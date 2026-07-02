@@ -35,7 +35,8 @@ const ObjectManager: React.FC = () => {
   const handleGenerateAndPreview = async (ot: ObjectTypeSummary) => {
     setGeneratingId(ot.id);
     try {
-      const page = await generatePage(ot.id, { displayName: ot.displayName });
+      const objectCode = ot.code || ot.name || "";
+      const page = await generatePage(objectCode, { displayName: ot.displayName });
       navigate(`/pages/${page.id}`);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "生成页面失败");
