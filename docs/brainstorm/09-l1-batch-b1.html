@@ -1,0 +1,104 @@
+<h2>MetaPlatform · L1 细化 · B1 用户面三层</h2>
+<p class="subtitle">从上到下：用户与 AI 对话层 → 应用与场景市场 → 页面/表单生成器 → 流程自动化引擎</p>
+
+<!-- ============== L1-1 用户与 AI 对话层 ============== -->
+<div class="mockup">
+  <div class="mockup-header">L1-1 · 用户与 AI 对话层</div>
+  <div class="mockup-body">
+    <p><strong>职责</strong>：所有用户触点的统一入口。承担 5 类交互形态——自然语言对话、Web 拖拽、移动端原生、AI Agent API、企业 ChatOps 嵌入。</p>
+    <p><strong>关键概念</strong>：</p>
+    <ul style="margin-left: 1.25rem; color: var(--text-secondary); font-size: 0.85rem;">
+      <li><strong>会话 (Session)</strong> — 一次用户访问的上下文；可挂载多个工作面 (Workspace)</li>
+      <li><strong>工作面 (Workspace)</strong> — 一个用户当前看到的"工作台"；由多卡片 (Card) 组成</li>
+      <li><strong>AI 助手 (Copilot)</strong> — 平台内嵌的 AI 角色，绑定权限/可见性/审计</li>
+      <li><strong>指令 (Intent)</strong> — 用户/Agent 的输入；NL 文本、结构化指令、语音、图片</li>
+      <li><strong>回复 (Render)</strong> — 输出形态：表单/图表/列表/工作流/确认对话框</li>
+    </ul>
+    <p><strong>上下游</strong>：</p>
+    <ul style="margin-left: 1.25rem; color: var(--text-secondary); font-size: 0.85rem;">
+      <li><strong>向上</strong>：所有真实用户、AI Agent、第三方应用（通过嵌入式 SDK）</li>
+      <li><strong>向下</strong>：业务对象层 (G2) — 所有读写最终落到业务对象；流程自动化引擎 — 触发/审批/状态变更</li>
+    </ul>
+    <p><strong>典型数据流</strong>：用户输入 "把所有北京的客户标为 VIP" → AI 助手解析为指令 → 查询"客户"业务对象 (按城市=北京过滤) → 批量更新 VIP 标记 → 提交工作流 → 通知审批人 → 返回"已标记 23 个客户"</p>
+  </div>
+</div>
+
+<!-- ============== L1-2 应用与场景市场 ============== -->
+<div class="mockup">
+  <div class="mockup-header">L1-2 · 应用与场景市场 (G4 二期)</div>
+  <div class="mockup-body">
+    <p><strong>职责</strong>：把"业务对象 + 流程 + 视图"组合成"可销售/可复用的端到端应用包"，并允许客户/合作伙伴上传/购买。对应 Palantir 的 "Application Marketplace"、Mendix 的 "App Store"。</p>
+    <p><strong>关键概念</strong>：</p>
+    <ul style="margin-left: 1.25rem; color: var(--text-secondary); font-size: 0.85rem;">
+      <li><strong>应用包 (App Package)</strong> — 一组业务对象 + 流程 + UI 模板 + 数据初始化脚本的 ZIP/JSON</li>
+      <li><strong>场景模板 (Scenario Template)</strong> — "采购到付款" / "招聘入职" / "设备巡检" 这类端到端流程的预制包</li>
+      <li><strong>发布 (Publish)</strong> — 私有 / 团队内 / 企业内 / 公开 四级可见性</li>
+      <li><strong>订阅 (Subscribe)</strong> — 客户可订阅应用；订阅后自动安装业务对象/流程/UI</li>
+      <li><strong>差异 (Diff)</strong> — 订阅后客户对应用做的"个性化修改"与原版的差异，可后续升级</li>
+    </ul>
+    <p><strong>上下游</strong>：</p>
+    <ul style="margin-left: 1.25rem; color: var(--text-secondary); font-size: 0.85rem;">
+      <li><strong>向上</strong>：用户与 AI 对话层 (用户浏览/安装应用) + 计费/订阅系统 (商业化)</li>
+      <li><strong>向下</strong>：业务对象层 (G2)、流程自动化、页面/表单生成器 (都要被打包)</li>
+    </ul>
+    <p><strong>典型数据流</strong>：合作伙伴上传 "CRM Lite" 应用包 (含 5 个业务对象/客户、订单等 + 8 个流程 + 12 个页面) → 平台校验 → 发布到企业市场 → 客户"一键安装" → 平台在客户的本体中创建同名业务对象 + 安装流程 → 客户可个性化修改 → 后续平台升级时提示合并</p>
+  </div>
+</div>
+
+<!-- ============== L1-3 页面与表单生成器 ============== -->
+<div class="mockup">
+  <div class="mockup-header">L1-3 · 页面与表单生成器 (G1 派生)</div>
+  <div class="mockup-body">
+    <p><strong>职责</strong>：把"业务对象定义"自动 + 半自动地转成"用户能看见、能操作的页面/表单/列表/看板"。是 P3 架构中"从本体派生 UI"的具体执行层。</p>
+    <p><strong>关键概念</strong>：</p>
+    <ul style="margin-left: 1.25rem; color: var(--text-secondary); font-size: 0.85rem;">
+      <li><strong>视图 (View)</strong> — 一个业务对象的"展示配置"：哪些字段、用什么控件、什么布局</li>
+      <li><strong>表单 (Form)</strong> — 创建/编辑业务对象的 UI；含字段校验、级联、动态显隐</li>
+      <li><strong>列表 (List)</strong> — 业务对象的列表展示；可配过滤、排序、分组、列宽</li>
+      <li><strong>看板 (Dashboard)</strong> — 多业务对象的汇总视图；图表/数字/趋势/钻取</li>
+      <li><strong>组件 (Component)</strong> — 平台预制的 UI 元素库；表单控件、表格、地图、富文本等</li>
+      <li><strong>布局 (Layout)</strong> — 拖拽式布局；可保存为模板复用</li>
+      <li><strong>权限投影 (Permission Projection)</strong> — 业务对象的权限如何映射到 UI 元素（只读/隐藏/可编辑）</li>
+    </ul>
+    <p><strong>上下游</strong>：</p>
+    <ul style="margin-left: 1.25rem; color: var(--text-secondary); font-size: 0.85rem;">
+      <li><strong>向上</strong>：用户与 AI 对话层 (用户拖拽/NL 描述生成页面) + 应用市场 (被打包)</li>
+      <li><strong>向下</strong>：业务对象层 (G2) — 读业务对象定义生成视图；平台底座 (权限/审计) — 应用权限投影</li>
+    </ul>
+    <p><strong>典型数据流</strong>：建模者创建"客户"业务对象 (10 个字段) → 平台自动生成默认表单/列表 → 建模者拖拽调整布局 + 配权限 → 用户看到"客户列表页" (默认 +5 列) → 用户点"+ 新建"看到表单 → 提交后业务对象层写入 → UI 自动刷新</p>
+  </div>
+</div>
+
+<!-- ============== L1-4 流程自动化引擎 ============== -->
+<div class="mockup">
+  <div class="mockup-header">L1-4 · 流程自动化引擎</div>
+  <div class="mockup-body">
+    <p><strong>职责</strong>：让业务跑起来——"客户提交订单 → 触发审批 → 审批通过 → 通知仓库发货 → 客户收到通知"。支持 BPMN/状态机/规则三种范式并存。</p>
+    <p><strong>关键概念</strong>：</p>
+    <ul style="margin-left: 1.25rem; color: var(--text-secondary); font-size: 0.85rem;">
+      <li><strong>流程定义 (Process Definition)</strong> — BPMN XML / 状态机 JSON / 规则 DSL；支持版本管理</li>
+      <li><strong>流程实例 (Process Instance)</strong> — 一次具体的流程执行；含状态、变量、参与者</li>
+      <li><strong>触发器 (Trigger)</strong> — 业务对象变更 / 定时 / Webhook / 用户动作 / 外部事件</li>
+      <li><strong>节点 (Node)</strong> — 用户任务 / 服务任务 / 网关 / 事件 / 子流程</li>
+      <li><strong>SLA</strong> — 每个节点的"最长等待时间"；超时触发升级/通知/重派</li>
+      <li><strong>参与者解析 (Assignee Resolution)</strong> — 谁来做这一步？可基于发起人/角色/业务对象属性/AI 推荐</li>
+      <li><strong>补偿/回滚 (Compensation)</strong> — 流程出错时如何回滚对业务对象的修改</li>
+    </ul>
+    <p><strong>上下游</strong>：</p>
+    <ul style="margin-left: 1.25rem; color: var(--text-secondary); font-size: 0.85rem;">
+      <li><strong>向上</strong>：用户与 AI 对话层 (用户审批/查看进度) + AI 胶水层 (Agent 可"读"流程状态) + 应用市场 (被打包)</li>
+      <li><strong>向下</strong>：业务对象层 (G2) — 流程节点读写业务对象；能力库 (G3) — 节点可调用能力 (发邮件/OCR/对账)</li>
+    </ul>
+    <p><strong>典型数据流</strong>：用户提交"采购申请" (业务对象) → 触发器"业务对象变更"启动"采购审批"流程 → 节点"部门经理审批"等待 1 天 → 经理通过 → 节点"金额>1万? → 总经办审批" → 通过 → 节点"调用能力:发送邮件" → 流程结束；流程中所有步骤在本体引擎中产生"流程事件"记录</p>
+  </div>
+</div>
+
+<div class="section">
+  <div class="label">B1 小结</div>
+  <ul style="color: var(--text-secondary); font-size: 0.85rem; margin-left: 1.25rem;">
+    <li>对话层是<strong>统一入口</strong>，承担 5 种交互形态</li>
+    <li>场景市场是<strong>商业化抓手</strong>（G4），但 MVP 不做</li>
+    <li>页面/表单生成器是<strong>P3 派生的关键</strong>——它必须能从 G2 自动派生</li>
+    <li>流程自动化是<strong>业务跑起来的关键</strong>，必须和 G2/G3 紧耦合</li>
+  </ul>
+</div>
