@@ -1648,3 +1648,135 @@ a {
   font-size: 13px;
   font-style: italic;
 }
+
+/* ============================================================
+ * Process Designer — 流程设计器
+ * ============================================================ */
+
+/* Main container */
+.mp-process-designer {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 40px);
+  position: relative;
+}
+
+/* Top toolbar */
+.mp-process-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-bg);
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+/* Three-column body */
+.mp-process-body {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* Left palette 200px */
+.mp-process-palette {
+  width: 200px;
+  border-right: 1px solid var(--color-border);
+  background: var(--color-bg-light);
+  overflow-y: auto;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Draggable node type items */
+.mp-process-palette-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  margin: 0 8px 4px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  cursor: grab;
+  font-size: 13px;
+  color: var(--color-text);
+  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+  user-select: none;
+}
+
+.mp-process-palette-item:hover {
+  background: #eff6ff;
+  border-color: var(--color-primary);
+  box-shadow: 0 1px 4px rgba(59, 130, 246, 0.1);
+}
+
+.mp-process-palette-item:active {
+  cursor: grabbing;
+}
+
+/* Center SVG canvas */
+.mp-process-canvas {
+  flex: 1;
+  overflow: hidden;
+  background: #f8fafc;
+  min-width: 0;
+  position: relative;
+}
+
+.mp-process-canvas svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: default;
+}
+
+/* SVG node groups */
+.mp-process-node {
+  transition: filter 0.1s;
+}
+
+.mp-process-node:hover {
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+.mp-process-node.selected {
+  filter: drop-shadow(0 0 6px rgba(59, 130, 246, 0.35));
+}
+
+/* SVG edge lines */
+.mp-process-edge {
+  transition: stroke 0.15s;
+}
+
+/* Right properties panel 280px */
+.mp-process-props {
+  width: 280px;
+  border-left: 1px solid var(--color-border);
+  background: var(--color-bg);
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+
+/* Edge mode indicator */
+.mp-process-edge-mode {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  background: #fef3c7;
+  border: 1px solid #f59e0b;
+  border-radius: var(--radius);
+  font-size: 12px;
+  font-weight: 500;
+  color: #92400e;
+  animation: mp-pulse-border 1.5s ease-in-out infinite;
+}
+
+@keyframes mp-pulse-border {
+  0%, 100% { border-color: #f59e0b; }
+  50% { border-color: #fbbf24; box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.15); }
+}

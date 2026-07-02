@@ -5,6 +5,7 @@ import PageView from "./pages/PageView";
 import ObjectManager from "./pages/ObjectManager";
 import ModelingWorkshop from "./pages/ModelingWorkshop";
 import PageDesigner from "./pages/PageDesigner";
+import ProcessDesigner from "./pages/ProcessDesigner";
 import "./App.css";
 
 const App: React.FC = () => {
@@ -43,6 +44,12 @@ const App: React.FC = () => {
             >
               设计器
             </NavLink>
+            <NavLink
+              to="/process-designer"
+              className={({ isActive }) => (isActive ? "mp-nav-link active" : "mp-nav-link")}
+            >
+              流程设计器
+            </NavLink>
           </nav>
         </aside>
 
@@ -55,6 +62,7 @@ const App: React.FC = () => {
             <Route path="/workshop" element={<ModelingWorkshop />} />
             <Route path="/designer" element={<PageDesigner />} />
             <Route path="/designer/:id" element={<PageDesigner />} />
+            <Route path="/process-designer" element={<ProcessDesigner />} />
           </Routes>
         </main>
       </div>
