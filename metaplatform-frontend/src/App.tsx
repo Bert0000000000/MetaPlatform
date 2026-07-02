@@ -6,6 +6,9 @@ import ObjectManager from "./pages/ObjectManager";
 import ModelingWorkshop from "./pages/ModelingWorkshop";
 import PageDesigner from "./pages/PageDesigner";
 import ProcessDesigner from "./pages/ProcessDesigner";
+import DialogueChat from "./pages/DialogueChat";
+import CapabilityCenter from "./pages/CapabilityCenter";
+import IntegrationHub from "./pages/IntegrationHub";
 import "./App.css";
 
 const App: React.FC = () => {
@@ -50,6 +53,24 @@ const App: React.FC = () => {
             >
               流程设计器
             </NavLink>
+            <NavLink
+              to="/dialogue"
+              className={({ isActive }) => (isActive ? "mp-nav-link active" : "mp-nav-link")}
+            >
+              AI 对话
+            </NavLink>
+            <NavLink
+              to="/capabilities"
+              className={({ isActive }) => (isActive ? "mp-nav-link active" : "mp-nav-link")}
+            >
+              能力中心
+            </NavLink>
+            <NavLink
+              to="/integration"
+              className={({ isActive }) => (isActive ? "mp-nav-link active" : "mp-nav-link")}
+            >
+              集成中心
+            </NavLink>
           </nav>
         </aside>
 
@@ -63,6 +84,9 @@ const App: React.FC = () => {
             <Route path="/designer" element={<PageDesigner />} />
             <Route path="/designer/:id" element={<PageDesigner />} />
             <Route path="/process-designer" element={<ProcessDesigner />} />
+            <Route path="/dialogue" element={<DialogueChat />} />
+            <Route path="/capabilities" element={<CapabilityCenter />} />
+            <Route path="/integration" element={<IntegrationHub />} />
           </Routes>
         </main>
       </div>
