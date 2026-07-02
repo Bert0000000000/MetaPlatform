@@ -35,12 +35,15 @@ class ProcessEngineTest {
     private ProcessTaskRepository taskRepository;
     @Mock
     private ProcessHistoryRepository historyRepository;
+    @Mock
+    private ParallelTokenRepository parallelTokenRepository;
 
     private ProcessEngine engine;
     private DslParser dslParser;
     private DefinitionValidator validator;
     private ParticipantResolver participantResolver;
     private SlaTracker slaTracker;
+    private AiDecisionService aiDecisionService;
 
     private String approvalDslJson;
 
@@ -52,9 +55,11 @@ class ProcessEngineTest {
         validator = new DefinitionValidator();
         participantResolver = new ParticipantResolver();
         slaTracker = mock(SlaTracker.class);
+        aiDecisionService = mock(AiDecisionService.class);
 
         engine = new ProcessEngine(instanceRepository, definitionRepository,
-            taskRepository, historyRepository, dslParser, validator, participantResolver, slaTracker);
+            taskRepository, historyRepository, parallelTokenRepository,
+            dslParser, validator, participantResolver, slaTracker, aiDecisionService);
 
         approvalDslJson = """
             {

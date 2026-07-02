@@ -15,3 +15,10 @@ spring:
 
 server:
   port: 0
+
+metaplatform:
+  process:
+    ai-substrate-url: http://localhost:8084
+    timer:
+      enabled: false
+      check-interval-ms: 60000

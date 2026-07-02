@@ -4,6 +4,11 @@
 **/*.jar
 **/*.war
 
+# Node
+**/node_modules/
+**/package-lock.json
+**/.vite/
+
 # IDE
 .idea/
 *.iml

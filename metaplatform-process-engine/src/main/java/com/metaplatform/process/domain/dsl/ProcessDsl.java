@@ -1,6 +1,7 @@
 package com.metaplatform.process.domain.dsl;
 
 import com.metaplatform.process.domain.enums.NodeType;
+import com.metaplatform.process.domain.enums.TriggerType;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -9,6 +10,8 @@ public class ProcessDsl {
     private String key;
     private String name;
     private String description;
+    private TriggerType triggerType;
+    private String cronExpression;
     private List<VariableDefinition> variables = new ArrayList<>();
     private List<ProcessNode> nodes = new ArrayList<>();
     private List<Transition> transitions = new ArrayList<>();
@@ -41,6 +44,10 @@ public class ProcessDsl {
     public void setName(String name) { this.name = name; }
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }
+    public TriggerType getTriggerType() { return triggerType; }
+    public void setTriggerType(TriggerType triggerType) { this.triggerType = triggerType; }
+    public String getCronExpression() { return cronExpression; }
+    public void setCronExpression(String cronExpression) { this.cronExpression = cronExpression; }
     public List<VariableDefinition> getVariables() { return variables; }
     public void setVariables(List<VariableDefinition> variables) { this.variables = variables; }
     public List<ProcessNode> getNodes() { return nodes; }

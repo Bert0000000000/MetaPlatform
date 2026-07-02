@@ -39,3 +39,10 @@ logging:
   level:
     com.metaplatform.process: INFO
     org.springframework.kafka: WARN
+
+metaplatform:
+  process:
+    ai-substrate-url: http://localhost:8084
+    timer:
+      enabled: true
+      check-interval-ms: 60000

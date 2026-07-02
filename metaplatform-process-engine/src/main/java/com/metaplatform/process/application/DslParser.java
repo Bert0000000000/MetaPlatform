@@ -32,6 +32,13 @@ public class DslParser {
             dsl.setDescription(root.has("description") ?
                 root.get("description").asText() : null);
 
+            if (root.has("triggerType")) {
+                dsl.setTriggerType(TriggerType.valueOf(root.get("triggerType").asText()));
+            }
+            if (root.has("cronExpression")) {
+                dsl.setCronExpression(root.get("cronExpression").asText());
+            }
+
             if (root.has("variables")) {
                 dsl.setVariables(parseVariables(root.get("variables")));
             }
@@ -75,6 +82,9 @@ public class DslParser {
 
             if (node.getType() == NodeType.GATEWAY && nodeNode.has("gatewayType")) {
                 node.setGatewayType(GatewayType.valueOf(nodeNode.get("gatewayType").asText()));
+                if (nodeNode.has("aiDecisionPrompt")) {
+                    node.setAiDecisionPrompt(nodeNode.get("aiDecisionPrompt").asText());
+                }
             }
 
             if (node.getType() == NodeType.TASK) {

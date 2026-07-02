@@ -14,6 +14,7 @@ public class ProcessNode {
     private SlaConfig sla;
     private FormConfig form;
     private NodeAction action;
+    private String aiDecisionPrompt;
 
     public ProcessNode() {}
 
@@ -41,4 +42,6 @@ public class ProcessNode {
     public void setForm(FormConfig form) { this.form = form; }
     public NodeAction getAction() { return action; }
     public void setAction(NodeAction action) { this.action = action; }
+    public String getAiDecisionPrompt() { return aiDecisionPrompt; }
+    public void setAiDecisionPrompt(String aiDecisionPrompt) { this.aiDecisionPrompt = aiDecisionPrompt; }
 }

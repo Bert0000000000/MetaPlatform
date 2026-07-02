@@ -1,5 +1,6 @@
 package com.metaplatform.process.application;
 
+import com.metaplatform.process.domain.ParallelToken;
 import com.metaplatform.process.domain.ProcessDefinition;
 import com.metaplatform.process.domain.ProcessHistoryEvent;
 import com.metaplatform.process.domain.ProcessInstance;
@@ -10,11 +11,14 @@ import com.metaplatform.process.domain.repository.ProcessDefinitionRepository;
 import com.metaplatform.process.domain.repository.ProcessHistoryRepository;
 import com.metaplatform.process.domain.repository.ProcessInstanceRepository;
 import com.metaplatform.process.domain.repository.ProcessTaskRepository;
+import com.metaplatform.process.domain.repository.ParallelTokenRepository;
 import com.metaplatform.process.infrastructure.exception.ProcessDefinitionNotFoundException;
 import com.metaplatform.process.infrastructure.exception.ProcessEngineException;
 import com.metaplatform.process.infrastructure.util.JsonUtils;
 import com.googlecode.aviator.AviatorEvaluator;
 import jakarta.transaction.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -24,31 +28,39 @@ import java.util.*;
 @Transactional
 public class ProcessEngine {
 
+    private static final Logger log = LoggerFactory.getLogger(ProcessEngine.class);
+
     private final ProcessInstanceRepository instanceRepository;
     private final ProcessDefinitionRepository definitionRepository;
     private final ProcessTaskRepository taskRepository;
     private final ProcessHistoryRepository historyRepository;
+    private final ParallelTokenRepository parallelTokenRepository;
     private final DslParser dslParser;
     private final DefinitionValidator validator;
     private final ParticipantResolver participantResolver;
     private final SlaTracker slaTracker;
+    private final AiDecisionService aiDecisionService;
 
     public ProcessEngine(ProcessInstanceRepository instanceRepository,
                          ProcessDefinitionRepository definitionRepository,
                          ProcessTaskRepository taskRepository,
                          ProcessHistoryRepository historyRepository,
+                         ParallelTokenRepository parallelTokenRepository,
                          DslParser dslParser,
                          DefinitionValidator validator,
                          ParticipantResolver participantResolver,
-                         SlaTracker slaTracker) {
+                         SlaTracker slaTracker,
+                         AiDecisionService aiDecisionService) {
         this.instanceRepository = instanceRepository;
         this.definitionRepository = definitionRepository;
         this.taskRepository = taskRepository;
         this.historyRepository = historyRepository;
+        this.parallelTokenRepository = parallelTokenRepository;
         this.dslParser = dslParser;
         this.validator = validator;
         this.participantResolver = participantResolver;
         this.slaTracker = slaTracker;
+        this.aiDecisionService = aiDecisionService;
     }
 
     /**
@@ -155,7 +167,117 @@ public class ProcessEngine {
             for (Transition transition : outgoing) {
                 moveToNode(instance, dsl, transition.getTo());
             }
+        } else if (gateway.getGatewayType() == GatewayType.PARALLEL) {
+            // PARALLEL: create tokens for all branches, track parallel execution
+            handleParallelGateway(instance, dsl, gateway, outgoing);
         }
+
+        // Check if this gateway uses AI Decision
+        if (gateway.getTaskType() == TaskType.AI_DECISION) {
+            handleAiDecisionGateway(instance, dsl, gateway, outgoing, variables);
+        }
+    }
+
+    /**
+     * Handle PARALLEL gateway: fork into all branches with token tracking.
+     */
+    private void handleParallelGateway(ProcessInstance instance, ProcessDsl dsl,
+                                        ProcessNode gateway, List<Transition> outgoing) {
+        log.info("Parallel gateway '{}' reached: splitting into {} branches",
+            gateway.getId(), outgoing.size());
+
+        // Create a token for each outgoing branch
+        List<ParallelToken> tokens = new ArrayList<>();
+        for (int i = 0; i < outgoing.size(); i++) {
+            Transition transition = outgoing.get(i);
+            ParallelToken token = new ParallelToken();
+            token.setInstanceId(instance.getId());
+            token.setGatewayNodeId(gateway.getId());
+            token.setBranchId(gateway.getId() + "_branch_" + i);
+            token.setTargetNodeId(transition.getTo());
+            token.setStatus(ParallelToken.TokenStatus.ACTIVE);
+            token = parallelTokenRepository.save(token);
+            tokens.add(token);
+        }
+
+        recordHistory(instance, HistoryEventType.PARALLEL_SPLIT, gateway.getId(), "SYSTEM",
+            Map.of("branchCount", tokens.size()));
+
+        // Execute each branch
+        for (ParallelToken token : tokens) {
+            try {
+                moveToNode(instance, dsl, token.getTargetNodeId());
+            } catch (Exception e) {
+                log.error("Parallel branch '{}' failed: {}", token.getBranchId(), e.getMessage());
+                token.markFailed();
+                parallelTokenRepository.save(token);
+            }
+        }
+    }
+
+    /**
+     * Check if all parallel branches for a gateway have completed.
+     * If so, perform the join (merge back to single path).
+     */
+    public void checkParallelJoin(ProcessInstance instance, ProcessDsl dsl, String gatewayNodeId) {
+        long totalTokens = parallelTokenRepository.countByInstanceIdAndGatewayNodeId(
+            instance.getId(), gatewayNodeId);
+        long completedTokens = parallelTokenRepository.countByInstanceIdAndGatewayNodeIdAndStatus(
+            instance.getId(), gatewayNodeId, ParallelToken.TokenStatus.COMPLETED);
+
+        log.info("Parallel join check for gateway '{}': {}/{} branches completed",
+            gatewayNodeId, completedTokens, totalTokens);
+
+        if (completedTokens == totalTokens && totalTokens > 0) {
+            // All branches completed -- perform join
+            ProcessNode gateway = dsl.getNodeById(gatewayNodeId);
+            recordHistory(instance, HistoryEventType.PARALLEL_JOIN, gatewayNodeId, "SYSTEM",
+                Map.of("completedBranches", completedTokens));
+
+            // Find the outgoing transition from the join gateway
+            List<Transition> joinOutgoing = dsl.getOutgoingTransitions(gatewayNodeId);
+            if (!joinOutgoing.isEmpty()) {
+                moveToNode(instance, dsl, joinOutgoing.get(0).getTo());
+            }
+        }
+    }
+
+    /**
+     * Mark a parallel branch as completed and check join condition.
+     */
+    public void completeParallelBranch(Long instanceId, String gatewayNodeId, String branchId) {
+        List<ParallelToken> tokens = parallelTokenRepository.findByInstanceIdAndGatewayNodeId(
+            instanceId, gatewayNodeId);
+
+        for (ParallelToken token : tokens) {
+            if (token.getBranchId().equals(branchId) && token.isActive()) {
+                token.markCompleted();
+                parallelTokenRepository.save(token);
+
+                log.info("Parallel branch '{}' completed for gateway '{}'",
+                    branchId, gatewayNodeId);
+                break;
+            }
+        }
+    }
+
+    /**
+     * Handle AI-powered decision gateway.
+     * Calls AiDecisionService instead of evaluating Aviator expressions.
+     */
+    private void handleAiDecisionGateway(ProcessInstance instance, ProcessDsl dsl,
+                                           ProcessNode gateway, List<Transition> outgoing,
+                                           Map<String, Object> variables) {
+        log.info("AI Decision gateway '{}' reached: asking AI to evaluate {} branches",
+            gateway.getId(), outgoing.size());
+
+        String chosenBranch = aiDecisionService.evaluateDecision(gateway, outgoing, variables);
+
+        recordHistory(instance, HistoryEventType.AI_DECISION_MADE, gateway.getId(), "SYSTEM",
+            Map.of("chosenBranch", chosenBranch, "branchCount", outgoing.size()));
+
+        // Move to the AI-chosen branch
+        moveToNode(instance, dsl, chosenBranch);
     }
 
     /**
