@@ -69,7 +69,7 @@ export interface KanbanConfig {
 }
 
 // ---- Section ----
-export type SectionType = "FORM" | "TABLE" | "KANBAN" | "CARD";
+export type SectionType = "FORM" | "TABLE" | "KANBAN" | "CARD" | "FIELD_GROUP";
 
 export interface SectionSchema {
   id: string;
@@ -83,20 +83,24 @@ export interface SectionSchema {
 
 // ---- Top-level PageRender ----
 export interface PageRender {
-  id: string;
+  id?: string;
   name: string;
-  displayName: string;
+  displayName?: string;
   pageType: string;
-  layout: PageLayout;
+  layout?: PageLayout;
   sections: SectionSchema[];
+  viewConfig?: Record<string, unknown>;
+  _meta?: Record<string, unknown>;
 }
 
 // ---- Meta info for dashboard listing ----
 export interface PageConfigSummary {
-  id: string;
+  id: string | number;
   name: string;
-  displayName: string;
+  displayName?: string;
+  code?: string;
   pageType: string;
+  objectCode?: string;
   objectTypeId?: string;
   createdAt?: string;
 }
@@ -104,7 +108,8 @@ export interface PageConfigSummary {
 // ---- ObjectType from ontology-engine ----
 export interface ObjectTypeSummary {
   id: string;
-  name: string;
+  name?: string;
+  code?: string;
   displayName: string;
   description?: string;
   fieldCount?: number;

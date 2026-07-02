@@ -42,7 +42,7 @@ const SchemaRenderer: React.FC<SchemaRendererProps> = ({
   return (
     <div className="mp-schema-renderer">
       <header className="mp-page-header">
-        <h2>{schema.displayName}</h2>
+        <h2>{schema.displayName || schema.name}</h2>
         <span className="mp-page-type-badge">{schema.pageType}</span>
       </header>
 

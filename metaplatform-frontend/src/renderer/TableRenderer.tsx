@@ -88,7 +88,7 @@ const TableRenderer: React.FC<TableRendererProps> = ({ config, data = [] }) => {
                 className={col.sortable ? "sortable" : ""}
                 onClick={() => handleSort(col.field, col.sortable)}
               >
-                {col.title}
+                {col.title || (col as Record<string, unknown>).headerName as string || col.field}
                 {col.sortable && sortField === col.field && (
                   <span className="mp-sort-indicator">
                     {sortDir === "asc" ? " ▲" : " ▼"}

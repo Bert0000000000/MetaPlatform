@@ -30,10 +30,10 @@ const Dashboard: React.FC = () => {
     reload();
   }, [reload]);
 
-  const handleGenerate = async (objectTypeId: string) => {
+  const handleGenerate = async (objectCode: string) => {
     setGenerating(true);
     try {
-      await generatePage(objectTypeId);
+      await generatePage(objectCode);
       await reload();
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "生成页面失败");
@@ -69,11 +69,11 @@ const Dashboard: React.FC = () => {
             {objectTypes.map((ot) => (
               <div key={ot.id} className="mp-ot-card">
                 <div className="mp-ot-card-name">{ot.displayName}</div>
-                <div className="mp-ot-card-meta">{ot.name}</div>
+                <div className="mp-ot-card-meta">{ot.code || ot.name}</div>
                 <button
                   className="mp-btn mp-btn-primary mp-btn-sm"
                   disabled={generating}
-                  onClick={() => handleGenerate(ot.id)}
+                  onClick={() => handleGenerate(ot.code || ot.name || "")}
                 >
                   {generating ? "生成中..." : "生成页面"}
                 </button>
@@ -104,7 +104,7 @@ const Dashboard: React.FC = () => {
             <tbody>
               {pages.map((p) => (
                 <tr key={p.id}>
-                  <td>{p.displayName}</td>
+                  <td>{p.displayName || p.name}</td>
                   <td>{p.name}</td>
                   <td>
                     <span className="mp-page-type-badge">{p.pageType}</span>

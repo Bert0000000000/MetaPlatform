@@ -32,7 +32,7 @@ const SectionRenderer: React.FC<SectionRendererProps> = ({
     <div className="mp-section">
       <h3 className="mp-section-title">{section.title}</h3>
 
-      {section.type === "FORM" && section.fields && (
+      {(section.type === "FORM" || section.type === "FIELD_GROUP") && section.fields && (
         <div
           className="mp-form-grid"
           style={{

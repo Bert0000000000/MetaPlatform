@@ -7,13 +7,13 @@ const http = axios.create({ baseURL: "/api/v1" });
 
 /** List all page configs. */
 export async function listPageConfigs(): Promise<PageConfigSummary[]> {
-  const { data } = await http.get<PageConfigSummary[]>("/pages");
+  const { data } = await http.get<PageConfigSummary[]>("/page-configs");
   return data;
 }
 
 /** Get a single page config by ID. */
 export async function getPageConfig(id: string): Promise<PageConfigSummary> {
-  const { data } = await http.get<PageConfigSummary>(`/pages/${id}`);
+  const { data } = await http.get<PageConfigSummary>(`/page-configs/${id}`);
   return data;
 }
 
@@ -23,20 +23,19 @@ export async function renderPage(id: string): Promise<PageRender> {
   return data;
 }
 
-/** Generate a page config from an ObjectType ID. */
+/** Generate a page config from an ObjectType code. */
 export async function generatePage(
-  objectTypeId: string,
+  objectCode: string,
   options?: { pageType?: string; displayName?: string },
 ): Promise<PageConfigSummary> {
-  const { data } = await http.post<PageConfigSummary>("/pages/generate", {
-    objectTypeId,
+  const { data } = await http.post<PageConfigSummary>("/pages/quick-create", {
+    objectCode,
     pageType: options?.pageType ?? "TABLE",
-    displayName: options?.displayName,
   });
   return data;
 }
 
 /** Delete a page config. */
 export async function deletePage(id: string): Promise<void> {
-  await http.delete(`/pages/${id}`);
+  await http.delete(`/page-configs/${id}`);
 }

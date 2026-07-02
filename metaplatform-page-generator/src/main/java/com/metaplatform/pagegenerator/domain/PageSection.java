@@ -16,9 +16,6 @@ public class PageSection {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "page_config_id", nullable = false)
-    private Long pageConfigId;
-
     @Column(nullable = false)
     private String title;
 
@@ -50,9 +47,6 @@ public class PageSection {
     // Getters and Setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
-
-    public Long getPageConfigId() { return pageConfigId; }
-    public void setPageConfigId(Long pageConfigId) { this.pageConfigId = pageConfigId; }
 
     public String getTitle() { return title; }
     public void setTitle(String title) { this.title = title; }
