@@ -201,18 +201,47 @@ bash e2e/shell/s10_full_stack.sh
 
 ## 📊 当前状态
 
-| 子项目 | 版本 | 状态 |
-|--------|------|------|
-| Ontology Engine | v0.2 | ✅ PG 持久化 + AI 增强 |
-| Page Generator | v0.1 | ✅ Schema 生成 + 渲染 |
-| Frontend | v0.1 | ✅ Schema 驱动渲染 |
-| Platform Base | v0.1 | ✅ 多租户 + RBAC |
-| AI Substrate | v0.1 | ✅ LLM Gateway + Billing |
-| Process Engine | v0.1 | ✅ JSON DSL + 状态机 |
-| Knowledge | v0.1 | ✅ RAG + MDM |
-| Dialogue | v0.1 | ✅ 会话 + 意图路由 |
-| Capability Library | v0.1 | ✅ Pipeline 编排 |
-| Data Stack | v0.2 | ✅ Doris + ClickHouse |
+| 子项目 | 版本 | 状态 | 核心能力 |
+|--------|------|------|----------|
+| Ontology Engine | v0.3 | ✅ | 25种字段类型 + 校验引擎 + 生命周期守卫 |
+| AI Substrate | v0.2 | ✅ | LlmClient + NL建模 + AI字段生成 |
+| Knowledge (RAG) | v0.1 | ✅ | 文档摄入 + 分块 + 嵌入 + 语义搜索 |
+| Dialogue | v0.1 | ✅ | NL解析器 + 上下文记忆 + 6种意图 |
+| Capability Library | v0.2 | ✅ | 12个原子能力 + Pipeline编排 |
+| Integration Hub | v0.1 | ✅ | REST/DB/CSV连接器 + 数据同步 |
+| Page Generator | v0.2 | ✅ | Schema生成 + TABLE/FORM/KANBAN渲染 |
+| Frontend | v0.2 | ✅ | 建模特工场 + 页面设计器 + 流程设计器 |
+| Data Stack | v0.2 | ✅ | Doris + ClickHouse + Hudi骨架 |
+| Platform Base | v0.1 | ✅ | 多租户 + RBAC 接口 |
+
+### 前端页面清单
+
+| 路径 | 页面 | 功能 |
+|------|------|------|
+| `/` | 页面配置管理 | 列表/预览/删除 |
+| `/workshop` | 建模特工场 | ObjectType CRUD + 字段编辑 + 生命周期 + NL建模 |
+| `/designer` | 页面设计器 | 三栏拖拽式 PageConfig 编辑 |
+| `/process-designer` | 流程设计器 | SVG画布 + 5种节点 + 连线 |
+| `/dialogue` | AI 对话 | 会话管理 + 消息 + 意图识别 |
+| `/capabilities` | 能力中心 | 12个能力卡片 + 执行 + 结果 |
+| `/integration` | 集成中心 | 连接器管理 + 测试 + 同步 |
+| `/objects` | ObjectType | 列表 + 一键生成页面 |
+| `/pages/:id` | 页面预览 | Schema渲染 + 实例数据 |
+
+### 后端 API 清单
+
+| 端点前缀 | 服务 | 端点数 |
+|----------|------|--------|
+| `/api/v1/entity-types` | 本体引擎 | 5 |
+| `/api/v1/object-types` | 业务对象 | 6 |
+| `/api/v1/object-instances` | 实例管理 | 5 |
+| `/api/v1/nl-modeling` | NL建模 | 1 |
+| `/api/v1/knowledge` | RAG知识库 | 5 |
+| `/api/v1/dialogue` | 对话层 | 6 |
+| `/api/v1/capabilities` | 能力库 | 4 |
+| `/api/v1/integration` | 集成中心 | 8 |
+| `/api/v1/page-configs` | 页面配置 | 4 |
+| `/api/v1/pages` | 页面生成 | 3 |
 
 ## 📝 开发指南
 
