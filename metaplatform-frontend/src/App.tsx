@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, NavLink } from "react-router-dom";
 import Dashboard from "./pages/Dashboard";
 import PageView from "./pages/PageView";
 import ObjectManager from "./pages/ObjectManager";
+import ModelingWorkshop from "./pages/ModelingWorkshop";
 import "./App.css";
 
 const App: React.FC = () => {
@@ -29,6 +30,12 @@ const App: React.FC = () => {
             >
               ObjectType
             </NavLink>
+            <NavLink
+              to="/workshop"
+              className={({ isActive }) => (isActive ? "mp-nav-link active" : "mp-nav-link")}
+            >
+              建模特工场
+            </NavLink>
           </nav>
         </aside>
 
@@ -38,6 +45,7 @@ const App: React.FC = () => {
             <Route path="/" element={<Dashboard />} />
             <Route path="/pages/:id" element={<PageView />} />
             <Route path="/objects" element={<ObjectManager />} />
+            <Route path="/workshop" element={<ModelingWorkshop />} />
           </Routes>
         </main>
       </div>

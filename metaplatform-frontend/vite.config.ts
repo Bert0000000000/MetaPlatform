@@ -6,7 +6,7 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      // Ontology Engine: entity-types, object-types, object-instances
+      // Ontology Engine: entity-types, object-types, object-instances, nl-modeling, ai
       "/api/v1/entity-types": {
         target: "http://localhost:8090",
         changeOrigin: true,
@@ -16,6 +16,10 @@ export default defineConfig({
         changeOrigin: true,
       },
       "/api/v1/object-instances": {
+        target: "http://localhost:8090",
+        changeOrigin: true,
+      },
+      "/api/v1/nl-modeling": {
         target: "http://localhost:8090",
         changeOrigin: true,
       },
