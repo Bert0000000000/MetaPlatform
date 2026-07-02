@@ -1,0 +1,17 @@
+package com.metaplatform.process.domain.enums;
+
+public enum HistoryEventType {
+    INSTANCE_STARTED,
+    NODE_ENTERED,
+    NODE_COMPLETED,
+    TASK_CREATED,
+    TASK_ASSIGNED,
+    TASK_COMPLETED,
+    GATEWAY_EVALUATED,
+    VARIABLE_SET,
+    SLA_WARNING,
+    SLA_BREACHED,
+    INSTANCE_COMPLETED,
+    INSTANCE_CANCELLED,
+    INSTANCE_FAILED
+}

@@ -1,0 +1,10 @@
+server:
+  port: 0
+
+spring:
+  application:
+    name: dialogue-layer-test
+
+logging:
+  level:
+    com.metaplatform.dialogue: DEBUG
