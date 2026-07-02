@@ -1,0 +1,46 @@
+server:
+  port: 8083
+
+spring:
+  application:
+    name: ai-substrate
+  datasource:
+    url: jdbc:postgresql://localhost:5435/ai_substrate
+    username: ai
+    password: metaplatform
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+  data:
+    redis:
+      host: localhost
+      port: 6381
+
+# AI Provider configuration
+ai:
+  openai:
+    api-key: ${OPENAI_API_KEY:sk-placeholder}
+    base-url: https://api.openai.com/v1
+    default-model: gpt-4o
+    embedding-model: text-embedding-ada-002
+  anthropic:
+    api-key: ${ANTHROPIC_API_KEY:sk-ant-placeholder}
+    base-url: https://api.anthropic.com/v1
+    default-model: claude-3-sonnet-20240229
+  # Model alias routing
+  model-aliases:
+    fast: gpt-3.5-turbo
+    smart: gpt-4o
+    claude: claude-3-sonnet-20240229
+    claude-fast: claude-3-haiku-20240307
+  # Token billing configuration
+  billing:
+    daily-quota-per-tenant: 1000000
+
+logging:
+  level:
+    com.metaplatform.ai: DEBUG
