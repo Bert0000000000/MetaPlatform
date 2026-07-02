@@ -4,6 +4,7 @@ import Dashboard from "./pages/Dashboard";
 import PageView from "./pages/PageView";
 import ObjectManager from "./pages/ObjectManager";
 import ModelingWorkshop from "./pages/ModelingWorkshop";
+import PageDesigner from "./pages/PageDesigner";
 import "./App.css";
 
 const App: React.FC = () => {
@@ -36,6 +37,12 @@ const App: React.FC = () => {
             >
               建模特工场
             </NavLink>
+            <NavLink
+              to="/designer"
+              className={({ isActive }) => (isActive ? "mp-nav-link active" : "mp-nav-link")}
+            >
+              设计器
+            </NavLink>
           </nav>
         </aside>
 
@@ -46,6 +53,8 @@ const App: React.FC = () => {
             <Route path="/pages/:id" element={<PageView />} />
             <Route path="/objects" element={<ObjectManager />} />
             <Route path="/workshop" element={<ModelingWorkshop />} />
+            <Route path="/designer" element={<PageDesigner />} />
+            <Route path="/designer/:id" element={<PageDesigner />} />
           </Routes>
         </main>
       </div>

@@ -1168,3 +1168,483 @@ a {
   border-color: var(--color-primary);
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.12);
 }
+
+/* ============================================================
+ * Page Designer — 页面设计器
+ * ============================================================ */
+
+/* ---- Designer container ---- */
+.mp-designer {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 40px);
+  position: relative;
+}
+
+/* ---- Toast ---- */
+.mp-designer-toast {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: #059669;
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: var(--radius);
+  font-size: 13px;
+  font-weight: 500;
+  z-index: 1000;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  animation: mp-toast-in 0.3s ease-out;
+}
+
+@keyframes mp-toast-in {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ---- Toolbar ---- */
+.mp-designer-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-bg);
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.mp-toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mp-toolbar-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-text);
+  white-space: nowrap;
+}
+
+.mp-toolbar-center {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.mp-toolbar-input {
+  padding: 5px 10px;
+  font-size: 13px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-bg);
+  color: var(--color-text);
+  width: 180px;
+  transition: border-color 0.15s;
+}
+
+.mp-toolbar-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.12);
+}
+
+.mp-toolbar-input-sm {
+  width: 130px;
+}
+
+.mp-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* ---- Three-column body ---- */
+.mp-designer-body {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* ---- Left: Palette ---- */
+.mp-designer-palette {
+  width: 240px;
+  border-right: 1px solid var(--color-border);
+  background: var(--color-bg-light);
+  overflow-y: auto;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.mp-palette-title {
+  padding: 12px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.mp-palette-hint {
+  padding: 6px 16px 10px;
+  font-size: 11px;
+  color: var(--color-text-secondary);
+}
+
+.mp-palette-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0 8px 12px;
+}
+
+.mp-palette-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  cursor: grab;
+  font-size: 13px;
+  color: var(--color-text);
+  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+  user-select: none;
+}
+
+.mp-palette-item:hover {
+  background: #eff6ff;
+  border-color: var(--color-primary);
+  box-shadow: 0 1px 4px rgba(59, 130, 246, 0.1);
+}
+
+.mp-palette-item:active {
+  cursor: grabbing;
+}
+
+.mp-palette-item.mp-dragging {
+  opacity: 0.5;
+  border-style: dashed;
+}
+
+.mp-palette-item-icon {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-badge-bg);
+  color: var(--color-badge-text);
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.mp-palette-item-label {
+  font-weight: 500;
+}
+
+/* ---- Center: Canvas ---- */
+.mp-designer-canvas {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 20px;
+  background: #f1f5f9;
+  min-width: 0;
+}
+
+.mp-canvas-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  color: var(--color-text-secondary);
+  text-align: center;
+}
+
+.mp-canvas-empty-icon {
+  font-size: 48px;
+  margin-bottom: 12px;
+  opacity: 0.4;
+}
+
+.mp-canvas-empty p {
+  font-size: 14px;
+}
+
+.mp-canvas-hint {
+  text-align: center;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  padding: 20px 12px;
+  font-style: italic;
+}
+
+/* ---- Section ---- */
+.mp-designer-section {
+  background: var(--color-bg);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius);
+  margin-bottom: 12px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.mp-designer-section.selected {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.12);
+}
+
+.mp-designer-section.mp-drop-zone {
+  border-color: var(--color-primary);
+  border-style: dashed;
+  background: #f0f9ff;
+}
+
+/* Section header */
+.mp-section-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-bg-light);
+  border-radius: var(--radius) var(--radius) 0 0;
+}
+
+.mp-section-type-badge {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--color-primary);
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.mp-section-title-text {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mp-section-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+/* ---- Field grid (inside FIELD_GROUP) ---- */
+.mp-field-grid {
+  display: grid;
+  gap: 8px;
+  padding: 12px 14px;
+}
+
+/* ---- TABLE columns list ---- */
+.mp-table-columns {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+}
+
+/* ---- Field card ---- */
+.mp-designer-field-card {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s, background 0.1s;
+  position: relative;
+}
+
+.mp-designer-field-card:hover {
+  border-color: #94a3b8;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.mp-designer-field-card.selected {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.12);
+  background: #f0f7ff;
+}
+
+.mp-designer-field-card.mp-insert-before {
+  border-top: 2px solid var(--color-primary);
+}
+
+.mp-field-card-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.mp-field-card-icon {
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-badge-bg);
+  color: var(--color-badge-text);
+  border-radius: 3px;
+  font-size: 12px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.mp-field-card-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mp-field-card-required {
+  color: var(--color-danger);
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.mp-field-card-type {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 500;
+  background: var(--color-bg-light);
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+.mp-field-card-code {
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  font-family: monospace;
+  margin-bottom: 6px;
+}
+
+.mp-field-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.mp-designer-field-card:hover .mp-field-card-actions,
+.mp-designer-field-card.selected .mp-field-card-actions {
+  opacity: 1;
+}
+
+/* ---- Right: Properties panel ---- */
+.mp-designer-props {
+  width: 280px;
+  border-left: 1px solid var(--color-border);
+  background: var(--color-bg);
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+
+.mp-props-title {
+  padding: 12px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.mp-props-group {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.mp-props-group-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 10px;
+}
+
+.mp-props-field {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-bottom: 10px;
+}
+
+.mp-props-field > span {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
+.mp-props-field input,
+.mp-props-field select {
+  padding: 5px 8px;
+  font-size: 13px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-bg);
+  color: var(--color-text);
+  transition: border-color 0.15s;
+  width: 100%;
+}
+
+.mp-props-field input:focus,
+.mp-props-field select:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.12);
+}
+
+.mp-props-field.mp-props-checkbox {
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+}
+
+.mp-props-field.mp-props-checkbox input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  accent-color: var(--color-primary);
+  cursor: pointer;
+}
+
+.mp-props-field.mp-props-checkbox > span {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--color-text);
+}
+
+.mp-props-hint {
+  padding: 24px 16px;
+  text-align: center;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  font-style: italic;
+}

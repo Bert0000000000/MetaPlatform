@@ -39,3 +39,15 @@ export async function generatePage(
 export async function deletePage(id: string): Promise<void> {
   await http.delete(`/page-configs/${id}`);
 }
+
+/** Update a page config. */
+export async function updatePageConfig(id: string, payload: Record<string, unknown>): Promise<PageConfigSummary> {
+  const { data } = await http.put<PageConfigSummary>(`/page-configs/${id}`, payload);
+  return data;
+}
+
+/** Create a new page config. */
+export async function createPageConfig(payload: Record<string, unknown>): Promise<PageConfigSummary> {
+  const { data } = await http.post<PageConfigSummary>("/page-configs", payload);
+  return data;
+}
