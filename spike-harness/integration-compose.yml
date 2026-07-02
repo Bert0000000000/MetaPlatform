@@ -14,6 +14,8 @@ services:
       POSTGRES_PASSWORD: metaplatform
     volumes:
       - pg-spike-data:/var/lib/postgresql/data
+    networks:
+      - mp-net
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U meta -d ontology_meta"]
       interval: 5s
@@ -38,11 +40,54 @@ services:
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 100
+    networks:
+      - mp-net
     healthcheck:
       test: ["CMD-SHELL", "/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list || exit 1"]
       interval: 5s
       timeout: 3s
       retries: 20
+
+  doris-fe:
+    image: apache/doris:doris-fe-2.1.7
+    container_name: mp-doris-fe
+    ports:
+      - "8030:8030"
+      - "9030:9030"
+    environment:
+      FE_SERVERS: fe1:mp-doris-fe:9010
+      FE_ID: 1
+    networks:
+      - mp-net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:8030/api/bootstrap | grep -q '\"msg\":\"success\"' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+
+  doris-be:
+    image: apache/doris:doris-be-2.1.7
+    container_name: mp-doris-be
+    ports:
+      - "8040:8040"
+      - "9040:9040"
+    environment:
+      FE_SERVERS: fe1:mp-doris-fe:9010
+      BE_ADDR: mp-doris-be:9050
+    networks:
+      - mp-net
+    depends_on:
+      doris-fe:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:8040/api/health | grep -q '\"status\": \"OK\"' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+
+networks:
+  mp-net:
+    external: true
 
 volumes:
   pg-spike-data:
