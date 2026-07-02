@@ -1,8 +1,8 @@
 # MetaPlatform Integration Spike — E2E 验证报告
 
 > **日期**: 2026-07-02  
-> **目标**: 验证本体引擎 → Outbox → Kafka → 数据栈 Consumer 全链路可行性  
-> **结果**: ✅ 全链路打通，Consumer 稳定运行
+> **目标**: 验证本体引擎 → Outbox → Kafka → 数据栈 Consumer → Doris → SQL 查询 全链路可行性  
+> **结果**: ✅ 全链路 7 步全部打通，Doris SQL 查询闭环验证通过
 
 ---
 
@@ -26,13 +26,13 @@
 
 | # | 步骤 | 结果 | 详情 |
 |---|------|------|------|
-| 1 | 起基础设施 (PG + Kafka) | ✅ | `docker compose -f spike-harness/integration-compose.yml up -d` |
-| 2 | 启本体引擎 | ✅ | Spring Boot 启动 5s，Flyway V1+V2 迁移成功 |
-| 3 | 启数据栈 | ✅ | Consumer group 注册成功，分配到 2 个 topic 分区 |
+| 1 | 起基础设施 (PG + Kafka + Doris) | ✅ | `docker compose -f spike-harness/integration-compose.yml up -d` |
+| 2 | 启本体引擎 | ✅ | Spring Boot 启动 5s，Flyway V1+V2+V3 迁移成功 |
+| 3 | 启数据栈 | ✅ | Consumer group 注册成功，Doris 连接正常 |
 | 4 | POST 触发 | ✅ | `POST /api/v1/entity-types` → 201 Created |
-| 5 | Outbox → Kafka | ✅ | outbox_event `published=true`，Kafka offset 递增 |
-| 6 | Consumer 接收 | ✅ | `[CONSUMER] received topic=... offset=0`，处理成功 |
-| 7 | traceId 贯通 | ✅ | REST header → outbox payload → Kafka → consumer log |
+| 5 | Outbox → Kafka | ✅ | outbox_event `published=true`，Kafka offset 递增，X-Trace-Id header 设入 |
+| 6 | Consumer → Doris | ✅ | auto-create table + insert row，traceId 全链路贯通 |
+| 7 | SQL 查询 | ✅ | `SELECT * FROM instance_cb9fcd51` → 返回 Alice 数据 |
 
 ## 关键修复（本轮 Spike 发现）
 
@@ -104,13 +104,15 @@ docker logs --tail 10 mp-data-stack-spike
 
 | 项 | 说明 | v0.2 计划 |
 |----|------|-----------|
-| Doris | degraded mode，未实际部署 | Doris 1.2 容器 + 完整建表 |
-| Hudi | 写 `/tmp/hudi`，未实际 Iceberg | MinIO + Iceberg |
+| Doris | ✅ 验证通过，FE+BE 集群正常 | 生产环境多副本 |
+| Hudi | 写 `/tmp/hudi`，目录不存在跳过 | MinIO + Iceberg |
 | Neo4j | 排除 autoconfig，用 InMemory 替代 | Neo4j 容器 + 集成 |
-| traceId | consumer 自行生成，未从 Kafka header 读取 | outbox 表加 trace_id，publisher 设 header |
-| DLQ | DLQPublisher 代码就绪，未实际触发 | 故意发畸形消息验证 |
-| Query API | 依赖 Doris，spike 跳过 | Doris 可用后验证 |
+| traceId | ✅ 全链路贯通（REST→outbox→Kafka header→consumer→Doris log） | Doris 表加 trace_id 列 |
+| DLQ | DLQPublisher 代码就绪，topic 已创建 | 故意发畸形消息验证 |
+| Query API | 依赖 Doris，spike 跳过 HTTP API | Doris 可用后验证 |
 
 ## 结论
 
-**核心假设验证通过**：Outbox Pattern + Kafka + Go Consumer 的技术栈在容器化环境下可以稳定运行，traceId 可从 REST 层传递到消息层。下一阶段应优先部署 Doris 并完成 "SQL 查出来" 的闭环。
+**核心假设验证通过**：Outbox Pattern + Kafka + Go Consumer + Doris 的技术栈在容器化环境下可以稳定运行。traceId 从 REST 层贯穿到 Doris 写入日志，全链路可追。数据已成功写入 Doris 并通过 SQL 查询返回。
+
+**集成 Spike 验收结论**：7 步 e2e 全部通过，具备进入 MVP 第 2 期的条件。

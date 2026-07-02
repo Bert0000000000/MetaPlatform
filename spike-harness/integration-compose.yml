@@ -55,7 +55,7 @@ services:
       - "8030:8030"
       - "9030:9030"
     environment:
-      FE_SERVERS: fe1:mp-doris-fe:9010
+      FE_SERVERS: fe1:127.0.0.1:9010
       FE_ID: 1
     networks:
       - mp-net
@@ -72,8 +72,8 @@ services:
       - "8040:8040"
       - "9040:9040"
     environment:
-      FE_SERVERS: fe1:mp-doris-fe:9010
-      BE_ADDR: mp-doris-be:9050
+      FE_SERVERS: fe1:172.21.0.3:9010
+      BE_ADDR: 172.21.0.5:9050
     networks:
       - mp-net
     depends_on:
