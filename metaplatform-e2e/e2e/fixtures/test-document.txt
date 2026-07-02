@@ -1,0 +1,52 @@
+MetaPlatform E2E Integration Test Document
+==========================================
+
+This document is used by the RAG/MMD E2E integration test (s06_rag_mdm.sh)
+to verify document upload, chunking, embedding, and semantic search capabilities.
+
+## Overview
+
+MetaPlatform is a next-generation enterprise low-code platform that provides
+nine layers of architecture:
+
+1. **Frontend Layer (L1-1)** - React/Next.js based user interface
+2. **Marketplace Layer (L1-2)** - Template and component marketplace
+3. **Page Generator (L1-3)** - Automatic UI generation from schemas
+4. **Process Automation (L1-4)** - Workflow and approval engine
+5. **Business Object Layer (L2-1)** - Object type definitions and instances
+6. **Ontology Engine (L2-2)** - Knowledge graph and entity management
+7. **Data Stack (L2-3)** - Data lake (Hudi) and warehouse (Doris)
+8. **AI Substrate (L2-4)** - LLM gateway, embedding, context store
+9. **RAG/MDM** - Retrieval augmented generation and master data management
+
+## Key Features
+
+- Multi-tenant architecture with tenant-level isolation
+- Role-based access control (RBAC) with Redis caching
+- Audit logging via append-only PostgreSQL + Kafka dual-write
+- Entity lifecycle management with state machines
+- Natural language to structured intent parsing
+- Capability library with pipeline composition
+- JSON DSL-based process definitions
+
+## Test Data
+
+The following test entities are used:
+
+| Entity     | Company            | Country  | Revenue    |
+|------------|-------------------|----------|------------|
+| Customer   | Acme Corp E2E     | USA      | $1,500,000 |
+| Supplier   | Global Parts Inc  | Germany  | $2,300,000 |
+| Partner    | Tech Alliance Ltd | Japan    | $800,000   |
+
+## Technical Stack
+
+- Backend: Java 21 + Spring Boot 3.2, Go 1.22 + Gin
+- Database: PostgreSQL 16, Neo4j 5, Redis 7
+- Messaging: Apache Kafka 3.6 (KRaft mode)
+- Vector Store: In-memory (v0.1), Milvus (v0.2)
+- Object Storage: MinIO (S3-compatible)
+- Data Warehouse: Apache Doris 2.0
+- Data Lake: Apache Hudi 0.13
+
+End of test document.
