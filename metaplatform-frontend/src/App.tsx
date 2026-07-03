@@ -1,4 +1,4 @@
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes, useParams } from "react-router-dom";
 import { RoleProvider } from "@/contexts/RoleContext";
 import { Layout } from "@/components/Layout";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -68,6 +68,11 @@ function AppDetailPlaceholder() {
       </div>
     </div>
   );
+}
+
+function OntologyElementWrapper() {
+  const params = useParams<{ elementKey: string }>();
+  return <OntologyElement elementKey={params.elementKey ?? "1-objects"} />;
 }
 
 export default function App() {

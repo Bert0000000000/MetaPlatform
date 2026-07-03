@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/ui/stat";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Sparkles, Send, Code2, Play, Save, Download, Folder, File, Terminal, GitBranch, Check, X, Loader2, Bot, Copy } from "lucide-react";
+import { Sparkles, Send, Code2, Play, Save, Download, Folder, File, Terminal, GitBranch, Check, X, Loader2, Bot, Copy, Plus } from "lucide-react";
 
 interface Msg { role: "user" | "assistant"; content: string; ts: string }
 
