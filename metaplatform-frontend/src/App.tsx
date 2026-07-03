@@ -17,6 +17,7 @@ import Workflows from "@/pages/apps/Workflows";
 import AppConfig from "@/pages/apps/AppConfig";
 import AppPublish from "@/pages/apps/AppPublish";
 import AppExport from "@/pages/apps/AppExport";
+import NewAppWizard from "@/pages/apps/NewAppWizard";
 
 // 流程中心
 import ProcessList from "@/pages/process/ProcessList";
@@ -47,18 +48,6 @@ import { BusinessArchitecture, ApplicationArchitecture, DataArchitecture, TechAr
 
 // 后台管理
 import { AdminDashboard, UserList } from "@/pages/admin/Admin";
-
-function NewAppPlaceholder() {
-  return (
-    <div className="flex flex-col items-center justify-center py-12 text-center">
-      <div className="text-4xl mb-4">📝</div>
-      <h2 className="text-lg font-semibold">新建应用向导</h2>
-      <p className="text-sm text-muted-foreground mt-2 max-w-md">
-        4 步向导：选择创建方式 → 应用基本信息 → 选择数据源 → 确认创建
-      </p>
-    </div>
-  );
-}
 
 function AppDetailPlaceholder() {
   return (
@@ -105,7 +94,7 @@ export default function App() {
 
               {/* 4. 应用中心 */}
               <Route path="/apps" element={<AppsListPage />} />
-              <Route path="/apps/new" element={<NewAppPlaceholder />} />
+              <Route path="/apps/new" element={<NewAppWizard />} />
               <Route path="/apps/:appId" element={<AppDetailPlaceholder />} />
               <Route path="/apps/:appId/overview" element={<AppOverview />} />
               <Route path="/apps/:appId/datamodeling" element={<DataModeling />} />
