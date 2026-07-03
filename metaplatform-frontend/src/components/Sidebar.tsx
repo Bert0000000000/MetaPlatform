@@ -1,4 +1,4 @@
-import { NavLink } from "react-router-dom";
+import { NavLink, useLocation } from "react-router-dom";
 import { useRole } from "@/contexts/RoleContext";
 import { getMenusByRole } from "@/config/menu";
 import { Separator } from "@/components/ui/separator";
@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 export function Sidebar() {
   const { role } = useRole();
   const menus = getMenusByRole(role);
+  const location = useLocation();
 
   return (
     <aside className="hidden md:flex w-56 shrink-0 flex-col border-r bg-sidebar text-sidebar-foreground">
@@ -15,24 +16,31 @@ export function Sidebar() {
       </div>
       <nav className="flex-1 overflow-y-auto p-2">
         <ul className="flex flex-col gap-1">
-          {menus.map((item) => (
-            <li key={item.key}>
-              <NavLink
-                to={item.path}
-                className={({ isActive }) =>
-                  cn(
+          {menus.map((item) => {
+            // 特殊处理应用中心：在应用详情页时也算激活
+            const isAppDetail =
+              item.key === "apps" && location.pathname.startsWith("/apps/");
+            const isActive = isAppDetail
+              ? false
+              : location.pathname === item.path ||
+                location.pathname.startsWith(item.path + "/");
+            return (
+              <li key={item.key}>
+                <NavLink
+                  to={item.path}
+                  className={cn(
                     "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
                     "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                     isActive &&
                       "bg-sidebar-primary text-sidebar-primary-foreground font-medium",
-                  )
-                }
-              >
-                <span className="text-base leading-none">{item.icon}</span>
-                <span className="truncate">{item.label}</span>
-              </NavLink>
-            </li>
-          ))}
+                  )}
+                >
+                  <span className="text-base leading-none">{item.icon}</span>
+                  <span className="truncate">{item.label}</span>
+                </NavLink>
+              </li>
+            );
+          })}
         </ul>
         <Separator className="my-3" />
         <ul className="flex flex-col gap-1">

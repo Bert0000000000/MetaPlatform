@@ -2,53 +2,78 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { RoleProvider } from "@/contexts/RoleContext";
 import { Layout } from "@/components/Layout";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { AppDetailTabs } from "@/components/AppDetailTabs";
+
+// 通用页面
 import { DashboardPage } from "@/pages/Dashboard";
 import { SuperAIPage } from "@/pages/SuperAI";
 import { AppsListPage } from "@/pages/AppsList";
-import { MenuPage, PlaceholderContent } from "@/pages/MenuPage";
 
-/**
- * 根据 URL pathname 自动推断当前 Tab 的 key（用于高亮）
- */
-function getActiveTabFromPath(
-  pathname: string,
-  basePath: string,
-  tabs: { key: string; path: string }[],
-): string {
-  // 优先匹配最长 path
-  const sorted = [...tabs].sort((a, b) => b.path.length - a.path.length);
-  for (const t of sorted) {
-    if (t.path === "") continue;
-    if (pathname === `${basePath}${t.path}` || pathname.startsWith(`${basePath}${t.path}/`)) {
-      return t.key;
-    }
-  }
-  return tabs.find((t) => t.path === "")?.key ?? tabs[0]?.key ?? "";
+// 应用中心
+import AppOverview from "@/pages/apps/AppOverview";
+import DataModeling from "@/pages/apps/DataModeling";
+import Pages from "@/pages/apps/Pages";
+import Workflows from "@/pages/apps/Workflows";
+import AppConfig from "@/pages/apps/AppConfig";
+import AppPublish from "@/pages/apps/AppPublish";
+import AppExport from "@/pages/apps/AppExport";
+
+// 流程中心
+import ProcessList from "@/pages/process/ProcessList";
+import ApprovalList from "@/pages/process/ApprovalList";
+import Orchestration from "@/pages/process/Orchestration";
+
+// 本体引擎
+import Objects from "@/pages/ontology/Objects";
+import { OntologyElement } from "@/pages/ontology/OntologyTab";
+
+// 数据中心
+import { DataDashboard, DataSourceList, AskData, MetricCenter } from "@/pages/data/DataCenter";
+
+// 质量中心
+import { QualityDashboard, TestCases } from "@/pages/quality/QualityCenter";
+
+// 知识库
+import { KnowledgeDashboard, DocumentList } from "@/pages/knowledge/Knowledge";
+
+// 云市场
+import { MarketDashboard, OntologyTemplates } from "@/pages/market/Market";
+
+// 数字员工
+import { AgentList, AgentCollaboration } from "@/pages/agents/AgentCenter";
+
+// 架构中心
+import { BusinessArchitecture, ApplicationArchitecture, DataArchitecture, TechArchitecture } from "@/pages/architecture/Architecture";
+
+// 后台管理
+import { AdminDashboard, UserList } from "@/pages/admin/Admin";
+
+function NewAppPlaceholder() {
+  return (
+    <div className="flex flex-col items-center justify-center py-12 text-center">
+      <div className="text-4xl mb-4">📝</div>
+      <h2 className="text-lg font-semibold">新建应用向导</h2>
+      <p className="text-sm text-muted-foreground mt-2 max-w-md">
+        4 步向导：选择创建方式 → 应用基本信息 → 选择数据源 → 确认创建
+      </p>
+    </div>
+  );
 }
 
-import { useLocation } from "react-router-dom";
-import { MENU_TABS } from "@/config/menu";
-
-function MenuPageWrapper({
-  menuKey,
-  basePath,
-  defaultActiveKey,
-}: {
-  menuKey: keyof typeof MENU_TABS;
-  basePath: string;
-  defaultActiveKey?: string;
-}) {
-  const location = useLocation();
-  const tabs = MENU_TABS[menuKey];
-  const activeKey =
-    defaultActiveKey ?? getActiveTabFromPath(location.pathname, basePath, tabs);
+function AppDetailPlaceholder() {
   return (
-    <MenuPage menuKey={menuKey} basePath={basePath} activeKey={activeKey}>
-      <PlaceholderContent
-        title={`${menuKey.toUpperCase()} - ${activeKey}`}
-        description={`Tab 内容待实现。当前 active key: ${activeKey} (path: ${location.pathname})`}
-      />
-    </MenuPage>
+    <div className="flex flex-col h-full">
+      <AppDetailTabs />
+      <div className="flex-1 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-4xl mb-4">📦</div>
+          <h2 className="text-lg font-semibold">应用详情</h2>
+          <p className="text-sm text-muted-foreground mt-2 max-w-md">
+            请选择上方 Tab 访问应用详情
+          </p>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -59,7 +84,7 @@ export default function App() {
         <TooltipProvider>
           <Routes>
             <Route element={<Layout />}>
-              {/* 默认重定向到工作台 */}
+              {/* 默认 */}
               <Route index element={<Navigate to="/dashboard" replace />} />
 
               {/* 1. Dashbaord */}
@@ -71,134 +96,77 @@ export default function App() {
               <Route path="/superai/*" element={<SuperAIPage />} />
 
               {/* 3. 架构中心 */}
-              <Route
-                path="/architecture"
-                element={
-                  <MenuPageWrapper menuKey="architecture" basePath="/architecture" />
-                }
-              />
-              <Route
-                path="/architecture/*"
-                element={
-                  <MenuPageWrapper menuKey="architecture" basePath="/architecture" />
-                }
-              />
+              <Route path="/architecture" element={<BusinessArchitecture />} />
+              <Route path="/architecture/business" element={<BusinessArchitecture />} />
+              <Route path="/architecture/application" element={<ApplicationArchitecture />} />
+              <Route path="/architecture/data" element={<DataArchitecture />} />
+              <Route path="/architecture/tech" element={<TechArchitecture />} />
+              <Route path="/architecture/*" element={<BusinessArchitecture />} />
 
               {/* 4. 应用中心 */}
               <Route path="/apps" element={<AppsListPage />} />
-              <Route
-                path="/apps/:appId/*"
-                element={
-                  <PlaceholderContent
-                    title="应用详情"
-                    description="应用详情页（概览 / 业务数据建模 / 页面 / 流程 / 配置 / 发布 / 导出）"
-                  />
-                }
-              />
-              <Route
-                path="/apps/new"
-                element={
-                  <PlaceholderContent
-                    title="新建应用向导"
-                    description="4 步向导：选择创建方式 → 应用基本信息 → 选择数据源 → 确认创建"
-                  />
-                }
-              />
+              <Route path="/apps/new" element={<NewAppPlaceholder />} />
+              <Route path="/apps/:appId" element={<AppDetailPlaceholder />} />
+              <Route path="/apps/:appId/overview" element={<AppOverview />} />
+              <Route path="/apps/:appId/datamodeling" element={<DataModeling />} />
+              <Route path="/apps/:appId/pages" element={<Pages />} />
+              <Route path="/apps/:appId/workflows" element={<Workflows />} />
+              <Route path="/apps/:appId/config" element={<AppConfig />} />
+              <Route path="/apps/:appId/publish" element={<AppPublish />} />
+              <Route path="/apps/:appId/export" element={<AppExport />} />
 
               {/* 5. 流程中心 */}
-              <Route
-                path="/process"
-                element={<MenuPageWrapper menuKey="process" basePath="/process" />}
-              />
-              <Route
-                path="/process/*"
-                element={<MenuPageWrapper menuKey="process" basePath="/process" />}
-              />
+              <Route path="/process" element={<ProcessList />} />
+              <Route path="/process/business" element={<ProcessList />} />
+              <Route path="/process/approval" element={<ApprovalList />} />
+              <Route path="/process/orchestration" element={<Orchestration />} />
+              <Route path="/process/*" element={<ProcessList />} />
 
               {/* 6. 数据中心 */}
-              <Route
-                path="/data"
-                element={<MenuPageWrapper menuKey="data" basePath="/data" />}
-              />
-              <Route
-                path="/data/*"
-                element={<MenuPageWrapper menuKey="data" basePath="/data" />}
-              />
+              <Route path="/data" element={<DataDashboard />} />
+              <Route path="/data/dashboard" element={<DataDashboard />} />
+              <Route path="/data/ask" element={<AskData />} />
+              <Route path="/data/metrics" element={<MetricCenter />} />
+              <Route path="/data/sources" element={<DataSourceList />} />
+              <Route path="/data/*" element={<DataDashboard />} />
 
               {/* 7. 本体引擎 */}
-              <Route
-                path="/ontology"
-                element={<MenuPageWrapper menuKey="ontology" basePath="/ontology" />}
-              />
-              <Route
-                path="/ontology/*"
-                element={<MenuPageWrapper menuKey="ontology" basePath="/ontology" />}
-              />
+              <Route path="/ontology" element={<Objects />} />
+              <Route path="/ontology/objects" element={<Objects />} />
+              <Route path="/ontology/properties" element={<OntologyElement elementKey="2-properties" />} />
+              <Route path="/ontology/links" element={<OntologyElement elementKey="3-links" />} />
+              <Route path="/ontology/actions" element={<OntologyElement elementKey="4-actions" />} />
+              <Route path="/ontology/functions" element={<OntologyElement elementKey="5-functions" />} />
+              <Route path="/ontology/rules" element={<OntologyElement elementKey="6-rules" />} />
+              <Route path="/ontology/security" element={<OntologyElement elementKey="7-security" />} />
+              <Route path="/ontology/governance" element={<OntologyElement elementKey="8-governance" />} />
+              <Route path="/ontology/*" element={<Objects />} />
 
               {/* 8. 质量中心 */}
-              <Route
-                path="/quality"
-                element={<MenuPageWrapper menuKey="quality" basePath="/quality" />}
-              />
-              <Route
-                path="/quality/*"
-                element={<MenuPageWrapper menuKey="quality" basePath="/quality" />}
-              />
+              <Route path="/quality" element={<QualityDashboard />} />
+              <Route path="/quality/cases" element={<TestCases />} />
+              <Route path="/quality/*" element={<QualityDashboard />} />
 
               {/* 9. 知识库 */}
-              <Route
-                path="/knowledge"
-                element={
-                  <MenuPageWrapper menuKey="knowledge" basePath="/knowledge" />
-                }
-              />
-              <Route
-                path="/knowledge/*"
-                element={
-                  <MenuPageWrapper menuKey="knowledge" basePath="/knowledge" />
-                }
-              />
+              <Route path="/knowledge" element={<KnowledgeDashboard />} />
+              <Route path="/knowledge/documents" element={<DocumentList />} />
+              <Route path="/knowledge/*" element={<KnowledgeDashboard />} />
 
               {/* 10. 云市场 */}
-              <Route
-                path="/market"
-                element={<MenuPageWrapper menuKey="market" basePath="/market" />}
-              />
-              <Route
-                path="/market/*"
-                element={<MenuPageWrapper menuKey="market" basePath="/market" />}
-              />
+              <Route path="/market" element={<MarketDashboard />} />
+              <Route path="/market/ontology-templates" element={<OntologyTemplates />} />
+              <Route path="/market/*" element={<MarketDashboard />} />
 
               {/* 11. 数字员工 */}
-              <Route
-                path="/agents"
-                element={<MenuPageWrapper menuKey="agents" basePath="/agents" />}
-              />
-              <Route
-                path="/agents/*"
-                element={<MenuPageWrapper menuKey="agents" basePath="/agents" />}
-              />
+              <Route path="/agents" element={<AgentList />} />
+              <Route path="/agents/mine" element={<AgentList />} />
+              <Route path="/agents/collaboration" element={<AgentCollaboration />} />
+              <Route path="/agents/*" element={<AgentList />} />
 
               {/* 12. 后台管理 */}
-              <Route
-                path="/admin"
-                element={<MenuPageWrapper menuKey="admin" basePath="/admin" />}
-              />
-              <Route
-                path="/admin/*"
-                element={<MenuPageWrapper menuKey="admin" basePath="/admin" />}
-              />
-
-              {/* 设置 */}
-              <Route
-                path="/settings"
-                element={
-                  <PlaceholderContent
-                    title="设置"
-                    description="个人设置 + 偏好"
-                  />
-                }
-              />
+              <Route path="/admin" element={<AdminDashboard />} />
+              <Route path="/admin/users" element={<UserList />} />
+              <Route path="/admin/*" element={<AdminDashboard />} />
 
               {/* 兜底 */}
               <Route path="*" element={<Navigate to="/dashboard" replace />} />
