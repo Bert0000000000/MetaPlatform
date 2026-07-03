@@ -1,0 +1,74 @@
+{
+  "data": [
+    {
+      "id": "page-dashboard",
+      "title": "页面配置管理",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1751516400000,
+      "canvasData": {
+        "x": 0,
+        "y": 0,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/dashboard.html",
+        "interactions": []
+      }
+    },
+    {
+      "id": "page-dialogue",
+      "title": "AI 对话",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1751516400000,
+      "canvasData": {
+        "x": 620,
+        "y": 0,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/dialogue.html",
+        "interactions": []
+      }
+    },
+    {
+      "id": "page-capability",
+      "title": "能力中心",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1751516400000,
+      "canvasData": {
+        "x": 1240,
+        "y": 0,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/capability.html",
+        "interactions": []
+      }
+    },
+    {
+      "id": "page-integration",
+      "title": "集成中心",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1751516400000,
+      "canvasData": {
+        "x": 1860,
+        "y": 0,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/integration.html",
+        "interactions": []
+      }
+    }
+  ],
+  "config": {
+    "autoLayout": true,
+    "deviceType": "desktop",
+    "projectName": "MetaPlatform 管理后台",
+    "designLibrary": null
+  }
+}

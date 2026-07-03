@@ -1,0 +1,183 @@
+version: '3.8'
+
+# ============================================================================
+# MetaPlatform Docker Compose — 一键部署
+# ============================================================================
+# 使用方式:
+#   docker-compose up -d          # 启动全部服务
+#   docker-compose down           # 停止全部服务
+#   docker-compose logs -f        # 查看日志
+#   docker-compose ps             # 查看状态
+# ============================================================================
+
+services:
+  # === 基础设施 ===
+  postgres:
+    image: postgres:16-alpine
+    container_name: mp-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: ontology_meta
+      POSTGRES_USER: meta
+      POSTGRES_PASSWORD: metaplatform
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U meta -d ontology_meta"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - mp-net
+
+  redis:
+    image: redis:7-alpine
+    container_name: mp-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - mp-net
+
+  kafka:
+    image: apache/kafka:3.7.0
+    container_name: mp-kafka
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-broker-api-versions.sh --bootstrap-server localhost:9092 > /dev/null 2>&1"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+    networks:
+      - mp-net
+
+  # === 应用服务 ===
+  ontology-engine:
+    build:
+      context: ./metaplatform-ontology-engine
+      dockerfile: Dockerfile
+    container_name: mp-ontology-engine
+    ports:
+      - "8090:8090"
+    environment:
+      SERVER_PORT: 8090
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/ontology_meta
+      SPRING_DATASOURCE_USERNAME: meta
+      SPRING_DATASOURCE_PASSWORD: metaplatform
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+      AI_LLM_BASE_URL: ${AI_LLM_BASE_URL:-https://api.openai.com/v1}
+      AI_LLM_API_KEY: ${AI_LLM_API_KEY:-}
+      AI_LLM_MODEL: ${AI_LLM_MODEL:-gpt-4o-mini}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8090/actuator/health"]
+      interval: 15s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - mp-net
+
+  page-generator:
+    build:
+      context: ./metaplatform-page-generator
+      dockerfile: Dockerfile
+    container_name: mp-page-generator
+    ports:
+      - "8083:8083"
+    environment:
+      SERVER_PORT: 8083
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/ontology_meta
+      SPRING_DATASOURCE_USERNAME: meta
+      SPRING_DATASOURCE_PASSWORD: metaplatform
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8083/actuator/health"]
+      interval: 15s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - mp-net
+
+  frontend:
+    build:
+      context: ./metaplatform-frontend
+      dockerfile: Dockerfile
+    container_name: mp-frontend
+    ports:
+      - "5173:80"
+    environment:
+      VITE_API_BASE: http://localhost:8090
+      VITE_PAGE_GEN_BASE: http://localhost:8083
+    depends_on:
+      ontology-engine:
+        condition: service_healthy
+      page-generator:
+        condition: service_healthy
+    networks:
+      - mp-net
+
+  # === 可观测性 (可选) ===
+  prometheus:
+    image: prom/prometheus:v2.51.0
+    container_name: mp-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./deploy/prometheus.yml:/etc/prometheus/prometheus.yml
+    profiles:
+      - monitoring
+    networks:
+      - mp-net
+
+  grafana:
+    image: grafana/grafana:10.4.0
+    container_name: mp-grafana
+    ports:
+      - "3001:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: metaplatform
+    volumes:
+      - grafana-data:/var/lib/grafana
+    profiles:
+      - monitoring
+    networks:
+      - mp-net
+
+volumes:
+  pg-data:
+  redis-data:
+  grafana-data:
+
+networks:
+  mp-net:
+    driver: bridge

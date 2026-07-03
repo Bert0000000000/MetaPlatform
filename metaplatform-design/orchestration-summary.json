@@ -1,0 +1,108 @@
+{
+  "project": {
+    "name": "MetaPlatform 管理后台",
+    "operation": "create",
+    "operatingMode": "free-explore",
+    "deviceType": "desktop",
+    "designRead": "enterprise admin console / internal builders & operators / calm enterprise trust / high density / avoid purple neon AI hero",
+    "designDials": {
+      "layoutVariance": 2,
+      "motionIntensity": 2,
+      "visualDensity": 4
+    },
+    "styleDefinitionBrief": "Enterprise low-code platform admin, cool neutral slate + indigo blue primary, Inter + Noto Sans SC, sidebar-nav dashboard density, border-first surfaces.",
+    "sharedProjectShellContract": {
+      "navigationType": "sidebar-dark",
+      "sidebarWidth": "240px",
+      "sidebarBg": "var(--color-sidebar-bg)",
+      "brandIcon": "M in indigo rounded square",
+      "brandText": "MetaPlatform",
+      "navItems": ["页面配置", "ObjectType", "建模工场", "设计器", "流程设计器", "AI 对话", "能力中心", "集成中心"],
+      "contentBg": "var(--color-bg)",
+      "contentPadding": "32px 40px",
+      "radiusScale": "4/8/12/16",
+      "surfaceDepthModel": "border-first, static shadow alpha <= 0.05"
+    },
+    "styleContinuityAnchors": {
+      "colorSystem": "indigo blue primary #3b82f6, slate neutrals, category tints (ai violet, data cyan, tool amber)",
+      "shapeSystem": "restrained radius: sm=4, md=8, lg=12, xl=16, full=9999",
+      "typographySystem": "Inter + system fallback for Latin, Noto Sans SC for CJK, mono for code",
+      "spacingSystem": "4/8/12/16/24/32/48 scale",
+      "componentLanguage": "border-first cards, left-aligned content, subtle hover states",
+      "surfaceAndDepth": "white surfaces, #e2e8f0 borders, shadow alpha <= 0.05 for static, 0.12 for float",
+      "imageryAndIconography": "emoji-style category icons, monospace badges for IDs/codes",
+      "interactionTone": "subtle hover/focus transitions, no dramatic animations"
+    },
+    "generationTree": {
+      "root": {
+        "nodeId": "gen-project-shell",
+        "kind": "project-shell",
+        "status": "planned"
+      }
+    }
+  },
+  "designSource": {
+    "libraryIdentity": null,
+    "brandCssPath": "colors_and_type.css",
+    "brandPrefix": "mp"
+  },
+  "pages": [
+    {
+      "nodeId": "page-dashboard",
+      "title": "页面配置管理",
+      "htmlSrc": "pages/dashboard.html",
+      "pageIndex": 1,
+      "pageType": "information-dense",
+      "visualNorthStar": "Clean management table with quick-generate card grid — the hub for page lifecycle",
+      "continuityAnchors": ["sidebar-dark-nav", "border-first-cards", "indigo-primary-cta"],
+      "imagePlan": []
+    },
+    {
+      "nodeId": "page-dialogue",
+      "title": "AI 对话",
+      "htmlSrc": "pages/dialogue.html",
+      "pageIndex": 2,
+      "pageType": "task-driven",
+      "visualNorthStar": "Full-height chat interface with session sidebar — the conversational AI entry point",
+      "continuityAnchors": ["sidebar-dark-nav", "border-first-cards", "indigo-primary-cta"],
+      "imagePlan": []
+    },
+    {
+      "nodeId": "page-capability",
+      "title": "能力中心",
+      "htmlSrc": "pages/capability.html",
+      "pageIndex": 3,
+      "pageType": "information-dense",
+      "visualNorthStar": "Filterable 3-column capability card grid with expand-to-execute interaction",
+      "continuityAnchors": ["sidebar-dark-nav", "border-first-cards", "indigo-primary-cta"],
+      "imagePlan": []
+    },
+    {
+      "nodeId": "page-integration",
+      "title": "集成中心",
+      "htmlSrc": "pages/integration.html",
+      "pageIndex": 4,
+      "pageType": "information-dense",
+      "visualNorthStar": "Connector management with type-colored cards and status indicators",
+      "continuityAnchors": ["sidebar-dark-nav", "border-first-cards", "indigo-primary-cta"],
+      "imagePlan": []
+    }
+  ],
+  "assets": [],
+  "wiringPlan": [
+    { "from": "page-dashboard", "to": "page-dialogue", "domId": "nav-dialogue", "label": "AI 对话" },
+    { "from": "page-dashboard", "to": "page-capability", "domId": "nav-capability", "label": "能力中心" },
+    { "from": "page-dashboard", "to": "page-integration", "domId": "nav-integration", "label": "集成中心" }
+  ],
+  "hiddenInteractionPlan": [
+    { "from": "page-dialogue", "to": "page-dashboard", "domId": "nav-dashboard", "hideEdge": true },
+    { "from": "page-dialogue", "to": "page-capability", "domId": "nav-capability", "hideEdge": true },
+    { "from": "page-dialogue", "to": "page-integration", "domId": "nav-integration", "hideEdge": true },
+    { "from": "page-capability", "to": "page-dashboard", "domId": "nav-dashboard", "hideEdge": true },
+    { "from": "page-capability", "to": "page-dialogue", "domId": "nav-dialogue", "hideEdge": true },
+    { "from": "page-capability", "to": "page-integration", "domId": "nav-integration", "hideEdge": true },
+    { "from": "page-integration", "to": "page-dashboard", "domId": "nav-dashboard", "hideEdge": true },
+    { "from": "page-integration", "to": "page-dialogue", "domId": "nav-dialogue", "hideEdge": true },
+    { "from": "page-integration", "to": "page-capability", "domId": "nav-capability", "hideEdge": true }
+  ]
+}
