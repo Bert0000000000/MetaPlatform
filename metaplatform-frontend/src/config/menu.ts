@@ -248,7 +248,12 @@ export const MENU_TABS: Record<MenuKey, TabConfig[]> = {
     { key: "portal", label: "门户", path: "/portal" },
     { key: "freepage", label: "自由页面", path: "/freepage" },
   ],
-  superai: [{ key: "chat", label: "AI 对话", path: "" }],
+  superai: [
+    { key: "chat", label: "AI 对话", path: "" },
+    { key: "agents", label: "智能体广场", path: "/agents" },
+    { key: "tasks", label: "智能体任务", path: "/tasks" },
+    { key: "knowledge", label: "知识中心", path: "/knowledge" },
+  ],
   architecture: [
     { key: "business", label: "业务架构", path: "/business" },
     { key: "application", label: "应用架构", path: "/application" },

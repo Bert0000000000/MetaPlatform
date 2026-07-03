@@ -130,18 +130,16 @@ export default function VibeCoding() {
 
         {/* 中间：代码 + 文件 */}
         <Card className="col-span-5 flex flex-col">
-          <CardHeader className="border-b pb-2">
-            <Tabs defaultValue="files">
+          <Tabs defaultValue="files" className="flex flex-col flex-1">
+            <CardHeader className="border-b pb-2">
               <TabsList>
                 <TabsTrigger value="files"><Folder className="size-3 mr-1" /> 文件</TabsTrigger>
                 <TabsTrigger value="code"><Code2 className="size-3 mr-1" /> 代码</TabsTrigger>
                 <TabsTrigger value="terminal"><Terminal className="size-3 mr-1" /> 终端</TabsTrigger>
                 <TabsTrigger value="git"><GitBranch className="size-3 mr-1" /> Git</TabsTrigger>
               </TabsList>
-            </Tabs>
-          </CardHeader>
-          <CardContent className="flex-1 p-0 overflow-hidden">
-            <Tabs defaultValue="files" className="h-full">
+            </CardHeader>
+            <CardContent className="flex-1 p-0 overflow-hidden">
               <TabsContent value="files" className="m-0 h-full overflow-y-auto p-3">
                 <div className="space-y-1">
                   {FILES.map((f) => (
@@ -240,8 +238,8 @@ $ curl http://localhost:3000
                   </div>
                 </div>
               </TabsContent>
-            </Tabs>
-          </CardContent>
+            </CardContent>
+          </Tabs>
         </Card>
 
         {/* 右侧：预览 */}
