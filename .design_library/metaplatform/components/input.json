@@ -15,11 +15,9 @@
         "background": "var(--color-bg-secondary)",
         "border": "1px solid var(--color-border)",
         "borderRadius": "var(--radius-input)",
-        "padding": "8px 12px",
+        "padding": "6px 10px",
         "fontSize": "var(--font-size-sm)",
-        "color": "var(--color-text-primary)",
-        "focusBorder": "var(--color-primary)",
-        "focusRing": "0 0 0 3px rgba(59,130,246,0.1)"
+        "focusBorder": "var(--color-primary)"
       }
     },
     {
@@ -28,20 +26,18 @@
         "background": "var(--color-bg-secondary)",
         "border": "1px solid var(--color-border)",
         "borderRadius": "var(--radius-input)",
-        "padding": "12px 16px",
+        "padding": "8px 10px",
         "fontSize": "var(--font-size-sm)",
-        "minHeight": "80px",
-        "resize": "vertical"
+        "minHeight": "60px"
       }
     }
   ],
   "anatomy": [
-    {"name": "label", "role": "label", "description": "Input label (optional)"},
-    {"name": "field", "role": "input", "description": "The input/textarea element"},
-    {"name": "helperText", "role": "hint", "description": "Helper text below input (optional)"}
+    {"name": "label", "role": "label", "description": "Compact label above input"},
+    {"name": "field", "role": "input", "description": "Input element"}
   ],
-  "structurePatterns": ["block", "label-above", "border-first", "bg-secondary"],
-  "usageHints": ["Form fields in capability execution panels", "Search inputs", "Chat message input"],
-  "doNotInvent": ["select dropdown", "checkbox", "radio group", "file upload"],
+  "structurePatterns": ["block", "compact", "4px-radius", "border-only"],
+  "usageHints": ["Admin form fields"],
+  "doNotInvent": ["select", "checkbox", "radio", "file-upload"],
   "unknowns": []
 }

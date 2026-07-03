@@ -4,7 +4,7 @@
   "schemaVersion": 2,
   "sourceKind": "structured-spec",
   "confidence": "high",
-  "semanticTypeCandidates": ["Indicator", "Badge", "Tag"],
+  "semanticTypeCandidates": ["Indicator", "Badge"],
   "variantDimensions": [
     {"name": "Variant", "values": ["Default", "Status"]}
   ],
@@ -12,12 +12,11 @@
     {
       "name": "Default",
       "traits": {
-        "background": "var(--color-primary-light)",
-        "color": "var(--color-primary)",
-        "borderRadius": "var(--radius-pill)",
-        "padding": "2px 10px",
-        "fontSize": "var(--font-size-xs)",
-        "fontWeight": "var(--font-weight-medium)"
+        "background": "var(--color-bg-secondary)",
+        "color": "var(--color-text-secondary)",
+        "borderRadius": "var(--radius-full)",
+        "padding": "1px 8px",
+        "fontSize": "var(--font-size-xs)"
       }
     },
     {
@@ -33,20 +32,13 @@
         "background": "var(--state-error-bg)",
         "color": "var(--state-error)"
       }
-    },
-    {
-      "name": "Status Warning",
-      "traits": {
-        "background": "var(--state-warning-bg)",
-        "color": "var(--state-warning)"
-      }
     }
   ],
   "anatomy": [
-    {"name": "label", "role": "text", "description": "Badge text label"}
+    {"name": "label", "role": "text", "description": "Badge text"}
   ],
-  "structurePatterns": ["inline-flex", "items-center", "pill-shape"],
-  "usageHints": ["Page type indicators", "Connection status labels", "Category tags"],
-  "doNotInvent": ["dismissible badge", "icon badge", "count badge"],
+  "structurePatterns": ["inline-flex", "pill", "neutral-default"],
+  "usageHints": ["Type/status labels — default uses neutral bg"],
+  "doNotInvent": ["colored-type-badges", "dismissible", "count"],
   "unknowns": []
 }

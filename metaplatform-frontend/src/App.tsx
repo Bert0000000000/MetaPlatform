@@ -11,6 +11,7 @@ import CapabilityCenter from "./pages/CapabilityCenter";
 import IntegrationHub from "./pages/IntegrationHub";
 import AppMarket from "./pages/AppMarket";
 import BillingDashboard from "./pages/BillingDashboard";
+import AdminPanel from "./pages/AdminPanel";
 import "./App.css";
 
 const App: React.FC = () => {
@@ -85,6 +86,12 @@ const App: React.FC = () => {
             >
               计费中心
             </NavLink>
+            <NavLink
+              to="/admin"
+              className={({ isActive }) => (isActive ? "mp-nav-link active" : "mp-nav-link")}
+            >
+              平台管理
+            </NavLink>
           </nav>
         </aside>
 
@@ -103,6 +110,7 @@ const App: React.FC = () => {
             <Route path="/integration" element={<IntegrationHub />} />
             <Route path="/market" element={<AppMarket />} />
             <Route path="/billing" element={<BillingDashboard />} />
+            <Route path="/admin" element={<AdminPanel />} />
           </Routes>
         </main>
       </div>

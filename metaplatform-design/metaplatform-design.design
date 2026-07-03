@@ -101,7 +101,7 @@
       "createdAt": 1751516400000,
       "canvasData": {
         "x": 620,
-        "y": 768,
+        "y": 754,
         "group": 0
       },
       "devMetadata": {
@@ -129,7 +129,7 @@
   "config": {
     "autoLayout": true,
     "deviceType": "desktop",
-    "projectName": "MetaPlatform 管理后台",
+    "projectName": "MetaPlatform 管理后台 (精简版)",
     "designLibrary": null,
     "showEdge": false
   }

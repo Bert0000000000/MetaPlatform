@@ -10,22 +10,21 @@
     {
       "name": "Default",
       "traits": {
-        "headerBg": "var(--color-bg-tertiary)",
-        "headerText": "var(--font-weight-semibold)",
-        "cellPadding": "12px 16px",
-        "rowBorder": "1px solid var(--color-border-light)",
-        "fontSize": "var(--font-size-sm)"
+        "headerBg": "var(--color-bg-secondary)",
+        "cellPadding": "6px 12px",
+        "rowBorder": "1px solid var(--color-border)",
+        "fontSize": "var(--font-size-sm)",
+        "borderRadius": "var(--radius-md)"
       }
     }
   ],
   "anatomy": [
-    {"name": "header", "role": "column-labels", "description": "Table header row with column names"},
-    {"name": "row", "role": "data-row", "description": "Table body row with cell data"},
-    {"name": "cell", "role": "data-cell", "description": "Individual data cell"},
-    {"name": "actions", "role": "row-actions", "description": "Action buttons column (optional)"}
+    {"name": "header", "role": "column-labels", "description": "Compact header row"},
+    {"name": "row", "role": "data-row", "description": "Tight data rows"},
+    {"name": "actions", "role": "row-actions", "description": "Compact action buttons"}
   ],
-  "structurePatterns": ["full-width", "border-collapse", "light-header", "alternating-rows-optional"],
-  "usageHints": ["Page management tables", "Entity listing with inline actions"],
-  "doNotInvent": ["sortable columns", "pagination controls", "row selection checkbox"],
+  "structurePatterns": ["compact-rows", "minimal-header", "4px-radius"],
+  "usageHints": ["Admin entity listing tables"],
+  "doNotInvent": ["sortable", "pagination", "row-selection"],
   "unknowns": []
 }

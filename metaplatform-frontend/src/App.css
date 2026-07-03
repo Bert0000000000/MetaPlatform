@@ -3007,3 +3007,170 @@ a {
   font-weight: 600;
   color: #22c55e;
 }
+
+/* ============================================================
+ * Admin Panel — 平台管理
+ * ============================================================ */
+
+.mp-admin {
+  max-width: 1400px;
+}
+
+.mp-admin-header {
+  margin-bottom: 20px;
+}
+
+.mp-admin-header h1 {
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.mp-admin-header p {
+  color: var(--color-text-secondary);
+  font-size: 14px;
+}
+
+/* Tab bar */
+.mp-admin-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: 20px;
+  overflow-x: auto;
+}
+
+.mp-admin-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.mp-admin-tab:hover {
+  color: var(--color-text);
+}
+
+.mp-admin-tab.active {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+}
+
+.mp-admin-tab-icon {
+  font-size: 16px;
+}
+
+/* Content area */
+.mp-admin-content {
+  min-height: 400px;
+}
+
+.mp-admin-section {
+  margin-bottom: 24px;
+}
+
+.mp-admin-section h2 {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.mp-admin-section h3 {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+/* Stats row */
+.mp-admin-stats {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.mp-admin-stat {
+  padding: 16px 24px;
+  background: var(--color-bg-light);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  text-align: center;
+  min-width: 120px;
+}
+
+.mp-admin-stat-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--color-primary);
+  margin-bottom: 4px;
+}
+
+.mp-admin-stat-label {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+/* Card grid */
+.mp-admin-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.mp-admin-card {
+  padding: 14px 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-bg);
+}
+
+.mp-admin-card-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.mp-admin-card-meta {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  margin-bottom: 6px;
+  font-family: monospace;
+}
+
+.mp-admin-card-desc {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+/* Badge variants */
+.mp-badge-active {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.mp-badge-success {
+  background: #dcfce7;
+  color: #166534;
+}
+
+/* Mono text */
+.mp-mono {
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 12px;
+}
+
+.mp-truncate {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
