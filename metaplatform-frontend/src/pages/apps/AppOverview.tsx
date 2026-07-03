@@ -1,33 +1,80 @@
+import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { StatCard, PageHeader } from "@/components/ui/stat";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { mockApplications } from "@/lib/mock-data";
-import { Box, FileText, GitBranch, Users, Calendar, Dna } from "lucide-react";
+import { appsApi, type Application } from "@/lib/api";
+import { Box, FileText, GitBranch, Users, Calendar, Dna, Loader2, AlertCircle } from "lucide-react";
 
 export default function AppOverview() {
   const { appId } = useParams();
-  const app = mockApplications.find((a) => a.id === appId) ?? mockApplications[0];
+  const [app, setApp] = useState<Application | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!appId) return;
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+
+    appsApi
+      .get(appId)
+      .then((data) => {
+        if (!cancelled) setApp(data);
+      })
+      .catch((err: Error) => {
+        if (!cancelled) setError(err.message || "加载应用详情失败");
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [appId]);
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 gap-3">
+        <Loader2 className="size-8 animate-spin text-muted-foreground" />
+        <p className="text-sm text-muted-foreground">正在加载应用详情...</p>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error || !app) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 gap-3">
+        <AlertCircle className="size-8 text-destructive" />
+        <p className="text-sm text-destructive">{error || "应用不存在"}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title={<><app.icon className="size-5 inline mr-2" />{app.name}</>}
-        description={`${app.description} · v${app.version} · ${app.category}`}
+        title={app.name}
+        description={`${app.description || "暂无描述"} · v${app.version} · ${app.category}`}
         action={
           <div className="flex gap-2">
-            <Badge variant="secondary">已发布</Badge>
-            <Badge variant="outline">{app.owner}</Badge>
+            <Badge variant={app.status === "published" ? "default" : "secondary"}>
+              {app.status === "published" ? "已发布" : app.status === "active" ? "运行中" : app.status}
+            </Badge>
           </div>
         }
       />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard label="对象数" value={app.objects} icon={<Dna className="size-5" />} />
-        <StatCard label="页面数" value={app.pages} icon={<FileText className="size-5" />} />
-        <StatCard label="流程数" value={app.flows} icon={<GitBranch className="size-5" />} />
-        <StatCard label="活跃用户" value={128} trend={12.5} icon={<Users className="size-5" />} />
+        <StatCard label="对象数" value={app.objects_count ?? 0} icon={<Dna className="size-5" />} />
+        <StatCard label="页面数" value={app.pages_count ?? 0} icon={<FileText className="size-5" />} />
+        <StatCard label="流程数" value={app.flows_count ?? 0} icon={<GitBranch className="size-5" />} />
+        <StatCard label="版本" value={app.version} icon={<Calendar className="size-5" />} />
       </div>
 
       <Tabs defaultValue="recent">
@@ -46,19 +93,19 @@ export default function AppOverview() {
               <ul className="space-y-3 text-sm">
                 <li className="flex items-center gap-3">
                   <span className="text-muted-foreground">10:42</span>
-                  <span>张伟 修改了「客户对象」字段</span>
+                  <span>修改了「客户对象」字段</span>
                 </li>
                 <li className="flex items-center gap-3">
                   <span className="text-muted-foreground">09:15</span>
-                  <span>李娜 部署了新版本到测试环境</span>
+                  <span>部署了新版本到测试环境</span>
                 </li>
                 <li className="flex items-center gap-3">
                   <span className="text-muted-foreground">昨天</span>
-                  <span>王强 新建了 3 个页面</span>
+                  <span>新建了 3 个页面</span>
                 </li>
                 <li className="flex items-center gap-3">
                   <span className="text-muted-foreground">2 天前</span>
-                  <span>刘敏 配置了 2 个工作流</span>
+                  <span>配置了 2 个工作流</span>
                 </li>
               </ul>
             </CardContent>
@@ -101,17 +148,27 @@ export default function AppOverview() {
                   <span className="font-mono">{app.id}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">所有者</span>
-                  <span>{app.owner}</span>
-                </div>
-                <div className="flex justify-between">
                   <span className="text-muted-foreground">分类</span>
                   <span>{app.category}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">最后更新</span>
-                  <span>{app.updatedAt}</span>
+                  <span className="text-muted-foreground">状态</span>
+                  <Badge variant={app.status === "published" ? "default" : "secondary"}>
+                    {app.status}
+                  </Badge>
                 </div>
+                {app.created_at && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">创建时间</span>
+                    <span>{app.created_at}</span>
+                  </div>
+                )}
+                {app.updated_at && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">最后更新</span>
+                    <span>{app.updated_at}</span>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>

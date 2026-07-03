@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Check, ChevronLeft, ChevronRight, Sparkles, Database, Wand2, FileEdit, BookOpen, Dna, Bot, Handshake, Package, Building2, Users, ClipboardList, BarChart3 } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Sparkles, Database, Wand2, FileEdit, BookOpen, Dna, Bot, Handshake, Package, Building2, Users, ClipboardList, BarChart3, Loader2 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { appsApi } from "@/lib/api";
 
 type Step = 1 | 2 | 3 | 4;
 
@@ -59,6 +60,8 @@ export default function NewAppWizard() {
   const navigate = useNavigate();
   const [step, setStep] = useState<Step>(1);
   const [state, setState] = useState<WizardState>(INITIAL);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const update = <K extends keyof WizardState>(k: K, v: WizardState[K]) =>
     setState((s) => ({ ...s, [k]: v }));
@@ -70,8 +73,27 @@ export default function NewAppWizard() {
     return true;
   };
 
-  const onSubmit = () => {
-    navigate(`/apps/app-${Math.floor(Math.random() * 9000 + 1000)}/overview`);
+  const onSubmit = async () => {
+    if (!state.name || state.name.length < 2) {
+      setSubmitError("应用名称至少需要 2 个字符");
+      return;
+    }
+    setSubmitting(true);
+    setSubmitError(null);
+    try {
+      const newApp = await appsApi.create({
+        name: state.name,
+        description: state.description,
+        category: state.category,
+        icon: state.icon,
+      });
+      navigate(`/apps/${newApp.id}/overview`);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "创建应用失败";
+      setSubmitError(message);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -309,6 +331,11 @@ export default function NewAppWizard() {
                   创建后系统将自动初始化：3 个示例对象 · 2 个示例页面 · 1 个示例工作流，你可以在应用中随时修改或删除。
                 </div>
               </div>
+              {submitError && (
+                <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
+                  {submitError}
+                </div>
+              )}
             </div>
           )}
         </CardContent>
@@ -332,9 +359,13 @@ export default function NewAppWizard() {
               <ChevronRight className="size-4 ml-1" />
             </Button>
           ) : (
-            <Button onClick={onSubmit}>
-              <Sparkles className="size-4 mr-1" />
-              创建应用
+            <Button onClick={onSubmit} disabled={submitting}>
+              {submitting ? (
+                <Loader2 className="size-4 mr-1 animate-spin" />
+              ) : (
+                <Sparkles className="size-4 mr-1" />
+              )}
+              {submitting ? "创建中..." : "创建应用"}
             </Button>
           )}
         </div>

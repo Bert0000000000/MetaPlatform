@@ -67,6 +67,15 @@ export const appsApi = {
     request<{ objects: number; pages: number; flows: number }>(
       `/apps/${id}/stats`,
     ),
+  publish: (id: string) =>
+    request<Application & { published_url: string; app_slug: string }>(
+      `/apps/${id}/publish`,
+      { method: "POST" },
+    ),
+  unpublish: (id: string) =>
+    request<Application>(`/apps/${id}/unpublish`, { method: "POST" }),
+  listPublished: () => request<Application[]>("/apps/published"),
+  getBySlug: (slug: string) => request<Application>(`/apps/slug/${slug}`),
 };
 
 // ─── Ontology ─────────────────────────────────────────────
@@ -281,6 +290,10 @@ export interface Application {
   objects_count: number;
   pages_count: number;
   flows_count: number;
+  app_slug?: string;
+  published_url?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface OntologyObject {

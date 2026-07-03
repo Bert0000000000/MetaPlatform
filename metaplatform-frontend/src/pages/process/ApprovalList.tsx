@@ -1,12 +1,15 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader, StatCard } from "@/components/ui/stat";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
-import { mockProcessInstances } from "@/lib/mock-data";
-import { Check, X, Clock, UserCheck, Vote, Users, GitBranch, Target, ArrowRight, Inbox, CheckCircle, Rocket, Sparkles } from "lucide-react";
+import { flowableApi, type FlowableTask } from "@/lib/flowable-api";
+import {
+  Check, X, Target, Users, ArrowRight, Vote, Inbox, CheckCircle,
+  Rocket, Sparkles, Loader2, AlertCircle, Clock,
+} from "lucide-react";
 
 const taskModes = [
   { key: "竞签", desc: "多人竞签，一人通过即可", icon: Target },
@@ -15,13 +18,59 @@ const taskModes = [
   { key: "投票", desc: "按比例/人数投票", icon: Vote },
 ];
 
-const approvalButtons = [
-  "同意", "拒绝", "加签", "转办", "知会",
-  "催办", "暂存", "终止", "撤回", "自定义",
-];
-
 export default function ApprovalList() {
   const [tab, setTab] = useState("todo");
+  const [tasks, setTasks] = useState<FlowableTask[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [completingId, setCompletingId] = useState<string | null>(null);
+
+  const fetchTasks = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await flowableApi.listTasks();
+      setTasks(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "加载失败");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchTasks();
+  }, [fetchTasks]);
+
+  const handleCompleteTask = async (taskId: string, approved: boolean) => {
+    const action = approved ? "同意" : "拒绝";
+    if (!confirm(`确定${action}该任务？`)) return;
+    try {
+      setCompletingId(taskId);
+      await flowableApi.completeTask(taskId, { approved });
+      await fetchTasks();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : `${action}失败`);
+    } finally {
+      setCompletingId(null);
+    }
+  };
+
+  const formatDate = (dateStr?: string) => {
+    if (!dateStr) return "--";
+    try {
+      const d = new Date(dateStr);
+      return d.toLocaleString("zh-CN", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    } catch {
+      return dateStr;
+    }
+  };
 
   return (
     <div className="flex flex-col gap-6">
@@ -31,99 +80,117 @@ export default function ApprovalList() {
       />
 
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-        <StatCard label="我的待办" value={12} icon={<Inbox className="size-5" />} />
-        <StatCard label="我的已办" value={148} trend={5.6} icon={<CheckCircle className="size-5" />} />
-        <StatCard label="我的发起" value={32} icon={<Rocket className="size-5" />} />
-        <StatCard label="本周新增" value={24} icon={<Sparkles className="size-5" />} />
+        <StatCard label="我的待办" value={loading ? "..." : tasks.length} icon={<Inbox className="size-5" />} />
+        <StatCard label="我的已办" value={"--"} icon={<CheckCircle className="size-5" />} />
+        <StatCard label="我的发起" value={"--"} icon={<Rocket className="size-5" />} />
+        <StatCard label="本周新增" value={"--"} icon={<Sparkles className="size-5" />} />
       </div>
+
+      {error && (
+        <div className="flex items-center gap-2 p-4 border border-destructive/50 rounded bg-destructive/10 text-destructive">
+          <AlertCircle className="size-4" />
+          <span className="text-sm">{error}</span>
+          <Button variant="outline" size="sm" className="ml-auto" onClick={fetchTasks}>
+            重试
+          </Button>
+        </div>
+      )}
 
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
           <TabsTrigger value="todo">我的待办</TabsTrigger>
-          <TabsTrigger value="done">我的已办</TabsTrigger>
-          <TabsTrigger value="started">我的发起</TabsTrigger>
           <TabsTrigger value="modes">任务模式</TabsTrigger>
-          <TabsTrigger value="buttons">审批按钮</TabsTrigger>
         </TabsList>
 
         <TabsContent value="todo" className="mt-4">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">待办事项（{mockProcessInstances.filter((i) => i.status === "running").length}）</CardTitle>
+              <CardTitle className="text-base">
+                待办事项（{loading ? "..." : tasks.length}）
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>流程</TableHead>
-                    <TableHead>当前节点</TableHead>
-                    <TableHead>发起人</TableHead>
-                    <TableHead>开始时间</TableHead>
-                    <TableHead>状态</TableHead>
-                    <TableHead className="text-right">操作</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {mockProcessInstances.filter((i) => i.status === "running").map((i) => (
-                    <TableRow key={i.id}>
-                      <TableCell className="font-medium">{i.processName}</TableCell>
-                      <TableCell>{i.currentNode}</TableCell>
-                      <TableCell>{i.initiator}</TableCell>
-                      <TableCell>{i.startTime}</TableCell>
-                      <TableCell>
-                        <Badge variant="default">进行中</Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button size="sm" className="mr-1">同意</Button>
-                        <Button size="sm" variant="outline">拒绝</Button>
-                      </TableCell>
+              {loading ? (
+                <div className="flex items-center justify-center py-12 text-muted-foreground">
+                  <Loader2 className="size-5 animate-spin mr-2" /> 加载中...
+                </div>
+              ) : tasks.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+                  <Inbox className="size-10 mb-3 opacity-40" />
+                  <p className="text-sm">暂无待办任务</p>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>任务名称</TableHead>
+                      <TableHead>处理人</TableHead>
+                      <TableHead>流程实例</TableHead>
+                      <TableHead>创建时间</TableHead>
+                      <TableHead>到期时间</TableHead>
+                      <TableHead>优先级</TableHead>
+                      <TableHead className="text-right">操作</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="done" className="mt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">已办事项</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>流程</TableHead>
-                    <TableHead>发起人</TableHead>
-                    <TableHead>完成时间</TableHead>
-                    <TableHead>耗时</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {mockProcessInstances.filter((i) => i.status === "completed").map((i) => (
-                    <TableRow key={i.id}>
-                      <TableCell className="font-medium">{i.processName}</TableCell>
-                      <TableCell>{i.initiator}</TableCell>
-                      <TableCell>{i.startTime}</TableCell>
-                      <TableCell>{i.duration}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="started" className="mt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">我发起的</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-sm text-muted-foreground py-8 text-center">
-                暂无发起的流程
-              </div>
+                  </TableHeader>
+                  <TableBody>
+                    {tasks.map((task) => (
+                      <TableRow key={task.id}>
+                        <TableCell className="font-medium">{task.name || "(未命名)"}</TableCell>
+                        <TableCell>{task.assignee || "未分配"}</TableCell>
+                        <TableCell className="font-mono text-xs">
+                          {task.processInstanceId?.substring(0, 8)}...
+                        </TableCell>
+                        <TableCell className="text-xs">
+                          <div className="flex items-center gap-1">
+                            <Clock className="size-3" />
+                            {formatDate(task.createTime)}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-xs">
+                          {task.dueDate ? formatDate(task.dueDate) : "--"}
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={
+                              (task.priority ?? 0) >= 75
+                                ? "destructive"
+                                : (task.priority ?? 0) >= 50
+                                  ? "default"
+                                  : "secondary"
+                            }
+                          >
+                            {(task.priority ?? 0) >= 75 ? "高" : (task.priority ?? 0) >= 50 ? "中" : "低"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            size="sm"
+                            className="mr-1"
+                            disabled={completingId === task.id}
+                            onClick={() => handleCompleteTask(task.id, true)}
+                          >
+                            {completingId === task.id ? (
+                              <Loader2 className="size-3 animate-spin mr-1" />
+                            ) : (
+                              <Check className="size-3 mr-1" />
+                            )}
+                            同意
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={completingId === task.id}
+                            onClick={() => handleCompleteTask(task.id, false)}
+                          >
+                            <X className="size-3 mr-1" />
+                            拒绝
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -143,23 +210,6 @@ export default function ApprovalList() {
               );
             })}
           </div>
-        </TabsContent>
-
-        <TabsContent value="buttons" className="mt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">10 种审批按钮</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-                {approvalButtons.map((b) => (
-                  <div key={b} className="border rounded-lg p-3 text-center">
-                    <div className="font-medium text-sm">{b}</div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
         </TabsContent>
       </Tabs>
     </div>

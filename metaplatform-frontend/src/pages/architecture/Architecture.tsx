@@ -1,12 +1,63 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Building2, Database, Server, Layers, GitBranch, FileText, Plus, Network, Cpu, Workflow, Box, ArrowRight, ArrowDown, BarChart3, Filter, Download, Link, Lightbulb, RefreshCw, User, Zap, Package, Megaphone, FlaskConical, Truck, Factory, Briefcase, Headphones, Smartphone, ClipboardList, DollarSign, Users, Handshake } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Building2, Database, Server, Layers, GitBranch, FileText, Plus, Network, Cpu, Workflow, Box, ArrowRight, ArrowDown, BarChart3, Filter, Download, Link, Lightbulb, RefreshCw, User, Zap, Package, Megaphone, FlaskConical, Truck, Factory, Briefcase, Headphones, Smartphone, ClipboardList, DollarSign, Users, Handshake, X, Eye, Search, ChevronDown,
+} from "lucide-react";
 
-// === 业务架构 ===
-const BA_LAYERS = [
+/* ═══════════════════════ Toast helper ═══════════════════════ */
+function useToast() {
+  const [toast, setToast] = useState<string | null>(null);
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 2500);
+    return () => clearTimeout(t);
+  }, [toast]);
+  return { toast, setToast };
+}
+
+/* ═══════════════════════ Export helper ═══════════════════════ */
+function downloadJSON(data: unknown, filename: string) {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function downloadCSV(headers: string[], rows: (string | number)[][], filename: string) {
+  const csvContent = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+  const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+/* ═══════════════════════ Business Architecture Data ═══════════════════════ */
+interface BALayer {
+  level: string;
+  name: string;
+  desc: string;
+  count: number;
+  icon: React.ElementType;
+  color: string;
+}
+
+const INITIAL_BA_LAYERS: BALayer[] = [
   { level: "L1", name: "价值链", desc: "端到端价值流", count: 5, icon: Link, color: "bg-red-500" },
   { level: "L2", name: "业务能力", desc: "可独立提供价值的业务能力", count: 28, icon: Lightbulb, color: "bg-orange-500" },
   { level: "L3", name: "业务流程", desc: "端到端业务流程图", count: 64, icon: RefreshCw, color: "bg-amber-500" },
@@ -24,7 +75,7 @@ const VALUE_CHAIN = [
   { name: "客户服务", apps: ["客服", "工单"], icon: Headphones },
 ];
 
-// === 应用架构 ===
+/* ═══════════════════════ Application Architecture Data ═══════════════════════ */
 const APP_DEPENDENCIES = [
   { from: "客户管理 CRM", to: "数据中台", calls: 1240, type: "数据查询" },
   { from: "报销审批", to: "财务系统", calls: 580, type: "凭证写入" },
@@ -42,7 +93,7 @@ const APP_FLOW_MATRIX = [
   { app: "VibeCoding Demo", flows: 0, data: 0, pages: 1 },
 ];
 
-// === 数据架构 ===
+/* ═══════════════════════ Data Architecture Data ═══════════════════════ */
 const DATA_DOMAINS = [
   { name: "客户域", objects: 8, apps: ["CRM", "销售看板"], icon: Handshake, color: "bg-blue-500" },
   { name: "订单域", objects: 12, apps: ["CRM", "ERP"], icon: ClipboardList, color: "bg-green-500" },
@@ -52,7 +103,7 @@ const DATA_DOMAINS = [
   { name: "运营域", objects: 13, apps: ["BI"], icon: BarChart3, color: "bg-pink-500" },
 ];
 
-// === 技术架构 ===
+/* ═══════════════════════ Tech Architecture Data ═══════════════════════ */
 const TECH_STACK = [
   { layer: "前端", items: ["React 19", "Tailwind 4", "Vite 7", "shadcn/ui", "React Router 7"] },
   { layer: "后端", items: ["Java 21", "Spring Boot 3", "Spring Cloud", "Flowable 7", "GraphQL"] },
@@ -62,9 +113,90 @@ const TECH_STACK = [
   { layer: "AI", items: ["LLM Gateway", "LangGraph", "DeepSeek", "Qwen", "BGE-M3"] },
 ];
 
+const DEPLOY_TOPOLOGY = [
+  { label: "集群", value: "K8s 1.29 (3 节点)" },
+  { label: "负载均衡", value: "Nginx + Istio" },
+  { label: "服务网格", value: "Istio 1.20" },
+  { label: "CI/CD", value: "GitHub Actions + ArgoCD" },
+];
+
+const OBSERVABILITY = [
+  { label: "日志", value: "ELK 8.x" },
+  { label: "监控", value: "Prometheus + Grafana" },
+  { label: "链路追踪", value: "Jaeger" },
+  { label: "告警", value: "AlertManager" },
+];
+
+const CAPABILITY_LIST = [
+  "营销管理", "销售管理", "客户服务", "采购管理", "生产管理", "仓储物流",
+  "财务管理", "人力资源", "研发管理", "质量管理", "法务合规", "战略规划",
+];
+
+/* ═══════════════════════ BusinessArchitecture ═══════════════════════ */
 export function BusinessArchitecture() {
+  const [baLayers, setBALayers] = useState<BALayer[]>(INITIAL_BA_LAYERS);
+  const [showFilter, setShowFilter] = useState(false);
+  const [filterLevel, setFilterLevel] = useState<string>("");
+  const [showAddDialog, setShowAddDialog] = useState(false);
+  const [showDetailDialog, setShowDetailDialog] = useState(false);
+  const [selectedLayer, setSelectedLayer] = useState<BALayer | null>(null);
+  const [newLayerName, setNewLayerName] = useState("");
+  const [newLayerDesc, setNewLayerDesc] = useState("");
+  const { toast, setToast } = useToast();
+
+  /* Filter */
+  const filteredLayers = filterLevel
+    ? baLayers.filter((l) => l.level === filterLevel)
+    : baLayers;
+
+  /* Export */
+  function handleExport() {
+    const data = baLayers.map((l) => ({ level: l.level, name: l.name, desc: l.desc, count: l.count }));
+    downloadJSON(data, "business-architecture-layers.json");
+    setToast("导出成功：business-architecture-layers.json");
+  }
+
+  function handleExportCSV() {
+    const headers = ["层级", "名称", "描述", "数量"];
+    const rows = baLayers.map((l) => [l.level, l.name, l.desc, l.count]);
+    downloadCSV(headers, rows, "business-architecture-layers.csv");
+    setToast("导出成功：business-architecture-layers.csv");
+  }
+
+  /* Add layer */
+  function handleAddLayer() {
+    if (!newLayerName.trim()) return;
+    const nextLevel = `L${baLayers.length + 1}`;
+    const newLayer: BALayer = {
+      level: nextLevel,
+      name: newLayerName.trim(),
+      desc: newLayerDesc.trim() || "自定义层级",
+      count: 0,
+      icon: Layers,
+      color: "bg-gray-500",
+    };
+    setBALayers((prev) => [...prev, newLayer]);
+    setNewLayerName("");
+    setNewLayerDesc("");
+    setShowAddDialog(false);
+    setToast(`已新增层级：${newLayer.level} ${newLayer.name}`);
+  }
+
+  /* Row click */
+  function handleRowClick(layer: BALayer) {
+    setSelectedLayer(layer);
+    setShowDetailDialog(true);
+  }
+
   return (
     <div className="flex flex-col gap-4">
+      {/* Toast */}
+      {toast && (
+        <div className="fixed top-4 right-4 z-50 rounded-md bg-foreground px-4 py-2 text-sm text-background shadow-lg">
+          {toast}
+        </div>
+      )}
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-semibold flex items-center gap-2">
@@ -73,11 +205,52 @@ export function BusinessArchitecture() {
           <p className="text-sm text-muted-foreground">企业业务架构 L1-L6 层模型 + 价值链</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm"><Filter className="size-3 mr-1" />筛选</Button>
-          <Button variant="outline" size="sm"><Download className="size-3 mr-1" />导出</Button>
-          <Button size="sm"><Plus className="size-3 mr-1" />新增层级</Button>
+          <Button variant="outline" size="sm" onClick={() => setShowFilter(!showFilter)}>
+            <Filter className="size-3 mr-1" />筛选
+            {filterLevel && <Badge variant="secondary" className="ml-1 text-xs">{filterLevel}</Badge>}
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleExport}>
+            <Download className="size-3 mr-1" />导出 JSON
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleExportCSV}>
+            <Download className="size-3 mr-1" />导出 CSV
+          </Button>
+          <Button size="sm" onClick={() => setShowAddDialog(true)}>
+            <Plus className="size-3 mr-1" />新增层级
+          </Button>
         </div>
       </div>
+
+      {/* Filter bar */}
+      {showFilter && (
+        <Card>
+          <CardContent className="p-3">
+            <div className="flex items-center gap-3 flex-wrap">
+              <span className="text-sm font-medium">按层级筛选：</span>
+              <Button
+                variant={filterLevel === "" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setFilterLevel("")}
+              >
+                全部
+              </Button>
+              {baLayers.map((l) => (
+                <Button
+                  key={l.level}
+                  variant={filterLevel === l.level ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setFilterLevel(l.level)}
+                >
+                  {l.level}
+                </Button>
+              ))}
+              <Button variant="ghost" size="sm" onClick={() => { setFilterLevel(""); setShowFilter(false); }}>
+                <X className="size-3 mr-1" /> 关闭
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Tabs defaultValue="layers">
         <TabsList>
@@ -89,27 +262,38 @@ export function BusinessArchitecture() {
           <Card>
             <CardHeader>
               <CardTitle className="text-base">业务架构分层模型</CardTitle>
-              <CardDescription>从价值链到业务对象，逐层分解</CardDescription>
+              <CardDescription>从价值链到业务对象，逐层分解。点击行查看详情。</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                {BA_LAYERS.map((l, i) => (
+                {filteredLayers.map((l, i) => (
                   <div key={l.level} className="flex items-center gap-3">
                     <div className={`size-12 rounded-lg ${l.color} text-white flex items-center justify-center font-semibold shrink-0`}>
                       {l.level}
                     </div>
-                    <div className="flex-1 flex items-center gap-3 p-3 border rounded hover:border-primary cursor-pointer">
+                    <div
+                      className="flex-1 flex items-center gap-3 p-3 border rounded hover:border-primary cursor-pointer transition-colors"
+                      onClick={() => handleRowClick(l)}
+                    >
                       <div className="text-2xl"><l.icon className="size-6" /></div>
                       <div className="flex-1">
                         <div className="font-medium">{l.name}</div>
                         <div className="text-xs text-muted-foreground">{l.desc}</div>
                       </div>
                       <Badge variant="secondary">{l.count} 项</Badge>
-                      {i < BA_LAYERS.length - 1 && <ArrowDown className="size-4 text-muted-foreground ml-2" />}
+                      <Eye className="size-4 text-muted-foreground" />
+                      {i < filteredLayers.length - 1 && <ArrowDown className="size-4 text-muted-foreground ml-2" />}
                     </div>
                   </div>
                 ))}
               </div>
+              {filteredLayers.length === 0 && (
+                <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+                  <Search className="size-8 mb-2" />
+                  <p className="text-sm">没有匹配的层级</p>
+                  <Button variant="link" size="sm" onClick={() => setFilterLevel("")}>清除筛选</Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -124,7 +308,7 @@ export function BusinessArchitecture() {
               <div className="flex flex-wrap items-center gap-2">
                 {VALUE_CHAIN.map((v, i) => (
                   <div key={v.name} className="flex items-center gap-2">
-                    <div className="rounded-lg border-2 border-primary/30 bg-primary/5 px-4 py-3 hover:bg-primary/10 cursor-pointer">
+                    <div className="rounded-lg border-2 border-primary/30 bg-primary/5 px-4 py-3 hover:bg-primary/10 cursor-pointer transition-colors">
                       <div className="text-2xl"><v.icon className="size-6" /></div>
                       <div className="font-medium text-sm mt-1">{v.name}</div>
                       <div className="text-xs text-muted-foreground mt-0.5">
@@ -147,8 +331,8 @@ export function BusinessArchitecture() {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                {["营销管理", "销售管理", "客户服务", "采购管理", "生产管理", "仓储物流", "财务管理", "人力资源", "研发管理", "质量管理", "法务合规", "战略规划"].map((c) => (
-                  <div key={c} className="rounded border p-3 hover:border-primary cursor-pointer">
+                {CAPABILITY_LIST.map((c) => (
+                  <div key={c} className="rounded border p-3 hover:border-primary cursor-pointer transition-colors">
                     <div className="font-medium text-sm">{c}</div>
                     <div className="text-xs text-muted-foreground mt-1">2-4 项子能力</div>
                   </div>
@@ -158,19 +342,154 @@ export function BusinessArchitecture() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Add Layer Dialog */}
+      <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>新增层级</DialogTitle>
+            <DialogDescription>在业务架构分层模型中新增一个层级</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="layer-name">层级名称 *</Label>
+              <Input
+                id="layer-name"
+                placeholder="例如：业务规则"
+                value={newLayerName}
+                onChange={(e) => setNewLayerName(e.target.value)}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="layer-desc">描述</Label>
+              <Input
+                id="layer-desc"
+                placeholder="例如：业务规则与约束"
+                value={newLayerDesc}
+                onChange={(e) => setNewLayerDesc(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAddDialog(false)}>取消</Button>
+            <Button onClick={handleAddLayer} disabled={!newLayerName.trim()}>确认新增</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Detail Dialog */}
+      <Dialog open={showDetailDialog} onOpenChange={setShowDetailDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {selectedLayer && <selectedLayer.icon className="size-5" />}
+              {selectedLayer?.level} - {selectedLayer?.name}
+            </DialogTitle>
+            <DialogDescription>{selectedLayer?.desc}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <Card>
+                <CardContent className="p-3">
+                  <div className="text-xs text-muted-foreground">包含项目数</div>
+                  <div className="text-xl font-bold mt-1">{selectedLayer?.count}</div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-3">
+                  <div className="text-xs text-muted-foreground">层级编号</div>
+                  <div className="text-xl font-bold mt-1">{selectedLayer?.level}</div>
+                </CardContent>
+              </Card>
+            </div>
+            <div className="p-3 bg-muted rounded text-sm">
+              <p className="font-medium mb-1">说明</p>
+              <p className="text-muted-foreground">{selectedLayer?.desc}</p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDetailDialog(false)}>关闭</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
 
+/* ═══════════════════════ ApplicationArchitecture ═══════════════════════ */
 export function ApplicationArchitecture() {
+  const [showFilter, setShowFilter] = useState(false);
+  const [filterType, setFilterType] = useState<string>("");
+  const [showDetailDialog, setShowDetailDialog] = useState(false);
+  const [selectedApp, setSelectedApp] = useState<(typeof APP_FLOW_MATRIX)[number] | null>(null);
+  const { toast, setToast } = useToast();
+
+  const filteredDeps = filterType
+    ? APP_DEPENDENCIES.filter((d) => d.type === filterType)
+    : APP_DEPENDENCIES;
+
+  const depTypes = [...new Set(APP_DEPENDENCIES.map((d) => d.type))];
+
+  function handleExport() {
+    const data = { dependencies: APP_DEPENDENCIES, matrix: APP_FLOW_MATRIX };
+    downloadJSON(data, "application-architecture.json");
+    setToast("导出成功：application-architecture.json");
+  }
+
+  function handleExportCSV() {
+    const headers = ["调用方", "被调用方", "调用次数", "类型"];
+    const rows = APP_DEPENDENCIES.map((d) => [d.from, d.to, d.calls, d.type]);
+    downloadCSV(headers, rows, "application-dependencies.csv");
+    setToast("导出成功：application-dependencies.csv");
+  }
+
+  function handleAppClick(app: (typeof APP_FLOW_MATRIX)[number]) {
+    setSelectedApp(app);
+    setShowDetailDialog(true);
+  }
+
   return (
     <div className="flex flex-col gap-4">
-      <div>
-        <h1 className="text-xl font-semibold flex items-center gap-2">
-          <Server className="size-5 text-primary" /> 应用架构
-        </h1>
-        <p className="text-sm text-muted-foreground">应用全景 + 依赖关系 + 跨应用映射</p>
+      {toast && (
+        <div className="fixed top-4 right-4 z-50 rounded-md bg-foreground px-4 py-2 text-sm text-background shadow-lg">{toast}</div>
+      )}
+
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-semibold flex items-center gap-2">
+            <Server className="size-5 text-primary" /> 应用架构
+          </h1>
+          <p className="text-sm text-muted-foreground">应用全景 + 依赖关系 + 跨应用映射</p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => setShowFilter(!showFilter)}>
+            <Filter className="size-3 mr-1" />筛选
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleExport}>
+            <Download className="size-3 mr-1" />导出 JSON
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleExportCSV}>
+            <Download className="size-3 mr-1" />导出 CSV
+          </Button>
+        </div>
       </div>
+
+      {showFilter && (
+        <Card>
+          <CardContent className="p-3">
+            <div className="flex items-center gap-3 flex-wrap">
+              <span className="text-sm font-medium">按调用类型筛选：</span>
+              <Button variant={filterType === "" ? "default" : "outline"} size="sm" onClick={() => setFilterType("")}>全部</Button>
+              {depTypes.map((t) => (
+                <Button key={t} variant={filterType === t ? "default" : "outline"} size="sm" onClick={() => setFilterType(t)}>{t}</Button>
+              ))}
+              <Button variant="ghost" size="sm" onClick={() => { setFilterType(""); setShowFilter(false); }}>
+                <X className="size-3 mr-1" /> 关闭
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
         {[
@@ -217,8 +536,8 @@ export function ApplicationArchitecture() {
                   </tr>
                 </thead>
                 <tbody>
-                  {APP_DEPENDENCIES.map((d, i) => (
-                    <tr key={i} className="border-b last:border-0 hover:bg-muted/30">
+                  {filteredDeps.map((d, i) => (
+                    <tr key={i} className="border-b last:border-0 hover:bg-muted/30 cursor-pointer">
                       <td className="px-4 py-3 font-medium">{d.from}</td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
@@ -234,6 +553,9 @@ export function ApplicationArchitecture() {
                   ))}
                 </tbody>
               </table>
+              {filteredDeps.length === 0 && (
+                <div className="flex items-center justify-center py-6 text-muted-foreground text-sm">无匹配的依赖关系</div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -241,8 +563,8 @@ export function ApplicationArchitecture() {
         <TabsContent value="matrix" className="mt-4">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">应用 × 流程 × 数据 矩阵</CardTitle>
-              <CardDescription>每个应用的能力映射</CardDescription>
+              <CardTitle className="text-base">应用 x 流程 x 数据 矩阵</CardTitle>
+              <CardDescription>每个应用的能力映射，点击行查看详情</CardDescription>
             </CardHeader>
             <CardContent className="p-0">
               <table className="w-full text-sm">
@@ -259,7 +581,11 @@ export function ApplicationArchitecture() {
                   {APP_FLOW_MATRIX.map((m, i) => {
                     const complexity = m.flows * 2 + m.data * 3 + m.pages;
                     return (
-                      <tr key={i} className="border-b last:border-0 hover:bg-muted/30">
+                      <tr
+                        key={i}
+                        className="border-b last:border-0 hover:bg-muted/30 cursor-pointer"
+                        onClick={() => handleAppClick(m)}
+                      >
                         <td className="px-4 py-3 font-medium">{m.app}</td>
                         <td className="px-4 py-3 text-center">{m.flows}</td>
                         <td className="px-4 py-3 text-center">{m.data}</td>
@@ -282,12 +608,16 @@ export function ApplicationArchitecture() {
           <Card>
             <CardHeader>
               <CardTitle className="text-base">应用全景图</CardTitle>
-              <CardDescription>6 个核心应用 + 数据中台 + AI 中台</CardDescription>
+              <CardDescription>6 个核心应用 + 数据中台 + AI 中台，点击查看详情</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-3 gap-4 p-6 bg-muted/30 rounded">
                 {APP_FLOW_MATRIX.map((a, i) => (
-                  <div key={i} className="rounded-lg border-2 border-primary/30 bg-card p-3 text-center">
+                  <div
+                    key={i}
+                    className="rounded-lg border-2 border-primary/30 bg-card p-3 text-center cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors"
+                    onClick={() => handleAppClick(a)}
+                  >
                     <div className="text-xl"><Smartphone className="size-5 mx-auto" /></div>
                     <div className="font-medium text-sm mt-1">{a.app}</div>
                     <div className="text-xs text-muted-foreground">{a.flows + a.data + a.pages} 项资产</div>
@@ -298,23 +628,107 @@ export function ApplicationArchitecture() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* App Detail Dialog */}
+      <Dialog open={showDetailDialog} onOpenChange={setShowDetailDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Smartphone className="size-5" />
+              {selectedApp?.app}
+            </DialogTitle>
+            <DialogDescription>应用资产详情</DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-3 gap-3">
+            <Card>
+              <CardContent className="p-3 text-center">
+                <Workflow className="size-5 mx-auto text-muted-foreground" />
+                <div className="text-xl font-bold mt-1">{selectedApp?.flows}</div>
+                <div className="text-xs text-muted-foreground">流程</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-3 text-center">
+                <Box className="size-5 mx-auto text-muted-foreground" />
+                <div className="text-xl font-bold mt-1">{selectedApp?.data}</div>
+                <div className="text-xs text-muted-foreground">对象</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-3 text-center">
+                <FileText className="size-5 mx-auto text-muted-foreground" />
+                <div className="text-xl font-bold mt-1">{selectedApp?.pages}</div>
+                <div className="text-xs text-muted-foreground">页面</div>
+              </CardContent>
+            </Card>
+          </div>
+          {selectedApp && (
+            <div className="p-3 bg-muted rounded text-sm">
+              <p className="font-medium">复杂度评估</p>
+              <p className="text-muted-foreground mt-1">
+                综合得分: {(selectedApp.flows * 2 + selectedApp.data * 3 + selectedApp.pages)} 分
+                (流程 x2 + 对象 x3 + 页面 x1)
+              </p>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDetailDialog(false)}>关闭</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
 
+/* ═══════════════════════ DataArchitecture ═══════════════════════ */
 export function DataArchitecture() {
+  const [showDetailDialog, setShowDetailDialog] = useState(false);
+  const [selectedDomain, setSelectedDomain] = useState<(typeof DATA_DOMAINS)[number] | null>(null);
+  const { toast, setToast } = useToast();
+
+  function handleExport() {
+    downloadJSON(DATA_DOMAINS, "data-architecture-domains.json");
+    setToast("导出成功：data-architecture-domains.json");
+  }
+
+  function handleExportCSV() {
+    const headers = ["域", "对象数", "关联应用"];
+    const rows = DATA_DOMAINS.map((d) => [d.name, d.objects, d.apps.join("/")]);
+    downloadCSV(headers, rows, "data-architecture-domains.csv");
+    setToast("导出成功：data-architecture-domains.csv");
+  }
+
+  function handleDomainClick(domain: (typeof DATA_DOMAINS)[number]) {
+    setSelectedDomain(domain);
+    setShowDetailDialog(true);
+  }
+
   return (
     <div className="flex flex-col gap-4">
-      <div>
-        <h1 className="text-xl font-semibold flex items-center gap-2">
-          <Database className="size-5 text-primary" /> 数据架构
-        </h1>
-        <p className="text-sm text-muted-foreground">数据主题域 + 数据模型 + 湖仓分布</p>
+      {toast && (
+        <div className="fixed top-4 right-4 z-50 rounded-md bg-foreground px-4 py-2 text-sm text-background shadow-lg">{toast}</div>
+      )}
+
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-semibold flex items-center gap-2">
+            <Database className="size-5 text-primary" /> 数据架构
+          </h1>
+          <p className="text-sm text-muted-foreground">数据主题域 + 数据模型 + 湖仓分布</p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={handleExport}>
+            <Download className="size-3 mr-1" />导出 JSON
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleExportCSV}>
+            <Download className="size-3 mr-1" />导出 CSV
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         {DATA_DOMAINS.map((d) => (
-          <Card key={d.name}>
+          <Card key={d.name} className="cursor-pointer hover:border-primary transition-colors" onClick={() => handleDomainClick(d)}>
             <CardContent className="p-4 text-center">
               <div className={`size-12 rounded-full ${d.color} text-white flex items-center justify-center mx-auto`}>
                 <d.icon className="size-6" />
@@ -340,7 +754,7 @@ export function DataArchitecture() {
               { layer: "DWS", name: "汇总层", count: 12, color: "border-l-orange-500", desc: "主题汇总" },
               { layer: "ADS", name: "应用层", count: 18, color: "border-l-red-500", desc: "面向应用" },
             ].map((l) => (
-              <div key={l.layer} className={`rounded border-l-4 ${l.color} border-y border-r p-3`}>
+              <div key={l.layer} className={`rounded border-l-4 ${l.color} border-y border-r p-3 cursor-pointer hover:border-primary transition-colors`}>
                 <div className="text-xs text-muted-foreground">{l.layer}</div>
                 <div className="font-medium">{l.name}</div>
                 <div className="text-xl font-bold mt-2">{l.count}</div>
@@ -350,31 +764,114 @@ export function DataArchitecture() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Domain Detail Dialog */}
+      <Dialog open={showDetailDialog} onOpenChange={setShowDetailDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {selectedDomain && <selectedDomain.icon className="size-5" />}
+              {selectedDomain?.name}
+            </DialogTitle>
+            <DialogDescription>数据域详情</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <Card>
+                <CardContent className="p-3">
+                  <div className="text-xs text-muted-foreground">数据对象数</div>
+                  <div className="text-xl font-bold mt-1">{selectedDomain?.objects}</div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-3">
+                  <div className="text-xs text-muted-foreground">关联应用数</div>
+                  <div className="text-xl font-bold mt-1">{selectedDomain?.apps.length}</div>
+                </CardContent>
+              </Card>
+            </div>
+            <div className="p-3 bg-muted rounded text-sm">
+              <p className="font-medium mb-1">关联应用</p>
+              <div className="flex gap-2 flex-wrap">
+                {selectedDomain?.apps.map((app) => (
+                  <Badge key={app} variant="secondary">{app}</Badge>
+                ))}
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDetailDialog(false)}>关闭</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
 
+/* ═══════════════════════ TechArchitecture ═══════════════════════ */
 export function TechArchitecture() {
+  const [showDetailDialog, setShowDetailDialog] = useState(false);
+  const [selectedStack, setSelectedStack] = useState<(typeof TECH_STACK)[number] | null>(null);
+  const { toast, setToast } = useToast();
+
+  function handleExport() {
+    const data = { techStack: TECH_STACK, deploy: DEPLOY_TOPOLOGY, observability: OBSERVABILITY };
+    downloadJSON(data, "tech-architecture.json");
+    setToast("导出成功：tech-architecture.json");
+  }
+
+  function handleExportCSV() {
+    const headers = ["层级", "技术"];
+    const rows: (string | number)[][] = [];
+    TECH_STACK.forEach((s) => s.items.forEach((t) => rows.push([s.layer, t])));
+    downloadCSV(headers, rows, "tech-architecture.csv");
+    setToast("导出成功：tech-architecture.csv");
+  }
+
+  function handleStackClick(stack: (typeof TECH_STACK)[number]) {
+    setSelectedStack(stack);
+    setShowDetailDialog(true);
+  }
+
   return (
     <div className="flex flex-col gap-4">
-      <div>
-        <h1 className="text-xl font-semibold flex items-center gap-2">
-          <Cpu className="size-5 text-primary" /> 技术架构
-        </h1>
-        <p className="text-sm text-muted-foreground">技术栈 + 部署拓扑 + 服务依赖</p>
+      {toast && (
+        <div className="fixed top-4 right-4 z-50 rounded-md bg-foreground px-4 py-2 text-sm text-background shadow-lg">{toast}</div>
+      )}
+
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-semibold flex items-center gap-2">
+            <Cpu className="size-5 text-primary" /> 技术架构
+          </h1>
+          <p className="text-sm text-muted-foreground">技术栈 + 部署拓扑 + 服务依赖</p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={handleExport}>
+            <Download className="size-3 mr-1" />导出 JSON
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleExportCSV}>
+            <Download className="size-3 mr-1" />导出 CSV
+          </Button>
+        </div>
       </div>
 
       <Card>
         <CardHeader>
           <CardTitle className="text-base">技术栈总览</CardTitle>
-          <CardDescription>6 大层级，每层关键技术选型</CardDescription>
+          <CardDescription>6 大层级，每层关键技术选型。点击层级查看详情。</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
             {TECH_STACK.map((s) => (
-              <div key={s.layer} className="rounded-lg border p-3">
+              <div
+                key={s.layer}
+                className="rounded-lg border p-3 cursor-pointer hover:border-primary transition-colors"
+                onClick={() => handleStackClick(s)}
+              >
                 <div className="flex items-center gap-2 mb-2">
                   <Badge variant="secondary">{s.layer}</Badge>
+                  <span className="text-xs text-muted-foreground">{s.items.length} 项技术</span>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {s.items.map((t) => (
@@ -394,18 +891,11 @@ export function TechArchitecture() {
           </CardHeader>
           <CardContent>
             <div className="space-y-2 text-sm">
-              <div className="flex justify-between p-2 border rounded">
-                <span>集群</span><span className="font-mono text-xs">K8s 1.29 (3 节点)</span>
-              </div>
-              <div className="flex justify-between p-2 border rounded">
-                <span>负载均衡</span><span className="font-mono text-xs">Nginx + Istio</span>
-              </div>
-              <div className="flex justify-between p-2 border rounded">
-                <span>服务网格</span><span className="font-mono text-xs">Istio 1.20</span>
-              </div>
-              <div className="flex justify-between p-2 border rounded">
-                <span>CI/CD</span><span className="font-mono text-xs">GitHub Actions + ArgoCD</span>
-              </div>
+              {DEPLOY_TOPOLOGY.map((item) => (
+                <div key={item.label} className="flex justify-between p-2 border rounded">
+                  <span>{item.label}</span><span className="font-mono text-xs">{item.value}</span>
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>
@@ -416,22 +906,39 @@ export function TechArchitecture() {
           </CardHeader>
           <CardContent>
             <div className="space-y-2 text-sm">
-              <div className="flex justify-between p-2 border rounded">
-                <span>日志</span><span className="font-mono text-xs">ELK 8.x</span>
-              </div>
-              <div className="flex justify-between p-2 border rounded">
-                <span>监控</span><span className="font-mono text-xs">Prometheus + Grafana</span>
-              </div>
-              <div className="flex justify-between p-2 border rounded">
-                <span>链路追踪</span><span className="font-mono text-xs">Jaeger</span>
-              </div>
-              <div className="flex justify-between p-2 border rounded">
-                <span>告警</span><span className="font-mono text-xs">AlertManager</span>
-              </div>
+              {OBSERVABILITY.map((item) => (
+                <div key={item.label} className="flex justify-between p-2 border rounded">
+                  <span>{item.label}</span><span className="font-mono text-xs">{item.value}</span>
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>
       </div>
+
+      {/* Tech Stack Detail Dialog */}
+      <Dialog open={showDetailDialog} onOpenChange={setShowDetailDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Cpu className="size-5" />
+              {selectedStack?.layer} 层技术栈
+            </DialogTitle>
+            <DialogDescription>包含 {selectedStack?.items.length} 项技术选型</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            {selectedStack?.items.map((item) => (
+              <div key={item} className="flex items-center justify-between p-3 border rounded">
+                <span className="font-medium text-sm">{item}</span>
+                <Badge variant="outline">{selectedStack.layer}</Badge>
+              </div>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDetailDialog(false)}>关闭</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -1,11 +1,16 @@
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { StatCard } from "@/components/ui/stat";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
-import { mockUsers } from "@/lib/mock-data";
-import { Users, Shield, Server, Cpu, Database, Activity, Plus, MoreHorizontal, BarChart3, AlertTriangle, Building2, Settings2, BookText, FileText, Clock, Edit, Trash2, Search, Filter, KeyRound, Lock, Eye, Monitor, Package, Handshake, Megaphone, Settings, DollarSign, Palette, Wrench, TestTube, Home, Bot, Smartphone, RefreshCw, Dna, CheckCircle2, BookOpen, Cloud, Circle, Radio } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import { adminApi, type User, type Role, type Department, type AuditLog, type SystemConfig } from "@/lib/api";
+import { Users, Shield, Server, Cpu, Database, Activity, Plus, MoreHorizontal, BarChart3, AlertTriangle, Building2, Settings2, BookText, FileText, Clock, Edit, Trash2, Search, Filter, KeyRound, Lock, Eye, Monitor, Package, Handshake, Megaphone, Settings, DollarSign, Palette, Wrench, TestTube, Home, Bot, Smartphone, RefreshCw, Dna, CheckCircle2, BookOpen, Cloud, Circle, Radio, Loader2 } from "lucide-react";
 
 const roleLabels: Record<string, string> = {
   executive: "领导",
@@ -14,30 +19,6 @@ const roleLabels: Record<string, string> = {
   architect: "架构师",
   ops: "运维",
 };
-
-// 角色管理
-const ROLES = [
-  { id: 1, name: "超级管理员", code: "super_admin", userCount: 3, permissionCount: 248, desc: "拥有所有权限", builtin: true },
-  { id: 2, name: "业务管理员", code: "business_admin", userCount: 8, permissionCount: 156, desc: "应用、流程、数据管理", builtin: true },
-  { id: 3, name: "开发者", code: "developer", userCount: 24, permissionCount: 84, desc: "应用开发与部署", builtin: true },
-  { id: 4, name: "业务人员", code: "business_user", userCount: 286, permissionCount: 32, desc: "业务操作与查询", builtin: true },
-  { id: 5, name: "只读用户", code: "readonly", userCount: 142, permissionCount: 18, desc: "仅查看", builtin: true },
-  { id: 6, name: "销售经理", code: "sales_manager", userCount: 12, permissionCount: 64, desc: "CRM 业务主管", builtin: false },
-];
-
-// 部门
-const DEPARTMENTS = [
-  { id: 1, name: "技术中心", parent: "—", count: 86, leader: "陈志远", icon: Monitor },
-  { id: 2, name: "产品中心", parent: "—", count: 18, leader: "李娜", icon: Package },
-  { id: 3, name: "销售中心", parent: "—", count: 142, leader: "张伟", icon: Handshake },
-  { id: 4, name: "市场中心", parent: "—", count: 24, leader: "王强", icon: Megaphone },
-  { id: 5, name: "运营中心", parent: "—", count: 38, leader: "刘敏", icon: Settings },
-  { id: 6, name: "财务中心", parent: "—", count: 12, leader: "陈红", icon: DollarSign },
-  { id: 7, name: "人力资源中心", parent: "—", count: 8, leader: "李俊", icon: Users },
-  { id: 8, name: "前端开发组", parent: "技术中心", count: 18, leader: "杨俊", icon: Palette },
-  { id: 9, name: "后端开发组", parent: "技术中心", count: 36, leader: "张浩", icon: Wrench },
-  { id: 10, name: "测试组", parent: "技术中心", count: 12, leader: "刘华", icon: TestTube },
-];
 
 // 菜单配置
 const MENU_CONFIG = [
@@ -66,18 +47,219 @@ const DICTIONARIES = [
   { code: "country", name: "国家/地区", items: 240, category: "基础字典" },
 ];
 
-// 操作日志
-const OPERATION_LOGS = [
-  { time: "12:48:32", user: "张伟", ip: "10.0.1.5", module: "客户管理", action: "编辑客户 #C8392 等级", result: "成功" },
-  { time: "12:48:18", user: "李娜", ip: "10.0.1.8", module: "应用发布", action: "部署 CRM v2.3 → 测试", result: "成功" },
-  { time: "12:48:05", user: "王强", ip: "10.0.1.12", module: "数据建模", action: "删除冗余字段", result: "成功" },
-  { time: "12:47:55", user: "刘敏", ip: "10.0.2.5", module: "流程中心", action: "修改采购流程节点", result: "成功" },
-  { time: "12:47:42", user: "陈红", ip: "10.0.3.8", module: "权限管理", action: "新增角色：销售主管", result: "成功" },
-  { time: "12:47:30", user: "系统", ip: "127.0.0.1", module: "系统", action: "自动备份数据库", result: "成功" },
-  { time: "12:47:15", user: "未知", ip: "10.0.99.99", module: "登录", action: "失败: 密码错误", result: "失败" },
-];
+// ─── 部门图标映射 ──────────────────────────────────────────
+const deptIconMap: Record<string, typeof Monitor> = {
+  "技术中心": Monitor, "产品中心": Package, "销售中心": Handshake,
+  "市场中心": Megaphone, "运营中心": Settings, "财务中心": DollarSign,
+  "人力资源中心": Users, "前端开发组": Palette, "后端开发组": Wrench,
+  "测试组": TestTube,
+};
 
+// ─── 用户表单对话框 ────────────────────────────────────────
+function UserFormDialog({
+  open,
+  onOpenChange,
+  user,
+  roles,
+  departments,
+  onSubmit,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  user?: User | null;
+  roles: Role[];
+  departments: Department[];
+  onSubmit: (data: Partial<User>) => void;
+}) {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [role, setRole] = useState("");
+  const [department, setDepartment] = useState("");
+  const [status, setStatus] = useState("active");
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      if (user) {
+        setName(user.name);
+        setEmail(user.email);
+        setRole(user.role);
+        setDepartment(user.department || "");
+        setStatus(user.status);
+      } else {
+        setName("");
+        setEmail("");
+        setRole("");
+        setDepartment("");
+        setStatus("active");
+      }
+    }
+  }, [open, user]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
+    try {
+      await onSubmit({ name, email, role, department, status });
+      onOpenChange(false);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const isEdit = !!user;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{isEdit ? "编辑用户" : "新建用户"}</DialogTitle>
+          <DialogDescription>
+            {isEdit ? "修改用户基本信息" : "创建一个新的系统用户"}
+          </DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="user-name">姓名</Label>
+            <Input id="user-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="请输入姓名" required />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="user-email">邮箱</Label>
+            <Input id="user-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="请输入邮箱" required />
+          </div>
+          <div className="space-y-2">
+            <Label>角色</Label>
+            <Select value={role} onValueChange={setRole}>
+              <SelectTrigger>
+                <SelectValue placeholder="选择角色" />
+              </SelectTrigger>
+              <SelectContent>
+                {roles.map((r) => (
+                  <SelectItem key={r.code} value={r.code}>{r.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>部门</Label>
+            <Select value={department} onValueChange={setDepartment}>
+              <SelectTrigger>
+                <SelectValue placeholder="选择部门" />
+              </SelectTrigger>
+              <SelectContent>
+                {departments.map((d) => (
+                  <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>状态</Label>
+            <Select value={status} onValueChange={setStatus}>
+              <SelectTrigger>
+                <SelectValue placeholder="选择状态" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="active">活跃</SelectItem>
+                <SelectItem value="inactive">禁用</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>取消</Button>
+            <Button type="submit" disabled={submitting}>
+              {submitting && <Loader2 className="size-3 mr-1 animate-spin" />}
+              {isEdit ? "保存" : "创建"}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ─── 确认删除对话框 ────────────────────────────────────────
+function ConfirmDialog({
+  open,
+  onOpenChange,
+  title,
+  description,
+  onConfirm,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  title: string;
+  description: string;
+  onConfirm: () => void;
+}) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>{description}</DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>取消</Button>
+          <Button variant="destructive" onClick={() => { onConfirm(); onOpenChange(false); }}>确认删除</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ─── UserList ──────────────────────────────────────────────
 export function UserList() {
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editUser, setEditUser] = useState<User | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
+  const [roles, setRoles] = useState<Role[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
+
+  const fetchUsers = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await adminApi.listUsers();
+      setUsers(data);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "加载用户失败");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
+
+  // 预加载角色和部门列表供表单使用
+  useEffect(() => {
+    adminApi.listRoles().then(setRoles).catch(() => {});
+    adminApi.listDepartments().then(setDepartments).catch(() => {});
+  }, []);
+
+  const handleCreate = async (data: Partial<User>) => {
+    await adminApi.createUser(data);
+    await fetchUsers();
+  };
+
+  const handleUpdate = async (data: Partial<User>) => {
+    if (!editUser) return;
+    await adminApi.updateUser(editUser.id, data);
+    await fetchUsers();
+  };
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    await adminApi.deleteUser(deleteTarget.id);
+    setDeleteTarget(null);
+    await fetchUsers();
+  };
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0">
@@ -85,62 +267,121 @@ export function UserList() {
           <CardTitle className="text-base flex items-center gap-2">
             <Users className="size-4" /> 用户列表
           </CardTitle>
-          <CardDescription>系统所有用户（{mockUsers.length} 个）</CardDescription>
+          <CardDescription>系统所有用户（{users.length} 个）</CardDescription>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm">
             <Filter className="size-3 mr-1" />
             筛选
           </Button>
-          <Button size="sm">
+          <Button size="sm" onClick={() => { setEditUser(null); setDialogOpen(true); }}>
             <Plus className="size-3 mr-1" />
             新建用户
           </Button>
         </div>
       </CardHeader>
       <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>姓名</TableHead>
-              <TableHead>邮箱</TableHead>
-              <TableHead>角色</TableHead>
-              <TableHead>部门</TableHead>
-              <TableHead>状态</TableHead>
-              <TableHead>最后登录</TableHead>
-              <TableHead className="text-right">操作</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {mockUsers.map((u) => (
-              <TableRow key={u.id}>
-                <TableCell className="font-medium">{u.name}</TableCell>
-                <TableCell className="font-mono text-xs">{u.email}</TableCell>
-                <TableCell>
-                  <Badge variant="outline">{roleLabels[u.role]}</Badge>
-                </TableCell>
-                <TableCell>{u.department}</TableCell>
-                <TableCell>
-                  <Badge variant={u.status === "active" ? "default" : "secondary"}>
-                    {u.status === "active" ? "活跃" : "禁用"}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-xs">{u.lastLogin}</TableCell>
-                <TableCell className="text-right">
-                  <Button variant="ghost" size="icon" className="size-8">
-                    <Edit className="size-4" />
-                  </Button>
-                </TableCell>
+        {loading ? (
+          <div className="flex items-center justify-center py-10">
+            <Loader2 className="size-6 animate-spin text-muted-foreground" />
+            <span className="ml-2 text-sm text-muted-foreground">加载中...</span>
+          </div>
+        ) : error ? (
+          <div className="flex flex-col items-center justify-center py-10 gap-2">
+            <AlertTriangle className="size-6 text-destructive" />
+            <span className="text-sm text-destructive">{error}</span>
+            <Button variant="outline" size="sm" onClick={fetchUsers}>重试</Button>
+          </div>
+        ) : users.length === 0 ? (
+          <div className="flex items-center justify-center py-10 text-sm text-muted-foreground">
+            暂无用户数据
+          </div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>姓名</TableHead>
+                <TableHead>邮箱</TableHead>
+                <TableHead>角色</TableHead>
+                <TableHead>部门</TableHead>
+                <TableHead>状态</TableHead>
+                <TableHead>最后登录</TableHead>
+                <TableHead className="text-right">操作</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {users.map((u) => (
+                <TableRow key={u.id}>
+                  <TableCell className="font-medium">{u.name}</TableCell>
+                  <TableCell className="font-mono text-xs">{u.email}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline">{roleLabels[u.role] || u.role}</Badge>
+                  </TableCell>
+                  <TableCell>{u.department}</TableCell>
+                  <TableCell>
+                    <Badge variant={u.status === "active" ? "default" : "secondary"}>
+                      {u.status === "active" ? "活跃" : "禁用"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-xs">{u.last_login || "—"}</TableCell>
+                  <TableCell className="text-right">
+                    <Button variant="ghost" size="icon" className="size-8" onClick={() => { setEditUser(u); setDialogOpen(true); }}>
+                      <Edit className="size-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="size-8" onClick={() => setDeleteTarget(u)}>
+                      <Trash2 className="size-4" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
       </CardContent>
+
+      <UserFormDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        user={editUser}
+        roles={roles}
+        departments={departments}
+        onSubmit={editUser ? handleUpdate : handleCreate}
+      />
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}
+        title="确认删除用户"
+        description={`确定要删除用户「${deleteTarget?.name}」吗？此操作不可撤销。`}
+        onConfirm={handleDelete}
+      />
     </Card>
   );
 }
 
+// ─── RoleList ──────────────────────────────────────────────
 export function RoleList() {
+  const [roles, setRoles] = useState<Role[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await adminApi.listRoles();
+        if (!cancelled) setRoles(data);
+      } catch (e: unknown) {
+        if (!cancelled) setError(e instanceof Error ? e.message : "加载角色失败");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0">
@@ -148,7 +389,7 @@ export function RoleList() {
           <CardTitle className="text-base flex items-center gap-2">
             <Shield className="size-4" /> 角色管理
           </CardTitle>
-          <CardDescription>RBAC 角色（{ROLES.length} 个）</CardDescription>
+          <CardDescription>RBAC 角色（{roles.length} 个）</CardDescription>
         </div>
         <Button size="sm">
           <Plus className="size-3 mr-1" />
@@ -156,46 +397,83 @@ export function RoleList() {
         </Button>
       </CardHeader>
       <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>角色名</TableHead>
-              <TableHead>角色代码</TableHead>
-              <TableHead>用户数</TableHead>
-              <TableHead>权限数</TableHead>
-              <TableHead>描述</TableHead>
-              <TableHead>类型</TableHead>
-              <TableHead className="text-right">操作</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {ROLES.map((r) => (
-              <TableRow key={r.id}>
-                <TableCell className="font-medium">{r.name}</TableCell>
-                <TableCell className="font-mono text-xs">{r.code}</TableCell>
-                <TableCell>{r.userCount}</TableCell>
-                <TableCell>{r.permissionCount}</TableCell>
-                <TableCell className="text-xs text-muted-foreground">{r.desc}</TableCell>
-                <TableCell>
-                  <Badge variant={r.builtin ? "secondary" : "outline"}>
-                    {r.builtin ? "内置" : "自定义"}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-right">
-                  <Button variant="ghost" size="icon" className="size-8">
-                    <Edit className="size-4" />
-                  </Button>
-                </TableCell>
+        {loading ? (
+          <div className="flex items-center justify-center py-10">
+            <Loader2 className="size-6 animate-spin text-muted-foreground" />
+            <span className="ml-2 text-sm text-muted-foreground">加载中...</span>
+          </div>
+        ) : error ? (
+          <div className="flex flex-col items-center justify-center py-10 gap-2">
+            <AlertTriangle className="size-6 text-destructive" />
+            <span className="text-sm text-destructive">{error}</span>
+          </div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>角色名</TableHead>
+                <TableHead>角色代码</TableHead>
+                <TableHead>用户数</TableHead>
+                <TableHead>权限数</TableHead>
+                <TableHead>描述</TableHead>
+                <TableHead>类型</TableHead>
+                <TableHead className="text-right">操作</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {roles.map((r) => (
+                <TableRow key={r.id}>
+                  <TableCell className="font-medium">{r.name}</TableCell>
+                  <TableCell className="font-mono text-xs">{r.code}</TableCell>
+                  <TableCell>{r.userCount}</TableCell>
+                  <TableCell>{r.permissionCount}</TableCell>
+                  <TableCell className="text-xs text-muted-foreground">{r.desc}</TableCell>
+                  <TableCell>
+                    <Badge variant={r.builtin ? "secondary" : "outline"}>
+                      {r.builtin ? "内置" : "自定义"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Button variant="ghost" size="icon" className="size-8">
+                      <Edit className="size-4" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
       </CardContent>
     </Card>
   );
 }
 
+// ─── DepartmentList ────────────────────────────────────────
 export function DepartmentList() {
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [newDeptName, setNewDeptName] = useState("");
+  const [newDeptLeader, setNewDeptLeader] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await adminApi.listDepartments();
+        if (!cancelled) setDepartments(data);
+      } catch (e: unknown) {
+        if (!cancelled) setError(e instanceof Error ? e.message : "加载部门失败");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0">
@@ -203,49 +481,98 @@ export function DepartmentList() {
           <CardTitle className="text-base flex items-center gap-2">
             <Building2 className="size-4" /> 部门管理
           </CardTitle>
-          <CardDescription>组织架构（{DEPARTMENTS.length} 个）</CardDescription>
+          <CardDescription>组织架构（{departments.length} 个）</CardDescription>
         </div>
-        <Button size="sm">
+        <Button size="sm" onClick={() => setDialogOpen(true)}>
           <Plus className="size-3 mr-1" />
           新建部门
         </Button>
       </CardHeader>
       <CardContent className="p-0">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>部门名</TableHead>
-              <TableHead>上级部门</TableHead>
-              <TableHead>人数</TableHead>
-              <TableHead>负责人</TableHead>
-              <TableHead className="text-right">操作</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {DEPARTMENTS.map((d) => (
-              <TableRow key={d.id}>
-                <TableCell>
-                  <span className="mr-2"><d.icon className="size-4" /></span>
-                  <span className="font-medium">{d.name}</span>
-                </TableCell>
-                <TableCell className="text-xs text-muted-foreground">{d.parent}</TableCell>
-                <TableCell>{d.count}</TableCell>
-                <TableCell>{d.leader}</TableCell>
-                <TableCell className="text-right">
-                  <Button variant="ghost" size="icon" className="size-8">
-                    <Edit className="size-4" />
-                  </Button>
-                </TableCell>
+        {loading ? (
+          <div className="flex items-center justify-center py-10">
+            <Loader2 className="size-6 animate-spin text-muted-foreground" />
+            <span className="ml-2 text-sm text-muted-foreground">加载中...</span>
+          </div>
+        ) : error ? (
+          <div className="flex flex-col items-center justify-center py-10 gap-2">
+            <AlertTriangle className="size-6 text-destructive" />
+            <span className="text-sm text-destructive">{error}</span>
+          </div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>部门名</TableHead>
+                <TableHead>上级部门</TableHead>
+                <TableHead>人数</TableHead>
+                <TableHead>负责人</TableHead>
+                <TableHead className="text-right">操作</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {departments.map((d) => {
+                const Icon = deptIconMap[d.name] || Building2;
+                return (
+                  <TableRow key={d.id}>
+                    <TableCell>
+                      <span className="mr-2"><Icon className="size-4" /></span>
+                      <span className="font-medium">{d.name}</span>
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{d.parent || "—"}</TableCell>
+                    <TableCell>{d.count}</TableCell>
+                    <TableCell>{d.leader}</TableCell>
+                    <TableCell className="text-right">
+                      <Button variant="ghost" size="icon" className="size-8">
+                        <Edit className="size-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        )}
       </CardContent>
+
+      {/* 新建部门对话框 */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>新建部门</DialogTitle>
+            <DialogDescription>创建一个新的组织部门</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="dept-name">部门名称</Label>
+              <Input id="dept-name" value={newDeptName} onChange={(e) => setNewDeptName(e.target.value)} placeholder="请输入部门名称" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="dept-leader">负责人</Label>
+              <Input id="dept-leader" value={newDeptLeader} onChange={(e) => setNewDeptLeader(e.target.value)} placeholder="请输入负责人姓名" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>取消</Button>
+            <Button onClick={() => {
+              // TODO: 调用 API 创建部门
+              setDialogOpen(false);
+              setNewDeptName("");
+              setNewDeptLeader("");
+            }}>创建</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
 
+// ─── MenuConfig ────────────────────────────────────────────
 export function MenuConfig() {
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [newMenuName, setNewMenuName] = useState("");
+  const [newMenuPath, setNewMenuPath] = useState("");
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0">
@@ -255,7 +582,7 @@ export function MenuConfig() {
           </CardTitle>
           <CardDescription>平台菜单与权限点</CardDescription>
         </div>
-        <Button size="sm">
+        <Button size="sm" onClick={() => setDialogOpen(true)}>
           <Plus className="size-3 mr-1" />
           新建菜单
         </Button>
@@ -290,11 +617,44 @@ export function MenuConfig() {
           </TableBody>
         </Table>
       </CardContent>
+
+      {/* 新建菜单对话框 */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>新建菜单</DialogTitle>
+            <DialogDescription>添加一个新的平台菜单项</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="menu-name">菜单名称</Label>
+              <Input id="menu-name" value={newMenuName} onChange={(e) => setNewMenuName(e.target.value)} placeholder="请输入菜单名称" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="menu-path">路由路径</Label>
+              <Input id="menu-path" value={newMenuPath} onChange={(e) => setNewMenuPath(e.target.value)} placeholder="/example" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>取消</Button>
+            <Button onClick={() => {
+              setDialogOpen(false);
+              setNewMenuName("");
+              setNewMenuPath("");
+            }}>创建</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
 
+// ─── DictionaryList ────────────────────────────────────────
 export function DictionaryList() {
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [newDictName, setNewDictName] = useState("");
+  const [newDictCode, setNewDictCode] = useState("");
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0">
@@ -304,7 +664,7 @@ export function DictionaryList() {
           </CardTitle>
           <CardDescription>系统级业务字典（{DICTIONARIES.length} 个）</CardDescription>
         </div>
-        <Button size="sm">
+        <Button size="sm" onClick={() => setDialogOpen(true)}>
           <Plus className="size-3 mr-1" />
           新建字典
         </Button>
@@ -339,11 +699,64 @@ export function DictionaryList() {
           </TableBody>
         </Table>
       </CardContent>
+
+      {/* 新建字典对话框 */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>新建字典</DialogTitle>
+            <DialogDescription>添加一个新的数据字典</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="dict-name">字典名称</Label>
+              <Input id="dict-name" value={newDictName} onChange={(e) => setNewDictName(e.target.value)} placeholder="请输入字典名称" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="dict-code">字典编码</Label>
+              <Input id="dict-code" value={newDictCode} onChange={(e) => setNewDictCode(e.target.value)} placeholder="e.g. order_type" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>取消</Button>
+            <Button onClick={() => {
+              setDialogOpen(false);
+              setNewDictName("");
+              setNewDictCode("");
+            }}>创建</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
 
+// ─── OperationLog ──────────────────────────────────────────
+const LOG_PAGE_SIZE = 10;
+
 export function OperationLog() {
+  const [logs, setLogs] = useState<AuditLog[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(0);
+
+  const fetchLogs = useCallback(async (offset: number) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await adminApi.listLogs(LOG_PAGE_SIZE, offset);
+      setLogs(data);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "加载日志失败");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchLogs(page * LOG_PAGE_SIZE);
+  }, [page, fetchLogs]);
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0">
@@ -364,42 +777,149 @@ export function OperationLog() {
         </div>
       </CardHeader>
       <CardContent className="p-0">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>时间</TableHead>
-              <TableHead>操作人</TableHead>
-              <TableHead>IP</TableHead>
-              <TableHead>模块</TableHead>
-              <TableHead>操作</TableHead>
-              <TableHead>结果</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {OPERATION_LOGS.map((l, i) => (
-              <TableRow key={i}>
-                <TableCell className="font-mono text-xs">{l.time}</TableCell>
-                <TableCell className="font-medium">{l.user}</TableCell>
-                <TableCell className="font-mono text-xs">{l.ip}</TableCell>
-                <TableCell>{l.module}</TableCell>
-                <TableCell className="text-xs">{l.action}</TableCell>
-                <TableCell>
-                  <Badge variant={l.result === "成功" ? "secondary" : "destructive"} className={l.result === "成功" ? "text-green-600" : ""}>
-                    {l.result}
-                  </Badge>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+        {loading ? (
+          <div className="flex items-center justify-center py-10">
+            <Loader2 className="size-6 animate-spin text-muted-foreground" />
+            <span className="ml-2 text-sm text-muted-foreground">加载中...</span>
+          </div>
+        ) : error ? (
+          <div className="flex flex-col items-center justify-center py-10 gap-2">
+            <AlertTriangle className="size-6 text-destructive" />
+            <span className="text-sm text-destructive">{error}</span>
+          </div>
+        ) : (
+          <>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>时间</TableHead>
+                  <TableHead>操作人</TableHead>
+                  <TableHead>模块</TableHead>
+                  <TableHead>操作</TableHead>
+                  <TableHead>结果</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {logs.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center text-sm text-muted-foreground py-6">暂无日志数据</TableCell>
+                  </TableRow>
+                ) : (
+                  logs.map((l) => (
+                    <TableRow key={l.id}>
+                      <TableCell className="font-mono text-xs">{l.created_at}</TableCell>
+                      <TableCell className="font-medium">{l.user_name || "—"}</TableCell>
+                      <TableCell>{l.module || "—"}</TableCell>
+                      <TableCell className="text-xs">{l.action}</TableCell>
+                      <TableCell>
+                        <Badge variant={l.result === "成功" || l.result === "success" ? "secondary" : "destructive"} className={l.result === "成功" || l.result === "success" ? "text-green-600" : ""}>
+                          {l.result === "success" ? "成功" : l.result === "fail" ? "失败" : l.result}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+
+            {/* 分页控制 */}
+            <div className="flex items-center justify-between px-4 py-3 border-t">
+              <span className="text-xs text-muted-foreground">
+                第 {page + 1} 页
+              </span>
+              <div className="flex gap-1">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page === 0}
+                  onClick={() => setPage((p) => Math.max(0, p - 1))}
+                >
+                  上一页
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={logs.length < LOG_PAGE_SIZE}
+                  onClick={() => setPage((p) => p + 1)}
+                >
+                  下一页
+                </Button>
+              </div>
+            </div>
+          </>
+        )}
       </CardContent>
     </Card>
   );
 }
 
+// ─── SystemSettings ────────────────────────────────────────
 export function SystemSettings() {
+  const [config, setConfig] = useState<SystemConfig[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await adminApi.listConfig();
+        if (!cancelled) setConfig(data);
+      } catch (e: unknown) {
+        if (!cancelled) setError(e instanceof Error ? e.message : "加载配置失败");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  // 从 API config 构建 key-value 映射
+  const configMap = Object.fromEntries(config.map((c) => [c.key, c]));
+
+  const getConfigValue = (key: string, fallback: string) => {
+    return configMap[key]?.value || fallback;
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      // TODO: 实现 config 更新 API
+      await new Promise((r) => setTimeout(r, 500));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-10">
+        <Loader2 className="size-6 animate-spin text-muted-foreground" />
+        <span className="ml-2 text-sm text-muted-foreground">加载配置...</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-10 gap-2">
+        <AlertTriangle className="size-6 text-destructive" />
+        <span className="text-sm text-destructive">{error}</span>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
+      <div className="flex justify-end">
+        <Button size="sm" onClick={handleSave} disabled={saving}>
+          {saving && <Loader2 className="size-3 mr-1 animate-spin" />}
+          保存设置
+        </Button>
+      </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card>
           <CardHeader>
@@ -407,11 +927,11 @@ export function SystemSettings() {
           </CardHeader>
           <CardContent className="space-y-3">
             {[
-              { label: "平台名称", value: "MetaPlatform 企业版" },
-              { label: "版本", value: "v1.3.0" },
-              { label: "License", value: "Enterprise" },
-              { label: "部署模式", value: "Kubernetes 多集群" },
-              { label: "运行环境", value: "Production" },
+              { label: "平台名称", value: getConfigValue("platform_name", "MetaPlatform 企业版") },
+              { label: "版本", value: getConfigValue("version", "v1.3.0") },
+              { label: "License", value: getConfigValue("license", "Enterprise") },
+              { label: "部署模式", value: getConfigValue("deploy_mode", "Kubernetes 多集群") },
+              { label: "运行环境", value: getConfigValue("env", "Production") },
             ].map((s) => (
               <div key={s.label} className="flex justify-between text-sm">
                 <span className="text-muted-foreground">{s.label}</span>
@@ -427,11 +947,11 @@ export function SystemSettings() {
           </CardHeader>
           <CardContent className="space-y-3">
             {[
-              { label: "密码强度", value: "高（8 位 + 数字 + 字母）", icon: KeyRound },
-              { label: "登录失败锁定", value: "5 次 / 30 分钟", icon: Lock },
-              { label: "会话超时", value: "60 分钟", icon: Clock },
-              { label: "MFA 双因素", value: "开启", icon: Shield },
-              { label: "数据加密", value: "AES-256", icon: Lock },
+              { label: "密码强度", value: getConfigValue("password_policy", "高（8 位 + 数字 + 字母）"), icon: KeyRound },
+              { label: "登录失败锁定", value: getConfigValue("lockout_policy", "5 次 / 30 分钟"), icon: Lock },
+              { label: "会话超时", value: getConfigValue("session_timeout", "60 分钟"), icon: Clock },
+              { label: "MFA 双因素", value: getConfigValue("mfa_enabled", "开启"), icon: Shield },
+              { label: "数据加密", value: getConfigValue("encryption", "AES-256"), icon: Lock },
             ].map((s) => {
               const Icon = s.icon;
               return (
@@ -497,7 +1017,35 @@ export function SystemSettings() {
   );
 }
 
+// ─── AdminDashboard ────────────────────────────────────────
 export function AdminDashboard() {
+  const [userCount, setUserCount] = useState<number>(0);
+  const [roleCount, setRoleCount] = useState<number>(0);
+  const [deptCount, setDeptCount] = useState<number>(0);
+  const [statsLoading, setStatsLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setStatsLoading(true);
+      try {
+        const [users, roles, depts] = await Promise.all([
+          adminApi.listUsers().catch(() => []),
+          adminApi.listRoles().catch(() => []),
+          adminApi.listDepartments().catch(() => []),
+        ]);
+        if (!cancelled) {
+          setUserCount(users.length);
+          setRoleCount(roles.length);
+          setDeptCount(depts.length);
+        }
+      } finally {
+        if (!cancelled) setStatsLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
   return (
     <div className="space-y-4 p-4">
       <div className="flex items-center justify-between">
@@ -514,10 +1062,10 @@ export function AdminDashboard() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-        <StatCard label="用户总数" value={1284} icon={Users} />
-        <StatCard label="在线服务" value="32/32" icon={Circle} />
-        <StatCard label="今日 API 调用" value={486000} trend={12.4} icon={Radio} />
-        <StatCard label="本月账单" value="¥ 12,840" icon={DollarSign} />
+        <StatCard label="用户总数" value={statsLoading ? "..." : userCount} icon={Users} />
+        <StatCard label="角色数量" value={statsLoading ? "..." : roleCount} icon={Shield} />
+        <StatCard label="部门数量" value={statsLoading ? "..." : deptCount} icon={Building2} />
+        <StatCard label="系统配置项" value={statsLoading ? "..." : "已接入"} icon={Settings} />
       </div>
 
       <Tabs defaultValue="dashboard">

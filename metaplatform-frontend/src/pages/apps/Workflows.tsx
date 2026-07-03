@@ -1,8 +1,16 @@
+import { useState, useEffect, useCallback } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/ui/stat";
-import { Plus, GitBranch, FileCode, Boxes, Settings, ChevronRight, Circle, Pause, CircleDot, Shield, User, ScrollText, Scale, FileText, Download, Upload, Save, BarChart3, Clock, ArrowRightLeft, MoreHorizontal } from "lucide-react";
+import { processesApi, type ProcessDefinition } from "@/lib/api";
+import {
+  Plus, GitBranch, FileCode, Boxes, Settings, ChevronRight,
+  Circle, Pause, CircleDot, Shield, User, ScrollText, Scale,
+  FileText, Download, Upload, Save, BarChart3, Clock,
+  ArrowRightLeft, MoreHorizontal, Loader2, AlertCircle, Inbox,
+} from "lucide-react";
 
 const eventTypes = [
   { type: "开始事件", icon: Circle, desc: "6 种触发器" },
@@ -47,7 +55,41 @@ const connectingTypes = [
   { type: "数据关联", icon: BarChart3, desc: "数据流向" },
 ];
 
+const STATUS_LABELS: Record<string, string> = {
+  active: "运行中",
+  published: "已发布",
+  draft: "草稿",
+  inactive: "已停用",
+};
+
 export default function Workflows() {
+  const { appId } = useParams();
+  const navigate = useNavigate();
+  const [processes, setProcesses] = useState<ProcessDefinition[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchProcesses = useCallback(() => {
+    setLoading(true);
+    setError(null);
+
+    processesApi
+      .list(appId ? { app_id: appId } : undefined)
+      .then((data) => {
+        setProcesses(data ?? []);
+      })
+      .catch((err: Error) => {
+        setError(err.message || "加载流程列表失败");
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, [appId]);
+
+  useEffect(() => {
+    fetchProcesses();
+  }, [fetchProcesses]);
+
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
@@ -58,14 +100,89 @@ export default function Workflows() {
             <Button variant="outline" className="gap-2">
               <FileCode className="size-4" /> 导入 BPMN XML
             </Button>
-            <Button className="gap-2">
+            <Button className="gap-2" onClick={() => navigate("/process/designer")}>
               <Plus className="size-4" /> 新建流程
             </Button>
           </div>
         }
       />
 
-      {/* 流对象（Flow Objects） */}
+      {/* Real process definitions from API */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">流程定义（{processes.length}）</CardTitle>
+          <CardDescription>已部署的流程定义列表</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {/* Loading state */}
+          {loading && (
+            <div className="flex flex-col items-center justify-center py-12 gap-3">
+              <Loader2 className="size-6 animate-spin text-muted-foreground" />
+              <p className="text-sm text-muted-foreground">正在加载流程列表...</p>
+            </div>
+          )}
+
+          {/* Error state */}
+          {!loading && error && (
+            <div className="flex flex-col items-center justify-center py-12 gap-3">
+              <AlertCircle className="size-6 text-destructive" />
+              <p className="text-sm text-destructive">{error}</p>
+              <Button variant="outline" size="sm" onClick={fetchProcesses}>
+                重试
+              </Button>
+            </div>
+          )}
+
+          {/* Empty state */}
+          {!loading && !error && processes.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-12 gap-3">
+              <Inbox className="size-8 text-muted-foreground" />
+              <p className="text-sm text-muted-foreground">暂无流程定义</p>
+              <Button variant="outline" size="sm" onClick={() => navigate("/process/designer")}>
+                <Plus className="size-4 mr-1" /> 创建第一个流程
+              </Button>
+            </div>
+          )}
+
+          {/* Process list */}
+          {!loading && !error && processes.length > 0 && (
+            <div className="space-y-2">
+              {processes.map((proc) => (
+                <div
+                  key={proc.id}
+                  className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
+                  onClick={() => navigate(`/process/designer?definition=${proc.id}`)}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center justify-center size-10 rounded-lg bg-primary/10">
+                      <GitBranch className="size-5 text-primary" />
+                    </div>
+                    <div>
+                      <div className="font-medium text-sm">{proc.name}</div>
+                      <div className="text-xs text-muted-foreground mt-0.5">
+                        {proc.type} · v{proc.version}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Badge
+                      variant={
+                        proc.status === "active" || proc.status === "published"
+                          ? "default"
+                          : "secondary"
+                      }
+                    >
+                      {STATUS_LABELS[proc.status] ?? proc.status}
+                    </Badge>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* BPMN Elements Showcase - kept as reference */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base">流对象（Flow Objects）</CardTitle>

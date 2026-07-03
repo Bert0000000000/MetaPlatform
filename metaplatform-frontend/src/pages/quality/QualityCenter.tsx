@@ -1,9 +1,14 @@
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { StatCard } from "@/components/ui/stat";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { mockTestCases } from "@/lib/mock-data";
 import { TestTube, Bot, Play, CheckCircle2, XCircle, Loader2, Bug, FileText, Plus, Gauge, Sparkles, GitBranch, AlertCircle, Zap, FlaskConical, BarChart3 } from "lucide-react";
 
@@ -48,19 +53,46 @@ const AI_GENERATED = [
 ];
 
 export function TestCases() {
+  const [cases, setCases] = useState(mockTestCases);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [form, setForm] = useState({ name: "", module: "", type: "单元", priority: "P1" });
+
+  function handleAddCase() {
+    if (!form.name.trim()) return;
+    setCases((prev) => [...prev, {
+      id: `t-${Date.now()}`,
+      name: form.name,
+      module: form.module || "未分类",
+      type: form.type as "单元" | "集成" | "UI" | "流程" | "性能",
+      status: "draft",
+      priority: form.priority as "P0" | "P1" | "P2",
+      lastRun: "未运行",
+      duration: "-",
+    }]);
+    setDialogOpen(false);
+    setForm({ name: "", module: "", type: "单元", priority: "P1" });
+  }
+
+  function handleRun(id: string) {
+    setCases((prev) => prev.map((c) => c.id === id ? { ...c, status: "running" as const, lastRun: "运行中..." } : c));
+    setTimeout(() => {
+      setCases((prev) => prev.map((c) => c.id === id ? { ...c, status: (Math.random() > 0.3 ? "passed" : "failed") as "passed" | "failed", lastRun: "刚刚", duration: `${(Math.random() * 10 + 1).toFixed(1)}s` } : c));
+    }, 1500);
+  }
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0">
         <div>
           <CardTitle className="text-base">测试用例</CardTitle>
-          <CardDescription>所有测试用例（按模块分组）</CardDescription>
+          <CardDescription>所有测试用例（{cases.length} 个）</CardDescription>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm">
             <Sparkles className="size-3 mr-1" />
             AI 生成
           </Button>
-          <Button size="sm">
+          <Button size="sm" onClick={() => setDialogOpen(true)}>
             <Plus className="size-3 mr-1" />
             新建用例
           </Button>
@@ -81,7 +113,7 @@ export function TestCases() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {mockTestCases.map((t) => {
+            {cases.map((t) => {
               const s = statusConfig[t.status];
               const p = priorityConfig[t.priority];
               const StatusIcon = s.icon;
@@ -104,7 +136,7 @@ export function TestCases() {
                   <TableCell>{t.duration}</TableCell>
                   <TableCell className="text-xs">{t.lastRun}</TableCell>
                   <TableCell className="text-right">
-                    <Button variant="ghost" size="icon" className="size-8">
+                    <Button variant="ghost" size="icon" className="size-8" onClick={() => handleRun(t.id)} disabled={t.status === "running"}>
                       <Play className="size-4" />
                     </Button>
                   </TableCell>
@@ -114,11 +146,78 @@ export function TestCases() {
           </TableBody>
         </Table>
       </CardContent>
+
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>新建测试用例</DialogTitle>
+            <DialogDescription>创建一个新的测试用例</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>用例名</Label>
+              <Input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} placeholder="如：客户编号唯一性校验" />
+            </div>
+            <div className="space-y-2">
+              <Label>模块</Label>
+              <Input value={form.module} onChange={(e) => setForm((f) => ({ ...f, module: e.target.value }))} placeholder="如：本体引擎" />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>类型</Label>
+                <Select value={form.type} onValueChange={(v) => setForm((f) => ({ ...f, type: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {["单元", "集成", "UI", "流程", "性能"].map((t) => (
+                      <SelectItem key={t} value={t}>{t}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>优先级</Label>
+                <Select value={form.priority} onValueChange={(v) => setForm((f) => ({ ...f, priority: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="P0">P0 - 紧急</SelectItem>
+                    <SelectItem value="P1">P1 - 高</SelectItem>
+                    <SelectItem value="P2">P2 - 中</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>取消</Button>
+            <Button onClick={handleAddCase}>创建</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
 
 export function BugTracker() {
+  const [bugs, setBugs] = useState(BUGS);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [form, setForm] = useState({ title: "", module: "", severity: "P1", assignee: "" });
+  const p0Count = bugs.filter((b) => b.severity === "P0").length;
+
+  function handleAddBug() {
+    if (!form.title.trim()) return;
+    setBugs((prev) => [{
+      id: `BUG-${1285 + prev.length}`,
+      title: form.title,
+      module: form.module || "未分类",
+      severity: form.severity,
+      status: "open",
+      assignee: form.assignee || "待分配",
+      createdAt: "刚刚",
+    }, ...prev]);
+    setDialogOpen(false);
+    setForm({ title: "", module: "", severity: "P1", assignee: "" });
+  }
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0">
@@ -126,9 +225,9 @@ export function BugTracker() {
           <CardTitle className="text-base flex items-center gap-2">
             <Bug className="size-4" /> 缺陷跟踪
           </CardTitle>
-          <CardDescription>{BUGS.length} 个缺陷，P0 优先级 2 个</CardDescription>
+          <CardDescription>{bugs.length} 个缺陷，P0 优先级 {p0Count} 个</CardDescription>
         </div>
-        <Button size="sm">
+        <Button size="sm" onClick={() => setDialogOpen(true)}>
           <Plus className="size-3 mr-1" />
           上报缺陷
         </Button>
@@ -147,7 +246,7 @@ export function BugTracker() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {BUGS.map((b) => (
+            {bugs.map((b) => (
               <TableRow key={b.id}>
                 <TableCell className="font-mono text-xs">{b.id}</TableCell>
                 <TableCell className="font-medium">{b.title}</TableCell>
@@ -168,6 +267,46 @@ export function BugTracker() {
           </TableBody>
         </Table>
       </CardContent>
+
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>上报缺陷</DialogTitle>
+            <DialogDescription>提交新的缺陷报告</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>标题</Label>
+              <Input value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} placeholder="简要描述问题" />
+            </div>
+            <div className="space-y-2">
+              <Label>模块</Label>
+              <Input value={form.module} onChange={(e) => setForm((f) => ({ ...f, module: e.target.value }))} placeholder="如：客户管理" />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>级别</Label>
+                <Select value={form.severity} onValueChange={(v) => setForm((f) => ({ ...f, severity: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="P0">P0 - 紧急</SelectItem>
+                    <SelectItem value="P1">P1 - 高</SelectItem>
+                    <SelectItem value="P2">P2 - 中</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>负责人</Label>
+                <Input value={form.assignee} onChange={(e) => setForm((f) => ({ ...f, assignee: e.target.value }))} placeholder="负责人姓名" />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>取消</Button>
+            <Button onClick={handleAddBug}>提交</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
@@ -244,6 +383,11 @@ export function AIGenerateCases() {
 }
 
 export function QualityDashboard() {
+  const caseCount = mockTestCases.length;
+  const passedCount = mockTestCases.filter((t) => t.status === "passed").length;
+  const failedCount = mockTestCases.filter((t) => t.status === "failed").length;
+  const passRate = caseCount > 0 ? ((passedCount / caseCount) * 100).toFixed(1) : "0";
+
   return (
     <div className="space-y-4 p-4">
       <div className="flex items-center justify-between">
@@ -263,10 +407,10 @@ export function QualityDashboard() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-        <StatCard label="用例总数" value={148} icon={FlaskConical} />
-        <StatCard label="通过率" value="92.5%" trend={2.1} icon={CheckCircle2} />
-        <StatCard label="失败用例" value={8} icon={XCircle} />
-        <StatCard label="覆盖率" value="78.3%" trend={5.6} icon={BarChart3} />
+        <StatCard label="用例总数" value={caseCount} icon={FlaskConical} />
+        <StatCard label="通过率" value={`${passRate}%`} trend={2.1} icon={CheckCircle2} />
+        <StatCard label="失败用例" value={failedCount} icon={XCircle} />
+        <StatCard label="缺陷数" value={BUGS.length} icon={BarChart3} />
       </div>
 
       <Tabs defaultValue="dashboard">

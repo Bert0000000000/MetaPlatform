@@ -47,7 +47,7 @@ import { QualityDashboard, TestCases, BugTracker, PerfMonitor, AIGenerateCases }
 import { KnowledgeDashboard, DocumentList, Categories, KnowledgeGraph, SmartQA, VersionHistory } from "@/pages/knowledge/Knowledge";
 
 // 云市场
-import { MarketDashboard, OntologyTemplates, AgentMarket, MySubscriptions, DeveloperRank } from "@/pages/market/Market";
+import { MarketDashboard, OntologyTemplatesPage, AgentMarketPage, MySubscriptionsPage, DeveloperRankPage } from "@/pages/market/Market";
 
 // 数字员工
 import { AgentList, AgentCollaboration, AgentSkills, AgentMonitor, AgentCenter } from "@/pages/agents/AgentCenter";
@@ -170,10 +170,10 @@ export default function App() {
 
               {/* 10. 云市场 */}
               <Route path="/market" element={<MarketDashboard />} />
-              <Route path="/market/ontology-templates" element={<OntologyTemplates />} />
-              <Route path="/market/agents" element={<AgentMarket />} />
-              <Route path="/market/subscriptions" element={<MySubscriptions />} />
-              <Route path="/market/rank" element={<DeveloperRank />} />
+              <Route path="/market/ontology-templates" element={<OntologyTemplatesPage />} />
+              <Route path="/market/agents" element={<AgentMarketPage />} />
+              <Route path="/market/subscriptions" element={<MySubscriptionsPage />} />
+              <Route path="/market/rank" element={<DeveloperRankPage />} />
               <Route path="/market/*" element={<MarketDashboard />} />
 
               {/* 11. 数字员工 */}

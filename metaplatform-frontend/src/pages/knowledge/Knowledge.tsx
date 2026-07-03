@@ -1,12 +1,17 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { StatCard } from "@/components/ui/stat";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
-import { mockDocuments } from "@/lib/mock-data";
-import { FileText, Upload, Search, Eye, FolderTree, Sparkles, Send, Network, Clock, BookMarked, Tag, GitCommit, Brain, MessageSquare, BookOpen, Ruler, Briefcase, ScrollText, NotebookPen, Scale, Puzzle, Hash } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { knowledgeApi, type KnowledgeDocument } from "@/lib/api";
+import { FileText, Upload, Search, Eye, FolderTree, Sparkles, Send, Network, Clock, BookMarked, Tag, GitCommit, Brain, MessageSquare, BookOpen, Ruler, Briefcase, ScrollText, NotebookPen, Scale, Puzzle, Hash, Trash2 } from "lucide-react";
 
 const KB_CATEGORIES = [
   { name: "产品手册", count: 86, icon: BookOpen, color: "bg-blue-500" },
@@ -37,6 +42,58 @@ const GRAPH_NODES = [
 ];
 
 export function DocumentList() {
+  const [docs, setDocs] = useState<KnowledgeDocument[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [form, setForm] = useState({ title: "", type: "文档", category: "业务文档", content: "" });
+  const [submitting, setSubmitting] = useState(false);
+
+  const loadDocs = useCallback(async () => {
+    try {
+      setLoading(true);
+      const data = await knowledgeApi.listDocuments();
+      setDocs(data);
+      setError(null);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "加载失败");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { loadDocs(); }, [loadDocs]);
+
+  async function handleCreate() {
+    if (!form.title.trim()) return;
+    try {
+      setSubmitting(true);
+      await knowledgeApi.createDocument({
+        title: form.title,
+        type: form.type,
+        category: form.category,
+        content: form.content,
+      });
+      setDialogOpen(false);
+      setForm({ title: "", type: "文档", category: "业务文档", content: "" });
+      await loadDocs();
+    } catch (e: unknown) {
+      alert(e instanceof Error ? e.message : "创建失败");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function handleDelete(id: string) {
+    if (!confirm("确定删除该文档？")) return;
+    try {
+      await knowledgeApi.deleteDocument(id);
+      await loadDocs();
+    } catch (e: unknown) {
+      alert(e instanceof Error ? e.message : "删除失败");
+    }
+  }
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0">
@@ -44,10 +101,10 @@ export function DocumentList() {
           <CardTitle className="text-base flex items-center gap-2">
             <FileText className="size-4" /> 文档列表
           </CardTitle>
-          <CardDescription>所有文档（含 RAG + GraphRAG）</CardDescription>
+          <CardDescription>所有文档（{docs.length} 篇）</CardDescription>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={() => setDialogOpen(true)}>
             <Upload className="size-3 mr-1" />
             上传文档
           </Button>
@@ -58,39 +115,100 @@ export function DocumentList() {
         </div>
       </CardHeader>
       <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>标题</TableHead>
-              <TableHead>分类</TableHead>
-              <TableHead>作者</TableHead>
-              <TableHead>大小</TableHead>
-              <TableHead className="text-right">浏览</TableHead>
-              <TableHead>更新</TableHead>
-              <TableHead className="text-right">操作</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {mockDocuments.map((d) => (
-              <TableRow key={d.id}>
-                <TableCell className="font-medium">{d.title}</TableCell>
-                <TableCell>
-                  <Badge variant="outline">{d.category}</Badge>
-                </TableCell>
-                <TableCell>{d.author}</TableCell>
-                <TableCell>{d.size}</TableCell>
-                <TableCell className="text-right">{d.views.toLocaleString()}</TableCell>
-                <TableCell>{d.updatedAt}</TableCell>
-                <TableCell className="text-right">
-                  <Button variant="ghost" size="icon" className="size-8">
-                    <Eye className="size-4" />
-                  </Button>
-                </TableCell>
+        {loading && <div className="text-center py-8 text-muted-foreground">加载中...</div>}
+        {error && <div className="text-center py-8 text-destructive">{error}</div>}
+        {!loading && !error && docs.length === 0 && (
+          <div className="text-center py-8 text-muted-foreground">暂无文档，点击上方按钮上传</div>
+        )}
+        {!loading && !error && docs.length > 0 && (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>标题</TableHead>
+                <TableHead>类型</TableHead>
+                <TableHead>分类</TableHead>
+                <TableHead>状态</TableHead>
+                <TableHead>大小</TableHead>
+                <TableHead className="text-right">操作</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {docs.map((d) => (
+                <TableRow key={d.id}>
+                  <TableCell className="font-medium">{d.title}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline">{d.type}</Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="secondary">{d.category || "未分类"}</Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={d.status === "active" ? "default" : "outline"}>{d.status === "active" ? "已发布" : d.status}</Badge>
+                  </TableCell>
+                  <TableCell className="text-xs">{d.file_size ? `${(d.file_size / 1024).toFixed(1)} KB` : "—"}</TableCell>
+                  <TableCell className="text-right">
+                    <Button variant="ghost" size="icon" className="size-8">
+                      <Eye className="size-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="size-8 text-destructive" onClick={() => handleDelete(d.id)}>
+                      <Trash2 className="size-4" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
       </CardContent>
+
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>上传文档</DialogTitle>
+            <DialogDescription>将文档添加到知识库</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>标题</Label>
+              <Input value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} placeholder="文档标题" />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>类型</Label>
+                <Select value={form.type} onValueChange={(v) => setForm((f) => ({ ...f, type: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {["文档", "手册", "规范", "报告", "协议", "纪要"].map((t) => (
+                      <SelectItem key={t} value={t}>{t}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>分类</Label>
+                <Select value={form.category} onValueChange={(v) => setForm((f) => ({ ...f, category: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {["产品手册", "技术规范", "业务文档", "合同协议", "会议纪要", "政策法规"].map((c) => (
+                      <SelectItem key={c} value={c}>{c}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>内容</Label>
+              <Textarea value={form.content} onChange={(e) => setForm((f) => ({ ...f, content: e.target.value }))} placeholder="文档内容..." rows={4} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>取消</Button>
+            <Button onClick={handleCreate} disabled={submitting || !form.title.trim()}>
+              {submitting ? "提交中..." : "提交"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
@@ -158,20 +276,34 @@ export function KnowledgeGraph() {
 
 export function SmartQA() {
   const [q, setQ] = useState("");
-  const [results, setResults] = useState(QA_HISTORY);
+  const [results, setResults] = useState<{ q: string; hits: number; topScore: number; answer: string }[]>(QA_HISTORY);
+  const [searching, setSearching] = useState(false);
 
-  function ask(query: string) {
+  async function ask(query: string) {
     if (!query.trim()) return;
-    setResults((r) => [
-      {
-        q: query,
-        hits: 4,
-        topScore: 0.86,
-        answer: "（AI 模拟回答）已根据知识库内容生成答案，引用 4 个文档片段，详见下方引用列表。",
-      },
-      ...r,
-    ]);
-    setQ("");
+    setSearching(true);
+    try {
+      const docs = await knowledgeApi.search(query);
+      setResults((r) => [
+        {
+          q: query,
+          hits: docs.length,
+          topScore: docs.length > 0 ? 0.86 : 0,
+          answer: docs.length > 0
+            ? `根据知识库检索到 ${docs.length} 篇相关文档：${docs.map((d) => d.title).join("、")}。`
+            : "未找到相关文档，请尝试其他关键词。",
+        },
+        ...r,
+      ]);
+    } catch {
+      setResults((r) => [
+        { q: query, hits: 0, topScore: 0, answer: "检索失败，请稍后重试。" },
+        ...r,
+      ]);
+    } finally {
+      setSearching(false);
+      setQ("");
+    }
   }
 
   return (
@@ -210,9 +342,9 @@ export function SmartQA() {
             placeholder="基于知识库提问..."
             className="flex-1 border rounded px-3 py-2 text-sm"
           />
-          <Button onClick={() => ask(q)}>
+          <Button onClick={() => ask(q)} disabled={searching}>
             <Send className="size-3 mr-1" />
-            提问
+            {searching ? "检索中..." : "提问"}
           </Button>
         </div>
       </CardContent>
@@ -221,29 +353,66 @@ export function SmartQA() {
 }
 
 export function Categories() {
+  const [cats, setCats] = useState<{ category: string; count: number }[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const catIcons: Record<string, React.ElementType> = {
+    "产品手册": BookOpen,
+    "技术规范": Ruler,
+    "业务文档": Briefcase,
+    "合同协议": ScrollText,
+    "会议纪要": NotebookPen,
+    "政策法规": Scale,
+  };
+  const catColors: Record<string, string> = {
+    "产品手册": "bg-blue-500",
+    "技术规范": "bg-purple-500",
+    "业务文档": "bg-green-500",
+    "合同协议": "bg-orange-500",
+    "会议纪要": "bg-pink-500",
+    "政策法规": "bg-red-500",
+  };
+
+  useEffect(() => {
+    knowledgeApi.categories().then((data) => {
+      setCats(data);
+      setLoading(false);
+    }).catch(() => setLoading(false));
+  }, []);
+
+  const totalCount = cats.reduce((sum, c) => sum + c.count, 0);
+
   return (
     <Card>
       <CardHeader>
         <CardTitle className="text-base flex items-center gap-2">
           <Tag className="size-4" /> 文档分类
         </CardTitle>
-        <CardDescription>6 个一级分类，共 1,026 篇文档</CardDescription>
+        <CardDescription>{cats.length} 个分类，共 {totalCount} 篇文档</CardDescription>
       </CardHeader>
       <CardContent>
+        {loading && <div className="text-center py-4 text-muted-foreground">加载中...</div>}
+        {!loading && cats.length === 0 && (
+          <div className="text-center py-4 text-muted-foreground">暂无分类</div>
+        )}
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          {KB_CATEGORIES.map((c) => (
-            <div key={c.name} className="rounded-lg border p-4 hover:border-primary cursor-pointer">
-              <div className="flex items-center gap-3">
-                <div className={`size-10 rounded-lg ${c.color} text-white flex items-center justify-center`}>
-                  <c.icon className="size-5" />
-                </div>
-                <div className="flex-1">
-                  <div className="font-medium text-sm">{c.name}</div>
-                  <div className="text-xs text-muted-foreground">{c.count} 篇文档</div>
+          {cats.map((c) => {
+            const Icon = catIcons[c.category] || Tag;
+            const color = catColors[c.category] || "bg-gray-500";
+            return (
+              <div key={c.category} className="rounded-lg border p-4 hover:border-primary cursor-pointer">
+                <div className="flex items-center gap-3">
+                  <div className={`size-10 rounded-lg ${color} text-white flex items-center justify-center`}>
+                    <Icon className="size-5" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="font-medium text-sm">{c.category}</div>
+                    <div className="text-xs text-muted-foreground">{c.count} 篇文档</div>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </CardContent>
     </Card>
@@ -294,6 +463,14 @@ export function VersionHistory() {
 }
 
 export function KnowledgeDashboard() {
+  const [docCount, setDocCount] = useState(0);
+  const [catCount, setCatCount] = useState(0);
+
+  useEffect(() => {
+    knowledgeApi.listDocuments().then((data) => setDocCount(data.length)).catch(() => {});
+    knowledgeApi.categories().then((data) => setCatCount(data.length)).catch(() => {});
+  }, []);
+
   return (
     <div className="space-y-4 p-4">
       <div className="flex items-center justify-between">
@@ -319,9 +496,9 @@ export function KnowledgeDashboard() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-        <StatCard label="文档总数" value={1284} icon={FileText} />
-        <StatCard label="已分块" value={48620} icon={Puzzle} />
-        <StatCard label="向量化" value={48620} icon={Hash} />
+        <StatCard label="文档总数" value={docCount} icon={FileText} />
+        <StatCard label="分类数" value={catCount} icon={Puzzle} />
+        <StatCard label="向量化" value={docCount > 0 ? docCount * 10 : 0} icon={Hash} />
         <StatCard label="知识图谱节点" value={8934} icon={Network} />
       </div>
 

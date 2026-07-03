@@ -1,12 +1,17 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { StatCard } from "@/components/ui/stat";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
-import { mockDataSources, mockMetrics, type DataSource } from "@/lib/mock-data";
-import { Database, Plus, Sparkles, MessageSquare, Activity, AlertTriangle, Terminal, BarChart3, GitMerge, ShieldCheck, Clock, Send, FileBarChart, Leaf, Zap, Rocket, Mail, Globe, FileSpreadsheet, Users, Package, Megaphone, HardDrive, RefreshCw, Circle, Handshake } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { dataApi, type DataSource, type DataMetric } from "@/lib/api";
+import { Database, Plus, Sparkles, MessageSquare, Activity, AlertTriangle, Terminal, BarChart3, GitMerge, ShieldCheck, Clock, Send, FileBarChart, Leaf, Zap, Rocket, Mail, Globe, FileSpreadsheet, Users, Package, Megaphone, HardDrive, RefreshCw, Circle, Handshake, Trash2, Plug } from "lucide-react";
 
 const statusMap: Record<DataSource["status"], { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
   online: { label: "在线", variant: "default" },
@@ -57,6 +62,71 @@ const REAL_TIME = [
 ];
 
 export function DataSourceList() {
+  const [sources, setSources] = useState<DataSource[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [form, setForm] = useState({ name: "", type: "MySQL", host: "", port: "3306", database_name: "", description: "" });
+  const [submitting, setSubmitting] = useState(false);
+  const [testResult, setTestResult] = useState<Record<string, string>>({});
+
+  const loadSources = useCallback(async () => {
+    try {
+      setLoading(true);
+      const data = await dataApi.listSources();
+      setSources(data);
+      setError(null);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "加载失败");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { loadSources(); }, [loadSources]);
+
+  async function handleCreate() {
+    if (!form.name.trim()) return;
+    try {
+      setSubmitting(true);
+      await dataApi.createSource({
+        name: form.name,
+        type: form.type,
+        host: form.host,
+        port: parseInt(form.port) || 3306,
+        database_name: form.database_name,
+        description: form.description,
+      });
+      setDialogOpen(false);
+      setForm({ name: "", type: "MySQL", host: "", port: "3306", database_name: "", description: "" });
+      await loadSources();
+    } catch (e: unknown) {
+      alert(e instanceof Error ? e.message : "创建失败");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function handleDelete(id: string) {
+    if (!confirm("确定删除该数据源？")) return;
+    try {
+      await dataApi.deleteSource(id);
+      await loadSources();
+    } catch (e: unknown) {
+      alert(e instanceof Error ? e.message : "删除失败");
+    }
+  }
+
+  async function handleTest(id: string) {
+    try {
+      const result = await dataApi.testConnection(id);
+      setTestResult((prev) => ({ ...prev, [id]: result.message || result.status }));
+      setTimeout(() => setTestResult((prev) => { const n = { ...prev }; delete n[id]; return n; }), 3000);
+    } catch (e: unknown) {
+      setTestResult((prev) => ({ ...prev, [id]: e instanceof Error ? e.message : "测试失败" }));
+    }
+  }
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0">
@@ -64,48 +134,113 @@ export function DataSourceList() {
           <CardTitle className="text-base flex items-center gap-2">
             <Database className="size-4" /> 数据源列表
           </CardTitle>
-          <CardDescription>连接外部数据源（13 类）</CardDescription>
+          <CardDescription>连接外部数据源（{sources.length} 个）</CardDescription>
         </div>
-        <Button size="sm">
+        <Button size="sm" onClick={() => setDialogOpen(true)}>
           <Plus className="size-3 mr-1" />
           新增数据源
         </Button>
       </CardHeader>
       <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>名称</TableHead>
-              <TableHead>类型</TableHead>
-              <TableHead>主机</TableHead>
-              <TableHead className="text-right">记录数</TableHead>
-              <TableHead>最后同步</TableHead>
-              <TableHead>状态</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {mockDataSources.map((ds) => (
-              <TableRow key={ds.id}>
-                <TableCell className="font-medium">{ds.name}</TableCell>
-                <TableCell>
-                  {(() => { const Icon = sourceTypeIcons[ds.type]; return Icon ? <Icon className="size-4 mr-1 inline" /> : null; })()}
-                  {ds.type}
-                </TableCell>
-                <TableCell className="font-mono text-xs">{ds.host}</TableCell>
-                <TableCell className="text-right">
-                  {ds.records > 0 ? ds.records.toLocaleString() : "—"}
-                </TableCell>
-                <TableCell className="text-xs">{ds.lastSync}</TableCell>
-                <TableCell>
-                  <Badge variant={statusMap[ds.status].variant}>
-                    {statusMap[ds.status].label}
-                  </Badge>
-                </TableCell>
+        {loading && <div className="text-center py-8 text-muted-foreground">加载中...</div>}
+        {error && <div className="text-center py-8 text-destructive">{error}</div>}
+        {!loading && !error && sources.length === 0 && (
+          <div className="text-center py-8 text-muted-foreground">暂无数据源，点击上方按钮新增</div>
+        )}
+        {!loading && !error && sources.length > 0 && (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>名称</TableHead>
+                <TableHead>类型</TableHead>
+                <TableHead>主机</TableHead>
+                <TableHead>数据库</TableHead>
+                <TableHead>状态</TableHead>
+                <TableHead className="text-right">操作</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {sources.map((ds) => (
+                <TableRow key={ds.id}>
+                  <TableCell className="font-medium">{ds.name}</TableCell>
+                  <TableCell>
+                    {(() => { const Icon = sourceTypeIcons[ds.type]; return Icon ? <Icon className="size-4 mr-1 inline" /> : null; })()}
+                    {ds.type}
+                  </TableCell>
+                  <TableCell className="font-mono text-xs">{ds.host}{ds.port ? `:${ds.port}` : ""}</TableCell>
+                  <TableCell className="text-xs">{ds.database_name || "—"}</TableCell>
+                  <TableCell>
+                    <Badge variant={statusMap[ds.status]?.variant || "outline"}>
+                      {statusMap[ds.status]?.label || ds.status}
+                    </Badge>
+                    {testResult[ds.id] && (
+                      <span className="ml-2 text-xs text-muted-foreground">{testResult[ds.id]}</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Button variant="ghost" size="icon" className="size-8" onClick={() => handleTest(ds.id)} title="测试连接">
+                      <Plug className="size-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="size-8 text-destructive" onClick={() => handleDelete(ds.id)} title="删除">
+                      <Trash2 className="size-4" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
       </CardContent>
+
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>新增数据源</DialogTitle>
+            <DialogDescription>配置新的数据库连接</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>名称</Label>
+              <Input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} placeholder="如：订单库 MySQL" />
+            </div>
+            <div className="space-y-2">
+              <Label>类型</Label>
+              <Select value={form.type} onValueChange={(v) => setForm((f) => ({ ...f, type: v }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {["MySQL", "PostgreSQL", "Oracle", "MongoDB", "ClickHouse", "Doris", "Kafka", "API", "CSV"].map((t) => (
+                    <SelectItem key={t} value={t}>{t}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>主机</Label>
+                <Input value={form.host} onChange={(e) => setForm((f) => ({ ...f, host: e.target.value }))} placeholder="localhost" />
+              </div>
+              <div className="space-y-2">
+                <Label>端口</Label>
+                <Input value={form.port} onChange={(e) => setForm((f) => ({ ...f, port: e.target.value }))} placeholder="3306" />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>数据库名</Label>
+              <Input value={form.database_name} onChange={(e) => setForm((f) => ({ ...f, database_name: e.target.value }))} placeholder="mydb" />
+            </div>
+            <div className="space-y-2">
+              <Label>描述</Label>
+              <Textarea value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} placeholder="数据源说明" rows={2} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>取消</Button>
+            <Button onClick={handleCreate} disabled={submitting || !form.name.trim()}>
+              {submitting ? "创建中..." : "创建"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
@@ -194,10 +329,21 @@ export function AskData() {
 }
 
 export function MetricCenter() {
+  const [metrics, setMetrics] = useState<DataMetric[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    dataApi.listMetrics().then((data) => {
+      setMetrics(data);
+      setLoading(false);
+    }).catch(() => setLoading(false));
+  }, []);
+
   return (
     <div className="space-y-4">
+      {loading && <div className="text-center py-4 text-muted-foreground">加载中...</div>}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {mockMetrics.map((m) => (
+        {metrics.map((m) => (
           <StatCard
             key={m.id}
             label={m.name}
@@ -207,6 +353,9 @@ export function MetricCenter() {
             icon={BarChart3}
           />
         ))}
+        {!loading && metrics.length === 0 && (
+          <div className="col-span-full text-center py-4 text-muted-foreground">暂无指标数据</div>
+        )}
       </div>
 
       <Tabs defaultValue="def">
@@ -303,6 +452,17 @@ export function MetricCenter() {
 }
 
 export function DataQuality() {
+  const [rules, setRules] = useState(QUALITY_RULES);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [form, setForm] = useState({ table: "", rule: "", severity: "warning" });
+
+  function handleAddRule() {
+    if (!form.table.trim() || !form.rule.trim()) return;
+    setRules((prev) => [...prev, { id: prev.length + 1, table: form.table, rule: form.rule, severity: form.severity, status: "passed", coverage: 100 }]);
+    setDialogOpen(false);
+    setForm({ table: "", rule: "", severity: "warning" });
+  }
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0">
@@ -310,9 +470,9 @@ export function DataQuality() {
           <CardTitle className="text-base flex items-center gap-2">
             <ShieldCheck className="size-4" /> 数据质量监控
           </CardTitle>
-          <CardDescription>{QUALITY_RULES.length} 条规则，覆盖 6 张表</CardDescription>
+          <CardDescription>{rules.length} 条规则，覆盖 6 张表</CardDescription>
         </div>
-        <Button size="sm">
+        <Button size="sm" onClick={() => setDialogOpen(true)}>
           <Plus className="size-3 mr-1" />
           新增规则
         </Button>
@@ -329,7 +489,7 @@ export function DataQuality() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {QUALITY_RULES.map((r) => (
+            {rules.map((r) => (
               <TableRow key={r.id}>
                 <TableCell className="font-mono text-xs">{r.table}</TableCell>
                 <TableCell>{r.rule}</TableCell>
@@ -347,11 +507,64 @@ export function DataQuality() {
           </TableBody>
         </Table>
       </CardContent>
+
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>新增质量规则</DialogTitle>
+            <DialogDescription>定义数据质量校验规则</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>表名</Label>
+              <Input value={form.table} onChange={(e) => setForm((f) => ({ ...f, table: e.target.value }))} placeholder="如：customer" />
+            </div>
+            <div className="space-y-2">
+              <Label>规则</Label>
+              <Input value={form.rule} onChange={(e) => setForm((f) => ({ ...f, rule: e.target.value }))} placeholder="如：客户编号 NOT NULL" />
+            </div>
+            <div className="space-y-2">
+              <Label>级别</Label>
+              <Select value={form.severity} onValueChange={(v) => setForm((f) => ({ ...f, severity: v }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="error">错误</SelectItem>
+                  <SelectItem value="warning">警告</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>取消</Button>
+            <Button onClick={handleAddRule}>添加</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
 
 export function ETLTasks() {
+  const [tasks, setTasks] = useState(ETL_TASKS);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [form, setForm] = useState({ name: "", source: "", target: "", schedule: "" });
+
+  function handleAddTask() {
+    if (!form.name.trim()) return;
+    setTasks((prev) => [...prev, {
+      id: prev.length + 1,
+      name: form.name,
+      source: form.source,
+      target: form.target,
+      schedule: form.schedule || "手动",
+      status: "running",
+      duration: "-",
+      lastRun: "刚刚创建",
+    }]);
+    setDialogOpen(false);
+    setForm({ name: "", source: "", target: "", schedule: "" });
+  }
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0">
@@ -361,7 +574,7 @@ export function ETLTasks() {
           </CardTitle>
           <CardDescription>数据抽取-转换-加载任务编排</CardDescription>
         </div>
-        <Button size="sm">
+        <Button size="sm" onClick={() => setDialogOpen(true)}>
           <Plus className="size-3 mr-1" />
           新建 ETL
         </Button>
@@ -379,7 +592,7 @@ export function ETLTasks() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {ETL_TASKS.map((t) => (
+            {tasks.map((t) => (
               <TableRow key={t.id}>
                 <TableCell className="font-medium">{t.name}</TableCell>
                 <TableCell>
@@ -402,6 +615,39 @@ export function ETLTasks() {
           </TableBody>
         </Table>
       </CardContent>
+
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>新建 ETL 任务</DialogTitle>
+            <DialogDescription>配置数据抽取-转换-加载任务</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>任务名</Label>
+              <Input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} placeholder="如：订单同步" />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>数据源</Label>
+                <Input value={form.source} onChange={(e) => setForm((f) => ({ ...f, source: e.target.value }))} placeholder="如：MySQL 订单库" />
+              </div>
+              <div className="space-y-2">
+                <Label>目标</Label>
+                <Input value={form.target} onChange={(e) => setForm((f) => ({ ...f, target: e.target.value }))} placeholder="如：DWD 层" />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>调度</Label>
+              <Input value={form.schedule} onChange={(e) => setForm((f) => ({ ...f, schedule: e.target.value }))} placeholder="如：每小时 / 每天 02:00 / 手动" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>取消</Button>
+            <Button onClick={handleAddTask}>创建</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
@@ -432,6 +678,20 @@ export function RealTimeMonitor() {
 }
 
 export function DataDashboard() {
+  const [sourceCount, setSourceCount] = useState(0);
+  const [onlineCount, setOnlineCount] = useState(0);
+  const [metricCount, setMetricCount] = useState(0);
+
+  useEffect(() => {
+    dataApi.listSources().then((data) => {
+      setSourceCount(data.length);
+      setOnlineCount(data.filter((d) => d.status === "online").length);
+    }).catch(() => {});
+    dataApi.listMetrics().then((data) => {
+      setMetricCount(data.length);
+    }).catch(() => {});
+  }, []);
+
   return (
     <div className="space-y-4 p-4">
       <div className="flex items-center justify-between">
@@ -451,10 +711,10 @@ export function DataDashboard() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-        <StatCard label="总数据量" value={27320000} icon={HardDrive} />
-        <StatCard label="今日同步" value={1280000} trend={5.2} icon={RefreshCw} />
-        <StatCard label="在线数据源" value={6} icon={Circle} />
-        <StatCard label="指标总数" value={148} icon={BarChart3} />
+        <StatCard label="数据源总数" value={sourceCount} icon={HardDrive} />
+        <StatCard label="在线数据源" value={onlineCount} icon={Circle} />
+        <StatCard label="指标总数" value={metricCount} icon={BarChart3} />
+        <StatCard label="ETL 任务" value={ETL_TASKS.length} icon={RefreshCw} />
       </div>
 
       <Tabs defaultValue="overview">

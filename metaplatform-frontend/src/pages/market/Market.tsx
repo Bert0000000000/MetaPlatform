@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -5,7 +6,18 @@ import { StatCard } from "@/components/ui/stat";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { mockTemplates } from "@/lib/mock-data";
-import { Star, Download, Boxes, Sparkles, Workflow, BookOpen, Code, Plus, Package, Bot, Store, Users, DollarSign, Check, Crown, Building2, Briefcase, Sprout } from "lucide-react";
+import { Star, Download, Boxes, Sparkles, Workflow, BookOpen, Code, Plus, Package, Bot, Store, Users, DollarSign, Check, Crown, Building2, Briefcase, Sprout, X } from "lucide-react";
+
+/* ── Toast helper ── */
+function useToast() {
+  const [toast, setToast] = useState<string | null>(null);
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 2500);
+    return () => clearTimeout(t);
+  }, [toast]);
+  return { toast, setToast };
+}
 
 const priceVariant = {
   免费: "default" as const,
@@ -21,7 +33,7 @@ const AGENT_MARKET = [
   { id: 5, name: "HR 简历筛选", desc: "自动评估候选人匹配度", author: "招聘专家", installs: 980, rating: 4.5, price: "付费", category: "HR" },
 ];
 
-const MY_SUBSCRIPTIONS = [
+const MY_SUBSCRIPTIONS_INIT = [
   { id: 1, name: "数据可视化 Pro", author: "MetaPlatform", price: "¥299/月", nextBill: "2026-08-01", status: "active", usage: "本月调用 1,248 次" },
   { id: 2, name: "AI 翻译接口", author: "TranslateAI", price: "¥0.02/千字", nextBill: "按用量", status: "active", usage: "本月翻译 12,400 字" },
   { id: 3, name: "OCR 识别服务", author: "视觉智能", price: "¥0.1/次", nextBill: "按用量", status: "active", usage: "本月识别 348 次" },
@@ -36,60 +48,119 @@ const DEVELOPERS = [
   { rank: 5, name: "招聘专家", apps: 6, downloads: 9800, revenue: "¥12,600", badge: Sprout },
 ];
 
-export function OntologyTemplates() {
-  const templates = mockTemplates.filter((t) => t.type === "本体模板" || t.type === "工作流");
+const CATEGORIES = [
+  { name: "本体模板", count: 86, icon: Boxes, color: "bg-blue-500" },
+  { name: "Skill", count: 42, icon: Sparkles, color: "bg-purple-500" },
+  { name: "Agent", count: 38, icon: Workflow, color: "bg-green-500" },
+  { name: "工作流", count: 28, icon: Package, color: "bg-yellow-500" },
+  { name: "知识包", count: 32, icon: BookOpen, color: "bg-red-500" },
+  { name: "API", count: 19, icon: Code, color: "bg-indigo-500" },
+];
+
+/* ── Category name → template type filter mapping ── */
+const CATEGORY_FILTER_MAP: Record<string, string> = {
+  "本体模板": "本体模板",
+  "Skill": "Skill",
+  "Agent": "Agent",
+  "工作流": "工作流",
+  "知识包": "知识包",
+  "API": "API",
+};
+
+/* ─────────────────── OntologyTemplates ─────────────────── */
+interface OntologyTemplatesProps {
+  installedTemplates: Set<string>;
+  onInstall: (id: string, name: string) => void;
+  filterCategory?: string | null;
+}
+
+function OntologyTemplates({ installedTemplates, onInstall, filterCategory }: OntologyTemplatesProps) {
+  let templates = mockTemplates.filter((t) => t.type === "本体模板" || t.type === "工作流");
+  if (filterCategory) {
+    templates = mockTemplates.filter((t) => t.type === filterCategory);
+  }
+
   return (
     <Card>
       <CardHeader>
         <CardTitle className="text-base flex items-center gap-2">
           <Boxes className="size-4" /> 本体行业模板
+          {filterCategory && (
+            <Badge variant="secondary" className="ml-2">
+              筛选: {filterCategory}
+            </Badge>
+          )}
         </CardTitle>
         <CardDescription>按行业 / 场景划分的本体模板</CardDescription>
       </CardHeader>
       <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>名称</TableHead>
-              <TableHead>类型</TableHead>
-              <TableHead>行业</TableHead>
-              <TableHead className="text-right">下载</TableHead>
-              <TableHead>评分</TableHead>
-              <TableHead>价格</TableHead>
-              <TableHead>作者</TableHead>
-              <TableHead className="text-right">操作</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {templates.map((t) => (
-              <TableRow key={t.id}>
-                <TableCell className="font-medium">{t.name}</TableCell>
-                <TableCell><Badge variant="outline">{t.type}</Badge></TableCell>
-                <TableCell>{t.industry}</TableCell>
-                <TableCell className="text-right">{t.downloads.toLocaleString()}</TableCell>
-                <TableCell>
-                  <span className="flex items-center gap-1">
-                    <Star className="size-3 fill-yellow-500 text-yellow-500" />
-                    {t.rating}
-                  </span>
-                </TableCell>
-                <TableCell>
-                  <Badge variant={priceVariant[t.price]}>{t.price}</Badge>
-                </TableCell>
-                <TableCell>{t.author}</TableCell>
-                <TableCell className="text-right">
-                  <Button size="sm">安装</Button>
-                </TableCell>
+        {templates.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+            <Package className="size-8 mb-2" />
+            <p className="text-sm">该分类暂无模板</p>
+          </div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>名称</TableHead>
+                <TableHead>类型</TableHead>
+                <TableHead>行业</TableHead>
+                <TableHead className="text-right">下载</TableHead>
+                <TableHead>评分</TableHead>
+                <TableHead>价格</TableHead>
+                <TableHead>作者</TableHead>
+                <TableHead className="text-right">操作</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {templates.map((t) => {
+                const isInstalled = installedTemplates.has(t.id);
+                return (
+                  <TableRow key={t.id}>
+                    <TableCell className="font-medium">{t.name}</TableCell>
+                    <TableCell><Badge variant="outline">{t.type}</Badge></TableCell>
+                    <TableCell>{t.industry}</TableCell>
+                    <TableCell className="text-right">{t.downloads.toLocaleString()}</TableCell>
+                    <TableCell>
+                      <span className="flex items-center gap-1">
+                        <Star className="size-3 fill-yellow-500 text-yellow-500" />
+                        {t.rating}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={priceVariant[t.price]}>{t.price}</Badge>
+                    </TableCell>
+                    <TableCell>{t.author}</TableCell>
+                    <TableCell className="text-right">
+                      {isInstalled ? (
+                        <Badge variant="secondary" className="text-green-600">
+                          <Check className="size-3 mr-1" /> 已安装
+                        </Badge>
+                      ) : (
+                        <Button size="sm" onClick={() => onInstall(t.id, t.name)}>
+                          安装
+                        </Button>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        )}
       </CardContent>
     </Card>
   );
 }
 
-export function AgentMarket() {
+/* ─────────────────── AgentMarket ─────────────────── */
+interface AgentMarketProps {
+  installedAgents: Set<number>;
+  onInstall: (id: number, name: string) => void;
+}
+
+function AgentMarket({ installedAgents, onInstall }: AgentMarketProps) {
   return (
     <Card>
       <CardHeader>
@@ -100,41 +171,66 @@ export function AgentMarket() {
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {AGENT_MARKET.map((a) => (
-            <div key={a.id} className="rounded-lg border p-4 hover:border-primary">
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="size-12 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 text-white flex items-center justify-center">
-                    <Bot className="size-6" />
+          {AGENT_MARKET.map((a) => {
+            const isInstalled = installedAgents.has(a.id);
+            return (
+              <div key={a.id} className="rounded-lg border p-4 hover:border-primary transition-colors">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="size-12 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 text-white flex items-center justify-center">
+                      <Bot className="size-6" />
+                    </div>
+                    <div>
+                      <div className="font-medium">{a.name}</div>
+                      <div className="text-xs text-muted-foreground">{a.author}</div>
+                    </div>
                   </div>
-                  <div>
-                    <div className="font-medium">{a.name}</div>
-                    <div className="text-xs text-muted-foreground">{a.author}</div>
+                  <Badge variant={priceVariant[a.price as keyof typeof priceVariant]}>{a.price}</Badge>
+                </div>
+                <p className="text-sm text-muted-foreground mt-2">{a.desc}</p>
+                <div className="flex items-center justify-between mt-3">
+                  <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                    <span className="flex items-center gap-1"><Download className="size-3" />{a.installs.toLocaleString()}</span>
+                    <span className="flex items-center gap-1"><Star className="size-3 fill-yellow-500 text-yellow-500" />{a.rating}</span>
+                    <Badge variant="outline" className="text-xs">{a.category}</Badge>
                   </div>
+                  {isInstalled ? (
+                    <Badge variant="secondary" className="text-green-600">
+                      <Check className="size-3 mr-1" /> 已安装
+                    </Badge>
+                  ) : (
+                    <Button size="sm" onClick={() => onInstall(a.id, a.name)}>
+                      <Check className="size-3 mr-1" />
+                      安装
+                    </Button>
+                  )}
                 </div>
-                <Badge variant={priceVariant[a.price as keyof typeof priceVariant]}>{a.price}</Badge>
               </div>
-              <p className="text-sm text-muted-foreground mt-2">{a.desc}</p>
-              <div className="flex items-center justify-between mt-3">
-                <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                  <span className="flex items-center gap-1"><Download className="size-3" />{a.installs.toLocaleString()}</span>
-                  <span className="flex items-center gap-1"><Star className="size-3 fill-yellow-500 text-yellow-500" />{a.rating}</span>
-                  <Badge variant="outline" className="text-xs">{a.category}</Badge>
-                </div>
-                <Button size="sm">
-                  <Check className="size-3 mr-1" />
-                  安装
-                </Button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </CardContent>
     </Card>
   );
 }
 
-export function MySubscriptions() {
+/* ─────────────────── MySubscriptions ─────────────────── */
+interface MySubscriptionsProps {
+  onRenew: (name: string) => void;
+}
+
+function MySubscriptions({ onRenew }: MySubscriptionsProps) {
+  const [subscriptions, setSubscriptions] = useState(MY_SUBSCRIPTIONS_INIT);
+
+  function handleRenew(id: number, name: string) {
+    setSubscriptions((prev) =>
+      prev.map((s) =>
+        s.id === id ? { ...s, status: "active", nextBill: "2026-08-15", usage: "续费成功" } : s
+      )
+    );
+    onRenew(name);
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -157,7 +253,7 @@ export function MySubscriptions() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {MY_SUBSCRIPTIONS.map((s) => (
+            {subscriptions.map((s) => (
               <TableRow key={s.id}>
                 <TableCell className="font-medium">{s.name}</TableCell>
                 <TableCell>{s.author}</TableCell>
@@ -169,7 +265,15 @@ export function MySubscriptions() {
                   {s.status === "expiring" && <Badge variant="outline" className="text-orange-500">即将到期</Badge>}
                 </TableCell>
                 <TableCell className="text-right">
-                  <Button variant="ghost" size="sm">续费</Button>
+                  {s.status === "expiring" ? (
+                    <Button variant="default" size="sm" onClick={() => handleRenew(s.id, s.name)}>
+                      续费
+                    </Button>
+                  ) : (
+                    <Button variant="ghost" size="sm" onClick={() => handleRenew(s.id, s.name)}>
+                      续费
+                    </Button>
+                  )}
                 </TableCell>
               </TableRow>
             ))}
@@ -180,7 +284,8 @@ export function MySubscriptions() {
   );
 }
 
-export function DeveloperRank() {
+/* ─────────────────── DeveloperRank ─────────────────── */
+function DeveloperRank() {
   return (
     <Card>
       <CardHeader>
@@ -220,9 +325,56 @@ export function DeveloperRank() {
   );
 }
 
+/* ─────────────────── MarketDashboard (main) ─────────────────── */
 export function MarketDashboard() {
+  const [installedTemplates, setInstalledTemplates] = useState<Set<string>>(new Set());
+  const [installedAgents, setInstalledAgents] = useState<Set<number>>(new Set());
+  const [activeTab, setActiveTab] = useState("overview");
+  const [filterCategory, setFilterCategory] = useState<string | null>(null);
+  const { toast, setToast } = useToast();
+
+  /* Install template handler */
+  function handleInstallTemplate(id: string, name: string) {
+    setInstalledTemplates((prev) => new Set(prev).add(id));
+    setToast(`安装成功：${name}`);
+  }
+
+  /* Install agent handler */
+  function handleInstallAgent(id: number, name: string) {
+    setInstalledAgents((prev) => new Set(prev).add(id));
+    setToast(`安装成功：${name}`);
+  }
+
+  /* Renew handler */
+  function handleRenew(name: string) {
+    setToast(`${name} 续费成功`);
+  }
+
+  /* Category card click → filter templates */
+  function handleCategoryClick(categoryName: string) {
+    const filterType = CATEGORY_FILTER_MAP[categoryName];
+    if (filterType) {
+      setFilterCategory(filterType);
+      setActiveTab("ontology");
+    }
+  }
+
+  /* Clear filter */
+  function handleClearFilter() {
+    setFilterCategory(null);
+  }
+
+  const totalInstalled = installedTemplates.size + installedAgents.size;
+
   return (
     <div className="space-y-4 p-4">
+      {/* Toast */}
+      {toast && (
+        <div className="fixed top-4 right-4 z-50 rounded-md bg-foreground px-4 py-2 text-sm text-background shadow-lg">
+          {toast}
+        </div>
+      )}
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-semibold tracking-tight flex items-center gap-2">
@@ -233,7 +385,7 @@ export function MarketDashboard() {
             本体模板、Skill、智能体、工作流、知识包订阅与开发者生态
           </p>
         </div>
-        <Button size="sm">
+        <Button size="sm" onClick={() => setActiveTab("subs")}>
           <Package className="size-3 mr-1" />
           我订阅的
         </Button>
@@ -243,10 +395,10 @@ export function MarketDashboard() {
         <StatCard label="模板总数" value={245} icon={Package} />
         <StatCard label="本月下载" value={12480} trend={18.5} icon={Download} />
         <StatCard label="活跃开发者" value={186} icon={Code} />
-        <StatCard label="已安装应用" value={32} icon={Check} />
+        <StatCard label="已安装应用" value={32 + totalInstalled} icon={Check} />
       </div>
 
-      <Tabs defaultValue="overview">
+      <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v); if (v !== "ontology") setFilterCategory(null); }}>
         <TabsList>
           <TabsTrigger value="overview">概览</TabsTrigger>
           <TabsTrigger value="ontology">本体模板</TabsTrigger>
@@ -257,17 +409,14 @@ export function MarketDashboard() {
 
         <TabsContent value="overview" className="mt-4 space-y-4">
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-            {[
-              { name: "本体模板", count: 86, icon: Boxes, color: "bg-blue-500" },
-              { name: "Skill", count: 42, icon: Sparkles, color: "bg-purple-500" },
-              { name: "Agent", count: 38, icon: Workflow, color: "bg-green-500" },
-              { name: "工作流", count: 28, icon: Package, color: "bg-yellow-500" },
-              { name: "知识包", count: 32, icon: BookOpen, color: "bg-red-500" },
-              { name: "API", count: 19, icon: Code, color: "bg-indigo-500" },
-            ].map((c) => {
+            {CATEGORIES.map((c) => {
               const Icon = c.icon;
               return (
-                <Card key={c.name} className="cursor-pointer hover:border-primary">
+                <Card
+                  key={c.name}
+                  className="cursor-pointer hover:border-primary transition-colors"
+                  onClick={() => handleCategoryClick(c.name)}
+                >
                   <CardContent className="p-4 text-center">
                     <div className={`${c.color} text-white size-12 rounded-lg flex items-center justify-center mx-auto`}>
                       <Icon className="size-6" />
@@ -279,25 +428,98 @@ export function MarketDashboard() {
               );
             })}
           </div>
-          <OntologyTemplates />
+          <OntologyTemplates
+            installedTemplates={installedTemplates}
+            onInstall={handleInstallTemplate}
+            filterCategory={filterCategory}
+          />
         </TabsContent>
 
         <TabsContent value="ontology" className="mt-4">
-          <OntologyTemplates />
+          {filterCategory && (
+            <div className="flex items-center gap-2 mb-3">
+              <Badge variant="secondary">当前筛选: {filterCategory}</Badge>
+              <Button variant="ghost" size="sm" onClick={handleClearFilter}>
+                <X className="size-3 mr-1" />
+                清除筛选
+              </Button>
+            </div>
+          )}
+          <OntologyTemplates
+            installedTemplates={installedTemplates}
+            onInstall={handleInstallTemplate}
+            filterCategory={filterCategory}
+          />
         </TabsContent>
 
         <TabsContent value="agents" className="mt-4">
-          <AgentMarket />
+          <AgentMarket
+            installedAgents={installedAgents}
+            onInstall={handleInstallAgent}
+          />
         </TabsContent>
 
         <TabsContent value="subs" className="mt-4">
-          <MySubscriptions />
+          <MySubscriptions onRenew={handleRenew} />
         </TabsContent>
 
         <TabsContent value="rank" className="mt-4">
           <DeveloperRank />
         </TabsContent>
       </Tabs>
+    </div>
+  );
+}
+
+/* ── Standalone wrapper components for route-level usage (no props needed) ── */
+export function OntologyTemplatesPage() {
+  const [installed, setInstalled] = useState<Set<string>>(new Set());
+  const { toast, setToast } = useToast();
+  return (
+    <div className="p-4 space-y-4">
+      {toast && (
+        <div className="fixed top-4 right-4 z-50 rounded-md bg-foreground px-4 py-2 text-sm text-background shadow-lg">{toast}</div>
+      )}
+      <OntologyTemplates
+        installedTemplates={installed}
+        onInstall={(id, name) => { setInstalled((prev) => new Set(prev).add(id)); setToast(`安装成功：${name}`); }}
+      />
+    </div>
+  );
+}
+
+export function AgentMarketPage() {
+  const [installed, setInstalled] = useState<Set<number>>(new Set());
+  const { toast, setToast } = useToast();
+  return (
+    <div className="p-4 space-y-4">
+      {toast && (
+        <div className="fixed top-4 right-4 z-50 rounded-md bg-foreground px-4 py-2 text-sm text-background shadow-lg">{toast}</div>
+      )}
+      <AgentMarket
+        installedAgents={installed}
+        onInstall={(id, name) => { setInstalled((prev) => new Set(prev).add(id)); setToast(`安装成功：${name}`); }}
+      />
+    </div>
+  );
+}
+
+export function MySubscriptionsPage() {
+  const { toast, setToast } = useToast();
+  return (
+    <div className="p-4 space-y-4">
+      {toast && (
+        <div className="fixed top-4 right-4 z-50 rounded-md bg-foreground px-4 py-2 text-sm text-background shadow-lg">{toast}</div>
+      )}
+      <MySubscriptions onRenew={(name) => setToast(`${name} 续费成功`)} />
+    </div>
+  );
+}
+
+export function DeveloperRankPage() {
+  return (
+    <div className="p-4">
+      <DeveloperRank />
     </div>
   );
 }

@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -30,13 +31,15 @@ const nodes = [
 ];
 
 export default function Orchestration() {
+  const navigate = useNavigate();
+
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
         title="服务编排"
         description="6 大适配器 + 3 触发方式 + 节点类型"
         action={
-          <Button className="gap-2">
+          <Button className="gap-2" onClick={() => navigate("/process/designer")}>
             <Plus className="size-4" /> 新建编排
           </Button>
         }
