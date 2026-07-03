@@ -5,6 +5,9 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppDetailTabs } from "@/components/AppDetailTabs";
 import { Package } from "lucide-react";
 
+// Published app (public, no platform layout)
+import PublishedApp from "@/pages/PublishedApp";
+
 // 通用页面
 import { DashboardPage } from "@/pages/Dashboard";
 import { SuperAIPage } from "@/pages/SuperAI";
@@ -27,6 +30,7 @@ import ProcessList from "@/pages/process/ProcessList";
 import ApprovalList from "@/pages/process/ApprovalList";
 import Orchestration from "@/pages/process/Orchestration";
 import { ProcessDesigner } from "@/pages/process/ProcessDesigner";
+import ProcessDesignerV2Page from "@/pages/process/ProcessDesignerV2Page";
 
 // 本体引擎
 import Objects from "@/pages/ontology/Objects";
@@ -82,6 +86,11 @@ export default function App() {
       <RoleProvider>
         <TooltipProvider>
           <Routes>
+            {/* Published apps (outside Layout — no sidebar/topbar) */}
+            <Route path="/app/:slug" element={<PublishedApp />} />
+            <Route path="/app/:slug/page/:pageId" element={<PublishedApp />} />
+
+            {/* Platform routes (with Layout sidebar/topbar) */}
             <Route element={<Layout />}>
               {/* 默认 */}
               <Route index element={<Navigate to="/dashboard" replace />} />
@@ -119,7 +128,8 @@ export default function App() {
               {/* 5. 流程中心 */}
               <Route path="/process" element={<ProcessList />} />
               <Route path="/process/business" element={<ProcessList />} />
-              <Route path="/process/designer" element={<ProcessDesigner />} />
+              <Route path="/process/designer" element={<ProcessDesignerV2Page />} />
+              <Route path="/process/designer/:definitionId" element={<ProcessDesignerV2Page />} />
               <Route path="/process/approval" element={<ApprovalList />} />
               <Route path="/process/orchestration" element={<Orchestration />} />
               <Route path="/process/*" element={<ProcessList />} />

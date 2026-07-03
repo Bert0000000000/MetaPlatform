@@ -7,6 +7,22 @@ import db from "../db.js";
 
 const router = Router();
 
+// ─── Slug generation helper ───────────────────────────────
+function generateSlug(name) {
+  // Transliterate common Chinese chars, fall back to UUID prefix
+  const slug = name
+    .toLowerCase()
+    .replace(/[\u4e00-\u9fff]/g, (ch) => {
+      // Simple hash: map each CJK char to a numeric prefix
+      return "c" + ch.charCodeAt(0).toString(36);
+    })
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 40);
+  const suffix = uuid().slice(0, 6);
+  return slug ? `${slug}-${suffix}` : `app-${suffix}`;
+}
+
 // ─── GET / ── list all applications ─────────────────────
 router.get("/", (req, res, next) => {
   try {
@@ -18,6 +34,45 @@ router.get("/", (req, res, next) => {
       rows = db.prepare("SELECT * FROM applications ORDER BY created_at DESC").all();
     }
     res.json({ success: true, data: rows });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ─── GET /published ── list all published apps (public) ───
+router.get("/published", (_req, res, next) => {
+  try {
+    const rows = db.prepare(
+      "SELECT id, name, description, category, icon, app_slug, published_url, published_version, published_at FROM applications WHERE status = 'published' ORDER BY published_at DESC"
+    ).all();
+    res.json({ success: true, data: rows });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ─── GET /slug/:slug ── get app by slug (public) ──────────
+router.get("/slug/:slug", (req, res, next) => {
+  try {
+    const row = db.prepare("SELECT * FROM applications WHERE app_slug = ? AND status = 'published'").get(req.params.slug);
+    if (!row) return res.status(404).json({ success: false, error: "Published app not found" });
+
+    // Try to parse pages from publish_config if available
+    let pages = [];
+    if (row.publish_config) {
+      try {
+        const config = JSON.parse(row.publish_config);
+        pages = config.pages || [];
+      } catch {}
+    }
+
+    res.json({
+      success: true,
+      data: {
+        ...row,
+        pages,
+      },
+    });
   } catch (err) {
     next(err);
   }
@@ -90,6 +145,83 @@ router.delete("/:id", (req, res, next) => {
     if (!existing) return res.status(404).json({ success: false, error: "应用不存在" });
     db.prepare("DELETE FROM applications WHERE id = ?").run(req.params.id);
     res.json({ success: true, data: { id: req.params.id } });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ─── POST /:id/publish ── publish an application ─────────
+router.post("/:id/publish", (req, res, next) => {
+  try {
+    const existing = db.prepare("SELECT * FROM applications WHERE id = ?").get(req.params.id);
+    if (!existing) return res.status(404).json({ success: false, error: "应用不存在" });
+
+    const now = new Date().toISOString();
+    const version = existing.version || "v1.0";
+    let slug = existing.app_slug;
+
+    // Generate slug if not already set
+    if (!slug) {
+      slug = generateSlug(existing.name);
+    }
+
+    const publishedUrl = `/app/${slug}`;
+    const publishConfig = JSON.stringify({
+      pages: req.body.pages || [],
+      config: req.body.config || {},
+      publishedAt: now,
+    });
+
+    // Update application record
+    db.prepare(
+      `UPDATE applications
+       SET status = 'published',
+           app_slug = ?,
+           published_url = ?,
+           published_version = ?,
+           published_at = ?,
+           publish_config = ?,
+           updated_at = ?
+       WHERE id = ?`
+    ).run(slug, publishedUrl, version, now, publishConfig, now, req.params.id);
+
+    // Create publication snapshot record
+    const pubId = uuid();
+    db.prepare(
+      `INSERT INTO app_publications (id, app_id, slug, published_url, published_version, config_snapshot, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`
+    ).run(pubId, req.params.id, slug, publishedUrl, version, publishConfig, now);
+
+    const row = db.prepare("SELECT * FROM applications WHERE id = ?").get(req.params.id);
+    res.json({
+      success: true,
+      data: {
+        ...row,
+        published_url: publishedUrl,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ─── POST /:id/unpublish ── unpublish an application ─────
+router.post("/:id/unpublish", (req, res, next) => {
+  try {
+    const existing = db.prepare("SELECT * FROM applications WHERE id = ?").get(req.params.id);
+    if (!existing) return res.status(404).json({ success: false, error: "应用不存在" });
+
+    const now = new Date().toISOString();
+    db.prepare(
+      `UPDATE applications
+       SET status = 'draft',
+           published_at = NULL,
+           updated_at = ?
+       WHERE id = ?`
+    ).run(now, req.params.id);
+
+    const row = db.prepare("SELECT * FROM applications WHERE id = ?").get(req.params.id);
+    res.json({ success: true, data: row });
   } catch (err) {
     next(err);
   }

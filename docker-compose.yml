@@ -23,6 +23,7 @@ services:
       POSTGRES_PASSWORD: metaplatform
     volumes:
       - pg-data:/var/lib/postgresql/data
+      - ./deploy/postgres-init:/docker-entrypoint-initdb.d
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U meta -d ontology_meta"]
       interval: 5s
@@ -146,6 +147,36 @@ services:
     networks:
       - mp-net
 
+  # === 流程引擎 ===
+  flowable-rest:
+    image: flowable/flowable-rest:7.0.1
+    container_name: metaplatform-flowable
+    ports:
+      - "8081:8080"
+    environment:
+      - SPRING_DATASOURCE_DRIVER-CLASS-NAME=org.postgresql.Driver
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/flowable
+      - SPRING_DATASOURCE_USERNAME=meta
+      - SPRING_DATASOURCE_PASSWORD=metaplatform
+      - FLOWABLE_REST_APP_ADMIN_USER-ID=admin
+      - FLOWABLE_REST_APP_ADMIN_PASSWORD=test
+      - FLOWABLE_REST_APP_ADMIN_FIRST-NAME=Admin
+      - FLOWABLE_REST_APP_ADMIN_LAST-NAME=Admin
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - flowable-data:/opt/flowable-rest/data
+    networks:
+      - mp-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/flowable-rest/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+
   # === 可观测性 (可选) ===
   prometheus:
     image: prom/prometheus:v2.51.0
@@ -177,6 +208,7 @@ volumes:
   pg-data:
   redis-data:
   grafana-data:
+  flowable-data:
 
 networks:
   mp-net:

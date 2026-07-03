@@ -211,6 +211,35 @@ db.exec(`
     description TEXT,
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
+
+  -- App Publications (publish snapshots)
+  CREATE TABLE IF NOT EXISTS app_publications (
+    id TEXT PRIMARY KEY,
+    app_id TEXT NOT NULL,
+    slug TEXT UNIQUE NOT NULL,
+    published_url TEXT,
+    published_version TEXT,
+    config_snapshot TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (app_id) REFERENCES applications(id)
+  );
 `);
+
+// ─── Migrations (additive) ─────────────────────────────────
+try {
+  db.exec(`ALTER TABLE applications ADD COLUMN app_slug TEXT`);
+} catch {}
+try {
+  db.exec(`ALTER TABLE applications ADD COLUMN published_url TEXT`);
+} catch {}
+try {
+  db.exec(`ALTER TABLE applications ADD COLUMN published_version TEXT`);
+} catch {}
+try {
+  db.exec(`ALTER TABLE applications ADD COLUMN published_at TEXT`);
+} catch {}
+try {
+  db.exec(`ALTER TABLE applications ADD COLUMN publish_config TEXT`);
+} catch {}
 
 export default db;

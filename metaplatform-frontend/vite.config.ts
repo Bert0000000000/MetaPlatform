@@ -150,6 +150,20 @@ export default defineConfig({
         target: "http://localhost:3001",
         changeOrigin: true,
       },
+      // Flowable BPMN REST API proxy
+      "/api/flowable": {
+        target: "http://localhost:3001",
+        changeOrigin: true,
+      },
+      // Published apps (public, no auth)
+      "/api/apps/slug": {
+        target: "http://localhost:3001",
+        changeOrigin: true,
+      },
+      "/api/apps/published": {
+        target: "http://localhost:3001",
+        changeOrigin: true,
+      },
     },
   },
 });

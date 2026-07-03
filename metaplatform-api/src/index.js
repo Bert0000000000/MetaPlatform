@@ -13,6 +13,7 @@ import knowledgeRoutes from "./routes/knowledge.js";
 import agentsRoutes from "./routes/agents.js";
 import adminRoutes from "./routes/admin.js";
 import messagesRoutes from "./routes/messages.js";
+import flowableRoutes from "./routes/flowable.js";
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -32,6 +33,7 @@ app.use("/api/knowledge", knowledgeRoutes);
 app.use("/api/agents", agentsRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/messages", messagesRoutes);
+app.use("/api/flowable", flowableRoutes);
 
 // ─── Health check ───────────────────────────────────────
 app.get("/api/health", (_req, res) => {
