@@ -433,7 +433,23 @@ export function RealTimeMonitor() {
 
 export function DataDashboard() {
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 p-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight flex items-center gap-2">
+            <Database className="size-5 text-primary" />
+            数据中心
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            数据源接入、ETL、指标建模、实时监控与 Ask Data
+          </p>
+        </div>
+        <Button size="sm">
+          <Plus className="size-3 mr-1" />
+          新增数据源
+        </Button>
+      </div>
+
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
         <StatCard label="总数据量" value={27320000} icon="💾" />
         <StatCard label="今日同步" value={1280000} trend={5.2} icon="🔄" />

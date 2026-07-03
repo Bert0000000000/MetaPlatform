@@ -16,7 +16,7 @@
   --color-sidebar-bg: #0f172a;
   --color-sidebar-text: #94a3b8;
   --color-sidebar-text-hover: #cbd5e1;
-  --color-sidebar-active-bg: rgba(59, 130, 246, 0.15);
+  --color-sidebar-active-bg: var(--color-primary-subtle);
   --color-sidebar-active-text: #60a5fa;
   --color-sidebar-border: rgba(148, 163, 184, 0.1);
   --color-text-primary: #0f172a;
@@ -84,7 +84,7 @@
       }
     </style>
 </head>
-<body style="margin:0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans SC', sans-serif; font-size: 13px;">
+<body style="margin:0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans SC', sans-serif; var(--font-size-base)">
 <div class="flex min-h-screen">
 
   <!-- Sidebar (220px) -->
@@ -206,7 +206,7 @@
 
     <!-- Bottom user area -->
     <div class="px-3 py-3 border-t flex items-center gap-2.5" style="border-color: var(--color-sidebar-border);">
-      <div class="w-6 h-6 flex items-center justify-center text-[10px] font-medium" style="background: #334155; color: #94a3b8; border-radius: var(--radius-full);">A</div>
+      <div class="w-6 h-6 flex items-center justify-center text-[10px] font-medium" style="background: var(--color-sidebar-bg); color: var(--color-sidebar-text); border-radius: var(--radius-full);">A</div>
       <div class="flex-1 min-w-0">
         <div class="text-xs text-slate-200 truncate">Admin</div>
       </div>
@@ -224,7 +224,7 @@
 
         <!-- New conversation button -->
         <div class="px-3 py-3">
-          <button class="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 text-white cursor-pointer transition-colors" style="background: var(--color-primary); border-radius: var(--radius-lg); font-size: 11px; font-weight: var(--font-weight-medium);" onmouseover="this.style.background='var(--color-primary-hover)'" onmouseout="this.style.background='var(--color-primary)'">
+          <button class="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 text-white cursor-pointer transition-colors" style="background: var(--color-primary); border-radius: var(--radius-lg); var(--font-size-xs) font-weight: var(--font-weight-medium);" onmouseover="this.style.background='var(--color-primary-hover)'" onmouseout="this.style.background='var(--color-primary)'">
             <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <line x1="12" y1="5" x2="12" y2="19"/>
               <line x1="5" y1="12" x2="19" y2="12"/>
@@ -238,21 +238,21 @@
           <div class="flex flex-col gap-0.5">
 
             <!-- Session 1 (active) -->
-            <button class="w-full text-left px-2.5 py-2 cursor-pointer" style="border-radius: var(--radius-lg); background: #ffffff; border-left: 2px solid var(--color-primary);">
-              <div class="truncate" style="font-size: 12px; font-weight: var(--font-weight-medium); color: var(--color-text-primary);">客户数据查询</div>
-              <div class="truncate mt-0.5" style="font-size: 11px; color: var(--color-text-secondary); opacity: 0.4;">07/03 09:15</div>
+            <button class="w-full text-left px-2.5 py-2 cursor-pointer" style="border-radius: var(--radius-lg); background: var(--color-surface); border-left: 2px solid var(--color-primary);">
+              <div class="truncate" style="var(--font-size-sm) font-weight: var(--font-weight-medium); color: var(--color-text-primary);">客户数据查询</div>
+              <div class="truncate mt-0.5" style="var(--font-size-xs) color: var(--color-text-secondary); opacity: 0.4;">07/03 09:15</div>
             </button>
 
             <!-- Session 2 -->
-            <button class="w-full text-left px-2.5 py-2 cursor-pointer border-l-2 border-transparent transition-colors" style="border-radius: var(--radius-lg);" onmouseover="this.style.background='#ffffff'" onmouseout="this.style.background='transparent'">
-              <div class="truncate" style="font-size: 12px; font-weight: var(--font-weight-medium); color: var(--color-text-secondary);">工单状态分析</div>
-              <div class="truncate mt-0.5" style="font-size: 11px; color: var(--color-text-secondary); opacity: 0.4;">07/03 08:30</div>
+            <button class="w-full text-left px-2.5 py-2 cursor-pointer border-l-2 border-transparent transition-colors" style="border-radius: var(--radius-lg);" onmouseover="this.style.background='var(--color-surface)'" onmouseout="this.style.background='transparent'">
+              <div class="truncate" style="var(--font-size-sm) font-weight: var(--font-weight-medium); color: var(--color-text-secondary);">工单状态分析</div>
+              <div class="truncate mt-0.5" style="var(--font-size-xs) color: var(--color-text-secondary); opacity: 0.4;">07/03 08:30</div>
             </button>
 
             <!-- Session 3 -->
-            <button class="w-full text-left px-2.5 py-2 cursor-pointer border-l-2 border-transparent transition-colors" style="border-radius: var(--radius-lg);" onmouseover="this.style.background='#ffffff'" onmouseout="this.style.background='transparent'">
-              <div class="truncate" style="font-size: 12px; font-weight: var(--font-weight-medium); color: var(--color-text-secondary);">产品推荐策略</div>
-              <div class="truncate mt-0.5" style="font-size: 11px; color: var(--color-text-secondary); opacity: 0.4;">07/02 17:45</div>
+            <button class="w-full text-left px-2.5 py-2 cursor-pointer border-l-2 border-transparent transition-colors" style="border-radius: var(--radius-lg);" onmouseover="this.style.background='var(--color-surface)'" onmouseout="this.style.background='transparent'">
+              <div class="truncate" style="var(--font-size-sm) font-weight: var(--font-weight-medium); color: var(--color-text-secondary);">产品推荐策略</div>
+              <div class="truncate mt-0.5" style="var(--font-size-xs) color: var(--color-text-secondary); opacity: 0.4;">07/02 17:45</div>
             </button>
 
           </div>
@@ -271,37 +271,37 @@
             <!-- Turn 1: User -->
             <div class="flex justify-end">
               <div class="max-w-[70%] flex flex-col items-end">
-                <div class="px-3 py-1.5 text-white" style="background: var(--color-primary); border-radius: 6px; font-size: 13px;">
+                <div class="px-3 py-1.5 text-white" style="background: var(--color-primary); border-radius: var(--radius-lg); var(--font-size-base)">
                   帮我查询本月新增的客户数据
                 </div>
-                <div class="mt-0.5" style="font-size: 11px; opacity: 0.4; color: var(--color-text-secondary);">09:15</div>
+                <div class="mt-0.5" style="var(--font-size-xs) opacity: 0.4; color: var(--color-text-secondary);">09:15</div>
               </div>
             </div>
 
             <!-- Turn 1: Assistant -->
             <div class="flex justify-start">
               <div class="max-w-[70%] flex flex-col items-start">
-                <div class="px-3 py-1.5" style="background: #ffffff; border: 1px solid var(--color-border); border-radius: 6px; font-size: 13px; color: var(--color-text-primary);">
+                <div class="px-3 py-1.5" style="background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg); var(--font-size-base) color: var(--color-text-primary);">
                   好的，我来为您查询本月新增的客户数据。请稍等...
                 </div>
-                <div class="mt-0.5" style="font-size: 11px; opacity: 0.4; color: var(--color-text-secondary);">09:15</div>
+                <div class="mt-0.5" style="var(--font-size-xs) opacity: 0.4; color: var(--color-text-secondary);">09:15</div>
               </div>
             </div>
 
             <!-- Turn 2: User -->
             <div class="flex justify-end">
               <div class="max-w-[70%] flex flex-col items-end">
-                <div class="px-3 py-1.5 text-white" style="background: var(--color-primary); border-radius: 6px; font-size: 13px;">
+                <div class="px-3 py-1.5 text-white" style="background: var(--color-primary); border-radius: var(--radius-lg); var(--font-size-base)">
                   按行业分布来看一下
                 </div>
-                <div class="mt-0.5" style="font-size: 11px; opacity: 0.4; color: var(--color-text-secondary);">09:16</div>
+                <div class="mt-0.5" style="var(--font-size-xs) opacity: 0.4; color: var(--color-text-secondary);">09:16</div>
               </div>
             </div>
 
             <!-- Turn 2: Assistant -->
             <div class="flex justify-start">
               <div class="max-w-[70%] flex flex-col items-start">
-                <div class="px-3 py-1.5" style="background: #ffffff; border: 1px solid var(--color-border); border-radius: 6px; font-size: 13px; color: var(--color-text-primary);">
+                <div class="px-3 py-1.5" style="background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg); var(--font-size-base) color: var(--color-text-primary);">
                   以下是本月新增客户的行业分布：
                   <br><br>
                   信息技术 — 18 家（40%）
@@ -316,11 +316,11 @@
                 </div>
                 <!-- Suggestion chips -->
                 <div class="flex flex-wrap gap-1.5 mt-1.5">
-                  <button class="px-2.5 py-1 transition-colors cursor-pointer whitespace-nowrap" style="font-size: 11px; border: 1px solid var(--color-border); border-radius: var(--radius-lg); color: var(--color-text-secondary); background: transparent;" onmouseover="this.style.background='var(--color-bg-secondary)'" onmouseout="this.style.background='transparent'">查看详情</button>
-                  <button class="px-2.5 py-1 transition-colors cursor-pointer whitespace-nowrap" style="font-size: 11px; border: 1px solid var(--color-border); border-radius: var(--radius-lg); color: var(--color-text-secondary); background: transparent;" onmouseover="this.style.background='var(--color-bg-secondary)'" onmouseout="this.style.background='transparent'">导出报表</button>
-                  <button class="px-2.5 py-1 transition-colors cursor-pointer whitespace-nowrap" style="font-size: 11px; border: 1px solid var(--color-border); border-radius: var(--radius-lg); color: var(--color-text-secondary); background: transparent;" onmouseover="this.style.background='var(--color-bg-secondary)'" onmouseout="this.style.background='transparent'">设置告警</button>
+                  <button class="px-2.5 py-1 transition-colors cursor-pointer whitespace-nowrap" style="var(--font-size-xs) border: 1px solid var(--color-border); border-radius: var(--radius-lg); color: var(--color-text-secondary); background: transparent;" onmouseover="this.style.background='var(--color-bg-secondary)'" onmouseout="this.style.background='transparent'">查看详情</button>
+                  <button class="px-2.5 py-1 transition-colors cursor-pointer whitespace-nowrap" style="var(--font-size-xs) border: 1px solid var(--color-border); border-radius: var(--radius-lg); color: var(--color-text-secondary); background: transparent;" onmouseover="this.style.background='var(--color-bg-secondary)'" onmouseout="this.style.background='transparent'">导出报表</button>
+                  <button class="px-2.5 py-1 transition-colors cursor-pointer whitespace-nowrap" style="var(--font-size-xs) border: 1px solid var(--color-border); border-radius: var(--radius-lg); color: var(--color-text-secondary); background: transparent;" onmouseover="this.style.background='var(--color-bg-secondary)'" onmouseout="this.style.background='transparent'">设置告警</button>
                 </div>
-                <div class="mt-0.5" style="font-size: 11px; opacity: 0.4; color: var(--color-text-secondary);">09:16</div>
+                <div class="mt-0.5" style="var(--font-size-xs) opacity: 0.4; color: var(--color-text-secondary);">09:16</div>
               </div>
             </div>
 
@@ -331,8 +331,8 @@
         <!-- Input bar -->
         <div class="border-t p-3" style="border-color: var(--color-border);">
           <div class="flex items-end gap-2 max-w-[720px] mx-auto">
-            <textarea rows="1" placeholder="输入消息..." class="flex-1 border resize-none outline-none transition-shadow" style="background: var(--color-bg-secondary); border-color: var(--color-border); border-radius: 4px; padding: 6px 12px; font-size: 12px; color: var(--color-text-primary); min-height: 36px; max-height: 120px;" onfocus="this.style.borderColor='var(--color-primary)'" onblur="this.style.borderColor='var(--color-border)'"></textarea>
-            <button class="flex items-center justify-center h-8 px-4 text-white whitespace-nowrap cursor-pointer transition-colors flex-shrink-0" style="background: var(--color-primary); border-radius: 4px; font-size: 11px; font-weight: var(--font-weight-medium);" onmouseover="this.style.background='var(--color-primary-hover)'" onmouseout="this.style.background='var(--color-primary)'">
+            <textarea rows="1" placeholder="输入消息..." class="flex-1 border resize-none outline-none transition-shadow" style="background: var(--color-bg-secondary); border-color: var(--color-border); border-radius: var(--radius-md); padding: 6px 12px; var(--font-size-sm) color: var(--color-text-primary); min-height: 36px; max-height: 120px;" onfocus="this.style.borderColor='var(--color-primary)'" onblur="this.style.borderColor='var(--color-border)'"></textarea>
+            <button class="flex items-center justify-center h-8 px-4 text-white whitespace-nowrap cursor-pointer transition-colors flex-shrink-0" style="background: var(--color-primary); border-radius: var(--radius-md); var(--font-size-xs) font-weight: var(--font-weight-medium);" onmouseover="this.style.background='var(--color-primary-hover)'" onmouseout="this.style.background='var(--color-primary)'">
               发送
             </button>
           </div>

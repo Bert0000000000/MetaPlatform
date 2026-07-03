@@ -499,7 +499,20 @@ export function SystemSettings() {
 
 export function AdminDashboard() {
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 p-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight flex items-center gap-2">
+            <Settings2 className="size-5 text-primary" />
+            系统设置 / 管理后台
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            用户、角色、权限、菜单、字典、日志与系统配置
+          </p>
+        </div>
+        <Badge variant="secondary">仅管理员可见</Badge>
+      </div>
+
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
         <StatCard label="用户总数" value={1284} icon="👥" />
         <StatCard label="在线服务" value="32/32" icon="🟢" />

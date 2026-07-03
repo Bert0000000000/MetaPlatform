@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Send, Bot, User, Sparkles, Plus, MessageSquare, Wrench, ListChecks, BookOpen, Globe, Code, Database, Workflow, FileText, BarChart3, Bot as BotIcon, Settings2, Clock, CheckCircle2 } from "lucide-react";
+import { Send, Bot, User, Sparkles, Plus, MessageSquare, Bot as BotIcon, ListChecks, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -74,25 +74,8 @@ function ChatTab() {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="border-b px-6 py-3 flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold tracking-tight">SuperAI</h1>
-          <p className="text-xs text-muted-foreground">AI 对话入口 · ⌘K 全局唤起</p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm">
-            <Clock className="size-3 mr-1" />
-            历史
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => setMessages(initialMessages)}>
-            <Plus className="size-3 mr-1" />
-            新对话
-          </Button>
-        </div>
-      </div>
-
-      <div className="flex-1 overflow-y-auto p-6">
-        <div className="mx-auto max-w-3xl flex flex-col gap-4">
+      <div className="flex-1 overflow-y-auto px-6 py-6">
+        <div className="mx-auto flex flex-col gap-4" style={{ maxWidth: "900px" }}>
           {messages.map((m, i) => (
             <div
               key={i}
@@ -103,8 +86,8 @@ function ChatTab() {
                   <Bot className="size-4" />
                 </div>
               )}
-              <div className={`max-w-[80%] flex flex-col ${m.role === "user" ? "items-end" : "items-start"}`}>
-                <Card className={m.role === "user" ? "bg-primary text-primary-foreground" : ""}>
+              <div className={`max-w-[70%] flex flex-col ${m.role === "user" ? "items-end" : "items-start"}`}>
+                <Card className={m.role === "user" ? "bg-primary text-primary-foreground" : "bg-card"}>
                   <CardContent className="p-3">
                     <p className="text-sm whitespace-pre-wrap">{m.content}</p>
                   </CardContent>
@@ -121,8 +104,8 @@ function ChatTab() {
         </div>
       </div>
 
-      <div className="border-t p-4">
-        <div className="mx-auto max-w-3xl">
+      <div className="border-t p-4 bg-background">
+        <div className="mx-auto" style={{ maxWidth: "900px" }}>
           <Card>
             <CardContent className="p-3">
               <div className="flex items-end gap-2">
@@ -166,12 +149,12 @@ function ChatTab() {
 
 function AgentTab() {
   const AGENTS = [
-    { id: "data", name: "数据分析智能体", desc: "查数据 / 出报表 / 发现异常", icon: "📊", color: "bg-blue-500" },
-    { id: "report", name: "报表生成智能体", desc: "自动编排 BI 报表", icon: "📈", color: "bg-purple-500" },
-    { id: "process", name: "流程分析智能体", desc: "识别瓶颈 / 给出优化建议", icon: "🔄", color: "bg-orange-500" },
-    { id: "doc", name: "文档撰写智能体", desc: "起草合同 / 会议纪要 / 周报", icon: "📝", color: "bg-green-500" },
-    { id: "code", name: "VibeCoding 智能体", desc: "自然语言生成完整应用", icon: "✨", color: "bg-pink-500" },
-    { id: "support", name: "客服智能体", desc: "7×24 答疑 / 工单预处理", icon: "💬", color: "bg-cyan-500" },
+    { id: "data", name: "数据分析智能体", desc: "查数据 / 出报表 / 发现异常", icon: "📊", color: "from-blue-500 to-blue-600" },
+    { id: "report", name: "报表生成智能体", desc: "自动编排 BI 报表", icon: "📈", color: "from-purple-500 to-purple-600" },
+    { id: "process", name: "流程分析智能体", desc: "识别瓶颈 / 给出优化建议", icon: "🔄", color: "from-orange-500 to-orange-600" },
+    { id: "doc", name: "文档撰写智能体", desc: "起草合同 / 会议纪要 / 周报", icon: "📝", color: "from-green-500 to-green-600" },
+    { id: "code", name: "VibeCoding 智能体", desc: "自然语言生成完整应用", icon: "✨", color: "from-pink-500 to-pink-600" },
+    { id: "support", name: "客服智能体", desc: "7×24 答疑 / 工单预处理", icon: "💬", color: "from-cyan-500 to-cyan-600" },
   ];
   return (
     <div className="p-6 flex flex-col gap-4">
@@ -184,7 +167,7 @@ function AgentTab() {
           <Card key={a.id} className="hover:border-primary cursor-pointer transition-colors">
             <CardHeader>
               <div className="flex items-start justify-between">
-                <div className="size-12 rounded-lg bg-muted flex items-center justify-center text-2xl">
+                <div className={`size-12 rounded-lg bg-gradient-to-br ${a.color} flex items-center justify-center text-2xl shadow-sm`}>
                   {a.icon}
                 </div>
                 <Badge variant="secondary">内置</Badge>
@@ -236,7 +219,7 @@ function TasksTab() {
                   <td className="px-4 py-3 font-medium">{t.title}</td>
                   <td className="px-4 py-3 text-muted-foreground">{t.agent}</td>
                   <td className="px-4 py-3">
-                    {t.status === "completed" && <Badge variant="secondary" className="text-green-600"><CheckCircle2 className="size-3 mr-1" />已完成</Badge>}
+                    {t.status === "completed" && <Badge variant="secondary" className="text-green-600">已完成</Badge>}
                     {t.status === "running" && <Badge className="bg-blue-500">进行中</Badge>}
                     {t.status === "failed" && <Badge variant="destructive">失败</Badge>}
                   </td>
@@ -262,7 +245,6 @@ function KnowledgeTab() {
         </div>
         <div className="flex gap-2">
           <Button size="sm" variant="outline">
-            <Database className="size-3 mr-1" />
             接入向量库
           </Button>
           <Button size="sm">
@@ -315,9 +297,6 @@ function KnowledgeTab() {
                     {d.category} · {d.type} · {d.size} · 更新于 {d.updated}
                   </div>
                 </div>
-                <Button variant="ghost" size="sm">
-                  <Settings2 className="size-3" />
-                </Button>
               </div>
             ))}
           </div>
@@ -329,27 +308,55 @@ function KnowledgeTab() {
 
 export function SuperAIPage() {
   return (
-    <Tabs defaultValue="chat" className="flex flex-col h-full">
-      <div className="border-b px-6">
-        <TabsList className="h-12 bg-transparent">
-          <TabsTrigger value="chat" className="gap-1"><MessageSquare className="size-3.5" /> 对话</TabsTrigger>
-          <TabsTrigger value="agent" className="gap-1"><Bot className="size-3.5" /> 智能体</TabsTrigger>
-          <TabsTrigger value="tasks" className="gap-1"><ListChecks className="size-3.5" /> 任务</TabsTrigger>
-          <TabsTrigger value="knowledge" className="gap-1"><BookOpen className="size-3.5" /> 知识中心</TabsTrigger>
-        </TabsList>
+    <div className="flex flex-col h-full">
+      <div className="border-b bg-background px-6 py-3 flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-semibold tracking-tight flex items-center gap-2">
+            <Sparkles className="size-5 text-primary" />
+            SuperAI
+          </h1>
+          <p className="text-xs text-muted-foreground mt-0.5">AI 对话入口 · ⌘K 全局唤起</p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm">
+            历史
+          </Button>
+          <Button variant="outline" size="sm">
+            <Plus className="size-3 mr-1" />
+            新对话
+          </Button>
+        </div>
       </div>
-      <TabsContent value="chat" className="flex-1 m-0">
-        <ChatTab />
-      </TabsContent>
-      <TabsContent value="agent" className="flex-1 m-0 overflow-y-auto">
-        <AgentTab />
-      </TabsContent>
-      <TabsContent value="tasks" className="flex-1 m-0 overflow-y-auto">
-        <TasksTab />
-      </TabsContent>
-      <TabsContent value="knowledge" className="flex-1 m-0 overflow-y-auto">
-        <KnowledgeTab />
-      </TabsContent>
-    </Tabs>
+      <Tabs defaultValue="chat" className="flex flex-col flex-1">
+        <div className="border-b bg-background px-6">
+          <TabsList className="h-11 bg-transparent">
+            <TabsTrigger value="chat" className="gap-1.5 data-[state=active]:bg-primary/10">
+              <MessageSquare className="size-3.5" /> 对话
+            </TabsTrigger>
+            <TabsTrigger value="agent" className="gap-1.5 data-[state=active]:bg-primary/10">
+              <Bot className="size-3.5" /> 智能体
+            </TabsTrigger>
+            <TabsTrigger value="tasks" className="gap-1.5 data-[state=active]:bg-primary/10">
+              <ListChecks className="size-3.5" /> 任务
+            </TabsTrigger>
+            <TabsTrigger value="knowledge" className="gap-1.5 data-[state=active]:bg-primary/10">
+              <BookOpen className="size-3.5" /> 知识中心
+            </TabsTrigger>
+          </TabsList>
+        </div>
+        <TabsContent value="chat" className="flex-1 m-0 overflow-hidden">
+          <ChatTab />
+        </TabsContent>
+        <TabsContent value="agent" className="flex-1 m-0 overflow-y-auto">
+          <AgentTab />
+        </TabsContent>
+        <TabsContent value="tasks" className="flex-1 m-0 overflow-y-auto">
+          <TasksTab />
+        </TabsContent>
+        <TabsContent value="knowledge" className="flex-1 m-0 overflow-y-auto">
+          <KnowledgeTab />
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 }

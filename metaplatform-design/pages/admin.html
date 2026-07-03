@@ -16,7 +16,7 @@
   --color-sidebar-bg: #0f172a;
   --color-sidebar-text: #94a3b8;
   --color-sidebar-text-hover: #cbd5e1;
-  --color-sidebar-active-bg: rgba(59, 130, 246, 0.15);
+  --color-sidebar-active-bg: var(--color-primary-subtle);
   --color-sidebar-active-text: #60a5fa;
   --color-sidebar-border: rgba(148, 163, 184, 0.1);
   --color-text-primary: #0f172a;
@@ -83,7 +83,7 @@
     <!-- Brand -->
     <div class="flex items-center gap-2 px-3 py-3" style="border-bottom: 1px solid var(--color-sidebar-border);">
       <span class="w-8 h-8 text-white flex items-center justify-center font-bold text-xs" style="background: var(--color-primary); border-radius: var(--radius-md);">M</span>
-      <span class="text-sm font-semibold" style="color: #f1f5f9;">MetaPlatform</span>
+      <span class="text-sm font-semibold" style="color: var(--color-text-inverse)">MetaPlatform</span>
     </div>
 
     <!-- Nav -->
@@ -179,7 +179,7 @@
       </a>
 
       <!-- 10. 平台管理 (ACTIVE) -->
-      <a data-dom-id="nav-admin" class="flex items-center gap-0.5 px-2.5 py-1.5 cursor-pointer" style="background: rgba(59, 130, 246, 0.15); color: #60a5fa; border-radius: var(--radius-md); font-size: var(--font-size-sm);">
+      <a data-dom-id="nav-admin" class="flex items-center gap-0.5 px-2.5 py-1.5 cursor-pointer" style="background: var(--color-primary-subtle); color: var(--color-primary-active); border-radius: var(--radius-md); font-size: var(--font-size-sm);">
         <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="12" r="3"/>
           <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
@@ -210,10 +210,10 @@
 
     <!-- Bottom user area -->
     <div class="px-3 py-3 flex items-center gap-2" style="border-top: 1px solid var(--color-sidebar-border);">
-      <div class="w-6 h-6 flex items-center justify-center" style="background: #334155; color: #94a3b8; border-radius: var(--radius-full); font-size: 10px; font-weight: 500;">A</div>
+      <div class="w-6 h-6 flex items-center justify-center" style="background: var(--color-sidebar-bg); color: var(--color-sidebar-text); border-radius: var(--radius-full); var(--font-size-xs) var(--font-weight-medium)">A</div>
       <div class="flex-1 min-w-0">
         <div class="truncate" style="color: var(--color-sidebar-text-hover); font-size: var(--font-size-sm);">Admin</div>
-        <div class="truncate" style="color: #64748b; font-size: var(--font-size-xs);">admin@metaplatform.io</div>
+        <div class="truncate" style="color: var(--color-text-secondary); font-size: var(--font-size-xs);">admin@metaplatform.io</div>
       </div>
     </div>
 
@@ -230,12 +230,12 @@
 
     <!-- Tab bar -->
     <div class="flex gap-0" style="border-bottom: 1px solid var(--color-border);">
-      <button data-tab="audit" class="tab-btn px-4 py-2 cursor-pointer transition-colors" style="font-size: var(--font-size-sm); font-weight: 500; border: none; background: none; color: var(--color-primary); border-bottom: 2px solid var(--color-primary); margin-bottom: -1px;">审计日志</button>
-      <button data-tab="lineage" class="tab-btn px-4 py-2 cursor-pointer transition-colors" style="font-size: var(--font-size-sm); font-weight: 500; border: none; background: none; color: var(--color-text-secondary); border-bottom: 2px solid transparent; margin-bottom: -1px;" onmouseover="this.style.borderBottomColor='var(--color-border)'" onmouseout="this.style.borderBottomColor='transparent'">数据血缘</button>
-      <button data-tab="process-monitor" class="tab-btn px-4 py-2 cursor-pointer transition-colors" style="font-size: var(--font-size-sm); font-weight: 500; border: none; background: none; color: var(--color-text-secondary); border-bottom: 2px solid transparent; margin-bottom: -1px;" onmouseover="this.style.borderBottomColor='var(--color-border)'" onmouseout="this.style.borderBottomColor='transparent'">流程监控</button>
-      <button data-tab="agent-monitor" class="tab-btn px-4 py-2 cursor-pointer transition-colors" style="font-size: var(--font-size-sm); font-weight: 500; border: none; background: none; color: var(--color-text-secondary); border-bottom: 2px solid transparent; margin-bottom: -1px;" onmouseover="this.style.borderBottomColor='var(--color-border)'" onmouseout="this.style.borderBottomColor='transparent'">Agent监控</button>
-      <button data-tab="data-sync" class="tab-btn px-4 py-2 cursor-pointer transition-colors" style="font-size: var(--font-size-sm); font-weight: 500; border: none; background: none; color: var(--color-text-secondary); border-bottom: 2px solid transparent; margin-bottom: -1px;" onmouseover="this.style.borderBottomColor='var(--color-border)'" onmouseout="this.style.borderBottomColor='transparent'">数据同步</button>
-      <button data-tab="ontology" class="tab-btn px-4 py-2 cursor-pointer transition-colors" style="font-size: var(--font-size-sm); font-weight: 500; border: none; background: none; color: var(--color-text-secondary); border-bottom: 2px solid transparent; margin-bottom: -1px;" onmouseover="this.style.borderBottomColor='var(--color-border)'" onmouseout="this.style.borderBottomColor='transparent'">本体管理</button>
+      <button data-tab="audit" class="tab-btn px-4 py-2 cursor-pointer transition-colors" style="font-size: var(--font-size-sm); var(--font-weight-medium) border: none; background: none; color: var(--color-primary); border-bottom: 2px solid var(--color-primary); margin-bottom: -1px;">审计日志</button>
+      <button data-tab="lineage" class="tab-btn px-4 py-2 cursor-pointer transition-colors" style="font-size: var(--font-size-sm); var(--font-weight-medium) border: none; background: none; color: var(--color-text-secondary); border-bottom: 2px solid transparent; margin-bottom: -1px;" onmouseover="this.style.borderBottomColor='var(--color-border)'" onmouseout="this.style.borderBottomColor='transparent'">数据血缘</button>
+      <button data-tab="process-monitor" class="tab-btn px-4 py-2 cursor-pointer transition-colors" style="font-size: var(--font-size-sm); var(--font-weight-medium) border: none; background: none; color: var(--color-text-secondary); border-bottom: 2px solid transparent; margin-bottom: -1px;" onmouseover="this.style.borderBottomColor='var(--color-border)'" onmouseout="this.style.borderBottomColor='transparent'">流程监控</button>
+      <button data-tab="agent-monitor" class="tab-btn px-4 py-2 cursor-pointer transition-colors" style="font-size: var(--font-size-sm); var(--font-weight-medium) border: none; background: none; color: var(--color-text-secondary); border-bottom: 2px solid transparent; margin-bottom: -1px;" onmouseover="this.style.borderBottomColor='var(--color-border)'" onmouseout="this.style.borderBottomColor='transparent'">Agent监控</button>
+      <button data-tab="data-sync" class="tab-btn px-4 py-2 cursor-pointer transition-colors" style="font-size: var(--font-size-sm); var(--font-weight-medium) border: none; background: none; color: var(--color-text-secondary); border-bottom: 2px solid transparent; margin-bottom: -1px;" onmouseover="this.style.borderBottomColor='var(--color-border)'" onmouseout="this.style.borderBottomColor='transparent'">数据同步</button>
+      <button data-tab="ontology" class="tab-btn px-4 py-2 cursor-pointer transition-colors" style="font-size: var(--font-size-sm); var(--font-weight-medium) border: none; background: none; color: var(--color-text-secondary); border-bottom: 2px solid transparent; margin-bottom: -1px;" onmouseover="this.style.borderBottomColor='var(--color-border)'" onmouseout="this.style.borderBottomColor='transparent'">本体管理</button>
     </div>
 
     <!-- Tab Content: 审计日志 -->
@@ -261,7 +261,7 @@
             <option>部署</option>
           </select>
         </div>
-        <button style="font-size: var(--font-size-sm); font-weight: 500; padding: 4px 14px; border-radius: var(--radius-md); background: var(--color-primary); color: var(--color-text-inverse); border: none; cursor: pointer; white-space: nowrap;" onmouseover="this.style.background='var(--color-primary-hover)'" onmouseout="this.style.background='var(--color-primary)'">查询</button>
+        <button style="font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); padding: 4px 14px; border-radius: var(--radius-md); background: var(--color-primary); color: var(--color-text-inverse); border: none; cursor: pointer; white-space: nowrap;" onmouseover="this.style.background='var(--color-primary-hover)'" onmouseout="this.style.background='var(--color-primary)'">查询</button>
       </div>
 
       <!-- Audit log table -->
@@ -269,19 +269,19 @@
         <table style="width: 100%; border-collapse: collapse; font-size: var(--font-size-sm);">
           <thead>
             <tr style="background: var(--color-bg-secondary);">
-              <th style="padding: 8px 12px; text-align: left; font-weight: 500; color: var(--color-text-secondary); border-bottom: 1px solid var(--color-border);">时间</th>
-              <th style="padding: 8px 12px; text-align: left; font-weight: 500; color: var(--color-text-secondary); border-bottom: 1px solid var(--color-border);">操作</th>
-              <th style="padding: 8px 12px; text-align: left; font-weight: 500; color: var(--color-text-secondary); border-bottom: 1px solid var(--color-border);">资源类型</th>
-              <th style="padding: 8px 12px; text-align: left; font-weight: 500; color: var(--color-text-secondary); border-bottom: 1px solid var(--color-border);">资源ID</th>
-              <th style="padding: 8px 12px; text-align: left; font-weight: 500; color: var(--color-text-secondary); border-bottom: 1px solid var(--color-border);">用户</th>
-              <th style="padding: 8px 12px; text-align: left; font-weight: 500; color: var(--color-text-secondary); border-bottom: 1px solid var(--color-border);">IP地址</th>
+              <th style="padding: 8px 12px; text-align: left; var(--font-weight-medium) color: var(--color-text-secondary); border-bottom: 1px solid var(--color-border);">时间</th>
+              <th style="padding: 8px 12px; text-align: left; var(--font-weight-medium) color: var(--color-text-secondary); border-bottom: 1px solid var(--color-border);">操作</th>
+              <th style="padding: 8px 12px; text-align: left; var(--font-weight-medium) color: var(--color-text-secondary); border-bottom: 1px solid var(--color-border);">资源类型</th>
+              <th style="padding: 8px 12px; text-align: left; var(--font-weight-medium) color: var(--color-text-secondary); border-bottom: 1px solid var(--color-border);">资源ID</th>
+              <th style="padding: 8px 12px; text-align: left; var(--font-weight-medium) color: var(--color-text-secondary); border-bottom: 1px solid var(--color-border);">用户</th>
+              <th style="padding: 8px 12px; text-align: left; var(--font-weight-medium) color: var(--color-text-secondary); border-bottom: 1px solid var(--color-border);">IP地址</th>
             </tr>
           </thead>
           <tbody>
             <tr>
               <td style="padding: 8px 12px; color: var(--color-text-secondary); border-bottom: 1px solid var(--color-border); font-family: var(--font-mono); font-size: var(--font-size-xs);">2024-01-15 14:32:10</td>
               <td style="padding: 8px 12px; border-bottom: 1px solid var(--color-border);">
-                <span style="font-size: var(--font-size-xs); padding: 1px 6px; border-radius: var(--radius-full); background: var(--color-primary-light); color: var(--color-primary); font-weight: 500;">创建</span>
+                <span style="font-size: var(--font-size-xs); padding: 1px 6px; border-radius: var(--radius-full); background: var(--color-primary-light); color: var(--color-primary); var(--font-weight-medium)">创建</span>
               </td>
               <td style="padding: 8px 12px; color: var(--color-text-primary); border-bottom: 1px solid var(--color-border);">ObjectType</td>
               <td style="padding: 8px 12px; color: var(--color-text-primary); border-bottom: 1px solid var(--color-border); font-family: var(--font-mono); font-size: var(--font-size-xs);">customer_info</td>
@@ -291,7 +291,7 @@
             <tr>
               <td style="padding: 8px 12px; color: var(--color-text-secondary); border-bottom: 1px solid var(--color-border); font-family: var(--font-mono); font-size: var(--font-size-xs);">2024-01-15 14:28:05</td>
               <td style="padding: 8px 12px; border-bottom: 1px solid var(--color-border);">
-                <span style="font-size: var(--font-size-xs); padding: 1px 6px; border-radius: var(--radius-full); background: var(--state-warning-bg); color: var(--state-warning); font-weight: 500;">更新</span>
+                <span style="font-size: var(--font-size-xs); padding: 1px 6px; border-radius: var(--radius-full); background: var(--state-warning-bg); color: var(--state-warning); var(--font-weight-medium)">更新</span>
               </td>
               <td style="padding: 8px 12px; color: var(--color-text-primary); border-bottom: 1px solid var(--color-border);">页面</td>
               <td style="padding: 8px 12px; color: var(--color-text-primary); border-bottom: 1px solid var(--color-border); font-family: var(--font-mono); font-size: var(--font-size-xs);">customer_form</td>
@@ -301,7 +301,7 @@
             <tr>
               <td style="padding: 8px 12px; color: var(--color-text-secondary); border-bottom: 1px solid var(--color-border); font-family: var(--font-mono); font-size: var(--font-size-xs);">2024-01-15 13:15:22</td>
               <td style="padding: 8px 12px; border-bottom: 1px solid var(--color-border);">
-                <span style="font-size: var(--font-size-xs); padding: 1px 6px; border-radius: var(--radius-full); background: var(--state-error-bg); color: var(--state-error); font-weight: 500;">删除</span>
+                <span style="font-size: var(--font-size-xs); padding: 1px 6px; border-radius: var(--radius-full); background: var(--state-error-bg); color: var(--state-error); var(--font-weight-medium)">删除</span>
               </td>
               <td style="padding: 8px 12px; color: var(--color-text-primary); border-bottom: 1px solid var(--color-border);">字段</td>
               <td style="padding: 8px 12px; color: var(--color-text-primary); border-bottom: 1px solid var(--color-border); font-family: var(--font-mono); font-size: var(--font-size-xs);">phone_backup</td>
@@ -311,7 +311,7 @@
             <tr>
               <td style="padding: 8px 12px; color: var(--color-text-secondary); border-bottom: 1px solid var(--color-border); font-family: var(--font-mono); font-size: var(--font-size-xs);">2024-01-15 11:42:18</td>
               <td style="padding: 8px 12px; border-bottom: 1px solid var(--color-border);">
-                <span style="font-size: var(--font-size-xs); padding: 1px 6px; border-radius: var(--radius-full); background: var(--state-success-bg); color: var(--state-success); font-weight: 500;">部署</span>
+                <span style="font-size: var(--font-size-xs); padding: 1px 6px; border-radius: var(--radius-full); background: var(--state-success-bg); color: var(--state-success); var(--font-weight-medium)">部署</span>
               </td>
               <td style="padding: 8px 12px; color: var(--color-text-primary); border-bottom: 1px solid var(--color-border);">流程</td>
               <td style="padding: 8px 12px; color: var(--color-text-primary); border-bottom: 1px solid var(--color-border); font-family: var(--font-mono); font-size: var(--font-size-xs);">approval_flow</td>
@@ -321,7 +321,7 @@
             <tr>
               <td style="padding: 8px 12px; color: var(--color-text-secondary); font-family: var(--font-mono); font-size: var(--font-size-xs);">2024-01-15 10:05:33</td>
               <td style="padding: 8px 12px;">
-                <span style="font-size: var(--font-size-xs); padding: 1px 6px; border-radius: var(--radius-full); background: var(--color-primary-light); color: var(--color-primary); font-weight: 500;">创建</span>
+                <span style="font-size: var(--font-size-xs); padding: 1px 6px; border-radius: var(--radius-full); background: var(--color-primary-light); color: var(--color-primary); var(--font-weight-medium)">创建</span>
               </td>
               <td style="padding: 8px 12px; color: var(--color-text-primary);">Agent</td>
               <td style="padding: 8px 12px; color: var(--color-text-primary); font-family: var(--font-mono); font-size: var(--font-size-xs);">data_extractor</td>

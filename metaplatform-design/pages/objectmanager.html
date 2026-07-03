@@ -16,7 +16,7 @@
   --color-sidebar-bg: #0f172a;
   --color-sidebar-text: #94a3b8;
   --color-sidebar-text-hover: #cbd5e1;
-  --color-sidebar-active-bg: rgba(59, 130, 246, 0.15);
+  --color-sidebar-active-bg: var(--color-primary-subtle);
   --color-sidebar-active-text: #60a5fa;
   --color-sidebar-border: rgba(148, 163, 184, 0.1);
   --color-text-primary: #0f172a;
@@ -83,7 +83,7 @@
     <!-- Brand -->
     <div class="flex items-center gap-2 px-3 py-3" style="border-bottom: 1px solid var(--color-sidebar-border);">
       <span class="w-8 h-8 text-white flex items-center justify-center font-bold text-xs" style="background: var(--color-primary); border-radius: var(--radius-md);">M</span>
-      <span class="text-sm font-semibold" style="color: #f1f5f9;">MetaPlatform</span>
+      <span class="text-sm font-semibold" style="color: var(--color-text-inverse)">MetaPlatform</span>
     </div>
 
     <!-- Nav -->
@@ -101,7 +101,7 @@
       </a>
 
       <!-- 2. ObjectType (ACTIVE) -->
-      <a data-dom-id="nav-objectmanager" class="flex items-center gap-0.5 px-2.5 py-1.5 cursor-pointer" style="background: rgba(59, 130, 246, 0.15); color: #60a5fa; border-radius: var(--radius-md); font-size: var(--font-size-sm);">
+      <a data-dom-id="nav-objectmanager" class="flex items-center gap-0.5 px-2.5 py-1.5 cursor-pointer" style="background: var(--color-primary-subtle); color: var(--color-primary-active); border-radius: var(--radius-md); font-size: var(--font-size-sm);">
         <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
           <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
@@ -168,21 +168,27 @@
 
       <!-- Divider -->
       <div style="border-top: 1px solid rgba(148,163,184,0.1); margin: 8px 12px;"></div>
-      <!-- 额外页面 -->
-      <a data-dom-id="nav-pageview" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-400 hover:bg-white/5 hover:text-slate-200 transition-colors cursor-pointer">
-        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+      <!-- 页面预览 -->
+      <a data-dom-id="nav-pageview" class="flex items-center gap-0.5 px-2.5 py-1.5 cursor-pointer transition-colors" style="color: var(--color-sidebar-text); border-radius: var(--radius-md); font-size: var(--font-size-sm);" onmouseover="this.style.background='rgba(255,255,255,0.05)';this.style.color='var(--color-sidebar-text-hover)'" onmouseout="this.style.background='transparent';this.style.color='var(--color-sidebar-text)'">
+        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
         <span>页面预览</span>
       </a>
-      <a data-dom-id="nav-admin" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-400 hover:bg-white/5 hover:text-slate-200 transition-colors cursor-pointer">
-        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+
+      <!-- 平台管理 -->
+      <a data-dom-id="nav-admin" class="flex items-center gap-0.5 px-2.5 py-1.5 cursor-pointer transition-colors" style="color: var(--color-sidebar-text); border-radius: var(--radius-md); font-size: var(--font-size-sm);" onmouseover="this.style.background='rgba(255,255,255,0.05)';this.style.color='var(--color-sidebar-text-hover)'" onmouseout="this.style.background='transparent';this.style.color='var(--color-sidebar-text)'">
+        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
         <span>平台管理</span>
       </a>
-      <a data-dom-id="nav-market" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-400 hover:bg-white/5 hover:text-slate-200 transition-colors cursor-pointer">
-        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+
+      <!-- 应用市场 -->
+      <a data-dom-id="nav-market" class="flex items-center gap-0.5 px-2.5 py-1.5 cursor-pointer transition-colors" style="color: var(--color-sidebar-text); border-radius: var(--radius-md); font-size: var(--font-size-sm);" onmouseover="this.style.background='rgba(255,255,255,0.05)';this.style.color='var(--color-sidebar-text-hover)'" onmouseout="this.style.background='transparent';this.style.color='var(--color-sidebar-text)'">
+        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
         <span>应用市场</span>
       </a>
-      <a data-dom-id="nav-billing" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-400 hover:bg-white/5 hover:text-slate-200 transition-colors cursor-pointer">
-        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+
+      <!-- 计费中心 -->
+      <a data-dom-id="nav-billing" class="flex items-center gap-0.5 px-2.5 py-1.5 cursor-pointer transition-colors" style="color: var(--color-sidebar-text); border-radius: var(--radius-md); font-size: var(--font-size-sm);" onmouseover="this.style.background='rgba(255,255,255,0.05)';this.style.color='var(--color-sidebar-text-hover)'" onmouseout="this.style.background='transparent';this.style.color='var(--color-sidebar-text)'">
+        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
         <span>计费中心</span>
       </a>
 
@@ -190,10 +196,10 @@
 
     <!-- Bottom user area -->
     <div class="px-3 py-3 flex items-center gap-2" style="border-top: 1px solid var(--color-sidebar-border);">
-      <div class="w-6 h-6 flex items-center justify-center" style="background: #334155; color: #94a3b8; border-radius: var(--radius-full); font-size: 10px; font-weight: 500;">A</div>
+      <div class="w-6 h-6 flex items-center justify-center" style="background: var(--color-sidebar-bg); color: var(--color-sidebar-text); border-radius: var(--radius-full); var(--font-size-xs) var(--font-weight-medium)">A</div>
       <div class="flex-1 min-w-0">
         <div class="truncate" style="color: var(--color-sidebar-text-hover); font-size: var(--font-size-sm);">Admin</div>
-        <div class="truncate" style="color: #64748b; font-size: var(--font-size-xs);">admin@metaplatform.io</div>
+        <div class="truncate" style="color: var(--color-text-secondary); font-size: var(--font-size-xs);">admin@metaplatform.io</div>
       </div>
     </div>
 
@@ -208,7 +214,7 @@
         <h1 class="font-semibold" style="font-size: var(--font-size-xl); color: var(--color-text-primary); letter-spacing: -0.02em; line-height: 1.25;">ObjectType 管理</h1>
         <p class="mt-1" style="font-size: var(--font-size-sm); color: var(--color-text-secondary);">管理平台中的业务对象类型定义与字段配置。</p>
       </div>
-      <button class="inline-flex items-center gap-1.5 text-white whitespace-nowrap transition-colors" style="font-size: var(--font-size-sm); font-weight: 500; padding: 6px 14px; border-radius: var(--radius-md); background: var(--color-primary); transition-property: background-color; transition-duration: 150ms;" onmouseover="this.style.background='var(--color-primary-hover)'" onmouseout="this.style.background='var(--color-primary)'">
+      <button class="inline-flex items-center gap-1.5 text-white whitespace-nowrap transition-colors" style="font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); padding: 6px 14px; border-radius: var(--radius-md); background: var(--color-primary); transition-property: background-color; transition-duration: 150ms;" onmouseover="this.style.background='var(--color-primary-hover)'" onmouseout="this.style.background='var(--color-primary)'">
         <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         新建 ObjectType
       </button>
@@ -236,7 +242,7 @@
     <div class="grid grid-cols-3 gap-3">
 
       <!-- Card 1: 客户信息 -->
-      <div class="p-4 transition-colors" style="border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); transition-duration: 150ms; transition-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);" onmouseover="this.style.borderColor='#93c5fd'" onmouseout="this.style.borderColor='var(--color-border)'">
+      <div class="p-4 transition-colors" style="border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); transition-duration: 150ms; transition-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);" onmouseover="this.style.borderColor='var(--color-primary-hover-light)'" onmouseout="this.style.borderColor='var(--color-border)'">
         <div class="flex items-start justify-between">
           <div class="font-medium" style="font-size: var(--font-size-base); color: var(--color-text-primary);">客户信息</div>
           <span class="inline-flex items-center gap-1 px-2 py-0.5" style="background: var(--color-bg-secondary); color: var(--color-text-secondary); border-radius: var(--radius-full); font-size: var(--font-size-xs);">
@@ -248,12 +254,12 @@
         <p class="mt-2" style="font-size: var(--font-size-xs); color: var(--color-text-secondary); line-height: 1.5;">管理客户基本资料与联系信息</p>
         <div class="flex items-center justify-between mt-3 pt-3" style="border-top: 1px solid var(--color-border);">
           <span class="inline-flex items-center px-2 py-0.5" style="background: var(--color-bg-secondary); color: var(--color-text-secondary); border-radius: var(--radius-full); font-size: var(--font-size-xs);">12 个字段</span>
-          <button class="inline-flex items-center justify-center text-white whitespace-nowrap transition-colors" style="font-size: var(--font-size-xs); font-weight: 500; padding: 4px 10px; border-radius: var(--radius-md); background: var(--color-primary); transition-property: background-color; transition-duration: 150ms;" onmouseover="this.style.background='var(--color-primary-hover)'" onmouseout="this.style.background='var(--color-primary)'">生成并预览</button>
+          <button class="inline-flex items-center justify-center text-white whitespace-nowrap transition-colors" style="font-size: var(--font-size-xs); font-weight: var(--font-weight-medium); padding: 4px 10px; border-radius: var(--radius-md); background: var(--color-primary); transition-property: background-color; transition-duration: 150ms;" onmouseover="this.style.background='var(--color-primary-hover)'" onmouseout="this.style.background='var(--color-primary)'">生成并预览</button>
         </div>
       </div>
 
       <!-- Card 2: 产品目录 -->
-      <div class="p-4 transition-colors" style="border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); transition-duration: 150ms; transition-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);" onmouseover="this.style.borderColor='#93c5fd'" onmouseout="this.style.borderColor='var(--color-border)'">
+      <div class="p-4 transition-colors" style="border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); transition-duration: 150ms; transition-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);" onmouseover="this.style.borderColor='var(--color-primary-hover-light)'" onmouseout="this.style.borderColor='var(--color-border)'">
         <div class="flex items-start justify-between">
           <div class="font-medium" style="font-size: var(--font-size-base); color: var(--color-text-primary);">产品目录</div>
           <span class="inline-flex items-center gap-1 px-2 py-0.5" style="background: var(--color-bg-secondary); color: var(--color-text-secondary); border-radius: var(--radius-full); font-size: var(--font-size-xs);">
@@ -265,12 +271,12 @@
         <p class="mt-2" style="font-size: var(--font-size-xs); color: var(--color-text-secondary); line-height: 1.5;">产品信息、分类与价格管理</p>
         <div class="flex items-center justify-between mt-3 pt-3" style="border-top: 1px solid var(--color-border);">
           <span class="inline-flex items-center px-2 py-0.5" style="background: var(--color-bg-secondary); color: var(--color-text-secondary); border-radius: var(--radius-full); font-size: var(--font-size-xs);">8 个字段</span>
-          <button class="inline-flex items-center justify-center text-white whitespace-nowrap transition-colors" style="font-size: var(--font-size-xs); font-weight: 500; padding: 4px 10px; border-radius: var(--radius-md); background: var(--color-primary); transition-property: background-color; transition-duration: 150ms;" onmouseover="this.style.background='var(--color-primary-hover)'" onmouseout="this.style.background='var(--color-primary)'">生成并预览</button>
+          <button class="inline-flex items-center justify-center text-white whitespace-nowrap transition-colors" style="font-size: var(--font-size-xs); font-weight: var(--font-weight-medium); padding: 4px 10px; border-radius: var(--radius-md); background: var(--color-primary); transition-property: background-color; transition-duration: 150ms;" onmouseover="this.style.background='var(--color-primary-hover)'" onmouseout="this.style.background='var(--color-primary)'">生成并预览</button>
         </div>
       </div>
 
       <!-- Card 3: 订单管理 -->
-      <div class="p-4 transition-colors" style="border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); transition-duration: 150ms; transition-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);" onmouseover="this.style.borderColor='#93c5fd'" onmouseout="this.style.borderColor='var(--color-border)'">
+      <div class="p-4 transition-colors" style="border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); transition-duration: 150ms; transition-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);" onmouseover="this.style.borderColor='var(--color-primary-hover-light)'" onmouseout="this.style.borderColor='var(--color-border)'">
         <div class="flex items-start justify-between">
           <div class="font-medium" style="font-size: var(--font-size-base); color: var(--color-text-primary);">订单管理</div>
           <span class="inline-flex items-center gap-1 px-2 py-0.5" style="background: var(--color-bg-secondary); color: var(--color-text-secondary); border-radius: var(--radius-full); font-size: var(--font-size-xs);">
@@ -282,12 +288,12 @@
         <p class="mt-2" style="font-size: var(--font-size-xs); color: var(--color-text-secondary); line-height: 1.5;">订单生命周期与状态跟踪</p>
         <div class="flex items-center justify-between mt-3 pt-3" style="border-top: 1px solid var(--color-border);">
           <span class="inline-flex items-center px-2 py-0.5" style="background: var(--color-bg-secondary); color: var(--color-text-secondary); border-radius: var(--radius-full); font-size: var(--font-size-xs);">15 个字段</span>
-          <button class="inline-flex items-center justify-center text-white whitespace-nowrap transition-colors" style="font-size: var(--font-size-xs); font-weight: 500; padding: 4px 10px; border-radius: var(--radius-md); background: var(--color-primary); transition-property: background-color; transition-duration: 150ms;" onmouseover="this.style.background='var(--color-primary-hover)'" onmouseout="this.style.background='var(--color-primary)'">生成并预览</button>
+          <button class="inline-flex items-center justify-center text-white whitespace-nowrap transition-colors" style="font-size: var(--font-size-xs); font-weight: var(--font-weight-medium); padding: 4px 10px; border-radius: var(--radius-md); background: var(--color-primary); transition-property: background-color; transition-duration: 150ms;" onmouseover="this.style.background='var(--color-primary-hover)'" onmouseout="this.style.background='var(--color-primary)'">生成并预览</button>
         </div>
       </div>
 
       <!-- Card 4: 员工档案 -->
-      <div class="p-4 transition-colors" style="border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); transition-duration: 150ms; transition-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);" onmouseover="this.style.borderColor='#93c5fd'" onmouseout="this.style.borderColor='var(--color-border)'">
+      <div class="p-4 transition-colors" style="border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); transition-duration: 150ms; transition-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);" onmouseover="this.style.borderColor='var(--color-primary-hover-light)'" onmouseout="this.style.borderColor='var(--color-border)'">
         <div class="flex items-start justify-between">
           <div class="font-medium" style="font-size: var(--font-size-base); color: var(--color-text-primary);">员工档案</div>
           <span class="inline-flex items-center gap-1 px-2 py-0.5" style="background: var(--color-bg-secondary); color: var(--color-text-secondary); border-radius: var(--radius-full); font-size: var(--font-size-xs);">
@@ -299,12 +305,12 @@
         <p class="mt-2" style="font-size: var(--font-size-xs); color: var(--color-text-secondary); line-height: 1.5;">员工基本信息与岗位管理</p>
         <div class="flex items-center justify-between mt-3 pt-3" style="border-top: 1px solid var(--color-border);">
           <span class="inline-flex items-center px-2 py-0.5" style="background: var(--color-bg-secondary); color: var(--color-text-secondary); border-radius: var(--radius-full); font-size: var(--font-size-xs);">10 个字段</span>
-          <button class="inline-flex items-center justify-center text-white whitespace-nowrap transition-colors" style="font-size: var(--font-size-xs); font-weight: 500; padding: 4px 10px; border-radius: var(--radius-md); background: var(--color-primary); transition-property: background-color; transition-duration: 150ms;" onmouseover="this.style.background='var(--color-primary-hover)'" onmouseout="this.style.background='var(--color-primary)'">生成并预览</button>
+          <button class="inline-flex items-center justify-center text-white whitespace-nowrap transition-colors" style="font-size: var(--font-size-xs); font-weight: var(--font-weight-medium); padding: 4px 10px; border-radius: var(--radius-md); background: var(--color-primary); transition-property: background-color; transition-duration: 150ms;" onmouseover="this.style.background='var(--color-primary-hover)'" onmouseout="this.style.background='var(--color-primary)'">生成并预览</button>
         </div>
       </div>
 
       <!-- Card 5: 供应商 -->
-      <div class="p-4 transition-colors" style="border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); transition-duration: 150ms; transition-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);" onmouseover="this.style.borderColor='#93c5fd'" onmouseout="this.style.borderColor='var(--color-border)'">
+      <div class="p-4 transition-colors" style="border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); transition-duration: 150ms; transition-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);" onmouseover="this.style.borderColor='var(--color-primary-hover-light)'" onmouseout="this.style.borderColor='var(--color-border)'">
         <div class="flex items-start justify-between">
           <div class="font-medium" style="font-size: var(--font-size-base); color: var(--color-text-primary);">供应商</div>
           <span class="inline-flex items-center gap-1 px-2 py-0.5" style="background: var(--color-warning-bg); color: var(--state-warning); border-radius: var(--radius-full); font-size: var(--font-size-xs);">
@@ -316,12 +322,12 @@
         <p class="mt-2" style="font-size: var(--font-size-xs); color: var(--color-text-secondary); line-height: 1.5;">供应商信息与资质管理</p>
         <div class="flex items-center justify-between mt-3 pt-3" style="border-top: 1px solid var(--color-border);">
           <span class="inline-flex items-center px-2 py-0.5" style="background: var(--color-bg-secondary); color: var(--color-text-secondary); border-radius: var(--radius-full); font-size: var(--font-size-xs);">6 个字段</span>
-          <button class="inline-flex items-center justify-center text-white whitespace-nowrap transition-colors" style="font-size: var(--font-size-xs); font-weight: 500; padding: 4px 10px; border-radius: var(--radius-md); background: var(--color-primary); transition-property: background-color; transition-duration: 150ms;" onmouseover="this.style.background='var(--color-primary-hover)'" onmouseout="this.style.background='var(--color-primary)'">生成并预览</button>
+          <button class="inline-flex items-center justify-center text-white whitespace-nowrap transition-colors" style="font-size: var(--font-size-xs); font-weight: var(--font-weight-medium); padding: 4px 10px; border-radius: var(--radius-md); background: var(--color-primary); transition-property: background-color; transition-duration: 150ms;" onmouseover="this.style.background='var(--color-primary-hover)'" onmouseout="this.style.background='var(--color-primary)'">生成并预览</button>
         </div>
       </div>
 
       <!-- Card 6: 工单系统 -->
-      <div class="p-4 transition-colors" style="border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); transition-duration: 150ms; transition-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);" onmouseover="this.style.borderColor='#93c5fd'" onmouseout="this.style.borderColor='var(--color-border)'">
+      <div class="p-4 transition-colors" style="border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); transition-duration: 150ms; transition-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);" onmouseover="this.style.borderColor='var(--color-primary-hover-light)'" onmouseout="this.style.borderColor='var(--color-border)'">
         <div class="flex items-start justify-between">
           <div class="font-medium" style="font-size: var(--font-size-base); color: var(--color-text-primary);">工单系统</div>
           <span class="inline-flex items-center gap-1 px-2 py-0.5" style="background: var(--color-warning-bg); color: var(--state-warning); border-radius: var(--radius-full); font-size: var(--font-size-xs);">
@@ -333,7 +339,7 @@
         <p class="mt-2" style="font-size: var(--font-size-xs); color: var(--color-text-secondary); line-height: 1.5;">客户工单与售后服务管理</p>
         <div class="flex items-center justify-between mt-3 pt-3" style="border-top: 1px solid var(--color-border);">
           <span class="inline-flex items-center px-2 py-0.5" style="background: var(--color-bg-secondary); color: var(--color-text-secondary); border-radius: var(--radius-full); font-size: var(--font-size-xs);">9 个字段</span>
-          <button class="inline-flex items-center justify-center text-white whitespace-nowrap transition-colors" style="font-size: var(--font-size-xs); font-weight: 500; padding: 4px 10px; border-radius: var(--radius-md); background: var(--color-primary); transition-property: background-color; transition-duration: 150ms;" onmouseover="this.style.background='var(--color-primary-hover)'" onmouseout="this.style.background='var(--color-primary)'">生成并预览</button>
+          <button class="inline-flex items-center justify-center text-white whitespace-nowrap transition-colors" style="font-size: var(--font-size-xs); font-weight: var(--font-weight-medium); padding: 4px 10px; border-radius: var(--radius-md); background: var(--color-primary); transition-property: background-color; transition-duration: 150ms;" onmouseover="this.style.background='var(--color-primary-hover)'" onmouseout="this.style.background='var(--color-primary)'">生成并预览</button>
         </div>
       </div>
 

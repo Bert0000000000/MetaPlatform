@@ -245,7 +245,23 @@ export function AIGenerateCases() {
 
 export function QualityDashboard() {
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 p-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight flex items-center gap-2">
+            <TestTube className="size-5 text-primary" />
+            质量中心
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            测试用例、缺陷跟踪、性能监控与 AI 自动生成
+          </p>
+        </div>
+        <Button size="sm">
+          <Sparkles className="size-3 mr-1" />
+          AI 生成用例
+        </Button>
+      </div>
+
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
         <StatCard label="用例总数" value={148} icon="🧪" />
         <StatCard label="通过率" value="92.5%" trend={2.1} icon="✅" />

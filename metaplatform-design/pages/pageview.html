@@ -16,7 +16,7 @@
   --color-sidebar-bg: #0f172a;
   --color-sidebar-text: #94a3b8;
   --color-sidebar-text-hover: #cbd5e1;
-  --color-sidebar-active-bg: rgba(59, 130, 246, 0.15);
+  --color-sidebar-active-bg: var(--color-primary-subtle);
   --color-sidebar-active-text: #60a5fa;
   --color-sidebar-border: rgba(148, 163, 184, 0.1);
   --color-text-primary: #0f172a;
@@ -83,7 +83,7 @@
     <!-- Brand -->
     <div class="flex items-center gap-2 px-3 py-3" style="border-bottom: 1px solid var(--color-sidebar-border);">
       <span class="w-8 h-8 text-white flex items-center justify-center font-bold text-xs" style="background: var(--color-primary); border-radius: var(--radius-md);">M</span>
-      <span class="text-sm font-semibold" style="color: #f1f5f9;">MetaPlatform</span>
+      <span class="text-sm font-semibold" style="color: var(--color-text-inverse)">MetaPlatform</span>
     </div>
 
     <!-- Nav -->
@@ -170,7 +170,7 @@
       <div style="border-top: 1px solid rgba(148,163,184,0.1); margin: 8px 12px;"></div>
 
       <!-- 9. 页面预览 (ACTIVE) -->
-      <a data-nav-key="pageview" data-dom-id="nav-pageview" data-active="true" class="flex items-center gap-0.5 px-2.5 py-1.5 cursor-pointer" style="background: rgba(59, 130, 246, 0.15); color: #60a5fa; border-radius: var(--radius-md); font-size: var(--font-size-sm);">
+      <a data-nav-key="pageview" data-dom-id="nav-pageview" data-active="true" class="flex items-center gap-0.5 px-2.5 py-1.5 cursor-pointer" style="background: var(--color-primary-subtle); color: var(--color-primary-active); border-radius: var(--radius-md); font-size: var(--font-size-sm);">
         <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
           <circle cx="12" cy="12" r="3"/>
@@ -210,10 +210,10 @@
 
     <!-- Bottom user area -->
     <div class="px-3 py-3 flex items-center gap-2" style="border-top: 1px solid var(--color-sidebar-border);">
-      <div class="w-6 h-6 flex items-center justify-center" style="background: #334155; color: #94a3b8; border-radius: var(--radius-full); font-size: 10px; font-weight: 500;">A</div>
+      <div class="w-6 h-6 flex items-center justify-center" style="background: var(--color-sidebar-bg); color: var(--color-sidebar-text); border-radius: var(--radius-full); var(--font-size-xs) var(--font-weight-medium)">A</div>
       <div class="flex-1 min-w-0">
         <div class="truncate" style="color: var(--color-sidebar-text-hover); font-size: var(--font-size-sm);">Admin</div>
-        <div class="truncate" style="color: #64748b; font-size: var(--font-size-xs);">admin@metaplatform.io</div>
+        <div class="truncate" style="color: var(--color-text-secondary); font-size: var(--font-size-xs);">admin@metaplatform.io</div>
       </div>
     </div>
 
@@ -271,7 +271,7 @@
             <label style="display: block; font-size: var(--font-size-sm); color: var(--color-text-primary); margin-bottom: 4px; font-weight: var(--font-weight-medium);">
               <span style="color: var(--state-error);">*</span> 客户名称
             </label>
-            <input type="text" placeholder="请输入客户名称" style="width: 100%; padding: 5px 8px; font-size: var(--font-size-sm); border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text-primary); outline: none; font-family: var(--font-sans); box-sizing: border-box;" onfocus="this.style.borderColor='var(--color-primary)';this.style.boxShadow='0 0 0 2px rgba(59,130,246,0.15)'" onblur="this.style.borderColor='var(--color-border)';this.style.boxShadow='none'">
+            <input type="text" placeholder="请输入客户名称" style="width: 100%; padding: 5px 8px; font-size: var(--font-size-sm); border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text-primary); outline: none; font-family: var(--font-sans); box-sizing: border-box;" onfocus="this.style.borderColor='var(--color-primary)';this.style.boxShadow='0 0 0 2px var(--color-primary-subtle)'" onblur="this.style.borderColor='var(--color-border)';this.style.boxShadow='none'">
           </div>
 
           <!-- 邮箱地址 (required) -->
@@ -279,7 +279,7 @@
             <label style="display: block; font-size: var(--font-size-sm); color: var(--color-text-primary); margin-bottom: 4px; font-weight: var(--font-weight-medium);">
               <span style="color: var(--state-error);">*</span> 邮箱地址
             </label>
-            <input type="email" placeholder="请输入邮箱" style="width: 100%; padding: 5px 8px; font-size: var(--font-size-sm); border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text-primary); outline: none; font-family: var(--font-sans); box-sizing: border-box;" onfocus="this.style.borderColor='var(--color-primary)';this.style.boxShadow='0 0 0 2px rgba(59,130,246,0.15)'" onblur="this.style.borderColor='var(--color-border)';this.style.boxShadow='none'">
+            <input type="email" placeholder="请输入邮箱" style="width: 100%; padding: 5px 8px; font-size: var(--font-size-sm); border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text-primary); outline: none; font-family: var(--font-sans); box-sizing: border-box;" onfocus="this.style.borderColor='var(--color-primary)';this.style.boxShadow='0 0 0 2px var(--color-primary-subtle)'" onblur="this.style.borderColor='var(--color-border)';this.style.boxShadow='none'">
           </div>
 
           <!-- 联系电话 -->
@@ -287,7 +287,7 @@
             <label style="display: block; font-size: var(--font-size-sm); color: var(--color-text-primary); margin-bottom: 4px; font-weight: var(--font-weight-medium);">
               联系电话
             </label>
-            <input type="tel" placeholder="请输入电话" style="width: 100%; padding: 5px 8px; font-size: var(--font-size-sm); border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text-primary); outline: none; font-family: var(--font-sans); box-sizing: border-box;" onfocus="this.style.borderColor='var(--color-primary)';this.style.boxShadow='0 0 0 2px rgba(59,130,246,0.15)'" onblur="this.style.borderColor='var(--color-border)';this.style.boxShadow='none'">
+            <input type="tel" placeholder="请输入电话" style="width: 100%; padding: 5px 8px; font-size: var(--font-size-sm); border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text-primary); outline: none; font-family: var(--font-sans); box-sizing: border-box;" onfocus="this.style.borderColor='var(--color-primary)';this.style.boxShadow='0 0 0 2px var(--color-primary-subtle)'" onblur="this.style.borderColor='var(--color-border)';this.style.boxShadow='none'">
           </div>
 
           <!-- 客户状态 (required) -->

@@ -295,7 +295,29 @@ export function VersionHistory() {
 
 export function KnowledgeDashboard() {
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 p-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight flex items-center gap-2">
+            <BookMarked className="size-5 text-primary" />
+            知识库
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            企业文档、向量检索、知识图谱与 RAG 智能问答
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm">
+            <Upload className="size-3 mr-1" />
+            上传文档
+          </Button>
+          <Button size="sm">
+            <Sparkles className="size-3 mr-1" />
+            AI 问答
+          </Button>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
         <StatCard label="文档总数" value={1284} icon="📄" />
         <StatCard label="已分块" value={48620} icon="🧩" />

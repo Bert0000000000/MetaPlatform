@@ -28,7 +28,7 @@
   --color-sidebar-bg: #0f172a;
   --color-sidebar-text: #94a3b8;
   --color-sidebar-text-hover: #cbd5e1;
-  --color-sidebar-active-bg: rgba(59, 130, 246, 0.15);
+  --color-sidebar-active-bg: var(--color-primary-subtle);
   --color-sidebar-active-text: #60a5fa;
   --color-sidebar-border: rgba(148, 163, 184, 0.1);
 
@@ -240,7 +240,7 @@
 
     <!-- Bottom user area -->
     <div class="px-3 py-3 flex items-center gap-2.5" style="border-top: 1px solid var(--color-sidebar-border);">
-      <div class="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-medium" style="background: #334155; color: var(--color-sidebar-text);">A</div>
+      <div class="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-medium" style="background: var(--color-sidebar-bg); color: var(--color-sidebar-text);">A</div>
       <div class="flex-1 min-w-0">
         <div class="text-xs truncate" style="color: var(--color-sidebar-text-hover);">Admin</div>
         <div class="text-[10px] truncate" style="color: var(--color-sidebar-text);">admin@metaplatform.io</div>

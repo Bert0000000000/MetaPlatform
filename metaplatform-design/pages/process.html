@@ -16,7 +16,7 @@
   --color-sidebar-bg: #0f172a;
   --color-sidebar-text: #94a3b8;
   --color-sidebar-text-hover: #cbd5e1;
-  --color-sidebar-active-bg: rgba(59, 130, 246, 0.15);
+  --color-sidebar-active-bg: var(--color-primary-subtle);
   --color-sidebar-active-text: #60a5fa;
   --color-sidebar-border: rgba(148, 163, 184, 0.1);
   --color-text-primary: #0f172a;
@@ -86,7 +86,7 @@
     <!-- Brand -->
     <div class="flex items-center gap-2 px-3 py-3" style="border-bottom: 1px solid var(--color-sidebar-border);">
       <span class="w-8 h-8 text-white flex items-center justify-center font-bold text-xs" style="background: var(--color-primary); border-radius: var(--radius-md);">M</span>
-      <span class="text-sm font-semibold" style="color: #f1f5f9;">MetaPlatform</span>
+      <span class="text-sm font-semibold" style="color: var(--color-text-inverse)">MetaPlatform</span>
     </div>
 
     <!-- Nav -->
@@ -133,7 +133,7 @@
       </a>
 
       <!-- 5. 流程设计器 (active) -->
-      <a data-dom-id="nav-process" class="flex items-center gap-0.5 px-2.5 py-1.5 cursor-pointer" style="background: rgba(59, 130, 246, 0.15); color: #60a5fa; border-radius: var(--radius-md); font-size: var(--font-size-sm);">
+      <a data-dom-id="nav-process" class="flex items-center gap-0.5 px-2.5 py-1.5 cursor-pointer" style="background: var(--color-primary-subtle); color: var(--color-primary-active); border-radius: var(--radius-md); font-size: var(--font-size-sm);">
         <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <line x1="6" y1="3" x2="6" y2="15"/>
           <circle cx="18" cy="6" r="3"/>
@@ -172,21 +172,27 @@
       <!-- Divider -->
       <div style="border-top: 1px solid rgba(148,163,184,0.1); margin: 8px 12px;"></div>
 
-      <!-- 额外页面 -->
-      <a data-dom-id="nav-pageview" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-400 hover:bg-white/5 hover:text-slate-200 transition-colors cursor-pointer">
-        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+      <!-- 页面预览 -->
+      <a data-dom-id="nav-pageview" class="flex items-center gap-0.5 px-2.5 py-1.5 cursor-pointer transition-colors" style="color: var(--color-sidebar-text); border-radius: var(--radius-md); font-size: var(--font-size-sm);" onmouseover="this.style.background='rgba(255,255,255,0.05)';this.style.color='var(--color-sidebar-text-hover)'" onmouseout="this.style.background='transparent';this.style.color='var(--color-sidebar-text)'">
+        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
         <span>页面预览</span>
       </a>
-      <a data-dom-id="nav-admin" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-400 hover:bg-white/5 hover:text-slate-200 transition-colors cursor-pointer">
-        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+
+      <!-- 平台管理 -->
+      <a data-dom-id="nav-admin" class="flex items-center gap-0.5 px-2.5 py-1.5 cursor-pointer transition-colors" style="color: var(--color-sidebar-text); border-radius: var(--radius-md); font-size: var(--font-size-sm);" onmouseover="this.style.background='rgba(255,255,255,0.05)';this.style.color='var(--color-sidebar-text-hover)'" onmouseout="this.style.background='transparent';this.style.color='var(--color-sidebar-text)'">
+        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
         <span>平台管理</span>
       </a>
-      <a data-dom-id="nav-market" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-400 hover:bg-white/5 hover:text-slate-200 transition-colors cursor-pointer">
-        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+
+      <!-- 应用市场 -->
+      <a data-dom-id="nav-market" class="flex items-center gap-0.5 px-2.5 py-1.5 cursor-pointer transition-colors" style="color: var(--color-sidebar-text); border-radius: var(--radius-md); font-size: var(--font-size-sm);" onmouseover="this.style.background='rgba(255,255,255,0.05)';this.style.color='var(--color-sidebar-text-hover)'" onmouseout="this.style.background='transparent';this.style.color='var(--color-sidebar-text)'">
+        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
         <span>应用市场</span>
       </a>
-      <a data-dom-id="nav-billing" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-400 hover:bg-white/5 hover:text-slate-200 transition-colors cursor-pointer">
-        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+
+      <!-- 计费中心 -->
+      <a data-dom-id="nav-billing" class="flex items-center gap-0.5 px-2.5 py-1.5 cursor-pointer transition-colors" style="color: var(--color-sidebar-text); border-radius: var(--radius-md); font-size: var(--font-size-sm);" onmouseover="this.style.background='rgba(255,255,255,0.05)';this.style.color='var(--color-sidebar-text-hover)'" onmouseout="this.style.background='transparent';this.style.color='var(--color-sidebar-text)'">
+        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
         <span>计费中心</span>
       </a>
 
@@ -194,10 +200,10 @@
 
     <!-- Bottom user area -->
     <div class="px-3 py-3 flex items-center gap-2" style="border-top: 1px solid var(--color-sidebar-border);">
-      <div class="w-6 h-6 flex items-center justify-center" style="background: #334155; color: #94a3b8; border-radius: var(--radius-full); font-size: 10px; font-weight: 500;">A</div>
+      <div class="w-6 h-6 flex items-center justify-center" style="background: var(--color-sidebar-bg); color: var(--color-sidebar-text); border-radius: var(--radius-full); var(--font-size-xs) var(--font-weight-medium)">A</div>
       <div class="flex-1 min-w-0">
         <div class="truncate" style="color: var(--color-sidebar-text-hover); font-size: var(--font-size-sm);">Admin</div>
-        <div class="truncate" style="color: #64748b; font-size: var(--font-size-xs);">admin@metaplatform.io</div>
+        <div class="truncate" style="color: var(--color-text-secondary); font-size: var(--font-size-xs);">admin@metaplatform.io</div>
       </div>
     </div>
 
@@ -211,28 +217,28 @@
       <div class="flex items-center gap-3">
         <div class="flex items-center gap-1.5">
           <label style="font-size: var(--font-size-sm); color: var(--color-text-secondary); white-space: nowrap;">流程名称</label>
-          <input type="text" value="费用审批流程" style="font-size: var(--font-size-sm); padding: 4px 8px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text-primary); width: 180px; outline: none;" onfocus="this.style.borderColor='var(--color-primary)';this.style.boxShadow='0 0 0 2px rgba(59,130,246,0.15)'" onblur="this.style.borderColor='var(--color-border)';this.style.boxShadow='none'">
+          <input type="text" value="费用审批流程" style="font-size: var(--font-size-sm); padding: 4px 8px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text-primary); width: 180px; outline: none;" onfocus="this.style.borderColor='var(--color-primary)';this.style.boxShadow='0 0 0 2px var(--color-primary-subtle)'" onblur="this.style.borderColor='var(--color-border)';this.style.boxShadow='none'">
         </div>
         <div style="width: 1px; height: 20px; background: var(--color-border);"></div>
-        <button class="inline-flex items-center gap-1 whitespace-nowrap transition-colors" style="font-size: var(--font-size-xs); font-weight: 500; padding: 4px 10px; border-radius: var(--radius-md); border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-text-primary); transition-property: background-color; transition-duration: 150ms;" onmouseover="this.style.background='var(--color-bg-secondary)'" onmouseout="this.style.background='var(--color-surface)'">
+        <button class="inline-flex items-center gap-1 whitespace-nowrap transition-colors" style="font-size: var(--font-size-xs); font-weight: var(--font-weight-medium); padding: 4px 10px; border-radius: var(--radius-md); border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-text-primary); transition-property: background-color; transition-duration: 150ms;" onmouseover="this.style.background='var(--color-bg-secondary)'" onmouseout="this.style.background='var(--color-surface)'">
           <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           新建
         </button>
-        <button class="inline-flex items-center gap-1 whitespace-nowrap transition-colors" style="font-size: var(--font-size-xs); font-weight: 500; padding: 4px 10px; border-radius: var(--radius-md); border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-text-primary); transition-property: background-color; transition-duration: 150ms;" onmouseover="this.style.background='var(--color-bg-secondary)'" onmouseout="this.style.background='var(--color-surface)'">
+        <button class="inline-flex items-center gap-1 whitespace-nowrap transition-colors" style="font-size: var(--font-size-xs); font-weight: var(--font-weight-medium); padding: 4px 10px; border-radius: var(--radius-md); border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-text-primary); transition-property: background-color; transition-duration: 150ms;" onmouseover="this.style.background='var(--color-bg-secondary)'" onmouseout="this.style.background='var(--color-surface)'">
           <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
           添加连线
         </button>
-        <button class="inline-flex items-center gap-1 whitespace-nowrap transition-colors" style="font-size: var(--font-size-xs); font-weight: 500; padding: 4px 10px; border-radius: var(--radius-md); border: 1px solid var(--state-error); background: var(--color-surface); color: var(--state-error); transition-property: background-color; transition-duration: 150ms;" onmouseover="this.style.background='var(--state-error-bg)'" onmouseout="this.style.background='var(--color-surface)'">
+        <button class="inline-flex items-center gap-1 whitespace-nowrap transition-colors" style="font-size: var(--font-size-xs); font-weight: var(--font-weight-medium); padding: 4px 10px; border-radius: var(--radius-md); border: 1px solid var(--state-error); background: var(--color-surface); color: var(--state-error); transition-property: background-color; transition-duration: 150ms;" onmouseover="this.style.background='var(--state-error-bg)'" onmouseout="this.style.background='var(--color-surface)'">
           <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
           删除
         </button>
       </div>
       <div class="flex items-center gap-2">
-        <button class="inline-flex items-center gap-1.5 text-white whitespace-nowrap transition-colors" style="font-size: var(--font-size-xs); font-weight: 500; padding: 4px 12px; border-radius: var(--radius-md); background: var(--color-primary); transition-property: background-color; transition-duration: 150ms;" onmouseover="this.style.background='var(--color-primary-hover)'" onmouseout="this.style.background='var(--color-primary)'">
+        <button class="inline-flex items-center gap-1.5 text-white whitespace-nowrap transition-colors" style="font-size: var(--font-size-xs); font-weight: var(--font-weight-medium); padding: 4px 12px; border-radius: var(--radius-md); background: var(--color-primary); transition-property: background-color; transition-duration: 150ms;" onmouseover="this.style.background='var(--color-primary-hover)'" onmouseout="this.style.background='var(--color-primary)'">
           <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
           保存
         </button>
-        <button class="inline-flex items-center gap-1.5 whitespace-nowrap transition-colors" style="font-size: var(--font-size-xs); font-weight: 500; padding: 4px 12px; border-radius: var(--radius-md); border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-text-primary); transition-property: background-color; transition-duration: 150ms;" onmouseover="this.style.background='var(--color-bg-secondary)'" onmouseout="this.style.background='var(--color-surface)'">
+        <button class="inline-flex items-center gap-1.5 whitespace-nowrap transition-colors" style="font-size: var(--font-size-xs); font-weight: var(--font-weight-medium); padding: 4px 12px; border-radius: var(--radius-md); border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-text-primary); transition-property: background-color; transition-duration: 150ms;" onmouseover="this.style.background='var(--color-bg-secondary)'" onmouseout="this.style.background='var(--color-surface)'">
           <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
           导出JSON
         </button>
@@ -244,53 +250,36 @@
 
       <!-- Left palette -->
       <div class="flex-shrink-0 overflow-y-auto" style="width: 160px; border-right: 1px solid var(--color-border); background: var(--color-bg-secondary);">
-        <div class="px-3 py-2" style="font-size: var(--font-size-sm); font-weight: var(--font-weight-semibold); color: var(--color-text-primary); border-bottom: 1px solid var(--color-border);">节点类型</div>
-        <div class="p-2 flex flex-col gap-1.5">
+        <div class="px-3 py-2" style="font-size: var(--font-size-xs); font-weight: var(--font-weight-semibold); color: var(--color-text-primary); border-bottom: 1px solid var(--color-border);">节点类型</div>
+        <div class="p-2 flex flex-col gap-1">
 
           <!-- 开始节点 -->
-          <div class="flex items-center gap-2 px-2.5 py-2 cursor-pointer transition-colors" style="border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface);" onmouseover="this.style.borderColor='#86efac'" onmouseout="this.style.borderColor='var(--color-border)'">
-            <svg class="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--state-success);">
-              <circle cx="12" cy="12" r="9" stroke="var(--state-success)" fill="var(--state-success-bg)"/>
-            </svg>
+          <div class="flex items-center gap-2 px-2 py-1.5 cursor-pointer transition-colors" style="border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface);" onmouseover="this.style.borderColor='var(--color-primary)'" onmouseout="this.style.borderColor='var(--color-border)'">
+            <svg class="w-3.5 h-3.5 flex-shrink-0" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="7" stroke="var(--state-success)" stroke-width="1.5" fill="var(--state-success-bg)"/></svg>
             <span style="font-size: var(--font-size-xs); color: var(--color-text-primary);">开始节点</span>
           </div>
 
           <!-- 结束节点 -->
-          <div class="flex items-center gap-2 px-2.5 py-2 cursor-pointer transition-colors" style="border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface);" onmouseover="this.style.borderColor='#fca5a5'" onmouseout="this.style.borderColor='var(--color-border)'">
-            <svg class="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="none">
-              <circle cx="12" cy="12" r="9" stroke="var(--state-error)" stroke-width="2" fill="var(--state-error-bg)"/>
-              <rect x="8" y="8" width="8" height="8" rx="1" fill="var(--state-error)" opacity="0.5"/>
-            </svg>
+          <div class="flex items-center gap-2 px-2 py-1.5 cursor-pointer transition-colors" style="border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface);" onmouseover="this.style.borderColor='var(--color-primary)'" onmouseout="this.style.borderColor='var(--color-border)'">
+            <svg class="w-3.5 h-3.5 flex-shrink-0" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="7" stroke="var(--state-error)" stroke-width="1.5" fill="var(--state-error-bg)"/><rect x="9" y="9" width="6" height="6" rx="1" fill="var(--state-error)" opacity="0.4"/></svg>
             <span style="font-size: var(--font-size-xs); color: var(--color-text-primary);">结束节点</span>
           </div>
 
           <!-- 普通节点 -->
-          <div class="flex items-center gap-2 px-2.5 py-2 cursor-pointer transition-colors" style="border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface);" onmouseover="this.style.borderColor='#93c5fd'" onmouseout="this.style.borderColor='var(--color-border)'">
-            <svg class="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="none">
-              <rect x="3" y="5" width="18" height="14" rx="3" stroke="var(--color-primary)" stroke-width="2" fill="var(--color-primary-light)"/>
-            </svg>
+          <div class="flex items-center gap-2 px-2 py-1.5 cursor-pointer transition-colors" style="border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface);" onmouseover="this.style.borderColor='var(--color-primary)'" onmouseout="this.style.borderColor='var(--color-border)'">
+            <svg class="w-3.5 h-3.5 flex-shrink-0" viewBox="0 0 24 24" fill="none"><rect x="4" y="6" width="16" height="12" rx="3" stroke="var(--color-primary)" stroke-width="1.5" fill="var(--color-primary-light)"/></svg>
             <span style="font-size: var(--font-size-xs); color: var(--color-text-primary);">普通节点</span>
           </div>
 
           <!-- 条件判断 -->
-          <div class="flex items-center gap-2 px-2.5 py-2 cursor-pointer transition-colors" style="border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface);" onmouseover="this.style.borderColor='#fcd34d'" onmouseout="this.style.borderColor='var(--color-border)'">
-            <svg class="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="none">
-              <polygon points="12,2 22,12 12,22 2,12" stroke="var(--state-warning)" stroke-width="2" fill="var(--state-warning-bg)"/>
-            </svg>
+          <div class="flex items-center gap-2 px-2 py-1.5 cursor-pointer transition-colors" style="border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface);" onmouseover="this.style.borderColor='var(--color-primary)'" onmouseout="this.style.borderColor='var(--color-border)'">
+            <svg class="w-3.5 h-3.5 flex-shrink-0" viewBox="0 0 24 24" fill="none"><polygon points="12,3 21,12 12,21 3,12" stroke="var(--state-warning)" stroke-width="1.5" fill="var(--state-warning-bg)"/></svg>
             <span style="font-size: var(--font-size-xs); color: var(--color-text-primary);">条件判断</span>
           </div>
 
           <!-- AI决策节点 -->
-          <div class="flex items-center gap-2 px-2.5 py-2 cursor-pointer transition-colors" style="border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface);" onmouseover="this.style.borderColor='#a78bfa'" onmouseout="this.style.borderColor='var(--color-border)'">
-            <svg class="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="none">
-              <defs>
-                <linearGradient id="starGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" style="stop-color:#8b5cf6"/>
-                  <stop offset="100%" style="stop-color:#3b82f6"/>
-                </linearGradient>
-              </defs>
-              <polygon points="12,2 14.5,8.5 21.5,9.5 16.5,14 18,21 12,17.5 6,21 7.5,14 2.5,9.5 9.5,8.5" stroke="url(#starGrad)" stroke-width="1.5" fill="#f0f0ff"/>
-            </svg>
+          <div class="flex items-center gap-2 px-2 py-1.5 cursor-pointer transition-colors" style="border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface);" onmouseover="this.style.borderColor='var(--color-primary)'" onmouseout="this.style.borderColor='var(--color-border)'">
+            <svg class="w-3.5 h-3.5 flex-shrink-0" viewBox="0 0 24 24" fill="none"><rect x="4" y="6" width="16" height="12" rx="3" stroke="var(--color-primary)" stroke-width="1.5" fill="var(--color-primary-light)"/><text x="12" y="13" text-anchor="middle" dominant-baseline="central" style="font-size: 7px; fill: var(--color-primary); font-weight: 700; font-family: var(--font-sans);">AI</text></svg>
             <span style="font-size: var(--font-size-xs); color: var(--color-text-primary);">AI决策节点</span>
           </div>
 
@@ -304,100 +293,76 @@
           <!-- Grid dot pattern -->
           <defs>
             <pattern id="dotGrid" width="20" height="20" patternUnits="userSpaceOnUse">
-              <circle cx="10" cy="10" r="0.8" fill="#cbd5e1" opacity="0.5"/>
+              <circle cx="10" cy="10" r="0.6" fill="var(--color-border)"/>
             </pattern>
             <!-- Arrow marker -->
-            <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto" markerUnits="strokeWidth">
-              <polygon points="0 0, 8 3, 0 6" fill="#94a3b8"/>
+            <marker id="arrowhead" markerWidth="6" markerHeight="4" refX="5" refY="2" orient="auto" markerUnits="strokeWidth">
+              <polygon points="0 0, 6 2, 0 4" fill="var(--color-text-secondary)"/>
             </marker>
-            <!-- AI gradient -->
-            <linearGradient id="aiGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" style="stop-color:#8b5cf6"/>
-              <stop offset="100%" style="stop-color:#3b82f6"/>
-            </linearGradient>
           </defs>
 
           <!-- Background -->
           <rect width="700" height="780" fill="var(--color-bg-secondary)"/>
           <rect width="700" height="780" fill="url(#dotGrid)"/>
 
-          <!-- ===== EDGES (drawn first, behind nodes) ===== -->
-
-          <!-- Edge: 开始 -> 提交申请 -->
-          <path d="M 350 82 L 350 120" stroke="#94a3b8" stroke-width="1.5" fill="none" marker-end="url(#arrowhead)"/>
-
-          <!-- Edge: 提交申请 -> 金额判断 -->
-          <path d="M 350 180 L 350 218" stroke="#94a3b8" stroke-width="1.5" fill="none" marker-end="url(#arrowhead)"/>
-
-          <!-- Edge: 金额判断 -> 主管审批 (left branch) -->
-          <path d="M 308 275 C 260 310, 200 330, 195 378" stroke="#94a3b8" stroke-width="1.5" fill="none" marker-end="url(#arrowhead)"/>
-          <!-- Label: <=5000 -->
-          <rect x="200" y="318" width="46" height="18" rx="3" fill="white" stroke="#e2e8f0" stroke-width="1"/>
-          <text x="223" y="331" text-anchor="middle" style="font-size: 10px; fill: #64748b; font-family: var(--font-sans);">≤5000</text>
-
-          <!-- Edge: 金额判断 -> 总监审批 (right branch) -->
-          <path d="M 392 275 C 440 310, 500 330, 505 378" stroke="#94a3b8" stroke-width="1.5" fill="none" marker-end="url(#arrowhead)"/>
-          <!-- Label: >5000 -->
-          <rect x="454" y="318" width="42" height="18" rx="3" fill="white" stroke="#e2e8f0" stroke-width="1"/>
-          <text x="475" y="331" text-anchor="middle" style="font-size: 10px; fill: #64748b; font-family: var(--font-sans);">&gt;5000</text>
-
-          <!-- Edge: 主管审批 -> AI风险评估 -->
-          <path d="M 195 438 C 200 490, 290 510, 310 548" stroke="#94a3b8" stroke-width="1.5" fill="none" marker-end="url(#arrowhead)"/>
-
-          <!-- Edge: 总监审批 -> AI风险评估 -->
-          <path d="M 505 438 C 500 490, 410 510, 390 548" stroke="#94a3b8" stroke-width="1.5" fill="none" marker-end="url(#arrowhead)"/>
-
-          <!-- Edge: AI风险评估 -> 结束 -->
-          <path d="M 350 618 L 350 660" stroke="#94a3b8" stroke-width="1.5" fill="none" marker-end="url(#arrowhead)"/>
+          <!-- ===== EDGES ===== -->
+          <path d="M 350 76 L 350 112" stroke="var(--color-text-secondary)" stroke-width="1" fill="none" marker-end="url(#arrowhead)" opacity="0.5"/>
+          <path d="M 350 172 L 350 210" stroke="var(--color-text-secondary)" stroke-width="1" fill="none" marker-end="url(#arrowhead)" opacity="0.5"/>
+          <path d="M 310 268 C 260 305, 210 325, 195 370" stroke="var(--color-text-secondary)" stroke-width="1" fill="none" marker-end="url(#arrowhead)" opacity="0.5"/>
+          <rect x="206" y="310" width="38" height="16" rx="3" fill="var(--color-surface)" stroke="var(--color-border)" stroke-width="1"/>
+          <text x="225" y="322" text-anchor="middle" style="font-size: 11px; fill: var(--color-text-secondary); font-family: var(--font-sans);">≤5000</text>
+          <path d="M 390 268 C 440 305, 490 325, 505 370" stroke="var(--color-text-secondary)" stroke-width="1" fill="none" marker-end="url(#arrowhead)" opacity="0.5"/>
+          <rect x="456" y="310" width="36" height="16" rx="3" fill="var(--color-surface)" stroke="var(--color-border)" stroke-width="1"/>
+          <text x="474" y="322" text-anchor="middle" style="font-size: 11px; fill: var(--color-text-secondary); font-family: var(--font-sans);">&gt;5000</text>
+          <path d="M 195 428 C 200 478, 290 498, 316 540" stroke="var(--color-text-secondary)" stroke-width="1" fill="none" marker-end="url(#arrowhead)" opacity="0.5"/>
+          <path d="M 505 428 C 500 478, 410 498, 384 540" stroke="var(--color-text-secondary)" stroke-width="1" fill="none" marker-end="url(#arrowhead)" opacity="0.5"/>
+          <path d="M 350 610 L 350 646" stroke="var(--color-text-secondary)" stroke-width="1" fill="none" marker-end="url(#arrowhead)" opacity="0.5"/>
 
           <!-- ===== NODES ===== -->
 
-          <!-- Node 1: 开始 (circle, green) -->
-          <g class="svg-node" transform="translate(350, 60)">
-            <circle cx="0" cy="0" r="22" fill="var(--state-success-bg)" stroke="var(--state-success)" stroke-width="1.5"/>
-            <text x="0" y="1" text-anchor="middle" dominant-baseline="central" style="font-size: 12px; font-weight: 500; fill: var(--state-success); font-family: var(--font-sans);">开始</text>
+          <!-- Node 1: 开始 -->
+          <g class="svg-node" transform="translate(350, 55)">
+            <circle cx="0" cy="0" r="18" fill="var(--color-surface)" stroke="var(--state-success)" stroke-width="1"/>
+            <text x="0" y="1" text-anchor="middle" dominant-baseline="central" style="font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); fill: var(--state-success); font-family: var(--font-sans);">开始</text>
           </g>
 
-          <!-- Node 2: 提交申请 (rounded rect, blue) -->
-          <g class="svg-node" transform="translate(350, 150)">
-            <rect x="-55" y="-30" width="110" height="60" rx="6" fill="var(--color-primary-light)" stroke="var(--color-primary)" stroke-width="1.5"/>
-            <text x="0" y="1" text-anchor="middle" dominant-baseline="central" style="font-size: 12px; font-weight: 500; fill: var(--color-primary); font-family: var(--font-sans);">提交申请</text>
+          <!-- Node 2: 提交申请 -->
+          <g class="svg-node" transform="translate(350, 142)">
+            <rect x="-52" y="-26" width="104" height="52" rx="4" fill="var(--color-surface)" stroke="var(--color-border)" stroke-width="1"/>
+            <text x="0" y="1" text-anchor="middle" dominant-baseline="central" style="font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); fill: var(--color-text-primary); font-family: var(--font-sans);">提交申请</text>
           </g>
 
-          <!-- Node 3: 金额判断 (diamond, yellow/amber) -->
-          <g class="svg-node" transform="translate(350, 270)">
-            <polygon points="0,-35 42,0 0,35 -42,0" fill="var(--state-warning-bg)" stroke="var(--state-warning)" stroke-width="1.5"/>
-            <text x="0" y="1" text-anchor="middle" dominant-baseline="central" style="font-size: 11px; font-weight: 500; fill: #b45309; font-family: var(--font-sans);">金额判断</text>
+          <!-- Node 3: 金额判断 -->
+          <g class="svg-node" transform="translate(350, 260)">
+            <polygon points="0,-30 38,0 0,30 -38,0" fill="var(--color-surface)" stroke="var(--state-warning)" stroke-width="1"/>
+            <text x="0" y="1" text-anchor="middle" dominant-baseline="central" style="font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); fill: var(--color-text-primary); font-family: var(--font-sans);">金额判断</text>
           </g>
 
-          <!-- Node 4a: 主管审批 (rounded rect, blue) -->
-          <g class="svg-node" transform="translate(195, 408)">
-            <rect x="-55" y="-30" width="110" height="60" rx="6" fill="var(--color-primary-light)" stroke="var(--color-primary)" stroke-width="1.5"/>
-            <text x="0" y="1" text-anchor="middle" dominant-baseline="central" style="font-size: 12px; font-weight: 500; fill: var(--color-primary); font-family: var(--font-sans);">主管审批</text>
+          <!-- Node 4a: 主管审批 -->
+          <g class="svg-node" transform="translate(195, 398)">
+            <rect x="-52" y="-26" width="104" height="52" rx="4" fill="var(--color-surface)" stroke="var(--color-border)" stroke-width="1"/>
+            <text x="0" y="1" text-anchor="middle" dominant-baseline="central" style="font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); fill: var(--color-text-primary); font-family: var(--font-sans);">主管审批</text>
           </g>
 
-          <!-- Node 4b: 总监审批 (rounded rect, blue) -->
-          <g class="svg-node" transform="translate(505, 408)">
-            <rect x="-55" y="-30" width="110" height="60" rx="6" fill="var(--color-primary-light)" stroke="var(--color-primary)" stroke-width="1.5"/>
-            <text x="0" y="1" text-anchor="middle" dominant-baseline="central" style="font-size: 12px; font-weight: 500; fill: var(--color-primary); font-family: var(--font-sans);">总监审批</text>
+          <!-- Node 4b: 总监审批 -->
+          <g class="svg-node" transform="translate(505, 398)">
+            <rect x="-52" y="-26" width="104" height="52" rx="4" fill="var(--color-surface)" stroke="var(--color-border)" stroke-width="1"/>
+            <text x="0" y="1" text-anchor="middle" dominant-baseline="central" style="font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); fill: var(--color-text-primary); font-family: var(--font-sans);">总监审批</text>
           </g>
 
-          <!-- Node 5: AI风险评估 (rounded rect, gradient border, selected) -->
-          <g class="svg-node node-selected" transform="translate(350, 585)">
-            <!-- Outer glow for selection -->
-            <rect x="-67" y="-37" width="134" height="74" rx="8" fill="none" stroke="var(--color-primary)" stroke-width="2" stroke-dasharray="0" opacity="0.3"/>
-            <!-- Main shape -->
-            <rect x="-60" y="-30" width="120" height="60" rx="6" fill="#f5f3ff" stroke="url(#aiGrad)" stroke-width="2"/>
-            <!-- AI icon hint -->
-            <text x="0" y="-6" text-anchor="middle" dominant-baseline="central" style="font-size: 9px; fill: #7c3aed; font-family: var(--font-sans); font-weight: 600;">AI</text>
-            <text x="0" y="10" text-anchor="middle" dominant-baseline="central" style="font-size: 12px; font-weight: 500; fill: #6d28d9; font-family: var(--font-sans);">风险评估</text>
+          <!-- Node 5: AI风险评估 (selected) -->
+          <g class="svg-node" transform="translate(350, 566)">
+            <rect x="-62" y="-32" width="124" height="64" rx="5" fill="none" stroke="var(--color-primary)" stroke-width="1" stroke-dasharray="4 2" opacity="0.4"/>
+            <rect x="-54" y="-26" width="108" height="52" rx="4" fill="var(--color-surface)" stroke="var(--color-primary)" stroke-width="1"/>
+            <text x="0" y="-5" text-anchor="middle" dominant-baseline="central" style="font-size: var(--font-size-xs); fill: var(--color-primary); font-family: var(--font-sans); font-weight: var(--font-weight-semibold); letter-spacing: 0.05em;">AI</text>
+            <text x="0" y="10" text-anchor="middle" dominant-baseline="central" style="font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); fill: var(--color-text-primary); font-family: var(--font-sans);">风险评估</text>
           </g>
 
-          <!-- Node 6: 结束 (circle, red) -->
-          <g class="svg-node" transform="translate(350, 695)">
-            <circle cx="0" cy="0" r="22" fill="var(--state-error-bg)" stroke="var(--state-error)" stroke-width="1.5"/>
-            <circle cx="0" cy="0" r="8" fill="var(--state-error)" opacity="0.4"/>
-            <text x="0" y="1" text-anchor="middle" dominant-baseline="central" style="font-size: 12px; font-weight: 500; fill: var(--state-error); font-family: var(--font-sans);">结束</text>
+          <!-- Node 6: 结束 -->
+          <g class="svg-node" transform="translate(350, 660)">
+            <circle cx="0" cy="0" r="18" fill="var(--color-surface)" stroke="var(--state-error)" stroke-width="1"/>
+            <circle cx="0" cy="0" r="6" fill="var(--state-error)" opacity="0.25"/>
+            <text x="0" y="1" text-anchor="middle" dominant-baseline="central" style="font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); fill: var(--state-error); font-family: var(--font-sans);">结束</text>
           </g>
 
         </svg>
@@ -423,13 +388,13 @@
           <!-- 节点名称 -->
           <div>
             <label style="font-size: var(--font-size-xs); color: var(--color-text-secondary); display: block; margin-bottom: var(--spacing-sm);">节点名称</label>
-            <input type="text" value="AI风险评估" style="width: 100%; font-size: var(--font-size-sm); padding: 4px 8px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text-primary); outline: none; box-sizing: border-box;" onfocus="this.style.borderColor='var(--color-primary)';this.style.boxShadow='0 0 0 2px rgba(59,130,246,0.15)'" onblur="this.style.borderColor='var(--color-border)';this.style.boxShadow='none'">
+            <input type="text" value="AI风险评估" style="width: 100%; font-size: var(--font-size-sm); padding: 4px 8px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text-primary); outline: none; box-sizing: border-box;" onfocus="this.style.borderColor='var(--color-primary)';this.style.boxShadow='0 0 0 2px var(--color-primary-subtle)'" onblur="this.style.borderColor='var(--color-border)';this.style.boxShadow='none'">
           </div>
 
           <!-- 节点描述 -->
           <div>
             <label style="font-size: var(--font-size-xs); color: var(--color-text-secondary); display: block; margin-bottom: var(--spacing-sm);">节点描述</label>
-            <textarea rows="3" style="width: 100%; font-size: var(--font-size-sm); padding: 6px 8px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text-primary); outline: none; resize: vertical; box-sizing: border-box; line-height: 1.5;" onfocus="this.style.borderColor='var(--color-primary)';this.style.boxShadow='0 0 0 2px rgba(59,130,246,0.15)'" onblur="this.style.borderColor='var(--color-border)';this.style.boxShadow='none'">使用AI模型自动评估费用申请的风险等级</textarea>
+            <textarea rows="3" style="width: 100%; font-size: var(--font-size-sm); padding: 6px 8px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text-primary); outline: none; resize: vertical; box-sizing: border-box; line-height: 1.5;" onfocus="this.style.borderColor='var(--color-primary)';this.style.boxShadow='0 0 0 2px var(--color-primary-subtle)'" onblur="this.style.borderColor='var(--color-border)';this.style.boxShadow='none'">使用AI模型自动评估费用申请的风险等级</textarea>
           </div>
 
           <!-- AI模型 -->
@@ -450,7 +415,7 @@
 
           <!-- Actions -->
           <div class="flex gap-2 mt-1">
-            <button class="flex-1 inline-flex items-center justify-center text-white whitespace-nowrap transition-colors" style="font-size: var(--font-size-xs); font-weight: 500; padding: 5px 0; border-radius: var(--radius-md); background: var(--color-primary); transition-property: background-color; transition-duration: 150ms;" onmouseover="this.style.background='var(--color-primary-hover)'" onmouseout="this.style.background='var(--color-primary)'">
+            <button class="flex-1 inline-flex items-center justify-center text-white whitespace-nowrap transition-colors" style="font-size: var(--font-size-xs); font-weight: var(--font-weight-medium); padding: 5px 0; border-radius: var(--radius-md); background: var(--color-primary); transition-property: background-color; transition-duration: 150ms;" onmouseover="this.style.background='var(--color-primary-hover)'" onmouseout="this.style.background='var(--color-primary)'">
               应用更改
             </button>
           </div>

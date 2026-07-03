@@ -28,7 +28,7 @@
   --color-sidebar-bg: #0f172a;
   --color-sidebar-text: #94a3b8;
   --color-sidebar-text-hover: #cbd5e1;
-  --color-sidebar-active-bg: rgba(59, 130, 246, 0.15);
+  --color-sidebar-active-bg: var(--color-primary-subtle);
   --color-sidebar-active-text: #60a5fa;
   --color-sidebar-border: rgba(148, 163, 184, 0.1);
 
@@ -128,7 +128,7 @@
     <!-- Brand -->
     <div class="flex items-center gap-2 px-3 py-3" style="border-bottom: 1px solid var(--color-sidebar-border);">
       <span class="w-8 h-8 text-white flex items-center justify-center font-bold text-xs" style="background: var(--color-primary); border-radius: var(--radius-md);">M</span>
-      <span class="text-sm font-semibold" style="color: #f1f5f9;">MetaPlatform</span>
+      <span class="text-sm font-semibold" style="color: var(--color-text-inverse)">MetaPlatform</span>
     </div>
 
     <!-- Nav -->
@@ -241,10 +241,10 @@
 
     <!-- Bottom user area -->
     <div class="px-3 py-3 flex items-center gap-2" style="border-top: 1px solid var(--color-sidebar-border);">
-      <div class="w-6 h-6 flex items-center justify-center" style="background: #334155; color: #94a3b8; border-radius: var(--radius-full); font-size: 10px; font-weight: 500;">A</div>
+      <div class="w-6 h-6 flex items-center justify-center" style="background: var(--color-sidebar-bg); color: var(--color-sidebar-text); border-radius: var(--radius-full); var(--font-size-xs) var(--font-weight-medium)">A</div>
       <div class="flex-1 min-w-0">
         <div class="truncate" style="color: var(--color-sidebar-text-hover); font-size: var(--font-size-sm);">Admin</div>
-        <div class="truncate" style="color: #64748b; font-size: var(--font-size-xs);">admin@metaplatform.io</div>
+        <div class="truncate" style="color: var(--color-text-secondary); font-size: var(--font-size-xs);">admin@metaplatform.io</div>
       </div>
     </div>
 
@@ -281,42 +281,42 @@
       <div class="grid grid-cols-4 gap-3">
 
         <!-- Card: 客户管理 -->
-        <div class="p-3 transition-colors" style="border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface); transition-duration: 150ms; transition-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);" onmouseover="this.style.borderColor='#93c5fd'" onmouseout="this.style.borderColor='var(--color-border)'">
+        <div class="p-3 transition-colors" style="border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface); transition-duration: 150ms; transition-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);" onmouseover="this.style.borderColor='var(--color-primary-hover-light)'" onmouseout="this.style.borderColor='var(--color-border)'">
           <div class="font-medium" style="font-size: var(--font-size-base); color: var(--color-text-primary);">客户管理</div>
           <div class="mt-0.5" style="font-size: var(--font-size-xs); color: var(--color-text-secondary); font-family: var(--font-mono);">customer</div>
           <p class="mt-1.5" style="font-size: var(--font-size-xs); color: var(--color-text-secondary); line-height: 1.5;">核心业务对象，包含客户基本信息</p>
           <div class="mt-3">
-            <button class="inline-flex items-center justify-center text-white whitespace-nowrap transition-colors" style="font-size: var(--font-size-xs); font-weight: 500; padding: 4px 10px; border-radius: var(--radius-md); background: var(--color-primary); transition-property: background-color; transition-duration: 150ms;" onmouseover="this.style.background='var(--color-primary-hover)'" onmouseout="this.style.background='var(--color-primary)'" onfocus="this.style.outline='2px solid var(--color-primary)';this.style.outlineOffset='2px'" onblur="this.style.outline='none'">生成页面</button>
+            <button class="inline-flex items-center justify-center text-white whitespace-nowrap transition-colors" style="font-size: var(--font-size-xs); font-weight: var(--font-weight-medium); padding: 4px 10px; border-radius: var(--radius-md); background: var(--color-primary); transition-property: background-color; transition-duration: 150ms;" onmouseover="this.style.background='var(--color-primary-hover)'" onmouseout="this.style.background='var(--color-primary)'" onfocus="this.style.outline='2px solid var(--color-primary)';this.style.outlineOffset='2px'" onblur="this.style.outline='none'">生成页面</button>
           </div>
         </div>
 
         <!-- Card: 工单系统 -->
-        <div class="p-3 transition-colors" style="border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface); transition-duration: 150ms; transition-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);" onmouseover="this.style.borderColor='#93c5fd'" onmouseout="this.style.borderColor='var(--color-border)'">
+        <div class="p-3 transition-colors" style="border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface); transition-duration: 150ms; transition-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);" onmouseover="this.style.borderColor='var(--color-primary-hover-light)'" onmouseout="this.style.borderColor='var(--color-border)'">
           <div class="font-medium" style="font-size: var(--font-size-base); color: var(--color-text-primary);">工单系统</div>
           <div class="mt-0.5" style="font-size: var(--font-size-xs); color: var(--color-text-secondary); font-family: var(--font-mono);">ticket</div>
           <p class="mt-1.5" style="font-size: var(--font-size-xs); color: var(--color-text-secondary); line-height: 1.5;">技术支持工单生命周期管理</p>
           <div class="mt-3">
-            <button class="inline-flex items-center justify-center text-white whitespace-nowrap transition-colors" style="font-size: var(--font-size-xs); font-weight: 500; padding: 4px 10px; border-radius: var(--radius-md); background: var(--color-primary); transition-property: background-color; transition-duration: 150ms;" onmouseover="this.style.background='var(--color-primary-hover)'" onmouseout="this.style.background='var(--color-primary)'" onfocus="this.style.outline='2px solid var(--color-primary)';this.style.outlineOffset='2px'" onblur="this.style.outline='none'">生成页面</button>
+            <button class="inline-flex items-center justify-center text-white whitespace-nowrap transition-colors" style="font-size: var(--font-size-xs); font-weight: var(--font-weight-medium); padding: 4px 10px; border-radius: var(--radius-md); background: var(--color-primary); transition-property: background-color; transition-duration: 150ms;" onmouseover="this.style.background='var(--color-primary-hover)'" onmouseout="this.style.background='var(--color-primary)'" onfocus="this.style.outline='2px solid var(--color-primary)';this.style.outlineOffset='2px'" onblur="this.style.outline='none'">生成页面</button>
           </div>
         </div>
 
         <!-- Card: 产品目录 -->
-        <div class="p-3 transition-colors" style="border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface); transition-duration: 150ms; transition-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);" onmouseover="this.style.borderColor='#93c5fd'" onmouseout="this.style.borderColor='var(--color-border)'">
+        <div class="p-3 transition-colors" style="border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface); transition-duration: 150ms; transition-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);" onmouseover="this.style.borderColor='var(--color-primary-hover-light)'" onmouseout="this.style.borderColor='var(--color-border)'">
           <div class="font-medium" style="font-size: var(--font-size-base); color: var(--color-text-primary);">产品目录</div>
           <div class="mt-0.5" style="font-size: var(--font-size-xs); color: var(--color-text-secondary); font-family: var(--font-mono);">product</div>
           <p class="mt-1.5" style="font-size: var(--font-size-xs); color: var(--color-text-secondary); line-height: 1.5;">产品信息与分类管理</p>
           <div class="mt-3">
-            <button class="inline-flex items-center justify-center text-white whitespace-nowrap transition-colors" style="font-size: var(--font-size-xs); font-weight: 500; padding: 4px 10px; border-radius: var(--radius-md); background: var(--color-primary); transition-property: background-color; transition-duration: 150ms;" onmouseover="this.style.background='var(--color-primary-hover)'" onmouseout="this.style.background='var(--color-primary)'" onfocus="this.style.outline='2px solid var(--color-primary)';this.style.outlineOffset='2px'" onblur="this.style.outline='none'">生成页面</button>
+            <button class="inline-flex items-center justify-center text-white whitespace-nowrap transition-colors" style="font-size: var(--font-size-xs); font-weight: var(--font-weight-medium); padding: 4px 10px; border-radius: var(--radius-md); background: var(--color-primary); transition-property: background-color; transition-duration: 150ms;" onmouseover="this.style.background='var(--color-primary-hover)'" onmouseout="this.style.background='var(--color-primary)'" onfocus="this.style.outline='2px solid var(--color-primary)';this.style.outlineOffset='2px'" onblur="this.style.outline='none'">生成页面</button>
           </div>
         </div>
 
         <!-- Card: 销售线索 -->
-        <div class="p-3 transition-colors" style="border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface); transition-duration: 150ms; transition-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);" onmouseover="this.style.borderColor='#93c5fd'" onmouseout="this.style.borderColor='var(--color-border)'">
+        <div class="p-3 transition-colors" style="border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface); transition-duration: 150ms; transition-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);" onmouseover="this.style.borderColor='var(--color-primary-hover-light)'" onmouseout="this.style.borderColor='var(--color-border)'">
           <div class="font-medium" style="font-size: var(--font-size-base); color: var(--color-text-primary);">销售线索</div>
           <div class="mt-0.5" style="font-size: var(--font-size-xs); color: var(--color-text-secondary); font-family: var(--font-mono);">lead</div>
           <p class="mt-1.5" style="font-size: var(--font-size-xs); color: var(--color-text-secondary); line-height: 1.5;">销售线索跟踪与转化</p>
           <div class="mt-3">
-            <button class="inline-flex items-center justify-center text-white whitespace-nowrap transition-colors" style="font-size: var(--font-size-xs); font-weight: 500; padding: 4px 10px; border-radius: var(--radius-md); background: var(--color-primary); transition-property: background-color; transition-duration: 150ms;" onmouseover="this.style.background='var(--color-primary-hover)'" onmouseout="this.style.background='var(--color-primary)'" onfocus="this.style.outline='2px solid var(--color-primary)';this.style.outlineOffset='2px'" onblur="this.style.outline='none'">生成页面</button>
+            <button class="inline-flex items-center justify-center text-white whitespace-nowrap transition-colors" style="font-size: var(--font-size-xs); font-weight: var(--font-weight-medium); padding: 4px 10px; border-radius: var(--radius-md); background: var(--color-primary); transition-property: background-color; transition-duration: 150ms;" onmouseover="this.style.background='var(--color-primary-hover)'" onmouseout="this.style.background='var(--color-primary)'" onfocus="this.style.outline='2px solid var(--color-primary)';this.style.outlineOffset='2px'" onblur="this.style.outline='none'">生成页面</button>
           </div>
         </div>
 
@@ -348,8 +348,8 @@
               <td class="px-3 py-1.5 whitespace-nowrap" style="font-size: var(--font-size-xs); color: var(--color-text-secondary);">2026-06-28 14:30</td>
               <td class="px-3 py-1.5 whitespace-nowrap text-right">
                 <div class="inline-flex items-center gap-1.5">
-                  <button class="inline-flex items-center justify-center whitespace-nowrap transition-colors" style="font-size: var(--font-size-xs); font-weight: 500; padding: 4px 10px; border-radius: var(--radius-md); border: 1px solid var(--color-border); color: var(--color-text-secondary); background: transparent; transition-property: border-color, color; transition-duration: 150ms;" onmouseover="this.style.borderColor='var(--color-primary)';this.style.color='var(--color-primary)'" onmouseout="this.style.borderColor='var(--color-border)';this.style.color='var(--color-text-secondary)'" onfocus="this.style.outline='2px solid var(--color-primary)';this.style.outlineOffset='2px'" onblur="this.style.outline='none'">预览</button>
-                  <button class="inline-flex items-center justify-center whitespace-nowrap transition-colors" style="font-size: var(--font-size-xs); font-weight: 500; padding: 4px 10px; border-radius: var(--radius-md); border: none; color: var(--state-error); background: transparent; transition-property: color; transition-duration: 150ms;" onmouseover="this.style.color='#dc2626'" onmouseout="this.style.color='var(--state-error)'" onfocus="this.style.outline='2px solid var(--color-primary)';this.style.outlineOffset='2px'" onblur="this.style.outline='none'">删除</button>
+                  <button class="inline-flex items-center justify-center whitespace-nowrap transition-colors" style="font-size: var(--font-size-xs); font-weight: var(--font-weight-medium); padding: 4px 10px; border-radius: var(--radius-md); border: 1px solid var(--color-border); color: var(--color-text-secondary); background: transparent; transition-property: border-color, color; transition-duration: 150ms;" onmouseover="this.style.borderColor='var(--color-primary)';this.style.color='var(--color-primary)'" onmouseout="this.style.borderColor='var(--color-border)';this.style.color='var(--color-text-secondary)'" onfocus="this.style.outline='2px solid var(--color-primary)';this.style.outlineOffset='2px'" onblur="this.style.outline='none'">预览</button>
+                  <button class="inline-flex items-center justify-center whitespace-nowrap transition-colors" style="font-size: var(--font-size-xs); font-weight: var(--font-weight-medium); padding: 4px 10px; border-radius: var(--radius-md); border: none; color: var(--state-error); background: transparent; transition-property: color; transition-duration: 150ms;" onmouseover="this.style.color='var(--state-error-hover)'" onmouseout="this.style.color='var(--state-error)'" onfocus="this.style.outline='2px solid var(--color-primary)';this.style.outlineOffset='2px'" onblur="this.style.outline='none'">删除</button>
                 </div>
               </td>
             </tr>
@@ -363,8 +363,8 @@
               <td class="px-3 py-1.5 whitespace-nowrap" style="font-size: var(--font-size-xs); color: var(--color-text-secondary);">2026-06-28 14:32</td>
               <td class="px-3 py-1.5 whitespace-nowrap text-right">
                 <div class="inline-flex items-center gap-1.5">
-                  <button class="inline-flex items-center justify-center whitespace-nowrap transition-colors" style="font-size: var(--font-size-xs); font-weight: 500; padding: 4px 10px; border-radius: var(--radius-md); border: 1px solid var(--color-border); color: var(--color-text-secondary); background: transparent; transition-property: border-color, color; transition-duration: 150ms;" onmouseover="this.style.borderColor='var(--color-primary)';this.style.color='var(--color-primary)'" onmouseout="this.style.borderColor='var(--color-border)';this.style.color='var(--color-text-secondary)'" onfocus="this.style.outline='2px solid var(--color-primary)';this.style.outlineOffset='2px'" onblur="this.style.outline='none'">预览</button>
-                  <button class="inline-flex items-center justify-center whitespace-nowrap transition-colors" style="font-size: var(--font-size-xs); font-weight: 500; padding: 4px 10px; border-radius: var(--radius-md); border: none; color: var(--state-error); background: transparent; transition-property: color; transition-duration: 150ms;" onmouseover="this.style.color='#dc2626'" onmouseout="this.style.color='var(--state-error)'" onfocus="this.style.outline='2px solid var(--color-primary)';this.style.outlineOffset='2px'" onblur="this.style.outline='none'">删除</button>
+                  <button class="inline-flex items-center justify-center whitespace-nowrap transition-colors" style="font-size: var(--font-size-xs); font-weight: var(--font-weight-medium); padding: 4px 10px; border-radius: var(--radius-md); border: 1px solid var(--color-border); color: var(--color-text-secondary); background: transparent; transition-property: border-color, color; transition-duration: 150ms;" onmouseover="this.style.borderColor='var(--color-primary)';this.style.color='var(--color-primary)'" onmouseout="this.style.borderColor='var(--color-border)';this.style.color='var(--color-text-secondary)'" onfocus="this.style.outline='2px solid var(--color-primary)';this.style.outlineOffset='2px'" onblur="this.style.outline='none'">预览</button>
+                  <button class="inline-flex items-center justify-center whitespace-nowrap transition-colors" style="font-size: var(--font-size-xs); font-weight: var(--font-weight-medium); padding: 4px 10px; border-radius: var(--radius-md); border: none; color: var(--state-error); background: transparent; transition-property: color; transition-duration: 150ms;" onmouseover="this.style.color='var(--state-error-hover)'" onmouseout="this.style.color='var(--state-error)'" onfocus="this.style.outline='2px solid var(--color-primary)';this.style.outlineOffset='2px'" onblur="this.style.outline='none'">删除</button>
                 </div>
               </td>
             </tr>
@@ -378,8 +378,8 @@
               <td class="px-3 py-1.5 whitespace-nowrap" style="font-size: var(--font-size-xs); color: var(--color-text-secondary);">2026-06-30 09:15</td>
               <td class="px-3 py-1.5 whitespace-nowrap text-right">
                 <div class="inline-flex items-center gap-1.5">
-                  <button class="inline-flex items-center justify-center whitespace-nowrap transition-colors" style="font-size: var(--font-size-xs); font-weight: 500; padding: 4px 10px; border-radius: var(--radius-md); border: 1px solid var(--color-border); color: var(--color-text-secondary); background: transparent; transition-property: border-color, color; transition-duration: 150ms;" onmouseover="this.style.borderColor='var(--color-primary)';this.style.color='var(--color-primary)'" onmouseout="this.style.borderColor='var(--color-border)';this.style.color='var(--color-text-secondary)'" onfocus="this.style.outline='2px solid var(--color-primary)';this.style.outlineOffset='2px'" onblur="this.style.outline='none'">预览</button>
-                  <button class="inline-flex items-center justify-center whitespace-nowrap transition-colors" style="font-size: var(--font-size-xs); font-weight: 500; padding: 4px 10px; border-radius: var(--radius-md); border: none; color: var(--state-error); background: transparent; transition-property: color; transition-duration: 150ms;" onmouseover="this.style.color='#dc2626'" onmouseout="this.style.color='var(--state-error)'" onfocus="this.style.outline='2px solid var(--color-primary)';this.style.outlineOffset='2px'" onblur="this.style.outline='none'">删除</button>
+                  <button class="inline-flex items-center justify-center whitespace-nowrap transition-colors" style="font-size: var(--font-size-xs); font-weight: var(--font-weight-medium); padding: 4px 10px; border-radius: var(--radius-md); border: 1px solid var(--color-border); color: var(--color-text-secondary); background: transparent; transition-property: border-color, color; transition-duration: 150ms;" onmouseover="this.style.borderColor='var(--color-primary)';this.style.color='var(--color-primary)'" onmouseout="this.style.borderColor='var(--color-border)';this.style.color='var(--color-text-secondary)'" onfocus="this.style.outline='2px solid var(--color-primary)';this.style.outlineOffset='2px'" onblur="this.style.outline='none'">预览</button>
+                  <button class="inline-flex items-center justify-center whitespace-nowrap transition-colors" style="font-size: var(--font-size-xs); font-weight: var(--font-weight-medium); padding: 4px 10px; border-radius: var(--radius-md); border: none; color: var(--state-error); background: transparent; transition-property: color; transition-duration: 150ms;" onmouseover="this.style.color='var(--state-error-hover)'" onmouseout="this.style.color='var(--state-error)'" onfocus="this.style.outline='2px solid var(--color-primary)';this.style.outlineOffset='2px'" onblur="this.style.outline='none'">删除</button>
                 </div>
               </td>
             </tr>
@@ -393,8 +393,8 @@
               <td class="px-3 py-1.5 whitespace-nowrap" style="font-size: var(--font-size-xs); color: var(--color-text-secondary);">2026-07-01 16:45</td>
               <td class="px-3 py-1.5 whitespace-nowrap text-right">
                 <div class="inline-flex items-center gap-1.5">
-                  <button class="inline-flex items-center justify-center whitespace-nowrap transition-colors" style="font-size: var(--font-size-xs); font-weight: 500; padding: 4px 10px; border-radius: var(--radius-md); border: 1px solid var(--color-border); color: var(--color-text-secondary); background: transparent; transition-property: border-color, color; transition-duration: 150ms;" onmouseover="this.style.borderColor='var(--color-primary)';this.style.color='var(--color-primary)'" onmouseout="this.style.borderColor='var(--color-border)';this.style.color='var(--color-text-secondary)'" onfocus="this.style.outline='2px solid var(--color-primary)';this.style.outlineOffset='2px'" onblur="this.style.outline='none'">预览</button>
-                  <button class="inline-flex items-center justify-center whitespace-nowrap transition-colors" style="font-size: var(--font-size-xs); font-weight: 500; padding: 4px 10px; border-radius: var(--radius-md); border: none; color: var(--state-error); background: transparent; transition-property: color; transition-duration: 150ms;" onmouseover="this.style.color='#dc2626'" onmouseout="this.style.color='var(--state-error)'" onfocus="this.style.outline='2px solid var(--color-primary)';this.style.outlineOffset='2px'" onblur="this.style.outline='none'">删除</button>
+                  <button class="inline-flex items-center justify-center whitespace-nowrap transition-colors" style="font-size: var(--font-size-xs); font-weight: var(--font-weight-medium); padding: 4px 10px; border-radius: var(--radius-md); border: 1px solid var(--color-border); color: var(--color-text-secondary); background: transparent; transition-property: border-color, color; transition-duration: 150ms;" onmouseover="this.style.borderColor='var(--color-primary)';this.style.color='var(--color-primary)'" onmouseout="this.style.borderColor='var(--color-border)';this.style.color='var(--color-text-secondary)'" onfocus="this.style.outline='2px solid var(--color-primary)';this.style.outlineOffset='2px'" onblur="this.style.outline='none'">预览</button>
+                  <button class="inline-flex items-center justify-center whitespace-nowrap transition-colors" style="font-size: var(--font-size-xs); font-weight: var(--font-weight-medium); padding: 4px 10px; border-radius: var(--radius-md); border: none; color: var(--state-error); background: transparent; transition-property: color; transition-duration: 150ms;" onmouseover="this.style.color='var(--state-error-hover)'" onmouseout="this.style.color='var(--state-error)'" onfocus="this.style.outline='2px solid var(--color-primary)';this.style.outlineOffset='2px'" onblur="this.style.outline='none'">删除</button>
                 </div>
               </td>
             </tr>

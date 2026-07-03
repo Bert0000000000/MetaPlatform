@@ -16,7 +16,7 @@
   --color-sidebar-bg: #0f172a;
   --color-sidebar-text: #94a3b8;
   --color-sidebar-text-hover: #cbd5e1;
-  --color-sidebar-active-bg: rgba(59, 130, 246, 0.15);
+  --color-sidebar-active-bg: var(--color-primary-subtle);
   --color-sidebar-active-text: #60a5fa;
   --color-sidebar-border: rgba(148, 163, 184, 0.1);
   --color-text-primary: #0f172a;
@@ -73,7 +73,7 @@
       [data-icon] { display: inline-flex; align-items: center; justify-content: center; -webkit-mask-size: contain; mask-size: contain; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-position: center; mask-position: center; background-color: currentColor; }
     </style>
 </head>
-<body style="font-family: var(--font-sans); font-size: 13px; background: var(--color-bg); color: var(--color-text-primary);">
+<body style="font-family: var(--font-sans); var(--font-size-base) background: var(--color-bg); color: var(--color-text-primary);">
 <div class="flex min-h-screen">
 
   <!-- Sidebar -->
@@ -82,7 +82,7 @@
     <!-- Brand -->
     <div class="flex items-center gap-2 px-4 py-4" style="border-bottom: 1px solid var(--color-sidebar-border);">
       <span class="w-7 h-7 flex items-center justify-center font-bold text-xs" style="border-radius: var(--radius-md); background: var(--color-primary); color: var(--color-text-inverse);">M</span>
-      <span class="text-sm font-semibold" style="color: #f8fafc;">MetaPlatform</span>
+      <span class="text-sm font-semibold" style="color: var(--color-text-inverse);">MetaPlatform</span>
     </div>
 
     <!-- Nav -->
@@ -209,10 +209,10 @@
 
     <!-- Bottom user area -->
     <div class="px-3 py-3 flex items-center gap-2" style="border-top: 1px solid var(--color-sidebar-border);">
-      <div class="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-medium" style="background: #334155; color: #cbd5e1;">A</div>
+      <div class="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-medium" style="background: var(--color-sidebar-bg); color: var(--color-sidebar-text-hover);">A</div>
       <div class="flex-1 min-w-0">
-        <div class="text-xs truncate" style="color: #e2e8f0;">Admin</div>
-        <div style="font-size: 10px; color: #64748b;" class="truncate">admin@metaplatform.io</div>
+        <div class="text-xs truncate" style="color: var(--color-sidebar-text-hover);">Admin</div>
+        <div style="var(--font-size-xs) color: var(--color-text-secondary);" class="truncate">admin@metaplatform.io</div>
       </div>
     </div>
 
@@ -223,7 +223,7 @@
 
     <!-- Page header -->
     <div class="flex items-center justify-between mb-5">
-      <h1 style="font-size: 18px; font-weight: var(--font-weight-semibold); color: var(--color-text-primary); line-height: var(--line-height-normal);">应用市场</h1>
+      <h1 style="var(--font-size-xl) font-weight: var(--font-weight-semibold); color: var(--color-text-primary); line-height: var(--line-height-normal);">应用市场</h1>
       <!-- Search input -->
       <div class="relative" style="width: 280px;">
         <svg class="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5" style="color: var(--color-text-secondary);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

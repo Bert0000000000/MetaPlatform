@@ -16,7 +16,7 @@
   --color-sidebar-bg: #0f172a;
   --color-sidebar-text: #94a3b8;
   --color-sidebar-text-hover: #cbd5e1;
-  --color-sidebar-active-bg: rgba(59, 130, 246, 0.15);
+  --color-sidebar-active-bg: var(--color-primary-subtle);
   --color-sidebar-active-text: #60a5fa;
   --color-sidebar-border: rgba(148, 163, 184, 0.1);
   --color-text-primary: #0f172a;
@@ -83,7 +83,7 @@
     <!-- Brand -->
     <div class="flex items-center gap-2 px-3 py-3" style="border-bottom: 1px solid var(--color-sidebar-border);">
       <span class="w-8 h-8 text-white flex items-center justify-center font-bold text-xs" style="background: var(--color-primary); border-radius: var(--radius-md);">M</span>
-      <span class="text-sm font-semibold" style="color: #f1f5f9;">MetaPlatform</span>
+      <span class="text-sm font-semibold" style="color: var(--color-text-inverse)">MetaPlatform</span>
     </div>
 
     <!-- Nav -->
@@ -119,7 +119,7 @@
       </a>
 
       <!-- 4. 设计器 (ACTIVE) -->
-      <a data-dom-id="nav-designer" class="flex items-center gap-0.5 px-2.5 py-1.5 cursor-pointer" style="background: rgba(59, 130, 246, 0.15); color: #60a5fa; border-radius: var(--radius-md); font-size: var(--font-size-sm);">
+      <a data-dom-id="nav-designer" class="flex items-center gap-0.5 px-2.5 py-1.5 cursor-pointer" style="background: var(--color-primary-subtle); color: var(--color-primary-active); border-radius: var(--radius-md); font-size: var(--font-size-sm);">
         <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M12 19l7-7 3 3-7 7-3-3z"/>
           <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/>
@@ -210,10 +210,10 @@
 
     <!-- Bottom user area -->
     <div class="px-3 py-3 flex items-center gap-2" style="border-top: 1px solid var(--color-sidebar-border);">
-      <div class="w-6 h-6 flex items-center justify-center" style="background: #334155; color: #94a3b8; border-radius: var(--radius-full); font-size: 10px; font-weight: 500;">A</div>
+      <div class="w-6 h-6 flex items-center justify-center" style="background: var(--color-sidebar-bg); color: var(--color-sidebar-text); border-radius: var(--radius-full); var(--font-size-xs) var(--font-weight-medium)">A</div>
       <div class="flex-1 min-w-0">
         <div class="truncate" style="color: var(--color-sidebar-text-hover); font-size: var(--font-size-sm);">Admin</div>
-        <div class="truncate" style="color: #64748b; font-size: var(--font-size-xs);">admin@metaplatform.io</div>
+        <div class="truncate" style="color: var(--color-text-secondary); font-size: var(--font-size-xs);">admin@metaplatform.io</div>
       </div>
     </div>
 
@@ -232,13 +232,13 @@
         </svg>
       </button>
       <!-- Page name input -->
-      <input type="text" value="客户信息表" class="flex-shrink-0 outline-none" style="font-size: var(--font-size-base); font-weight: 500; color: var(--color-text-primary); padding: 4px 8px; border: 1px solid var(--color-border); border-radius: var(--radius-md); width: 160px; background: var(--color-surface);" onfocus="this.style.borderColor='var(--color-primary)';this.style.boxShadow='0 0 0 2px rgba(59,130,246,0.15)'" onblur="this.style.borderColor='var(--color-border)';this.style.boxShadow='none'">
+      <input type="text" value="客户信息表" class="flex-shrink-0 outline-none" style="font-size: var(--font-size-base); var(--font-weight-medium) color: var(--color-text-primary); padding: 4px 8px; border: 1px solid var(--color-border); border-radius: var(--radius-md); width: 160px; background: var(--color-surface);" onfocus="this.style.borderColor='var(--color-primary)';this.style.boxShadow='0 0 0 2px var(--color-primary-subtle)'" onblur="this.style.borderColor='var(--color-border)';this.style.boxShadow='none'">
       <!-- Page code input -->
-      <input type="text" value="customer_form" class="flex-shrink-0 outline-none" style="font-size: var(--font-size-sm); color: var(--color-text-secondary); font-family: var(--font-mono); padding: 4px 8px; border: 1px solid var(--color-border); border-radius: var(--radius-md); width: 140px; background: var(--color-surface);" onfocus="this.style.borderColor='var(--color-primary)';this.style.boxShadow='0 0 0 2px rgba(59,130,246,0.15)'" onblur="this.style.borderColor='var(--color-border)';this.style.boxShadow='none'">
+      <input type="text" value="customer_form" class="flex-shrink-0 outline-none" style="font-size: var(--font-size-sm); color: var(--color-text-secondary); font-family: var(--font-mono); padding: 4px 8px; border: 1px solid var(--color-border); border-radius: var(--radius-md); width: 140px; background: var(--color-surface);" onfocus="this.style.borderColor='var(--color-primary)';this.style.boxShadow='0 0 0 2px var(--color-primary-subtle)'" onblur="this.style.borderColor='var(--color-border)';this.style.boxShadow='none'">
       <!-- Spacer -->
       <div class="flex-1"></div>
       <!-- Preview button -->
-      <button class="flex items-center gap-1 cursor-pointer whitespace-nowrap" style="font-size: var(--font-size-sm); font-weight: 500; padding: 5px 12px; border-radius: var(--radius-md); border: 1px solid var(--color-border); color: var(--color-text-secondary); background: transparent;" onmouseover="this.style.borderColor='var(--color-primary)';this.style.color='var(--color-primary)'" onmouseout="this.style.borderColor='var(--color-border)';this.style.color='var(--color-text-secondary)'">
+      <button class="flex items-center gap-1 cursor-pointer whitespace-nowrap" style="font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); padding: 5px 12px; border-radius: var(--radius-md); border: 1px solid var(--color-border); color: var(--color-text-secondary); background: transparent;" onmouseover="this.style.borderColor='var(--color-primary)';this.style.color='var(--color-primary)'" onmouseout="this.style.borderColor='var(--color-border)';this.style.color='var(--color-text-secondary)'">
         <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
           <circle cx="12" cy="12" r="3"/>
@@ -246,7 +246,7 @@
         预览
       </button>
       <!-- Save button -->
-      <button class="flex items-center gap-1 cursor-pointer text-white whitespace-nowrap" style="font-size: var(--font-size-sm); font-weight: 500; padding: 5px 14px; border-radius: var(--radius-md); border: none; background: var(--color-primary);" onmouseover="this.style.background='var(--color-primary-hover)'" onmouseout="this.style.background='var(--color-primary)'">
+      <button class="flex items-center gap-1 cursor-pointer text-white whitespace-nowrap" style="font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); padding: 5px 14px; border-radius: var(--radius-md); border: none; background: var(--color-primary);" onmouseover="this.style.background='var(--color-primary-hover)'" onmouseout="this.style.background='var(--color-primary)'">
         <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
           <polyline points="17 21 17 13 7 13 7 21"/>
@@ -265,73 +265,73 @@
         <div class="flex-1 overflow-y-auto px-2 pb-2" style="display: flex; flex-direction: column; gap: 4px;">
 
           <!-- Widget: 单行输入 -->
-          <div class="flex items-center gap-2 cursor-pointer" style="padding: 6px 8px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); font-size: 12px; color: var(--color-text-primary);" onmouseover="this.style.borderColor='var(--color-primary)'" onmouseout="this.style.borderColor='var(--color-border)'">
+          <div class="flex items-center gap-2 cursor-pointer" style="padding: 6px 8px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); var(--font-size-sm) color: var(--color-text-primary);" onmouseover="this.style.borderColor='var(--color-primary)'" onmouseout="this.style.borderColor='var(--color-border)'">
             <svg class="w-3.5 h-3.5 flex-shrink-0" style="color: var(--color-text-secondary);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="17" y1="10" x2="3" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="17" y1="18" x2="3" y2="18"/></svg>
             <span>单行输入</span>
           </div>
 
           <!-- Widget: 多行文本 -->
-          <div class="flex items-center gap-2 cursor-pointer" style="padding: 6px 8px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); font-size: 12px; color: var(--color-text-primary);" onmouseover="this.style.borderColor='var(--color-primary)'" onmouseout="this.style.borderColor='var(--color-border)'">
+          <div class="flex items-center gap-2 cursor-pointer" style="padding: 6px 8px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); var(--font-size-sm) color: var(--color-text-primary);" onmouseover="this.style.borderColor='var(--color-primary)'" onmouseout="this.style.borderColor='var(--color-border)'">
             <svg class="w-3.5 h-3.5 flex-shrink-0" style="color: var(--color-text-secondary);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="7" y1="8" x2="17" y2="8"/><line x1="7" y1="12" x2="17" y2="12"/><line x1="7" y1="16" x2="13" y2="16"/></svg>
             <span>多行文本</span>
           </div>
 
           <!-- Widget: 数字 -->
-          <div class="flex items-center gap-2 cursor-pointer" style="padding: 6px 8px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); font-size: 12px; color: var(--color-text-primary);" onmouseover="this.style.borderColor='var(--color-primary)'" onmouseout="this.style.borderColor='var(--color-border)'">
+          <div class="flex items-center gap-2 cursor-pointer" style="padding: 6px 8px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); var(--font-size-sm) color: var(--color-text-primary);" onmouseover="this.style.borderColor='var(--color-primary)'" onmouseout="this.style.borderColor='var(--color-border)'">
             <svg class="w-3.5 h-3.5 flex-shrink-0" style="color: var(--color-text-secondary);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             <span>数字</span>
           </div>
 
           <!-- Widget: 下拉选择 -->
-          <div class="flex items-center gap-2 cursor-pointer" style="padding: 6px 8px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); font-size: 12px; color: var(--color-text-primary);" onmouseover="this.style.borderColor='var(--color-primary)'" onmouseout="this.style.borderColor='var(--color-border)'">
+          <div class="flex items-center gap-2 cursor-pointer" style="padding: 6px 8px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); var(--font-size-sm) color: var(--color-text-primary);" onmouseover="this.style.borderColor='var(--color-primary)'" onmouseout="this.style.borderColor='var(--color-border)'">
             <svg class="w-3.5 h-3.5 flex-shrink-0" style="color: var(--color-text-secondary);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
             <span>下拉选择</span>
           </div>
 
           <!-- Widget: 日期 -->
-          <div class="flex items-center gap-2 cursor-pointer" style="padding: 6px 8px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); font-size: 12px; color: var(--color-text-primary);" onmouseover="this.style.borderColor='var(--color-primary)'" onmouseout="this.style.borderColor='var(--color-border)'">
+          <div class="flex items-center gap-2 cursor-pointer" style="padding: 6px 8px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); var(--font-size-sm) color: var(--color-text-primary);" onmouseover="this.style.borderColor='var(--color-primary)'" onmouseout="this.style.borderColor='var(--color-border)'">
             <svg class="w-3.5 h-3.5 flex-shrink-0" style="color: var(--color-text-secondary);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
             <span>日期</span>
           </div>
 
           <!-- Widget: 开关 -->
-          <div class="flex items-center gap-2 cursor-pointer" style="padding: 6px 8px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); font-size: 12px; color: var(--color-text-primary);" onmouseover="this.style.borderColor='var(--color-primary)'" onmouseout="this.style.borderColor='var(--color-border)'">
+          <div class="flex items-center gap-2 cursor-pointer" style="padding: 6px 8px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); var(--font-size-sm) color: var(--color-text-primary);" onmouseover="this.style.borderColor='var(--color-primary)'" onmouseout="this.style.borderColor='var(--color-border)'">
             <svg class="w-3.5 h-3.5 flex-shrink-0" style="color: var(--color-text-secondary);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="5" width="22" height="14" rx="7"/><circle cx="16" cy="12" r="3"/></svg>
             <span>开关</span>
           </div>
 
           <!-- Widget: 邮箱 -->
-          <div class="flex items-center gap-2 cursor-pointer" style="padding: 6px 8px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); font-size: 12px; color: var(--color-text-primary);" onmouseover="this.style.borderColor='var(--color-primary)'" onmouseout="this.style.borderColor='var(--color-border)'">
+          <div class="flex items-center gap-2 cursor-pointer" style="padding: 6px 8px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); var(--font-size-sm) color: var(--color-text-primary);" onmouseover="this.style.borderColor='var(--color-primary)'" onmouseout="this.style.borderColor='var(--color-border)'">
             <svg class="w-3.5 h-3.5 flex-shrink-0" style="color: var(--color-text-secondary);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
             <span>邮箱</span>
           </div>
 
           <!-- Widget: 电话 -->
-          <div class="flex items-center gap-2 cursor-pointer" style="padding: 6px 8px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); font-size: 12px; color: var(--color-text-primary);" onmouseover="this.style.borderColor='var(--color-primary)'" onmouseout="this.style.borderColor='var(--color-border)'">
+          <div class="flex items-center gap-2 cursor-pointer" style="padding: 6px 8px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); var(--font-size-sm) color: var(--color-text-primary);" onmouseover="this.style.borderColor='var(--color-primary)'" onmouseout="this.style.borderColor='var(--color-border)'">
             <svg class="w-3.5 h-3.5 flex-shrink-0" style="color: var(--color-text-secondary);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
             <span>电话</span>
           </div>
 
           <!-- Widget: 富文本 -->
-          <div class="flex items-center gap-2 cursor-pointer" style="padding: 6px 8px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); font-size: 12px; color: var(--color-text-primary);" onmouseover="this.style.borderColor='var(--color-primary)'" onmouseout="this.style.borderColor='var(--color-border)'">
+          <div class="flex items-center gap-2 cursor-pointer" style="padding: 6px 8px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); var(--font-size-sm) color: var(--color-text-primary);" onmouseover="this.style.borderColor='var(--color-primary)'" onmouseout="this.style.borderColor='var(--color-border)'">
             <svg class="w-3.5 h-3.5 flex-shrink-0" style="color: var(--color-text-secondary);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
             <span>富文本</span>
           </div>
 
           <!-- Widget: 货币 -->
-          <div class="flex items-center gap-2 cursor-pointer" style="padding: 6px 8px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); font-size: 12px; color: var(--color-text-primary);" onmouseover="this.style.borderColor='var(--color-primary)'" onmouseout="this.style.borderColor='var(--color-border)'">
+          <div class="flex items-center gap-2 cursor-pointer" style="padding: 6px 8px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); var(--font-size-sm) color: var(--color-text-primary);" onmouseover="this.style.borderColor='var(--color-primary)'" onmouseout="this.style.borderColor='var(--color-border)'">
             <svg class="w-3.5 h-3.5 flex-shrink-0" style="color: var(--color-text-secondary);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
             <span>货币</span>
           </div>
 
           <!-- Widget: 百分比 -->
-          <div class="flex items-center gap-2 cursor-pointer" style="padding: 6px 8px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); font-size: 12px; color: var(--color-text-primary);" onmouseover="this.style.borderColor='var(--color-primary)'" onmouseout="this.style.borderColor='var(--color-border)'">
+          <div class="flex items-center gap-2 cursor-pointer" style="padding: 6px 8px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); var(--font-size-sm) color: var(--color-text-primary);" onmouseover="this.style.borderColor='var(--color-primary)'" onmouseout="this.style.borderColor='var(--color-border)'">
             <svg class="w-3.5 h-3.5 flex-shrink-0" style="color: var(--color-text-secondary);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>
             <span>百分比</span>
           </div>
 
           <!-- Widget: 评分 -->
-          <div class="flex items-center gap-2 cursor-pointer" style="padding: 6px 8px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); font-size: 12px; color: var(--color-text-primary);" onmouseover="this.style.borderColor='var(--color-primary)'" onmouseout="this.style.borderColor='var(--color-border)'">
+          <div class="flex items-center gap-2 cursor-pointer" style="padding: 6px 8px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); var(--font-size-sm) color: var(--color-text-primary);" onmouseover="this.style.borderColor='var(--color-primary)'" onmouseout="this.style.borderColor='var(--color-border)'">
             <svg class="w-3.5 h-3.5 flex-shrink-0" style="color: var(--color-text-secondary);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
             <span>评分</span>
           </div>
@@ -358,7 +358,7 @@
           <!-- Section header -->
           <div class="flex items-center gap-2 px-3 py-2" style="border-bottom: 1px solid var(--color-border); background: var(--color-bg-secondary); border-radius: var(--radius-lg) var(--radius-lg) 0 0;">
             <span class="font-medium" style="font-size: var(--font-size-sm); color: var(--color-text-primary);">基本信息</span>
-            <span class="px-1.5 py-0.5" style="font-size: 10px; color: var(--color-text-secondary); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-sm); font-family: var(--font-mono);">FIELD_GROUP</span>
+            <span class="px-1.5 py-0.5" style="var(--font-size-xs) color: var(--color-text-secondary); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-sm); font-family: var(--font-mono);">FIELD_GROUP</span>
           </div>
           <!-- Field grid (2x2) -->
           <div class="grid grid-cols-2 gap-2 p-3">
@@ -410,7 +410,7 @@
           <!-- Section header -->
           <div class="flex items-center gap-2 px-3 py-2" style="border-bottom: 1px solid var(--color-border); background: var(--color-bg-secondary);">
             <span class="font-medium" style="font-size: var(--font-size-sm); color: var(--color-text-primary);">详细信息</span>
-            <span class="px-1.5 py-0.5" style="font-size: 10px; color: var(--color-text-secondary); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-sm); font-family: var(--font-mono);">TABLE</span>
+            <span class="px-1.5 py-0.5" style="var(--font-size-xs) color: var(--color-text-secondary); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-sm); font-family: var(--font-mono);">TABLE</span>
           </div>
           <!-- Table -->
           <table class="w-full" style="font-size: var(--font-size-sm);">
@@ -470,19 +470,19 @@
           <!-- 字段名称 -->
           <div class="flex flex-col gap-1">
             <label style="font-size: var(--font-size-xs); font-weight: var(--font-weight-medium); color: var(--color-text-secondary);">字段名称</label>
-            <input type="text" value="客户名称" class="outline-none" style="font-size: var(--font-size-sm); padding: 5px 8px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text-primary);" onfocus="this.style.borderColor='var(--color-primary)';this.style.boxShadow='0 0 0 2px rgba(59,130,246,0.15)'" onblur="this.style.borderColor='var(--color-border)';this.style.boxShadow='none'">
+            <input type="text" value="客户名称" class="outline-none" style="font-size: var(--font-size-sm); padding: 5px 8px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text-primary);" onfocus="this.style.borderColor='var(--color-primary)';this.style.boxShadow='0 0 0 2px var(--color-primary-subtle)'" onblur="this.style.borderColor='var(--color-border)';this.style.boxShadow='none'">
           </div>
 
           <!-- 字段标识 -->
           <div class="flex flex-col gap-1">
             <label style="font-size: var(--font-size-xs); font-weight: var(--font-weight-medium); color: var(--color-text-secondary);">字段标识</label>
-            <input type="text" value="customerName" class="outline-none" style="font-size: var(--font-size-sm); padding: 5px 8px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text-primary); font-family: var(--font-mono);" onfocus="this.style.borderColor='var(--color-primary)';this.style.boxShadow='0 0 0 2px rgba(59,130,246,0.15)'" onblur="this.style.borderColor='var(--color-border)';this.style.boxShadow='none'">
+            <input type="text" value="customerName" class="outline-none" style="font-size: var(--font-size-sm); padding: 5px 8px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text-primary); font-family: var(--font-mono);" onfocus="this.style.borderColor='var(--color-primary)';this.style.boxShadow='0 0 0 2px var(--color-primary-subtle)'" onblur="this.style.borderColor='var(--color-border)';this.style.boxShadow='none'">
           </div>
 
           <!-- 字段类型 -->
           <div class="flex flex-col gap-1">
             <label style="font-size: var(--font-size-xs); font-weight: var(--font-weight-medium); color: var(--color-text-secondary);">字段类型</label>
-            <select class="outline-none cursor-pointer" style="font-size: var(--font-size-sm); padding: 5px 8px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text-primary); appearance: auto;" onfocus="this.style.borderColor='var(--color-primary)';this.style.boxShadow='0 0 0 2px rgba(59,130,246,0.15)'" onblur="this.style.borderColor='var(--color-border)';this.style.boxShadow='none'">
+            <select class="outline-none cursor-pointer" style="font-size: var(--font-size-sm); padding: 5px 8px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text-primary); appearance: auto;" onfocus="this.style.borderColor='var(--color-primary)';this.style.boxShadow='0 0 0 2px var(--color-primary-subtle)'" onblur="this.style.borderColor='var(--color-border)';this.style.boxShadow='none'">
               <option selected>单行输入</option>
               <option>多行文本</option>
               <option>数字</option>
@@ -509,13 +509,13 @@
           <!-- 占位文本 -->
           <div class="flex flex-col gap-1">
             <label style="font-size: var(--font-size-xs); font-weight: var(--font-weight-medium); color: var(--color-text-secondary);">占位文本</label>
-            <input type="text" value="请输入客户名称" class="outline-none" style="font-size: var(--font-size-sm); padding: 5px 8px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text-primary);" onfocus="this.style.borderColor='var(--color-primary)';this.style.boxShadow='0 0 0 2px rgba(59,130,246,0.15)'" onblur="this.style.borderColor='var(--color-border)';this.style.boxShadow='none'">
+            <input type="text" value="请输入客户名称" class="outline-none" style="font-size: var(--font-size-sm); padding: 5px 8px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text-primary);" onfocus="this.style.borderColor='var(--color-primary)';this.style.boxShadow='0 0 0 2px var(--color-primary-subtle)'" onblur="this.style.borderColor='var(--color-border)';this.style.boxShadow='none'">
           </div>
 
           <!-- 描述 -->
           <div class="flex flex-col gap-1">
             <label style="font-size: var(--font-size-xs); font-weight: var(--font-weight-medium); color: var(--color-text-secondary);">描述</label>
-            <textarea rows="3" class="outline-none resize-none" style="font-size: var(--font-size-sm); padding: 5px 8px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text-primary); line-height: var(--line-height-normal);" placeholder="请输入字段描述..." onfocus="this.style.borderColor='var(--color-primary)';this.style.boxShadow='0 0 0 2px rgba(59,130,246,0.15)'" onblur="this.style.borderColor='var(--color-border)';this.style.boxShadow='none'"></textarea>
+            <textarea rows="3" class="outline-none resize-none" style="font-size: var(--font-size-sm); padding: 5px 8px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text-primary); line-height: var(--line-height-normal);" placeholder="请输入字段描述..." onfocus="this.style.borderColor='var(--color-primary)';this.style.boxShadow='0 0 0 2px var(--color-primary-subtle)'" onblur="this.style.borderColor='var(--color-border)';this.style.boxShadow='none'"></textarea>
           </div>
 
         </div>
@@ -533,7 +533,7 @@ function toggleSwitch(btn) {
   const isOn = knob.style.transform === 'translateX(16px)';
   if (isOn) {
     knob.style.transform = 'translateX(0px)';
-    btn.style.background = '#cbd5e1';
+    btn.style.background = 'var(--color-sidebar-text-hover)';
   } else {
     knob.style.transform = 'translateX(16px)';
     btn.style.background = 'var(--color-primary)';

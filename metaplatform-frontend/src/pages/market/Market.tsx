@@ -222,7 +222,23 @@ export function DeveloperRank() {
 
 export function MarketDashboard() {
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 p-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight flex items-center gap-2">
+            <Store className="size-5 text-primary" />
+            云市场
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            本体模板、Skill、智能体、工作流、知识包订阅与开发者生态
+          </p>
+        </div>
+        <Button size="sm">
+          <Package className="size-3 mr-1" />
+          我订阅的
+        </Button>
+      </div>
+
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
         <StatCard label="模板总数" value={245} icon="📦" />
         <StatCard label="本月下载" value={12480} trend={18.5} icon="⬇️" />

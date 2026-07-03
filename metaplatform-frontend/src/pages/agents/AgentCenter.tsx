@@ -244,7 +244,23 @@ export function AgentMonitor() {
 
 export function AgentCenter() {
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 p-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight flex items-center gap-2">
+            <Bot className="size-5 text-primary" />
+            数字员工中心
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            数字员工、技能广场、多智能体协作与运行监控
+          </p>
+        </div>
+        <Button size="sm">
+          <Plus className="size-3 mr-1" />
+          新建数字员工
+        </Button>
+      </div>
+
       <Tabs defaultValue="list">
         <TabsList>
           <TabsTrigger value="list">数字员工</TabsTrigger>
