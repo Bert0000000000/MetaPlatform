@@ -74,7 +74,7 @@ const TableRenderer: React.FC<TableRendererProps> = ({ config, data = [] }) => {
     if (v == null || v === "") return <span className="text-muted-foreground">--</span>;
     switch (type) {
       case "boolean":
-        return v ? "\u662F" : "\u5426";
+        return v ? "是" : "否";
       case "link":
         return (
           <a href={String(v)} target="_blank" rel="noreferrer" className="text-primary underline">
@@ -101,7 +101,7 @@ const TableRenderer: React.FC<TableRendererProps> = ({ config, data = [] }) => {
                 {col.title || col.field}
                 {col.sortable && sortField === col.field && (
                   <span className="ml-1 text-xs">
-                    {sortDir === "asc" ? "\u25B2" : "\u25BC"}
+                    {sortDir === "asc" ? "▲" : "▼"}
                   </span>
                 )}
               </TableHead>

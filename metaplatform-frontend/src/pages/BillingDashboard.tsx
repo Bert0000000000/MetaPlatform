@@ -56,7 +56,7 @@ const BillingDashboard: React.FC = () => {
       if (subData.status === "fulfilled") setSubscription(subData.value);
       if (usageData.status === "fulfilled") setUsage(usageData.value);
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "\u52A0\u8F7D\u5931\u8D25");
+      setError(e instanceof Error ? e.message : "加载失败");
     } finally {
       setLoading(false);
     }
@@ -69,11 +69,11 @@ const BillingDashboard: React.FC = () => {
     return n.toString();
   };
 
-  const formatCost = (cents: number) => `\u00A5${(cents / 100).toFixed(2)}`;
+  const formatCost = (cents: number) => `¥${(cents / 100).toFixed(2)}`;
 
   const getPlanPrice = (cents: number) => {
-    if (cents === 0) return "\u514D\u8D39";
-    return `\u00A5${(cents / 100).toFixed(0)}/\u6708`;
+    if (cents === 0) return "免费";
+    return `¥${(cents / 100).toFixed(0)}/月`;
   };
 
   const handleSubscribe = async (planId: string) => {
@@ -81,14 +81,14 @@ const BillingDashboard: React.FC = () => {
       await subscribe(TENANT_ID, planId);
       await loadData();
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "\u8BA2\u9605\u5931\u8D25");
+      setError(e instanceof Error ? e.message : "订阅失败");
     }
   };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center py-8 text-muted-foreground">
-        \u52A0\u8F7D\u4E2D...
+        加载中...
       </div>
     );
   }
@@ -96,8 +96,8 @@ const BillingDashboard: React.FC = () => {
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">\u8BA1\u8D39\u4E2D\u5FC3</h1>
-        <p className="text-sm text-muted-foreground mt-1">\u7BA1\u7406\u8BA2\u9605\u5957\u9910\u3001\u67E5\u770B\u4F7F\u7528\u91CF\u7EDF\u8BA1</p>
+        <h1 className="text-2xl font-semibold tracking-tight">计费中心</h1>
+        <p className="text-sm text-muted-foreground mt-1">管理订阅套餐、查看使用量统计</p>
       </div>
 
       {error && (
@@ -109,7 +109,7 @@ const BillingDashboard: React.FC = () => {
       {/* Current subscription */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">\u5F53\u524D\u8BA2\u9605</CardTitle>
+          <CardTitle className="text-lg">当前订阅</CardTitle>
         </CardHeader>
         <CardContent>
           {subscription ? (
@@ -119,18 +119,18 @@ const BillingDashboard: React.FC = () => {
                   {plans.find(p => p.id === subscription.planId)?.name || subscription.planId}
                 </span>
                 <Badge variant={subscription.status === "active" ? "default" : "secondary"}>
-                  {subscription.status === "active" ? "\u751F\u6548\u4E2D" : subscription.status}
+                  {subscription.status === "active" ? "生效中" : subscription.status}
                 </Badge>
               </div>
               <div className="flex gap-4 text-sm text-muted-foreground">
-                <span>\u5F00\u59CB\u65F6\u95F4: {new Date(subscription.startedAt).toLocaleDateString()}</span>
+                <span>开始时间: {new Date(subscription.startedAt).toLocaleDateString()}</span>
                 {subscription.expiresAt && (
-                  <span>\u5230\u671F\u65F6\u95F4: {new Date(subscription.expiresAt).toLocaleDateString()}</span>
+                  <span>到期时间: {new Date(subscription.expiresAt).toLocaleDateString()}</span>
                 )}
               </div>
             </div>
           ) : (
-            <div className="text-sm text-muted-foreground">\u6682\u65E0\u8BA2\u9605\uFF0C\u8BF7\u9009\u62E9\u5957\u9910</div>
+            <div className="text-sm text-muted-foreground">暂无订阅，请选择套餐</div>
           )}
         </CardContent>
       </Card>
@@ -138,15 +138,15 @@ const BillingDashboard: React.FC = () => {
       {/* Usage stats */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">\u4F7F\u7528\u91CF\u7EDF\u8BA1</CardTitle>
+          <CardTitle className="text-lg">使用量统计</CardTitle>
         </CardHeader>
         <CardContent>
           {usage ? (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {[
-                { label: "\u4ECA\u65E5", data: usage.today },
-                { label: "\u672C\u6708", data: usage.thisMonth },
-                { label: "\u7D2F\u8BA1", data: usage.total },
+                { label: "今日", data: usage.today },
+                { label: "本月", data: usage.thisMonth },
+                { label: "累计", data: usage.total },
               ].map(({ label, data }) => (
                 <div key={label} className="rounded-lg border p-4 text-center">
                   <div className="text-sm font-medium text-muted-foreground mb-2">{label}</div>
@@ -154,19 +154,19 @@ const BillingDashboard: React.FC = () => {
                   <div className="text-xs text-muted-foreground mt-1">Token</div>
                   <Separator className="my-2" />
                   <div className="text-sm font-medium">{formatCost(data?.costCents || 0)}</div>
-                  <div className="text-xs text-muted-foreground">{data?.requestCount || 0} \u6B21\u8BF7\u6C42</div>
+                  <div className="text-xs text-muted-foreground">{data?.requestCount || 0} 次请求</div>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="text-sm text-muted-foreground">\u6682\u65E0\u4F7F\u7528\u6570\u636E</div>
+            <div className="text-sm text-muted-foreground">暂无使用数据</div>
           )}
         </CardContent>
       </Card>
 
       {/* Plan list */}
       <div>
-        <h2 className="text-lg font-semibold mb-4">\u5957\u9910\u9009\u62E9</h2>
+        <h2 className="text-lg font-semibold mb-4">套餐选择</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {plans.map(plan => {
             const isCurrent = subscription?.planId === plan.id;
@@ -181,14 +181,14 @@ const BillingDashboard: React.FC = () => {
                 <CardContent className="space-y-3">
                   <p className="text-sm text-muted-foreground">{plan.description}</p>
                   <div className="text-sm">
-                    \u6708\u5EA6\u9650\u989D: {formatTokens(plan.monthlyTokenLimit)} Token
+                    月度限额: {formatTokens(plan.monthlyTokenLimit)} Token
                   </div>
                   <div>
                     {isCurrent ? (
-                      <Badge variant="default">\u5F53\u524D\u5957\u9910</Badge>
+                      <Badge variant="default">当前套餐</Badge>
                     ) : (
                       <Button size="sm" onClick={() => handleSubscribe(plan.id)}>
-                        \u8BA2\u9605
+                        订阅
                       </Button>
                     )}
                   </div>

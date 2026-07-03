@@ -52,15 +52,15 @@ const DEFAULT_CONFIGS: Record<ConnectorType, Record<string, string>> = {
 };
 
 const CONFIG_LABELS: Record<string, string> = {
-  baseUrl: "\u57FA\u7840 URL",
-  authType: "\u8BA4\u8BC1\u7C7B\u578B",
-  authToken: "\u8BA4\u8BC1\u4EE4\u724C",
+  baseUrl: "基础 URL",
+  authType: "认证类型",
+  authToken: "认证令牌",
   jdbcUrl: "JDBC URL",
-  username: "\u7528\u6237\u540D",
-  password: "\u5BC6\u7801",
-  filePath: "\u6587\u4EF6\u8DEF\u5F84",
-  delimiter: "\u5206\u9694\u7B26",
-  hasHeader: "\u542B\u8868\u5934",
+  username: "用户名",
+  password: "密码",
+  filePath: "文件路径",
+  delimiter: "分隔符",
+  hasHeader: "含表头",
 };
 
 /* ---- Component ---- */
@@ -89,7 +89,7 @@ const IntegrationHub: React.FC = () => {
       const data = await listConnectors();
       setConnectors(Array.isArray(data) ? data : []);
     } catch {
-      setError("\u52A0\u8F7D\u8FDE\u63A5\u5668\u5217\u8868\u5931\u8D25");
+      setError("加载连接器列表失败");
       setConnectors([]);
     } finally {
       setLoading(false);
@@ -134,7 +134,7 @@ const IntegrationHub: React.FC = () => {
     } catch {
       setStatusMessages((prev) => ({
         ...prev,
-        __create: { type: "error", text: "\u521B\u5EFA\u8FDE\u63A5\u5668\u5931\u8D25" },
+        __create: { type: "error", text: "创建连接器失败" },
       }));
     } finally {
       setCreating(false);
@@ -166,13 +166,13 @@ const IntegrationHub: React.FC = () => {
         ...prev,
         [id]: {
           type: ok ? "success" : "error",
-          text: ok ? "\u8FDE\u63A5\u6D4B\u8BD5\u6210\u529F" : "\u8FDE\u63A5\u6D4B\u8BD5\u5931\u8D25",
+          text: ok ? "连接测试成功" : "连接测试失败",
         },
       }));
     } catch {
       setStatusMessages((prev) => ({
         ...prev,
-        [id]: { type: "error", text: "\u8FDE\u63A5\u6D4B\u8BD5\u5931\u8D25" },
+        [id]: { type: "error", text: "连接测试失败" },
       }));
     } finally {
       setTestingId(null);
@@ -191,12 +191,12 @@ const IntegrationHub: React.FC = () => {
       await syncConnector(id);
       setStatusMessages((prev) => ({
         ...prev,
-        [`sync-${id}`]: { type: "success", text: "\u540C\u6B65\u5B8C\u6210" },
+        [`sync-${id}`]: { type: "success", text: "同步完成" },
       }));
     } catch {
       setStatusMessages((prev) => ({
         ...prev,
-        [`sync-${id}`]: { type: "error", text: "\u540C\u6B65\u5931\u8D25" },
+        [`sync-${id}`]: { type: "error", text: "同步失败" },
       }));
     } finally {
       setSyncingId(null);
@@ -212,10 +212,10 @@ const IntegrationHub: React.FC = () => {
 
   function getStatusLabel(connector: Connector): string {
     const s = (connector.status || "").toLowerCase();
-    if (s === "active" || s === "connected") return "\u5DF2\u8FDE\u63A5";
-    if (s === "error" || s === "failed") return "\u5F02\u5E38";
-    if (s === "inactive" || s === "disconnected") return "\u672A\u8FDE\u63A5";
-    return connector.status || "\u672A\u77E5";
+    if (s === "active" || s === "connected") return "已连接";
+    if (s === "error" || s === "failed") return "异常";
+    if (s === "inactive" || s === "disconnected") return "未连接";
+    return connector.status || "未知";
   }
 
   return (

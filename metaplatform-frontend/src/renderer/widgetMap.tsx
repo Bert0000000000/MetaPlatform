@@ -57,7 +57,7 @@ const SelectWidget: ComponentType<WidgetProps> = ({ field, value, onChange }) =>
     onChange={(e) => onChange(e.target.value)}
     disabled={!field.editable}
   >
-    <option value="">{field.placeholder ?? "-- \u8BF7\u9009\u62E9 --"}</option>
+    <option value="">{field.placeholder ?? "-- 请选择 --"}</option>
     {(field.options ?? []).map((opt) => (
       <option key={String(opt.value)} value={String(opt.value)}>
         {opt.label}

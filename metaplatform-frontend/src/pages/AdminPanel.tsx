@@ -26,12 +26,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 type Tab = "audit" | "lineage" | "process" | "agent" | "sync" | "ontology";
 
 const TABS: { key: Tab; label: string; icon: string }[] = [
-  { key: "audit", label: "\u5BA1\u8BA1\u65E5\u5FD7", icon: "\u{1F4CB}" },
-  { key: "lineage", label: "\u6570\u636E\u8840\u7F18", icon: "\u{1F517}" },
-  { key: "process", label: "\u6D41\u7A0B\u76D1\u63A7", icon: "\u2699\uFE0F" },
-  { key: "agent", label: "Agent \u76D1\u63A7", icon: "\u{1F916}" },
-  { key: "sync", label: "\u6570\u636E\u540C\u6B65", icon: "\u{1F504}" },
-  { key: "ontology", label: "\u672C\u4F53\u7BA1\u7406", icon: "\u{1F9E0}" },
+  { key: "audit", label: "审计日志", icon: "\u{1F4CB}" },
+  { key: "lineage", label: "数据血缘", icon: "\u{1F517}" },
+  { key: "process", label: "流程监控", icon: "⚙️" },
+  { key: "agent", label: "Agent 监控", icon: "\u{1F916}" },
+  { key: "sync", label: "数据同步", icon: "\u{1F504}" },
+  { key: "ontology", label: "本体管理", icon: "\u{1F9E0}" },
 ];
 
 const AdminPanel: React.FC = () => {
@@ -101,8 +101,8 @@ const AdminPanel: React.FC = () => {
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">\u5E73\u53F0\u7BA1\u7406</h1>
-        <p className="text-sm text-muted-foreground mt-1">\u5BA1\u8BA1\u3001\u8840\u7F18\u3001\u6D41\u7A0B\u3001Agent\u3001\u6570\u636E\u540C\u6B65\u3001\u672C\u4F53\u7BA1\u7406</p>
+        <h1 className="text-2xl font-semibold tracking-tight">平台管理</h1>
+        <p className="text-sm text-muted-foreground mt-1">审计、血缘、流程、Agent、数据同步、本体管理</p>
       </div>
 
       {error && (
@@ -123,7 +123,7 @@ const AdminPanel: React.FC = () => {
 
         {loading && (
           <div className="flex items-center justify-center py-8 text-muted-foreground">
-            \u52A0\u8F7D\u4E2D...
+            加载中...
           </div>
         )}
 
@@ -131,20 +131,20 @@ const AdminPanel: React.FC = () => {
         <TabsContent value="audit">
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">\u5BA1\u8BA1\u65E5\u5FD7 ({auditLogs.length})</CardTitle>
+              <CardTitle className="text-lg">审计日志 ({auditLogs.length})</CardTitle>
             </CardHeader>
             <CardContent>
               {auditLogs.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">\u6682\u65E0\u5BA1\u8BA1\u8BB0\u5F55</div>
+                <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">暂无审计记录</div>
               ) : (
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>\u65F6\u95F4</TableHead>
-                      <TableHead>\u64CD\u4F5C</TableHead>
-                      <TableHead>\u8D44\u6E90\u7C7B\u578B</TableHead>
-                      <TableHead>\u8D44\u6E90ID</TableHead>
-                      <TableHead>\u7528\u6237</TableHead>
+                      <TableHead>时间</TableHead>
+                      <TableHead>操作</TableHead>
+                      <TableHead>资源类型</TableHead>
+                      <TableHead>资源ID</TableHead>
+                      <TableHead>用户</TableHead>
                       <TableHead>IP</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -170,21 +170,21 @@ const AdminPanel: React.FC = () => {
         <TabsContent value="lineage">
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">\u6570\u636E\u8840\u7F18\u8BB0\u5F55 ({lineageRecords.length})</CardTitle>
+              <CardTitle className="text-lg">数据血缘记录 ({lineageRecords.length})</CardTitle>
             </CardHeader>
             <CardContent>
               {lineageRecords.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">\u6682\u65E0\u8840\u7F18\u8BB0\u5F55</div>
+                <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">暂无血缘记录</div>
               ) : (
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>\u65F6\u95F4</TableHead>
-                      <TableHead>\u64CD\u4F5C</TableHead>
-                      <TableHead>\u6E90</TableHead>
-                      <TableHead>\u2192</TableHead>
-                      <TableHead>\u76EE\u6807</TableHead>
-                      <TableHead>\u7528\u6237</TableHead>
+                      <TableHead>时间</TableHead>
+                      <TableHead>操作</TableHead>
+                      <TableHead>源</TableHead>
+                      <TableHead>→</TableHead>
+                      <TableHead>目标</TableHead>
+                      <TableHead>用户</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -193,7 +193,7 @@ const AdminPanel: React.FC = () => {
                         <TableCell className="font-mono text-xs">{String(r.createdAt || "").slice(0, 19)}</TableCell>
                         <TableCell><Badge variant="secondary">{String(r.operation)}</Badge></TableCell>
                         <TableCell><code className="text-xs">{String(r.sourceType)}</code>:{String(r.sourceId || "").slice(0, 8)}</TableCell>
-                        <TableCell>\u2192</TableCell>
+                        <TableCell>→</TableCell>
                         <TableCell><code className="text-xs">{String(r.targetType)}</code>:{String(r.targetId || "").slice(0, 8)}</TableCell>
                         <TableCell>{String(r.userId || "-")}</TableCell>
                       </TableRow>
@@ -210,7 +210,7 @@ const AdminPanel: React.FC = () => {
           <div className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">\u6D41\u7A0B\u5B9A\u4E49 ({processDefs.length})</CardTitle>
+                <CardTitle className="text-lg">流程定义 ({processDefs.length})</CardTitle>
               </CardHeader>
               <CardContent>
                 {processDefs.length > 0 ? (
@@ -218,8 +218,8 @@ const AdminPanel: React.FC = () => {
                     {processDefs.map((d, i) => (
                       <div key={i} className="rounded-lg border p-4">
                         <div className="font-medium">{String(d.name)}</div>
-                        <div className="text-xs text-muted-foreground mt-1">\u7248\u672C {String(d.version)} | {String(d.status)}</div>
-                        <div className="text-sm text-muted-foreground mt-2">{String(d.description || "\u65E0\u63CF\u8FF0")}</div>
+                        <div className="text-xs text-muted-foreground mt-1">版本 {String(d.version)} | {String(d.status)}</div>
+                        <div className="text-sm text-muted-foreground mt-2">{String(d.description || "无描述")}</div>
                       </div>
                     ))}
                   </div>
@@ -229,22 +229,22 @@ const AdminPanel: React.FC = () => {
 
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">\u6D41\u7A0B\u5B9E\u4F8B ({processInstances.length})</CardTitle>
+                <CardTitle className="text-lg">流程实例 ({processInstances.length})</CardTitle>
               </CardHeader>
               <CardContent>
                 {processInstances.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">\u6682\u65E0\u6D41\u7A0B\u5B9E\u4F8B</div>
+                  <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">暂无流程实例</div>
                 ) : (
                   <Table>
                     <TableHeader>
                       <TableRow>
                         <TableHead>ID</TableHead>
-                        <TableHead>\u6807\u9898</TableHead>
-                        <TableHead>\u53D1\u8D77\u4EBA</TableHead>
-                        <TableHead>\u5F53\u524D\u8282\u70B9</TableHead>
-                        <TableHead>\u72B6\u6001</TableHead>
-                        <TableHead>\u5F00\u59CB\u65F6\u95F4</TableHead>
-                        <TableHead>\u64CD\u4F5C</TableHead>
+                        <TableHead>标题</TableHead>
+                        <TableHead>发起人</TableHead>
+                        <TableHead>当前节点</TableHead>
+                        <TableHead>状态</TableHead>
+                        <TableHead>开始时间</TableHead>
+                        <TableHead>操作</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -262,7 +262,7 @@ const AdminPanel: React.FC = () => {
                           <TableCell className="font-mono text-xs">{String(inst.startedAt || "").slice(0, 19)}</TableCell>
                           <TableCell>
                             <Button variant="outline" size="sm" onClick={() => handleShowHistory(String(inst.id))}>
-                              \u5386\u53F2
+                              历史
                             </Button>
                           </TableCell>
                         </TableRow>
@@ -275,18 +275,18 @@ const AdminPanel: React.FC = () => {
                 {selectedHistory && (
                   <div className="mt-4 space-y-2">
                     <div className="flex items-center gap-2">
-                      <h3 className="text-sm font-semibold">\u6D41\u7A0B\u4E8B\u4EF6\u5386\u53F2 ({selectedHistory.length})</h3>
+                      <h3 className="text-sm font-semibold">流程事件历史 ({selectedHistory.length})</h3>
                       <Button variant="outline" size="sm" onClick={() => setSelectedHistory(null)}>
-                        \u5173\u95ED
+                        关闭
                       </Button>
                     </div>
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>\u65F6\u95F4</TableHead>
-                          <TableHead>\u4E8B\u4EF6\u7C7B\u578B</TableHead>
-                          <TableHead>\u8282\u70B9</TableHead>
-                          <TableHead>\u6570\u636E</TableHead>
+                          <TableHead>时间</TableHead>
+                          <TableHead>事件类型</TableHead>
+                          <TableHead>节点</TableHead>
+                          <TableHead>数据</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -312,7 +312,7 @@ const AdminPanel: React.FC = () => {
           <div className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Agent \u5B9A\u4E49 ({agents.length})</CardTitle>
+                <CardTitle className="text-lg">Agent 定义 ({agents.length})</CardTitle>
               </CardHeader>
               <CardContent>
                 {agents.length > 0 ? (
@@ -320,8 +320,8 @@ const AdminPanel: React.FC = () => {
                     {agents.map((a, i) => (
                       <div key={i} className="rounded-lg border p-4">
                         <div className="font-medium">{String(a.name)}</div>
-                        <div className="text-xs text-muted-foreground mt-1">\u6A21\u578B: {String(a.model || "default")} | \u6700\u5927\u6B65\u6570: {String(a.maxSteps || 10)}</div>
-                        <div className="text-sm text-muted-foreground mt-2">{String(a.description || "\u65E0\u63CF\u8FF0")}</div>
+                        <div className="text-xs text-muted-foreground mt-1">模型: {String(a.model || "default")} | 最大步数: {String(a.maxSteps || 10)}</div>
+                        <div className="text-sm text-muted-foreground mt-2">{String(a.description || "无描述")}</div>
                       </div>
                     ))}
                   </div>
@@ -331,22 +331,22 @@ const AdminPanel: React.FC = () => {
 
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">\u6267\u884C\u8BB0\u5F55 ({agentExecutions.length})</CardTitle>
+                <CardTitle className="text-lg">执行记录 ({agentExecutions.length})</CardTitle>
               </CardHeader>
               <CardContent>
                 {agentExecutions.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">\u6682\u65E0 Agent \u6267\u884C\u8BB0\u5F55</div>
+                  <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">暂无 Agent 执行记录</div>
                 ) : (
                   <Table>
                     <TableHeader>
                       <TableRow>
                         <TableHead>ID</TableHead>
-                        <TableHead>\u4EFB\u52A1</TableHead>
-                        <TableHead>\u72B6\u6001</TableHead>
-                        <TableHead>\u6B65\u6570</TableHead>
+                        <TableHead>任务</TableHead>
+                        <TableHead>状态</TableHead>
+                        <TableHead>步数</TableHead>
                         <TableHead>Token</TableHead>
-                        <TableHead>\u8017\u65F6</TableHead>
-                        <TableHead>\u5F00\u59CB\u65F6\u95F4</TableHead>
+                        <TableHead>耗时</TableHead>
+                        <TableHead>开始时间</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -380,22 +380,22 @@ const AdminPanel: React.FC = () => {
         <TabsContent value="sync">
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">\u6570\u636E\u540C\u6B65\u7EDF\u8BA1</CardTitle>
+              <CardTitle className="text-lg">数据同步统计</CardTitle>
             </CardHeader>
             <CardContent>
               {syncStats ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="rounded-lg border p-4 text-center">
                     <div className="text-2xl font-bold">{String(syncStats.totalRecords || 0)}</div>
-                    <div className="text-sm text-muted-foreground mt-1">\u603B\u8BB0\u5F55\u6570</div>
+                    <div className="text-sm text-muted-foreground mt-1">总记录数</div>
                   </div>
                   <div className="rounded-lg border p-4 text-center">
                     <div className="text-sm font-medium">{String(syncStats.lastSyncTime || "-")}</div>
-                    <div className="text-sm text-muted-foreground mt-1">\u6700\u8FD1\u540C\u6B65</div>
+                    <div className="text-sm text-muted-foreground mt-1">最近同步</div>
                   </div>
                 </div>
               ) : (
-                <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">\u6682\u65E0\u540C\u6B65\u6570\u636E</div>
+                <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">暂无同步数据</div>
               )}
             </CardContent>
           </Card>
@@ -405,7 +405,7 @@ const AdminPanel: React.FC = () => {
         <TabsContent value="ontology">
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Schema \u56FE\u8C31</CardTitle>
+              <CardTitle className="text-lg">Schema 图谱</CardTitle>
             </CardHeader>
             <CardContent>
               {schemaGraph ? (
@@ -413,21 +413,21 @@ const AdminPanel: React.FC = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="rounded-lg border p-4 text-center">
                       <div className="text-2xl font-bold">{(schemaGraph.nodes as unknown[] || []).length}</div>
-                      <div className="text-sm text-muted-foreground mt-1">\u8282\u70B9 (ObjectType)</div>
+                      <div className="text-sm text-muted-foreground mt-1">节点 (ObjectType)</div>
                     </div>
                     <div className="rounded-lg border p-4 text-center">
                       <div className="text-2xl font-bold">{(schemaGraph.edges as unknown[] || []).length}</div>
-                      <div className="text-sm text-muted-foreground mt-1">\u8FB9 (\u5173\u7CFB)</div>
+                      <div className="text-sm text-muted-foreground mt-1">边 (关系)</div>
                     </div>
                   </div>
 
-                  <h3 className="text-sm font-semibold">\u8282\u70B9\u5217\u8868</h3>
+                  <h3 className="text-sm font-semibold">节点列表</h3>
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>\u7C7B\u578B</TableHead>
-                        <TableHead>\u7F16\u7801</TableHead>
-                        <TableHead>\u663E\u793A\u540D</TableHead>
+                        <TableHead>类型</TableHead>
+                        <TableHead>编码</TableHead>
+                        <TableHead>显示名</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -442,7 +442,7 @@ const AdminPanel: React.FC = () => {
                   </Table>
                 </div>
               ) : (
-                <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">\u6682\u65E0 Schema \u6570\u636E</div>
+                <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">暂无 Schema 数据</div>
               )}
             </CardContent>
           </Card>

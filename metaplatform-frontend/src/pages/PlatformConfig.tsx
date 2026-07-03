@@ -88,7 +88,7 @@ const PlatformConfig: React.FC = () => {
   };
 
   const handleDelete = async (key: string) => {
-    if (!confirm(`\u786E\u5B9A\u5220\u9664\u914D\u7F6E ${key}\uFF1F`)) return;
+    if (!confirm(`确定删除配置 ${key}？`)) return;
     try {
       await http.delete(`/configs/${encodeURIComponent(key)}`);
       await loadConfigs();
@@ -104,11 +104,11 @@ const PlatformConfig: React.FC = () => {
     <div className="p-6 max-w-7xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">\u5E73\u53F0\u914D\u7F6E\u4E2D\u5FC3</h1>
-          <p className="text-sm text-muted-foreground mt-1">\u7BA1\u7406\u7CFB\u7EDF\u914D\u7F6E\u3001\u529F\u80FD\u5F00\u5173\u548C\u5065\u5EB7\u72B6\u6001</p>
+          <h1 className="text-2xl font-semibold tracking-tight">平台配置中心</h1>
+          <p className="text-sm text-muted-foreground mt-1">管理系统配置、功能开关和健康状态</p>
         </div>
         <Button onClick={() => setShowAdd(true)}>
-          + \u65B0\u589E\u914D\u7F6E
+          + 新增配置
         </Button>
       </div>
 
@@ -116,7 +116,7 @@ const PlatformConfig: React.FC = () => {
       {health && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">\u7CFB\u7EDF\u5065\u5EB7\u72B6\u6001</CardTitle>
+            <CardTitle className="text-lg">系统健康状态</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -145,23 +145,23 @@ const PlatformConfig: React.FC = () => {
       {/* Config list */}
       {loading ? (
         <div className="flex items-center justify-center py-8 text-muted-foreground">
-          \u52A0\u8F7D\u4E2D...
+          加载中...
         </div>
       ) : (
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">\u7CFB\u7EDF\u914D\u7F6E ({configs.length})</CardTitle>
+            <CardTitle className="text-lg">系统配置 ({configs.length})</CardTitle>
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[200px]">\u914D\u7F6E\u952E</TableHead>
-                  <TableHead className="w-[120px]">\u7C7B\u578B</TableHead>
-                  <TableHead>\u503C</TableHead>
-                  <TableHead className="w-[200px]">\u63CF\u8FF0</TableHead>
-                  <TableHead className="w-[100px]">\u66F4\u65B0\u4EBA</TableHead>
-                  <TableHead className="w-[140px]">\u64CD\u4F5C</TableHead>
+                  <TableHead className="w-[200px]">配置键</TableHead>
+                  <TableHead className="w-[120px]">类型</TableHead>
+                  <TableHead>值</TableHead>
+                  <TableHead className="w-[200px]">描述</TableHead>
+                  <TableHead className="w-[100px]">更新人</TableHead>
+                  <TableHead className="w-[140px]">操作</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -170,7 +170,7 @@ const PlatformConfig: React.FC = () => {
                     <TableCell>
                       <code className="text-xs font-mono">{config.key}</code>
                       {isFeatureFlag(config.key) && (
-                        <Badge variant="outline" className="ml-1.5 text-[10px]">\u529F\u80FD\u5F00\u5173</Badge>
+                        <Badge variant="outline" className="ml-1.5 text-[10px]">功能开关</Badge>
                       )}
                     </TableCell>
                     <TableCell className="text-sm">{config.configType || "string"}</TableCell>
@@ -182,8 +182,8 @@ const PlatformConfig: React.FC = () => {
                             value={editValue}
                             onChange={e => setEditValue(e.target.value)}
                           >
-                            <option value="true">true (\u542F\u7528)</option>
-                            <option value="false">false (\u7981\u7528)</option>
+                            <option value="true">true (启用)</option>
+                            <option value="false">false (禁用)</option>
                           </select>
                         ) : (
                           <Input
@@ -209,16 +209,16 @@ const PlatformConfig: React.FC = () => {
                     <TableCell>
                       {editKey === config.key ? (
                         <div className="flex gap-1">
-                          <Button size="sm" onClick={() => handleSave(config.key)}>\u4FDD\u5B58</Button>
-                          <Button variant="outline" size="sm" onClick={() => setEditKey(null)}>\u53D6\u6D88</Button>
+                          <Button size="sm" onClick={() => handleSave(config.key)}>保存</Button>
+                          <Button variant="outline" size="sm" onClick={() => setEditKey(null)}>取消</Button>
                         </div>
                       ) : (
                         <div className="flex gap-1">
                           <Button variant="outline" size="sm" onClick={() => { setEditKey(config.key); setEditValue(config.value); }}>
-                            \u7F16\u8F91
+                            编辑
                           </Button>
                           <Button variant="destructive" size="sm" onClick={() => handleDelete(config.key)}>
-                            \u5220\u9664
+                            删除
                           </Button>
                         </div>
                       )}
@@ -235,37 +235,37 @@ const PlatformConfig: React.FC = () => {
       <Dialog open={showAdd} onOpenChange={setShowAdd}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>\u65B0\u589E\u914D\u7F6E</DialogTitle>
+            <DialogTitle>新增配置</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>\u914D\u7F6E\u952E *</Label>
+              <Label>配置键 *</Label>
               <Input
                 value={newKey}
                 onChange={e => setNewKey(e.target.value)}
-                placeholder="\u4F8B\u5982: feature.new_feature"
+                placeholder="例如: feature.new_feature"
               />
             </div>
             <div className="space-y-2">
-              <Label>\u503C</Label>
+              <Label>值</Label>
               <Input
                 value={newValue}
                 onChange={e => setNewValue(e.target.value)}
-                placeholder="\u914D\u7F6E\u503C"
+                placeholder="配置值"
               />
             </div>
             <div className="space-y-2">
-              <Label>\u63CF\u8FF0</Label>
+              <Label>描述</Label>
               <Input
                 value={newDesc}
                 onChange={e => setNewDesc(e.target.value)}
-                placeholder="\u914D\u7F6E\u8BF4\u660E"
+                placeholder="配置说明"
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowAdd(false)}>\u53D6\u6D88</Button>
-            <Button onClick={handleAdd} disabled={!newKey}>\u521B\u5EFA</Button>
+            <Button variant="outline" onClick={() => setShowAdd(false)}>取消</Button>
+            <Button onClick={handleAdd} disabled={!newKey}>创建</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -83,10 +83,10 @@ const TicketSystem: React.FC = () => {
 
   const getStatusLabel = (status: string) => {
     switch (status) {
-      case "open": return "\u5F85\u5904\u7406";
-      case "in_progress": return "\u5904\u7406\u4E2D";
-      case "resolved": return "\u5DF2\u89E3\u51B3";
-      case "closed": return "\u5DF2\u5173\u95ED";
+      case "open": return "待处理";
+      case "in_progress": return "处理中";
+      case "resolved": return "已解决";
+      case "closed": return "已关闭";
       default: return status;
     }
   };
@@ -96,16 +96,16 @@ const TicketSystem: React.FC = () => {
       case "high": return "\u{1F534}";
       case "medium": return "\u{1F7E1}";
       case "low": return "\u{1F7E2}";
-      default: return "\u26AA";
+      default: return "⚪";
     }
   };
 
   const FILTER_OPTIONS = [
-    { value: "all", label: "\u5168\u90E8" },
-    { value: "open", label: "\u5F85\u5904\u7406" },
-    { value: "in_progress", label: "\u5904\u7406\u4E2D" },
-    { value: "resolved", label: "\u5DF2\u89E3\u51B3" },
-    { value: "closed", label: "\u5DF2\u5173\u95ED" },
+    { value: "all", label: "全部" },
+    { value: "open", label: "待处理" },
+    { value: "in_progress", label: "处理中" },
+    { value: "resolved", label: "已解决" },
+    { value: "closed", label: "已关闭" },
   ];
 
   const getFilterCount = (s: string) => {
@@ -117,11 +117,11 @@ const TicketSystem: React.FC = () => {
     <div className="p-6 max-w-7xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">\u5DE5\u5355\u7CFB\u7EDF</h1>
-          <p className="text-sm text-muted-foreground mt-1">\u521B\u5EFA\u3001\u8DDF\u8E2A\u548C\u7BA1\u7406\u5DE5\u5355</p>
+          <h1 className="text-2xl font-semibold tracking-tight">工单系统</h1>
+          <p className="text-sm text-muted-foreground mt-1">创建、跟踪和管理工单</p>
         </div>
         <Button onClick={() => setShowCreate(true)}>
-          + \u65B0\u5EFA\u5DE5\u5355
+          + 新建工单
         </Button>
       </div>
 
@@ -143,11 +143,11 @@ const TicketSystem: React.FC = () => {
       {/* Ticket list */}
       {loading ? (
         <div className="flex items-center justify-center py-8 text-muted-foreground">
-          \u52A0\u8F7D\u4E2D...
+          加载中...
         </div>
       ) : filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-          {objectTypeId ? "\u6682\u65E0\u5DE5\u5355\uFF0C\u70B9\u51FB\u53F3\u4E0A\u89D2\u521B\u5EFA" : "\u672A\u627E\u5230\u5DE5\u5355\u7C7B\u578B\u7684 ObjectType\uFF0C\u8BF7\u5148\u5728\u5EFA\u6A21\u5DE5\u573A\u521B\u5EFA"}
+          {objectTypeId ? "暂无工单，点击右上角创建" : "未找到工单类型的 ObjectType，请先在建模工场创建"}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -165,14 +165,14 @@ const TicketSystem: React.FC = () => {
                 </CardHeader>
                 <CardContent className="space-y-2">
                   <div className="font-medium">
-                    {getFieldValue(ticket, "title") || getFieldValue(ticket, "name") || "\u65E0\u6807\u9898"}
+                    {getFieldValue(ticket, "title") || getFieldValue(ticket, "name") || "无标题"}
                   </div>
                   <div className="text-sm text-muted-foreground">
-                    {getFieldValue(ticket, "description") || getFieldValue(ticket, "content") || "\u65E0\u63CF\u8FF0"}
+                    {getFieldValue(ticket, "description") || getFieldValue(ticket, "content") || "无描述"}
                   </div>
                   <div className="flex gap-4 text-xs text-muted-foreground pt-1">
-                    <span>\u521B\u5EFA\u65F6\u95F4: {ticket.createdAt ? new Date(ticket.createdAt).toLocaleString() : "-"}</span>
-                    {getFieldValue(ticket, "assignee") && <span>\u8D1F\u8D23\u4EBA: {getFieldValue(ticket, "assignee")}</span>}
+                    <span>创建时间: {ticket.createdAt ? new Date(ticket.createdAt).toLocaleString() : "-"}</span>
+                    {getFieldValue(ticket, "assignee") && <span>负责人: {getFieldValue(ticket, "assignee")}</span>}
                   </div>
                 </CardContent>
               </Card>
@@ -185,42 +185,42 @@ const TicketSystem: React.FC = () => {
       <Dialog open={showCreate} onOpenChange={setShowCreate}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>\u65B0\u5EFA\u5DE5\u5355</DialogTitle>
+            <DialogTitle>新建工单</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>\u6807\u9898 *</Label>
+              <Label>标题 *</Label>
               <Input
                 value={newTitle}
                 onChange={e => setNewTitle(e.target.value)}
-                placeholder="\u5DE5\u5355\u6807\u9898"
+                placeholder="工单标题"
               />
             </div>
             <div className="space-y-2">
-              <Label>\u63CF\u8FF0</Label>
+              <Label>描述</Label>
               <Textarea
                 value={newDesc}
                 onChange={e => setNewDesc(e.target.value)}
-                placeholder="\u8BE6\u7EC6\u63CF\u8FF0..."
+                placeholder="详细描述..."
                 rows={4}
               />
             </div>
             <div className="space-y-2">
-              <Label>\u4F18\u5148\u7EA7</Label>
+              <Label>优先级</Label>
               <select
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 value={newPriority}
                 onChange={e => setNewPriority(e.target.value)}
               >
-                <option value="high">{"\u{1F534} \u9AD8"}</option>
-                <option value="medium">{"\u{1F7E1} \u4E2D"}</option>
-                <option value="low">{"\u{1F7E2} \u4F4E"}</option>
+                <option value="high">{"\u{1F534} 高"}</option>
+                <option value="medium">{"\u{1F7E1} 中"}</option>
+                <option value="low">{"\u{1F7E2} 低"}</option>
               </select>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowCreate(false)}>\u53D6\u6D88</Button>
-            <Button onClick={handleCreate} disabled={!newTitle}>\u521B\u5EFA</Button>
+            <Button variant="outline" onClick={() => setShowCreate(false)}>取消</Button>
+            <Button onClick={handleCreate} disabled={!newTitle}>创建</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

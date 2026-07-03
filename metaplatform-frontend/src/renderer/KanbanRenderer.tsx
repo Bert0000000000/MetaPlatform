@@ -51,14 +51,14 @@ const KanbanRenderer: React.FC<KanbanRendererProps> = ({ config, data = [] }) =>
             <div className="space-y-2 min-h-[100px]">
               {cards.length === 0 && (
                 <div className="text-center text-sm text-muted-foreground py-4">
-                  \u6682\u65E0\u8BB0\u5F55
+                  暂无记录
                 </div>
               )}
               {cards.map((card, idx) => (
                 <Card key={(card["id"] as string) ?? idx}>
                   <CardContent className="p-3 space-y-2">
                     <div className="font-medium text-sm">
-                      {String(card[cardTitleField] ?? "\u672A\u547D\u540D")}
+                      {String(card[cardTitleField] ?? "未命名")}
                     </div>
                     {cardFields.length > 0 && (
                       <div className="space-y-1">
