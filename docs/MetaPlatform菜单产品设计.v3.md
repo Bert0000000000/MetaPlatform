@@ -328,27 +328,129 @@ SuperAI
     │   ├── 页面预览
     │   └── 页面导入导出
     │
-    ├── Tab 4: 流程 ⭐ 应用内的流程构建
+    ├── Tab 4: 流程 ⭐ 应用内的流程构建（BPMN 2.0 规范）
     │   ├── 流程列表（本应用内的流程）
     │   ├── 新建流程
-    │   │   ├── 业务流程（BPMN）
+    │   │   ├── 业务流程（BPMN 2.0）
     │   │   ├── 审批流程
     │   │   └── 服务编排流程
-    │   ├── 流程设计器
-    │   │   ├── 画布 + 节点
-    │   │   │   ├── 审批节点
-    │   │   │   ├── 服务节点
-    │   │   │   ├── 网关节点（排他/包容/并行）
-    │   │   │   ├── AI 节点
-    │   │   │   └── 通知节点
-    │   │   ├── 6 种参与者表达式
-    │   │   ├── 4 种任务模式（竞签/并签/串签/投票）
-    │   │   ├── 10 种审批按钮
-    │   │   ├── SLA 配置
-    │   │   ├── AI 节点配置
-    │   │   └── 6 大适配器调用（SQL/HTTP/Groovy/JS/Java/连接器）
+    │   ├── 流程设计器（BPMN 2.0 规范）⭐⭐⭐
+    │   │   │
+    │   │   ├── 【5 大基础元素类别】（BPMN 2.0 规范）
+    │   │   │   │
+    │   │   │   ├── 1. 流对象（Flow Objects）
+    │   │   │   │   ├── 事件（Events）⭐
+    │   │   │   │   │   ├── 开始事件（Start Events）
+    │   │   │   │   │   │   ├── 无触发器（None Start）
+    │   │   │   │   │   │   ├── 消息开始（Message Start）
+    │   │   │   │   │   │   ├── 定时开始（Timer Start）— Cron/ISO 8601
+    │   │   │   │   │   │   ├── 条件开始（Conditional Start）
+    │   │   │   │   │   │   ├── 信号开始（Signal Start）
+    │   │   │   │   │   │   └── 错误开始（Error Start）
+    │   │   │   │   ├── 中间事件（Intermediate Events）
+    │   │   │   │   │   ├── 捕获事件（Catch）
+    │   │   │   │   │   │   ├── 消息捕获（Message Intermediate Catch）
+    │   │   │   │   │   │   ├── 定时捕获（Timer Intermediate Catch）
+    │   │   │   │   │   │   ├── 信号捕获（Signal Intermediate Catch）
+    │   │   │   │   │   │   └── 条件捕获（Conditional Intermediate Catch）
+    │   │   │   │   │   ├── 抛出事件（Throw）
+    │   │   │   │   │   │   ├── 消息抛出（Message Intermediate Throw）
+    │   │   │   │   │   │   ├── 信号抛出（Signal Intermediate Throw）
+    │   │   │   │   │   │   ├── 升级抛出（Escalation Intermediate Throw）
+    │   │   │   │   │   │   └── 补偿抛出（Compensation Intermediate Throw）
+    │   │   │   │   │   └── 链接事件（Link Intermediate）
+    │   │   │   │   ├── 结束事件（End Events）
+    │   │   │   │   │   ├── 无结果（None End）
+    │   │   │   │   │   ├── 消息结束（Message End）
+    │   │   │   │   │   ├── 信号结束（Signal End）
+    │   │   │   │   │   ├── 错误结束（Error End）
+    │   │   │   │   │   ├── 升级结束（Escalation End）
+    │   │   │   │   │   ├── 取消结束（Cancel End）
+    │   │   │   │   │   ├── 补偿结束（Compensation End）
+    │   │   │   │   │   └── 终止结束（Terminate End）
+    │   │   │   │   └── 边界事件（Boundary Events）— 附着于活动边界
+    │   │   │   │       ├── 中断（Interrupting）+ 非中断（Non-Interrupting）
+    │   │   │   │       ├── 消息边界、定时边界、信号边界
+    │   │   │   │       ├── 错误边界、升级边界、补偿边界
+    │   │   │   │       └── 取消边界
+    │   │   │   │
+    │   │   │   ├── 2. 活动（Activities）⭐
+    │   │   │   │   ├── 任务（Task）— 原子活动
+    │   │   │   │   │   ├── 用户任务（User Task）⭐
+    │   │   │   │   │   │   ├── 6 种参与者表达式
+    │   │   │   │   │   │   ├── 4 种任务模式（竞签/并签/串签/投票）
+    │   │   │   │   │   │   ├── 10 种审批按钮
+    │   │   │   │   │   │   ├── 字段权限
+    │   │   │   │   │   │   ├── SLA 配置
+    │   │   │   │   │   │   ├── 超时处理
+    │   │   │   │   │   │   └── 自定义表单
+    │   │   │   │   ├── 服务任务（Service Task）⭐
+    │   │   │   │   │   ├── 6 大适配器（SQL/HTTP/Groovy/JS/Java/连接器）
+    │   │   │   │   │   ├── 同步/异步模式
+    │   │   │   │   │   └── Dmn 业务规则任务
+    │   │   │   │   ├── 脚本任务（Script Task）
+    │   │   │   │   │   ├── Groovy 脚本
+    │   │   │   │   │   ├── JavaScript 脚本
+    │   │   │   │   │   └── Python 脚本
+    │   │   │   │   ├── 业务规则任务（Business Rule Task）
+    │   │   │   │   │   ├── DMN 决策表
+    │   │   │   │   │   └── 规则引擎
+    │   │   │   │   ├── 发送任务（Send Task）
+    │   │   │   │   ├── 接收任务（Receive Task）
+    │   │   │   │   ├── 手动任务（Manual Task）
+    │   │   │   │   └── 用户任务 + AI 增强 ⭐
+    │   │   │   │       ├── AI 自动审批
+    │   │   │   │       ├── AI 字段填充
+    │   │   │   │       └── AI 智能建议
+    │   │   │   │
+    │   │   │   ├── 子流程（Sub-Process）— 复合活动
+    │   │   │   │   ├── 嵌入式子流程（Embedded Sub-Process）
+    │   │   │   │   ├── 事件子流程（Event Sub-Process）
+    │   │   │   │   ├── 事务子流程（Transaction Sub-Process）
+    │   │   │   │   ├── 调用活动（Call Activity）— 引用全局流程
+    │   │   │   │   └── 折叠/展开（Collapsed/Expanded）
+    │   │   │   │
+    │   │   │   ├── 3. 网关（Gateways）⭐
+    │   │   │   │   ├── 排他网关（Exclusive Gateway）— 异或 X
+    │   │   │   │   ├── 包容网关（Inclusive Gateway）— 或 O
+    │   │   │   │   ├── 并行网关（Parallel Gateway）— 与 +
+    │   │   │   │   ├── 事件网关（Event-based Gateway）
+    │   │   │   │   │   ├── 排他事件网关
+    │   │   │   │   │   └── 并行事件网关
+    │   │   │   │   └── 复杂网关（Complex Gateway）— 自定义条件
+    │   │   │   │
+    │   │   │   └── 【数据】与【Artifacts】元数据
+    │   │   │       ├── 数据对象（Data Objects）
+    │   │   │       ├── 数据输入（Data Inputs）
+    │   │   │       ├── 数据输出（Data Outputs）
+    │   │   │       └── 数据存储（Data Stores）
+    │   │   │
+    │   │   ├── 2. 连接对象（Connecting Objects）
+    │   │   │   ├── 顺序流（Sequence Flow）— 实线箭头
+    │   │   │   │   ├── 默认流（Default Flow）
+    │   │   │   │   └── 条件流（Conditional Flow）
+    │   │   │   ├── 消息流（Message Flow）— 虚线箭头（跨泳池）
+    │   │   │   ├── 关联（Association）— 点线
+    │   │   │   └── 数据关联（Data Association）
+    │   │   │
+    │   │   ├── 3. 泳道（Swimlanes）
+    │   │   │   ├── 泳池（Pool）— 参与者
+    │   │   │   │   ├── 空白泳池（Black-box Pool）
+    │   │   │   │   └── 详细泳池（Detailed Pool）
+    │   │   │   └── 泳道（Lane）— 角色/部门
+    │   │   │
+    │   │   └── 4. 制品（Artifacts）
+    │   │       ├── 组（Group）— 视觉分组（黄色虚线框）
+    │   │       └── 文本注释（Text Annotation）
+    │   │
+    │   ├── 流程属性配置
+    │   │   ├── 流程基本信息（ID/名称/版本）
+    │   │   ├── 流程变量（Process Variables）
+    │   │   ├── 执行监听器（Execution Listener）
+    │   │   ├── 任务监听器（Task Listener）
+    │   │   └── 表单 Key（Form Key）
     │   ├── 流程实例
-    │   ├── 流程追踪
+    │   ├── 流程追踪（可视化执行路径）
     │   ├── 流程干预
     │   └── 流程模拟运行
     │
@@ -429,19 +531,36 @@ SuperAI
 
 ---
 
-### 5️⃣ 流程中心（9 个 Tab，**重点优化**）
+### 5️⃣ 流程中心（9 个 Tab，**重点优化，BPMN 2.0 规范**）
 
 **聚焦**：业务流程 + 审批流程 + 服务编排
+
+**核心规范**：流程设计器遵循 **BPMN 2.0 规范**（OMG 维护，2011 年发布）
+
+> **BPMN 2.0（Business Process Modeling Notation）** 是由 OMG 维护的流程建模标准图形注解。
+> 它提供了一种直观且统一的方式来描述业务流程，支持图形化设计 + 丰富的语义，
+> 能表达复杂流程逻辑，适用于业务分析师、开发人员、企业架构师。
+
+**BPMN 2.0 五大基础元素类别**：
+1. **流对象（Flow Objects）**：事件、活动、网关
+2. **数据（Data）**：数据对象、数据输入、数据输出、数据存储
+3. **连接对象（Connecting Objects）**：顺序流、消息流、关联、数据关联
+4. **泳道（Swimlanes）**：泳池、泳道
+5. **Artifacts**：组、文本注释
 
 ```
 流程中心
 │
-├── Tab 1: 业务流程 🆕  ← 百特搭"业务流程架构"
+├── Tab 1: 业务流程 🆕  ← 百特搭"业务流程架构"（BPMN 2.0 规范）
 │   ├── 业务流程图（与架构中心 L3 联动）
-│   ├── 流程定义（BPMN）
+│   ├── 流程定义（基于 BPMN 2.0）
+│   │   ├── 流对象：事件 / 活动 / 网关
+│   │   ├── 连接对象：顺序流 / 消息流 / 关联
+│   │   ├── 泳道：泳池 / 泳道
+│   │   └── Artifacts：组 / 文本注释
 │   ├── 业务流程实例
-│   ├── 业务流程追踪
-│   └── 业务流程干预
+│   ├── 业务流程追踪（高亮已执行路径）
+│   └── 业务流程干预（动态修改路径/处理人）
 │
 ├── Tab 2: 审批流程 🆕  ← 百特搭"审批流程"
 │   ├── 我的待办
@@ -787,6 +906,31 @@ SuperAI
 - [ ] 应用详情 Tab：概览/业务数据建模/页面/流程/应用配置/应用发布/应用导出
 - [ ] 5 类角色看到不同的菜单
 - [ ] 百特搭 9 大模块 100% 覆盖
+
+### 8.1 流程中心 BPMN 2.0 验收
+
+- [ ] **流对象（Flow Objects）完整覆盖**
+  - [ ] 事件：开始事件（6 种触发器）+ 中间事件（捕获/抛出/链接）+ 结束事件（8 种结果）+ 边界事件（中断/非中断）
+  - [ ] 活动：用户任务 + 服务任务 + 脚本任务 + 业务规则任务 + 发送/接收任务 + 手动任务 + AI 增强
+  - [ ] 子流程：嵌入式 + 事件 + 事务 + 调用活动（4 种）
+  - [ ] 网关：排他（X）+ 包容（O）+ 并行（+）+ 事件 + 复杂（5 种）
+
+- [ ] **数据对象**
+  - [ ] 数据对象、数据输入、数据输出、数据存储（4 类）
+
+- [ ] **连接对象**
+  - [ ] 顺序流（实线箭头）+ 消息流（虚线箭头）+ 关联（点线）+ 数据关联（4 种）
+
+- [ ] **泳道**
+  - [ ] 泳池（Pool）+ 泳道（Lane）
+
+- [ ] **Artifacts**
+  - [ ] 组（Group）+ 文本注释（Text Annotation）
+
+- [ ] **BPMN 2.0 兼容性**
+  - [ ] 导入/导出标准 BPMN 2.0 XML
+  - [ ] 兼容 Camunda/Flowable/Activiti 等主流引擎
+  - [ ] 符合 OMG BPMN 2.0 规范
 
 ## 九、应用中心核心设计哲学
 
