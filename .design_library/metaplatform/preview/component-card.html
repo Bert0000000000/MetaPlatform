@@ -1,505 +1,66 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Card 卡片 - MetaPlatform Design System</title>
-    <style id="theme-vars">
-/* ============================================================
- * MetaPlatform Design System — Compact Edition
- * ============================================================ */
-
-/* ---- Brand Prefix: mp ---- */
-
-:root {
-  /* Source: structured-spec */
-  /* Primary */
-  --color-primary: #3b82f6;
-  --color-primary-hover: #2563eb;
-  --color-primary-light: #eff6ff;
-
-  /* Source: structured-spec */
-  /* Neutral — minimal set */
-  --color-bg: #ffffff;
-  --color-bg-secondary: #f8fafc;
-  --color-surface: #ffffff;
-  --color-surface-hover: #f8fafc;
-
-  /* Source: structured-spec */
-  /* Sidebar */
-  --color-sidebar-bg: #0f172a;
-  --color-sidebar-text: #94a3b8;
-  --color-sidebar-text-hover: #cbd5e1;
-  --color-sidebar-active-bg: rgba(59, 130, 246, 0.15);
-  --color-sidebar-active-text: #60a5fa;
-  --color-sidebar-border: rgba(148, 163, 184, 0.1);
-
-  /* Source: structured-spec */
-  /* Text — 3 levels only */
-  --color-text-primary: #0f172a;
-  --color-text-secondary: #64748b;
-  --color-text-inverse: #ffffff;
-
-  /* Source: structured-spec */
-  /* Border — 1 token only */
-  --color-border: #e2e8f0;
-
-  /* Source: structured-spec */
-  /* State — 3 semantic colors, bg derived */
-  --state-success: #22c55e;
-  --state-success-bg: #f0fdf4;
-  --state-warning: #f59e0b;
-  --state-warning-bg: #fffbeb;
-  --state-error: #ef4444;
-  --state-error-bg: #fef2f2;
-
-  /* Source: structured-spec */
-  /* Typography */
-  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans SC", sans-serif;
-  --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
-
-  --font-size-xs: 11px;
-  --font-size-sm: 12px;
-  --font-size-base: 13px;
-  --font-size-lg: 14px;
-  --font-size-xl: 18px;
-  --font-size-2xl: 22px;
-
-  --font-weight-normal: 400;
-  --font-weight-medium: 500;
-  --font-weight-semibold: 600;
-
-  --line-height-normal: 1.5;
-
-  /* Source: structured-spec */
-  /* Spacing — compact scale */
-  --spacing-xs: 2px;
-  --spacing-sm: 4px;
-  --spacing-md: 8px;
-  --spacing-lg: 12px;
-  --spacing-xl: 16px;
-  --spacing-2xl: 24px;
-
-  /* Source: structured-spec */
-  /* Radius — SMALL */
-  --radius-sm: 3px;
-  --radius-md: 4px;
-  --radius-lg: 6px;
-  --radius-full: 9999px;
-
-  /* Source: structured-spec */
-  /* Shadows — minimal */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
-  --shadow-float: 0 8px 24px rgba(0, 0, 0, 0.1);
-
-  /* Source: structured-spec */
-  /* Layout */
-  --sidebar-width: 220px;
-
-  /* ---- Portable Aliases ---- */
-  --color-action: var(--color-primary);
-  --color-action-hover: var(--color-primary-hover);
-  --color-action-light: var(--color-primary-light);
-  --color-content: var(--color-text-primary);
-  --color-content-secondary: var(--color-text-secondary);
-  --color-field: var(--color-border);
-  --color-field-focus: var(--color-primary);
-  --color-feedback-success: var(--state-success);
-  --color-feedback-warning: var(--state-warning);
-  --color-feedback-error: var(--state-error);
-  --radius-btn: var(--radius-md);
-  --radius-card: var(--radius-lg);
-  --radius-input: var(--radius-md);
-  --radius-pill: var(--radius-full);
-}
-
-/* ---- Dark Mode ---- */
-.dark {
-  /* Neutral */
-  --color-bg: #0f172a;
-  --color-bg-secondary: #1e293b;
-  --color-surface: #1e293b;
-  --color-surface-hover: #334155;
-
-  /* Sidebar */
-  --color-sidebar-bg: #020617;
-  --color-sidebar-text: #64748b;
-
-  /* Text */
-  --color-text-primary: #f1f5f9;
-  --color-text-secondary: #94a3b8;
-  --color-text-inverse: #0f172a;
-
-  /* Border */
-  --color-border: #334155;
-
-  /* Primary light */
-  --color-primary-light: rgba(59, 130, 246, 0.1);
-
-  /* State backgrounds */
-  --state-success-bg: rgba(34, 197, 94, 0.1);
-  --state-warning-bg: rgba(245, 158, 11, 0.1);
-  --state-error-bg: rgba(239, 68, 68, 0.1);
-
-  /* Shadows */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.06);
-  --shadow-float: 0 8px 24px rgba(0, 0, 0, 0.15);
-}
-
-/* ============================================================
- * Typography Scale Classes
- * ============================================================ */
-
-.mp-h1 {
-  font-family: var(--font-sans);
-  font-size: var(--font-size-2xl);
-  font-weight: var(--font-weight-semibold);
-  line-height: var(--line-height-normal);
-  color: var(--color-text-primary);
-  margin: 0;
-}
-
-.mp-h2 {
-  font-family: var(--font-sans);
-  font-size: var(--font-size-xl);
-  font-weight: var(--font-weight-semibold);
-  line-height: var(--line-height-normal);
-  color: var(--color-text-primary);
-  margin: 0;
-}
-
-.mp-h3 {
-  font-family: var(--font-sans);
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-medium);
-  line-height: var(--line-height-normal);
-  color: var(--color-text-primary);
-  margin: 0;
-}
-
-.mp-body {
-  font-family: var(--font-sans);
-  font-size: var(--font-size-base);
-  font-weight: var(--font-weight-normal);
-  line-height: var(--line-height-normal);
-  color: var(--color-text-primary);
-  margin: 0;
-}
-
-.mp-caption {
-  font-family: var(--font-sans);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-normal);
-  line-height: var(--line-height-normal);
-  color: var(--color-text-secondary);
-  margin: 0;
-}
-
-.mp-code {
-  font-family: var(--font-mono);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-normal);
-  line-height: var(--line-height-normal);
-  color: var(--color-text-primary);
-  margin: 0;
-}
-
-/* ============================================================
- * Component Surface Classes
- * ============================================================ */
-
-.mp-surface {
-  background-color: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-}
-
-.mp-surface-raised {
-  background-color: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-float);
-}
-
-    </style>
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
-    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
-    <style type="text/tailwindcss">
-  
-  @layer base {
-    body { background: var(--color-bg-secondary); color: var(--color-text-primary); }
-  }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Card 卡片</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans SC', sans-serif; background: #ffffff; color: #0f172a; padding: 40px; }
+    .preview { max-width: 700px; margin: 0 auto; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .card { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px; }
+    .card-interactive { cursor: pointer; transition: border-color 0.15s; }
+    .card-interactive:hover { border-color: #3b82f6; }
+    .card-icon { width: 28px; height: 28px; border-radius: 4px; background: #f8fafc; display: flex; align-items: center; justify-content: center; margin-bottom: 8px; font-size: 13px; }
+    .card-title { font-size: 13px; font-weight: 500; color: #0f172a; margin-bottom: 2px; }
+    .card-code { font-size: 11px; font-family: 'SFMono-Regular', Consolas, monospace; color: #94a3b8; margin-bottom: 4px; }
+    .card-desc { font-size: 11px; color: #64748b; line-height: 1.5; }
+    .card-status { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
+    .card-status-dot { width: 6px; height: 6px; border-radius: 50%; }
+    .dot-green { background: #22c55e; }
+    .dot-red { background: #ef4444; }
+    .card-status-text { font-size: 11px; }
+    .text-green { color: #22c55e; }
+    .text-red { color: #ef4444; }
+    h1 { font-size: 22px; font-weight: 600; margin-bottom: 24px; }
+  </style>
 </head>
 <body>
-
-  <div class="preview-container">
-
-    <h1 class="preview-title">Card 卡片</h1>
-
-    <!-- Default & Interactive Cards -->
-    <div class="section-divider">
-      <p class="section-label">基础卡片</p>
-    </div>
-    <div class="card-grid">
-
-      <!-- Default Card -->
-      <div>
-        <div class="card-wrapper">
-          <div class="card">
-            <div class="card-header">
-              <div class="card-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path d="M10 10.118a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5ZM7 15a3 3 0 1 0 6 0v-1.5a1.5 1.5 0 0 0-1.5-1.5h-3A1.5 1.5 0 0 0 7 13.5V15Z"/><path fill-rule="evenodd" d="M5 2a3 3 0 0 0-3 3v10a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3V5a3 3 0 0 0-3-3H5ZM3.5 5A1.5 1.5 0 0 1 5 3.5h10A1.5 1.5 0 0 1 16.5 5v10a1.5 1.5 0 0 1-1.5 1.5H5A1.5 1.5 0 0 1 3.5 15V5Z"/></svg>
-              </div>
-              <div class="card-info">
-                <div class="card-title">客户管理</div>
-                <div class="card-code">customer</div>
-              </div>
-            </div>
-            <p class="card-desc">管理客户信息、跟进记录与业务数据，支持批量导入导出。</p>
-          </div>
-        </div>
-        <p class="card-label">Default 默认卡片</p>
+  <div class="preview">
+    <h1>Card 卡片</h1>
+    <div class="grid">
+      <div class="card">
+        <div class="card-icon">C</div>
+        <div class="card-title">客户管理</div>
+        <div class="card-code">customer</div>
+        <div class="card-desc">核心业务对象，包含客户基本信息</div>
       </div>
-
-      <!-- Interactive Card -->
-      <div>
-        <div class="card-wrapper">
-          <span class="hover-hint">hover 状态</span>
-          <div class="card card-interactive">
-            <div class="card-header">
-              <div class="card-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path d="M10 10.118a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5ZM7 15a3 3 0 1 0 6 0v-1.5a1.5 1.5 0 0 0-1.5-1.5h-3A1.5 1.5 0 0 0 7 13.5V15Z"/><path fill-rule="evenodd" d="M5 2a3 3 0 0 0-3 3v10a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3V5a3 3 0 0 0-3-3H5ZM3.5 5A1.5 1.5 0 0 1 5 3.5h10A1.5 1.5 0 0 1 16.5 5v10a1.5 1.5 0 0 1-1.5 1.5H5A1.5 1.5 0 0 1 3.5 15V5Z"/></svg>
-              </div>
-              <div class="card-info">
-                <div class="card-title">订单中心</div>
-                <div class="card-code">order-center</div>
-              </div>
-            </div>
-            <p class="card-desc">处理订单全生命周期管理，从创建到履约跟踪。</p>
-          </div>
+      <div class="card card-interactive">
+        <div class="card-icon">T</div>
+        <div class="card-title">工单系统</div>
+        <div class="card-code">ticket</div>
+        <div class="card-desc">技术支持工单生命周期管理</div>
+      </div>
+      <div class="card">
+        <div class="card-status">
+          <span class="card-status-dot dot-green"></span>
+          <span class="card-status-text text-green">已连接</span>
         </div>
-        <p class="card-label">Interactive 可交互卡片</p>
+        <div class="card-title">CRM API</div>
+        <div class="card-code">conn_crm_001</div>
+        <div class="card-desc">REST API 连接器</div>
+      </div>
+      <div class="card">
+        <div class="card-status">
+          <span class="card-status-dot dot-red"></span>
+          <span class="card-status-text text-red">异常</span>
+        </div>
+        <div class="card-title">产品CSV导入</div>
+        <div class="card-code">conn_csv_003</div>
+        <div class="card-desc">CSV 文件数据导入</div>
       </div>
     </div>
-
-    <!-- Status Cards -->
-    <div class="section-divider">
-      <p class="section-label">状态卡片</p>
-    </div>
-    <div class="card-grid">
-
-      <!-- Status Card: Connected (green) -->
-      <div>
-        <div class="card-wrapper">
-          <div class="card card-status">
-            <div class="card-status-header">
-              <div class="card-status-left">
-                <span class="status-dot status-dot-green"></span>
-                <span class="card-status-name">CRM API</span>
-              </div>
-              <span class="card-status-badge">REST</span>
-            </div>
-            <p class="card-desc">已连接 — 上次同步 2 分钟前</p>
-          </div>
-        </div>
-        <p class="card-label">Status · 已连接</p>
-      </div>
-
-      <!-- Status Card: Error (red) -->
-      <div>
-        <div class="card-wrapper">
-          <div class="card card-status">
-            <div class="card-status-header">
-              <div class="card-status-left">
-                <span class="status-dot status-dot-red"></span>
-                <span class="card-status-name">数据仓库</span>
-              </div>
-              <span class="card-status-badge">Database</span>
-            </div>
-            <p class="card-desc">连接异常 — 3 条数据格式错误</p>
-          </div>
-        </div>
-        <p class="card-label">Status · 异常</p>
-      </div>
-    </div>
-
   </div>
-
-  <style>
-    /* ---- Reset & Base ---- */
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: var(--font-sans);
-      background: var(--color-bg-secondary);
-      color: var(--color-text-primary);
-      padding: var(--spacing-2xl);
-      line-height: var(--line-height-normal);
-    }
-
-    /* ---- Container ---- */
-    .preview-container {
-      max-width: 700px;
-      margin: 0 auto;
-    }
-
-    /* ---- Page Title ---- */
-    .preview-title {
-      font-size: var(--font-size-xl);
-      font-weight: var(--font-weight-semibold);
-      color: var(--color-text-primary);
-      margin-bottom: var(--spacing-lg);
-      padding-bottom: var(--spacing-md);
-      border-bottom: 1px solid var(--color-border);
-    }
-
-    /* ---- Section Labels ---- */
-    .section-label {
-      font-size: var(--font-size-xs);
-      font-weight: var(--font-weight-medium);
-      color: var(--color-text-secondary);
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      margin-bottom: var(--spacing-md);
-    }
-    .section-divider {
-      margin-top: var(--spacing-xl);
-      margin-bottom: var(--spacing-md);
-    }
-
-    /* ---- Grid ---- */
-    .card-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: var(--spacing-lg);
-    }
-
-    /* ---- Card Base ---- */
-    .card {
-      background: var(--color-surface);
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius-card);
-      padding: var(--spacing-lg);
-      transition: border-color 0.2s ease;
-    }
-
-    /* ---- Card Inner Layout ---- */
-    .card-header {
-      display: flex;
-      align-items: center;
-      gap: var(--spacing-md);
-      margin-bottom: var(--spacing-md);
-    }
-    .card-icon {
-      width: 28px;
-      height: 28px;
-      border-radius: var(--radius-md);
-      flex-shrink: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: var(--color-bg-secondary);
-      color: var(--color-text-secondary);
-    }
-    .card-icon svg {
-      width: 14px;
-      height: 14px;
-    }
-    .card-info {
-      flex: 1;
-      min-width: 0;
-    }
-    .card-title {
-      font-size: var(--font-size-sm);
-      font-weight: var(--font-weight-medium);
-      color: var(--color-text-primary);
-      line-height: var(--line-height-normal);
-    }
-    .card-code {
-      font-family: var(--font-mono);
-      font-size: var(--font-size-xs);
-      color: var(--color-text-secondary);
-      margin-top: 1px;
-    }
-    .card-desc {
-      font-size: var(--font-size-xs);
-      color: var(--color-text-secondary);
-      line-height: var(--line-height-normal);
-    }
-
-    /* ---- Interactive Card ---- */
-    .card-interactive {
-      cursor: pointer;
-    }
-    .card-interactive:hover {
-      border-color: var(--color-primary);
-    }
-
-    /* ---- Status Card ---- */
-    .card-status-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: var(--spacing-sm);
-    }
-    .card-status-left {
-      display: flex;
-      align-items: center;
-      gap: var(--spacing-sm);
-    }
-    .card-status-name {
-      font-size: var(--font-size-sm);
-      font-weight: var(--font-weight-medium);
-      color: var(--color-text-primary);
-    }
-    .card-status-badge {
-      display: inline-flex;
-      align-items: center;
-      padding: 1px var(--spacing-sm);
-      font-size: var(--font-size-xs);
-      font-weight: var(--font-weight-medium);
-      border-radius: var(--radius-pill);
-      background: var(--color-bg-secondary);
-      color: var(--color-text-secondary);
-    }
-
-    /* ---- Status Dot ---- */
-    .status-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: var(--radius-full);
-      flex-shrink: 0;
-    }
-    .status-dot-green {
-      background: var(--state-success);
-    }
-    .status-dot-red {
-      background: var(--state-error);
-    }
-
-    /* ---- Label below card ---- */
-    .card-label {
-      font-size: var(--font-size-xs);
-      color: var(--color-text-secondary);
-      text-align: center;
-      margin-top: var(--spacing-sm);
-    }
-
-    /* ---- Hover hint annotation ---- */
-    .hover-hint {
-      position: absolute;
-      top: var(--spacing-sm);
-      right: var(--spacing-sm);
-      font-size: var(--font-size-xs);
-      color: var(--color-primary);
-      background: var(--color-primary-light);
-      padding: 1px var(--spacing-sm);
-      border-radius: var(--radius-sm);
-      pointer-events: none;
-    }
-    .card-wrapper {
-      position: relative;
-    }
-  </style>
 </body>
 </html>
