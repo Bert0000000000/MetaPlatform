@@ -9,6 +9,7 @@ import ProcessDesigner from "./pages/ProcessDesigner";
 import DialogueChat from "./pages/DialogueChat";
 import CapabilityCenter from "./pages/CapabilityCenter";
 import IntegrationHub from "./pages/IntegrationHub";
+import AppMarket from "./pages/AppMarket";
 import "./App.css";
 
 const App: React.FC = () => {
@@ -71,6 +72,12 @@ const App: React.FC = () => {
             >
               集成中心
             </NavLink>
+            <NavLink
+              to="/market"
+              className={({ isActive }) => (isActive ? "mp-nav-link active" : "mp-nav-link")}
+            >
+              应用市场
+            </NavLink>
           </nav>
         </aside>
 
@@ -87,6 +94,7 @@ const App: React.FC = () => {
             <Route path="/dialogue" element={<DialogueChat />} />
             <Route path="/capabilities" element={<CapabilityCenter />} />
             <Route path="/integration" element={<IntegrationHub />} />
+            <Route path="/market" element={<AppMarket />} />
           </Routes>
         </main>
       </div>

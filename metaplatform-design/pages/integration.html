@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html class="light" lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>集成中心 — MetaPlatform</title>
+    <style id="theme-vars">
+/* ============================================================
+ * MetaPlatform Design — Brand CSS
+ * Enterprise low-code platform: calm, trustworthy, data-rich
+ * ============================================================ */
+
+/* ---- Brand Prefix: mp ---- */
+
+/* ---- Color System ---- */
+:root {
+  /* Primary: Indigo Blue — enterprise trust */
+  --color-primary: #3b82f6;
+  --color-primary-hover: #2563eb;
+  --color-primary-light: #eff6ff;
+  --color-primary-muted: #bfdbfe;
+
+  /* Neutral Scale */
+  --color-bg: #ffffff;
+  --color-bg-secondary: #f8fafc;
+  --color-bg-tertiary: #f1f5f9;
+  --color-surface: #ffffff;
+  --color-surface-hover: #f8fafc;
+
+  /* Sidebar — dark navy */
+  --color-sidebar-bg: #0f172a;
+  --color-sidebar-text: #94a3b8;
+  --color-sidebar-text-hover: #cbd5e1;
+  --color-sidebar-active-bg: rgba(59, 130, 246, 0.15);
+  --color-sidebar-active-text: #60a5fa;
+  --color-sidebar-border: rgba(148, 163, 184, 0.1);
+
+  /* Text */
+  --color-text-primary: #0f172a;
+  --color-text-secondary: #475569;
+  --color-text-tertiary: #94a3b8;
+  --color-text-inverse: #ffffff;
+
+  /* Borders */
+  --color-border: #e2e8f0;
+  --color-border-light: #f1f5f9;
+
+  /* State Colors */
+  --state-success: #22c55e;
+  --state-success-bg: #f0fdf4;
+  --state-warning: #f59e0b;
+  --state-warning-bg: #fffbeb;
+  --state-error: #ef4444;
+  --state-error-bg: #fef2f2;
+  --state-info: #3b82f6;
+  --state-info-bg: #eff6ff;
+
+  /* Accent tints for categories */
+  --tint-ai: #8b5cf6;
+  --tint-ai-bg: #f5f3ff;
+  --tint-data: #06b6d4;
+  --tint-data-bg: #ecfeff;
+  --tint-tool: #f59e0b;
+  --tint-tool-bg: #fffbeb;
+  --tint-rest: #3b82f6;
+  --tint-rest-bg: #eff6ff;
+  --tint-database: #22c55e;
+  --tint-database-bg: #f0fdf4;
+  --tint-csv: #f59e0b;
+  --tint-csv-bg: #fffbeb;
+
+  /* ---- Typography ---- */
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans SC", sans-serif;
+  --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+
+  --font-size-xs: 11px;
+  --font-size-sm: 12px;
+  --font-size-base: 14px;
+  --font-size-md: 15px;
+  --font-size-lg: 16px;
+  --font-size-xl: 20px;
+  --font-size-2xl: 24px;
+  --font-size-3xl: 30px;
+
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  --line-height-tight: 1.25;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.625;
+
+  /* ---- Spacing ---- */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 12px;
+  --spacing-lg: 16px;
+  --spacing-xl: 24px;
+  --spacing-2xl: 32px;
+  --spacing-3xl: 48px;
+
+  /* ---- Radius ---- */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-full: 9999px;
+
+  /* ---- Shadows (border-first, low alpha) ---- */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.03);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.04);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.06);
+  --shadow-float: 0 12px 32px rgba(0, 0, 0, 0.12);
+
+  /* ---- Layout ---- */
+  --sidebar-width: 240px;
+  --content-max-width: 1200px;
+  --header-height: 56px;
+}
+
+/* ---- Typography Scale Classes ---- */
+.mp-h1 { font-size: var(--font-size-3xl); font-weight: var(--font-weight-bold); line-height: var(--line-height-tight); color: var(--color-text-primary); letter-spacing: -0.02em; }
+.mp-h2 { font-size: var(--font-size-2xl); font-weight: var(--font-weight-bold); line-height: var(--line-height-tight); color: var(--color-text-primary); letter-spacing: -0.01em; }
+.mp-h3 { font-size: var(--font-size-xl); font-weight: var(--font-weight-semibold); line-height: var(--line-height-normal); color: var(--color-text-primary); }
+.mp-h4 { font-size: var(--font-size-lg); font-weight: var(--font-weight-semibold); line-height: var(--line-height-normal); color: var(--color-text-primary); }
+.mp-body { font-size: var(--font-size-base); font-weight: var(--font-weight-normal); line-height: var(--line-height-normal); color: var(--color-text-secondary); }
+.mp-caption { font-size: var(--font-size-sm); font-weight: var(--font-weight-normal); line-height: var(--line-height-normal); color: var(--color-text-tertiary); }
+.mp-code { font-family: var(--font-mono); font-size: var(--font-size-sm); }
+
+/* ---- Component Surfaces ---- */
+.mp-surface { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); }
+.mp-surface-raised { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); }
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-primary: var(--color-primary);
+    --color-border: var(--color-border);
+  }
+  @layer base {
+    body { background: var(--color-surface); color: var(--color-text-primary); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+</head>
+<body style="font-family: var(--font-sans); background: var(--color-bg);">
+<div class="flex min-h-screen">
+
+  <!-- Sidebar -->
+  <aside class="w-[240px] flex flex-col flex-shrink-0 fixed inset-y-0 left-0 z-10" style="background: var(--color-sidebar-bg);">
+
+    <!-- Brand -->
+    <div class="flex items-center gap-3 px-5 py-5" style="border-bottom: 1px solid var(--color-sidebar-border);">
+      <span class="w-9 h-9 flex items-center justify-center font-bold text-base" style="border-radius: var(--radius-md); background: var(--color-primary); color: var(--color-text-inverse);">M</span>
+      <span class="text-base font-semibold" style="color: #f8fafc;">MetaPlatform</span>
+    </div>
+
+    <!-- Nav -->
+    <nav class="flex flex-col px-3 py-4 gap-1 flex-1">
+
+      <!-- 1. 页面配置 -->
+      <a data-nav-key="dashboard" data-dom-id="nav-dashboard" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm cursor-pointer transition-colors" style="color: var(--color-sidebar-text);">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="7" height="7" rx="1"/>
+          <rect x="14" y="3" width="7" height="7" rx="1"/>
+          <rect x="3" y="14" width="7" height="7" rx="1"/>
+          <rect x="14" y="14" width="7" height="7" rx="1"/>
+        </svg>
+        <span>页面配置</span>
+      </a>
+
+      <!-- 2. ObjectType -->
+      <a data-nav-key="objecttype" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm cursor-pointer transition-colors" style="color: var(--color-sidebar-text);">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+          <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+          <line x1="12" y1="22.08" x2="12" y2="12"/>
+        </svg>
+        <span>ObjectType</span>
+      </a>
+
+      <!-- 3. 建模特工场 -->
+      <a data-nav-key="modeling-workshop" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm cursor-pointer transition-colors" style="color: var(--color-sidebar-text);">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+        </svg>
+        <span>建模特工场</span>
+      </a>
+
+      <!-- 4. 设计器 -->
+      <a data-nav-key="designer" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm cursor-pointer transition-colors" style="color: var(--color-sidebar-text);">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 19l7-7 3 3-7 7-3-3z"/>
+          <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/>
+          <path d="M2 2l7.586 7.586"/>
+          <circle cx="11" cy="11" r="2"/>
+        </svg>
+        <span>设计器</span>
+      </a>
+
+      <!-- 5. 流程设计器 -->
+      <a data-nav-key="flow-designer" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm cursor-pointer transition-colors" style="color: var(--color-sidebar-text);">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="6" y1="3" x2="6" y2="15"/>
+          <circle cx="18" cy="6" r="3"/>
+          <circle cx="6" cy="18" r="3"/>
+          <path d="M18 9a9 9 0 0 1-9 9"/>
+        </svg>
+        <span>流程设计器</span>
+      </a>
+
+      <!-- 6. AI 对话 -->
+      <a data-nav-key="dialogue" data-dom-id="nav-dialogue" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm cursor-pointer transition-colors" style="color: var(--color-sidebar-text);">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+        </svg>
+        <span>AI 对话</span>
+      </a>
+
+      <!-- 7. 能力中心 -->
+      <a data-nav-key="capability" data-dom-id="nav-capability" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm cursor-pointer transition-colors" style="color: var(--color-sidebar-text);">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+        </svg>
+        <span>能力中心</span>
+      </a>
+
+      <!-- 8. 集成中心 (active) -->
+      <a data-nav-key="integration" data-active="true" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm cursor-pointer transition-colors" style="color: var(--color-sidebar-active-text); background: var(--color-sidebar-active-bg);">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+          <polyline points="15 3 21 3 21 9"/>
+          <line x1="10" y1="14" x2="21" y2="3"/>
+        </svg>
+        <span>集成中心</span>
+      </a>
+
+    </nav>
+
+    <!-- Bottom user area -->
+    <div class="px-4 py-4 flex items-center gap-3" style="border-top: 1px solid var(--color-sidebar-border);">
+      <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium" style="background: #334155; color: #cbd5e1;">A</div>
+      <div class="flex-1 min-w-0">
+        <div class="text-sm truncate" style="color: #e2e8f0;">Admin</div>
+        <div class="text-xs truncate" style="color: #64748b;">admin@metaplatform.io</div>
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- Main content -->
+  <main class="flex-1 min-w-0 p-8" style="margin-left: 240px; background: var(--color-bg);">
+
+    <!-- Page header -->
+    <div class="flex items-center justify-between mb-8">
+      <div>
+        <h1 class="mp-h1" style="text-wrap: balance; word-break: keep-all;">集成中心</h1>
+        <p class="mp-body mt-1">管理连接器和数据同步</p>
+      </div>
+      <button class="inline-flex items-center justify-center whitespace-nowrap text-sm font-semibold px-5 py-2.5 transition-colors" style="border-radius: var(--radius-md); background: var(--color-primary); color: var(--color-text-inverse);" onmouseover="this.style.background='var(--color-primary-hover)'" onmouseout="this.style.background='var(--color-primary)'">
+        + 新建连接器
+      </button>
+    </div>
+
+    <!-- Connector card list -->
+    <div class="flex flex-col gap-3">
+
+      <!-- Card 1: CRM API (REST, active) -->
+      <div class="flex items-center gap-4 p-4 transition-colors" style="background: var(--color-surface); border: 1px solid var(--color-border); border-left: 3px solid var(--color-primary); border-radius: var(--radius-md); box-shadow: var(--shadow-sm);" onmouseover="this.style.borderColor='var(--color-primary-muted)'" onmouseout="this.style.borderColor='var(--color-border)'">
+        <!-- Icon -->
+        <div class="w-10 h-10 flex items-center justify-center text-lg flex-shrink-0" style="background: var(--tint-rest-bg); border-radius: var(--radius-md);">
+          <svg class="w-5 h-5" style="color: var(--tint-rest);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="2" y1="12" x2="22" y2="12"/>
+            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+          </svg>
+        </div>
+        <!-- Info -->
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="font-semibold text-sm" style="color: var(--color-text-primary);">CRM API</span>
+            <span class="inline-flex items-center whitespace-nowrap px-2.5 py-0.5 text-xs font-medium" style="background: var(--tint-rest-bg); color: var(--tint-rest); border-radius: var(--radius-full);">REST</span>
+          </div>
+          <div class="flex items-center gap-3 mt-1">
+            <span class="text-xs font-mono" style="color: var(--color-text-tertiary);">conn_crm_01</span>
+            <span class="inline-flex items-center gap-1.5 text-xs font-medium" style="color: var(--state-success);">
+              <span class="w-1.5 h-1.5 rounded-full inline-block" style="background: var(--state-success);"></span>
+              已连接
+            </span>
+          </div>
+        </div>
+        <!-- Actions -->
+        <div class="flex items-center gap-2 flex-shrink-0">
+          <button class="inline-flex items-center justify-center whitespace-nowrap text-xs font-medium px-3 py-1.5 transition-colors" style="border: 1px solid var(--color-border); border-radius: var(--radius-md); color: var(--color-text-secondary); background: transparent;" onmouseover="this.style.background='var(--color-bg-tertiary)'" onmouseout="this.style.background='transparent'">测试连接</button>
+          <button class="inline-flex items-center justify-center whitespace-nowrap text-xs font-medium px-3 py-1.5 transition-colors" style="border: 1px solid var(--color-border); border-radius: var(--radius-md); color: var(--color-text-secondary); background: transparent;" onmouseover="this.style.background='var(--color-bg-tertiary)'" onmouseout="this.style.background='transparent'">同步</button>
+          <button class="inline-flex items-center justify-center whitespace-nowrap text-xs font-medium px-3 py-1.5 transition-colors" style="border: none; border-radius: var(--radius-md); color: var(--state-error); background: transparent;" onmouseover="this.style.background='var(--state-error-bg)'" onmouseout="this.style.background='transparent'">删除</button>
+        </div>
+      </div>
+
+      <!-- Card 2: 数据仓库 (Database, active) -->
+      <div class="flex items-center gap-4 p-4 transition-colors" style="background: var(--color-surface); border: 1px solid var(--color-border); border-left: 3px solid var(--tint-database); border-radius: var(--radius-md); box-shadow: var(--shadow-sm);" onmouseover="this.style.borderColor='var(--tint-database)'" onmouseout="this.style.borderColor='var(--color-border)'">
+        <!-- Icon -->
+        <div class="w-10 h-10 flex items-center justify-center text-lg flex-shrink-0" style="background: var(--tint-database-bg); border-radius: var(--radius-md);">
+          <svg class="w-5 h-5" style="color: var(--tint-database);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <ellipse cx="12" cy="5" rx="9" ry="3"/>
+            <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
+            <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
+          </svg>
+        </div>
+        <!-- Info -->
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="font-semibold text-sm" style="color: var(--color-text-primary);">数据仓库</span>
+            <span class="inline-flex items-center whitespace-nowrap px-2.5 py-0.5 text-xs font-medium" style="background: var(--tint-database-bg); color: var(--tint-database); border-radius: var(--radius-full);">Database</span>
+          </div>
+          <div class="flex items-center gap-3 mt-1">
+            <span class="text-xs font-mono" style="color: var(--color-text-tertiary);">conn_db_warehouse</span>
+            <span class="inline-flex items-center gap-1.5 text-xs font-medium" style="color: var(--state-success);">
+              <span class="w-1.5 h-1.5 rounded-full inline-block" style="background: var(--state-success);"></span>
+              已连接
+            </span>
+          </div>
+        </div>
+        <!-- Actions -->
+        <div class="flex items-center gap-2 flex-shrink-0">
+          <button class="inline-flex items-center justify-center whitespace-nowrap text-xs font-medium px-3 py-1.5 transition-colors" style="border: 1px solid var(--color-border); border-radius: var(--radius-md); color: var(--color-text-secondary); background: transparent;" onmouseover="this.style.background='var(--color-bg-tertiary)'" onmouseout="this.style.background='transparent'">测试连接</button>
+          <button class="inline-flex items-center justify-center whitespace-nowrap text-xs font-medium px-3 py-1.5 transition-colors" style="border: 1px solid var(--color-border); border-radius: var(--radius-md); color: var(--color-text-secondary); background: transparent;" onmouseover="this.style.background='var(--color-bg-tertiary)'" onmouseout="this.style.background='transparent'">同步</button>
+          <button class="inline-flex items-center justify-center whitespace-nowrap text-xs font-medium px-3 py-1.5 transition-colors" style="border: none; border-radius: var(--radius-md); color: var(--state-error); background: transparent;" onmouseover="this.style.background='var(--state-error-bg)'" onmouseout="this.style.background='transparent'">删除</button>
+        </div>
+      </div>
+
+      <!-- Card 3: 产品CSV导入 (CSV, error) -->
+      <div class="flex items-center gap-4 p-4 transition-colors" style="background: var(--color-surface); border: 1px solid var(--color-border); border-left: 3px solid var(--tint-csv); border-radius: var(--radius-md); box-shadow: var(--shadow-sm);" onmouseover="this.style.borderColor='var(--tint-csv)'" onmouseout="this.style.borderColor='var(--color-border)'">
+        <!-- Icon -->
+        <div class="w-10 h-10 flex items-center justify-center text-lg flex-shrink-0" style="background: var(--tint-csv-bg); border-radius: var(--radius-md);">
+          <svg class="w-5 h-5" style="color: var(--tint-csv);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="8" y1="13" x2="16" y2="13"/>
+            <line x1="8" y1="17" x2="16" y2="17"/>
+            <polyline points="10 9 9 9 8 9"/>
+          </svg>
+        </div>
+        <!-- Info -->
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="font-semibold text-sm" style="color: var(--color-text-primary);">产品CSV导入</span>
+            <span class="inline-flex items-center whitespace-nowrap px-2.5 py-0.5 text-xs font-medium" style="background: var(--tint-csv-bg); color: var(--tint-csv); border-radius: var(--radius-full);">CSV</span>
+          </div>
+          <div class="flex items-center gap-3 mt-1">
+            <span class="text-xs font-mono" style="color: var(--color-text-tertiary);">conn_csv_product</span>
+            <span class="inline-flex items-center gap-1.5 text-xs font-medium" style="color: var(--state-error);">
+              <span class="w-1.5 h-1.5 rounded-full inline-block" style="background: var(--state-error);"></span>
+              异常
+            </span>
+          </div>
+        </div>
+        <!-- Actions -->
+        <div class="flex items-center gap-2 flex-shrink-0">
+          <button class="inline-flex items-center justify-center whitespace-nowrap text-xs font-medium px-3 py-1.5 transition-colors" style="border: 1px solid var(--color-border); border-radius: var(--radius-md); color: var(--color-text-secondary); background: transparent;" onmouseover="this.style.background='var(--color-bg-tertiary)'" onmouseout="this.style.background='transparent'">测试连接</button>
+          <button class="inline-flex items-center justify-center whitespace-nowrap text-xs font-medium px-3 py-1.5 transition-colors" style="border: 1px solid var(--color-border); border-radius: var(--radius-md); color: var(--color-text-secondary); background: transparent;" onmouseover="this.style.background='var(--color-bg-tertiary)'" onmouseout="this.style.background='transparent'">同步</button>
+          <button class="inline-flex items-center justify-center whitespace-nowrap text-xs font-medium px-3 py-1.5 transition-colors" style="border: none; border-radius: var(--radius-md); color: var(--state-error); background: transparent;" onmouseover="this.style.background='var(--state-error-bg)'" onmouseout="this.style.background='transparent'">删除</button>
+        </div>
+      </div>
+
+      <!-- Empty state placeholder -->
+      <div class="flex items-center justify-center p-6 transition-colors cursor-pointer" style="border: 2px dashed var(--color-border); border-radius: var(--radius-md); background: transparent;" onmouseover="this.style.borderColor='var(--color-primary-muted)'; this.style.background='var(--color-primary-light)'" onmouseout="this.style.borderColor='var(--color-border)'; this.style.background='transparent'">
+        <span class="text-sm font-medium" style="color: var(--color-text-tertiary);">+ 添加新连接器</span>
+      </div>
+
+    </div>
+
+  </main>
+
+</div>
+</body>
+</html>
