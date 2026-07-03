@@ -18,36 +18,40 @@ import AppConfig from "@/pages/apps/AppConfig";
 import AppPublish from "@/pages/apps/AppPublish";
 import AppExport from "@/pages/apps/AppExport";
 import NewAppWizard from "@/pages/apps/NewAppWizard";
+import VibeCoding from "@/pages/apps/VibeCoding";
+import FormDesigner from "@/pages/apps/FormDesigner";
 
 // 流程中心
 import ProcessList from "@/pages/process/ProcessList";
 import ApprovalList from "@/pages/process/ApprovalList";
 import Orchestration from "@/pages/process/Orchestration";
+import { ProcessDesigner } from "@/pages/process/ProcessDesigner";
 
 // 本体引擎
 import Objects from "@/pages/ontology/Objects";
 import { OntologyElement } from "@/pages/ontology/OntologyTab";
+import ObjectDetail from "@/pages/ontology/ObjectDetail";
 
 // 数据中心
-import { DataDashboard, DataSourceList, AskData, MetricCenter } from "@/pages/data/DataCenter";
+import { DataDashboard, DataSourceList, AskData, MetricCenter, DataQuality, ETLTasks, RealTimeMonitor } from "@/pages/data/DataCenter";
 
 // 质量中心
-import { QualityDashboard, TestCases } from "@/pages/quality/QualityCenter";
+import { QualityDashboard, TestCases, BugTracker, PerfMonitor, AIGenerateCases } from "@/pages/quality/QualityCenter";
 
 // 知识库
-import { KnowledgeDashboard, DocumentList } from "@/pages/knowledge/Knowledge";
+import { KnowledgeDashboard, DocumentList, Categories, KnowledgeGraph, SmartQA, VersionHistory } from "@/pages/knowledge/Knowledge";
 
 // 云市场
-import { MarketDashboard, OntologyTemplates } from "@/pages/market/Market";
+import { MarketDashboard, OntologyTemplates, AgentMarket, MySubscriptions, DeveloperRank } from "@/pages/market/Market";
 
 // 数字员工
-import { AgentList, AgentCollaboration } from "@/pages/agents/AgentCenter";
+import { AgentList, AgentCollaboration, AgentSkills, AgentMonitor, AgentCenter } from "@/pages/agents/AgentCenter";
 
 // 架构中心
 import { BusinessArchitecture, ApplicationArchitecture, DataArchitecture, TechArchitecture } from "@/pages/architecture/Architecture";
 
 // 后台管理
-import { AdminDashboard, UserList } from "@/pages/admin/Admin";
+import { AdminDashboard, UserList, RoleList, DepartmentList, MenuConfig, DictionaryList, OperationLog, SystemSettings } from "@/pages/admin/Admin";
 
 function AppDetailPlaceholder() {
   return (
@@ -95,6 +99,8 @@ export default function App() {
               {/* 4. 应用中心 */}
               <Route path="/apps" element={<AppsListPage />} />
               <Route path="/apps/new" element={<NewAppWizard />} />
+              <Route path="/apps/vibe" element={<VibeCoding />} />
+              <Route path="/apps/form" element={<FormDesigner />} />
               <Route path="/apps/:appId" element={<AppDetailPlaceholder />} />
               <Route path="/apps/:appId/overview" element={<AppOverview />} />
               <Route path="/apps/:appId/datamodeling" element={<DataModeling />} />
@@ -107,6 +113,7 @@ export default function App() {
               {/* 5. 流程中心 */}
               <Route path="/process" element={<ProcessList />} />
               <Route path="/process/business" element={<ProcessList />} />
+              <Route path="/process/designer" element={<ProcessDesigner />} />
               <Route path="/process/approval" element={<ApprovalList />} />
               <Route path="/process/orchestration" element={<Orchestration />} />
               <Route path="/process/*" element={<ProcessList />} />
@@ -117,44 +124,60 @@ export default function App() {
               <Route path="/data/ask" element={<AskData />} />
               <Route path="/data/metrics" element={<MetricCenter />} />
               <Route path="/data/sources" element={<DataSourceList />} />
+              <Route path="/data/quality" element={<DataQuality />} />
+              <Route path="/data/etl" element={<ETLTasks />} />
+              <Route path="/data/realtime" element={<RealTimeMonitor />} />
               <Route path="/data/*" element={<DataDashboard />} />
 
               {/* 7. 本体引擎 */}
               <Route path="/ontology" element={<Objects />} />
               <Route path="/ontology/objects" element={<Objects />} />
-              <Route path="/ontology/properties" element={<OntologyElement elementKey="2-properties" />} />
-              <Route path="/ontology/links" element={<OntologyElement elementKey="3-links" />} />
-              <Route path="/ontology/actions" element={<OntologyElement elementKey="4-actions" />} />
-              <Route path="/ontology/functions" element={<OntologyElement elementKey="5-functions" />} />
-              <Route path="/ontology/rules" element={<OntologyElement elementKey="6-rules" />} />
-              <Route path="/ontology/security" element={<OntologyElement elementKey="7-security" />} />
-              <Route path="/ontology/governance" element={<OntologyElement elementKey="8-governance" />} />
-              <Route path="/ontology/*" element={<Objects />} />
+              <Route path="/ontology/object/:objectId" element={<ObjectDetail />} />
+              <Route path="/ontology/element/:elementKey" element={<OntologyElementWrapper />} />
 
               {/* 8. 质量中心 */}
               <Route path="/quality" element={<QualityDashboard />} />
               <Route path="/quality/cases" element={<TestCases />} />
+              <Route path="/quality/bugs" element={<BugTracker />} />
+              <Route path="/quality/perf" element={<PerfMonitor />} />
+              <Route path="/quality/ai" element={<AIGenerateCases />} />
               <Route path="/quality/*" element={<QualityDashboard />} />
 
               {/* 9. 知识库 */}
               <Route path="/knowledge" element={<KnowledgeDashboard />} />
               <Route path="/knowledge/documents" element={<DocumentList />} />
+              <Route path="/knowledge/categories" element={<Categories />} />
+              <Route path="/knowledge/graph" element={<KnowledgeGraph />} />
+              <Route path="/knowledge/qa" element={<SmartQA />} />
+              <Route path="/knowledge/history" element={<VersionHistory />} />
               <Route path="/knowledge/*" element={<KnowledgeDashboard />} />
 
               {/* 10. 云市场 */}
               <Route path="/market" element={<MarketDashboard />} />
               <Route path="/market/ontology-templates" element={<OntologyTemplates />} />
+              <Route path="/market/agents" element={<AgentMarket />} />
+              <Route path="/market/subscriptions" element={<MySubscriptions />} />
+              <Route path="/market/rank" element={<DeveloperRank />} />
               <Route path="/market/*" element={<MarketDashboard />} />
 
               {/* 11. 数字员工 */}
-              <Route path="/agents" element={<AgentList />} />
-              <Route path="/agents/mine" element={<AgentList />} />
-              <Route path="/agents/collaboration" element={<AgentCollaboration />} />
-              <Route path="/agents/*" element={<AgentList />} />
+              <Route path="/agents" element={<AgentCenter />} />
+              <Route path="/agents/list" element={<AgentList />} />
+              <Route path="/agents/skills" element={<AgentSkills />} />
+              <Route path="/agents/collab" element={<AgentCollaboration />} />
+              <Route path="/agents/monitor" element={<AgentMonitor />} />
+              <Route path="/agents/*" element={<AgentCenter />} />
 
               {/* 12. 后台管理 */}
               <Route path="/admin" element={<AdminDashboard />} />
+              <Route path="/admin/dashboard" element={<AdminDashboard />} />
               <Route path="/admin/users" element={<UserList />} />
+              <Route path="/admin/roles" element={<RoleList />} />
+              <Route path="/admin/departments" element={<DepartmentList />} />
+              <Route path="/admin/menus" element={<MenuConfig />} />
+              <Route path="/admin/dictionary" element={<DictionaryList />} />
+              <Route path="/admin/logs" element={<OperationLog />} />
+              <Route path="/admin/settings" element={<SystemSettings />} />
               <Route path="/admin/*" element={<AdminDashboard />} />
 
               {/* 兜底 */}
