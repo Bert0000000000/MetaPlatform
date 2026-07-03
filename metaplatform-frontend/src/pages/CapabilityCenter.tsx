@@ -4,6 +4,13 @@ import {
   getCapability,
   executeCapability,
 } from "../api/capabilityApi";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import { cn } from "@/lib/utils";
 
 /* ---- Types ---- */
 interface Capability {
@@ -29,15 +36,15 @@ interface CapabilityDetail extends Capability {
 /* ---- Constants ---- */
 const CATEGORIES = [
   { key: "", label: "全部" },
-  { key: "AI", label: "AI", icon: "🤖" },
-  { key: "数据", label: "数据", icon: "📊" },
-  { key: "工具", label: "工具", icon: "🔧" },
+  { key: "AI", label: "AI", icon: "[AI]" },
+  { key: "数据", label: "数据", icon: "[D]" },
+  { key: "工具", label: "工具", icon: "[T]" },
 ];
 
 const CATEGORY_ICONS: Record<string, string> = {
-  AI: "🤖",
-  数据: "📊",
-  工具: "🔧",
+  AI: "[AI]",
+  数据: "[D]",
+  工具: "[T]",
 };
 
 /* ---- Component ---- */
@@ -53,7 +60,6 @@ const CapabilityCenter: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  /* Load capabilities */
   const loadCapabilities = useCallback(async (category?: string) => {
     setLoading(true);
     setError(null);
@@ -72,7 +78,6 @@ const CapabilityCenter: React.FC = () => {
     loadCapabilities(activeCategory);
   }, [activeCategory, loadCapabilities]);
 
-  /* Load detail when expanding */
   async function handleExpand(code: string) {
     if (expandedCode === code) {
       setExpandedCode(null);
@@ -96,7 +101,6 @@ const CapabilityCenter: React.FC = () => {
     }
   }
 
-  /* Execute capability */
   async function handleExecute() {
     if (!expandedCode) return;
     setExecuting(true);
@@ -104,11 +108,9 @@ const CapabilityCenter: React.FC = () => {
     setExecError(null);
 
     try {
-      // Build input object from form values
       const input: Record<string, unknown> = {};
       for (const [key, val] of Object.entries(inputValues)) {
         if (val.trim()) {
-          // Try to parse JSON values
           try {
             input[key] = JSON.parse(val);
           } catch {
@@ -140,148 +142,167 @@ const CapabilityCenter: React.FC = () => {
   }
 
   return (
-    <div className="mp-capability-center">
-      <div className="mp-capability-header">
-        <h1>能力中心</h1>
-        <p>查看和执行已注册的能力服务</p>
+    <div className="p-6 max-w-7xl mx-auto space-y-6">
+      {/* Page header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">能力中心</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            查看和执行已注册的能力服务
+          </p>
+        </div>
       </div>
 
       {/* Category filter tabs */}
-      <div className="mp-capability-filters">
+      <div className="flex gap-2">
         {CATEGORIES.map((cat) => (
-          <button
+          <Button
             key={cat.key}
-            className={`mp-capability-filter-tab${activeCategory === cat.key ? " active" : ""}`}
+            variant={activeCategory === cat.key ? "default" : "outline"}
+            size="sm"
             onClick={() => setActiveCategory(cat.key)}
           >
-            {cat.icon && <span className="mp-capability-filter-icon">{cat.icon}</span>}
+            {cat.icon && <span className="mr-1">{cat.icon}</span>}
             {cat.label}
-          </button>
+          </Button>
         ))}
       </div>
 
-      {error && <div className="mp-alert mp-alert-error">{error}</div>}
+      {error && (
+        <div className="rounded-md border border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive">
+          {error}
+        </div>
+      )}
 
       {loading ? (
-        <div className="mp-loading">加载中...</div>
+        <div className="flex items-center justify-center py-8 text-muted-foreground">
+          加载中...
+        </div>
       ) : capabilities.length === 0 ? (
-        <div className="mp-empty-hint">暂无可用能力</div>
+        <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+          <p>暂无可用能力</p>
+        </div>
       ) : (
-        <div className="mp-capability-grid">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {capabilities.map((cap) => (
-            <div
+            <Card
               key={cap.code}
-              className={`mp-capability-card${expandedCode === cap.code ? " expanded" : ""}`}
+              className={cn(
+                "transition-shadow",
+                expandedCode === cap.code && "ring-2 ring-primary"
+              )}
             >
-              <div
-                className="mp-capability-card-header"
+              <CardHeader
+                className="cursor-pointer pb-3"
                 onClick={() => handleExpand(cap.code)}
               >
-                <div className="mp-capability-card-icon">
-                  {cap.icon || CATEGORY_ICONS[cap.category] || "⚙️"}
-                </div>
-                <div className="mp-capability-card-info">
-                  <div className="mp-capability-card-name">{cap.name}</div>
-                  <div className="mp-capability-card-code">{cap.code}</div>
-                </div>
-                <span className="mp-capability-card-category">
-                  {cap.category}
-                </span>
-              </div>
-
-              {cap.description && (
-                <div className="mp-capability-card-desc">
-                  {cap.description}
-                </div>
-              )}
-
-              <div className="mp-capability-card-schemas">
-                <div className="mp-capability-card-schema">
-                  <span className="mp-capability-schema-label">输入:</span>
-                  <span>{getSchemaSummary(cap.inputSchema)}</span>
-                </div>
-                <div className="mp-capability-card-schema">
-                  <span className="mp-capability-schema-label">输出:</span>
-                  <span>{getSchemaSummary(cap.outputSchema)}</span>
-                </div>
-              </div>
-
-              {/* Expanded: input form + execute */}
-              {expandedCode === cap.code && (
-                <div className="mp-capability-execute">
-                  {detail?.inputFields && detail.inputFields.length > 0 ? (
-                    <div className="mp-capability-input-form">
-                      {detail.inputFields.map((field) => (
-                        <div key={field.name} className="mp-field">
-                          <label className="mp-field-label">
-                            {field.name}
-                            {field.required && (
-                              <span className="mp-field-required">*</span>
-                            )}
-                          </label>
-                          {field.description && (
-                            <span className="mp-capability-field-hint">
-                              {field.description}
-                            </span>
-                          )}
-                          <input
-                            type="text"
-                            className="mp-widget-input"
-                            placeholder={`${field.type}`}
-                            value={inputValues[field.name] || ""}
-                            onChange={(e) =>
-                              handleInputChange(field.name, e.target.value)
-                            }
-                          />
-                        </div>
-                      ))}
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="text-2xl">
+                      {cap.icon || CATEGORY_ICONS[cap.category] || "[ ]"}
                     </div>
-                  ) : (
-                    <div className="mp-capability-input-form">
-                      <div className="mp-field">
-                        <label className="mp-field-label">
-                          输入参数 (JSON)
-                        </label>
-                        <textarea
-                          className="mp-widget-textarea"
-                          placeholder='{"key": "value"}'
-                          value={inputValues["__json__"] || ""}
-                          onChange={(e) =>
-                            handleInputChange("__json__", e.target.value)
-                          }
-                          rows={3}
-                        />
-                      </div>
+                    <div>
+                      <CardTitle className="text-base">{cap.name}</CardTitle>
+                      <p className="text-xs text-muted-foreground font-mono">
+                        {cap.code}
+                      </p>
                     </div>
-                  )}
+                  </div>
+                  <Badge variant="secondary">{cap.category}</Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {cap.description && (
+                  <p className="text-sm text-muted-foreground line-clamp-2">
+                    {cap.description}
+                  </p>
+                )}
 
-                  <button
-                    className="mp-btn mp-btn-primary mp-capability-execute-btn"
-                    onClick={handleExecute}
-                    disabled={executing}
-                  >
-                    {executing ? "执行中..." : "执行"}
-                  </button>
+                <div className="flex gap-4 text-xs text-muted-foreground">
+                  <div>
+                    <span className="font-medium">输入:</span>{" "}
+                    {getSchemaSummary(cap.inputSchema)}
+                  </div>
+                  <div>
+                    <span className="font-medium">输出:</span>{" "}
+                    {getSchemaSummary(cap.outputSchema)}
+                  </div>
+                </div>
 
-                  {/* Result area */}
-                  {(execResult !== null || execError) && (
-                    <div className="mp-capability-result">
-                      {execError ? (
-                        <div className="mp-capability-result-error">
-                          {execError}
+                {/* Expanded: input form + execute */}
+                {expandedCode === cap.code && (
+                  <>
+                    <Separator />
+                    <div className="space-y-3">
+                      {detail?.inputFields && detail.inputFields.length > 0 ? (
+                        <div className="space-y-3">
+                          {detail.inputFields.map((field) => (
+                            <div key={field.name} className="space-y-1">
+                              <Label>
+                                {field.name}
+                                {field.required && (
+                                  <span className="text-destructive ml-1">*</span>
+                                )}
+                              </Label>
+                              {field.description && (
+                                <p className="text-xs text-muted-foreground">
+                                  {field.description}
+                                </p>
+                              )}
+                              <Input
+                                placeholder={`${field.type}`}
+                                value={inputValues[field.name] || ""}
+                                onChange={(e) =>
+                                  handleInputChange(field.name, e.target.value)
+                                }
+                              />
+                            </div>
+                          ))}
                         </div>
                       ) : (
-                        <pre className="mp-capability-result-content">
-                          {typeof execResult === "string"
-                            ? execResult
-                            : JSON.stringify(execResult, null, 2)}
-                        </pre>
+                        <div className="space-y-1">
+                          <Label>输入参数 (JSON)</Label>
+                          <textarea
+                            className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                            placeholder='{"key": "value"}'
+                            value={inputValues["__json__"] || ""}
+                            onChange={(e) =>
+                              handleInputChange("__json__", e.target.value)
+                            }
+                            rows={3}
+                          />
+                        </div>
+                      )}
+
+                      <Button
+                        className="w-full"
+                        onClick={handleExecute}
+                        disabled={executing}
+                      >
+                        {executing ? "执行中..." : "执行"}
+                      </Button>
+
+                      {/* Result area */}
+                      {(execResult !== null || execError) && (
+                        <div className="rounded-md border p-3">
+                          {execError ? (
+                            <div className="text-sm text-destructive">
+                              {execError}
+                            </div>
+                          ) : (
+                            <pre className="text-xs font-mono whitespace-pre-wrap break-all max-h-48 overflow-auto">
+                              {typeof execResult === "string"
+                                ? execResult
+                                : JSON.stringify(execResult, null, 2)}
+                            </pre>
+                          )}
+                        </div>
                       )}
                     </div>
-                  )}
-                </div>
-              )}
-            </div>
+                  </>
+                )}
+              </CardContent>
+            </Card>
           ))}
         </div>
       )}

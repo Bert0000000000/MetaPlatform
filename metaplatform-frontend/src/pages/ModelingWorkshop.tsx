@@ -8,8 +8,31 @@ import {
   nlModeling,
 } from "../api/ontologyApi";
 import { ObjectTypeSummary } from "../types/schema";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 
-/* ── 常量 ── */
+/* -- Constants -- */
 const FIELD_TYPES = [
   "STRING", "TEXT", "RICH_TEXT", "INTEGER", "LONG", "DOUBLE",
   "BOOLEAN", "DATE", "DATETIME", "ENUM", "REFERENCE", "JSON",
@@ -49,7 +72,7 @@ interface Transition {
   description?: string;
 }
 
-/* ── 主页面 ── */
+/* -- Main Page -- */
 const ModelingWorkshop: React.FC = () => {
   const [objectTypes, setObjectTypes] = useState<ObjectTypeSummary[]>([]);
   const [selected, setSelected] = useState<ObjectTypeSummary | null>(null);
@@ -58,23 +81,23 @@ const ModelingWorkshop: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  /* NL 建模 */
+  /* NL Modeling */
   const [nlInput, setNlInput] = useState("");
   const [nlLoading, setNlLoading] = useState(false);
   const [nlResult, setNlResult] = useState<Record<string, unknown> | null>(null);
 
-  /* 创建表单 */
+  /* Create form */
   const [showCreate, setShowCreate] = useState(false);
   const [createForm, setCreateForm] = useState({
     code: "", displayName: "", description: "",
     entityTypeId: "",
   });
 
-  /* 字段编辑 */
+  /* Field editing */
   const [fields, setFields] = useState<FieldDef[]>([]);
   const [editingField, setEditingField] = useState<FieldDef | null>(null);
 
-  /* 生命周期 */
+  /* Lifecycle */
   const [states, setStates] = useState<string[]>([]);
   const [transitions, setTransitions] = useState<Transition[]>([]);
   const [newState, setNewState] = useState("");
@@ -82,7 +105,7 @@ const ModelingWorkshop: React.FC = () => {
     fromState: "", toState: "", name: "",
   });
 
-  /* ── 加载 ── */
+  /* -- Load -- */
   const reload = useCallback(async () => {
     setLoading(true);
     try {
@@ -97,7 +120,7 @@ const ModelingWorkshop: React.FC = () => {
 
   useEffect(() => { reload(); }, [reload]);
 
-  /* ── 选中 ObjectType ── */
+  /* -- Select ObjectType -- */
   const handleSelect = async (ot: ObjectTypeSummary) => {
     setSelected(ot);
     setError(null);
@@ -115,7 +138,7 @@ const ModelingWorkshop: React.FC = () => {
     }
   };
 
-  /* ── 保存 ObjectType ── */
+  /* -- Save ObjectType -- */
   const handleSave = async () => {
     if (!selected || !detail) return;
     try {
@@ -136,7 +159,7 @@ const ModelingWorkshop: React.FC = () => {
     }
   };
 
-  /* ── 创建 ObjectType ── */
+  /* -- Create ObjectType -- */
   const handleCreate = async () => {
     if (!createForm.code || !createForm.displayName) {
       setError("编码和显示名称必填");
@@ -161,7 +184,7 @@ const ModelingWorkshop: React.FC = () => {
     }
   };
 
-  /* ── 删除 ObjectType ── */
+  /* -- Delete ObjectType -- */
   const handleDelete = async (id: string) => {
     if (!window.confirm("确定删除此 ObjectType？")) return;
     try {
@@ -173,7 +196,7 @@ const ModelingWorkshop: React.FC = () => {
     }
   };
 
-  /* ── NL 建模 ── */
+  /* -- NL Modeling -- */
   const handleNlModeling = async () => {
     if (!nlInput.trim()) return;
     setNlLoading(true);
@@ -181,7 +204,6 @@ const ModelingWorkshop: React.FC = () => {
     try {
       const result = await nlModeling(nlInput);
       setNlResult(result);
-      // 自动填充创建表单
       setCreateForm({
         code: (result.code as string) ?? "",
         displayName: (result.displayName as string) ?? "",
@@ -202,7 +224,7 @@ const ModelingWorkshop: React.FC = () => {
     }
   };
 
-  /* ── 字段操作 ── */
+  /* -- Field Operations -- */
   const addField = () => {
     setEditingField({ name: "", displayName: "", fieldType: "STRING", required: false, editable: true });
   };
@@ -218,7 +240,7 @@ const ModelingWorkshop: React.FC = () => {
   };
   const removeField = (name: string) => setFields(fields.filter(f => f.name !== name));
 
-  /* ── 生命周期操作 ── */
+  /* -- Lifecycle Operations -- */
   const addState = () => {
     if (newState && !states.includes(newState)) {
       setStates([...states, newState]); setNewState("");
@@ -236,199 +258,326 @@ const ModelingWorkshop: React.FC = () => {
   };
   const removeTransition = (idx: number) => setTransitions(transitions.filter((_, i) => i !== idx));
 
-  /* ── 渲染 ── */
+  /* -- Render -- */
   return (
-    <div className="mp-workshop">
-      <div className="mp-workshop-header">
-        <h1>建模特工场</h1>
-        <p>Schema 驱动的业务对象可视化管理</p>
-        <div className="mp-workshop-actions">
-          <button className="mp-btn mp-btn-primary" onClick={() => { setShowCreate(true); setFields([]); setStates(["draft","active","archived"]); setTransitions([{fromState:"draft",toState:"active",name:"激活"},{fromState:"active",toState:"archived",name:"归档"}]); setNlResult(null); }}>
-            + 新建 ObjectType
-          </button>
+    <div className="flex flex-col h-full">
+      {/* Header */}
+      <div className="flex items-center justify-between px-6 py-4 border-b">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">建模特工场</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Schema 驱动的业务对象可视化管理
+          </p>
         </div>
+        <Button onClick={() => {
+          setShowCreate(true);
+          setFields([]);
+          setStates(["draft", "active", "archived"]);
+          setTransitions([
+            { fromState: "draft", toState: "active", name: "激活" },
+            { fromState: "active", toState: "archived", name: "归档" },
+          ]);
+          setNlResult(null);
+        }}>
+          + 新建 ObjectType
+        </Button>
       </div>
 
-      {error && <div className="mp-alert mp-alert-error">{error}<button className="mp-alert-close" onClick={() => setError(null)}>×</button></div>}
+      {error && (
+        <div className="mx-6 mt-4 rounded-md border border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive flex items-center justify-between">
+          <span>{error}</span>
+          <Button variant="ghost" size="sm" onClick={() => setError(null)}>
+            x
+          </Button>
+        </div>
+      )}
 
-      <div className="mp-workshop-body">
-        {/* 左侧列表 */}
-        <aside className="mp-workshop-sidebar">
-          <div className="mp-workshop-sidebar-title">ObjectType 列表 ({objectTypes.length})</div>
-          {loading ? (
-            <p className="mp-loading">加载中...</p>
-          ) : objectTypes.length === 0 ? (
-            <p className="mp-empty-hint">暂无 ObjectType</p>
-          ) : (
-            <div className="mp-workshop-list">
-              {objectTypes.map(ot => (
-                <div
-                  key={ot.id}
-                  className={`mp-workshop-list-item ${selected?.id === ot.id ? "active" : ""}`}
-                  onClick={() => handleSelect(ot)}
-                >
-                  <div className="mp-workshop-list-item-name">{ot.displayName || ot.code || ot.name}</div>
-                  <div className="mp-workshop-list-item-meta">{ot.code || ot.name}</div>
-                  <button
-                    className="mp-workshop-list-item-delete"
-                    onClick={(e) => { e.stopPropagation(); handleDelete(ot.id); }}
-                    title="删除"
-                  >×</button>
-                </div>
-              ))}
-            </div>
-          )}
+      {/* Body */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Left sidebar */}
+        <aside className="w-64 border-r bg-muted/30 flex flex-col shrink-0">
+          <div className="px-4 py-3 text-sm font-medium text-muted-foreground">
+            ObjectType 列表 ({objectTypes.length})
+          </div>
+          <Separator />
+          <div className="flex-1 overflow-auto">
+            {loading ? (
+              <div className="flex items-center justify-center py-8 text-muted-foreground">
+                加载中...
+              </div>
+            ) : objectTypes.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+                <p>暂无 ObjectType</p>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-1 p-2">
+                {objectTypes.map(ot => (
+                  <div
+                    key={ot.id}
+                    className={cn(
+                      "relative group flex flex-col gap-0.5 px-3 py-2 rounded-md cursor-pointer transition-colors",
+                      selected?.id === ot.id
+                        ? "bg-accent text-accent-foreground"
+                        : "hover:bg-accent/50 text-foreground/80"
+                    )}
+                    onClick={() => handleSelect(ot)}
+                  >
+                    <div className="text-sm font-medium pr-6">
+                      {ot.displayName || ot.code || ot.name}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {ot.code || ot.name}
+                    </div>
+                    <button
+                      className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-opacity"
+                      onClick={(e) => { e.stopPropagation(); handleDelete(ot.id); }}
+                      title="删除"
+                    >
+                      x
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </aside>
 
-        {/* 右侧详情 */}
-        <main className="mp-workshop-main">
-          {/* 创建表单 */}
+        {/* Right detail */}
+        <main className="flex-1 overflow-auto p-6">
+          {/* Create form */}
           {showCreate && (
-            <div className="mp-workshop-create">
-              <h3>{nlResult ? "AI 建模结果（可编辑后保存）" : "新建 ObjectType"}</h3>
-              <div className="mp-workshop-form-grid">
-                <label>
-                  <span>编码 *</span>
-                  <input value={createForm.code} onChange={e => setCreateForm({...createForm, code: e.target.value})} placeholder="e.g. customer" />
-                </label>
-                <label>
-                  <span>显示名称 *</span>
-                  <input value={createForm.displayName} onChange={e => setCreateForm({...createForm, displayName: e.target.value})} placeholder="e.g. 客户" />
-                </label>
-                <label className="mp-span-2">
-                  <span>描述</span>
-                  <input value={createForm.description} onChange={e => setCreateForm({...createForm, description: e.target.value})} placeholder="对象描述" />
-                </label>
-              </div>
+            <Card>
+              <CardHeader>
+                <CardTitle>
+                  {nlResult ? "AI 建模结果（可编辑后保存）" : "新建 ObjectType"}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <Label>编码 *</Label>
+                    <Input
+                      value={createForm.code}
+                      onChange={e => setCreateForm({ ...createForm, code: e.target.value })}
+                      placeholder="e.g. customer"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>显示名称 *</Label>
+                    <Input
+                      value={createForm.displayName}
+                      onChange={e => setCreateForm({ ...createForm, displayName: e.target.value })}
+                      placeholder="e.g. 客户"
+                    />
+                  </div>
+                  <div className="col-span-2 space-y-1">
+                    <Label>描述</Label>
+                    <Input
+                      value={createForm.description}
+                      onChange={e => setCreateForm({ ...createForm, description: e.target.value })}
+                      placeholder="对象描述"
+                    />
+                  </div>
+                </div>
 
-              {/* 字段编辑区 */}
-              <FieldEditor fields={fields} editingField={editingField} setEditingField={setEditingField} addField={addField} saveField={saveField} removeField={removeField} />
+                <FieldEditor
+                  fields={fields}
+                  editingField={editingField}
+                  setEditingField={setEditingField}
+                  addField={addField}
+                  saveField={saveField}
+                  removeField={removeField}
+                />
 
-              {/* 生命周期区 */}
-              <LifecycleEditor states={states} transitions={transitions} newState={newState} setNewState={setNewState} newTransition={newTransition} setNewTransition={setNewTransition} addState={addState} removeState={removeState} addTransition={addTransition} removeTransition={removeTransition} />
+                <LifecycleEditor
+                  states={states}
+                  transitions={transitions}
+                  newState={newState}
+                  setNewState={setNewState}
+                  newTransition={newTransition}
+                  setNewTransition={setNewTransition}
+                  addState={addState}
+                  removeState={removeState}
+                  addTransition={addTransition}
+                  removeTransition={removeTransition}
+                />
 
-              <div className="mp-workshop-form-actions">
-                <button className="mp-btn mp-btn-primary" onClick={handleCreate}>创建</button>
-                <button className="mp-btn" onClick={() => setShowCreate(false)}>取消</button>
-              </div>
-            </div>
+                <div className="flex gap-2">
+                  <Button onClick={handleCreate}>创建</Button>
+                  <Button variant="outline" onClick={() => setShowCreate(false)}>取消</Button>
+                </div>
+              </CardContent>
+            </Card>
           )}
 
-          {/* 详情视图 */}
+          {/* Detail view */}
           {!showCreate && selected && detail && (
-            <>
-              <div className="mp-workshop-tabs">
-                {(["fields", "lifecycle", "info", "preview"] as Tab[]).map(tab => (
-                  <button key={tab} className={`mp-tab ${activeTab === tab ? "active" : ""}`} onClick={() => setActiveTab(tab)}>
-                    {{ fields: "字段管理", lifecycle: "生命周期", info: "基本信息", preview: "预览" }[tab]}
-                  </button>
-                ))}
-                <div className="mp-workshop-tabs-spacer" />
-                <button className="mp-btn mp-btn-primary mp-btn-sm" onClick={handleSave}>保存</button>
+            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as Tab)}>
+              <div className="flex items-center justify-between mb-4">
+                <TabsList>
+                  <TabsTrigger value="fields">字段管理</TabsTrigger>
+                  <TabsTrigger value="lifecycle">生命周期</TabsTrigger>
+                  <TabsTrigger value="info">基本信息</TabsTrigger>
+                  <TabsTrigger value="preview">预览</TabsTrigger>
+                </TabsList>
+                <Button size="sm" onClick={handleSave}>保存</Button>
               </div>
 
-              {activeTab === "info" && (
-                <div className="mp-workshop-info">
-                  <div className="mp-workshop-form-grid">
-                    <label>
-                      <span>编码</span>
-                      <input value={String(detail.code ?? "")} onChange={e => setDetail({...detail, code: e.target.value})} />
-                    </label>
-                    <label>
-                      <span>显示名称</span>
-                      <input value={String(detail.displayName ?? "")} onChange={e => setDetail({...detail, displayName: e.target.value})} />
-                    </label>
-                    <label className="mp-span-2">
-                      <span>描述</span>
-                      <textarea value={String(detail.description ?? "")} onChange={e => setDetail({...detail, description: e.target.value})} rows={3} />
-                    </label>
-                  </div>
-                </div>
-              )}
-
-              {activeTab === "fields" && (
-                <FieldEditor fields={fields} editingField={editingField} setEditingField={setEditingField} addField={addField} saveField={saveField} removeField={removeField} />
-              )}
-
-              {activeTab === "lifecycle" && (
-                <LifecycleEditor states={states} transitions={transitions} newState={newState} setNewState={setNewState} newTransition={newTransition} setNewTransition={setNewTransition} addState={addState} removeState={removeState} addTransition={addTransition} removeTransition={removeTransition} />
-              )}
-
-              {activeTab === "preview" && (
-                <div className="mp-workshop-preview">
-                  <h3>字段预览</h3>
-                  <table className="mp-table">
-                    <thead>
-                      <tr>
-                        <th>字段名</th><th>显示名</th><th>类型</th><th>必填</th><th>可编辑</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {fields.map(f => (
-                        <tr key={f.name}>
-                          <td><code>{f.name}</code></td>
-                          <td>{f.displayName}</td>
-                          <td><span className="mp-badge">{TYPE_LABELS[f.fieldType] ?? f.fieldType}</span></td>
-                          <td>{f.required ? "✓" : ""}</td>
-                          <td>{f.editable ? "✓" : ""}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-
-                  <h3 style={{ marginTop: 24 }}>生命周期</h3>
-                  <div className="mp-lifecycle-preview">
-                    <div className="mp-lifecycle-states">
-                      {states.map(s => (
-                        <span key={s} className="mp-lifecycle-state">{s}</span>
-                      ))}
+              <TabsContent value="info">
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <Label>编码</Label>
+                        <Input
+                          value={String(detail.code ?? "")}
+                          onChange={e => setDetail({ ...detail, code: e.target.value })}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label>显示名称</Label>
+                        <Input
+                          value={String(detail.displayName ?? "")}
+                          onChange={e => setDetail({ ...detail, displayName: e.target.value })}
+                        />
+                      </div>
+                      <div className="col-span-2 space-y-1">
+                        <Label>描述</Label>
+                        <textarea
+                          className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                          value={String(detail.description ?? "")}
+                          onChange={e => setDetail({ ...detail, description: e.target.value })}
+                          rows={3}
+                        />
+                      </div>
                     </div>
-                    <div className="mp-lifecycle-transitions">
-                      {transitions.map((t, i) => (
-                        <div key={i} className="mp-lifecycle-transition">
-                          <span className="mp-lifecycle-from">{t.fromState}</span>
-                          <span className="mp-lifecycle-arrow">→</span>
-                          <span className="mp-lifecycle-to">{t.toState}</span>
-                          <span className="mp-lifecycle-name">({t.name})</span>
-                        </div>
-                      ))}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="fields">
+                <FieldEditor
+                  fields={fields}
+                  editingField={editingField}
+                  setEditingField={setEditingField}
+                  addField={addField}
+                  saveField={saveField}
+                  removeField={removeField}
+                />
+              </TabsContent>
+
+              <TabsContent value="lifecycle">
+                <LifecycleEditor
+                  states={states}
+                  transitions={transitions}
+                  newState={newState}
+                  setNewState={setNewState}
+                  newTransition={newTransition}
+                  setNewTransition={setNewTransition}
+                  addState={addState}
+                  removeState={removeState}
+                  addTransition={addTransition}
+                  removeTransition={removeTransition}
+                />
+              </TabsContent>
+
+              <TabsContent value="preview">
+                <Card>
+                  <CardContent className="pt-6 space-y-6">
+                    <div>
+                      <h3 className="text-lg font-medium mb-3">字段预览</h3>
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>字段名</TableHead>
+                            <TableHead>显示名</TableHead>
+                            <TableHead>类型</TableHead>
+                            <TableHead>必填</TableHead>
+                            <TableHead>可编辑</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {fields.map(f => (
+                            <TableRow key={f.name}>
+                              <TableCell>
+                                <code className="text-xs bg-muted px-1 py-0.5 rounded">
+                                  {f.name}
+                                </code>
+                              </TableCell>
+                              <TableCell>{f.displayName}</TableCell>
+                              <TableCell>
+                                <Badge variant="secondary">
+                                  {TYPE_LABELS[f.fieldType] ?? f.fieldType}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>{f.required ? "Yes" : ""}</TableCell>
+                              <TableCell>{f.editable ? "Yes" : ""}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
                     </div>
-                  </div>
-                </div>
-              )}
-            </>
+
+                    <div>
+                      <h3 className="text-lg font-medium mb-3">生命周期</h3>
+                      <div className="flex flex-wrap gap-2 mb-3">
+                        {states.map(s => (
+                          <Badge key={s} variant="outline">{s}</Badge>
+                        ))}
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        {transitions.map((t, i) => (
+                          <div key={i} className="flex items-center gap-2 text-sm">
+                            <Badge variant="secondary">{t.fromState}</Badge>
+                            <span className="text-muted-foreground">{"->"}</span>
+                            <Badge variant="secondary">{t.toState}</Badge>
+                            <span className="text-muted-foreground">({t.name})</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </Tabs>
           )}
 
+          {/* Empty state */}
           {!showCreate && !selected && (
-            <div className="mp-workshop-empty">
-              <div className="mp-workshop-empty-icon">🏗️</div>
-              <h3>建模特工场</h3>
+            <div className="flex flex-col items-center justify-center py-24 text-muted-foreground">
+              <div className="text-5xl mb-4">[M]</div>
+              <h3 className="text-lg font-medium text-foreground mb-2">
+                建模特工场
+              </h3>
               <p>选择左侧 ObjectType 查看详情，或点击「新建 ObjectType」开始建模</p>
             </div>
           )}
         </main>
       </div>
 
-      {/* NL 建模输入栏 */}
-      <div className="mp-nl-bar">
-        <div className="mp-nl-bar-icon">🤖</div>
-        <input
-          className="mp-nl-bar-input"
+      {/* NL modeling bar */}
+      <div className="flex items-center gap-3 px-6 py-3 border-t bg-muted/30">
+        <span className="text-lg">AI</span>
+        <Input
+          className="flex-1"
           placeholder="用自然语言描述你的业务对象，AI 自动生成 ObjectType... 例如：我需要一个客户管理对象，包含姓名、邮箱、电话、公司名称"
           value={nlInput}
           onChange={e => setNlInput(e.target.value)}
           onKeyDown={e => e.key === "Enter" && handleNlModeling()}
           disabled={nlLoading}
         />
-        <button className="mp-btn mp-btn-primary" onClick={handleNlModeling} disabled={nlLoading || !nlInput.trim()}>
+        <Button
+          onClick={handleNlModeling}
+          disabled={nlLoading || !nlInput.trim()}
+        >
           {nlLoading ? "生成中..." : "AI 建模"}
-        </button>
+        </Button>
       </div>
     </div>
   );
 };
 
-/* ── 字段编辑器组件 ── */
+/* -- Field Editor Component -- */
 const FieldEditor: React.FC<{
   fields: FieldDef[];
   editingField: FieldDef | null;
@@ -437,60 +586,131 @@ const FieldEditor: React.FC<{
   saveField: () => void;
   removeField: (name: string) => void;
 }> = ({ fields, editingField, setEditingField, addField, saveField, removeField }) => (
-  <div className="mp-field-editor">
-    <div className="mp-field-editor-header">
-      <h3>字段定义 ({fields.length})</h3>
-      <button className="mp-btn mp-btn-sm" onClick={addField}>+ 添加字段</button>
-    </div>
+  <Card>
+    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+      <CardTitle className="text-base">字段定义 ({fields.length})</CardTitle>
+      <Button variant="outline" size="sm" onClick={addField}>+ 添加字段</Button>
+    </CardHeader>
+    <CardContent>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>字段名</TableHead>
+            <TableHead>显示名</TableHead>
+            <TableHead>类型</TableHead>
+            <TableHead>必填</TableHead>
+            <TableHead>可编辑</TableHead>
+            <TableHead style={{ width: 60 }}>操作</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {fields.map(f => (
+            <TableRow key={f.name}>
+              <TableCell>
+                <code className="text-xs bg-muted px-1 py-0.5 rounded">{f.name}</code>
+              </TableCell>
+              <TableCell>{f.displayName}</TableCell>
+              <TableCell>
+                <Badge variant="secondary">{TYPE_LABELS[f.fieldType] ?? f.fieldType}</Badge>
+              </TableCell>
+              <TableCell>{f.required ? "Yes" : ""}</TableCell>
+              <TableCell>{f.editable ? "Yes" : ""}</TableCell>
+              <TableCell>
+                <div className="flex gap-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 w-7 p-0"
+                    onClick={() => setEditingField({ ...f })}
+                    title="编辑"
+                  >
+                    E
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                    onClick={() => removeField(f.name)}
+                    title="删除"
+                  >
+                    X
+                  </Button>
+                </div>
+              </TableCell>
+            </TableRow>
+          ))}
+          {fields.length === 0 && (
+            <TableRow>
+              <TableCell colSpan={6} className="text-center text-muted-foreground py-6">
+                暂无字段，点击「添加字段」开始
+              </TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
 
-    <table className="mp-table mp-table-compact">
-      <thead>
-        <tr>
-          <th>字段名</th><th>显示名</th><th>类型</th><th>必填</th><th>可编辑</th><th style={{width:60}}>操作</th>
-        </tr>
-      </thead>
-      <tbody>
-        {fields.map(f => (
-          <tr key={f.name}>
-            <td><code>{f.name}</code></td>
-            <td>{f.displayName}</td>
-            <td><span className="mp-badge">{TYPE_LABELS[f.fieldType] ?? f.fieldType}</span></td>
-            <td>{f.required ? "✓" : ""}</td>
-            <td>{f.editable ? "✓" : ""}</td>
-            <td>
-              <button className="mp-btn-icon" onClick={() => setEditingField({...f})} title="编辑">✎</button>
-              <button className="mp-btn-icon mp-btn-icon-danger" onClick={() => removeField(f.name)} title="删除">✕</button>
-            </td>
-          </tr>
-        ))}
-        {fields.length === 0 && (
-          <tr><td colSpan={6} className="mp-empty-hint">暂无字段，点击「添加字段」开始</td></tr>
-        )}
-      </tbody>
-    </table>
-
-    {/* 编辑行 */}
-    {editingField && (
-      <div className="mp-field-edit-row">
-        <input placeholder="字段名 (英文)" value={editingField.name} onChange={e => setEditingField({...editingField, name: e.target.value})} />
-        <input placeholder="显示名称" value={editingField.displayName} onChange={e => setEditingField({...editingField, displayName: e.target.value})} />
-        <select value={editingField.fieldType} onChange={e => setEditingField({...editingField, fieldType: e.target.value})}>
-          {FIELD_TYPES.map(t => <option key={t} value={t}>{TYPE_LABELS[t] ?? t}</option>)}
-        </select>
-        <label className="mp-checkbox-label">
-          <input type="checkbox" checked={editingField.required} onChange={e => setEditingField({...editingField, required: e.target.checked})} /> 必填
-        </label>
-        <label className="mp-checkbox-label">
-          <input type="checkbox" checked={editingField.editable} onChange={e => setEditingField({...editingField, editable: e.target.checked})} /> 可编辑
-        </label>
-        <button className="mp-btn mp-btn-primary mp-btn-sm" onClick={saveField}>确定</button>
-        <button className="mp-btn mp-btn-sm" onClick={() => setEditingField(null)}>取消</button>
-      </div>
-    )}
-  </div>
+      {/* Edit row */}
+      {editingField && (
+        <div className="flex flex-wrap items-end gap-3 mt-4 p-4 bg-muted/30 rounded-lg">
+          <div className="space-y-1">
+            <Label className="text-xs">字段名 (英文)</Label>
+            <Input
+              value={editingField.name}
+              onChange={e => setEditingField({ ...editingField, name: e.target.value })}
+              className="h-8 w-32"
+            />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">显示名称</Label>
+            <Input
+              value={editingField.displayName}
+              onChange={e => setEditingField({ ...editingField, displayName: e.target.value })}
+              className="h-8 w-32"
+            />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">类型</Label>
+            <Select
+              value={editingField.fieldType}
+              onValueChange={val => setEditingField({ ...editingField, fieldType: val })}
+            >
+              <SelectTrigger className="h-8 w-32">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {FIELD_TYPES.map(t => (
+                  <SelectItem key={t} value={t}>{TYPE_LABELS[t] ?? t}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <label className="flex items-center gap-1.5 text-sm">
+            <input
+              type="checkbox"
+              checked={editingField.required}
+              onChange={e => setEditingField({ ...editingField, required: e.target.checked })}
+              className="rounded border-input"
+            />
+            必填
+          </label>
+          <label className="flex items-center gap-1.5 text-sm">
+            <input
+              type="checkbox"
+              checked={editingField.editable}
+              onChange={e => setEditingField({ ...editingField, editable: e.target.checked })}
+              className="rounded border-input"
+            />
+            可编辑
+          </label>
+          <Button size="sm" className="h-8" onClick={saveField}>确定</Button>
+          <Button variant="outline" size="sm" className="h-8" onClick={() => setEditingField(null)}>取消</Button>
+        </div>
+      )}
+    </CardContent>
+  </Card>
 );
 
-/* ── 生命周期编辑器组件 ── */
+/* -- Lifecycle Editor Component -- */
 const LifecycleEditor: React.FC<{
   states: string[];
   transitions: Transition[];
@@ -503,73 +723,153 @@ const LifecycleEditor: React.FC<{
   addTransition: () => void;
   removeTransition: (idx: number) => void;
 }> = ({ states, transitions, newState, setNewState, newTransition, setNewTransition, addState, removeState, addTransition, removeTransition }) => (
-  <div className="mp-lifecycle-editor">
-    {/* 状态列表 */}
-    <div className="mp-lifecycle-section">
-      <h3>状态 ({states.length})</h3>
-      <div className="mp-lifecycle-state-list">
-        {states.map(s => (
-          <span key={s} className="mp-lifecycle-state-chip">
-            {s}
-            <button onClick={() => removeState(s)} title="删除">×</button>
-          </span>
-        ))}
-        <div className="mp-lifecycle-add-state">
-          <input placeholder="新状态名" value={newState} onChange={e => setNewState(e.target.value)} onKeyDown={e => e.key === "Enter" && addState()} />
-          <button className="mp-btn mp-btn-sm" onClick={addState}>添加</button>
-        </div>
-      </div>
-    </div>
-
-    {/* 状态流转图 */}
-    <div className="mp-lifecycle-section">
-      <h3>状态流转</h3>
-      <div className="mp-lifecycle-diagram">
-        {states.map((s, i) => (
-          <React.Fragment key={s}>
-            <div className="mp-lifecycle-node">{s}</div>
-            {i < states.length - 1 && <div className="mp-lifecycle-arrow-h">→</div>}
-          </React.Fragment>
-        ))}
-      </div>
-    </div>
-
-    {/* 流转列表 */}
-    <div className="mp-lifecycle-section">
-      <h3>流转规则 ({transitions.length})</h3>
-      <table className="mp-table mp-table-compact">
-        <thead>
-          <tr><th>起始状态</th><th>目标状态</th><th>名称</th><th>守卫条件</th><th style={{width:50}}>操作</th></tr>
-        </thead>
-        <tbody>
-          {transitions.map((t, i) => (
-            <tr key={i}>
-              <td><span className="mp-lifecycle-state-chip small">{t.fromState}</span></td>
-              <td><span className="mp-lifecycle-state-chip small">{t.toState}</span></td>
-              <td>{t.name}</td>
-              <td><code>{t.guardExpression || "--"}</code></td>
-              <td><button className="mp-btn-icon mp-btn-icon-danger" onClick={() => removeTransition(i)}>✕</button></td>
-            </tr>
+  <div className="space-y-6">
+    {/* States */}
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base">状态 ({states.length})</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="flex flex-wrap gap-2 mb-3">
+          {states.map(s => (
+            <Badge key={s} variant="outline" className="gap-1 pr-1">
+              {s}
+              <button
+                className="ml-1 rounded-full hover:bg-destructive/20 px-1 text-xs"
+                onClick={() => removeState(s)}
+              >
+                x
+              </button>
+            </Badge>
           ))}
-        </tbody>
-      </table>
+        </div>
+        <div className="flex gap-2">
+          <Input
+            placeholder="新状态名"
+            value={newState}
+            onChange={e => setNewState(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && addState()}
+            className="h-8 flex-1"
+          />
+          <Button size="sm" className="h-8" onClick={addState}>添加</Button>
+        </div>
+      </CardContent>
+    </Card>
 
-      {/* 添加流转 */}
-      <div className="mp-lifecycle-add-transition">
-        <select value={newTransition.fromState} onChange={e => setNewTransition({...newTransition, fromState: e.target.value})}>
-          <option value="">起始状态</option>
-          {states.map(s => <option key={s} value={s}>{s}</option>)}
-        </select>
-        <span>→</span>
-        <select value={newTransition.toState} onChange={e => setNewTransition({...newTransition, toState: e.target.value})}>
-          <option value="">目标状态</option>
-          {states.map(s => <option key={s} value={s}>{s}</option>)}
-        </select>
-        <input placeholder="流转名称" value={newTransition.name} onChange={e => setNewTransition({...newTransition, name: e.target.value})} />
-        <input placeholder="守卫条件 (可选)" value={newTransition.guardExpression ?? ""} onChange={e => setNewTransition({...newTransition, guardExpression: e.target.value})} />
-        <button className="mp-btn mp-btn-sm" onClick={addTransition}>添加</button>
-      </div>
-    </div>
+    {/* State diagram */}
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base">状态流转</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="flex items-center gap-2 flex-wrap">
+          {states.map((s, i) => (
+            <React.Fragment key={s}>
+              <Badge variant="secondary">{s}</Badge>
+              {i < states.length - 1 && (
+                <span className="text-muted-foreground">{"->"}</span>
+              )}
+            </React.Fragment>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+
+    {/* Transitions */}
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base">流转规则 ({transitions.length})</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>起始状态</TableHead>
+              <TableHead>目标状态</TableHead>
+              <TableHead>名称</TableHead>
+              <TableHead>守卫条件</TableHead>
+              <TableHead style={{ width: 50 }}>操作</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {transitions.map((t, i) => (
+              <TableRow key={i}>
+                <TableCell>
+                  <Badge variant="outline" className="text-xs">{t.fromState}</Badge>
+                </TableCell>
+                <TableCell>
+                  <Badge variant="outline" className="text-xs">{t.toState}</Badge>
+                </TableCell>
+                <TableCell>{t.name}</TableCell>
+                <TableCell>
+                  <code className="text-xs">{t.guardExpression || "--"}</code>
+                </TableCell>
+                <TableCell>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                    onClick={() => removeTransition(i)}
+                  >
+                    X
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+
+        {/* Add transition */}
+        <div className="flex flex-wrap items-end gap-2 p-3 bg-muted/30 rounded-lg">
+          <div className="space-y-1">
+            <Label className="text-xs">起始状态</Label>
+            <Select
+              value={newTransition.fromState}
+              onValueChange={val => setNewTransition({ ...newTransition, fromState: val })}
+            >
+              <SelectTrigger className="h-8 w-28">
+                <SelectValue placeholder="选择" />
+              </SelectTrigger>
+              <SelectContent>
+                {states.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <span className="text-muted-foreground pb-2">{"->"}</span>
+          <div className="space-y-1">
+            <Label className="text-xs">目标状态</Label>
+            <Select
+              value={newTransition.toState}
+              onValueChange={val => setNewTransition({ ...newTransition, toState: val })}
+            >
+              <SelectTrigger className="h-8 w-28">
+                <SelectValue placeholder="选择" />
+              </SelectTrigger>
+              <SelectContent>
+                {states.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">流转名称</Label>
+            <Input
+              value={newTransition.name}
+              onChange={e => setNewTransition({ ...newTransition, name: e.target.value })}
+              className="h-8 w-32"
+            />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">守卫条件 (可选)</Label>
+            <Input
+              value={newTransition.guardExpression ?? ""}
+              onChange={e => setNewTransition({ ...newTransition, guardExpression: e.target.value })}
+              className="h-8 w-40"
+            />
+          </div>
+          <Button size="sm" className="h-8" onClick={addTransition}>添加</Button>
+        </div>
+      </CardContent>
+    </Card>
   </div>
 );
 

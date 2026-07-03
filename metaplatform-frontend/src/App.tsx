@@ -1,5 +1,7 @@
 import React from "react";
 import { BrowserRouter, Routes, Route, NavLink } from "react-router-dom";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
 import Dashboard from "./pages/Dashboard";
 import PageView from "./pages/PageView";
 import ObjectManager from "./pages/ObjectManager";
@@ -14,103 +16,71 @@ import BillingDashboard from "./pages/BillingDashboard";
 import AdminPanel from "./pages/AdminPanel";
 import TicketSystem from "./pages/TicketSystem";
 import PlatformConfig from "./pages/PlatformConfig";
+import "./index.css";
 import "./App.css";
+
+const navItems = [
+  { to: "/", label: "页面配置", end: true },
+  { to: "/objects", label: "ObjectType" },
+  { to: "/workshop", label: "建模特工场" },
+  { to: "/designer", label: "设计器" },
+  { to: "/process-designer", label: "流程设计器" },
+  { to: "/dialogue", label: "AI 对话" },
+  { to: "/capabilities", label: "能力中心" },
+  { to: "/integration", label: "集成中心" },
+  { to: "/market", label: "应用市场" },
+  { to: "/billing", label: "计费中心" },
+  { to: "/admin", label: "平台管理" },
+  { to: "/tickets", label: "工单系统" },
+  { to: "/config", label: "平台配置" },
+];
 
 const App: React.FC = () => {
   return (
     <BrowserRouter>
-      <div className="mp-app">
+      <div className="flex h-screen overflow-hidden">
         {/* Sidebar */}
-        <aside className="mp-sidebar">
-          <div className="mp-sidebar-brand">
-            <span className="mp-brand-icon">M</span>
-            <span className="mp-brand-text">MetaPlatform</span>
+        <aside className="w-56 bg-sidebar text-sidebar-foreground flex flex-col border-r border-sidebar-border shrink-0">
+          {/* Brand */}
+          <div className="flex items-center gap-2 px-4 py-4 border-b border-sidebar-border">
+            <span className="flex items-center justify-center w-8 h-8 rounded-md bg-primary text-primary-foreground font-bold text-lg">
+              M
+            </span>
+            <span className="font-semibold text-base text-sidebar-foreground">
+              MetaPlatform
+            </span>
           </div>
-          <nav className="mp-sidebar-nav">
-            <NavLink
-              to="/"
-              end
-              className={({ isActive }) => (isActive ? "mp-nav-link active" : "mp-nav-link")}
-            >
-              页面配置
-            </NavLink>
-            <NavLink
-              to="/objects"
-              className={({ isActive }) => (isActive ? "mp-nav-link active" : "mp-nav-link")}
-            >
-              ObjectType
-            </NavLink>
-            <NavLink
-              to="/workshop"
-              className={({ isActive }) => (isActive ? "mp-nav-link active" : "mp-nav-link")}
-            >
-              建模特工场
-            </NavLink>
-            <NavLink
-              to="/designer"
-              className={({ isActive }) => (isActive ? "mp-nav-link active" : "mp-nav-link")}
-            >
-              设计器
-            </NavLink>
-            <NavLink
-              to="/process-designer"
-              className={({ isActive }) => (isActive ? "mp-nav-link active" : "mp-nav-link")}
-            >
-              流程设计器
-            </NavLink>
-            <NavLink
-              to="/dialogue"
-              className={({ isActive }) => (isActive ? "mp-nav-link active" : "mp-nav-link")}
-            >
-              AI 对话
-            </NavLink>
-            <NavLink
-              to="/capabilities"
-              className={({ isActive }) => (isActive ? "mp-nav-link active" : "mp-nav-link")}
-            >
-              能力中心
-            </NavLink>
-            <NavLink
-              to="/integration"
-              className={({ isActive }) => (isActive ? "mp-nav-link active" : "mp-nav-link")}
-            >
-              集成中心
-            </NavLink>
-            <NavLink
-              to="/market"
-              className={({ isActive }) => (isActive ? "mp-nav-link active" : "mp-nav-link")}
-            >
-              应用市场
-            </NavLink>
-            <NavLink
-              to="/billing"
-              className={({ isActive }) => (isActive ? "mp-nav-link active" : "mp-nav-link")}
-            >
-              计费中心
-            </NavLink>
-            <NavLink
-              to="/admin"
-              className={({ isActive }) => (isActive ? "mp-nav-link active" : "mp-nav-link")}
-            >
-              平台管理
-            </NavLink>
-            <NavLink
-              to="/tickets"
-              className={({ isActive }) => (isActive ? "mp-nav-link active" : "mp-nav-link")}
-            >
-              工单系统
-            </NavLink>
-            <NavLink
-              to="/config"
-              className={({ isActive }) => (isActive ? "mp-nav-link active" : "mp-nav-link")}
-            >
-              平台配置
-            </NavLink>
-          </nav>
+
+          {/* Navigation */}
+          <ScrollArea className="flex-1">
+            <nav className="flex flex-col gap-1 p-2">
+              {navItems.map((item) => (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  end={item.end}
+                  className={({ isActive }) =>
+                    `flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors ${
+                      isActive
+                        ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                        : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                    }`
+                  }
+                >
+                  {item.label}
+                </NavLink>
+              ))}
+            </nav>
+          </ScrollArea>
+
+          <Separator className="bg-sidebar-border" />
+          <div className="px-4 py-3 text-xs text-sidebar-foreground/50">
+            v0.1.0
+          </div>
         </aside>
 
         {/* Main content */}
-        <main className="mp-main">
+        <main className="flex-1 overflow-auto bg-background">
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/pages/:id" element={<PageView />} />

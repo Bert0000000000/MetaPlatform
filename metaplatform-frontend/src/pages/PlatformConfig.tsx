@@ -1,5 +1,20 @@
 import React, { useEffect, useState, useCallback } from "react";
 import axios from "axios";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { cn } from "@/lib/utils";
 
 const http = axios.create({ baseURL: "/api/v1" });
 
@@ -73,7 +88,7 @@ const PlatformConfig: React.FC = () => {
   };
 
   const handleDelete = async (key: string) => {
-    if (!confirm(`确定删除配置 ${key}？`)) return;
+    if (!confirm(`\u786E\u5B9A\u5220\u9664\u914D\u7F6E ${key}\uFF1F`)) return;
     try {
       await http.delete(`/configs/${encodeURIComponent(key)}`);
       await loadConfigs();
@@ -86,128 +101,174 @@ const PlatformConfig: React.FC = () => {
   const isBooleanValue = (val: string) => val === "true" || val === "false";
 
   return (
-    <div className="mp-platform-config">
-      <div className="mp-platform-config-header">
+    <div className="p-6 max-w-7xl mx-auto space-y-6">
+      <div className="flex items-center justify-between">
         <div>
-          <h1>平台配置中心</h1>
-          <p>管理系统配置、功能开关和健康状态</p>
+          <h1 className="text-2xl font-semibold tracking-tight">\u5E73\u53F0\u914D\u7F6E\u4E2D\u5FC3</h1>
+          <p className="text-sm text-muted-foreground mt-1">\u7BA1\u7406\u7CFB\u7EDF\u914D\u7F6E\u3001\u529F\u80FD\u5F00\u5173\u548C\u5065\u5EB7\u72B6\u6001</p>
         </div>
-        <button className="mp-btn mp-btn-primary" onClick={() => setShowAdd(true)}>
-          + 新增配置
-        </button>
+        <Button onClick={() => setShowAdd(true)}>
+          + \u65B0\u589E\u914D\u7F6E
+        </Button>
       </div>
 
-      {/* 健康状态 */}
+      {/* Health status */}
       {health && (
-        <div className="mp-health-grid">
-          <h2>系统健康状态</h2>
-          <div className="mp-health-cards">
-            {Object.entries(health).filter(([k]) => k !== "status").map(([name, status]) => (
-              <div key={name} className={`mp-health-card ${String(status) === "UP" || String(status) === "ok" ? "healthy" : "unhealthy"}`}>
-                <div className="mp-health-name">{name}</div>
-                <div className="mp-health-status">{String(status)}</div>
-              </div>
-            ))}
-          </div>
-        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">\u7CFB\u7EDF\u5065\u5EB7\u72B6\u6001</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {Object.entries(health).filter(([k]) => k !== "status").map(([name, status]) => {
+                const isHealthy = String(status) === "UP" || String(status) === "ok";
+                return (
+                  <div
+                    key={name}
+                    className={cn(
+                      "rounded-lg border p-3 text-center",
+                      isHealthy ? "border-green-200 bg-green-50" : "border-destructive/50 bg-destructive/10"
+                    )}
+                  >
+                    <div className="text-sm font-medium">{name}</div>
+                    <div className={cn("text-xs mt-1", isHealthy ? "text-green-600" : "text-destructive")}>
+                      {String(status)}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
       )}
 
-      {/* 配置列表 */}
+      {/* Config list */}
       {loading ? (
-        <div className="mp-loading">加载中...</div>
-      ) : (
-        <div className="mp-config-list">
-          <h2>系统配置 ({configs.length})</h2>
-          <table className="mp-table">
-            <thead>
-              <tr>
-                <th style={{ width: 200 }}>配置键</th>
-                <th style={{ width: 120 }}>类型</th>
-                <th>值</th>
-                <th style={{ width: 200 }}>描述</th>
-                <th style={{ width: 100 }}>更新人</th>
-                <th style={{ width: 140 }}>操作</th>
-              </tr>
-            </thead>
-            <tbody>
-              {configs.map(config => (
-                <tr key={config.key} className={isFeatureFlag(config.key) ? "mp-config-feature" : ""}>
-                  <td>
-                    <code className="mp-config-key">{config.key}</code>
-                    {isFeatureFlag(config.key) && <span className="mp-badge" style={{ marginLeft: 6, fontSize: 10 }}>功能开关</span>}
-                  </td>
-                  <td>{config.configType || "string"}</td>
-                  <td>
-                    {editKey === config.key ? (
-                      isBooleanValue(config.value) ? (
-                        <select value={editValue} onChange={e => setEditValue(e.target.value)}>
-                          <option value="true">true (启用)</option>
-                          <option value="false">false (禁用)</option>
-                        </select>
-                      ) : (
-                        <input
-                          value={editValue}
-                          onChange={e => setEditValue(e.target.value)}
-                          style={{ width: "100%" }}
-                        />
-                      )
-                    ) : (
-                      <span className={`mp-config-value ${config.value === "true" ? "mp-config-true" : config.value === "false" ? "mp-config-false" : ""}`}>
-                        {config.value}
-                      </span>
-                    )}
-                  </td>
-                  <td className="mp-config-desc">{config.description || "-"}</td>
-                  <td>{config.updatedBy || "-"}</td>
-                  <td>
-                    {editKey === config.key ? (
-                      <div style={{ display: "flex", gap: 4 }}>
-                        <button className="mp-btn mp-btn-sm mp-btn-primary" onClick={() => handleSave(config.key)}>保存</button>
-                        <button className="mp-btn mp-btn-sm" onClick={() => setEditKey(null)}>取消</button>
-                      </div>
-                    ) : (
-                      <div style={{ display: "flex", gap: 4 }}>
-                        <button className="mp-btn mp-btn-sm" onClick={() => { setEditKey(config.key); setEditValue(config.value); }}>编辑</button>
-                        <button className="mp-btn mp-btn-sm" onClick={() => handleDelete(config.key)} style={{ color: "#ef4444" }}>删除</button>
-                      </div>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="flex items-center justify-center py-8 text-muted-foreground">
+          \u52A0\u8F7D\u4E2D...
         </div>
+      ) : (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">\u7CFB\u7EDF\u914D\u7F6E ({configs.length})</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[200px]">\u914D\u7F6E\u952E</TableHead>
+                  <TableHead className="w-[120px]">\u7C7B\u578B</TableHead>
+                  <TableHead>\u503C</TableHead>
+                  <TableHead className="w-[200px]">\u63CF\u8FF0</TableHead>
+                  <TableHead className="w-[100px]">\u66F4\u65B0\u4EBA</TableHead>
+                  <TableHead className="w-[140px]">\u64CD\u4F5C</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {configs.map(config => (
+                  <TableRow key={config.key} className={isFeatureFlag(config.key) ? "bg-muted/30" : ""}>
+                    <TableCell>
+                      <code className="text-xs font-mono">{config.key}</code>
+                      {isFeatureFlag(config.key) && (
+                        <Badge variant="outline" className="ml-1.5 text-[10px]">\u529F\u80FD\u5F00\u5173</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-sm">{config.configType || "string"}</TableCell>
+                    <TableCell>
+                      {editKey === config.key ? (
+                        isBooleanValue(config.value) ? (
+                          <select
+                            className="flex h-8 w-full rounded-md border border-input bg-background px-2 py-1 text-sm"
+                            value={editValue}
+                            onChange={e => setEditValue(e.target.value)}
+                          >
+                            <option value="true">true (\u542F\u7528)</option>
+                            <option value="false">false (\u7981\u7528)</option>
+                          </select>
+                        ) : (
+                          <Input
+                            value={editValue}
+                            onChange={e => setEditValue(e.target.value)}
+                            className="h-8"
+                          />
+                        )
+                      ) : (
+                        <span
+                          className={cn(
+                            "text-sm",
+                            config.value === "true" && "text-green-600 font-medium",
+                            config.value === "false" && "text-destructive font-medium"
+                          )}
+                        >
+                          {config.value}
+                        </span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{config.description || "-"}</TableCell>
+                    <TableCell className="text-sm">{config.updatedBy || "-"}</TableCell>
+                    <TableCell>
+                      {editKey === config.key ? (
+                        <div className="flex gap-1">
+                          <Button size="sm" onClick={() => handleSave(config.key)}>\u4FDD\u5B58</Button>
+                          <Button variant="outline" size="sm" onClick={() => setEditKey(null)}>\u53D6\u6D88</Button>
+                        </div>
+                      ) : (
+                        <div className="flex gap-1">
+                          <Button variant="outline" size="sm" onClick={() => { setEditKey(config.key); setEditValue(config.value); }}>
+                            \u7F16\u8F91
+                          </Button>
+                          <Button variant="destructive" size="sm" onClick={() => handleDelete(config.key)}>
+                            \u5220\u9664
+                          </Button>
+                        </div>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
       )}
 
-      {/* 新增配置弹窗 */}
-      {showAdd && (
-        <div className="mp-modal-overlay" onClick={() => setShowAdd(false)}>
-          <div className="mp-modal" onClick={e => e.stopPropagation()}>
-            <div className="mp-modal-header">
-              <h2>新增配置</h2>
-              <button className="mp-modal-close" onClick={() => setShowAdd(false)}>×</button>
+      {/* Add config dialog */}
+      <Dialog open={showAdd} onOpenChange={setShowAdd}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>\u65B0\u589E\u914D\u7F6E</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>\u914D\u7F6E\u952E *</Label>
+              <Input
+                value={newKey}
+                onChange={e => setNewKey(e.target.value)}
+                placeholder="\u4F8B\u5982: feature.new_feature"
+              />
             </div>
-            <div className="mp-modal-body">
-              <div className="mp-field">
-                <label>配置键 *</label>
-                <input value={newKey} onChange={e => setNewKey(e.target.value)} placeholder="例如: feature.new_feature" />
-              </div>
-              <div className="mp-field">
-                <label>值</label>
-                <input value={newValue} onChange={e => setNewValue(e.target.value)} placeholder="配置值" />
-              </div>
-              <div className="mp-field">
-                <label>描述</label>
-                <input value={newDesc} onChange={e => setNewDesc(e.target.value)} placeholder="配置说明" />
-              </div>
+            <div className="space-y-2">
+              <Label>\u503C</Label>
+              <Input
+                value={newValue}
+                onChange={e => setNewValue(e.target.value)}
+                placeholder="\u914D\u7F6E\u503C"
+              />
             </div>
-            <div className="mp-modal-footer">
-              <button className="mp-btn" onClick={() => setShowAdd(false)}>取消</button>
-              <button className="mp-btn mp-btn-primary" onClick={handleAdd} disabled={!newKey}>创建</button>
+            <div className="space-y-2">
+              <Label>\u63CF\u8FF0</Label>
+              <Input
+                value={newDesc}
+                onChange={e => setNewDesc(e.target.value)}
+                placeholder="\u914D\u7F6E\u8BF4\u660E"
+              />
             </div>
           </div>
-        </div>
-      )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAdd(false)}>\u53D6\u6D88</Button>
+            <Button onClick={handleAdd} disabled={!newKey}>\u521B\u5EFA</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

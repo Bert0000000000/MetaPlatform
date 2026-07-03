@@ -1,5 +1,15 @@
 import React, { useCallback, useMemo, useState } from "react";
 import { TableConfig } from "../types/schema";
+import { Button } from "@/components/ui/button";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { cn } from "@/lib/utils";
 
 interface TableRendererProps {
   config: TableConfig;
@@ -61,13 +71,13 @@ const TableRenderer: React.FC<TableRendererProps> = ({ config, data = [] }) => {
   // ---- cell renderer ----
   const renderCell = (row: Record<string, unknown>, field: string, type: string) => {
     const v = row[field];
-    if (v == null || v === "") return <span className="mp-cell-empty">--</span>;
+    if (v == null || v === "") return <span className="text-muted-foreground">--</span>;
     switch (type) {
       case "boolean":
-        return v ? "是" : "否";
+        return v ? "\u662F" : "\u5426";
       case "link":
         return (
-          <a href={String(v)} target="_blank" rel="noreferrer">
+          <a href={String(v)} target="_blank" rel="noreferrer" className="text-primary underline">
             {String(v)}
           </a>
         );
@@ -77,59 +87,71 @@ const TableRenderer: React.FC<TableRendererProps> = ({ config, data = [] }) => {
   };
 
   return (
-    <div className="mp-table-wrapper">
-      <table className="mp-table">
-        <thead>
-          <tr>
+    <div className="w-full overflow-auto">
+      <Table>
+        <TableHeader>
+          <TableRow>
             {columns.map((col) => (
-              <th
+              <TableHead
                 key={col.field}
                 style={{ textAlign: col.align ?? "left", width: col.width }}
-                className={col.sortable ? "sortable" : ""}
+                className={cn(col.sortable && "cursor-pointer select-none hover:text-foreground")}
                 onClick={() => handleSort(col.field, col.sortable)}
               >
-                {col.title || (col as Record<string, unknown>).headerName as string || col.field}
+                {col.title || col.field}
                 {col.sortable && sortField === col.field && (
-                  <span className="mp-sort-indicator">
-                    {sortDir === "asc" ? " ▲" : " ▼"}
+                  <span className="ml-1 text-xs">
+                    {sortDir === "asc" ? "\u25B2" : "\u25BC"}
                   </span>
                 )}
-              </th>
+              </TableHead>
             ))}
-          </tr>
-        </thead>
-        <tbody>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {paged.length === 0 ? (
-            <tr>
-              <td colSpan={columns.length} className="mp-table-empty">
+            <TableRow>
+              <TableCell colSpan={columns.length} className="h-24 text-center text-muted-foreground">
                 暂无数据
-              </td>
-            </tr>
+              </TableCell>
+            </TableRow>
           ) : (
             paged.map((row, idx) => (
-              <tr key={(row["id"] as string) ?? idx}>
+              <TableRow key={(row["id"] as string) ?? idx}>
                 {columns.map((col) => (
-                  <td key={col.field} style={{ textAlign: col.align ?? "left" }}>
+                  <TableCell key={col.field} style={{ textAlign: col.align ?? "left" }}>
                     {renderCell(row, col.field, col.type)}
-                  </td>
+                  </TableCell>
                 ))}
-              </tr>
+              </TableRow>
             ))
           )}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
 
       {pagination && totalPages > 1 && (
-        <div className="mp-table-pagination">
-          <span className="mp-page-info">
+        <div className="flex items-center justify-between py-3 px-2 text-sm text-muted-foreground">
+          <span>
             共 {total} 条，第 {page}/{totalPages} 页
           </span>
-          <button disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
-            上一页
-          </button>
-          <button disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
-            下一页
-          </button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page <= 1}
+              onClick={() => setPage((p) => p - 1)}
+            >
+              上一页
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page >= totalPages}
+              onClick={() => setPage((p) => p + 1)}
+            >
+              下一页
+            </Button>
+          </div>
         </div>
       )}
     </div>

@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { PageRender } from "../types/schema";
 import SectionRenderer from "./SectionRenderer";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 interface SchemaRendererProps {
   schema: PageRender;
@@ -32,18 +34,18 @@ const SchemaRenderer: React.FC<SchemaRendererProps> = ({
 
   const layoutClass =
     schema.layout?.type === "TWO_COLUMN"
-      ? "mp-layout-two-col"
+      ? "grid grid-cols-1 md:grid-cols-2"
       : schema.layout?.type === "THREE_COLUMN"
-        ? "mp-layout-three-col"
-        : "mp-layout-single-col";
+        ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
+        : "grid grid-cols-1";
 
   const gutter = schema.layout?.gutter ?? 16;
 
   return (
-    <div className="mp-schema-renderer">
-      <header className="mp-page-header">
-        <h2>{schema.displayName || schema.name}</h2>
-        <span className="mp-page-type-badge">{schema.pageType}</span>
+    <div className="space-y-6">
+      <header className="flex items-center justify-between">
+        <h2 className="text-xl font-semibold tracking-tight">{schema.displayName || schema.name}</h2>
+        <Badge variant="secondary">{schema.pageType}</Badge>
       </header>
 
       <div className={layoutClass} style={{ gap: gutter }}>

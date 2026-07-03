@@ -1,5 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { listPlans, getSubscription, getUsageStats, subscribe } from "../api/billingApi";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { cn } from "@/lib/utils";
 
 interface Plan {
   id: string;
@@ -51,7 +56,7 @@ const BillingDashboard: React.FC = () => {
       if (subData.status === "fulfilled") setSubscription(subData.value);
       if (usageData.status === "fulfilled") setUsage(usageData.value);
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "加载失败");
+      setError(e instanceof Error ? e.message : "\u52A0\u8F7D\u5931\u8D25");
     } finally {
       setLoading(false);
     }
@@ -64,11 +69,11 @@ const BillingDashboard: React.FC = () => {
     return n.toString();
   };
 
-  const formatCost = (cents: number) => `¥${(cents / 100).toFixed(2)}`;
+  const formatCost = (cents: number) => `\u00A5${(cents / 100).toFixed(2)}`;
 
   const getPlanPrice = (cents: number) => {
-    if (cents === 0) return "免费";
-    return `¥${(cents / 100).toFixed(0)}/月`;
+    if (cents === 0) return "\u514D\u8D39";
+    return `\u00A5${(cents / 100).toFixed(0)}/\u6708`;
   };
 
   const handleSubscribe = async (planId: string) => {
@@ -76,108 +81,121 @@ const BillingDashboard: React.FC = () => {
       await subscribe(TENANT_ID, planId);
       await loadData();
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "订阅失败");
+      setError(e instanceof Error ? e.message : "\u8BA2\u9605\u5931\u8D25");
     }
   };
 
   if (loading) {
-    return <div className="mp-loading">加载中...</div>;
+    return (
+      <div className="flex items-center justify-center py-8 text-muted-foreground">
+        \u52A0\u8F7D\u4E2D...
+      </div>
+    );
   }
 
   return (
-    <div className="mp-billing">
-      <div className="mp-billing-header">
-        <h1>计费中心</h1>
-        <p>管理订阅套餐、查看使用量统计</p>
+    <div className="p-6 max-w-7xl mx-auto space-y-6">
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight">\u8BA1\u8D39\u4E2D\u5FC3</h1>
+        <p className="text-sm text-muted-foreground mt-1">\u7BA1\u7406\u8BA2\u9605\u5957\u9910\u3001\u67E5\u770B\u4F7F\u7528\u91CF\u7EDF\u8BA1</p>
       </div>
 
-      {error && <div className="mp-alert mp-alert-error">{error}</div>}
+      {error && (
+        <div className="rounded-md border border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive">
+          {error}
+        </div>
+      )}
 
-      {/* 当前订阅 */}
-      <div className="mp-billing-section">
-        <h2>当前订阅</h2>
-        {subscription ? (
-          <div className="mp-billing-current">
-            <div className="mp-billing-current-plan">
-              <span className="mp-billing-plan-name">
-                {plans.find(p => p.id === subscription.planId)?.name || subscription.planId}
-              </span>
-              <span className={`mp-billing-status ${subscription.status}`}>
-                {subscription.status === "active" ? "生效中" : subscription.status}
-              </span>
-            </div>
-            <div className="mp-billing-current-meta">
-              <span>开始时间: {new Date(subscription.startedAt).toLocaleDateString()}</span>
-              {subscription.expiresAt && (
-                <span>到期时间: {new Date(subscription.expiresAt).toLocaleDateString()}</span>
-              )}
-            </div>
-          </div>
-        ) : (
-          <div className="mp-billing-no-sub">暂无订阅，请选择套餐</div>
-        )}
-      </div>
-
-      {/* 使用量统计 */}
-      <div className="mp-billing-section">
-        <h2>使用量统计</h2>
-        {usage ? (
-          <div className="mp-billing-stats-grid">
-            <div className="mp-billing-stat-card">
-              <div className="mp-billing-stat-label">今日</div>
-              <div className="mp-billing-stat-value">{formatTokens(usage.today?.totalTokens || 0)}</div>
-              <div className="mp-billing-stat-sub">Token</div>
-              <div className="mp-billing-stat-cost">{formatCost(usage.today?.costCents || 0)}</div>
-              <div className="mp-billing-stat-count">{usage.today?.requestCount || 0} 次请求</div>
-            </div>
-            <div className="mp-billing-stat-card">
-              <div className="mp-billing-stat-label">本月</div>
-              <div className="mp-billing-stat-value">{formatTokens(usage.thisMonth?.totalTokens || 0)}</div>
-              <div className="mp-billing-stat-sub">Token</div>
-              <div className="mp-billing-stat-cost">{formatCost(usage.thisMonth?.costCents || 0)}</div>
-              <div className="mp-billing-stat-count">{usage.thisMonth?.requestCount || 0} 次请求</div>
-            </div>
-            <div className="mp-billing-stat-card">
-              <div className="mp-billing-stat-label">累计</div>
-              <div className="mp-billing-stat-value">{formatTokens(usage.total?.totalTokens || 0)}</div>
-              <div className="mp-billing-stat-sub">Token</div>
-              <div className="mp-billing-stat-cost">{formatCost(usage.total?.costCents || 0)}</div>
-              <div className="mp-billing-stat-count">{usage.total?.requestCount || 0} 次请求</div>
-            </div>
-          </div>
-        ) : (
-          <div className="mp-billing-no-sub">暂无使用数据</div>
-        )}
-      </div>
-
-      {/* 套餐列表 */}
-      <div className="mp-billing-section">
-        <h2>套餐选择</h2>
-        <div className="mp-billing-plans-grid">
-          {plans.map(plan => (
-            <div key={plan.id} className={`mp-billing-plan-card ${subscription?.planId === plan.id ? "current" : ""}`}>
-              <div className="mp-billing-plan-card-header">
-                <div className="mp-billing-plan-card-name">{plan.name}</div>
-                <div className="mp-billing-plan-card-price">{getPlanPrice(plan.priceCentsMonthly)}</div>
+      {/* Current subscription */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">\u5F53\u524D\u8BA2\u9605</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {subscription ? (
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <span className="font-medium text-base">
+                  {plans.find(p => p.id === subscription.planId)?.name || subscription.planId}
+                </span>
+                <Badge variant={subscription.status === "active" ? "default" : "secondary"}>
+                  {subscription.status === "active" ? "\u751F\u6548\u4E2D" : subscription.status}
+                </Badge>
               </div>
-              <div className="mp-billing-plan-card-desc">{plan.description}</div>
-              <div className="mp-billing-plan-card-limit">
-                月度限额: {formatTokens(plan.monthlyTokenLimit)} Token
-              </div>
-              <div className="mp-billing-plan-card-action">
-                {subscription?.planId === plan.id ? (
-                  <span className="mp-billing-current-badge">当前套餐</span>
-                ) : (
-                  <button
-                    className="mp-btn mp-btn-primary mp-btn-sm"
-                    onClick={() => handleSubscribe(plan.id)}
-                  >
-                    订阅
-                  </button>
+              <div className="flex gap-4 text-sm text-muted-foreground">
+                <span>\u5F00\u59CB\u65F6\u95F4: {new Date(subscription.startedAt).toLocaleDateString()}</span>
+                {subscription.expiresAt && (
+                  <span>\u5230\u671F\u65F6\u95F4: {new Date(subscription.expiresAt).toLocaleDateString()}</span>
                 )}
               </div>
             </div>
-          ))}
+          ) : (
+            <div className="text-sm text-muted-foreground">\u6682\u65E0\u8BA2\u9605\uFF0C\u8BF7\u9009\u62E9\u5957\u9910</div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Usage stats */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">\u4F7F\u7528\u91CF\u7EDF\u8BA1</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {usage ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {[
+                { label: "\u4ECA\u65E5", data: usage.today },
+                { label: "\u672C\u6708", data: usage.thisMonth },
+                { label: "\u7D2F\u8BA1", data: usage.total },
+              ].map(({ label, data }) => (
+                <div key={label} className="rounded-lg border p-4 text-center">
+                  <div className="text-sm font-medium text-muted-foreground mb-2">{label}</div>
+                  <div className="text-2xl font-bold">{formatTokens(data?.totalTokens || 0)}</div>
+                  <div className="text-xs text-muted-foreground mt-1">Token</div>
+                  <Separator className="my-2" />
+                  <div className="text-sm font-medium">{formatCost(data?.costCents || 0)}</div>
+                  <div className="text-xs text-muted-foreground">{data?.requestCount || 0} \u6B21\u8BF7\u6C42</div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-sm text-muted-foreground">\u6682\u65E0\u4F7F\u7528\u6570\u636E</div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Plan list */}
+      <div>
+        <h2 className="text-lg font-semibold mb-4">\u5957\u9910\u9009\u62E9</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {plans.map(plan => {
+            const isCurrent = subscription?.planId === plan.id;
+            return (
+              <Card key={plan.id} className={cn(isCurrent && "ring-2 ring-primary")}>
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-base">{plan.name}</CardTitle>
+                    <span className="text-lg font-bold">{getPlanPrice(plan.priceCentsMonthly)}</span>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <p className="text-sm text-muted-foreground">{plan.description}</p>
+                  <div className="text-sm">
+                    \u6708\u5EA6\u9650\u989D: {formatTokens(plan.monthlyTokenLimit)} Token
+                  </div>
+                  <div>
+                    {isCurrent ? (
+                      <Badge variant="default">\u5F53\u524D\u5957\u9910</Badge>
+                    ) : (
+                      <Button size="sm" onClick={() => handleSubscribe(plan.id)}>
+                        \u8BA2\u9605
+                      </Button>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       </div>
     </div>

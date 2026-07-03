@@ -4,6 +4,7 @@ import { renderPage } from "../api/pageApi";
 import { listObjectInstances } from "../api/ontologyApi";
 import { PageRender } from "../types/schema";
 import SchemaRenderer from "../renderer/SchemaRenderer";
+import { Button } from "@/components/ui/button";
 
 /**
  * Loads a page config by ID, fetches its render JSON from the
@@ -56,32 +57,42 @@ const PageView: React.FC = () => {
   }, [id]);
 
   if (loading) {
-    return <div className="mp-loading">正在渲染页面...</div>;
+    return (
+      <div className="flex items-center justify-center py-8 text-muted-foreground">
+        正在渲染页面...
+      </div>
+    );
   }
 
   if (error) {
     return (
-      <div className="mp-page-error">
-        <h2>加载失败</h2>
-        <p>{error}</p>
-        <button className="mp-btn" onClick={() => navigate("/")}>
+      <div className="p-6 max-w-7xl mx-auto space-y-4">
+        <div className="rounded-md border border-destructive/50 bg-destructive/10 p-4">
+          <h2 className="text-lg font-semibold mb-2">加载失败</h2>
+          <p className="text-sm text-destructive">{error}</p>
+        </div>
+        <Button variant="outline" onClick={() => navigate("/")}>
           返回首页
-        </button>
+        </Button>
       </div>
     );
   }
 
   if (!schema) {
-    return <div className="mp-empty-hint">未找到页面渲染数据。</div>;
+    return (
+      <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+        未找到页面渲染数据。
+      </div>
+    );
   }
 
   return (
-    <div className="mp-page-view">
-      <div className="mp-page-view-toolbar">
-        <button className="mp-btn mp-btn-sm" onClick={() => navigate("/")}>
+    <div className="p-6 max-w-7xl mx-auto space-y-4">
+      <div className="flex items-center justify-between">
+        <Button variant="outline" size="sm" onClick={() => navigate("/")}>
           &larr; 返回
-        </button>
-        <span className="mp-page-view-id">ID: {id}</span>
+        </Button>
+        <span className="font-mono text-xs text-muted-foreground">ID: {id}</span>
       </div>
       <SchemaRenderer schema={schema} tableData={tableData} />
     </div>

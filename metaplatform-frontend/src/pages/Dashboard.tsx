@@ -3,6 +3,17 @@ import { useNavigate } from "react-router-dom";
 import { listPageConfigs, deletePage, generatePage } from "../api/pageApi";
 import { listObjectTypes } from "../api/ontologyApi";
 import { PageConfigSummary, ObjectTypeSummary } from "../types/schema";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -53,81 +64,112 @@ const Dashboard: React.FC = () => {
   };
 
   return (
-    <div className="mp-dashboard">
-      <div className="mp-dashboard-header">
-        <h1>页面配置管理</h1>
-        <p>管理已生成的页面配置，或从 ObjectType 一键生成新页面。</p>
+    <div className="p-6 max-w-7xl mx-auto space-y-6">
+      {/* Page header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">页面配置管理</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            管理已生成的页面配置，或从 ObjectType 一键生成新页面。
+          </p>
+        </div>
       </div>
 
-      {error && <div className="mp-alert mp-alert-error">{error}</div>}
+      {error && (
+        <div className="rounded-md border border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive">
+          {error}
+        </div>
+      )}
 
       {/* Quick-generate section */}
       {objectTypes.length > 0 && (
-        <section className="mp-dashboard-section">
-          <h3>快速生成页面</h3>
-          <div className="mp-ot-grid">
+        <section className="space-y-4">
+          <h3 className="text-lg font-medium">快速生成页面</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {objectTypes.map((ot) => (
-              <div key={ot.id} className="mp-ot-card">
-                <div className="mp-ot-card-name">{ot.displayName}</div>
-                <div className="mp-ot-card-meta">{ot.code || ot.name}</div>
-                <button
-                  className="mp-btn mp-btn-primary mp-btn-sm"
-                  disabled={generating}
-                  onClick={() => handleGenerate(ot.code || ot.name || "")}
-                >
-                  {generating ? "生成中..." : "生成页面"}
-                </button>
-              </div>
+              <Card key={ot.id}>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base">{ot.displayName}</CardTitle>
+                  <p className="text-xs text-muted-foreground">
+                    {ot.code || ot.name}
+                  </p>
+                </CardHeader>
+                <CardContent>
+                  <Button
+                    size="sm"
+                    disabled={generating}
+                    onClick={() => handleGenerate(ot.code || ot.name || "")}
+                  >
+                    {generating ? "生成中..." : "生成页面"}
+                  </Button>
+                </CardContent>
+              </Card>
             ))}
           </div>
         </section>
       )}
 
       {/* Page list */}
-      <section className="mp-dashboard-section">
-        <h3>已生成页面 ({pages.length})</h3>
+      <section className="space-y-4">
+        <h3 className="text-lg font-medium">
+          已生成页面 ({pages.length})
+        </h3>
         {loading ? (
-          <p className="mp-loading">加载中...</p>
+          <div className="flex items-center justify-center py-8 text-muted-foreground">
+            加载中...
+          </div>
         ) : pages.length === 0 ? (
-          <p className="mp-empty-hint">暂无页面配置，请从上方 ObjectType 生成。</p>
+          <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+            <p>暂无页面配置，请从上方 ObjectType 生成。</p>
+          </div>
         ) : (
-          <table className="mp-table">
-            <thead>
-              <tr>
-                <th>显示名称</th>
-                <th>名称</th>
-                <th>页面类型</th>
-                <th>创建时间</th>
-                <th style={{ width: 180 }}>操作</th>
-              </tr>
-            </thead>
-            <tbody>
-              {pages.map((p) => (
-                <tr key={p.id}>
-                  <td>{p.displayName || p.name}</td>
-                  <td>{p.name}</td>
-                  <td>
-                    <span className="mp-page-type-badge">{p.pageType}</span>
-                  </td>
-                  <td>{p.createdAt ?? "--"}</td>
-                  <td>
-                    <button
-                      className="mp-btn mp-btn-sm"
-                      onClick={() => navigate(`/pages/${p.id}`)}
-                    >
-                      预览
-                    </button>
-                    <button
-                      className="mp-btn mp-btn-sm mp-btn-danger"
-                      onClick={() => handleDelete(p.id)}
-                    >
-                      删除
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <Card>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>显示名称</TableHead>
+                  <TableHead>名称</TableHead>
+                  <TableHead>页面类型</TableHead>
+                  <TableHead>创建时间</TableHead>
+                  <TableHead style={{ width: 180 }}>操作</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {pages.map((p) => (
+                  <TableRow key={p.id}>
+                    <TableCell className="font-medium">
+                      {p.displayName || p.name}
+                    </TableCell>
+                    <TableCell>{p.name}</TableCell>
+                    <TableCell>
+                      <Badge variant="secondary">{p.pageType}</Badge>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {p.createdAt ?? "--"}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => navigate(`/pages/${p.id}`)}
+                        >
+                          预览
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleDelete(String(p.id))}
+                        >
+                          删除
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </Card>
         )}
       </section>
     </div>

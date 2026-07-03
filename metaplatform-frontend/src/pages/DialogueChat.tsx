@@ -6,6 +6,11 @@ import {
   sendMessage,
   deleteSession,
 } from "../api/dialogueApi";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import { cn } from "@/lib/utils";
 
 /* ---- Types ---- */
 interface Session {
@@ -34,7 +39,6 @@ const DialogueChat: React.FC = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  /* Scroll to bottom on new messages */
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, []);
@@ -43,12 +47,10 @@ const DialogueChat: React.FC = () => {
     scrollToBottom();
   }, [messages, scrollToBottom]);
 
-  /* Load sessions on mount */
   useEffect(() => {
     loadSessions();
   }, []);
 
-  /* Load messages when active session changes */
   useEffect(() => {
     if (activeSessionId) {
       loadMessages(activeSessionId);
@@ -97,7 +99,6 @@ const DialogueChat: React.FC = () => {
         const session = await createSession(text.slice(0, 30));
         setSessions((prev) => [session, ...prev]);
         setActiveSessionId(session.id);
-        // will send after session is created — defer to next tick
         setTimeout(() => doSend(session.id, text), 100);
       } catch {
         /* silent */
@@ -109,7 +110,6 @@ const DialogueChat: React.FC = () => {
   }
 
   async function doSend(sessionId: string, text: string) {
-    // Optimistic user message
     const tempUser: ChatMessage = {
       id: `temp-${Date.now()}`,
       role: "user",
@@ -122,13 +122,11 @@ const DialogueChat: React.FC = () => {
 
     try {
       const reply = await sendMessage(sessionId, text);
-      // reply could be single message or array
       if (Array.isArray(reply)) {
         setMessages((prev) => [...prev, ...reply]);
       } else {
         setMessages((prev) => [...prev, reply]);
       }
-      // Refresh sessions to update title/time
       loadSessions();
     } catch {
       const errorMsg: ChatMessage = {
@@ -184,108 +182,152 @@ const DialogueChat: React.FC = () => {
   }
 
   return (
-    <div className="mp-chat">
-      {/* Left sidebar — session list */}
-      <aside className="mp-chat-sidebar">
-        <div className="mp-chat-sidebar-header">
-          <button className="mp-btn mp-btn-primary" onClick={handleNewSession}>
+    <div className="flex h-full">
+      {/* Left sidebar -- session list */}
+      <aside className="w-64 border-r bg-muted/30 flex flex-col shrink-0">
+        <div className="p-3">
+          <Button className="w-full" onClick={handleNewSession}>
             + 新建对话
-          </button>
+          </Button>
         </div>
-        <div className="mp-chat-session-list">
+        <Separator />
+        <ScrollArea className="flex-1">
           {sessions.length === 0 && (
-            <div className="mp-empty-hint">暂无对话</div>
-          )}
-          {sessions.map((s) => (
-            <div
-              key={s.id}
-              className={`mp-chat-session-item${activeSessionId === s.id ? " active" : ""}`}
-              onClick={() => setActiveSessionId(s.id)}
-            >
-              <div className="mp-chat-session-title">{s.title || "未命名对话"}</div>
-              <div className="mp-chat-session-time">{formatTime(s.updatedAt)}</div>
-              <button
-                className="mp-chat-session-delete"
-                onClick={(e) => handleDeleteSession(e, s.id)}
-                title="删除对话"
-              >
-                ×
-              </button>
+            <div className="flex items-center justify-center py-8 text-muted-foreground text-sm">
+              暂无对话
             </div>
-          ))}
-        </div>
+          )}
+          <div className="flex flex-col gap-1 p-2">
+            {sessions.map((s) => (
+              <div
+                key={s.id}
+                className={cn(
+                  "relative group flex flex-col gap-0.5 px-3 py-2 rounded-md cursor-pointer transition-colors",
+                  activeSessionId === s.id
+                    ? "bg-accent text-accent-foreground"
+                    : "hover:bg-accent/50 text-foreground/80"
+                )}
+                onClick={() => setActiveSessionId(s.id)}
+              >
+                <div className="text-sm font-medium pr-6 truncate">
+                  {s.title || "未命名对话"}
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  {formatTime(s.updatedAt)}
+                </div>
+                <button
+                  className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-opacity text-sm"
+                  onClick={(e) => handleDeleteSession(e, s.id)}
+                  title="删除对话"
+                >
+                  x
+                </button>
+              </div>
+            ))}
+          </div>
+        </ScrollArea>
       </aside>
 
       {/* Center chat area */}
-      <section className="mp-chat-main">
+      <section className="flex-1 flex flex-col overflow-hidden">
         {!activeSessionId && messages.length === 0 ? (
-          <div className="mp-chat-empty">
-            <div className="mp-chat-empty-icon">💬</div>
-            <h3>AI 对话</h3>
+          <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground">
+            <div className="text-5xl mb-4">[Chat]</div>
+            <h3 className="text-lg font-medium text-foreground mb-2">AI 对话</h3>
             <p>选择或新建一个对话开始交流</p>
           </div>
         ) : (
           <>
-            <div className="mp-chat-messages">
-              {loading && <div className="mp-loading">加载中...</div>}
-              {messages.map((msg) => (
-                <div key={msg.id} className={`mp-chat-message ${msg.role}`}>
-                  <div className="mp-chat-message-bubble">
-                    {msg.role === "assistant" && msg.intent && (
-                      <span className="mp-chat-intent-badge">{msg.intent}</span>
-                    )}
-                    <div className="mp-chat-message-content">{msg.content}</div>
-                    <div className="mp-chat-message-time">
-                      {formatTime(msg.timestamp)}
-                    </div>
+            <ScrollArea className="flex-1 p-4">
+              <div className="space-y-4 max-w-3xl mx-auto">
+                {loading && (
+                  <div className="flex items-center justify-center py-4 text-muted-foreground">
+                    加载中...
                   </div>
-                  {msg.role === "assistant" &&
-                    msg.suggestedActions &&
-                    msg.suggestedActions.length > 0 && (
-                      <div className="mp-chat-suggestions">
-                        {msg.suggestedActions.map((action, i) => (
-                          <button
-                            key={i}
-                            className="mp-chat-suggestion-chip"
-                            onClick={() => handleSuggestionClick(action)}
-                          >
-                            {action}
-                          </button>
-                        ))}
+                )}
+                {messages.map((msg) => (
+                  <div
+                    key={msg.id}
+                    className={cn(
+                      "flex",
+                      msg.role === "user" ? "justify-end" : "justify-start"
+                    )}
+                  >
+                    <div
+                      className={cn(
+                        "max-w-[80%] rounded-lg px-4 py-2",
+                        msg.role === "user"
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted"
+                      )}
+                    >
+                      {msg.role === "assistant" && msg.intent && (
+                        <span className="inline-block text-xs bg-primary/10 text-primary rounded px-1.5 py-0.5 mb-1">
+                          {msg.intent}
+                        </span>
+                      )}
+                      <div className="text-sm whitespace-pre-wrap">{msg.content}</div>
+                      <div
+                        className={cn(
+                          "text-xs mt-1",
+                          msg.role === "user"
+                            ? "text-primary-foreground/70"
+                            : "text-muted-foreground"
+                        )}
+                      >
+                        {formatTime(msg.timestamp)}
                       </div>
-                    )}
-                </div>
-              ))}
-              {sending && (
-                <div className="mp-chat-message assistant">
-                  <div className="mp-chat-message-bubble">
-                    <div className="mp-chat-message-content mp-chat-typing">
-                      正在思考...
+                    </div>
+                    {msg.role === "assistant" &&
+                      msg.suggestedActions &&
+                      msg.suggestedActions.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {msg.suggestedActions.map((action, i) => (
+                            <button
+                              key={i}
+                              className="text-xs px-2 py-1 rounded-md border bg-background hover:bg-accent transition-colors"
+                              onClick={() => handleSuggestionClick(action)}
+                            >
+                              {action}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                  </div>
+                ))}
+                {sending && (
+                  <div className="flex justify-start">
+                    <div className="max-w-[80%] rounded-lg px-4 py-2 bg-muted">
+                      <div className="text-sm text-muted-foreground animate-pulse">
+                        正在思考...
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
-              <div ref={messagesEndRef} />
-            </div>
+                )}
+                <div ref={messagesEndRef} />
+              </div>
+            </ScrollArea>
 
             {/* Bottom input bar */}
-            <div className="mp-chat-input">
-              <textarea
-                ref={inputRef}
-                className="mp-chat-input-field"
-                placeholder="输入消息，按 Enter 发送..."
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyDown={handleKeyDown}
-                rows={1}
-              />
-              <button
-                className="mp-btn mp-btn-primary mp-chat-send-btn"
-                onClick={handleSend}
-                disabled={!inputValue.trim() || sending}
-              >
-                发送
-              </button>
+            <div className="border-t p-4">
+              <div className="flex gap-2 max-w-3xl mx-auto">
+                <textarea
+                  ref={inputRef}
+                  className="flex min-h-[40px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-none"
+                  placeholder="输入消息，按 Enter 发送..."
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  rows={1}
+                />
+                <Button
+                  onClick={handleSend}
+                  disabled={!inputValue.trim() || sending}
+                  className="shrink-0"
+                >
+                  发送
+                </Button>
+              </div>
             </div>
           </>
         )}

@@ -1,6 +1,18 @@
 import React, { useState, useRef, useCallback, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { cn } from "@/lib/utils";
 
-/* ─── Data Model ─── */
+/* -- Data Model -- */
 interface ProcessNode {
   id: string;
   type: "start" | "end" | "task" | "gateway" | "ai_decision";
@@ -28,7 +40,7 @@ interface ProcessDesign {
   edges: ProcessEdge[];
 }
 
-/* ─── Palette Item Definitions ─── */
+/* -- Palette Item Definitions -- */
 interface PaletteItemDef {
   type: ProcessNode["type"];
   label: string;
@@ -36,14 +48,14 @@ interface PaletteItemDef {
 }
 
 const PALETTE_ITEMS: PaletteItemDef[] = [
-  { type: "start", label: "开始节点", icon: "🟢" },
-  { type: "end", label: "结束节点", icon: "🔴" },
-  { type: "task", label: "普通节点", icon: "⬜" },
-  { type: "gateway", label: "条件判断", icon: "◇" },
-  { type: "ai_decision", label: "AI 决策节点", icon: "🤖" },
+  { type: "start", label: "开始节点", icon: "G" },
+  { type: "end", label: "结束节点", icon: "R" },
+  { type: "task", label: "普通节点", icon: "[]" },
+  { type: "gateway", label: "条件判断", icon: "<>" },
+  { type: "ai_decision", label: "AI 决策节点", icon: "AI" },
 ];
 
-/* ─── Default Process ─── */
+/* -- Default Process -- */
 function createDefaultProcess(): ProcessDesign {
   const n1: ProcessNode = { id: "node-start", type: "start", label: "开始", x: 80, y: 240 };
   const n2: ProcessNode = { id: "node-submit", type: "task", label: "审批提交", x: 240, y: 240, assignee: "", sla: "1h", description: "提交审批申请" };
@@ -68,7 +80,7 @@ function createDefaultProcess(): ProcessDesign {
   };
 }
 
-/* ─── Helper: SVG mouse position ─── */
+/* -- Helper: SVG mouse position -- */
 function getMousePosition(e: React.MouseEvent, svg: SVGSVGElement) {
   const pt = svg.createSVGPoint();
   pt.x = e.clientX;
@@ -78,7 +90,7 @@ function getMousePosition(e: React.MouseEvent, svg: SVGSVGElement) {
   return pt.matrixTransform(ctm.inverse());
 }
 
-/* ─── Helper: node dimensions by type ─── */
+/* -- Helper: node dimensions by type -- */
 function getNodeDimensions(type: ProcessNode["type"]) {
   switch (type) {
     case "start":
@@ -100,7 +112,7 @@ function getNodeCenter(node: ProcessNode) {
   return { cx: node.x + dim.w / 2, cy: node.y + dim.h / 2 };
 }
 
-/* ─── Helper: edge endpoint offset (avoid overlapping with node shape) ─── */
+/* -- Helper: edge endpoint offset -- */
 function getEdgeEndpoint(node: ProcessNode, otherCx: number, otherCy: number) {
   const center = getNodeCenter(node);
   const dim = getNodeDimensions(node.type);
@@ -128,7 +140,7 @@ function getEdgeEndpoint(node: ProcessNode, otherCx: number, otherCy: number) {
   return { cx: center.cx + dx * scale, cy: center.cy + dy * scale };
 }
 
-/* ─── Type label map ─── */
+/* -- Type label map -- */
 const NODE_TYPE_LABELS: Record<ProcessNode["type"], string> = {
   start: "开始",
   end: "结束",
@@ -137,7 +149,7 @@ const NODE_TYPE_LABELS: Record<ProcessNode["type"], string> = {
   ai_decision: "AI 决策",
 };
 
-/* ─── Component ─── */
+/* -- Component -- */
 const ProcessDesigner: React.FC = () => {
   const [design, setDesign] = useState<ProcessDesign>(createDefaultProcess);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
@@ -174,7 +186,7 @@ const ProcessDesigner: React.FC = () => {
     setSelectedEdgeId(null);
   }, []);
 
-  /* ─── Node dragging ─── */
+  /* -- Node dragging -- */
   const onNodeMouseDown = useCallback(
     (e: React.MouseEvent, nodeId: string) => {
       if (edgeMode) return;
@@ -208,7 +220,7 @@ const ProcessDesigner: React.FC = () => {
     setDragging(null);
   }, []);
 
-  /* ─── Edge mode: click nodes to create edge ─── */
+  /* -- Edge mode -- */
   const onNodeClick = useCallback(
     (e: React.MouseEvent, nodeId: string) => {
       e.stopPropagation();
@@ -239,7 +251,7 @@ const ProcessDesigner: React.FC = () => {
     [edgeMode, edgeSourceId, design.edges, selectNode, showToast]
   );
 
-  /* ─── Double-click to edit label ─── */
+  /* -- Double-click to edit label -- */
   const onNodeDoubleClick = useCallback(
     (e: React.MouseEvent, nodeId: string) => {
       e.stopPropagation();
@@ -261,7 +273,7 @@ const ProcessDesigner: React.FC = () => {
     setEditingLabel("");
   }, [editingNodeId, editingLabel]);
 
-  /* ─── Canvas click: deselect ─── */
+  /* -- Canvas click -- */
   const onCanvasClick = useCallback(() => {
     if (edgeMode) {
       setEdgeSourceId(null);
@@ -270,7 +282,7 @@ const ProcessDesigner: React.FC = () => {
     }
   }, [edgeMode, clearSelection]);
 
-  /* ─── Edge click ─── */
+  /* -- Edge click -- */
   const onEdgeClick = useCallback(
     (e: React.MouseEvent, edgeId: string) => {
       e.stopPropagation();
@@ -279,7 +291,7 @@ const ProcessDesigner: React.FC = () => {
     [selectEdge]
   );
 
-  /* ─── Delete selected ─── */
+  /* -- Delete selected -- */
   const deleteSelected = useCallback(() => {
     if (selectedNodeId) {
       setDesign((prev) => ({
@@ -299,7 +311,7 @@ const ProcessDesigner: React.FC = () => {
     }
   }, [selectedNodeId, selectedEdgeId, showToast]);
 
-  /* ─── Keyboard shortcut ─── */
+  /* -- Keyboard shortcut -- */
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Delete" || e.key === "Backspace") {
@@ -316,7 +328,7 @@ const ProcessDesigner: React.FC = () => {
     return () => window.removeEventListener("keydown", handler);
   }, [deleteSelected, editingNodeId, clearSelection]);
 
-  /* ─── Drag from palette to canvas ─── */
+  /* -- Drag from palette to canvas -- */
   const onPaletteDragStart = useCallback((e: React.DragEvent, type: ProcessNode["type"]) => {
     e.dataTransfer.setData("application/node-type", type);
     e.dataTransfer.effectAllowed = "copy";
@@ -348,7 +360,7 @@ const ProcessDesigner: React.FC = () => {
     e.dataTransfer.dropEffect = "copy";
   }, []);
 
-  /* ─── Properties panel update ─── */
+  /* -- Properties panel update -- */
   const updateNode = useCallback((id: string, updates: Partial<ProcessNode>) => {
     setDesign((prev) => ({
       ...prev,
@@ -367,7 +379,7 @@ const ProcessDesigner: React.FC = () => {
     setDesign((prev) => ({ ...prev, ...updates }));
   }, []);
 
-  /* ─── Save / Load / JSON ─── */
+  /* -- Save / Load / JSON -- */
   const saveJson = useCallback(() => {
     const json = JSON.stringify(design, null, 2);
     const blob = new Blob([json], { type: "application/json" });
@@ -409,7 +421,7 @@ const ProcessDesigner: React.FC = () => {
     [clearSelection, showToast]
   );
 
-  /* ─── New process ─── */
+  /* -- New process -- */
   const newProcess = useCallback(() => {
     setDesign({
       name: "新建流程",
@@ -423,11 +435,11 @@ const ProcessDesigner: React.FC = () => {
     showToast("已创建新流程");
   }, [clearSelection, showToast]);
 
-  /* ─── Selected node / edge data ─── */
+  /* -- Selected data -- */
   const selectedNode = selectedNodeId ? design.nodes.find((n) => n.id === selectedNodeId) : null;
   const selectedEdge = selectedEdgeId ? design.edges.find((ed) => ed.id === selectedEdgeId) : null;
 
-  /* ─── Render SVG Node ─── */
+  /* -- Render SVG Node -- */
   const renderNode = (node: ProcessNode) => {
     const isSelected = selectedNodeId === node.id;
     const isEdgeSource = edgeMode && edgeSourceId === node.id;
@@ -445,11 +457,11 @@ const ProcessDesigner: React.FC = () => {
 
     const selectedStroke = isSelected ? "#3b82f6" : isEdgeSource ? "#f59e0b" : undefined;
 
-    /* Start / End — circle */
+    /* Start / End -- circle */
     if (node.type === "start" || node.type === "end") {
       const r = dim.w / 2;
       return (
-        <g key={node.id} className={`mp-process-node${isSelected ? " selected" : ""}`} {...commonGroupProps}>
+        <g key={node.id} {...commonGroupProps}>
           <circle
             cx={cx}
             cy={cy}
@@ -469,28 +481,11 @@ const ProcessDesigner: React.FC = () => {
                   if (e.key === "Enter") onLabelChangeConfirm();
                   if (e.key === "Escape") setEditingNodeId(null);
                 }}
-                style={{
-                  width: "100%",
-                  fontSize: "11px",
-                  textAlign: "center",
-                  border: "1px solid #3b82f6",
-                  borderRadius: "3px",
-                  outline: "none",
-                  padding: "1px 2px",
-                }}
+                style={{ width: "100%", fontSize: "11px", textAlign: "center", border: "1px solid #3b82f6", borderRadius: "3px", outline: "none", padding: "1px 2px" }}
               />
             </foreignObject>
           ) : (
-            <text
-              x={cx}
-              y={cy}
-              textAnchor="middle"
-              dominantBaseline="central"
-              fill="#fff"
-              fontSize={11}
-              fontWeight={600}
-              style={{ pointerEvents: "none", userSelect: "none" }}
-            >
+            <text x={cx} y={cy} textAnchor="middle" dominantBaseline="central" fill="#fff" fontSize={11} fontWeight={600} style={{ pointerEvents: "none", userSelect: "none" }}>
               {node.label}
             </text>
           )}
@@ -498,51 +493,19 @@ const ProcessDesigner: React.FC = () => {
       );
     }
 
-    /* Gateway — diamond */
+    /* Gateway -- diamond */
     if (node.type === "gateway") {
       const half = dim.w / 2;
       const points = `${cx},${cy - half} ${cx + half},${cy} ${cx},${cy + half} ${cx - half},${cy}`;
       return (
-        <g key={node.id} className={`mp-process-node${isSelected ? " selected" : ""}`} {...commonGroupProps}>
-          <polygon
-            points={points}
-            fill="#fef9c3"
-            stroke={selectedStroke || "#eab308"}
-            strokeWidth={isSelected ? 3 : 2}
-          />
+        <g key={node.id} {...commonGroupProps}>
+          <polygon points={points} fill="#fef9c3" stroke={selectedStroke || "#eab308"} strokeWidth={isSelected ? 3 : 2} />
           {isEditing ? (
             <foreignObject x={cx - 35} y={cy - 12} width={70} height={24}>
-              <input
-                autoFocus
-                value={editingLabel}
-                onChange={(e) => setEditingLabel(e.target.value)}
-                onBlur={onLabelChangeConfirm}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") onLabelChangeConfirm();
-                  if (e.key === "Escape") setEditingNodeId(null);
-                }}
-                style={{
-                  width: "100%",
-                  fontSize: "11px",
-                  textAlign: "center",
-                  border: "1px solid #3b82f6",
-                  borderRadius: "3px",
-                  outline: "none",
-                  padding: "1px 2px",
-                }}
-              />
+              <input autoFocus value={editingLabel} onChange={(e) => setEditingLabel(e.target.value)} onBlur={onLabelChangeConfirm} onKeyDown={(e) => { if (e.key === "Enter") onLabelChangeConfirm(); if (e.key === "Escape") setEditingNodeId(null); }} style={{ width: "100%", fontSize: "11px", textAlign: "center", border: "1px solid #3b82f6", borderRadius: "3px", outline: "none", padding: "1px 2px" }} />
             </foreignObject>
           ) : (
-            <text
-              x={cx}
-              y={cy}
-              textAnchor="middle"
-              dominantBaseline="central"
-              fill="#92400e"
-              fontSize={11}
-              fontWeight={600}
-              style={{ pointerEvents: "none", userSelect: "none" }}
-            >
+            <text x={cx} y={cy} textAnchor="middle" dominantBaseline="central" fill="#92400e" fontSize={11} fontWeight={600} style={{ pointerEvents: "none", userSelect: "none" }}>
               {node.label}
             </text>
           )}
@@ -550,72 +513,28 @@ const ProcessDesigner: React.FC = () => {
       );
     }
 
-    /* AI Decision — purple rect */
+    /* AI Decision -- purple rect */
     if (node.type === "ai_decision") {
       return (
-        <g key={node.id} className={`mp-process-node${isSelected ? " selected" : ""}`} {...commonGroupProps}>
+        <g key={node.id} {...commonGroupProps}>
           <defs>
             <linearGradient id="ai-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
               <stop offset="0%" stopColor="#ede9fe" />
               <stop offset="100%" stopColor="#c4b5fd" />
             </linearGradient>
           </defs>
-          <rect
-            x={node.x}
-            y={node.y}
-            width={dim.w}
-            height={dim.h}
-            rx={8}
-            ry={8}
-            fill="url(#ai-gradient)"
-            stroke={selectedStroke || "#8b5cf6"}
-            strokeWidth={isSelected ? 3 : 2}
-          />
+          <rect x={node.x} y={node.y} width={dim.w} height={dim.h} rx={8} ry={8} fill="url(#ai-gradient)" stroke={selectedStroke || "#8b5cf6"} strokeWidth={isSelected ? 3 : 2} />
           {isEditing ? (
             <foreignObject x={cx - 55} y={cy - 12} width={110} height={24}>
-              <input
-                autoFocus
-                value={editingLabel}
-                onChange={(e) => setEditingLabel(e.target.value)}
-                onBlur={onLabelChangeConfirm}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") onLabelChangeConfirm();
-                  if (e.key === "Escape") setEditingNodeId(null);
-                }}
-                style={{
-                  width: "100%",
-                  fontSize: "12px",
-                  textAlign: "center",
-                  border: "1px solid #3b82f6",
-                  borderRadius: "3px",
-                  outline: "none",
-                  padding: "1px 2px",
-                }}
-              />
+              <input autoFocus value={editingLabel} onChange={(e) => setEditingLabel(e.target.value)} onBlur={onLabelChangeConfirm} onKeyDown={(e) => { if (e.key === "Enter") onLabelChangeConfirm(); if (e.key === "Escape") setEditingNodeId(null); }} style={{ width: "100%", fontSize: "12px", textAlign: "center", border: "1px solid #3b82f6", borderRadius: "3px", outline: "none", padding: "1px 2px" }} />
             </foreignObject>
           ) : (
-            <text
-              x={cx}
-              y={cy}
-              textAnchor="middle"
-              dominantBaseline="central"
-              fill="#5b21b6"
-              fontSize={12}
-              fontWeight={600}
-              style={{ pointerEvents: "none", userSelect: "none" }}
-            >
+            <text x={cx} y={cy} textAnchor="middle" dominantBaseline="central" fill="#5b21b6" fontSize={12} fontWeight={600} style={{ pointerEvents: "none", userSelect: "none" }}>
               {node.label}
             </text>
           )}
-          {/* AI icon hint */}
           {!isEditing && (
-            <text
-              x={node.x + 8}
-              y={node.y + 14}
-              fontSize={10}
-              fill="#7c3aed"
-              style={{ pointerEvents: "none" }}
-            >
+            <text x={node.x + 8} y={node.y + 14} fontSize={10} fill="#7c3aed" style={{ pointerEvents: "none" }}>
               AI
             </text>
           )}
@@ -623,53 +542,16 @@ const ProcessDesigner: React.FC = () => {
       );
     }
 
-    /* Task — rounded rect (default) */
+    /* Task -- rounded rect */
     return (
-      <g key={node.id} className={`mp-process-node${isSelected ? " selected" : ""}`} {...commonGroupProps}>
-        <rect
-          x={node.x}
-          y={node.y}
-          width={dim.w}
-          height={dim.h}
-          rx={8}
-          ry={8}
-          fill="#ffffff"
-          stroke={selectedStroke || "#3b82f6"}
-          strokeWidth={isSelected ? 3 : 1.5}
-        />
+      <g key={node.id} {...commonGroupProps}>
+        <rect x={node.x} y={node.y} width={dim.w} height={dim.h} rx={8} ry={8} fill="#ffffff" stroke={selectedStroke || "#3b82f6"} strokeWidth={isSelected ? 3 : 1.5} />
         {isEditing ? (
           <foreignObject x={cx - 55} y={cy - 12} width={110} height={24}>
-            <input
-              autoFocus
-              value={editingLabel}
-              onChange={(e) => setEditingLabel(e.target.value)}
-              onBlur={onLabelChangeConfirm}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") onLabelChangeConfirm();
-                if (e.key === "Escape") setEditingNodeId(null);
-              }}
-              style={{
-                width: "100%",
-                fontSize: "12px",
-                textAlign: "center",
-                border: "1px solid #3b82f6",
-                borderRadius: "3px",
-                outline: "none",
-                padding: "1px 2px",
-              }}
-            />
+            <input autoFocus value={editingLabel} onChange={(e) => setEditingLabel(e.target.value)} onBlur={onLabelChangeConfirm} onKeyDown={(e) => { if (e.key === "Enter") onLabelChangeConfirm(); if (e.key === "Escape") setEditingNodeId(null); }} style={{ width: "100%", fontSize: "12px", textAlign: "center", border: "1px solid #3b82f6", borderRadius: "3px", outline: "none", padding: "1px 2px" }} />
           </foreignObject>
         ) : (
-          <text
-            x={cx}
-            y={cy}
-            textAnchor="middle"
-            dominantBaseline="central"
-            fill="#1e293b"
-            fontSize={12}
-            fontWeight={500}
-            style={{ pointerEvents: "none", userSelect: "none" }}
-          >
+          <text x={cx} y={cy} textAnchor="middle" dominantBaseline="central" fill="#1e293b" fontSize={12} fontWeight={500} style={{ pointerEvents: "none", userSelect: "none" }}>
             {node.label}
           </text>
         )}
@@ -677,7 +559,7 @@ const ProcessDesigner: React.FC = () => {
     );
   };
 
-  /* ─── Render SVG Edge ─── */
+  /* -- Render SVG Edge -- */
   const renderEdge = (edge: ProcessEdge) => {
     const sourceNode = design.nodes.find((n) => n.id === edge.source);
     const targetNode = design.nodes.find((n) => n.id === edge.target);
@@ -690,11 +572,9 @@ const ProcessDesigner: React.FC = () => {
 
     const isSelected = selectedEdgeId === edge.id;
 
-    /* Compute midpoint for label */
     const midX = (sp.cx + tp.cx) / 2;
     const midY = (sp.cy + tp.cy) / 2;
 
-    /* Slight curve via quadratic bezier */
     const dx = tp.cx - sp.cx;
     const dy = tp.cy - sp.cy;
     const perpX = -dy * 0.1;
@@ -704,47 +584,13 @@ const ProcessDesigner: React.FC = () => {
     const pathD = `M ${sp.cx} ${sp.cy} Q ${ctrlX} ${ctrlY} ${tp.cx} ${tp.cy}`;
 
     return (
-      <g key={edge.id} className="mp-process-edge">
-        {/* Invisible wider hit area */}
-        <path
-          d={pathD}
-          fill="none"
-          stroke="transparent"
-          strokeWidth={12}
-          style={{ cursor: "pointer" }}
-          onClick={(e) => onEdgeClick(e, edge.id)}
-        />
-        <path
-          d={pathD}
-          fill="none"
-          stroke={isSelected ? "#3b82f6" : "#94a3b8"}
-          strokeWidth={isSelected ? 2.5 : 1.5}
-          markerEnd="url(#arrowhead)"
-          onClick={(e) => onEdgeClick(e, edge.id)}
-          style={{ cursor: "pointer" }}
-        />
+      <g key={edge.id}>
+        <path d={pathD} fill="none" stroke="transparent" strokeWidth={12} style={{ cursor: "pointer" }} onClick={(e) => onEdgeClick(e, edge.id)} />
+        <path d={pathD} fill="none" stroke={isSelected ? "#3b82f6" : "#94a3b8"} strokeWidth={isSelected ? 2.5 : 1.5} markerEnd="url(#arrowhead)" onClick={(e) => onEdgeClick(e, edge.id)} style={{ cursor: "pointer" }} />
         {edge.label && (
           <g>
-            <rect
-              x={ctrlX - (edge.label.length * 5 + 8)}
-              y={ctrlY - 10}
-              width={edge.label.length * 10 + 16}
-              height={20}
-              rx={4}
-              fill="#ffffff"
-              stroke="#e2e8f0"
-              strokeWidth={1}
-            />
-            <text
-              x={ctrlX}
-              y={ctrlY + 1}
-              textAnchor="middle"
-              dominantBaseline="central"
-              fill="#64748b"
-              fontSize={10}
-              fontWeight={500}
-              style={{ pointerEvents: "none", userSelect: "none" }}
-            >
+            <rect x={ctrlX - (edge.label.length * 5 + 8)} y={ctrlY - 10} width={edge.label.length * 10 + 16} height={20} rx={4} fill="#ffffff" stroke="#e2e8f0" strokeWidth={1} />
+            <text x={ctrlX} y={ctrlY + 1} textAnchor="middle" dominantBaseline="central" fill="#64748b" fontSize={10} fontWeight={500} style={{ pointerEvents: "none", userSelect: "none" }}>
               {edge.label}
             </text>
           </g>
@@ -753,22 +599,20 @@ const ProcessDesigner: React.FC = () => {
     );
   };
 
-  /* ─── Properties Panel Content ─── */
+  /* -- Properties Panel Content -- */
   const renderProperties = () => {
     if (selectedNode) {
       return (
-        <div className="mp-props-group">
-          <div className="mp-props-group-title">节点属性</div>
-          <div className="mp-props-field">
-            <span>名称</span>
-            <input
-              value={selectedNode.label}
-              onChange={(e) => updateNode(selectedNode.id, { label: e.target.value })}
-            />
+        <div className="space-y-3">
+          <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider">节点属性</div>
+          <div className="space-y-1">
+            <Label>名称</Label>
+            <Input value={selectedNode.label} onChange={(e) => updateNode(selectedNode.id, { label: e.target.value })} />
           </div>
-          <div className="mp-props-field">
-            <span>类型</span>
+          <div className="space-y-1">
+            <Label>类型</Label>
             <select
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               value={selectedNode.type}
               onChange={(e) => updateNode(selectedNode.id, { type: e.target.value as ProcessNode["type"] })}
             >
@@ -781,38 +625,28 @@ const ProcessDesigner: React.FC = () => {
           </div>
           {(selectedNode.type === "task" || selectedNode.type === "ai_decision") && (
             <>
-              <div className="mp-props-field">
-                <span>处理人</span>
-                <input
-                  value={selectedNode.assignee || ""}
-                  onChange={(e) => updateNode(selectedNode.id, { assignee: e.target.value })}
-                  placeholder="输入处理人"
-                />
+              <div className="space-y-1">
+                <Label>处理人</Label>
+                <Input value={selectedNode.assignee || ""} onChange={(e) => updateNode(selectedNode.id, { assignee: e.target.value })} placeholder="输入处理人" />
               </div>
-              <div className="mp-props-field">
-                <span>SLA</span>
-                <input
-                  value={selectedNode.sla || ""}
-                  onChange={(e) => updateNode(selectedNode.id, { sla: e.target.value })}
-                  placeholder="如: 24h, 3d"
-                />
+              <div className="space-y-1">
+                <Label>SLA</Label>
+                <Input value={selectedNode.sla || ""} onChange={(e) => updateNode(selectedNode.id, { sla: e.target.value })} placeholder="如: 24h, 3d" />
               </div>
             </>
           )}
-          <div className="mp-props-field">
-            <span>描述</span>
+          <div className="space-y-1">
+            <Label>描述</Label>
             <textarea
-              className="mp-widget-textarea"
+              className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               value={selectedNode.description || ""}
               onChange={(e) => updateNode(selectedNode.id, { description: e.target.value })}
               placeholder="节点描述"
               rows={3}
             />
           </div>
-          <div className="mp-props-field">
-            <span style={{ fontSize: 11, color: "#94a3b8", fontFamily: "monospace" }}>
-              ID: {selectedNode.id}
-            </span>
+          <div className="text-xs text-muted-foreground font-mono">
+            ID: {selectedNode.id}
           </div>
         </div>
       );
@@ -820,218 +654,129 @@ const ProcessDesigner: React.FC = () => {
 
     if (selectedEdge) {
       return (
-        <div className="mp-props-group">
-          <div className="mp-props-group-title">边属性</div>
-          <div className="mp-props-field">
-            <span>标签</span>
-            <input
-              value={selectedEdge.label || ""}
-              onChange={(e) => updateEdge(selectedEdge.id, { label: e.target.value })}
-              placeholder="边标签"
-            />
+        <div className="space-y-3">
+          <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider">边属性</div>
+          <div className="space-y-1">
+            <Label>标签</Label>
+            <Input value={selectedEdge.label || ""} onChange={(e) => updateEdge(selectedEdge.id, { label: e.target.value })} placeholder="边标签" />
           </div>
-          <div className="mp-props-field">
-            <span>条件表达式</span>
-            <input
-              value={selectedEdge.condition || ""}
-              onChange={(e) => updateEdge(selectedEdge.id, { condition: e.target.value })}
-              placeholder="如: amount > 10000"
-            />
+          <div className="space-y-1">
+            <Label>条件表达式</Label>
+            <Input value={selectedEdge.condition || ""} onChange={(e) => updateEdge(selectedEdge.id, { condition: e.target.value })} placeholder="如: amount > 10000" />
           </div>
-          <div className="mp-props-field">
-            <span style={{ fontSize: 11, color: "#94a3b8", fontFamily: "monospace" }}>
-              源: {selectedEdge.source}
-            </span>
+          <div className="text-xs text-muted-foreground font-mono">
+            源: {selectedEdge.source}
           </div>
-          <div className="mp-props-field">
-            <span style={{ fontSize: 11, color: "#94a3b8", fontFamily: "monospace" }}>
-              目标: {selectedEdge.target}
-            </span>
+          <div className="text-xs text-muted-foreground font-mono">
+            目标: {selectedEdge.target}
           </div>
         </div>
       );
     }
 
-    /* Nothing selected — show process properties */
     return (
-      <div className="mp-props-group">
-        <div className="mp-props-group-title">流程属性</div>
-        <div className="mp-props-field">
-          <span>流程名称</span>
-          <input
-            value={design.name}
-            onChange={(e) => updateProcess({ name: e.target.value })}
-          />
+      <div className="space-y-3">
+        <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider">流程属性</div>
+        <div className="space-y-1">
+          <Label>流程名称</Label>
+          <Input value={design.name} onChange={(e) => updateProcess({ name: e.target.value })} />
         </div>
-        <div className="mp-props-field">
-          <span>描述</span>
+        <div className="space-y-1">
+          <Label>描述</Label>
           <textarea
-            className="mp-widget-textarea"
+            className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             value={design.description || ""}
             onChange={(e) => updateProcess({ description: e.target.value })}
             placeholder="流程描述"
             rows={4}
           />
         </div>
-        <div className="mp-props-field">
-          <span style={{ fontSize: 11, color: "#94a3b8" }}>
-            节点数: {design.nodes.length} | 边数: {design.edges.length}
-          </span>
+        <div className="text-xs text-muted-foreground">
+          节点数: {design.nodes.length} | 边数: {design.edges.length}
         </div>
       </div>
     );
   };
 
-  /* ─── JSON Preview Modal ─── */
-  const renderJsonModal = () => {
-    if (!showJson) return null;
-    const json = JSON.stringify(design, null, 2);
-    return (
-      <div
-        style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: "rgba(0,0,0,0.5)",
-          zIndex: 1000,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-        onClick={() => setShowJson(false)}
-      >
-        <div
-          style={{
-            background: "#fff",
-            borderRadius: 8,
-            padding: 24,
-            maxWidth: 700,
-            width: "90%",
-            maxHeight: "80vh",
-            overflow: "auto",
-            boxShadow: "0 8px 32px rgba(0,0,0,0.15)",
-          }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-            <h3 style={{ fontSize: 16, fontWeight: 600 }}>流程 JSON 数据</h3>
-            <button className="mp-btn mp-btn-sm" onClick={() => setShowJson(false)}>
-              关闭
-            </button>
-          </div>
-          <pre
-            style={{
-              background: "#f8fafc",
-              border: "1px solid #e2e8f0",
-              borderRadius: 6,
-              padding: 16,
-              fontSize: 12,
-              lineHeight: 1.5,
-              fontFamily: "monospace",
-              overflow: "auto",
-              maxHeight: "60vh",
-              whiteSpace: "pre-wrap",
-              wordBreak: "break-all",
-            }}
-          >
-            {json}
-          </pre>
-        </div>
-      </div>
-    );
-  };
-
-  /* ─── Main Render ─── */
+  /* -- Main Render -- */
   return (
-    <div className="mp-process-designer">
+    <div className="flex flex-col h-full">
       {/* Toast */}
-      {toast && <div className="mp-designer-toast">{toast}</div>}
+      {toast && (
+        <div className="fixed top-4 right-4 z-50 rounded-md bg-foreground px-4 py-2 text-sm text-background shadow-lg">
+          {toast}
+        </div>
+      )}
 
       {/* Hidden file input */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept=".json"
-        style={{ display: "none" }}
-        onChange={onFileChange}
-      />
+      <input ref={fileInputRef} type="file" accept=".json" style={{ display: "none" }} onChange={onFileChange} />
 
       {/* Toolbar */}
-      <div className="mp-process-toolbar">
-        <div className="mp-toolbar-left">
-          <span className="mp-toolbar-title">流程设计器</span>
+      <div className="flex items-center justify-between px-4 py-2 border-b bg-background shrink-0">
+        <div className="flex items-center gap-3">
+          <span className="text-sm font-medium">流程设计器</span>
         </div>
-        <div className="mp-toolbar-center">
-          <input
-            className="mp-toolbar-input"
+        <div className="flex items-center gap-2">
+          <Input
+            className="h-8 w-48"
             value={design.name}
             onChange={(e) => updateProcess({ name: e.target.value })}
             placeholder="流程名称"
           />
           {edgeMode && (
-            <span className="mp-process-edge-mode">
+            <span className="text-xs text-primary font-medium px-2 py-1 bg-primary/10 rounded">
               {edgeSourceId ? "请点击目标节点" : "请点击源节点"}
             </span>
           )}
         </div>
-        <div className="mp-toolbar-right">
-          <button className="mp-btn mp-btn-sm" onClick={newProcess}>
-            新建
-          </button>
-          <button
-            className={`mp-btn mp-btn-sm${edgeMode ? " mp-btn-primary" : ""}`}
-            onClick={() => {
-              setEdgeMode(!edgeMode);
-              setEdgeSourceId(null);
-            }}
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={newProcess}>新建</Button>
+          <Button
+            variant={edgeMode ? "default" : "outline"}
+            size="sm"
+            onClick={() => { setEdgeMode(!edgeMode); setEdgeSourceId(null); }}
           >
             {edgeMode ? "退出连线" : "添加连线"}
-          </button>
-          <button
-            className="mp-btn mp-btn-sm mp-btn-danger"
+          </Button>
+          <Button
+            variant="destructive"
+            size="sm"
             onClick={deleteSelected}
             disabled={!selectedNodeId && !selectedEdgeId}
           >
             删除
-          </button>
-          <div style={{ width: 1, height: 20, background: "#e2e8f0" }} />
-          <button className="mp-btn mp-btn-sm" onClick={saveJson}>
-            保存
-          </button>
-          <button className="mp-btn mp-btn-sm" onClick={loadJson}>
-            加载
-          </button>
-          <button className="mp-btn mp-btn-sm" onClick={() => setShowJson(true)}>
-            JSON
-          </button>
+          </Button>
+          <Separator orientation="vertical" className="h-5 mx-1" />
+          <Button variant="outline" size="sm" onClick={saveJson}>保存</Button>
+          <Button variant="outline" size="sm" onClick={loadJson}>加载</Button>
+          <Button variant="outline" size="sm" onClick={() => setShowJson(true)}>JSON</Button>
         </div>
       </div>
 
-      {/* Body: Palette | Canvas | Properties */}
-      <div className="mp-process-body">
+      {/* Body */}
+      <div className="flex flex-1 overflow-hidden">
         {/* Left Palette */}
-        <div className="mp-process-palette">
-          <div className="mp-palette-title">节点组件</div>
-          <div className="mp-palette-hint">拖拽到画布添加节点</div>
-          <div className="mp-palette-list">
+        <aside className="w-44 border-r bg-muted/30 flex flex-col shrink-0">
+          <div className="px-3 py-2 text-sm font-medium text-muted-foreground">节点组件</div>
+          <div className="px-3 pb-1 text-xs text-muted-foreground">拖拽到画布添加节点</div>
+          <Separator />
+          <div className="flex-1 overflow-auto p-2 flex flex-col gap-1">
             {PALETTE_ITEMS.map((item) => (
               <div
                 key={item.type}
-                className="mp-process-palette-item"
+                className="flex items-center gap-2 px-3 py-2 rounded-md cursor-grab text-sm hover:bg-accent transition-colors"
                 draggable
                 onDragStart={(e) => onPaletteDragStart(e, item.type)}
               >
-                <span style={{ fontSize: 18, width: 24, textAlign: "center" }}>{item.icon}</span>
+                <span className="w-6 text-center text-muted-foreground">{item.icon}</span>
                 <span>{item.label}</span>
               </div>
             ))}
           </div>
-        </div>
+        </aside>
 
         {/* Center Canvas */}
-        <div className="mp-process-canvas">
+        <div className="flex-1 overflow-hidden bg-background">
           <svg
             ref={svgRef}
             width="100%"
@@ -1045,30 +790,12 @@ const ProcessDesigner: React.FC = () => {
             onDragOver={onCanvasDragOver}
           >
             <defs>
-              <marker
-                id="arrowhead"
-                markerWidth={10}
-                markerHeight={7}
-                refX={10}
-                refY={3.5}
-                orient="auto"
-              >
+              <marker id="arrowhead" markerWidth={10} markerHeight={7} refX={10} refY={3.5} orient="auto">
                 <polygon points="0 0, 10 3.5, 0 7" fill="#64748b" />
               </marker>
-              <marker
-                id="arrowhead-selected"
-                markerWidth={10}
-                markerHeight={7}
-                refX={10}
-                refY={3.5}
-                orient="auto"
-              >
+              <marker id="arrowhead-selected" markerWidth={10} markerHeight={7} refX={10} refY={3.5} orient="auto">
                 <polygon points="0 0, 10 3.5, 0 7" fill="#3b82f6" />
               </marker>
-            </defs>
-
-            {/* Grid pattern */}
-            <defs>
               <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
                 <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#e2e8f0" strokeWidth="0.5" />
               </pattern>
@@ -1081,16 +808,9 @@ const ProcessDesigner: React.FC = () => {
             {/* Nodes */}
             {design.nodes.map(renderNode)}
 
-            {/* Empty state hint */}
+            {/* Empty state */}
             {design.nodes.length === 0 && (
-              <text
-                x="50%"
-                y="50%"
-                textAnchor="middle"
-                dominantBaseline="central"
-                fill="#94a3b8"
-                fontSize={14}
-              >
+              <text x="50%" y="50%" textAnchor="middle" dominantBaseline="central" fill="#94a3b8" fontSize={14}>
                 从左侧拖拽节点到画布开始设计
               </text>
             )}
@@ -1098,16 +818,28 @@ const ProcessDesigner: React.FC = () => {
         </div>
 
         {/* Right Properties */}
-        <div className="mp-process-props">
-          <div className="mp-props-title">
+        <aside className="w-72 border-l bg-muted/30 flex flex-col shrink-0 overflow-auto">
+          <div className="px-4 py-3 text-sm font-medium text-muted-foreground">
             {selectedNode ? "节点属性" : selectedEdge ? "边属性" : "流程属性"}
           </div>
-          {renderProperties()}
-        </div>
+          <Separator />
+          <div className="p-4">
+            {renderProperties()}
+          </div>
+        </aside>
       </div>
 
-      {/* JSON Preview Modal */}
-      {renderJsonModal()}
+      {/* JSON Preview Dialog */}
+      <Dialog open={showJson} onOpenChange={setShowJson}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>流程 JSON 数据</DialogTitle>
+          </DialogHeader>
+          <pre className="bg-muted rounded-md p-4 text-xs font-mono overflow-auto max-h-[60vh] whitespace-pre-wrap break-all">
+            {JSON.stringify(design, null, 2)}
+          </pre>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

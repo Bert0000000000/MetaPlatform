@@ -6,6 +6,12 @@ import {
   testConnection,
   syncConnector,
 } from "../api/integrationApi";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 
 /* ---- Types ---- */
 interface Connector {
@@ -34,9 +40,9 @@ const TYPE_LABELS: Record<string, string> = {
 };
 
 const TYPE_ICONS: Record<string, string> = {
-  rest: "🌐",
-  database: "🗄️",
-  csv: "📄",
+  rest: "\u{1F310}",
+  database: "\u{1F5C4}\u{FE0F}",
+  csv: "\u{1F4C4}",
 };
 
 const DEFAULT_CONFIGS: Record<ConnectorType, Record<string, string>> = {
@@ -46,15 +52,15 @@ const DEFAULT_CONFIGS: Record<ConnectorType, Record<string, string>> = {
 };
 
 const CONFIG_LABELS: Record<string, string> = {
-  baseUrl: "基础 URL",
-  authType: "认证类型",
-  authToken: "认证令牌",
+  baseUrl: "\u57FA\u7840 URL",
+  authType: "\u8BA4\u8BC1\u7C7B\u578B",
+  authToken: "\u8BA4\u8BC1\u4EE4\u724C",
   jdbcUrl: "JDBC URL",
-  username: "用户名",
-  password: "密码",
-  filePath: "文件路径",
-  delimiter: "分隔符",
-  hasHeader: "含表头",
+  username: "\u7528\u6237\u540D",
+  password: "\u5BC6\u7801",
+  filePath: "\u6587\u4EF6\u8DEF\u5F84",
+  delimiter: "\u5206\u9694\u7B26",
+  hasHeader: "\u542B\u8868\u5934",
 };
 
 /* ---- Component ---- */
@@ -83,7 +89,7 @@ const IntegrationHub: React.FC = () => {
       const data = await listConnectors();
       setConnectors(Array.isArray(data) ? data : []);
     } catch {
-      setError("加载连接器列表失败");
+      setError("\u52A0\u8F7D\u8FDE\u63A5\u5668\u5217\u8868\u5931\u8D25");
       setConnectors([]);
     } finally {
       setLoading(false);
@@ -128,7 +134,7 @@ const IntegrationHub: React.FC = () => {
     } catch {
       setStatusMessages((prev) => ({
         ...prev,
-        __create: { type: "error", text: "创建连接器失败" },
+        __create: { type: "error", text: "\u521B\u5EFA\u8FDE\u63A5\u5668\u5931\u8D25" },
       }));
     } finally {
       setCreating(false);
@@ -160,13 +166,13 @@ const IntegrationHub: React.FC = () => {
         ...prev,
         [id]: {
           type: ok ? "success" : "error",
-          text: ok ? "连接测试成功" : "连接测试失败",
+          text: ok ? "\u8FDE\u63A5\u6D4B\u8BD5\u6210\u529F" : "\u8FDE\u63A5\u6D4B\u8BD5\u5931\u8D25",
         },
       }));
     } catch {
       setStatusMessages((prev) => ({
         ...prev,
-        [id]: { type: "error", text: "连接测试失败" },
+        [id]: { type: "error", text: "\u8FDE\u63A5\u6D4B\u8BD5\u5931\u8D25" },
       }));
     } finally {
       setTestingId(null);
@@ -185,54 +191,56 @@ const IntegrationHub: React.FC = () => {
       await syncConnector(id);
       setStatusMessages((prev) => ({
         ...prev,
-        [`sync-${id}`]: { type: "success", text: "同步完成" },
+        [`sync-${id}`]: { type: "success", text: "\u540C\u6B65\u5B8C\u6210" },
       }));
     } catch {
       setStatusMessages((prev) => ({
         ...prev,
-        [`sync-${id}`]: { type: "error", text: "同步失败" },
+        [`sync-${id}`]: { type: "error", text: "\u540C\u6B65\u5931\u8D25" },
       }));
     } finally {
       setSyncingId(null);
     }
   }
 
-  function getStatusClass(connector: Connector): string {
+  function getStatusVariant(connector: Connector): "default" | "secondary" | "destructive" | "outline" {
     const s = (connector.status || "").toLowerCase();
-    if (s === "active" || s === "connected") return "status-active";
-    if (s === "error" || s === "failed") return "status-error";
-    return "status-unknown";
+    if (s === "active" || s === "connected") return "default";
+    if (s === "error" || s === "failed") return "destructive";
+    return "secondary";
   }
 
   function getStatusLabel(connector: Connector): string {
     const s = (connector.status || "").toLowerCase();
-    if (s === "active" || s === "connected") return "已连接";
-    if (s === "error" || s === "failed") return "异常";
-    if (s === "inactive" || s === "disconnected") return "未连接";
-    return connector.status || "未知";
+    if (s === "active" || s === "connected") return "\u5DF2\u8FDE\u63A5";
+    if (s === "error" || s === "failed") return "\u5F02\u5E38";
+    if (s === "inactive" || s === "disconnected") return "\u672A\u8FDE\u63A5";
+    return connector.status || "\u672A\u77E5";
   }
 
   return (
-    <div className="mp-integration">
+    <div className="p-6 max-w-7xl mx-auto space-y-6">
       {/* Header */}
-      <div className="mp-integration-header">
+      <div className="flex items-center justify-between">
         <div>
-          <h1>集成中心</h1>
-          <p>管理连接器和数据同步</p>
+          <h1 className="text-2xl font-semibold tracking-tight">集成中心</h1>
+          <p className="text-sm text-muted-foreground mt-1">管理连接器和数据同步</p>
         </div>
-        <button
-          className="mp-btn mp-btn-primary"
-          onClick={() => setShowCreate(!showCreate)}
-        >
+        <Button onClick={() => setShowCreate(!showCreate)}>
           + 新建连接器
-        </button>
+        </Button>
       </div>
 
       {/* Status messages */}
       {Object.entries(statusMessages).map(([key, msg]) => (
         <div
           key={key}
-          className={`mp-alert mp-alert-${msg.type === "success" ? "success" : "error"}`}
+          className={cn(
+            "rounded-md border p-4 text-sm",
+            msg.type === "success"
+              ? "border-green-200 bg-green-50 text-green-700"
+              : "border-destructive/50 bg-destructive/10 text-destructive"
+          )}
         >
           {msg.text}
         </div>
@@ -240,16 +248,16 @@ const IntegrationHub: React.FC = () => {
 
       {/* Create connector form */}
       {showCreate && (
-        <div className="mp-integration-create">
-          <h3>新建连接器</h3>
-          <div className="mp-integration-create-form">
-            <div className="mp-field">
-              <label className="mp-field-label">
-                名称<span className="mp-field-required">*</span>
-              </label>
-              <input
-                type="text"
-                className="mp-widget-input"
+        <Card>
+          <CardHeader>
+            <h3 className="text-lg font-semibold">新建连接器</h3>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label>
+                名称<span className="text-destructive ml-0.5">*</span>
+              </Label>
+              <Input
                 placeholder="输入连接器名称"
                 value={formData.name}
                 onChange={(e) =>
@@ -258,33 +266,31 @@ const IntegrationHub: React.FC = () => {
               />
             </div>
 
-            <div className="mp-field">
-              <label className="mp-field-label">类型</label>
-              <div className="mp-integration-type-selector">
+            <div className="space-y-2">
+              <Label>类型</Label>
+              <div className="flex gap-2">
                 {(["rest", "database", "csv"] as ConnectorType[]).map((t) => (
-                  <button
+                  <Button
                     key={t}
-                    className={`mp-integration-type-btn${formData.type === t ? " active" : ""}`}
+                    variant={formData.type === t ? "default" : "outline"}
+                    size="sm"
                     onClick={() => handleTypeChange(t)}
                   >
-                    <span>{TYPE_ICONS[t]}</span>
+                    <span className="mr-1">{TYPE_ICONS[t]}</span>
                     {TYPE_LABELS[t]}
-                  </button>
+                  </Button>
                 ))}
               </div>
             </div>
 
             {/* Config fields by type */}
-            <div className="mp-integration-config-fields">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {Object.entries(formData.config).map(([field, value]) => (
-                <div key={field} className="mp-field">
-                  <label className="mp-field-label">
-                    {CONFIG_LABELS[field] || field}
-                  </label>
+                <div key={field} className="space-y-2">
+                  <Label>{CONFIG_LABELS[field] || field}</Label>
                   {field === "password" ? (
-                    <input
+                    <Input
                       type="password"
-                      className="mp-widget-input"
                       value={value}
                       onChange={(e) =>
                         handleConfigChange(field, e.target.value)
@@ -292,7 +298,7 @@ const IntegrationHub: React.FC = () => {
                     />
                   ) : field === "hasHeader" ? (
                     <select
-                      className="mp-widget-select"
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                       value={value}
                       onChange={(e) =>
                         handleConfigChange(field, e.target.value)
@@ -302,9 +308,7 @@ const IntegrationHub: React.FC = () => {
                       <option value="false">否</option>
                     </select>
                   ) : (
-                    <input
-                      type="text"
-                      className="mp-widget-input"
+                    <Input
                       value={value}
                       onChange={(e) =>
                         handleConfigChange(field, e.target.value)
@@ -315,97 +319,113 @@ const IntegrationHub: React.FC = () => {
               ))}
             </div>
 
-            <div className="mp-integration-create-actions">
-              <button
-                className="mp-btn mp-btn-primary"
+            <div className="flex gap-2 justify-end">
+              <Button
                 onClick={handleCreate}
                 disabled={!formData.name.trim() || creating}
               >
                 {creating ? "创建中..." : "创建"}
-              </button>
-              <button
-                className="mp-btn"
+              </Button>
+              <Button
+                variant="outline"
                 onClick={() => setShowCreate(false)}
               >
                 取消
-              </button>
+              </Button>
             </div>
-          </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {error && (
+        <div className="rounded-md border border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive">
+          {error}
         </div>
       )}
 
-      {error && <div className="mp-alert mp-alert-error">{error}</div>}
-
       {/* Connector list */}
       {loading ? (
-        <div className="mp-loading">加载中...</div>
+        <div className="flex items-center justify-center py-8 text-muted-foreground">
+          加载中...
+        </div>
       ) : connectors.length === 0 ? (
-        <div className="mp-empty-hint">暂无连接器，请创建新连接器</div>
+        <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+          暂无连接器，请创建新连接器
+        </div>
       ) : (
-        <div className="mp-integration-list">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {connectors.map((c) => (
-            <div key={c.id} className={`mp-integration-card ${c.type}`}>
-              <div className="mp-integration-card-header">
-                <div className="mp-integration-card-icon">
-                  {TYPE_ICONS[c.type] || "🔗"}
+            <Card key={c.id}>
+              <CardHeader className="pb-3">
+                <div className="flex items-center gap-3">
+                  <div className="text-2xl">{TYPE_ICONS[c.type] || "\u{1F517}"}</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium truncate">{c.name}</div>
+                    <div className="font-mono text-xs text-muted-foreground truncate">{c.id}</div>
+                  </div>
+                  <Badge variant="secondary">{TYPE_LABELS[c.type] || c.type}</Badge>
                 </div>
-                <div className="mp-integration-card-info">
-                  <div className="mp-integration-card-name">{c.name}</div>
-                  <div className="mp-integration-card-id">{c.id}</div>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div>
+                  <Badge variant={getStatusVariant(c)}>
+                    {getStatusLabel(c)}
+                  </Badge>
                 </div>
-                <span className={`mp-integration-type-badge ${c.type}`}>
-                  {TYPE_LABELS[c.type] || c.type}
-                </span>
-              </div>
 
-              <div className="mp-integration-card-status">
-                <span className={`mp-integration-status ${getStatusClass(c)}`}>
-                  <span className="mp-integration-status-dot" />
-                  {getStatusLabel(c)}
-                </span>
-              </div>
+                {/* Status message for this connector */}
+                {statusMessages[c.id] && (
+                  <div
+                    className={cn(
+                      "rounded-md border p-2 text-xs",
+                      statusMessages[c.id].type === "success"
+                        ? "border-green-200 bg-green-50 text-green-700"
+                        : "border-destructive/50 bg-destructive/10 text-destructive"
+                    )}
+                  >
+                    {statusMessages[c.id].text}
+                  </div>
+                )}
+                {statusMessages[`sync-${c.id}`] && (
+                  <div
+                    className={cn(
+                      "rounded-md border p-2 text-xs",
+                      statusMessages[`sync-${c.id}`].type === "success"
+                        ? "border-green-200 bg-green-50 text-green-700"
+                        : "border-destructive/50 bg-destructive/10 text-destructive"
+                    )}
+                  >
+                    {statusMessages[`sync-${c.id}`].text}
+                  </div>
+                )}
 
-              {/* Status message for this connector */}
-              {statusMessages[c.id] && (
-                <div
-                  className={`mp-alert mp-alert-${statusMessages[c.id].type === "success" ? "success" : "error"}`}
-                  style={{ marginBottom: 8 }}
-                >
-                  {statusMessages[c.id].text}
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleTest(c.id)}
+                    disabled={testingId === c.id}
+                  >
+                    {testingId === c.id ? "测试中..." : "测试连接"}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleSync(c.id)}
+                    disabled={syncingId === c.id}
+                  >
+                    {syncingId === c.id ? "同步中..." : "同步"}
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => handleDelete(c.id)}
+                  >
+                    删除
+                  </Button>
                 </div>
-              )}
-              {statusMessages[`sync-${c.id}`] && (
-                <div
-                  className={`mp-alert mp-alert-${statusMessages[`sync-${c.id}`].type === "success" ? "success" : "error"}`}
-                  style={{ marginBottom: 8 }}
-                >
-                  {statusMessages[`sync-${c.id}`].text}
-                </div>
-              )}
-
-              <div className="mp-integration-card-actions">
-                <button
-                  className="mp-btn mp-btn-sm"
-                  onClick={() => handleTest(c.id)}
-                  disabled={testingId === c.id}
-                >
-                  {testingId === c.id ? "测试中..." : "测试连接"}
-                </button>
-                <button
-                  className="mp-btn mp-btn-sm"
-                  onClick={() => handleSync(c.id)}
-                  disabled={syncingId === c.id}
-                >
-                  {syncingId === c.id ? "同步中..." : "同步"}
-                </button>
-                <button
-                  className="mp-btn mp-btn-sm mp-btn-danger"
-                  onClick={() => handleDelete(c.id)}
-                >
-                  删除
-                </button>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
           ))}
         </div>
       )}

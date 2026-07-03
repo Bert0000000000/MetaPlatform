@@ -1,6 +1,8 @@
 import React from "react";
 import { FieldSchema } from "../types/schema";
 import widgetMap from "./widgetMap";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 
 interface FieldWidgetProps {
   field: FieldSchema;
@@ -19,13 +21,13 @@ const FieldWidget: React.FC<FieldWidgetProps> = ({ field, value, onChange }) => 
 
   return (
     <div
-      className="mp-field"
+      className="space-y-1.5"
       style={{ gridColumn: `span ${field.colSpan ?? 1}` }}
     >
-      <label className="mp-field-label">
+      <Label className="text-sm">
         {field.label}
-        {field.required && <span className="mp-field-required">*</span>}
-      </label>
+        {field.required && <span className="text-destructive ml-0.5">*</span>}
+      </Label>
       {WidgetComponent ? (
         <WidgetComponent
           field={field}
@@ -33,9 +35,8 @@ const FieldWidget: React.FC<FieldWidgetProps> = ({ field, value, onChange }) => 
           onChange={(v) => onChange(field.field, v)}
         />
       ) : (
-        <input
+        <Input
           type="text"
-          className="mp-widget-input"
           placeholder={field.placeholder}
           value={String(value ?? "")}
           onChange={(e) => onChange(field.field, e.target.value)}

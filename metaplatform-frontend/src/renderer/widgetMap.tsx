@@ -1,5 +1,8 @@
 import { ComponentType } from "react";
 import { FieldSchema } from "../types/schema";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
 
 /**
  * Maps widget type strings to the native HTML element component or a
@@ -16,10 +19,10 @@ export interface WidgetProps {
 
 // ---------- native widget wrappers ----------
 
+const selectClasses = "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50";
+
 const InputWidget: ComponentType<WidgetProps> = ({ field, value, onChange }) => (
-  <input
-    type="text"
-    className="mp-widget-input"
+  <Input
     placeholder={field.placeholder}
     value={String(value ?? "")}
     onChange={(e) => onChange(e.target.value)}
@@ -28,8 +31,7 @@ const InputWidget: ComponentType<WidgetProps> = ({ field, value, onChange }) => 
 );
 
 const TextareaWidget: ComponentType<WidgetProps> = ({ field, value, onChange }) => (
-  <textarea
-    className="mp-widget-textarea"
+  <Textarea
     placeholder={field.placeholder}
     value={String(value ?? "")}
     onChange={(e) => onChange(e.target.value)}
@@ -39,11 +41,10 @@ const TextareaWidget: ComponentType<WidgetProps> = ({ field, value, onChange }) 
 );
 
 const NumberWidget: ComponentType<WidgetProps> = ({ field, value, onChange }) => (
-  <input
+  <Input
     type="number"
-    className="mp-widget-input"
     placeholder={field.placeholder}
-    value={value == null ? "" : Number(value)}
+    value={value == null ? "" : String(Number(value))}
     onChange={(e) => onChange(e.target.value === "" ? null : Number(e.target.value))}
     disabled={!field.editable}
   />
@@ -51,12 +52,12 @@ const NumberWidget: ComponentType<WidgetProps> = ({ field, value, onChange }) =>
 
 const SelectWidget: ComponentType<WidgetProps> = ({ field, value, onChange }) => (
   <select
-    className="mp-widget-select"
+    className={selectClasses}
     value={String(value ?? "")}
     onChange={(e) => onChange(e.target.value)}
     disabled={!field.editable}
   >
-    <option value="">{field.placeholder ?? "-- 请选择 --"}</option>
+    <option value="">{field.placeholder ?? "-- \u8BF7\u9009\u62E9 --"}</option>
     {(field.options ?? []).map((opt) => (
       <option key={String(opt.value)} value={String(opt.value)}>
         {opt.label}
@@ -66,9 +67,8 @@ const SelectWidget: ComponentType<WidgetProps> = ({ field, value, onChange }) =>
 );
 
 const DatepickerWidget: ComponentType<WidgetProps> = ({ field, value, onChange }) => (
-  <input
+  <Input
     type="date"
-    className="mp-widget-input"
     value={String(value ?? "")}
     onChange={(e) => onChange(e.target.value)}
     disabled={!field.editable}
@@ -76,21 +76,20 @@ const DatepickerWidget: ComponentType<WidgetProps> = ({ field, value, onChange }
 );
 
 const SwitchWidget: ComponentType<WidgetProps> = ({ field, value, onChange }) => (
-  <label className="mp-widget-switch">
+  <label className="flex items-center gap-2 cursor-pointer">
     <input
       type="checkbox"
+      className="h-4 w-4 rounded border-gray-300"
       checked={Boolean(value)}
       onChange={(e) => onChange(e.target.checked)}
       disabled={!field.editable}
     />
-    <span className="mp-widget-switch-label" />
   </label>
 );
 
 const EmailWidget: ComponentType<WidgetProps> = ({ field, value, onChange }) => (
-  <input
+  <Input
     type="email"
-    className="mp-widget-input"
     placeholder={field.placeholder ?? "email@example.com"}
     value={String(value ?? "")}
     onChange={(e) => onChange(e.target.value)}
@@ -99,9 +98,8 @@ const EmailWidget: ComponentType<WidgetProps> = ({ field, value, onChange }) => 
 );
 
 const PhoneWidget: ComponentType<WidgetProps> = ({ field, value, onChange }) => (
-  <input
+  <Input
     type="tel"
-    className="mp-widget-input"
     placeholder={field.placeholder ?? "+86 ..."}
     value={String(value ?? "")}
     onChange={(e) => onChange(e.target.value)}
@@ -110,9 +108,8 @@ const PhoneWidget: ComponentType<WidgetProps> = ({ field, value, onChange }) => 
 );
 
 const UrlWidget: ComponentType<WidgetProps> = ({ field, value, onChange }) => (
-  <input
+  <Input
     type="url"
-    className="mp-widget-input"
     placeholder={field.placeholder ?? "https://..."}
     value={String(value ?? "")}
     onChange={(e) => onChange(e.target.value)}
@@ -123,11 +120,15 @@ const UrlWidget: ComponentType<WidgetProps> = ({ field, value, onChange }) => (
 const RateWidget: ComponentType<WidgetProps> = ({ field, value, onChange }) => {
   const current = Number(value ?? 0);
   return (
-    <div className="mp-widget-rate">
+    <div className="flex gap-1">
       {[1, 2, 3, 4, 5].map((n) => (
         <span
           key={n}
-          className={`mp-rate-star ${n <= current ? "active" : ""}`}
+          className={cn(
+            "text-2xl cursor-pointer transition-colors",
+            n <= current ? "text-yellow-400" : "text-gray-300",
+            !field.editable && "cursor-not-allowed opacity-50"
+          )}
           onClick={() => field.editable && onChange(n)}
           role="button"
           aria-label={`${n} star`}

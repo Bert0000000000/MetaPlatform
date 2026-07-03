@@ -87,6 +87,7 @@ export interface PageRender {
   name: string;
   displayName?: string;
   pageType: string;
+  objectCode?: string;
   layout?: PageLayout;
   sections: SectionSchema[];
   viewConfig?: Record<string, unknown>;

@@ -3,6 +3,7 @@ import { SectionSchema } from "../types/schema";
 import FieldWidget from "./FieldWidget";
 import TableRenderer from "./TableRenderer";
 import KanbanRenderer from "./KanbanRenderer";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface SectionRendererProps {
   section: SectionSchema;
@@ -29,16 +30,14 @@ const SectionRenderer: React.FC<SectionRendererProps> = ({
   const columns = section.columns ?? 2;
 
   return (
-    <div className="mp-section">
-      <h3 className="mp-section-title">{section.title}</h3>
+    <div className="space-y-3">
+      <h3 className="text-base font-semibold">{section.title}</h3>
 
       {(section.type === "FORM" || section.type === "FIELD_GROUP") && section.fields && (
         <div
-          className="mp-form-grid"
+          className="grid gap-3"
           style={{
-            display: "grid",
             gridTemplateColumns: `repeat(${columns}, 1fr)`,
-            gap: 12,
           }}
         >
           {section.fields
@@ -64,9 +63,14 @@ const SectionRenderer: React.FC<SectionRendererProps> = ({
       )}
 
       {section.type === "CARD" && (
-        <div className="mp-card-placeholder">
-          <p>Card section: {section.title}</p>
-        </div>
+        <Card>
+          <CardHeader className="py-3">
+            <CardTitle className="text-sm">{section.title}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">Card section: {section.title}</p>
+          </CardContent>
+        </Card>
       )}
     </div>
   );

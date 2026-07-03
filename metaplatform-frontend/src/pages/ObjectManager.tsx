@@ -3,11 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { listObjectTypes } from "../api/ontologyApi";
 import { generatePage } from "../api/pageApi";
 import { ObjectTypeSummary } from "../types/schema";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-/**
- * Lists all ObjectTypes from the ontology-engine.
- * Users can click to auto-generate a page config and preview it.
- */
 const ObjectManager: React.FC = () => {
   const navigate = useNavigate();
   const [objectTypes, setObjectTypes] = useState<ObjectTypeSummary[]>([]);
@@ -46,38 +44,59 @@ const ObjectManager: React.FC = () => {
   };
 
   return (
-    <div className="mp-object-manager">
-      <div className="mp-dashboard-header">
-        <h1>ObjectType 管理</h1>
-        <p>查看所有业务对象类型，点击即可自动生成页面配置并预览。</p>
+    <div className="p-6 max-w-7xl mx-auto space-y-6">
+      {/* Page header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">ObjectType 管理</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            查看所有业务对象类型，点击即可自动生成页面配置并预览。
+          </p>
+        </div>
       </div>
 
-      {error && <div className="mp-alert mp-alert-error">{error}</div>}
+      {error && (
+        <div className="rounded-md border border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive">
+          {error}
+        </div>
+      )}
 
       {loading ? (
-        <p className="mp-loading">加载中...</p>
+        <div className="flex items-center justify-center py-8 text-muted-foreground">
+          加载中...
+        </div>
       ) : objectTypes.length === 0 ? (
-        <p className="mp-empty-hint">暂无 ObjectType，请先在 ontology-engine 中创建。</p>
+        <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+          <p>暂无 ObjectType，请先在 ontology-engine 中创建。</p>
+        </div>
       ) : (
-        <div className="mp-ot-grid">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {objectTypes.map((ot) => (
-            <div key={ot.id} className="mp-ot-card">
-              <div className="mp-ot-card-name">{ot.displayName}</div>
-              <div className="mp-ot-card-meta">{ot.name}</div>
-              {ot.description && (
-                <div className="mp-ot-card-desc">{ot.description}</div>
-              )}
-              {ot.fieldCount != null && (
-                <div className="mp-ot-card-meta">字段数: {ot.fieldCount}</div>
-              )}
-              <button
-                className="mp-btn mp-btn-primary mp-btn-sm"
-                disabled={generatingId === ot.id}
-                onClick={() => handleGenerateAndPreview(ot)}
-              >
-                {generatingId === ot.id ? "生成中..." : "生成并预览"}
-              </button>
-            </div>
+            <Card key={ot.id}>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">{ot.displayName}</CardTitle>
+                <p className="text-xs text-muted-foreground">{ot.name}</p>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {ot.description && (
+                  <p className="text-sm text-muted-foreground line-clamp-2">
+                    {ot.description}
+                  </p>
+                )}
+                {ot.fieldCount != null && (
+                  <p className="text-xs text-muted-foreground">
+                    字段数: {ot.fieldCount}
+                  </p>
+                )}
+                <Button
+                  size="sm"
+                  disabled={generatingId === ot.id}
+                  onClick={() => handleGenerateAndPreview(ot)}
+                >
+                  {generatingId === ot.id ? "生成中..." : "生成并预览"}
+                </Button>
+              </CardContent>
+            </Card>
           ))}
         </div>
       )}

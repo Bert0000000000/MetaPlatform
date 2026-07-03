@@ -58,3 +58,17 @@ export async function listObjectInstances(
   });
   return data;
 }
+
+/** Create a new ObjectInstance. */
+export async function createObjectInstance(
+  objectTypeId: string,
+  fieldValues: Record<string, unknown>,
+  tenantId: string = TENANT_ID,
+): Promise<Record<string, unknown>> {
+  const { data } = await http.post<Record<string, unknown>>("/object-instances", {
+    objectTypeId,
+    tenantId,
+    fieldValues,
+  });
+  return data;
+}
