@@ -30,9 +30,10 @@ export default function ApprovalList() {
       setLoading(true);
       setError(null);
       const data = await flowableApi.listTasks();
-      setTasks(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "加载失败");
+      setTasks(Array.isArray(data) ? data : []);
+    } catch {
+      // Flowable not available — show empty state, not error
+      setTasks([]);
     } finally {
       setLoading(false);
     }

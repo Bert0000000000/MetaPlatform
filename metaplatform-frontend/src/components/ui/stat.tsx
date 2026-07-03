@@ -8,7 +8,7 @@ interface StatCardProps {
   value: string | number;
   unit?: string;
   trend?: number;
-  icon?: React.ReactNode;
+  icon?: React.ElementType | React.ReactNode;
   className?: string;
 }
 
@@ -21,6 +21,12 @@ export function StatCard({
   className,
 }: StatCardProps) {
   const isPositive = trend !== undefined && trend >= 0;
+  // Support both React.ElementType (Lucide component) and React.ReactNode (JSX)
+  const iconElement = icon
+    ? typeof icon === "function"
+      ? React.createElement(icon as React.ElementType, { className: "size-4" })
+      : icon
+    : null;
   return (
     <Card className={className}>
       <CardContent className="p-3">
@@ -49,7 +55,7 @@ export function StatCard({
               </div>
             )}
           </div>
-          {icon && <span className="text-xl">{icon}</span>}
+          {iconElement && <span className="text-xl">{iconElement}</span>}
         </div>
       </CardContent>
     </Card>
