@@ -109,9 +109,45 @@ export default defineConfig({
         target: "http://localhost:8083",
         changeOrigin: true,
       },
-      // Fallback to page-generator for any other /api
-      "/api": {
-        target: "http://localhost:8083",
+      // MetaPlatform API (Node.js backend)
+      "/api/auth": {
+        target: "http://localhost:3001",
+        changeOrigin: true,
+      },
+      "/api/apps": {
+        target: "http://localhost:3001",
+        changeOrigin: true,
+      },
+      "/api/ontology": {
+        target: "http://localhost:3001",
+        changeOrigin: true,
+      },
+      "/api/processes": {
+        target: "http://localhost:3001",
+        changeOrigin: true,
+      },
+      "/api/data": {
+        target: "http://localhost:3001",
+        changeOrigin: true,
+      },
+      "/api/knowledge": {
+        target: "http://localhost:3001",
+        changeOrigin: true,
+      },
+      "/api/agents": {
+        target: "http://localhost:3001",
+        changeOrigin: true,
+      },
+      "/api/admin": {
+        target: "http://localhost:3001",
+        changeOrigin: true,
+      },
+      "/api/messages": {
+        target: "http://localhost:3001",
+        changeOrigin: true,
+      },
+      "/api/health": {
+        target: "http://localhost:3001",
         changeOrigin: true,
       },
     },

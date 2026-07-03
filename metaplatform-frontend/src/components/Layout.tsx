@@ -3,6 +3,7 @@ import { Sidebar } from "@/components/Sidebar";
 import { Topbar } from "@/components/Topbar";
 import { MenuTabsBar } from "@/components/MenuTabsBar";
 import { AppDetailTabs } from "@/components/AppDetailTabs";
+import { CommandPalette } from "@/components/CommandPalette";
 
 export function Layout() {
   const location = useLocation();
@@ -38,6 +39,7 @@ export function Layout() {
           <Outlet />
         </main>
       </div>
+      <CommandPalette />
     </div>
   );
 }
