@@ -1,0 +1,1455 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Untitled</title>
+    <style id="theme-vars">
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MetaPlatform 设计系统 — 组件展示</title>
+  <link rel="stylesheet" href="../../colors_and_type.css">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; }
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-bg);
+      color: var(--color-text-primary);
+      line-height: var(--line-height-normal);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    ::selection { background: rgba(59,130,246,0.15); }
+    input, textarea, button { font-family: inherit; }
+    a { text-decoration: none; color: inherit; }
+
+    /* Layout */
+    .page-wrapper {
+      display: flex;
+      min-height: 100vh;
+    }
+    .content-area {
+      flex: 1;
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 48px 48px 80px;
+    }
+
+    /* Header */
+    .hero {
+      text-align: center;
+      padding-bottom: 40px;
+      margin-bottom: 40px;
+      border-bottom: 1px solid var(--color-border-light);
+    }
+    .hero h1 {
+      font-size: var(--font-size-3xl);
+      font-weight: var(--font-weight-bold);
+      letter-spacing: -0.02em;
+      color: var(--color-text-primary);
+      margin-bottom: 8px;
+    }
+    .hero p {
+      font-size: var(--font-size-md);
+      color: var(--color-text-tertiary);
+      font-weight: var(--font-weight-normal);
+    }
+
+    /* Section */
+    .section {
+      margin-bottom: 48px;
+    }
+    .section-title {
+      font-size: var(--font-size-xl);
+      font-weight: var(--font-weight-semibold);
+      color: var(--color-text-primary);
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--color-border-light);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .section-title .section-tag {
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-medium);
+      color: var(--color-primary);
+      background: var(--color-primary-light);
+      padding: 2px 8px;
+      border-radius: var(--radius-full);
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+    }
+
+    /* Component groups */
+    .component-group {
+      margin-bottom: 16px;
+    }
+    .component-group-label {
+      font-size: var(--font-size-xs);
+      color: var(--color-text-tertiary);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 10px;
+      font-weight: var(--font-weight-medium);
+    }
+
+    /* Flex rows */
+    .flex-row {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .flex-col {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* ---- BUTTON COMPONENT ---- */
+    .mp-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      border: none;
+      cursor: pointer;
+      font-weight: var(--font-weight-medium);
+      transition: all 0.15s ease;
+      white-space: nowrap;
+      border-radius: var(--radius-btn);
+    }
+    .mp-btn--primary {
+      background: var(--color-primary);
+      color: #ffffff;
+    }
+    .mp-btn--primary:hover {
+      background: var(--color-primary-hover);
+    }
+    .mp-btn--outline {
+      background: transparent;
+      color: var(--color-text-secondary);
+      border: 1px solid var(--color-border);
+    }
+    .mp-btn--outline:hover {
+      border-color: var(--color-primary);
+      color: var(--color-primary);
+    }
+    .mp-btn--danger {
+      background: transparent;
+      color: var(--state-error);
+      border: none;
+    }
+    .mp-btn--danger:hover {
+      background: var(--state-error-bg);
+    }
+    .mp-btn--sm {
+      padding: 4px 12px;
+      font-size: var(--font-size-xs);
+    }
+    .mp-btn--md {
+      padding: 8px 16px;
+      font-size: var(--font-size-sm);
+    }
+
+    /* ---- BADGE COMPONENT ---- */
+    .mp-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 10px;
+      border-radius: var(--radius-full);
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-medium);
+      line-height: 20px;
+      white-space: nowrap;
+    }
+    .mp-badge--default {
+      background: var(--color-primary-light);
+      color: var(--color-primary);
+    }
+    .mp-badge--rest {
+      background: var(--tint-rest-bg);
+      color: var(--tint-rest);
+    }
+    .mp-badge--ai {
+      background: var(--tint-ai-bg);
+      color: var(--tint-ai);
+    }
+    .mp-badge--database {
+      background: var(--tint-database-bg);
+      color: var(--tint-database);
+    }
+    .mp-badge--csv {
+      background: var(--tint-csv-bg);
+      color: var(--tint-csv);
+    }
+    .mp-badge--success {
+      background: var(--state-success-bg);
+      color: var(--state-success);
+    }
+    .mp-badge--error {
+      background: var(--state-error-bg);
+      color: var(--state-error);
+    }
+    .mp-badge--warning {
+      background: var(--state-warning-bg);
+      color: var(--state-warning);
+    }
+
+    /* ---- INPUT COMPONENT ---- */
+    .mp-field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .mp-field__label {
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-medium);
+      color: var(--color-text-primary);
+    }
+    .mp-field__helper {
+      font-size: var(--font-size-xs);
+      color: var(--color-text-tertiary);
+    }
+    .mp-input {
+      background: var(--color-bg-secondary);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-input);
+      padding: 8px 12px;
+      font-size: var(--font-size-sm);
+      color: var(--color-text-primary);
+      outline: none;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+      width: 100%;
+    }
+    .mp-input:focus {
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
+    }
+    .mp-textarea {
+      background: var(--color-bg-secondary);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-input);
+      padding: 12px 16px;
+      font-size: var(--font-size-sm);
+      color: var(--color-text-primary);
+      outline: none;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+      width: 100%;
+      min-height: 80px;
+      resize: vertical;
+    }
+    .mp-textarea:focus {
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
+    }
+
+    /* ---- CARD COMPONENT ---- */
+    .mp-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-card);
+      padding: var(--spacing-lg);
+    }
+    .mp-card--interactive {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-card);
+      padding: var(--spacing-lg);
+      cursor: pointer;
+      transition: border-color 0.15s ease;
+    }
+    .mp-card--interactive:hover {
+      border-color: var(--color-primary);
+    }
+    .mp-card--status {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-left: 3px solid var(--color-primary);
+      border-radius: var(--radius-card);
+      padding: var(--spacing-lg);
+    }
+    .mp-card__title {
+      font-size: var(--font-size-base);
+      font-weight: var(--font-weight-semibold);
+      color: var(--color-text-primary);
+      margin-bottom: 4px;
+    }
+    .mp-card__desc {
+      font-size: var(--font-size-sm);
+      color: var(--color-text-secondary);
+      line-height: var(--line-height-relaxed);
+    }
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+
+    /* ---- DATA TABLE COMPONENT ---- */
+    .mp-table-wrapper {
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+    .mp-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: var(--font-size-sm);
+    }
+    .mp-table thead {
+      background: var(--color-bg-tertiary);
+    }
+    .mp-table th {
+      text-align: left;
+      padding: 12px 16px;
+      font-weight: var(--font-weight-semibold);
+      color: var(--color-text-primary);
+      font-size: var(--font-size-xs);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border-bottom: 1px solid var(--color-border);
+    }
+    .mp-table td {
+      padding: 12px 16px;
+      color: var(--color-text-secondary);
+      border-bottom: 1px solid var(--color-border-light);
+    }
+    .mp-table tbody tr:last-child td {
+      border-bottom: none;
+    }
+    .mp-table .mp-table__actions {
+      display: flex;
+      gap: 8px;
+    }
+    .mp-table__action-btn {
+      font-size: var(--font-size-xs);
+      color: var(--color-primary);
+      cursor: pointer;
+      background: none;
+      border: none;
+      padding: 0;
+      font-weight: var(--font-weight-medium);
+    }
+    .mp-table__action-btn--danger {
+      color: var(--state-error);
+    }
+
+    /* ---- SIDEBAR COMPONENT ---- */
+    .mp-sidebar {
+      width: var(--sidebar-width);
+      min-height: 480px;
+      background: var(--color-sidebar-bg);
+      border-radius: var(--radius-lg);
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .mp-sidebar__brand {
+      padding: 20px 20px 16px;
+      border-bottom: 1px solid var(--color-sidebar-border);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .mp-sidebar__logo {
+      width: 36px;
+      height: 36px;
+      background: var(--color-primary);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+      font-weight: var(--font-weight-bold);
+      font-size: var(--font-size-md);
+      flex-shrink: 0;
+    }
+    .mp-sidebar__brand-text {
+      font-size: var(--font-size-base);
+      font-weight: var(--font-weight-semibold);
+      color: #ffffff;
+      letter-spacing: -0.01em;
+    }
+    .mp-sidebar__brand-sub {
+      font-size: var(--font-size-xs);
+      color: var(--color-sidebar-text);
+    }
+    .mp-sidebar__nav {
+      flex: 1;
+      padding: 12px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .mp-sidebar__item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 12px;
+      border-radius: var(--radius-md);
+      font-size: var(--font-size-sm);
+      color: var(--color-sidebar-text);
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+    .mp-sidebar__item:hover {
+      background: rgba(255,255,255,0.05);
+      color: var(--color-sidebar-text-hover);
+    }
+    .mp-sidebar__item--active {
+      background: var(--color-sidebar-active-bg);
+      color: var(--color-sidebar-active-text);
+    }
+    .mp-sidebar__icon {
+      width: 18px;
+      height: 18px;
+      opacity: 0.7;
+      flex-shrink: 0;
+    }
+    .mp-sidebar__user {
+      padding: 16px 20px;
+      border-top: 1px solid var(--color-sidebar-border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .mp-sidebar__avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: var(--radius-full);
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-semibold);
+      flex-shrink: 0;
+    }
+    .mp-sidebar__user-name {
+      font-size: var(--font-size-sm);
+      color: #ffffff;
+      font-weight: var(--font-weight-medium);
+    }
+    .mp-sidebar__user-email {
+      font-size: var(--font-size-xs);
+      color: var(--color-sidebar-text);
+    }
+
+    /* Sidebar mini preview (right column) */
+    .sidebar-preview-col {
+      width: 280px;
+      flex-shrink: 0;
+      padding: 48px 24px 80px 0;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .sidebar-preview-label {
+      font-size: var(--font-size-xs);
+      color: var(--color-text-tertiary);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 16px;
+      font-weight: var(--font-weight-medium);
+    }
+
+    /* Full sidebar section */
+    .sidebar-full {
+      margin-top: 0;
+    }
+    .sidebar-full .mp-sidebar {
+      width: 240px;
+    }
+
+    /* Input layout */
+    .input-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .input-full {
+      grid-column: 1 / -1;
+    }
+
+    /* SVG icon helper */
+    .icon-svg {
+      display: inline-block;
+      width: 18px;
+      height: 18px;
+      vertical-align: middle;
+    }
+
+    /* Responsive */
+    @media (max-width: 1100px) {
+      .sidebar-preview-col { display: none; }
+      .content-area { padding: 32px 24px 64px; }
+      .card-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/htm@3/dist/htm.umd.js"></script>
+  <script>
+    const html = htm.bind(React.createElement);
+    const { useState } = React;
+
+    /* ---- SVG Icons ---- */
+    const icons = {
+      dashboard: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="4" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="11" width="7" height="10" rx="1.5"/></svg>',
+      pages: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>',
+      connections: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>',
+      workflows: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/><line x1="14" y1="4" x2="10" y2="20"/></svg>',
+      database: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>',
+      ai: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>',
+      csv: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>',
+      settings: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>'
+    };
+
+    /* ---- Icon Component ---- */
+    function Icon({ name, style }) {
+      return html`<span className="icon-svg" style=${style} dangerouslySetInnerHTML=${{ __html: icons[name] || '' }} />`;
+    }
+
+    /* ---- Button ---- */
+    function Button({ variant, size, children }) {
+      return html`
+        <button className=${`mp-btn mp-btn--${variant.toLowerCase()} mp-btn--${size.toLowerCase()}`}>
+          ${children}
+        </button>
+      `;
+    }
+
+    /* ---- Badge ---- */
+    function Badge({ variant, children }) {
+      return html`<span className=${`mp-badge mp-badge--${variant}`}>${children}</span>`;
+    }
+
+    /* ---- Input ---- */
+    function InputField({ label, helperText, placeholder }) {
+      return html`
+        <div className="mp-field">
+          <label className="mp-field__label">${label}</label>
+          <input className="mp-input" placeholder=${placeholder} />
+          ${helperText && html`<span className="mp-field__helper">${helperText}</span>`}
+        </div>
+      `;
+    }
+
+    /* ---- Textarea ---- */
+    function TextareaField({ label, placeholder }) {
+      return html`
+        <div className="mp-field">
+          <label className="mp-field__label">${label}</label>
+          <textarea className="mp-textarea" placeholder=${placeholder}></textarea>
+        </div>
+      `;
+    }
+
+    /* ---- Card ---- */
+    function Card({ variant, title, desc }) {
+      const cls = variant === 'status' ? 'mp-card--status'
+                 : variant === 'interactive' ? 'mp-card--interactive'
+                 : 'mp-card';
+      return html`
+        <div className=${cls}>
+          <div className="mp-card__title">${title}</div>
+          <div className="mp-card__desc">${desc}</div>
+        </div>
+      `;
+    }
+
+    /* ---- DataTable ---- */
+    function DataTable() {
+      const rows = [
+        { name: '用户数据同步', type: 'REST', status: 'success' },
+        { name: 'GPT-4 接入', type: 'AI', status: 'warning' },
+        { name: 'PostgreSQL 连接', type: 'Database', status: 'success' },
+        { name: 'CSV 产品导入', type: 'CSV', status: 'error' }
+      ];
+      const typeVariant = (t) => {
+        const map = { REST: 'rest', AI: 'ai', Database: 'database', CSV: 'csv' };
+        return map[t] || 'default';
+      };
+      const statusLabel = (s) => {
+        const map = { success: '运行中', error: '已断开', warning: '重试中' };
+        return map[s] || s;
+      };
+      return html`
+        <div className="mp-table-wrapper">
+          <table className="mp-table">
+            <thead>
+              <tr>
+                <th>名称</th>
+                <th>类型</th>
+                <th>状态</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rows.map(r => html`
+                <tr key=${r.name}>
+                  <td style=${{ color: 'var(--color-text-primary)', fontWeight: 500 }}>${r.name}</td>
+                  <td><${Badge} variant=${typeVariant(r.type)}>${r.type}<//></td>
+                  <td><${Badge} variant=${r.status}>${statusLabel(r.status)}<//></td>
+                  <td>
+                    <div className="mp-table__actions">
+                      <button className="mp-table__action-btn">编辑</button>
+                      <button className="mp-table__action-btn mp-table__action-btn--danger">删除</button>
+                    </div>
+                  </td>
+                </tr>
+              `)}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    /* ---- Sidebar ---- */
+    function Sidebar({ compact }) {
+      const navItems = [
+        { icon: 'dashboard', label: '仪表盘', active: true },
+        { icon: 'pages', label: '页面管理', active: false },
+        { icon: 'connections', label: '数据连接', active: false },
+        { icon: 'workflows', label: '工作流', active: false },
+        { icon: 'database', label: '数据库', active: false },
+        { icon: 'ai', label: 'AI 能力', active: false },
+        { icon: 'csv', label: 'CSV 导入', active: false },
+        { icon: 'settings', label: '系统设置', active: false }
+      ];
+      return html`
+        <div className="mp-sidebar" style=${compact ? { width: '240px', minHeight: '420px' } : {}}>
+          <div className="mp-sidebar__brand">
+            <div className="mp-sidebar__logo">M</div>
+            <div>
+              <div className="mp-sidebar__brand-text">MetaPlatform</div>
+              <div className="mp-sidebar__brand-sub">企业级平台</div>
+            </div>
+          </div>
+          <div className="mp-sidebar__nav">
+            ${navItems.map(item => html`
+              <div key=${item.label} className=${`mp-sidebar__item${item.active ? ' mp-sidebar__item--active' : ''}`}>
+                <span className="mp-sidebar__icon" dangerouslySetInnerHTML=${{ __html: icons[item.icon] }} />
+                <span>${item.label}</span>
+              </div>
+            `)}
+          </div>
+          <div className="mp-sidebar__user">
+            <div className="mp-sidebar__avatar">管</div>
+            <div>
+              <div className="mp-sidebar__user-name">管理员</div>
+              <div className="mp-sidebar__user-email">admin@meta.io</div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    /* ---- App ---- */
+    function App() {
+      return html`
+        <div className="page-wrapper">
+          <div style=${{ flex: 1 }}>
+            <div className="content-area">
+
+              <!-- Hero -->
+              <div className="hero">
+                <h1>MetaPlatform 设计系统</h1>
+                <p>企业级低代码平台 · 组件展示</p>
+              </div>
+
+              <!-- 1. Button -->
+              <div className="section">
+                <h2 className="section-title">
+                  按钮 Button
+                  <span className="section-tag">组件</span>
+                </h2>
+
+                <div className="component-group">
+                  <div className="component-group-label">Primary 主要按钮</div>
+                  <div className="flex-row" style=${{ marginBottom: 12 }}>
+                    <${Button} variant="Primary" size="SM">创建页面</${Button}>
+                    <${Button} variant="Primary" size="MD">创建页面</${Button}>
+                  </div>
+                </div>
+
+                <div className="component-group">
+                  <div className="component-group-label">Outline 描边按钮</div>
+                  <div className="flex-row" style=${{ marginBottom: 12 }}>
+                    <${Button} variant="Outline" size="SM">取消</${Button}>
+                    <${Button} variant="Outline" size="MD">取消</${Button}>
+                  </div>
+                </div>
+
+                <div className="component-group">
+                  <div className="component-group-label">Danger 危险按钮</div>
+                  <div className="flex-row">
+                    <${Button} variant="Danger" size="SM">删除</${Button}>
+                    <${Button} variant="Danger" size="MD">删除连接</${Button}>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 2. Badge -->
+              <div className="section">
+                <h2 className="section-title">
+                  徽章 Badge
+                  <span className="section-tag">组件</span>
+                </h2>
+
+                <div className="component-group">
+                  <div className="component-group-label">Default 默认</div>
+                  <div className="flex-row" style=${{ marginBottom: 16 }}>
+                    <${Badge} variant="default">标签</${Badge}>
+                    <${Badge} variant="default">v2.0</${Badge}>
+                  </div>
+                </div>
+
+                <div className="component-group">
+                  <div className="component-group-label">Category 类别</div>
+                  <div className="flex-row" style=${{ marginBottom: 16 }}>
+                    <${Badge} variant="rest">REST</${Badge}>
+                    <${Badge} variant="ai">AI</${Badge}>
+                    <${Badge} variant="database">Database</${Badge}>
+                    <${Badge} variant="csv">CSV</${Badge}>
+                  </div>
+                </div>
+
+                <div className="component-group">
+                  <div className="component-group-label">Status 状态</div>
+                  <div className="flex-row">
+                    <${Badge} variant="success">运行中</${Badge}>
+                    <${Badge} variant="error">已断开</${Badge}>
+                    <${Badge} variant="warning">重试中</${Badge}>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 3. Input -->
+              <div className="section">
+                <h2 className="section-title">
+                  输入框 Input
+                  <span className="section-tag">组件</span>
+                </h2>
+                <div className="input-grid">
+                  <${InputField} label="页面名称" placeholder="例如：用户管理页" helperText="仅支持字母、数字和下划线" />
+                  <${InputField} label="API 地址" placeholder="https://api.example.com/v1" />
+                  <div className="input-full">
+                    <${TextareaField} label="描述" placeholder="输入页面描述信息..." />
+                  </div>
+                </div>
+              </div>
+
+              <!-- 4. Card -->
+              <div className="section">
+                <h2 className="section-title">
+                  卡片 Card
+                  <span className="section-tag">组件</span>
+                </h2>
+                <div className="card-grid">
+                  <${Card} variant="default" title="默认卡片" desc="用于承载内容的基础容器组件，支持标题和正文布局。" />
+                  <${Card} variant="status" title="状态卡片" desc="带有左侧边框的状态指示卡片，用于展示重要信息。" />
+                  <${Card} variant="interactive" title="可交互卡片" desc="鼠标悬停时边框高亮，用于可点击的操作入口。" />
+                </div>
+              </div>
+
+              <!-- 5. DataTable -->
+              <div className="section">
+                <h2 className="section-title">
+                  数据表格 DataTable
+                  <span className="section-tag">组件</span>
+                </h2>
+                <${DataTable} />
+              </div>
+
+              <!-- 6. Sidebar -->
+              <div className="section sidebar-full">
+                <h2 className="section-title">
+                  侧边栏 Sidebar
+                  <span className="section-tag">组件</span>
+                </h2>
+                <${Sidebar} compact=${true} />
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Right column: mini sidebar preview -->
+          <div className="sidebar-preview-col">
+            <div className="sidebar-preview-label">侧边栏预览</div>
+            <${Sidebar} compact=${true} />
+          </div>
+        </div>
+      `;
+    }
+
+    /* ---- Render ---- */
+    ReactDOM.createRoot(document.getElementById('root')).render(html`<${App} />`);
+  </script>
+</body>
+</html>
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <style type="text/tailwindcss">
+  
+  @layer base {
+    body { background: #ffffff; color: #0f172a; }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/htm@3/dist/htm.umd.js"></script>
+  <script>
+    const html = htm.bind(React.createElement);
+    const { useState } = React;
+
+    /* ---- SVG Icons ---- */
+    const icons = {
+      dashboard: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="4" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="11" width="7" height="10" rx="1.5"/></svg>',
+      pages: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>',
+      connections: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>',
+      workflows: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/><line x1="14" y1="4" x2="10" y2="20"/></svg>',
+      database: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>',
+      ai: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>',
+      csv: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>',
+      settings: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>'
+    };
+
+    /* ---- Icon Component ---- */
+    function Icon({ name, style }) {
+      return html`<span className="icon-svg" style=${style} dangerouslySetInnerHTML=${{ __html: icons[name] || '' }} />`;
+    }
+
+    /* ---- Button ---- */
+    function Button({ variant, size, children }) {
+      return html`
+        <button className=${`mp-btn mp-btn--${variant.toLowerCase()} mp-btn--${size.toLowerCase()}`}>
+          ${children}
+        </button>
+      `;
+    }
+
+    /* ---- Badge ---- */
+    function Badge({ variant, children }) {
+      return html`<span className=${`mp-badge mp-badge--${variant}`}>${children}</span>`;
+    }
+
+    /* ---- Input ---- */
+    function InputField({ label, helperText, placeholder }) {
+      return html`
+        <div className="mp-field">
+          <label className="mp-field__label">${label}</label>
+          <input className="mp-input" placeholder=${placeholder} />
+          ${helperText && html`<span className="mp-field__helper">${helperText}</span>`}
+        </div>
+      `;
+    }
+
+    /* ---- Textarea ---- */
+    function TextareaField({ label, placeholder }) {
+      return html`
+        <div className="mp-field">
+          <label className="mp-field__label">${label}</label>
+          <textarea className="mp-textarea" placeholder=${placeholder}></textarea>
+        </div>
+      `;
+    }
+
+    /* ---- Card ---- */
+    function Card({ variant, title, desc }) {
+      const cls = variant === 'status' ? 'mp-card--status'
+                 : variant === 'interactive' ? 'mp-card--interactive'
+                 : 'mp-card';
+      return html`
+        <div className=${cls}>
+          <div className="mp-card__title">${title}</div>
+          <div className="mp-card__desc">${desc}</div>
+        </div>
+      `;
+    }
+
+    /* ---- DataTable ---- */
+    function DataTable() {
+      const rows = [
+        { name: '用户数据同步', type: 'REST', status: 'success' },
+        { name: 'GPT-4 接入', type: 'AI', status: 'warning' },
+        { name: 'PostgreSQL 连接', type: 'Database', status: 'success' },
+        { name: 'CSV 产品导入', type: 'CSV', status: 'error' }
+      ];
+      const typeVariant = (t) => {
+        const map = { REST: 'rest', AI: 'ai', Database: 'database', CSV: 'csv' };
+        return map[t] || 'default';
+      };
+      const statusLabel = (s) => {
+        const map = { success: '运行中', error: '已断开', warning: '重试中' };
+        return map[s] || s;
+      };
+      return html`
+        <div className="mp-table-wrapper">
+          <table className="mp-table">
+            <thead>
+              <tr>
+                <th>名称</th>
+                <th>类型</th>
+                <th>状态</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rows.map(r => html`
+                <tr key=${r.name}>
+                  <td style=${{ color: 'var(--color-text-primary)', fontWeight: 500 }}>${r.name}</td>
+                  <td><${Badge} variant=${typeVariant(r.type)}>${r.type}<//></td>
+                  <td><${Badge} variant=${r.status}>${statusLabel(r.status)}<//></td>
+                  <td>
+                    <div className="mp-table__actions">
+                      <button className="mp-table__action-btn">编辑</button>
+                      <button className="mp-table__action-btn mp-table__action-btn--danger">删除</button>
+                    </div>
+                  </td>
+                </tr>
+              `)}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    /* ---- Sidebar ---- */
+    function Sidebar({ compact }) {
+      const navItems = [
+        { icon: 'dashboard', label: '仪表盘', active: true },
+        { icon: 'pages', label: '页面管理', active: false },
+        { icon: 'connections', label: '数据连接', active: false },
+        { icon: 'workflows', label: '工作流', active: false },
+        { icon: 'database', label: '数据库', active: false },
+        { icon: 'ai', label: 'AI 能力', active: false },
+        { icon: 'csv', label: 'CSV 导入', active: false },
+        { icon: 'settings', label: '系统设置', active: false }
+      ];
+      return html`
+        <div className="mp-sidebar" style=${compact ? { width: '240px', minHeight: '420px' } : {}}>
+          <div className="mp-sidebar__brand">
+            <div className="mp-sidebar__logo">M</div>
+            <div>
+              <div className="mp-sidebar__brand-text">MetaPlatform</div>
+              <div className="mp-sidebar__brand-sub">企业级平台</div>
+            </div>
+          </div>
+          <div className="mp-sidebar__nav">
+            ${navItems.map(item => html`
+              <div key=${item.label} className=${`mp-sidebar__item${item.active ? ' mp-sidebar__item--active' : ''}`}>
+                <span className="mp-sidebar__icon" dangerouslySetInnerHTML=${{ __html: icons[item.icon] }} />
+                <span>${item.label}</span>
+              </div>
+            `)}
+          </div>
+          <div className="mp-sidebar__user">
+            <div className="mp-sidebar__avatar">管</div>
+            <div>
+              <div className="mp-sidebar__user-name">管理员</div>
+              <div className="mp-sidebar__user-email">admin@meta.io</div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    /* ---- App ---- */
+    function App() {
+      return html`
+        <div className="page-wrapper">
+          <div style=${{ flex: 1 }}>
+            <div className="content-area">
+
+              <!-- Hero -->
+              <div className="hero">
+                <h1>MetaPlatform 设计系统</h1>
+                <p>企业级低代码平台 · 组件展示</p>
+              </div>
+
+              <!-- 1. Button -->
+              <div className="section">
+                <h2 className="section-title">
+                  按钮 Button
+                  <span className="section-tag">组件</span>
+                </h2>
+
+                <div className="component-group">
+                  <div className="component-group-label">Primary 主要按钮</div>
+                  <div className="flex-row" style=${{ marginBottom: 12 }}>
+                    <${Button} variant="Primary" size="SM">创建页面</${Button}>
+                    <${Button} variant="Primary" size="MD">创建页面</${Button}>
+                  </div>
+                </div>
+
+                <div className="component-group">
+                  <div className="component-group-label">Outline 描边按钮</div>
+                  <div className="flex-row" style=${{ marginBottom: 12 }}>
+                    <${Button} variant="Outline" size="SM">取消</${Button}>
+                    <${Button} variant="Outline" size="MD">取消</${Button}>
+                  </div>
+                </div>
+
+                <div className="component-group">
+                  <div className="component-group-label">Danger 危险按钮</div>
+                  <div className="flex-row">
+                    <${Button} variant="Danger" size="SM">删除</${Button}>
+                    <${Button} variant="Danger" size="MD">删除连接</${Button}>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 2. Badge -->
+              <div className="section">
+                <h2 className="section-title">
+                  徽章 Badge
+                  <span className="section-tag">组件</span>
+                </h2>
+
+                <div className="component-group">
+                  <div className="component-group-label">Default 默认</div>
+                  <div className="flex-row" style=${{ marginBottom: 16 }}>
+                    <${Badge} variant="default">标签</${Badge}>
+                    <${Badge} variant="default">v2.0</${Badge}>
+                  </div>
+                </div>
+
+                <div className="component-group">
+                  <div className="component-group-label">Category 类别</div>
+                  <div className="flex-row" style=${{ marginBottom: 16 }}>
+                    <${Badge} variant="rest">REST</${Badge}>
+                    <${Badge} variant="ai">AI</${Badge}>
+                    <${Badge} variant="database">Database</${Badge}>
+                    <${Badge} variant="csv">CSV</${Badge}>
+                  </div>
+                </div>
+
+                <div className="component-group">
+                  <div className="component-group-label">Status 状态</div>
+                  <div className="flex-row">
+                    <${Badge} variant="success">运行中</${Badge}>
+                    <${Badge} variant="error">已断开</${Badge}>
+                    <${Badge} variant="warning">重试中</${Badge}>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 3. Input -->
+              <div className="section">
+                <h2 className="section-title">
+                  输入框 Input
+                  <span className="section-tag">组件</span>
+                </h2>
+                <div className="input-grid">
+                  <${InputField} label="页面名称" placeholder="例如：用户管理页" helperText="仅支持字母、数字和下划线" />
+                  <${InputField} label="API 地址" placeholder="https://api.example.com/v1" />
+                  <div className="input-full">
+                    <${TextareaField} label="描述" placeholder="输入页面描述信息..." />
+                  </div>
+                </div>
+              </div>
+
+              <!-- 4. Card -->
+              <div className="section">
+                <h2 className="section-title">
+                  卡片 Card
+                  <span className="section-tag">组件</span>
+                </h2>
+                <div className="card-grid">
+                  <${Card} variant="default" title="默认卡片" desc="用于承载内容的基础容器组件，支持标题和正文布局。" />
+                  <${Card} variant="status" title="状态卡片" desc="带有左侧边框的状态指示卡片，用于展示重要信息。" />
+                  <${Card} variant="interactive" title="可交互卡片" desc="鼠标悬停时边框高亮，用于可点击的操作入口。" />
+                </div>
+              </div>
+
+              <!-- 5. DataTable -->
+              <div className="section">
+                <h2 className="section-title">
+                  数据表格 DataTable
+                  <span className="section-tag">组件</span>
+                </h2>
+                <${DataTable} />
+              </div>
+
+              <!-- 6. Sidebar -->
+              <div className="section sidebar-full">
+                <h2 className="section-title">
+                  侧边栏 Sidebar
+                  <span className="section-tag">组件</span>
+                </h2>
+                <${Sidebar} compact=${true} />
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Right column: mini sidebar preview -->
+          <div className="sidebar-preview-col">
+            <div className="sidebar-preview-label">侧边栏预览</div>
+            <${Sidebar} compact=${true} />
+          </div>
+        </div>
+      `;
+    }
+
+    /* ---- Render ---- */
+    ReactDOM.createRoot(document.getElementById('root')).render(html`<${App} />`);
+  </script>
+</body>
+</html>
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <style type="text/tailwindcss">
+  
+  @layer base {
+    body { background: #ffffff; color: #0f172a; }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+</head>
+<body>
+  <div class="page-wrapper">
+    <div class="component-showcase">
+      <h1 class="component-title">DataTable 数据表格</h1>
+      <p class="component-subtitle">用于展示结构化数据，支持排序、筛选和操作列</p>
+
+      <div class="data-table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>显示名称</th>
+              <th>名称</th>
+              <th>类型</th>
+              <th>状态</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Row 1: 客户管理页面 -->
+            <tr>
+              <td class="cell-name">客户管理页面</td>
+              <td><span class="cell-code">customer</span></td>
+              <td><span class="badge badge-blue">表格页面</span></td>
+              <td><span class="badge badge-green">已发布</span></td>
+              <td>
+                <div class="action-group">
+                  <button class="btn btn-outline">预览</button>
+                  <button class="btn btn-danger-text">删除</button>
+                </div>
+              </td>
+            </tr>
+            <!-- Row 2: 工单管理 -->
+            <tr>
+              <td class="cell-name">工单管理</td>
+              <td><span class="cell-code">ticket</span></td>
+              <td><span class="badge badge-blue">表单页面</span></td>
+              <td><span class="badge badge-yellow">草稿</span></td>
+              <td>
+                <div class="action-group">
+                  <button class="btn btn-outline">预览</button>
+                  <button class="btn btn-danger-text">删除</button>
+                </div>
+              </td>
+            </tr>
+            <!-- Row 3: 产品目录 -->
+            <tr>
+              <td class="cell-name">产品目录</td>
+              <td><span class="cell-code">product</span></td>
+              <td><span class="badge badge-blue">表格页面</span></td>
+              <td><span class="badge badge-green">已发布</span></td>
+              <td>
+                <div class="action-group">
+                  <button class="btn btn-outline">预览</button>
+                  <button class="btn btn-danger-text">删除</button>
+                </div>
+              </td>
+            </tr>
+            <!-- Row 4: 销售看板 -->
+            <tr>
+              <td class="cell-name">销售看板</td>
+              <td><span class="cell-code">lead</span></td>
+              <td><span class="badge badge-blue">看板页面</span></td>
+              <td><span class="badge badge-green">已发布</span></td>
+              <td>
+                <div class="action-group">
+                  <button class="btn btn-outline">预览</button>
+                  <button class="btn btn-danger-text">删除</button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <style type="text/tailwindcss">
+  
+  @layer base {
+    body { background: #ffffff; color: #0f172a; }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+</head>
+<body>
+  <div class="page-wrapper">
+    <div class="component-showcase">
+      <h1 class="component-title">DataTable 数据表格</h1>
+      <p class="component-subtitle">用于展示结构化数据，支持排序、筛选和操作列</p>
+
+      <div class="data-table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>显示名称</th>
+              <th>名称</th>
+              <th>类型</th>
+              <th>状态</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Row 1: 客户管理页面 -->
+            <tr>
+              <td class="cell-name">客户管理页面</td>
+              <td><span class="cell-code">customer</span></td>
+              <td><span class="badge badge-blue">表格页面</span></td>
+              <td><span class="badge badge-green">已发布</span></td>
+              <td>
+                <div class="action-group">
+                  <button class="btn btn-outline">预览</button>
+                  <button class="btn btn-danger-text">删除</button>
+                </div>
+              </td>
+            </tr>
+            <!-- Row 2: 工单管理 -->
+            <tr>
+              <td class="cell-name">工单管理</td>
+              <td><span class="cell-code">ticket</span></td>
+              <td><span class="badge badge-blue">表单页面</span></td>
+              <td><span class="badge badge-yellow">草稿</span></td>
+              <td>
+                <div class="action-group">
+                  <button class="btn btn-outline">预览</button>
+                  <button class="btn btn-danger-text">删除</button>
+                </div>
+              </td>
+            </tr>
+            <!-- Row 3: 产品目录 -->
+            <tr>
+              <td class="cell-name">产品目录</td>
+              <td><span class="cell-code">product</span></td>
+              <td><span class="badge badge-blue">表格页面</span></td>
+              <td><span class="badge badge-green">已发布</span></td>
+              <td>
+                <div class="action-group">
+                  <button class="btn btn-outline">预览</button>
+                  <button class="btn btn-danger-text">删除</button>
+                </div>
+              </td>
+            </tr>
+            <!-- Row 4: 销售看板 -->
+            <tr>
+              <td class="cell-name">销售看板</td>
+              <td><span class="cell-code">lead</span></td>
+              <td><span class="badge badge-blue">看板页面</span></td>
+              <td><span class="badge badge-green">已发布</span></td>
+              <td>
+                <div class="action-group">
+                  <button class="btn btn-outline">预览</button>
+                  <button class="btn btn-danger-text">删除</button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <style type="text/tailwindcss">
+  
+  @layer base {
+    body { background: #ffffff; color: #0f172a; }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+</head>
+<body>
+
+<div class="preview-container">
+
+  <h1 class="preview-title">Input 输入框</h1>
+
+  <!-- Text 文本输入 -->
+  <div class="section">
+    <h2 class="section-title">Text 文本输入</h2>
+
+    <div class="field">
+      <label class="field-label" for="input-name">显示名称</label>
+      <input class="field-input" type="text" id="input-name" placeholder="请输入显示名称">
+    </div>
+
+    <div class="field">
+      <label class="field-label" for="input-api">API 地址</label>
+      <input class="field-input field-input--mono" type="text" id="input-api" placeholder="https://api.example.com">
+    </div>
+
+    <div class="field">
+      <label class="field-label" for="input-search">搜索</label>
+      <input class="field-input" type="text" id="input-search" placeholder="搜索...">
+    </div>
+  </div>
+
+  <!-- Textarea 文本域 -->
+  <div class="section">
+    <h2 class="section-title">Textarea 文本域</h2>
+
+    <div class="field">
+      <label class="field-label" for="textarea-desc">描述</label>
+      <textarea class="field-textarea" id="textarea-desc" placeholder="请输入描述信息..."></textarea>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <style type="text/tailwindcss">
+  
+  @layer base {
+    body { background: #ffffff; color: #0f172a; }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+</head>
+<body class="min-h-screen font-sans antialiased">
+    <main>
+    </main>
+    <script>lucide.createIcons();</script>
+</body>
+</html>

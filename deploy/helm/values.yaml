@@ -1,0 +1,180 @@
+# MetaPlatform Helm Chart Values
+# ============================================================
+
+global:
+  imageRegistry: ""
+  imagePullSecrets: []
+  storageClass: ""
+
+# === PostgreSQL ===
+postgresql:
+  enabled: true
+  auth:
+    postgresPassword: metaplatform
+    database: ontology_meta
+    username: meta
+  primary:
+    persistence:
+      enabled: true
+      size: 10Gi
+    resources:
+      requests:
+        memory: 256Mi
+        cpu: 250m
+      limits:
+        memory: 1Gi
+        cpu: 1000m
+
+# === Redis ===
+redis:
+  enabled: true
+  auth:
+    enabled: false
+  master:
+    persistence:
+      enabled: true
+      size: 2Gi
+    resources:
+      requests:
+        memory: 128Mi
+        cpu: 100m
+      limits:
+        memory: 512Mi
+        cpu: 500m
+
+# === Kafka ===
+kafka:
+  enabled: true
+  persistence:
+    enabled: true
+    size: 5Gi
+  resources:
+    requests:
+      memory: 256Mi
+      cpu: 250m
+    limits:
+      memory: 1Gi
+      cpu: 1000m
+
+# === Ontology Engine ===
+ontologyEngine:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: metaplatform/ontology-engine
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 8090
+  resources:
+    requests:
+      memory: 512Mi
+      cpu: 500m
+    limits:
+      memory: 2Gi
+      cpu: 2000m
+  env:
+    SERVER_PORT: "8090"
+    SPRING_DATASOURCE_URL: "jdbc:postgresql://metaplatform-postgresql:5432/ontology_meta"
+    SPRING_DATASOURCE_USERNAME: "meta"
+    SPRING_DATASOURCE_PASSWORD: "metaplatform"
+    SPRING_KAFKA_BOOTSTRAP_SERVERS: "metaplatform-kafka:9092"
+    SPRING_REDIS_HOST: "metaplatform-redis-master"
+    SPRING_REDIS_PORT: "6379"
+  livenessProbe:
+    httpGet:
+      path: /actuator/health
+      port: 8090
+    initialDelaySeconds: 60
+    periodSeconds: 15
+    timeoutSeconds: 10
+  readinessProbe:
+    httpGet:
+      path: /actuator/health
+      port: 8090
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+
+# === Page Generator ===
+pageGenerator:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: metaplatform/page-generator
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 8083
+  resources:
+    requests:
+      memory: 256Mi
+      cpu: 250m
+    limits:
+      memory: 1Gi
+      cpu: 1000m
+  env:
+    SERVER_PORT: "8083"
+    SPRING_DATASOURCE_URL: "jdbc:postgresql://metaplatform-postgresql:5432/ontology_meta"
+    SPRING_DATASOURCE_USERNAME: "meta"
+    SPRING_DATASOURCE_PASSWORD: "metaplatform"
+
+# === Frontend ===
+frontend:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: metaplatform/frontend
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 80
+  resources:
+    requests:
+      memory: 64Mi
+      cpu: 50m
+    limits:
+      memory: 256Mi
+      cpu: 500m
+
+# === Ingress ===
+ingress:
+  enabled: false
+  className: nginx
+  annotations: {}
+  hosts:
+    - host: metaplatform.local
+      paths:
+        - path: /
+          pathType: Prefix
+          service: frontend
+          port: 80
+        - path: /api/v1/page
+          pathType: Prefix
+          service: pageGenerator
+          port: 8083
+        - path: /api
+          pathType: Prefix
+          service: ontologyEngine
+          port: 8090
+  tls: []
+
+# === AI Configuration ===
+ai:
+  llm:
+    baseUrl: "https://api.openai.com/v1"
+    apiKey: ""
+    model: "gpt-4o-mini"
+
+# === Monitoring (optional) ===
+monitoring:
+  prometheus:
+    enabled: false
+    port: 9090
+  grafana:
+    enabled: false
+    port: 3001
+    adminPassword: metaplatform

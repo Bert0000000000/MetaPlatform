@@ -10,6 +10,7 @@ import DialogueChat from "./pages/DialogueChat";
 import CapabilityCenter from "./pages/CapabilityCenter";
 import IntegrationHub from "./pages/IntegrationHub";
 import AppMarket from "./pages/AppMarket";
+import BillingDashboard from "./pages/BillingDashboard";
 import "./App.css";
 
 const App: React.FC = () => {
@@ -78,6 +79,12 @@ const App: React.FC = () => {
             >
               应用市场
             </NavLink>
+            <NavLink
+              to="/billing"
+              className={({ isActive }) => (isActive ? "mp-nav-link active" : "mp-nav-link")}
+            >
+              计费中心
+            </NavLink>
           </nav>
         </aside>
 
@@ -95,6 +102,7 @@ const App: React.FC = () => {
             <Route path="/capabilities" element={<CapabilityCenter />} />
             <Route path="/integration" element={<IntegrationHub />} />
             <Route path="/market" element={<AppMarket />} />
+            <Route path="/billing" element={<BillingDashboard />} />
           </Routes>
         </main>
       </div>

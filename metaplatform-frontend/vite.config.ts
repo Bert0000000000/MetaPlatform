@@ -43,6 +43,10 @@ export default defineConfig({
         target: "http://localhost:8090",
         changeOrigin: true,
       },
+      "/api/v1/billing": {
+        target: "http://localhost:8090",
+        changeOrigin: true,
+      },
       // Page Generator: page-configs, pages, page-templates
       "/api/v1/page": {
         target: "http://localhost:8083",

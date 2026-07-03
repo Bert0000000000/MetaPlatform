@@ -1,0 +1,51 @@
+{{- if .Values.pageGenerator.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "metaplatform.fullname" . }}-page-generator
+  labels:
+    {{- include "metaplatform.componentLabels" (dict "context" . "component" "page-generator") | nindent 4 }}
+spec:
+  replicas: {{ .Values.pageGenerator.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "metaplatform.name" . }}
+      app.kubernetes.io/component: page-generator
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "metaplatform.name" . }}
+        app.kubernetes.io/component: page-generator
+    spec:
+      containers:
+        - name: page-generator
+          image: "{{ .Values.pageGenerator.image.repository }}:{{ .Values.pageGenerator.image.tag }}"
+          imagePullPolicy: {{ .Values.pageGenerator.image.pullPolicy }}
+          ports:
+            - containerPort: 8083
+              protocol: TCP
+          env:
+            {{- range $key, $value := .Values.pageGenerator.env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+          resources:
+            {{- toYaml .Values.pageGenerator.resources | nindent 12 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "metaplatform.fullname" . }}-page-generator
+  labels:
+    {{- include "metaplatform.componentLabels" (dict "context" . "component" "page-generator") | nindent 4 }}
+spec:
+  type: {{ .Values.pageGenerator.service.type }}
+  ports:
+    - port: {{ .Values.pageGenerator.service.port }}
+      targetPort: 8083
+      protocol: TCP
+      name: http
+  selector:
+    app.kubernetes.io/name: {{ include "metaplatform.name" . }}
+    app.kubernetes.io/component: page-generator
+{{- end }}

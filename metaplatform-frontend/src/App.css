@@ -2804,3 +2804,206 @@ a {
   padding: 16px 24px;
   border-top: 1px solid var(--color-border);
 }
+
+/* ============================================================
+ * Billing Dashboard — 计费中心
+ * ============================================================ */
+
+.mp-billing {
+  max-width: 1200px;
+}
+
+.mp-billing-header {
+  margin-bottom: 24px;
+}
+
+.mp-billing-header h1 {
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.mp-billing-header p {
+  color: var(--color-text-secondary);
+  font-size: 14px;
+}
+
+.mp-billing-section {
+  margin-bottom: 32px;
+}
+
+.mp-billing-section h2 {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+/* Current subscription */
+.mp-billing-current {
+  padding: 16px 20px;
+  background: var(--color-bg-light);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.mp-billing-current-plan {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.mp-billing-plan-name {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.mp-billing-status {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.mp-billing-status.active {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.mp-billing-current-meta {
+  display: flex;
+  gap: 16px;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.mp-billing-no-sub {
+  padding: 20px;
+  text-align: center;
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  background: var(--color-bg-light);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius);
+}
+
+/* Usage stats grid */
+.mp-billing-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.mp-billing-stat-card {
+  padding: 20px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  text-align: center;
+}
+
+.mp-billing-stat-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  margin-bottom: 8px;
+}
+
+.mp-billing-stat-value {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--color-primary);
+  line-height: 1.2;
+}
+
+.mp-billing-stat-sub {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  margin-bottom: 4px;
+}
+
+.mp-billing-stat-cost {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: 4px;
+}
+
+.mp-billing-stat-count {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+/* Plans grid */
+.mp-billing-plans-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.mp-billing-plan-card {
+  padding: 20px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.mp-billing-plan-card:hover {
+  border-color: var(--color-primary);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1);
+}
+
+.mp-billing-plan-card.current {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.12);
+}
+
+.mp-billing-plan-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.mp-billing-plan-card-name {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.mp-billing-plan-card-price {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.mp-billing-plan-card-desc {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.mp-billing-plan-card-limit {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  padding: 8px 0;
+  border-top: 1px solid var(--color-border);
+}
+
+.mp-billing-plan-card-action {
+  margin-top: auto;
+  display: flex;
+  justify-content: center;
+}
+
+.mp-billing-current-badge {
+  font-size: 13px;
+  font-weight: 600;
+  color: #22c55e;
+}

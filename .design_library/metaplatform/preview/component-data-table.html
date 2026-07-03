@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DataTable 数据表格 — MetaPlatform Design System</title>
+    <style id="theme-vars">
+/* ============================================================
+ * MetaPlatform Design System
+ * Enterprise low-code platform design tokens
+ * Source: structured-spec (.design project extraction)
+ * Brand Prefix: mp
+ * ============================================================ */
+
+/* ---- Color System ---- */
+/* Source: structured-spec */
+:root {
+  /* Primary: Indigo Blue — enterprise trust */
+  --color-primary: #3b82f6;
+  --color-primary-hover: #2563eb;
+  --color-primary-light: #eff6ff;
+  --color-primary-muted: #bfdbfe;
+
+  /* Neutral Scale */
+  --color-bg: #ffffff;
+  --color-bg-secondary: #f8fafc;
+  --color-bg-tertiary: #f1f5f9;
+  --color-surface: #ffffff;
+  --color-surface-hover: #f8fafc;
+
+  /* Sidebar — dark navy */
+  --color-sidebar-bg: #0f172a;
+  --color-sidebar-text: #94a3b8;
+  --color-sidebar-text-hover: #cbd5e1;
+  --color-sidebar-active-bg: rgba(59, 130, 246, 0.15);
+  --color-sidebar-active-text: #60a5fa;
+  --color-sidebar-border: rgba(148, 163, 184, 0.1);
+
+  /* Text */
+  --color-text-primary: #0f172a;
+  --color-text-secondary: #475569;
+  --color-text-tertiary: #94a3b8;
+  --color-text-inverse: #ffffff;
+
+  /* Borders */
+  --color-border: #e2e8f0;
+  --color-border-light: #f1f5f9;
+
+  /* State Colors */
+  --state-success: #22c55e;
+  --state-success-bg: #f0fdf4;
+  --state-warning: #f59e0b;
+  --state-warning-bg: #fffbeb;
+  --state-error: #ef4444;
+  --state-error-bg: #fef2f2;
+  --state-info: #3b82f6;
+  --state-info-bg: #eff6ff;
+
+  /* Accent tints for categories */
+  --tint-ai: #8b5cf6;
+  --tint-ai-bg: #f5f3ff;
+  --tint-data: #06b6d4;
+  --tint-data-bg: #ecfeff;
+  --tint-tool: #f59e0b;
+  --tint-tool-bg: #fffbeb;
+  --tint-rest: #3b82f6;
+  --tint-rest-bg: #eff6ff;
+  --tint-database: #22c55e;
+  --tint-database-bg: #f0fdf4;
+  --tint-csv: #f59e0b;
+  --tint-csv-bg: #fffbeb;
+
+  /* ---- Typography ---- */
+  /* Source: structured-spec */
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans SC", sans-serif;
+  --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+
+  --font-size-xs: 11px;
+  --font-size-sm: 12px;
+  --font-size-base: 14px;
+  --font-size-md: 15px;
+  --font-size-lg: 16px;
+  --font-size-xl: 20px;
+  --font-size-2xl: 24px;
+  --font-size-3xl: 30px;
+
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  --line-height-tight: 1.25;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.625;
+
+  /* ---- Spacing ---- */
+  /* Source: structured-spec */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 12px;
+  --spacing-lg: 16px;
+  --spacing-xl: 24px;
+  --spacing-2xl: 32px;
+  --spacing-3xl: 48px;
+
+  /* ---- Radius ---- */
+  /* Source: structured-spec */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-full: 9999px;
+
+  /* ---- Shadows (border-first, low alpha) ---- */
+  /* Source: structured-spec */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.03);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.04);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.05);
+  --shadow-float: 0 12px 32px rgba(0, 0, 0, 0.12);
+
+  /* ---- Layout ---- */
+  /* Source: structured-spec */
+  --sidebar-width: 240px;
+  --content-max-width: 1200px;
+  --header-height: 56px;
+
+  /* ---- Portable Aliases (for component consumption) ---- */
+  /* Color aliases */
+  --color-action: var(--color-primary);
+  --color-action-hover: var(--color-primary-hover);
+  --color-action-light: var(--color-primary-light);
+  --color-content: var(--color-text-primary);
+  --color-content-secondary: var(--color-text-secondary);
+  --color-content-tertiary: var(--color-text-tertiary);
+  --color-field: var(--color-border);
+  --color-field-focus: var(--color-primary);
+  --color-feedback-success: var(--state-success);
+  --color-feedback-warning: var(--state-warning);
+  --color-feedback-error: var(--state-error);
+  --color-feedback-info: var(--state-info);
+
+  /* Typography aliases */
+  --type-heading: var(--font-weight-bold);
+  --type-subheading: var(--font-weight-semibold);
+  --type-body: var(--font-weight-normal);
+  --type-caption: var(--font-weight-normal);
+
+  /* Radius aliases */
+  --radius-btn: var(--radius-md);
+  --radius-card: var(--radius-lg);
+  --radius-input: var(--radius-md);
+  --radius-pill: var(--radius-full);
+}
+
+/* ---- Dark Mode ---- */
+/* Source: structured-spec */
+.dark {
+  --color-bg: #0f172a;
+  --color-bg-secondary: #1e293b;
+  --color-bg-tertiary: #334155;
+  --color-surface: #1e293b;
+  --color-surface-hover: #334155;
+
+  --color-sidebar-bg: #020617;
+  --color-sidebar-text: #64748b;
+  --color-sidebar-border: rgba(148, 163, 184, 0.15);
+
+  --color-text-primary: #f1f5f9;
+  --color-text-secondary: #94a3b8;
+  --color-text-tertiary: #64748b;
+  --color-text-inverse: #0f172a;
+
+  --color-border: #334155;
+  --color-border-light: #1e293b;
+
+  --color-primary-light: rgba(59, 130, 246, 0.1);
+  --color-primary-muted: rgba(59, 130, 246, 0.3);
+
+  --state-success-bg: rgba(34, 197, 94, 0.1);
+  --state-warning-bg: rgba(245, 158, 11, 0.1);
+  --state-error-bg: rgba(239, 68, 68, 0.1);
+  --state-info-bg: rgba(59, 130, 246, 0.1);
+
+  --tint-ai-bg: rgba(139, 92, 246, 0.1);
+  --tint-data-bg: rgba(6, 182, 212, 0.1);
+  --tint-tool-bg: rgba(245, 158, 11, 0.1);
+  --tint-rest-bg: rgba(59, 130, 246, 0.1);
+  --tint-database-bg: rgba(34, 197, 94, 0.1);
+  --tint-csv-bg: rgba(245, 158, 11, 0.1);
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.07);
+  --shadow-float: 0 12px 32px rgba(0, 0, 0, 0.14);
+}
+
+/* ---- Typography Scale Classes ---- */
+.mp-h1 { font-size: var(--font-size-3xl); font-weight: var(--font-weight-bold); line-height: var(--line-height-tight); color: var(--color-text-primary); letter-spacing: -0.02em; }
+.mp-h2 { font-size: var(--font-size-2xl); font-weight: var(--font-weight-bold); line-height: var(--line-height-tight); color: var(--color-text-primary); letter-spacing: -0.01em; }
+.mp-h3 { font-size: var(--font-size-xl); font-weight: var(--font-weight-semibold); line-height: var(--line-height-normal); color: var(--color-text-primary); }
+.mp-h4 { font-size: var(--font-size-lg); font-weight: var(--font-weight-semibold); line-height: var(--line-height-normal); color: var(--color-text-primary); }
+.mp-body { font-size: var(--font-size-base); font-weight: var(--font-weight-normal); line-height: var(--line-height-normal); color: var(--color-text-secondary); }
+.mp-caption { font-size: var(--font-size-sm); font-weight: var(--font-weight-normal); line-height: var(--line-height-normal); color: var(--color-text-tertiary); }
+.mp-code { font-family: var(--font-mono); font-size: var(--font-size-sm); }
+
+/* ---- Component Surfaces ---- */
+.mp-surface { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); }
+.mp-surface-raised { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); }
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <style type="text/tailwindcss">
+  
+  @layer base {
+    body { background: var(--mp-background); color: var(--mp-foreground); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+</head>
+<body>
+  <div class="page-wrapper">
+    <div class="component-showcase">
+      <h1 class="component-title">DataTable 数据表格</h1>
+      <p class="component-subtitle">用于展示结构化数据，支持排序、筛选和操作列</p>
+
+      <div class="data-table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>显示名称</th>
+              <th>名称</th>
+              <th>类型</th>
+              <th>状态</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Row 1: 客户管理页面 -->
+            <tr>
+              <td class="cell-name">客户管理页面</td>
+              <td><span class="cell-code">customer</span></td>
+              <td><span class="badge badge-blue">表格页面</span></td>
+              <td><span class="badge badge-green">已发布</span></td>
+              <td>
+                <div class="action-group">
+                  <button class="btn btn-outline">预览</button>
+                  <button class="btn btn-danger-text">删除</button>
+                </div>
+              </td>
+            </tr>
+            <!-- Row 2: 工单管理 -->
+            <tr>
+              <td class="cell-name">工单管理</td>
+              <td><span class="cell-code">ticket</span></td>
+              <td><span class="badge badge-blue">表单页面</span></td>
+              <td><span class="badge badge-yellow">草稿</span></td>
+              <td>
+                <div class="action-group">
+                  <button class="btn btn-outline">预览</button>
+                  <button class="btn btn-danger-text">删除</button>
+                </div>
+              </td>
+            </tr>
+            <!-- Row 3: 产品目录 -->
+            <tr>
+              <td class="cell-name">产品目录</td>
+              <td><span class="cell-code">product</span></td>
+              <td><span class="badge badge-blue">表格页面</span></td>
+              <td><span class="badge badge-green">已发布</span></td>
+              <td>
+                <div class="action-group">
+                  <button class="btn btn-outline">预览</button>
+                  <button class="btn btn-danger-text">删除</button>
+                </div>
+              </td>
+            </tr>
+            <!-- Row 4: 销售看板 -->
+            <tr>
+              <td class="cell-name">销售看板</td>
+              <td><span class="cell-code">lead</span></td>
+              <td><span class="badge badge-blue">看板页面</span></td>
+              <td><span class="badge badge-green">已发布</span></td>
+              <td>
+                <div class="action-group">
+                  <button class="btn btn-outline">预览</button>
+                  <button class="btn btn-danger-text">删除</button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+    <style>
+    /* ---- Page Reset ---- */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--font-sans);
+      font-size: var(--font-size-base);
+      color: var(--color-text-primary);
+      background: var(--color-bg-secondary);
+      line-height: var(--line-height-normal);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* ---- Layout ---- */
+    .page-wrapper {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: var(--spacing-3xl) var(--spacing-xl);
+    }
+
+    /* ---- Component Showcase ---- */
+    .component-showcase {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-md);
+      padding: var(--spacing-xl);
+    }
+
+    .component-title {
+      font-size: var(--font-size-xl);
+      font-weight: var(--font-weight-bold);
+      color: var(--color-text-primary);
+      margin-bottom: var(--spacing-xs);
+      letter-spacing: -0.01em;
+    }
+
+    .component-subtitle {
+      font-size: var(--font-size-sm);
+      color: var(--color-text-tertiary);
+      margin-bottom: var(--spacing-xl);
+    }
+
+    /* ---- DataTable ---- */
+    .data-table-wrapper {
+      width: 100%;
+      overflow-x: auto;
+    }
+
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: var(--font-size-sm);
+      text-align: left;
+    }
+
+    .data-table thead th {
+      background: var(--color-bg-tertiary);
+      font-weight: var(--font-weight-semibold);
+      color: var(--color-text-secondary);
+      font-size: var(--font-size-xs);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      padding: var(--spacing-sm) var(--spacing-md);
+      border-bottom: 1px solid var(--color-border);
+      white-space: nowrap;
+    }
+
+    .data-table thead th:first-child {
+      border-top-left-radius: var(--radius-md);
+    }
+
+    .data-table thead th:last-child {
+      border-top-right-radius: var(--radius-md);
+    }
+
+    .data-table tbody td {
+      padding: var(--spacing-md) var(--spacing-md);
+      border-bottom: 1px solid var(--color-border-light);
+      color: var(--color-text-primary);
+      vertical-align: middle;
+    }
+
+    .data-table tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    .data-table tbody tr:hover {
+      background: var(--color-surface-hover);
+    }
+
+    /* ---- Cell: Display Name ---- */
+    .cell-name {
+      font-weight: var(--font-weight-medium);
+      color: var(--color-text-primary);
+    }
+
+    /* ---- Cell: Code/Identifier ---- */
+    .cell-code {
+      font-family: var(--font-mono);
+      font-size: var(--font-size-xs);
+      color: var(--color-text-tertiary);
+      background: var(--color-bg-tertiary);
+      padding: 2px 8px;
+      border-radius: var(--radius-sm);
+    }
+
+    /* ---- Badge ---- */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-medium);
+      padding: 2px 10px;
+      border-radius: var(--radius-full);
+      white-space: nowrap;
+      line-height: var(--line-height-normal);
+    }
+
+    .badge-blue {
+      background: var(--state-info-bg);
+      color: var(--color-primary);
+    }
+
+    .badge-green {
+      background: var(--state-success-bg);
+      color: var(--state-success);
+    }
+
+    .badge-yellow {
+      background: var(--state-warning-bg);
+      color: var(--state-warning);
+    }
+
+    /* ---- Action Buttons ---- */
+    .action-group {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-family: inherit;
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-medium);
+      padding: 4px 12px;
+      border-radius: var(--radius-btn);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+      border: none;
+      line-height: var(--line-height-normal);
+    }
+
+    .btn-outline {
+      background: transparent;
+      border: 1px solid var(--color-border);
+      color: var(--color-text-secondary);
+    }
+
+    .btn-outline:hover {
+      border-color: var(--color-primary);
+      color: var(--color-primary);
+      background: var(--color-primary-light);
+    }
+
+    .btn-danger-text {
+      background: transparent;
+      border: none;
+      color: var(--state-error);
+      padding: 4px 8px;
+    }
+
+    .btn-danger-text:hover {
+      background: var(--state-error-bg);
+    }
+  </style>
+</body>
+</html>
