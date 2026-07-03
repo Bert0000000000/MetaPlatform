@@ -1,0 +1,33 @@
+{
+  "name": "Sidebar",
+  "slug": "sidebar",
+  "schemaVersion": 2,
+  "sourceKind": "structured-spec",
+  "confidence": "high",
+  "semanticTypeCandidates": ["Navigation", "Sidebar", "AppShell"],
+  "variantDimensions": [],
+  "representativeVariants": [
+    {
+      "name": "Default",
+      "traits": {
+        "width": "var(--sidebar-width)",
+        "background": "var(--color-sidebar-bg)",
+        "brandIcon": "36px rounded-lg primary bg",
+        "navItemText": "var(--color-sidebar-text)",
+        "navItemHover": "rgba(255,255,255,0.05)",
+        "activeBg": "var(--color-sidebar-active-bg)",
+        "activeText": "var(--color-sidebar-active-text)"
+      }
+    }
+  ],
+  "anatomy": [
+    {"name": "brandArea", "role": "branding", "description": "Logo + product name with bottom border"},
+    {"name": "navList", "role": "navigation", "description": "Vertical list of navigation items"},
+    {"name": "navItem", "role": "link", "description": "Icon + label, flex row, rounded-lg hover"},
+    {"name": "userArea", "role": "user-info", "description": "Avatar + name + email at bottom"}
+  ],
+  "structurePatterns": ["fixed-left", "flex-column", "brand-top-nav-middle-user-bottom"],
+  "usageHints": ["Fixed left sidebar in admin dashboard layouts", "Icon + text navigation items with active state highlighting"],
+  "doNotInvent": ["submenu flyout", "collapsible sidebar", "multi-level navigation"],
+  "unknowns": []
+}

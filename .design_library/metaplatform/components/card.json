@@ -1,0 +1,51 @@
+{
+  "name": "Card",
+  "slug": "card",
+  "schemaVersion": 2,
+  "sourceKind": "structured-spec",
+  "confidence": "high",
+  "semanticTypeCandidates": ["Surface", "Card"],
+  "variantDimensions": [
+    {"name": "Variant", "values": ["Default", "Interactive", "Status"]},
+    {"name": "Density", "values": ["Compact", "Normal"]}
+  ],
+  "representativeVariants": [
+    {
+      "name": "Default",
+      "traits": {
+        "background": "var(--color-surface)",
+        "border": "1px solid var(--color-border)",
+        "borderRadius": "var(--radius-card)",
+        "padding": "var(--spacing-lg)"
+      }
+    },
+    {
+      "name": "Interactive",
+      "traits": {
+        "background": "var(--color-surface)",
+        "border": "1px solid var(--color-border)",
+        "borderRadius": "var(--radius-card)",
+        "cursor": "pointer",
+        "hoverBorder": "var(--color-primary)"
+      }
+    },
+    {
+      "name": "Status",
+      "traits": {
+        "background": "var(--color-surface)",
+        "border": "1px solid var(--color-border)",
+        "borderLeft": "3px solid var(--color-primary)",
+        "borderRadius": "var(--radius-card)"
+      }
+    }
+  ],
+  "anatomy": [
+    {"name": "header", "role": "title", "description": "Card title area with optional icon"},
+    {"name": "body", "role": "content", "description": "Main content area"},
+    {"name": "footer", "role": "actions", "description": "Action buttons area (optional)"}
+  ],
+  "structurePatterns": ["flex-column", "border-first", "white-surface"],
+  "usageHints": ["Content containers in dashboard grids", "Entity cards with status indicators", "Expandable capability cards"],
+  "doNotInvent": ["media card with image", "hover-shadow lift effect"],
+  "unknowns": []
+}

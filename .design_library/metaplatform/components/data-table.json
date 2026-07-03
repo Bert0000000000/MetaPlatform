@@ -1,0 +1,31 @@
+{
+  "name": "DataTable",
+  "slug": "data-table",
+  "schemaVersion": 2,
+  "sourceKind": "structured-spec",
+  "confidence": "high",
+  "semanticTypeCandidates": ["DataDisplay", "Table"],
+  "variantDimensions": [],
+  "representativeVariants": [
+    {
+      "name": "Default",
+      "traits": {
+        "headerBg": "var(--color-bg-tertiary)",
+        "headerText": "var(--font-weight-semibold)",
+        "cellPadding": "12px 16px",
+        "rowBorder": "1px solid var(--color-border-light)",
+        "fontSize": "var(--font-size-sm)"
+      }
+    }
+  ],
+  "anatomy": [
+    {"name": "header", "role": "column-labels", "description": "Table header row with column names"},
+    {"name": "row", "role": "data-row", "description": "Table body row with cell data"},
+    {"name": "cell", "role": "data-cell", "description": "Individual data cell"},
+    {"name": "actions", "role": "row-actions", "description": "Action buttons column (optional)"}
+  ],
+  "structurePatterns": ["full-width", "border-collapse", "light-header", "alternating-rows-optional"],
+  "usageHints": ["Page management tables", "Entity listing with inline actions"],
+  "doNotInvent": ["sortable columns", "pagination controls", "row selection checkbox"],
+  "unknowns": []
+}

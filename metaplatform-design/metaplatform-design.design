@@ -13,7 +13,20 @@
       },
       "devMetadata": {
         "htmlSrc": "pages/dashboard.html",
-        "interactions": []
+        "interactions": [
+          {
+            "domId": "nav-dialogue",
+            "targetPageId": "page-dialogue"
+          },
+          {
+            "domId": "nav-capability",
+            "targetPageId": "page-capability"
+          },
+          {
+            "domId": "nav-integration",
+            "targetPageId": "page-integration"
+          }
+        ]
       }
     },
     {
@@ -29,7 +42,23 @@
       },
       "devMetadata": {
         "htmlSrc": "pages/dialogue.html",
-        "interactions": []
+        "interactions": [
+          {
+            "domId": "nav-dashboard",
+            "targetPageId": "page-dashboard",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-capability",
+            "targetPageId": "page-capability",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-integration",
+            "targetPageId": "page-integration",
+            "hideEdge": true
+          }
+        ]
       }
     },
     {
@@ -39,13 +68,29 @@
       "version": 1,
       "createdAt": 1751516400000,
       "canvasData": {
-        "x": 1240,
-        "y": 0,
+        "x": 620,
+        "y": 377,
         "group": 0
       },
       "devMetadata": {
         "htmlSrc": "pages/capability.html",
-        "interactions": []
+        "interactions": [
+          {
+            "domId": "nav-dashboard",
+            "targetPageId": "page-dashboard",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-dialogue",
+            "targetPageId": "page-dialogue",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-integration",
+            "targetPageId": "page-integration",
+            "hideEdge": true
+          }
+        ]
       }
     },
     {
@@ -55,13 +100,29 @@
       "version": 1,
       "createdAt": 1751516400000,
       "canvasData": {
-        "x": 1860,
-        "y": 0,
+        "x": 620,
+        "y": 768,
         "group": 0
       },
       "devMetadata": {
         "htmlSrc": "pages/integration.html",
-        "interactions": []
+        "interactions": [
+          {
+            "domId": "nav-dashboard",
+            "targetPageId": "page-dashboard",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-dialogue",
+            "targetPageId": "page-dialogue",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-capability",
+            "targetPageId": "page-capability",
+            "hideEdge": true
+          }
+        ]
       }
     }
   ],
@@ -69,6 +130,7 @@
     "autoLayout": true,
     "deviceType": "desktop",
     "projectName": "MetaPlatform 管理后台",
-    "designLibrary": null
+    "designLibrary": null,
+    "showEdge": false
   }
 }

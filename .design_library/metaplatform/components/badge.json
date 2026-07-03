@@ -1,0 +1,52 @@
+{
+  "name": "Badge",
+  "slug": "badge",
+  "schemaVersion": 2,
+  "sourceKind": "structured-spec",
+  "confidence": "high",
+  "semanticTypeCandidates": ["Indicator", "Badge", "Tag"],
+  "variantDimensions": [
+    {"name": "Variant", "values": ["Default", "Status"]}
+  ],
+  "representativeVariants": [
+    {
+      "name": "Default",
+      "traits": {
+        "background": "var(--color-primary-light)",
+        "color": "var(--color-primary)",
+        "borderRadius": "var(--radius-pill)",
+        "padding": "2px 10px",
+        "fontSize": "var(--font-size-xs)",
+        "fontWeight": "var(--font-weight-medium)"
+      }
+    },
+    {
+      "name": "Status Success",
+      "traits": {
+        "background": "var(--state-success-bg)",
+        "color": "var(--state-success)"
+      }
+    },
+    {
+      "name": "Status Error",
+      "traits": {
+        "background": "var(--state-error-bg)",
+        "color": "var(--state-error)"
+      }
+    },
+    {
+      "name": "Status Warning",
+      "traits": {
+        "background": "var(--state-warning-bg)",
+        "color": "var(--state-warning)"
+      }
+    }
+  ],
+  "anatomy": [
+    {"name": "label", "role": "text", "description": "Badge text label"}
+  ],
+  "structurePatterns": ["inline-flex", "items-center", "pill-shape"],
+  "usageHints": ["Page type indicators", "Connection status labels", "Category tags"],
+  "doNotInvent": ["dismissible badge", "icon badge", "count badge"],
+  "unknowns": []
+}

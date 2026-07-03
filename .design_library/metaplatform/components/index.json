@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 2,
+  "components": [
+    {"slug": "sidebar", "name": "Sidebar", "file": "components/sidebar.json"},
+    {"slug": "button", "name": "Button", "file": "components/button.json"},
+    {"slug": "card", "name": "Card", "file": "components/card.json"},
+    {"slug": "data-table", "name": "DataTable", "file": "components/data-table.json"},
+    {"slug": "badge", "name": "Badge", "file": "components/badge.json"},
+    {"slug": "input", "name": "Input", "file": "components/input.json"}
+  ]
+}

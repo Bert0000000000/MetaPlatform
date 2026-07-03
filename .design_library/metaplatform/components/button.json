@@ -1,0 +1,50 @@
+{
+  "name": "Button",
+  "slug": "button",
+  "schemaVersion": 2,
+  "sourceKind": "structured-spec",
+  "confidence": "high",
+  "semanticTypeCandidates": ["Action", "Button"],
+  "variantDimensions": [
+    {"name": "Variant", "values": ["Primary", "Outline", "Danger"]},
+    {"name": "Size", "values": ["SM", "MD"]}
+  ],
+  "representativeVariants": [
+    {
+      "name": "Primary MD",
+      "traits": {
+        "background": "var(--color-primary)",
+        "color": "#ffffff",
+        "borderRadius": "var(--radius-btn)",
+        "padding": "8px 16px",
+        "fontSize": "var(--font-size-sm)",
+        "fontWeight": "var(--font-weight-medium)"
+      }
+    },
+    {
+      "name": "Outline MD",
+      "traits": {
+        "background": "transparent",
+        "color": "var(--color-text-secondary)",
+        "border": "1px solid var(--color-border)",
+        "borderRadius": "var(--radius-btn)"
+      }
+    },
+    {
+      "name": "Danger MD",
+      "traits": {
+        "background": "transparent",
+        "color": "var(--state-error)",
+        "border": "none"
+      }
+    }
+  ],
+  "anatomy": [
+    {"name": "label", "role": "text", "description": "Button text label"},
+    {"name": "icon", "role": "icon", "description": "Optional leading icon (optional)"}
+  ],
+  "structurePatterns": ["inline-flex", "items-center", "gap-2", "cursor-pointer"],
+  "usageHints": ["Primary for main CTA actions", "Outline for secondary actions", "Danger for destructive actions like delete"],
+  "doNotInvent": ["ghost variant", "icon-only variant", "loading spinner"],
+  "unknowns": []
+}
