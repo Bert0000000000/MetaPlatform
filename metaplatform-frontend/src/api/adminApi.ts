@@ -16,7 +16,7 @@ export async function getLineageImpact(sourceType: string, sourceId: string) {
 
 export async function getLineageRecords(tenantId = "00000000-0000-0000-0000-000000000001", limit = 50) {
   const { data } = await http.get("/lineage", { params: { tenantId, limit } });
-  return data;
+  return Array.isArray(data) ? data : (data.records || []);
 }
 
 // Agent 执行记录
