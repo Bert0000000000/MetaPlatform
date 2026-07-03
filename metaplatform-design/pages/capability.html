@@ -86,6 +86,7 @@
   /* ---- Layout ---- */
   --sidebar-width: 220px;
 }
+
     </style>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
     <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
@@ -96,12 +97,25 @@
   }
   @layer base {
     body { background: var(--color-surface); color: var(--color-text-primary); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
   }
     </style>
     <style>
       .no-scrollbar::-webkit-scrollbar { display: none; }
       .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-      body { font-size: 13px; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
     </style>
 </head>
 <body class="min-h-screen antialiased" style="font-family: var(--font-sans);">
@@ -215,7 +229,7 @@
     <!-- Page Header -->
     <div class="mb-4">
       <h1 style="font-size: var(--font-size-xl); font-weight: var(--font-weight-semibold); color: var(--color-text-primary); line-height: 1.25; letter-spacing: -0.01em;">能力中心</h1>
-      <p class="mt-1" style="font-size: var(--font-size-base); color: var(--color-text-secondary);">查看和执行已注册的能力服务</p>
+      <p class="mt-1" style="font-size: var(--font-size-sm); color: var(--color-text-secondary);">查看和执行已注册的能力服务</p>
     </div>
 
     <!-- Filter Tabs -->
@@ -232,15 +246,15 @@
       <!-- Card A: AI 文本分类 -->
       <div class="transition-colors cursor-pointer" style="background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 12px;" onmouseover="this.style.borderColor='var(--color-primary)'" onmouseout="this.style.borderColor='var(--color-border)'">
         <div class="flex items-start gap-2.5">
-          <div class="flex-shrink-0 flex items-center justify-center" style="width: 28px; height: 28px; background: var(--color-bg-secondary); border-radius: var(--radius-md);">
-            <i data-lucide="sparkles" class="w-4 h-4" style="color: var(--color-text-secondary);"></i>
+          <div class="flex-shrink-0 flex items-center justify-center" style="width: 24px; height: 24px; background: var(--color-bg-secondary); border-radius: var(--radius-md);">
+            <i data-lucide="sparkles" class="w-3.5 h-3.5" style="color: var(--color-text-secondary);"></i>
           </div>
           <div class="flex-1 min-w-0">
             <div class="flex items-center gap-1.5">
-              <h3 style="font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); color: var(--color-text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">AI 文本分类</h3>
+              <h3 style="font-size: var(--font-size-base); font-weight: var(--font-weight-medium); color: var(--color-text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">AI 文本分类</h3>
               <span style="font-size: var(--font-size-xs); color: var(--color-text-secondary); flex-shrink: 0;">AI</span>
             </div>
-            <p class="mt-0.5" style="font-family: var(--font-mono); font-size: var(--font-size-xs); color: var(--color-text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">ai_text_classify</p>
+            <p class="mt-0.5" style="font-family: var(--font-mono); font-size: var(--font-size-xs); color: var(--color-text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">text_classifier</p>
           </div>
         </div>
         <p class="mt-2" style="font-size: var(--font-size-xs); color: var(--color-text-secondary); line-height: 1.5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">基于深度学习模型对文本内容进行多类别智能分类，支持自定义标签体系与置信度阈值配置。</p>
@@ -249,12 +263,12 @@
       <!-- Card B: 数据摘要生成 -->
       <div class="transition-colors cursor-pointer" style="background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 12px;" onmouseover="this.style.borderColor='var(--color-primary)'" onmouseout="this.style.borderColor='var(--color-border)'">
         <div class="flex items-start gap-2.5">
-          <div class="flex-shrink-0 flex items-center justify-center" style="width: 28px; height: 28px; background: var(--color-bg-secondary); border-radius: var(--radius-md);">
-            <i data-lucide="file-text" class="w-4 h-4" style="color: var(--color-text-secondary);"></i>
+          <div class="flex-shrink-0 flex items-center justify-center" style="width: 24px; height: 24px; background: var(--color-bg-secondary); border-radius: var(--radius-md);">
+            <i data-lucide="file-text" class="w-3.5 h-3.5" style="color: var(--color-text-secondary);"></i>
           </div>
           <div class="flex-1 min-w-0">
             <div class="flex items-center gap-1.5">
-              <h3 style="font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); color: var(--color-text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">数据摘要生成</h3>
+              <h3 style="font-size: var(--font-size-base); font-weight: var(--font-weight-medium); color: var(--color-text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">数据摘要生成</h3>
               <span style="font-size: var(--font-size-xs); color: var(--color-text-secondary); flex-shrink: 0;">AI</span>
             </div>
             <p class="mt-0.5" style="font-family: var(--font-mono); font-size: var(--font-size-xs); color: var(--color-text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">data_summary</p>
@@ -266,12 +280,12 @@
       <!-- Card C: 邮件发送 -->
       <div class="transition-colors cursor-pointer" style="background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 12px;" onmouseover="this.style.borderColor='var(--color-primary)'" onmouseout="this.style.borderColor='var(--color-border)'">
         <div class="flex items-start gap-2.5">
-          <div class="flex-shrink-0 flex items-center justify-center" style="width: 28px; height: 28px; background: var(--color-bg-secondary); border-radius: var(--radius-md);">
-            <i data-lucide="mail" class="w-4 h-4" style="color: var(--color-text-secondary);"></i>
+          <div class="flex-shrink-0 flex items-center justify-center" style="width: 24px; height: 24px; background: var(--color-bg-secondary); border-radius: var(--radius-md);">
+            <i data-lucide="mail" class="w-3.5 h-3.5" style="color: var(--color-text-secondary);"></i>
           </div>
           <div class="flex-1 min-w-0">
             <div class="flex items-center gap-1.5">
-              <h3 style="font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); color: var(--color-text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">邮件发送</h3>
+              <h3 style="font-size: var(--font-size-base); font-weight: var(--font-weight-medium); color: var(--color-text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">邮件发送</h3>
               <span style="font-size: var(--font-size-xs); color: var(--color-text-secondary); flex-shrink: 0;">工具</span>
             </div>
             <p class="mt-0.5" style="font-family: var(--font-mono); font-size: var(--font-size-xs); color: var(--color-text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">send_email</p>
@@ -283,12 +297,12 @@
       <!-- Card D: PDF 导出 -->
       <div class="transition-colors cursor-pointer" style="background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 12px;" onmouseover="this.style.borderColor='var(--color-primary)'" onmouseout="this.style.borderColor='var(--color-border)'">
         <div class="flex items-start gap-2.5">
-          <div class="flex-shrink-0 flex items-center justify-center" style="width: 28px; height: 28px; background: var(--color-bg-secondary); border-radius: var(--radius-md);">
-            <i data-lucide="file-down" class="w-4 h-4" style="color: var(--color-text-secondary);"></i>
+          <div class="flex-shrink-0 flex items-center justify-center" style="width: 24px; height: 24px; background: var(--color-bg-secondary); border-radius: var(--radius-md);">
+            <i data-lucide="file-down" class="w-3.5 h-3.5" style="color: var(--color-text-secondary);"></i>
           </div>
           <div class="flex-1 min-w-0">
             <div class="flex items-center gap-1.5">
-              <h3 style="font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); color: var(--color-text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">PDF 导出</h3>
+              <h3 style="font-size: var(--font-size-base); font-weight: var(--font-weight-medium); color: var(--color-text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">PDF 导出</h3>
               <span style="font-size: var(--font-size-xs); color: var(--color-text-secondary); flex-shrink: 0;">工具</span>
             </div>
             <p class="mt-0.5" style="font-family: var(--font-mono); font-size: var(--font-size-xs); color: var(--color-text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">export_pdf</p>
@@ -300,12 +314,12 @@
       <!-- Card E: 翻译服务 -->
       <div class="transition-colors cursor-pointer" style="background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 12px;" onmouseover="this.style.borderColor='var(--color-primary)'" onmouseout="this.style.borderColor='var(--color-border)'">
         <div class="flex items-start gap-2.5">
-          <div class="flex-shrink-0 flex items-center justify-center" style="width: 28px; height: 28px; background: var(--color-bg-secondary); border-radius: var(--radius-md);">
-            <i data-lucide="languages" class="w-4 h-4" style="color: var(--color-text-secondary);"></i>
+          <div class="flex-shrink-0 flex items-center justify-center" style="width: 24px; height: 24px; background: var(--color-bg-secondary); border-radius: var(--radius-md);">
+            <i data-lucide="languages" class="w-3.5 h-3.5" style="color: var(--color-text-secondary);"></i>
           </div>
           <div class="flex-1 min-w-0">
             <div class="flex items-center gap-1.5">
-              <h3 style="font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); color: var(--color-text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">翻译服务</h3>
+              <h3 style="font-size: var(--font-size-base); font-weight: var(--font-weight-medium); color: var(--color-text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">翻译服务</h3>
               <span style="font-size: var(--font-size-xs); color: var(--color-text-secondary); flex-shrink: 0;">AI</span>
             </div>
             <p class="mt-0.5" style="font-family: var(--font-mono); font-size: var(--font-size-xs); color: var(--color-text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">translate</p>
@@ -317,12 +331,12 @@
       <!-- Card F: HTTP 请求 -->
       <div class="transition-colors cursor-pointer" style="background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 12px;" onmouseover="this.style.borderColor='var(--color-primary)'" onmouseout="this.style.borderColor='var(--color-border)'">
         <div class="flex items-start gap-2.5">
-          <div class="flex-shrink-0 flex items-center justify-center" style="width: 28px; height: 28px; background: var(--color-bg-secondary); border-radius: var(--radius-md);">
-            <i data-lucide="globe" class="w-4 h-4" style="color: var(--color-text-secondary);"></i>
+          <div class="flex-shrink-0 flex items-center justify-center" style="width: 24px; height: 24px; background: var(--color-bg-secondary); border-radius: var(--radius-md);">
+            <i data-lucide="globe" class="w-3.5 h-3.5" style="color: var(--color-text-secondary);"></i>
           </div>
           <div class="flex-1 min-w-0">
             <div class="flex items-center gap-1.5">
-              <h3 style="font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); color: var(--color-text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">HTTP 请求</h3>
+              <h3 style="font-size: var(--font-size-base); font-weight: var(--font-weight-medium); color: var(--color-text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">HTTP 请求</h3>
               <span style="font-size: var(--font-size-xs); color: var(--color-text-secondary); flex-shrink: 0;">数据</span>
             </div>
             <p class="mt-0.5" style="font-family: var(--font-mono); font-size: var(--font-size-xs); color: var(--color-text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">http_request</p>

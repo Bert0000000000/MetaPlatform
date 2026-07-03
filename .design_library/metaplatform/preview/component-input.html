@@ -1,298 +1,46 @@
 <!DOCTYPE html>
-<html lang="zh-CN" class="light">
+<html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Input 输入框</title>
-    <style id="theme-vars">
-/* ============================================================
- * MetaPlatform Design System — Compact Edition
- * ============================================================ */
-
-/* ---- Brand Prefix: mp ---- */
-
-:root {
-  /* Source: structured-spec */
-  /* Primary */
-  --color-primary: #3b82f6;
-  --color-primary-hover: #2563eb;
-  --color-primary-light: #eff6ff;
-
-  /* Source: structured-spec */
-  /* Neutral — minimal set */
-  --color-bg: #ffffff;
-  --color-bg-secondary: #f8fafc;
-  --color-surface: #ffffff;
-  --color-surface-hover: #f8fafc;
-
-  /* Source: structured-spec */
-  /* Sidebar */
-  --color-sidebar-bg: #0f172a;
-  --color-sidebar-text: #94a3b8;
-  --color-sidebar-text-hover: #cbd5e1;
-  --color-sidebar-active-bg: rgba(59, 130, 246, 0.15);
-  --color-sidebar-active-text: #60a5fa;
-  --color-sidebar-border: rgba(148, 163, 184, 0.1);
-
-  /* Source: structured-spec */
-  /* Text — 3 levels only */
-  --color-text-primary: #0f172a;
-  --color-text-secondary: #64748b;
-  --color-text-inverse: #ffffff;
-
-  /* Source: structured-spec */
-  /* Border — 1 token only */
-  --color-border: #e2e8f0;
-
-  /* Source: structured-spec */
-  /* State — 3 semantic colors, bg derived */
-  --state-success: #22c55e;
-  --state-success-bg: #f0fdf4;
-  --state-warning: #f59e0b;
-  --state-warning-bg: #fffbeb;
-  --state-error: #ef4444;
-  --state-error-bg: #fef2f2;
-
-  /* Source: structured-spec */
-  /* Typography */
-  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans SC", sans-serif;
-  --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
-
-  --font-size-xs: 11px;
-  --font-size-sm: 12px;
-  --font-size-base: 13px;
-  --font-size-lg: 14px;
-  --font-size-xl: 18px;
-  --font-size-2xl: 22px;
-
-  --font-weight-normal: 400;
-  --font-weight-medium: 500;
-  --font-weight-semibold: 600;
-
-  --line-height-normal: 1.5;
-
-  /* Source: structured-spec */
-  /* Spacing — compact scale */
-  --spacing-xs: 2px;
-  --spacing-sm: 4px;
-  --spacing-md: 8px;
-  --spacing-lg: 12px;
-  --spacing-xl: 16px;
-  --spacing-2xl: 24px;
-
-  /* Source: structured-spec */
-  /* Radius — SMALL */
-  --radius-sm: 3px;
-  --radius-md: 4px;
-  --radius-lg: 6px;
-  --radius-full: 9999px;
-
-  /* Source: structured-spec */
-  /* Shadows — minimal */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
-  --shadow-float: 0 8px 24px rgba(0, 0, 0, 0.1);
-
-  /* Source: structured-spec */
-  /* Layout */
-  --sidebar-width: 220px;
-
-  /* ---- Portable Aliases ---- */
-  --color-action: var(--color-primary);
-  --color-action-hover: var(--color-primary-hover);
-  --color-action-light: var(--color-primary-light);
-  --color-content: var(--color-text-primary);
-  --color-content-secondary: var(--color-text-secondary);
-  --color-field: var(--color-border);
-  --color-field-focus: var(--color-primary);
-  --color-feedback-success: var(--state-success);
-  --color-feedback-warning: var(--state-warning);
-  --color-feedback-error: var(--state-error);
-  --radius-btn: var(--radius-md);
-  --radius-card: var(--radius-lg);
-  --radius-input: var(--radius-md);
-  --radius-pill: var(--radius-full);
-}
-
-/* ---- Dark Mode ---- */
-.dark {
-  /* Neutral */
-  --color-bg: #0f172a;
-  --color-bg-secondary: #1e293b;
-  --color-surface: #1e293b;
-  --color-surface-hover: #334155;
-
-  /* Sidebar */
-  --color-sidebar-bg: #020617;
-  --color-sidebar-text: #64748b;
-
-  /* Text */
-  --color-text-primary: #f1f5f9;
-  --color-text-secondary: #94a3b8;
-  --color-text-inverse: #0f172a;
-
-  /* Border */
-  --color-border: #334155;
-
-  /* Primary light */
-  --color-primary-light: rgba(59, 130, 246, 0.1);
-
-  /* State backgrounds */
-  --state-success-bg: rgba(34, 197, 94, 0.1);
-  --state-warning-bg: rgba(245, 158, 11, 0.1);
-  --state-error-bg: rgba(239, 68, 68, 0.1);
-
-  /* Shadows */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.06);
-  --shadow-float: 0 8px 24px rgba(0, 0, 0, 0.15);
-}
-    </style>
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
-    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
-    <style type="text/tailwindcss">
-      @layer base {
-        body { background: var(--mp-background); color: var(--mp-foreground); }
-        td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
-        th { @apply whitespace-nowrap; }
-      }
-    </style>
-    <style>
-      .no-scrollbar::-webkit-scrollbar { display: none; }
-      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-      [data-icon] {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        -webkit-mask-size: contain;
-        mask-size: contain;
-        -webkit-mask-repeat: no-repeat;
-        mask-repeat: no-repeat;
-        -webkit-mask-position: center;
-        mask-position: center;
-        background-color: currentColor;
-      }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Input 输入框</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans SC', sans-serif; background: #ffffff; color: #0f172a; padding: 40px; }
+    .preview { max-width: 500px; margin: 0 auto; }
+    .section { margin-bottom: 20px; }
+    .section-label { font-size: 11px; font-weight: 500; color: #94a3b8; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .field { margin-bottom: 12px; }
+    .field-label { display: block; font-size: 12px; font-weight: 500; color: #0f172a; margin-bottom: 4px; }
+    .field-input { width: 100%; padding: 6px 10px; font-size: 12px; border: 1px solid #e2e8f0; border-radius: 4px; background: #f8fafc; color: #0f172a; outline: none; font-family: inherit; }
+    .field-input:focus { border-color: #3b82f6; }
+    .field-input::placeholder { color: #94a3b8; }
+    .field-textarea { min-height: 60px; resize: vertical; }
+    .mono { font-family: 'SFMono-Regular', Consolas, monospace; }
+    h1 { font-size: 22px; font-weight: 600; margin-bottom: 24px; }
+  </style>
 </head>
-<body class="min-h-screen font-sans antialiased">
-    <main>
-      <div class="preview-container">
-
-        <h1 class="preview-title">Input 输入框</h1>
-
-        <!-- 文本输入 -->
-        <div class="section">
-          <h2 class="section-title">文本输入</h2>
-
-          <div class="field">
-            <label class="field-label" for="input-name">显示名称</label>
-            <input class="field-input" type="text" id="input-name" placeholder="请输入显示名称">
-          </div>
-
-          <div class="field">
-            <label class="field-label" for="input-api">API 地址</label>
-            <input class="field-input field-input--mono" type="text" id="input-api" placeholder="https://api.example.com">
-          </div>
-        </div>
-
-        <!-- 文本域 -->
-        <div class="section">
-          <h2 class="section-title">文本域</h2>
-
-          <div class="field">
-            <label class="field-label" for="textarea-desc">描述</label>
-            <textarea class="field-textarea" id="textarea-desc" placeholder="请输入描述..." rows="3"></textarea>
-          </div>
-        </div>
-
+<body>
+  <div class="preview">
+    <h1>Input 输入框</h1>
+    <div class="section">
+      <div class="section-label">文本输入 Text</div>
+      <div class="field">
+        <label class="field-label">显示名称</label>
+        <input class="field-input" type="text" placeholder="请输入显示名称">
       </div>
-    </main>
-    <script>lucide.createIcons();</script>
-
-    <style>
-      .preview-container {
-        max-width: 500px;
-        margin: 0 auto;
-        padding: 40px 24px;
-      }
-      .preview-title {
-        font-family: var(--font-sans);
-        font-size: var(--font-size-2xl);
-        font-weight: var(--font-weight-semibold);
-        line-height: var(--line-height-normal);
-        color: var(--color-text-primary);
-        margin: 0 0 var(--spacing-2xl) 0;
-        padding-bottom: var(--spacing-lg);
-        border-bottom: 1px solid var(--color-border);
-      }
-      .section {
-        margin-bottom: var(--spacing-2xl);
-      }
-      .section-title {
-        font-family: var(--font-sans);
-        font-size: var(--font-size-lg);
-        font-weight: var(--font-weight-medium);
-        color: var(--color-text-primary);
-        margin: 0 0 var(--spacing-lg) 0;
-      }
-      .field {
-        margin-bottom: var(--spacing-lg);
-        width: 100%;
-        max-width: 24rem;
-      }
-      .field-label {
-        display: block;
-        font-family: var(--font-sans);
-        font-size: 12px;
-        font-weight: var(--font-weight-medium);
-        color: var(--color-text-primary);
-        margin-bottom: 4px;
-      }
-      .field-input {
-        display: block;
-        width: 100%;
-        background: #f8fafc;
-        border: 1px solid #e2e8f0;
-        border-radius: 4px;
-        padding: 6px 10px;
-        font-size: 12px;
-        font-family: var(--font-sans);
-        color: var(--color-text-primary);
-        line-height: var(--line-height-normal);
-        outline: none;
-        transition: border-color 0.15s ease, box-shadow 0.15s ease;
-      }
-      .field-input::placeholder {
-        color: var(--color-text-secondary);
-      }
-      .field-input:focus {
-        border-color: var(--color-primary);
-        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.12);
-      }
-      .field-input--mono {
-        font-family: var(--font-mono);
-      }
-      .field-textarea {
-        display: block;
-        width: 100%;
-        background: #f8fafc;
-        border: 1px solid #e2e8f0;
-        border-radius: 4px;
-        padding: 6px 10px;
-        font-size: 12px;
-        font-family: var(--font-sans);
-        color: var(--color-text-primary);
-        line-height: var(--line-height-normal);
-        outline: none;
-        resize: vertical;
-        min-height: 64px;
-        transition: border-color 0.15s ease, box-shadow 0.15s ease;
-      }
-      .field-textarea::placeholder {
-        color: var(--color-text-secondary);
-      }
-      .field-textarea:focus {
-        border-color: var(--color-primary);
-        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.12);
-      }
-    </style>
+      <div class="field">
+        <label class="field-label">API 地址</label>
+        <input class="field-input mono" type="text" placeholder="https://api.example.com">
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-label">文本域 Textarea</div>
+      <div class="field">
+        <label class="field-label">描述</label>
+        <textarea class="field-input field-textarea" placeholder="请输入描述信息..."></textarea>
+      </div>
+    </div>
+  </div>
 </body>
 </html>

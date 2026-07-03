@@ -5,37 +5,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Untitled</title>
     <style id="theme-vars">
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MetaPlatform 设计系统 — 组件展示</title>
-    <style id="theme-vars">
 /* ============================================================
- * MetaPlatform Design System
- * Enterprise low-code platform design tokens
- * Source: structured-spec (.design project extraction)
- * Brand Prefix: mp
+ * MetaPlatform Design — Draft (精简版)
+ * Compact, minimal, small-radius enterprise style
  * ============================================================ */
 
-/* ---- Color System ---- */
-/* Source: structured-spec */
+/* ---- Brand Prefix: mp ---- */
+
 :root {
-  /* Primary: Indigo Blue — enterprise trust */
+  /* Primary */
   --color-primary: #3b82f6;
   --color-primary-hover: #2563eb;
   --color-primary-light: #eff6ff;
-  --color-primary-muted: #bfdbfe;
 
-  /* Neutral Scale */
+  /* Neutral — minimal set */
   --color-bg: #ffffff;
   --color-bg-secondary: #f8fafc;
-  --color-bg-tertiary: #f1f5f9;
   --color-surface: #ffffff;
   --color-surface-hover: #f8fafc;
 
-  /* Sidebar — dark navy */
+  /* Sidebar */
   --color-sidebar-bg: #0f172a;
   --color-sidebar-text: #94a3b8;
   --color-sidebar-text-hover: #cbd5e1;
@@ -43,2439 +32,61 @@
   --color-sidebar-active-text: #60a5fa;
   --color-sidebar-border: rgba(148, 163, 184, 0.1);
 
-  /* Text */
+  /* Text — 3 levels only */
   --color-text-primary: #0f172a;
-  --color-text-secondary: #475569;
-  --color-text-tertiary: #94a3b8;
+  --color-text-secondary: #64748b;
   --color-text-inverse: #ffffff;
 
-  /* Borders */
+  /* Border — 1 token only */
   --color-border: #e2e8f0;
-  --color-border-light: #f1f5f9;
 
-  /* State Colors */
+  /* State — 3 semantic colors, bg derived */
   --state-success: #22c55e;
   --state-success-bg: #f0fdf4;
   --state-warning: #f59e0b;
   --state-warning-bg: #fffbeb;
   --state-error: #ef4444;
   --state-error-bg: #fef2f2;
-  --state-info: #3b82f6;
-  --state-info-bg: #eff6ff;
-
-  /* Accent tints for categories */
-  --tint-ai: #8b5cf6;
-  --tint-ai-bg: #f5f3ff;
-  --tint-data: #06b6d4;
-  --tint-data-bg: #ecfeff;
-  --tint-tool: #f59e0b;
-  --tint-tool-bg: #fffbeb;
-  --tint-rest: #3b82f6;
-  --tint-rest-bg: #eff6ff;
-  --tint-database: #22c55e;
-  --tint-database-bg: #f0fdf4;
-  --tint-csv: #f59e0b;
-  --tint-csv-bg: #fffbeb;
 
   /* ---- Typography ---- */
-  /* Source: structured-spec */
   --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans SC", sans-serif;
   --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
 
   --font-size-xs: 11px;
   --font-size-sm: 12px;
-  --font-size-base: 14px;
-  --font-size-md: 15px;
-  --font-size-lg: 16px;
-  --font-size-xl: 20px;
-  --font-size-2xl: 24px;
-  --font-size-3xl: 30px;
+  --font-size-base: 13px;
+  --font-size-lg: 14px;
+  --font-size-xl: 18px;
+  --font-size-2xl: 22px;
 
   --font-weight-normal: 400;
   --font-weight-medium: 500;
   --font-weight-semibold: 600;
-  --font-weight-bold: 700;
 
-  --line-height-tight: 1.25;
   --line-height-normal: 1.5;
-  --line-height-relaxed: 1.625;
 
-  /* ---- Spacing ---- */
-  /* Source: structured-spec */
-  --spacing-xs: 4px;
-  --spacing-sm: 8px;
-  --spacing-md: 12px;
-  --spacing-lg: 16px;
-  --spacing-xl: 24px;
-  --spacing-2xl: 32px;
-  --spacing-3xl: 48px;
+  /* ---- Spacing — compact scale ---- */
+  --spacing-xs: 2px;
+  --spacing-sm: 4px;
+  --spacing-md: 8px;
+  --spacing-lg: 12px;
+  --spacing-xl: 16px;
+  --spacing-2xl: 24px;
 
-  /* ---- Radius ---- */
-  /* Source: structured-spec */
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-xl: 16px;
+  /* ---- Radius — SMALL ---- */
+  --radius-sm: 3px;
+  --radius-md: 4px;
+  --radius-lg: 6px;
   --radius-full: 9999px;
 
-  /* ---- Shadows (border-first, low alpha) ---- */
-  /* Source: structured-spec */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.03);
-  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.04);
-  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.05);
-  --shadow-float: 0 12px 32px rgba(0, 0, 0, 0.12);
+  /* ---- Shadows — minimal ---- */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-float: 0 8px 24px rgba(0, 0, 0, 0.1);
 
   /* ---- Layout ---- */
-  /* Source: structured-spec */
-  --sidebar-width: 240px;
-  --content-max-width: 1200px;
-  --header-height: 56px;
-
-  /* ---- Portable Aliases (for component consumption) ---- */
-  /* Color aliases */
-  --color-action: var(--color-primary);
-  --color-action-hover: var(--color-primary-hover);
-  --color-action-light: var(--color-primary-light);
-  --color-content: var(--color-text-primary);
-  --color-content-secondary: var(--color-text-secondary);
-  --color-content-tertiary: var(--color-text-tertiary);
-  --color-field: var(--color-border);
-  --color-field-focus: var(--color-primary);
-  --color-feedback-success: var(--state-success);
-  --color-feedback-warning: var(--state-warning);
-  --color-feedback-error: var(--state-error);
-  --color-feedback-info: var(--state-info);
-
-  /* Typography aliases */
-  --type-heading: var(--font-weight-bold);
-  --type-subheading: var(--font-weight-semibold);
-  --type-body: var(--font-weight-normal);
-  --type-caption: var(--font-weight-normal);
-
-  /* Radius aliases */
-  --radius-btn: var(--radius-md);
-  --radius-card: var(--radius-lg);
-  --radius-input: var(--radius-md);
-  --radius-pill: var(--radius-full);
+  --sidebar-width: 220px;
 }
 
-/* ---- Dark Mode ---- */
-/* Source: structured-spec */
-.dark {
-  --color-bg: #0f172a;
-  --color-bg-secondary: #1e293b;
-  --color-bg-tertiary: #334155;
-  --color-surface: #1e293b;
-  --color-surface-hover: #334155;
-
-  --color-sidebar-bg: #020617;
-  --color-sidebar-text: #64748b;
-  --color-sidebar-border: rgba(148, 163, 184, 0.15);
-
-  --color-text-primary: #f1f5f9;
-  --color-text-secondary: #94a3b8;
-  --color-text-tertiary: #64748b;
-  --color-text-inverse: #0f172a;
-
-  --color-border: #334155;
-  --color-border-light: #1e293b;
-
-  --color-primary-light: rgba(59, 130, 246, 0.1);
-  --color-primary-muted: rgba(59, 130, 246, 0.3);
-
-  --state-success-bg: rgba(34, 197, 94, 0.1);
-  --state-warning-bg: rgba(245, 158, 11, 0.1);
-  --state-error-bg: rgba(239, 68, 68, 0.1);
-  --state-info-bg: rgba(59, 130, 246, 0.1);
-
-  --tint-ai-bg: rgba(139, 92, 246, 0.1);
-  --tint-data-bg: rgba(6, 182, 212, 0.1);
-  --tint-tool-bg: rgba(245, 158, 11, 0.1);
-  --tint-rest-bg: rgba(59, 130, 246, 0.1);
-  --tint-database-bg: rgba(34, 197, 94, 0.1);
-  --tint-csv-bg: rgba(245, 158, 11, 0.1);
-
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.06);
-  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.07);
-  --shadow-float: 0 12px 32px rgba(0, 0, 0, 0.14);
-}
-
-/* ---- Typography Scale Classes ---- */
-.mp-h1 { font-size: var(--font-size-3xl); font-weight: var(--font-weight-bold); line-height: var(--line-height-tight); color: var(--color-text-primary); letter-spacing: -0.02em; }
-.mp-h2 { font-size: var(--font-size-2xl); font-weight: var(--font-weight-bold); line-height: var(--line-height-tight); color: var(--color-text-primary); letter-spacing: -0.01em; }
-.mp-h3 { font-size: var(--font-size-xl); font-weight: var(--font-weight-semibold); line-height: var(--line-height-normal); color: var(--color-text-primary); }
-.mp-h4 { font-size: var(--font-size-lg); font-weight: var(--font-weight-semibold); line-height: var(--line-height-normal); color: var(--color-text-primary); }
-.mp-body { font-size: var(--font-size-base); font-weight: var(--font-weight-normal); line-height: var(--line-height-normal); color: var(--color-text-secondary); }
-.mp-caption { font-size: var(--font-size-sm); font-weight: var(--font-weight-normal); line-height: var(--line-height-normal); color: var(--color-text-tertiary); }
-.mp-code { font-family: var(--font-mono); font-size: var(--font-size-sm); }
-
-/* ---- Component Surfaces ---- */
-.mp-surface { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); }
-.mp-surface-raised { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); }
-
-    </style>
-    <style id="component-vars">
-/* ═══════════════════════════════════════════════════════════════
-   components.css — Design System Component Definitions
-   Auto-extracted from preview/component-*.html
-   DO NOT EDIT MANUALLY — regenerate via extract-components-css.mjs
-   ═══════════════════════════════════════════════════════════════ */
-
-/* ── Badge ─────────────────────────────────────────────────── */
-/* @anatomy
-   <div class="preview-container"> <div class="preview-header"> <h1>Badge 徽章标签</h1> <p>用于状态标记、分类标识和信息标注的轻量标签组件</p> </div>
-*/
-/* ============================================================
- * MetaPlatform Design System
- * Enterprise low-code platform design tokens
- * Source: structured-spec (.design project extraction)
- * Brand Prefix: mp
- * ============================================================ */
-
-/* ---- Color System ---- */
-/* Source: structured-spec */
-:root {
-  /* Primary: Indigo Blue — enterprise trust */
-  --color-primary: #3b82f6;
-  --color-primary-hover: #2563eb;
-  --color-primary-light: #eff6ff;
-  --color-primary-muted: #bfdbfe;
-
-  /* Neutral Scale */
-  --color-bg: #ffffff;
-  --color-bg-secondary: #f8fafc;
-  --color-bg-tertiary: #f1f5f9;
-  --color-surface: #ffffff;
-  --color-surface-hover: #f8fafc;
-
-  /* Sidebar — dark navy */
-  --color-sidebar-bg: #0f172a;
-  --color-sidebar-text: #94a3b8;
-  --color-sidebar-text-hover: #cbd5e1;
-  --color-sidebar-active-bg: rgba(59, 130, 246, 0.15);
-  --color-sidebar-active-text: #60a5fa;
-  --color-sidebar-border: rgba(148, 163, 184, 0.1);
-
-  /* Text */
-  --color-text-primary: #0f172a;
-  --color-text-secondary: #475569;
-  --color-text-tertiary: #94a3b8;
-  --color-text-inverse: #ffffff;
-
-  /* Borders */
-  --color-border: #e2e8f0;
-  --color-border-light: #f1f5f9;
-
-  /* State Colors */
-  --state-success: #22c55e;
-  --state-success-bg: #f0fdf4;
-  --state-warning: #f59e0b;
-  --state-warning-bg: #fffbeb;
-  --state-error: #ef4444;
-  --state-error-bg: #fef2f2;
-  --state-info: #3b82f6;
-  --state-info-bg: #eff6ff;
-
-  /* Accent tints for categories */
-  --tint-ai: #8b5cf6;
-  --tint-ai-bg: #f5f3ff;
-  --tint-data: #06b6d4;
-  --tint-data-bg: #ecfeff;
-  --tint-tool: #f59e0b;
-  --tint-tool-bg: #fffbeb;
-  --tint-rest: #3b82f6;
-  --tint-rest-bg: #eff6ff;
-  --tint-database: #22c55e;
-  --tint-database-bg: #f0fdf4;
-  --tint-csv: #f59e0b;
-  --tint-csv-bg: #fffbeb;
-
-  /* ---- Typography ---- */
-  /* Source: structured-spec */
-  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans SC", sans-serif;
-  --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
-
-  --font-size-xs: 11px;
-  --font-size-sm: 12px;
-  --font-size-base: 14px;
-  --font-size-md: 15px;
-  --font-size-lg: 16px;
-  --font-size-xl: 20px;
-  --font-size-2xl: 24px;
-  --font-size-3xl: 30px;
-
-  --font-weight-normal: 400;
-  --font-weight-medium: 500;
-  --font-weight-semibold: 600;
-  --font-weight-bold: 700;
-
-  --line-height-tight: 1.25;
-  --line-height-normal: 1.5;
-  --line-height-relaxed: 1.625;
-
-  /* ---- Spacing ---- */
-  /* Source: structured-spec */
-  --spacing-xs: 4px;
-  --spacing-sm: 8px;
-  --spacing-md: 12px;
-  --spacing-lg: 16px;
-  --spacing-xl: 24px;
-  --spacing-2xl: 32px;
-  --spacing-3xl: 48px;
-
-  /* ---- Radius ---- */
-  /* Source: structured-spec */
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-xl: 16px;
-  --radius-full: 9999px;
-
-  /* ---- Shadows (border-first, low alpha) ---- */
-  /* Source: structured-spec */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.03);
-  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.04);
-  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.05);
-  --shadow-float: 0 12px 32px rgba(0, 0, 0, 0.12);
-
-  /* ---- Layout ---- */
-  /* Source: structured-spec */
-  --sidebar-width: 240px;
-  --content-max-width: 1200px;
-  --header-height: 56px;
-
-  /* ---- Portable Aliases (for component consumption) ---- */
-  /* Color aliases */
-  --color-action: var(--color-primary);
-  --color-action-hover: var(--color-primary-hover);
-  --color-action-light: var(--color-primary-light);
-  --color-content: var(--color-text-primary);
-  --color-content-secondary: var(--color-text-secondary);
-  --color-content-tertiary: var(--color-text-tertiary);
-  --color-field: var(--color-border);
-  --color-field-focus: var(--color-primary);
-  --color-feedback-success: var(--state-success);
-  --color-feedback-warning: var(--state-warning);
-  --color-feedback-error: var(--state-error);
-  --color-feedback-info: var(--state-info);
-
-  /* Typography aliases */
-  --type-heading: var(--font-weight-bold);
-  --type-subheading: var(--font-weight-semibold);
-  --type-body: var(--font-weight-normal);
-  --type-caption: var(--font-weight-normal);
-
-  /* Radius aliases */
-  --radius-btn: var(--radius-md);
-  --radius-card: var(--radius-lg);
-  --radius-input: var(--radius-md);
-  --radius-pill: var(--radius-full);
-}
-
-/* ---- Dark Mode ---- */
-/* Source: structured-spec */
-.dark {
-  --color-bg: #0f172a;
-  --color-bg-secondary: #1e293b;
-  --color-bg-tertiary: #334155;
-  --color-surface: #1e293b;
-  --color-surface-hover: #334155;
-
-  --color-sidebar-bg: #020617;
-  --color-sidebar-text: #64748b;
-  --color-sidebar-border: rgba(148, 163, 184, 0.15);
-
-  --color-text-primary: #f1f5f9;
-  --color-text-secondary: #94a3b8;
-  --color-text-tertiary: #64748b;
-  --color-text-inverse: #0f172a;
-
-  --color-border: #334155;
-  --color-border-light: #1e293b;
-
-  --color-primary-light: rgba(59, 130, 246, 0.1);
-  --color-primary-muted: rgba(59, 130, 246, 0.3);
-
-  --state-success-bg: rgba(34, 197, 94, 0.1);
-  --state-warning-bg: rgba(245, 158, 11, 0.1);
-  --state-error-bg: rgba(239, 68, 68, 0.1);
-  --state-info-bg: rgba(59, 130, 246, 0.1);
-
-  --tint-ai-bg: rgba(139, 92, 246, 0.1);
-  --tint-data-bg: rgba(6, 182, 212, 0.1);
-  --tint-tool-bg: rgba(245, 158, 11, 0.1);
-  --tint-rest-bg: rgba(59, 130, 246, 0.1);
-  --tint-database-bg: rgba(34, 197, 94, 0.1);
-  --tint-csv-bg: rgba(245, 158, 11, 0.1);
-
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.06);
-  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.07);
-  --shadow-float: 0 12px 32px rgba(0, 0, 0, 0.14);
-}
-
-/* ---- Typography Scale Classes ---- */
-.mp-h1 { font-size: var(--font-size-3xl); font-weight: var(--font-weight-bold); line-height: var(--line-height-tight); color: var(--color-text-primary); letter-spacing: -0.02em; }
-.mp-h2 { font-size: var(--font-size-2xl); font-weight: var(--font-weight-bold); line-height: var(--line-height-tight); color: var(--color-text-primary); letter-spacing: -0.01em; }
-.mp-h3 { font-size: var(--font-size-xl); font-weight: var(--font-weight-semibold); line-height: var(--line-height-normal); color: var(--color-text-primary); }
-.mp-h4 { font-size: var(--font-size-lg); font-weight: var(--font-weight-semibold); line-height: var(--line-height-normal); color: var(--color-text-primary); }
-.mp-body { font-size: var(--font-size-base); font-weight: var(--font-weight-normal); line-height: var(--line-height-normal); color: var(--color-text-secondary); }
-.mp-caption { font-size: var(--font-size-sm); font-weight: var(--font-weight-normal); line-height: var(--line-height-normal); color: var(--color-text-tertiary); }
-.mp-code { font-family: var(--font-mono); font-size: var(--font-size-sm); }
-
-/* ---- Component Surfaces ---- */
-.mp-surface { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); }
-.mp-surface-raised { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); }
-
-    
-
-  
-  @layer base {
-    body { background: var(--mp-background); color: var(--mp-foreground); }
-    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
-    th { @apply whitespace-nowrap; }
-  }
-    
-
-      .no-scrollbar::-webkit-scrollbar { display: none; }
-      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-      [data-icon] {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        -webkit-mask-size: contain;
-        mask-size: contain;
-        -webkit-mask-repeat: no-repeat;
-        mask-repeat: no-repeat;
-        -webkit-mask-position: center;
-        mask-position: center;
-        background-color: currentColor;
-      }
-    
-
-
-    .preview-container {
-      max-width: 600px;
-      margin: 0 auto;
-    }
-
-    .preview-header {
-      margin-bottom: 32px;
-    }
-
-    .preview-header h1 {
-      font-size: var(--font-size-2xl);
-      font-weight: var(--font-weight-bold);
-      color: var(--color-text-primary);
-      margin: 0 0 8px 0;
-    }
-
-    .preview-header p {
-      font-size: var(--font-size-sm);
-      color: var(--color-text-tertiary);
-      margin: 0;
-    }
-
-    .section {
-      background: #ffffff;
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius-lg);
-      padding: 24px;
-      margin-bottom: 16px;
-    }
-
-    .section-title {
-      font-size: var(--font-size-sm);
-      font-weight: var(--font-weight-semibold);
-      color: var(--color-text-secondary);
-      margin: 0 0 16px 0;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-
-    .badge-row {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      border-radius: 9999px;
-      font-size: 11px;
-      padding: 2px 10px;
-      font-weight: var(--font-weight-medium);
-      line-height: var(--line-height-normal);
-      white-space: nowrap;
-    }
-
-    /* Default - Blue */
-    .badge-default {
-      background: var(--color-primary-light);
-      color: var(--color-primary);
-    }
-
-    /* Category: REST */
-    .badge-rest {
-      background: var(--tint-rest-bg);
-      color: var(--tint-rest);
-    }
-
-    /* Category: Database */
-    .badge-database {
-      background: var(--tint-database-bg);
-      color: var(--tint-database);
-    }
-
-    /* Category: CSV */
-    .badge-csv {
-      background: var(--tint-csv-bg);
-      color: var(--tint-csv);
-    }
-
-    /* Category: AI */
-    .badge-ai {
-      background: var(--tint-ai-bg);
-      color: var(--tint-ai);
-    }
-
-    /* Status: Success */
-    .badge-success {
-      background: var(--state-success-bg);
-      color: var(--state-success);
-    }
-
-    /* Status: Error */
-    .badge-error {
-      background: var(--state-error-bg);
-      color: var(--state-error);
-    }
-
-    /* Status: Warning */
-    .badge-warning {
-      background: var(--state-warning-bg);
-      color: var(--state-warning);
-    }
-
-/* ── Button ────────────────────────────────────────────────── */
-/* @anatomy
-   <div class="container"> <h1 class="page-title">Button 按钮</h1> <p class="page-desc">用于触发页面操作、执行流程或引导用户行为的交互元素。</p> <!-- Primary 主要按钮 --> <div class="section"> <div class="section-label">VARIANT</div>
-*/
-/* ============================================================
- * MetaPlatform Design System
- * Enterprise low-code platform design tokens
- * Source: structured-spec (.design project extraction)
- * Brand Prefix: mp
- * ============================================================ */
-
-/* ---- Color System ---- */
-/* Source: structured-spec */
-:root {
-  /* Primary: Indigo Blue — enterprise trust */
-  --color-primary: #3b82f6;
-  --color-primary-hover: #2563eb;
-  --color-primary-light: #eff6ff;
-  --color-primary-muted: #bfdbfe;
-
-  /* Neutral Scale */
-  --color-bg: #ffffff;
-  --color-bg-secondary: #f8fafc;
-  --color-bg-tertiary: #f1f5f9;
-  --color-surface: #ffffff;
-  --color-surface-hover: #f8fafc;
-
-  /* Sidebar — dark navy */
-  --color-sidebar-bg: #0f172a;
-  --color-sidebar-text: #94a3b8;
-  --color-sidebar-text-hover: #cbd5e1;
-  --color-sidebar-active-bg: rgba(59, 130, 246, 0.15);
-  --color-sidebar-active-text: #60a5fa;
-  --color-sidebar-border: rgba(148, 163, 184, 0.1);
-
-  /* Text */
-  --color-text-primary: #0f172a;
-  --color-text-secondary: #475569;
-  --color-text-tertiary: #94a3b8;
-  --color-text-inverse: #ffffff;
-
-  /* Borders */
-  --color-border: #e2e8f0;
-  --color-border-light: #f1f5f9;
-
-  /* State Colors */
-  --state-success: #22c55e;
-  --state-success-bg: #f0fdf4;
-  --state-warning: #f59e0b;
-  --state-warning-bg: #fffbeb;
-  --state-error: #ef4444;
-  --state-error-bg: #fef2f2;
-  --state-info: #3b82f6;
-  --state-info-bg: #eff6ff;
-
-  /* Accent tints for categories */
-  --tint-ai: #8b5cf6;
-  --tint-ai-bg: #f5f3ff;
-  --tint-data: #06b6d4;
-  --tint-data-bg: #ecfeff;
-  --tint-tool: #f59e0b;
-  --tint-tool-bg: #fffbeb;
-  --tint-rest: #3b82f6;
-  --tint-rest-bg: #eff6ff;
-  --tint-database: #22c55e;
-  --tint-database-bg: #f0fdf4;
-  --tint-csv: #f59e0b;
-  --tint-csv-bg: #fffbeb;
-
-  /* ---- Typography ---- */
-  /* Source: structured-spec */
-  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans SC", sans-serif;
-  --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
-
-  --font-size-xs: 11px;
-  --font-size-sm: 12px;
-  --font-size-base: 14px;
-  --font-size-md: 15px;
-  --font-size-lg: 16px;
-  --font-size-xl: 20px;
-  --font-size-2xl: 24px;
-  --font-size-3xl: 30px;
-
-  --font-weight-normal: 400;
-  --font-weight-medium: 500;
-  --font-weight-semibold: 600;
-  --font-weight-bold: 700;
-
-  --line-height-tight: 1.25;
-  --line-height-normal: 1.5;
-  --line-height-relaxed: 1.625;
-
-  /* ---- Spacing ---- */
-  /* Source: structured-spec */
-  --spacing-xs: 4px;
-  --spacing-sm: 8px;
-  --spacing-md: 12px;
-  --spacing-lg: 16px;
-  --spacing-xl: 24px;
-  --spacing-2xl: 32px;
-  --spacing-3xl: 48px;
-
-  /* ---- Radius ---- */
-  /* Source: structured-spec */
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-xl: 16px;
-  --radius-full: 9999px;
-
-  /* ---- Shadows (border-first, low alpha) ---- */
-  /* Source: structured-spec */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.03);
-  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.04);
-  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.05);
-  --shadow-float: 0 12px 32px rgba(0, 0, 0, 0.12);
-
-  /* ---- Layout ---- */
-  /* Source: structured-spec */
-  --sidebar-width: 240px;
-  --content-max-width: 1200px;
-  --header-height: 56px;
-
-  /* ---- Portable Aliases (for component consumption) ---- */
-  /* Color aliases */
-  --color-action: var(--color-primary);
-  --color-action-hover: var(--color-primary-hover);
-  --color-action-light: var(--color-primary-light);
-  --color-content: var(--color-text-primary);
-  --color-content-secondary: var(--color-text-secondary);
-  --color-content-tertiary: var(--color-text-tertiary);
-  --color-field: var(--color-border);
-  --color-field-focus: var(--color-primary);
-  --color-feedback-success: var(--state-success);
-  --color-feedback-warning: var(--state-warning);
-  --color-feedback-error: var(--state-error);
-  --color-feedback-info: var(--state-info);
-
-  /* Typography aliases */
-  --type-heading: var(--font-weight-bold);
-  --type-subheading: var(--font-weight-semibold);
-  --type-body: var(--font-weight-normal);
-  --type-caption: var(--font-weight-normal);
-
-  /* Radius aliases */
-  --radius-btn: var(--radius-md);
-  --radius-card: var(--radius-lg);
-  --radius-input: var(--radius-md);
-  --radius-pill: var(--radius-full);
-}
-
-/* ---- Dark Mode ---- */
-/* Source: structured-spec */
-.dark {
-  --color-bg: #0f172a;
-  --color-bg-secondary: #1e293b;
-  --color-bg-tertiary: #334155;
-  --color-surface: #1e293b;
-  --color-surface-hover: #334155;
-
-  --color-sidebar-bg: #020617;
-  --color-sidebar-text: #64748b;
-  --color-sidebar-border: rgba(148, 163, 184, 0.15);
-
-  --color-text-primary: #f1f5f9;
-  --color-text-secondary: #94a3b8;
-  --color-text-tertiary: #64748b;
-  --color-text-inverse: #0f172a;
-
-  --color-border: #334155;
-  --color-border-light: #1e293b;
-
-  --color-primary-light: rgba(59, 130, 246, 0.1);
-  --color-primary-muted: rgba(59, 130, 246, 0.3);
-
-  --state-success-bg: rgba(34, 197, 94, 0.1);
-  --state-warning-bg: rgba(245, 158, 11, 0.1);
-  --state-error-bg: rgba(239, 68, 68, 0.1);
-  --state-info-bg: rgba(59, 130, 246, 0.1);
-
-  --tint-ai-bg: rgba(139, 92, 246, 0.1);
-  --tint-data-bg: rgba(6, 182, 212, 0.1);
-  --tint-tool-bg: rgba(245, 158, 11, 0.1);
-  --tint-rest-bg: rgba(59, 130, 246, 0.1);
-  --tint-database-bg: rgba(34, 197, 94, 0.1);
-  --tint-csv-bg: rgba(245, 158, 11, 0.1);
-
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.06);
-  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.07);
-  --shadow-float: 0 12px 32px rgba(0, 0, 0, 0.14);
-}
-
-/* ---- Typography Scale Classes ---- */
-.mp-h1 { font-size: var(--font-size-3xl); font-weight: var(--font-weight-bold); line-height: var(--line-height-tight); color: var(--color-text-primary); letter-spacing: -0.02em; }
-.mp-h2 { font-size: var(--font-size-2xl); font-weight: var(--font-weight-bold); line-height: var(--line-height-tight); color: var(--color-text-primary); letter-spacing: -0.01em; }
-.mp-h3 { font-size: var(--font-size-xl); font-weight: var(--font-weight-semibold); line-height: var(--line-height-normal); color: var(--color-text-primary); }
-.mp-h4 { font-size: var(--font-size-lg); font-weight: var(--font-weight-semibold); line-height: var(--line-height-normal); color: var(--color-text-primary); }
-.mp-body { font-size: var(--font-size-base); font-weight: var(--font-weight-normal); line-height: var(--line-height-normal); color: var(--color-text-secondary); }
-.mp-caption { font-size: var(--font-size-sm); font-weight: var(--font-weight-normal); line-height: var(--line-height-normal); color: var(--color-text-tertiary); }
-.mp-code { font-family: var(--font-mono); font-size: var(--font-size-sm); }
-
-/* ---- Component Surfaces ---- */
-.mp-surface { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); }
-.mp-surface-raised { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); }
-
-    
-
-  
-  @layer base {
-    body { background: var(--mp-background); color: var(--mp-foreground); }
-    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
-    th { @apply whitespace-nowrap; }
-  }
-    
-
-      .no-scrollbar::-webkit-scrollbar { display: none; }
-      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-      [data-icon] {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        -webkit-mask-size: contain;
-        mask-size: contain;
-        -webkit-mask-repeat: no-repeat;
-        mask-repeat: no-repeat;
-        -webkit-mask-position: center;
-        mask-position: center;
-        background-color: currentColor;
-      }
-    
-
-    .container {
-      max-width: 800px;
-      margin: 0 auto;
-    }
-    .page-title {
-      font-size: var(--font-size-2xl);
-      font-weight: var(--font-weight-bold);
-      color: var(--color-text-primary);
-      margin-bottom: 8px;
-    }
-    .page-desc {
-      font-size: var(--font-size-base);
-      color: var(--color-text-secondary);
-      margin-bottom: 40px;
-    }
-    .section {
-      margin-bottom: 40px;
-    }
-    .section-label {
-      font-size: var(--font-size-sm);
-      font-weight: var(--font-weight-medium);
-      color: var(--color-text-tertiary);
-      margin-bottom: 4px;
-    }
-    .section-title {
-      font-size: var(--font-size-lg);
-      font-weight: var(--font-weight-semibold);
-      color: var(--color-text-primary);
-      margin-bottom: 16px;
-    }
-    .btn-row {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 12px;
-    }
-    .size-label {
-      font-size: var(--font-size-xs);
-      color: var(--color-text-tertiary);
-      width: 32px;
-      flex-shrink: 0;
-      font-weight: var(--font-weight-medium);
-    }
-
-    /* ---- Base Button ---- */
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      cursor: pointer;
-      font-weight: var(--font-weight-medium);
-      border: none;
-      transition: opacity 0.15s ease;
-      line-height: 1;
-    }
-    .btn:hover { opacity: 0.85; }
-    .btn:active { opacity: 0.7; }
-
-    /* ---- Primary ---- */
-    .btn-primary {
-      background: var(--color-primary);
-      color: #ffffff;
-      border-radius: var(--radius-btn);
-    }
-    .btn-primary:hover {
-      background: var(--color-primary-hover);
-    }
-
-    /* ---- Outline ---- */
-    .btn-outline {
-      background: transparent;
-      border: 1px solid var(--color-border);
-      color: var(--color-text-secondary);
-      border-radius: var(--radius-btn);
-    }
-    .btn-outline:hover {
-      border-color: var(--color-primary);
-      color: var(--color-primary);
-      background: var(--color-primary-light);
-    }
-
-    /* ---- Danger ---- */
-    .btn-danger {
-      background: transparent;
-      border: none;
-      color: var(--state-error);
-      border-radius: var(--radius-btn);
-    }
-    .btn-danger:hover {
-      background: var(--state-error-bg);
-    }
-
-    /* ---- Size SM ---- */
-    .btn-sm {
-      padding: 6px 12px;
-      font-size: var(--font-size-xs);
-    }
-
-    /* ---- Size MD ---- */
-    .btn-md {
-      padding: 8px 16px;
-      font-size: var(--font-size-sm);
-    }
-
-    /* SVG icon placeholder */
-    .icon {
-      width: 14px;
-      height: 14px;
-      flex-shrink: 0;
-    }
-    .btn-sm .icon {
-      width: 12px;
-      height: 12px;
-    }
-
-/* ── Card ──────────────────────────────────────────────────── */
-/* @anatomy
-   <div class="section-divider"> <p class="section-label">基础卡片</p> </div>
-*/
-/* ============================================================
- * MetaPlatform Design System
- * Enterprise low-code platform design tokens
- * Source: structured-spec (.design project extraction)
- * Brand Prefix: mp
- * ============================================================ */
-
-/* ---- Color System ---- */
-/* Source: structured-spec */
-:root {
-  /* Primary: Indigo Blue — enterprise trust */
-  --color-primary: #3b82f6;
-  --color-primary-hover: #2563eb;
-  --color-primary-light: #eff6ff;
-  --color-primary-muted: #bfdbfe;
-
-  /* Neutral Scale */
-  --color-bg: #ffffff;
-  --color-bg-secondary: #f8fafc;
-  --color-bg-tertiary: #f1f5f9;
-  --color-surface: #ffffff;
-  --color-surface-hover: #f8fafc;
-
-  /* Sidebar — dark navy */
-  --color-sidebar-bg: #0f172a;
-  --color-sidebar-text: #94a3b8;
-  --color-sidebar-text-hover: #cbd5e1;
-  --color-sidebar-active-bg: rgba(59, 130, 246, 0.15);
-  --color-sidebar-active-text: #60a5fa;
-  --color-sidebar-border: rgba(148, 163, 184, 0.1);
-
-  /* Text */
-  --color-text-primary: #0f172a;
-  --color-text-secondary: #475569;
-  --color-text-tertiary: #94a3b8;
-  --color-text-inverse: #ffffff;
-
-  /* Borders */
-  --color-border: #e2e8f0;
-  --color-border-light: #f1f5f9;
-
-  /* State Colors */
-  --state-success: #22c55e;
-  --state-success-bg: #f0fdf4;
-  --state-warning: #f59e0b;
-  --state-warning-bg: #fffbeb;
-  --state-error: #ef4444;
-  --state-error-bg: #fef2f2;
-  --state-info: #3b82f6;
-  --state-info-bg: #eff6ff;
-
-  /* Accent tints for categories */
-  --tint-ai: #8b5cf6;
-  --tint-ai-bg: #f5f3ff;
-  --tint-data: #06b6d4;
-  --tint-data-bg: #ecfeff;
-  --tint-tool: #f59e0b;
-  --tint-tool-bg: #fffbeb;
-  --tint-rest: #3b82f6;
-  --tint-rest-bg: #eff6ff;
-  --tint-database: #22c55e;
-  --tint-database-bg: #f0fdf4;
-  --tint-csv: #f59e0b;
-  --tint-csv-bg: #fffbeb;
-
-  /* ---- Typography ---- */
-  /* Source: structured-spec */
-  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans SC", sans-serif;
-  --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
-
-  --font-size-xs: 11px;
-  --font-size-sm: 12px;
-  --font-size-base: 14px;
-  --font-size-md: 15px;
-  --font-size-lg: 16px;
-  --font-size-xl: 20px;
-  --font-size-2xl: 24px;
-  --font-size-3xl: 30px;
-
-  --font-weight-normal: 400;
-  --font-weight-medium: 500;
-  --font-weight-semibold: 600;
-  --font-weight-bold: 700;
-
-  --line-height-tight: 1.25;
-  --line-height-normal: 1.5;
-  --line-height-relaxed: 1.625;
-
-  /* ---- Spacing ---- */
-  /* Source: structured-spec */
-  --spacing-xs: 4px;
-  --spacing-sm: 8px;
-  --spacing-md: 12px;
-  --spacing-lg: 16px;
-  --spacing-xl: 24px;
-  --spacing-2xl: 32px;
-  --spacing-3xl: 48px;
-
-  /* ---- Radius ---- */
-  /* Source: structured-spec */
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-xl: 16px;
-  --radius-full: 9999px;
-
-  /* ---- Shadows (border-first, low alpha) ---- */
-  /* Source: structured-spec */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.03);
-  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.04);
-  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.05);
-  --shadow-float: 0 12px 32px rgba(0, 0, 0, 0.12);
-
-  /* ---- Layout ---- */
-  /* Source: structured-spec */
-  --sidebar-width: 240px;
-  --content-max-width: 1200px;
-  --header-height: 56px;
-
-  /* ---- Portable Aliases (for component consumption) ---- */
-  /* Color aliases */
-  --color-action: var(--color-primary);
-  --color-action-hover: var(--color-primary-hover);
-  --color-action-light: var(--color-primary-light);
-  --color-content: var(--color-text-primary);
-  --color-content-secondary: var(--color-text-secondary);
-  --color-content-tertiary: var(--color-text-tertiary);
-  --color-field: var(--color-border);
-  --color-field-focus: var(--color-primary);
-  --color-feedback-success: var(--state-success);
-  --color-feedback-warning: var(--state-warning);
-  --color-feedback-error: var(--state-error);
-  --color-feedback-info: var(--state-info);
-
-  /* Typography aliases */
-  --type-heading: var(--font-weight-bold);
-  --type-subheading: var(--font-weight-semibold);
-  --type-body: var(--font-weight-normal);
-  --type-caption: var(--font-weight-normal);
-
-  /* Radius aliases */
-  --radius-btn: var(--radius-md);
-  --radius-card: var(--radius-lg);
-  --radius-input: var(--radius-md);
-  --radius-pill: var(--radius-full);
-}
-
-/* ---- Dark Mode ---- */
-/* Source: structured-spec */
-.dark {
-  --color-bg: #0f172a;
-  --color-bg-secondary: #1e293b;
-  --color-bg-tertiary: #334155;
-  --color-surface: #1e293b;
-  --color-surface-hover: #334155;
-
-  --color-sidebar-bg: #020617;
-  --color-sidebar-text: #64748b;
-  --color-sidebar-border: rgba(148, 163, 184, 0.15);
-
-  --color-text-primary: #f1f5f9;
-  --color-text-secondary: #94a3b8;
-  --color-text-tertiary: #64748b;
-  --color-text-inverse: #0f172a;
-
-  --color-border: #334155;
-  --color-border-light: #1e293b;
-
-  --color-primary-light: rgba(59, 130, 246, 0.1);
-  --color-primary-muted: rgba(59, 130, 246, 0.3);
-
-  --state-success-bg: rgba(34, 197, 94, 0.1);
-  --state-warning-bg: rgba(245, 158, 11, 0.1);
-  --state-error-bg: rgba(239, 68, 68, 0.1);
-  --state-info-bg: rgba(59, 130, 246, 0.1);
-
-  --tint-ai-bg: rgba(139, 92, 246, 0.1);
-  --tint-data-bg: rgba(6, 182, 212, 0.1);
-  --tint-tool-bg: rgba(245, 158, 11, 0.1);
-  --tint-rest-bg: rgba(59, 130, 246, 0.1);
-  --tint-database-bg: rgba(34, 197, 94, 0.1);
-  --tint-csv-bg: rgba(245, 158, 11, 0.1);
-
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.06);
-  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.07);
-  --shadow-float: 0 12px 32px rgba(0, 0, 0, 0.14);
-}
-
-/* ---- Typography Scale Classes ---- */
-.mp-h1 { font-size: var(--font-size-3xl); font-weight: var(--font-weight-bold); line-height: var(--line-height-tight); color: var(--color-text-primary); letter-spacing: -0.02em; }
-.mp-h2 { font-size: var(--font-size-2xl); font-weight: var(--font-weight-bold); line-height: var(--line-height-tight); color: var(--color-text-primary); letter-spacing: -0.01em; }
-.mp-h3 { font-size: var(--font-size-xl); font-weight: var(--font-weight-semibold); line-height: var(--line-height-normal); color: var(--color-text-primary); }
-.mp-h4 { font-size: var(--font-size-lg); font-weight: var(--font-weight-semibold); line-height: var(--line-height-normal); color: var(--color-text-primary); }
-.mp-body { font-size: var(--font-size-base); font-weight: var(--font-weight-normal); line-height: var(--line-height-normal); color: var(--color-text-secondary); }
-.mp-caption { font-size: var(--font-size-sm); font-weight: var(--font-weight-normal); line-height: var(--line-height-normal); color: var(--color-text-tertiary); }
-.mp-code { font-family: var(--font-mono); font-size: var(--font-size-sm); }
-
-/* ---- Component Surfaces ---- */
-.mp-surface { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); }
-.mp-surface-raised { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); }
-
-    
-
-  
-  @layer base {
-    body { background: var(--mp-background); color: var(--mp-foreground); }
-    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
-    th { @apply whitespace-nowrap; }
-  }
-    
-
-      .no-scrollbar::-webkit-scrollbar { display: none; }
-      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-      [data-icon] {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        -webkit-mask-size: contain;
-        mask-size: contain;
-        -webkit-mask-repeat: no-repeat;
-        mask-repeat: no-repeat;
-        -webkit-mask-position: center;
-        mask-position: center;
-        background-color: currentColor;
-      }
-    
-
-    /* ---- Reset & Base ---- */
-
-    /* ---- Page Title ---- */
-    .preview-title {
-      font-size: var(--font-size-2xl);
-      font-weight: var(--font-weight-bold);
-      color: var(--color-text-primary);
-      letter-spacing: -0.01em;
-      margin-bottom: var(--spacing-xl);
-      padding-bottom: var(--spacing-md);
-      border-bottom: 1px solid var(--color-border);
-    }
-
-    /* ---- Section Labels ---- */
-    .section-label {
-      font-size: var(--font-size-sm);
-      font-weight: var(--font-weight-medium);
-      color: var(--color-text-tertiary);
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      margin-bottom: var(--spacing-md);
-    }
-    .section-divider {
-      margin-top: var(--spacing-2xl);
-      margin-bottom: var(--spacing-lg);
-    }
-
-    /* ---- Grid ---- */
-    .card-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: var(--spacing-lg);
-      max-width: 840px;
-    }
-
-    /* ---- Card Base ---- */
-    .card {
-      background: var(--color-surface);
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius-card);
-      padding: var(--spacing-lg);
-      transition: border-color 0.2s ease, box-shadow 0.2s ease;
-    }
-
-    /* ---- Card Inner Layout ---- */
-    .card-header {
-      display: flex;
-      align-items: center;
-      gap: var(--spacing-md);
-      margin-bottom: var(--spacing-md);
-    }
-    .card-icon {
-      width: 40px;
-      height: 40px;
-      border-radius: var(--radius-md);
-      flex-shrink: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .card-icon svg {
-      width: 20px;
-      height: 20px;
-    }
-    .card-info {
-      flex: 1;
-      min-width: 0;
-    }
-    .card-title {
-      font-size: var(--font-size-md);
-      font-weight: var(--font-weight-semibold);
-      color: var(--color-text-primary);
-      line-height: var(--line-height-tight);
-    }
-    .card-code {
-      font-family: var(--font-mono);
-      font-size: var(--font-size-xs);
-      color: var(--color-text-tertiary);
-      margin-top: 2px;
-    }
-    .card-desc {
-      font-size: var(--font-size-sm);
-      color: var(--color-text-secondary);
-      line-height: var(--line-height-normal);
-      margin-bottom: var(--spacing-md);
-    }
-    .card-action {
-      display: inline-flex;
-      align-items: center;
-      gap: var(--spacing-xs);
-      padding: var(--spacing-sm) var(--spacing-md);
-      font-size: var(--font-size-sm);
-      font-weight: var(--font-weight-medium);
-      color: var(--color-primary);
-      background: var(--color-primary-light);
-      border: 1px solid transparent;
-      border-radius: var(--radius-btn);
-      cursor: pointer;
-      transition: background 0.15s ease, border-color 0.15s ease;
-    }
-    .card-action:hover {
-      background: var(--color-primary-muted);
-    }
-    .card-action svg {
-      width: 14px;
-      height: 14px;
-    }
-
-    /* ---- Interactive Card ---- */
-    .card-interactive {
-      cursor: pointer;
-    }
-    .card-interactive:hover {
-      border-color: var(--color-primary);
-      box-shadow: var(--shadow-md);
-    }
-
-    /* ---- Status Card ---- */
-    .card-status {
-      border-left: 3px solid var(--color-primary);
-    }
-    .card-status-success {
-      border-left-color: var(--state-success);
-    }
-    .card-status-warning {
-      border-left-color: var(--state-warning);
-    }
-    .card-status-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: var(--spacing-sm);
-    }
-    .card-status-name {
-      font-size: var(--font-size-md);
-      font-weight: var(--font-weight-semibold);
-      color: var(--color-text-primary);
-    }
-    .card-status-badge {
-      display: inline-flex;
-      align-items: center;
-      padding: 2px var(--spacing-sm);
-      font-size: var(--font-size-xs);
-      font-weight: var(--font-weight-medium);
-      border-radius: var(--radius-pill);
-      background: var(--color-bg-tertiary);
-      color: var(--color-text-secondary);
-    }
-    .card-status-row {
-      display: flex;
-      align-items: center;
-      gap: var(--spacing-sm);
-    }
-    .status-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: var(--radius-full);
-      flex-shrink: 0;
-    }
-    .status-dot-green {
-      background: var(--state-success);
-      box-shadow: 0 0 0 2px var(--state-success-bg);
-    }
-    .status-dot-red {
-      background: var(--state-error);
-      box-shadow: 0 0 0 2px var(--state-error-bg);
-    }
-    .status-text {
-      font-size: var(--font-size-sm);
-      color: var(--color-text-secondary);
-    }
-
-    /* ---- Compact Card ---- */
-    .card-compact {
-      padding: var(--spacing-md);
-    }
-    .card-compact .card-header {
-      margin-bottom: var(--spacing-sm);
-    }
-    .card-compact .card-desc {
-      margin-bottom: var(--spacing-sm);
-    }
-
-    /* ---- Label below card ---- */
-    .card-label {
-      font-size: var(--font-size-xs);
-      color: var(--color-text-tertiary);
-      text-align: center;
-      margin-top: var(--spacing-sm);
-    }
-
-    /* ---- Hover hint annotation ---- */
-    .hover-hint {
-      position: absolute;
-      top: var(--spacing-sm);
-      right: var(--spacing-sm);
-      font-size: var(--font-size-xs);
-      color: var(--color-primary);
-      background: var(--color-primary-light);
-      padding: 2px var(--spacing-sm);
-      border-radius: var(--radius-sm);
-      pointer-events: none;
-    }
-    .card-wrapper {
-      position: relative;
-    }
-
-    /* ---- Icon tint colors ---- */
-    .icon-tint-blue { background: var(--color-primary-light); color: var(--color-primary); }
-    .icon-tint-green { background: var(--tint-database-bg); color: var(--tint-database); }
-    .icon-tint-orange { background: var(--tint-csv-bg); color: var(--tint-csv); }
-
-/* ── Data Table ────────────────────────────────────────────── */
-/* @anatomy
-   <div class="page-wrapper"> <div class="component-showcase"> <h1 class="component-title">DataTable 数据表格</h1> <p class="component-subtitle">用于展示结构化数据，支持排序、筛选和操作列</p> <div class="data-table-wrapper"> <table class="data-table"> <thead> <tr> <th>显示名称</th> <th>名称</th> <th>类型</th> <th>状态</th> <th>操作</th> </tr> </thead> <tbody> <!-- Row 1: 客户管理页面 --> <tr> <td class="cell-name">客户管理页面</td> <td><span cla...
-*/
-/* ============================================================
- * MetaPlatform Design System
- * Enterprise low-code platform design tokens
- * Source: structured-spec (.design project extraction)
- * Brand Prefix: mp
- * ============================================================ */
-
-/* ---- Color System ---- */
-/* Source: structured-spec */
-:root {
-  /* Primary: Indigo Blue — enterprise trust */
-  --color-primary: #3b82f6;
-  --color-primary-hover: #2563eb;
-  --color-primary-light: #eff6ff;
-  --color-primary-muted: #bfdbfe;
-
-  /* Neutral Scale */
-  --color-bg: #ffffff;
-  --color-bg-secondary: #f8fafc;
-  --color-bg-tertiary: #f1f5f9;
-  --color-surface: #ffffff;
-  --color-surface-hover: #f8fafc;
-
-  /* Sidebar — dark navy */
-  --color-sidebar-bg: #0f172a;
-  --color-sidebar-text: #94a3b8;
-  --color-sidebar-text-hover: #cbd5e1;
-  --color-sidebar-active-bg: rgba(59, 130, 246, 0.15);
-  --color-sidebar-active-text: #60a5fa;
-  --color-sidebar-border: rgba(148, 163, 184, 0.1);
-
-  /* Text */
-  --color-text-primary: #0f172a;
-  --color-text-secondary: #475569;
-  --color-text-tertiary: #94a3b8;
-  --color-text-inverse: #ffffff;
-
-  /* Borders */
-  --color-border: #e2e8f0;
-  --color-border-light: #f1f5f9;
-
-  /* State Colors */
-  --state-success: #22c55e;
-  --state-success-bg: #f0fdf4;
-  --state-warning: #f59e0b;
-  --state-warning-bg: #fffbeb;
-  --state-error: #ef4444;
-  --state-error-bg: #fef2f2;
-  --state-info: #3b82f6;
-  --state-info-bg: #eff6ff;
-
-  /* Accent tints for categories */
-  --tint-ai: #8b5cf6;
-  --tint-ai-bg: #f5f3ff;
-  --tint-data: #06b6d4;
-  --tint-data-bg: #ecfeff;
-  --tint-tool: #f59e0b;
-  --tint-tool-bg: #fffbeb;
-  --tint-rest: #3b82f6;
-  --tint-rest-bg: #eff6ff;
-  --tint-database: #22c55e;
-  --tint-database-bg: #f0fdf4;
-  --tint-csv: #f59e0b;
-  --tint-csv-bg: #fffbeb;
-
-  /* ---- Typography ---- */
-  /* Source: structured-spec */
-  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans SC", sans-serif;
-  --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
-
-  --font-size-xs: 11px;
-  --font-size-sm: 12px;
-  --font-size-base: 14px;
-  --font-size-md: 15px;
-  --font-size-lg: 16px;
-  --font-size-xl: 20px;
-  --font-size-2xl: 24px;
-  --font-size-3xl: 30px;
-
-  --font-weight-normal: 400;
-  --font-weight-medium: 500;
-  --font-weight-semibold: 600;
-  --font-weight-bold: 700;
-
-  --line-height-tight: 1.25;
-  --line-height-normal: 1.5;
-  --line-height-relaxed: 1.625;
-
-  /* ---- Spacing ---- */
-  /* Source: structured-spec */
-  --spacing-xs: 4px;
-  --spacing-sm: 8px;
-  --spacing-md: 12px;
-  --spacing-lg: 16px;
-  --spacing-xl: 24px;
-  --spacing-2xl: 32px;
-  --spacing-3xl: 48px;
-
-  /* ---- Radius ---- */
-  /* Source: structured-spec */
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-xl: 16px;
-  --radius-full: 9999px;
-
-  /* ---- Shadows (border-first, low alpha) ---- */
-  /* Source: structured-spec */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.03);
-  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.04);
-  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.05);
-  --shadow-float: 0 12px 32px rgba(0, 0, 0, 0.12);
-
-  /* ---- Layout ---- */
-  /* Source: structured-spec */
-  --sidebar-width: 240px;
-  --content-max-width: 1200px;
-  --header-height: 56px;
-
-  /* ---- Portable Aliases (for component consumption) ---- */
-  /* Color aliases */
-  --color-action: var(--color-primary);
-  --color-action-hover: var(--color-primary-hover);
-  --color-action-light: var(--color-primary-light);
-  --color-content: var(--color-text-primary);
-  --color-content-secondary: var(--color-text-secondary);
-  --color-content-tertiary: var(--color-text-tertiary);
-  --color-field: var(--color-border);
-  --color-field-focus: var(--color-primary);
-  --color-feedback-success: var(--state-success);
-  --color-feedback-warning: var(--state-warning);
-  --color-feedback-error: var(--state-error);
-  --color-feedback-info: var(--state-info);
-
-  /* Typography aliases */
-  --type-heading: var(--font-weight-bold);
-  --type-subheading: var(--font-weight-semibold);
-  --type-body: var(--font-weight-normal);
-  --type-caption: var(--font-weight-normal);
-
-  /* Radius aliases */
-  --radius-btn: var(--radius-md);
-  --radius-card: var(--radius-lg);
-  --radius-input: var(--radius-md);
-  --radius-pill: var(--radius-full);
-}
-
-/* ---- Dark Mode ---- */
-/* Source: structured-spec */
-.dark {
-  --color-bg: #0f172a;
-  --color-bg-secondary: #1e293b;
-  --color-bg-tertiary: #334155;
-  --color-surface: #1e293b;
-  --color-surface-hover: #334155;
-
-  --color-sidebar-bg: #020617;
-  --color-sidebar-text: #64748b;
-  --color-sidebar-border: rgba(148, 163, 184, 0.15);
-
-  --color-text-primary: #f1f5f9;
-  --color-text-secondary: #94a3b8;
-  --color-text-tertiary: #64748b;
-  --color-text-inverse: #0f172a;
-
-  --color-border: #334155;
-  --color-border-light: #1e293b;
-
-  --color-primary-light: rgba(59, 130, 246, 0.1);
-  --color-primary-muted: rgba(59, 130, 246, 0.3);
-
-  --state-success-bg: rgba(34, 197, 94, 0.1);
-  --state-warning-bg: rgba(245, 158, 11, 0.1);
-  --state-error-bg: rgba(239, 68, 68, 0.1);
-  --state-info-bg: rgba(59, 130, 246, 0.1);
-
-  --tint-ai-bg: rgba(139, 92, 246, 0.1);
-  --tint-data-bg: rgba(6, 182, 212, 0.1);
-  --tint-tool-bg: rgba(245, 158, 11, 0.1);
-  --tint-rest-bg: rgba(59, 130, 246, 0.1);
-  --tint-database-bg: rgba(34, 197, 94, 0.1);
-  --tint-csv-bg: rgba(245, 158, 11, 0.1);
-
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.06);
-  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.07);
-  --shadow-float: 0 12px 32px rgba(0, 0, 0, 0.14);
-}
-
-/* ---- Typography Scale Classes ---- */
-.mp-h1 { font-size: var(--font-size-3xl); font-weight: var(--font-weight-bold); line-height: var(--line-height-tight); color: var(--color-text-primary); letter-spacing: -0.02em; }
-.mp-h2 { font-size: var(--font-size-2xl); font-weight: var(--font-weight-bold); line-height: var(--line-height-tight); color: var(--color-text-primary); letter-spacing: -0.01em; }
-.mp-h3 { font-size: var(--font-size-xl); font-weight: var(--font-weight-semibold); line-height: var(--line-height-normal); color: var(--color-text-primary); }
-.mp-h4 { font-size: var(--font-size-lg); font-weight: var(--font-weight-semibold); line-height: var(--line-height-normal); color: var(--color-text-primary); }
-.mp-body { font-size: var(--font-size-base); font-weight: var(--font-weight-normal); line-height: var(--line-height-normal); color: var(--color-text-secondary); }
-.mp-caption { font-size: var(--font-size-sm); font-weight: var(--font-weight-normal); line-height: var(--line-height-normal); color: var(--color-text-tertiary); }
-.mp-code { font-family: var(--font-mono); font-size: var(--font-size-sm); }
-
-/* ---- Component Surfaces ---- */
-.mp-surface { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); }
-.mp-surface-raised { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); }
-
-    
-
-  
-  @layer base {
-    body { background: var(--mp-background); color: var(--mp-foreground); }
-    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
-    th { @apply whitespace-nowrap; }
-  }
-    
-
-      .no-scrollbar::-webkit-scrollbar { display: none; }
-      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-      [data-icon] {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        -webkit-mask-size: contain;
-        mask-size: contain;
-        -webkit-mask-repeat: no-repeat;
-        mask-repeat: no-repeat;
-        -webkit-mask-position: center;
-        mask-position: center;
-        background-color: currentColor;
-      }
-    
-
-    /* ---- Page Reset ---- */
-
-    /* ---- Layout ---- */
-    .page-wrapper {
-      max-width: 900px;
-      margin: 0 auto;
-      padding: var(--spacing-3xl) var(--spacing-xl);
-    }
-
-    /* ---- Component Showcase ---- */
-    .component-showcase {
-      background: var(--color-surface);
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius-lg);
-      box-shadow: var(--shadow-md);
-      padding: var(--spacing-xl);
-    }
-
-    .component-title {
-      font-size: var(--font-size-xl);
-      font-weight: var(--font-weight-bold);
-      color: var(--color-text-primary);
-      margin-bottom: var(--spacing-xs);
-      letter-spacing: -0.01em;
-    }
-
-    .component-subtitle {
-      font-size: var(--font-size-sm);
-      color: var(--color-text-tertiary);
-      margin-bottom: var(--spacing-xl);
-    }
-
-    /* ---- DataTable ---- */
-    .data-table-wrapper {
-      width: 100%;
-      overflow-x: auto;
-    }
-
-    .data-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: var(--font-size-sm);
-      text-align: left;
-    }
-
-    .data-table thead th {
-      background: var(--color-bg-tertiary);
-      font-weight: var(--font-weight-semibold);
-      color: var(--color-text-secondary);
-      font-size: var(--font-size-xs);
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      padding: var(--spacing-sm) var(--spacing-md);
-      border-bottom: 1px solid var(--color-border);
-      white-space: nowrap;
-    }
-
-    .data-table thead th:first-child {
-      border-top-left-radius: var(--radius-md);
-    }
-
-    .data-table thead th:last-child {
-      border-top-right-radius: var(--radius-md);
-    }
-
-    .data-table tbody td {
-      padding: var(--spacing-md) var(--spacing-md);
-      border-bottom: 1px solid var(--color-border-light);
-      color: var(--color-text-primary);
-      vertical-align: middle;
-    }
-
-    .data-table tbody tr:last-child td {
-      border-bottom: none;
-    }
-
-    .data-table tbody tr:hover {
-      background: var(--color-surface-hover);
-    }
-
-    /* ---- Cell: Display Name ---- */
-    .cell-name {
-      font-weight: var(--font-weight-medium);
-      color: var(--color-text-primary);
-    }
-
-    /* ---- Cell: Code/Identifier ---- */
-    .cell-code {
-      font-family: var(--font-mono);
-      font-size: var(--font-size-xs);
-      color: var(--color-text-tertiary);
-      background: var(--color-bg-tertiary);
-      padding: 2px 8px;
-      border-radius: var(--radius-sm);
-    }
-
-    /* ---- Badge ---- */
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      font-size: var(--font-size-xs);
-      font-weight: var(--font-weight-medium);
-      padding: 2px 10px;
-      border-radius: var(--radius-full);
-      white-space: nowrap;
-      line-height: var(--line-height-normal);
-    }
-
-    .badge-blue {
-      background: var(--state-info-bg);
-      color: var(--color-primary);
-    }
-
-    .badge-green {
-      background: var(--state-success-bg);
-      color: var(--state-success);
-    }
-
-    .badge-yellow {
-      background: var(--state-warning-bg);
-      color: var(--state-warning);
-    }
-
-    /* ---- Action Buttons ---- */
-    .action-group {
-      display: inline-flex;
-      align-items: center;
-      gap: var(--spacing-sm);
-    }
-
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      font-family: inherit;
-      font-size: var(--font-size-xs);
-      font-weight: var(--font-weight-medium);
-      padding: 4px 12px;
-      border-radius: var(--radius-btn);
-      cursor: pointer;
-      transition: all 0.15s ease;
-      white-space: nowrap;
-      border: none;
-      line-height: var(--line-height-normal);
-    }
-
-    .btn-outline {
-      background: transparent;
-      border: 1px solid var(--color-border);
-      color: var(--color-text-secondary);
-    }
-
-    .btn-outline:hover {
-      border-color: var(--color-primary);
-      color: var(--color-primary);
-      background: var(--color-primary-light);
-    }
-
-    .btn-danger-text {
-      background: transparent;
-      border: none;
-      color: var(--state-error);
-      padding: 4px 8px;
-    }
-
-    .btn-danger-text:hover {
-      background: var(--state-error-bg);
-    }
-
-/* ── Input ─────────────────────────────────────────────────── */
-/* @anatomy
-   <div class="preview-container"> <h1 class="preview-title">Input 输入框</h1> <!-- Text 文本输入 --> <div class="section"> <h2 class="section-title">Text 文本输入</h2> <div class="field"> <label class="field-label" for="input-name">显示名称</label> <input class="field-input" type="text" id="input-name" placeholder="请输入显示名称"> </div>
-*/
-/* ============================================================
- * MetaPlatform Design System
- * Enterprise low-code platform design tokens
- * Source: structured-spec (.design project extraction)
- * Brand Prefix: mp
- * ============================================================ */
-
-/* ---- Color System ---- */
-/* Source: structured-spec */
-:root {
-  /* Primary: Indigo Blue — enterprise trust */
-  --color-primary: #3b82f6;
-  --color-primary-hover: #2563eb;
-  --color-primary-light: #eff6ff;
-  --color-primary-muted: #bfdbfe;
-
-  /* Neutral Scale */
-  --color-bg: #ffffff;
-  --color-bg-secondary: #f8fafc;
-  --color-bg-tertiary: #f1f5f9;
-  --color-surface: #ffffff;
-  --color-surface-hover: #f8fafc;
-
-  /* Sidebar — dark navy */
-  --color-sidebar-bg: #0f172a;
-  --color-sidebar-text: #94a3b8;
-  --color-sidebar-text-hover: #cbd5e1;
-  --color-sidebar-active-bg: rgba(59, 130, 246, 0.15);
-  --color-sidebar-active-text: #60a5fa;
-  --color-sidebar-border: rgba(148, 163, 184, 0.1);
-
-  /* Text */
-  --color-text-primary: #0f172a;
-  --color-text-secondary: #475569;
-  --color-text-tertiary: #94a3b8;
-  --color-text-inverse: #ffffff;
-
-  /* Borders */
-  --color-border: #e2e8f0;
-  --color-border-light: #f1f5f9;
-
-  /* State Colors */
-  --state-success: #22c55e;
-  --state-success-bg: #f0fdf4;
-  --state-warning: #f59e0b;
-  --state-warning-bg: #fffbeb;
-  --state-error: #ef4444;
-  --state-error-bg: #fef2f2;
-  --state-info: #3b82f6;
-  --state-info-bg: #eff6ff;
-
-  /* Accent tints for categories */
-  --tint-ai: #8b5cf6;
-  --tint-ai-bg: #f5f3ff;
-  --tint-data: #06b6d4;
-  --tint-data-bg: #ecfeff;
-  --tint-tool: #f59e0b;
-  --tint-tool-bg: #fffbeb;
-  --tint-rest: #3b82f6;
-  --tint-rest-bg: #eff6ff;
-  --tint-database: #22c55e;
-  --tint-database-bg: #f0fdf4;
-  --tint-csv: #f59e0b;
-  --tint-csv-bg: #fffbeb;
-
-  /* ---- Typography ---- */
-  /* Source: structured-spec */
-  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans SC", sans-serif;
-  --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
-
-  --font-size-xs: 11px;
-  --font-size-sm: 12px;
-  --font-size-base: 14px;
-  --font-size-md: 15px;
-  --font-size-lg: 16px;
-  --font-size-xl: 20px;
-  --font-size-2xl: 24px;
-  --font-size-3xl: 30px;
-
-  --font-weight-normal: 400;
-  --font-weight-medium: 500;
-  --font-weight-semibold: 600;
-  --font-weight-bold: 700;
-
-  --line-height-tight: 1.25;
-  --line-height-normal: 1.5;
-  --line-height-relaxed: 1.625;
-
-  /* ---- Spacing ---- */
-  /* Source: structured-spec */
-  --spacing-xs: 4px;
-  --spacing-sm: 8px;
-  --spacing-md: 12px;
-  --spacing-lg: 16px;
-  --spacing-xl: 24px;
-  --spacing-2xl: 32px;
-  --spacing-3xl: 48px;
-
-  /* ---- Radius ---- */
-  /* Source: structured-spec */
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-xl: 16px;
-  --radius-full: 9999px;
-
-  /* ---- Shadows (border-first, low alpha) ---- */
-  /* Source: structured-spec */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.03);
-  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.04);
-  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.05);
-  --shadow-float: 0 12px 32px rgba(0, 0, 0, 0.12);
-
-  /* ---- Layout ---- */
-  /* Source: structured-spec */
-  --sidebar-width: 240px;
-  --content-max-width: 1200px;
-  --header-height: 56px;
-
-  /* ---- Portable Aliases (for component consumption) ---- */
-  /* Color aliases */
-  --color-action: var(--color-primary);
-  --color-action-hover: var(--color-primary-hover);
-  --color-action-light: var(--color-primary-light);
-  --color-content: var(--color-text-primary);
-  --color-content-secondary: var(--color-text-secondary);
-  --color-content-tertiary: var(--color-text-tertiary);
-  --color-field: var(--color-border);
-  --color-field-focus: var(--color-primary);
-  --color-feedback-success: var(--state-success);
-  --color-feedback-warning: var(--state-warning);
-  --color-feedback-error: var(--state-error);
-  --color-feedback-info: var(--state-info);
-
-  /* Typography aliases */
-  --type-heading: var(--font-weight-bold);
-  --type-subheading: var(--font-weight-semibold);
-  --type-body: var(--font-weight-normal);
-  --type-caption: var(--font-weight-normal);
-
-  /* Radius aliases */
-  --radius-btn: var(--radius-md);
-  --radius-card: var(--radius-lg);
-  --radius-input: var(--radius-md);
-  --radius-pill: var(--radius-full);
-}
-
-/* ---- Dark Mode ---- */
-/* Source: structured-spec */
-.dark {
-  --color-bg: #0f172a;
-  --color-bg-secondary: #1e293b;
-  --color-bg-tertiary: #334155;
-  --color-surface: #1e293b;
-  --color-surface-hover: #334155;
-
-  --color-sidebar-bg: #020617;
-  --color-sidebar-text: #64748b;
-  --color-sidebar-border: rgba(148, 163, 184, 0.15);
-
-  --color-text-primary: #f1f5f9;
-  --color-text-secondary: #94a3b8;
-  --color-text-tertiary: #64748b;
-  --color-text-inverse: #0f172a;
-
-  --color-border: #334155;
-  --color-border-light: #1e293b;
-
-  --color-primary-light: rgba(59, 130, 246, 0.1);
-  --color-primary-muted: rgba(59, 130, 246, 0.3);
-
-  --state-success-bg: rgba(34, 197, 94, 0.1);
-  --state-warning-bg: rgba(245, 158, 11, 0.1);
-  --state-error-bg: rgba(239, 68, 68, 0.1);
-  --state-info-bg: rgba(59, 130, 246, 0.1);
-
-  --tint-ai-bg: rgba(139, 92, 246, 0.1);
-  --tint-data-bg: rgba(6, 182, 212, 0.1);
-  --tint-tool-bg: rgba(245, 158, 11, 0.1);
-  --tint-rest-bg: rgba(59, 130, 246, 0.1);
-  --tint-database-bg: rgba(34, 197, 94, 0.1);
-  --tint-csv-bg: rgba(245, 158, 11, 0.1);
-
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.06);
-  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.07);
-  --shadow-float: 0 12px 32px rgba(0, 0, 0, 0.14);
-}
-
-/* ---- Typography Scale Classes ---- */
-.mp-h1 { font-size: var(--font-size-3xl); font-weight: var(--font-weight-bold); line-height: var(--line-height-tight); color: var(--color-text-primary); letter-spacing: -0.02em; }
-.mp-h2 { font-size: var(--font-size-2xl); font-weight: var(--font-weight-bold); line-height: var(--line-height-tight); color: var(--color-text-primary); letter-spacing: -0.01em; }
-.mp-h3 { font-size: var(--font-size-xl); font-weight: var(--font-weight-semibold); line-height: var(--line-height-normal); color: var(--color-text-primary); }
-.mp-h4 { font-size: var(--font-size-lg); font-weight: var(--font-weight-semibold); line-height: var(--line-height-normal); color: var(--color-text-primary); }
-.mp-body { font-size: var(--font-size-base); font-weight: var(--font-weight-normal); line-height: var(--line-height-normal); color: var(--color-text-secondary); }
-.mp-caption { font-size: var(--font-size-sm); font-weight: var(--font-weight-normal); line-height: var(--line-height-normal); color: var(--color-text-tertiary); }
-.mp-code { font-family: var(--font-mono); font-size: var(--font-size-sm); }
-
-/* ---- Component Surfaces ---- */
-.mp-surface { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); }
-.mp-surface-raised { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); }
-
-    
-
-  
-  @layer base {
-    body { background: var(--mp-background); color: var(--mp-foreground); }
-    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
-    th { @apply whitespace-nowrap; }
-  }
-    
-
-      .no-scrollbar::-webkit-scrollbar { display: none; }
-      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-      [data-icon] {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        -webkit-mask-size: contain;
-        mask-size: contain;
-        -webkit-mask-repeat: no-repeat;
-        mask-repeat: no-repeat;
-        -webkit-mask-position: center;
-        mask-position: center;
-        background-color: currentColor;
-      }
-    
-
-      .preview-container {
-        max-width: 600px;
-        margin: 0 auto;
-        padding: 40px 24px;
-      }
-      .preview-title {
-        font-size: var(--font-size-2xl);
-        font-weight: var(--font-weight-bold);
-        line-height: var(--line-height-tight);
-        color: var(--color-text-primary);
-        letter-spacing: -0.01em;
-        margin-bottom: var(--spacing-2xl);
-        padding-bottom: var(--spacing-lg);
-        border-bottom: 1px solid var(--color-border);
-      }
-      .section {
-        margin-bottom: var(--spacing-2xl);
-      }
-      .section-title {
-        font-size: var(--font-size-md);
-        font-weight: var(--font-weight-semibold);
-        color: var(--color-text-primary);
-        margin-bottom: var(--spacing-lg);
-      }
-      .field {
-        margin-bottom: var(--spacing-lg);
-        width: 100%;
-        max-width: 28rem;
-      }
-      .field-label {
-        display: block;
-        font-size: var(--font-size-base);
-        font-weight: var(--font-weight-medium);
-        color: var(--color-text-primary);
-        margin-bottom: 6px;
-      }
-      .field-input {
-        display: block;
-        width: 100%;
-        background: var(--color-bg-secondary);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-input);
-        padding: 8px 12px;
-        font-size: var(--font-size-base);
-        font-family: inherit;
-        color: var(--color-text-primary);
-        line-height: var(--line-height-normal);
-        outline: none;
-        transition: border-color 0.15s ease, box-shadow 0.15s ease;
-      }
-      .field-input::placeholder {
-        color: var(--color-text-tertiary);
-      }
-      .field-input:focus {
-        border-color: var(--color-primary);
-        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
-      }
-      .field-input--mono {
-        font-family: var(--font-mono);
-        font-size: var(--font-size-sm);
-      }
-      .field-textarea {
-        display: block;
-        width: 100%;
-        background: var(--color-bg-secondary);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-input);
-        padding: 8px 12px;
-        font-size: var(--font-size-base);
-        font-family: inherit;
-        color: var(--color-text-primary);
-        line-height: var(--line-height-normal);
-        outline: none;
-        resize: vertical;
-        min-height: 80px;
-        transition: border-color 0.15s ease, box-shadow 0.15s ease;
-      }
-      .field-textarea::placeholder {
-        color: var(--color-text-tertiary);
-      }
-      .field-textarea:focus {
-        border-color: var(--color-primary);
-        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
-      }
-
-/* ── Sidebar ───────────────────────────────────────────────── */
-/* @anatomy
-   <div class="preview-title">Sidebar 侧边栏导航</div>
-*/
-/* ============================================================
- * MetaPlatform Design System
- * Enterprise low-code platform design tokens
- * Source: structured-spec (.design project extraction)
- * Brand Prefix: mp
- * ============================================================ */
-
-/* ---- Color System ---- */
-/* Source: structured-spec */
-:root {
-  /* Primary: Indigo Blue — enterprise trust */
-  --color-primary: #3b82f6;
-  --color-primary-hover: #2563eb;
-  --color-primary-light: #eff6ff;
-  --color-primary-muted: #bfdbfe;
-
-  /* Neutral Scale */
-  --color-bg: #ffffff;
-  --color-bg-secondary: #f8fafc;
-  --color-bg-tertiary: #f1f5f9;
-  --color-surface: #ffffff;
-  --color-surface-hover: #f8fafc;
-
-  /* Sidebar — dark navy */
-  --color-sidebar-bg: #0f172a;
-  --color-sidebar-text: #94a3b8;
-  --color-sidebar-text-hover: #cbd5e1;
-  --color-sidebar-active-bg: rgba(59, 130, 246, 0.15);
-  --color-sidebar-active-text: #60a5fa;
-  --color-sidebar-border: rgba(148, 163, 184, 0.1);
-
-  /* Text */
-  --color-text-primary: #0f172a;
-  --color-text-secondary: #475569;
-  --color-text-tertiary: #94a3b8;
-  --color-text-inverse: #ffffff;
-
-  /* Borders */
-  --color-border: #e2e8f0;
-  --color-border-light: #f1f5f9;
-
-  /* State Colors */
-  --state-success: #22c55e;
-  --state-success-bg: #f0fdf4;
-  --state-warning: #f59e0b;
-  --state-warning-bg: #fffbeb;
-  --state-error: #ef4444;
-  --state-error-bg: #fef2f2;
-  --state-info: #3b82f6;
-  --state-info-bg: #eff6ff;
-
-  /* Accent tints for categories */
-  --tint-ai: #8b5cf6;
-  --tint-ai-bg: #f5f3ff;
-  --tint-data: #06b6d4;
-  --tint-data-bg: #ecfeff;
-  --tint-tool: #f59e0b;
-  --tint-tool-bg: #fffbeb;
-  --tint-rest: #3b82f6;
-  --tint-rest-bg: #eff6ff;
-  --tint-database: #22c55e;
-  --tint-database-bg: #f0fdf4;
-  --tint-csv: #f59e0b;
-  --tint-csv-bg: #fffbeb;
-
-  /* ---- Typography ---- */
-  /* Source: structured-spec */
-  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans SC", sans-serif;
-  --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
-
-  --font-size-xs: 11px;
-  --font-size-sm: 12px;
-  --font-size-base: 14px;
-  --font-size-md: 15px;
-  --font-size-lg: 16px;
-  --font-size-xl: 20px;
-  --font-size-2xl: 24px;
-  --font-size-3xl: 30px;
-
-  --font-weight-normal: 400;
-  --font-weight-medium: 500;
-  --font-weight-semibold: 600;
-  --font-weight-bold: 700;
-
-  --line-height-tight: 1.25;
-  --line-height-normal: 1.5;
-  --line-height-relaxed: 1.625;
-
-  /* ---- Spacing ---- */
-  /* Source: structured-spec */
-  --spacing-xs: 4px;
-  --spacing-sm: 8px;
-  --spacing-md: 12px;
-  --spacing-lg: 16px;
-  --spacing-xl: 24px;
-  --spacing-2xl: 32px;
-  --spacing-3xl: 48px;
-
-  /* ---- Radius ---- */
-  /* Source: structured-spec */
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-xl: 16px;
-  --radius-full: 9999px;
-
-  /* ---- Shadows (border-first, low alpha) ---- */
-  /* Source: structured-spec */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.03);
-  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.04);
-  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.05);
-  --shadow-float: 0 12px 32px rgba(0, 0, 0, 0.12);
-
-  /* ---- Layout ---- */
-  /* Source: structured-spec */
-  --sidebar-width: 240px;
-  --content-max-width: 1200px;
-  --header-height: 56px;
-
-  /* ---- Portable Aliases (for component consumption) ---- */
-  /* Color aliases */
-  --color-action: var(--color-primary);
-  --color-action-hover: var(--color-primary-hover);
-  --color-action-light: var(--color-primary-light);
-  --color-content: var(--color-text-primary);
-  --color-content-secondary: var(--color-text-secondary);
-  --color-content-tertiary: var(--color-text-tertiary);
-  --color-field: var(--color-border);
-  --color-field-focus: var(--color-primary);
-  --color-feedback-success: var(--state-success);
-  --color-feedback-warning: var(--state-warning);
-  --color-feedback-error: var(--state-error);
-  --color-feedback-info: var(--state-info);
-
-  /* Typography aliases */
-  --type-heading: var(--font-weight-bold);
-  --type-subheading: var(--font-weight-semibold);
-  --type-body: var(--font-weight-normal);
-  --type-caption: var(--font-weight-normal);
-
-  /* Radius aliases */
-  --radius-btn: var(--radius-md);
-  --radius-card: var(--radius-lg);
-  --radius-input: var(--radius-md);
-  --radius-pill: var(--radius-full);
-}
-
-/* ---- Dark Mode ---- */
-/* Source: structured-spec */
-.dark {
-  --color-bg: #0f172a;
-  --color-bg-secondary: #1e293b;
-  --color-bg-tertiary: #334155;
-  --color-surface: #1e293b;
-  --color-surface-hover: #334155;
-
-  --color-sidebar-bg: #020617;
-  --color-sidebar-text: #64748b;
-  --color-sidebar-border: rgba(148, 163, 184, 0.15);
-
-  --color-text-primary: #f1f5f9;
-  --color-text-secondary: #94a3b8;
-  --color-text-tertiary: #64748b;
-  --color-text-inverse: #0f172a;
-
-  --color-border: #334155;
-  --color-border-light: #1e293b;
-
-  --color-primary-light: rgba(59, 130, 246, 0.1);
-  --color-primary-muted: rgba(59, 130, 246, 0.3);
-
-  --state-success-bg: rgba(34, 197, 94, 0.1);
-  --state-warning-bg: rgba(245, 158, 11, 0.1);
-  --state-error-bg: rgba(239, 68, 68, 0.1);
-  --state-info-bg: rgba(59, 130, 246, 0.1);
-
-  --tint-ai-bg: rgba(139, 92, 246, 0.1);
-  --tint-data-bg: rgba(6, 182, 212, 0.1);
-  --tint-tool-bg: rgba(245, 158, 11, 0.1);
-  --tint-rest-bg: rgba(59, 130, 246, 0.1);
-  --tint-database-bg: rgba(34, 197, 94, 0.1);
-  --tint-csv-bg: rgba(245, 158, 11, 0.1);
-
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.06);
-  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.07);
-  --shadow-float: 0 12px 32px rgba(0, 0, 0, 0.14);
-}
-
-/* ---- Typography Scale Classes ---- */
-.mp-h1 { font-size: var(--font-size-3xl); font-weight: var(--font-weight-bold); line-height: var(--line-height-tight); color: var(--color-text-primary); letter-spacing: -0.02em; }
-.mp-h2 { font-size: var(--font-size-2xl); font-weight: var(--font-weight-bold); line-height: var(--line-height-tight); color: var(--color-text-primary); letter-spacing: -0.01em; }
-.mp-h3 { font-size: var(--font-size-xl); font-weight: var(--font-weight-semibold); line-height: var(--line-height-normal); color: var(--color-text-primary); }
-.mp-h4 { font-size: var(--font-size-lg); font-weight: var(--font-weight-semibold); line-height: var(--line-height-normal); color: var(--color-text-primary); }
-.mp-body { font-size: var(--font-size-base); font-weight: var(--font-weight-normal); line-height: var(--line-height-normal); color: var(--color-text-secondary); }
-.mp-caption { font-size: var(--font-size-sm); font-weight: var(--font-weight-normal); line-height: var(--line-height-normal); color: var(--color-text-tertiary); }
-.mp-code { font-family: var(--font-mono); font-size: var(--font-size-sm); }
-
-/* ---- Component Surfaces ---- */
-.mp-surface { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); }
-.mp-surface-raised { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); }
-
-    
-
-  @theme inline {
-    --color-primary: var(--color-primary);
-    --color-border: var(--color-border);
-  }
-  @layer base {
-    body { background: var(--color-surface); color: var(--color-text-primary); }
-    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
-    th { @apply whitespace-nowrap; }
-  }
-    
-
-      .no-scrollbar::-webkit-scrollbar { display: none; }
-      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-      [data-icon] {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        -webkit-mask-size: contain;
-        mask-size: contain;
-        -webkit-mask-repeat: no-repeat;
-        mask-repeat: no-repeat;
-        -webkit-mask-position: center;
-        mask-position: center;
-        background-color: currentColor;
-      }
-    
-
-    /* Reset & base */
-
-    /* Page title */
-    .preview-title {
-      font-size: var(--font-size-2xl);
-      font-weight: var(--font-weight-bold);
-      color: var(--color-text-primary);
-      margin-bottom: 24px;
-      letter-spacing: -0.01em;
-    }
-
-    /* Preview wrapper */
-    .preview-wrapper {
-      display: flex;
-      height: 100%;
-      background: var(--color-surface);
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius-lg);
-      overflow: hidden;
-      box-shadow: var(--shadow-md);
-      height: 640px;
-    }
-
-    /* Sidebar */
-    .sidebar {
-      width: var(--sidebar-width);
-      min-width: var(--sidebar-width);
-      height: 100%;
-      background: var(--color-sidebar-bg);
-      display: flex;
-      flex-direction: column;
-      border-right: 1px solid var(--color-sidebar-border);
-    }
-
-    /* Brand area */
-    .sidebar-brand {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 20px 16px;
-      border-bottom: 1px solid var(--color-sidebar-border);
-    }
-    .sidebar-brand-icon {
-      width: 36px;
-      height: 36px;
-      background: var(--color-primary);
-      border-radius: var(--radius-md);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #ffffff;
-      font-size: 18px;
-      font-weight: var(--font-weight-bold);
-      flex-shrink: 0;
-    }
-    .sidebar-brand-label {
-      font-size: var(--font-size-md);
-      font-weight: var(--font-weight-semibold);
-      color: #ffffff;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    /* Navigation */
-    .sidebar-nav {
-      flex: 1;
-      overflow-y: auto;
-      padding: 8px 8px;
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-    .sidebar-nav::-webkit-scrollbar { width: 4px; }
-    .sidebar-nav::-webkit-scrollbar-track { background: transparent; }
-    .sidebar-nav::-webkit-scrollbar-thumb { background: rgba(148,163,184,0.2); border-radius: 4px; }
-
-    .nav-item {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 10px 12px;
-      border-radius: var(--radius-md);
-      cursor: pointer;
-      transition: background 0.15s, color 0.15s;
-      text-decoration: none;
-      color: var(--color-sidebar-text);
-      font-size: var(--font-size-base);
-      font-weight: var(--font-weight-normal);
-      white-space: nowrap;
-    }
-    .nav-item:hover {
-      background: rgba(148,163,184,0.08);
-      color: var(--color-sidebar-text-hover);
-    }
-    .nav-item.active {
-      background: var(--color-sidebar-active-bg);
-      color: var(--color-sidebar-active-text);
-      font-weight: var(--font-weight-medium);
-    }
-    .nav-item svg {
-      width: 20px;
-      height: 20px;
-      flex-shrink: 0;
-      opacity: 0.7;
-    }
-    .nav-item.active svg {
-      opacity: 1;
-    }
-    .nav-item:hover svg {
-      opacity: 1;
-    }
-
-    /* Divider */
-    .nav-divider {
-      height: 1px;
-      background: var(--color-sidebar-border);
-      margin: 8px 12px;
-    }
-
-    /* User area */
-    .sidebar-user {
-      padding: 16px;
-      border-top: 1px solid var(--color-sidebar-border);
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    .sidebar-user-avatar {
-      width: 32px;
-      height: 32px;
-      border-radius: var(--radius-full);
-      background: var(--color-primary);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #ffffff;
-      font-size: var(--font-size-sm);
-      font-weight: var(--font-weight-bold);
-      flex-shrink: 0;
-    }
-    .sidebar-user-info {
-      flex: 1;
-      min-width: 0;
-    }
-    .sidebar-user-name {
-      font-size: var(--font-size-sm);
-      font-weight: var(--font-weight-medium);
-      color: #e2e8f0;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .sidebar-user-email {
-      font-size: var(--font-size-xs);
-      color: var(--color-sidebar-text);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    /* Main content placeholder */
-    .main-content-placeholder {
-      flex: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: var(--color-text-tertiary);
-      font-size: var(--font-size-base);
-    }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
     <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
@@ -2507,795 +118,584 @@
       }
     </style>
 </head>
-<body>
-  <div id="root"></div>
+<body class="font-sans antialiased" style="font-family: var(--font-sans); font-size: var(--font-size-base);">
 
-  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script src="https://unpkg.com/htm@3/dist/htm.umd.js"></script>
-  <script>
-    const html = htm.bind(React.createElement);
-    const { useState } = React;
+<div class="flex min-h-screen">
 
-    /* ---- SVG Icons ---- */
-    const icons = {
-      dashboard: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="4" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="11" width="7" height="10" rx="1.5"/></svg>',
-      pages: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>',
-      connections: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>',
-      workflows: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/><line x1="14" y1="4" x2="10" y2="20"/></svg>',
-      database: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>',
-      ai: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>',
-      csv: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>',
-      settings: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>'
-    };
+  <!-- Sidebar -->
+  <aside class="w-[220px] flex flex-col flex-shrink-0 fixed inset-y-0 left-0 z-10" style="background: var(--color-sidebar-bg);">
 
-    /* ---- Icon Component ---- */
-    function Icon({ name, style }) {
-      return html`<span className="icon-svg" style=${style} dangerouslySetInnerHTML=${{ __html: icons[name] || '' }} />`;
-    }
+    <!-- Brand -->
+    <div class="flex items-center gap-2 px-3 py-3" style="border-bottom: 1px solid var(--color-sidebar-border);">
+      <span class="w-8 h-8 text-white flex items-center justify-center font-bold text-xs" style="background: var(--color-primary); border-radius: var(--radius-md);">M</span>
+      <span class="text-sm font-semibold" style="color: #f1f5f9;">MetaPlatform</span>
+    </div>
 
-    /* ---- Button ---- */
-    function Button({ variant, size, children }) {
-      return html`
-        <button className=${`mp-btn mp-btn--${variant.toLowerCase()} mp-btn--${size.toLowerCase()}`}>
-          ${children}
-        </button>
-      `;
-    }
+    <!-- Nav -->
+    <nav class="flex flex-col px-2 py-3 gap-0.5 flex-1">
 
-    /* ---- Badge ---- */
-    function Badge({ variant, children }) {
-      return html`<span className=${`mp-badge mp-badge--${variant}`}>${children}</span>`;
-    }
+      <!-- 1. 页面配置 (active) -->
+      <a data-nav-key="dashboard" data-active="true" class="flex items-center gap-0.5 px-2.5 py-1.5 cursor-pointer" style="background: var(--color-sidebar-active-bg); color: var(--color-sidebar-active-text); border-radius: var(--radius-md); font-size: var(--font-size-sm);">
+        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="7" height="7" rx="1"/>
+          <rect x="14" y="3" width="7" height="7" rx="1"/>
+          <rect x="3" y="14" width="7" height="7" rx="1"/>
+          <rect x="14" y="14" width="7" height="7" rx="1"/>
+        </svg>
+        <span>页面配置</span>
+      </a>
 
-    /* ---- Input ---- */
-    function InputField({ label, helperText, placeholder }) {
-      return html`
-        <div className="mp-field">
-          <label className="mp-field__label">${label}</label>
-          <input className="mp-input" placeholder=${placeholder} />
-          ${helperText && html`<span className="mp-field__helper">${helperText}</span>`}
-        </div>
-      `;
-    }
+      <!-- 2. ObjectType -->
+      <a data-nav-key="objecttype" class="flex items-center gap-0.5 px-2.5 py-1.5 cursor-pointer transition-colors" style="color: var(--color-sidebar-text); border-radius: var(--radius-md); font-size: var(--font-size-sm);" onmouseover="this.style.background='rgba(255,255,255,0.05)';this.style.color='var(--color-sidebar-text-hover)'" onmouseout="this.style.background='transparent';this.style.color='var(--color-sidebar-text)'">
+        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+          <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+          <line x1="12" y1="22.08" x2="12" y2="12"/>
+        </svg>
+        <span>ObjectType</span>
+      </a>
 
-    /* ---- Textarea ---- */
-    function TextareaField({ label, placeholder }) {
-      return html`
-        <div className="mp-field">
-          <label className="mp-field__label">${label}</label>
-          <textarea className="mp-textarea" placeholder=${placeholder}></textarea>
-        </div>
-      `;
-    }
+      <!-- 3. 建模特工场 -->
+      <a data-nav-key="modeling-workshop" class="flex items-center gap-0.5 px-2.5 py-1.5 cursor-pointer transition-colors" style="color: var(--color-sidebar-text); border-radius: var(--radius-md); font-size: var(--font-size-sm);" onmouseover="this.style.background='rgba(255,255,255,0.05)';this.style.color='var(--color-sidebar-text-hover)'" onmouseout="this.style.background='transparent';this.style.color='var(--color-sidebar-text)'">
+        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+        </svg>
+        <span>建模特工场</span>
+      </a>
 
-    /* ---- Card ---- */
-    function Card({ variant, title, desc }) {
-      const cls = variant === 'status' ? 'mp-card--status'
-                 : variant === 'interactive' ? 'mp-card--interactive'
-                 : 'mp-card';
-      return html`
-        <div className=${cls}>
-          <div className="mp-card__title">${title}</div>
-          <div className="mp-card__desc">${desc}</div>
-        </div>
-      `;
-    }
+      <!-- 4. 设计器 -->
+      <a data-nav-key="designer" class="flex items-center gap-0.5 px-2.5 py-1.5 cursor-pointer transition-colors" style="color: var(--color-sidebar-text); border-radius: var(--radius-md); font-size: var(--font-size-sm);" onmouseover="this.style.background='rgba(255,255,255,0.05)';this.style.color='var(--color-sidebar-text-hover)'" onmouseout="this.style.background='transparent';this.style.color='var(--color-sidebar-text)'">
+        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 19l7-7 3 3-7 7-3-3z"/>
+          <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/>
+          <path d="M2 2l7.586 7.586"/>
+          <circle cx="11" cy="11" r="2"/>
+        </svg>
+        <span>设计器</span>
+      </a>
 
-    /* ---- DataTable ---- */
-    function DataTable() {
-      const rows = [
-        { name: '用户数据同步', type: 'REST', status: 'success' },
-        { name: 'GPT-4 接入', type: 'AI', status: 'warning' },
-        { name: 'PostgreSQL 连接', type: 'Database', status: 'success' },
-        { name: 'CSV 产品导入', type: 'CSV', status: 'error' }
-      ];
-      const typeVariant = (t) => {
-        const map = { REST: 'rest', AI: 'ai', Database: 'database', CSV: 'csv' };
-        return map[t] || 'default';
-      };
-      const statusLabel = (s) => {
-        const map = { success: '运行中', error: '已断开', warning: '重试中' };
-        return map[s] || s;
-      };
-      return html`
-        <div className="mp-table-wrapper">
-          <table className="mp-table">
-            <thead>
-              <tr>
-                <th>名称</th>
-                <th>类型</th>
-                <th>状态</th>
-                <th>操作</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${rows.map(r => html`
-                <tr key=${r.name}>
-                  <td style=${{ color: 'var(--color-text-primary)', fontWeight: 500 }}>${r.name}</td>
-                  <td><${Badge} variant=${typeVariant(r.type)}>${r.type}<//></td>
-                  <td><${Badge} variant=${r.status}>${statusLabel(r.status)}<//></td>
-                  <td>
-                    <div className="mp-table__actions">
-                      <button className="mp-table__action-btn">编辑</button>
-                      <button className="mp-table__action-btn mp-table__action-btn--danger">删除</button>
-                    </div>
-                  </td>
-                </tr>
-              `)}
-            </tbody>
-          </table>
-        </div>
-      `;
-    }
+      <!-- 5. 流程设计器 -->
+      <a data-nav-key="flow-designer" class="flex items-center gap-0.5 px-2.5 py-1.5 cursor-pointer transition-colors" style="color: var(--color-sidebar-text); border-radius: var(--radius-md); font-size: var(--font-size-sm);" onmouseover="this.style.background='rgba(255,255,255,0.05)';this.style.color='var(--color-sidebar-text-hover)'" onmouseout="this.style.background='transparent';this.style.color='var(--color-sidebar-text)'">
+        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="6" y1="3" x2="6" y2="15"/>
+          <circle cx="18" cy="6" r="3"/>
+          <circle cx="6" cy="18" r="3"/>
+          <path d="M18 9a9 9 0 0 1-9 9"/>
+        </svg>
+        <span>流程设计器</span>
+      </a>
 
-    /* ---- Sidebar ---- */
-    function Sidebar({ compact }) {
-      const navItems = [
-        { icon: 'dashboard', label: '仪表盘', active: true },
-        { icon: 'pages', label: '页面管理', active: false },
-        { icon: 'connections', label: '数据连接', active: false },
-        { icon: 'workflows', label: '工作流', active: false },
-        { icon: 'database', label: '数据库', active: false },
-        { icon: 'ai', label: 'AI 能力', active: false },
-        { icon: 'csv', label: 'CSV 导入', active: false },
-        { icon: 'settings', label: '系统设置', active: false }
-      ];
-      return html`
-        <div className="mp-sidebar" style=${compact ? { width: '240px', minHeight: '420px' } : {}}>
-          <div className="mp-sidebar__brand">
-            <div className="mp-sidebar__logo">M</div>
-            <div>
-              <div className="mp-sidebar__brand-text">MetaPlatform</div>
-              <div className="mp-sidebar__brand-sub">企业级平台</div>
-            </div>
-          </div>
-          <div className="mp-sidebar__nav">
-            ${navItems.map(item => html`
-              <div key=${item.label} className=${`mp-sidebar__item${item.active ? ' mp-sidebar__item--active' : ''}`}>
-                <span className="mp-sidebar__icon" dangerouslySetInnerHTML=${{ __html: icons[item.icon] }} />
-                <span>${item.label}</span>
-              </div>
-            `)}
-          </div>
-          <div className="mp-sidebar__user">
-            <div className="mp-sidebar__avatar">管</div>
-            <div>
-              <div className="mp-sidebar__user-name">管理员</div>
-              <div className="mp-sidebar__user-email">admin@meta.io</div>
-            </div>
+      <!-- 6. AI 对话 -->
+      <a data-nav-key="dialogue" data-dom-id="nav-dialogue" class="flex items-center gap-0.5 px-2.5 py-1.5 cursor-pointer transition-colors" style="color: var(--color-sidebar-text); border-radius: var(--radius-md); font-size: var(--font-size-sm);" onmouseover="this.style.background='rgba(255,255,255,0.05)';this.style.color='var(--color-sidebar-text-hover)'" onmouseout="this.style.background='transparent';this.style.color='var(--color-sidebar-text)'">
+        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+        </svg>
+        <span>AI 对话</span>
+      </a>
+
+      <!-- 7. 能力中心 -->
+      <a data-nav-key="capability" data-dom-id="nav-capability" class="flex items-center gap-0.5 px-2.5 py-1.5 cursor-pointer transition-colors" style="color: var(--color-sidebar-text); border-radius: var(--radius-md); font-size: var(--font-size-sm);" onmouseover="this.style.background='rgba(255,255,255,0.05)';this.style.color='var(--color-sidebar-text-hover)'" onmouseout="this.style.background='transparent';this.style.color='var(--color-sidebar-text)'">
+        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+        </svg>
+        <span>能力中心</span>
+      </a>
+
+      <!-- 8. 集成中心 -->
+      <a data-nav-key="integration" data-dom-id="nav-integration" class="flex items-center gap-0.5 px-2.5 py-1.5 cursor-pointer transition-colors" style="color: var(--color-sidebar-text); border-radius: var(--radius-md); font-size: var(--font-size-sm);" onmouseover="this.style.background='rgba(255,255,255,0.05)';this.style.color='var(--color-sidebar-text-hover)'" onmouseout="this.style.background='transparent';this.style.color='var(--color-sidebar-text)'">
+        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+          <polyline points="15 3 21 3 21 9"/>
+          <line x1="10" y1="14" x2="21" y2="3"/>
+        </svg>
+        <span>集成中心</span>
+      </a>
+
+    </nav>
+
+    <!-- Bottom user area -->
+    <div class="px-3 py-3 flex items-center gap-2" style="border-top: 1px solid var(--color-sidebar-border);">
+      <div class="w-6 h-6 flex items-center justify-center" style="background: #334155; color: #94a3b8; border-radius: var(--radius-full); font-size: 10px; font-weight: 500;">A</div>
+      <div class="flex-1 min-w-0">
+        <div class="truncate" style="color: var(--color-sidebar-text-hover); font-size: var(--font-size-sm);">Admin</div>
+        <div class="truncate" style="color: #64748b; font-size: var(--font-size-xs);">admin@metaplatform.io</div>
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- Main content -->
+  <main class="flex-1 ml-[220px] p-5 min-w-0" style="background: var(--color-bg);">
+
+    <!-- Page Header -->
+    <div class="mb-3">
+      <h1 class="font-semibold" style="font-size: var(--font-size-xl); color: var(--color-text-primary); letter-spacing: -0.02em; line-height: 1.25; text-wrap: balance; word-break: keep-all;">页面配置管理</h1>
+      <p class="mt-1" style="font-size: var(--font-size-sm); color: var(--color-text-secondary);">管理已生成的页面配置，或从 ObjectType 一键生成新页面。</p>
+    </div>
+
+    <!-- Stats Row -->
+    <div class="flex gap-3 mb-3">
+      <div class="flex-1 px-3 py-3" style="border: 1px solid var(--color-border); border-radius: var(--radius-lg);">
+        <div class="font-semibold" style="font-size: var(--font-size-xl); color: var(--color-text-primary); font-variant-numeric: tabular-nums; line-height: 1.25;">12</div>
+        <div class="mt-0.5" style="font-size: var(--font-size-xs); color: var(--color-text-secondary);">总页面数</div>
+      </div>
+      <div class="flex-1 px-3 py-3" style="border: 1px solid var(--color-border); border-radius: var(--radius-lg);">
+        <div class="font-semibold" style="font-size: var(--font-size-xl); color: var(--color-text-primary); font-variant-numeric: tabular-nums; line-height: 1.25;">4</div>
+        <div class="mt-0.5" style="font-size: var(--font-size-xs); color: var(--color-text-secondary);">本月新增</div>
+      </div>
+      <div class="flex-1 px-3 py-3" style="border: 1px solid var(--color-border); border-radius: var(--radius-lg);">
+        <div class="font-semibold" style="font-size: var(--font-size-xl); color: var(--color-text-primary); font-variant-numeric: tabular-nums; line-height: 1.25;">8</div>
+        <div class="mt-0.5" style="font-size: var(--font-size-xs); color: var(--color-text-secondary);">活跃页面</div>
+      </div>
+    </div>
+
+    <!-- Quick Generate Section -->
+    <div class="mb-3">
+      <h2 class="font-medium mb-3" style="font-size: var(--font-size-lg); color: var(--color-text-primary);">快速生成页面</h2>
+      <div class="grid grid-cols-4 gap-3">
+
+        <!-- Card: 客户管理 -->
+        <div class="p-3 transition-colors" style="border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface); transition-duration: 150ms; transition-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);" onmouseover="this.style.borderColor='#93c5fd'" onmouseout="this.style.borderColor='var(--color-border)'">
+          <div class="font-medium" style="font-size: var(--font-size-base); color: var(--color-text-primary);">客户管理</div>
+          <div class="mt-0.5" style="font-size: var(--font-size-xs); color: var(--color-text-secondary); font-family: var(--font-mono);">customer</div>
+          <p class="mt-1.5" style="font-size: var(--font-size-xs); color: var(--color-text-secondary); line-height: 1.5;">核心业务对象，包含客户基本信息</p>
+          <div class="mt-3">
+            <button class="inline-flex items-center justify-center text-white whitespace-nowrap transition-colors" style="font-size: var(--font-size-xs); font-weight: 500; padding: 4px 10px; border-radius: var(--radius-md); background: var(--color-primary); transition-property: background-color; transition-duration: 150ms;" onmouseover="this.style.background='var(--color-primary-hover)'" onmouseout="this.style.background='var(--color-primary)'" onfocus="this.style.outline='2px solid var(--color-primary)';this.style.outlineOffset='2px'" onblur="this.style.outline='none'">生成页面</button>
           </div>
         </div>
-      `;
-    }
 
-    /* ---- App ---- */
-    function App() {
-      return html`
-        <div className="page-wrapper">
-          <div style=${{ flex: 1 }}>
-            <div className="content-area">
-
-              <!-- Hero -->
-              <div className="hero">
-                <h1>MetaPlatform 设计系统</h1>
-                <p>企业级低代码平台 · 组件展示</p>
-              </div>
-
-              <!-- 1. Button -->
-              <div className="section">
-                <h2 className="section-title">
-                  按钮 Button
-                  <span className="section-tag">组件</span>
-                </h2>
-
-                <div className="component-group">
-                  <div className="component-group-label">Primary 主要按钮</div>
-                  <div className="flex-row" style=${{ marginBottom: 12 }}>
-                    <${Button} variant="Primary" size="SM">创建页面</${Button}>
-                    <${Button} variant="Primary" size="MD">创建页面</${Button}>
-                  </div>
-                </div>
-
-                <div className="component-group">
-                  <div className="component-group-label">Outline 描边按钮</div>
-                  <div className="flex-row" style=${{ marginBottom: 12 }}>
-                    <${Button} variant="Outline" size="SM">取消</${Button}>
-                    <${Button} variant="Outline" size="MD">取消</${Button}>
-                  </div>
-                </div>
-
-                <div className="component-group">
-                  <div className="component-group-label">Danger 危险按钮</div>
-                  <div className="flex-row">
-                    <${Button} variant="Danger" size="SM">删除</${Button}>
-                    <${Button} variant="Danger" size="MD">删除连接</${Button}>
-                  </div>
-                </div>
-              </div>
-
-              <!-- 2. Badge -->
-              <div className="section">
-                <h2 className="section-title">
-                  徽章 Badge
-                  <span className="section-tag">组件</span>
-                </h2>
-
-                <div className="component-group">
-                  <div className="component-group-label">Default 默认</div>
-                  <div className="flex-row" style=${{ marginBottom: 16 }}>
-                    <${Badge} variant="default">标签</${Badge}>
-                    <${Badge} variant="default">v2.0</${Badge}>
-                  </div>
-                </div>
-
-                <div className="component-group">
-                  <div className="component-group-label">Category 类别</div>
-                  <div className="flex-row" style=${{ marginBottom: 16 }}>
-                    <${Badge} variant="rest">REST</${Badge}>
-                    <${Badge} variant="ai">AI</${Badge}>
-                    <${Badge} variant="database">Database</${Badge}>
-                    <${Badge} variant="csv">CSV</${Badge}>
-                  </div>
-                </div>
-
-                <div className="component-group">
-                  <div className="component-group-label">Status 状态</div>
-                  <div className="flex-row">
-                    <${Badge} variant="success">运行中</${Badge}>
-                    <${Badge} variant="error">已断开</${Badge}>
-                    <${Badge} variant="warning">重试中</${Badge}>
-                  </div>
-                </div>
-              </div>
-
-              <!-- 3. Input -->
-              <div className="section">
-                <h2 className="section-title">
-                  输入框 Input
-                  <span className="section-tag">组件</span>
-                </h2>
-                <div className="input-grid">
-                  <${InputField} label="页面名称" placeholder="例如：用户管理页" helperText="仅支持字母、数字和下划线" />
-                  <${InputField} label="API 地址" placeholder="https://api.example.com/v1" />
-                  <div className="input-full">
-                    <${TextareaField} label="描述" placeholder="输入页面描述信息..." />
-                  </div>
-                </div>
-              </div>
-
-              <!-- 4. Card -->
-              <div className="section">
-                <h2 className="section-title">
-                  卡片 Card
-                  <span className="section-tag">组件</span>
-                </h2>
-                <div className="card-grid">
-                  <${Card} variant="default" title="默认卡片" desc="用于承载内容的基础容器组件，支持标题和正文布局。" />
-                  <${Card} variant="status" title="状态卡片" desc="带有左侧边框的状态指示卡片，用于展示重要信息。" />
-                  <${Card} variant="interactive" title="可交互卡片" desc="鼠标悬停时边框高亮，用于可点击的操作入口。" />
-                </div>
-              </div>
-
-              <!-- 5. DataTable -->
-              <div className="section">
-                <h2 className="section-title">
-                  数据表格 DataTable
-                  <span className="section-tag">组件</span>
-                </h2>
-                <${DataTable} />
-              </div>
-
-              <!-- 6. Sidebar -->
-              <div className="section sidebar-full">
-                <h2 className="section-title">
-                  侧边栏 Sidebar
-                  <span className="section-tag">组件</span>
-                </h2>
-                <${Sidebar} compact=${true} />
-              </div>
-
-            </div>
-          </div>
-
-          <!-- Right column: mini sidebar preview -->
-          <div className="sidebar-preview-col">
-            <div className="sidebar-preview-label">侧边栏预览</div>
-            <${Sidebar} compact=${true} />
+        <!-- Card: 工单系统 -->
+        <div class="p-3 transition-colors" style="border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface); transition-duration: 150ms; transition-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);" onmouseover="this.style.borderColor='#93c5fd'" onmouseout="this.style.borderColor='var(--color-border)'">
+          <div class="font-medium" style="font-size: var(--font-size-base); color: var(--color-text-primary);">工单系统</div>
+          <div class="mt-0.5" style="font-size: var(--font-size-xs); color: var(--color-text-secondary); font-family: var(--font-mono);">ticket</div>
+          <p class="mt-1.5" style="font-size: var(--font-size-xs); color: var(--color-text-secondary); line-height: 1.5;">技术支持工单生命周期管理</p>
+          <div class="mt-3">
+            <button class="inline-flex items-center justify-center text-white whitespace-nowrap transition-colors" style="font-size: var(--font-size-xs); font-weight: 500; padding: 4px 10px; border-radius: var(--radius-md); background: var(--color-primary); transition-property: background-color; transition-duration: 150ms;" onmouseover="this.style.background='var(--color-primary-hover)'" onmouseout="this.style.background='var(--color-primary)'" onfocus="this.style.outline='2px solid var(--color-primary)';this.style.outlineOffset='2px'" onblur="this.style.outline='none'">生成页面</button>
           </div>
         </div>
-      `;
+
+        <!-- Card: 产品目录 -->
+        <div class="p-3 transition-colors" style="border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface); transition-duration: 150ms; transition-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);" onmouseover="this.style.borderColor='#93c5fd'" onmouseout="this.style.borderColor='var(--color-border)'">
+          <div class="font-medium" style="font-size: var(--font-size-base); color: var(--color-text-primary);">产品目录</div>
+          <div class="mt-0.5" style="font-size: var(--font-size-xs); color: var(--color-text-secondary); font-family: var(--font-mono);">product</div>
+          <p class="mt-1.5" style="font-size: var(--font-size-xs); color: var(--color-text-secondary); line-height: 1.5;">产品信息与分类管理</p>
+          <div class="mt-3">
+            <button class="inline-flex items-center justify-center text-white whitespace-nowrap transition-colors" style="font-size: var(--font-size-xs); font-weight: 500; padding: 4px 10px; border-radius: var(--radius-md); background: var(--color-primary); transition-property: background-color; transition-duration: 150ms;" onmouseover="this.style.background='var(--color-primary-hover)'" onmouseout="this.style.background='var(--color-primary)'" onfocus="this.style.outline='2px solid var(--color-primary)';this.style.outlineOffset='2px'" onblur="this.style.outline='none'">生成页面</button>
+          </div>
+        </div>
+
+        <!-- Card: 销售线索 -->
+        <div class="p-3 transition-colors" style="border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface); transition-duration: 150ms; transition-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);" onmouseover="this.style.borderColor='#93c5fd'" onmouseout="this.style.borderColor='var(--color-border)'">
+          <div class="font-medium" style="font-size: var(--font-size-base); color: var(--color-text-primary);">销售线索</div>
+          <div class="mt-0.5" style="font-size: var(--font-size-xs); color: var(--color-text-secondary); font-family: var(--font-mono);">lead</div>
+          <p class="mt-1.5" style="font-size: var(--font-size-xs); color: var(--color-text-secondary); line-height: 1.5;">销售线索跟踪与转化</p>
+          <div class="mt-3">
+            <button class="inline-flex items-center justify-center text-white whitespace-nowrap transition-colors" style="font-size: var(--font-size-xs); font-weight: 500; padding: 4px 10px; border-radius: var(--radius-md); background: var(--color-primary); transition-property: background-color; transition-duration: 150ms;" onmouseover="this.style.background='var(--color-primary-hover)'" onmouseout="this.style.background='var(--color-primary)'" onfocus="this.style.outline='2px solid var(--color-primary)';this.style.outlineOffset='2px'" onblur="this.style.outline='none'">生成页面</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Generated Pages Table -->
+    <div>
+      <h2 class="font-medium mb-3" style="font-size: var(--font-size-lg); color: var(--color-text-primary);">已生成页面 <span class="font-normal" style="font-size: var(--font-size-sm); color: var(--color-text-secondary);">(4)</span></h2>
+      <div style="border: 1px solid var(--color-border); border-radius: var(--radius-lg); overflow: hidden;">
+        <table class="w-full" style="font-size: var(--font-size-sm);">
+          <thead>
+            <tr style="background: var(--color-bg-secondary);">
+              <th class="text-left px-3 py-1.5 font-medium whitespace-nowrap" style="font-size: var(--font-size-xs); color: var(--color-text-secondary);">显示名称</th>
+              <th class="text-left px-3 py-1.5 font-medium whitespace-nowrap" style="font-size: var(--font-size-xs); color: var(--color-text-secondary);">名称</th>
+              <th class="text-left px-3 py-1.5 font-medium whitespace-nowrap" style="font-size: var(--font-size-xs); color: var(--color-text-secondary);">页面类型</th>
+              <th class="text-left px-3 py-1.5 font-medium whitespace-nowrap" style="font-size: var(--font-size-xs); color: var(--color-text-secondary);">创建时间</th>
+              <th class="text-right px-3 py-1.5 font-medium whitespace-nowrap" style="font-size: var(--font-size-xs); color: var(--color-text-secondary);">操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Row 1 -->
+            <tr style="border-top: 1px solid var(--color-border);">
+              <td class="px-3 py-1.5 whitespace-nowrap" style="font-size: var(--font-size-sm); color: var(--color-text-primary);">客户列表页</td>
+              <td class="px-3 py-1.5 whitespace-nowrap" style="color: var(--color-text-secondary); font-family: var(--font-mono); font-size: var(--font-size-xs);">customer_list</td>
+              <td class="px-3 py-1.5 whitespace-nowrap">
+                <span class="inline-flex items-center px-2 py-0.5 whitespace-nowrap" style="background: var(--color-bg-secondary); color: var(--color-text-secondary); border-radius: var(--radius-full); font-size: var(--font-size-xs);">列表页</span>
+              </td>
+              <td class="px-3 py-1.5 whitespace-nowrap" style="font-size: var(--font-size-xs); color: var(--color-text-secondary);">2026-06-28 14:30</td>
+              <td class="px-3 py-1.5 whitespace-nowrap text-right">
+                <div class="inline-flex items-center gap-1.5">
+                  <button class="inline-flex items-center justify-center whitespace-nowrap transition-colors" style="font-size: var(--font-size-xs); font-weight: 500; padding: 4px 10px; border-radius: var(--radius-md); border: 1px solid var(--color-border); color: var(--color-text-secondary); background: transparent; transition-property: border-color, color; transition-duration: 150ms;" onmouseover="this.style.borderColor='var(--color-primary)';this.style.color='var(--color-primary)'" onmouseout="this.style.borderColor='var(--color-border)';this.style.color='var(--color-text-secondary)'" onfocus="this.style.outline='2px solid var(--color-primary)';this.style.outlineOffset='2px'" onblur="this.style.outline='none'">预览</button>
+                  <button class="inline-flex items-center justify-center whitespace-nowrap transition-colors" style="font-size: var(--font-size-xs); font-weight: 500; padding: 4px 10px; border-radius: var(--radius-md); border: none; color: var(--state-error); background: transparent; transition-property: color; transition-duration: 150ms;" onmouseover="this.style.color='#dc2626'" onmouseout="this.style.color='var(--state-error)'" onfocus="this.style.outline='2px solid var(--color-primary)';this.style.outlineOffset='2px'" onblur="this.style.outline='none'">删除</button>
+                </div>
+              </td>
+            </tr>
+            <!-- Row 2 -->
+            <tr style="border-top: 1px solid var(--color-border);">
+              <td class="px-3 py-1.5 whitespace-nowrap" style="font-size: var(--font-size-sm); color: var(--color-text-primary);">客户详情页</td>
+              <td class="px-3 py-1.5 whitespace-nowrap" style="color: var(--color-text-secondary); font-family: var(--font-mono); font-size: var(--font-size-xs);">customer_detail</td>
+              <td class="px-3 py-1.5 whitespace-nowrap">
+                <span class="inline-flex items-center px-2 py-0.5 whitespace-nowrap" style="background: var(--color-bg-secondary); color: var(--color-text-secondary); border-radius: var(--radius-full); font-size: var(--font-size-xs);">详情页</span>
+              </td>
+              <td class="px-3 py-1.5 whitespace-nowrap" style="font-size: var(--font-size-xs); color: var(--color-text-secondary);">2026-06-28 14:32</td>
+              <td class="px-3 py-1.5 whitespace-nowrap text-right">
+                <div class="inline-flex items-center gap-1.5">
+                  <button class="inline-flex items-center justify-center whitespace-nowrap transition-colors" style="font-size: var(--font-size-xs); font-weight: 500; padding: 4px 10px; border-radius: var(--radius-md); border: 1px solid var(--color-border); color: var(--color-text-secondary); background: transparent; transition-property: border-color, color; transition-duration: 150ms;" onmouseover="this.style.borderColor='var(--color-primary)';this.style.color='var(--color-primary)'" onmouseout="this.style.borderColor='var(--color-border)';this.style.color='var(--color-text-secondary)'" onfocus="this.style.outline='2px solid var(--color-primary)';this.style.outlineOffset='2px'" onblur="this.style.outline='none'">预览</button>
+                  <button class="inline-flex items-center justify-center whitespace-nowrap transition-colors" style="font-size: var(--font-size-xs); font-weight: 500; padding: 4px 10px; border-radius: var(--radius-md); border: none; color: var(--state-error); background: transparent; transition-property: color; transition-duration: 150ms;" onmouseover="this.style.color='#dc2626'" onmouseout="this.style.color='var(--state-error)'" onfocus="this.style.outline='2px solid var(--color-primary)';this.style.outlineOffset='2px'" onblur="this.style.outline='none'">删除</button>
+                </div>
+              </td>
+            </tr>
+            <!-- Row 3 -->
+            <tr style="border-top: 1px solid var(--color-border);">
+              <td class="px-3 py-1.5 whitespace-nowrap" style="font-size: var(--font-size-sm); color: var(--color-text-primary);">工单列表页</td>
+              <td class="px-3 py-1.5 whitespace-nowrap" style="color: var(--color-text-secondary); font-family: var(--font-mono); font-size: var(--font-size-xs);">ticket_list</td>
+              <td class="px-3 py-1.5 whitespace-nowrap">
+                <span class="inline-flex items-center px-2 py-0.5 whitespace-nowrap" style="background: var(--color-bg-secondary); color: var(--color-text-secondary); border-radius: var(--radius-full); font-size: var(--font-size-xs);">列表页</span>
+              </td>
+              <td class="px-3 py-1.5 whitespace-nowrap" style="font-size: var(--font-size-xs); color: var(--color-text-secondary);">2026-06-30 09:15</td>
+              <td class="px-3 py-1.5 whitespace-nowrap text-right">
+                <div class="inline-flex items-center gap-1.5">
+                  <button class="inline-flex items-center justify-center whitespace-nowrap transition-colors" style="font-size: var(--font-size-xs); font-weight: 500; padding: 4px 10px; border-radius: var(--radius-md); border: 1px solid var(--color-border); color: var(--color-text-secondary); background: transparent; transition-property: border-color, color; transition-duration: 150ms;" onmouseover="this.style.borderColor='var(--color-primary)';this.style.color='var(--color-primary)'" onmouseout="this.style.borderColor='var(--color-border)';this.style.color='var(--color-text-secondary)'" onfocus="this.style.outline='2px solid var(--color-primary)';this.style.outlineOffset='2px'" onblur="this.style.outline='none'">预览</button>
+                  <button class="inline-flex items-center justify-center whitespace-nowrap transition-colors" style="font-size: var(--font-size-xs); font-weight: 500; padding: 4px 10px; border-radius: var(--radius-md); border: none; color: var(--state-error); background: transparent; transition-property: color; transition-duration: 150ms;" onmouseover="this.style.color='#dc2626'" onmouseout="this.style.color='var(--state-error)'" onfocus="this.style.outline='2px solid var(--color-primary)';this.style.outlineOffset='2px'" onblur="this.style.outline='none'">删除</button>
+                </div>
+              </td>
+            </tr>
+            <!-- Row 4 -->
+            <tr style="border-top: 1px solid var(--color-border);">
+              <td class="px-3 py-1.5 whitespace-nowrap" style="font-size: var(--font-size-sm); color: var(--color-text-primary);">产品列表页</td>
+              <td class="px-3 py-1.5 whitespace-nowrap" style="color: var(--color-text-secondary); font-family: var(--font-mono); font-size: var(--font-size-xs);">product_list</td>
+              <td class="px-3 py-1.5 whitespace-nowrap">
+                <span class="inline-flex items-center px-2 py-0.5 whitespace-nowrap" style="background: var(--color-bg-secondary); color: var(--color-text-secondary); border-radius: var(--radius-full); font-size: var(--font-size-xs);">列表页</span>
+              </td>
+              <td class="px-3 py-1.5 whitespace-nowrap" style="font-size: var(--font-size-xs); color: var(--color-text-secondary);">2026-07-01 16:45</td>
+              <td class="px-3 py-1.5 whitespace-nowrap text-right">
+                <div class="inline-flex items-center gap-1.5">
+                  <button class="inline-flex items-center justify-center whitespace-nowrap transition-colors" style="font-size: var(--font-size-xs); font-weight: 500; padding: 4px 10px; border-radius: var(--radius-md); border: 1px solid var(--color-border); color: var(--color-text-secondary); background: transparent; transition-property: border-color, color; transition-duration: 150ms;" onmouseover="this.style.borderColor='var(--color-primary)';this.style.color='var(--color-primary)'" onmouseout="this.style.borderColor='var(--color-border)';this.style.color='var(--color-text-secondary)'" onfocus="this.style.outline='2px solid var(--color-primary)';this.style.outlineOffset='2px'" onblur="this.style.outline='none'">预览</button>
+                  <button class="inline-flex items-center justify-center whitespace-nowrap transition-colors" style="font-size: var(--font-size-xs); font-weight: 500; padding: 4px 10px; border-radius: var(--radius-md); border: none; color: var(--state-error); background: transparent; transition-property: color; transition-duration: 150ms;" onmouseover="this.style.color='#dc2626'" onmouseout="this.style.color='var(--state-error)'" onfocus="this.style.outline='2px solid var(--color-primary)';this.style.outlineOffset='2px'" onblur="this.style.outline='none'">删除</button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+
+</div>
+
+<!-- Reduced motion -->
+<style>
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      transition-duration: 0.01ms !important;
     }
+  }
+</style>
 
-    /* ---- Render ---- */
-    ReactDOM.createRoot(document.getElementById('root')).render(html`<${App} />`);
-  </script>
+</body>
+</html>
 
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-primary: var(--color-primary);
+    --color-border: var(--color-border);
+  }
+  @layer base {
+    body { background: var(--color-surface); color: var(--color-text-primary); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
     <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html { font-size: 16px; }
-    body {
-      font-family: var(--font-sans);
-      background: var(--color-bg);
-      color: var(--color-text-primary);
-      line-height: var(--line-height-normal);
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-    }
-    ::selection { background: rgba(59,130,246,0.15); }
-    input, textarea, button { font-family: inherit; }
-    a { text-decoration: none; color: inherit; }
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+</head>
+<body class="font-sans antialiased" style="font-family: var(--font-sans); font-size: var(--font-size-base);">
 
-    /* Layout */
-    .page-wrapper {
-      display: flex;
-      min-height: 100vh;
-    }
-    .content-area {
-      flex: 1;
-      max-width: 960px;
-      margin: 0 auto;
-      padding: 48px 48px 80px;
-    }
+<div class="flex min-h-screen">
 
-    /* Header */
-    .hero {
-      text-align: center;
-      padding-bottom: 40px;
-      margin-bottom: 40px;
-      border-bottom: 1px solid var(--color-border-light);
-    }
-    .hero h1 {
-      font-size: var(--font-size-3xl);
-      font-weight: var(--font-weight-bold);
-      letter-spacing: -0.02em;
-      color: var(--color-text-primary);
-      margin-bottom: 8px;
-    }
-    .hero p {
-      font-size: var(--font-size-md);
-      color: var(--color-text-tertiary);
-      font-weight: var(--font-weight-normal);
-    }
+  <!-- Sidebar -->
+  <aside class="w-[220px] flex flex-col flex-shrink-0 fixed inset-y-0 left-0 z-10" style="background: var(--color-sidebar-bg);">
 
-    /* Section */
-    .section {
-      margin-bottom: 48px;
-    }
-    .section-title {
-      font-size: var(--font-size-xl);
-      font-weight: var(--font-weight-semibold);
-      color: var(--color-text-primary);
-      margin-bottom: 20px;
-      padding-bottom: 12px;
-      border-bottom: 1px solid var(--color-border-light);
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    .section-title .section-tag {
-      font-size: var(--font-size-xs);
-      font-weight: var(--font-weight-medium);
-      color: var(--color-primary);
-      background: var(--color-primary-light);
-      padding: 2px 8px;
-      border-radius: var(--radius-full);
-      letter-spacing: 0.02em;
-      text-transform: uppercase;
-    }
+    <!-- Brand -->
+    <div class="flex items-center gap-2 px-3 py-3" style="border-bottom: 1px solid var(--color-sidebar-border);">
+      <span class="w-8 h-8 text-white flex items-center justify-center font-bold text-xs" style="background: var(--color-primary); border-radius: var(--radius-md);">M</span>
+      <span class="text-sm font-semibold" style="color: #f1f5f9;">MetaPlatform</span>
+    </div>
 
-    /* Component groups */
-    .component-group {
-      margin-bottom: 16px;
-    }
-    .component-group-label {
-      font-size: var(--font-size-xs);
-      color: var(--color-text-tertiary);
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      margin-bottom: 10px;
-      font-weight: var(--font-weight-medium);
-    }
+    <!-- Nav -->
+    <nav class="flex flex-col px-2 py-3 gap-0.5 flex-1">
 
-    /* Flex rows */
-    .flex-row {
-      display: flex;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 10px;
-    }
-    .flex-col {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
+      <!-- 1. 页面配置 (active) -->
+      <a data-nav-key="dashboard" data-active="true" class="flex items-center gap-0.5 px-2.5 py-1.5 cursor-pointer" style="background: var(--color-sidebar-active-bg); color: var(--color-sidebar-active-text); border-radius: var(--radius-md); font-size: var(--font-size-sm);">
+        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="7" height="7" rx="1"/>
+          <rect x="14" y="3" width="7" height="7" rx="1"/>
+          <rect x="3" y="14" width="7" height="7" rx="1"/>
+          <rect x="14" y="14" width="7" height="7" rx="1"/>
+        </svg>
+        <span>页面配置</span>
+      </a>
 
-    /* ---- BUTTON COMPONENT ---- */
-    .mp-btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      border: none;
-      cursor: pointer;
-      font-weight: var(--font-weight-medium);
-      transition: all 0.15s ease;
-      white-space: nowrap;
-      border-radius: var(--radius-btn);
-    }
-    .mp-btn--primary {
-      background: var(--color-primary);
-      color: #ffffff;
-    }
-    .mp-btn--primary:hover {
-      background: var(--color-primary-hover);
-    }
-    .mp-btn--outline {
-      background: transparent;
-      color: var(--color-text-secondary);
-      border: 1px solid var(--color-border);
-    }
-    .mp-btn--outline:hover {
-      border-color: var(--color-primary);
-      color: var(--color-primary);
-    }
-    .mp-btn--danger {
-      background: transparent;
-      color: var(--state-error);
-      border: none;
-    }
-    .mp-btn--danger:hover {
-      background: var(--state-error-bg);
-    }
-    .mp-btn--sm {
-      padding: 4px 12px;
-      font-size: var(--font-size-xs);
-    }
-    .mp-btn--md {
-      padding: 8px 16px;
-      font-size: var(--font-size-sm);
-    }
+      <!-- 2. ObjectType -->
+      <a data-nav-key="objecttype" class="flex items-center gap-0.5 px-2.5 py-1.5 cursor-pointer transition-colors" style="color: var(--color-sidebar-text); border-radius: var(--radius-md); font-size: var(--font-size-sm);" onmouseover="this.style.background='rgba(255,255,255,0.05)';this.style.color='var(--color-sidebar-text-hover)'" onmouseout="this.style.background='transparent';this.style.color='var(--color-sidebar-text)'">
+        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+          <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+          <line x1="12" y1="22.08" x2="12" y2="12"/>
+        </svg>
+        <span>ObjectType</span>
+      </a>
 
-    /* ---- BADGE COMPONENT ---- */
-    .mp-badge {
-      display: inline-flex;
-      align-items: center;
-      padding: 2px 10px;
-      border-radius: var(--radius-full);
-      font-size: var(--font-size-xs);
-      font-weight: var(--font-weight-medium);
-      line-height: 20px;
-      white-space: nowrap;
-    }
-    .mp-badge--default {
-      background: var(--color-primary-light);
-      color: var(--color-primary);
-    }
-    .mp-badge--rest {
-      background: var(--tint-rest-bg);
-      color: var(--tint-rest);
-    }
-    .mp-badge--ai {
-      background: var(--tint-ai-bg);
-      color: var(--tint-ai);
-    }
-    .mp-badge--database {
-      background: var(--tint-database-bg);
-      color: var(--tint-database);
-    }
-    .mp-badge--csv {
-      background: var(--tint-csv-bg);
-      color: var(--tint-csv);
-    }
-    .mp-badge--success {
-      background: var(--state-success-bg);
-      color: var(--state-success);
-    }
-    .mp-badge--error {
-      background: var(--state-error-bg);
-      color: var(--state-error);
-    }
-    .mp-badge--warning {
-      background: var(--state-warning-bg);
-      color: var(--state-warning);
-    }
+      <!-- 3. 建模特工场 -->
+      <a data-nav-key="modeling-workshop" class="flex items-center gap-0.5 px-2.5 py-1.5 cursor-pointer transition-colors" style="color: var(--color-sidebar-text); border-radius: var(--radius-md); font-size: var(--font-size-sm);" onmouseover="this.style.background='rgba(255,255,255,0.05)';this.style.color='var(--color-sidebar-text-hover)'" onmouseout="this.style.background='transparent';this.style.color='var(--color-sidebar-text)'">
+        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+        </svg>
+        <span>建模特工场</span>
+      </a>
 
-    /* ---- INPUT COMPONENT ---- */
-    .mp-field {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-    .mp-field__label {
-      font-size: var(--font-size-sm);
-      font-weight: var(--font-weight-medium);
-      color: var(--color-text-primary);
-    }
-    .mp-field__helper {
-      font-size: var(--font-size-xs);
-      color: var(--color-text-tertiary);
-    }
-    .mp-input {
-      background: var(--color-bg-secondary);
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius-input);
-      padding: 8px 12px;
-      font-size: var(--font-size-sm);
-      color: var(--color-text-primary);
-      outline: none;
-      transition: border-color 0.15s ease, box-shadow 0.15s ease;
-      width: 100%;
-    }
-    .mp-input:focus {
-      border-color: var(--color-primary);
-      box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
-    }
-    .mp-textarea {
-      background: var(--color-bg-secondary);
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius-input);
-      padding: 12px 16px;
-      font-size: var(--font-size-sm);
-      color: var(--color-text-primary);
-      outline: none;
-      transition: border-color 0.15s ease, box-shadow 0.15s ease;
-      width: 100%;
-      min-height: 80px;
-      resize: vertical;
-    }
-    .mp-textarea:focus {
-      border-color: var(--color-primary);
-      box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
-    }
+      <!-- 4. 设计器 -->
+      <a data-nav-key="designer" class="flex items-center gap-0.5 px-2.5 py-1.5 cursor-pointer transition-colors" style="color: var(--color-sidebar-text); border-radius: var(--radius-md); font-size: var(--font-size-sm);" onmouseover="this.style.background='rgba(255,255,255,0.05)';this.style.color='var(--color-sidebar-text-hover)'" onmouseout="this.style.background='transparent';this.style.color='var(--color-sidebar-text)'">
+        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 19l7-7 3 3-7 7-3-3z"/>
+          <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/>
+          <path d="M2 2l7.586 7.586"/>
+          <circle cx="11" cy="11" r="2"/>
+        </svg>
+        <span>设计器</span>
+      </a>
 
-    /* ---- CARD COMPONENT ---- */
-    .mp-card {
-      background: var(--color-surface);
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius-card);
-      padding: var(--spacing-lg);
-    }
-    .mp-card--interactive {
-      background: var(--color-surface);
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius-card);
-      padding: var(--spacing-lg);
-      cursor: pointer;
-      transition: border-color 0.15s ease;
-    }
-    .mp-card--interactive:hover {
-      border-color: var(--color-primary);
-    }
-    .mp-card--status {
-      background: var(--color-surface);
-      border: 1px solid var(--color-border);
-      border-left: 3px solid var(--color-primary);
-      border-radius: var(--radius-card);
-      padding: var(--spacing-lg);
-    }
-    .mp-card__title {
-      font-size: var(--font-size-base);
-      font-weight: var(--font-weight-semibold);
-      color: var(--color-text-primary);
-      margin-bottom: 4px;
-    }
-    .mp-card__desc {
-      font-size: var(--font-size-sm);
-      color: var(--color-text-secondary);
-      line-height: var(--line-height-relaxed);
-    }
-    .card-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 16px;
-    }
+      <!-- 5. 流程设计器 -->
+      <a data-nav-key="flow-designer" class="flex items-center gap-0.5 px-2.5 py-1.5 cursor-pointer transition-colors" style="color: var(--color-sidebar-text); border-radius: var(--radius-md); font-size: var(--font-size-sm);" onmouseover="this.style.background='rgba(255,255,255,0.05)';this.style.color='var(--color-sidebar-text-hover)'" onmouseout="this.style.background='transparent';this.style.color='var(--color-sidebar-text)'">
+        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="6" y1="3" x2="6" y2="15"/>
+          <circle cx="18" cy="6" r="3"/>
+          <circle cx="6" cy="18" r="3"/>
+          <path d="M18 9a9 9 0 0 1-9 9"/>
+        </svg>
+        <span>流程设计器</span>
+      </a>
 
-    /* ---- DATA TABLE COMPONENT ---- */
-    .mp-table-wrapper {
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius-lg);
-      overflow: hidden;
-    }
-    .mp-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: var(--font-size-sm);
-    }
-    .mp-table thead {
-      background: var(--color-bg-tertiary);
-    }
-    .mp-table th {
-      text-align: left;
-      padding: 12px 16px;
-      font-weight: var(--font-weight-semibold);
-      color: var(--color-text-primary);
-      font-size: var(--font-size-xs);
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      border-bottom: 1px solid var(--color-border);
-    }
-    .mp-table td {
-      padding: 12px 16px;
-      color: var(--color-text-secondary);
-      border-bottom: 1px solid var(--color-border-light);
-    }
-    .mp-table tbody tr:last-child td {
-      border-bottom: none;
-    }
-    .mp-table .mp-table__actions {
-      display: flex;
-      gap: 8px;
-    }
-    .mp-table__action-btn {
-      font-size: var(--font-size-xs);
-      color: var(--color-primary);
-      cursor: pointer;
-      background: none;
-      border: none;
-      padding: 0;
-      font-weight: var(--font-weight-medium);
-    }
-    .mp-table__action-btn--danger {
-      color: var(--state-error);
-    }
+      <!-- 6. AI 对话 -->
+      <a data-nav-key="dialogue" data-dom-id="nav-dialogue" class="flex items-center gap-0.5 px-2.5 py-1.5 cursor-pointer transition-colors" style="color: var(--color-sidebar-text); border-radius: var(--radius-md); font-size: var(--font-size-sm);" onmouseover="this.style.background='rgba(255,255,255,0.05)';this.style.color='var(--color-sidebar-text-hover)'" onmouseout="this.style.background='transparent';this.style.color='var(--color-sidebar-text)'">
+        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+        </svg>
+        <span>AI 对话</span>
+      </a>
 
-    /* ---- SIDEBAR COMPONENT ---- */
-    .mp-sidebar {
-      width: var(--sidebar-width);
-      min-height: 480px;
-      background: var(--color-sidebar-bg);
-      border-radius: var(--radius-lg);
-      padding: 0;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-    }
-    .mp-sidebar__brand {
-      padding: 20px 20px 16px;
-      border-bottom: 1px solid var(--color-sidebar-border);
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-    .mp-sidebar__logo {
-      width: 36px;
-      height: 36px;
-      background: var(--color-primary);
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #ffffff;
-      font-weight: var(--font-weight-bold);
-      font-size: var(--font-size-md);
-      flex-shrink: 0;
-    }
-    .mp-sidebar__brand-text {
-      font-size: var(--font-size-base);
-      font-weight: var(--font-weight-semibold);
-      color: #ffffff;
-      letter-spacing: -0.01em;
-    }
-    .mp-sidebar__brand-sub {
-      font-size: var(--font-size-xs);
-      color: var(--color-sidebar-text);
-    }
-    .mp-sidebar__nav {
-      flex: 1;
-      padding: 12px 10px;
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-    .mp-sidebar__item {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 9px 12px;
-      border-radius: var(--radius-md);
-      font-size: var(--font-size-sm);
-      color: var(--color-sidebar-text);
-      cursor: pointer;
-      transition: background 0.15s ease;
-    }
-    .mp-sidebar__item:hover {
-      background: rgba(255,255,255,0.05);
-      color: var(--color-sidebar-text-hover);
-    }
-    .mp-sidebar__item--active {
-      background: var(--color-sidebar-active-bg);
-      color: var(--color-sidebar-active-text);
-    }
-    .mp-sidebar__icon {
-      width: 18px;
-      height: 18px;
-      opacity: 0.7;
-      flex-shrink: 0;
-    }
-    .mp-sidebar__user {
-      padding: 16px 20px;
-      border-top: 1px solid var(--color-sidebar-border);
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    .mp-sidebar__avatar {
-      width: 32px;
-      height: 32px;
-      border-radius: var(--radius-full);
-      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #ffffff;
-      font-size: var(--font-size-xs);
-      font-weight: var(--font-weight-semibold);
-      flex-shrink: 0;
-    }
-    .mp-sidebar__user-name {
-      font-size: var(--font-size-sm);
-      color: #ffffff;
-      font-weight: var(--font-weight-medium);
-    }
-    .mp-sidebar__user-email {
-      font-size: var(--font-size-xs);
-      color: var(--color-sidebar-text);
-    }
+      <!-- 7. 能力中心 -->
+      <a data-nav-key="capability" data-dom-id="nav-capability" class="flex items-center gap-0.5 px-2.5 py-1.5 cursor-pointer transition-colors" style="color: var(--color-sidebar-text); border-radius: var(--radius-md); font-size: var(--font-size-sm);" onmouseover="this.style.background='rgba(255,255,255,0.05)';this.style.color='var(--color-sidebar-text-hover)'" onmouseout="this.style.background='transparent';this.style.color='var(--color-sidebar-text)'">
+        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+        </svg>
+        <span>能力中心</span>
+      </a>
 
-    /* Sidebar mini preview (right column) */
-    .sidebar-preview-col {
-      width: 280px;
-      flex-shrink: 0;
-      padding: 48px 24px 80px 0;
-      position: sticky;
-      top: 0;
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-    }
-    .sidebar-preview-label {
-      font-size: var(--font-size-xs);
-      color: var(--color-text-tertiary);
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      margin-bottom: 16px;
-      font-weight: var(--font-weight-medium);
-    }
+      <!-- 8. 集成中心 -->
+      <a data-nav-key="integration" data-dom-id="nav-integration" class="flex items-center gap-0.5 px-2.5 py-1.5 cursor-pointer transition-colors" style="color: var(--color-sidebar-text); border-radius: var(--radius-md); font-size: var(--font-size-sm);" onmouseover="this.style.background='rgba(255,255,255,0.05)';this.style.color='var(--color-sidebar-text-hover)'" onmouseout="this.style.background='transparent';this.style.color='var(--color-sidebar-text)'">
+        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+          <polyline points="15 3 21 3 21 9"/>
+          <line x1="10" y1="14" x2="21" y2="3"/>
+        </svg>
+        <span>集成中心</span>
+      </a>
 
-    /* Full sidebar section */
-    .sidebar-full {
-      margin-top: 0;
-    }
-    .sidebar-full .mp-sidebar {
-      width: 240px;
-    }
+    </nav>
 
-    /* Input layout */
-    .input-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-    }
-    .input-full {
-      grid-column: 1 / -1;
-    }
+    <!-- Bottom user area -->
+    <div class="px-3 py-3 flex items-center gap-2" style="border-top: 1px solid var(--color-sidebar-border);">
+      <div class="w-6 h-6 flex items-center justify-center" style="background: #334155; color: #94a3b8; border-radius: var(--radius-full); font-size: 10px; font-weight: 500;">A</div>
+      <div class="flex-1 min-w-0">
+        <div class="truncate" style="color: var(--color-sidebar-text-hover); font-size: var(--font-size-sm);">Admin</div>
+        <div class="truncate" style="color: #64748b; font-size: var(--font-size-xs);">admin@metaplatform.io</div>
+      </div>
+    </div>
 
-    /* SVG icon helper */
-    .icon-svg {
-      display: inline-block;
-      width: 18px;
-      height: 18px;
-      vertical-align: middle;
-    }
+  </aside>
 
-    /* Responsive */
-    @media (max-width: 1100px) {
-      .sidebar-preview-col { display: none; }
-      .content-area { padding: 32px 24px 64px; }
-      .card-grid { grid-template-columns: 1fr; }
+  <!-- Main content -->
+  <main class="flex-1 ml-[220px] p-5 min-w-0" style="background: var(--color-bg);">
+
+    <!-- Page Header -->
+    <div class="mb-3">
+      <h1 class="font-semibold" style="font-size: var(--font-size-xl); color: var(--color-text-primary); letter-spacing: -0.02em; line-height: 1.25; text-wrap: balance; word-break: keep-all;">页面配置管理</h1>
+      <p class="mt-1" style="font-size: var(--font-size-sm); color: var(--color-text-secondary);">管理已生成的页面配置，或从 ObjectType 一键生成新页面。</p>
+    </div>
+
+    <!-- Stats Row -->
+    <div class="flex gap-3 mb-3">
+      <div class="flex-1 px-3 py-3" style="border: 1px solid var(--color-border); border-radius: var(--radius-lg);">
+        <div class="font-semibold" style="font-size: var(--font-size-xl); color: var(--color-text-primary); font-variant-numeric: tabular-nums; line-height: 1.25;">12</div>
+        <div class="mt-0.5" style="font-size: var(--font-size-xs); color: var(--color-text-secondary);">总页面数</div>
+      </div>
+      <div class="flex-1 px-3 py-3" style="border: 1px solid var(--color-border); border-radius: var(--radius-lg);">
+        <div class="font-semibold" style="font-size: var(--font-size-xl); color: var(--color-text-primary); font-variant-numeric: tabular-nums; line-height: 1.25;">4</div>
+        <div class="mt-0.5" style="font-size: var(--font-size-xs); color: var(--color-text-secondary);">本月新增</div>
+      </div>
+      <div class="flex-1 px-3 py-3" style="border: 1px solid var(--color-border); border-radius: var(--radius-lg);">
+        <div class="font-semibold" style="font-size: var(--font-size-xl); color: var(--color-text-primary); font-variant-numeric: tabular-nums; line-height: 1.25;">8</div>
+        <div class="mt-0.5" style="font-size: var(--font-size-xs); color: var(--color-text-secondary);">活跃页面</div>
+      </div>
+    </div>
+
+    <!-- Quick Generate Section -->
+    <div class="mb-3">
+      <h2 class="font-medium mb-3" style="font-size: var(--font-size-lg); color: var(--color-text-primary);">快速生成页面</h2>
+      <div class="grid grid-cols-4 gap-3">
+
+        <!-- Card: 客户管理 -->
+        <div class="p-3 transition-colors" style="border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface); transition-duration: 150ms; transition-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);" onmouseover="this.style.borderColor='#93c5fd'" onmouseout="this.style.borderColor='var(--color-border)'">
+          <div class="font-medium" style="font-size: var(--font-size-base); color: var(--color-text-primary);">客户管理</div>
+          <div class="mt-0.5" style="font-size: var(--font-size-xs); color: var(--color-text-secondary); font-family: var(--font-mono);">customer</div>
+          <p class="mt-1.5" style="font-size: var(--font-size-xs); color: var(--color-text-secondary); line-height: 1.5;">核心业务对象，包含客户基本信息</p>
+          <div class="mt-3">
+            <button class="inline-flex items-center justify-center text-white whitespace-nowrap transition-colors" style="font-size: var(--font-size-xs); font-weight: 500; padding: 4px 10px; border-radius: var(--radius-md); background: var(--color-primary); transition-property: background-color; transition-duration: 150ms;" onmouseover="this.style.background='var(--color-primary-hover)'" onmouseout="this.style.background='var(--color-primary)'" onfocus="this.style.outline='2px solid var(--color-primary)';this.style.outlineOffset='2px'" onblur="this.style.outline='none'">生成页面</button>
+          </div>
+        </div>
+
+        <!-- Card: 工单系统 -->
+        <div class="p-3 transition-colors" style="border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface); transition-duration: 150ms; transition-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);" onmouseover="this.style.borderColor='#93c5fd'" onmouseout="this.style.borderColor='var(--color-border)'">
+          <div class="font-medium" style="font-size: var(--font-size-base); color: var(--color-text-primary);">工单系统</div>
+          <div class="mt-0.5" style="font-size: var(--font-size-xs); color: var(--color-text-secondary); font-family: var(--font-mono);">ticket</div>
+          <p class="mt-1.5" style="font-size: var(--font-size-xs); color: var(--color-text-secondary); line-height: 1.5;">技术支持工单生命周期管理</p>
+          <div class="mt-3">
+            <button class="inline-flex items-center justify-center text-white whitespace-nowrap transition-colors" style="font-size: var(--font-size-xs); font-weight: 500; padding: 4px 10px; border-radius: var(--radius-md); background: var(--color-primary); transition-property: background-color; transition-duration: 150ms;" onmouseover="this.style.background='var(--color-primary-hover)'" onmouseout="this.style.background='var(--color-primary)'" onfocus="this.style.outline='2px solid var(--color-primary)';this.style.outlineOffset='2px'" onblur="this.style.outline='none'">生成页面</button>
+          </div>
+        </div>
+
+        <!-- Card: 产品目录 -->
+        <div class="p-3 transition-colors" style="border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface); transition-duration: 150ms; transition-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);" onmouseover="this.style.borderColor='#93c5fd'" onmouseout="this.style.borderColor='var(--color-border)'">
+          <div class="font-medium" style="font-size: var(--font-size-base); color: var(--color-text-primary);">产品目录</div>
+          <div class="mt-0.5" style="font-size: var(--font-size-xs); color: var(--color-text-secondary); font-family: var(--font-mono);">product</div>
+          <p class="mt-1.5" style="font-size: var(--font-size-xs); color: var(--color-text-secondary); line-height: 1.5;">产品信息与分类管理</p>
+          <div class="mt-3">
+            <button class="inline-flex items-center justify-center text-white whitespace-nowrap transition-colors" style="font-size: var(--font-size-xs); font-weight: 500; padding: 4px 10px; border-radius: var(--radius-md); background: var(--color-primary); transition-property: background-color; transition-duration: 150ms;" onmouseover="this.style.background='var(--color-primary-hover)'" onmouseout="this.style.background='var(--color-primary)'" onfocus="this.style.outline='2px solid var(--color-primary)';this.style.outlineOffset='2px'" onblur="this.style.outline='none'">生成页面</button>
+          </div>
+        </div>
+
+        <!-- Card: 销售线索 -->
+        <div class="p-3 transition-colors" style="border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface); transition-duration: 150ms; transition-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);" onmouseover="this.style.borderColor='#93c5fd'" onmouseout="this.style.borderColor='var(--color-border)'">
+          <div class="font-medium" style="font-size: var(--font-size-base); color: var(--color-text-primary);">销售线索</div>
+          <div class="mt-0.5" style="font-size: var(--font-size-xs); color: var(--color-text-secondary); font-family: var(--font-mono);">lead</div>
+          <p class="mt-1.5" style="font-size: var(--font-size-xs); color: var(--color-text-secondary); line-height: 1.5;">销售线索跟踪与转化</p>
+          <div class="mt-3">
+            <button class="inline-flex items-center justify-center text-white whitespace-nowrap transition-colors" style="font-size: var(--font-size-xs); font-weight: 500; padding: 4px 10px; border-radius: var(--radius-md); background: var(--color-primary); transition-property: background-color; transition-duration: 150ms;" onmouseover="this.style.background='var(--color-primary-hover)'" onmouseout="this.style.background='var(--color-primary)'" onfocus="this.style.outline='2px solid var(--color-primary)';this.style.outlineOffset='2px'" onblur="this.style.outline='none'">生成页面</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Generated Pages Table -->
+    <div>
+      <h2 class="font-medium mb-3" style="font-size: var(--font-size-lg); color: var(--color-text-primary);">已生成页面 <span class="font-normal" style="font-size: var(--font-size-sm); color: var(--color-text-secondary);">(4)</span></h2>
+      <div style="border: 1px solid var(--color-border); border-radius: var(--radius-lg); overflow: hidden;">
+        <table class="w-full" style="font-size: var(--font-size-sm);">
+          <thead>
+            <tr style="background: var(--color-bg-secondary);">
+              <th class="text-left px-3 py-1.5 font-medium whitespace-nowrap" style="font-size: var(--font-size-xs); color: var(--color-text-secondary);">显示名称</th>
+              <th class="text-left px-3 py-1.5 font-medium whitespace-nowrap" style="font-size: var(--font-size-xs); color: var(--color-text-secondary);">名称</th>
+              <th class="text-left px-3 py-1.5 font-medium whitespace-nowrap" style="font-size: var(--font-size-xs); color: var(--color-text-secondary);">页面类型</th>
+              <th class="text-left px-3 py-1.5 font-medium whitespace-nowrap" style="font-size: var(--font-size-xs); color: var(--color-text-secondary);">创建时间</th>
+              <th class="text-right px-3 py-1.5 font-medium whitespace-nowrap" style="font-size: var(--font-size-xs); color: var(--color-text-secondary);">操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Row 1 -->
+            <tr style="border-top: 1px solid var(--color-border);">
+              <td class="px-3 py-1.5 whitespace-nowrap" style="font-size: var(--font-size-sm); color: var(--color-text-primary);">客户列表页</td>
+              <td class="px-3 py-1.5 whitespace-nowrap" style="color: var(--color-text-secondary); font-family: var(--font-mono); font-size: var(--font-size-xs);">customer_list</td>
+              <td class="px-3 py-1.5 whitespace-nowrap">
+                <span class="inline-flex items-center px-2 py-0.5 whitespace-nowrap" style="background: var(--color-bg-secondary); color: var(--color-text-secondary); border-radius: var(--radius-full); font-size: var(--font-size-xs);">列表页</span>
+              </td>
+              <td class="px-3 py-1.5 whitespace-nowrap" style="font-size: var(--font-size-xs); color: var(--color-text-secondary);">2026-06-28 14:30</td>
+              <td class="px-3 py-1.5 whitespace-nowrap text-right">
+                <div class="inline-flex items-center gap-1.5">
+                  <button class="inline-flex items-center justify-center whitespace-nowrap transition-colors" style="font-size: var(--font-size-xs); font-weight: 500; padding: 4px 10px; border-radius: var(--radius-md); border: 1px solid var(--color-border); color: var(--color-text-secondary); background: transparent; transition-property: border-color, color; transition-duration: 150ms;" onmouseover="this.style.borderColor='var(--color-primary)';this.style.color='var(--color-primary)'" onmouseout="this.style.borderColor='var(--color-border)';this.style.color='var(--color-text-secondary)'" onfocus="this.style.outline='2px solid var(--color-primary)';this.style.outlineOffset='2px'" onblur="this.style.outline='none'">预览</button>
+                  <button class="inline-flex items-center justify-center whitespace-nowrap transition-colors" style="font-size: var(--font-size-xs); font-weight: 500; padding: 4px 10px; border-radius: var(--radius-md); border: none; color: var(--state-error); background: transparent; transition-property: color; transition-duration: 150ms;" onmouseover="this.style.color='#dc2626'" onmouseout="this.style.color='var(--state-error)'" onfocus="this.style.outline='2px solid var(--color-primary)';this.style.outlineOffset='2px'" onblur="this.style.outline='none'">删除</button>
+                </div>
+              </td>
+            </tr>
+            <!-- Row 2 -->
+            <tr style="border-top: 1px solid var(--color-border);">
+              <td class="px-3 py-1.5 whitespace-nowrap" style="font-size: var(--font-size-sm); color: var(--color-text-primary);">客户详情页</td>
+              <td class="px-3 py-1.5 whitespace-nowrap" style="color: var(--color-text-secondary); font-family: var(--font-mono); font-size: var(--font-size-xs);">customer_detail</td>
+              <td class="px-3 py-1.5 whitespace-nowrap">
+                <span class="inline-flex items-center px-2 py-0.5 whitespace-nowrap" style="background: var(--color-bg-secondary); color: var(--color-text-secondary); border-radius: var(--radius-full); font-size: var(--font-size-xs);">详情页</span>
+              </td>
+              <td class="px-3 py-1.5 whitespace-nowrap" style="font-size: var(--font-size-xs); color: var(--color-text-secondary);">2026-06-28 14:32</td>
+              <td class="px-3 py-1.5 whitespace-nowrap text-right">
+                <div class="inline-flex items-center gap-1.5">
+                  <button class="inline-flex items-center justify-center whitespace-nowrap transition-colors" style="font-size: var(--font-size-xs); font-weight: 500; padding: 4px 10px; border-radius: var(--radius-md); border: 1px solid var(--color-border); color: var(--color-text-secondary); background: transparent; transition-property: border-color, color; transition-duration: 150ms;" onmouseover="this.style.borderColor='var(--color-primary)';this.style.color='var(--color-primary)'" onmouseout="this.style.borderColor='var(--color-border)';this.style.color='var(--color-text-secondary)'" onfocus="this.style.outline='2px solid var(--color-primary)';this.style.outlineOffset='2px'" onblur="this.style.outline='none'">预览</button>
+                  <button class="inline-flex items-center justify-center whitespace-nowrap transition-colors" style="font-size: var(--font-size-xs); font-weight: 500; padding: 4px 10px; border-radius: var(--radius-md); border: none; color: var(--state-error); background: transparent; transition-property: color; transition-duration: 150ms;" onmouseover="this.style.color='#dc2626'" onmouseout="this.style.color='var(--state-error)'" onfocus="this.style.outline='2px solid var(--color-primary)';this.style.outlineOffset='2px'" onblur="this.style.outline='none'">删除</button>
+                </div>
+              </td>
+            </tr>
+            <!-- Row 3 -->
+            <tr style="border-top: 1px solid var(--color-border);">
+              <td class="px-3 py-1.5 whitespace-nowrap" style="font-size: var(--font-size-sm); color: var(--color-text-primary);">工单列表页</td>
+              <td class="px-3 py-1.5 whitespace-nowrap" style="color: var(--color-text-secondary); font-family: var(--font-mono); font-size: var(--font-size-xs);">ticket_list</td>
+              <td class="px-3 py-1.5 whitespace-nowrap">
+                <span class="inline-flex items-center px-2 py-0.5 whitespace-nowrap" style="background: var(--color-bg-secondary); color: var(--color-text-secondary); border-radius: var(--radius-full); font-size: var(--font-size-xs);">列表页</span>
+              </td>
+              <td class="px-3 py-1.5 whitespace-nowrap" style="font-size: var(--font-size-xs); color: var(--color-text-secondary);">2026-06-30 09:15</td>
+              <td class="px-3 py-1.5 whitespace-nowrap text-right">
+                <div class="inline-flex items-center gap-1.5">
+                  <button class="inline-flex items-center justify-center whitespace-nowrap transition-colors" style="font-size: var(--font-size-xs); font-weight: 500; padding: 4px 10px; border-radius: var(--radius-md); border: 1px solid var(--color-border); color: var(--color-text-secondary); background: transparent; transition-property: border-color, color; transition-duration: 150ms;" onmouseover="this.style.borderColor='var(--color-primary)';this.style.color='var(--color-primary)'" onmouseout="this.style.borderColor='var(--color-border)';this.style.color='var(--color-text-secondary)'" onfocus="this.style.outline='2px solid var(--color-primary)';this.style.outlineOffset='2px'" onblur="this.style.outline='none'">预览</button>
+                  <button class="inline-flex items-center justify-center whitespace-nowrap transition-colors" style="font-size: var(--font-size-xs); font-weight: 500; padding: 4px 10px; border-radius: var(--radius-md); border: none; color: var(--state-error); background: transparent; transition-property: color; transition-duration: 150ms;" onmouseover="this.style.color='#dc2626'" onmouseout="this.style.color='var(--state-error)'" onfocus="this.style.outline='2px solid var(--color-primary)';this.style.outlineOffset='2px'" onblur="this.style.outline='none'">删除</button>
+                </div>
+              </td>
+            </tr>
+            <!-- Row 4 -->
+            <tr style="border-top: 1px solid var(--color-border);">
+              <td class="px-3 py-1.5 whitespace-nowrap" style="font-size: var(--font-size-sm); color: var(--color-text-primary);">产品列表页</td>
+              <td class="px-3 py-1.5 whitespace-nowrap" style="color: var(--color-text-secondary); font-family: var(--font-mono); font-size: var(--font-size-xs);">product_list</td>
+              <td class="px-3 py-1.5 whitespace-nowrap">
+                <span class="inline-flex items-center px-2 py-0.5 whitespace-nowrap" style="background: var(--color-bg-secondary); color: var(--color-text-secondary); border-radius: var(--radius-full); font-size: var(--font-size-xs);">列表页</span>
+              </td>
+              <td class="px-3 py-1.5 whitespace-nowrap" style="font-size: var(--font-size-xs); color: var(--color-text-secondary);">2026-07-01 16:45</td>
+              <td class="px-3 py-1.5 whitespace-nowrap text-right">
+                <div class="inline-flex items-center gap-1.5">
+                  <button class="inline-flex items-center justify-center whitespace-nowrap transition-colors" style="font-size: var(--font-size-xs); font-weight: 500; padding: 4px 10px; border-radius: var(--radius-md); border: 1px solid var(--color-border); color: var(--color-text-secondary); background: transparent; transition-property: border-color, color; transition-duration: 150ms;" onmouseover="this.style.borderColor='var(--color-primary)';this.style.color='var(--color-primary)'" onmouseout="this.style.borderColor='var(--color-border)';this.style.color='var(--color-text-secondary)'" onfocus="this.style.outline='2px solid var(--color-primary)';this.style.outlineOffset='2px'" onblur="this.style.outline='none'">预览</button>
+                  <button class="inline-flex items-center justify-center whitespace-nowrap transition-colors" style="font-size: var(--font-size-xs); font-weight: 500; padding: 4px 10px; border-radius: var(--radius-md); border: none; color: var(--state-error); background: transparent; transition-property: color; transition-duration: 150ms;" onmouseover="this.style.color='#dc2626'" onmouseout="this.style.color='var(--state-error)'" onfocus="this.style.outline='2px solid var(--color-primary)';this.style.outlineOffset='2px'" onblur="this.style.outline='none'">删除</button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+
+</div>
+
+<!-- Reduced motion -->
+<style>
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      transition-duration: 0.01ms !important;
     }
-  </style>
+  }
+</style>
+
 </body>
 </html>
 

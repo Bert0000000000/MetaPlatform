@@ -3174,3 +3174,251 @@ a {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* ============================================================
+ * Ticket System — 工单系统
+ * ============================================================ */
+
+.mp-ticket {
+  max-width: 1200px;
+}
+
+.mp-ticket-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.mp-ticket-header h1 {
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.mp-ticket-header p {
+  color: var(--color-text-secondary);
+  font-size: 14px;
+}
+
+.mp-ticket-filters {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.mp-ticket-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  background: var(--color-bg);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.mp-ticket-filter:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.mp-ticket-filter.active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+}
+
+.mp-ticket-filter-count {
+  font-size: 11px;
+  opacity: 0.7;
+}
+
+.mp-ticket-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mp-ticket-card {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 16px;
+  background: var(--color-bg);
+  transition: box-shadow 0.15s;
+}
+
+.mp-ticket-card:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.mp-ticket-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.mp-ticket-id {
+  font-size: 12px;
+  font-family: monospace;
+  color: var(--color-text-secondary);
+}
+
+.mp-ticket-status {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.mp-ticket-priority {
+  font-size: 14px;
+  margin-left: auto;
+}
+
+.mp-ticket-card-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: 6px;
+}
+
+.mp-ticket-card-desc {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  margin-bottom: 8px;
+  line-height: 1.5;
+}
+
+.mp-ticket-card-meta {
+  display: flex;
+  gap: 16px;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+/* ============================================================
+ * Platform Config — 平台配置中心
+ * ============================================================ */
+
+.mp-platform-config {
+  max-width: 1200px;
+}
+
+.mp-platform-config-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.mp-platform-config-header h1 {
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.mp-platform-config-header p {
+  color: var(--color-text-secondary);
+  font-size: 14px;
+}
+
+.mp-health-grid {
+  margin-bottom: 24px;
+}
+
+.mp-health-grid h2 {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.mp-health-cards {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.mp-health-card {
+  padding: 12px 20px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  min-width: 120px;
+  text-align: center;
+}
+
+.mp-health-card.healthy {
+  border-color: #22c55e;
+  background: #f0fdf4;
+}
+
+.mp-health-card.unhealthy {
+  border-color: #ef4444;
+  background: #fef2f2;
+}
+
+.mp-health-name {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  margin-bottom: 4px;
+  text-transform: uppercase;
+}
+
+.mp-health-status {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.mp-health-card.healthy .mp-health-status {
+  color: #166534;
+}
+
+.mp-health-card.unhealthy .mp-health-status {
+  color: #991b1b;
+}
+
+.mp-config-list h2 {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.mp-config-feature {
+  background: #faf5ff;
+}
+
+.mp-config-key {
+  font-size: 12px;
+  font-family: monospace;
+  background: var(--color-bg-light);
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+.mp-config-value {
+  font-size: 13px;
+  font-family: monospace;
+}
+
+.mp-config-true {
+  color: #22c55e;
+  font-weight: 600;
+}
+
+.mp-config-false {
+  color: #ef4444;
+  font-weight: 600;
+}
+
+.mp-config-desc {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}

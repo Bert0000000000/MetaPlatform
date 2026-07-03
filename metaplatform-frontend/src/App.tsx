@@ -12,6 +12,8 @@ import IntegrationHub from "./pages/IntegrationHub";
 import AppMarket from "./pages/AppMarket";
 import BillingDashboard from "./pages/BillingDashboard";
 import AdminPanel from "./pages/AdminPanel";
+import TicketSystem from "./pages/TicketSystem";
+import PlatformConfig from "./pages/PlatformConfig";
 import "./App.css";
 
 const App: React.FC = () => {
@@ -92,6 +94,18 @@ const App: React.FC = () => {
             >
               平台管理
             </NavLink>
+            <NavLink
+              to="/tickets"
+              className={({ isActive }) => (isActive ? "mp-nav-link active" : "mp-nav-link")}
+            >
+              工单系统
+            </NavLink>
+            <NavLink
+              to="/config"
+              className={({ isActive }) => (isActive ? "mp-nav-link active" : "mp-nav-link")}
+            >
+              平台配置
+            </NavLink>
           </nav>
         </aside>
 
@@ -111,6 +125,8 @@ const App: React.FC = () => {
             <Route path="/market" element={<AppMarket />} />
             <Route path="/billing" element={<BillingDashboard />} />
             <Route path="/admin" element={<AdminPanel />} />
+            <Route path="/tickets" element={<TicketSystem />} />
+            <Route path="/config" element={<PlatformConfig />} />
           </Routes>
         </main>
       </div>

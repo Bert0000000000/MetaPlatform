@@ -104,6 +104,18 @@
     <style>
       .no-scrollbar::-webkit-scrollbar { display: none; }
       .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
     </style>
 </head>
 <body style="font-family: var(--font-sans); font-size: 13px; background: var(--color-bg); color: var(--color-text-primary);">
@@ -214,21 +226,24 @@
   <!-- Main content -->
   <main class="flex-1 min-w-0 p-5" style="margin-left: 220px; background: var(--color-bg);">
 
-    <!-- Page header — compact -->
+    <!-- Page header -->
     <div class="flex items-center justify-between mb-4">
-      <h1 style="font-size: 18px; font-weight: var(--font-weight-semibold); color: var(--color-text-primary); line-height: var(--line-height-normal);">集成中心</h1>
-      <button class="inline-flex items-center justify-center whitespace-nowrap font-medium transition-colors" style="font-size: 11px; padding: 6px 12px; border-radius: var(--radius-md); background: var(--color-primary); color: var(--color-text-inverse);" onmouseover="this.style.background='var(--color-primary-hover)'" onmouseout="this.style.background='var(--color-primary)'">
+      <div>
+        <h1 style="font-size: 18px; font-weight: var(--font-weight-semibold); color: var(--color-text-primary); line-height: var(--line-height-normal);">集成中心</h1>
+        <p style="font-size: 12px; color: var(--color-text-secondary); margin-top: 2px;">管理连接器和数据同步</p>
+      </div>
+      <button class="inline-flex items-center justify-center whitespace-nowrap font-medium transition-colors" style="font-size: 11px; padding: 6px 12px; border-radius: var(--radius-md); background: #3b82f6; color: #ffffff;" onmouseover="this.style.background='#2563eb'" onmouseout="this.style.background='#3b82f6'">
         + 新建连接器
       </button>
     </div>
 
     <!-- Connector card list -->
-    <div class="flex flex-col gap-2">
+    <div class="flex flex-col gap-3">
 
       <!-- Card 1: CRM API (REST, connected) -->
-      <div class="flex items-center gap-3 p-3 transition-colors" style="background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); box-shadow: var(--shadow-sm);">
-        <!-- Icon — neutral bg -->
-        <div class="w-8 h-8 flex items-center justify-center flex-shrink-0" style="background: #f1f5f9; border-radius: var(--radius-md);">
+      <div class="flex items-center gap-3 p-3 transition-colors" style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 4px;">
+        <!-- Icon -->
+        <div class="flex items-center justify-center flex-shrink-0" style="width: 28px; height: 28px; background: #f8fafc; border-radius: 4px;">
           <svg class="w-4 h-4" style="color: var(--color-text-secondary);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="10"/>
             <line x1="2" y1="12" x2="22" y2="12"/>
@@ -241,25 +256,25 @@
             <span style="font-size: 13px; font-weight: var(--font-weight-medium); color: var(--color-text-primary);">CRM API</span>
             <span style="font-size: 11px; color: var(--color-text-secondary);">REST</span>
           </div>
-          <span class="font-mono" style="font-size: 11px; color: var(--color-text-secondary);">conn_crm_01</span>
+          <span class="font-mono" style="font-size: 11px; color: var(--color-text-secondary);">conn_crm_001</span>
         </div>
         <!-- Status -->
         <div class="flex items-center gap-1.5 flex-shrink-0">
-          <span class="w-1.5 h-1.5 rounded-full inline-block" style="background: var(--state-success);"></span>
+          <span class="w-1.5 h-1.5 rounded-full inline-block" style="background: #22c55e;"></span>
           <span style="font-size: 11px; color: var(--color-text-secondary);">已连接</span>
         </div>
         <!-- Actions -->
         <div class="flex items-center gap-1 flex-shrink-0">
-          <button class="inline-flex items-center justify-center whitespace-nowrap font-medium transition-colors" style="font-size: 11px; padding: 2px 8px; border-radius: var(--radius-md); border: 1px solid var(--color-border); color: var(--color-text-secondary); background: transparent;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='transparent'">测试连接</button>
-          <button class="inline-flex items-center justify-center whitespace-nowrap font-medium transition-colors" style="font-size: 11px; padding: 2px 8px; border-radius: var(--radius-md); border: 1px solid var(--color-border); color: var(--color-text-secondary); background: transparent;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='transparent'">同步</button>
-          <button class="inline-flex items-center justify-center whitespace-nowrap font-medium transition-colors" style="font-size: 11px; padding: 2px 8px; border-radius: var(--radius-md); border: none; color: var(--state-error); background: transparent;" onmouseover="this.style.background='var(--state-error-bg)'" onmouseout="this.style.background='transparent'">删除</button>
+          <button class="inline-flex items-center justify-center whitespace-nowrap font-medium transition-colors" style="font-size: 11px; padding: 4px 8px; border-radius: 4px; border: 1px solid #e2e8f0; color: var(--color-text-secondary); background: transparent;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">测试连接</button>
+          <button class="inline-flex items-center justify-center whitespace-nowrap font-medium transition-colors" style="font-size: 11px; padding: 4px 8px; border-radius: 4px; border: 1px solid #e2e8f0; color: var(--color-text-secondary); background: transparent;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">同步</button>
+          <button class="inline-flex items-center justify-center whitespace-nowrap font-medium transition-colors" style="font-size: 11px; padding: 4px 8px; border-radius: 4px; border: none; color: #ef4444; background: transparent;" onmouseover="this.style.background='#fef2f2'" onmouseout="this.style.background='transparent'">删除</button>
         </div>
       </div>
 
       <!-- Card 2: 数据仓库 (Database, connected) -->
-      <div class="flex items-center gap-3 p-3 transition-colors" style="background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); box-shadow: var(--shadow-sm);">
-        <!-- Icon — neutral bg -->
-        <div class="w-8 h-8 flex items-center justify-center flex-shrink-0" style="background: #f1f5f9; border-radius: var(--radius-md);">
+      <div class="flex items-center gap-3 p-3 transition-colors" style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 4px;">
+        <!-- Icon -->
+        <div class="flex items-center justify-center flex-shrink-0" style="width: 28px; height: 28px; background: #f8fafc; border-radius: 4px;">
           <svg class="w-4 h-4" style="color: var(--color-text-secondary);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <ellipse cx="12" cy="5" rx="9" ry="3"/>
             <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
@@ -272,25 +287,25 @@
             <span style="font-size: 13px; font-weight: var(--font-weight-medium); color: var(--color-text-primary);">数据仓库</span>
             <span style="font-size: 11px; color: var(--color-text-secondary);">Database</span>
           </div>
-          <span class="font-mono" style="font-size: 11px; color: var(--color-text-secondary);">conn_db_warehouse</span>
+          <span class="font-mono" style="font-size: 11px; color: var(--color-text-secondary);">conn_db_001</span>
         </div>
         <!-- Status -->
         <div class="flex items-center gap-1.5 flex-shrink-0">
-          <span class="w-1.5 h-1.5 rounded-full inline-block" style="background: var(--state-success);"></span>
+          <span class="w-1.5 h-1.5 rounded-full inline-block" style="background: #22c55e;"></span>
           <span style="font-size: 11px; color: var(--color-text-secondary);">已连接</span>
         </div>
         <!-- Actions -->
         <div class="flex items-center gap-1 flex-shrink-0">
-          <button class="inline-flex items-center justify-center whitespace-nowrap font-medium transition-colors" style="font-size: 11px; padding: 2px 8px; border-radius: var(--radius-md); border: 1px solid var(--color-border); color: var(--color-text-secondary); background: transparent;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='transparent'">测试连接</button>
-          <button class="inline-flex items-center justify-center whitespace-nowrap font-medium transition-colors" style="font-size: 11px; padding: 2px 8px; border-radius: var(--radius-md); border: 1px solid var(--color-border); color: var(--color-text-secondary); background: transparent;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='transparent'">同步</button>
-          <button class="inline-flex items-center justify-center whitespace-nowrap font-medium transition-colors" style="font-size: 11px; padding: 2px 8px; border-radius: var(--radius-md); border: none; color: var(--state-error); background: transparent;" onmouseover="this.style.background='var(--state-error-bg)'" onmouseout="this.style.background='transparent'">删除</button>
+          <button class="inline-flex items-center justify-center whitespace-nowrap font-medium transition-colors" style="font-size: 11px; padding: 4px 8px; border-radius: 4px; border: 1px solid #e2e8f0; color: var(--color-text-secondary); background: transparent;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">测试连接</button>
+          <button class="inline-flex items-center justify-center whitespace-nowrap font-medium transition-colors" style="font-size: 11px; padding: 4px 8px; border-radius: 4px; border: 1px solid #e2e8f0; color: var(--color-text-secondary); background: transparent;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">同步</button>
+          <button class="inline-flex items-center justify-center whitespace-nowrap font-medium transition-colors" style="font-size: 11px; padding: 4px 8px; border-radius: 4px; border: none; color: #ef4444; background: transparent;" onmouseover="this.style.background='#fef2f2'" onmouseout="this.style.background='transparent'">删除</button>
         </div>
       </div>
 
       <!-- Card 3: 产品CSV导入 (CSV, error) -->
-      <div class="flex items-center gap-3 p-3 transition-colors" style="background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); box-shadow: var(--shadow-sm);">
-        <!-- Icon — neutral bg -->
-        <div class="w-8 h-8 flex items-center justify-center flex-shrink-0" style="background: #f1f5f9; border-radius: var(--radius-md);">
+      <div class="flex items-center gap-3 p-3 transition-colors" style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 4px;">
+        <!-- Icon -->
+        <div class="flex items-center justify-center flex-shrink-0" style="width: 28px; height: 28px; background: #f8fafc; border-radius: 4px;">
           <svg class="w-4 h-4" style="color: var(--color-text-secondary);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
             <polyline points="14 2 14 8 20 8"/>
@@ -305,18 +320,18 @@
             <span style="font-size: 13px; font-weight: var(--font-weight-medium); color: var(--color-text-primary);">产品CSV导入</span>
             <span style="font-size: 11px; color: var(--color-text-secondary);">CSV</span>
           </div>
-          <span class="font-mono" style="font-size: 11px; color: var(--color-text-secondary);">conn_csv_product</span>
+          <span class="font-mono" style="font-size: 11px; color: var(--color-text-secondary);">conn_csv_003</span>
         </div>
         <!-- Status — error -->
         <div class="flex items-center gap-1.5 flex-shrink-0">
-          <span class="w-1.5 h-1.5 rounded-full inline-block" style="background: var(--state-error);"></span>
+          <span class="w-1.5 h-1.5 rounded-full inline-block" style="background: #ef4444;"></span>
           <span style="font-size: 11px; color: var(--color-text-secondary);">异常</span>
         </div>
         <!-- Actions -->
         <div class="flex items-center gap-1 flex-shrink-0">
-          <button class="inline-flex items-center justify-center whitespace-nowrap font-medium transition-colors" style="font-size: 11px; padding: 2px 8px; border-radius: var(--radius-md); border: 1px solid var(--color-border); color: var(--color-text-secondary); background: transparent;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='transparent'">测试连接</button>
-          <button class="inline-flex items-center justify-center whitespace-nowrap font-medium transition-colors" style="font-size: 11px; padding: 2px 8px; border-radius: var(--radius-md); border: 1px solid var(--color-border); color: var(--color-text-secondary); background: transparent;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='transparent'">同步</button>
-          <button class="inline-flex items-center justify-center whitespace-nowrap font-medium transition-colors" style="font-size: 11px; padding: 2px 8px; border-radius: var(--radius-md); border: none; color: var(--state-error); background: transparent;" onmouseover="this.style.background='var(--state-error-bg)'" onmouseout="this.style.background='transparent'">删除</button>
+          <button class="inline-flex items-center justify-center whitespace-nowrap font-medium transition-colors" style="font-size: 11px; padding: 4px 8px; border-radius: 4px; border: 1px solid #e2e8f0; color: var(--color-text-secondary); background: transparent;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">测试连接</button>
+          <button class="inline-flex items-center justify-center whitespace-nowrap font-medium transition-colors" style="font-size: 11px; padding: 4px 8px; border-radius: 4px; border: 1px solid #e2e8f0; color: var(--color-text-secondary); background: transparent;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">同步</button>
+          <button class="inline-flex items-center justify-center whitespace-nowrap font-medium transition-colors" style="font-size: 11px; padding: 4px 8px; border-radius: 4px; border: none; color: #ef4444; background: transparent;" onmouseover="this.style.background='#fef2f2'" onmouseout="this.style.background='transparent'">删除</button>
         </div>
       </div>
 

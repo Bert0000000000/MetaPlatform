@@ -15,6 +15,22 @@
         "htmlSrc": "pages/dashboard.html",
         "interactions": [
           {
+            "domId": "nav-objectmanager",
+            "targetPageId": "page-objectmanager"
+          },
+          {
+            "domId": "nav-workshop",
+            "targetPageId": "page-workshop"
+          },
+          {
+            "domId": "nav-designer",
+            "targetPageId": "page-designer"
+          },
+          {
+            "domId": "nav-process",
+            "targetPageId": "page-process"
+          },
+          {
             "domId": "nav-dialogue",
             "targetPageId": "page-dialogue"
           },
@@ -25,6 +41,286 @@
           {
             "domId": "nav-integration",
             "targetPageId": "page-integration"
+          },
+          {
+            "domId": "nav-pageview",
+            "targetPageId": "page-pageview",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-admin",
+            "targetPageId": "page-admin",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-market",
+            "targetPageId": "page-market",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-billing",
+            "targetPageId": "page-billing",
+            "hideEdge": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-objectmanager",
+      "title": "ObjectType 管理",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1751516400000,
+      "canvasData": {
+        "x": 620,
+        "y": 0,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/objectmanager.html",
+        "interactions": [
+          {
+            "domId": "nav-dashboard",
+            "targetPageId": "page-dashboard"
+          },
+          {
+            "domId": "nav-workshop",
+            "targetPageId": "page-workshop"
+          },
+          {
+            "domId": "nav-designer",
+            "targetPageId": "page-designer"
+          },
+          {
+            "domId": "nav-process",
+            "targetPageId": "page-process"
+          },
+          {
+            "domId": "nav-dialogue",
+            "targetPageId": "page-dialogue"
+          },
+          {
+            "domId": "nav-capability",
+            "targetPageId": "page-capability"
+          },
+          {
+            "domId": "nav-integration",
+            "targetPageId": "page-integration"
+          },
+          {
+            "domId": "nav-pageview",
+            "targetPageId": "page-pageview",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-admin",
+            "targetPageId": "page-admin",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-market",
+            "targetPageId": "page-market",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-billing",
+            "targetPageId": "page-billing",
+            "hideEdge": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-workshop",
+      "title": "建模范工场",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1751516400000,
+      "canvasData": {
+        "x": 620,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/workshop.html",
+        "interactions": [
+          {
+            "domId": "nav-dashboard",
+            "targetPageId": "page-dashboard"
+          },
+          {
+            "domId": "nav-objectmanager",
+            "targetPageId": "page-objectmanager"
+          },
+          {
+            "domId": "nav-designer",
+            "targetPageId": "page-designer"
+          },
+          {
+            "domId": "nav-process",
+            "targetPageId": "page-process"
+          },
+          {
+            "domId": "nav-dialogue",
+            "targetPageId": "page-dialogue"
+          },
+          {
+            "domId": "nav-capability",
+            "targetPageId": "page-capability"
+          },
+          {
+            "domId": "nav-integration",
+            "targetPageId": "page-integration"
+          },
+          {
+            "domId": "nav-pageview",
+            "targetPageId": "page-pageview",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-admin",
+            "targetPageId": "page-admin",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-market",
+            "targetPageId": "page-market",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-billing",
+            "targetPageId": "page-billing",
+            "hideEdge": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-designer",
+      "title": "设计器",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1751516400000,
+      "canvasData": {
+        "x": 620,
+        "y": 754,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/designer.html",
+        "interactions": [
+          {
+            "domId": "nav-dashboard",
+            "targetPageId": "page-dashboard"
+          },
+          {
+            "domId": "nav-objectmanager",
+            "targetPageId": "page-objectmanager"
+          },
+          {
+            "domId": "nav-workshop",
+            "targetPageId": "page-workshop"
+          },
+          {
+            "domId": "nav-process",
+            "targetPageId": "page-process"
+          },
+          {
+            "domId": "nav-dialogue",
+            "targetPageId": "page-dialogue"
+          },
+          {
+            "domId": "nav-capability",
+            "targetPageId": "page-capability"
+          },
+          {
+            "domId": "nav-integration",
+            "targetPageId": "page-integration"
+          },
+          {
+            "domId": "nav-pageview",
+            "targetPageId": "page-pageview",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-admin",
+            "targetPageId": "page-admin",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-market",
+            "targetPageId": "page-market",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-billing",
+            "targetPageId": "page-billing",
+            "hideEdge": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-process",
+      "title": "流程设计器",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1751516400000,
+      "canvasData": {
+        "x": 620,
+        "y": 1131,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/process.html",
+        "interactions": [
+          {
+            "domId": "nav-dashboard",
+            "targetPageId": "page-dashboard"
+          },
+          {
+            "domId": "nav-objectmanager",
+            "targetPageId": "page-objectmanager"
+          },
+          {
+            "domId": "nav-workshop",
+            "targetPageId": "page-workshop"
+          },
+          {
+            "domId": "nav-designer",
+            "targetPageId": "page-designer"
+          },
+          {
+            "domId": "nav-dialogue",
+            "targetPageId": "page-dialogue"
+          },
+          {
+            "domId": "nav-capability",
+            "targetPageId": "page-capability"
+          },
+          {
+            "domId": "nav-integration",
+            "targetPageId": "page-integration"
+          },
+          {
+            "domId": "nav-pageview",
+            "targetPageId": "page-pageview",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-admin",
+            "targetPageId": "page-admin",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-market",
+            "targetPageId": "page-market",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-billing",
+            "targetPageId": "page-billing",
+            "hideEdge": true
           }
         ]
       }
@@ -37,7 +333,7 @@
       "createdAt": 1751516400000,
       "canvasData": {
         "x": 620,
-        "y": 0,
+        "y": 1525,
         "group": 0
       },
       "devMetadata": {
@@ -49,6 +345,22 @@
             "hideEdge": true
           },
           {
+            "domId": "nav-objectmanager",
+            "targetPageId": "page-objectmanager"
+          },
+          {
+            "domId": "nav-workshop",
+            "targetPageId": "page-workshop"
+          },
+          {
+            "domId": "nav-designer",
+            "targetPageId": "page-designer"
+          },
+          {
+            "domId": "nav-process",
+            "targetPageId": "page-process"
+          },
+          {
             "domId": "nav-capability",
             "targetPageId": "page-capability",
             "hideEdge": true
@@ -56,6 +368,26 @@
           {
             "domId": "nav-integration",
             "targetPageId": "page-integration",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-pageview",
+            "targetPageId": "page-pageview",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-admin",
+            "targetPageId": "page-admin",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-market",
+            "targetPageId": "page-market",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-billing",
+            "targetPageId": "page-billing",
             "hideEdge": true
           }
         ]
@@ -69,7 +401,7 @@
       "createdAt": 1751516400000,
       "canvasData": {
         "x": 620,
-        "y": 377,
+        "y": 1902,
         "group": 0
       },
       "devMetadata": {
@@ -81,6 +413,22 @@
             "hideEdge": true
           },
           {
+            "domId": "nav-objectmanager",
+            "targetPageId": "page-objectmanager"
+          },
+          {
+            "domId": "nav-workshop",
+            "targetPageId": "page-workshop"
+          },
+          {
+            "domId": "nav-designer",
+            "targetPageId": "page-designer"
+          },
+          {
+            "domId": "nav-process",
+            "targetPageId": "page-process"
+          },
+          {
             "domId": "nav-dialogue",
             "targetPageId": "page-dialogue",
             "hideEdge": true
@@ -88,6 +436,26 @@
           {
             "domId": "nav-integration",
             "targetPageId": "page-integration",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-pageview",
+            "targetPageId": "page-pageview",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-admin",
+            "targetPageId": "page-admin",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-market",
+            "targetPageId": "page-market",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-billing",
+            "targetPageId": "page-billing",
             "hideEdge": true
           }
         ]
@@ -101,7 +469,7 @@
       "createdAt": 1751516400000,
       "canvasData": {
         "x": 620,
-        "y": 754,
+        "y": 2279,
         "group": 0
       },
       "devMetadata": {
@@ -113,6 +481,22 @@
             "hideEdge": true
           },
           {
+            "domId": "nav-objectmanager",
+            "targetPageId": "page-objectmanager"
+          },
+          {
+            "domId": "nav-workshop",
+            "targetPageId": "page-workshop"
+          },
+          {
+            "domId": "nav-designer",
+            "targetPageId": "page-designer"
+          },
+          {
+            "domId": "nav-process",
+            "targetPageId": "page-process"
+          },
+          {
             "domId": "nav-dialogue",
             "targetPageId": "page-dialogue",
             "hideEdge": true
@@ -120,6 +504,314 @@
           {
             "domId": "nav-capability",
             "targetPageId": "page-capability",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-pageview",
+            "targetPageId": "page-pageview",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-admin",
+            "targetPageId": "page-admin",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-market",
+            "targetPageId": "page-market",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-billing",
+            "targetPageId": "page-billing",
+            "hideEdge": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-pageview",
+      "title": "页面预览",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1751516400000,
+      "canvasData": {
+        "x": 0,
+        "y": 2656,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/pageview.html",
+        "interactions": [
+          {
+            "domId": "nav-dashboard",
+            "targetPageId": "page-dashboard",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-objectmanager",
+            "targetPageId": "page-objectmanager",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-workshop",
+            "targetPageId": "page-workshop",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-designer",
+            "targetPageId": "page-designer",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-process",
+            "targetPageId": "page-process",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-dialogue",
+            "targetPageId": "page-dialogue",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-capability",
+            "targetPageId": "page-capability",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-integration",
+            "targetPageId": "page-integration",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-admin",
+            "targetPageId": "page-admin",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-market",
+            "targetPageId": "page-market",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-billing",
+            "targetPageId": "page-billing",
+            "hideEdge": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-admin",
+      "title": "平台管理",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1751516400000,
+      "canvasData": {
+        "x": 620,
+        "y": 2656,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/admin.html",
+        "interactions": [
+          {
+            "domId": "nav-dashboard",
+            "targetPageId": "page-dashboard",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-objectmanager",
+            "targetPageId": "page-objectmanager",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-workshop",
+            "targetPageId": "page-workshop",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-designer",
+            "targetPageId": "page-designer",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-process",
+            "targetPageId": "page-process",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-dialogue",
+            "targetPageId": "page-dialogue",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-capability",
+            "targetPageId": "page-capability",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-integration",
+            "targetPageId": "page-integration",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-pageview",
+            "targetPageId": "page-pageview",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-market",
+            "targetPageId": "page-market",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-billing",
+            "targetPageId": "page-billing",
+            "hideEdge": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-market",
+      "title": "应用市场",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1751516400000,
+      "canvasData": {
+        "x": 1240,
+        "y": 2656,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/market.html",
+        "interactions": [
+          {
+            "domId": "nav-dashboard",
+            "targetPageId": "page-dashboard",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-objectmanager",
+            "targetPageId": "page-objectmanager",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-workshop",
+            "targetPageId": "page-workshop",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-designer",
+            "targetPageId": "page-designer",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-process",
+            "targetPageId": "page-process",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-dialogue",
+            "targetPageId": "page-dialogue",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-capability",
+            "targetPageId": "page-capability",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-integration",
+            "targetPageId": "page-integration",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-pageview",
+            "targetPageId": "page-pageview",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-admin",
+            "targetPageId": "page-admin",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-billing",
+            "targetPageId": "page-billing",
+            "hideEdge": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-billing",
+      "title": "计费中心",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1751516400000,
+      "canvasData": {
+        "x": 1860,
+        "y": 2656,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/billing.html",
+        "interactions": [
+          {
+            "domId": "nav-dashboard",
+            "targetPageId": "page-dashboard",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-objectmanager",
+            "targetPageId": "page-objectmanager",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-workshop",
+            "targetPageId": "page-workshop",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-designer",
+            "targetPageId": "page-designer",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-process",
+            "targetPageId": "page-process",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-dialogue",
+            "targetPageId": "page-dialogue",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-capability",
+            "targetPageId": "page-capability",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-integration",
+            "targetPageId": "page-integration",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-pageview",
+            "targetPageId": "page-pageview",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-admin",
+            "targetPageId": "page-admin",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-market",
+            "targetPageId": "page-market",
             "hideEdge": true
           }
         ]
@@ -129,7 +821,7 @@
   "config": {
     "autoLayout": true,
     "deviceType": "desktop",
-    "projectName": "MetaPlatform 管理后台 (精简版)",
+    "projectName": "MetaPlatform 管理后台",
     "designLibrary": null,
     "showEdge": false
   }
