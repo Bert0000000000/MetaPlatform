@@ -57,7 +57,7 @@ export default function ObjectDetail() {
           <Button variant="ghost" size="icon"><ChevronLeft className="size-4" /></Button>
         </Link>
         <div className="flex-1">
-          <h1 className="text-2xl font-semibold flex items-center gap-2">
+          <h1 className="text-xl font-semibold flex items-center gap-2">
             <span className="text-3xl">{obj.icon}</span>
             {obj.label} ({obj.name})
             <Badge variant="default">已激活</Badge>

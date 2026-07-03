@@ -13,7 +13,7 @@ export function Topbar() {
   const navigate = useNavigate();
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b bg-background/80 px-4 backdrop-blur">
+    <header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b bg-background/80 px-3 backdrop-blur">
       <div className="flex flex-1 items-center gap-2">
         <Tooltip>
           <TooltipTrigger asChild>

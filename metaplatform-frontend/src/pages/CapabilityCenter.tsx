@@ -146,7 +146,7 @@ const CapabilityCenter: React.FC = () => {
       {/* Page header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">能力中心</h1>
+          <h1 className="text-xl font-semibold tracking-tight">能力中心</h1>
           <p className="text-sm text-muted-foreground mt-1">
             查看和执行已注册的能力服务
           </p>

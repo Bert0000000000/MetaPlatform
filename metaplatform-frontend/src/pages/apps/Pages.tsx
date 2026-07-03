@@ -57,7 +57,7 @@ export default function Pages() {
         <Card>
           <CardContent className="p-4">
             <div className="text-sm text-muted-foreground">表单</div>
-            <div className="text-2xl font-semibold mt-1">
+            <div className="text-xl font-semibold mt-1">
               {mockPages.filter((p) => p.type === "表单").length}
             </div>
           </CardContent>
@@ -65,7 +65,7 @@ export default function Pages() {
         <Card>
           <CardContent className="p-4">
             <div className="text-sm text-muted-foreground">列表</div>
-            <div className="text-2xl font-semibold mt-1">
+            <div className="text-xl font-semibold mt-1">
               {mockPages.filter((p) => p.type === "列表").length}
             </div>
           </CardContent>
@@ -73,7 +73,7 @@ export default function Pages() {
         <Card>
           <CardContent className="p-4">
             <div className="text-sm text-muted-foreground">仪表盘</div>
-            <div className="text-2xl font-semibold mt-1">
+            <div className="text-xl font-semibold mt-1">
               {mockPages.filter((p) => p.type === "仪表盘").length}
             </div>
           </CardContent>
@@ -81,7 +81,7 @@ export default function Pages() {
         <Card>
           <CardContent className="p-4">
             <div className="text-sm text-muted-foreground">自定义/VibeCoding</div>
-            <div className="text-2xl font-semibold mt-1">
+            <div className="text-xl font-semibold mt-1">
               {mockPages.filter((p) => p.type === "自定义" || p.type === "VibeCoding").length}
             </div>
           </CardContent>

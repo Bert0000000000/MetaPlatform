@@ -264,7 +264,7 @@ const ModelingWorkshop: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between px-6 py-4 border-b">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">建模特工场</h1>
+          <h1 className="text-xl font-semibold tracking-tight">建模特工场</h1>
           <p className="text-sm text-muted-foreground mt-1">
             Schema 驱动的业务对象可视化管理
           </p>

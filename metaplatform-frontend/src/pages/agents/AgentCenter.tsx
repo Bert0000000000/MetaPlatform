@@ -133,7 +133,7 @@ export function AgentCollaboration() {
             <CardDescription>多个智能体共同决策</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-semibold">12</div>
+            <div className="text-xl font-semibold">12</div>
             <p className="text-xs text-muted-foreground">本周会议数</p>
           </CardContent>
         </Card>
@@ -145,7 +145,7 @@ export function AgentCollaboration() {
             <CardDescription>基于能力匹配</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-semibold">48</div>
+            <div className="text-xl font-semibold">48</div>
             <p className="text-xs text-muted-foreground">本周任务</p>
           </CardContent>
         </Card>
@@ -157,7 +157,7 @@ export function AgentCollaboration() {
             <CardDescription>委派 + 协同</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-semibold">156</div>
+            <div className="text-xl font-semibold">156</div>
             <p className="text-xs text-muted-foreground">本周协同</p>
           </CardContent>
         </Card>
@@ -244,10 +244,10 @@ export function AgentMonitor() {
 
 export function AgentCenter() {
   return (
-    <div className="space-y-4 p-6">
+    <div className="space-y-4 p-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight flex items-center gap-2">
+          <h1 className="text-xl font-semibold tracking-tight flex items-center gap-2">
             <Bot className="size-5 text-primary" />
             数字员工中心
           </h1>

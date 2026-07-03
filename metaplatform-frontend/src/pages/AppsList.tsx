@@ -55,7 +55,7 @@ export function AppsListPage() {
     <div className="flex flex-col gap-6 p-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">应用中心</h1>
+          <h1 className="text-xl font-semibold tracking-tight">应用中心</h1>
           <p className="text-sm text-muted-foreground mt-1">
             构建应用 · NoCode + LowCode + ProCode + VibeCoding
           </p>

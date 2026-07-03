@@ -295,10 +295,10 @@ export function VersionHistory() {
 
 export function KnowledgeDashboard() {
   return (
-    <div className="space-y-4 p-6">
+    <div className="space-y-4 p-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight flex items-center gap-2">
+          <h1 className="text-xl font-semibold tracking-tight flex items-center gap-2">
             <BookMarked className="size-5 text-primary" />
             知识库
           </h1>
@@ -344,7 +344,7 @@ export function KnowledgeDashboard() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-semibold">2,841</div>
+                <div className="text-xl font-semibold">2,841</div>
                 <p className="text-xs text-muted-foreground mt-1">本周检索次数</p>
                 <p className="text-xs text-muted-foreground">平均响应 156ms</p>
               </CardContent>
@@ -356,7 +356,7 @@ export function KnowledgeDashboard() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-semibold">186</div>
+                <div className="text-xl font-semibold">186</div>
                 <p className="text-xs text-muted-foreground mt-1">本周图谱检索</p>
                 <p className="text-xs text-muted-foreground">平均响应 89ms</p>
               </CardContent>

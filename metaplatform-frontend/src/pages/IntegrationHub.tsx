@@ -223,7 +223,7 @@ const IntegrationHub: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">集成中心</h1>
+          <h1 className="text-xl font-semibold tracking-tight">集成中心</h1>
           <p className="text-sm text-muted-foreground mt-1">管理连接器和数据同步</p>
         </div>
         <Button onClick={() => setShowCreate(!showCreate)}>

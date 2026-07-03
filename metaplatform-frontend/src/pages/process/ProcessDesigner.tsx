@@ -259,7 +259,7 @@ export function ProcessDesigner() {
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">流程设计器</h1>
+          <h1 className="text-xl font-semibold">流程设计器</h1>
           <p className="text-sm text-muted-foreground">采购审批流程 v3.1 · BPMN 2.0 规范</p>
         </div>
         <div className="flex gap-2">

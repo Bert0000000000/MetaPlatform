@@ -222,10 +222,10 @@ export function DeveloperRank() {
 
 export function MarketDashboard() {
   return (
-    <div className="space-y-4 p-6">
+    <div className="space-y-4 p-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight flex items-center gap-2">
+          <h1 className="text-xl font-semibold tracking-tight flex items-center gap-2">
             <Store className="size-5 text-primary" />
             云市场
           </h1>
@@ -273,7 +273,7 @@ export function MarketDashboard() {
                       <Icon className="size-6" />
                     </div>
                     <div className="font-medium text-sm mt-2">{c.name}</div>
-                    <div className="text-2xl font-semibold mt-1">{c.count}</div>
+                    <div className="text-xl font-semibold mt-1">{c.count}</div>
                   </CardContent>
                 </Card>
               );

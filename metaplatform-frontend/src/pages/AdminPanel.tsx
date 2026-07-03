@@ -101,7 +101,7 @@ const AdminPanel: React.FC = () => {
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">平台管理</h1>
+        <h1 className="text-xl font-semibold tracking-tight">平台管理</h1>
         <p className="text-sm text-muted-foreground mt-1">审计、血缘、流程、Agent、数据同步、本体管理</p>
       </div>
 
@@ -386,7 +386,7 @@ const AdminPanel: React.FC = () => {
               {syncStats ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="rounded-lg border p-4 text-center">
-                    <div className="text-2xl font-bold">{String(syncStats.totalRecords || 0)}</div>
+                    <div className="text-xl font-bold">{String(syncStats.totalRecords || 0)}</div>
                     <div className="text-sm text-muted-foreground mt-1">总记录数</div>
                   </div>
                   <div className="rounded-lg border p-4 text-center">
@@ -412,11 +412,11 @@ const AdminPanel: React.FC = () => {
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="rounded-lg border p-4 text-center">
-                      <div className="text-2xl font-bold">{(schemaGraph.nodes as unknown[] || []).length}</div>
+                      <div className="text-xl font-bold">{(schemaGraph.nodes as unknown[] || []).length}</div>
                       <div className="text-sm text-muted-foreground mt-1">节点 (ObjectType)</div>
                     </div>
                     <div className="rounded-lg border p-4 text-center">
-                      <div className="text-2xl font-bold">{(schemaGraph.edges as unknown[] || []).length}</div>
+                      <div className="text-xl font-bold">{(schemaGraph.edges as unknown[] || []).length}</div>
                       <div className="text-sm text-muted-foreground mt-1">边 (关系)</div>
                     </div>
                   </div>

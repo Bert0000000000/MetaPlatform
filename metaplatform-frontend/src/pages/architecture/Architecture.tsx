@@ -67,7 +67,7 @@ export function BusinessArchitecture() {
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold flex items-center gap-2">
+          <h1 className="text-xl font-semibold flex items-center gap-2">
             <Building2 className="size-5 text-primary" /> 业务架构
           </h1>
           <p className="text-sm text-muted-foreground">企业业务架构 L1-L6 层模型 + 价值链</p>
@@ -166,7 +166,7 @@ export function ApplicationArchitecture() {
   return (
     <div className="flex flex-col gap-4">
       <div>
-        <h1 className="text-2xl font-semibold flex items-center gap-2">
+        <h1 className="text-xl font-semibold flex items-center gap-2">
           <Server className="size-5 text-primary" /> 应用架构
         </h1>
         <p className="text-sm text-muted-foreground">应用全景 + 依赖关系 + 跨应用映射</p>
@@ -184,7 +184,7 @@ export function ApplicationArchitecture() {
               <div className="flex items-center justify-between">
                 <div>
                   <div className="text-xs text-muted-foreground">{c.name}</div>
-                  <div className="text-2xl font-bold mt-1">{c.count}</div>
+                  <div className="text-xl font-bold mt-1">{c.count}</div>
                   <div className="text-xs text-muted-foreground mt-1">{c.desc}</div>
                 </div>
                 <div className="text-3xl">{c.icon}</div>
@@ -306,7 +306,7 @@ export function DataArchitecture() {
   return (
     <div className="flex flex-col gap-4">
       <div>
-        <h1 className="text-2xl font-semibold flex items-center gap-2">
+        <h1 className="text-xl font-semibold flex items-center gap-2">
           <Database className="size-5 text-primary" /> 数据架构
         </h1>
         <p className="text-sm text-muted-foreground">数据主题域 + 数据模型 + 湖仓分布</p>
@@ -343,7 +343,7 @@ export function DataArchitecture() {
               <div key={l.layer} className={`rounded border-l-4 ${l.color} border-y border-r p-3`}>
                 <div className="text-xs text-muted-foreground">{l.layer}</div>
                 <div className="font-medium">{l.name}</div>
-                <div className="text-2xl font-bold mt-2">{l.count}</div>
+                <div className="text-xl font-bold mt-2">{l.count}</div>
                 <div className="text-xs text-muted-foreground mt-1">{l.desc}</div>
               </div>
             ))}
@@ -358,7 +358,7 @@ export function TechArchitecture() {
   return (
     <div className="flex flex-col gap-4">
       <div>
-        <h1 className="text-2xl font-semibold flex items-center gap-2">
+        <h1 className="text-xl font-semibold flex items-center gap-2">
           <Cpu className="size-5 text-primary" /> 技术架构
         </h1>
         <p className="text-sm text-muted-foreground">技术栈 + 部署拓扑 + 服务依赖</p>

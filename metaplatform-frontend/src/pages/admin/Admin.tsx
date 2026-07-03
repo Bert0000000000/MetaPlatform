@@ -499,10 +499,10 @@ export function SystemSettings() {
 
 export function AdminDashboard() {
   return (
-    <div className="space-y-4 p-6">
+    <div className="space-y-4 p-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight flex items-center gap-2">
+          <h1 className="text-xl font-semibold tracking-tight flex items-center gap-2">
             <Settings2 className="size-5 text-primary" />
             系统设置 / 管理后台
           </h1>

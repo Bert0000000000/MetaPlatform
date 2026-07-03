@@ -73,7 +73,7 @@ export default function ProcessList() {
                   { label: "失败", count: 3, color: "text-red-500" },
                 ].map((s) => (
                   <div key={s.label} className="rounded border p-3 text-center">
-                    <div className={`text-2xl font-semibold ${s.color}`}>{s.count}</div>
+                    <div className={`text-xl font-semibold ${s.color}`}>{s.count}</div>
                     <div className="text-xs text-muted-foreground">{s.label}</div>
                   </div>
                 ))}

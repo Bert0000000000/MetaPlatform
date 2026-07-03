@@ -149,30 +149,28 @@ function ChatTab() {
 
 function AgentTab() {
   const AGENTS = [
-    { id: "data", name: "数据分析智能体", desc: "查数据 / 出报表 / 发现异常", icon: "📊", color: "from-blue-500 to-blue-600" },
-    { id: "report", name: "报表生成智能体", desc: "自动编排 BI 报表", icon: "📈", color: "from-purple-500 to-purple-600" },
-    { id: "process", name: "流程分析智能体", desc: "识别瓶颈 / 给出优化建议", icon: "🔄", color: "from-orange-500 to-orange-600" },
-    { id: "doc", name: "文档撰写智能体", desc: "起草合同 / 会议纪要 / 周报", icon: "📝", color: "from-green-500 to-green-600" },
-    { id: "code", name: "VibeCoding 智能体", desc: "自然语言生成完整应用", icon: "✨", color: "from-pink-500 to-pink-600" },
-    { id: "support", name: "客服智能体", desc: "7×24 答疑 / 工单预处理", icon: "💬", color: "from-cyan-500 to-cyan-600" },
+    { id: "data", name: "数据分析智能体", desc: "查数据 / 出报表 / 发现异常", icon: "📊" },
+    { id: "report", name: "报表生成智能体", desc: "自动编排 BI 报表", icon: "📈" },
+    { id: "process", name: "流程分析智能体", desc: "识别瓶颈 / 给出优化建议", icon: "🔄" },
+    { id: "doc", name: "文档撰写智能体", desc: "起草合同 / 会议纪要 / 周报", icon: "📝" },
+    { id: "code", name: "VibeCoding 智能体", desc: "自然语言生成完整应用", icon: "✨" },
+    { id: "support", name: "客服智能体", desc: "7×24 答疑 / 工单预处理", icon: "💬" },
   ];
   return (
-    <div className="p-6 flex flex-col gap-4">
+    <div className="p-4 flex flex-col gap-3">
       <div>
-        <h1 className="text-2xl font-semibold">智能体广场</h1>
-        <p className="text-sm text-muted-foreground">SuperAI 内置 6 类业务智能体，可一键唤起</p>
+        <h1 className="text-xl font-semibold">智能体广场</h1>
+        <p className="text-xs text-muted-foreground">SuperAI 内置 6 类业务智能体，可一键唤起</p>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
         {AGENTS.map((a) => (
           <Card key={a.id} className="hover:border-primary cursor-pointer transition-colors">
             <CardHeader>
               <div className="flex items-start justify-between">
-                <div className={`size-12 rounded-lg bg-gradient-to-br ${a.color} flex items-center justify-center text-2xl shadow-sm`}>
-                  {a.icon}
-                </div>
+                <span className="text-xl">{a.icon}</span>
                 <Badge variant="secondary">内置</Badge>
               </div>
-              <CardTitle className="text-base mt-3">{a.name}</CardTitle>
+              <CardTitle className="text-sm mt-1">{a.name}</CardTitle>
               <CardDescription>{a.desc}</CardDescription>
             </CardHeader>
             <CardContent>
@@ -190,10 +188,10 @@ function AgentTab() {
 
 function TasksTab() {
   return (
-    <div className="p-6 flex flex-col gap-4">
+    <div className="p-4 flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">智能体任务</h1>
+          <h1 className="text-xl font-semibold">智能体任务</h1>
           <p className="text-sm text-muted-foreground">SuperAI 调度的所有任务，含历史记录</p>
         </div>
         <Button size="sm">
@@ -237,10 +235,10 @@ function TasksTab() {
 
 function KnowledgeTab() {
   return (
-    <div className="p-6 flex flex-col gap-4">
+    <div className="p-4 flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">知识中心</h1>
+          <h1 className="text-xl font-semibold">知识中心</h1>
           <p className="text-sm text-muted-foreground">SuperAI 检索增强（RAG）的私有知识库</p>
         </div>
         <div className="flex gap-2">
@@ -257,25 +255,25 @@ function KnowledgeTab() {
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
         <Card>
           <CardContent className="pt-6">
-            <div className="text-2xl font-bold">126</div>
+            <div className="text-xl font-bold">126</div>
             <div className="text-xs text-muted-foreground">文档总数</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6">
-            <div className="text-2xl font-bold">8,492</div>
+            <div className="text-xl font-bold">8,492</div>
             <div className="text-xs text-muted-foreground">已索引片段</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6">
-            <div className="text-2xl font-bold">12</div>
+            <div className="text-xl font-bold">12</div>
             <div className="text-xs text-muted-foreground">数据源</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6">
-            <div className="text-2xl font-bold">98.2%</div>
+            <div className="text-xl font-bold">98.2%</div>
             <div className="text-xs text-muted-foreground">检索准确率</div>
           </CardContent>
         </Card>

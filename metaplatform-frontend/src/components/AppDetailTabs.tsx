@@ -20,15 +20,15 @@ export function AppDetailTabs() {
   const basePath = `/apps/${appId}`;
 
   return (
-    <div className="border-b bg-background px-6">
-      <nav className="flex h-12 items-center gap-0 overflow-x-auto">
+    <div className="border-b bg-background px-4">
+      <nav className="flex h-11 items-center gap-0 overflow-x-auto">
         {appTabs.map((t) => (
           <NavLink
             key={t.key}
             to={`${basePath}/${t.key}`}
             className={({ isActive }) =>
               cn(
-                "inline-flex h-12 items-center px-4 text-sm font-medium whitespace-nowrap transition-colors border-b-2",
+                "inline-flex h-11 items-center px-3 text-sm font-medium whitespace-nowrap transition-colors border-b-2",
                 isActive
                   ? "border-primary text-foreground"
                   : "border-transparent text-muted-foreground hover:text-foreground",

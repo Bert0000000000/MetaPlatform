@@ -23,20 +23,20 @@ export function StatCard({
   const isPositive = trend !== undefined && trend >= 0;
   return (
     <Card className={className}>
-      <CardContent className="p-6">
+      <CardContent className="p-3">
         <div className="flex items-start justify-between">
           <div>
-            <p className="text-sm text-muted-foreground">{label}</p>
-            <div className="flex items-baseline gap-1 mt-2">
-              <span className="text-2xl font-semibold">
+            <p className="text-xs text-muted-foreground">{label}</p>
+            <div className="flex items-baseline gap-1 mt-1">
+              <span className="text-xl font-semibold">
                 {typeof value === "number" ? value.toLocaleString() : value}
               </span>
-              {unit && <span className="text-sm text-muted-foreground">{unit}</span>}
+              {unit && <span className="text-xs text-muted-foreground">{unit}</span>}
             </div>
             {trend !== undefined && (
               <div
                 className={cn(
-                  "flex items-center gap-1 mt-2 text-xs",
+                  "flex items-center gap-1 mt-1 text-xs",
                   isPositive ? "text-green-600" : "text-red-600",
                 )}
               >
@@ -49,7 +49,7 @@ export function StatCard({
               </div>
             )}
           </div>
-          {icon && <span className="text-3xl">{icon}</span>}
+          {icon && <span className="text-xl">{icon}</span>}
         </div>
       </CardContent>
     </Card>
@@ -64,11 +64,11 @@ interface PageHeaderProps {
 
 export function PageHeader({ title, description, action }: PageHeaderProps) {
   return (
-    <div className="flex items-start justify-between mb-6">
+    <div className="flex items-start justify-between mb-3">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
+        <h1 className="text-xl font-semibold tracking-tight">{title}</h1>
         {description && (
-          <p className="text-sm text-muted-foreground mt-1">{description}</p>
+          <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
         )}
       </div>
       {action && <div>{action}</div>}

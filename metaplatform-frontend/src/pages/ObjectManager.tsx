@@ -48,7 +48,7 @@ const ObjectManager: React.FC = () => {
       {/* Page header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">ObjectType 管理</h1>
+          <h1 className="text-xl font-semibold tracking-tight">ObjectType 管理</h1>
           <p className="text-sm text-muted-foreground mt-1">
             查看所有业务对象类型，点击即可自动生成页面配置并预览。
           </p>

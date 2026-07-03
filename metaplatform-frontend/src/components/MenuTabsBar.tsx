@@ -66,9 +66,9 @@ export function MenuTabsBar() {
   const activeMenuDef = MENU_ITEMS.find((m) => m.key === activeMenu);
 
   return (
-    <div className="border-b bg-background px-6 sticky top-14 z-20" role="navigation" aria-label="菜单 Tab">
+    <div className="border-b bg-background px-4 sticky top-14 z-20" role="navigation" aria-label="菜单 Tab">
       <div className="flex h-11 items-center gap-0 overflow-x-auto">
-        <span className="text-xs text-muted-foreground mr-3 shrink-0">
+        <span className="text-xs text-muted-foreground mr-2.5 shrink-0">
           {activeMenuDef?.icon} {activeMenuDef?.label}
         </span>
         {tabs.map((t) => {

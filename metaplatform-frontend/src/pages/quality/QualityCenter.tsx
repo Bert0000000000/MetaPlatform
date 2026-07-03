@@ -245,10 +245,10 @@ export function AIGenerateCases() {
 
 export function QualityDashboard() {
   return (
-    <div className="space-y-4 p-6">
+    <div className="space-y-4 p-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight flex items-center gap-2">
+          <h1 className="text-xl font-semibold tracking-tight flex items-center gap-2">
             <TestTube className="size-5 text-primary" />
             质量中心
           </h1>
@@ -287,7 +287,7 @@ export function QualityDashboard() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-semibold">68 / 73</div>
+                <div className="text-xl font-semibold">68 / 73</div>
                 <p className="text-xs text-muted-foreground mt-1">93.2% 通过</p>
               </CardContent>
             </Card>
@@ -298,7 +298,7 @@ export function QualityDashboard() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-semibold">24 / 28</div>
+                <div className="text-xl font-semibold">24 / 28</div>
                 <p className="text-xs text-muted-foreground mt-1">85.7% 通过</p>
               </CardContent>
             </Card>
@@ -309,7 +309,7 @@ export function QualityDashboard() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-semibold">12 / 12</div>
+                <div className="text-xl font-semibold">12 / 12</div>
                 <p className="text-xs text-muted-foreground mt-1">100% 通过</p>
               </CardContent>
             </Card>

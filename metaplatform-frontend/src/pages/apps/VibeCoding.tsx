@@ -175,7 +175,7 @@ export default function SalesDashboard() {
       <Card>
         <CardHeader><CardTitle>本月销售额</CardTitle></CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">¥12,486,329</div>
+          <div className="text-xl font-bold">¥12,486,329</div>
           <span className="text-green-600 text-sm">+18.2% ↑</span>
         </CardContent>
       </Card>

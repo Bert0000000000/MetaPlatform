@@ -10,12 +10,12 @@ export function Sidebar() {
   const location = useLocation();
 
   return (
-    <aside className="hidden md:flex w-56 shrink-0 flex-col border-r bg-sidebar text-sidebar-foreground">
-      <div className="flex h-14 items-center px-4 border-b">
-        <span className="text-lg font-semibold tracking-tight">MetaPlatform</span>
+    <aside className="hidden md:flex shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground" style={{ width: "220px" }}>
+      <div className="flex h-14 items-center px-3 border-b border-sidebar-border">
+        <span className="text-lg font-semibold tracking-tight text-sidebar-accent-foreground">MetaPlatform</span>
       </div>
       <nav className="flex-1 overflow-y-auto p-2">
-        <ul className="flex flex-col gap-1">
+        <ul className="flex flex-col gap-0.5">
           {menus.map((item) => {
             // 特殊处理应用中心：在应用详情页时也算激活
             const isAppDetail =
@@ -29,10 +29,10 @@ export function Sidebar() {
                 <NavLink
                   to={item.path}
                   className={cn(
-                    "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
+                    "flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm transition-colors",
                     "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                     isActive &&
-                      "bg-sidebar-primary text-sidebar-primary-foreground font-medium",
+                      "bg-sidebar-accent text-sidebar-accent-foreground font-medium",
                   )}
                 >
                   <span className="text-base leading-none">{item.icon}</span>
@@ -42,17 +42,17 @@ export function Sidebar() {
             );
           })}
         </ul>
-        <Separator className="my-3" />
-        <ul className="flex flex-col gap-1">
+        <Separator className="my-2 opacity-10" />
+        <ul className="flex flex-col gap-0.5">
           <li>
             <NavLink
               to="/settings"
               className={({ isActive }) =>
                 cn(
-                  "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
+                  "flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm transition-colors",
                   "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                   isActive &&
-                    "bg-sidebar-primary text-sidebar-primary-foreground font-medium",
+                    "bg-sidebar-accent text-sidebar-accent-foreground font-medium",
                 )
               }
             >
@@ -62,7 +62,7 @@ export function Sidebar() {
           </li>
         </ul>
       </nav>
-      <div className="p-3 text-xs text-muted-foreground border-t">
+      <div className="p-3 text-xs text-sidebar-foreground border-t border-sidebar-border">
         <div>v1.2 · 本体论驱动 AI 平台</div>
       </div>
     </aside>
