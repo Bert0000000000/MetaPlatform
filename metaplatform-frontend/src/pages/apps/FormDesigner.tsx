@@ -5,7 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/ui/stat";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Save, Eye, Smartphone, Monitor, Tablet, Settings, Trash2, Copy, Plus, Type, Hash, Calendar, Mail, Phone, ListChecks, FileText, Upload, Star, Sliders, ToggleLeft, Sparkles } from "lucide-react";
+import { Save, Eye, Smartphone, Monitor, Tablet, Settings, Trash2, Copy, Plus, Type, Hash, Calendar, Mail, Phone, ListChecks, FileText, Upload, Star, Sliders, ToggleLeft, Sparkles, FileEdit, Clock, ClipboardList, Circle, CheckSquare, Paperclip, Image, PenTool, MapPin, TreeDeciduous } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
 interface FieldDef {
   id: string;
@@ -13,40 +14,40 @@ interface FieldDef {
   label: string;
   placeholder?: string;
   required: boolean;
-  icon: string;
+  icon: LucideIcon;
   color: string;
 }
 
 const FIELD_LIBRARY: FieldDef[] = [
-  { id: "single-text", type: "单行文本", label: "单行文本", required: false, icon: "🔤", color: "bg-blue-500" },
-  { id: "multi-text", type: "多行文本", label: "多行文本", required: false, icon: "📝", color: "bg-green-500" },
-  { id: "number", type: "数字", label: "数字", required: false, icon: "🔢", color: "bg-purple-500" },
-  { id: "date", type: "日期", label: "日期", required: false, icon: "📅", color: "bg-orange-500" },
-  { id: "datetime", type: "日期时间", label: "日期时间", required: false, icon: "🕐", color: "bg-amber-500" },
-  { id: "email", type: "邮箱", label: "邮箱", required: false, icon: "📧", color: "bg-cyan-500" },
-  { id: "phone", type: "手机号", label: "手机号", required: false, icon: "📱", color: "bg-pink-500" },
-  { id: "select", type: "下拉选择", label: "下拉选择", required: false, icon: "📋", color: "bg-indigo-500" },
-  { id: "radio", type: "单选", label: "单选", required: false, icon: "⭕", color: "bg-red-500" },
-  { id: "checkbox", type: "多选", label: "多选", required: false, icon: "☑️", color: "bg-emerald-500" },
-  { id: "switch", type: "开关", label: "开关", required: false, icon: "🔘", color: "bg-yellow-500" },
-  { id: "slider", type: "滑块", label: "滑块", required: false, icon: "🎚️", color: "bg-violet-500" },
-  { id: "rating", type: "评分", label: "评分", required: false, icon: "⭐", color: "bg-rose-500" },
-  { id: "file", type: "文件上传", label: "文件上传", required: false, icon: "📎", color: "bg-slate-500" },
-  { id: "image", type: "图片上传", label: "图片上传", required: false, icon: "🖼️", color: "bg-teal-500" },
-  { id: "richtext", type: "富文本", label: "富文本", required: false, icon: "🖋️", color: "bg-fuchsia-500" },
-  { id: "address", type: "地址", label: "地址", required: false, icon: "📍", color: "bg-sky-500" },
-  { id: "cascader", type: "级联选择", label: "级联选择", required: false, icon: "🌲", color: "bg-lime-500" },
+  { id: "single-text", type: "单行文本", label: "单行文本", required: false, icon: Type, color: "bg-blue-500" },
+  { id: "multi-text", type: "多行文本", label: "多行文本", required: false, icon: FileEdit, color: "bg-green-500" },
+  { id: "number", type: "数字", label: "数字", required: false, icon: Hash, color: "bg-purple-500" },
+  { id: "date", type: "日期", label: "日期", required: false, icon: Calendar, color: "bg-orange-500" },
+  { id: "datetime", type: "日期时间", label: "日期时间", required: false, icon: Clock, color: "bg-amber-500" },
+  { id: "email", type: "邮箱", label: "邮箱", required: false, icon: Mail, color: "bg-cyan-500" },
+  { id: "phone", type: "手机号", label: "手机号", required: false, icon: Smartphone, color: "bg-pink-500" },
+  { id: "select", type: "下拉选择", label: "下拉选择", required: false, icon: ClipboardList, color: "bg-indigo-500" },
+  { id: "radio", type: "单选", label: "单选", required: false, icon: Circle, color: "bg-red-500" },
+  { id: "checkbox", type: "多选", label: "多选", required: false, icon: CheckSquare, color: "bg-emerald-500" },
+  { id: "switch", type: "开关", label: "开关", required: false, icon: ToggleLeft, color: "bg-yellow-500" },
+  { id: "slider", type: "滑块", label: "滑块", required: false, icon: Sliders, color: "bg-violet-500" },
+  { id: "rating", type: "评分", label: "评分", required: false, icon: Star, color: "bg-rose-500" },
+  { id: "file", type: "文件上传", label: "文件上传", required: false, icon: Paperclip, color: "bg-slate-500" },
+  { id: "image", type: "图片上传", label: "图片上传", required: false, icon: Image, color: "bg-teal-500" },
+  { id: "richtext", type: "富文本", label: "富文本", required: false, icon: PenTool, color: "bg-fuchsia-500" },
+  { id: "address", type: "地址", label: "地址", required: false, icon: MapPin, color: "bg-sky-500" },
+  { id: "cascader", type: "级联选择", label: "级联选择", required: false, icon: TreeDeciduous, color: "bg-lime-500" },
 ];
 
-const INITIAL_FORM: { id: string; label: string; type: string; icon: string }[] = [
-  { id: "f1", label: "客户名称", type: "单行文本", icon: "🔤" },
-  { id: "f2", label: "客户编号", type: "单行文本", icon: "🔤" },
-  { id: "f3", label: "行业类型", type: "下拉选择", icon: "📋" },
-  { id: "f4", label: "联系电话", type: "手机号", icon: "📱" },
-  { id: "f5", label: "邮箱", type: "邮箱", icon: "📧" },
-  { id: "f6", label: "客户等级", type: "单选", icon: "⭕" },
-  { id: "f7", label: "重要程度", type: "评分", icon: "⭐" },
-  { id: "f8", label: "备注", type: "多行文本", icon: "📝" },
+const INITIAL_FORM: { id: string; label: string; type: string; icon: LucideIcon }[] = [
+  { id: "f1", label: "客户名称", type: "单行文本", icon: Type },
+  { id: "f2", label: "客户编号", type: "单行文本", icon: Type },
+  { id: "f3", label: "行业类型", type: "下拉选择", icon: ClipboardList },
+  { id: "f4", label: "联系电话", type: "手机号", icon: Smartphone },
+  { id: "f5", label: "邮箱", type: "邮箱", icon: Mail },
+  { id: "f6", label: "客户等级", type: "单选", icon: Circle },
+  { id: "f7", label: "重要程度", type: "评分", icon: Star },
+  { id: "f8", label: "备注", type: "多行文本", icon: FileEdit },
 ];
 
 export default function FormDesigner() {
@@ -91,7 +92,7 @@ export default function FormDesigner() {
                   draggable
                   className="flex items-center gap-2 p-2 border rounded cursor-move hover:border-primary bg-white text-xs"
                 >
-                  <span className={`${f.color} size-6 rounded text-white flex items-center justify-center text-[10px]`}>{f.icon}</span>
+                  <span className={`${f.color} size-6 rounded text-white flex items-center justify-center`}><f.icon className="size-3" /></span>
                   <span>{f.label}</span>
                 </div>
               ))}
@@ -144,7 +145,7 @@ export default function FormDesigner() {
                     }`}
                   >
                     <Label className="flex items-center gap-1">
-                      <span className="text-base">{f.icon}</span>
+                      <f.icon className="size-4" />
                       <span>{f.label}</span>
                       {f.id === "f1" && <Badge variant="destructive" className="text-[10px] ml-1">必填</Badge>}
                     </Label>

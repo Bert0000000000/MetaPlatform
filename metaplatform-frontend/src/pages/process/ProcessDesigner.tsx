@@ -7,45 +7,47 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@
 import {
   Save, Play, Download, Copy, Settings, Plus, Trash2, Circle, Square, Diamond, GitBranch, GitMerge,
   User, Mail, Database, Cloud, Zap, Code, FileText, Clock, ArrowRight, Check, AlertTriangle, Pause, MoreHorizontal, Search, Bot,
+  CircleDot, ArrowUp, RotateCcw, Radio, Hand, Ruler, Send, Package, Phone, CreditCard, X,
+  type LucideIcon,
 } from "lucide-react";
 
 // BPMN 节点库（与 Workflows 页面对齐）
-const NODE_LIBRARY = [
+const NODE_LIBRARY: { category: string; items: { id: string; name: string; icon: LucideIcon; color: string }[] }[] = [
   { category: "事件 (Events)", items: [
-    { id: "start", name: "开始事件", icon: "🟢", color: "bg-green-500" },
-    { id: "end", name: "结束事件", icon: "🔴", color: "bg-red-500" },
-    { id: "intermediate", name: "中间事件", icon: "🟡", color: "bg-yellow-500" },
-    { id: "timer", name: "定时事件", icon: "⏰", color: "bg-orange-500" },
-    { id: "message", name: "消息事件", icon: "✉️", color: "bg-blue-500" },
-    { id: "signal", name: "信号事件", icon: "📡", color: "bg-purple-500" },
-    { id: "error", name: "错误事件", icon: "⚠️", color: "bg-red-600" },
-    { id: "escalation", name: "升级事件", icon: "⬆️", color: "bg-indigo-500" },
-    { id: "compensate", name: "补偿事件", icon: "↩️", color: "bg-pink-500" },
+    { id: "start", name: "开始事件", icon: Circle, color: "bg-green-500" },
+    { id: "end", name: "结束事件", icon: CircleDot, color: "bg-red-500" },
+    { id: "intermediate", name: "中间事件", icon: Circle, color: "bg-yellow-500" },
+    { id: "timer", name: "定时事件", icon: Clock, color: "bg-orange-500" },
+    { id: "message", name: "消息事件", icon: Mail, color: "bg-blue-500" },
+    { id: "signal", name: "信号事件", icon: Radio, color: "bg-purple-500" },
+    { id: "error", name: "错误事件", icon: AlertTriangle, color: "bg-red-600" },
+    { id: "escalation", name: "升级事件", icon: ArrowUp, color: "bg-indigo-500" },
+    { id: "compensate", name: "补偿事件", icon: RotateCcw, color: "bg-pink-500" },
   ]},
   { category: "活动 (Activities)", items: [
-    { id: "user-task", name: "用户任务", icon: "👤", color: "bg-blue-500" },
-    { id: "service-task", name: "服务任务", icon: "⚙️", color: "bg-purple-500" },
-    { id: "script-task", name: "脚本任务", icon: "📝", color: "bg-green-500" },
-    { id: "manual-task", name: "手工任务", icon: "✋", color: "bg-orange-500" },
-    { id: "business-rule", name: "业务规则", icon: "📐", color: "bg-pink-500" },
-    { id: "send-task", name: "发送任务", icon: "📤", color: "bg-cyan-500" },
-    { id: "receive-task", name: "接收任务", icon: "📥", color: "bg-indigo-500" },
+    { id: "user-task", name: "用户任务", icon: User, color: "bg-blue-500" },
+    { id: "service-task", name: "服务任务", icon: Settings, color: "bg-purple-500" },
+    { id: "script-task", name: "脚本任务", icon: FileText, color: "bg-green-500" },
+    { id: "manual-task", name: "手工任务", icon: Hand, color: "bg-orange-500" },
+    { id: "business-rule", name: "业务规则", icon: Ruler, color: "bg-pink-500" },
+    { id: "send-task", name: "发送任务", icon: Send, color: "bg-cyan-500" },
+    { id: "receive-task", name: "接收任务", icon: Download, color: "bg-indigo-500" },
   ]},
   { category: "子流程 (Sub-Process)", items: [
-    { id: "subprocess", name: "嵌入式子流程", icon: "📦", color: "bg-slate-500" },
-    { id: "call-activity", name: "调用活动", icon: "📞", color: "bg-slate-600" },
-    { id: "transaction", name: "事务子流程", icon: "💳", color: "bg-emerald-500" },
+    { id: "subprocess", name: "嵌入式子流程", icon: Package, color: "bg-slate-500" },
+    { id: "call-activity", name: "调用活动", icon: Phone, color: "bg-slate-600" },
+    { id: "transaction", name: "事务子流程", icon: CreditCard, color: "bg-emerald-500" },
   ]},
   { category: "网关 (Gateways)", items: [
-    { id: "exclusive", name: "排他网关", icon: "❌", color: "bg-yellow-500" },
-    { id: "parallel", name: "并行网关", icon: "➕", color: "bg-blue-500" },
-    { id: "inclusive", name: "包容网关", icon: "🔵", color: "bg-cyan-500" },
-    { id: "event-based", name: "事件网关", icon: "🔶", color: "bg-orange-500" },
-    { id: "complex", name: "复杂网关", icon: "⚙️", color: "bg-gray-500" },
+    { id: "exclusive", name: "排他网关", icon: X, color: "bg-yellow-500" },
+    { id: "parallel", name: "并行网关", icon: Plus, color: "bg-blue-500" },
+    { id: "inclusive", name: "包容网关", icon: Circle, color: "bg-cyan-500" },
+    { id: "event-based", name: "事件网关", icon: Diamond, color: "bg-orange-500" },
+    { id: "complex", name: "复杂网关", icon: Settings, color: "bg-gray-500" },
   ]},
   { category: "数据 (Data)", items: [
-    { id: "data-object", name: "数据对象", icon: "📄", color: "bg-gray-400" },
-    { id: "data-store", name: "数据存储", icon: "🗄️", color: "bg-gray-500" },
+    { id: "data-object", name: "数据对象", icon: FileText, color: "bg-gray-400" },
+    { id: "data-store", name: "数据存储", icon: Database, color: "bg-gray-500" },
   ]},
 ];
 
@@ -134,18 +136,21 @@ function NodePanel() {
         <div key={cat.category}>
           <div className="text-xs font-medium text-muted-foreground mb-2">{cat.category}</div>
           <div className="space-y-1">
-            {cat.items.map((n) => (
-              <div
-                key={n.id}
-                draggable
-                className="flex items-center gap-2 p-2 border rounded cursor-move hover:border-primary bg-white text-sm"
-              >
-                <span className={`${n.color} size-6 rounded text-white flex items-center justify-center text-xs`}>
-                  {n.icon}
-                </span>
-                <span>{n.name}</span>
-              </div>
-            ))}
+            {cat.items.map((n) => {
+              const NodeIcon = n.icon;
+              return (
+                <div
+                  key={n.id}
+                  draggable
+                  className="flex items-center gap-2 p-2 border rounded cursor-move hover:border-primary bg-white text-sm"
+                >
+                  <span className={`${n.color} size-6 rounded text-white flex items-center justify-center`}>
+                    <NodeIcon className="size-3" />
+                  </span>
+                  <span>{n.name}</span>
+                </div>
+              );
+            })}
           </div>
         </div>
       ))}

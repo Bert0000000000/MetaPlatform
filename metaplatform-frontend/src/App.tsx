@@ -3,6 +3,7 @@ import { RoleProvider } from "@/contexts/RoleContext";
 import { Layout } from "@/components/Layout";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppDetailTabs } from "@/components/AppDetailTabs";
+import { Package } from "lucide-react";
 
 // 通用页面
 import { DashboardPage } from "@/pages/Dashboard";
@@ -59,7 +60,7 @@ function AppDetailPlaceholder() {
       <AppDetailTabs />
       <div className="flex-1 flex items-center justify-center">
         <div className="text-center">
-          <div className="text-4xl mb-4">📦</div>
+          <div className="text-4xl mb-4"><Package className="size-10" /></div>
           <h2 className="text-lg font-semibold">应用详情</h2>
           <p className="text-sm text-muted-foreground mt-2 max-w-md">
             请选择上方 Tab 访问应用详情

@@ -4,7 +4,7 @@ import { StatCard, PageHeader } from "@/components/ui/stat";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { mockApplications } from "@/lib/mock-data";
-import { Box, FileText, GitBranch, Users, Calendar } from "lucide-react";
+import { Box, FileText, GitBranch, Users, Calendar, Dna } from "lucide-react";
 
 export default function AppOverview() {
   const { appId } = useParams();
@@ -13,7 +13,7 @@ export default function AppOverview() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title={`${app.icon} ${app.name}`}
+        title={<><app.icon className="size-5 inline mr-2" />{app.name}</>}
         description={`${app.description} · v${app.version} · ${app.category}`}
         action={
           <div className="flex gap-2">
@@ -24,10 +24,10 @@ export default function AppOverview() {
       />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard label="对象数" value={app.objects} icon="🧬" />
-        <StatCard label="页面数" value={app.pages} icon="📄" />
-        <StatCard label="流程数" value={app.flows} icon="🔄" />
-        <StatCard label="活跃用户" value={128} trend={12.5} icon="👥" />
+        <StatCard label="对象数" value={app.objects} icon={<Dna className="size-5" />} />
+        <StatCard label="页面数" value={app.pages} icon={<FileText className="size-5" />} />
+        <StatCard label="流程数" value={app.flows} icon={<GitBranch className="size-5" />} />
+        <StatCard label="活跃用户" value={128} trend={12.5} icon={<Users className="size-5" />} />
       </div>
 
       <Tabs defaultValue="recent">

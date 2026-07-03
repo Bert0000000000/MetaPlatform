@@ -5,7 +5,7 @@ import { StatCard } from "@/components/ui/stat";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { mockTestCases } from "@/lib/mock-data";
-import { TestTube, Bot, Play, CheckCircle2, XCircle, Loader2, Bug, FileText, Plus, Gauge, Sparkles, GitBranch, AlertCircle, Zap } from "lucide-react";
+import { TestTube, Bot, Play, CheckCircle2, XCircle, Loader2, Bug, FileText, Plus, Gauge, Sparkles, GitBranch, AlertCircle, Zap, FlaskConical, BarChart3 } from "lucide-react";
 
 const statusConfig = {
   passed: { label: "通过", variant: "default" as const, icon: CheckCircle2 },
@@ -263,10 +263,10 @@ export function QualityDashboard() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-        <StatCard label="用例总数" value={148} icon="🧪" />
-        <StatCard label="通过率" value="92.5%" trend={2.1} icon="✅" />
-        <StatCard label="失败用例" value={8} icon="❌" />
-        <StatCard label="覆盖率" value="78.3%" trend={5.6} icon="📊" />
+        <StatCard label="用例总数" value={148} icon={FlaskConical} />
+        <StatCard label="通过率" value="92.5%" trend={2.1} icon={CheckCircle2} />
+        <StatCard label="失败用例" value={8} icon={XCircle} />
+        <StatCard label="覆盖率" value="78.3%" trend={5.6} icon={BarChart3} />
       </div>
 
       <Tabs defaultValue="dashboard">

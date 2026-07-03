@@ -5,7 +5,7 @@ import { StatCard } from "@/components/ui/stat";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { mockTemplates } from "@/lib/mock-data";
-import { Star, Download, Boxes, Sparkles, Workflow, BookOpen, Code, Plus, Package, Bot, Store, Users, DollarSign, Check } from "lucide-react";
+import { Star, Download, Boxes, Sparkles, Workflow, BookOpen, Code, Plus, Package, Bot, Store, Users, DollarSign, Check, Crown, Building2, Briefcase, Sprout } from "lucide-react";
 
 const priceVariant = {
   免费: "default" as const,
@@ -29,11 +29,11 @@ const MY_SUBSCRIPTIONS = [
 ];
 
 const DEVELOPERS = [
-  { rank: 1, name: "数澜科技", apps: 18, downloads: 28400, revenue: "¥86,400", badge: "👑" },
-  { rank: 2, name: "MetaPlatform 官方", apps: 24, downloads: 24600, revenue: "¥0", badge: "🏢" },
-  { rank: 3, name: "法智 AI", apps: 12, downloads: 18420, revenue: "¥42,800", badge: "⭐" },
-  { rank: 4, name: "供应链实验室", apps: 8, downloads: 12400, revenue: "¥18,200", badge: "💼" },
-  { rank: 5, name: "招聘专家", apps: 6, downloads: 9800, revenue: "¥12,600", badge: "🌱" },
+  { rank: 1, name: "数澜科技", apps: 18, downloads: 28400, revenue: "¥86,400", badge: Crown },
+  { rank: 2, name: "MetaPlatform 官方", apps: 24, downloads: 24600, revenue: "¥0", badge: Building2 },
+  { rank: 3, name: "法智 AI", apps: 12, downloads: 18420, revenue: "¥42,800", badge: Star },
+  { rank: 4, name: "供应链实验室", apps: 8, downloads: 12400, revenue: "¥18,200", badge: Briefcase },
+  { rank: 5, name: "招聘专家", apps: 6, downloads: 9800, revenue: "¥12,600", badge: Sprout },
 ];
 
 export function OntologyTemplates() {
@@ -104,8 +104,8 @@ export function AgentMarket() {
             <div key={a.id} className="rounded-lg border p-4 hover:border-primary">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="size-12 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 text-white flex items-center justify-center text-xl">
-                    🤖
+                  <div className="size-12 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 text-white flex items-center justify-center">
+                    <Bot className="size-6" />
                   </div>
                   <div>
                     <div className="font-medium">{a.name}</div>
@@ -204,7 +204,7 @@ export function DeveloperRank() {
             {DEVELOPERS.map((d) => (
               <TableRow key={d.rank}>
                 <TableCell>
-                  <span className="text-2xl">{d.badge}</span>
+                  <d.badge className="size-5 inline" />
                   <span className="ml-2 font-mono">#{d.rank}</span>
                 </TableCell>
                 <TableCell className="font-medium">{d.name}</TableCell>
@@ -240,10 +240,10 @@ export function MarketDashboard() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-        <StatCard label="模板总数" value={245} icon="📦" />
-        <StatCard label="本月下载" value={12480} trend={18.5} icon="⬇️" />
-        <StatCard label="活跃开发者" value={186} icon="👨‍💻" />
-        <StatCard label="已安装应用" value={32} icon="✅" />
+        <StatCard label="模板总数" value={245} icon={Package} />
+        <StatCard label="本月下载" value={12480} trend={18.5} icon={Download} />
+        <StatCard label="活跃开发者" value={186} icon={Code} />
+        <StatCard label="已安装应用" value={32} icon={Check} />
       </div>
 
       <Tabs defaultValue="overview">

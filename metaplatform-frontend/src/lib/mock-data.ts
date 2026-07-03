@@ -3,6 +3,12 @@
  * 后续可逐步替换为真实 API 调用
  */
 
+import {
+  ClipboardList, FileText, BarChart3, Bot, User, Sparkles,
+  Package, Tag, Users, Receipt, Brain, Code, MessageSquare,
+  type LucideIcon,
+} from "lucide-react";
+
 export type Priority = "P0" | "P1" | "P2";
 export type Status = "active" | "inactive" | "draft" | "published" | "archived";
 export type Severity = "high" | "medium" | "low" | "info";
@@ -11,7 +17,7 @@ export type Severity = "high" | "medium" | "low" | "info";
 export interface Application {
   id: string;
   name: string;
-  icon: string;
+  icon: LucideIcon;
   description: string;
   category: "传统应用" | "AI 原生" | "数字员工" | "VibeCoding";
   status: Status;
@@ -24,12 +30,12 @@ export interface Application {
 }
 
 export const mockApplications: Application[] = [
-  { id: "1", name: "客户管理 CRM", icon: "📋", description: "客户档案、商机、跟进", category: "传统应用", status: "published", objects: 3, pages: 12, flows: 5, owner: "张伟", updatedAt: "2026-07-01", version: "v2.3" },
-  { id: "2", name: "报销审批", icon: "📝", description: "差旅报销、审批流", category: "传统应用", status: "published", objects: 2, pages: 8, flows: 3, owner: "李娜", updatedAt: "2026-07-02", version: "v1.5" },
-  { id: "3", name: "销售看板", icon: "📊", description: "销售指标、可视化", category: "传统应用", status: "published", objects: 5, pages: 15, flows: 10, owner: "王强", updatedAt: "2026-06-30", version: "v3.0" },
-  { id: "4", name: "智能体助手", icon: "🤖", description: "AI 智能问答 + 流程自动化", category: "AI 原生", status: "published", objects: 1, pages: 3, flows: 8, owner: "刘敏", updatedAt: "2026-07-03", version: "v1.2" },
-  { id: "5", name: "数字员工小秘", icon: "👤", description: "数据查询助手", category: "数字员工", status: "active", objects: 0, pages: 2, flows: 6, owner: "陈昊", updatedAt: "2026-07-02", version: "v0.9" },
-  { id: "6", name: "VibeCoding Demo", icon: "✨", description: "AI 生成代码示例", category: "VibeCoding", status: "draft", objects: 0, pages: 1, flows: 0, owner: "赵明", updatedAt: "2026-07-03", version: "v0.1" },
+  { id: "1", name: "客户管理 CRM", icon: ClipboardList, description: "客户档案、商机、跟进", category: "传统应用", status: "published", objects: 3, pages: 12, flows: 5, owner: "张伟", updatedAt: "2026-07-01", version: "v2.3" },
+  { id: "2", name: "报销审批", icon: FileText, description: "差旅报销、审批流", category: "传统应用", status: "published", objects: 2, pages: 8, flows: 3, owner: "李娜", updatedAt: "2026-07-02", version: "v1.5" },
+  { id: "3", name: "销售看板", icon: BarChart3, description: "销售指标、可视化", category: "传统应用", status: "published", objects: 5, pages: 15, flows: 10, owner: "王强", updatedAt: "2026-06-30", version: "v3.0" },
+  { id: "4", name: "智能体助手", icon: Bot, description: "AI 智能问答 + 流程自动化", category: "AI 原生", status: "published", objects: 1, pages: 3, flows: 8, owner: "刘敏", updatedAt: "2026-07-03", version: "v1.2" },
+  { id: "5", name: "数字员工小秘", icon: User, description: "数据查询助手", category: "数字员工", status: "active", objects: 0, pages: 2, flows: 6, owner: "陈昊", updatedAt: "2026-07-02", version: "v0.9" },
+  { id: "6", name: "VibeCoding Demo", icon: Sparkles, description: "AI 生成代码示例", category: "VibeCoding", status: "draft", objects: 0, pages: 1, flows: 0, owner: "赵明", updatedAt: "2026-07-03", version: "v0.1" },
 ];
 
 // ============ 本体引擎 ============
@@ -37,7 +43,7 @@ export interface OntologyObject {
   id: string;
   name: string;
   label: string;
-  icon: string;
+  icon: LucideIcon;
   properties: number;
   actions: number;
   rules: number;
@@ -45,12 +51,12 @@ export interface OntologyObject {
 }
 
 export const mockOntologyObjects: OntologyObject[] = [
-  { id: "obj-1", name: "Customer", label: "客户", icon: "👤", properties: 18, actions: 6, rules: 4, status: "active" },
-  { id: "obj-2", name: "Order", label: "订单", icon: "📦", properties: 24, actions: 8, rules: 6, status: "active" },
-  { id: "obj-3", name: "Product", label: "产品", icon: "🏷️", properties: 16, actions: 5, rules: 3, status: "active" },
-  { id: "obj-4", name: "Employee", label: "员工", icon: "👥", properties: 22, actions: 4, rules: 2, status: "active" },
-  { id: "obj-5", name: "Contract", label: "合同", icon: "📄", properties: 30, actions: 7, rules: 5, status: "active" },
-  { id: "obj-6", name: "Invoice", label: "发票", icon: "🧾", properties: 14, actions: 5, rules: 3, status: "active" },
+  { id: "obj-1", name: "Customer", label: "客户", icon: User, properties: 18, actions: 6, rules: 4, status: "active" },
+  { id: "obj-2", name: "Order", label: "订单", icon: Package, properties: 24, actions: 8, rules: 6, status: "active" },
+  { id: "obj-3", name: "Product", label: "产品", icon: Tag, properties: 16, actions: 5, rules: 3, status: "active" },
+  { id: "obj-4", name: "Employee", label: "员工", icon: Users, properties: 22, actions: 4, rules: 2, status: "active" },
+  { id: "obj-5", name: "Contract", label: "合同", icon: FileText, properties: 30, actions: 7, rules: 5, status: "active" },
+  { id: "obj-6", name: "Invoice", label: "发票", icon: Receipt, properties: 14, actions: 5, rules: 3, status: "active" },
 ];
 
 // ============ 流程中心 ============
@@ -174,7 +180,7 @@ export interface DigitalEmployee {
   id: string;
   name: string;
   role: string;
-  avatar: string;
+  avatar: LucideIcon;
   model: string;
   skills: number;
   conversations: number;
@@ -183,11 +189,11 @@ export interface DigitalEmployee {
 }
 
 export const mockAgents: DigitalEmployee[] = [
-  { id: "a-1", name: "数据助手小秘", role: "数据查询", avatar: "🤖", model: "DeepSeek-V3", skills: 8, conversations: 1248, status: "online", owner: "数据中心" },
-  { id: "a-2", name: "流程审批小审", role: "流程自动化", avatar: "🧠", model: "Qwen-Max", skills: 12, conversations: 892, status: "busy", owner: "流程中心" },
-  { id: "a-3", name: "会议记录小记", role: "会议助手", avatar: "📝", model: "GPT-4o", skills: 6, conversations: 234, status: "online", owner: "数字员工" },
-  { id: "a-4", name: "代码助手小码", role: "开发辅助", avatar: "💻", model: "Claude-3.5", skills: 15, conversations: 567, status: "offline", owner: "开发团队" },
-  { id: "a-5", name: "客户助手小客", role: "客户服务", avatar: "💬", model: "Qwen-Plus", skills: 10, conversations: 3421, status: "online", owner: "客服部" },
+  { id: "a-1", name: "数据助手小秘", role: "数据查询", avatar: Bot, model: "DeepSeek-V3", skills: 8, conversations: 1248, status: "online", owner: "数据中心" },
+  { id: "a-2", name: "流程审批小审", role: "流程自动化", avatar: Brain, model: "Qwen-Max", skills: 12, conversations: 892, status: "busy", owner: "流程中心" },
+  { id: "a-3", name: "会议记录小记", role: "会议助手", avatar: FileText, model: "GPT-4o", skills: 6, conversations: 234, status: "online", owner: "数字员工" },
+  { id: "a-4", name: "代码助手小码", role: "开发辅助", avatar: Code, model: "Claude-3.5", skills: 15, conversations: 567, status: "offline", owner: "开发团队" },
+  { id: "a-5", name: "客户助手小客", role: "客户服务", avatar: MessageSquare, model: "Qwen-Plus", skills: 10, conversations: 3421, status: "online", owner: "客服部" },
 ];
 
 // ============ 云市场 ============

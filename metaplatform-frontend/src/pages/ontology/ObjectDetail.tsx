@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { mockOntologyObjects } from "@/lib/mock-data";
-import { ChevronLeft, Edit, Plus, Hash, Type, Calendar, Star, ToggleLeft, Settings, Sparkles, Save, Trash2, Shield, Box, Zap, Calculator } from "lucide-react";
+import { ChevronLeft, Edit, Plus, Hash, Type, Calendar, Star, ToggleLeft, Settings, Sparkles, Save, Trash2, Shield, Box, Zap, Calculator, CheckCircle2 } from "lucide-react";
 
 const MOCK_PROPERTIES = [
   { id: 1, name: "customer_code", label: "客户编号", type: "自动编号", required: true, indexed: true, system: true },
@@ -58,7 +58,7 @@ export default function ObjectDetail() {
         </Link>
         <div className="flex-1">
           <h1 className="text-xl font-semibold flex items-center gap-2">
-            <span className="text-3xl">{obj.icon}</span>
+            {(() => { const Icon = obj.icon; return <Icon className="size-5" />; })()}
             {obj.label} ({obj.name})
             <Badge variant="default">已激活</Badge>
           </h1>
@@ -113,8 +113,8 @@ export default function ObjectDetail() {
                       <TableCell>
                         <Badge variant="outline">{p.type}</Badge>
                       </TableCell>
-                      <TableCell>{p.required ? "✅" : "—"}</TableCell>
-                      <TableCell>{p.indexed ? "✅" : "—"}</TableCell>
+                      <TableCell>{p.required ? <CheckCircle2 className="size-4 text-green-500" /> : "—"}</TableCell>
+                      <TableCell>{p.indexed ? <CheckCircle2 className="size-4 text-green-500" /> : "—"}</TableCell>
                       <TableCell>{p.system ? <Badge variant="secondary">系统</Badge> : "—"}</TableCell>
                       <TableCell className="text-right">
                         <Button variant="ghost" size="icon" className="size-8"><Edit className="size-4" /></Button>

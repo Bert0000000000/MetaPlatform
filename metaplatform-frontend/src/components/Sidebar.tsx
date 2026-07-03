@@ -3,6 +3,7 @@ import { useRole } from "@/contexts/RoleContext";
 import { getMenusByRole } from "@/config/menu";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
+import { Settings } from "lucide-react";
 
 export function Sidebar() {
   const { role } = useRole();
@@ -24,6 +25,7 @@ export function Sidebar() {
               ? false
               : location.pathname === item.path ||
                 location.pathname.startsWith(item.path + "/");
+            const Icon = item.icon;
             return (
               <li key={item.key}>
                 <NavLink
@@ -35,7 +37,7 @@ export function Sidebar() {
                       "bg-sidebar-accent text-sidebar-accent-foreground font-medium",
                   )}
                 >
-                  <span className="text-base leading-none">{item.icon}</span>
+                  <Icon className="size-4 shrink-0" />
                   <span className="truncate">{item.label}</span>
                 </NavLink>
               </li>
@@ -56,7 +58,7 @@ export function Sidebar() {
                 )
               }
             >
-              <span className="text-base leading-none">⚙️</span>
+              <Settings className="size-4 shrink-0" />
               <span className="truncate">设置</span>
             </NavLink>
           </li>

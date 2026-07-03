@@ -5,7 +5,7 @@ import { PageHeader } from "@/components/ui/stat";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
-import { Key, Globe, Bell, Link2, Shield, Webhook, Eye, EyeOff } from "lucide-react";
+import { Key, Globe, Bell, Link2, Shield, Webhook, Eye, EyeOff, BookOpen, Hash, MessageCircle, MessagesSquare } from "lucide-react";
 import { useState } from "react";
 
 export default function AppConfig() {
@@ -191,7 +191,7 @@ export default function AppConfig() {
                   {["飞书", "钉钉", "企微", "Teams"].map((im) => (
                     <div key={im} className="flex items-center justify-between p-3 border rounded-lg">
                       <div className="flex items-center gap-3">
-                        <span className="text-2xl">{im === "飞书" ? "📘" : im === "钉钉" ? "🔵" : im === "企微" ? "🟢" : "🟣"}</span>
+                        <span className="text-2xl">{im === "飞书" ? <BookOpen className="size-5" /> : im === "钉钉" ? <Hash className="size-5" /> : im === "企微" ? <MessageCircle className="size-5" /> : <MessagesSquare className="size-5" />}</span>
                         <div>
                           <div className="font-medium text-sm">{im}</div>
                           <div className="text-xs text-muted-foreground">未配置</div>

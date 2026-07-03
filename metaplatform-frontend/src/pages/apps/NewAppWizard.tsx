@@ -5,24 +5,25 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Check, ChevronLeft, ChevronRight, Sparkles, Database, Wand2 } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Sparkles, Database, Wand2, FileEdit, BookOpen, Dna, Bot, Handshake, Package, Building2, Users, ClipboardList, BarChart3 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
 type Step = 1 | 2 | 3 | 4;
 
 const CREATE_TYPES = [
-  { id: "blank", title: "空白应用", desc: "从零开始，完全自定义数据模型与流程", icon: "📝" },
-  { id: "template", title: "模板创建", desc: "从行业模板快速构建（CRM/ERP/OA...）", icon: "📚" },
-  { id: "ontology", title: "本体驱动", desc: "先定义业务对象，自动生成页面与流程", icon: "🧬" },
-  { id: "ai", title: "AI 对话创建", desc: "用自然语言描述需求，AI 自动生成", icon: "🤖" },
+  { id: "blank", title: "空白应用", desc: "从零开始，完全自定义数据模型与流程", icon: FileEdit },
+  { id: "template", title: "模板创建", desc: "从行业模板快速构建（CRM/ERP/OA...）", icon: BookOpen },
+  { id: "ontology", title: "本体驱动", desc: "先定义业务对象，自动生成页面与流程", icon: Dna },
+  { id: "ai", title: "AI 对话创建", desc: "用自然语言描述需求，AI 自动生成", icon: Bot },
 ];
 
 const TEMPLATES = [
-  { id: "crm", name: "客户关系管理", icon: "🤝", category: "销售" },
-  { id: "erp", name: "进销存管理", icon: "📦", category: "供应链" },
-  { id: "oa", name: "协同办公", icon: "🏢", category: "通用" },
-  { id: "hr", name: "人力资源", icon: "👥", category: "人事" },
-  { id: "project", name: "项目管理", icon: "📋", category: "通用" },
-  { id: "bi", name: "业务分析", icon: "📊", category: "数据" },
+  { id: "crm", name: "客户关系管理", icon: Handshake, category: "销售" },
+  { id: "erp", name: "进销存管理", icon: Package, category: "供应链" },
+  { id: "oa", name: "协同办公", icon: Building2, category: "通用" },
+  { id: "hr", name: "人力资源", icon: Users, category: "人事" },
+  { id: "project", name: "项目管理", icon: ClipboardList, category: "通用" },
+  { id: "bi", name: "业务分析", icon: BarChart3, category: "数据" },
 ];
 
 const DATA_SOURCES = [
@@ -47,7 +48,7 @@ const INITIAL: WizardState = {
   createType: "blank",
   template: "",
   name: "",
-  icon: "📦",
+  icon: "",
   description: "",
   category: "通用",
   dataSource: "ds-mysql",
@@ -127,7 +128,7 @@ export default function NewAppWizard() {
                     }`}
                   >
                     <div className="flex items-start gap-3">
-                      <div className="text-2xl">{t.icon}</div>
+                      <t.icon className="size-5" />
                       <div className="flex-1">
                         <div className="font-medium flex items-center gap-2">
                           {t.title}
@@ -151,14 +152,13 @@ export default function NewAppWizard() {
                         onClick={() => {
                           update("template", t.id);
                           update("name", t.name);
-                          update("icon", t.icon);
                           update("category", t.category);
                         }}
                         className={`text-left rounded border p-3 transition-all hover:border-primary ${
                           state.template === t.id ? "border-primary bg-primary/5" : ""
                         }`}
                       >
-                        <div className="text-xl">{t.icon}</div>
+                        <t.icon className="size-5" />
                         <div className="font-medium text-sm mt-1">{t.name}</div>
                         <div className="text-xs text-muted-foreground">{t.category}</div>
                       </button>

@@ -68,8 +68,9 @@ export function MenuTabsBar() {
   return (
     <div className="border-b bg-background px-4 sticky top-14 z-20" role="navigation" aria-label="菜单 Tab">
       <div className="flex h-11 items-center gap-0 overflow-x-auto">
-        <span className="text-xs text-muted-foreground mr-2.5 shrink-0">
-          {activeMenuDef?.icon} {activeMenuDef?.label}
+        <span className="text-xs text-muted-foreground mr-2.5 shrink-0 flex items-center gap-1.5">
+          {activeMenuDef && <activeMenuDef.icon className="size-3.5" />}
+          {activeMenuDef?.label}
         </span>
         {tabs.map((t) => {
           const fullPath = `${activeBasePath}${t.path}`;

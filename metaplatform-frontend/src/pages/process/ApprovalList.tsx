@@ -6,13 +6,13 @@ import { PageHeader, StatCard } from "@/components/ui/stat";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { mockProcessInstances } from "@/lib/mock-data";
-import { Check, X, Clock, UserCheck, Vote, Users, GitBranch } from "lucide-react";
+import { Check, X, Clock, UserCheck, Vote, Users, GitBranch, Target, ArrowRight, Inbox, CheckCircle, Rocket, Sparkles } from "lucide-react";
 
 const taskModes = [
-  { key: "竞签", desc: "多人竞签，一人通过即可", icon: "🎯" },
-  { key: "并签", desc: "多人并签，需全员通过", icon: "👥" },
-  { key: "串签", desc: "多人串签，按顺序审批", icon: "➡️" },
-  { key: "投票", desc: "按比例/人数投票", icon: "🗳️" },
+  { key: "竞签", desc: "多人竞签，一人通过即可", icon: Target },
+  { key: "并签", desc: "多人并签，需全员通过", icon: Users },
+  { key: "串签", desc: "多人串签，按顺序审批", icon: ArrowRight },
+  { key: "投票", desc: "按比例/人数投票", icon: Vote },
 ];
 
 const approvalButtons = [
@@ -31,10 +31,10 @@ export default function ApprovalList() {
       />
 
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-        <StatCard label="我的待办" value={12} icon="📥" />
-        <StatCard label="我的已办" value={148} trend={5.6} icon="✅" />
-        <StatCard label="我的发起" value={32} icon="🚀" />
-        <StatCard label="本周新增" value={24} icon="🆕" />
+        <StatCard label="我的待办" value={12} icon={<Inbox className="size-5" />} />
+        <StatCard label="我的已办" value={148} trend={5.6} icon={<CheckCircle className="size-5" />} />
+        <StatCard label="我的发起" value={32} icon={<Rocket className="size-5" />} />
+        <StatCard label="本周新增" value={24} icon={<Sparkles className="size-5" />} />
       </div>
 
       <Tabs value={tab} onValueChange={setTab}>
@@ -130,15 +130,18 @@ export default function ApprovalList() {
 
         <TabsContent value="modes" className="mt-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {taskModes.map((m) => (
-              <Card key={m.key}>
-                <CardHeader>
-                  <div className="text-3xl mb-2">{m.icon}</div>
-                  <CardTitle className="text-base">{m.key}</CardTitle>
-                  <CardDescription>{m.desc}</CardDescription>
-                </CardHeader>
-              </Card>
-            ))}
+            {taskModes.map((m) => {
+              const ModeIcon = m.icon;
+              return (
+                <Card key={m.key}>
+                  <CardHeader>
+                    <div className="text-3xl mb-2"><ModeIcon className="size-8" /></div>
+                    <CardTitle className="text-base">{m.key}</CardTitle>
+                    <CardDescription>{m.desc}</CardDescription>
+                  </CardHeader>
+                </Card>
+              );
+            })}
           </div>
         </TabsContent>
 

@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Circle } from "lucide-react";
 
 interface Ticket {
   id: string;
@@ -93,10 +94,10 @@ const TicketSystem: React.FC = () => {
 
   const getPriorityIcon = (p: string) => {
     switch (p) {
-      case "high": return "\u{1F534}";
-      case "medium": return "\u{1F7E1}";
-      case "low": return "\u{1F7E2}";
-      default: return "⚪";
+      case "high": return <Circle className="size-4 fill-red-500 text-red-500" />;
+      case "medium": return <Circle className="size-4 fill-yellow-500 text-yellow-500" />;
+      case "low": return <Circle className="size-4 fill-green-500 text-green-500" />;
+      default: return <Circle className="size-4" />;
     }
   };
 
@@ -212,9 +213,9 @@ const TicketSystem: React.FC = () => {
                 value={newPriority}
                 onChange={e => setNewPriority(e.target.value)}
               >
-                <option value="high">{"\u{1F534} 高"}</option>
-                <option value="medium">{"\u{1F7E1} 中"}</option>
-                <option value="low">{"\u{1F7E2} 低"}</option>
+                <option value="high">高</option>
+                <option value="medium">中</option>
+                <option value="low">低</option>
               </select>
             </div>
           </div>

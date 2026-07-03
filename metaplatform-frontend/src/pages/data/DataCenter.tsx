@@ -6,7 +6,7 @@ import { StatCard } from "@/components/ui/stat";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { mockDataSources, mockMetrics, type DataSource } from "@/lib/mock-data";
-import { Database, Plus, Sparkles, MessageSquare, Activity, AlertTriangle, Terminal, BarChart3, GitMerge, ShieldCheck, Clock, Send, FileBarChart } from "lucide-react";
+import { Database, Plus, Sparkles, MessageSquare, Activity, AlertTriangle, Terminal, BarChart3, GitMerge, ShieldCheck, Clock, Send, FileBarChart, Leaf, Zap, Rocket, Mail, Globe, FileSpreadsheet, Users, Package, Megaphone, HardDrive, RefreshCw, Circle, Handshake } from "lucide-react";
 
 const statusMap: Record<DataSource["status"], { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
   online: { label: "在线", variant: "default" },
@@ -15,16 +15,16 @@ const statusMap: Record<DataSource["status"], { label: string; variant: "default
   error: { label: "错误", variant: "destructive" },
 };
 
-const sourceTypeIcons: Record<string, string> = {
-  MySQL: "🐬",
-  PostgreSQL: "🐘",
-  Oracle: "🔴",
-  MongoDB: "🍃",
-  ClickHouse: "⚡",
-  Doris: "🚀",
-  Kafka: "📨",
-  API: "🌐",
-  CSV: "📊",
+const sourceTypeIcons: Record<string, React.ElementType> = {
+  MySQL: Database,
+  PostgreSQL: Database,
+  Oracle: Database,
+  MongoDB: Leaf,
+  ClickHouse: Zap,
+  Doris: Rocket,
+  Kafka: Mail,
+  API: Globe,
+  CSV: FileSpreadsheet,
 };
 
 // ETL 任务
@@ -88,7 +88,7 @@ export function DataSourceList() {
               <TableRow key={ds.id}>
                 <TableCell className="font-medium">{ds.name}</TableCell>
                 <TableCell>
-                  <span className="mr-1">{sourceTypeIcons[ds.type]}</span>
+                  {(() => { const Icon = sourceTypeIcons[ds.type]; return Icon ? <Icon className="size-4 mr-1 inline" /> : null; })()}
                   {ds.type}
                 </TableCell>
                 <TableCell className="font-mono text-xs">{ds.host}</TableCell>
@@ -163,7 +163,7 @@ export function AskData() {
           </div>
 
           <div className="border rounded-lg p-4 bg-muted/30 mb-3">
-            <div className="text-sm text-muted-foreground mb-2">💬 试试问：</div>
+            <div className="text-sm text-muted-foreground mb-2"><MessageSquare className="size-4 inline mr-1" />试试问：</div>
             <div className="grid grid-cols-2 gap-2">
               {["上个月销售额是多少？", "本周新增客户有多少？", "各地区销售 Top 5 城市", "客单价超过 1 万的订单数"].map((s) => (
                 <button key={s} onClick={() => ask(s)} className="bg-background border rounded p-2 text-sm text-left hover:border-primary">
@@ -204,7 +204,7 @@ export function MetricCenter() {
             value={m.value}
             unit={m.unit}
             trend={m.trend}
-            icon="📊"
+            icon={BarChart3}
           />
         ))}
       </div>
@@ -267,14 +267,14 @@ export function MetricCenter() {
             <CardContent>
               <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                 {[
-                  { name: "时间维度", count: 8, icon: "🕐" },
-                  { name: "地域维度", count: 32, icon: "🌍" },
-                  { name: "客户维度", count: 12, icon: "🤝" },
-                  { name: "产品维度", count: 24, icon: "📦" },
-                  { name: "渠道维度", count: 6, icon: "📣" },
+                  { name: "时间维度", count: 8, icon: Clock },
+                  { name: "地域维度", count: 32, icon: Globe },
+                  { name: "客户维度", count: 12, icon: Handshake },
+                  { name: "产品维度", count: 24, icon: Package },
+                  { name: "渠道维度", count: 6, icon: Megaphone },
                 ].map((d) => (
                   <div key={d.name} className="rounded-lg border p-3 text-center">
-                    <div className="text-2xl">{d.icon}</div>
+                    <div className="text-2xl"><d.icon className="size-6" /></div>
                     <div className="font-medium text-sm mt-1">{d.name}</div>
                     <div className="text-xs text-muted-foreground">{d.count} 项</div>
                   </div>
@@ -451,10 +451,10 @@ export function DataDashboard() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-        <StatCard label="总数据量" value={27320000} icon="💾" />
-        <StatCard label="今日同步" value={1280000} trend={5.2} icon="🔄" />
-        <StatCard label="在线数据源" value={6} icon="🟢" />
-        <StatCard label="指标总数" value={148} icon="📊" />
+        <StatCard label="总数据量" value={27320000} icon={HardDrive} />
+        <StatCard label="今日同步" value={1280000} trend={5.2} icon={RefreshCw} />
+        <StatCard label="在线数据源" value={6} icon={Circle} />
+        <StatCard label="指标总数" value={148} icon={BarChart3} />
       </div>
 
       <Tabs defaultValue="overview">

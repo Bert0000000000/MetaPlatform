@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader, StatCard } from "@/components/ui/stat";
-import { Box, GitBranch, CheckCircle2, ArrowRight, Rocket, History } from "lucide-react";
+import { Box, GitBranch, CheckCircle2, ArrowRight, Rocket, History, Package, RotateCcw, Target } from "lucide-react";
 
 const environments = [
   { name: "开发环境", color: "bg-blue-500", status: "running", version: "v2.4.0-rc.1" },
@@ -36,10 +36,10 @@ export default function AppPublish() {
       />
 
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-        <StatCard label="当前版本" value="v2.3" icon="📦" />
-        <StatCard label="发布次数" value={28} trend={12.5} icon="🚀" />
-        <StatCard label="回滚次数" value={2} icon="↩️" />
-        <StatCard label="灰度比例" value="50%" icon="🎯" />
+        <StatCard label="当前版本" value="v2.3" icon={<Package className="size-5" />} />
+        <StatCard label="发布次数" value={28} trend={12.5} icon={<Rocket className="size-5" />} />
+        <StatCard label="回滚次数" value={2} icon={<RotateCcw className="size-5" />} />
+        <StatCard label="灰度比例" value="50%" icon={<Target className="size-5" />} />
       </div>
 
       <Card>

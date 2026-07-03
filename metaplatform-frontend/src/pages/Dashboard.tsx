@@ -5,14 +5,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { mockApplications } from "@/lib/mock-data";
-import { ArrowRight, Plus, MessageCircle, GitBranch, Bell, CheckCircle2, AlertCircle, Clock } from "lucide-react";
+import { ArrowRight, Plus, MessageCircle, GitBranch, Bell, CheckCircle2, AlertCircle, Clock, Pencil, Rocket, FileText, RefreshCw, Box } from "lucide-react";
 
 const RECENT_ACTIVITIES = [
-  { time: "10:42", actor: "张伟", action: "修改了", target: "客户对象 / 客户等级字段", icon: "✏️" },
-  { time: "09:15", actor: "李娜", action: "部署了", target: "CRM v2.3 → 测试环境", icon: "🚀" },
-  { time: "昨天", actor: "王强", action: "新建了", target: "3 个页面（销售看板）", icon: "📄" },
-  { time: "昨天", actor: "刘敏", action: "配置了", target: "采购审批工作流（5 节点）", icon: "🔄" },
-  { time: "2 天前", actor: "陈红", action: "发布了", target: "OA 系统 v1.8 生产版本", icon: "✅" },
+  { time: "10:42", actor: "张伟", action: "修改了", target: "客户对象 / 客户等级字段", icon: Pencil },
+  { time: "09:15", actor: "李娜", action: "部署了", target: "CRM v2.3 → 测试环境", icon: Rocket },
+  { time: "昨天", actor: "王强", action: "新建了", target: "3 个页面（销售看板）", icon: FileText },
+  { time: "昨天", actor: "刘敏", action: "配置了", target: "采购审批工作流（5 节点）", icon: RefreshCw },
+  { time: "2 天前", actor: "陈红", action: "发布了", target: "OA 系统 v1.8 生产版本", icon: CheckCircle2 },
 ];
 
 const MY_TODOS = [
@@ -56,9 +56,7 @@ export function DashboardPage() {
           >
             <CardHeader>
               <div className="flex items-start justify-between">
-                <span className="text-3xl" aria-hidden>
-                  {card.icon}
-                </span>
+                <card.icon className="size-5" />
                 {card.link && (
                   <ArrowRight className="size-4 text-muted-foreground" />
                 )}
@@ -97,15 +95,15 @@ export function DashboardPage() {
                 onClick={() => navigate(`/apps/${app.id}/overview`)}
                 className="text-left rounded-lg border p-3 hover:border-primary transition-colors"
               >
-                <div className="text-2xl mb-2">{app.icon}</div>
+                <div className="mb-2"><app.icon className="size-5" /></div>
                 <div className="font-medium text-sm truncate">{app.name}</div>
                 <div className="text-xs text-muted-foreground mt-0.5">
                   {app.category} · v{app.version}
                 </div>
                 <div className="flex gap-2 mt-2 text-xs text-muted-foreground">
-                  <span>📦 {app.objects}</span>
-                  <span>📄 {app.pages}</span>
-                  <span>🔄 {app.flows}</span>
+                  <span className="flex items-center gap-1"><Box className="size-3" /> {app.objects}</span>
+                  <span className="flex items-center gap-1"><FileText className="size-3" /> {app.pages}</span>
+                  <span className="flex items-center gap-1"><GitBranch className="size-3" /> {app.flows}</span>
                 </div>
               </button>
             ))}
@@ -123,8 +121,8 @@ export function DashboardPage() {
             <ul className="space-y-3">
               {RECENT_ACTIVITIES.map((a, i) => (
                 <li key={i} className="flex items-center gap-3 text-sm">
-                  <span className="size-7 rounded-full bg-muted flex items-center justify-center text-base">
-                    {a.icon}
+                  <span className="size-7 rounded-full bg-muted flex items-center justify-center">
+                    <a.icon className="size-4" />
                   </span>
                   <div className="flex-1">
                     <span className="text-muted-foreground">{a.actor}</span>{" "}

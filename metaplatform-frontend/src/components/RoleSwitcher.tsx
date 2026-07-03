@@ -1,4 +1,4 @@
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, User } from "lucide-react";
 import { useRole } from "@/contexts/RoleContext";
 import { ROLES, type Role } from "@/config/menu";
 import { Button } from "@/components/ui/button";
@@ -19,7 +19,7 @@ export function RoleSwitcher() {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="outline" size="sm" className="gap-2">
-          <span className="text-base">👤</span>
+          <User className="size-4" />
           <span className="hidden md:inline">
             {current?.label}
           </span>

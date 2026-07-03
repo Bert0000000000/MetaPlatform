@@ -8,7 +8,7 @@ interface StatCardProps {
   value: string | number;
   unit?: string;
   trend?: number;
-  icon?: string;
+  icon?: React.ReactNode;
   className?: string;
 }
 
@@ -57,7 +57,7 @@ export function StatCard({
 }
 
 interface PageHeaderProps {
-  title: string;
+  title: React.ReactNode;
   description?: string;
   action?: React.ReactNode;
 }

@@ -3,7 +3,36 @@
  * - 一级菜单 12 项
  * - 5 类角色分发
  * - 每个菜单内 5-9 个 Tab
+ *
+ * icon 字段统一使用 Lucide React 图标组件
  */
+
+import type { LucideIcon } from "lucide-react";
+import {
+  LayoutDashboard,
+  Sparkles,
+  Building2,
+  Smartphone,
+  GitBranch,
+  BarChart3,
+  Dna,
+  CheckCircle2,
+  BookOpen,
+  Cloud,
+  Users,
+  Settings2,
+  Target,
+  ClipboardList,
+  Bell,
+  Wrench,
+  Zap,
+  Scale,
+  FileText,
+  HeartPulse,
+  AlertTriangle,
+  TrendingUp,
+  Hammer,
+} from "lucide-react";
 
 export type Role = "executive" | "business" | "developer" | "architect" | "ops";
 
@@ -23,7 +52,7 @@ export type MenuKey =
 
 export interface MenuItem {
   key: MenuKey;
-  icon: string;
+  icon: LucideIcon;
   label: string;
   path: string;
   description?: string;
@@ -72,84 +101,84 @@ export const ROLES: RoleConfig[] = [
 export const MENU_ITEMS: MenuItem[] = [
   {
     key: "dashboard",
-    icon: "🏠",
+    icon: LayoutDashboard,
     label: "工作台",
     path: "/dashboard",
     description: "千人千面工作台 + 我的应用 + 数字员工 + 门户 + 自由页面",
   },
   {
     key: "superai",
-    icon: "🤖",
+    icon: Sparkles,
     label: "SuperAI",
     path: "/superai",
     description: "AI 对话入口",
   },
   {
     key: "architecture",
-    icon: "🏛",
+    icon: Building2,
     label: "架构中心",
     path: "/architecture",
     description: "4A 架构（业务/应用/数据/技术）",
   },
   {
     key: "apps",
-    icon: "📱",
+    icon: Smartphone,
     label: "应用中心",
     path: "/apps",
     description: "应用构建（NoCode+LowCode+ProCode+VibeCoding）",
   },
   {
     key: "process",
-    icon: "🔄",
+    icon: GitBranch,
     label: "流程中心",
     path: "/process",
     description: "BPMN 2.0 + 业务流程 + 审批流程 + 服务编排",
   },
   {
     key: "data",
-    icon: "📊",
+    icon: BarChart3,
     label: "数据中心",
     path: "/data",
     description: "智能问数 + 指标 + 数据湖仓",
   },
   {
     key: "ontology",
-    icon: "🧬",
+    icon: Dna,
     label: "本体引擎",
     path: "/ontology",
     description: "本体 8 要素",
   },
   {
     key: "quality",
-    icon: "✅",
+    icon: CheckCircle2,
     label: "质量中心",
     path: "/quality",
     description: "AI 测试 + 自动化测试 + 流程测试",
   },
   {
     key: "knowledge",
-    icon: "📚",
+    icon: BookOpen,
     label: "知识库",
     path: "/knowledge",
     description: "文档 + RAG + GraphRAG",
   },
   {
     key: "market",
-    icon: "☁️",
+    icon: Cloud,
     label: "云市场",
     path: "/market",
     description: "6 类模板分发",
   },
   {
     key: "agents",
-    icon: "👥",
+    icon: Users,
     label: "数字员工",
     path: "/agents",
     description: "多智能体协作 + 决策会议",
   },
   {
     key: "admin",
-    icon: "⚙️",
+    icon: Settings2,
     label: "后台管理",
     path: "/admin",
     description: "用户 + 权限 + 监控 + 部署 + 计费",
@@ -348,7 +377,7 @@ export const MENU_TABS: Record<MenuKey, TabConfig[]> = {
 export interface DashboardCard {
   title: string;
   description: string;
-  icon: string;
+  icon: LucideIcon;
   link?: string;
 }
 
@@ -357,24 +386,24 @@ export const WORKSPACE_BY_ROLE: Record<Role, DashboardCard[]> = {
     {
       title: "AI 看板",
       description: "关键指标 + 趋势图",
-      icon: "📊",
+      icon: BarChart3,
       link: "/data/dashboard",
     },
     {
       title: "战略指标",
       description: "战略指标进度",
-      icon: "🎯",
+      icon: Target,
     },
     {
       title: "待审批",
       description: "需要决策的事项",
-      icon: "📋",
+      icon: ClipboardList,
       link: "/process/approvals",
     },
     {
       title: "团队数字员工",
       description: "数字员工总览",
-      icon: "👥",
+      icon: Users,
       link: "/agents",
     },
   ],
@@ -382,25 +411,25 @@ export const WORKSPACE_BY_ROLE: Record<Role, DashboardCard[]> = {
     {
       title: "我的待办",
       description: "流程/审批/工单",
-      icon: "📋",
+      icon: ClipboardList,
       link: "/process/approvals",
     },
     {
       title: "最近应用",
       description: "最近使用的应用",
-      icon: "📱",
+      icon: Smartphone,
       link: "/dashboard/myapps",
     },
     {
       title: "我的数字员工",
       description: "已分配的数字员工",
-      icon: "👥",
+      icon: Users,
       link: "/dashboard/myagents",
     },
     {
       title: "消息通知",
       description: "系统通知 + @ 我",
-      icon: "🔔",
+      icon: Bell,
       link: "/dashboard/messages",
     },
   ],
@@ -408,72 +437,72 @@ export const WORKSPACE_BY_ROLE: Record<Role, DashboardCard[]> = {
     {
       title: "开发中的应用",
       description: "正在开发的应用",
-      icon: "🛠️",
+      icon: Wrench,
       link: "/apps",
     },
     {
       title: "开发中的智能体",
       description: "智能体开发进度",
-      icon: "🤖",
+      icon: Sparkles,
       link: "/agents",
     },
     {
       title: "FDE 工作台",
       description: "快速应用构建",
-      icon: "⚡",
+      icon: Zap,
       link: "/apps",
     },
     {
       title: "VibeCoding",
       description: "AI 生成代码",
-      icon: "✨",
+      icon: Sparkles,
     },
   ],
   architect: [
     {
       title: "4A 架构",
       description: "业务/应用/数据/技术架构",
-      icon: "🏛",
+      icon: Building2,
       link: "/architecture",
     },
     {
       title: "本体地图",
       description: "本体 8 要素全景",
-      icon: "🧬",
+      icon: Dna,
       link: "/ontology",
     },
     {
       title: "架构决策",
       description: "设计态/运行态",
-      icon: "⚖️",
+      icon: Scale,
     },
     {
       title: "架构文档",
       description: "技术选型矩阵",
-      icon: "📑",
+      icon: FileText,
     },
   ],
   ops: [
     {
       title: "系统健康",
       description: "服务运行状态",
-      icon: "💚",
+      icon: HeartPulse,
       link: "/admin/monitor",
     },
     {
       title: "告警中心",
       description: "待处理告警",
-      icon: "⚠️",
+      icon: AlertTriangle,
     },
     {
       title: "资源使用",
       description: "CPU/内存/磁盘",
-      icon: "📈",
+      icon: TrendingUp,
     },
     {
       title: "运维操作",
       description: "重启/扩容/备份",
-      icon: "🔧",
+      icon: Hammer,
       link: "/admin",
     },
   ],

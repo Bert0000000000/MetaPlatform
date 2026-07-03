@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/ui/stat";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Box, Hash, Link2, Zap, Calculator, Shield, Settings, Server, Plus, Sparkles } from "lucide-react";
+import { Box, Hash, Link2, Zap, Calculator, Shield, Settings, Server, Plus, Sparkles, Link, User, Package, Tag, Users, FileText, Receipt } from "lucide-react";
 
 const element7of8 = [
   { key: "1-objects", title: "对象（Objects）", icon: Box, desc: "业务对象的定义与建模", tag: "O" },
@@ -48,17 +48,17 @@ export function OntologyElement({ elementKey }: { elementKey: string }) {
       {elementKey === "1-objects" && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {[
-            { name: "Customer", label: "客户", icon: "👤", props: 18 },
-            { name: "Order", label: "订单", icon: "📦", props: 24 },
-            { name: "Product", label: "产品", icon: "🏷️", props: 16 },
-            { name: "Employee", label: "员工", icon: "👥", props: 22 },
-            { name: "Contract", label: "合同", icon: "📄", props: 30 },
-            { name: "Invoice", label: "发票", icon: "🧾", props: 14 },
+            { name: "Customer", label: "客户", icon: User, props: 18 },
+            { name: "Order", label: "订单", icon: Package, props: 24 },
+            { name: "Product", label: "产品", icon: Tag, props: 16 },
+            { name: "Employee", label: "员工", icon: Users, props: 22 },
+            { name: "Contract", label: "合同", icon: FileText, props: 30 },
+            { name: "Invoice", label: "发票", icon: Receipt, props: 14 },
           ].map((o) => (
             <Card key={o.name} className="cursor-pointer hover:border-primary">
               <CardHeader>
                 <div className="flex items-start justify-between">
-                  <span className="text-3xl">{o.icon}</span>
+                  <span className="text-3xl"><o.icon className="size-8" /></span>
                   <Badge variant="secondary">{o.props} 属性</Badge>
                 </div>
                 <CardTitle className="text-base mt-2">{o.label}</CardTitle>
@@ -100,7 +100,7 @@ export function OntologyElement({ elementKey }: { elementKey: string }) {
                 { type: "N:N 多对多", desc: "学生-课程" },
               ].map((r) => (
                 <div key={r.type} className="border rounded p-4 text-center">
-                  <div className="text-2xl mb-2">🔗</div>
+                  <div className="text-2xl mb-2"><Link className="size-6 mx-auto" /></div>
                   <div className="font-medium">{r.type}</div>
                   <div className="text-xs text-muted-foreground mt-1">{r.desc}</div>
                 </div>

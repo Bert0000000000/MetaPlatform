@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Send, Bot, User, Sparkles, Plus, MessageSquare, Bot as BotIcon, ListChecks, BookOpen } from "lucide-react";
+import { Send, Bot, User, Sparkles, Plus, MessageSquare, Bot as BotIcon, ListChecks, BookOpen, Smartphone, BarChart3, GitBranch, FileEdit, Search as SearchIcon, TrendingUp, RefreshCw, FileText, Ruler, Briefcase, ScrollText, Scale } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -15,18 +15,18 @@ const initialMessages: Message[] = [
   {
     role: "assistant",
     content:
-      "你好，我是 SuperAI 🤖\n我可以帮你：\n• 建应用 / 建对象 / 建流程\n• 查数据 / 分析指标\n• 启动智能体 / 调度任务\n• 回答业务问题\n\n请告诉我你想做什么？",
+      "你好，我是 SuperAI\n我可以帮你：\n- 建应用 / 建对象 / 建流程\n- 查数据 / 分析指标\n- 启动智能体 / 调度任务\n- 回答业务问题\n\n请告诉我你想做什么？",
     ts: "09:30",
   },
 ];
 
 const SUGGESTIONS = [
-  { icon: "📱", text: "帮我建一个请假审批应用", category: "建应用" },
-  { icon: "📊", text: "上个月的订单总额是多少？", category: "查数据" },
-  { icon: "🔄", text: "梳理采购流程并发现瓶颈", category: "流程分析" },
-  { icon: "🤖", text: "启动财务月结智能体", category: "智能体" },
-  { icon: "📝", text: "起草一份客户拜访纪要", category: "内容生成" },
-  { icon: "🔍", text: "从合同库中查找应收账款条款", category: "知识检索" },
+  { icon: Smartphone, text: "帮我建一个请假审批应用", category: "建应用" },
+  { icon: BarChart3, text: "上个月的订单总额是多少？", category: "查数据" },
+  { icon: GitBranch, text: "梳理采购流程并发现瓶颈", category: "流程分析" },
+  { icon: Bot, text: "启动财务月结智能体", category: "智能体" },
+  { icon: FileEdit, text: "起草一份客户拜访纪要", category: "内容生成" },
+  { icon: SearchIcon, text: "从合同库中查找应收账款条款", category: "知识检索" },
 ];
 
 const RECENT_TASKS = [
@@ -38,10 +38,10 @@ const RECENT_TASKS = [
 ];
 
 const KNOWLEDGE_DOCS = [
-  { title: "MetaPlatform 用户手册", type: "PDF", size: "12.4 MB", updated: "今天", category: "产品文档" },
-  { title: "API 接口规范 v2.1", type: "Markdown", size: "384 KB", updated: "3 天前", category: "技术规范" },
-  { title: "BPMN 2.0 节点参考", type: "Web", size: "—", updated: "1 周前", category: "标准规范" },
-  { title: "销售话术库（已索引）", type: "向量库", size: "8.2K 条", updated: "实时", category: "业务知识" },
+  { title: "MetaPlatform 用户手册", type: "PDF", size: "12.4 MB", updated: "今天", category: "产品文档", icon: BookOpen },
+  { title: "API 接口规范 v2.1", type: "Markdown", size: "384 KB", updated: "3 天前", category: "技术规范", icon: Ruler },
+  { title: "BPMN 2.0 节点参考", type: "Web", size: "—", updated: "1 周前", category: "标准规范", icon: Briefcase },
+  { title: "销售话术库（已索引）", type: "向量库", size: "8.2K 条", updated: "实时", category: "业务知识", icon: ScrollText },
 ];
 
 function sendMock(input: string): string {
@@ -135,7 +135,7 @@ function ChatTab() {
                     onClick={() => send(s.text)}
                     className="hover:underline text-foreground"
                   >
-                    {s.icon} {s.text}
+                    <s.icon className="size-3 mr-1 inline" />{s.text}
                   </button>
                 ))}
               </div>
@@ -149,12 +149,12 @@ function ChatTab() {
 
 function AgentTab() {
   const AGENTS = [
-    { id: "data", name: "数据分析智能体", desc: "查数据 / 出报表 / 发现异常", icon: "📊" },
-    { id: "report", name: "报表生成智能体", desc: "自动编排 BI 报表", icon: "📈" },
-    { id: "process", name: "流程分析智能体", desc: "识别瓶颈 / 给出优化建议", icon: "🔄" },
-    { id: "doc", name: "文档撰写智能体", desc: "起草合同 / 会议纪要 / 周报", icon: "📝" },
-    { id: "code", name: "VibeCoding 智能体", desc: "自然语言生成完整应用", icon: "✨" },
-    { id: "support", name: "客服智能体", desc: "7×24 答疑 / 工单预处理", icon: "💬" },
+    { id: "data", name: "数据分析智能体", desc: "查数据 / 出报表 / 发现异常", icon: BarChart3 },
+    { id: "report", name: "报表生成智能体", desc: "自动编排 BI 报表", icon: TrendingUp },
+    { id: "process", name: "流程分析智能体", desc: "识别瓶颈 / 给出优化建议", icon: RefreshCw },
+    { id: "doc", name: "文档撰写智能体", desc: "起草合同 / 会议纪要 / 周报", icon: FileText },
+    { id: "code", name: "VibeCoding 智能体", desc: "自然语言生成完整应用", icon: Sparkles },
+    { id: "support", name: "客服智能体", desc: "7×24 答疑 / 工单预处理", icon: MessageSquare },
   ];
   return (
     <div className="p-4 flex flex-col gap-3">
@@ -167,7 +167,7 @@ function AgentTab() {
           <Card key={a.id} className="hover:border-primary cursor-pointer transition-colors">
             <CardHeader>
               <div className="flex items-start justify-between">
-                <span className="text-xl">{a.icon}</span>
+                <a.icon className="size-5" />
                 <Badge variant="secondary">内置</Badge>
               </div>
               <CardTitle className="text-sm mt-1">{a.name}</CardTitle>
@@ -288,7 +288,7 @@ function KnowledgeTab() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {KNOWLEDGE_DOCS.map((d, i) => (
               <div key={i} className="flex items-center gap-3 p-3 rounded-lg border hover:border-primary">
-                <BookOpen className="size-5 text-primary shrink-0" />
+                <d.icon className="size-5 text-primary shrink-0" />
                 <div className="flex-1 min-w-0">
                   <div className="font-medium text-sm truncate">{d.title}</div>
                   <div className="text-xs text-muted-foreground mt-0.5">

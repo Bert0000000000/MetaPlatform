@@ -4,24 +4,25 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { PageHeader } from "@/components/ui/stat";
-import { Plus, Search, Layout, Code2, FileText, BarChart3 } from "lucide-react";
+import { Plus, Search, Layout, Code2, FileText, BarChart3, FileEdit, ClipboardList, Palette, Sparkles, Package } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
 interface Page {
   id: string;
   name: string;
   type: "表单" | "列表" | "仪表盘" | "自定义" | "VibeCoding";
-  icon: string;
+  icon: LucideIcon;
   status: "published" | "draft" | "archived";
   updatedAt: string;
 }
 
 const mockPages: Page[] = [
-  { id: "p-1", name: "客户档案", type: "表单", icon: "📝", status: "published", updatedAt: "2026-07-01" },
-  { id: "p-2", name: "客户列表", type: "列表", icon: "📋", status: "published", updatedAt: "2026-07-02" },
-  { id: "p-3", name: "销售仪表盘", type: "仪表盘", icon: "📊", status: "published", updatedAt: "2026-07-01" },
-  { id: "p-4", name: "客户画像自定义页", type: "自定义", icon: "🎨", status: "draft", updatedAt: "2026-07-03" },
-  { id: "p-5", name: "VibeCoding Demo", type: "VibeCoding", icon: "✨", status: "draft", updatedAt: "2026-07-03" },
-  { id: "p-6", name: "订单管理", type: "列表", icon: "📦", status: "published", updatedAt: "2026-06-28" },
+  { id: "p-1", name: "客户档案", type: "表单", icon: FileEdit, status: "published", updatedAt: "2026-07-01" },
+  { id: "p-2", name: "客户列表", type: "列表", icon: ClipboardList, status: "published", updatedAt: "2026-07-02" },
+  { id: "p-3", name: "销售仪表盘", type: "仪表盘", icon: BarChart3, status: "published", updatedAt: "2026-07-01" },
+  { id: "p-4", name: "客户画像自定义页", type: "自定义", icon: Palette, status: "draft", updatedAt: "2026-07-03" },
+  { id: "p-5", name: "VibeCoding Demo", type: "VibeCoding", icon: Sparkles, status: "draft", updatedAt: "2026-07-03" },
+  { id: "p-6", name: "订单管理", type: "列表", icon: Package, status: "published", updatedAt: "2026-06-28" },
 ];
 
 const typeIcons: Record<Page["type"], React.ReactNode> = {
@@ -103,7 +104,7 @@ export default function Pages() {
           <Card key={page.id} className="cursor-pointer hover:border-primary">
             <CardHeader>
               <div className="flex items-start justify-between">
-                <span className="text-3xl">{page.icon}</span>
+                <page.icon className="size-5" />
                 <Badge variant="outline" className="gap-1">
                   {typeIcons[page.type]} {page.type}
                 </Badge>

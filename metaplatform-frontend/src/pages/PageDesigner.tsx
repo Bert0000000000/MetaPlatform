@@ -79,7 +79,7 @@ const WIDGET_LIST: WidgetDef[] = [
   { type: "textarea",   label: "多行文本", icon: "¶" },
   { type: "number",     label: "数字",     icon: "#" },
   { type: "select",     label: "下拉选择", icon: "▼" },
-  { type: "datepicker", label: "日期",     icon: "📅" },
+  { type: "datepicker", label: "日期",     icon: "Cal" },
   { type: "switch",     label: "开关",     icon: "⊘" },
   { type: "email",      label: "邮箱",     icon: "@" },
   { type: "phone",      label: "电话",     icon: "☎" },

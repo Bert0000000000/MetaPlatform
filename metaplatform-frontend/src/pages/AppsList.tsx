@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
-import { Plus, Sparkles, Bot, Zap, Folder } from "lucide-react";
+import { Plus, Sparkles, Bot, Zap, Folder, ClipboardList, FileEdit, BarChart3 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -7,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 interface AppItem {
   id: string;
   name: string;
-  icon: string;
+  icon: LucideIcon;
   description: string;
   category: "传统应用" | "AI 原生" | "数字员工" | "VibeCoding";
   objects?: number;
@@ -19,7 +20,7 @@ const mockApps: AppItem[] = [
   {
     id: "1",
     name: "客户管理",
-    icon: "📋",
+    icon: ClipboardList,
     description: "客户档案、商机、跟进记录",
     category: "传统应用",
     objects: 3,
@@ -29,7 +30,7 @@ const mockApps: AppItem[] = [
   {
     id: "2",
     name: "报销审批",
-    icon: "📝",
+    icon: FileEdit,
     description: "差旅报销、审批流",
     category: "传统应用",
     objects: 2,
@@ -39,7 +40,7 @@ const mockApps: AppItem[] = [
   {
     id: "3",
     name: "销售看板",
-    icon: "📊",
+    icon: BarChart3,
     description: "销售指标、可视化",
     category: "传统应用",
     objects: 5,
@@ -113,7 +114,7 @@ export function AppsListPage() {
             >
               <CardHeader>
                 <div className="flex items-start justify-between">
-                  <span className="text-3xl">{app.icon}</span>
+                  <app.icon className="size-5" />
                   <Badge variant="outline">{app.category}</Badge>
                 </div>
                 <CardTitle className="text-base mt-2">{app.name}</CardTitle>

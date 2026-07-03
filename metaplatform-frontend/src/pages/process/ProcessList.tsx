@@ -5,7 +5,7 @@ import { PageHeader, StatCard } from "@/components/ui/stat";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { mockProcesses } from "@/lib/mock-data";
-import { Plus, GitBranch, Eye, Activity, BarChart3, AlertTriangle } from "lucide-react";
+import { Plus, GitBranch, Eye, Activity, BarChart3, AlertTriangle, Waves, Play, Timer, CheckCircle } from "lucide-react";
 
 const ALL_PROCESSES = mockProcesses;
 
@@ -27,10 +27,10 @@ export default function ProcessList() {
       />
 
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-        <StatCard label="流程总数" value={ALL_PROCESSES.length} icon="🌊" />
-        <StatCard label="运行中实例" value={3210} trend={8.2} icon="▶️" />
-        <StatCard label="平均耗时" value="5.6h" icon="⏱️" />
-        <StatCard label="SLA 达成率" value="98.5%" trend={2.1} icon="✅" />
+        <StatCard label="流程总数" value={ALL_PROCESSES.length} icon={<Waves className="size-5" />} />
+        <StatCard label="运行中实例" value={3210} trend={8.2} icon={<Play className="size-5" />} />
+        <StatCard label="平均耗时" value="5.6h" icon={<Timer className="size-5" />} />
+        <StatCard label="SLA 达成率" value="98.5%" trend={2.1} icon={<CheckCircle className="size-5" />} />
       </div>
 
       <Tabs defaultValue="all">

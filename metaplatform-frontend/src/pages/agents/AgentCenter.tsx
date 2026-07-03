@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { StatCard } from "@/components/ui/stat";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { mockAgents } from "@/lib/mock-data";
-import { Bot, Plus, MessageSquare, Brain, Sparkles, Users, FileText, Wrench, Activity, GitBranch, Mail, Calendar, BarChart3, Zap, Clock, CheckCircle2 } from "lucide-react";
+import { Bot, Plus, MessageSquare, Brain, Sparkles, Users, FileText, Wrench, Activity, GitBranch, Mail, Calendar, BarChart3, Zap, Clock, CheckCircle2, Search, NotebookPen, Code, ScrollText, DollarSign, Handshake, Truck, Circle, User } from "lucide-react";
 
 const statusConfig = {
   online: { label: "在线", color: "bg-green-500" },
@@ -13,16 +13,16 @@ const statusConfig = {
 };
 
 const SKILLS = [
-  { name: "数据查询", icon: "🔍", category: "数据" },
-  { name: "报表生成", icon: "📊", category: "数据" },
-  { name: "邮件起草", icon: "📧", category: "办公" },
-  { name: "会议纪要", icon: "📝", category: "办公" },
-  { name: "日程安排", icon: "📅", category: "办公" },
-  { name: "代码生成", icon: "💻", category: "技术" },
-  { name: "合同审查", icon: "📜", category: "法务" },
-  { name: "财务核算", icon: "💰", category: "财务" },
-  { name: "客户分析", icon: "🤝", category: "销售" },
-  { name: "供应链预测", icon: "🚚", category: "供应链" },
+  { name: "数据查询", icon: Search, category: "数据" },
+  { name: "报表生成", icon: BarChart3, category: "数据" },
+  { name: "邮件起草", icon: Mail, category: "办公" },
+  { name: "会议纪要", icon: NotebookPen, category: "办公" },
+  { name: "日程安排", icon: Calendar, category: "办公" },
+  { name: "代码生成", icon: Code, category: "技术" },
+  { name: "合同审查", icon: ScrollText, category: "法务" },
+  { name: "财务核算", icon: DollarSign, category: "财务" },
+  { name: "客户分析", icon: Handshake, category: "销售" },
+  { name: "供应链预测", icon: Truck, category: "供应链" },
 ];
 
 const COLLAB_HISTORY = [
@@ -36,10 +36,10 @@ export function AgentList() {
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-        <StatCard label="数字员工总数" value={mockAgents.length} icon="👥" />
-        <StatCard label="在线" value={mockAgents.filter((a) => a.status === "online").length} icon="🟢" />
-        <StatCard label="今日对话" value={1864} trend={15.2} icon="💬" />
-        <StatCard label="Token 用量" value="2.4M" icon="⚡" />
+        <StatCard label="数字员工总数" value={mockAgents.length} icon={Users} />
+        <StatCard label="在线" value={mockAgents.filter((a) => a.status === "online").length} icon={Circle} />
+        <StatCard label="今日对话" value={1864} trend={15.2} icon={MessageSquare} />
+        <StatCard label="Token 用量" value="2.4M" icon={Zap} />
       </div>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0">
@@ -60,7 +60,7 @@ export function AgentList() {
                 <Card key={a.id} className="cursor-pointer hover:border-primary">
                   <CardHeader>
                     <div className="flex items-start justify-between">
-                      <span className="text-4xl">{a.avatar}</span>
+                      <a.avatar className="size-8" />
                       <div className="flex items-center gap-1">
                         <div className={`size-2 rounded-full ${s.color}`} />
                         <span className="text-xs text-muted-foreground">{s.label}</span>
@@ -71,11 +71,11 @@ export function AgentList() {
                   </CardHeader>
                   <CardContent>
                     <div className="flex items-center justify-between text-xs text-muted-foreground">
-                      <span>🤖 {a.model}</span>
-                      <span>💬 {a.conversations.toLocaleString()}</span>
+                      <span className="flex items-center gap-1"><Bot className="size-3" />{a.model}</span>
+                      <span className="flex items-center gap-1"><MessageSquare className="size-3" />{a.conversations.toLocaleString()}</span>
                     </div>
-                    <div className="mt-2 text-xs text-muted-foreground">
-                      👤 {a.owner}
+                    <div className="mt-2 text-xs text-muted-foreground flex items-center gap-1">
+                      <User className="size-3" />{a.owner}
                     </div>
                     <div className="mt-3 flex gap-2">
                       <Button size="sm" variant="outline" className="flex-1">
@@ -110,7 +110,7 @@ export function AgentSkills() {
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           {SKILLS.map((s) => (
             <div key={s.name} className="rounded-lg border p-3 text-center hover:border-primary cursor-pointer">
-              <div className="text-2xl">{s.icon}</div>
+              <div className="text-2xl"><s.icon className="size-6" /></div>
               <div className="font-medium text-sm mt-1">{s.name}</div>
               <Badge variant="outline" className="text-xs mt-1">{s.category}</Badge>
             </div>

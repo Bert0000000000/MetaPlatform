@@ -69,7 +69,7 @@ export default function Objects() {
             <TableBody>
               {filtered.map((obj) => (
                 <TableRow key={obj.id}>
-                  <TableCell className="text-2xl">{obj.icon}</TableCell>
+                  <TableCell>{(() => { const Icon = obj.icon; return <Icon className="size-5" />; })()}</TableCell>
                   <TableCell className="font-mono">{obj.name}</TableCell>
                   <TableCell>{obj.label}</TableCell>
                   <TableCell className="text-right">{obj.properties}</TableCell>

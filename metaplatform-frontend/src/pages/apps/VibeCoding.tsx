@@ -9,7 +9,7 @@ import { Sparkles, Send, Code2, Play, Save, Download, Folder, File, Terminal, Gi
 interface Msg { role: "user" | "assistant"; content: string; ts: string }
 
 const INITIAL: Msg[] = [
-  { role: "assistant", content: "我是 VibeCoding 🤖✨\n用自然语言描述你想要的页面/应用，我来帮你生成。\n\n例如：\n• 「做一个销售看板，按地区分组，显示本月销售额、订单数、客户数」\n• 「客户管理表单，包含姓名、电话、行业、备注」", ts: "12:30" },
+  { role: "assistant", content: "我是 VibeCoding\n用自然语言描述你想要的页面/应用，我来帮你生成。\n\n例如：\n- 「做一个销售看板，按地区分组，显示本月销售额、订单数、客户数」\n- 「客户管理表单，包含姓名、电话、行业、备注」", ts: "12:30" },
 ];
 
 const FILES = [
@@ -43,7 +43,7 @@ export default function VibeCoding() {
         ...m,
         {
           role: "assistant",
-          content: `好的，我正在为你生成代码...\n\n📁 生成了 ${FILES.length} 个文件：\n${FILES.map((f) => `  • ${f.name} (${f.lines} 行)`).join("\n")}\n\n📦 总计 ${FILES.reduce((a, f) => a + f.lines, 0)} 行代码\n⏱️ 耗时 18 秒\n\n你可以点击右侧「运行预览」查看效果，或「下载源码」获取完整工程。`,
+          content: `好的，我正在为你生成代码...\n\n生成了 ${FILES.length} 个文件：\n${FILES.map((f) => `  - ${f.name} (${f.lines} 行)`).join("\n")}\n\n总计 ${FILES.reduce((a, f) => a + f.lines, 0)} 行代码 | 耗时 18 秒\n\n你可以点击右侧「运行预览」查看效果，或「下载源码」获取完整工程。`,
           ts: "现在",
         },
       ]);

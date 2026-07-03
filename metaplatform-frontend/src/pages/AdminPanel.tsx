@@ -22,16 +22,17 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ClipboardList, Link, Settings, Bot, RefreshCw, Brain } from "lucide-react";
 
 type Tab = "audit" | "lineage" | "process" | "agent" | "sync" | "ontology";
 
-const TABS: { key: Tab; label: string; icon: string }[] = [
-  { key: "audit", label: "审计日志", icon: "\u{1F4CB}" },
-  { key: "lineage", label: "数据血缘", icon: "\u{1F517}" },
-  { key: "process", label: "流程监控", icon: "⚙️" },
-  { key: "agent", label: "Agent 监控", icon: "\u{1F916}" },
-  { key: "sync", label: "数据同步", icon: "\u{1F504}" },
-  { key: "ontology", label: "本体管理", icon: "\u{1F9E0}" },
+const TABS: { key: Tab; label: string; icon: React.ElementType }[] = [
+  { key: "audit", label: "审计日志", icon: ClipboardList },
+  { key: "lineage", label: "数据血缘", icon: Link },
+  { key: "process", label: "流程监控", icon: Settings },
+  { key: "agent", label: "Agent 监控", icon: Bot },
+  { key: "sync", label: "数据同步", icon: RefreshCw },
+  { key: "ontology", label: "本体管理", icon: Brain },
 ];
 
 const AdminPanel: React.FC = () => {
@@ -113,12 +114,15 @@ const AdminPanel: React.FC = () => {
 
       <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v as Tab); setSelectedHistory(null); }}>
         <TabsList className="flex-wrap h-auto gap-1">
-          {TABS.map(t => (
-            <TabsTrigger key={t.key} value={t.key} className="gap-1.5">
-              <span>{t.icon}</span>
-              {t.label}
-            </TabsTrigger>
-          ))}
+          {TABS.map(t => {
+            const TabIcon = t.icon;
+            return (
+              <TabsTrigger key={t.key} value={t.key} className="gap-1.5">
+                <TabIcon className="size-4" />
+                {t.label}
+              </TabsTrigger>
+            );
+          })}
         </TabsList>
 
         {loading && (

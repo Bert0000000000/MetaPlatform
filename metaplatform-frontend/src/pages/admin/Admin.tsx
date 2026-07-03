@@ -5,7 +5,7 @@ import { StatCard } from "@/components/ui/stat";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { mockUsers } from "@/lib/mock-data";
-import { Users, Shield, Server, Cpu, Database, Activity, Plus, MoreHorizontal, BarChart3, AlertTriangle, Building2, Settings2, BookText, FileText, Clock, Edit, Trash2, Search, Filter, KeyRound, Lock, Eye } from "lucide-react";
+import { Users, Shield, Server, Cpu, Database, Activity, Plus, MoreHorizontal, BarChart3, AlertTriangle, Building2, Settings2, BookText, FileText, Clock, Edit, Trash2, Search, Filter, KeyRound, Lock, Eye, Monitor, Package, Handshake, Megaphone, Settings, DollarSign, Palette, Wrench, TestTube, Home, Bot, Smartphone, RefreshCw, Dna, CheckCircle2, BookOpen, Cloud, Circle, Radio } from "lucide-react";
 
 const roleLabels: Record<string, string> = {
   executive: "领导",
@@ -27,32 +27,32 @@ const ROLES = [
 
 // 部门
 const DEPARTMENTS = [
-  { id: 1, name: "技术中心", parent: "—", count: 86, leader: "陈志远", icon: "💻" },
-  { id: 2, name: "产品中心", parent: "—", count: 18, leader: "李娜", icon: "📦" },
-  { id: 3, name: "销售中心", parent: "—", count: 142, leader: "张伟", icon: "🤝" },
-  { id: 4, name: "市场中心", parent: "—", count: 24, leader: "王强", icon: "📣" },
-  { id: 5, name: "运营中心", parent: "—", count: 38, leader: "刘敏", icon: "⚙️" },
-  { id: 6, name: "财务中心", parent: "—", count: 12, leader: "陈红", icon: "💰" },
-  { id: 7, name: "人力资源中心", parent: "—", count: 8, leader: "李俊", icon: "👥" },
-  { id: 8, name: "前端开发组", parent: "技术中心", count: 18, leader: "杨俊", icon: "🎨" },
-  { id: 9, name: "后端开发组", parent: "技术中心", count: 36, leader: "张浩", icon: "🔧" },
-  { id: 10, name: "测试组", parent: "技术中心", count: 12, leader: "刘华", icon: "🧪" },
+  { id: 1, name: "技术中心", parent: "—", count: 86, leader: "陈志远", icon: Monitor },
+  { id: 2, name: "产品中心", parent: "—", count: 18, leader: "李娜", icon: Package },
+  { id: 3, name: "销售中心", parent: "—", count: 142, leader: "张伟", icon: Handshake },
+  { id: 4, name: "市场中心", parent: "—", count: 24, leader: "王强", icon: Megaphone },
+  { id: 5, name: "运营中心", parent: "—", count: 38, leader: "刘敏", icon: Settings },
+  { id: 6, name: "财务中心", parent: "—", count: 12, leader: "陈红", icon: DollarSign },
+  { id: 7, name: "人力资源中心", parent: "—", count: 8, leader: "李俊", icon: Users },
+  { id: 8, name: "前端开发组", parent: "技术中心", count: 18, leader: "杨俊", icon: Palette },
+  { id: 9, name: "后端开发组", parent: "技术中心", count: 36, leader: "张浩", icon: Wrench },
+  { id: 10, name: "测试组", parent: "技术中心", count: 12, leader: "刘华", icon: TestTube },
 ];
 
 // 菜单配置
 const MENU_CONFIG = [
-  { id: 1, name: "工作台", path: "/dashboard", icon: "🏠", type: "菜单", perms: 1, sort: 1 },
-  { id: 2, name: "SuperAI", path: "/superai", icon: "🤖", type: "菜单", perms: 1, sort: 2 },
-  { id: 3, name: "应用中心", path: "/apps", icon: "📱", type: "菜单", perms: 12, sort: 3 },
-  { id: 4, name: "流程中心", path: "/process", icon: "🔄", type: "菜单", perms: 18, sort: 4 },
-  { id: 5, name: "数据中心", path: "/data", icon: "📊", type: "菜单", perms: 14, sort: 5 },
-  { id: 6, name: "本体引擎", path: "/ontology", icon: "🧬", type: "菜单", perms: 8, sort: 6 },
-  { id: 7, name: "质量中心", path: "/quality", icon: "✅", type: "菜单", perms: 6, sort: 7 },
-  { id: 8, name: "知识库", path: "/knowledge", icon: "📚", type: "菜单", perms: 5, sort: 8 },
-  { id: 9, name: "架构中心", path: "/architecture", icon: "🏛️", type: "菜单", perms: 4, sort: 9 },
-  { id: 10, name: "云市场", path: "/market", icon: "☁️", type: "菜单", perms: 3, sort: 10 },
-  { id: 11, name: "数字员工", path: "/agents", icon: "👥", type: "菜单", perms: 7, sort: 11 },
-  { id: 12, name: "设置", path: "/admin", icon: "⚙️", type: "菜单", perms: 16, sort: 12 },
+  { id: 1, name: "工作台", path: "/dashboard", icon: Home, type: "菜单", perms: 1, sort: 1 },
+  { id: 2, name: "SuperAI", path: "/superai", icon: Bot, type: "菜单", perms: 1, sort: 2 },
+  { id: 3, name: "应用中心", path: "/apps", icon: Smartphone, type: "菜单", perms: 12, sort: 3 },
+  { id: 4, name: "流程中心", path: "/process", icon: RefreshCw, type: "菜单", perms: 18, sort: 4 },
+  { id: 5, name: "数据中心", path: "/data", icon: BarChart3, type: "菜单", perms: 14, sort: 5 },
+  { id: 6, name: "本体引擎", path: "/ontology", icon: Dna, type: "菜单", perms: 8, sort: 6 },
+  { id: 7, name: "质量中心", path: "/quality", icon: CheckCircle2, type: "菜单", perms: 6, sort: 7 },
+  { id: 8, name: "知识库", path: "/knowledge", icon: BookOpen, type: "菜单", perms: 5, sort: 8 },
+  { id: 9, name: "架构中心", path: "/architecture", icon: Building2, type: "菜单", perms: 4, sort: 9 },
+  { id: 10, name: "云市场", path: "/market", icon: Cloud, type: "菜单", perms: 3, sort: 10 },
+  { id: 11, name: "数字员工", path: "/agents", icon: Users, type: "菜单", perms: 7, sort: 11 },
+  { id: 12, name: "设置", path: "/admin", icon: Settings, type: "菜单", perms: 16, sort: 12 },
 ];
 
 // 数据字典
@@ -225,7 +225,7 @@ export function DepartmentList() {
             {DEPARTMENTS.map((d) => (
               <TableRow key={d.id}>
                 <TableCell>
-                  <span className="mr-2">{d.icon}</span>
+                  <span className="mr-2"><d.icon className="size-4" /></span>
                   <span className="font-medium">{d.name}</span>
                 </TableCell>
                 <TableCell className="text-xs text-muted-foreground">{d.parent}</TableCell>
@@ -277,7 +277,7 @@ export function MenuConfig() {
               <TableRow key={m.id}>
                 <TableCell className="font-medium">{m.name}</TableCell>
                 <TableCell className="font-mono text-xs">{m.path}</TableCell>
-                <TableCell>{m.icon}</TableCell>
+                <TableCell><m.icon className="size-4" /></TableCell>
                 <TableCell>{m.perms}</TableCell>
                 <TableCell className="text-right">{m.sort}</TableCell>
                 <TableCell className="text-right">
@@ -514,10 +514,10 @@ export function AdminDashboard() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-        <StatCard label="用户总数" value={1284} icon="👥" />
-        <StatCard label="在线服务" value="32/32" icon="🟢" />
-        <StatCard label="今日 API 调用" value={486000} trend={12.4} icon="📡" />
-        <StatCard label="本月账单" value="¥ 12,840" icon="💰" />
+        <StatCard label="用户总数" value={1284} icon={Users} />
+        <StatCard label="在线服务" value="32/32" icon={Circle} />
+        <StatCard label="今日 API 调用" value={486000} trend={12.4} icon={Radio} />
+        <StatCard label="本月账单" value="¥ 12,840" icon={DollarSign} />
       </div>
 
       <Tabs defaultValue="dashboard">

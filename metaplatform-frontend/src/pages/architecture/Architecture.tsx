@@ -3,25 +3,25 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Building2, Database, Server, Layers, GitBranch, FileText, Plus, Network, Cpu, Workflow, Box, ArrowRight, ArrowDown, BarChart3, Filter, Download } from "lucide-react";
+import { Building2, Database, Server, Layers, GitBranch, FileText, Plus, Network, Cpu, Workflow, Box, ArrowRight, ArrowDown, BarChart3, Filter, Download, Link, Lightbulb, RefreshCw, User, Zap, Package, Megaphone, FlaskConical, Truck, Factory, Briefcase, Headphones, Smartphone, ClipboardList, DollarSign, Users } from "lucide-react";
 
 // === 业务架构 ===
 const BA_LAYERS = [
-  { level: "L1", name: "价值链", desc: "端到端价值流", count: 5, icon: "🔗", color: "bg-red-500" },
-  { level: "L2", name: "业务能力", desc: "可独立提供价值的业务能力", count: 28, icon: "💡", color: "bg-orange-500" },
-  { level: "L3", name: "业务流程", desc: "端到端业务流程图", count: 64, icon: "🔄", color: "bg-amber-500" },
-  { level: "L4", name: "业务角色", desc: "执行流程的角色", count: 18, icon: "👤", color: "bg-green-500" },
-  { level: "L5", name: "业务事件", desc: "业务事件触发", count: 42, icon: "⚡", color: "bg-blue-500" },
-  { level: "L6", name: "业务对象", desc: "业务层面的核心对象", count: 56, icon: "📦", color: "bg-purple-500" },
+  { level: "L1", name: "价值链", desc: "端到端价值流", count: 5, icon: Link, color: "bg-red-500" },
+  { level: "L2", name: "业务能力", desc: "可独立提供价值的业务能力", count: 28, icon: Lightbulb, color: "bg-orange-500" },
+  { level: "L3", name: "业务流程", desc: "端到端业务流程图", count: 64, icon: RefreshCw, color: "bg-amber-500" },
+  { level: "L4", name: "业务角色", desc: "执行流程的角色", count: 18, icon: User, color: "bg-green-500" },
+  { level: "L5", name: "业务事件", desc: "业务事件触发", count: 42, icon: Zap, color: "bg-blue-500" },
+  { level: "L6", name: "业务对象", desc: "业务层面的核心对象", count: 56, icon: Package, color: "bg-purple-500" },
 ];
 
 const VALUE_CHAIN = [
-  { name: "市场获取", apps: ["CRM", "营销"], icon: "📣" },
-  { name: "产品研发", apps: ["PLM", "项目管理"], icon: "🧪" },
-  { name: "采购供应", apps: ["SRM", "WMS"], icon: "🚚" },
-  { name: "生产制造", apps: ["MES", "ERP"], icon: "🏭" },
-  { name: "营销销售", apps: ["CRM", "电商"], icon: "💼" },
-  { name: "客户服务", apps: ["客服", "工单"], icon: "🎧" },
+  { name: "市场获取", apps: ["CRM", "营销"], icon: Megaphone },
+  { name: "产品研发", apps: ["PLM", "项目管理"], icon: FlaskConical },
+  { name: "采购供应", apps: ["SRM", "WMS"], icon: Truck },
+  { name: "生产制造", apps: ["MES", "ERP"], icon: Factory },
+  { name: "营销销售", apps: ["CRM", "电商"], icon: Briefcase },
+  { name: "客户服务", apps: ["客服", "工单"], icon: Headphones },
 ];
 
 // === 应用架构 ===
@@ -44,12 +44,12 @@ const APP_FLOW_MATRIX = [
 
 // === 数据架构 ===
 const DATA_DOMAINS = [
-  { name: "客户域", objects: 8, apps: ["CRM", "销售看板"], icon: "🤝", color: "bg-blue-500" },
-  { name: "订单域", objects: 12, apps: ["CRM", "ERP"], icon: "📋", color: "bg-green-500" },
-  { name: "产品域", objects: 6, apps: ["PLM", "电商"], icon: "📦", color: "bg-orange-500" },
-  { name: "财务域", objects: 10, apps: ["ERP", "报销"], icon: "💰", color: "bg-yellow-500" },
-  { name: "人事域", objects: 7, apps: ["HR"], icon: "👥", color: "bg-purple-500" },
-  { name: "运营域", objects: 13, apps: ["BI"], icon: "📊", color: "bg-pink-500" },
+  { name: "客户域", objects: 8, apps: ["CRM", "销售看板"], icon: Handshake, color: "bg-blue-500" },
+  { name: "订单域", objects: 12, apps: ["CRM", "ERP"], icon: ClipboardList, color: "bg-green-500" },
+  { name: "产品域", objects: 6, apps: ["PLM", "电商"], icon: Package, color: "bg-orange-500" },
+  { name: "财务域", objects: 10, apps: ["ERP", "报销"], icon: DollarSign, color: "bg-yellow-500" },
+  { name: "人事域", objects: 7, apps: ["HR"], icon: Users, color: "bg-purple-500" },
+  { name: "运营域", objects: 13, apps: ["BI"], icon: BarChart3, color: "bg-pink-500" },
 ];
 
 // === 技术架构 ===
@@ -99,7 +99,7 @@ export function BusinessArchitecture() {
                       {l.level}
                     </div>
                     <div className="flex-1 flex items-center gap-3 p-3 border rounded hover:border-primary cursor-pointer">
-                      <div className="text-2xl">{l.icon}</div>
+                      <div className="text-2xl"><l.icon className="size-6" /></div>
                       <div className="flex-1">
                         <div className="font-medium">{l.name}</div>
                         <div className="text-xs text-muted-foreground">{l.desc}</div>
@@ -125,7 +125,7 @@ export function BusinessArchitecture() {
                 {VALUE_CHAIN.map((v, i) => (
                   <div key={v.name} className="flex items-center gap-2">
                     <div className="rounded-lg border-2 border-primary/30 bg-primary/5 px-4 py-3 hover:bg-primary/10 cursor-pointer">
-                      <div className="text-2xl">{v.icon}</div>
+                      <div className="text-2xl"><v.icon className="size-6" /></div>
                       <div className="font-medium text-sm mt-1">{v.name}</div>
                       <div className="text-xs text-muted-foreground mt-0.5">
                         {v.apps.join(" · ")}
@@ -174,10 +174,10 @@ export function ApplicationArchitecture() {
 
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
         {[
-          { name: "应用总数", count: 6, icon: "📱", desc: "全部应用" },
-          { name: "依赖关系", count: 18, icon: "🔗", desc: "调用次数 5,022/月" },
-          { name: "流程映射", count: 32, icon: "🔄", desc: "应用-流程映射" },
-          { name: "数据映射", count: 56, icon: "📊", desc: "应用-对象映射" },
+          { name: "应用总数", count: 6, icon: Smartphone, desc: "全部应用" },
+          { name: "依赖关系", count: 18, icon: Link, desc: "调用次数 5,022/月" },
+          { name: "流程映射", count: 32, icon: RefreshCw, desc: "应用-流程映射" },
+          { name: "数据映射", count: 56, icon: BarChart3, desc: "应用-对象映射" },
         ].map((c) => (
           <Card key={c.name}>
             <CardContent className="pt-6">
@@ -187,7 +187,7 @@ export function ApplicationArchitecture() {
                   <div className="text-xl font-bold mt-1">{c.count}</div>
                   <div className="text-xs text-muted-foreground mt-1">{c.desc}</div>
                 </div>
-                <div className="text-3xl">{c.icon}</div>
+                <c.icon className="size-8 text-muted-foreground" />
               </div>
             </CardContent>
           </Card>
@@ -288,7 +288,7 @@ export function ApplicationArchitecture() {
               <div className="grid grid-cols-3 gap-4 p-6 bg-muted/30 rounded">
                 {APP_FLOW_MATRIX.map((a, i) => (
                   <div key={i} className="rounded-lg border-2 border-primary/30 bg-card p-3 text-center">
-                    <div className="text-xl">📱</div>
+                    <div className="text-xl"><Smartphone className="size-5 mx-auto" /></div>
                     <div className="font-medium text-sm mt-1">{a.app}</div>
                     <div className="text-xs text-muted-foreground">{a.flows + a.data + a.pages} 项资产</div>
                   </div>
@@ -316,8 +316,8 @@ export function DataArchitecture() {
         {DATA_DOMAINS.map((d) => (
           <Card key={d.name}>
             <CardContent className="p-4 text-center">
-              <div className={`size-12 rounded-full ${d.color} text-white flex items-center justify-center text-2xl mx-auto`}>
-                {d.icon}
+              <div className={`size-12 rounded-full ${d.color} text-white flex items-center justify-center mx-auto`}>
+                <d.icon className="size-6" />
               </div>
               <div className="font-medium text-sm mt-2">{d.name}</div>
               <div className="text-xs text-muted-foreground mt-1">{d.objects} 对象</div>

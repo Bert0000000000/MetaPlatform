@@ -2,28 +2,28 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/ui/stat";
-import { Plus, GitBranch, FileCode, Boxes, Settings, ChevronRight } from "lucide-react";
+import { Plus, GitBranch, FileCode, Boxes, Settings, ChevronRight, Circle, Pause, CircleDot, Shield, User, ScrollText, Scale, FileText, Download, Upload, Save, BarChart3, Clock, ArrowRightLeft, MoreHorizontal } from "lucide-react";
 
 const eventTypes = [
-  { type: "开始事件", icon: "🟢", desc: "6 种触发器" },
-  { type: "中间事件", icon: "⏸️", desc: "捕获/抛出/链接" },
-  { type: "结束事件", icon: "🔴", desc: "8 种结果" },
-  { type: "边界事件", icon: "🛡️", desc: "中断/非中断" },
+  { type: "开始事件", icon: Circle, desc: "6 种触发器" },
+  { type: "中间事件", icon: Pause, desc: "捕获/抛出/链接" },
+  { type: "结束事件", icon: CircleDot, desc: "8 种结果" },
+  { type: "边界事件", icon: Shield, desc: "中断/非中断" },
 ];
 
 const taskTypes = [
-  { type: "用户任务", icon: "👤", desc: "6 参与者 + 4 任务模式 + 10 按钮" },
-  { type: "服务任务", icon: "⚙️", desc: "6 大适配器" },
-  { type: "脚本任务", icon: "📜", desc: "Groovy/JS/Python" },
-  { type: "业务规则", icon: "⚖️", desc: "DMN 决策表" },
+  { type: "用户任务", icon: User, desc: "6 参与者 + 4 任务模式 + 10 按钮" },
+  { type: "服务任务", icon: Settings, desc: "6 大适配器" },
+  { type: "脚本任务", icon: ScrollText, desc: "Groovy/JS/Python" },
+  { type: "业务规则", icon: Scale, desc: "DMN 决策表" },
 ];
 
 const gatewayTypes = [
-  { type: "排他网关", icon: "✕", desc: "XOR 决策/合并" },
-  { type: "包容网关", icon: "○", desc: "OR 决策/合并" },
-  { type: "并行网关", icon: "+", desc: "AND 分叉/连接" },
-  { type: "事件网关", icon: "⏰", desc: "事件驱动" },
-  { type: "复杂网关", icon: "✱", desc: "自定义" },
+  { type: "排他网关", icon: CircleDot, desc: "XOR 决策/合并" },
+  { type: "包容网关", icon: Circle, desc: "OR 决策/合并" },
+  { type: "并行网关", icon: GitBranch, desc: "AND 分叉/连接" },
+  { type: "事件网关", icon: Clock, desc: "事件驱动" },
+  { type: "复杂网关", icon: Settings, desc: "自定义" },
 ];
 
 const subProcessTypes = [
@@ -34,17 +34,17 @@ const subProcessTypes = [
 ];
 
 const dataElements = [
-  { type: "数据对象", icon: "📄" },
-  { type: "数据输入", icon: "⬇️" },
-  { type: "数据输出", icon: "⬆️" },
-  { type: "数据存储", icon: "💾" },
+  { type: "数据对象", icon: FileText },
+  { type: "数据输入", icon: Download },
+  { type: "数据输出", icon: Upload },
+  { type: "数据存储", icon: Save },
 ];
 
 const connectingTypes = [
-  { type: "顺序流", icon: "→", desc: "实线箭头" },
-  { type: "消息流", icon: "⇢", desc: "虚线箭头（跨泳池）" },
-  { type: "关联", icon: "···", desc: "点线" },
-  { type: "数据关联", icon: "📊", desc: "数据流向" },
+  { type: "顺序流", icon: ChevronRight, desc: "实线箭头" },
+  { type: "消息流", icon: ArrowRightLeft, desc: "虚线箭头（跨泳池）" },
+  { type: "关联", icon: MoreHorizontal, desc: "点线" },
+  { type: "数据关联", icon: BarChart3, desc: "数据流向" },
 ];
 
 export default function Workflows() {
@@ -78,7 +78,7 @@ export default function Workflows() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {eventTypes.map((e) => (
                 <div key={e.type} className="border rounded-lg p-3 hover:border-primary cursor-pointer">
-                  <div className="text-2xl mb-1">{e.icon}</div>
+                  <div className="mb-1"><e.icon className="size-5" /></div>
                   <div className="font-medium text-sm">{e.type}</div>
                   <div className="text-xs text-muted-foreground">{e.desc}</div>
                 </div>
@@ -92,7 +92,7 @@ export default function Workflows() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {taskTypes.map((t) => (
                 <div key={t.type} className="border rounded-lg p-3 hover:border-primary cursor-pointer">
-                  <div className="text-2xl mb-1">{t.icon}</div>
+                  <div className="mb-1"><t.icon className="size-5" /></div>
                   <div className="font-medium text-sm">{t.type}</div>
                   <div className="text-xs text-muted-foreground">{t.desc}</div>
                 </div>
@@ -119,7 +119,7 @@ export default function Workflows() {
             <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
               {gatewayTypes.map((g) => (
                 <div key={g.type} className="border rounded-lg p-3 hover:border-primary cursor-pointer">
-                  <div className="text-2xl mb-1">{g.icon}</div>
+                  <div className="mb-1"><g.icon className="size-5" /></div>
                   <div className="font-medium text-sm">{g.type}</div>
                   <div className="text-xs text-muted-foreground">{g.desc}</div>
                 </div>
@@ -138,7 +138,7 @@ export default function Workflows() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {dataElements.map((d) => (
               <div key={d.type} className="border rounded-lg p-3 hover:border-primary cursor-pointer">
-                <div className="text-2xl mb-1">{d.icon}</div>
+                <div className="mb-1"><d.icon className="size-5" /></div>
                 <div className="font-medium text-sm">{d.type}</div>
               </div>
             ))}
@@ -155,7 +155,7 @@ export default function Workflows() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {connectingTypes.map((c) => (
               <div key={c.type} className="border rounded-lg p-3 hover:border-primary cursor-pointer">
-                <div className="text-2xl mb-1">{c.icon}</div>
+                <div className="mb-1"><c.icon className="size-5" /></div>
                 <div className="font-medium text-sm">{c.type}</div>
                 <div className="text-xs text-muted-foreground">{c.desc}</div>
               </div>

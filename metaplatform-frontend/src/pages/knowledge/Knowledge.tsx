@@ -6,15 +6,15 @@ import { StatCard } from "@/components/ui/stat";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { mockDocuments } from "@/lib/mock-data";
-import { FileText, Upload, Search, Eye, FolderTree, Sparkles, Send, Network, Clock, BookMarked, Tag, GitCommit, Brain, MessageSquare } from "lucide-react";
+import { FileText, Upload, Search, Eye, FolderTree, Sparkles, Send, Network, Clock, BookMarked, Tag, GitCommit, Brain, MessageSquare, BookOpen, Ruler, Briefcase, ScrollText, NotebookPen, Scale, Puzzle, Hash } from "lucide-react";
 
 const KB_CATEGORIES = [
-  { name: "产品手册", count: 86, icon: "📘", color: "bg-blue-500" },
-  { name: "技术规范", count: 124, icon: "📐", color: "bg-purple-500" },
-  { name: "业务文档", count: 248, icon: "💼", color: "bg-green-500" },
-  { name: "合同协议", count: 178, icon: "📜", color: "bg-orange-500" },
-  { name: "会议纪要", count: 326, icon: "📝", color: "bg-pink-500" },
-  { name: "政策法规", count: 64, icon: "⚖️", color: "bg-red-500" },
+  { name: "产品手册", count: 86, icon: BookOpen, color: "bg-blue-500" },
+  { name: "技术规范", count: 124, icon: Ruler, color: "bg-purple-500" },
+  { name: "业务文档", count: 248, icon: Briefcase, color: "bg-green-500" },
+  { name: "合同协议", count: 178, icon: ScrollText, color: "bg-orange-500" },
+  { name: "会议纪要", count: 326, icon: NotebookPen, color: "bg-pink-500" },
+  { name: "政策法规", count: 64, icon: Scale, color: "bg-red-500" },
 ];
 
 const QA_HISTORY = [
@@ -234,8 +234,8 @@ export function Categories() {
           {KB_CATEGORIES.map((c) => (
             <div key={c.name} className="rounded-lg border p-4 hover:border-primary cursor-pointer">
               <div className="flex items-center gap-3">
-                <div className={`size-10 rounded-lg ${c.color} text-white flex items-center justify-center text-xl`}>
-                  {c.icon}
+                <div className={`size-10 rounded-lg ${c.color} text-white flex items-center justify-center`}>
+                  <c.icon className="size-5" />
                 </div>
                 <div className="flex-1">
                   <div className="font-medium text-sm">{c.name}</div>
@@ -319,10 +319,10 @@ export function KnowledgeDashboard() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-        <StatCard label="文档总数" value={1284} icon="📄" />
-        <StatCard label="已分块" value={48620} icon="🧩" />
-        <StatCard label="向量化" value={48620} icon="🔢" />
-        <StatCard label="知识图谱节点" value={8934} icon="🕸️" />
+        <StatCard label="文档总数" value={1284} icon={FileText} />
+        <StatCard label="已分块" value={48620} icon={Puzzle} />
+        <StatCard label="向量化" value={48620} icon={Hash} />
+        <StatCard label="知识图谱节点" value={8934} icon={Network} />
       </div>
 
       <Tabs defaultValue="overview">
