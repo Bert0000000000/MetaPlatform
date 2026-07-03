@@ -196,6 +196,9 @@ export default function App() {
               <Route path="/admin/settings" element={<SystemSettings />} />
               <Route path="/admin/*" element={<AdminDashboard />} />
 
+              {/* 设置快捷路由 → 后台管理设置页 */}
+              <Route path="/settings" element={<Navigate to="/admin/settings" replace />} />
+
               {/* 兜底 */}
               <Route path="*" element={<Navigate to="/dashboard" replace />} />
             </Route>
