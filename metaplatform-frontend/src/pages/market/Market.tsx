@@ -5,6 +5,10 @@ import { Badge } from "@/components/ui/badge";
 import { StatCard } from "@/components/ui/stat";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Star, Download, Boxes, Sparkles, Workflow, BookOpen, Code, Plus, Package, Bot, Store, Users, DollarSign, Check, Crown, Building2, Briefcase, Sprout, X, Search, Eye, FileText, Zap, Globe } from "lucide-react";
 
 /* ── 本体模板初始数据（本地状态管理，无 market API） ── */

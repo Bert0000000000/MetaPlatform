@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Key, Globe, Bell, Link2, Shield, Webhook, Eye, EyeOff, BookOpen, Hash, MessageCircle, MessagesSquare, Save, Loader2, Check, Copy, Send, ArrowRight, Clock, Zap, FileText, RefreshCw, Trash2, Plus, ExternalLink, Lock, Users, Building2, Sliders, ShieldCheck, TestTube2, Workflow, ChevronRight, ChevronDown, Pencil, Wand2, Crosshair, Layers, Gauge, ArrowLeftRight, Scale, Percent, FastForward, Rewind, ToggleLeft, UserPlus, UserCheck, MoveRight, StopCircle, Wrench, Settings, Image, Upload } from "lucide-react";
+import { Key, Globe, Bell, Link2, Shield, Webhook, Eye, EyeOff, BookOpen, Hash, MessageCircle, MessagesSquare, Save, Loader2, Check, Copy, Send, ArrowRight, Clock, Zap, FileText, RefreshCw, Trash2, Plus, ExternalLink, Lock, Users, Building2, Sliders, ShieldCheck, TestTube2, Workflow, ChevronRight, ChevronDown, Pencil, Wand2, Crosshair, Layers, Gauge, ArrowLeftRight, Scale, Percent, FastForward, Rewind, ToggleLeft, UserPlus, UserCheck, MoveRight, StopCircle, Wrench, Settings, Image, Upload, Server } from "lucide-react";
 
 /* ── Toast helper ── */
 function useToast() {

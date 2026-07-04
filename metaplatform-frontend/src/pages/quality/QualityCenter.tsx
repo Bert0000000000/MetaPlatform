@@ -9,8 +9,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { PageHeader } from "@/components/ui/stat";
-import { TestTube, Bot, Play, CheckCircle2, XCircle, Loader2, Bug, FileText, Plus, Gauge, Sparkles, GitBranch, AlertCircle, Zap, FlaskConical, BarChart3, Download, Activity, Settings, Search, Send, Monitor, Wrench, Eye, Clock } from "lucide-react";
+import { TestTube, Bot, Play, CheckCircle2, XCircle, Loader2, Bug, FileText, Plus, Gauge, Sparkles, GitBranch, AlertCircle, Zap, FlaskConical, BarChart3, Download, Activity, Settings, Search, Send, Monitor, Wrench, Eye, Clock, Shield } from "lucide-react";
 
 const statusConfig = {
   passed: { label: "通过", variant: "default" as const, icon: CheckCircle2 },

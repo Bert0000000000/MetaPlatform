@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { appsApi, type Application } from "@/lib/api";
-import { Box, FileText, GitBranch, Users, Calendar, Dna, Loader2, AlertCircle, Upload, TrendingUp, Plus, Workflow, Eye } from "lucide-react";
+import { Box, FileText, GitBranch, Users, Calendar, Dna, Loader2, AlertCircle, Upload, TrendingUp, Plus, Workflow, Eye, Zap } from "lucide-react";
 
 export default function AppOverview() {
   const { appId } = useParams();

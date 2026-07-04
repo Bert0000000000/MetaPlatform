@@ -6,7 +6,7 @@ import { PageHeader } from "@/components/ui/stat";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Save, Eye, Smartphone, Monitor, Tablet, Settings, Trash2, Copy, Plus, Type, Hash, Calendar, Mail, Phone, ListChecks, FileText, Upload, Star, Sliders, ToggleLeft, Sparkles, FileEdit, Clock, ClipboardList, Circle, CheckSquare, Paperclip, Image, PenTool, MapPin, TreeDeciduous, Scan, FileImage, CreditCard, Receipt, Contact, Check, Gauge, Printer, TreePine, LayoutDashboard } from "lucide-react";
+import { Save, Eye, Smartphone, Monitor, Tablet, Settings, Trash2, Copy, Plus, Type, Hash, Calendar, Mail, Phone, ListChecks, FileText, Upload, Star, Sliders, ToggleLeft, Sparkles, FileEdit, Clock, ClipboardList, Circle, CheckSquare, Paperclip, Image, PenTool, MapPin, TreeDeciduous, Scan, FileImage, CreditCard, Receipt, Contact, Check, Gauge, Printer, TreePine, LayoutDashboard, Loader2 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 // OCR Document Types

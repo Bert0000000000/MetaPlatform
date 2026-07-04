@@ -5,6 +5,10 @@ import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/ui/stat";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Box, Hash, Link2, Zap, Calculator, Shield, Settings, Server, Plus, Sparkles, Link, User, Package, Tag, Users, FileText, Receipt, Eye, Edit, Trash2, Search } from "lucide-react";
 
 const element7of8 = [
