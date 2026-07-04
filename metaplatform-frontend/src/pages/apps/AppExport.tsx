@@ -5,8 +5,10 @@ import { PageHeader } from "@/components/ui/stat";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Code2, Database, Server, Smartphone, Download, FileCode, Container, Loader2, CheckCircle2, FileDown, X } from "lucide-react";
+import { Code2, Database, Server, Smartphone, Download, FileCode, Container, Loader2, CheckCircle2, FileDown, X, ChevronDown, ChevronRight, Copy, ExternalLink } from "lucide-react";
 import { useState, useEffect } from "react";
+import { exportApi } from "@/lib/api";
+import { useSearchParams } from "react-router-dom";
 
 /* ── Export targets with initial checked state ── */
 const INITIAL_FRONTEND = [
@@ -16,13 +18,13 @@ const INITIAL_FRONTEND = [
 ];
 
 const INITIAL_BACKEND = [
-  { id: "java", name: "Java Spring Boot", desc: "Java 21 + Spring Boot 3", checked: true, size: "~850KB" },
+  { id: "java-spring", name: "Java Spring Boot", desc: "Java 21 + Spring Boot 3", checked: true, size: "~850KB" },
   { id: "python", name: "Python FastAPI", desc: "Python 3.12 + FastAPI + SQLAlchemy", checked: false, size: "~620KB" },
   { id: "node", name: "Node.js", desc: "Node.js 20 + Express + TypeScript", checked: false, size: "~480KB" },
 ];
 
 const INITIAL_DB = [
-  { id: "ddl", name: "DDL（建表语句）", desc: "PostgreSQL/MySQL 兼容", checked: true, size: "~12KB" },
+  { id: "java-ddl", name: "DDL（建表语句）", desc: "PostgreSQL/MySQL 兼容", checked: true, size: "~12KB" },
   { id: "dml", name: "DML（初始化数据）", desc: "包含种子数据", checked: true, size: "~8KB" },
   { id: "flyway", name: "Flyway 迁移脚本", desc: "V1__init.sql ... V2__...", checked: false, size: "~4KB" },
 ];
@@ -33,7 +35,24 @@ const INITIAL_DEPLOY = [
   { id: "helm", name: "Helm Chart", desc: "Kubernetes 部署包", checked: true, size: "~8KB" },
 ];
 
+interface ExportFile {
+  name: string;
+  content: string;
+  type: string;
+}
+
+interface ExportResult {
+  exportId: string;
+  files: ExportFile[];
+  status: string;
+  app: { id: string; name: string; version: string };
+  generatedAt: string;
+}
+
 export default function AppExport() {
+  const [searchParams] = useSearchParams();
+  const appId = searchParams.get("appId") || "";
+
   const [activeTab, setActiveTab] = useState("frontend");
   const [frontendTargets, setFrontendTargets] = useState(INITIAL_FRONTEND);
   const [backendTargets, setBackendTargets] = useState(INITIAL_BACKEND);
@@ -46,6 +65,15 @@ export default function AppExport() {
   const [exportProgress, setExportProgress] = useState(0);
   const [exportStep, setExportStep] = useState("");
   const [exportDone, setExportDone] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
+
+  /* ── Export result ── */
+  const [exportResult, setExportResult] = useState<ExportResult | null>(null);
+
+  /* ── File viewer state ── */
+  const [expandedFiles, setExpandedFiles] = useState<Set<string>>(new Set());
+  const [fileFilter, setFileFilter] = useState("");
+  const [copiedFile, setCopiedFile] = useState<string | null>(null);
 
   /* ── Toggle checkbox helper ── */
   function toggleItem(
@@ -62,30 +90,152 @@ export default function AppExport() {
   /* ── Count selected items ── */
   const selectedCount = [...frontendTargets, ...backendTargets, ...dbTargets, ...deployTargets].filter((t) => t.checked).length;
 
-  /* ── Start export ── */
+  /* ── Get active backend targets that the API supports ── */
+  function getApiTargets(): string[] {
+    const allTargets = [...frontendTargets, ...backendTargets, ...dbTargets, ...deployTargets];
+    return allTargets.filter((t) => t.checked).map((t) => t.id);
+  }
+
+  /* ── Toggle file expansion ── */
+  function toggleFileExpand(fileName: string) {
+    setExpandedFiles((prev) => {
+      const next = new Set(prev);
+      if (next.has(fileName)) {
+        next.delete(fileName);
+      } else {
+        next.add(fileName);
+      }
+      return next;
+    });
+  }
+
+  /* ── Copy file content ── */
+  async function copyFileContent(file: ExportFile) {
+    try {
+      await navigator.clipboard.writeText(file.content);
+      setCopiedFile(file.name);
+      setTimeout(() => setCopiedFile(null), 2000);
+    } catch {
+      // Fallback
+      const ta = document.createElement("textarea");
+      ta.value = file.content;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+      setCopiedFile(file.name);
+      setTimeout(() => setCopiedFile(null), 2000);
+    }
+  }
+
+  /* ── Download single file ── */
+  function downloadFile(file: ExportFile) {
+    const blob = new Blob([file.content], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = file.name.split("/").pop() || file.name;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }
+
+  /* ── Download all files as combined text (browser-side) ── */
+  function downloadAllFiles() {
+    if (!exportResult || exportResult.files.length === 0) return;
+
+    // Create a concatenated file with all source code
+    const separator = "\n" + "=".repeat(80) + "\n";
+    const combined = exportResult.files.map((f) => {
+      return `// ─── File: ${f.name} ${"─".repeat(Math.max(0, 60 - f.name.length))}\n${f.content}`;
+    }).join(separator);
+
+    const blob = new Blob([combined], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${exportResult.app.name || "export"}-all-files.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }
+
+  /* ── Filter files ── */
+  const filteredFiles = exportResult
+    ? exportResult.files.filter(
+        (f) => !fileFilter || f.name.toLowerCase().includes(fileFilter.toLowerCase()),
+      )
+    : [];
+
+  /* ── Get file icon based on type ── */
+  function getFileIcon(type: string) {
+    switch (type) {
+      case "java": return <FileCode className="size-4 text-orange-500" />;
+      case "typescript":
+      case "vue": return <Code2 className="size-4 text-blue-500" />;
+      case "sql": return <Database className="size-4 text-green-500" />;
+      case "yaml":
+      case "json": return <FileCode className="size-4 text-purple-500" />;
+      case "dockerfile":
+      case "nginx":
+      case "shell": return <Container className="size-4 text-cyan-500" />;
+      default: return <FileCode className="size-4 text-muted-foreground" />;
+    }
+  }
+
+  /* ── Start export (real API call) ── */
   async function handleExport() {
+    if (!appId) {
+      setExportError("请先选择一个应用（URL 中需要 appId 参数）");
+      setExportDialogOpen(true);
+      return;
+    }
+
     setExportDialogOpen(true);
     setExporting(true);
     setExportDone(false);
+    setExportError(null);
+    setExportResult(null);
     setExportProgress(0);
+    setExpandedFiles(new Set());
 
+    const targets = getApiTargets();
     const steps = [
-      { label: "生成前端源码...", progress: 15 },
-      { label: "生成后端源码...", progress: 35 },
-      { label: "导出数据库脚本...", progress: 55 },
-      { label: "打包部署配置...", progress: 75 },
-      { label: "压缩归档...", progress: 90 },
+      { label: "读取应用配置...", progress: 10 },
+      { label: "读取本体模型...", progress: 25 },
+      { label: "生成代码文件...", progress: 50 },
+      { label: "处理导出结果...", progress: 80 },
       { label: "完成", progress: 100 },
     ];
 
-    for (const step of steps) {
-      setExportStep(step.label);
-      setExportProgress(step.progress);
-      await new Promise((r) => setTimeout(r, 600 + Math.random() * 400));
-    }
+    // Animate progress steps while waiting for API
+    let stepIdx = 0;
+    const progressTimer = setInterval(() => {
+      if (stepIdx < steps.length - 1) {
+        stepIdx++;
+        setExportStep(steps[stepIdx].label);
+        setExportProgress(steps[stepIdx].progress);
+      }
+    }, 400);
 
-    setExporting(false);
-    setExportDone(true);
+    setExportStep(steps[0].label);
+    setExportProgress(steps[0].progress);
+
+    try {
+      const result = await exportApi.generate(appId, targets);
+      clearInterval(progressTimer);
+      setExportProgress(100);
+      setExportStep("完成");
+      setExportResult(result);
+      setExporting(false);
+      setExportDone(true);
+    } catch (err: any) {
+      clearInterval(progressTimer);
+      setExporting(false);
+      setExportError(err.message || "导出失败，请稍后重试");
+    }
   }
 
   /* ── Reset export dialog ── */
@@ -94,13 +244,14 @@ export default function AppExport() {
     setExportDone(false);
     setExportProgress(0);
     setExportStep("");
+    setExportError(null);
   }
 
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
         title="应用导出（CODE EXPORT）"
-        description="将应用导出为可独立部署的完整工程（前端 + 后端 + 数据库 + 部署）"
+        description={appId ? `正在导出应用: ${appId}` : "将应用导出为可独立部署的完整工程（前端 + 后端 + 数据库 + 部署）"}
         action={
           <Button className="gap-2" size="lg" onClick={handleExport} disabled={exporting || selectedCount === 0}>
             {exporting ? <Loader2 className="size-4 animate-spin" /> : <Download className="size-4" />}
@@ -108,6 +259,16 @@ export default function AppExport() {
           </Button>
         }
       />
+
+      {!appId && (
+        <Card className="border-amber-200 bg-amber-50">
+          <CardContent className="p-4">
+            <p className="text-sm text-amber-800">
+              请通过 URL 参数 <code>appId</code> 指定要导出的应用。例如: <code>/apps/export?appId=your-app-id</code>
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
@@ -239,29 +400,33 @@ export default function AppExport() {
         </CardContent>
       </Card>
 
-      {/* ── Export Progress Dialog ── */}
+      {/* ── Export Progress & Results Dialog ── */}
       <Dialog open={exportDialogOpen} onOpenChange={exporting ? undefined : handleCloseExport}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              {exportDone ? (
+              {exportError ? (
+                <><X className="size-5 text-red-500" /> 导出失败</>
+              ) : exportDone ? (
                 <><CheckCircle2 className="size-5 text-green-500" /> 导出完成</>
               ) : (
                 <><Loader2 className="size-5 animate-spin" /> 正在导出...</>
               )}
             </DialogTitle>
             <DialogDescription>
-              {exportDone
-                ? "所有选中的模块已成功导出"
-                : `正在生成 ${selectedCount} 个导出模块，请稍候`}
+              {exportError
+                ? exportError
+                : exportDone && exportResult
+                  ? `已生成 ${exportResult.files.length} 个文件`
+                  : `正在生成 ${selectedCount} 个导出模块，请稍候`}
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 py-2">
+          <div className="space-y-4 py-2 flex-1 overflow-y-auto min-h-0">
             {/* Progress bar */}
             <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
               <div
-                className="h-full bg-primary transition-all duration-500 ease-out rounded-full"
+                className={`h-full transition-all duration-500 ease-out rounded-full ${exportError ? "bg-red-500" : "bg-primary"}`}
                 style={{ width: `${exportProgress}%` }}
               />
             </div>
@@ -270,20 +435,89 @@ export default function AppExport() {
               <span>{exportProgress}%</span>
             </div>
 
-            {/* Export summary */}
-            {exportDone && (
-              <div className="space-y-2">
-                <div className="text-sm font-medium mt-2">导出内容：</div>
-                <div className="space-y-1">
-                  {[...frontendTargets, ...backendTargets, ...dbTargets, ...deployTargets]
-                    .filter((t) => t.checked)
-                    .map((t) => (
-                      <div key={t.id} className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <CheckCircle2 className="size-3 text-green-500" />
-                        <span>{t.name}</span>
-                        <Badge variant="outline" className="text-xs ml-auto">{t.size}</Badge>
+            {/* Error message */}
+            {exportError && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded text-sm text-red-700">
+                {exportError}
+              </div>
+            )}
+
+            {/* Export result: file list */}
+            {exportDone && exportResult && (
+              <div className="space-y-3">
+                {/* Filter & actions bar */}
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    placeholder="搜索文件..."
+                    value={fileFilter}
+                    onChange={(e) => setFileFilter(e.target.value)}
+                    className="flex-1 px-3 py-1.5 text-sm border rounded-md bg-background"
+                  />
+                  <Button variant="outline" size="sm" onClick={downloadAllFiles} className="gap-1">
+                    <FileDown className="size-3.5" />
+                    下载全部
+                  </Button>
+                </div>
+
+                {/* File tree */}
+                <div className="border rounded-md divide-y max-h-[400px] overflow-y-auto">
+                  {filteredFiles.length === 0 ? (
+                    <div className="p-4 text-center text-sm text-muted-foreground">
+                      {fileFilter ? "没有匹配的文件" : "暂无文件"}
+                    </div>
+                  ) : (
+                    filteredFiles.map((file) => (
+                      <div key={file.name} className="text-sm">
+                        {/* File header */}
+                        <div
+                          className="flex items-center gap-2 px-3 py-2 hover:bg-muted/50 cursor-pointer select-none"
+                          onClick={() => toggleFileExpand(file.name)}
+                        >
+                          {expandedFiles.has(file.name) ? (
+                            <ChevronDown className="size-3.5 shrink-0 text-muted-foreground" />
+                          ) : (
+                            <ChevronRight className="size-3.5 shrink-0 text-muted-foreground" />
+                          )}
+                          {getFileIcon(file.type)}
+                          <span className="flex-1 font-mono text-xs truncate">{file.name}</span>
+                          <Badge variant="outline" className="text-[10px] shrink-0">{file.type}</Badge>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0 shrink-0"
+                            onClick={(e) => { e.stopPropagation(); copyFileContent(file); }}
+                            title="复制内容"
+                          >
+                            <Copy className="size-3" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0 shrink-0"
+                            onClick={(e) => { e.stopPropagation(); downloadFile(file); }}
+                            title="下载文件"
+                          >
+                            <FileDown className="size-3" />
+                          </Button>
+                        </div>
+                        {/* File content (expandable) */}
+                        {expandedFiles.has(file.name) && (
+                          <div className="border-t bg-muted/30">
+                            <pre className="p-3 text-xs font-mono overflow-x-auto whitespace-pre-wrap break-all max-h-[300px] overflow-y-auto">
+                              {file.content}
+                            </pre>
+                          </div>
+                        )}
+                        {/* Copied toast */}
+                        {copiedFile === file.name && (
+                          <div className="absolute right-12 text-xs text-green-600 bg-green-50 px-2 py-0.5 rounded">
+                            已复制
+                          </div>
+                        )}
                       </div>
-                    ))}
+                    ))
+                  )}
                 </div>
               </div>
             )}
@@ -297,18 +531,18 @@ export default function AppExport() {
                 <Button variant="outline" onClick={handleCloseExport}>
                   关闭
                 </Button>
-                <Button onClick={() => {
-                  // Simulate download
-                  const link = document.createElement("a");
-                  link.href = "#";
-                  link.download = "metaplatform-export.zip";
-                  // In a real app, this would be a real file URL
-                  handleCloseExport();
-                  // Show a brief toast-like message
-                  alert("下载已开始：metaplatform-export.zip（演示模式，文件将由后端生成）");
-                }}>
+                <Button onClick={downloadAllFiles} disabled={!exportResult || exportResult.files.length === 0}>
                   <FileDown className="size-4 mr-1" />
-                  下载导出包
+                  下载全部 ({exportResult?.files.length || 0} 个文件)
+                </Button>
+              </>
+            ) : exportError ? (
+              <>
+                <Button variant="outline" onClick={handleCloseExport}>
+                  关闭
+                </Button>
+                <Button onClick={handleExport}>
+                  重试
                 </Button>
               </>
             ) : null}

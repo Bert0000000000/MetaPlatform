@@ -226,6 +226,30 @@ export const agentsApi = {
     }),
 };
 
+// ─── Export ────────────────────────────────────────────────
+export const exportApi = {
+  generate: (appId: string, targets: string[]) =>
+    request<{
+      exportId: string;
+      files: Array<{ name: string; content: string; type: string }>;
+      status: string;
+      app: { id: string; name: string; version: string };
+      generatedAt: string;
+    }>("/export/generate", {
+      method: "POST",
+      body: JSON.stringify({ appId, targets }),
+    }),
+  download: (appId: string, targets: string[]) =>
+    request<{
+      exportId: string;
+      files: Array<{ name: string; content: string; type: string }>;
+      status: string;
+    }>("/export/download", {
+      method: "POST",
+      body: JSON.stringify({ appId, targets }),
+    }),
+};
+
 // ─── Admin ────────────────────────────────────────────────
 export const adminApi = {
   listUsers: () => request<User[]>("/admin/users"),

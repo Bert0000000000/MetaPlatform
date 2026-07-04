@@ -23,7 +23,9 @@ import AppPublish from "@/pages/apps/AppPublish";
 import AppExport from "@/pages/apps/AppExport";
 import NewAppWizard from "@/pages/apps/NewAppWizard";
 import VibeCoding from "@/pages/apps/VibeCoding";
+import WebIDE from "@/pages/apps/WebIDE";
 import FormDesigner from "@/pages/apps/FormDesigner";
+import FDEWorkbench from "@/pages/apps/FDEWorkbench";
 
 // 流程中心
 import ProcessList, { ProcessInstances, ProcessApprovals, ProcessTriggers, ProcessAnalysis, ProcessPlatform, ProcessExport } from "@/pages/process/ProcessList";
@@ -38,7 +40,7 @@ import { OntologyElement, OntologyProperties, OntologyLinks, OntologyActions, On
 import ObjectDetail from "@/pages/ontology/ObjectDetail";
 
 // 数据中心
-import { DataDashboard, DataSourceList, AskData, MetricCenter, DataQuality, ETLTasks, RealTimeMonitor, DecisionPush, DataLakehouse, DataKnowledge } from "@/pages/data/DataCenter";
+import { DataDashboard, DataSourceList, AskData, MetricCenter, DataQuality, ETLTasks, RealTimeMonitor, DecisionPush, DataLakehouse, DataKnowledge, ReportCenter, MasterData } from "@/pages/data/DataCenter";
 
 // 质量中心
 import { QualityDashboard, TestCases, BugTracker, PerfMonitor, AIGenerateCases, OntologyTesting, AIUITesting, ProcessTesting, AIBugFix, TestReport } from "@/pages/quality/QualityCenter";
@@ -129,6 +131,8 @@ export default function App() {
               <Route path="/apps/:appId/config" element={<AppConfig />} />
               <Route path="/apps/:appId/publish" element={<AppPublish />} />
               <Route path="/apps/:appId/export" element={<AppExport />} />
+              <Route path="/apps/:appId/ide" element={<WebIDE />} />
+              <Route path="/apps/:appId/fde" element={<FDEWorkbench />} />
 
               {/* 5. 流程中心 */}
               <Route path="/process" element={<ProcessList />} />
@@ -157,6 +161,8 @@ export default function App() {
               <Route path="/data/decision" element={<DecisionPush />} />
               <Route path="/data/lakehouse" element={<DataLakehouse />} />
               <Route path="/data/knowledge" element={<DataKnowledge />} />
+              <Route path="/data/reports" element={<ReportCenter />} />
+              <Route path="/data/masterdata" element={<MasterData />} />
               <Route path="/data/*" element={<DataDashboard />} />
 
               {/* 7. 本体引擎 */}

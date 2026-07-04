@@ -146,12 +146,21 @@ export default defineConfig({
         target: "http://localhost:3001",
         changeOrigin: true,
       },
+      "/api/export": {
+        target: "http://localhost:3001",
+        changeOrigin: true,
+      },
       "/api/health": {
         target: "http://localhost:3001",
         changeOrigin: true,
       },
       // Flowable BPMN REST API proxy
       "/api/flowable": {
+        target: "http://localhost:3001",
+        changeOrigin: true,
+      },
+      // LLM proxy
+      "/api/llm": {
         target: "http://localhost:3001",
         changeOrigin: true,
       },

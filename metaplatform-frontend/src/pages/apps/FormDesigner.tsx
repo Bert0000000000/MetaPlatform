@@ -1,12 +1,93 @@
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/ui/stat";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Save, Eye, Smartphone, Monitor, Tablet, Settings, Trash2, Copy, Plus, Type, Hash, Calendar, Mail, Phone, ListChecks, FileText, Upload, Star, Sliders, ToggleLeft, Sparkles, FileEdit, Clock, ClipboardList, Circle, CheckSquare, Paperclip, Image, PenTool, MapPin, TreeDeciduous } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Save, Eye, Smartphone, Monitor, Tablet, Settings, Trash2, Copy, Plus, Type, Hash, Calendar, Mail, Phone, ListChecks, FileText, Upload, Star, Sliders, ToggleLeft, Sparkles, FileEdit, Clock, ClipboardList, Circle, CheckSquare, Paperclip, Image, PenTool, MapPin, TreeDeciduous, Scan, FileImage, CreditCard, Receipt, Contact, Check } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+
+// OCR Document Types
+type OCRDocType = "id-card" | "business-license" | "invoice" | "business-card";
+
+interface OCRResult {
+  type: OCRDocType;
+  fields: Record<string, string>;
+  confidence: number;
+  rawText: string;
+}
+
+const OCR_DOC_TYPES: { id: OCRDocType; name: string; icon: LucideIcon; description: string }[] = [
+  { id: "id-card", name: "身份证", icon: CreditCard, description: "居民身份证正反面识别" },
+  { id: "business-license", name: "营业执照", icon: FileImage, description: "企业营业执照识别" },
+  { id: "invoice", name: "发票", icon: Receipt, description: "增值税发票识别" },
+  { id: "business-card", name: "名片", icon: Contact, description: "个人名片识别" },
+];
+
+const MOCK_OCR_RESULTS: Record<OCRDocType, OCRResult> = {
+  "id-card": {
+    type: "id-card",
+    fields: {
+      "姓名": "张三",
+      "性别": "男",
+      "民族": "汉",
+      "出生日期": "1990-05-15",
+      "住址": "北京市海淀区中关村大街1号",
+      "身份证号": "110108199005150012",
+      "签发机关": "北京市公安局海淀分局",
+      "有效期": "2020.01.01-2030.01.01",
+    },
+    confidence: 98.5,
+    rawText: "居民身份证\n姓名：张三\n性别：男 民族：汉\n出生日期：1990年05月15日\n住址：北京市海淀区中关村大街1号\n公民身份号码：110108199005150012\n签发机关：北京市公安局海淀分局\n有效期限：2020.01.01-2030.01.01",
+  },
+  "business-license": {
+    type: "business-license",
+    fields: {
+      "企业名称": "北京科技有限公司",
+      "统一社会信用代码": "91110108MA01XXXXX",
+      "法定代表人": "李四",
+      "注册资本": "1000万元",
+      "成立日期": "2020-01-10",
+      "营业期限": "2020-01-10 至 长期",
+      "住所": "北京市朝阳区望京街道",
+      "经营范围": "技术开发、技术咨询、技术服务",
+    },
+    confidence: 97.2,
+    rawText: "营业执照\n企业名称：北京科技有限公司\n统一社会信用代码：91110108MA01XXXXX\n法定代表人：李四\n注册资本：1000万元\n成立日期：2020年01月10日\n营业期限：2020年01月10日至长期\n住所：北京市朝阳区望京街道\n经营范围：技术开发、技术咨询、技术服务",
+  },
+  "invoice": {
+    type: "invoice",
+    fields: {
+      "发票代码": "011002100111",
+      "发票号码": "12345678",
+      "开票日期": "2026-06-15",
+      "购买方名称": "北京科技有限公司",
+      "购买方税号": "91110108MA01XXXXX",
+      "销售方名称": "上海贸易有限公司",
+      "金额合计": "¥10,000.00",
+      "税额合计": "¥1,300.00",
+      "价税合计": "¥11,300.00",
+    },
+    confidence: 96.8,
+    rawText: "增值税专用发票\n发票代码：011002100111\n发票号码：12345678\n开票日期：2026年06月15日\n购买方名称：北京科技有限公司\n购买方纳税人识别号：91110108MA01XXXXX\n销售方名称：上海贸易有限公司\n金额合计：¥10,000.00\n税额合计：¥1,300.00\n价税合计：¥11,300.00",
+  },
+  "business-card": {
+    type: "business-card",
+    fields: {
+      "姓名": "王五",
+      "职位": "技术总监",
+      "公司": "北京科技有限公司",
+      "手机": "13800138000",
+      "邮箱": "wangwu@tech.com",
+      "地址": "北京市海淀区中关村大街1号",
+      "网站": "www.tech.com",
+    },
+    confidence: 95.4,
+    rawText: "王五\n技术总监\n北京科技有限公司\n手机：13800138000\n邮箱：wangwu@tech.com\n地址：北京市海淀区中关村大街1号\n网站：www.tech.com",
+  },
+};
 
 interface FieldDef {
   id: string;
@@ -54,6 +135,62 @@ export default function FormDesigner() {
   const [device, setDevice] = useState<"desktop" | "tablet" | "mobile">("desktop");
   const [selectedField, setSelectedField] = useState<string | null>("f3");
 
+  // OCR State
+  const [ocrDialogOpen, setOcrDialogOpen] = useState(false);
+  const [selectedDocType, setSelectedDocType] = useState<OCRDocType>("id-card");
+  const [isDragging, setIsDragging] = useState(false);
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [ocrProcessing, setOcrProcessing] = useState(false);
+  const [ocrResult, setOcrResult] = useState<OCRResult | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  }, []);
+
+  const handleDragLeave = useCallback(() => {
+    setIsDragging(false);
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      setUploadedFile(files[0]);
+      simulateOCR();
+    }
+  }, []);
+
+  const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      setUploadedFile(files[0]);
+      simulateOCR();
+    }
+  }, []);
+
+  const simulateOCR = useCallback(() => {
+    setOcrProcessing(true);
+    setOcrResult(null);
+    // Simulate OCR processing delay
+    setTimeout(() => {
+      setOcrResult(MOCK_OCR_RESULTS[selectedDocType]);
+      setOcrProcessing(false);
+    }, 1500);
+  }, [selectedDocType]);
+
+  const handleApplyToForm = useCallback(() => {
+    if (!ocrResult) return;
+    // Here you would map OCR fields to form fields
+    // For now, we just close the dialog and show a success message
+    alert("OCR 结果已应用到表单字段");
+    setOcrDialogOpen(false);
+    setOcrResult(null);
+    setUploadedFile(null);
+  }, [ocrResult]);
+
   return (
     <div className="flex flex-col gap-4 h-[calc(100vh-180px)]">
       <PageHeader
@@ -61,6 +198,10 @@ export default function FormDesigner() {
         description="LowCode 拖拽式表单设计 · 客户管理表单"
         action={
           <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={() => setOcrDialogOpen(true)}>
+              <Scan className="size-3 mr-1" />
+              OCR 识别
+            </Button>
             <Button variant="outline" size="sm">
               <Sparkles className="size-3 mr-1" />
               AI 生成
@@ -251,6 +392,142 @@ export default function FormDesigner() {
           </CardContent>
         </Card>
       </div>
+
+      {/* OCR Dialog */}
+      <Dialog open={ocrDialogOpen} onOpenChange={setOcrDialogOpen}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Scan className="size-5" /> OCR 文档识别
+            </DialogTitle>
+            <DialogDescription>上传图片或文档，自动识别并提取文字信息</DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {/* Document Type Selection */}
+            <div>
+              <Label className="text-sm font-medium mb-2 block">选择文档类型</Label>
+              <div className="grid grid-cols-4 gap-3">
+                {OCR_DOC_TYPES.map((docType) => (
+                  <button
+                    key={docType.id}
+                    onClick={() => {
+                      setSelectedDocType(docType.id);
+                      setOcrResult(null);
+                      setUploadedFile(null);
+                    }}
+                    className={`p-3 border rounded-lg text-center transition-all ${
+                      selectedDocType === docType.id
+                        ? "border-primary bg-primary/5 ring-2 ring-primary/20"
+                        : "hover:border-primary/50"
+                    }`}
+                  >
+                    <docType.icon className="size-6 mx-auto mb-1" />
+                    <div className="text-sm font-medium">{docType.name}</div>
+                    <div className="text-xs text-muted-foreground">{docType.description}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Upload Area */}
+            <div
+              className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+                isDragging ? "border-primary bg-primary/5" : "border-gray-300"
+              }`}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleFileSelect}
+              />
+              <Upload className="size-12 mx-auto mb-3 text-gray-400" />
+              <div className="text-sm font-medium">
+                {uploadedFile ? uploadedFile.name : "拖拽文件到此处或点击上传"}
+              </div>
+              <div className="text-xs text-muted-foreground mt-1">
+                支持 JPG、PNG、PDF 格式，最大 10MB
+              </div>
+            </div>
+
+            {/* Processing Status */}
+            {ocrProcessing && (
+              <div className="flex items-center justify-center gap-2 p-4 bg-blue-50 rounded-lg">
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+                <span className="text-sm text-blue-600">正在识别中...</span>
+              </div>
+            )}
+
+            {/* OCR Results */}
+            {ocrResult && !ocrProcessing && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Badge variant="secondary" className="text-green-600">
+                      识别完成
+                    </Badge>
+                    <span className="text-xs text-muted-foreground">
+                      置信度: {ocrResult.confidence}%
+                    </span>
+                  </div>
+                </div>
+
+                {/* Extracted Fields */}
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm">识别结果</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 gap-3">
+                      {Object.entries(ocrResult.fields).map(([key, value]) => (
+                        <div key={key} className="flex items-start gap-2 p-2 border rounded">
+                          <Label className="text-xs text-muted-foreground min-w-[80px]">{key}</Label>
+                          <Input defaultValue={value} className="text-sm h-7" />
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Raw Text */}
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm">原始文本</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <pre className="text-xs bg-gray-50 p-3 rounded overflow-auto max-h-32">
+                      {ocrResult.rawText}
+                    </pre>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setOcrDialogOpen(false);
+              setOcrResult(null);
+              setUploadedFile(null);
+            }}>
+              取消
+            </Button>
+            <Button
+              onClick={handleApplyToForm}
+              disabled={!ocrResult || ocrProcessing}
+            >
+              <Check className="size-3 mr-1" />
+              应用到表单
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

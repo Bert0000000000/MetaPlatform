@@ -177,6 +177,38 @@ services:
       retries: 10
       start_period: 60s
 
+  # === 图数据库 & 对象存储 ===
+  neo4j:
+    image: neo4j:5-community
+    container_name: metaplatform-neo4j
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    environment:
+      - NEO4J_AUTH=neo4j/metaplatform
+      - NEO4J_PLUGINS=["apoc"]
+    volumes:
+      - neo4j-data:/data
+    networks:
+      - mp-net
+    restart: unless-stopped
+
+  minio:
+    image: minio/minio:latest
+    container_name: metaplatform-minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      - MINIO_ROOT_USER=minioadmin
+      - MINIO_ROOT_PASSWORD=minioadmin
+    volumes:
+      - minio-data:/data
+    command: server /data --console-address ":9001"
+    networks:
+      - mp-net
+    restart: unless-stopped
+
   # === 可观测性 (可选) ===
   prometheus:
     image: prom/prometheus:v2.51.0
@@ -209,6 +241,8 @@ volumes:
   redis-data:
   grafana-data:
   flowable-data:
+  neo4j-data:
+  minio-data:
 
 networks:
   mp-net:

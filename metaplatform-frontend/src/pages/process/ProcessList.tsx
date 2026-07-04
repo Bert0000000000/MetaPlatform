@@ -9,10 +9,37 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@
 import { processesApi, type ProcessDefinition } from "@/lib/api";
 import { flowableApi, type FlowableProcessDefinition } from "@/lib/flowable-api";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Plus, GitBranch, Eye, Activity, BarChart3, AlertTriangle, Play,
   Timer, CheckCircle, Loader2, AlertCircle, List, FileCheck, Zap, TrendingUp, Server, Download, Search, Clock, Pause, RotateCcw, XCircle, Send, BookOpen, Filter, FileText,
+  SkipForward, ChevronRight, Workflow, UserPlus, UserCheck, MoveRight, StopCircle, Wrench, Wand2, Crosshair, Gauge, Users, Settings, Pencil, ArrowRight, FastForward,
 } from "lucide-react";
+
+/* ── Mock simulation data ── */
+interface SimNode {
+  id: string;
+  name: string;
+  type: "start" | "task" | "gateway" | "end";
+  assignee?: string;
+  duration?: string;
+  status?: "pending" | "active" | "completed" | "skipped";
+  decision?: string;
+}
+
+const SIM_NODES: SimNode[] = [
+  { id: "start", name: "开始", type: "start", status: "completed" },
+  { id: "submit", name: "提交申请", type: "task", assignee: "发起人", duration: "1m", status: "completed" },
+  { id: "manager", name: "部门经理审批", type: "task", assignee: "张经理", duration: "2h", status: "active" },
+  { id: "gw1", name: "金额判断", type: "gateway", decision: "> 50000 元", status: "active" },
+  { id: "finance", name: "财务审批", type: "task", assignee: "李财务", duration: "4h", status: "pending" },
+  { id: "vp", name: "VP 审批", type: "task", assignee: "王 VP", duration: "8h", status: "pending" },
+  { id: "end", name: "结束", type: "end", status: "pending" },
+];
 
 export default function ProcessList() {
   const navigate = useNavigate();
@@ -20,6 +47,66 @@ export default function ProcessList() {
   const [flowableDefs, setFlowableDefs] = useState<FlowableProcessDefinition[]>([]);
   const [loading, setLoading] = useState(true);
   const [flowableAvailable, setFlowableAvailable] = useState(false);
+
+  /* ── Simulation state ── */
+  const [simDialogOpen, setSimDialogOpen] = useState(false);
+  const [simRunning, setSimRunning] = useState(false);
+  const [simStep, setSimStep] = useState(0);
+  const [simNodes, setSimNodes] = useState<SimNode[]>(SIM_NODES.map((n) => ({ ...n, status: "pending" })));
+  const [simVars, setSimVars] = useState<{ key: string; value: string }[]>([
+    { key: "amount", value: "60000" },
+    { key: "applicant", value: "王丽" },
+    { key: "department", value: "技术部" },
+  ]);
+  const [simToast, setSimToast] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!simToast) return;
+    const t = setTimeout(() => setSimToast(null), 2500);
+    return () => clearTimeout(t);
+  }, [simToast]);
+
+  function handleOpenSim() {
+    setSimDialogOpen(true);
+    setSimRunning(false);
+    setSimStep(0);
+    setSimNodes(SIM_NODES.map((n) => ({ ...n, status: "pending" })));
+  }
+
+  function handleAddSimVar() {
+    setSimVars((prev) => [...prev, { key: "", value: "" }]);
+  }
+
+  function handleUpdateSimVar(idx: number, field: "key" | "value", val: string) {
+    setSimVars((prev) => prev.map((v, i) => (i === idx ? { ...v, [field]: val } : v)));
+  }
+
+  function handleRemoveSimVar(idx: number) {
+    setSimVars((prev) => prev.filter((_, i) => i !== idx));
+  }
+
+  async function handleStartSim() {
+    setSimRunning(true);
+    setSimStep(0);
+    const nodes = SIM_NODES.map((n) => ({ ...n, status: "pending" as const }));
+    setSimNodes(nodes);
+
+    for (let i = 0; i < SIM_NODES.length; i++) {
+      await new Promise((r) => setTimeout(r, 800));
+      setSimStep(i);
+      setSimNodes((prev) =>
+        prev.map((n, idx) => ({
+          ...n,
+          status: idx < i ? "completed" : idx === i ? "active" : "pending",
+        }))
+      );
+    }
+
+    await new Promise((r) => setTimeout(r, 500));
+    setSimNodes((prev) => prev.map((n) => ({ ...n, status: "completed" })));
+    setSimRunning(false);
+    setSimToast("模拟执行完成");
+  }
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -177,7 +264,7 @@ export default function ProcessList() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="monitor" className="mt-3">
+        <TabsContent value="monitor" className="mt-3 space-y-4">
           <Card>
             <CardHeader>
               <CardTitle className="text-base flex items-center gap-2">
@@ -202,6 +289,46 @@ export default function ProcessList() {
               <p className="text-sm text-muted-foreground">
                 实例监控数据将从 Flowable 引擎实时获取
               </p>
+            </CardContent>
+          </Card>
+
+          {/* ── 流程模拟 ── */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Wand2 className="size-4" /> 流程模拟
+                  </CardTitle>
+                  <CardDescription>模拟流程执行，验证流程逻辑和变量传递</CardDescription>
+                </div>
+                <Button size="sm" onClick={handleOpenSim}>
+                  <Play className="size-3 mr-1" /> 模拟运行
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {(definitions.length > 0 ? definitions : [{ id: "demo", name: "采购审批流程", version: 1, type: "business", status: "active" }]).slice(0, 3).map((p) => (
+                  <div key={p.id} className="flex items-center justify-between p-3 border rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <Workflow className="size-4 text-muted-foreground" />
+                      <div>
+                        <div className="font-medium text-sm">{p.name || "(未命名)"}</div>
+                        <div className="text-xs text-muted-foreground">v{p.version || 1} · {p.type || "business"}</div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant={p.status === "active" ? "default" : "secondary"}>
+                        {p.status === "active" ? "已激活" : p.status || "草稿"}
+                      </Badge>
+                      <Button variant="outline" size="sm" onClick={handleOpenSim}>
+                        <Wand2 className="size-3 mr-1" /> 模拟
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -239,6 +366,156 @@ export default function ProcessList() {
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* ── 模拟运行对话框 ── */}
+      <Dialog open={simDialogOpen} onOpenChange={setSimDialogOpen}>
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Wand2 className="size-5" /> 流程模拟
+            </DialogTitle>
+            <DialogDescription>输入流程变量，模拟执行流程并查看执行路径</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {/* Variable input */}
+            <div className="space-y-3 p-4 border rounded-lg">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-medium">流程变量</Label>
+                <Button variant="outline" size="sm" onClick={handleAddSimVar}>
+                  <Plus className="size-3 mr-1" /> 添加变量
+                </Button>
+              </div>
+              <div className="space-y-2">
+                {simVars.map((v, idx) => (
+                  <div key={idx} className="flex items-center gap-2">
+                    <Input
+                      value={v.key}
+                      onChange={(e) => handleUpdateSimVar(idx, "key", e.target.value)}
+                      placeholder="变量名"
+                      className="font-mono text-xs flex-1"
+                    />
+                    <Input
+                      value={v.value}
+                      onChange={(e) => handleUpdateSimVar(idx, "value", e.target.value)}
+                      placeholder="变量值"
+                      className="flex-1"
+                    />
+                    <Button variant="ghost" size="icon" className="size-8 shrink-0" onClick={() => handleRemoveSimVar(idx)}>
+                      <XCircle className="size-4 text-muted-foreground" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Step-by-step visualization */}
+            <div className="space-y-3 p-4 border rounded-lg">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-medium">执行路径</Label>
+                {simRunning && (
+                  <Badge variant="default" className="gap-1">
+                    <Loader2 className="size-3 animate-spin" /> 模拟中...
+                  </Badge>
+                )}
+              </div>
+              <div className="flex items-center gap-1 overflow-x-auto pb-2">
+                {simNodes.map((node, idx) => (
+                  <div key={node.id} className="flex items-center">
+                    <div
+                      className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-xs whitespace-nowrap transition-all ${
+                        node.status === "active"
+                          ? "border-primary bg-primary text-primary-foreground shadow-md"
+                          : node.status === "completed"
+                          ? "border-green-300 bg-green-50 text-green-700"
+                          : "border-muted bg-muted/30 text-muted-foreground"
+                      }`}
+                    >
+                      {node.type === "gateway" ? (
+                        <Crosshair className="size-3" />
+                      ) : node.type === "start" ? (
+                        <Play className="size-3" />
+                      ) : node.type === "end" ? (
+                        <CheckCircle className="size-3" />
+                      ) : (
+                        <Workflow className="size-3" />
+                      )}
+                      <span className="font-medium">{node.name}</span>
+                    </div>
+                    {idx < simNodes.length - 1 && (
+                      <ChevronRight className="size-4 text-muted-foreground mx-0.5 shrink-0" />
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Node details */}
+            <div className="grid grid-cols-2 gap-3">
+              {/* Decision path */}
+              <div className="p-4 border rounded-lg space-y-2">
+                <Label className="text-sm font-medium flex items-center gap-1.5">
+                  <Crosshair className="size-4" /> 网关决策
+                </Label>
+                <div className="text-xs space-y-1">
+                  <div className="flex justify-between p-2 bg-muted/30 rounded">
+                    <span className="text-muted-foreground">金额判断</span>
+                    <span className="font-medium">{simVars.find((v) => v.key === "amount")?.value || "60000"} {">"} 50000</span>
+                  </div>
+                  <div className="flex justify-between p-2 bg-muted/30 rounded">
+                    <span className="text-muted-foreground">决策结果</span>
+                    <Badge variant="default" className="text-[10px]">走 VP 审批</Badge>
+                  </div>
+                </div>
+              </div>
+
+              {/* Task assignment */}
+              <div className="p-4 border rounded-lg space-y-2">
+                <Label className="text-sm font-medium flex items-center gap-1.5">
+                  <Users className="size-4" /> 任务分配
+                </Label>
+                <div className="text-xs space-y-1">
+                  {simNodes.filter((n) => n.type === "task").map((n) => (
+                    <div key={n.id} className="flex justify-between p-2 bg-muted/30 rounded">
+                      <span className="text-muted-foreground">{n.name}</span>
+                      <span className="font-medium">{n.assignee}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Estimated time */}
+            <div className="p-4 border rounded-lg">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-medium flex items-center gap-1.5">
+                  <Timer className="size-4" /> 预计执行时间
+                </Label>
+                <span className="text-lg font-semibold text-primary">~14h 1m</span>
+              </div>
+              <div className="mt-2 flex gap-4 text-xs text-muted-foreground">
+                <span>提交申请: 1m</span>
+                <span>部门经理审批: 2h</span>
+                <span>VP 审批: 8h</span>
+                <span>财务审批: 4h</span>
+              </div>
+            </div>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setSimDialogOpen(false)}>关闭</Button>
+            <Button onClick={handleStartSim} disabled={simRunning}>
+              {simRunning ? <Loader2 className="size-4 animate-spin mr-1" /> : <Play className="size-4 mr-1" />}
+              {simRunning ? "模拟中..." : "开始模拟"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Simulation toast */}
+      {simToast && (
+        <div className="fixed top-4 right-4 z-50 rounded-md bg-foreground px-4 py-2 text-sm text-background shadow-lg">
+          {simToast}
+        </div>
+      )}
     </div>
   );
 }
@@ -260,10 +537,75 @@ const instanceStatusConfig: Record<string, { label: string; variant: "default" |
 };
 
 export function ProcessInstances() {
-  const [instances] = useState(MOCK_INSTANCES);
+  const [instances, setInstances] = useState(MOCK_INSTANCES);
   const [search, setSearch] = useState("");
 
+  /* ── Intervention state ── */
+  const [interveneDialogOpen, setInterveneDialogOpen] = useState(false);
+  const [selectedInstance, setSelectedInstance] = useState<string | null>(null);
+  const [interveneAction, setInterveneAction] = useState<string>("");
+  const [interveneTargetNode, setInterveneTargetNode] = useState("");
+  const [interveneAssignee, setInterveneAssignee] = useState("");
+  const [interveneReason, setInterveneReason] = useState("");
+  const [interveneVarKey, setInterveneVarKey] = useState("");
+  const [interveneVarValue, setInterveneVarValue] = useState("");
+  const [interveneToast, setInterveneToast] = useState<string | null>(null);
+  const [interveneLoading, setInterveneLoading] = useState(false);
+
+  useEffect(() => {
+    if (!interveneToast) return;
+    const t = setTimeout(() => setInterveneToast(null), 2500);
+    return () => clearTimeout(t);
+  }, [interveneToast]);
+
   const filtered = instances.filter((i) => i.name.includes(search) || i.id.includes(search));
+
+  function handleOpenIntervene(instanceId: string) {
+    setSelectedInstance(instanceId);
+    setInterveneAction("");
+    setInterveneTargetNode("");
+    setInterveneAssignee("");
+    setInterveneReason("");
+    setInterveneVarKey("");
+    setInterveneVarValue("");
+    setInterveneDialogOpen(true);
+  }
+
+  async function handleConfirmIntervene() {
+    if (!interveneAction || !selectedInstance) return;
+    setInterveneLoading(true);
+    await new Promise((r) => setTimeout(r, 800));
+
+    const actionLabels: Record<string, string> = {
+      jump: "跳转到节点",
+      addSign: "加签",
+      transfer: "转办",
+      terminate: "终止",
+      suspend: "暂停",
+      resume: "恢复",
+      editVar: "修改变量",
+    };
+
+    if (interveneAction === "terminate" || interveneAction === "suspend") {
+      setInstances((prev) =>
+        prev.map((i) =>
+          i.id === selectedInstance
+            ? { ...i, status: interveneAction === "terminate" ? "failed" : "suspended" }
+            : i
+        )
+      );
+    } else if (interveneAction === "resume") {
+      setInstances((prev) =>
+        prev.map((i) =>
+          i.id === selectedInstance ? { ...i, status: "running" } : i
+        )
+      );
+    }
+
+    setInterveneLoading(false);
+    setInterveneDialogOpen(false);
+    setInterveneToast(`${actionLabels[interveneAction]}操作已执行`);
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -331,9 +673,16 @@ export function ProcessInstances() {
                     <TableCell className="text-xs">{inst.current}</TableCell>
                     <TableCell className="text-xs">{inst.duration}</TableCell>
                     <TableCell className="text-right">
-                      <Button variant="ghost" size="icon" className="size-8" title="查看详情">
-                        <Eye className="size-4" />
-                      </Button>
+                      <div className="flex items-center justify-end gap-1">
+                        <Button variant="ghost" size="icon" className="size-8" title="查看详情">
+                          <Eye className="size-4" />
+                        </Button>
+                        {(inst.status === "running" || inst.status === "suspended") && (
+                          <Button variant="outline" size="sm" className="h-7 px-2 text-xs" onClick={() => handleOpenIntervene(inst.id)}>
+                            <Wrench className="size-3 mr-1" /> 干预
+                          </Button>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 );
@@ -342,6 +691,126 @@ export function ProcessInstances() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* ── 流程干预对话框 ── */}
+      <Dialog open={interveneDialogOpen} onOpenChange={setInterveneDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Wrench className="size-5" /> 流程干预
+            </DialogTitle>
+            <DialogDescription>
+              对实例 {selectedInstance} 执行干预操作
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {/* Action select */}
+            <div className="space-y-2">
+              <Label>干预操作</Label>
+              <Select value={interveneAction} onValueChange={setInterveneAction}>
+                <SelectTrigger>
+                  <SelectValue placeholder="选择干预操作" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="jump">跳转到节点</SelectItem>
+                  <SelectItem value="addSign">加签</SelectItem>
+                  <SelectItem value="transfer">转办</SelectItem>
+                  <SelectItem value="terminate">终止</SelectItem>
+                  <SelectItem value="suspend">暂停</SelectItem>
+                  <SelectItem value="resume">恢复</SelectItem>
+                  <SelectItem value="editVar">修改变量</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Dynamic form based on action */}
+            {interveneAction === "jump" && (
+              <div className="space-y-2">
+                <Label>目标节点</Label>
+                <Select value={interveneTargetNode} onValueChange={setInterveneTargetNode}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="选择目标节点" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="submit">提交申请</SelectItem>
+                    <SelectItem value="manager">部门经理审批</SelectItem>
+                    <SelectItem value="finance">财务审批</SelectItem>
+                    <SelectItem value="vp">VP 审批</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {(interveneAction === "addSign" || interveneAction === "transfer") && (
+              <div className="space-y-2">
+                <Label>{interveneAction === "addSign" ? "加签人" : "转办人"}</Label>
+                <Input
+                  value={interveneAssignee}
+                  onChange={(e) => setInterveneAssignee(e.target.value)}
+                  placeholder="输入用户名或从通讯录选择"
+                />
+              </div>
+            )}
+
+            {interveneAction === "editVar" && (
+              <div className="space-y-2">
+                <Label>修改变量</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  <Input
+                    value={interveneVarKey}
+                    onChange={(e) => setInterveneVarKey(e.target.value)}
+                    placeholder="变量名"
+                    className="font-mono text-xs"
+                  />
+                  <Input
+                    value={interveneVarValue}
+                    onChange={(e) => setInterveneVarValue(e.target.value)}
+                    placeholder="新值"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Reason input */}
+            {interveneAction && (
+              <div className="space-y-2">
+                <Label>干预原因</Label>
+                <Textarea
+                  value={interveneReason}
+                  onChange={(e) => setInterveneReason(e.target.value)}
+                  placeholder="请填写干预原因（必填）"
+                  className="h-20"
+                />
+              </div>
+            )}
+
+            {/* Warning for destructive actions */}
+            {(interveneAction === "terminate" || interveneAction === "suspend") && (
+              <div className="p-3 bg-destructive/10 border border-destructive/30 rounded-lg text-sm text-destructive">
+                {interveneAction === "terminate" ? "终止操作将立即结束流程实例，此操作不可撤销。" : "暂停操作将冻结流程实例，所有待办任务将被挂起。"}
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setInterveneDialogOpen(false)}>取消</Button>
+            <Button
+              variant={interveneAction === "terminate" ? "destructive" : "default"}
+              onClick={handleConfirmIntervene}
+              disabled={!interveneAction || interveneLoading}
+            >
+              {interveneLoading ? <Loader2 className="size-4 animate-spin mr-1" /> : null}
+              确认执行
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Intervention toast */}
+      {interveneToast && (
+        <div className="fixed top-4 right-4 z-50 rounded-md bg-foreground px-4 py-2 text-sm text-background shadow-lg">
+          {interveneToast}
+        </div>
+      )}
     </div>
   );
 }

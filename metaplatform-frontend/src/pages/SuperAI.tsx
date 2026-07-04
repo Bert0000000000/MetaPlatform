@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { agentsApi } from "@/lib/api";
 import type { Agent } from "@/lib/api";
-import { Send, Bot, User, Sparkles, Plus, MessageSquare, Bot as BotIcon, ListChecks, BookOpen, Smartphone, BarChart3, GitBranch, FileEdit, Search as SearchIcon, TrendingUp, RefreshCw, FileText, Ruler, Briefcase, ScrollText, Scale, Clock, Trash2, X, Loader2 } from "lucide-react";
+import { llmApi, type ChatMessage } from "@/lib/llm-api";
+import { Send, Bot, User, Sparkles, Plus, MessageSquare, Bot as BotIcon, ListChecks, BookOpen, Smartphone, BarChart3, GitBranch, FileEdit, Search as SearchIcon, TrendingUp, RefreshCw, FileText, Ruler, Briefcase, ScrollText, Scale, Clock, Trash2, X, Loader2, Image as ImageIcon, Mic, MicOff, Paperclip, FileSpreadsheet, File as FileIcon, Camera, Volume2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -18,10 +19,21 @@ function resolveAgentIcon(iconName?: string): React.ElementType {
 }
 
 /* ─────────────────── Types ─────────────────── */
+interface Attachment {
+  id: string;
+  type: "image" | "document" | "voice";
+  name: string;
+  size?: string;
+  url?: string; // data URL for images
+  duration?: string; // for voice
+  mimeType?: string;
+}
+
 interface Message {
   role: "user" | "assistant";
   content: string;
   ts?: string;
+  attachments?: Attachment[];
 }
 
 interface Conversation {
@@ -139,7 +151,13 @@ interface ChatTabProps {
 function ChatTab({ messages, setMessages, agentPrompt, onAgentPromptConsumed }: ChatTabProps) {
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [pendingAttachments, setPendingAttachments] = useState<Attachment[]>([]);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const docInputRef = useRef<HTMLInputElement>(null);
+  const recordingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   /* Auto-scroll to bottom */
   useEffect(() => {
@@ -157,21 +175,196 @@ function ChatTab({ messages, setMessages, agentPrompt, onAgentPromptConsumed }: 
     }
   }, [agentPrompt, setMessages, onAgentPromptConsumed]);
 
+  /* Recording timer */
+  useEffect(() => {
+    if (isRecording) {
+      setRecordingTime(0);
+      recordingIntervalRef.current = setInterval(() => {
+        setRecordingTime((t) => t + 1);
+      }, 1000);
+    } else {
+      if (recordingIntervalRef.current) clearInterval(recordingIntervalRef.current);
+      setRecordingTime(0);
+    }
+    return () => { if (recordingIntervalRef.current) clearInterval(recordingIntervalRef.current); };
+  }, [isRecording]);
+
+  function formatRecordingTime(sec: number) {
+    const m = Math.floor(sec / 60).toString().padStart(2, "0");
+    const s = (sec % 60).toString().padStart(2, "0");
+    return `${m}:${s}`;
+  }
+
+  /* Image upload handler */
+  function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = e.target.files;
+    if (!files) return;
+    Array.from(files).forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const att: Attachment = {
+          id: `img-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          type: "image",
+          name: file.name,
+          size: `${(file.size / 1024).toFixed(1)} KB`,
+          url: reader.result as string,
+          mimeType: file.type,
+        };
+        setPendingAttachments((prev) => [...prev, att]);
+      };
+      reader.readAsDataURL(file);
+    });
+    e.target.value = "";
+  }
+
+  /* Document upload handler */
+  function handleDocUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = e.target.files;
+    if (!files) return;
+    Array.from(files).forEach((file) => {
+      const ext = file.name.split(".").pop()?.toLowerCase() || "";
+      const sizeKb = file.size / 1024;
+      const sizeStr = sizeKb > 1024 ? `${(sizeKb / 1024).toFixed(1)} MB` : `${sizeKb.toFixed(1)} KB`;
+      const att: Attachment = {
+        id: `doc-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        type: "document",
+        name: file.name,
+        size: sizeStr,
+        mimeType: file.type || `application/${ext}`,
+      };
+      setPendingAttachments((prev) => [...prev, att]);
+    });
+    e.target.value = "";
+  }
+
+  /* Voice recording toggle (mock) */
+  function toggleRecording() {
+    if (isRecording) {
+      setIsRecording(false);
+      // Mock transcription
+      const voiceAtt: Attachment = {
+        id: `voice-${Date.now()}`,
+        type: "voice",
+        name: `语音消息_${new Date().toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" })}.webm`,
+        duration: formatRecordingTime(recordingTime),
+        size: `${(recordingTime * 16).toFixed(0)} KB`,
+      };
+      setPendingAttachments((prev) => [...prev, voiceAtt]);
+      setInput((prev) => prev || "（语音消息已录制，请发送或补充文字说明）");
+    } else {
+      setIsRecording(true);
+    }
+  }
+
+  function removeAttachment(id: string) {
+    setPendingAttachments((prev) => prev.filter((a) => a.id !== id));
+  }
+
+  function getDocIcon(name: string) {
+    const ext = name.split(".").pop()?.toLowerCase();
+    if (ext === "pdf") return FileIcon;
+    if (ext === "xlsx" || ext === "xls" || ext === "csv") return FileSpreadsheet;
+    return FileText;
+  }
+
   async function send(text?: string) {
     const content = (text ?? input).trim();
-    if (!content || isTyping) return;
+    if (!content && pendingAttachments.length === 0) return;
+    if (isTyping) return;
 
-    const userMsg: Message = { role: "user", content, ts: formatTime() };
+    const userMsg: Message = {
+      role: "user",
+      content: content || "（发送了附件）",
+      ts: formatTime(),
+      attachments: pendingAttachments.length > 0 ? [...pendingAttachments] : undefined,
+    };
     setMessages((m) => [...m, userMsg]);
     if (!text) setInput("");
+    setPendingAttachments([]);
     setIsTyping(true);
 
     try {
-      const reply = await sendMock(content);
+      let reply: string;
+
+      try {
+        const systemMessage: ChatMessage = {
+          role: "system",
+          content: "你是 MetaPlatform 的 SuperAI 助手，帮助企业用户建应用、查数据、分析流程、生成内容、调度智能体。请用中文回复，简洁专业。",
+        };
+
+        const allMessages = [...messages, userMsg];
+        const chatMessages: ChatMessage[] = [
+          systemMessage,
+          ...allMessages.map((m) => ({
+            role: m.role as "user" | "assistant",
+            content: m.content,
+          })),
+        ];
+
+        const response = await llmApi.chat(chatMessages, {
+          model: "gpt-4o-mini",
+          temperature: 0.7,
+          maxTokens: 1024,
+        });
+        reply = response.content;
+      } catch (llmError) {
+        console.warn("[SuperAI] LLM API unavailable, falling back to mock:", llmError);
+        if (userMsg.attachments?.some((a) => a.type === "image")) {
+          reply = "已收到你上传的图片。我可以看到图片内容并进行分析。\n\n请问你需要我对这张图片做什么处理？例如：\n- 提取图片中的文字信息\n- 分析图片中的数据图表\n- 识别图片中的业务流程";
+        } else if (userMsg.attachments?.some((a) => a.type === "voice")) {
+          reply = "已收到你的语音消息。语音转文字功能正在处理中。\n\n在完整接入语音识别服务后，将自动将语音转为文字并理解你的意图。";
+        } else if (userMsg.attachments?.some((a) => a.type === "document")) {
+          const docNames = userMsg.attachments.filter((a) => a.type === "document").map((a) => a.name).join("、");
+          reply = `已收到文档：${docNames}\n\n文档解析功能将在接入文档处理引擎后生效。目前我可以帮你：\n- 总结文档要点\n- 提取关键数据\n- 生成文档摘要\n\n请问你需要什么操作？`;
+        } else {
+          reply = await sendMock(content);
+        }
+      }
+
       setMessages((m) => [...m, { role: "assistant", content: reply, ts: formatTime() }]);
     } finally {
       setIsTyping(false);
     }
+  }
+
+  /* Attachment preview component */
+  function AttachmentPreview({ attachment, isOwn }: { attachment: Attachment; isOwn: boolean }) {
+    if (attachment.type === "image" && attachment.url) {
+      return (
+        <div className="rounded-lg overflow-hidden border max-w-[200px] mb-1">
+          <img src={attachment.url} alt={attachment.name} className="w-full h-auto max-h-[150px] object-cover" />
+          <div className={`px-2 py-1 text-[10px] ${isOwn ? "bg-primary/20" : "bg-muted"}`}>
+            {attachment.name} ({attachment.size})
+          </div>
+        </div>
+      );
+    }
+    if (attachment.type === "voice") {
+      return (
+        <div className={`flex items-center gap-2 rounded-lg border px-3 py-2 mb-1 ${isOwn ? "bg-primary/10" : "bg-muted/50"}`}>
+          <Volume2 className="size-4 text-primary shrink-0" />
+          <div className="flex gap-[2px] items-end h-4">
+            {Array.from({ length: 20 }).map((_, i) => (
+              <div key={i} className="w-[3px] bg-primary/60 rounded-full" style={{ height: `${4 + Math.random() * 12}px` }} />
+            ))}
+          </div>
+          <span className="text-[10px] text-muted-foreground ml-1">{attachment.duration}</span>
+        </div>
+      );
+    }
+    if (attachment.type === "document") {
+      const DocIcon = getDocIcon(attachment.name);
+      return (
+        <div className={`flex items-center gap-2 rounded-lg border px-3 py-2 mb-1 ${isOwn ? "bg-primary/10" : "bg-muted/50"}`}>
+          <DocIcon className="size-5 text-blue-500 shrink-0" />
+          <div className="min-w-0">
+            <div className="text-xs font-medium truncate">{attachment.name}</div>
+            <div className="text-[10px] text-muted-foreground">{attachment.size}</div>
+          </div>
+        </div>
+      );
+    }
+    return null;
   }
 
   return (
@@ -189,6 +382,14 @@ function ChatTab({ messages, setMessages, agentPrompt, onAgentPromptConsumed }: 
                 </div>
               )}
               <div className={`max-w-[70%] flex flex-col ${m.role === "user" ? "items-end" : "items-start"}`}>
+                {/* Attachments display */}
+                {m.attachments && m.attachments.length > 0 && (
+                  <div className="mb-1 space-y-1">
+                    {m.attachments.map((att) => (
+                      <AttachmentPreview key={att.id} attachment={att} isOwn={m.role === "user"} />
+                    ))}
+                  </div>
+                )}
                 <Card className={m.role === "user" ? "bg-primary text-primary-foreground" : "bg-card"}>
                   <CardContent className="p-3">
                     <p className="text-sm whitespace-pre-wrap">{m.content}</p>
@@ -224,9 +425,105 @@ function ChatTab({ messages, setMessages, agentPrompt, onAgentPromptConsumed }: 
 
       <div className="border-t p-4 bg-background">
         <div className="mx-auto" style={{ maxWidth: "900px" }}>
+          {/* Recording indicator */}
+          {isRecording && (
+            <div className="mb-2 flex items-center gap-3 px-4 py-2 bg-red-50 border border-red-200 rounded-lg">
+              <div className="size-3 rounded-full bg-red-500 animate-pulse" />
+              <span className="text-sm font-medium text-red-600">语音输入中...</span>
+              <span className="text-sm text-red-500 font-mono">{formatRecordingTime(recordingTime)}</span>
+              <div className="flex gap-[2px] items-end h-5 flex-1">
+                {Array.from({ length: 40 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="w-[3px] bg-red-400 rounded-full animate-pulse"
+                    style={{
+                      height: `${4 + Math.random() * 16}px`,
+                      animationDelay: `${i * 50}ms`,
+                      animationDuration: `${300 + Math.random() * 400}ms`,
+                    }}
+                  />
+                ))}
+              </div>
+              <Button size="sm" variant="destructive" onClick={toggleRecording}>
+                <MicOff className="size-3 mr-1" /> 停止
+              </Button>
+            </div>
+          )}
+
+          {/* Pending attachments preview */}
+          {pendingAttachments.length > 0 && (
+            <div className="mb-2 flex gap-2 flex-wrap">
+              {pendingAttachments.map((att) => (
+                <div key={att.id} className="relative group">
+                  {att.type === "image" && att.url ? (
+                    <div className="w-16 h-16 rounded border overflow-hidden">
+                      <img src={att.url} alt={att.name} className="w-full h-full object-cover" />
+                    </div>
+                  ) : att.type === "voice" ? (
+                    <div className="flex items-center gap-1 px-2 py-1 bg-muted rounded border text-xs">
+                      <Mic className="size-3 text-primary" />
+                      <span>{att.duration}</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1 px-2 py-1 bg-muted rounded border text-xs max-w-[140px]">
+                      {(() => { const DocIcon = getDocIcon(att.name); return <DocIcon className="size-3 text-blue-500 shrink-0" />; })()}
+                      <span className="truncate">{att.name}</span>
+                    </div>
+                  )}
+                  <button
+                    className="absolute -top-1.5 -right-1.5 size-5 rounded-full bg-destructive text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={() => removeAttachment(att.id)}
+                  >
+                    <X className="size-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
           <Card>
             <CardContent className="p-3">
               <div className="flex items-end gap-2">
+                {/* Multi-modal input buttons */}
+                <div className="flex flex-col gap-1">
+                  {/* Hidden file inputs */}
+                  <input ref={imageInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleImageUpload} />
+                  <input ref={docInputRef} type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.ppt,.pptx" multiple className="hidden" onChange={handleDocUpload} />
+
+                  <div className="flex gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="size-7"
+                      title="上传图片"
+                      onClick={() => imageInputRef.current?.click()}
+                      disabled={isTyping}
+                    >
+                      <ImageIcon className="size-4 text-muted-foreground hover:text-primary" />
+                    </Button>
+                    <Button
+                      variant={isRecording ? "destructive" : "ghost"}
+                      size="icon"
+                      className="size-7"
+                      title={isRecording ? "停止录音" : "语音输入"}
+                      onClick={toggleRecording}
+                      disabled={isTyping}
+                    >
+                      {isRecording ? <MicOff className="size-4" /> : <Mic className="size-4 text-muted-foreground hover:text-primary" />}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="size-7"
+                      title="上传文档 (PDF/Word/Excel)"
+                      onClick={() => docInputRef.current?.click()}
+                      disabled={isTyping}
+                    >
+                      <Paperclip className="size-4 text-muted-foreground hover:text-primary" />
+                    </Button>
+                  </div>
+                </div>
+
                 <textarea
                   className="flex-1 resize-none border-0 bg-transparent p-2 text-sm focus:outline-none placeholder:text-muted-foreground"
                   placeholder="问我任何问题...(按 Enter 发送，Shift+Enter 换行)"
@@ -239,9 +536,9 @@ function ChatTab({ messages, setMessages, agentPrompt, onAgentPromptConsumed }: 
                       send();
                     }
                   }}
-                  disabled={isTyping}
+                  disabled={isTyping || isRecording}
                 />
-                <Button onClick={() => send()} size="icon" aria-label="发送" disabled={isTyping}>
+                <Button onClick={() => send()} size="icon" aria-label="发送" disabled={isTyping || isRecording}>
                   {isTyping ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
                 </Button>
               </div>

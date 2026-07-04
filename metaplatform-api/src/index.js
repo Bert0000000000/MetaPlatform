@@ -15,6 +15,8 @@ import adminRoutes from "./routes/admin.js";
 import messagesRoutes from "./routes/messages.js";
 import flowableRoutes from "./routes/flowable.js";
 import pagesRoutes from "./routes/pages.js";
+import exportRoutes from "./routes/export.js";
+import llmRoutes from "./routes/llm.js";
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -36,6 +38,8 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/messages", messagesRoutes);
 app.use("/api/flowable", flowableRoutes);
 app.use("/api/pages", pagesRoutes);
+app.use("/api/export", exportRoutes);
+app.use("/api/llm", llmRoutes);
 
 // ─── Health check ───────────────────────────────────────
 app.get("/api/health", (_req, res) => {
