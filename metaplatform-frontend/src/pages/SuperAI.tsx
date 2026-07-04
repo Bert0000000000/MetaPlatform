@@ -1,9 +1,21 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import { agentsApi } from "@/lib/api";
+import type { Agent } from "@/lib/api";
 import { Send, Bot, User, Sparkles, Plus, MessageSquare, Bot as BotIcon, ListChecks, BookOpen, Smartphone, BarChart3, GitBranch, FileEdit, Search as SearchIcon, TrendingUp, RefreshCw, FileText, Ruler, Briefcase, ScrollText, Scale, Clock, Trash2, X, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+
+/* ── Icon resolver: API icon string → Lucide component ── */
+const ICON_MAP: Record<string, React.ElementType> = {
+  BarChart3, TrendingUp, RefreshCw, FileText, Sparkles, MessageSquare,
+  Bot, User, Smartphone, GitBranch, FileEdit, BookOpen,
+};
+function resolveAgentIcon(iconName?: string): React.ElementType {
+  if (iconName && ICON_MAP[iconName]) return ICON_MAP[iconName];
+  return Bot;
+}
 
 /* ─────────────────── Types ─────────────────── */
 interface Message {
@@ -56,16 +68,6 @@ const KNOWLEDGE_DOCS = [
   { title: "API 接口规范 v2.1", type: "Markdown", size: "384 KB", updated: "3 天前", category: "技术规范", icon: Ruler },
   { title: "BPMN 2.0 节点参考", type: "Web", size: "—", updated: "1 周前", category: "标准规范", icon: Briefcase },
   { title: "销售话术库（已索引）", type: "向量库", size: "8.2K 条", updated: "实时", category: "业务知识", icon: ScrollText },
-];
-
-/* ─────────────────── Agent list ─────────────────── */
-const AGENTS = [
-  { id: "data", name: "数据分析智能体", desc: "查数据 / 出报表 / 发现异常", icon: BarChart3, prompt: "你好，我已激活「数据分析智能体」，我可以帮你查询数据、生成报表、发现异常指标。请告诉我你想分析什么？" },
-  { id: "report", name: "报表生成智能体", desc: "自动编排 BI 报表", icon: TrendingUp, prompt: "你好，我已激活「报表生成智能体」，我可以自动编排 BI 报表并可视化。请告诉我想生成什么报表？" },
-  { id: "process", name: "流程分析智能体", desc: "识别瓶颈 / 给出优化建议", icon: RefreshCw, prompt: "你好，我已激活「流程分析智能体」，我可以识别流程瓶颈并给出优化建议。请告诉我想分析哪条流程？" },
-  { id: "doc", name: "文档撰写智能体", desc: "起草合同 / 会议纪要 / 周报", icon: FileText, prompt: "你好，我已激活「文档撰写智能体」，我可以帮你起草合同、会议纪要、周报等文档。请告诉我想写什么？" },
-  { id: "code", name: "VibeCoding 智能体", desc: "自然语言生成完整应用", icon: Sparkles, prompt: "你好，我已激活「VibeCoding 智能体」，我可以用自然语言帮你生成完整应用。请描述你想要的应用？" },
-  { id: "support", name: "客服智能体", desc: "7x24 答疑 / 工单预处理", icon: MessageSquare, prompt: "你好，我已激活「客服智能体」，我可以 7x24 小时答疑并预处理工单。请问有什么可以帮你的？" },
 ];
 
 /* ─────────────────── Enhanced mock LLM ─────────────────── */
@@ -270,40 +272,96 @@ interface AgentTabProps {
   onActivateAgent: (prompt: string) => void;
 }
 
+/* 本地 fallback 智能体数据（API 不可用时） */
+const FALLBACK_AGENTS = [
+  { id: "data", name: "数据分析智能体", description: "查数据 / 出报表 / 发现异常", icon: "BarChart3", prompt: "你好，我已激活「数据分析智能体」，我可以帮你查询数据、生成报表、发现异常指标。请告诉我你想分析什么？" },
+  { id: "report", name: "报表生成智能体", description: "自动编排 BI 报表", icon: "TrendingUp", prompt: "你好，我已激活「报表生成智能体」，我可以自动编排 BI 报表并可视化。请告诉我想生成什么报表？" },
+  { id: "process", name: "流程分析智能体", description: "识别瓶颈 / 给出优化建议", icon: "RefreshCw", prompt: "你好，我已激活「流程分析智能体」，我可以识别流程瓶颈并给出优化建议。请告诉我想分析哪条流程？" },
+  { id: "doc", name: "文档撰写智能体", description: "起草合同 / 会议纪要 / 周报", icon: "FileText", prompt: "你好，我已激活「文档撰写智能体」，我可以帮你起草合同、会议纪要、周报等文档。请告诉我想写什么？" },
+  { id: "code", name: "VibeCoding 智能体", description: "自然语言生成完整应用", icon: "Sparkles", prompt: "你好，我已激活「VibeCoding 智能体」，我可以用自然语言帮你生成完整应用。请描述你想要的应用？" },
+  { id: "support", name: "客服智能体", description: "7x24 答疑 / 工单预处理", icon: "MessageSquare", prompt: "你好，我已激活「客服智能体」，我可以 7x24 小时答疑并预处理工单。请问有什么可以帮你的？" },
+];
+
+interface AgentWithPrompt {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  prompt: string;
+}
+
 function AgentTab({ onActivateAgent }: AgentTabProps) {
+  const [agents, setAgents] = useState<AgentWithPrompt[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await agentsApi.list();
+        if (!cancelled && data.length > 0) {
+          // 将 API agent 映射为带 prompt 的本地格式
+          const mapped = data.map((a: Agent) => ({
+            id: a.id,
+            name: a.name,
+            description: a.description || a.type || "",
+            icon: a.type || "Bot",
+            prompt: `你好，我已激活「${a.name}」。${a.description || "请问有什么可以帮你的？"}`,
+          }));
+          setAgents(mapped);
+        } else if (!cancelled) {
+          setAgents(FALLBACK_AGENTS);
+        }
+      } catch {
+        if (!cancelled) setAgents(FALLBACK_AGENTS);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
   return (
-    <div className="p-4 flex flex-col gap-3">
-      <div>
-        <h1 className="text-xl font-semibold">智能体广场</h1>
-        <p className="text-xs text-muted-foreground">SuperAI 内置 6 类业务智能体，可一键唤起</p>
+      <div className="p-4 flex flex-col gap-3">
+        <div>
+          <h1 className="text-xl font-semibold">智能体广场</h1>
+          <p className="text-xs text-muted-foreground">SuperAI 内置 6 类业务智能体，可一键唤起</p>
+        </div>
+        {loading ? (
+          <div className="flex items-center justify-center py-12 text-muted-foreground">
+            <Loader2 className="size-5 animate-spin mr-2" /> 加载智能体...
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {agents.map((a) => {
+              const Icon = resolveAgentIcon(a.icon);
+              return (
+                <Card key={a.id} className="hover:border-primary cursor-pointer transition-colors">
+                  <CardHeader>
+                    <div className="flex items-start justify-between">
+                      <Icon className="size-5" />
+                      <Badge variant="secondary">内置</Badge>
+                    </div>
+                    <CardTitle className="text-sm mt-1">{a.name}</CardTitle>
+                    <CardDescription>{a.description}</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => onActivateAgent(a.prompt)}
+                    >
+                      <BotIcon className="size-3 mr-1" />
+                      唤起
+                    </Button>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        )}
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-        {AGENTS.map((a) => (
-          <Card key={a.id} className="hover:border-primary cursor-pointer transition-colors">
-            <CardHeader>
-              <div className="flex items-start justify-between">
-                <a.icon className="size-5" />
-                <Badge variant="secondary">内置</Badge>
-              </div>
-              <CardTitle className="text-sm mt-1">{a.name}</CardTitle>
-              <CardDescription>{a.desc}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button
-                size="sm"
-                variant="outline"
-                className="w-full"
-                onClick={() => onActivateAgent(a.prompt)}
-              >
-                <BotIcon className="size-3 mr-1" />
-                唤起
-              </Button>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    </div>
-  );
+    );
 }
 
 /* ─────────────────── TasksTab ─────────────────── */

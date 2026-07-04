@@ -30,6 +30,8 @@ db.exec(`
   DELETE FROM ontology_properties;
   DELETE FROM ontology_objects;
   DELETE FROM data_sources;
+  DELETE FROM app_pages;
+  DELETE FROM app_configs;
   DELETE FROM applications;
   DELETE FROM users;
   DELETE FROM system_config;
@@ -76,6 +78,42 @@ for (const a of apps) {
   insertApp.run(a.id, a.name, a.description, a.category, a.status, a.icon, "u-admin", a.objects_count, a.pages_count, a.flows_count, now, now);
 }
 console.log(`  ✅ Applications: ${apps.length}`);
+
+// ════════════════════════════════════════════════════════
+//  App Pages (17)
+// ════════════════════════════════════════════════════════
+const pagesList = [
+  // CRM (app-crm) — 4 pages
+  { id: "page-crm-1", app_id: "app-crm", name: "客户列表", type: "list", icon: "Users", status: "published", sort_order: 0 },
+  { id: "page-crm-2", app_id: "app-crm", name: "商机看板", type: "dashboard", icon: "Kanban", status: "published", sort_order: 1 },
+  { id: "page-crm-3", app_id: "app-crm", name: "合同管理", type: "list", icon: "FileText", status: "published", sort_order: 2 },
+  { id: "page-crm-4", app_id: "app-crm", name: "数据报表", type: "chart", icon: "BarChart3", status: "published", sort_order: 3 },
+  // 报销审批 (app-expense) — 3 pages
+  { id: "page-exp-1", app_id: "app-expense", name: "报销单", type: "list", icon: "Receipt", status: "published", sort_order: 0 },
+  { id: "page-exp-2", app_id: "app-expense", name: "审批记录", type: "list", icon: "CheckSquare", status: "published", sort_order: 1 },
+  { id: "page-exp-3", app_id: "app-expense", name: "统计报表", type: "chart", icon: "PieChart", status: "published", sort_order: 2 },
+  // 销售看板 (app-dashboard) — 3 pages
+  { id: "page-dash-1", app_id: "app-dashboard", name: "销售概览", type: "dashboard", icon: "LayoutDashboard", status: "published", sort_order: 0 },
+  { id: "page-dash-2", app_id: "app-dashboard", name: "区域分析", type: "chart", icon: "Map", status: "published", sort_order: 1 },
+  { id: "page-dash-3", app_id: "app-dashboard", name: "客户画像", type: "dashboard", icon: "UserCircle", status: "published", sort_order: 2 },
+  // 智能体助手 (app-agent) — 2 pages
+  { id: "page-agent-1", app_id: "app-agent", name: "对话界面", type: "text", icon: "MessageSquare", status: "published", sort_order: 0 },
+  { id: "page-agent-2", app_id: "app-agent", name: "知识管理", type: "list", icon: "BookOpen", status: "published", sort_order: 1 },
+  // 数字员工小秘 (app-secretary) — 2 pages
+  { id: "page-sec-1", app_id: "app-secretary", name: "工作台", type: "dashboard", icon: "Monitor", status: "draft", sort_order: 0 },
+  { id: "page-sec-2", app_id: "app-secretary", name: "任务管理", type: "list", icon: "ListTodo", status: "draft", sort_order: 1 },
+  // VibeCoding Demo (app-vibe) — 1 page
+  { id: "page-vibe-1", app_id: "app-vibe", name: "代码编辑器", type: "text", icon: "Code", status: "draft", sort_order: 0 },
+];
+
+const insertPage = db.prepare(
+  `INSERT INTO app_pages (id, app_id, name, type, icon, status, config, sort_order, created_at, updated_at)
+   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+);
+for (const p of pagesList) {
+  insertPage.run(p.id, p.app_id, p.name, p.type, p.icon, p.status, null, p.sort_order, now, now);
+}
+console.log(`  ✅ App Pages: ${pagesList.length}`);
 
 // ════════════════════════════════════════════════════════
 //  Ontology Objects (6) with Properties
@@ -332,6 +370,7 @@ console.log("═".repeat(50));
 console.log(`
   Users:            ${users.length}
   Applications:     ${apps.length}
+  App Pages:        ${pagesList.length}
   Ontology Objects: ${objects.length} (${objects.reduce((s, o) => s + o.properties.length, 0)} properties)
   Relations:        ${relations.length}
   Process Defs:     ${processes.length}

@@ -8,9 +8,10 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { processesApi, type ProcessDefinition } from "@/lib/api";
 import { flowableApi, type FlowableProcessDefinition } from "@/lib/flowable-api";
+import { Input } from "@/components/ui/input";
 import {
   Plus, GitBranch, Eye, Activity, BarChart3, AlertTriangle, Play,
-  Timer, CheckCircle, Loader2, AlertCircle,
+  Timer, CheckCircle, Loader2, AlertCircle, List, FileCheck, Zap, TrendingUp, Server, Download, Search, Clock, Pause, RotateCcw, XCircle, Send, BookOpen, Filter, FileText,
 } from "lucide-react";
 
 export default function ProcessList() {
@@ -238,6 +239,479 @@ export default function ProcessList() {
           </div>
         </TabsContent>
       </Tabs>
+    </div>
+  );
+}
+
+/* ─────────────────── ProcessInstances ─────────────────── */
+const MOCK_INSTANCES = [
+  { id: "PI-20260704-001", name: "采购审批 - 王丽提交", definition: "采购审批流程", status: "running", start: "2026-07-04 09:15", duration: "2h 30m", current: "部门经理审批" },
+  { id: "PI-20260704-002", name: "差旅报销 - 张伟", definition: "报销审批流程", status: "completed", start: "2026-07-04 08:42", duration: "45m", current: "已完成" },
+  { id: "PI-20260703-015", name: "合同签署 - 供应商A", definition: "合同审批流程", status: "running", start: "2026-07-03 14:20", duration: "18h", current: "法务审核" },
+  { id: "PI-20260703-012", name: "采购审批 - 李明", definition: "采购审批流程", status: "suspended", start: "2026-07-03 10:05", duration: "暂停", current: "财务审批" },
+  { id: "PI-20260702-008", name: "员工入职流程 - HR-001", definition: "入职流程", status: "failed", start: "2026-07-02 16:30", duration: "失败", current: "IT 账号创建" },
+];
+
+const instanceStatusConfig: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline"; icon: React.ElementType }> = {
+  running: { label: "运行中", variant: "default", icon: Activity },
+  completed: { label: "已完成", variant: "secondary", icon: CheckCircle },
+  suspended: { label: "已暂停", variant: "outline", icon: Pause },
+  failed: { label: "已失败", variant: "destructive", icon: XCircle },
+};
+
+export function ProcessInstances() {
+  const [instances] = useState(MOCK_INSTANCES);
+  const [search, setSearch] = useState("");
+
+  const filtered = instances.filter((i) => i.name.includes(search) || i.id.includes(search));
+
+  return (
+    <div className="flex flex-col gap-4">
+      <PageHeader
+        title="流程实例"
+        description="查看所有运行中、已完成和异常的流程实例"
+        action={
+          <Button variant="outline" className="gap-2">
+            <RotateCcw className="size-4" /> 刷新
+          </Button>
+        }
+      />
+
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+        <StatCard label="运行中" value={instances.filter((i) => i.status === "running").length} icon={Activity} />
+        <StatCard label="已完成" value={instances.filter((i) => i.status === "completed").length} icon={CheckCircle} />
+        <StatCard label="已暂停" value={instances.filter((i) => i.status === "suspended").length} icon={Pause} />
+        <StatCard label="已失败" value={instances.filter((i) => i.status === "failed").length} icon={XCircle} />
+      </div>
+
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0">
+          <div>
+            <CardTitle className="text-base flex items-center gap-2">
+              <List className="size-4" /> 实例列表
+            </CardTitle>
+            <CardDescription>{filtered.length} 个实例</CardDescription>
+          </div>
+          <div className="flex gap-2">
+            <div className="relative">
+              <Search className="size-3 absolute left-2 top-2.5 text-muted-foreground" />
+              <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="搜索实例..." className="pl-7 h-8 w-48 text-sm" />
+            </div>
+            <Button variant="outline" size="sm"><Filter className="size-3 mr-1" />筛选</Button>
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>实例 ID</TableHead>
+                <TableHead>名称</TableHead>
+                <TableHead>流程定义</TableHead>
+                <TableHead>状态</TableHead>
+                <TableHead>当前节点</TableHead>
+                <TableHead>耗时</TableHead>
+                <TableHead className="text-right">操作</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filtered.map((inst) => {
+                const s = instanceStatusConfig[inst.status] || instanceStatusConfig.running;
+                const StatusIcon = s.icon;
+                return (
+                  <TableRow key={inst.id}>
+                    <TableCell className="font-mono text-xs">{inst.id}</TableCell>
+                    <TableCell className="font-medium">{inst.name}</TableCell>
+                    <TableCell className="text-xs">{inst.definition}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1">
+                        <StatusIcon className={`size-3 ${inst.status === "failed" ? "text-red-500" : inst.status === "running" ? "text-blue-500" : inst.status === "suspended" ? "text-orange-500" : "text-green-500"}`} />
+                        <Badge variant={s.variant}>{s.label}</Badge>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-xs">{inst.current}</TableCell>
+                    <TableCell className="text-xs">{inst.duration}</TableCell>
+                    <TableCell className="text-right">
+                      <Button variant="ghost" size="icon" className="size-8" title="查看详情">
+                        <Eye className="size-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+/* ─────────────────── ProcessApprovals ─────────────────── */
+const MY_APPROVALS = [
+  { id: "AP-001", title: "采购申请 - 办公设备采购", submitter: "王丽", type: "采购审批", status: "pending", priority: "high", time: "2 小时前" },
+  { id: "AP-002", title: "差旅报销 - 北京出差", submitter: "张伟", type: "报销审批", status: "pending", priority: "normal", time: "4 小时前" },
+  { id: "AP-003", title: "合同续签 - 供应商A", submitter: "李娜", type: "合同审批", status: "approved", priority: "high", time: "昨天" },
+  { id: "AP-004", title: "请假申请 - 年假", submitter: "刘敏", type: "人事审批", status: "rejected", priority: "normal", time: "2 天前" },
+];
+
+const approvalStatusMap: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
+  pending: { label: "待审批", variant: "outline" },
+  approved: { label: "已通过", variant: "default" },
+  rejected: { label: "已驳回", variant: "destructive" },
+};
+
+export function ProcessApprovals() {
+  const [approvals, setApprovals] = useState(MY_APPROVALS);
+  const [filter, setFilter] = useState("all");
+
+  const filtered = filter === "all" ? approvals : approvals.filter((a) => a.status === filter);
+  const pendingCount = approvals.filter((a) => a.status === "pending").length;
+
+  function handleApprove(id: string) {
+    setApprovals((prev) => prev.map((a) => a.id === id ? { ...a, status: "approved" as const } : a));
+  }
+
+  function handleReject(id: string) {
+    setApprovals((prev) => prev.map((a) => a.id === id ? { ...a, status: "rejected" as const } : a));
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      <PageHeader
+        title="审批中心"
+        description="个人审批待办与已办事项"
+        action={
+          <Button className="gap-2">
+            <Send className="size-4" /> 发起审批
+          </Button>
+        }
+      />
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <StatCard label="待我审批" value={pendingCount} icon={Clock} />
+        <StatCard label="已通过" value={approvals.filter((a) => a.status === "approved").length} icon={CheckCircle} />
+        <StatCard label="已驳回" value={approvals.filter((a) => a.status === "rejected").length} icon={XCircle} />
+      </div>
+
+      <Tabs value={filter} onValueChange={setFilter}>
+        <TabsList>
+          <TabsTrigger value="all">全部 ({approvals.length})</TabsTrigger>
+          <TabsTrigger value="pending">待审批 ({pendingCount})</TabsTrigger>
+          <TabsTrigger value="approved">已通过</TabsTrigger>
+          <TabsTrigger value="rejected">已驳回</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value={filter} className="mt-3">
+          <Card>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>编号</TableHead>
+                    <TableHead>标题</TableHead>
+                    <TableHead>提交人</TableHead>
+                    <TableHead>类型</TableHead>
+                    <TableHead>状态</TableHead>
+                    <TableHead>时间</TableHead>
+                    <TableHead className="text-right">操作</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filtered.map((a) => {
+                    const s = approvalStatusMap[a.status];
+                    return (
+                      <TableRow key={a.id}>
+                        <TableCell className="font-mono text-xs">{a.id}</TableCell>
+                        <TableCell className="font-medium">{a.title}</TableCell>
+                        <TableCell>{a.submitter}</TableCell>
+                        <TableCell><Badge variant="outline" className="text-xs">{a.type}</Badge></TableCell>
+                        <TableCell><Badge variant={s.variant}>{s.label}</Badge></TableCell>
+                        <TableCell className="text-xs text-muted-foreground">{a.time}</TableCell>
+                        <TableCell className="text-right">
+                          {a.status === "pending" && (
+                            <div className="flex gap-1 justify-end">
+                              <Button size="sm" variant="outline" onClick={() => handleApprove(a.id)}>通过</Button>
+                              <Button size="sm" variant="ghost" className="text-destructive" onClick={() => handleReject(a.id)}>驳回</Button>
+                            </div>
+                          )}
+                          {a.status !== "pending" && (
+                            <Button variant="ghost" size="icon" className="size-8"><Eye className="size-4" /></Button>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
+
+/* ─────────────────── ProcessTriggers ─────────────────── */
+const MOCK_TRIGGERS = [
+  { id: 1, name: "订单创建触发", event: "Order.created", target: "采购审批流程", status: "active", hits: 1248 },
+  { id: 2, name: "合同到期提醒", event: "Contract.expires_in_7d", target: "提醒流程", status: "active", hits: 56 },
+  { id: 3, name: "库存预警触发", event: "Inventory.low_stock", target: "补货流程", status: "active", hits: 320 },
+  { id: 4, name: "审批超时升级", event: "Approval.timeout", target: "升级审批流程", status: "paused", hits: 12 },
+];
+
+export function ProcessTriggers() {
+  const [triggers, setTriggers] = useState(MOCK_TRIGGERS);
+
+  function toggleStatus(id: number) {
+    setTriggers((prev) => prev.map((t) => t.id === id ? { ...t, status: t.status === "active" ? "paused" : "active" } : t));
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      <PageHeader
+        title="触发器管理"
+        description="基于事件驱动的流程自动触发配置"
+        action={
+          <Button className="gap-2">
+            <Plus className="size-4" /> 新建触发器
+          </Button>
+        }
+      />
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <StatCard label="触发器总数" value={triggers.length} icon={Zap} />
+        <StatCard label="已启用" value={triggers.filter((t) => t.status === "active").length} icon={Activity} />
+        <StatCard label="累计触发" value={triggers.reduce((s, t) => s + t.hits, 0)} icon={TrendingUp} />
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Zap className="size-4" /> 触发器列表
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>名称</TableHead>
+                <TableHead>事件</TableHead>
+                <TableHead>目标流程</TableHead>
+                <TableHead>状态</TableHead>
+                <TableHead className="text-right">触发次数</TableHead>
+                <TableHead className="text-right">操作</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {triggers.map((t) => (
+                <TableRow key={t.id}>
+                  <TableCell className="font-medium">{t.name}</TableCell>
+                  <TableCell className="font-mono text-xs">{t.event}</TableCell>
+                  <TableCell className="text-xs">{t.target}</TableCell>
+                  <TableCell>
+                    <Badge variant={t.status === "active" ? "default" : "secondary"}>
+                      {t.status === "active" ? "已启用" : "已暂停"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right">{t.hits.toLocaleString()}</TableCell>
+                  <TableCell className="text-right">
+                    <Button variant="ghost" size="sm" onClick={() => toggleStatus(t.id)}>
+                      {t.status === "active" ? "暂停" : "启用"}
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+/* ─────────────────── ProcessAnalysis ─────────────────── */
+export function ProcessAnalysis() {
+  return (
+    <div className="flex flex-col gap-4">
+      <PageHeader
+        title="流程分析"
+        description="流程效率分析、瓶颈识别与优化建议"
+        action={
+          <Button variant="outline" className="gap-2">
+            <Download className="size-4" /> 导出报告
+          </Button>
+        }
+      />
+
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+        <StatCard label="平均审批时长" value="4.2h" icon={Timer} />
+        <StatCard label="流程完成率" value="92.3%" icon={CheckCircle} />
+        <StatCard label="超时率" value="3.8%" trend={-1.2} icon={AlertTriangle} />
+        <StatCard label="本周完成" value={186} icon={Activity} />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <BarChart3 className="size-4" /> 流程效率排名
+            </CardTitle>
+            <CardDescription>按平均耗时排名（从低到高）</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {[
+                { name: "请假审批", avg: "1.2h", rate: 98 },
+                { name: "报销审批", avg: "3.5h", rate: 95 },
+                { name: "采购审批", avg: "4.8h", rate: 91 },
+                { name: "合同审批", avg: "12.3h", rate: 88 },
+                { name: "入职流程", avg: "24.5h", rate: 82 },
+              ].map((p) => (
+                <div key={p.name} className="flex items-center gap-3">
+                  <span className="text-sm font-medium w-20">{p.name}</span>
+                  <div className="flex-1 bg-muted rounded-full h-2">
+                    <div className="bg-primary rounded-full h-2 transition-all" style={{ width: `${p.rate}%` }} />
+                  </div>
+                  <span className="text-xs text-muted-foreground w-12 text-right">{p.avg}</span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <AlertTriangle className="size-4" /> 流程瓶颈
+            </CardTitle>
+            <CardDescription>识别最长耗时节点</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {[
+                { node: "法务审核", process: "合同审批", avgWait: "8.2h", severity: "high" },
+                { node: "财务复核", process: "采购审批", avgWait: "3.5h", severity: "medium" },
+                { node: "IT 账号创建", process: "入职流程", avgWait: "2.1h", severity: "low" },
+              ].map((b) => (
+                <div key={b.node} className="flex items-center gap-3 p-3 border rounded-lg">
+                  <AlertTriangle className={`size-4 shrink-0 ${b.severity === "high" ? "text-red-500" : b.severity === "medium" ? "text-orange-500" : "text-yellow-500"}`} />
+                  <div className="flex-1">
+                    <div className="font-medium text-sm">{b.node}</div>
+                    <div className="text-xs text-muted-foreground">{b.process} / 平均等待 {b.avgWait}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────── ProcessPlatform ─────────────────── */
+export function ProcessPlatform() {
+  return (
+    <div className="flex flex-col gap-4">
+      <PageHeader
+        title="流程中台"
+        description="流程中台 API 文档与接入指南"
+        action={
+          <Button variant="outline" className="gap-2">
+            <BookOpen className="size-4" /> 查看文档
+          </Button>
+        }
+      />
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <StatCard label="API 接口数" value={42} icon={Server} />
+        <StatCard label="今日调用" value="12,480" icon={Activity} />
+        <StatCard label="平均响应" value="28ms" icon={Timer} />
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Server className="size-4" /> 核心 API
+          </CardTitle>
+          <CardDescription>流程中台提供的 RESTful API</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {[
+              { method: "POST", path: "/api/v1/process/start", desc: "启动流程实例" },
+              { method: "POST", path: "/api/v1/process/task/complete", desc: "完成任务节点" },
+              { method: "GET", path: "/api/v1/process/instances", desc: "查询流程实例" },
+              { method: "GET", path: "/api/v1/process/tasks", desc: "查询待办任务" },
+              { method: "POST", path: "/api/v1/process/deploy", desc: "部署流程定义" },
+              { method: "GET", path: "/api/v1/process/history", desc: "查询流程历史" },
+            ].map((api) => (
+              <div key={api.path} className="flex items-center gap-3 p-3 border rounded-lg">
+                <Badge variant={api.method === "GET" ? "secondary" : "default"} className="font-mono text-xs w-14 justify-center">
+                  {api.method}
+                </Badge>
+                <span className="font-mono text-sm flex-1">{api.path}</span>
+                <span className="text-xs text-muted-foreground">{api.desc}</span>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+/* ─────────────────── ProcessExport ─────────────────── */
+export function ProcessExport() {
+  const [exporting, setExporting] = useState<string | null>(null);
+
+  function handleExport(format: string) {
+    setExporting(format);
+    setTimeout(() => setExporting(null), 1500);
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      <PageHeader
+        title="流程导出"
+        description="导出流程定义、实例数据和分析报告"
+      />
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {[
+          { name: "流程定义 (BPMN XML)", desc: "导出所有流程的 BPMN 2.0 XML 定义文件", format: "bpmn", icon: FileText },
+          { name: "流程实例数据", desc: "导出当前运行中和已完成的流程实例数据", format: "instances", icon: List },
+          { name: "流程分析报告", desc: "导出流程效率分析报告（PDF）", format: "report", icon: BarChart3 },
+          { name: "审批记录", desc: "导出所有审批记录和审批意见", format: "approvals", icon: FileCheck },
+          { name: "触发器配置", desc: "导出所有触发器的配置文件", format: "triggers", icon: Zap },
+          { name: "全量数据包", desc: "导出所有流程相关数据（ZIP 打包）", format: "all", icon: Download },
+        ].map((item) => {
+          const Icon = item.icon;
+          return (
+            <Card key={item.format} className="cursor-pointer hover:border-primary transition-colors">
+              <CardHeader>
+                <div className="flex items-start justify-between">
+                  <Icon className="size-8 text-primary" />
+                  {exporting === item.format && <Loader2 className="size-4 animate-spin text-primary" />}
+                </div>
+                <CardTitle className="text-base mt-2">{item.name}</CardTitle>
+                <CardDescription>{item.desc}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button
+                  size="sm"
+                  className="w-full"
+                  onClick={() => handleExport(item.format)}
+                  disabled={exporting !== null}
+                >
+                  <Download className="size-3 mr-1" />
+                  {exporting === item.format ? "导出中..." : "导出"}
+                </Button>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
     </div>
   );
 }

@@ -10,7 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { adminApi, type User, type Role, type Department, type AuditLog, type SystemConfig } from "@/lib/api";
-import { Users, Shield, Server, Cpu, Database, Activity, Plus, MoreHorizontal, BarChart3, AlertTriangle, Building2, Settings2, BookText, FileText, Clock, Edit, Trash2, Search, Filter, KeyRound, Lock, Eye, Monitor, Package, Handshake, Megaphone, Settings, DollarSign, Palette, Wrench, TestTube, Home, Bot, Smartphone, RefreshCw, Dna, CheckCircle2, BookOpen, Cloud, Circle, Radio, Loader2 } from "lucide-react";
+import { Users, Shield, Server, Cpu, Database, Activity, Plus, MoreHorizontal, BarChart3, AlertTriangle, Building2, Settings2, BookText, FileText, Clock, Edit, Trash2, Search, Filter, KeyRound, Lock, Eye, Monitor, Package, Handshake, Megaphone, Settings, DollarSign, Palette, Wrench, TestTube, Home, Bot, Smartphone, RefreshCw, Dna, CheckCircle2, BookOpen, Cloud, Circle, Radio, Loader2, Download, Upload, HardDrive, GitBranch, Layers, Globe, Puzzle, Calendar } from "lucide-react";
+import { PageHeader } from "@/components/ui/stat";
 
 const roleLabels: Record<string, string> = {
   executive: "领导",
@@ -1159,3 +1160,266 @@ export function AdminDashboard() {
     </div>
   );
 }
+
+/* ─────────────────── OrgStructure ─────────────────── */
+export function OrgStructure() {
+  return (
+    <div className="flex flex-col gap-4">
+      <PageHeader title="组织架构" description="管理公司组织架构、部门层级和人员编制" action={<Button className="gap-2"><Plus className="size-4" /> 新建部门</Button>} />
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+        <StatCard label="部门总数" value={10} icon={Building2} />
+        <StatCard label="员工总数" value={156} icon={Users} />
+        <StatCard label="管理层" value={12} icon={Shield} />
+        <StatCard label="待入职" value={3} icon={Users} />
+      </div>
+      <Card>
+        <CardHeader><CardTitle className="text-base flex items-center gap-2"><Building2 className="size-4" /> 组织树</CardTitle></CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            {[
+              { name: "总裁办", level: 0, count: 5, leader: "张总" },
+              { name: "技术中心", level: 1, count: 48, leader: "王强" },
+              { name: "前端开发组", level: 2, count: 12, leader: "赵敏" },
+              { name: "后端开发组", level: 2, count: 18, leader: "李伟" },
+              { name: "测试组", level: 2, count: 8, leader: "陈红" },
+              { name: "产品中心", level: 1, count: 24, leader: "刘敏" },
+              { name: "销售中心", level: 1, count: 36, leader: "周杰" },
+              { name: "财务中心", level: 1, count: 12, leader: "吴芳" },
+              { name: "人力资源中心", level: 1, count: 15, leader: "孙丽" },
+              { name: "市场中心", level: 1, count: 16, leader: "黄磊" },
+            ].map((d) => (
+              <div key={d.name} className="flex items-center gap-3 p-2 border rounded hover:bg-muted/30" style={{ paddingLeft: `${d.level * 24 + 8}px` }}>
+                {d.level === 0 ? <Building2 className="size-4 text-primary" /> : d.level === 1 ? <Building2 className="size-4" /> : <Users className="size-4 text-muted-foreground" />}
+                <span className="font-medium text-sm flex-1">{d.name}</span>
+                <span className="text-xs text-muted-foreground">{d.leader}</span>
+                <Badge variant="secondary" className="text-xs">{d.count} 人</Badge>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+/* ─────────────────── AdminMonitor ─────────────────── */
+export function AdminMonitor() {
+  return (
+    <div className="flex flex-col gap-4">
+      <PageHeader title="监控日志" description="系统运行监控、性能指标和告警管理" />
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+        <StatCard label="CPU 使用率" value="42%" icon={Cpu} />
+        <StatCard label="内存使用" value="68%" icon={Database} />
+        <StatCard label="磁盘使用" value="56%" icon={HardDrive} />
+        <StatCard label="API 响应" value="28ms" icon={Activity} />
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Card>
+          <CardHeader><CardTitle className="text-base flex items-center gap-2"><Activity className="size-4" /> 系统健康</CardTitle></CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {[
+                { name: "API 网关", status: "正常", value: "99.99%" },
+                { name: "PostgreSQL", status: "正常", value: "85% 连接" },
+                { name: "Redis", status: "正常", value: "2.1GB" },
+                { name: "LLM Gateway", status: "正常", value: "12ms" },
+                { name: "MinIO 存储", status: "警告", value: "80% 使用" },
+                { name: "Flowable 引擎", status: "正常", value: "运行中" },
+              ].map((s) => (
+                <div key={s.name} className="flex items-center justify-between text-sm p-2 border rounded">
+                  <span>{s.name}</span>
+                  <div className="flex items-center gap-2">
+                    <Badge variant={s.status === "正常" ? "default" : "outline"} className={s.status === "警告" ? "text-orange-500" : ""}>{s.status}</Badge>
+                    <span className="text-muted-foreground text-xs">{s.value}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader><CardTitle className="text-base flex items-center gap-2"><AlertTriangle className="size-4" /> 告警列表</CardTitle></CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {[
+                { title: "MinIO 磁盘使用超过 80%", severity: "中", time: "30 分钟前" },
+                { title: "API 响应时间超过 500ms", severity: "低", time: "2 小时前" },
+                { title: "Flowable 连接池使用率 90%", severity: "高", time: "昨天" },
+              ].map((a, i) => (
+                <div key={i} className="flex items-center justify-between p-2 border rounded">
+                  <div>
+                    <div className="text-sm font-medium">{a.title}</div>
+                    <div className="text-xs text-muted-foreground">{a.time}</div>
+                  </div>
+                  <Badge variant={a.severity === "高" ? "destructive" : a.severity === "中" ? "outline" : "secondary"} className={a.severity === "中" ? "text-orange-500" : ""}>{a.severity}</Badge>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────── AdminBackup ─────────────────── */
+export function AdminBackup() {
+  return (
+    <div className="flex flex-col gap-4">
+      <PageHeader title="备份恢复" description="数据库备份策略、手动备份和数据恢复" action={<Button className="gap-2"><Download className="size-4" /> 立即备份</Button>} />
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <StatCard label="最近备份" value="2 小时前" icon={Clock} />
+        <StatCard label="备份大小" value="4.2 GB" icon={Database} />
+        <StatCard label="保留天数" value="30 天" icon={Calendar} />
+      </div>
+      <Card>
+        <CardHeader><CardTitle className="text-base flex items-center gap-2"><Download className="size-4" /> 备份记录</CardTitle></CardHeader>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader><TableRow><TableHead>备份时间</TableHead><TableHead>类型</TableHead><TableHead>大小</TableHead><TableHead>状态</TableHead><TableHead className="text-right">操作</TableHead></TableRow></TableHeader>
+            <TableBody>
+              {[
+                { time: "2026-07-04 10:00", type: "全量", size: "4.2 GB", status: "成功" },
+                { time: "2026-07-04 09:00", type: "增量", size: "128 MB", status: "成功" },
+                { time: "2026-07-03 22:00", type: "全量", size: "4.1 GB", status: "成功" },
+                { time: "2026-07-03 21:00", type: "增量", size: "96 MB", status: "成功" },
+              ].map((b, i) => (
+                <TableRow key={i}>
+                  <TableCell className="font-mono text-xs">{b.time}</TableCell>
+                  <TableCell><Badge variant="outline">{b.type}</Badge></TableCell>
+                  <TableCell>{b.size}</TableCell>
+                  <TableCell><Badge variant="secondary" className="text-green-600">{b.status}</Badge></TableCell>
+                  <TableCell className="text-right"><Button variant="ghost" size="sm"><Upload className="size-3 mr-1" />恢复</Button></TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+/* ─────────────────── AdminDeploy ─────────────────── */
+export function AdminDeploy() {
+  return (
+    <div className="flex flex-col gap-4">
+      <PageHeader title="部署环境" description="管理开发、测试、预发和生产环境" />
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {[
+          { env: "开发环境", version: "v1.3.1-dev", status: "运行中", deploy: "2 小时前", instances: 1 },
+          { env: "测试环境", version: "v1.3.0-rc2", status: "运行中", deploy: "1 天前", instances: 2 },
+          { env: "预发环境", version: "v1.3.0-rc1", status: "运行中", deploy: "3 天前", instances: 2 },
+          { env: "生产环境", version: "v1.2.3", status: "运行中", deploy: "1 周前", instances: 4 },
+        ].map((e) => (
+          <Card key={e.env} className="hover:border-primary">
+            <CardHeader>
+              <CardTitle className="text-base">{e.env}</CardTitle>
+              <CardDescription>版本: {e.version}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2 text-xs">
+                <div className="flex justify-between"><span className="text-muted-foreground">状态</span><Badge variant="default">{e.status}</Badge></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">实例数</span><span>{e.instances}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">最近部署</span><span>{e.deploy}</span></div>
+              </div>
+              <Button variant="outline" size="sm" className="w-full mt-3">部署</Button>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────── AdminBilling ─────────────────── */
+export function AdminBilling() {
+  return (
+    <div className="flex flex-col gap-4">
+      <PageHeader title="计费" description="平台资源使用计费和账单管理" />
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+        <StatCard label="本月费用" value="¥12,480" icon={DollarSign} />
+        <StatCard label="计算资源" value="¥8,200" icon={Cpu} />
+        <StatCard label="存储费用" value="¥2,880" icon={Database} />
+        <StatCard label="API 调用" value="¥1,400" icon={Activity} />
+      </div>
+      <Card>
+        <CardHeader><CardTitle className="text-base flex items-center gap-2"><DollarSign className="size-4" /> 费用明细</CardTitle></CardHeader>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader><TableRow><TableHead>资源类型</TableHead><TableHead>用量</TableHead><TableHead>单价</TableHead><TableHead className="text-right">费用</TableHead></TableRow></TableHeader>
+            <TableBody>
+              {[
+                { type: "计算实例 (K8s)", usage: "4 实例 x 30 天", price: "¥68/天/实例", cost: "¥8,160" },
+                { type: "PostgreSQL", usage: "100GB SSD", price: "¥0.5/GB/月", cost: "¥50" },
+                { type: "Redis", usage: "4GB", price: "¥200/GB/月", cost: "¥800" },
+                { type: "MinIO 存储", usage: "200GB", price: "¥0.1/GB/月", cost: "¥20" },
+                { type: "LLM API 调用", usage: "1,248,000 tokens", price: "¥0.001/token", cost: "¥1,248" },
+                { type: "带宽", usage: "500GB", price: "¥0.5/GB", cost: "¥250" },
+              ].map((b, i) => (
+                <TableRow key={i}>
+                  <TableCell className="font-medium">{b.type}</TableCell>
+                  <TableCell className="text-xs">{b.usage}</TableCell>
+                  <TableCell className="text-xs text-muted-foreground">{b.price}</TableCell>
+                  <TableCell className="text-right font-medium">{b.cost}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+/* ─────────────────── AdminPlugins ─────────────────── */
+const PLUGINS = [
+  { id: 1, name: "飞书集成", version: "v2.1", status: "installed", desc: "飞书消息、审批、日历集成" },
+  { id: 2, name: "钉钉集成", version: "v1.8", status: "installed", desc: "钉钉消息和审批集成" },
+  { id: 3, name: "企业微信", version: "v1.5", status: "available", desc: "企业微信消息和通讯录" },
+  { id: 4, name: "Flowable 引擎", version: "v6.8", status: "installed", desc: "BPMN 2.0 流程引擎" },
+  { id: 5, name: "MinIO 存储", version: "v2024", status: "installed", desc: "对象存储服务" },
+  { id: 6, name: "Elasticsearch", version: "v8.12", status: "available", desc: "全文搜索引擎" },
+];
+
+export function AdminPlugins() {
+  const [plugins, setPlugins] = useState(PLUGINS);
+
+  function togglePlugin(id: number) {
+    setPlugins((prev) => prev.map((p) => p.id === id ? { ...p, status: p.status === "installed" ? "available" : "installed" } : p));
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      <PageHeader title="插件管理" description="管理平台扩展插件和第三方集成" />
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <StatCard label="已安装" value={plugins.filter((p) => p.status === "installed").length} icon={Package} />
+        <StatCard label="可用插件" value={plugins.filter((p) => p.status === "available").length} icon={Layers} />
+        <StatCard label="总插件" value={plugins.length} icon={Server} />
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {plugins.map((p) => (
+          <Card key={p.id} className="hover:border-primary">
+            <CardHeader>
+              <div className="flex items-start justify-between">
+                <div className="size-10 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-500 text-white flex items-center justify-center"><Puzzle className="size-5" /></div>
+                <Badge variant={p.status === "installed" ? "default" : "secondary"}>{p.status === "installed" ? "已安装" : "可安装"}</Badge>
+              </div>
+              <CardTitle className="text-base mt-2">{p.name}</CardTitle>
+              <CardDescription>{p.desc}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">版本: {p.version}</span>
+                <Button size="sm" variant={p.status === "installed" ? "outline" : "default"} onClick={() => togglePlugin(p.id)}>
+                  {p.status === "installed" ? "卸载" : "安装"}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
+}
+

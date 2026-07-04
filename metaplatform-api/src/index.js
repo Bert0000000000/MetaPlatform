@@ -14,6 +14,7 @@ import agentsRoutes from "./routes/agents.js";
 import adminRoutes from "./routes/admin.js";
 import messagesRoutes from "./routes/messages.js";
 import flowableRoutes from "./routes/flowable.js";
+import pagesRoutes from "./routes/pages.js";
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -34,6 +35,7 @@ app.use("/api/agents", agentsRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/messages", messagesRoutes);
 app.use("/api/flowable", flowableRoutes);
+app.use("/api/pages", pagesRoutes);
 
 // ─── Health check ───────────────────────────────────────
 app.get("/api/health", (_req, res) => {

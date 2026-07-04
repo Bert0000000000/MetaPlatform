@@ -10,7 +10,9 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { agentsApi, type Agent, type AgentTask } from "@/lib/api";
-import { Bot, Plus, MessageSquare, Brain, Sparkles, Users, FileText, Wrench, Activity, GitBranch, Mail, Calendar, BarChart3, Zap, Clock, CheckCircle2, Search, NotebookPen, Code, ScrollText, DollarSign, Handshake, Truck, Circle, User, Trash2, Settings } from "lucide-react";
+import { Bot, Plus, MessageSquare, Brain, Sparkles, Users, FileText, Wrench, Activity, GitBranch, Mail, Calendar, BarChart3, Zap, Clock, CheckCircle2, Search, NotebookPen, Code, ScrollText, DollarSign, Handshake, Truck, Circle, User, Trash2, Settings, Shield, Database, Key, MemoryStick, Cpu, Eye } from "lucide-react";
+import { PageHeader } from "@/components/ui/stat";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 
 const statusConfig = {
   online: { label: "在线", color: "bg-green-500" },
@@ -476,6 +478,173 @@ export function AgentCenter() {
           <AgentMonitor />
         </TabsContent>
       </Tabs>
+    </div>
+  );
+}
+
+/* ─────────────────── AgentIdentity ─────────────────── */
+const AGENT_IDENTITIES = [
+  { id: 1, name: "数据分析助手", personality: "严谨、专业", memory: "长期记忆 2,480 条", context: "业务知识 + 历史对话", avatar: "Bot" },
+  { id: 2, name: "财务审核员", personality: "细致、合规", memory: "长期记忆 1,820 条", context: "财务制度 + 审批规则", avatar: "Bot" },
+  { id: 3, name: "客户画像师", personality: "洞察、主动", memory: "长期记忆 3,240 条", context: "客户数据 + 行为分析", avatar: "Bot" },
+];
+
+export function AgentIdentity() {
+  return (
+    <div className="flex flex-col gap-4">
+      <PageHeader title="身份与记忆" description="管理数字员工的身份设定、记忆系统和上下文配置" />
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <StatCard label="已配置身份" value={AGENT_IDENTITIES.length} icon={User} />
+        <StatCard label="总记忆条数" value="7,540" icon={Brain} />
+        <StatCard label="上下文窗口" value="128K" icon={Database} />
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {AGENT_IDENTITIES.map((a) => (
+          <Card key={a.id} className="hover:border-primary">
+            <CardHeader>
+              <div className="flex items-start justify-between">
+                <Bot className="size-8 text-primary" />
+                <Button variant="ghost" size="icon" className="size-8"><Settings className="size-4" /></Button>
+              </div>
+              <CardTitle className="text-base mt-2">{a.name}</CardTitle>
+              <CardDescription>性格: {a.personality}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2 text-xs text-muted-foreground">
+                <div className="flex items-center gap-2"><Brain className="size-3" /><span>{a.memory}</span></div>
+                <div className="flex items-center gap-2"><Database className="size-3" /><span>上下文: {a.context}</span></div>
+              </div>
+              <Button variant="outline" size="sm" className="w-full mt-3">管理记忆</Button>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────── AgentWorkspace ─────────────────── */
+export function AgentWorkspace() {
+  return (
+    <div className="flex flex-col gap-4">
+      <PageHeader title="工作空间" description="为数字员工分配独立的工作空间和资源" />
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+        <StatCard label="工作空间" value={5} icon={Wrench} />
+        <StatCard label="运行中的任务" value={8} icon={Activity} />
+        <StatCard label="存储使用" value="2.4 GB" icon={Database} />
+        <StatCard label="API 配额" value="12,480/天" icon={Zap} />
+      </div>
+      <Card>
+        <CardHeader><CardTitle className="text-base flex items-center gap-2"><Wrench className="size-4" /> 工作空间列表</CardTitle></CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {[
+              { name: "数据分析空间", agent: "数据分析助手", storage: "1.2 GB", tasks: 3, status: "active" },
+              { name: "财务审核空间", agent: "财务审核员", storage: "0.8 GB", tasks: 2, status: "active" },
+              { name: "客户画像空间", agent: "客户画像师", storage: "0.4 GB", tasks: 3, status: "active" },
+            ].map((w) => (
+              <div key={w.name} className="flex items-center justify-between p-3 border rounded-lg">
+                <div>
+                  <div className="font-medium text-sm">{w.name}</div>
+                  <div className="text-xs text-muted-foreground">分配给: {w.agent} / 存储: {w.storage} / 任务: {w.tasks}</div>
+                </div>
+                <Badge variant="default">运行中</Badge>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+/* ─────────────────── AgentPermissions ─────────────────── */
+export function AgentPermissions() {
+  return (
+    <div className="flex flex-col gap-4">
+      <PageHeader title="权限渠道" description="管理数字员工的数据访问权限和消息推送渠道" />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Card>
+          <CardHeader><CardTitle className="text-base flex items-center gap-2"><Shield className="size-4" /> 数据权限</CardTitle></CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {[
+                { agent: "数据分析助手", access: "只读", data: "销售数据 + 客户数据" },
+                { agent: "财务审核员", access: "读写", data: "财务数据 + 审批记录" },
+                { agent: "客户画像师", access: "只读", data: "客户数据 + 行为数据" },
+              ].map((p) => (
+                <div key={p.agent} className="flex items-center justify-between p-3 border rounded">
+                  <div>
+                    <div className="font-medium text-sm">{p.agent}</div>
+                    <div className="text-xs text-muted-foreground">数据范围: {p.data}</div>
+                  </div>
+                  <Badge variant={p.access === "读写" ? "default" : "secondary"}>{p.access}</Badge>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader><CardTitle className="text-base flex items-center gap-2"><Mail className="size-4" /> 消息渠道</CardTitle></CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {[
+                { name: "飞书 Webhook", status: "已配置", agents: "全部" },
+                { name: "邮件 SMTP", status: "已配置", agents: "财务审核员" },
+                { name: "企业微信", status: "未配置", agents: "-" },
+                { name: "短信通知", status: "未配置", agents: "-" },
+              ].map((c) => (
+                <div key={c.name} className="flex items-center justify-between p-3 border rounded">
+                  <div>
+                    <div className="font-medium text-sm">{c.name}</div>
+                    <div className="text-xs text-muted-foreground">适用: {c.agents}</div>
+                  </div>
+                  <Badge variant={c.status === "已配置" ? "default" : "outline"}>{c.status}</Badge>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────── AgentModel ─────────────────── */
+export function AgentModel() {
+  return (
+    <div className="flex flex-col gap-4">
+      <PageHeader title="模型及用量" description="管理数字员工的模型配置和 Token 用量监控" />
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+        <StatCard label="本月 Token" value="1,248,000" icon={Cpu} />
+        <StatCard label="本月费用" value="¥386" icon={DollarSign} />
+        <StatCard label="日均调用" value="2,480" icon={Activity} />
+        <StatCard label="平均延迟" value="156ms" icon={Clock} />
+      </div>
+      <Card>
+        <CardHeader><CardTitle className="text-base flex items-center gap-2"><Cpu className="size-4" /> 模型用量明细</CardTitle></CardHeader>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader><TableRow><TableHead>数字员工</TableHead><TableHead>模型</TableHead><TableHead>本月 Token</TableHead><TableHead>费用</TableHead><TableHead>日均调用</TableHead><TableHead>状态</TableHead></TableRow></TableHeader>
+            <TableBody>
+              {[
+                { name: "数据分析助手", model: "DeepSeek-V3", tokens: "520K", cost: "¥156", daily: 1040, status: "normal" },
+                { name: "财务审核员", model: "Qwen-Max", tokens: "380K", cost: "¥114", daily: 760, status: "normal" },
+                { name: "客户画像师", model: "GPT-4o", tokens: "348K", cost: "¥116", daily: 680, status: "warning" },
+              ].map((m) => (
+                <TableRow key={m.name}>
+                  <TableCell className="font-medium">{m.name}</TableCell>
+                  <TableCell><Badge variant="secondary" className="font-mono text-xs">{m.model}</Badge></TableCell>
+                  <TableCell>{m.tokens}</TableCell>
+                  <TableCell>{m.cost}</TableCell>
+                  <TableCell>{m.daily}</TableCell>
+                  <TableCell><Badge variant={m.status === "normal" ? "default" : "outline"} className={m.status === "warning" ? "text-orange-500" : ""}>{m.status === "normal" ? "正常" : "接近上限"}</Badge></TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
     </div>
   );
 }

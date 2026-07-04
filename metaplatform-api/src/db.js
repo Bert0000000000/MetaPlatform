@@ -212,6 +212,30 @@ db.exec(`
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
 
+  -- App Pages
+  CREATE TABLE IF NOT EXISTS app_pages (
+    id TEXT PRIMARY KEY,
+    app_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    type TEXT NOT NULL DEFAULT 'list',
+    icon TEXT,
+    status TEXT NOT NULL DEFAULT 'draft',
+    config TEXT,
+    sort_order INTEGER DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
+  -- App Configs
+  CREATE TABLE IF NOT EXISTS app_configs (
+    id TEXT PRIMARY KEY,
+    app_id TEXT NOT NULL,
+    key TEXT NOT NULL,
+    value TEXT,
+    description TEXT,
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
   -- App Publications (publish snapshots)
   CREATE TABLE IF NOT EXISTS app_publications (
     id TEXT PRIMARY KEY,

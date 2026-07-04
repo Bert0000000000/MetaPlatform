@@ -9,8 +9,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
-import { mockTestCases } from "@/lib/mock-data";
-import { TestTube, Bot, Play, CheckCircle2, XCircle, Loader2, Bug, FileText, Plus, Gauge, Sparkles, GitBranch, AlertCircle, Zap, FlaskConical, BarChart3 } from "lucide-react";
+import { PageHeader } from "@/components/ui/stat";
+import { TestTube, Bot, Play, CheckCircle2, XCircle, Loader2, Bug, FileText, Plus, Gauge, Sparkles, GitBranch, AlertCircle, Zap, FlaskConical, BarChart3, Download, Activity, Settings, Search, Send, Monitor, Wrench, Eye, Clock } from "lucide-react";
 
 const statusConfig = {
   passed: { label: "通过", variant: "default" as const, icon: CheckCircle2 },
@@ -25,6 +25,15 @@ const priorityConfig = {
   P1: { label: "P1", variant: "default" as const },
   P2: { label: "P2", variant: "outline" as const },
 };
+
+// 测试用例初始数据（本地状态管理，无 quality API）
+const INITIAL_TEST_CASES = [
+  { id: "t-1", name: "客户对象建模 CRUD", module: "本体引擎", type: "单元" as const, status: "passed" as const, priority: "P0" as const, lastRun: "10min ago", duration: "2.3s" },
+  { id: "t-2", name: "请假流程端到端", module: "流程引擎", type: "流程" as const, status: "passed" as const, priority: "P0" as const, lastRun: "1h ago", duration: "12.4s" },
+  { id: "t-3", name: "报销审批页面回归", module: "应用中心", type: "UI" as const, status: "failed" as const, priority: "P0" as const, lastRun: "30min ago", duration: "45.2s" },
+  { id: "t-4", name: "知识库 RAG 检索性能", module: "知识库", type: "性能" as const, status: "passed" as const, priority: "P1" as const, lastRun: "2h ago", duration: "8.1s" },
+  { id: "t-5", name: "数据中心 Doris SQL 集成", module: "数据中心", type: "集成" as const, status: "running" as const, priority: "P0" as const, lastRun: "running", duration: "-" },
+];
 
 // 缺陷跟踪
 const BUGS = [
@@ -52,9 +61,10 @@ const AI_GENERATED = [
   { name: "大屏看板 1 万条数据渲染", type: "性能测试", source: "AI 根据页面生成", confidence: 79 },
 ];
 
-export function TestCases() {
-  const [cases, setCases] = useState(mockTestCases);
+export function TestCases({ onAdoptFromAI }: { onAdoptFromAI?: (caseItem: { name: string; module: string; type: string }) => void }) {
+  const [cases, setCases] = useState(INITIAL_TEST_CASES);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [aiDialogOpen, setAiDialogOpen] = useState(false);
   const [form, setForm] = useState({ name: "", module: "", type: "单元", priority: "P1" });
 
   function handleAddCase() {
@@ -88,7 +98,7 @@ export function TestCases() {
           <CardDescription>所有测试用例（{cases.length} 个）</CardDescription>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={() => setAiDialogOpen(true)}>
             <Sparkles className="size-3 mr-1" />
             AI 生成
           </Button>
@@ -190,6 +200,69 @@ export function TestCases() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>取消</Button>
             <Button onClick={handleAddCase}>创建</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* AI 生成用例对话框 */}
+      <Dialog open={aiDialogOpen} onOpenChange={setAiDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="size-4 text-primary" /> AI 自动生成测试用例
+            </DialogTitle>
+            <DialogDescription>根据对象 / 流程 / 页面 AI 自动推荐测试用例</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 max-h-80 overflow-y-auto">
+            {AI_GENERATED.map((g, i) => (
+              <div key={i} className="flex items-center gap-3 p-3 border rounded-lg">
+                <Sparkles className="size-4 text-primary shrink-0" />
+                <div className="flex-1">
+                  <div className="font-medium text-sm">{g.name}</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">
+                    {g.type} · {g.source}
+                  </div>
+                </div>
+                <Badge variant="outline" className="text-xs">置信度 {g.confidence}%</Badge>
+                <Button size="sm" variant="outline" onClick={() => {
+                  setCases((prev) => [...prev, {
+                    id: `t-ai-${Date.now()}-${i}`,
+                    name: g.name,
+                    module: "AI 生成",
+                    type: (g.type.includes("边界") || g.type.includes("单元") ? "单元" : g.type.includes("流程") ? "流程" : g.type.includes("性能") ? "性能" : "集成") as "单元" | "集成" | "UI" | "流程" | "性能",
+                    status: "draft" as const,
+                    priority: "P1" as const,
+                    lastRun: "未运行",
+                    duration: "-",
+                  }]);
+                  onAdoptFromAI?.({ name: g.name, module: "AI 生成", type: g.type });
+                }}>
+                  采纳
+                </Button>
+              </div>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAiDialogOpen(false)}>关闭</Button>
+            <Button onClick={() => {
+              // 一键全部采纳
+              AI_GENERATED.forEach((g, i) => {
+                setCases((prev) => [...prev, {
+                  id: `t-ai-batch-${Date.now()}-${i}`,
+                  name: g.name,
+                  module: "AI 生成",
+                  type: (g.type.includes("边界") || g.type.includes("单元") ? "单元" : g.type.includes("流程") ? "流程" : g.type.includes("性能") ? "性能" : "集成") as "单元" | "集成" | "UI" | "流程" | "性能",
+                  status: "draft" as const,
+                  priority: "P1" as const,
+                  lastRun: "未运行",
+                  duration: "-",
+                }]);
+              });
+              setAiDialogOpen(false);
+            }}>
+              <Sparkles className="size-3 mr-1" />
+              全部采纳
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -352,7 +425,7 @@ export function PerfMonitor() {
   );
 }
 
-export function AIGenerateCases() {
+export function AIGenerateCases({ onAdopt }: { onAdopt?: (caseItem: { name: string; type: string }) => void }) {
   return (
     <Card>
       <CardHeader>
@@ -373,7 +446,9 @@ export function AIGenerateCases() {
                 </div>
               </div>
               <Badge variant="outline" className="text-xs">置信度 {g.confidence}%</Badge>
-              <Button size="sm" variant="outline">采纳</Button>
+              <Button size="sm" variant="outline" onClick={() => onAdopt?.({ name: g.name, type: g.type })}>
+                采纳
+              </Button>
             </div>
           ))}
         </div>
@@ -383,10 +458,26 @@ export function AIGenerateCases() {
 }
 
 export function QualityDashboard() {
-  const caseCount = mockTestCases.length;
-  const passedCount = mockTestCases.filter((t) => t.status === "passed").length;
-  const failedCount = mockTestCases.filter((t) => t.status === "failed").length;
+  const [cases, setCases] = useState(INITIAL_TEST_CASES);
+  const [aiDialogOpen, setAiDialogOpen] = useState(false);
+
+  const caseCount = cases.length;
+  const passedCount = cases.filter((t) => t.status === "passed").length;
+  const failedCount = cases.filter((t) => t.status === "failed").length;
   const passRate = caseCount > 0 ? ((passedCount / caseCount) * 100).toFixed(1) : "0";
+
+  function handleAdoptFromAI(caseItem: { name: string; type: string }) {
+    setCases((prev) => [...prev, {
+      id: `t-adopt-${Date.now()}`,
+      name: caseItem.name,
+      module: "AI 生成",
+      type: (caseItem.type.includes("边界") || caseItem.type.includes("单元") ? "单元" : caseItem.type.includes("流程") ? "流程" : caseItem.type.includes("性能") ? "性能" : "集成") as "单元" | "集成" | "UI" | "流程" | "性能",
+      status: "draft" as const,
+      priority: "P1" as const,
+      lastRun: "未运行",
+      duration: "-",
+    }]);
+  }
 
   return (
     <div className="space-y-4 p-4">
@@ -400,7 +491,7 @@ export function QualityDashboard() {
             测试用例、缺陷跟踪、性能监控与 AI 自动生成
           </p>
         </div>
-        <Button size="sm">
+        <Button size="sm" onClick={() => setAiDialogOpen(true)}>
           <Sparkles className="size-3 mr-1" />
           AI 生成用例
         </Button>
@@ -458,7 +549,7 @@ export function QualityDashboard() {
               </CardContent>
             </Card>
           </div>
-          <AIGenerateCases />
+          <AIGenerateCases onAdopt={handleAdoptFromAI} />
         </TabsContent>
 
         <TabsContent value="cases" className="mt-4">
@@ -474,9 +565,285 @@ export function QualityDashboard() {
         </TabsContent>
 
         <TabsContent value="ai" className="mt-4">
-          <AIGenerateCases />
+          <AIGenerateCases onAdopt={handleAdoptFromAI} />
         </TabsContent>
       </Tabs>
+
+      {/* AI 生成用例对话框 (header button) */}
+      <Dialog open={aiDialogOpen} onOpenChange={setAiDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="size-4 text-primary" /> AI 自动生成测试用例
+            </DialogTitle>
+            <DialogDescription>根据对象 / 流程 / 页面 AI 自动推荐测试用例</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 max-h-80 overflow-y-auto">
+            {AI_GENERATED.map((g, i) => (
+              <div key={i} className="flex items-center gap-3 p-3 border rounded-lg">
+                <Sparkles className="size-4 text-primary shrink-0" />
+                <div className="flex-1">
+                  <div className="font-medium text-sm">{g.name}</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">{g.type} · {g.source}</div>
+                </div>
+                <Badge variant="outline" className="text-xs">置信度 {g.confidence}%</Badge>
+                <Button size="sm" variant="outline" onClick={() => {
+                  handleAdoptFromAI({ name: g.name, type: g.type });
+                  setAiDialogOpen(false);
+                }}>
+                  采纳
+                </Button>
+              </div>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAiDialogOpen(false)}>关闭</Button>
+            <Button onClick={() => {
+              AI_GENERATED.forEach((g) => handleAdoptFromAI({ name: g.name, type: g.type }));
+              setAiDialogOpen(false);
+            }}>
+              <Sparkles className="size-3 mr-1" /> 全部采纳
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+/* ─────────────────── OntologyTesting ─────────────────── */
+const ONTOLOGY_TESTS = [
+  { id: 1, name: "Customer 对象完整性", object: "Customer", checks: 18, passed: 17, failed: 1, status: "warning" },
+  { id: 2, name: "Order 关系校验", object: "Order", checks: 12, passed: 12, failed: 0, status: "passed" },
+  { id: 3, name: "Product 属性约束", object: "Product", checks: 16, passed: 16, failed: 0, status: "passed" },
+  { id: 4, name: "Employee 权限验证", object: "Employee", checks: 8, passed: 6, failed: 2, status: "failed" },
+  { id: 5, name: "Contract 规则引擎", object: "Contract", checks: 10, passed: 10, failed: 0, status: "passed" },
+];
+
+export function OntologyTesting() {
+  const [tests] = useState(ONTOLOGY_TESTS);
+  const [running, setRunning] = useState(false);
+
+  function runAll() {
+    setRunning(true);
+    setTimeout(() => setRunning(false), 2000);
+  }
+
+  const totalChecks = tests.reduce((s, t) => s + t.checks, 0);
+  const totalPassed = tests.reduce((s, t) => s + t.passed, 0);
+
+  return (
+    <div className="flex flex-col gap-4">
+      <PageHeader
+        title="本体测试"
+        description="自动验证本体对象、属性、关系和规则的完整性"
+        action={<Button className="gap-2" onClick={runAll} disabled={running}>{running ? <Loader2 className="size-4 animate-spin" /> : <Play className="size-4" />} {running ? "运行中..." : "运行全部"}</Button>}
+      />
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+        <StatCard label="测试对象" value={tests.length} icon={FlaskConical} />
+        <StatCard label="检查项" value={totalChecks} icon={CheckCircle2} />
+        <StatCard label="通过率" value={`${((totalPassed / totalChecks) * 100).toFixed(1)}%`} icon={BarChart3} />
+        <StatCard label="失败项" value={totalChecks - totalPassed} icon={XCircle} />
+      </div>
+      <Card>
+        <CardHeader><CardTitle className="text-base flex items-center gap-2"><FlaskConical className="size-4" /> 本体测试套件</CardTitle></CardHeader>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader><TableRow><TableHead>测试名</TableHead><TableHead>对象</TableHead><TableHead>检查项</TableHead><TableHead>通过</TableHead><TableHead>失败</TableHead><TableHead>状态</TableHead><TableHead className="text-right">操作</TableHead></TableRow></TableHeader>
+            <TableBody>
+              {tests.map((t) => (
+                <TableRow key={t.id}>
+                  <TableCell className="font-medium">{t.name}</TableCell>
+                  <TableCell><Badge variant="secondary">{t.object}</Badge></TableCell>
+                  <TableCell>{t.checks}</TableCell>
+                  <TableCell className="text-green-600">{t.passed}</TableCell>
+                  <TableCell className={t.failed > 0 ? "text-red-500" : ""}>{t.failed}</TableCell>
+                  <TableCell>{t.status === "passed" ? <Badge variant="secondary" className="text-green-600">通过</Badge> : t.status === "failed" ? <Badge variant="destructive">失败</Badge> : <Badge variant="outline" className="text-orange-500">警告</Badge>}</TableCell>
+                  <TableCell className="text-right"><Button variant="ghost" size="sm"><Eye className="size-3 mr-1" />详情</Button></TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+/* ─────────────────── AIUITesting ─────────────────── */
+const AI_UI_TESTS = [
+  { id: 1, name: "登录页表单验证", page: "/login", steps: 5, status: "passed", duration: "3.2s" },
+  { id: 2, name: "客户列表分页", page: "/customers", steps: 8, status: "passed", duration: "5.1s" },
+  { id: 3, name: "订单创建流程", page: "/orders/new", steps: 12, status: "failed", duration: "8.4s" },
+  { id: 4, name: "审批流页面渲染", page: "/approval", steps: 6, status: "passed", duration: "4.2s" },
+  { id: 5, name: "报表大屏加载", page: "/dashboard", steps: 4, status: "running", duration: "..." },
+];
+
+export function AIUITesting() {
+  return (
+    <div className="flex flex-col gap-4">
+      <PageHeader title="AI UI 测试" description="AI 驱动的 UI 自动化测试，自动识别页面元素并生成测试脚本" action={<Button className="gap-2"><Sparkles className="size-4" /> AI 生成用例</Button>} />
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+        <StatCard label="UI 测试数" value={AI_UI_TESTS.length} icon={Monitor} />
+        <StatCard label="通过" value={AI_UI_TESTS.filter((t) => t.status === "passed").length} icon={CheckCircle2} />
+        <StatCard label="失败" value={AI_UI_TESTS.filter((t) => t.status === "failed").length} icon={XCircle} />
+        <StatCard label="覆盖率" value="85.7%" icon={BarChart3} />
+      </div>
+      <Card>
+        <CardHeader><CardTitle className="text-base flex items-center gap-2"><Bot className="size-4" /> UI 测试用例</CardTitle></CardHeader>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader><TableRow><TableHead>名称</TableHead><TableHead>页面</TableHead><TableHead>步骤数</TableHead><TableHead>耗时</TableHead><TableHead>状态</TableHead><TableHead className="text-right">操作</TableHead></TableRow></TableHeader>
+            <TableBody>
+              {AI_UI_TESTS.map((t) => (
+                <TableRow key={t.id}>
+                  <TableCell className="font-medium">{t.name}</TableCell>
+                  <TableCell className="font-mono text-xs">{t.page}</TableCell>
+                  <TableCell>{t.steps}</TableCell>
+                  <TableCell className="text-xs">{t.duration}</TableCell>
+                  <TableCell>{t.status === "passed" ? <Badge variant="secondary" className="text-green-600">通过</Badge> : t.status === "failed" ? <Badge variant="destructive">失败</Badge> : <Badge className="bg-blue-500">运行中</Badge>}</TableCell>
+                  <TableCell className="text-right"><Button variant="ghost" size="sm"><Play className="size-3 mr-1" />运行</Button></TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+/* ─────────────────── ProcessTesting ─────────────────── */
+const PROCESS_TESTS = [
+  { id: 1, name: "采购审批全流程", nodes: 5, coverage: 100, status: "passed", lastRun: "2 小时前" },
+  { id: 2, name: "报销审批-超时升级", nodes: 7, coverage: 85, status: "passed", lastRun: "3 小时前" },
+  { id: 3, name: "合同审批-并发测试", nodes: 4, coverage: 75, status: "failed", lastRun: "昨天" },
+  { id: 4, name: "入职流程-异常分支", nodes: 8, coverage: 62, status: "warning", lastRun: "2 天前" },
+];
+
+export function ProcessTesting() {
+  return (
+    <div className="flex flex-col gap-4">
+      <PageHeader title="流程测试" description="端到端流程自动化测试与节点覆盖率分析" action={<Button className="gap-2"><Play className="size-4" /> 运行全部</Button>} />
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+        <StatCard label="流程测试数" value={PROCESS_TESTS.length} icon={GitBranch} />
+        <StatCard label="通过" value={PROCESS_TESTS.filter((t) => t.status === "passed").length} icon={CheckCircle2} />
+        <StatCard label="平均覆盖率" value="80.5%" icon={BarChart3} />
+        <StatCard label="总节点" value={PROCESS_TESTS.reduce((s, t) => s + t.nodes, 0)} icon={Activity} />
+      </div>
+      <Card>
+        <CardHeader><CardTitle className="text-base flex items-center gap-2"><GitBranch className="size-4" /> 流程测试套件</CardTitle></CardHeader>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader><TableRow><TableHead>名称</TableHead><TableHead>节点数</TableHead><TableHead>覆盖率</TableHead><TableHead>状态</TableHead><TableHead>上次运行</TableHead><TableHead className="text-right">操作</TableHead></TableRow></TableHeader>
+            <TableBody>
+              {PROCESS_TESTS.map((t) => (
+                <TableRow key={t.id}>
+                  <TableCell className="font-medium">{t.name}</TableCell>
+                  <TableCell>{t.nodes}</TableCell>
+                  <TableCell><div className="flex items-center gap-2"><div className="flex-1 bg-muted rounded-full h-1.5"><div className="bg-primary rounded-full h-1.5" style={{ width: `${t.coverage}%` }} /></div><span className="text-xs">{t.coverage}%</span></div></TableCell>
+                  <TableCell>{t.status === "passed" ? <Badge variant="secondary" className="text-green-600">通过</Badge> : t.status === "failed" ? <Badge variant="destructive">失败</Badge> : <Badge variant="outline" className="text-orange-500">警告</Badge>}</TableCell>
+                  <TableCell className="text-xs text-muted-foreground">{t.lastRun}</TableCell>
+                  <TableCell className="text-right"><Button variant="ghost" size="sm"><Play className="size-3" /></Button></TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+/* ─────────────────── AIBugFix ─────────────────── */
+const AI_FIXES = [
+  { id: 1, bug: "BUG-1284", title: "客户详情页加载慢", suggestion: "添加分页加载 + 虚拟滚动", confidence: 92, status: "pending", effort: "低" },
+  { id: 2, bug: "BUG-1283", title: "审批流加签功能不可用", suggestion: "修复加签节点类型判断逻辑", confidence: 88, status: "applied", effort: "中" },
+  { id: 3, bug: "BUG-1281", title: "智能体回答错乱", suggestion: "添加语言检测中间件", confidence: 75, status: "pending", effort: "高" },
+];
+
+export function AIBugFix() {
+  const [fixes, setFixes] = useState(AI_FIXES);
+  function applyFix(id: number) { setFixes((prev) => prev.map((f) => f.id === id ? { ...f, status: "applied" } : f)); }
+
+  return (
+    <div className="flex flex-col gap-4">
+      <PageHeader title="AI Bug 修复" description="AI 分析缺陷根因并自动生成修复建议" action={<Button className="gap-2"><Sparkles className="size-4" /> AI 分析新缺陷</Button>} />
+      <Card>
+        <CardHeader><CardTitle className="text-base flex items-center gap-2"><Wrench className="size-4" /> AI 修复建议</CardTitle></CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {fixes.map((f) => (
+              <div key={f.id} className="border rounded-lg p-4">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <div className="flex items-center gap-2"><Badge variant="outline" className="font-mono text-xs">{f.bug}</Badge><span className="font-medium text-sm">{f.title}</span></div>
+                    <p className="text-sm text-muted-foreground mt-2">建议: {f.suggestion}</p>
+                  </div>
+                  <Badge variant="outline" className="text-xs">置信度 {f.confidence}%</Badge>
+                </div>
+                <div className="flex items-center justify-between mt-3">
+                  <div className="flex items-center gap-3 text-xs text-muted-foreground"><span>工作量: {f.effort}</span><span>状态: {f.status === "applied" ? "已应用" : "待处理"}</span></div>
+                  {f.status === "pending" ? <Button size="sm" onClick={() => applyFix(f.id)}>应用修复</Button> : <Badge variant="secondary" className="text-green-600"><CheckCircle2 className="size-3 mr-1" />已应用</Badge>}
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+/* ─────────────────── TestReport ─────────────────── */
+export function TestReport() {
+  return (
+    <div className="flex flex-col gap-4">
+      <PageHeader title="测试报告" description="生成和查看各类测试报告" action={<Button className="gap-2"><Download className="size-4" /> 导出报告</Button>} />
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+        <StatCard label="总用例数" value={73} icon={FlaskConical} />
+        <StatCard label="通过率" value="91.8%" icon={CheckCircle2} />
+        <StatCard label="缺陷数" value={5} icon={Bug} />
+        <StatCard label="覆盖率" value="87.2%" icon={BarChart3} />
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Card>
+          <CardHeader><CardTitle className="text-base">最新报告</CardTitle></CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {[
+                { name: "每日回归测试报告", time: "今天 10:30" },
+                { name: "v1.3 发版测试报告", time: "昨天 18:00" },
+                { name: "性能测试报告", time: "2 天前" },
+                { name: "安全扫描报告", time: "3 天前" },
+              ].map((r) => (
+                <div key={r.name} className="flex items-center justify-between p-2 border rounded">
+                  <div><div className="font-medium text-sm">{r.name}</div><div className="text-xs text-muted-foreground">{r.time}</div></div>
+                  <Button variant="ghost" size="sm"><Download className="size-3 mr-1" />下载</Button>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader><CardTitle className="text-base">趋势分析</CardTitle></CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {[
+                { metric: "通过率趋势", value: "91.8%", trend: "+2.1%" },
+                { metric: "缺陷密度", value: "0.68/KLOC", trend: "-0.12" },
+                { metric: "回归时间", value: "18 分钟", trend: "-3min" },
+                { metric: "AI 用例采纳率", value: "78%", trend: "+5%" },
+              ].map((t) => (
+                <div key={t.metric} className="flex items-center justify-between p-2 border rounded">
+                  <span className="text-sm">{t.metric}</span>
+                  <div className="text-right"><span className="font-medium text-sm">{t.value}</span><span className="text-xs ml-2 text-green-600">{t.trend}</span></div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

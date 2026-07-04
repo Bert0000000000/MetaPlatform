@@ -234,13 +234,215 @@ router.get("/:id/stats", (req, res, next) => {
     if (!app) return res.status(404).json({ success: false, error: "应用不存在" });
 
     const objects_count = db.prepare("SELECT COUNT(*) AS cnt FROM ontology_objects WHERE app_id = ?").get(req.params.id).cnt;
-    const pages_count = app.pages_count || 0;
+    const pages_count = db.prepare("SELECT COUNT(*) AS cnt FROM app_pages WHERE app_id = ?").get(req.params.id).cnt;
     const flows_count = db.prepare("SELECT COUNT(*) AS cnt FROM process_definitions WHERE app_id = ?").get(req.params.id).cnt;
+
+    // Also update the application's pages_count for consistency
+    db.prepare("UPDATE applications SET pages_count = ?, updated_at = ? WHERE id = ?")
+      .run(pages_count, new Date().toISOString(), req.params.id);
 
     res.json({
       success: true,
       data: { objects_count, pages_count, flows_count },
     });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ════════════════════════════════════════════════════════
+//  App Pages (nested under /api/apps/:id/pages)
+// ════════════════════════════════════════════════════════
+
+// ─── GET /:id/pages ── list all pages for this app ──────
+router.get("/:id/pages", (req, res, next) => {
+  try {
+    const app = db.prepare("SELECT id FROM applications WHERE id = ?").get(req.params.id);
+    if (!app) return res.status(404).json({ success: false, error: "应用不存在" });
+
+    const rows = db.prepare(
+      "SELECT * FROM app_pages WHERE app_id = ? ORDER BY sort_order ASC, created_at ASC"
+    ).all(req.params.id);
+    res.json({ success: true, data: rows });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ─── POST /:id/pages ── create a page for this app ──────
+router.post("/:id/pages", (req, res, next) => {
+  try {
+    const app = db.prepare("SELECT id FROM applications WHERE id = ?").get(req.params.id);
+    if (!app) return res.status(404).json({ success: false, error: "应用不存在" });
+
+    const { name, type, icon, config, status, sort_order } = req.body;
+    if (!name) {
+      return res.status(400).json({ success: false, error: "name 为必填项" });
+    }
+
+    const id = uuid();
+    const now = new Date().toISOString();
+    const configStr = typeof config === "object" ? JSON.stringify(config) : config || null;
+
+    let order = sort_order;
+    if (order === undefined || order === null) {
+      const maxRow = db.prepare(
+        "SELECT MAX(sort_order) AS max_order FROM app_pages WHERE app_id = ?"
+      ).get(req.params.id);
+      order = (maxRow?.max_order ?? -1) + 1;
+    }
+
+    db.prepare(
+      `INSERT INTO app_pages (id, app_id, name, type, icon, status, config, sort_order, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    ).run(id, req.params.id, name, type || "list", icon || null, status || "draft", configStr, order, now, now);
+
+    const row = db.prepare("SELECT * FROM app_pages WHERE id = ?").get(id);
+    res.status(201).json({ success: true, data: row });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ─── PUT /:id/pages/:pageId ── update a page ────────────
+router.put("/:id/pages/:pageId", (req, res, next) => {
+  try {
+    const app = db.prepare("SELECT id FROM applications WHERE id = ?").get(req.params.id);
+    if (!app) return res.status(404).json({ success: false, error: "应用不存在" });
+
+    const existing = db.prepare(
+      "SELECT * FROM app_pages WHERE id = ? AND app_id = ?"
+    ).get(req.params.pageId, req.params.id);
+    if (!existing) return res.status(404).json({ success: false, error: "页面不存在" });
+
+    const { name, type, icon, status, config, sort_order } = req.body;
+    const now = new Date().toISOString();
+    const configStr = typeof config === "object" ? JSON.stringify(config) : config ?? existing.config;
+
+    db.prepare(
+      `UPDATE app_pages
+       SET name = ?, type = ?, icon = ?, status = ?, config = ?, sort_order = ?, updated_at = ?
+       WHERE id = ? AND app_id = ?`
+    ).run(
+      name ?? existing.name,
+      type ?? existing.type,
+      icon ?? existing.icon,
+      status ?? existing.status,
+      configStr,
+      sort_order ?? existing.sort_order,
+      now,
+      req.params.pageId,
+      req.params.id
+    );
+
+    const row = db.prepare("SELECT * FROM app_pages WHERE id = ?").get(req.params.pageId);
+    res.json({ success: true, data: row });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ─── DELETE /:id/pages/:pageId ── delete a page ─────────
+router.delete("/:id/pages/:pageId", (req, res, next) => {
+  try {
+    const app = db.prepare("SELECT id FROM applications WHERE id = ?").get(req.params.id);
+    if (!app) return res.status(404).json({ success: false, error: "应用不存在" });
+
+    const existing = db.prepare(
+      "SELECT * FROM app_pages WHERE id = ? AND app_id = ?"
+    ).get(req.params.pageId, req.params.id);
+    if (!existing) return res.status(404).json({ success: false, error: "页面不存在" });
+
+    db.prepare("DELETE FROM app_pages WHERE id = ? AND app_id = ?").run(req.params.pageId, req.params.id);
+    res.json({ success: true, data: { id: req.params.pageId } });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ════════════════════════════════════════════════════════
+//  App Config (nested under /api/apps/:id/config)
+// ════════════════════════════════════════════════════════
+
+// ─── GET /:id/config ── list all config key-value pairs ──
+router.get("/:id/config", (req, res, next) => {
+  try {
+    const app = db.prepare("SELECT id FROM applications WHERE id = ?").get(req.params.id);
+    if (!app) return res.status(404).json({ success: false, error: "应用不存在" });
+
+    const rows = db.prepare(
+      "SELECT * FROM app_configs WHERE app_id = ? ORDER BY key ASC"
+    ).all(req.params.id);
+    res.json({ success: true, data: rows });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ─── POST /:id/config ── create a config entry ──────────
+router.post("/:id/config", (req, res, next) => {
+  try {
+    const app = db.prepare("SELECT id FROM applications WHERE id = ?").get(req.params.id);
+    if (!app) return res.status(404).json({ success: false, error: "应用不存在" });
+
+    const { key, value, description } = req.body;
+    if (!key) {
+      return res.status(400).json({ success: false, error: "key 为必填项" });
+    }
+
+    // Check for duplicate key within the same app
+    const existingKey = db.prepare(
+      "SELECT id FROM app_configs WHERE app_id = ? AND key = ?"
+    ).get(req.params.id, key);
+    if (existingKey) {
+      return res.status(409).json({ success: false, error: "该配置键已存在" });
+    }
+
+    const id = uuid();
+    const now = new Date().toISOString();
+
+    db.prepare(
+      `INSERT INTO app_configs (id, app_id, key, value, description, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?)`
+    ).run(id, req.params.id, key, value || null, description || null, now);
+
+    const row = db.prepare("SELECT * FROM app_configs WHERE id = ?").get(id);
+    res.status(201).json({ success: true, data: row });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ─── PUT /:id/config/:key ── update a config value ──────
+router.put("/:id/config/:key", (req, res, next) => {
+  try {
+    const app = db.prepare("SELECT id FROM applications WHERE id = ?").get(req.params.id);
+    if (!app) return res.status(404).json({ success: false, error: "应用不存在" });
+
+    const existing = db.prepare(
+      "SELECT * FROM app_configs WHERE app_id = ? AND key = ?"
+    ).get(req.params.id, req.params.key);
+    if (!existing) return res.status(404).json({ success: false, error: "配置项不存在" });
+
+    const { value, description } = req.body;
+    const now = new Date().toISOString();
+
+    db.prepare(
+      `UPDATE app_configs
+       SET value = ?, description = ?, updated_at = ?
+       WHERE app_id = ? AND key = ?`
+    ).run(
+      value ?? existing.value,
+      description ?? existing.description,
+      now,
+      req.params.id,
+      req.params.key
+    );
+
+    const row = db.prepare(
+      "SELECT * FROM app_configs WHERE app_id = ? AND key = ?"
+    ).get(req.params.id, req.params.key);
+    res.json({ success: true, data: row });
   } catch (err) {
     next(err);
   }

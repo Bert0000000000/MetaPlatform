@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { StatCard } from "@/components/ui/stat";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
@@ -11,7 +10,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { knowledgeApi, type KnowledgeDocument } from "@/lib/api";
-import { FileText, Upload, Search, Eye, FolderTree, Sparkles, Send, Network, Clock, BookMarked, Tag, GitCommit, Brain, MessageSquare, BookOpen, Ruler, Briefcase, ScrollText, NotebookPen, Scale, Puzzle, Hash, Trash2 } from "lucide-react";
+import { FileText, Upload, Search, Eye, FolderTree, Sparkles, Send, Network, Clock, BookMarked, Tag, GitCommit, Brain, MessageSquare, BookOpen, Ruler, Briefcase, ScrollText, NotebookPen, Scale, Puzzle, Hash, Trash2, Bell, Plus, CheckCircle2, RefreshCw, Download, Activity, XCircle } from "lucide-react";
+import { StatCard, PageHeader } from "@/components/ui/stat";
 
 const KB_CATEGORIES = [
   { name: "产品手册", count: 86, icon: BookOpen, color: "bg-blue-500" },
@@ -562,6 +562,217 @@ export function KnowledgeDashboard() {
           <VersionHistory />
         </TabsContent>
       </Tabs>
+    </div>
+  );
+}
+
+/* ─────────────────── KnowledgeProcessing ─────────────────── */
+const PROCESSING_JOBS = [
+  { id: 1, doc: "MetaPlatform 用户手册", task: "向量化 + 图谱抽取", status: "completed", progress: 100, time: "5 分钟" },
+  { id: 2, doc: "API 接口规范 v3.2", task: "向量化", status: "running", progress: 68, time: "进行中" },
+  { id: 3, doc: "BPMN 2.0 节点参考", task: "图谱抽取", status: "pending", progress: 0, time: "排队中" },
+  { id: 4, doc: "差旅报销制度", task: "向量化 + 图谱抽取", status: "completed", progress: 100, time: "12 分钟" },
+  { id: 5, doc: "Q3 销售计划", task: "分类标注", status: "failed", progress: 45, time: "失败" },
+];
+
+const procStatusConfig: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
+  completed: { label: "已完成", variant: "default" },
+  running: { label: "处理中", variant: "secondary" },
+  pending: { label: "排队中", variant: "outline" },
+  failed: { label: "失败", variant: "destructive" },
+};
+
+export function KnowledgeProcessing() {
+  const [jobs, setJobs] = useState(PROCESSING_JOBS);
+
+  function retryJob(id: number) {
+    setJobs((prev) => prev.map((j) => j.id === id ? { ...j, status: "running", progress: 0 } : j));
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      <PageHeader
+        title="知识加工"
+        description="文档向量化、实体抽取、知识图谱构建"
+        action={<Button className="gap-2"><Plus className="size-4" /> 新建任务</Button>}
+      />
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+        <StatCard label="加工任务" value={jobs.length} icon={RefreshCw} />
+        <StatCard label="已完成" value={jobs.filter((j) => j.status === "completed").length} icon={CheckCircle2} />
+        <StatCard label="处理中" value={jobs.filter((j) => j.status === "running").length} icon={Activity} />
+        <StatCard label="失败" value={jobs.filter((j) => j.status === "failed").length} icon={XCircle} />
+      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2"><Sparkles className="size-4" /> 加工任务</CardTitle>
+          <CardDescription>自动对上传文档进行向量化和知识抽取</CardDescription>
+        </CardHeader>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>文档</TableHead>
+                <TableHead>加工类型</TableHead>
+                <TableHead>进度</TableHead>
+                <TableHead>耗时</TableHead>
+                <TableHead>状态</TableHead>
+                <TableHead className="text-right">操作</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {jobs.map((j) => {
+                const s = procStatusConfig[j.status];
+                return (
+                  <TableRow key={j.id}>
+                    <TableCell className="font-medium">{j.doc}</TableCell>
+                    <TableCell className="text-xs">{j.task}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 bg-muted rounded-full h-1.5 w-24">
+                          <div className="bg-primary rounded-full h-1.5 transition-all" style={{ width: `${j.progress}%` }} />
+                        </div>
+                        <span className="text-xs">{j.progress}%</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-xs">{j.time}</TableCell>
+                    <TableCell><Badge variant={s.variant}>{s.label}</Badge></TableCell>
+                    <TableCell className="text-right">
+                      {j.status === "failed" && <Button variant="ghost" size="sm" onClick={() => retryJob(j.id)}>重试</Button>}
+                      {j.status === "completed" && <Button variant="ghost" size="icon" className="size-8"><Eye className="size-4" /></Button>}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+/* ─────────────────── KnowledgeSearch ─────────────────── */
+export function KnowledgeSearch() {
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<{ title: string; snippet: string; score: number; source: string }[]>([]);
+  const [searching, setSearching] = useState(false);
+
+  function doSearch() {
+    if (!query.trim()) return;
+    setSearching(true);
+    setTimeout(() => {
+      setResults([
+        { title: "客户合同付款条款", snippet: "根据合同第 5.2 条，付款条款为月结 30 天，T+3 工作日内完成对公转账...", score: 0.94, source: "合同协议" },
+        { title: "差旅报销制度", snippet: "差旅报销标准：机票经济舱、酒店不超过 500 元/晚、市内交通实报实销...", score: 0.88, source: "政策法规" },
+        { title: "Q3 销售目标分解", snippet: "Q3 总目标 ¥4.2 亿，华东 ¥1.8 亿、华南 ¥1.2 亿、华北 ¥0.8 亿...", score: 0.82, source: "业务文档" },
+      ]);
+      setSearching(false);
+    }, 800);
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      <PageHeader title="知识搜索" description="基于 RAG 的语义搜索，支持自然语言查询" />
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2"><Search className="size-4" /> 语义搜索</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex gap-2 mb-4">
+            <input
+              type="text" value={query} onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && doSearch()}
+              placeholder="输入自然语言查询..."
+              className="flex-1 border rounded px-3 py-2 text-sm"
+            />
+            <Button onClick={doSearch} disabled={searching}>
+              <Search className="size-3 mr-1" />{searching ? "搜索中..." : "搜索"}
+            </Button>
+          </div>
+          {results.length > 0 && (
+            <div className="space-y-3">
+              {results.map((r, i) => (
+                <div key={i} className="border rounded-lg p-3 hover:border-primary cursor-pointer">
+                  <div className="flex items-start justify-between">
+                    <div className="font-medium text-sm">{r.title}</div>
+                    <Badge variant="outline" className="text-xs">相关度 {(r.score * 100).toFixed(0)}%</Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-1">{r.snippet}</p>
+                  <div className="mt-2 text-xs text-muted-foreground">来源: {r.source}</div>
+                </div>
+              ))}
+            </div>
+          )}
+          {results.length === 0 && !searching && (
+            <div className="text-center py-12 text-muted-foreground">
+              <Search className="size-10 mx-auto mb-3 opacity-40" />
+              <p className="text-sm">输入关键词开始搜索知识库</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+/* ─────────────────── KnowledgeSubscribe ─────────────────── */
+const SUBSCRIPTIONS = [
+  { id: 1, name: "产品手册更新", category: "产品手册", frequency: "实时", status: "active", lastNotified: "2 小时前" },
+  { id: 2, name: "技术规范变更", category: "技术规范", frequency: "每天", status: "active", lastNotified: "昨天" },
+  { id: 3, name: "政策法规变动", category: "政策法规", frequency: "每周", status: "active", lastNotified: "3 天前" },
+  { id: 4, name: "合同模板更新", category: "合同协议", frequency: "实时", status: "paused", lastNotified: "1 周前" },
+];
+
+export function KnowledgeSubscribe() {
+  const [subs, setSubs] = useState(SUBSCRIPTIONS);
+
+  function toggleSub(id: number) {
+    setSubs((prev) => prev.map((s) => s.id === id ? { ...s, status: s.status === "active" ? "paused" : "active" } : s));
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      <PageHeader
+        title="知识订阅"
+        description="订阅知识库分类变更通知，及时获取最新文档"
+        action={<Button className="gap-2"><Bell className="size-4" /> 新建订阅</Button>}
+      />
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <StatCard label="订阅数" value={subs.length} icon={Bell} />
+        <StatCard label="已启用" value={subs.filter((s) => s.status === "active").length} icon={CheckCircle2} />
+        <StatCard label="本周通知" value={12} icon={Send} />
+      </div>
+      <Card>
+        <CardHeader><CardTitle className="text-base flex items-center gap-2"><Bell className="size-4" /> 订阅列表</CardTitle></CardHeader>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>订阅名</TableHead>
+                <TableHead>分类</TableHead>
+                <TableHead>通知频率</TableHead>
+                <TableHead>状态</TableHead>
+                <TableHead>最后通知</TableHead>
+                <TableHead className="text-right">操作</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {subs.map((s) => (
+                <TableRow key={s.id}>
+                  <TableCell className="font-medium">{s.name}</TableCell>
+                  <TableCell><Badge variant="secondary">{s.category}</Badge></TableCell>
+                  <TableCell className="text-xs">{s.frequency}</TableCell>
+                  <TableCell><Badge variant={s.status === "active" ? "default" : "secondary"}>{s.status === "active" ? "已启用" : "已暂停"}</Badge></TableCell>
+                  <TableCell className="text-xs text-muted-foreground">{s.lastNotified}</TableCell>
+                  <TableCell className="text-right">
+                    <Button variant="ghost" size="sm" onClick={() => toggleSub(s.id)}>{s.status === "active" ? "暂停" : "启用"}</Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -5,8 +5,19 @@ import { Badge } from "@/components/ui/badge";
 import { StatCard } from "@/components/ui/stat";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
-import { mockTemplates } from "@/lib/mock-data";
-import { Star, Download, Boxes, Sparkles, Workflow, BookOpen, Code, Plus, Package, Bot, Store, Users, DollarSign, Check, Crown, Building2, Briefcase, Sprout, X } from "lucide-react";
+import { Star, Download, Boxes, Sparkles, Workflow, BookOpen, Code, Plus, Package, Bot, Store, Users, DollarSign, Check, Crown, Building2, Briefcase, Sprout, X, Search, Eye, FileText, Zap, Globe } from "lucide-react";
+
+/* ── 本体模板初始数据（本地状态管理，无 market API） ── */
+const INITIAL_TEMPLATES = [
+  { id: "t-1", name: "CRM 通用模板", type: "本体模板", industry: "通用", downloads: 12480, rating: 4.8, price: "免费" as const, author: "百特搭官方" },
+  { id: "t-2", name: "HR 全套", type: "本体模板", industry: "通用", downloads: 8921, rating: 4.7, price: "免费" as const, author: "百特搭官方" },
+  { id: "t-3", name: "财务记账", type: "工作流", industry: "金融", downloads: 5430, rating: 4.6, price: "免费" as const, author: "生态合作" },
+  { id: "t-4", name: "销售智能体", type: "Agent", industry: "通用", downloads: 3210, rating: 4.9, price: "订阅" as const, author: "ISV" },
+  { id: "t-5", name: "OCR 文字识别", type: "Skill", industry: "通用", downloads: 9876, rating: 4.5, price: "免费" as const, author: "百特搭官方" },
+  { id: "t-6", name: "HR 简历解析", type: "本体模板", industry: "人力资源", downloads: 4210, rating: 4.4, price: "免费" as const, author: "百特搭官方" },
+  { id: "t-7", name: "供应链预测", type: "Agent", industry: "供应链", downloads: 2180, rating: 4.7, price: "订阅" as const, author: "供应链实验室" },
+  { id: "t-8", name: "合同审查流程", type: "工作流", industry: "法务", downloads: 3560, rating: 4.5, price: "付费" as const, author: "法智 AI" },
+];
 
 /* ── Toast helper ── */
 function useToast() {
@@ -75,9 +86,9 @@ interface OntologyTemplatesProps {
 }
 
 function OntologyTemplates({ installedTemplates, onInstall, filterCategory }: OntologyTemplatesProps) {
-  let templates = mockTemplates.filter((t) => t.type === "本体模板" || t.type === "工作流");
+  let templates = INITIAL_TEMPLATES.filter((t) => t.type === "本体模板" || t.type === "工作流");
   if (filterCategory) {
-    templates = mockTemplates.filter((t) => t.type === filterCategory);
+    templates = INITIAL_TEMPLATES.filter((t) => t.type === filterCategory);
   }
 
   return (
@@ -520,6 +531,183 @@ export function DeveloperRankPage() {
   return (
     <div className="p-4">
       <DeveloperRank />
+    </div>
+  );
+}
+
+/* ── Skill Market page ── */
+const SKILL_MARKET = [
+  { id: 1, name: "数据查询 Skill", author: "MetaPlatform", desc: "自然语言查询数据库", installs: 6240, rating: 4.8, price: "免费" },
+  { id: 2, name: "文档解析 Skill", author: "数澜科技", desc: "PDF/Word/Excel 智能解析", installs: 4180, rating: 4.7, price: "免费" },
+  { id: 3, name: "代码审查 Skill", author: "DevAI", desc: "AI 代码审查与优化建议", installs: 3640, rating: 4.6, price: "订阅" },
+  { id: 4, name: "合同分析 Skill", author: "法智 AI", desc: "合同条款提取与风险识别", installs: 2880, rating: 4.9, price: "付费" },
+  { id: 5, name: "报表生成 Skill", author: "MetaPlatform", desc: "自动生成 Excel/PDF 报表", installs: 5120, rating: 4.5, price: "免费" },
+];
+
+export function SkillMarketPage() {
+  const [installed, setInstalled] = useState<Set<number>>(new Set());
+  return (
+    <div className="p-4 space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-semibold flex items-center gap-2"><Sparkles className="size-5 text-primary" /> Skill 市场</h1>
+          <p className="text-sm text-muted-foreground mt-1">可复用的 AI 技能组件，赋予智能体新能力</p>
+        </div>
+        <Button size="sm"><Plus className="size-3 mr-1" />发布 Skill</Button>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {SKILL_MARKET.map((s) => (
+          <Card key={s.id} className="hover:border-primary transition-colors">
+            <CardHeader>
+              <div className="flex items-start justify-between">
+                <div className="size-10 rounded-lg bg-gradient-to-br from-blue-500 to-purple-500 text-white flex items-center justify-center"><Sparkles className="size-5" /></div>
+                <Badge variant={s.price === "免费" ? "default" : "secondary"}>{s.price}</Badge>
+              </div>
+              <CardTitle className="text-base mt-2">{s.name}</CardTitle>
+              <CardDescription>{s.desc}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                  <span className="flex items-center gap-1"><Download className="size-3" />{s.installs.toLocaleString()}</span>
+                  <span className="flex items-center gap-1"><Star className="size-3 fill-yellow-500 text-yellow-500" />{s.rating}</span>
+                </div>
+                {installed.has(s.id) ? (
+                  <Badge variant="secondary" className="text-green-600"><Check className="size-3 mr-1" />已安装</Badge>
+                ) : (
+                  <Button size="sm" onClick={() => setInstalled((prev) => new Set(prev).add(s.id))}>安装</Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ── Workflow Templates page ── */
+const WORKFLOW_TEMPLATES = [
+  { id: 1, name: "采购审批流程模板", category: "采购", nodes: 5, author: "MetaPlatform", installs: 3240, rating: 4.7 },
+  { id: 2, name: "员工入职流程模板", category: "HR", nodes: 8, author: "HR 专家", installs: 2180, rating: 4.6 },
+  { id: 3, name: "合同签署流程模板", category: "法务", nodes: 6, author: "法智 AI", installs: 1860, rating: 4.8 },
+  { id: 4, name: "费用报销流程模板", category: "财务", nodes: 4, author: "MetaPlatform", installs: 4520, rating: 4.5 },
+  { id: 5, name: "Bug 修复流程模板", category: "研发", nodes: 7, author: "DevAI", installs: 1440, rating: 4.4 },
+];
+
+export function WorkflowTemplatesPage() {
+  return (
+    <div className="p-4 space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-semibold flex items-center gap-2"><Workflow className="size-5 text-primary" /> 工作流模板</h1>
+          <p className="text-sm text-muted-foreground mt-1">开箱即用的业务流程模板，一键导入</p>
+        </div>
+      </div>
+      <Card>
+        <CardHeader><CardTitle className="text-base flex items-center gap-2"><Workflow className="size-4" /> 模板列表</CardTitle></CardHeader>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader><TableRow><TableHead>名称</TableHead><TableHead>分类</TableHead><TableHead>节点数</TableHead><TableHead>作者</TableHead><TableHead>下载量</TableHead><TableHead>评分</TableHead><TableHead className="text-right">操作</TableHead></TableRow></TableHeader>
+            <TableBody>
+              {WORKFLOW_TEMPLATES.map((t) => (
+                <TableRow key={t.id}>
+                  <TableCell className="font-medium">{t.name}</TableCell>
+                  <TableCell><Badge variant="outline">{t.category}</Badge></TableCell>
+                  <TableCell>{t.nodes}</TableCell>
+                  <TableCell className="text-xs">{t.author}</TableCell>
+                  <TableCell>{t.installs.toLocaleString()}</TableCell>
+                  <TableCell><span className="flex items-center gap-1"><Star className="size-3 fill-yellow-500 text-yellow-500" />{t.rating}</span></TableCell>
+                  <TableCell className="text-right"><Button size="sm">安装</Button></TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+/* ── Knowledge Packages page ── */
+const KNOWLEDGE_PACKAGES = [
+  { id: 1, name: "制造业知识包", docs: 248, author: "行业专家", installs: 1840, category: "制造业" },
+  { id: 2, name: "零售业知识包", docs: 186, author: "零售研究院", installs: 1320, category: "零售" },
+  { id: 3, name: "金融合规知识包", docs: 320, author: "合规 AI", installs: 2460, category: "金融" },
+  { id: 4, name: "HR 政策知识包", docs: 124, author: "HR 专家", installs: 960, category: "人力资源" },
+];
+
+export function KnowledgePackagesPage() {
+  return (
+    <div className="p-4 space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-semibold flex items-center gap-2"><BookOpen className="size-5 text-primary" /> 知识包资源库</h1>
+          <p className="text-sm text-muted-foreground mt-1">行业知识包，可直接订阅并应用于智能体</p>
+        </div>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {KNOWLEDGE_PACKAGES.map((k) => (
+          <Card key={k.id} className="hover:border-primary transition-colors">
+            <CardHeader>
+              <div className="flex items-start justify-between">
+                <div className="size-10 rounded-lg bg-gradient-to-br from-green-500 to-teal-500 text-white flex items-center justify-center"><BookOpen className="size-5" /></div>
+                <Badge variant="secondary">{k.category}</Badge>
+              </div>
+              <CardTitle className="text-base mt-2">{k.name}</CardTitle>
+              <CardDescription>{k.docs} 篇文档 / {k.author}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground"><Download className="size-3 inline mr-1" />{k.installs.toLocaleString()} 次安装</span>
+                <Button size="sm">订阅</Button>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ── API Library page ── */
+const API_LIBRARY = [
+  { id: 1, name: "订单管理 API", category: "电商", endpoints: 12, author: "MetaPlatform", version: "v2.1" },
+  { id: 2, name: "客户管理 API", category: "CRM", endpoints: 8, author: "MetaPlatform", version: "v1.8" },
+  { id: 3, name: "支付接口 API", category: "支付", endpoints: 6, author: "PayTech", version: "v3.0" },
+  { id: 4, name: "短信通知 API", category: "通知", endpoints: 4, author: "阿里云", version: "v1.2" },
+  { id: 5, name: "OCR 识别 API", category: "AI", endpoints: 5, author: "视觉智能", version: "v2.5" },
+];
+
+export function APILibraryPage() {
+  return (
+    <div className="p-4 space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-semibold flex items-center gap-2"><Code className="size-5 text-primary" /> API 动作库</h1>
+          <p className="text-sm text-muted-foreground mt-1">标准化 API 接口，可直接集成到流程和智能体</p>
+        </div>
+      </div>
+      <Card>
+        <CardHeader><CardTitle className="text-base flex items-center gap-2"><Code className="size-4" /> API 列表</CardTitle></CardHeader>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader><TableRow><TableHead>名称</TableHead><TableHead>分类</TableHead><TableHead>端点数</TableHead><TableHead>作者</TableHead><TableHead>版本</TableHead><TableHead className="text-right">操作</TableHead></TableRow></TableHeader>
+            <TableBody>
+              {API_LIBRARY.map((a) => (
+                <TableRow key={a.id}>
+                  <TableCell className="font-medium">{a.name}</TableCell>
+                  <TableCell><Badge variant="outline">{a.category}</Badge></TableCell>
+                  <TableCell>{a.endpoints}</TableCell>
+                  <TableCell className="text-xs">{a.author}</TableCell>
+                  <TableCell className="font-mono text-xs">{a.version}</TableCell>
+                  <TableCell className="text-right"><Button variant="ghost" size="sm"><Eye className="size-3 mr-1" />查看</Button></TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
     </div>
   );
 }

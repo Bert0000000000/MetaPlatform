@@ -11,7 +11,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { dataApi, type DataSource, type DataMetric } from "@/lib/api";
-import { Database, Plus, Sparkles, MessageSquare, Activity, AlertTriangle, Terminal, BarChart3, GitMerge, ShieldCheck, Clock, Send, FileBarChart, Leaf, Zap, Rocket, Mail, Globe, FileSpreadsheet, Users, Package, Megaphone, HardDrive, RefreshCw, Circle, Handshake, Trash2, Plug } from "lucide-react";
+import { Database, Plus, Sparkles, MessageSquare, Activity, AlertTriangle, Terminal, BarChart3, GitMerge, ShieldCheck, Clock, Send, FileBarChart, Leaf, Zap, Rocket, Mail, Globe, FileSpreadsheet, Users, Package, Megaphone, HardDrive, RefreshCw, Circle, Handshake, Trash2, Plug, Bell, CheckCircle2, Warehouse, Layers, Search, BookOpen, Ruler, Briefcase, ScrollText, Download, Server, Eye } from "lucide-react";
+import { PageHeader } from "@/components/ui/stat";
 
 const statusMap: Record<DataSource["status"], { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
   online: { label: "在线", variant: "default" },
@@ -447,6 +448,241 @@ export function MetricCenter() {
           </Card>
         </TabsContent>
       </Tabs>
+    </div>
+  );
+}
+
+/* ─────────────────── DecisionPush ─────────────────── */
+const DECISION_RULES = [
+  { id: 1, name: "库存预警自动补货", condition: "库存 < 安全库存 * 0.3", target: "采购审批", status: "active", hits: 320 },
+  { id: 2, name: "大额订单审批通知", condition: "订单金额 > 50万", target: "高管审批", status: "active", hits: 48 },
+  { id: 3, name: "客户流失预警", condition: "30天无订单 + 账期逾期", target: "销售跟进", status: "active", hits: 156 },
+  { id: 4, name: "合同到期提醒", condition: "合同到期 < 30天", target: "法务提醒", status: "paused", hits: 23 },
+];
+
+export function DecisionPush() {
+  const [rules, setRules] = useState(DECISION_RULES);
+
+  function toggleRule(id: number) {
+    setRules((prev) => prev.map((r) => r.id === id ? { ...r, status: r.status === "active" ? "paused" : "active" } : r));
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      <PageHeader
+        title="决策推送"
+        description="基于数据指标的自动化决策规则与消息推送"
+        action={
+          <Button className="gap-2">
+            <Plus className="size-4" /> 新建规则
+          </Button>
+        }
+      />
+
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+        <StatCard label="规则总数" value={rules.length} icon={Zap} />
+        <StatCard label="已启用" value={rules.filter((r) => r.status === "active").length} icon={Activity} />
+        <StatCard label="本月触发" value="2,480" icon={Bell} />
+        <StatCard label="推送成功率" value="99.2%" icon={CheckCircle2} />
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Zap className="size-4" /> 决策规则
+          </CardTitle>
+          <CardDescription>当指标满足条件时自动触发推送</CardDescription>
+        </CardHeader>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>规则名称</TableHead>
+                <TableHead>触发条件</TableHead>
+                <TableHead>推送目标</TableHead>
+                <TableHead>状态</TableHead>
+                <TableHead className="text-right">本月触发</TableHead>
+                <TableHead className="text-right">操作</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {rules.map((r) => (
+                <TableRow key={r.id}>
+                  <TableCell className="font-medium">{r.name}</TableCell>
+                  <TableCell className="font-mono text-xs">{r.condition}</TableCell>
+                  <TableCell><Badge variant="outline">{r.target}</Badge></TableCell>
+                  <TableCell>
+                    <Badge variant={r.status === "active" ? "default" : "secondary"}>
+                      {r.status === "active" ? "已启用" : "已暂停"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right">{r.hits}</TableCell>
+                  <TableCell className="text-right">
+                    <Button variant="ghost" size="sm" onClick={() => toggleRule(r.id)}>
+                      {r.status === "active" ? "暂停" : "启用"}
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+/* ─────────────────── DataLakehouse ─────────────────── */
+const LAKE_TABLES = [
+  { name: "ods_orders", layer: "ODS", rows: "12,480,000", size: "4.2 GB", updated: "2 分钟前", format: "Parquet" },
+  { name: "dwd_order_detail", layer: "DWD", rows: "12,480,000", size: "3.8 GB", updated: "5 分钟前", format: "Parquet" },
+  { name: "dws_sales_daily", layer: "DWS", rows: "365,000", size: "128 MB", updated: "1 小时前", format: "Parquet" },
+  { name: "ads_dashboard_metrics", layer: "ADS", rows: "2,400", size: "2.1 MB", updated: "1 小时前", format: "Parquet" },
+  { name: "dim_customer", layer: "DIM", rows: "89,200", size: "56 MB", updated: "每天 02:00", format: "ORC" },
+  { name: "raw_behavior_log", layer: "RAW", rows: "520,000,000", size: "128 GB", updated: "实时", format: "JSON" },
+];
+
+export function DataLakehouse() {
+  const [filter, setFilter] = useState("all");
+  const layers = ["all", "RAW", "ODS", "DWD", "DWS", "ADS", "DIM"];
+  const filtered = filter === "all" ? LAKE_TABLES : LAKE_TABLES.filter((t) => t.layer === filter);
+
+  return (
+    <div className="flex flex-col gap-4">
+      <PageHeader
+        title="数据湖仓"
+        description="统一存储 Raw / ODS / DWD / DWS / ADS 分层数据"
+        action={
+          <Button variant="outline" className="gap-2">
+            <Plus className="size-4" /> 新建表
+          </Button>
+        }
+      />
+
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+        <StatCard label="表总数" value={LAKE_TABLES.length} icon={Database} />
+        <StatCard label="总存储" value="136.2 GB" icon={HardDrive} />
+        <StatCard label="总行数" value="5.33 亿" icon={BarChart3} />
+        <StatCard label="存储层" value={6} icon={Layers} />
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Warehouse className="size-4" /> 湖仓表管理
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex gap-2 mb-4">
+            {layers.map((l) => (
+              <Button key={l} variant={filter === l ? "default" : "outline"} size="sm" onClick={() => setFilter(l)}>
+                {l === "all" ? "全部" : l}
+              </Button>
+            ))}
+          </div>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>表名</TableHead>
+                <TableHead>层级</TableHead>
+                <TableHead>行数</TableHead>
+                <TableHead>大小</TableHead>
+                <TableHead>格式</TableHead>
+                <TableHead>最后更新</TableHead>
+                <TableHead className="text-right">操作</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filtered.map((t) => (
+                <TableRow key={t.name}>
+                  <TableCell className="font-mono text-xs font-medium">{t.name}</TableCell>
+                  <TableCell><Badge variant="outline">{t.layer}</Badge></TableCell>
+                  <TableCell className="text-xs">{t.rows}</TableCell>
+                  <TableCell className="text-xs">{t.size}</TableCell>
+                  <TableCell><Badge variant="secondary" className="text-xs">{t.format}</Badge></TableCell>
+                  <TableCell className="text-xs text-muted-foreground">{t.updated}</TableCell>
+                  <TableCell className="text-right">
+                    <Button variant="ghost" size="icon" className="size-8"><Eye className="size-4" /></Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+/* ─────────────────── DataKnowledge ─────────────────── */
+const DATA_DOCS = [
+  { id: 1, title: "订单数据字典", category: "数据字典", objects: 12, lastUpdate: "2 天前", status: "published" },
+  { id: 2, title: "客户主数据模型", category: "数据模型", objects: 8, lastUpdate: "1 周前", status: "published" },
+  { id: 3, title: "ETL 调度手册", category: "运维手册", objects: 0, lastUpdate: "3 天前", status: "draft" },
+  { id: 4, title: "指标计算口径说明", category: "业务文档", objects: 24, lastUpdate: "今天", status: "published" },
+  { id: 5, title: "数据质量规则清单", category: "质量规范", objects: 56, lastUpdate: "昨天", status: "published" },
+];
+
+export function DataKnowledge() {
+  const [docs] = useState(DATA_DOCS);
+  const [search, setSearch] = useState("");
+
+  const filtered = docs.filter((d) => d.title.includes(search) || d.category.includes(search));
+
+  return (
+    <div className="flex flex-col gap-4">
+      <PageHeader
+        title="数据知识库"
+        description="数据字典、模型文档与业务口径说明"
+        action={
+          <Button className="gap-2">
+            <Plus className="size-4" /> 新建文档
+          </Button>
+        }
+      />
+
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+        <StatCard label="文档总数" value={docs.length} icon={BookOpen} />
+        <StatCard label="已发布" value={docs.filter((d) => d.status === "published").length} icon={CheckCircle2} />
+        <StatCard label="覆盖对象" value={docs.reduce((s, d) => s + d.objects, 0)} icon={Database} />
+        <StatCard label="分类数" value={new Set(docs.map((d) => d.category)).size} icon={Layers} />
+      </div>
+
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0">
+          <div>
+            <CardTitle className="text-base flex items-center gap-2">
+              <BookOpen className="size-4" /> 数据文档
+            </CardTitle>
+            <CardDescription>{filtered.length} 篇文档</CardDescription>
+          </div>
+          <div className="relative">
+            <Search className="size-3 absolute left-2 top-2.5 text-muted-foreground" />
+            <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="搜索文档..." className="pl-7 h-8 w-48 text-sm" />
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {filtered.map((d) => (
+              <div key={d.id} className="rounded-lg border p-4 hover:border-primary cursor-pointer transition-colors">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <div className="font-medium text-sm">{d.title}</div>
+                    <div className="text-xs text-muted-foreground mt-1">{d.category}</div>
+                  </div>
+                  <Badge variant={d.status === "published" ? "default" : "secondary"}>
+                    {d.status === "published" ? "已发布" : "草稿"}
+                  </Badge>
+                </div>
+                <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
+                  {d.objects > 0 && <span>{d.objects} 个对象</span>}
+                  <span>更新于 {d.lastUpdate}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
