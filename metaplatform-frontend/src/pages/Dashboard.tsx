@@ -20,7 +20,7 @@ import {
   Square, Table as TableIcon, Minus, Maximize, Move, X, ChevronDown, Search,
   Mic, MicOff, Paperclip, FileSpreadsheet, File as FileIcon, Camera,
   Merge, Split, Fingerprint, Target, Layers, Database, ShieldCheck, Columns,
-  TrendingUp, Activity, Shield, Globe2, ExternalLink,
+  TrendingUp, Activity, Shield, Globe2, ExternalLink, Briefcase, Package,
 } from "lucide-react";
 import { PageHeader, StatCard } from "@/components/ui/stat";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
@@ -1210,8 +1210,6 @@ export function Portal() {
   );
 }
 
-// Briefcase import helper - used in Portal categories
-const Briefcase = Users; // fallback
 
 /* ─────────────────── FreePage (F1.6: Page Editor) ─────────────────── */
 const PALETTE_COMPONENTS = [
