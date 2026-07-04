@@ -2,7 +2,9 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { agentsApi } from "@/lib/api";
 import type { Agent } from "@/lib/api";
 import { llmApi, type ChatMessage } from "@/lib/llm-api";
-import { Send, Bot, User, Sparkles, Plus, MessageSquare, Bot as BotIcon, ListChecks, BookOpen, Smartphone, BarChart3, GitBranch, FileEdit, Search as SearchIcon, TrendingUp, RefreshCw, FileText, Ruler, Briefcase, ScrollText, Scale, Clock, Trash2, X, Loader2, Image as ImageIcon, Mic, MicOff, Paperclip, FileSpreadsheet, File as FileIcon, Camera, Volume2 } from "lucide-react";
+import { dispatchApi, type DispatchResult } from "@/lib/dispatch-api";
+import { useNavigate } from "react-router-dom";
+import { Send, Bot, User, Sparkles, Plus, MessageSquare, Bot as BotIcon, ListChecks, BookOpen, Smartphone, BarChart3, GitBranch, FileEdit, Search as SearchIcon, TrendingUp, RefreshCw, FileText, Ruler, Briefcase, ScrollText, Scale, Clock, Trash2, X, Loader2, Image as ImageIcon, Mic, MicOff, Paperclip, FileSpreadsheet, File as FileIcon, Camera, Volume2, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -34,6 +36,7 @@ interface Message {
   content: string;
   ts?: string;
   attachments?: Attachment[];
+  dispatchLinks?: { label: string; path: string }[];
 }
 
 interface Conversation {
@@ -154,10 +157,12 @@ function ChatTab({ messages, setMessages, agentPrompt, onAgentPromptConsumed }: 
   const [pendingAttachments, setPendingAttachments] = useState<Attachment[]>([]);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
+  const [dispatchingAgents, setDispatchingAgents] = useState<string[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const docInputRef = useRef<HTMLInputElement>(null);
   const recordingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const navigate = useNavigate();
 
   /* Auto-scroll to bottom */
   useEffect(() => {
@@ -285,45 +290,89 @@ function ChatTab({ messages, setMessages, agentPrompt, onAgentPromptConsumed }: 
 
     try {
       let reply: string;
+      let dispatchedTo: string[] = [];
+      let dispatchLinks: { label: string; path: string }[] = [];
 
+      // Step 1: Try Agent Dispatch (cross-module orchestration)
       try {
-        const systemMessage: ChatMessage = {
-          role: "system",
-          content: "你是 MetaPlatform 的 SuperAI 助手，帮助企业用户建应用、查数据、分析流程、生成内容、调度智能体。请用中文回复，简洁专业。",
-        };
+        setDispatchingAgents(["正在识别意图..."]);
+        const dispatchResult = await dispatchApi.dispatch(content);
 
-        const allMessages = [...messages, userMsg];
-        const chatMessages: ChatMessage[] = [
-          systemMessage,
-          ...allMessages.map((m) => ({
-            role: m.role as "user" | "assistant",
-            content: m.content,
-          })),
-        ];
+        if (dispatchResult.type === "dispatch" && dispatchResult.agents.length > 0) {
+          // Successfully dispatched to one or more agents
+          setDispatchingAgents(dispatchResult.agents.map((a) => a.name));
+          dispatchedTo = dispatchResult.agents.map((a) => a.name);
+          reply = dispatchResult.response || "操作已完成。";
 
-        const response = await llmApi.chat(chatMessages, {
-          model: "gpt-4o-mini",
-          temperature: 0.7,
-          maxTokens: 1024,
-        });
-        reply = response.content;
-      } catch (llmError) {
-        console.warn("[SuperAI] LLM API unavailable, falling back to mock:", llmError);
-        if (userMsg.attachments?.some((a) => a.type === "image")) {
-          reply = "已收到你上传的图片。我可以看到图片内容并进行分析。\n\n请问你需要我对这张图片做什么处理？例如：\n- 提取图片中的文字信息\n- 分析图片中的数据图表\n- 识别图片中的业务流程";
-        } else if (userMsg.attachments?.some((a) => a.type === "voice")) {
-          reply = "已收到你的语音消息。语音转文字功能正在处理中。\n\n在完整接入语音识别服务后，将自动将语音转为文字并理解你的意图。";
-        } else if (userMsg.attachments?.some((a) => a.type === "document")) {
-          const docNames = userMsg.attachments.filter((a) => a.type === "document").map((a) => a.name).join("、");
-          reply = `已收到文档：${docNames}\n\n文档解析功能将在接入文档处理引擎后生效。目前我可以帮你：\n- 总结文档要点\n- 提取关键数据\n- 生成文档摘要\n\n请问你需要什么操作？`;
+          // Extract navigation links from results
+          for (const r of dispatchResult.results) {
+            if (r.link) {
+              const moduleNames: Record<string, string> = {
+                apps: "应用", ontology: "本体对象", processes: "流程设计器",
+                data: "数据中心", knowledge: "知识库", agents: "数字员工",
+              };
+              dispatchLinks.push({
+                label: moduleNames[r.module] || r.module,
+                path: r.link,
+              });
+            }
+          }
+
+          // Add dispatch info to reply
+          const agentNames = dispatchedTo.join("、");
+          const dispatchPrefix = `[调度 ${agentNames}] `;
+          reply = dispatchPrefix + reply;
+
+          if (dispatchLinks.length > 0) {
+            reply += "\n\n相关链接：" + dispatchLinks.map((l) => l.label).join(" / ");
+          }
         } else {
-          reply = await sendMock(content);
+          // No agent matched — fall through to LLM
+          throw new Error("No agent matched");
+        }
+      } catch (dispatchError) {
+        // Step 2: Try LLM API
+        try {
+          const systemMessage: ChatMessage = {
+            role: "system",
+            content: "你是 MetaPlatform 的 SuperAI 助手，帮助企业用户建应用、查数据、分析流程、生成内容、调度智能体。请用中文回复，简洁专业。",
+          };
+
+          const allMessages = [...messages, userMsg];
+          const chatMessages: ChatMessage[] = [
+            systemMessage,
+            ...allMessages.map((m) => ({
+              role: m.role as "user" | "assistant",
+              content: m.content,
+            })),
+          ];
+
+          const response = await llmApi.chat(chatMessages, {
+            model: "gpt-4o-mini",
+            temperature: 0.7,
+            maxTokens: 1024,
+          });
+          reply = response.content;
+        } catch (llmError) {
+          // Step 3: Fallback to mock
+          console.warn("[SuperAI] LLM API unavailable, falling back to mock:", llmError);
+          if (userMsg.attachments?.some((a) => a.type === "image")) {
+            reply = "已收到你上传的图片。我可以看到图片内容并进行分析。\n\n请问你需要我对这张图片做什么处理？例如：\n- 提取图片中的文字信息\n- 分析图片中的数据图表\n- 识别图片中的业务流程";
+          } else if (userMsg.attachments?.some((a) => a.type === "voice")) {
+            reply = "已收到你的语音消息。语音转文字功能正在处理中。\n\n在完整接入语音识别服务后，将自动将语音转为文字并理解你的意图。";
+          } else if (userMsg.attachments?.some((a) => a.type === "document")) {
+            const docNames = userMsg.attachments.filter((a) => a.type === "document").map((a) => a.name).join("、");
+            reply = `已收到文档：${docNames}\n\n文档解析功能将在接入文档处理引擎后生效。目前我可以帮你：\n- 总结文档要点\n- 提取关键数据\n- 生成文档摘要\n\n请问你需要什么操作？`;
+          } else {
+            reply = await sendMock(content);
+          }
         }
       }
 
-      setMessages((m) => [...m, { role: "assistant", content: reply, ts: formatTime() }]);
+      setMessages((m) => [...m, { role: "assistant", content: reply, ts: formatTime(), dispatchLinks }]);
     } finally {
       setIsTyping(false);
+      setDispatchingAgents([]);
     }
   }
 
@@ -393,6 +442,22 @@ function ChatTab({ messages, setMessages, agentPrompt, onAgentPromptConsumed }: 
                 <Card className={m.role === "user" ? "bg-primary text-primary-foreground" : "bg-card"}>
                   <CardContent className="p-3">
                     <p className="text-sm whitespace-pre-wrap">{m.content}</p>
+                    {m.dispatchLinks && m.dispatchLinks.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mt-2 pt-2 border-t border-border/50">
+                        {m.dispatchLinks.map((link, i) => (
+                          <Button
+                            key={i}
+                            variant="outline"
+                            size="sm"
+                            className="h-7 text-xs gap-1.5"
+                            onClick={() => navigate(link.path)}
+                          >
+                            <ArrowRight className="size-3" />
+                            {link.label}
+                          </Button>
+                        ))}
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
                 {m.ts && <span className="text-xs text-muted-foreground mt-1">{m.ts}</span>}
@@ -415,6 +480,17 @@ function ChatTab({ messages, setMessages, agentPrompt, onAgentPromptConsumed }: 
                     <Loader2 className="size-3 animate-spin" />
                     <span>SuperAI 正在思考...</span>
                   </div>
+                  {dispatchingAgents.length > 0 && (
+                    <div className="flex items-center gap-2 mt-2 pt-2 border-t border-border/50">
+                      <span className="text-xs text-muted-foreground">调度中：</span>
+                      {dispatchingAgents.map((name, i) => (
+                        <Badge key={i} variant="secondary" className="text-xs gap-1">
+                          <Loader2 className="size-2.5 animate-spin" />
+                          {name}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>
