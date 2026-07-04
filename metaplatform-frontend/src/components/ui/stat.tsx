@@ -23,9 +23,9 @@ export function StatCard({
   const isPositive = trend !== undefined && trend >= 0;
   // Support both React.ElementType (Lucide component) and React.ReactNode (JSX)
   const iconElement = icon
-    ? typeof icon === "function"
-      ? React.createElement(icon as React.ElementType, { className: "size-4" })
-      : icon
+    ? React.isValidElement(icon)
+      ? icon
+      : React.createElement(icon as React.ElementType, { className: "size-4" })
     : null;
   return (
     <Card className={className}>

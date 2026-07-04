@@ -18,7 +18,7 @@ import {
   Plus, GitBranch, Eye, Activity, BarChart3, AlertTriangle, Play,
   Timer, CheckCircle, Loader2, AlertCircle, List, FileCheck, Zap, TrendingUp, Server, Download, Search, Clock, Pause, RotateCcw, XCircle, Send, BookOpen, Filter, FileText,
   SkipForward, ChevronRight, Workflow, UserPlus, UserCheck, MoveRight, StopCircle, Wrench, Wand2, Crosshair, Gauge, Users, Settings, Pencil, ArrowRight, FastForward,
-  Printer, LayoutGrid, TreePine, Columns, Upload, Waves, Bookmark,
+  Printer, LayoutGrid, TreePine, Columns, Upload, Waves, Bookmark, Sparkles, Stamp,
 } from "lucide-react";
 
 /* ── Mock simulation data ── */
