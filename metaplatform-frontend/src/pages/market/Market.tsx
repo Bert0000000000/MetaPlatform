@@ -32,9 +32,21 @@ function useToast() {
 
 const priceVariant = {
   免费: "default" as const,
+  "¥99": "secondary" as const,
+  "¥299": "secondary" as const,
+  "¥999": "secondary" as const,
   付费: "secondary" as const,
   订阅: "outline" as const,
 };
+
+const MOCK_TEMPLATES_WITH_PRICE = [
+  { id: "p-1", name: "CRM 通用模板", type: "本体模板", industry: "通用", downloads: 12480, rating: 4.8, price: "免费", author: "百特搭官方" },
+  { id: "p-2", name: "HR 全套", type: "本体模板", industry: "通用", downloads: 8921, rating: 4.7, price: "¥99", author: "百特搭官方" },
+  { id: "p-3", name: "财务记账", type: "工作流", industry: "金融", downloads: 5430, rating: 4.6, price: "免费", author: "生态合作" },
+  { id: "p-4", name: "销售智能体", type: "Agent", industry: "通用", downloads: 3210, rating: 4.9, price: "¥299", author: "ISV" },
+  { id: "p-5", name: "OCR 文字识别", type: "Skill", industry: "通用", downloads: 9876, rating: 4.5, price: "免费", author: "百特搭官方" },
+  { id: "p-6", name: "供应链预测 Pro", type: "Agent", industry: "供应链", downloads: 2180, rating: 4.7, price: "¥999", author: "供应链实验室" },
+];
 
 const AGENT_MARKET = [
   { id: 1, name: "财务月结智能体", desc: "自动跑账、生成报表、异常告警", author: "MetaPlatform 官方", installs: 4820, rating: 4.9, price: "免费", category: "财务" },
@@ -476,6 +488,54 @@ export function MarketDashboard() {
 
         <TabsContent value="rank" className="mt-4">
           <DeveloperRank />
+        </TabsContent>
+        <TabsContent value="developer" className="mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Code className="size-4" /> 成为开发者
+              </CardTitle>
+              <CardDescription>注册成为云市场开发者，发布模板和应用</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <div className="space-y-2"><Label>开发者名称</Label><Input placeholder="公司或个人名称" /></div>
+                  <div className="space-y-2"><Label>联系邮箱</Label><Input type="email" placeholder="developer@example.com" /></div>
+                  <div className="space-y-2"><Label>开发者类型</Label>
+                    <Select defaultValue="individual">
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="individual">个人开发者</SelectItem>
+                        <SelectItem value="enterprise">企业开发者</SelectItem>
+                        <SelectItem value="partner">生态合作伙伴</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2"><Label>擅长领域</Label><Input placeholder="e.g. CRM, 供应链, AI" /></div>
+                  <div className="space-y-2"><Label>简介</Label><Textarea placeholder="简要介绍你的开发经验和优势" rows={3} /></div>
+                  <Button className="w-full"><Plus className="size-3 mr-1" /> 提交入驻申请</Button>
+                </div>
+                <div className="space-y-4">
+                  <div className="text-lg font-semibold">开发者权益</div>
+                  {[
+                    { icon: Star, title: "收益分成", desc: "应用销售收入的 70% 归开发者" },
+                    { icon: Users, title: "流量扶持", desc: "优质应用获得首页推荐" },
+                    { icon: Sparkles, title: "技术支持", desc: "专属技术支持通道" },
+                    { icon: Building2, title: "品牌认证", desc: "官方认证开发者标识" },
+                  ].map((b) => (
+                    <div key={b.title} className="flex items-start gap-3 p-3 border rounded-lg">
+                      <b.icon className="size-5 text-primary shrink-0 mt-0.5" />
+                      <div>
+                        <div className="font-medium text-sm">{b.title}</div>
+                        <div className="text-xs text-muted-foreground">{b.desc}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>

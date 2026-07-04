@@ -18,6 +18,10 @@ import {
   Mail,
   Box,
   Phone,
+  Sparkles,
+  Zap,
+  Group,
+  MessageSquareText,
 } from "lucide-react";
 
 // ---------- Shared Handle Styles ----------
@@ -423,6 +427,122 @@ export const CallActivityNode = memo(({ data, selected }: NodeProps) => (
 ));
 CallActivityNode.displayName = "CallActivityNode";
 
+// ==================== Group ====================
+
+export const GroupNode = memo(({ data, selected }: NodeProps) => {
+  const d = data as BpmnNodeData;
+  return (
+    <div
+      className="relative rounded-lg border-2 border-dashed transition-shadow px-4 py-3"
+      style={{
+        minWidth: 180,
+        minHeight: 100,
+        borderColor: selected ? "#a855f7" : "#d8b4fe",
+        background: selected ? "#faf5ff" : "#fdf4ff",
+        boxShadow: selected ? "0 0 0 3px rgba(168,85,247,0.3)" : "none",
+      }}
+    >
+      <div className="flex items-center gap-2 mb-1">
+        <Group className="size-4 text-purple-500" />
+        <span className="text-xs font-semibold text-foreground">
+          {d.label || "Group"}
+        </span>
+      </div>
+      <div className="flex-1 flex items-center justify-center text-muted-foreground text-[10px]">
+        Group elements
+      </div>
+      <Handle type="target" position={Position.Left} style={targetHandleStyle} />
+      <Handle type="source" position={Position.Right} style={sourceHandleStyle} />
+    </div>
+  );
+});
+GroupNode.displayName = "GroupNode";
+
+// ==================== Text Annotation ====================
+
+export const TextAnnotationNode = memo(({ data, selected }: NodeProps) => {
+  const d = data as BpmnNodeData;
+  return (
+    <div
+      className="relative rounded-lg border-l-[3px] transition-shadow px-3 py-2"
+      style={{
+        minWidth: 140,
+        minHeight: 48,
+        borderColor: selected ? "#0ea5e9" : "#7dd3fc",
+        background: selected ? "#f0f9ff" : "#f8fafc",
+        boxShadow: selected ? "0 0 0 3px rgba(14,165,233,0.3)" : "0 1px 2px rgba(0,0,0,0.06)",
+      }}
+    >
+      <div className="flex items-center gap-2">
+        <MessageSquareText className="size-3.5 text-sky-500 shrink-0" />
+        <span className="text-xs text-foreground">
+          {d.label || "Text Annotation"}
+        </span>
+      </div>
+    </div>
+  );
+});
+TextAnnotationNode.displayName = "TextAnnotationNode";
+
+// ==================== AI Decision Node (F4.5.6.12) ====================
+
+export const AIDecisionNode = memo(({ data, selected }: NodeProps) => (
+  <TaskNodeBase
+    data={data as BpmnNodeData}
+    selected={selected}
+    color="#9333ea"
+    bgColor="#faf5ff"
+    borderColor="#d8b4fe"
+    Icon={Sparkles}
+  />
+));
+AIDecisionNode.displayName = "AIDecisionNode";
+
+// ==================== Event Subprocess (F4.5.6.14) ====================
+
+export const EventSubprocessNode = memo(({ data, selected }: NodeProps) => {
+  const d = data as BpmnNodeData;
+  return (
+    <div
+      className="relative rounded-lg border-2 border-dashed transition-shadow px-4 py-3"
+      style={{
+        minWidth: 200,
+        minHeight: 100,
+        borderColor: selected ? "#f59e0b" : "#fcd34d",
+        background: selected ? "#fffbeb" : "#fefce8",
+        boxShadow: selected ? "0 0 0 3px rgba(245,158,11,0.3)" : "0 1px 3px rgba(0,0,0,0.1)",
+      }}
+    >
+      <div className="flex items-center gap-2 mb-1">
+        <Zap className="size-4 text-amber-500" />
+        <span className="text-xs font-semibold text-foreground">
+          {d.label || "Event Subprocess"}
+        </span>
+      </div>
+      <div className="flex-1 flex items-center justify-center text-muted-foreground text-[10px]">
+        Event-driven subprocess
+      </div>
+      <Handle type="target" position={Position.Left} style={targetHandleStyle} />
+      <Handle type="source" position={Position.Right} style={sourceHandleStyle} />
+    </div>
+  );
+});
+EventSubprocessNode.displayName = "EventSubprocessNode";
+
+// ==================== Event Gateway (F4.5.6.20) ====================
+
+export const EventGatewayNode = memo(({ data, selected }: NodeProps) => (
+  <GatewayNodeBase
+    data={data as BpmnNodeData}
+    selected={selected}
+    color="#f59e0b"
+    bgColor="#fffbeb"
+    borderColor="#fcd34d"
+    Icon={Zap}
+  />
+));
+EventGatewayNode.displayName = "EventGatewayNode";
+
 // ---------- Node Type Registry ----------
 
 export const bpmnNodeTypes = {
@@ -439,6 +559,11 @@ export const bpmnNodeTypes = {
   inclusiveGateway: InclusiveGatewayNode,
   subprocess: SubProcessNode,
   callActivity: CallActivityNode,
+  group: GroupNode,
+  textAnnotation: TextAnnotationNode,
+  aiDecision: AIDecisionNode,
+  eventSubprocess: EventSubprocessNode,
+  eventGateway: EventGatewayNode,
 };
 
 // ---------- Node Type Metadata (for palette) ----------
@@ -472,4 +597,11 @@ export const bpmnNodeTypeRegistry: BpmnNodeTypeMeta[] = [
   // Subprocess
   { type: "subprocess", label: "Subprocess", category: "Subprocess", color: "#6366f1", bgColor: "#eef2ff", borderColor: "#a5b4fc", Icon: Layers, defaultData: { label: "Subprocess" } },
   { type: "callActivity", label: "Call Activity", category: "Subprocess", color: "#6366f1", bgColor: "#eef2ff", borderColor: "#a5b4fc", Icon: Phone, defaultData: { label: "Call Activity" } },
+  // Artifacts
+  { type: "group", label: "Group", category: "Artifacts", color: "#a855f7", bgColor: "#faf5ff", borderColor: "#d8b4fe", Icon: Group, defaultData: { label: "Group" } },
+  { type: "textAnnotation", label: "Text Annotation", category: "Artifacts", color: "#0ea5e9", bgColor: "#f0f9ff", borderColor: "#7dd3fc", Icon: MessageSquareText, defaultData: { label: "Annotation" } },
+  // AI & Advanced
+  { type: "aiDecision", label: "AI Decision", category: "Tasks", color: "#9333ea", bgColor: "#faf5ff", borderColor: "#d8b4fe", Icon: Sparkles, defaultData: { label: "AI Decision" } },
+  { type: "eventSubprocess", label: "Event Subprocess", category: "Subprocess", color: "#f59e0b", bgColor: "#fffbeb", borderColor: "#fcd34d", Icon: Zap, defaultData: { label: "Event Subprocess" } },
+  { type: "eventGateway", label: "Event Gateway", category: "Gateways", color: "#f59e0b", bgColor: "#fffbeb", borderColor: "#fcd34d", Icon: Zap, defaultData: { label: "Event" } },
 ];

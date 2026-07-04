@@ -286,7 +286,14 @@ export function AgentSkills() {
   );
 }
 
+const DECISION_MEETINGS = [
+  { id: 1, topic: "Q3 销售策略决策", agents: ["数据分析", "销售顾问", "财务分析"], status: "completed", startTime: "10:30", duration: "25 分钟", decision: "调整华东区域定价策略，预计增收 15%" },
+  { id: 2, topic: "供应商评估会议", agents: ["供应链分析", "财务审核", "法务审查"], status: "running", startTime: "14:00", duration: "进行中", decision: "..." },
+  { id: 3, topic: "新员工入职方案", agents: ["HR 智能体", "IT 运维", "行政管理"], status: "completed", startTime: "09:00", duration: "18 分钟", decision: "统一入职流程，新增 3 天导师制" },
+];
+
 export function AgentCollaboration() {
+  const [meetings] = useState(DECISION_MEETINGS);
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -298,8 +305,8 @@ export function AgentCollaboration() {
             <CardDescription>多个智能体共同决策</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-xl font-semibold">12</div>
-            <p className="text-xs text-muted-foreground">本周会议数</p>
+            <div className="text-xl font-semibold">{meetings.length}</div>
+            <p className="text-xs text-muted-foreground">进行中的会议</p>
           </CardContent>
         </Card>
         <Card>
@@ -327,6 +334,41 @@ export function AgentCollaboration() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Decision Meetings */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Users className="size-4" /> 决策会议记录
+          </CardTitle>
+          <CardDescription>多智能体协同决策会话</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {meetings.map((m) => (
+              <div key={m.id} className="border rounded-lg p-4">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <div className="font-medium text-sm">{m.topic}</div>
+                    <div className="text-xs text-muted-foreground mt-1">{m.startTime} / {m.duration}</div>
+                  </div>
+                  <Badge variant={m.status === "completed" ? "secondary" : "default"} className={m.status === "completed" ? "text-green-600" : ""}>
+                    {m.status === "completed" ? "已结束" : "进行中"}
+                  </Badge>
+                </div>
+                <div className="flex gap-1 mt-2 flex-wrap">
+                  {m.agents.map((a) => <Badge key={a} variant="outline" className="text-xs">{a}</Badge>)}
+                </div>
+                {m.decision !== "..." && (
+                  <div className="mt-2 p-2 bg-muted/30 rounded text-xs">
+                    <span className="font-medium">决策结果: </span>{m.decision}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
@@ -489,7 +531,24 @@ const AGENT_IDENTITIES = [
   { id: 3, name: "客户画像师", personality: "洞察、主动", memory: "长期记忆 3,240 条", context: "客户数据 + 行为分析", avatar: "Bot" },
 ];
 
+/* ── Memory Management (F11.5) ── */
+const MEMORY_ENTRIES = [
+  { id: 1, agent: "数据分析助手", key: "Q3 销售目标", value: "总目标 4.2 亿，华东 1.8 亿", type: "长期", created: "2 天前", lastAccess: "30 分钟前" },
+  { id: 2, agent: "数据分析助手", key: "客户分级标准", value: "VIP: >100万, A: >50万, B: >10万", type: "长期", created: "1 周前", lastAccess: "2 小时前" },
+  { id: 3, agent: "财务审核员", key: "审批阈值", value: "<1万自动通过, <10万部门经理, >=10万VP", type: "系统", created: "3 天前", lastAccess: "1 小时前" },
+  { id: 4, agent: "客户画像师", key: "RFM 模型参数", value: "R=30天, F=3次, M=5000元", type: "长期", created: "5 天前", lastAccess: "4 小时前" },
+  { id: 5, agent: "数据分析助手", key: "常用 SQL 模板", value: "SELECT region, SUM(amount) FROM orders...", type: "短期", created: "1 小时前", lastAccess: "刚刚" },
+];
+
 export function AgentIdentity() {
+  const [memorySearch, setMemorySearch] = useState("");
+  const [memories, setMemories] = useState(MEMORY_ENTRIES);
+  const filteredMemories = memories.filter((m) => m.key.includes(memorySearch) || m.agent.includes(memorySearch));
+
+  function deleteMemory(id: number) {
+    setMemories((prev) => prev.filter((m) => m.id !== id));
+  }
+
   return (
     <div className="flex flex-col gap-4">
       <PageHeader title="身份与记忆" description="管理数字员工的身份设定、记忆系统和上下文配置" />
@@ -518,6 +577,52 @@ export function AgentIdentity() {
             </CardContent>
           </Card>
         ))}
+      {/* Memory Management Section */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0">
+          <div>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Brain className="size-4" /> 记忆管理
+            </CardTitle>
+            <CardDescription>管理智能体的长期记忆条目（{memories.length} 条）</CardDescription>
+          </div>
+          <div className="relative">
+            <Search className="size-3 absolute left-2 top-2.5 text-muted-foreground" />
+            <Input value={memorySearch} onChange={(e) => setMemorySearch(e.target.value)} placeholder="搜索记忆..." className="pl-7 h-8 w-48 text-sm" />
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>智能体</TableHead>
+                <TableHead>记忆键</TableHead>
+                <TableHead>内容</TableHead>
+                <TableHead>类型</TableHead>
+                <TableHead>最近访问</TableHead>
+                <TableHead className="text-right">操作</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredMemories.map((m) => (
+                <TableRow key={m.id}>
+                  <TableCell className="text-xs">{m.agent}</TableCell>
+                  <TableCell className="font-medium">{m.key}</TableCell>
+                  <TableCell className="text-xs max-w-[200px] truncate">{m.value}</TableCell>
+                  <TableCell><Badge variant={m.type === "系统" ? "default" : m.type === "长期" ? "secondary" : "outline"}>{m.type}</Badge></TableCell>
+                  <TableCell className="text-xs text-muted-foreground">{m.lastAccess}</TableCell>
+                  <TableCell className="text-right">
+                    <Button variant="ghost" size="icon" className="size-8" onClick={() => deleteMemory(m.id)}>
+                      <Trash2 className="size-4 text-destructive" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
       </div>
     </div>
   );
@@ -605,6 +710,52 @@ export function AgentPermissions() {
             </div>
           </CardContent>
         </Card>
+      </div>
+    </div>
+  );
+}
+
+/* ── IM Channel Configuration (F11.6) ── */
+export function AgentIMChannel() {
+  const [channels, setChannels] = useState([
+    { id: 1, name: "飞书 Bot", platform: "飞书", webhook: "https://open.feishu.cn/...", status: "connected", agents: "全部" },
+    { id: 2, name: "钉钉机器人", platform: "钉钉", webhook: "https://oapi.dingtalk.com/...", status: "connected", agents: "数据分析助手" },
+    { id: 3, name: "企微 Bot", platform: "企微", webhook: "", status: "disconnected", agents: "-" },
+  ]);
+
+  return (
+    <div className="flex flex-col gap-4">
+      <PageHeader title="IM 渠道接入" description="配置飞书、钉钉、企业微信 Bot 接入" />
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        {channels.map((ch) => (
+          <Card key={ch.id} className="hover:border-primary">
+            <CardHeader>
+              <div className="flex items-start justify-between">
+                <div className="text-2xl">{ch.platform === "飞书" ? "F" : ch.platform === "钉钉" ? "D" : "W"}</div>
+                <Badge variant={ch.status === "connected" ? "default" : "outline"}>{ch.status === "connected" ? "已连接" : "未连接"}</Badge>
+              </div>
+              <CardTitle className="text-base mt-2">{ch.name}</CardTitle>
+              <CardDescription>适用: {ch.agents}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <div className="space-y-1">
+                  <Label className="text-xs">Webhook URL</Label>
+                  <Input placeholder="输入 Webhook URL" defaultValue={ch.webhook} className="text-xs font-mono" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">App ID</Label>
+                  <Input placeholder="App ID" className="text-xs" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">App Secret</Label>
+                  <Input type="password" placeholder="App Secret" className="text-xs" />
+                </div>
+                <Button size="sm" className="w-full">{ch.status === "connected" ? "更新配置" : "连接"}</Button>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
     </div>
   );

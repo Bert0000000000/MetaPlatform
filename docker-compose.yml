@@ -236,6 +236,125 @@ services:
     networks:
       - mp-net
 
+
+  # === 搜索引擎 ===
+  elasticsearch:
+    image: elasticsearch:8.12.0
+    container_name: mp-elasticsearch
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    volumes:
+      - es-data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+    networks:
+      - mp-net
+    restart: unless-stopped
+
+  # === 向量数据库 ===
+  milvus-standalone:
+    image: milvusdb/milvus:v2.4-latest
+    container_name: mp-milvus
+    ports:
+      - "19530:19530"
+      - "9091:9091"
+    environment:
+      - ETCD_USE_EMBED=true
+      - COMMON_STORAGETYPE=local
+    volumes:
+      - milvus-data:/var/lib/milvus
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9091/healthz || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+    networks:
+      - mp-net
+    restart: unless-stopped
+
+  # === API 网关 ===
+  apisix:
+    image: apache/apisix:3.8.0-debian
+    container_name: mp-apisix
+    ports:
+      - "9180:9180"
+      - "9080:9080"
+      - "9443:9443"
+    environment:
+      - APISIX_ADMIN_API_KEY=metaplatform-admin-key
+    volumes:
+      - ./deploy/apisix-config.yaml:/usr/local/apisix/conf/config.yaml:ro
+    depends_on:
+      - etcd
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9080/apisix/status"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+    networks:
+      - mp-net
+    restart: unless-stopped
+
+  etcd:
+    image: bitnami/etcd:3.5
+    container_name: mp-etcd
+    environment:
+      - ALLOW_NONE_AUTHENTICATION=yes
+      - ETCD_ADVERTISE_CLIENT_URLS=http://etcd:2379
+    ports:
+      - "2379:2379"
+    volumes:
+      - etcd-data:/bitnami/etcd
+    networks:
+      - mp-net
+    restart: unless-stopped
+
+  # === 身份认证 ===
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0
+    container_name: mp-keycloak
+    ports:
+      - "8180:8080"
+    environment:
+      - KEYCLOAK_ADMIN=admin
+      - KEYCLOAK_ADMIN_PASSWORD=metaplatform
+      - KC_DB=postgres
+      - KC_DB_URL=jdbc:postgresql://postgres:5432/keycloak
+      - KC_DB_USERNAME=meta
+      - KC_DB_PASSWORD=metaplatform
+    command: start-dev
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - keycloak-data:/opt/keycloak/data
+    networks:
+      - mp-net
+    restart: unless-stopped
+
+  # === GitOps 持续部署 ===
+  argocd-server:
+    image: argoproj/argocd:v2.10.0
+    container_name: mp-argocd
+    ports:
+      - "8280:8080"
+    environment:
+      - ARGOCD_SERVER_INSECURE=true
+    command: argocd-server --staticassets /shared/app
+    volumes:
+      - argocd-data:/shared
+    networks:
+      - mp-net
+    restart: unless-stopped
+
 volumes:
   pg-data:
   redis-data:
@@ -243,6 +362,11 @@ volumes:
   flowable-data:
   neo4j-data:
   minio-data:
+  es-data:
+  milvus-data:
+  etcd-data:
+  keycloak-data:
+  argocd-data:
 
 networks:
   mp-net:

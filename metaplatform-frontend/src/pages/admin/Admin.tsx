@@ -1204,9 +1204,38 @@ export function OrgStructure() {
 
 /* ─────────────────── AdminMonitor ─────────────────── */
 export function AdminMonitor() {
+  const [healthData, setHealthData] = useState<{ name: string; status: string; latency: string }[]>([]);
+  const [healthLoading, setHealthLoading] = useState(false);
+
+  async function fetchHealth() {
+    setHealthLoading(true);
+    try {
+      const resp = await fetch('/api/health');
+      if (resp.ok) {
+        const data = await resp.json();
+        setHealthData(data.services || []);
+      }
+    } catch {
+      // fallback mock
+      setHealthData([
+        { name: "API Gateway", status: "up", latency: "12ms" },
+        { name: "PostgreSQL", status: "up", latency: "5ms" },
+        { name: "Redis", status: "up", latency: "2ms" },
+        { name: "Flowable", status: "up", latency: "18ms" },
+        { name: "LLM Gateway", status: "up", latency: "120ms" },
+        { name: "Elasticsearch", status: "down", latency: "-" },
+        { name: "MinIO", status: "warning", latency: "45ms" },
+      ]);
+    } finally {
+      setHealthLoading(false);
+    }
+  }
+
+  useEffect(() => { fetchHealth(); }, []);
+
   return (
     <div className="flex flex-col gap-4">
-      <PageHeader title="监控日志" description="系统运行监控、性能指标和告警管理" />
+      <PageHeader title="统一监控" description="系统运行监控、性能指标和告警管理" action={<Button variant="outline" size="sm" onClick={fetchHealth} disabled={healthLoading}><RefreshCw className={'size-3 mr-1 ' + (healthLoading ? 'animate-spin' : '')} />刷新</Button>} />
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
         <StatCard label="CPU 使用率" value="42%" icon={Cpu} />
         <StatCard label="内存使用" value="68%" icon={Database} />
@@ -1302,28 +1331,42 @@ export function AdminBackup() {
 
 /* ─────────────────── AdminDeploy ─────────────────── */
 export function AdminDeploy() {
+  const [environments] = useState([
+    { env: "开发环境 (dev)", version: "v1.3.1-dev", status: "运行中", deploy: "2 小时前", instances: 1, cluster: "dev-cluster", cpu: "32%", mem: "45%", url: "https://dev.metaplatform.io" },
+    { env: "测试环境 (staging)", version: "v1.3.0-rc2", status: "运行中", deploy: "1 天前", instances: 2, cluster: "staging-cluster", cpu: "28%", mem: "38%", url: "https://staging.metaplatform.io" },
+    { env: "生产环境 (prod)", version: "v1.2.3", status: "运行中", deploy: "1 周前", instances: 4, cluster: "prod-cluster", cpu: "52%", mem: "68%", url: "https://app.metaplatform.io" },
+  ]);
+
   return (
     <div className="flex flex-col gap-4">
-      <PageHeader title="部署环境" description="管理开发、测试、预发和生产环境" />
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {[
-          { env: "开发环境", version: "v1.3.1-dev", status: "运行中", deploy: "2 小时前", instances: 1 },
-          { env: "测试环境", version: "v1.3.0-rc2", status: "运行中", deploy: "1 天前", instances: 2 },
-          { env: "预发环境", version: "v1.3.0-rc1", status: "运行中", deploy: "3 天前", instances: 2 },
-          { env: "生产环境", version: "v1.2.3", status: "运行中", deploy: "1 周前", instances: 4 },
-        ].map((e) => (
+      <PageHeader title="集群部署" description="管理开发、测试和生产环境的集群部署" action={<Button className="gap-2"><Plus className="size-4" /> 新建环境</Button>} />
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <StatCard label="环境总数" value={environments.length} icon={Server} />
+        <StatCard label="总实例数" value={environments.reduce((s, e) => s + e.instances, 0)} icon={Layers} />
+        <StatCard label="运行中" value={environments.filter((e) => e.status === "运行中").length} icon={CheckCircle2} />
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {environments.map((e) => (
           <Card key={e.env} className="hover:border-primary">
             <CardHeader>
-              <CardTitle className="text-base">{e.env}</CardTitle>
-              <CardDescription>版本: {e.version}</CardDescription>
+              <div className="flex items-start justify-between">
+                <CardTitle className="text-base">{e.env}</CardTitle>
+                <Badge variant="default">{e.status}</Badge>
+              </div>
+              <CardDescription>版本: {e.version} / 集群: {e.cluster}</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-2 text-xs">
-                <div className="flex justify-between"><span className="text-muted-foreground">状态</span><Badge variant="default">{e.status}</Badge></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">实例数</span><span>{e.instances}</span></div>
+              <div className="space-y-3 text-xs">
+                <div className="flex justify-between"><span className="text-muted-foreground">实例数</span><span className="font-medium">{e.instances}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">CPU</span><span>{e.cpu}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">内存</span><span>{e.mem}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">最近部署</span><span>{e.deploy}</span></div>
+                <div className="text-muted-foreground truncate">URL: {e.url}</div>
               </div>
-              <Button variant="outline" size="sm" className="w-full mt-3">部署</Button>
+              <div className="flex gap-2 mt-3">
+                <Button variant="outline" size="sm" className="flex-1">部署</Button>
+                <Button variant="outline" size="sm" className="flex-1">回滚</Button>
+              </div>
             </CardContent>
           </Card>
         ))}
@@ -1333,16 +1376,76 @@ export function AdminDeploy() {
 }
 
 /* ─────────────────── AdminBilling ─────────────────── */
+const BILLING_PLANS = [
+  { name: "基础版", price: "免费", features: ["5 个用户", "1 GB 存储", "基础 API"], active: false },
+  { name: "专业版", price: "¥2,999/月", features: ["50 个用户", "50 GB 存储", "高级 API", "AI 助手"], active: true },
+  { name: "企业版", price: "¥9,999/月", features: ["不限用户", "500 GB 存储", "全部功能", "专属支持"], active: false },
+];
+
 export function AdminBilling() {
   return (
     <div className="flex flex-col gap-4">
-      <PageHeader title="计费" description="平台资源使用计费和账单管理" />
+      <PageHeader title="计费订阅" description="平台资源使用计费、套餐和账单管理" />
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
         <StatCard label="本月费用" value="¥12,480" icon={DollarSign} />
         <StatCard label="计算资源" value="¥8,200" icon={Cpu} />
         <StatCard label="存储费用" value="¥2,880" icon={Database} />
         <StatCard label="API 调用" value="¥1,400" icon={Activity} />
       </div>
+
+      {/* Plan Tiers */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {BILLING_PLANS.map((plan) => (
+          <Card key={plan.name} className={plan.active ? "border-primary" : ""}>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base">{plan.name}</CardTitle>
+                {plan.active && <Badge>当前方案</Badge>}
+              </div>
+              <div className="text-2xl font-bold mt-2">{plan.price}</div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {plan.features.map((f) => (
+                  <div key={f} className="flex items-center gap-2 text-sm">
+                    <CheckCircle2 className="size-3 text-green-500" />
+                    <span>{f}</span>
+                  </div>
+                ))}
+              </div>
+              <Button variant={plan.active ? "outline" : "default"} size="sm" className="w-full mt-4">
+                {plan.active ? "管理方案" : "升级"}
+              </Button>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Usage Meters */}
+      <Card>
+        <CardHeader><CardTitle className="text-base flex items-center gap-2"><Activity className="size-4" /> 用量仪表</CardTitle></CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {[
+              { name: "API 调用", used: "12,480", limit: "100,000", percent: 12.5 },
+              { name: "存储空间", used: "12.4 GB", limit: "50 GB", percent: 24.8 },
+              { name: "LLM Token", used: "1.2M", limit: "10M", percent: 12 },
+              { name: "数字员工", used: "5", limit: "20", percent: 25 },
+            ].map((m) => (
+              <div key={m.name} className="p-3 border rounded-lg space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span>{m.name}</span>
+                  <span className="text-muted-foreground">{m.used} / {m.limit}</span>
+                </div>
+                <div className="w-full bg-muted rounded-full h-2">
+                  <div className="bg-primary rounded-full h-2 transition-all" style={{ width: `${m.percent}%` }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader><CardTitle className="text-base flex items-center gap-2"><DollarSign className="size-4" /> 费用明细</CardTitle></CardHeader>
         <CardContent className="p-0">

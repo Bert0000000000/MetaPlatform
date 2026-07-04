@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/ui/stat";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { CodeEditor } from "@/components/CodeEditor";
-import { Sparkles, Send, Code2, Play, Save, Download, Folder, File, Terminal, GitBranch, Check, X, Loader2, Bot, Copy, Plus, Maximize2, Minimize2 } from "lucide-react";
+import { Sparkles, Send, Code2, Play, Save, Download, Folder, File, Terminal, GitBranch, Check, X, Loader2, Bot, Copy, Plus, Maximize2, Minimize2, Layout, Table, BarChart3, FormInput, List, Navigation, ToggleLeft, Sliders } from "lucide-react";
 
 interface Msg { role: "user" | "assistant"; content: string; ts: string }
 
@@ -256,6 +256,29 @@ const PREVIEW_LOG = [
   { time: "12:48:50", msg: "✅ 渲染完成，0 错误" },
 ];
 
+const COMPONENT_LIBRARY = [
+  { category: "布局", items: [
+    { name: "Card", icon: Layout, snippet: "<Card><CardHeader><CardTitle>Title</CardTitle></CardHeader><CardContent>Content</CardContent></Card>" },
+    { name: "Grid", icon: Layout, snippet: "<div className='grid grid-cols-3 gap-4'>...</div>" },
+    { name: "Flex", icon: Layout, snippet: "<div className='flex items-center gap-4'>...</div>" },
+  ]},
+  { category: "数据展示", items: [
+    { name: "Table", icon: Table, snippet: "<Table><TableHeader>...</TableHeader><TableBody>...</TableBody></Table>" },
+    { name: "Chart", icon: BarChart3, snippet: "<BarChart data={data}><Bar dataKey='amount' /></BarChart>" },
+    { name: "List", icon: List, snippet: "<ul className='space-y-2'>{items.map(i => <li key={i}>{i}</li>)}</ul>" },
+  ]},
+  { category: "表单", items: [
+    { name: "Input", icon: FormInput, snippet: "<Input placeholder='请输入' />" },
+    { name: "Select", icon: List, snippet: "<Select><SelectTrigger><SelectValue /></SelectTrigger></Select>" },
+    { name: "Switch", icon: ToggleLeft, snippet: "<Switch checked={val} onCheckedChange={setVal} />" },
+    { name: "Slider", icon: Sliders, snippet: "<Slider min={0} max={100} value={[50]} />" },
+  ]},
+  { category: "导航", items: [
+    { name: "Tabs", icon: Navigation, snippet: "<Tabs><TabsList><TabsTrigger>Tab</TabsTrigger></TabsList></Tabs>" },
+    { name: "Button", icon: FormInput, snippet: "<Button>Click</Button>" },
+  ]},
+];
+
 export default function VibeCoding() {
   const [msgs, setMsgs] = useState<Msg[]>(INITIAL);
   const [input, setInput] = useState("");
@@ -416,6 +439,7 @@ export default function VibeCoding() {
                 <TabsList>
                   <TabsTrigger value="files"><Folder className="size-3 mr-1" /> 文件</TabsTrigger>
                   <TabsTrigger value="code"><Code2 className="size-3 mr-1" /> 代码</TabsTrigger>
+                  <TabsTrigger value="components"><Layout className="size-3 mr-1" /> 组件库</TabsTrigger>
                   <TabsTrigger value="terminal"><Terminal className="size-3 mr-1" /> 终端</TabsTrigger>
                   <TabsTrigger value="git"><GitBranch className="size-3 mr-1" /> Git</TabsTrigger>
                 </TabsList>
@@ -495,6 +519,36 @@ export default function VibeCoding() {
 // 输入你的需求开始生成`}
                   </pre>
                 )}
+              </TabsContent>
+              {/* F4.4.6.4 组件库面板 */}
+              <TabsContent value="components" className="m-0 h-full overflow-y-auto p-3">
+                <div className="space-y-4">
+                  {COMPONENT_LIBRARY.map((group) => (
+                    <div key={group.category}>
+                      <h4 className="text-xs font-semibold text-muted-foreground mb-2">{group.category}</h4>
+                      <div className="grid grid-cols-2 gap-2">
+                        {group.items.map((comp) => (
+                          <button
+                            key={comp.name}
+                            type="button"
+                            className="flex items-center gap-2 p-2 border rounded text-xs hover:border-primary transition-colors cursor-grab active:cursor-grabbing"
+                            draggable
+                            onDragStart={(e) => {
+                              e.dataTransfer.setData("text/plain", comp.snippet);
+                            }}
+                            onClick={() => {
+                              setInput((prev) => prev + (prev ? "\n" : "") + `添加组件: ${comp.name}`);
+                            }}
+                            title={comp.snippet}
+                          >
+                            <comp.icon className="size-3.5 text-muted-foreground" />
+                            <span className="font-medium">{comp.name}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </TabsContent>
               <TabsContent value="terminal" className="m-0 h-full overflow-y-auto p-3">
                 <pre className="text-xs font-mono space-y-1">

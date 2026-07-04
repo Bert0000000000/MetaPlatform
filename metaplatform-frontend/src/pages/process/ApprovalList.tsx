@@ -2,13 +2,14 @@ import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { PageHeader, StatCard } from "@/components/ui/stat";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { flowableApi, type FlowableTask } from "@/lib/flowable-api";
 import {
   Check, X, Target, Users, ArrowRight, Vote, Inbox, CheckCircle,
-  Rocket, Sparkles, Loader2, AlertCircle, Clock,
+  Rocket, Sparkles, Loader2, AlertCircle, Clock, UserPlus, MoveRight, Bell, Save as SaveIcon, StopCircle, RotateCcw,
 } from "lucide-react";
 
 const taskModes = [
@@ -24,6 +25,8 @@ export default function ApprovalList() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [completingId, setCompletingId] = useState<string | null>(null);
+  const [selectedTasks, setSelectedTasks] = useState<Set<string>>(new Set());
+  const [batchProcessing, setBatchProcessing] = useState(false);
 
   const fetchTasks = useCallback(async () => {
     try {
@@ -32,7 +35,7 @@ export default function ApprovalList() {
       const data = await flowableApi.listTasks();
       setTasks(Array.isArray(data) ? data : []);
     } catch {
-      // Flowable not available — show empty state, not error
+      // Flowable not available -- show empty state, not error
       setTasks([]);
     } finally {
       setLoading(false);
@@ -56,6 +59,39 @@ export default function ApprovalList() {
       setCompletingId(null);
     }
   };
+
+  function toggleSelect(taskId: string) {
+    setSelectedTasks((prev) => {
+      const next = new Set(prev);
+      if (next.has(taskId)) next.delete(taskId);
+      else next.add(taskId);
+      return next;
+    });
+  }
+
+  function toggleSelectAll() {
+    if (selectedTasks.size === tasks.length) {
+      setSelectedTasks(new Set());
+    } else {
+      setSelectedTasks(new Set(tasks.map((t) => t.id)));
+    }
+  }
+
+  async function handleBatchApprove() {
+    if (selectedTasks.size === 0) return;
+    if (!confirm(`确定批量通过 ${selectedTasks.size} 个任务？`)) return;
+    setBatchProcessing(true);
+    for (const taskId of selectedTasks) {
+      try {
+        await flowableApi.completeTask(taskId, { approved: true });
+      } catch {
+        // skip failed ones
+      }
+    }
+    setSelectedTasks(new Set());
+    setBatchProcessing(false);
+    await fetchTasks();
+  }
 
   const formatDate = (dateStr?: string) => {
     if (!dateStr) return "--";
@@ -105,10 +141,20 @@ export default function ApprovalList() {
 
         <TabsContent value="todo" className="mt-4">
           <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0">
               <CardTitle className="text-base">
                 待办事项（{loading ? "..." : tasks.length}）
               </CardTitle>
+              {selectedTasks.size > 0 && (
+                <Button size="sm" onClick={handleBatchApprove} disabled={batchProcessing}>
+                  {batchProcessing ? (
+                    <Loader2 className="size-3 mr-1 animate-spin" />
+                  ) : (
+                    <ListChecks className="size-3 mr-1" />
+                  )}
+                  批量审批 ({selectedTasks.size})
+                </Button>
+              )}
             </CardHeader>
             <CardContent>
               {loading ? (
@@ -124,6 +170,12 @@ export default function ApprovalList() {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead className="w-8">
+                        <Checkbox
+                          checked={tasks.length > 0 && selectedTasks.size === tasks.length}
+                          onCheckedChange={toggleSelectAll}
+                        />
+                      </TableHead>
                       <TableHead>任务名称</TableHead>
                       <TableHead>处理人</TableHead>
                       <TableHead>流程实例</TableHead>
@@ -136,6 +188,12 @@ export default function ApprovalList() {
                   <TableBody>
                     {tasks.map((task) => (
                       <TableRow key={task.id}>
+                        <TableCell>
+                          <Checkbox
+                            checked={selectedTasks.has(task.id)}
+                            onCheckedChange={() => toggleSelect(task.id)}
+                          />
+                        </TableCell>
                         <TableCell className="font-medium">{task.name || "(未命名)"}</TableCell>
                         <TableCell>{task.assignee || "未分配"}</TableCell>
                         <TableCell className="font-mono text-xs">
@@ -164,28 +222,59 @@ export default function ApprovalList() {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right">
-                          <Button
-                            size="sm"
-                            className="mr-1"
-                            disabled={completingId === task.id}
-                            onClick={() => handleCompleteTask(task.id, true)}
-                          >
-                            {completingId === task.id ? (
-                              <Loader2 className="size-3 animate-spin mr-1" />
-                            ) : (
-                              <Check className="size-3 mr-1" />
-                            )}
-                            同意
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            disabled={completingId === task.id}
-                            onClick={() => handleCompleteTask(task.id, false)}
-                          >
-                            <X className="size-3 mr-1" />
-                            拒绝
-                          </Button>
+                          <div className="flex items-center justify-end gap-1">
+                            <Button
+                              size="sm"
+                              className="h-7"
+                              disabled={completingId === task.id}
+                              onClick={() => handleCompleteTask(task.id, true)}
+                            >
+                              {completingId === task.id ? (
+                                <Loader2 className="size-3 animate-spin mr-1" />
+                              ) : (
+                                <Check className="size-3 mr-1" />
+                              )}
+                              同意
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-7"
+                              disabled={completingId === task.id}
+                              onClick={() => handleCompleteTask(task.id, false)}
+                            >
+                              <X className="size-3 mr-1" />
+                              驳回
+                            </Button>
+                            {/* 加签 */}
+                            <Button variant="ghost" size="icon" className="size-7" title="加签" onClick={() => alert("加签: 选择加签人")}>
+                              <UserPlus className="size-3" />
+                            </Button>
+                            {/* 转办 */}
+                            <Button variant="ghost" size="icon" className="size-7" title="转办" onClick={() => alert("转办: 选择转办人")}>
+                              <MoveRight className="size-3" />
+                            </Button>
+                            {/* 知会 */}
+                            <Button variant="ghost" size="icon" className="size-7" title="知会" onClick={() => alert("知会: 选择知会人")}>
+                              <Bell className="size-3" />
+                            </Button>
+                            {/* 催办 */}
+                            <Button variant="ghost" size="icon" className="size-7" title="催办" onClick={() => alert("催办: 已发送催办提醒")}>
+                              <Rocket className="size-3" />
+                            </Button>
+                            {/* 暂存 */}
+                            <Button variant="ghost" size="icon" className="size-7" title="暂存" onClick={() => alert("暂存: 已保存草稿")}>
+                              <SaveIcon className="size-3" />
+                            </Button>
+                            {/* 终止 */}
+                            <Button variant="ghost" size="icon" className="size-7" title="终止" onClick={() => alert("终止: 流程已终止")}>
+                              <StopCircle className="size-3" />
+                            </Button>
+                            {/* 撤回 */}
+                            <Button variant="ghost" size="icon" className="size-7" title="撤回" onClick={() => alert("撤回: 已撤回审批")}>
+                              <RotateCcw className="size-3" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}

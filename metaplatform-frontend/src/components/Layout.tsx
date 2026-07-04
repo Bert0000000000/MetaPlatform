@@ -4,6 +4,7 @@ import { Topbar } from "@/components/Topbar";
 import { MenuTabsBar } from "@/components/MenuTabsBar";
 import { AppDetailTabs } from "@/components/AppDetailTabs";
 import { CommandPalette } from "@/components/CommandPalette";
+import { PageAIAssistant } from "@/components/PageAIAssistant";
 
 export function Layout() {
   const location = useLocation();
@@ -40,6 +41,7 @@ export function Layout() {
         </main>
       </div>
       <CommandPalette />
+      <PageAIAssistant />
     </div>
   );
 }

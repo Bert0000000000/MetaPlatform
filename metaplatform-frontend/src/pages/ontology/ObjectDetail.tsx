@@ -13,7 +13,7 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@
 import { ontologyApi, type OntologyObject, type OntologyProperty } from "@/lib/api";
 import {
   ChevronLeft, Plus, Hash, Settings, Sparkles, Save, Trash2, Shield, Box, Zap,
-  Calculator, CheckCircle2, Loader2, AlertCircle, Edit,
+  Calculator, CheckCircle2, Loader2, AlertCircle, Edit, Regex, Ruler,
   User, Package, Tag, Users, FileText, Receipt,
 } from "lucide-react";
 
@@ -51,6 +51,9 @@ export default function ObjectDetail() {
     label: "",
     type: "短文本",
     required: false,
+    regex: "",
+    minLength: "",
+    maxLength: "",
   });
 
   const fetchData = useCallback(async () => {
@@ -83,7 +86,7 @@ export default function ObjectDetail() {
         required: propForm.required ? 1 : 0,
       });
       setPropDialogOpen(false);
-      setPropForm({ name: "", label: "", type: "短文本", required: false });
+      setPropForm({ name: "", label: "", type: "短文本", required: false, regex: "", minLength: "", maxLength: "" });
       await fetchData();
     } catch (err) {
       alert(err instanceof Error ? err.message : "创建属性失败");
@@ -361,6 +364,52 @@ export default function ObjectDetail() {
                 }
               />
               <Label htmlFor="prop-required" className="cursor-pointer">必填</Label>
+            </div>
+            {/* F7.2.10 Validation Rules */}
+            <div className="border-t pt-3 space-y-3">
+              <Label className="text-sm font-medium flex items-center gap-1.5">
+                <Regex className="size-4" /> 格式校验规则
+              </Label>
+              <div className="space-y-2">
+                <Label className="text-xs">正则表达式</Label>
+                <Input
+                  placeholder="e.g. ^[A-Z]{2}\d{6}$"
+                  value={propForm.regex}
+                  onChange={(e) => setPropForm({ ...propForm, regex: e.target.value })}
+                  className="font-mono text-xs"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label className="text-xs">最小长度</Label>
+                  <Input
+                    type="number"
+                    placeholder="0"
+                    value={propForm.minLength}
+                    onChange={(e) => setPropForm({ ...propForm, minLength: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs">最大长度</Label>
+                  <Input
+                    type="number"
+                    placeholder="255"
+                    value={propForm.maxLength}
+                    onChange={(e) => setPropForm({ ...propForm, maxLength: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div className="flex gap-2 flex-wrap">
+                {[
+                  { label: "邮箱", regex: "^[\\w.-]+@[\\w.-]+\\.\\w+$" },
+                  { label: "手机号", regex: "^1[3-9]\\d{9}$" },
+                  { label: "身份证", regex: "^[1-9]\\d{5}(19|20)\\d{2}(0[1-9]|1[0-2])\\d{3}[\\dXx]$" },
+                ].map((tpl) => (
+                  <Button key={tpl.label} variant="outline" size="sm" className="text-xs" onClick={() => setPropForm({ ...propForm, regex: tpl.regex })}>
+                    {tpl.label}
+                  </Button>
+                ))}
+              </div>
             </div>
           </div>
           <DialogFooter>

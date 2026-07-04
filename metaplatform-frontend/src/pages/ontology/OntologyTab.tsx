@@ -301,13 +301,60 @@ const MOCK_LINKS = [
 ];
 
 export function OntologyLinks() {
+  const [aiSuggestOpen, setAiSuggestOpen] = useState(false);
+  const suggestedRels = [
+    { from: "Customer", to: "Invoice", type: "1:N", confidence: 94, reason: "客户-发票 一对多关系，基于历史数据推断" },
+    { from: "Product", to: "Contract", type: "N:N", confidence: 87, reason: "产品-合同 多对多关系，基于业务模式推断" },
+    { from: "Employee", to: "Contract", type: "1:N", confidence: 91, reason: "员工-合同 一对多关系，基于审批记录推断" },
+  ];
   return (
     <div className="flex flex-col gap-4">
       <PageHeader
         title="关系管理"
         description="定义对象间的关系（1:1 / 1:N / N:N）"
-        action={<Button className="gap-2"><Plus className="size-4" /> 新建关系</Button>}
+        action={
+          <div className="flex gap-2">
+            <Button variant="outline" className="gap-2" onClick={() => setAiSuggestOpen(true)}>
+              <Sparkles className="size-4" /> AI 推断关系
+            </Button>
+            <Button className="gap-2"><Plus className="size-4" /> 新建关系</Button>
+          </div>
+        }
       />
+      {/* AI Suggest Dialog */}
+      {aiSuggestOpen && (
+        <Card className="border-primary">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0">
+            <div>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Sparkles className="size-4 text-primary" /> AI 推断的关系
+              </CardTitle>
+              <CardDescription>基于数据模式和业务规则推断的潜在关系</CardDescription>
+            </div>
+            <Button variant="ghost" size="sm" onClick={() => setAiSuggestOpen(false)}>关闭</Button>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {suggestedRels.map((r, i) => (
+                <div key={i} className="flex items-center gap-3 p-3 border rounded-lg">
+                  <Sparkles className="size-4 text-primary shrink-0" />
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 text-sm">
+                      <Badge variant="secondary">{r.from}</Badge>
+                      <span className="text-muted-foreground">--{'>'}</span>
+                      <Badge variant="secondary">{r.to}</Badge>
+                      <Badge variant="outline">{r.type}</Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">{r.reason}</p>
+                  </div>
+                  <Badge variant="outline" className="text-xs shrink-0">置信度 {r.confidence}%</Badge>
+                  <Button size="sm">采纳</Button>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
       <Card>
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2"><Link2 className="size-4" /> 关系列表</CardTitle>
@@ -519,14 +566,73 @@ const MOCK_SECURITY_RULES = [
   { id: 4, name: "ABAC-跨部门限制", level: "ABAC", object: "-", rule: "部门!=财务 AND 金额>10万 → 禁止", roles: "全部" },
 ];
 
+/* ── Sensitive Data Detection (F7.7.4) ── */
+const SENSITIVE_PATTERNS = [
+  { id: 1, name: "身份证号", pattern: "^[1-9]\\d{5}(19|20)\\d{2}(0[1-9]|1[0-2])\\d{3}[\\dXx]$", type: "PII", action: "脱敏", fields: 3 },
+  { id: 2, name: "手机号", pattern: "^1[3-9]\\d{9}$", type: "PII", action: "脱敏", fields: 5 },
+  { id: 3, name: "银行卡号", pattern: "^\\d{16,19}$", type: "PCI", action: "加密", fields: 2 },
+  { id: 4, name: "病历号", pattern: "^MR\\d{8}$", type: "PHI", action: "脱敏", fields: 1 },
+  { id: 5, name: "邮箱地址", pattern: "^[\\w.-]+@[\\w.-]+\\.\\w+$", type: "PII", action: "脱敏", fields: 4 },
+];
+
 export function OntologySecurity() {
+  const [sensitiveDialogOpen, setSensitiveDialogOpen] = useState(false);
+  const [patterns, setPatterns] = useState(SENSITIVE_PATTERNS);
+
   return (
     <div className="flex flex-col gap-4">
       <PageHeader
         title="安全配置"
         description="数据/字段/动作级权限 + ABAC 策略"
-        action={<Button className="gap-2"><Plus className="size-4" /> 新建策略</Button>}
+        action={
+          <div className="flex gap-2">
+            <Button variant="outline" className="gap-2" onClick={() => setSensitiveDialogOpen(true)}>
+              <Shield className="size-4" /> 敏感数据识别
+            </Button>
+            <Button className="gap-2"><Plus className="size-4" /> 新建策略</Button>
+          </div>
+        }
       />
+      {/* Sensitive Data Panel */}
+      {sensitiveDialogOpen && (
+        <Card className="border-orange-300">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0">
+            <div>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Shield className="size-4 text-orange-500" /> 敏感数据识别规则
+              </CardTitle>
+              <CardDescription>PII / PHI / PCI 模式自动检测与脱敏</CardDescription>
+            </div>
+            <Button variant="ghost" size="sm" onClick={() => setSensitiveDialogOpen(false)}>关闭</Button>
+          </CardHeader>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>名称</TableHead>
+                  <TableHead>正则模式</TableHead>
+                  <TableHead>类型</TableHead>
+                  <TableHead>动作</TableHead>
+                  <TableHead>关联字段</TableHead>
+                  <TableHead className="text-right">操作</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {patterns.map((p) => (
+                  <TableRow key={p.id}>
+                    <TableCell className="font-medium">{p.name}</TableCell>
+                    <TableCell className="font-mono text-xs max-w-[200px] truncate">{p.pattern}</TableCell>
+                    <TableCell><Badge variant={p.type === "PCI" ? "destructive" : p.type === "PHI" ? "outline" : "secondary"}>{p.type}</Badge></TableCell>
+                    <TableCell>{p.action}</TableCell>
+                    <TableCell>{p.fields}</TableCell>
+                    <TableCell className="text-right"><Button variant="ghost" size="icon" className="size-8"><Edit className="size-4" /></Button></TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
         {[
           { label: "数据权限", count: 12, icon: Shield },
@@ -577,6 +683,96 @@ export function OntologySecurity() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+/* ── Auto Number Rules (F7.6.4) ── */
+const AUTO_NUMBER_RULES = [
+  { id: 1, object: "Order", prefix: "ORD-", suffix: "", seqLength: 6, reset: "每年", next: "ORD-000042" },
+  { id: 2, object: "Invoice", prefix: "INV-", suffix: "", seqLength: 8, reset: "每月", next: "INV-00001234" },
+  { id: 3, object: "Contract", prefix: "CT-", suffix: "-SH", seqLength: 5, reset: "不重置", next: "CT-00186-SH" },
+];
+
+export function AutoNumberRules() {
+  const [rules, setRules] = useState(AUTO_NUMBER_RULES);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [form, setForm] = useState({ object: "", prefix: "", suffix: "", seqLength: "6", reset: "每年" });
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0">
+        <div>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Hash className="size-4" /> 自动编号规则
+          </CardTitle>
+          <CardDescription>配置对象的自动编号前缀、后缀和序列规则</CardDescription>
+        </div>
+        <Button size="sm" onClick={() => setDialogOpen(true)}><Plus className="size-3 mr-1" /> 新建规则</Button>
+      </CardHeader>
+      <CardContent className="p-0">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>对象</TableHead>
+              <TableHead>前缀</TableHead>
+              <TableHead>后缀</TableHead>
+              <TableHead>序列长度</TableHead>
+              <TableHead>重置策略</TableHead>
+              <TableHead>下一个编号</TableHead>
+              <TableHead className="text-right">操作</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {rules.map((r) => (
+              <TableRow key={r.id}>
+                <TableCell className="font-medium">{r.object}</TableCell>
+                <TableCell className="font-mono text-xs">{r.prefix || "-"}</TableCell>
+                <TableCell className="font-mono text-xs">{r.suffix || "-"}</TableCell>
+                <TableCell>{r.seqLength}</TableCell>
+                <TableCell><Badge variant="outline">{r.reset}</Badge></TableCell>
+                <TableCell className="font-mono text-xs">{r.next}</TableCell>
+                <TableCell className="text-right">
+                  <Button variant="ghost" size="icon" className="size-8"><Edit className="size-4" /></Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>新建自动编号规则</DialogTitle>
+            <DialogDescription>配置对象自动编号的前缀、后缀和序列</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2"><Label>对象</Label><Input value={form.object} onChange={(e) => setForm((f) => ({ ...f, object: e.target.value }))} placeholder="e.g. Order" /></div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2"><Label>前缀</Label><Input value={form.prefix} onChange={(e) => setForm((f) => ({ ...f, prefix: e.target.value }))} placeholder="e.g. ORD-" /></div>
+              <div className="space-y-2"><Label>后缀</Label><Input value={form.suffix} onChange={(e) => setForm((f) => ({ ...f, suffix: e.target.value }))} placeholder="可选" /></div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2"><Label>序列长度</Label><Input type="number" value={form.seqLength} onChange={(e) => setForm((f) => ({ ...f, seqLength: e.target.value }))} /></div>
+              <div className="space-y-2"><Label>重置策略</Label>
+                <Select value={form.reset} onValueChange={(v) => setForm((f) => ({ ...f, reset: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="不重置">不重置</SelectItem>
+                    <SelectItem value="每年">每年</SelectItem>
+                    <SelectItem value="每月">每月</SelectItem>
+                    <SelectItem value="每天">每天</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>取消</Button>
+            <Button onClick={() => { setDialogOpen(false); }}>创建</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </Card>
   );
 }
 

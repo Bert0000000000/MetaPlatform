@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { dataApi, type DataSource, type DataMetric } from "@/lib/api";
-import { Database, Plus, Sparkles, MessageSquare, Activity, AlertTriangle, Terminal, BarChart3, GitMerge, ShieldCheck, Clock, Send, FileBarChart, Leaf, Zap, Rocket, Mail, Globe, FileSpreadsheet, Users, Package, Megaphone, HardDrive, RefreshCw, Circle, Handshake, Trash2, Plug, Bell, CheckCircle2, Warehouse, Layers, Search, BookOpen, Ruler, Briefcase, ScrollText, Download, Server, Eye, Star, Bookmark, History, ChevronRight, ChevronDown, PieChart, TrendingUp, Table as TableIcon, Filter, Copy, MoreHorizontal, ArrowRight, Printer, Columns, Split, Merge, Fingerprint, Target, ArrowRightLeft, Lock, GripVertical, Loader2 } from "lucide-react";
+import { Database, Plus, Sparkles, MessageSquare, Activity, AlertTriangle, Terminal, BarChart3, GitMerge, ShieldCheck, Clock, Send, FileBarChart, Leaf, Zap, Rocket, Mail, Globe, FileSpreadsheet, Users, Package, Megaphone, HardDrive, RefreshCw, Circle, Handshake, Trash2, Plug, Bell, CheckCircle2, Warehouse, Layers, Search, BookOpen, Ruler, Briefcase, ScrollText, Download, Server, Eye, Star, Bookmark, History, ChevronRight, ChevronDown, PieChart, TrendingUp, Table as TableIcon, Filter, Copy, MoreHorizontal, ArrowRight, Printer, Columns, Split, Merge, Fingerprint, Target, ArrowRightLeft, Lock, GripVertical, Loader2, Share2, Link2, Code2, GitBranch } from "lucide-react";
 import { PageHeader } from "@/components/ui/stat";
 
 const statusMap: Record<DataSource["status"], { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
@@ -254,6 +254,9 @@ export function AskData() {
   const [selectedChartType, setSelectedChartType] = useState<string>("auto");
   const [favorites, setFavorites] = useState<string[]>([]);
   const [showExportMenu, setShowExportMenu] = useState(false);
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [publicLink, setPublicLink] = useState("");
+  const [embedCode, setEmbedCode] = useState("");
 
   const [history, setHistory] = useState<{
     q: string;
@@ -744,6 +747,33 @@ export function AskData() {
                 </SelectContent>
               </Select>
 
+              <Button variant="outline" size="sm" onClick={() => {
+                if (currentQuery) {
+                  setFavorites((prev) => prev.includes(currentQuery.q) ? prev.filter((f) => f !== currentQuery.q) : [...prev, currentQuery.q]);
+                }
+              }}>
+                <Star className={`size-3 mr-1 ${currentQuery && favorites.includes(currentQuery.q) ? "text-yellow-500 fill-yellow-500" : ""}`} />
+                收藏
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => {
+                setPublicLink(`https://mp.example.com/share/query/${Date.now().toString(36)}`);
+                setShareDialogOpen(true);
+              }}>
+                <Share2 className="size-3 mr-1" /> 分享
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => {
+                setPublicLink(`https://mp.example.com/share/query/${Date.now().toString(36)}`);
+                setShareDialogOpen(true);
+              }}>
+                <Link2 className="size-3 mr-1" /> 公开链接
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => {
+                setEmbedCode(`<iframe src="https://mp.example.com/embed/query/${Date.now().toString(36)}" width="800" height="600" frameborder="0"></iframe>`);
+                setShareDialogOpen(true);
+              }}>
+                <Code2 className="size-3 mr-1" /> 嵌入代码
+              </Button>
+
               <div className="relative">
                 <Button variant="outline" size="sm" onClick={() => setShowExportMenu(!showExportMenu)}>
                   <Download className="size-3 mr-1" />
@@ -754,6 +784,10 @@ export function AskData() {
                     <button onClick={() => handleExport("CSV")} className="block w-full text-left px-3 py-1.5 text-xs hover:bg-muted rounded">导出 CSV</button>
                     <button onClick={() => handleExport("Excel")} className="block w-full text-left px-3 py-1.5 text-xs hover:bg-muted rounded">导出 Excel</button>
                     <button onClick={() => handleExport("JSON")} className="block w-full text-left px-3 py-1.5 text-xs hover:bg-muted rounded">导出 JSON</button>
+                    <div className="border-t my-1" />
+                    <button onClick={() => handleExport("PDF")} className="block w-full text-left px-3 py-1.5 text-xs hover:bg-muted rounded">导出 PDF</button>
+                    <button onClick={() => handleExport("PPT")} className="block w-full text-left px-3 py-1.5 text-xs hover:bg-muted rounded">导出 PPT</button>
+                    <button onClick={() => handleExport("PNG")} className="block w-full text-left px-3 py-1.5 text-xs hover:bg-muted rounded">导出 PNG</button>
                   </div>
                 )}
               </div>
@@ -795,6 +829,45 @@ export function AskData() {
           </div>
         </Card>
       </div>
+
+      {/* Share Dialog */}
+      <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Share2 className="size-5" /> 分享查询结果
+            </DialogTitle>
+            <DialogDescription>生成公开链接或嵌入代码</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {publicLink && (
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">公开链接</Label>
+                <div className="flex gap-2">
+                  <Input readOnly value={publicLink} className="font-mono text-xs" />
+                  <Button variant="outline" size="sm" onClick={() => { navigator.clipboard.writeText(publicLink); }}>
+                    <Copy className="size-3" />
+                  </Button>
+                </div>
+              </div>
+            )}
+            {embedCode && (
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">iframe 嵌入代码</Label>
+                <div className="flex gap-2">
+                  <Textarea readOnly value={embedCode} className="font-mono text-xs h-20" />
+                  <Button variant="outline" size="sm" onClick={() => { navigator.clipboard.writeText(embedCode); }}>
+                    <Copy className="size-3" />
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShareDialogOpen(false)}>关闭</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -802,6 +875,8 @@ export function AskData() {
 export function MetricCenter() {
   const [metrics, setMetrics] = useState<DataMetric[]>([]);
   const [loading, setLoading] = useState(true);
+  const [lineageDialogOpen, setLineageDialogOpen] = useState(false);
+  const [selectedMetric, setSelectedMetric] = useState<string>("");
 
   useEffect(() => {
     dataApi.listMetrics().then((data) => {
@@ -846,33 +921,28 @@ export function MetricCenter() {
                     <TableHead>分类</TableHead>
                     <TableHead>类型</TableHead>
                     <TableHead>计算公式</TableHead>
+                    <TableHead className="text-right">操作</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  <TableRow>
-                    <TableCell>日销售额</TableCell>
-                    <TableCell>销售</TableCell>
-                    <TableCell><Badge>原子</Badge></TableCell>
-                    <TableCell className="font-mono text-xs">SUM(订单.金额)</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>月环比</TableCell>
-                    <TableCell>销售</TableCell>
-                    <TableCell><Badge variant="secondary">派生</Badge></TableCell>
-                    <TableCell className="font-mono text-xs">(本月-上月)/上月</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>客单价</TableCell>
-                    <TableCell>销售</TableCell>
-                    <TableCell><Badge variant="secondary">派生</Badge></TableCell>
-                    <TableCell className="font-mono text-xs">销售额/订单数</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>复购率</TableCell>
-                    <TableCell>客户</TableCell>
-                    <TableCell><Badge variant="secondary">派生</Badge></TableCell>
-                    <TableCell className="font-mono text-xs">复购客户/总客户</TableCell>
-                  </TableRow>
+                  {[
+                    { name: "日销售额", cat: "销售", type: "原子", formula: "SUM(订单.金额)" },
+                    { name: "月环比", cat: "销售", type: "派生", formula: "(本月-上月)/上月" },
+                    { name: "客单价", cat: "销售", type: "派生", formula: "销售额/订单数" },
+                    { name: "复购率", cat: "客户", type: "派生", formula: "复购客户/总客户" },
+                  ].map((m) => (
+                    <TableRow key={m.name}>
+                      <TableCell>{m.name}</TableCell>
+                      <TableCell>{m.cat}</TableCell>
+                      <TableCell><Badge variant={m.type === "原子" ? "default" : "secondary"}>{m.type}</Badge></TableCell>
+                      <TableCell className="font-mono text-xs">{m.formula}</TableCell>
+                      <TableCell className="text-right">
+                        <Button variant="ghost" size="sm" onClick={() => { setSelectedMetric(m.name); setLineageDialogOpen(true); }}>
+                          <GitBranch className="size-3 mr-1" /> 血缘
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
                 </TableBody>
               </Table>
             </CardContent>
@@ -918,6 +988,50 @@ export function MetricCenter() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Lineage Dialog */}
+      <Dialog open={lineageDialogOpen} onOpenChange={setLineageDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <GitBranch className="size-5" /> 指标血缘 - {selectedMetric}
+            </DialogTitle>
+            <DialogDescription>查看指标的上下游依赖关系</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">上游数据源</Label>
+              {["MySQL 订单表 (orders)", "DWD 订单明细", "DWS 销售汇总"].map((s) => (
+                <div key={s} className="flex items-center gap-2 p-2 border rounded text-sm">
+                  <Database className="size-3 text-blue-500" />
+                  <span>{s}</span>
+                </div>
+              ))}
+            </div>
+            <div className="flex items-center justify-center">
+              <ArrowRight className="size-5 text-muted-foreground rotate-90" />
+            </div>
+            <div className="p-3 bg-primary/5 border border-primary/20 rounded-lg text-center">
+              <span className="font-medium text-sm">{selectedMetric}</span>
+            </div>
+            <div className="flex items-center justify-center">
+              <ArrowRight className="size-5 text-muted-foreground rotate-90" />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">下游消费者</Label>
+              {["销售看板 Dashboard", "月度报表", "AI 问数缓存"].map((s) => (
+                <div key={s} className="flex items-center gap-2 p-2 border rounded text-sm">
+                  <BarChart3 className="size-3 text-green-500" />
+                  <span>{s}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setLineageDialogOpen(false)}>关闭</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -24,6 +24,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   Tasks: "Tasks",
   Gateways: "Gateways",
   Subprocess: "Subprocesses",
+  Artifacts: "Artifacts",
 };
 
 export function NodePalette() {
@@ -33,6 +34,7 @@ export function NodePalette() {
     Tasks: true,
     Gateways: true,
     Subprocess: true,
+    Artifacts: true,
   });
 
   const toggleCategory = useCallback((cat: string) => {

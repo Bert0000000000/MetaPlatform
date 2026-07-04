@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Key, Globe, Bell, Link2, Shield, Webhook, Eye, EyeOff, BookOpen, Hash, MessageCircle, MessagesSquare, Save, Loader2, Check, Copy, Send, ArrowRight, Clock, Zap, FileText, RefreshCw, Trash2, Plus, ExternalLink, Lock, Users, Building2, Sliders, ShieldCheck, TestTube2, Workflow, ChevronRight, ChevronDown, Pencil, Wand2, Crosshair, Layers, Gauge, ArrowLeftRight, Scale, Percent, FastForward, Rewind, ToggleLeft, UserPlus, UserCheck, MoveRight, StopCircle, Wrench, Settings } from "lucide-react";
+import { Key, Globe, Bell, Link2, Shield, Webhook, Eye, EyeOff, BookOpen, Hash, MessageCircle, MessagesSquare, Save, Loader2, Check, Copy, Send, ArrowRight, Clock, Zap, FileText, RefreshCw, Trash2, Plus, ExternalLink, Lock, Users, Building2, Sliders, ShieldCheck, TestTube2, Workflow, ChevronRight, ChevronDown, Pencil, Wand2, Crosshair, Layers, Gauge, ArrowLeftRight, Scale, Percent, FastForward, Rewind, ToggleLeft, UserPlus, UserCheck, MoveRight, StopCircle, Wrench, Settings, Image, Upload } from "lucide-react";
 
 /* ── Toast helper ── */
 function useToast() {
@@ -359,6 +359,9 @@ export default function AppConfig() {
             <TabsTrigger value="permission" className="w-full justify-start data-[state=active]:bg-muted">
               <Shield className="size-4 mr-2" /> 权限
             </TabsTrigger>
+            <TabsTrigger value="cover" className="w-full justify-start data-[state=active]:bg-muted">
+              <Image className="size-4 mr-2" /> 封面
+            </TabsTrigger>
             <TabsTrigger value="notification" className="w-full justify-start data-[state=active]:bg-muted">
               <Bell className="size-4 mr-2" /> 通知
             </TabsTrigger>
@@ -415,6 +418,46 @@ export default function AppConfig() {
                   <div className="flex items-center justify-between">
                     <span>脱敏规则</span>
                     <Badge variant="secondary">{config.maskingRule}</Badge>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* F4.6.3 应用封面 */}
+            <TabsContent value="cover" className="mt-0 space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Image className="size-4" /> 应用封面
+                  </CardTitle>
+                  <CardDescription>上传应用封面图片，用于应用市场和工作台展示</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="border-2 border-dashed rounded-lg p-8 text-center hover:border-primary transition-colors cursor-pointer">
+                    <Upload className="size-10 mx-auto mb-3 text-muted-foreground" />
+                    <div className="text-sm font-medium">点击或拖拽上传封面图片</div>
+                    <div className="text-xs text-muted-foreground mt-1">支持 JPG、PNG 格式，建议尺寸 1200x630px，最大 2MB</div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-3">
+                    {[
+                      { name: "默认渐变", color: "from-blue-500 to-purple-600" },
+                      { name: "商务蓝", color: "from-sky-400 to-blue-600" },
+                      { name: "活力橙", color: "from-orange-400 to-red-500" },
+                    ].map((preset) => (
+                      <button
+                        key={preset.name}
+                        type="button"
+                        className={`h-24 rounded-lg bg-gradient-to-r ${preset.color} flex items-end p-2 hover:ring-2 ring-primary transition-all`}
+                      >
+                        <span className="text-xs font-medium text-white drop-shadow">{preset.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex justify-end">
+                    <Button onClick={handleSave} disabled={saving}>
+                      {saving ? <Loader2 className="size-4 animate-spin mr-1" /> : <Save className="size-4 mr-1" />}
+                      保存封面
+                    </Button>
                   </div>
                 </CardContent>
               </Card>

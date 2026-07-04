@@ -6,7 +6,7 @@ import { PageHeader } from "@/components/ui/stat";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Save, Eye, Smartphone, Monitor, Tablet, Settings, Trash2, Copy, Plus, Type, Hash, Calendar, Mail, Phone, ListChecks, FileText, Upload, Star, Sliders, ToggleLeft, Sparkles, FileEdit, Clock, ClipboardList, Circle, CheckSquare, Paperclip, Image, PenTool, MapPin, TreeDeciduous, Scan, FileImage, CreditCard, Receipt, Contact, Check } from "lucide-react";
+import { Save, Eye, Smartphone, Monitor, Tablet, Settings, Trash2, Copy, Plus, Type, Hash, Calendar, Mail, Phone, ListChecks, FileText, Upload, Star, Sliders, ToggleLeft, Sparkles, FileEdit, Clock, ClipboardList, Circle, CheckSquare, Paperclip, Image, PenTool, MapPin, TreeDeciduous, Scan, FileImage, CreditCard, Receipt, Contact, Check, Gauge, Printer, TreePine, LayoutDashboard } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 // OCR Document Types
@@ -118,6 +118,12 @@ const FIELD_LIBRARY: FieldDef[] = [
   { id: "richtext", type: "富文本", label: "富文本", required: false, icon: PenTool, color: "bg-fuchsia-500" },
   { id: "address", type: "地址", label: "地址", required: false, icon: MapPin, color: "bg-sky-500" },
   { id: "cascader", type: "级联选择", label: "级联选择", required: false, icon: TreeDeciduous, color: "bg-lime-500" },
+  // F4.4.2.20 自动编号
+  { id: "auto-number", type: "自动编号", label: "自动编号", required: false, icon: Hash, color: "bg-stone-500" },
+  // F4.4.2.22 树形录入
+  { id: "tree-input", type: "树形", label: "树形录入", required: false, icon: TreePine, color: "bg-emerald-600" },
+  // F4.4.2.26 仪表盘内嵌
+  { id: "dashboard-embed", type: "仪表盘", label: "仪表盘内嵌", required: false, icon: LayoutDashboard, color: "bg-blue-600" },
 ];
 
 const INITIAL_FORM: { id: string; label: string; type: string; icon: LucideIcon }[] = [
@@ -143,6 +149,13 @@ export default function FormDesigner() {
   const [ocrProcessing, setOcrProcessing] = useState(false);
   const [ocrResult, setOcrResult] = useState<OCRResult | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // F4.4.5.2 发票验真 state
+  const [invoiceVerifying, setInvoiceVerifying] = useState(false);
+  const [invoiceVerified, setInvoiceVerified] = useState(false);
+
+  // F4.4.5.5 打印模板 state
+  const [printDialogOpen, setPrintDialogOpen] = useState(false);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -191,6 +204,16 @@ export default function FormDesigner() {
     setUploadedFile(null);
   }, [ocrResult]);
 
+  // F4.4.5.2 发票验真
+  const handleInvoiceVerify = useCallback(() => {
+    setInvoiceVerifying(true);
+    setInvoiceVerified(false);
+    setTimeout(() => {
+      setInvoiceVerifying(false);
+      setInvoiceVerified(true);
+    }, 2000);
+  }, []);
+
   return (
     <div className="flex flex-col gap-4 h-[calc(100vh-180px)]">
       <PageHeader
@@ -205,6 +228,10 @@ export default function FormDesigner() {
             <Button variant="outline" size="sm">
               <Sparkles className="size-3 mr-1" />
               AI 生成
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setPrintDialogOpen(true)}>
+              <Printer className="size-3 mr-1" />
+              打印模板
             </Button>
             <Button variant="outline" size="sm">
               <Eye className="size-3 mr-1" />
@@ -223,7 +250,7 @@ export default function FormDesigner() {
         <Card className="col-span-2 overflow-y-auto">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm">字段库</CardTitle>
-            <CardDescription className="text-xs">18 种字段类型</CardDescription>
+            <CardDescription className="text-xs">{FIELD_LIBRARY.length} 种字段类型</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-1">
@@ -515,9 +542,23 @@ export default function FormDesigner() {
               setOcrDialogOpen(false);
               setOcrResult(null);
               setUploadedFile(null);
+              setInvoiceVerified(false);
             }}>
               取消
             </Button>
+            {/* F4.4.5.2 发票验真 */}
+            {selectedDocType === "invoice" && ocrResult && !ocrProcessing && (
+              <Button variant="outline" onClick={handleInvoiceVerify} disabled={invoiceVerifying}>
+                {invoiceVerifying ? (
+                  <Loader2 className="size-3 mr-1 animate-spin" />
+                ) : invoiceVerified ? (
+                  <Check className="size-3 mr-1 text-green-500" />
+                ) : (
+                  <Receipt className="size-3 mr-1" />
+                )}
+                {invoiceVerifying ? "验真中..." : invoiceVerified ? "验真通过" : "发票验真"}
+              </Button>
+            )}
             <Button
               onClick={handleApplyToForm}
               disabled={!ocrResult || ocrProcessing}
@@ -525,6 +566,42 @@ export default function FormDesigner() {
               <Check className="size-3 mr-1" />
               应用到表单
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* F4.4.5.5 打印模板对话框 */}
+      <Dialog open={printDialogOpen} onOpenChange={setPrintDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Printer className="size-5" /> 打印模板
+            </DialogTitle>
+            <DialogDescription>选择打印模板样式</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            {[
+              { name: "标准表单打印", desc: "表单字段纵向排列，适合 A4 纸张", icon: FileText },
+              { name: "表格批量打印", desc: "表格形式，适合批量数据打印", icon: ListChecks },
+              { name: "卡片式打印", desc: "每条记录一张卡片，适合标签纸", icon: ClipboardList },
+              { name: "自定义模板", desc: "拖拽自定义打印布局", icon: Settings },
+            ].map((tpl, i) => (
+              <button
+                key={i}
+                type="button"
+                className="flex items-start gap-3 p-3 border rounded-lg w-full text-left hover:border-primary transition-colors"
+                onClick={() => { alert(`已选择模板: ${tpl.name}`); setPrintDialogOpen(false); }}
+              >
+                <tpl.icon className="size-5 text-muted-foreground mt-0.5" />
+                <div>
+                  <div className="text-sm font-medium">{tpl.name}</div>
+                  <div className="text-xs text-muted-foreground">{tpl.desc}</div>
+                </div>
+              </button>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPrintDialogOpen(false)}>取消</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

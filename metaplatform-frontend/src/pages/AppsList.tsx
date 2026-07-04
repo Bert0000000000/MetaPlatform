@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import {
   Plus, Sparkles, Bot, Zap, Folder,
   ClipboardList, FileEdit, BarChart3,
-  Loader2, AlertCircle, Inbox,
+  Loader2, AlertCircle, Inbox, Brain,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,11 +17,15 @@ const CATEGORY_ICONS: Record<string, typeof Bot> = {
   "VibeCoding": Zap,
 };
 
+const APP_CATEGORIES = ["全部", "CRM", "ERP", "OA", "HR", "数据"] as const;
+type AppCategory = (typeof APP_CATEGORIES)[number];
+
 export function AppsListPage() {
   const navigate = useNavigate();
   const [apps, setApps] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [categoryFilter, setCategoryFilter] = useState<AppCategory>("全部");
 
   useEffect(() => {
     let cancelled = false;
@@ -60,7 +64,17 @@ export function AppsListPage() {
       </div>
 
       {/* Quick entry cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+        <Card
+          className="cursor-pointer hover:border-primary"
+          onClick={() => navigate("/apps/new?type=ai")}
+        >
+          <CardHeader>
+            <Brain className="size-6 text-violet-500 mb-2" />
+            <CardTitle className="text-base">AI 原生</CardTitle>
+            <CardDescription>AI 驱动的智能应用</CardDescription>
+          </CardHeader>
+        </Card>
         <Card
           className="cursor-pointer hover:border-primary"
           onClick={() => navigate("/apps/new?type=agent")}
@@ -131,6 +145,26 @@ export function AppsListPage() {
         </div>
       )}
 
+      {/* Category filter chips - F4.1.5 */}
+      {!loading && !error && apps.length > 0 && (
+        <div className="flex items-center gap-2 flex-wrap">
+          {APP_CATEGORIES.map((cat) => (
+            <button
+              key={cat}
+              type="button"
+              onClick={() => setCategoryFilter(cat)}
+              className={`px-3 py-1.5 text-sm rounded-full border transition-colors ${
+                categoryFilter === cat
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "bg-background text-muted-foreground border-border hover:border-primary/50"
+              }`}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* App list */}
       {!loading && !error && apps.length > 0 && (
         <div>
@@ -140,7 +174,9 @@ export function AppsListPage() {
             <Badge variant="secondary">{apps.length}</Badge>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {apps.map((app) => {
+            {apps
+              .filter((app) => categoryFilter === "全部" || app.category?.includes(categoryFilter))
+              .map((app) => {
               const IconComponent = CATEGORY_ICONS[app.category] ?? ClipboardList;
               return (
                 <Card

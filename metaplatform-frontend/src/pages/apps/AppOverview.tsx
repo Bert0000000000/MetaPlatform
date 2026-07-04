@@ -1,14 +1,16 @@
 import { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { StatCard, PageHeader } from "@/components/ui/stat";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { appsApi, type Application } from "@/lib/api";
-import { Box, FileText, GitBranch, Users, Calendar, Dna, Loader2, AlertCircle } from "lucide-react";
+import { Box, FileText, GitBranch, Users, Calendar, Dna, Loader2, AlertCircle, Upload, TrendingUp, Plus, Workflow, Eye } from "lucide-react";
 
 export default function AppOverview() {
   const { appId } = useParams();
+  const navigate = useNavigate();
   const [app, setApp] = useState<Application | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -63,6 +65,10 @@ export default function AppOverview() {
         description={`${app.description || "暂无描述"} · v${app.version} · ${app.category}`}
         action={
           <div className="flex gap-2">
+            {/* F4.4.9.2 升级到 LowCode */}
+            <Button variant="outline" onClick={() => alert("已升级到 LowCode 模式，解锁完整开发能力")}>
+              <Zap className="size-4 mr-1" /> 升级到 LowCode
+            </Button>
             <Badge variant={app.status === "published" ? "default" : "secondary"}>
               {app.status === "published" ? "已发布" : app.status === "active" ? "运行中" : app.status}
             </Badge>
@@ -75,6 +81,93 @@ export default function AppOverview() {
         <StatCard label="页面数" value={app.pages_count ?? 0} icon={<FileText className="size-5" />} />
         <StatCard label="流程数" value={app.flows_count ?? 0} icon={<GitBranch className="size-5" />} />
         <StatCard label="版本" value={app.version} icon={<Calendar className="size-5" />} />
+      </div>
+
+      {/* F4.2.5 快速入口 */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <Button variant="outline" className="gap-2 h-auto py-3" onClick={() => navigate(`/apps/${appId}/pages`)}>
+          <Plus className="size-4" /> 新建页面
+        </Button>
+        <Button variant="outline" className="gap-2 h-auto py-3" onClick={() => navigate(`/apps/${appId}/data-modeling`)}>
+          <Dna className="size-4" /> 新建对象
+        </Button>
+        <Button variant="outline" className="gap-2 h-auto py-3" onClick={() => navigate(`/apps/${appId}/workflows`)}>
+          <Workflow className="size-4" /> 新建流程
+        </Button>
+        <Button variant="outline" className="gap-2 h-auto py-3" onClick={() => navigate(`/apps/${appId}/publish`)}>
+          <Upload className="size-4" /> 发布
+        </Button>
+      </div>
+
+      {/* F4.2.4 应用活跃度 sparkline + F4.2.3 最近发布 */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Activity sparkline */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <TrendingUp className="size-4" /> 应用活跃度
+            </CardTitle>
+            <CardDescription>过去 7 天操作趋势</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <svg viewBox="0 0 280 60" className="w-full h-16">
+              <polyline
+                fill="none"
+                stroke="hsl(var(--primary))"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                points={[10, 45, 50, 30, 90, 38, 130, 18, 170, 28, 210, 12, 250, 22].join(" ")}
+              />
+              <polyline
+                fill="hsl(var(--primary) / 0.1)"
+                stroke="none"
+                points={[10, 45, 50, 30, 90, 38, 130, 18, 170, 28, 210, 12, 250, 22, 250, 55, 10, 55].join(" ")}
+              />
+              {[10, 50, 90, 130, 170, 210, 250].map((x, i) => (
+                <circle key={i} cx={x} cy={[45, 30, 38, 18, 28, 12, 22][i]} r="3" fill="hsl(var(--primary))" />
+              ))}
+            </svg>
+            <div className="flex justify-between text-[10px] text-muted-foreground mt-1 px-1">
+              {["周一", "周二", "周三", "周四", "周五", "周六", "周日"].map((d) => (
+                <span key={d}>{d}</span>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Recent publications - F4.2.3 */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Upload className="size-4" /> 最近发布
+            </CardTitle>
+            <CardDescription>app_publications 最近 3 条记录</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ul className="space-y-3 text-sm">
+              {[
+                { version: "v2.3.0", env: "生产", date: "2026-07-01", status: "success" },
+                { version: "v2.2.1", env: "预发", date: "2026-06-28", status: "success" },
+                { version: "v2.2.0", env: "测试", date: "2026-06-25", status: "success" },
+              ].map((pub, i) => (
+                <li key={i} className="flex items-center justify-between p-2 rounded border">
+                  <div className="flex items-center gap-2">
+                    <Eye className="size-4 text-muted-foreground" />
+                    <div>
+                      <span className="font-medium">{pub.version}</span>
+                      <span className="text-muted-foreground ml-2">{pub.env}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="secondary" className="text-green-600">{pub.status === "success" ? "成功" : "失败"}</Badge>
+                    <span className="text-xs text-muted-foreground">{pub.date}</span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
       </div>
 
       <Tabs defaultValue="recent">

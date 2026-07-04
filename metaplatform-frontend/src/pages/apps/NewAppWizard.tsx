@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Check, ChevronLeft, ChevronRight, Sparkles, Database, Wand2, FileEdit, BookOpen, Dna, Bot, Handshake, Package, Building2, Users, ClipboardList, BarChart3, Loader2 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Check, ChevronLeft, ChevronRight, Sparkles, Database, Wand2, FileEdit, BookOpen, Dna, Bot, Handshake, Package, Building2, Users, ClipboardList, BarChart3, Loader2, Zap } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { appsApi } from "@/lib/api";
 
@@ -62,6 +63,8 @@ export default function NewAppWizard() {
   const [state, setState] = useState<WizardState>(INITIAL);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  // F4.4.9.1 NoCode 模式
+  const [noCodeMode, setNoCodeMode] = useState(false);
 
   const update = <K extends keyof WizardState>(k: K, v: WizardState[K]) =>
     setState((s) => ({ ...s, [k]: v }));
@@ -137,7 +140,22 @@ export default function NewAppWizard() {
                 <CardTitle className="text-base">选择创建方式</CardTitle>
                 <CardDescription>不同方式对应不同的初始化策略</CardDescription>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+
+              {/* F4.4.9.1 NoCode 模式 toggle */}
+              <div className="flex items-center justify-between p-3 border rounded-lg bg-muted/30">
+                <div className="flex items-center gap-3">
+                  <Zap className="size-5 text-amber-500" />
+                  <div>
+                    <div className="font-medium text-sm">NoCode 模式</div>
+                    <div className="text-xs text-muted-foreground">
+                      {noCodeMode ? "简化向导，自动生成数据模型和页面" : "完整模式，支持自定义数据源和部署"}
+                    </div>
+                  </div>
+                </div>
+                <Switch checked={noCodeMode} onCheckedChange={setNoCodeMode} />
+              </div>
+
+              <div className={`grid grid-cols-1 md:grid-cols-2 gap-3 ${noCodeMode ? "opacity-50 pointer-events-none" : ""}`}>
                 {CREATE_TYPES.map((t) => (
                   <button
                     key={t.id}

@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Trash2, X } from "lucide-react";
 import { bpmnNodeTypeRegistry } from "./BpmnNodes";
 
@@ -52,6 +53,7 @@ export function PropertiesPanel({
         form.description = String(data.description || "");
       } else if (selectedNode.type === "serviceTask") {
         form.delegateExpression = String(data.delegateExpression || "");
+        form.javaAdapter = String(data.javaAdapter || "");
         form.description = String(data.description || "");
       } else if (selectedNode.type === "scriptTask") {
         form.scriptFormat = String(data.scriptFormat || "groovy");
@@ -92,6 +94,7 @@ export function PropertiesPanel({
         data.description = formData.description || undefined;
       } else if (selectedNode.type === "serviceTask") {
         data.delegateExpression = formData.delegateExpression || undefined;
+        data.javaAdapter = formData.javaAdapter || undefined;
         data.description = formData.description || undefined;
       } else if (selectedNode.type === "scriptTask") {
         data.scriptFormat = formData.scriptFormat || "groovy";
@@ -312,6 +315,25 @@ export function PropertiesPanel({
                 className="h-8 text-xs font-mono"
                 placeholder="${myServiceDelegateBean}"
               />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Java 适配器</Label>
+              <Select
+                value={formData.javaAdapter || ""}
+                onValueChange={(val) => handleFieldChange("javaAdapter", val)}
+              >
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue placeholder="选择 Java 适配器（可选）" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">不使用适配器</SelectItem>
+                  <SelectItem value="com.metaplatform.adapter.HttpAdapter">HttpAdapter - HTTP 请求</SelectItem>
+                  <SelectItem value="com.metaplatform.adapter.DbAdapter">DbAdapter - 数据库操作</SelectItem>
+                  <SelectItem value="com.metaplatform.adapter.MqAdapter">MqAdapter - 消息队列</SelectItem>
+                  <SelectItem value="com.metaplatform.adapter.RestAdapter">RestAdapter - REST API</SelectItem>
+                  <SelectItem value="com.metaplatform.adapter.JavaDelegate">JavaDelegate - 自定义</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs">Description</Label>

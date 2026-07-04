@@ -284,6 +284,10 @@ export default function AppExport() {
           <TabsTrigger value="deploy" className="gap-2">
             <Container className="size-4" /> 部署包
           </TabsTrigger>
+          {/* F4.4.8.5 组件封装 Tab */}
+          <TabsTrigger value="component-encap" className="gap-2">
+            <FileCode className="size-4" /> 组件封装
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="frontend" className="mt-4 space-y-3">
@@ -377,6 +381,48 @@ export default function AppExport() {
             </Card>
           ))}
         </TabsContent>
+
+        {/* F4.4.8.5 组件封装 */}
+        <TabsContent value="component-encap" className="mt-4 space-y-3">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <FileCode className="size-4" /> 自定义组件封装
+              </CardTitle>
+              <CardDescription>将应用中的自定义组件导出为可复用的 npm 包</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {[
+                { name: "CustomerCard", desc: "客户信息卡片组件", lines: 86, deps: 3 },
+                { name: "OrderTable", desc: "订单数据表格组件", lines: 142, deps: 5 },
+                { name: "SalesChart", desc: "销售图表组件", lines: 64, deps: 2 },
+                { name: "ApprovalFlow", desc: "审批流程可视化组件", lines: 210, deps: 4 },
+              ].map((comp) => (
+                <div key={comp.name} className="flex items-center gap-3 p-3 border rounded-lg">
+                  <FileCode className="size-4 text-blue-500" />
+                  <div className="flex-1">
+                    <div className="font-mono text-sm font-medium">{comp.name}</div>
+                    <div className="text-xs text-muted-foreground">{comp.desc}</div>
+                  </div>
+                  <Badge variant="secondary" className="text-xs">{comp.lines} 行</Badge>
+                  <Badge variant="outline" className="text-xs">{comp.deps} 依赖</Badge>
+                  <Button variant="ghost" size="icon" className="size-8" title="复制组件代码">
+                    <Copy className="size-4" />
+                  </Button>
+                </div>
+              ))}
+              <div className="flex justify-end gap-2 pt-2">
+                <Button variant="outline" size="sm">
+                  <ExternalLink className="size-3 mr-1" /> 预览文档
+                </Button>
+                <Button size="sm">
+                  <Download className="size-3 mr-1" /> 导出组件包
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
       </Tabs>
 
       <Card>

@@ -510,6 +510,8 @@ export function QualityDashboard() {
           <TabsTrigger value="cases">测试用例</TabsTrigger>
           <TabsTrigger value="bugs">缺陷跟踪</TabsTrigger>
           <TabsTrigger value="perf">性能监控</TabsTrigger>
+          <TabsTrigger value="perfTest">性能测试</TabsTrigger>
+          <TabsTrigger value="security">安全扫描</TabsTrigger>
           <TabsTrigger value="ai">AI 生成</TabsTrigger>
         </TabsList>
 
@@ -564,6 +566,80 @@ export function QualityDashboard() {
           <PerfMonitor />
         </TabsContent>
 
+        <TabsContent value="perfTest" className="mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Gauge className="size-4" /> 性能测试引擎
+              </CardTitle>
+              <CardDescription>配置并发用户、持续时间和目标端点</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div className="space-y-2">
+                  <Label>并发用户数</Label>
+                  <Input type="number" defaultValue={100} />
+                </div>
+                <div className="space-y-2">
+                  <Label>持续时间(秒)</Label>
+                  <Input type="number" defaultValue={60} />
+                </div>
+                <div className="space-y-2">
+                  <Label>目标端点</Label>
+                  <Input defaultValue="/api/v1/process/start" />
+                </div>
+              </div>
+              <div className="space-y-2 mb-4">
+                <Label>测试端点列表</Label>
+                {["GET /api/v1/process/instances", "POST /api/v1/process/task/complete", "GET /api/v1/ontology/objects", "POST /api/v1/data/query"].map((ep) => (
+                  <div key={ep} className="flex items-center gap-2 p-2 border rounded text-sm">
+                    <Checkbox defaultChecked />
+                    <span className="font-mono text-xs">{ep}</span>
+                  </div>
+                ))}
+              </div>
+              <Button><Play className="size-3 mr-1" /> 启动性能测试</Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        <TabsContent value="security" className="mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Shield className="size-4" /> 安全扫描
+              </CardTitle>
+              <CardDescription>OWASP Top 10 / SAST / DAST 安全扫描配置</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {[
+                    { name: "OWASP Top 10", desc: "检查 OWASP 十大安全漏洞", checked: true },
+                    { name: "SAST (静态分析)", desc: "源代码安全扫描", checked: true },
+                    { name: "DAST (动态分析)", desc: "运行时安全测试", checked: false },
+                  ].map((opt) => (
+                    <div key={opt.name} className="border rounded-lg p-4 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Checkbox defaultChecked={opt.checked} />
+                        <span className="font-medium text-sm">{opt.name}</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">{opt.desc}</p>
+                    </div>
+                  ))}
+                </div>
+                <div className="space-y-2">
+                  <Label>扫描目标 URL</Label>
+                  <Input defaultValue="http://localhost:5173" />
+                </div>
+                <div className="space-y-2">
+                  <Label>排除路径</Label>
+                  <Input defaultValue="/static, /assets, /node_modules" />
+                </div>
+                <Button><Shield className="size-3 mr-1" /> 启动安全扫描</Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
         <TabsContent value="ai" className="mt-4">
           <AIGenerateCases onAdopt={handleAdoptFromAI} />
         </TabsContent>

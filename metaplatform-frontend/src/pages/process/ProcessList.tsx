@@ -18,6 +18,7 @@ import {
   Plus, GitBranch, Eye, Activity, BarChart3, AlertTriangle, Play,
   Timer, CheckCircle, Loader2, AlertCircle, List, FileCheck, Zap, TrendingUp, Server, Download, Search, Clock, Pause, RotateCcw, XCircle, Send, BookOpen, Filter, FileText,
   SkipForward, ChevronRight, Workflow, UserPlus, UserCheck, MoveRight, StopCircle, Wrench, Wand2, Crosshair, Gauge, Users, Settings, Pencil, ArrowRight, FastForward,
+  Printer, LayoutGrid, TreePine, Columns, Upload, Waves, Bookmark,
 } from "lucide-react";
 
 /* ── Mock simulation data ── */
@@ -160,21 +161,73 @@ export default function ProcessList() {
       )}
 
       <Tabs defaultValue="all">
-        <TabsList>
-          <TabsTrigger value="all">全部 ({loading ? "..." : totalCount})</TabsTrigger>
-          <TabsTrigger value="monitor">实例监控</TabsTrigger>
-          <TabsTrigger value="analytics">流程分析</TabsTrigger>
-        </TabsList>
+        <div className="flex items-center justify-between">
+          <TabsList>
+            <TabsTrigger value="all">全部 ({loading ? "..." : totalCount})</TabsTrigger>
+            <TabsTrigger value="monitor">实例监控</TabsTrigger>
+            <TabsTrigger value="analytics">流程分析</TabsTrigger>
+            {/* F4.4.3.13 个人视图 */}
+            <TabsTrigger value="myviews"><Bookmark className="size-3 mr-1" /> 我的视图</TabsTrigger>
+          </TabsList>
+          {/* F4.4.3 list capability toolbar */}
+          <div className="flex items-center gap-1">
+            {/* F4.4.3.6 树+列表布局 toggle */}
+            <Button variant="ghost" size="icon" className="size-8" title="列表视图">
+              <List className="size-4" />
+            </Button>
+            <Button variant="ghost" size="icon" className="size-8" title="树形视图">
+              <TreePine className="size-4" />
+            </Button>
+            <Button variant="ghost" size="icon" className="size-8" title="看板视图">
+              <LayoutGrid className="size-4" />
+            </Button>
+            <div className="w-px h-5 bg-border mx-1" />
+            {/* F4.4.3.4 批量打印 */}
+            <Button variant="ghost" size="icon" className="size-8" title="批量打印" onClick={() => alert("批量打印: 已发送到打印机")}>
+              <Printer className="size-4" />
+            </Button>
+            {/* F4.4.3.15 EXCEL批量导入 */}
+            <Button variant="ghost" size="icon" className="size-8" title="Excel 导入" onClick={() => alert("Excel 导入: 请选择文件")}>
+              <Upload className="size-4" />
+            </Button>
+            {/* F4.4.3.17 数据级联 */}
+            <Button variant="ghost" size="icon" className="size-8" title="级联筛选" onClick={() => alert("级联筛选: 配置级联条件")}>
+              <Columns className="size-4" />
+            </Button>
+          </div>
+        </div>
 
         <TabsContent value="all" className="mt-3">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2">
-                <GitBranch className="size-4" /> 流程列表
-              </CardTitle>
-              <CardDescription>
-                {loading ? "加载中..." : `共 ${totalCount} 个流程定义`}
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <GitBranch className="size-4" /> 流程列表
+                  </CardTitle>
+                  <CardDescription>
+                    {loading ? "加载中..." : `共 ${totalCount} 个流程定义`}
+                  </CardDescription>
+                </div>
+                {/* F4.4.3.11 全文查询 */}
+                <div className="flex items-center gap-2">
+                  <div className="relative">
+                    <Search className="absolute left-2 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
+                    <Input placeholder="全文查询..." className="pl-8 h-8 w-48 text-sm" />
+                  </div>
+                  <div className="flex gap-1">
+                    {["全部", "业务流程", "审批流程", "已激活"].map((chip) => (
+                      <button key={chip} className="px-2 py-1 text-[10px] rounded-full border hover:border-primary hover:text-primary transition-colors">
+                        {chip}
+                      </button>
+                    ))}
+                  </div>
+                  {/* F4.4.3.14 虚拟滚动 indicator */}
+                  <Badge variant="secondary" className="text-[10px] gap-1">
+                    <Waves className="size-2.5" /> 虚拟滚动
+                  </Badge>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               {loading ? (
@@ -260,6 +313,40 @@ export default function ProcessList() {
                   </TableBody>
                 </Table>
               )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* F4.4.3.13 个人视图 Tab Content */}
+        <TabsContent value="myviews" className="mt-3">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Bookmark className="size-4" /> 我的视图
+              </CardTitle>
+              <CardDescription>保存的筛选条件和视图配置</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {[
+                  { name: "我发起的流程", filter: "创建人 = 当前用户", count: 12 },
+                  { name: "待我处理", filter: "处理人 = 当前用户 AND 状态 = pending", count: 5 },
+                  { name: "高优先级审批", filter: "优先级 >= 75 AND 类型 = 审批", count: 3 },
+                  { name: "本周完成", filter: "状态 = completed AND 完成时间 >= 本周一", count: 18 },
+                ].map((view, i) => (
+                  <div key={i} className="flex items-center gap-3 p-3 border rounded-lg hover:border-primary cursor-pointer transition-colors">
+                    <Bookmark className="size-4 text-muted-foreground" />
+                    <div className="flex-1">
+                      <div className="text-sm font-medium">{view.name}</div>
+                      <div className="text-[10px] text-muted-foreground font-mono">{view.filter}</div>
+                    </div>
+                    <Badge variant="secondary" className="text-xs">{view.count}</Badge>
+                  </div>
+                ))}
+                <button className="flex items-center gap-2 p-3 border border-dashed rounded-lg hover:border-primary transition-colors text-sm text-muted-foreground">
+                  <Plus className="size-4" /> 保存当前筛选为视图
+                </button>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -364,6 +451,47 @@ export default function ProcessList() {
               </CardContent>
             </Card>
           </div>
+          {/* F5.2.12 AI 预测 */}
+          <Card className="mt-4">
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Sparkles className="size-4 text-primary" /> AI 流程预测
+              </CardTitle>
+              <CardDescription>基于历史数据预测流程完成时间和风险</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div className="p-4 border rounded-lg text-center">
+                  <div className="text-2xl font-semibold text-primary">4.2h</div>
+                  <div className="text-xs text-muted-foreground mt-1">预测平均完成时间</div>
+                </div>
+                <div className="p-4 border rounded-lg text-center">
+                  <div className="text-2xl font-semibold text-orange-500">3 个</div>
+                  <div className="text-xs text-muted-foreground mt-1">高风险流程</div>
+                </div>
+                <div className="p-4 border rounded-lg text-center">
+                  <div className="text-2xl font-semibold text-green-500">92.3%</div>
+                  <div className="text-xs text-muted-foreground mt-1">预测按时完成率</div>
+                </div>
+              </div>
+              <div className="space-y-3">
+                {[
+                  { name: "采购审批", predicted: "~3.8h", risk: "低", riskColor: "text-green-500", confidence: 94 },
+                  { name: "合同签署", predicted: "~18.5h", risk: "高", riskColor: "text-red-500", confidence: 87 },
+                  { name: "报销审批", predicted: "~2.1h", risk: "低", riskColor: "text-green-500", confidence: 91 },
+                  { name: "入职流程", predicted: "~36h", risk: "中", riskColor: "text-orange-500", confidence: 78 },
+                ].map((p) => (
+                  <div key={p.name} className="flex items-center gap-3 p-3 border rounded-lg">
+                    <Workflow className="size-4 text-muted-foreground shrink-0" />
+                    <span className="font-medium text-sm flex-1">{p.name}</span>
+                    <span className="text-xs text-muted-foreground">预计 {p.predicted}</span>
+                    <span className={`text-xs font-medium ${p.riskColor}`}>风险: {p.risk}</span>
+                    <Badge variant="outline" className="text-xs">置信度 {p.confidence}%</Badge>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
 
@@ -832,6 +960,9 @@ const approvalStatusMap: Record<string, { label: string; variant: "default" | "s
 export function ProcessApprovals() {
   const [approvals, setApprovals] = useState(MY_APPROVALS);
   const [filter, setFilter] = useState("all");
+  const [stampDialogOpen, setStampDialogOpen] = useState(false);
+  const [stampTarget, setStampTarget] = useState<string | null>(null);
+  const [stampSaved, setStampSaved] = useState(false);
 
   const filtered = filter === "all" ? approvals : approvals.filter((a) => a.status === filter);
   const pendingCount = approvals.filter((a) => a.status === "pending").length;
@@ -842,6 +973,20 @@ export function ProcessApprovals() {
 
   function handleReject(id: string) {
     setApprovals((prev) => prev.map((a) => a.id === id ? { ...a, status: "rejected" as const } : a));
+  }
+
+  function handleOpenStamp(id: string) {
+    setStampTarget(id);
+    setStampSaved(false);
+    setStampDialogOpen(true);
+  }
+
+  function handleApplyStamp() {
+    if (stampTarget) {
+      setApprovals((prev) => prev.map((a) => a.id === stampTarget ? { ...a, status: "approved" as const } : a));
+    }
+    setStampSaved(true);
+    setTimeout(() => setStampDialogOpen(false), 800);
   }
 
   return (
@@ -900,6 +1045,9 @@ export function ProcessApprovals() {
                           {a.status === "pending" && (
                             <div className="flex gap-1 justify-end">
                               <Button size="sm" variant="outline" onClick={() => handleApprove(a.id)}>通过</Button>
+                              <Button size="sm" variant="outline" onClick={() => handleOpenStamp(a.id)}>
+                                <Stamp className="size-3 mr-1" /> 签章
+                              </Button>
                               <Button size="sm" variant="ghost" className="text-destructive" onClick={() => handleReject(a.id)}>驳回</Button>
                             </div>
                           )}
@@ -916,6 +1064,41 @@ export function ProcessApprovals() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Stamp Dialog */}
+      <Dialog open={stampDialogOpen} onOpenChange={setStampDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Stamp className="size-5" /> 电子签章
+            </DialogTitle>
+            <DialogDescription>为审批单 {stampTarget} 添加电子签章</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center text-center" style={{ minHeight: 160 }}>
+              <div className="w-20 h-20 rounded-full border-[3px] border-red-500 flex items-center justify-center mb-2">
+                <div className="text-red-500 text-xs font-bold">公司印章</div>
+              </div>
+              <div className="text-xs text-muted-foreground mt-1">圆形公章模板</div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge variant="outline">模板: 圆形公章</Badge>
+              <Badge variant="secondary">颜色: 红色</Badge>
+            </div>
+            {stampSaved && (
+              <div className="flex items-center gap-2 p-2 bg-green-50 border border-green-200 rounded text-sm text-green-700">
+                <CheckCircle className="size-4" /> 签章已应用，审批已通过
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setStampDialogOpen(false)}>取消</Button>
+            <Button onClick={handleApplyStamp} disabled={stampSaved}>
+              <Stamp className="size-4 mr-1" /> {stampSaved ? "已签章" : "应用签章"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

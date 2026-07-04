@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { PageHeader } from "@/components/ui/stat";
 import {
   Plus, Search, Layout, Code2, FileText, BarChart3,
-  FileEdit, ClipboardList, Palette, Sparkles, Package, Loader2,
+  FileEdit, ClipboardList, Palette, Sparkles, Package, Loader2, Copy,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import {
@@ -93,6 +93,19 @@ export default function Pages() {
     // Navigate to form designer or show preview
     // For now just show an alert since pages API doesn't exist yet
     alert(`打开页面: ${page.name} (${page.type})`);
+  };
+
+  // F4.4.1.5 页面复制
+  const handleCopyPage = (page: Page) => {
+    const newPage: Page = {
+      id: `p-${Date.now()}`,
+      name: `${page.name} (副本)`,
+      type: page.type,
+      icon: page.icon,
+      status: "draft",
+      updatedAt: new Date().toISOString().slice(0, 10),
+    };
+    setPages((prev) => [newPage, ...prev]);
   };
 
   return (
@@ -191,9 +204,20 @@ export default function Pages() {
                 <CardDescription>最后更新: {page.updatedAt}</CardDescription>
               </CardHeader>
               <CardContent>
-                <Badge variant={page.status === "published" ? "default" : "secondary"}>
-                  {page.status === "published" ? "已发布" : page.status === "draft" ? "草稿" : "已归档"}
-                </Badge>
+                <div className="flex items-center justify-between">
+                  <Badge variant={page.status === "published" ? "default" : "secondary"}>
+                    {page.status === "published" ? "已发布" : page.status === "draft" ? "草稿" : "已归档"}
+                  </Badge>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 px-2 text-xs"
+                    onClick={(e) => { e.stopPropagation(); handleCopyPage(page); }}
+                    title="复制页面"
+                  >
+                    <Copy className="size-3 mr-1" /> 复制
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           ))}

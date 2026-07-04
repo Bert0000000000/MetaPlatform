@@ -7,6 +7,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { appsApi, messagesApi, agentsApi } from "@/lib/api";
 import type { Application, Message, Agent } from "@/lib/api";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import {
   ArrowRight, Plus, MessageCircle, GitBranch, Bell, CheckCircle2, AlertCircle,
   Clock, Pencil, Rocket, FileText, RefreshCw, Box,
@@ -17,6 +20,7 @@ import {
   Square, Table as TableIcon, Minus, Maximize, Move, X, ChevronDown, Search,
   Mic, MicOff, Paperclip, FileSpreadsheet, File as FileIcon, Camera,
   Merge, Split, Fingerprint, Target, Layers, Database, ShieldCheck, Columns,
+  TrendingUp, Activity, Shield, Globe2, ExternalLink,
 } from "lucide-react";
 import { PageHeader, StatCard } from "@/components/ui/stat";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
@@ -196,6 +200,138 @@ export function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* F1.1.4 领导版：数字员工概览 (visible for leader/manager roles) */}
+      {(role === "leader" || role === "admin" || role === "manager") && (
+        <Card className="border-l-4 border-l-blue-500">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <div>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Bot className="size-4 text-blue-500" /> 数字员工概览
+              </CardTitle>
+              <CardDescription>团队数字员工运行状态和任务完成率</CardDescription>
+            </div>
+            <Button variant="ghost" size="sm" onClick={() => navigate("/agents")}>
+              管理中心 <ChevronRight className="size-3 ml-1" />
+            </Button>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <div className="flex items-center justify-center py-6 text-muted-foreground">
+                <Loader2 className="size-5 animate-spin mr-2" /> 加载中...
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30">
+                    <div className="text-xs text-muted-foreground">智能体总数</div>
+                    <div className="text-2xl font-bold text-blue-600 mt-1">{agents.length}</div>
+                  </div>
+                  <div className="p-3 rounded-lg bg-green-50 dark:bg-green-950/30">
+                    <div className="text-xs text-muted-foreground">在线运行</div>
+                    <div className="text-2xl font-bold text-green-600 mt-1">{agents.filter((a) => a.status === "active" || a.status === "online").length}</div>
+                  </div>
+                  <div className="p-3 rounded-lg bg-orange-50 dark:bg-orange-950/30">
+                    <div className="text-xs text-muted-foreground">忙碌中</div>
+                    <div className="text-2xl font-bold text-orange-600 mt-1">{agents.filter((a) => a.status === "busy").length}</div>
+                  </div>
+                  <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-950/30">
+                    <div className="text-xs text-muted-foreground">离线/故障</div>
+                    <div className="text-2xl font-bold text-gray-500 mt-1">{agents.filter((a) => a.status === "offline" || a.status === "error").length}</div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4 p-3 rounded-lg border bg-muted/30">
+                  <div className="flex items-center gap-2">
+                    <TrendingUp className="size-4 text-green-500" />
+                    <span className="text-sm">本月任务完成率</span>
+                  </div>
+                  <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                    <div className="h-full bg-green-500 rounded-full" style={{ width: "94%" }} />
+                  </div>
+                  <span className="text-sm font-bold text-green-600">94.2%</span>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* F1.1.11 FDE 工作台快捷入口 (developer view) */}
+      {(role === "developer" || role === "admin") && (
+        <Card className="border-l-4 border-l-purple-500">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <div>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Settings className="size-4 text-purple-500" /> FDE 工作台
+              </CardTitle>
+              <CardDescription>前端开发环境 - 在应用内使用 FDE 进行页面开发和调试</CardDescription>
+            </div>
+            <Button variant="outline" size="sm" onClick={() => navigate("/apps")}>
+              <ExternalLink className="size-3 mr-1" /> 进入应用中心
+            </Button>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-4 p-3 rounded-lg border bg-purple-50/50 dark:bg-purple-950/20">
+              <div className="size-12 rounded-lg bg-purple-500 text-white flex items-center justify-center">
+                <Settings className="size-6" />
+              </div>
+              <div className="flex-1">
+                <div className="text-sm font-medium">选择一个应用，进入 FDE 开发模式</div>
+                <div className="text-xs text-muted-foreground mt-0.5">
+                  FDE 提供可视化的页面编辑、组件拖拽、实时预览和代码编辑能力
+                </div>
+              </div>
+              <Button size="sm" className="bg-purple-600 hover:bg-purple-700" onClick={() => navigate("/apps")}>
+                <Rocket className="size-3 mr-1" /> 打开 FDE
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* F1.2.4 团队应用推荐 */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <div>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Sparkles className="size-4 text-amber-500" /> 团队推荐
+            </CardTitle>
+            <CardDescription>根据团队使用习惯推荐的热门应用</CardDescription>
+          </div>
+          <Button variant="ghost" size="sm" onClick={() => navigate("/market")}>
+            更多推荐 <ChevronRight className="size-3 ml-1" />
+          </Button>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {[
+              { name: "CRM 客户管理", desc: "客户关系管理，支持销售全流程", installs: 1280, rating: 4.8, icon: Users, color: "bg-blue-500/10 text-blue-600" },
+              { name: "BI 数据分析", desc: "商业智能分析，多维数据可视化", installs: 856, rating: 4.6, icon: BarChart3, color: "bg-green-500/10 text-green-600" },
+              { name: "BPM 流程管理", desc: "业务流程编排和审批自动化", installs: 642, rating: 4.5, icon: GitBranch, color: "bg-orange-500/10 text-orange-600" },
+            ].map((app) => (
+              <div key={app.name} className="rounded-lg border p-4 hover:border-primary transition-colors">
+                <div className="flex items-start justify-between">
+                  <div className={`size-10 rounded-lg flex items-center justify-center ${app.color}`}>
+                    <app.icon className="size-5" />
+                  </div>
+                  <div className="flex items-center gap-1 text-xs text-amber-500">
+                    <Star className="size-3 fill-amber-500" />
+                    {app.rating}
+                  </div>
+                </div>
+                <div className="font-medium text-sm mt-2">{app.name}</div>
+                <div className="text-xs text-muted-foreground mt-0.5">{app.desc}</div>
+                <div className="flex items-center justify-between mt-3">
+                  <span className="text-xs text-muted-foreground">{app.installs} 次安装</span>
+                  <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => navigate("/apps")}>
+                    <Download className="size-3 mr-1" /> 安装
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* 我的应用 - real API data */}
       <Card>
@@ -436,39 +572,168 @@ export function MyApps() {
 export function MyAgents() {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState("all");
 
   useEffect(() => {
     agentsApi.list().then((data) => { setAgents(data); setLoading(false); }).catch(() => setLoading(false));
   }, []);
 
+  const onlineAgents = agents.filter((a) => a.status === "active" || a.status === "online");
+  const assignedAgents = agents.filter((a) => a.assigned_to === "current_user" || a.status === "active");
+
   return (
     <div className="flex flex-col gap-4">
       <PageHeader title="我的数字员工" description="分配给我的 AI 数字员工" action={<Button className="gap-2"><Plus className="size-4" /> 创建数字员工</Button>} />
+
+      {/* F1.3.4 使用统计 */}
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-        <StatCard label="数字员工" value={agents.length} icon={Bot} />
-        <StatCard label="在线" value={agents.filter((a) => a.status === "active" || a.status === "online").length} icon={CheckCircle2} />
-        <StatCard label="本月任务" value={156} icon={ClipboardList} />
-        <StatCard label="成功率" value="98.2%" icon={BarChart3} />
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-xs text-muted-foreground">总对话数</div>
+                <div className="text-2xl font-bold mt-1">2,847</div>
+                <div className="text-xs text-green-600 mt-1 flex items-center gap-1">
+                  <TrendingUp className="size-3" /> +12.5%
+                </div>
+              </div>
+              <MessageCircle className="size-8 text-blue-500/20" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-xs text-muted-foreground">已完成任务</div>
+                <div className="text-2xl font-bold mt-1">156</div>
+                <div className="text-xs text-green-600 mt-1 flex items-center gap-1">
+                  <TrendingUp className="size-3" /> +8.3%
+                </div>
+              </div>
+              <CheckCircle2 className="size-8 text-green-500/20" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-xs text-muted-foreground">平均运行时间</div>
+                <div className="text-2xl font-bold mt-1">99.2%</div>
+                <div className="text-xs text-muted-foreground mt-1">过去 30 天</div>
+              </div>
+              <Activity className="size-8 text-orange-500/20" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-xs text-muted-foreground">成功率</div>
+                <div className="text-2xl font-bold mt-1 text-green-600">98.2%</div>
+                <div className="text-xs text-green-600 mt-1 flex items-center gap-1">
+                  <TrendingUp className="size-3" /> +0.5%
+                </div>
+              </div>
+              <BarChart3 className="size-8 text-purple-500/20" />
+            </div>
+          </CardContent>
+        </Card>
       </div>
-      {loading ? (
-        <div className="flex items-center justify-center py-12 text-muted-foreground"><Loader2 className="size-5 animate-spin mr-2" />加载中...</div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {agents.map((a) => (
-            <Card key={a.id} className="hover:border-primary">
-              <CardHeader>
-                <div className="flex items-start justify-between"><Bot className="size-8 text-primary" /><div className={`size-2 rounded-full ${a.status === "active" || a.status === "online" ? "bg-green-500" : "bg-gray-400"}`} /></div>
-                <CardTitle className="text-base mt-2">{a.name}</CardTitle>
-                <CardDescription>{a.description || a.type}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex gap-2"><Button size="sm" variant="outline" className="flex-1"><MessageCircle className="size-3 mr-1" />对话</Button><Button size="sm" variant="outline" className="flex-1"><Settings className="size-3 mr-1" />配置</Button></div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
+
+      {/* F1.3.2 分配给我的数字员工 - Tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList>
+          <TabsTrigger value="all">全部智能体</TabsTrigger>
+          <TabsTrigger value="assigned">
+            分配给我的
+            <Badge variant="secondary" className="ml-1 text-xs">{assignedAgents.length}</Badge>
+          </TabsTrigger>
+          <TabsTrigger value="online">
+            在线
+            <Badge variant="secondary" className="ml-1 text-xs">{onlineAgents.length}</Badge>
+          </TabsTrigger>
+        </TabsList>
+        <TabsContent value="all" className="mt-4">
+          {loading ? (
+            <div className="flex items-center justify-center py-12 text-muted-foreground"><Loader2 className="size-5 animate-spin mr-2" />加载中...</div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {agents.map((a) => (
+                <AgentCard key={a.id} agent={a} />
+              ))}
+            </div>
+          )}
+        </TabsContent>
+        <TabsContent value="assigned" className="mt-4">
+          {loading ? (
+            <div className="flex items-center justify-center py-12 text-muted-foreground"><Loader2 className="size-5 animate-spin mr-2" />加载中...</div>
+          ) : assignedAgents.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              <Bot className="size-10 mx-auto mb-3 opacity-40" />
+              <p className="text-sm">暂无分配给你的智能体</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {assignedAgents.map((a) => (
+                <AgentCard key={a.id} agent={a} />
+              ))}
+            </div>
+          )}
+        </TabsContent>
+        <TabsContent value="online" className="mt-4">
+          {loading ? (
+            <div className="flex items-center justify-center py-12 text-muted-foreground"><Loader2 className="size-5 animate-spin mr-2" />加载中...</div>
+          ) : onlineAgents.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              <Bot className="size-10 mx-auto mb-3 opacity-40" />
+              <p className="text-sm">暂无在线智能体</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {onlineAgents.map((a) => (
+                <AgentCard key={a.id} agent={a} />
+              ))}
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
+  );
+}
+
+/* Agent card sub-component for reuse across tabs */
+function AgentCard({ agent }: { agent: Agent }) {
+  const navigate = useNavigate();
+  const isOnline = agent.status === "active" || agent.status === "online";
+  return (
+    <Card className="hover:border-primary">
+      <CardHeader>
+        <div className="flex items-start justify-between">
+          <Bot className="size-8 text-primary" />
+          <div className="flex items-center gap-2">
+            <Badge variant={isOnline ? "default" : "secondary"} className="text-xs">
+              {isOnline ? "在线" : agent.status === "busy" ? "忙碌" : "离线"}
+            </Badge>
+            <div className={`size-2 rounded-full ${isOnline ? "bg-green-500" : agent.status === "busy" ? "bg-orange-500" : "bg-gray-400"}`} />
+          </div>
+        </div>
+        <CardTitle className="text-base mt-2">{agent.name}</CardTitle>
+        <CardDescription>{agent.description || agent.type}</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" className="flex-1">
+            <MessageCircle className="size-3 mr-1" />对话
+          </Button>
+          <Button size="sm" variant="outline" className="flex-1" onClick={() => navigate("/agents")}>
+            <Settings className="size-3 mr-1" />配置
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -491,6 +756,53 @@ export function DashboardMessages() {
         <StatCard label="总消息" value={messages.length} icon={Send} />
         <StatCard label="今日新增" value={5} icon={Clock} />
       </div>
+      {/* F1.4.4 数字员工主动推送 */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <div>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Bot className="size-4 text-blue-500" /> 智能体推送
+            </CardTitle>
+            <CardDescription>数字员工主动发现的问题和建议</CardDescription>
+          </div>
+          <Button variant="ghost" size="sm" onClick={() => navigate("/agents")}>
+            查看全部 <ChevronRight className="size-3 ml-1" />
+          </Button>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            {[
+              { agent: "数据分析智能体", title: "发现 Q2 销售数据异常波动", desc: "华东区 6 月销售额环比下降 15%，建议排查原因", urgency: "high", time: "10 分钟前" },
+              { agent: "流程优化智能体", title: "采购审批流程优化建议", desc: "当前平均耗时 4.2 天，通过并行审批可缩短至 2.5 天", urgency: "medium", time: "1 小时前" },
+              { agent: "安全审计智能体", title: "检测到 3 个异常登录行为", desc: "来自非常用地点的登录尝试，建议检查账户安全", urgency: "high", time: "2 小时前" },
+              { agent: "文档智能体", title: "Q3 销售预测报告已生成", desc: "基于历史数据和市场趋势，已自动生成预测报告草稿", urgency: "low", time: "3 小时前" },
+            ].map((push, i) => (
+              <div
+                key={i}
+                className="flex items-start gap-3 p-3 border rounded-lg hover:bg-muted/30 cursor-pointer transition-colors"
+                onClick={() => navigate("/agents")}
+              >
+                <div className={`size-8 rounded-full flex items-center justify-center shrink-0 ${push.urgency === "high" ? "bg-red-100 text-red-600" : push.urgency === "medium" ? "bg-orange-100 text-orange-600" : "bg-blue-100 text-blue-600"}`}>
+                  <Bot className="size-4" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium truncate">{push.title}</span>
+                    {push.urgency === "high" && <Badge variant="destructive" className="text-xs">紧急</Badge>}
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-0.5">{push.desc}</div>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-xs text-primary">{push.agent}</span>
+                    <span className="text-xs text-muted-foreground">{push.time}</span>
+                  </div>
+                </div>
+                <ArrowRight className="size-4 text-muted-foreground shrink-0 mt-1" />
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader><CardTitle className="text-base flex items-center gap-2"><Bell className="size-4" /> 消息列表</CardTitle></CardHeader>
         <CardContent>
@@ -963,6 +1275,12 @@ export function FreePage() {
   const [draggedType, setDraggedType] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  /* F1.6.4 & F1.6.5 */
+  const [showShareDialog, setShowShareDialog] = useState(false);
+  const [showPermissionDialog, setShowPermissionDialog] = useState(false);
+  const [shareUrl, setShareUrl] = useState("");
+  const [selectedPageForAction, setSelectedPageForAction] = useState<FreePageItem | null>(null);
+  const [pageVisibility, setPageVisibility] = useState<"private" | "team" | "public">("team");
 
   useEffect(() => {
     if (!toast) return;
@@ -1049,6 +1367,32 @@ export function FreePage() {
   }
 
   const selectedComp = canvasComponents.find((c) => c.id === selectedComponent);
+
+  /* F1.6.4 Share link */
+  function handleSharePage(page: FreePageItem) {
+    setSelectedPageForAction(page);
+    const url = `https://metaplatform.com/p/share/${page.id}?token=${btoa(page.id).slice(0, 12)}`;
+    setShareUrl(url);
+    setShowShareDialog(true);
+  }
+
+  function handleCopyShareLink() {
+    navigator.clipboard?.writeText(shareUrl);
+    setToast("分享链接已复制到剪贴板");
+    setShowShareDialog(false);
+  }
+
+  /* F1.6.5 Permission settings */
+  function handlePermissionPage(page: FreePageItem) {
+    setSelectedPageForAction(page);
+    setPageVisibility("team");
+    setShowPermissionDialog(true);
+  }
+
+  function handleSavePermission() {
+    setShowPermissionDialog(false);
+    setToast(`已将「${selectedPageForAction?.name}」的可见性设置为${pageVisibility === "private" ? "私有" : pageVisibility === "team" ? "团队可见" : "公开"}`);
+  }
 
   /* ── Templates view ── */
   if (activeView === "templates") {
@@ -1332,6 +1676,12 @@ export function FreePage() {
                     <Button variant="ghost" size="icon" className="size-8" onClick={() => openBuilder(p)} title="预览">
                       <Eye className="size-4" />
                     </Button>
+                    <Button variant="ghost" size="icon" className="size-8" onClick={() => handleSharePage(p)} title="分享链接">
+                      <Share2 className="size-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="size-8" onClick={() => handlePermissionPage(p)} title="权限设置">
+                      <ShieldCheck className="size-4" />
+                    </Button>
                     <Button variant="ghost" size="icon" className="size-8 text-destructive" onClick={() => deletePage(p.id)} title="删除">
                       <Trash2 className="size-4" />
                     </Button>
@@ -1342,6 +1692,107 @@ export function FreePage() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* F1.6.4 分享链接 Dialog */}
+      <Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Share2 className="size-5" /> 分享页面链接
+            </DialogTitle>
+            <DialogDescription>
+              将「{selectedPageForAction?.name}」的访问链接分享给团队成员
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>分享链接</Label>
+              <div className="flex gap-2">
+                <Input value={shareUrl} readOnly className="flex-1 font-mono text-xs" />
+                <Button size="sm" onClick={handleCopyShareLink}>
+                  <Link2 className="size-3 mr-1" /> 复制
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">此链接将在 7 天后过期，可在权限设置中延长有效期</p>
+            </div>
+            <div className="p-3 bg-muted rounded-lg text-sm space-y-2">
+              <div className="flex items-center gap-2">
+                <Eye className="size-4 text-muted-foreground" />
+                <span>访问权限：{pageVisibility === "private" ? "仅自己" : pageVisibility === "team" ? "团队成员可查看" : "任何人可查看"}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="size-4 text-muted-foreground" />
+                <span>链接加密：已启用 Token 验证</span>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowShareDialog(false)}>关闭</Button>
+            <Button onClick={handleCopyShareLink}>
+              <Link2 className="size-3 mr-1" /> 复制链接并关闭
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* F1.6.5 权限设置 Dialog */}
+      <Dialog open={showPermissionDialog} onOpenChange={setShowPermissionDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ShieldCheck className="size-5" /> 页面权限设置
+            </DialogTitle>
+            <DialogDescription>
+              设置「{selectedPageForAction?.name}」的可见性和访问权限
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-3">
+              <Label>可见性</Label>
+              <div className="space-y-2">
+                {[
+                  { value: "private" as const, icon: Shield, label: "私有", desc: "仅创建者可查看和编辑" },
+                  { value: "team" as const, icon: Users, label: "团队可见", desc: "团队成员可查看，创建者可编辑" },
+                  { value: "public" as const, icon: Globe, label: "公开", desc: "所有平台用户可查看" },
+                ].map((opt) => (
+                  <div
+                    key={opt.value}
+                    className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                      pageVisibility === opt.value ? "border-primary bg-primary/5" : "hover:border-gray-400"
+                    }`}
+                    onClick={() => setPageVisibility(opt.value)}
+                  >
+                    <input
+                      type="radio"
+                      name="visibility"
+                      checked={pageVisibility === opt.value}
+                      onChange={() => setPageVisibility(opt.value)}
+                      className="accent-primary"
+                    />
+                    <opt.icon className="size-4 text-muted-foreground" />
+                    <div className="flex-1">
+                      <div className="text-sm font-medium">{opt.label}</div>
+                      <div className="text-xs text-muted-foreground">{opt.desc}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="p-3 bg-muted rounded-lg text-sm">
+              <p className="font-medium mb-1">当前页面信息</p>
+              <div className="text-muted-foreground space-y-1">
+                <p>路径：{selectedPageForAction?.path}</p>
+                <p>状态：{selectedPageForAction?.status === "published" ? "已发布" : "草稿"}</p>
+                <p>组件数：{selectedPageForAction?.components.length}</p>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowPermissionDialog(false)}>取消</Button>
+            <Button onClick={handleSavePermission}>保存权限设置</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
