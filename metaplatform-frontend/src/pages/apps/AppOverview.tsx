@@ -6,7 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { appsApi, type Application } from "@/lib/api";
-import { Box, FileText, GitBranch, Users, Calendar, Dna, Loader2, AlertCircle, Upload, TrendingUp, Plus, Workflow, Eye, Zap } from "lucide-react";
+import { Box, FileText, GitBranch, Users, Calendar, Dna, Loader2, AlertCircle, Upload, TrendingUp, Plus, Workflow, Eye, Zap, CheckCircle } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 
 export default function AppOverview() {
   const { appId } = useParams();
@@ -14,6 +15,7 @@ export default function AppOverview() {
   const [app, setApp] = useState<Application | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [lowCodeDialogOpen, setLowCodeDialogOpen] = useState(false);
 
   useEffect(() => {
     if (!appId) return;
@@ -66,7 +68,7 @@ export default function AppOverview() {
         action={
           <div className="flex gap-2">
             {/* F4.4.9.2 升级到 LowCode */}
-            <Button variant="outline" onClick={() => alert("已升级到 LowCode 模式，解锁完整开发能力")}>
+            <Button variant="outline" onClick={() => setLowCodeDialogOpen(true)}>
               <Zap className="size-4 mr-1" /> 升级到 LowCode
             </Button>
             <Badge variant={app.status === "published" ? "default" : "secondary"}>
@@ -267,6 +269,48 @@ export default function AppOverview() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* LowCode Upgrade Confirmation Dialog */}
+      <Dialog open={lowCodeDialogOpen} onOpenChange={setLowCodeDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Zap className="size-5 text-yellow-500" /> 升级到 LowCode 模式
+            </DialogTitle>
+            <DialogDescription>
+              升级后将解锁完整的低代码开发能力，包括自定义组件、高级数据建模、API 编排等
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <p className="text-sm font-medium">升级后将获得以下能力:</p>
+              <ul className="space-y-2 text-sm text-muted-foreground">
+                <li className="flex items-center gap-2">
+                  <CheckCircle className="size-4 text-green-500 shrink-0" /> 自定义页面组件与布局
+                </li>
+                <li className="flex items-center gap-2">
+                  <CheckCircle className="size-4 text-green-500 shrink-0" /> 高级数据模型与关联关系
+                </li>
+                <li className="flex items-center gap-2">
+                  <CheckCircle className="size-4 text-green-500 shrink-0" /> API 编排与自定义逻辑
+                </li>
+                <li className="flex items-center gap-2">
+                  <CheckCircle className="size-4 text-green-500 shrink-0" /> VibeCoding AI 代码生成
+                </li>
+              </ul>
+            </div>
+            <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-xs text-yellow-800">
+              注意: 升级操作不可逆。升级后应用将切换到 LowCode 开发模式。
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setLowCodeDialogOpen(false)}>取消</Button>
+            <Button onClick={() => setLowCodeDialogOpen(false)}>
+              <Zap className="size-4 mr-1" /> 确认升级
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

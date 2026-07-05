@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Star, Download, Boxes, Sparkles, Workflow, BookOpen, Code, Plus, Package, Bot, Store, Users, DollarSign, Check, Crown, Building2, Briefcase, Sprout, X, Search, Eye, FileText, Zap, Globe } from "lucide-react";
 
 /* ── 本体模板初始数据（本地状态管理，无 market API） ── */
+// TODO: Replace with real API call when backend is ready (no market API exists yet)
 const INITIAL_TEMPLATES = [
   { id: "t-1", name: "CRM 通用模板", type: "本体模板", industry: "通用", downloads: 12480, rating: 4.8, price: "免费" as const, author: "百特搭官方" },
   { id: "t-2", name: "HR 全套", type: "本体模板", industry: "通用", downloads: 8921, rating: 4.7, price: "免费" as const, author: "百特搭官方" },

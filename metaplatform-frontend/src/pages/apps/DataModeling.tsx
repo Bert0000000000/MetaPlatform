@@ -420,7 +420,7 @@ export default function DataModeling() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowAIRecommend(false)}>关闭</Button>
             {!aiRecommending && aiFields.length > 0 && (
-              <Button onClick={() => { alert("已添加全部推荐字段"); setShowAIRecommend(false); }}>
+              <Button onClick={() => setShowAIRecommend(false)}>
                 <Sparkles className="size-3 mr-1" /> 全部添加
               </Button>
             )}

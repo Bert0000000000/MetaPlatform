@@ -56,6 +56,40 @@ export default function ObjectDetail() {
     maxLength: "",
   });
 
+  // Actions tab state & mock data
+  const [actionDialogOpen, setActionDialogOpen] = useState(false);
+  const [actionForm, setActionForm] = useState({ name: "", type: "CRUD", trigger: "" });
+  const MOCK_ACTIONS = [
+    { id: "act-1", name: "创建记录", type: "CRUD", trigger: "表单提交", status: "active" },
+    { id: "act-2", name: "更新记录", type: "CRUD", trigger: "表单提交", status: "active" },
+    { id: "act-3", name: "删除记录", type: "CRUD", trigger: "按钮点击", status: "active" },
+    { id: "act-4", name: "查询记录", type: "CRUD", trigger: "页面加载", status: "active" },
+    { id: "act-5", name: "批量导入", type: "Custom", trigger: "手动执行", status: "draft" },
+  ];
+  const [actions] = useState(MOCK_ACTIONS);
+
+  // Rules tab state & mock data
+  const [ruleDialogOpen, setRuleDialogOpen] = useState(false);
+  const [ruleForm, setRuleForm] = useState({ name: "", type: "Validation", condition: "" });
+  const MOCK_RULES = [
+    { id: "rule-1", name: "数据校验", type: "Validation", condition: "字段非空且格式正确", status: "active" },
+    { id: "rule-2", name: "自动计算", type: "Calculation", condition: "金额 = 单价 * 数量", status: "active" },
+    { id: "rule-3", name: "状态流转", type: "Trigger", condition: "审批通过后状态变为已完成", status: "active" },
+    { id: "rule-4", name: "通知触发", type: "Trigger", condition: "创建记录后通知相关人", status: "draft" },
+  ];
+  const [rules] = useState(MOCK_RULES);
+
+  // Relations tab state & mock data
+  const [relationDialogOpen, setRelationDialogOpen] = useState(false);
+  const [relationForm, setRelationForm] = useState({ target: "", type: "1:N", description: "" });
+  const MOCK_RELATIONS = [
+    { id: "rel-1", target: "订单", type: "1:N", description: "一个客户拥有多个订单" },
+    { id: "rel-2", target: "联系人", type: "1:N", description: "一个客户拥有多个联系人" },
+    { id: "rel-3", target: "合同", type: "N:N", description: "客户与合同多对多关系" },
+    { id: "rel-4", target: "地址", type: "1:1", description: "一个客户对应一个主地址" },
+  ];
+  const [relations] = useState(MOCK_RELATIONS);
+
   const fetchData = useCallback(async () => {
     if (!objectId) return;
     try {
@@ -140,7 +174,7 @@ export default function ObjectDetail() {
             </Badge>
           </h1>
           <p className="text-sm text-muted-foreground">
-            本体对象详情 · {properties.length} 个属性 · {obj.actions_count ?? 0} 个动作 · {obj.rules_count ?? 0} 个规则
+            本体对象详情 · {properties.length} 个属性 · {actions.length} 个动作 · {rules.length} 个规则
           </p>
         </div>
         <div className="flex gap-2">
@@ -153,8 +187,8 @@ export default function ObjectDetail() {
       <Tabs defaultValue="properties">
         <TabsList>
           <TabsTrigger value="properties"><Hash className="size-3 mr-1" />属性 ({properties.length})</TabsTrigger>
-          <TabsTrigger value="actions"><Zap className="size-3 mr-1" />动作 ({obj.actions_count ?? 0})</TabsTrigger>
-          <TabsTrigger value="rules"><Calculator className="size-3 mr-1" />规则 ({obj.rules_count ?? 0})</TabsTrigger>
+          <TabsTrigger value="actions"><Zap className="size-3 mr-1" />动作 ({actions.length})</TabsTrigger>
+          <TabsTrigger value="rules"><Calculator className="size-3 mr-1" />规则 ({rules.length})</TabsTrigger>
           <TabsTrigger value="links"><Box className="size-3 mr-1" />关系</TabsTrigger>
           <TabsTrigger value="security"><Shield className="size-3 mr-1" />安全</TabsTrigger>
         </TabsList>
@@ -219,65 +253,169 @@ export default function ObjectDetail() {
           </Card>
         </TabsContent>
 
-        {/* Actions Tab - Placeholder */}
+        {/* Actions Tab */}
         <TabsContent value="actions" className="mt-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0">
               <div>
                 <CardTitle className="text-base">动作</CardTitle>
-                <CardDescription>CRUD 动作 + 自定义动作</CardDescription>
+                <CardDescription>CRUD 动作 + 自定义动作（{actions.length} 个）</CardDescription>
               </div>
-              <Button size="sm" disabled>
+              <Button size="sm" onClick={() => setActionDialogOpen(true)}>
                 <Plus className="size-3 mr-1" />
-                新增动作
+                新建动作
               </Button>
             </CardHeader>
-            <CardContent>
-              <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-                <Zap className="size-8 mb-2 opacity-40" />
-                <p className="text-sm font-medium">动作管理即将上线</p>
-                <p className="text-xs mt-1">该功能将由 Java 后端提供，支持 CRUD 动作和自定义动作配置</p>
-              </div>
+            <CardContent className="p-0">
+              {actions.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+                  <Zap className="size-8 mb-2 opacity-40" />
+                  <p className="text-sm">暂无动作，点击「新建动作」添加</p>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>名称</TableHead>
+                      <TableHead>类型</TableHead>
+                      <TableHead>触发方式</TableHead>
+                      <TableHead>状态</TableHead>
+                      <TableHead className="text-right">操作</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {actions.map((a) => (
+                      <TableRow key={a.id}>
+                        <TableCell className="font-medium">{a.name}</TableCell>
+                        <TableCell>
+                          <Badge variant={a.type === "CRUD" ? "default" : "secondary"}>{a.type}</Badge>
+                        </TableCell>
+                        <TableCell>{a.trigger}</TableCell>
+                        <TableCell>
+                          <Badge variant={a.status === "active" ? "default" : "outline"}>
+                            {a.status === "active" ? "已启用" : "草稿"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button variant="ghost" size="icon" className="size-8">
+                            <Trash2 className="size-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* Rules Tab - Placeholder */}
+        {/* Rules Tab */}
         <TabsContent value="rules" className="mt-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0">
               <div>
                 <CardTitle className="text-base">业务规则</CardTitle>
-                <CardDescription>Drools + DMN + 服务编排</CardDescription>
+                <CardDescription>Drools + DMN + 服务编排（{rules.length} 个）</CardDescription>
               </div>
-              <Button size="sm" disabled>
+              <Button size="sm" onClick={() => setRuleDialogOpen(true)}>
                 <Plus className="size-3 mr-1" />
-                新增规则
+                新建规则
               </Button>
             </CardHeader>
-            <CardContent>
-              <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-                <Calculator className="size-8 mb-2 opacity-40" />
-                <p className="text-sm font-medium">规则引擎即将上线</p>
-                <p className="text-xs mt-1">该功能将由 Java 后端 Drools 规则引擎提供，支持业务规则配置</p>
-              </div>
+            <CardContent className="p-0">
+              {rules.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+                  <Calculator className="size-8 mb-2 opacity-40" />
+                  <p className="text-sm">暂无规则，点击「新建规则」添加</p>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>名称</TableHead>
+                      <TableHead>类型</TableHead>
+                      <TableHead>条件</TableHead>
+                      <TableHead>状态</TableHead>
+                      <TableHead className="text-right">操作</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {rules.map((r) => (
+                      <TableRow key={r.id}>
+                        <TableCell className="font-medium">{r.name}</TableCell>
+                        <TableCell>
+                          <Badge variant={r.type === "Validation" ? "default" : r.type === "Calculation" ? "secondary" : "outline"}>
+                            {r.type === "Validation" ? "校验" : r.type === "Calculation" ? "计算" : "触发"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground max-w-[300px] truncate">{r.condition}</TableCell>
+                        <TableCell>
+                          <Badge variant={r.status === "active" ? "default" : "outline"}>
+                            {r.status === "active" ? "已启用" : "草稿"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button variant="ghost" size="icon" className="size-8">
+                            <Trash2 className="size-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* Relations Tab - Placeholder */}
+        {/* Relations Tab */}
         <TabsContent value="links" className="mt-4">
           <Card>
-            <CardHeader>
-              <CardTitle className="text-base">关系</CardTitle>
-              <CardDescription>对象间的关系建模（Neo4j 存储）</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-                <Box className="size-8 mb-2 opacity-40" />
-                <p className="text-sm font-medium">关系管理即将上线</p>
-                <p className="text-xs mt-1">该功能将由 Java 后端提供，支持 Neo4j 图数据库关系建模</p>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0">
+              <div>
+                <CardTitle className="text-base">关系</CardTitle>
+                <CardDescription>对象间的关系建模（Neo4j 存储）· {relations.length} 个关系</CardDescription>
               </div>
+              <Button size="sm" onClick={() => setRelationDialogOpen(true)}>
+                <Plus className="size-3 mr-1" />
+                新建关系
+              </Button>
+            </CardHeader>
+            <CardContent className="p-0">
+              {relations.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+                  <Box className="size-8 mb-2 opacity-40" />
+                  <p className="text-sm">暂无关系，点击「新建关系」添加</p>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>目标对象</TableHead>
+                      <TableHead>关系类型</TableHead>
+                      <TableHead>描述</TableHead>
+                      <TableHead className="text-right">操作</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {relations.map((r) => (
+                      <TableRow key={r.id}>
+                        <TableCell className="font-medium">{r.target}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{r.type}</Badge>
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">{r.description}</TableCell>
+                        <TableCell className="text-right">
+                          <Button variant="ghost" size="icon" className="size-8">
+                            <Trash2 className="size-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -421,6 +559,110 @@ export default function ObjectDetail() {
               {propCreating && <Loader2 className="size-4 animate-spin mr-1" />}
               创建
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* New Action Dialog */}
+      <Dialog open={actionDialogOpen} onOpenChange={setActionDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>新建动作</DialogTitle>
+            <DialogDescription>为「{obj.label}」对象添加新动作</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-2">
+            <div className="grid gap-2">
+              <Label>动作名称</Label>
+              <Input placeholder="如：发送通知" value={actionForm.name} onChange={(e) => setActionForm({ ...actionForm, name: e.target.value })} />
+            </div>
+            <div className="grid gap-2">
+              <Label>类型</Label>
+              <Select value={actionForm.type} onValueChange={(val) => setActionForm({ ...actionForm, type: val })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="CRUD">CRUD</SelectItem>
+                  <SelectItem value="Custom">Custom（自定义）</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-2">
+              <Label>触发方式</Label>
+              <Input placeholder="如：表单提交、定时任务" value={actionForm.trigger} onChange={(e) => setActionForm({ ...actionForm, trigger: e.target.value })} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setActionDialogOpen(false)}>取消</Button>
+            <Button onClick={() => setActionDialogOpen(false)} disabled={!actionForm.name}>创建</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* New Rule Dialog */}
+      <Dialog open={ruleDialogOpen} onOpenChange={setRuleDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>新建规则</DialogTitle>
+            <DialogDescription>为「{obj.label}」对象添加新业务规则</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-2">
+            <div className="grid gap-2">
+              <Label>规则名称</Label>
+              <Input placeholder="如：金额上限校验" value={ruleForm.name} onChange={(e) => setRuleForm({ ...ruleForm, name: e.target.value })} />
+            </div>
+            <div className="grid gap-2">
+              <Label>类型</Label>
+              <Select value={ruleForm.type} onValueChange={(val) => setRuleForm({ ...ruleForm, type: val })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Validation">Validation（校验）</SelectItem>
+                  <SelectItem value="Calculation">Calculation（计算）</SelectItem>
+                  <SelectItem value="Trigger">Trigger（触发）</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-2">
+              <Label>条件表达式</Label>
+              <Input placeholder="如：amount > 0 AND amount <= 10000" value={ruleForm.condition} onChange={(e) => setRuleForm({ ...ruleForm, condition: e.target.value })} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRuleDialogOpen(false)}>取消</Button>
+            <Button onClick={() => setRuleDialogOpen(false)} disabled={!ruleForm.name}>创建</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* New Relation Dialog */}
+      <Dialog open={relationDialogOpen} onOpenChange={setRelationDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>新建关系</DialogTitle>
+            <DialogDescription>为「{obj.label}」对象添加新的对象关系</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-2">
+            <div className="grid gap-2">
+              <Label>目标对象</Label>
+              <Input placeholder="如：订单" value={relationForm.target} onChange={(e) => setRelationForm({ ...relationForm, target: e.target.value })} />
+            </div>
+            <div className="grid gap-2">
+              <Label>关系类型</Label>
+              <Select value={relationForm.type} onValueChange={(val) => setRelationForm({ ...relationForm, type: val })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1:N">1:N（一对多）</SelectItem>
+                  <SelectItem value="N:N">N:N（多对多）</SelectItem>
+                  <SelectItem value="1:1">1:1（一对一）</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-2">
+              <Label>描述</Label>
+              <Input placeholder="如：一个客户拥有多个订单" value={relationForm.description} onChange={(e) => setRelationForm({ ...relationForm, description: e.target.value })} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRelationDialogOpen(false)}>取消</Button>
+            <Button onClick={() => setRelationDialogOpen(false)} disabled={!relationForm.target}>创建</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

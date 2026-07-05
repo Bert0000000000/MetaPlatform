@@ -11,8 +11,8 @@ const router = Router();
 
 // ─── Configuration ────────────────────────────────────────
 const LLM_BASE_URL = process.env.LLM_BASE_URL || "https://api.openai.com/v1";
-const LLM_API_KEY = process.env.LLM_API_KEY || "sk-test-key-for-development";
-const LLM_DEFAULT_MODEL = process.env.LLM_DEFAULT_MODEL || "gpt-4o-mini";
+const LLM_API_KEY = process.env.LLM_API_KEY || "sk-your-real-api-key-here";
+const LLM_DEFAULT_MODEL = process.env.LLM_MODEL || "gpt-4o-mini";
 
 // ─── Available models ─────────────────────────────────────
 const AVAILABLE_MODELS = [

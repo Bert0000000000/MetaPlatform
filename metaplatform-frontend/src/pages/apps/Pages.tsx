@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -55,6 +56,8 @@ const PAGE_TYPE_OPTIONS: Array<{ value: Page["type"]; label: string }> = [
 ];
 
 export default function Pages() {
+  const navigate = useNavigate();
+  const { appId } = useParams();
   const [pages, setPages] = useState<Page[]>(INITIAL_PAGES);
   const [search, setSearch] = useState("");
 
@@ -90,9 +93,12 @@ export default function Pages() {
   };
 
   const handleCardClick = (page: Page) => {
-    // Navigate to form designer or show preview
-    // For now just show an alert since pages API doesn't exist yet
-    alert(`打开页面: ${page.name} (${page.type})`);
+    // Navigate to page designer/preview based on type
+    if (page.type === "VibeCoding") {
+      navigate(`/apps/${appId || "demo"}/vibe-coding?pageId=${page.id}`);
+    } else {
+      navigate(`/apps/${appId || "demo"}/page-designer?pageId=${page.id}`);
+    }
   };
 
   // F4.4.1.5 页面复制

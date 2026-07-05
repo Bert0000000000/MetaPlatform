@@ -5,8 +5,8 @@ import { ROLES, WORKSPACE_BY_ROLE } from "@/config/menu";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { appsApi, messagesApi, agentsApi } from "@/lib/api";
-import type { Application, Message, Agent } from "@/lib/api";
+import { appsApi, messagesApi, agentsApi, adminApi } from "@/lib/api";
+import type { Application, Message, Agent, AuditLog } from "@/lib/api";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
@@ -36,13 +36,39 @@ function resolveIcon(iconName?: string): React.ElementType {
 }
 
 /* ── Mock data that stays (no API for audit log on dashboard) ── */
-const RECENT_ACTIVITIES = [
+const RECENT_ACTIVITIES_FALLBACK = [
   { time: "10:42", actor: "张伟", action: "修改了", target: "客户对象 / 客户等级字段", icon: Pencil, link: "/ontology" },
   { time: "09:15", actor: "李娜", action: "部署了", target: "CRM v2.3 → 测试环境", icon: Rocket, link: "/apps" },
   { time: "昨天", actor: "王强", action: "新建了", target: "3 个页面（销售看板）", icon: FileText, link: "/apps" },
   { time: "昨天", actor: "刘敏", action: "配置了", target: "采购审批工作流（5 节点）", icon: RefreshCw, link: "/process" },
   { time: "2 天前", actor: "陈红", action: "发布了", target: "OA 系统 v1.8 生产版本", icon: CheckCircle2, link: "/apps" },
 ];
+
+/** Transform AuditLog from API into the activity display format */
+function transformAuditLog(log: AuditLog) {
+  const iconMap: Record<string, React.ElementType> = {
+    update: Pencil, create: FileText, delete: Trash2, deploy: Rocket,
+    config: RefreshCw, publish: CheckCircle2,
+  };
+  const now = new Date();
+  const logDate = new Date(log.created_at);
+  const diffMs = now.getTime() - logDate.getTime();
+  const diffHours = diffMs / (1000 * 60 * 60);
+  let time: string;
+  if (diffHours < 1) time = `${Math.max(1, Math.round(diffHours * 60))}min ago`;
+  else if (diffHours < 24) time = `${Math.round(diffHours)}h ago`;
+  else if (diffHours < 48) time = "昨天";
+  else time = `${Math.round(diffHours / 24)} 天前`;
+
+  return {
+    time,
+    actor: log.user_name || "系统",
+    action: log.action || "操作了",
+    target: log.target || log.detail || log.module || "未知",
+    icon: iconMap[log.action?.toLowerCase()] || Activity,
+    link: "/admin",
+  };
+}
 
 const ANNOUNCEMENTS = [
   { id: 1, title: "v1.3 新版本发布预告", time: "今早", type: "feature", link: "/admin" },
@@ -67,6 +93,7 @@ export function DashboardPage() {
   const [apps, setApps] = useState<Application[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [agents, setAgents] = useState<Agent[]>([]);
+  const [recentActivities, setRecentActivities] = useState(RECENT_ACTIVITIES_FALLBACK);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
@@ -96,6 +123,17 @@ export function DashboardPage() {
   }, []);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  /* ── Fetch audit log for recent activities ── */
+  useEffect(() => {
+    adminApi.listLogs(5, 0).then((logs) => {
+      if (logs && logs.length > 0) {
+        setRecentActivities(logs.map(transformAuditLog));
+      }
+    }).catch(() => {
+      // Keep fallback data if API fails
+    });
+  }, []);
 
   /* ── Toast auto-clear ── */
   useEffect(() => {
@@ -396,7 +434,7 @@ export function DashboardPage() {
           </CardHeader>
           <CardContent>
             <ul className="space-y-3">
-              {RECENT_ACTIVITIES.map((a, i) => (
+              {recentActivities.map((a, i) => (
                 <li
                   key={i}
                   className="flex items-center gap-3 text-sm p-1.5 -mx-1.5 rounded hover:bg-muted cursor-pointer transition-colors"

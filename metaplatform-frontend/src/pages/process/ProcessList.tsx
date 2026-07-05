@@ -61,6 +61,14 @@ export default function ProcessList() {
   ]);
   const [simToast, setSimToast] = useState<string | null>(null);
 
+  /* ── Print / Import / Cascade dialog state ── */
+  const [printDialogOpen, setPrintDialogOpen] = useState(false);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [cascadeDialogOpen, setCascadeDialogOpen] = useState(false);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [cascadeField, setCascadeField] = useState("");
+  const [cascadeParent, setCascadeParent] = useState("");
+
   useEffect(() => {
     if (!simToast) return;
     const t = setTimeout(() => setSimToast(null), 2500);
@@ -183,15 +191,15 @@ export default function ProcessList() {
             </Button>
             <div className="w-px h-5 bg-border mx-1" />
             {/* F4.4.3.4 批量打印 */}
-            <Button variant="ghost" size="icon" className="size-8" title="批量打印" onClick={() => alert("批量打印: 已发送到打印机")}>
+            <Button variant="ghost" size="icon" className="size-8" title="批量打印" onClick={() => setPrintDialogOpen(true)}>
               <Printer className="size-4" />
             </Button>
             {/* F4.4.3.15 EXCEL批量导入 */}
-            <Button variant="ghost" size="icon" className="size-8" title="Excel 导入" onClick={() => alert("Excel 导入: 请选择文件")}>
+            <Button variant="ghost" size="icon" className="size-8" title="Excel 导入" onClick={() => setImportDialogOpen(true)}>
               <Upload className="size-4" />
             </Button>
             {/* F4.4.3.17 数据级联 */}
-            <Button variant="ghost" size="icon" className="size-8" title="级联筛选" onClick={() => alert("级联筛选: 配置级联条件")}>
+            <Button variant="ghost" size="icon" className="size-8" title="级联筛选" onClick={() => setCascadeDialogOpen(true)}>
               <Columns className="size-4" />
             </Button>
           </div>
@@ -633,6 +641,142 @@ export default function ProcessList() {
             <Button onClick={handleStartSim} disabled={simRunning}>
               {simRunning ? <Loader2 className="size-4 animate-spin mr-1" /> : <Play className="size-4 mr-1" />}
               {simRunning ? "模拟中..." : "开始模拟"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Batch Print Dialog ── */}
+      <Dialog open={printDialogOpen} onOpenChange={setPrintDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Printer className="size-5" /> 批量打印
+            </DialogTitle>
+            <DialogDescription>选择要打印的流程记录，系统将生成可打印的文档</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>打印范围</Label>
+              <Select defaultValue="all">
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">全部流程记录</SelectItem>
+                  <SelectItem value="selected">已选中的记录</SelectItem>
+                  <SelectItem value="filtered">当前筛选结果</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>打印模板</Label>
+              <Select defaultValue="standard">
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="standard">标准流程表</SelectItem>
+                  <SelectItem value="detail">详细流程卡片</SelectItem>
+                  <SelectItem value="summary">汇总表</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="p-3 bg-muted/30 rounded-lg text-xs text-muted-foreground">
+              将使用浏览器打印功能生成可打印页面，请确保打印机已连接
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPrintDialogOpen(false)}>取消</Button>
+            <Button onClick={() => { setPrintDialogOpen(false); setSimToast("已发送到打印机"); }}>
+              <Printer className="size-4 mr-1" /> 确认打印
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Excel Import Dialog ── */}
+      <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Upload className="size-5" /> Excel 批量导入
+            </DialogTitle>
+            <DialogDescription>上传 Excel 文件批量导入流程数据</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="border-2 border-dashed rounded-lg p-6 text-center">
+              <Upload className="size-8 mx-auto mb-2 text-muted-foreground" />
+              <p className="text-sm text-muted-foreground mb-2">拖放 Excel 文件到此处，或点击选择文件</p>
+              <Input
+                type="file"
+                accept=".xlsx,.xls,.csv"
+                className="max-w-xs mx-auto"
+                onChange={(e) => setImportFile(e.target.files?.[0] || null)}
+              />
+              {importFile && (
+                <p className="text-xs text-primary mt-2">已选择: {importFile.name}</p>
+              )}
+            </div>
+            <div className="p-3 bg-muted/30 rounded-lg text-xs text-muted-foreground">
+              支持 .xlsx、.xls、.csv 格式，单次最多导入 1000 条记录
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setImportDialogOpen(false); setImportFile(null); }}>取消</Button>
+            <Button onClick={() => { setImportDialogOpen(false); setImportFile(null); setSimToast("导入任务已提交"); }} disabled={!importFile}>
+              <Upload className="size-4 mr-1" /> 开始导入
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Cascade Filter Dialog ── */}
+      <Dialog open={cascadeDialogOpen} onOpenChange={setCascadeDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Columns className="size-5" /> 级联筛选配置
+            </DialogTitle>
+            <DialogDescription>配置字段之间的级联关联关系</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>子级字段</Label>
+              <Select value={cascadeField} onValueChange={setCascadeField}>
+                <SelectTrigger>
+                  <SelectValue placeholder="选择子级字段" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="department">部门</SelectItem>
+                  <SelectItem value="category">流程分类</SelectItem>
+                  <SelectItem value="status">流程状态</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>父级字段</Label>
+              <Select value={cascadeParent} onValueChange={setCascadeParent}>
+                <SelectTrigger>
+                  <SelectValue placeholder="选择父级字段" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="company">公司</SelectItem>
+                  <SelectItem value="type">流程类型</SelectItem>
+                  <SelectItem value="priority">优先级</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {cascadeField && cascadeParent && (
+              <div className="p-3 bg-primary/5 border border-primary/20 rounded-lg text-xs">
+                级联规则: 选择「{cascadeParent}」后，将自动过滤「{cascadeField}」的可选值
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCascadeDialogOpen(false)}>取消</Button>
+            <Button onClick={() => { setCascadeDialogOpen(false); setSimToast("级联筛选已配置"); }}>
+              确认配置
             </Button>
           </DialogFooter>
         </DialogContent>

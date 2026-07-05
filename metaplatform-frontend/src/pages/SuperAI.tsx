@@ -4,11 +4,14 @@ import type { Agent } from "@/lib/api";
 import { llmApi, type ChatMessage } from "@/lib/llm-api";
 import { dispatchApi, type DispatchResult } from "@/lib/dispatch-api";
 import { useNavigate } from "react-router-dom";
-import { Send, Bot, User, Sparkles, Plus, MessageSquare, Bot as BotIcon, ListChecks, BookOpen, Smartphone, BarChart3, GitBranch, FileEdit, Search as SearchIcon, TrendingUp, RefreshCw, FileText, Ruler, Briefcase, ScrollText, Scale, Clock, Trash2, X, Loader2, Image as ImageIcon, Mic, MicOff, Paperclip, FileSpreadsheet, File as FileIcon, Camera, Volume2, ArrowRight } from "lucide-react";
+import { Send, Bot, User, Sparkles, Plus, MessageSquare, Bot as BotIcon, ListChecks, BookOpen, Smartphone, BarChart3, GitBranch, FileEdit, Search as SearchIcon, TrendingUp, RefreshCw, FileText, Ruler, Briefcase, ScrollText, Scale, Clock, Trash2, X, Loader2, Image as ImageIcon, Mic, MicOff, Paperclip, FileSpreadsheet, File as FileIcon, Camera, Volume2, ArrowRight, Database } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 /* ── Icon resolver: API icon string → Lucide component ── */
 const ICON_MAP: Record<string, React.ElementType> = {
@@ -354,8 +357,8 @@ function ChatTab({ messages, setMessages, agentPrompt, onAgentPromptConsumed }: 
           });
           reply = response.content;
         } catch (llmError) {
-          // Step 3: Fallback to mock
-          console.warn("[SuperAI] LLM API unavailable, falling back to mock:", llmError);
+          // Step 3: Handle failure
+          console.warn("[SuperAI] LLM API unavailable:", llmError);
           if (userMsg.attachments?.some((a) => a.type === "image")) {
             reply = "已收到你上传的图片。我可以看到图片内容并进行分析。\n\n请问你需要我对这张图片做什么处理？例如：\n- 提取图片中的文字信息\n- 分析图片中的数据图表\n- 识别图片中的业务流程";
           } else if (userMsg.attachments?.some((a) => a.type === "voice")) {
@@ -364,7 +367,8 @@ function ChatTab({ messages, setMessages, agentPrompt, onAgentPromptConsumed }: 
             const docNames = userMsg.attachments.filter((a) => a.type === "document").map((a) => a.name).join("、");
             reply = `已收到文档：${docNames}\n\n文档解析功能将在接入文档处理引擎后生效。目前我可以帮你：\n- 总结文档要点\n- 提取关键数据\n- 生成文档摘要\n\n请问你需要什么操作？`;
           } else {
-            reply = await sendMock(content);
+            // For text-only messages, show user-friendly error instead of mock fallback
+            reply = "抱歉，AI 服务暂时不可用，请稍后再试。";
           }
         }
       }
@@ -739,6 +743,10 @@ function AgentTab({ onActivateAgent }: AgentTabProps) {
 
 /* ─────────────────── TasksTab ─────────────────── */
 function TasksTab() {
+  const [newTaskDialogOpen, setNewTaskDialogOpen] = useState(false);
+  const [newTaskName, setNewTaskName] = useState("");
+  const [newTaskAgent, setNewTaskAgent] = useState("");
+
   return (
     <div className="p-4 flex flex-col gap-4">
       <div className="flex items-center justify-between">
@@ -746,7 +754,7 @@ function TasksTab() {
           <h1 className="text-xl font-semibold">智能体任务</h1>
           <p className="text-sm text-muted-foreground">SuperAI 调度的所有任务，含历史记录</p>
         </div>
-        <Button size="sm" onClick={() => alert("新建任务功能开发中")}>
+        <Button size="sm" onClick={() => setNewTaskDialogOpen(true)}>
           <Plus className="size-3 mr-1" />
           新建任务
         </Button>
@@ -781,12 +789,62 @@ function TasksTab() {
           </table>
         </CardContent>
       </Card>
+
+      {/* New Task Dialog */}
+      <Dialog open={newTaskDialogOpen} onOpenChange={setNewTaskDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Plus className="size-5" /> 新建智能体任务
+            </DialogTitle>
+            <DialogDescription>创建一个新的智能体执行任务</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>任务名称</Label>
+              <Input
+                placeholder="如：分析上月销售数据"
+                value={newTaskName}
+                onChange={(e) => setNewTaskName(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>指定智能体</Label>
+              <div className="grid grid-cols-2 gap-2">
+                {["数据分析智能体", "报表生成智能体", "流程分析智能体", "文档撰写智能体"].map((agent) => (
+                  <button
+                    key={agent}
+                    type="button"
+                    onClick={() => setNewTaskAgent(agent)}
+                    className={`text-left rounded border p-2 text-xs transition-all hover:border-primary ${
+                      newTaskAgent === agent ? "border-primary bg-primary/5" : ""
+                    }`}
+                  >
+                    {agent}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setNewTaskDialogOpen(false)}>取消</Button>
+            <Button onClick={() => setNewTaskDialogOpen(false)} disabled={!newTaskName.trim()}>
+              <Plus className="size-3 mr-1" /> 创建任务
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
 
 /* ─────────────────── KnowledgeTab ─────────────────── */
 function KnowledgeTab() {
+  const [vectorDialogOpen, setVectorDialogOpen] = useState(false);
+  const [uploadDocDialogOpen, setUploadDocDialogOpen] = useState(false);
+  const [vectorDbType, setVectorDbType] = useState("");
+  const [docUploadFile, setDocUploadFile] = useState<File | null>(null);
+
   return (
     <div className="p-4 flex flex-col gap-4">
       <div className="flex items-center justify-between">
@@ -795,10 +853,10 @@ function KnowledgeTab() {
           <p className="text-sm text-muted-foreground">SuperAI 检索增强（RAG）的私有知识库</p>
         </div>
         <div className="flex gap-2">
-          <Button size="sm" variant="outline" onClick={() => alert("接入向量库功能开发中")}>
+          <Button size="sm" variant="outline" onClick={() => setVectorDialogOpen(true)}>
             接入向量库
           </Button>
-          <Button size="sm" onClick={() => alert("上传文档功能开发中")}>
+          <Button size="sm" onClick={() => setUploadDocDialogOpen(true)}>
             <Plus className="size-3 mr-1" />
             上传文档
           </Button>
@@ -853,6 +911,92 @@ function KnowledgeTab() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Vector DB Connection Dialog */}
+      <Dialog open={vectorDialogOpen} onOpenChange={setVectorDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Database className="size-5" /> 接入向量库
+            </DialogTitle>
+            <DialogDescription>配置向量数据库连接，用于 RAG 知识检索</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>向量数据库类型</Label>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { value: "milvus", label: "Milvus" },
+                  { value: "pinecone", label: "Pinecone" },
+                  { value: "qdrant", label: "Qdrant" },
+                  { value: "weaviate", label: "Weaviate" },
+                ].map((db) => (
+                  <button
+                    key={db.value}
+                    type="button"
+                    onClick={() => setVectorDbType(db.value)}
+                    className={`text-left rounded border p-3 text-sm transition-all hover:border-primary ${
+                      vectorDbType === db.value ? "border-primary bg-primary/5" : ""
+                    }`}
+                  >
+                    {db.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>连接地址</Label>
+              <Input placeholder="http://localhost:19530" />
+            </div>
+            <div className="space-y-2">
+              <Label>Collection 名称</Label>
+              <Input placeholder="knowledge_base" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setVectorDialogOpen(false)}>取消</Button>
+            <Button onClick={() => setVectorDialogOpen(false)} disabled={!vectorDbType}>
+              接入
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Upload Document Dialog */}
+      <Dialog open={uploadDocDialogOpen} onOpenChange={setUploadDocDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Plus className="size-5" /> 上传文档
+            </DialogTitle>
+            <DialogDescription>上传文档到知识库，支持 PDF、Word、Markdown 等格式</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="border-2 border-dashed rounded-lg p-6 text-center">
+              <FileText className="size-8 mx-auto mb-2 text-muted-foreground" />
+              <p className="text-sm text-muted-foreground mb-2">拖放文档到此处，或点击选择文件</p>
+              <Input
+                type="file"
+                accept=".pdf,.doc,.docx,.md,.txt,.csv"
+                className="max-w-xs mx-auto"
+                onChange={(e) => setDocUploadFile(e.target.files?.[0] || null)}
+              />
+              {docUploadFile && (
+                <p className="text-xs text-primary mt-2">已选择: {docUploadFile.name}</p>
+              )}
+            </div>
+            <div className="p-3 bg-muted/30 rounded-lg text-xs text-muted-foreground">
+              支持格式: PDF、Word (.docx)、Markdown (.md)、纯文本 (.txt)、CSV。单文件最大 50MB
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setUploadDocDialogOpen(false); setDocUploadFile(null); }}>取消</Button>
+            <Button onClick={() => { setUploadDocDialogOpen(false); setDocUploadFile(null); }} disabled={!docUploadFile}>
+              <Plus className="size-3 mr-1" /> 上传并索引
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

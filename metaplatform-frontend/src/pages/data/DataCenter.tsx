@@ -390,8 +390,13 @@ export function AskData() {
     );
   }
 
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
+  const [exportFormat, setExportFormat] = useState("");
+  const [exportInProgress, setExportInProgress] = useState(false);
+
   function handleExport(format: string) {
-    alert(`导出为 ${format} 格式（模拟）`);
+    setExportFormat(format);
+    setExportDialogOpen(true);
     setShowExportMenu(false);
   }
 
@@ -865,6 +870,60 @@ export function AskData() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShareDialogOpen(false)}>关闭</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Export Dialog */}
+      <Dialog open={exportDialogOpen} onOpenChange={setExportDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Download className="size-5" /> 导出数据
+            </DialogTitle>
+            <DialogDescription>将当前查询结果导出为 {exportFormat.toUpperCase()} 格式</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>导出范围</Label>
+              <Select defaultValue="current">
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="current">当前查询结果</SelectItem>
+                  <SelectItem value="all">全部数据</SelectItem>
+                  <SelectItem value="filtered">筛选后数据</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>文件名</Label>
+              <Input placeholder={`data_export_${new Date().toISOString().slice(0, 10)}`} />
+            </div>
+            <div className="p-3 bg-muted/30 rounded-lg text-xs text-muted-foreground">
+              导出格式: {exportFormat.toUpperCase()} | 预计文件大小将根据数据量自动计算
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setExportDialogOpen(false)}>取消</Button>
+            <Button
+              onClick={() => {
+                setExportInProgress(true);
+                setTimeout(() => {
+                  setExportInProgress(false);
+                  setExportDialogOpen(false);
+                }, 1500);
+              }}
+              disabled={exportInProgress}
+            >
+              {exportInProgress ? (
+                <Loader2 className="size-4 animate-spin mr-1" />
+              ) : (
+                <Download className="size-4 mr-1" />
+              )}
+              {exportInProgress ? "导出中..." : "开始导出"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

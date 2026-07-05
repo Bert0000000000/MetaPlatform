@@ -28,6 +28,7 @@ const priorityConfig = {
 };
 
 // 测试用例初始数据（本地状态管理，无 quality API）
+// TODO: Replace with real API call when backend is ready (no quality API exists yet)
 const INITIAL_TEST_CASES = [
   { id: "t-1", name: "客户对象建模 CRUD", module: "本体引擎", type: "单元" as const, status: "passed" as const, priority: "P0" as const, lastRun: "10min ago", duration: "2.3s" },
   { id: "t-2", name: "请假流程端到端", module: "流程引擎", type: "流程" as const, status: "passed" as const, priority: "P0" as const, lastRun: "1h ago", duration: "12.4s" },

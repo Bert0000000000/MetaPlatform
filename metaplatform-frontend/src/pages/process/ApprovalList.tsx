@@ -6,10 +6,14 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { PageHeader, StatCard } from "@/components/ui/stat";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { flowableApi, type FlowableTask } from "@/lib/flowable-api";
 import {
   Check, X, Target, Users, ArrowRight, Vote, Inbox, CheckCircle,
-  Rocket, Sparkles, Loader2, AlertCircle, Clock, UserPlus, MoveRight, Bell, Save as SaveIcon, StopCircle, RotateCcw,
+  Rocket, Sparkles, Loader2, AlertCircle, Clock, UserPlus, MoveRight, Bell, Save as SaveIcon, StopCircle, RotateCcw, ListChecks,
 } from "lucide-react";
 
 const taskModes = [
@@ -27,6 +31,7 @@ export default function ApprovalList() {
   const [completingId, setCompletingId] = useState<string | null>(null);
   const [selectedTasks, setSelectedTasks] = useState<Set<string>>(new Set());
   const [batchProcessing, setBatchProcessing] = useState(false);
+  const [approvalDialog, setApprovalDialog] = useState<{ open: boolean; type: string; title: string }>({ open: false, type: "", title: "" });
 
   const fetchTasks = useCallback(async () => {
     try {
@@ -247,31 +252,31 @@ export default function ApprovalList() {
                               驳回
                             </Button>
                             {/* 加签 */}
-                            <Button variant="ghost" size="icon" className="size-7" title="加签" onClick={() => alert("加签: 选择加签人")}>
+                            <Button variant="ghost" size="icon" className="size-7" title="加签" onClick={() => setApprovalDialog({ open: true, type: "counterSign", title: "加签" })}>
                               <UserPlus className="size-3" />
                             </Button>
                             {/* 转办 */}
-                            <Button variant="ghost" size="icon" className="size-7" title="转办" onClick={() => alert("转办: 选择转办人")}>
+                            <Button variant="ghost" size="icon" className="size-7" title="转办" onClick={() => setApprovalDialog({ open: true, type: "transfer", title: "转办" })}>
                               <MoveRight className="size-3" />
                             </Button>
                             {/* 知会 */}
-                            <Button variant="ghost" size="icon" className="size-7" title="知会" onClick={() => alert("知会: 选择知会人")}>
+                            <Button variant="ghost" size="icon" className="size-7" title="知会" onClick={() => setApprovalDialog({ open: true, type: "notify", title: "知会" })}>
                               <Bell className="size-3" />
                             </Button>
                             {/* 催办 */}
-                            <Button variant="ghost" size="icon" className="size-7" title="催办" onClick={() => alert("催办: 已发送催办提醒")}>
+                            <Button variant="ghost" size="icon" className="size-7" title="催办" onClick={() => setApprovalDialog({ open: true, type: "urge", title: "催办" })}>
                               <Rocket className="size-3" />
                             </Button>
                             {/* 暂存 */}
-                            <Button variant="ghost" size="icon" className="size-7" title="暂存" onClick={() => alert("暂存: 已保存草稿")}>
+                            <Button variant="ghost" size="icon" className="size-7" title="暂存" onClick={() => setApprovalDialog({ open: true, type: "save", title: "暂存" })}>
                               <SaveIcon className="size-3" />
                             </Button>
                             {/* 终止 */}
-                            <Button variant="ghost" size="icon" className="size-7" title="终止" onClick={() => alert("终止: 流程已终止")}>
+                            <Button variant="ghost" size="icon" className="size-7" title="终止" onClick={() => setApprovalDialog({ open: true, type: "terminate", title: "终止" })}>
                               <StopCircle className="size-3" />
                             </Button>
                             {/* 撤回 */}
-                            <Button variant="ghost" size="icon" className="size-7" title="撤回" onClick={() => alert("撤回: 已撤回审批")}>
+                            <Button variant="ghost" size="icon" className="size-7" title="撤回" onClick={() => setApprovalDialog({ open: true, type: "withdraw", title: "撤回" })}>
                               <RotateCcw className="size-3" />
                             </Button>
                           </div>
@@ -302,6 +307,41 @@ export default function ApprovalList() {
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* Approval Operations Dialog */}
+      <Dialog open={approvalDialog.open} onOpenChange={(open) => setApprovalDialog(prev => ({ ...prev, open }))}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{approvalDialog.title}</DialogTitle>
+            <DialogDescription>请选择{approvalDialog.title}的处理方式</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {/* For counterSign/transfer/notify: show user selector */}
+            {(approvalDialog.type === "counterSign" || approvalDialog.type === "transfer" || approvalDialog.type === "notify") && (
+              <div className="space-y-2">
+                <Label>选择人员</Label>
+                <Select defaultValue="">
+                  <SelectTrigger><SelectValue placeholder="请选择" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="user1">张伟</SelectItem>
+                    <SelectItem value="user2">李娜</SelectItem>
+                    <SelectItem value="user3">王强</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            {/* For all: show reason input */}
+            <div className="space-y-2">
+              <Label>备注</Label>
+              <Textarea placeholder="请输入备注..." />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setApprovalDialog(prev => ({ ...prev, open: false }))}>取消</Button>
+            <Button onClick={() => { alert(approvalDialog.title + "操作已提交"); setApprovalDialog(prev => ({ ...prev, open: false })); }}>确认</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

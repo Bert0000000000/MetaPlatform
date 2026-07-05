@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { llmApi } from "@/lib/llm-api";
 import {
   MessageCircle, X, Send, Bot, User, Minimize2, Maximize2, Loader2, GripVertical,
 } from "lucide-react";
@@ -42,35 +43,17 @@ function getPageContext(pathname: string): { title: string; description: string 
   return { title: "MetaPlatform", description: "企业级低代码 AI 平台" };
 }
 
-/* ── Mock AI response ── */
-function mockAIReply(question: string, context: { title: string; description: string }): Promise<string> {
-  return new Promise((resolve) => {
-    const delay = 600 + Math.random() * 800;
-    setTimeout(() => {
-      const lower = question.toLowerCase();
-      if (lower.includes("帮助") || lower.includes("help") || lower.includes("怎么用")) {
-        resolve(
-          `关于「${context.title}」页面：\n${context.description}\n\n你可以：\n1. 使用左侧导航切换功能模块\n2. 在页面内执行搜索和筛选\n3. 点击卡片或行项目查看详情\n\n还有什么我能帮你的？`
-        );
-        return;
-      }
-      if (lower.includes("是什么") || lower.includes("介绍") || lower.includes("功能")) {
-        resolve(
-          `「${context.title}」是 MetaPlatform 的核心功能模块之一。\n\n${context.description}。\n\n该模块支持丰富的交互操作，包括数据查询、可视化展示和流程管理。如需更详细的信息，建议查阅知识库中的用户手册。`
-        );
-        return;
-      }
-      if (lower.includes("问题") || lower.includes("报错") || lower.includes("异常")) {
-        resolve(
-          `如果在「${context.title}」中遇到问题，建议：\n1. 刷新页面重试\n2. 检查网络连接\n3. 查看系统公告是否有维护通知\n4. 联系管理员获取帮助\n\n如需提交 Bug，请前往质量中心创建工单。`
-        );
-        return;
-      }
-      resolve(
-        `我是页面助手，当前页面是「${context.title}」。\n${context.description}\n\n你可以问我关于这个页面的任何问题，例如：\n- 这个页面有什么功能？\n- 如何使用某项功能？\n- 遇到问题怎么办？`
-      );
-    }, delay);
-  });
+/* ── Real AI response via LLM API ── */
+async function getAIReply(question: string, context: { title: string; description: string }): Promise<string> {
+  try {
+    const response = await llmApi.chat([
+      { role: "system", content: `你是「${context.title}」页面的AI助手。${context.description}。请用中文简洁回答用户问题。` },
+      { role: "user", content: question }
+    ], { model: "gpt-4o-mini", temperature: 0.7, maxTokens: 512 });
+    return response.content;
+  } catch {
+    return `我是页面助手，当前页面是「${context.title}」。${context.description}\n\nAI 服务暂时不可用，请稍后再试。`;
+  }
 }
 
 interface ChatMsg {
@@ -144,7 +127,7 @@ export function PageAIAssistant() {
     setInput("");
     setIsTyping(true);
     try {
-      const reply = await mockAIReply(userMsg.content, context);
+      const reply = await getAIReply(userMsg.content, context);
       setMessages((prev) => [...prev, { role: "assistant", content: reply, ts: formatTime() }]);
     } finally {
       setIsTyping(false);

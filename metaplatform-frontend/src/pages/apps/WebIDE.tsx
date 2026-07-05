@@ -144,7 +144,7 @@ export function Home() {
           <p className="text-sm text-gray-500">Pending</p>
         </Card>
       </div>
-      <Button variant="primary" onClick={() => alert("Hello!")}>
+      <Button variant="primary" onClick={() => navigate("/dashboard")}>
         Get Started
       </Button>
     </div>
