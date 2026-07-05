@@ -24,6 +24,7 @@ function useToast() {
 }
 
 /* ── API endpoint mock data ── */
+// TODO: Replace with real API when backend ready (no OpenAPI spec endpoint exists)
 const API_ENDPOINTS = [
   { method: "GET", path: "/api/v1/apps/{id}", auth: "公开", desc: "获取应用详情", tags: ["应用"] },
   { method: "POST", path: "/api/v1/apps/{id}/instances", auth: "已认证", desc: "创建实例", tags: ["实例"] },
@@ -43,6 +44,7 @@ const METHOD_COLORS: Record<string, string> = {
   PATCH: "bg-purple-100 text-purple-700",
 };
 
+// TODO: Replace with real API when backend ready (adminApi.listConfig() exists but does not cover app-level config)
 /* ── Initial config state ── */
 interface AppConfigState {
   publicAccess: boolean;
@@ -121,6 +123,8 @@ export default function AppConfig() {
 
   async function handleSave() {
     setSaving(true);
+    // TODO: Replace with real API call when appsApi.updateConfig is available
+    // await appsApi.updateConfig(appId, config);
     await new Promise((r) => setTimeout(r, 800));
     setSaving(false);
     setToast("配置已保存");
@@ -128,6 +132,8 @@ export default function AppConfig() {
 
   async function handleRegenerateKey() {
     setRegeneratingKey(true);
+    // TODO: Replace with real API call when appsApi.regenerateApiKey is available
+    // const newKey = await appsApi.regenerateApiKey(appId);
     await new Promise((r) => setTimeout(r, 1000));
     const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
     let newKey = "mp_sk_live_";
@@ -212,6 +218,8 @@ export default function AppConfig() {
 
   async function handleTestSSO() {
     setTestingSSO(true);
+    // TODO: Replace with real SSO test API call
+    // const result = await authApi.testSSOConnection(ssoProvider, ssoConfig);
     await new Promise((r) => setTimeout(r, 1500));
     setTestingSSO(false);
     setToast("SSO 连接测试成功");
@@ -229,6 +237,8 @@ export default function AppConfig() {
 
   async function handleTestIM() {
     setTestingIM(true);
+    // TODO: Replace with real IM test API call
+    // const result = await integrationApi.testIM(imPlatform, imConfig);
     await new Promise((r) => setTimeout(r, 1000));
     setTestingIM(false);
     setToast(`${imPlatform} 测试消息已发送`);
@@ -236,6 +246,8 @@ export default function AppConfig() {
 
   async function handleSyncOrg() {
     setSyncingOrg(true);
+    // TODO: Replace with real org sync API call
+    // const result = await integrationApi.syncOrganization(imPlatform);
     await new Promise((r) => setTimeout(r, 2000));
     setSyncingOrg(false);
     setToast(`${imPlatform} 组织架构同步完成`);
@@ -281,16 +293,33 @@ export default function AppConfig() {
     setToast("限流配置已更新");
   }
 
+  // TODO: Replace with real API when backend ready (mockResponses is simulated test data)
   /* ── Run API test ── */
   async function handleRunTest() {
     setTesting(true);
     setTestResult(null);
-    await new Promise((r) => setTimeout(r, 600 + Math.random() * 400));
+    const startTime = Date.now();
+    // TODO: Replace with real API test call when backend is ready
+    // try {
+    //   const parsedHeaders = JSON.parse(testHeaders);
+    //   const response = await fetch(testUrl, {
+    //     method: testMethod,
+    //     headers: parsedHeaders,
+    //     body: ["POST", "PUT", "PATCH"].includes(testMethod) ? testBody : undefined,
+    //   });
+    //   const elapsed = Date.now() - startTime;
+    //   const body = response.status !== 204 ? await response.text() : "";
+    //   setTestResult({ status: response.status, statusText: response.statusText, time: elapsed, body });
+    // } catch (err: any) {
+    //   setTestResult({ status: 0, statusText: "Network Error", time: Date.now() - startTime, body: err.message });
+    // }
+    // --- Simulation fallback (remove when real API is connected) ---
+    await new Promise((r) => setTimeout(r, 800));
     const mockResponses: Record<string, APITestResult> = {
       GET: {
         status: 200,
         statusText: "OK",
-        time: Math.floor(40 + Math.random() * 60),
+        time: 67,
         body: JSON.stringify({
           id: "app_001",
           name: "销售管理系统",
@@ -303,7 +332,7 @@ export default function AppConfig() {
       POST: {
         status: 201,
         statusText: "Created",
-        time: Math.floor(80 + Math.random() * 80),
+        time: 123,
         body: JSON.stringify({
           id: "inst_789",
           appId: "app_001",
@@ -315,7 +344,7 @@ export default function AppConfig() {
       PUT: {
         status: 200,
         statusText: "OK",
-        time: Math.floor(50 + Math.random() * 50),
+        time: 78,
         body: JSON.stringify({
           id: "inst_789",
           updatedAt: new Date().toISOString(),
@@ -325,7 +354,7 @@ export default function AppConfig() {
       DELETE: {
         status: 204,
         statusText: "No Content",
-        time: Math.floor(30 + Math.random() * 30),
+        time: 42,
         body: "",
       },
     };

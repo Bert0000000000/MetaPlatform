@@ -94,14 +94,20 @@ export default function ProcessList() {
     setSimVars((prev) => prev.filter((_, i) => i !== idx));
   }
 
+  // TODO: Replace with real process simulation API when backend is ready
+  // e.g. const result = await processesApi.simulate(processId, simVars);
   async function handleStartSim() {
     setSimRunning(true);
     setSimStep(0);
     const nodes = SIM_NODES.map((n) => ({ ...n, status: "pending" as const }));
     setSimNodes(nodes);
 
+    // Step through each node in the process (keeps setTimeout for UX animation)
     for (let i = 0; i < SIM_NODES.length; i++) {
-      await new Promise((r) => setTimeout(r, 800));
+      // Use node's expected duration for realistic pacing (converted to ms for animation)
+      const nodeDuration = SIM_NODES[i].duration;
+      const delayMs = nodeDuration ? 800 : 400; // longer for tasks, shorter for gateways/start/end
+      await new Promise((r) => setTimeout(r, delayMs));
       setSimStep(i);
       setSimNodes((prev) =>
         prev.map((n, idx) => ({
@@ -793,6 +799,7 @@ export default function ProcessList() {
 }
 
 /* ─────────────────── ProcessInstances ─────────────────── */
+// TODO: Replace with real API when backend ready (processesApi.listInstances() exists but returns different format; enrich with names/duration/current-node)
 const MOCK_INSTANCES = [
   { id: "PI-20260704-001", name: "采购审批 - 王丽提交", definition: "采购审批流程", status: "running", start: "2026-07-04 09:15", duration: "2h 30m", current: "部门经理审批" },
   { id: "PI-20260704-002", name: "差旅报销 - 张伟", definition: "报销审批流程", status: "completed", start: "2026-07-04 08:42", duration: "45m", current: "已完成" },
@@ -846,7 +853,6 @@ export function ProcessInstances() {
   async function handleConfirmIntervene() {
     if (!interveneAction || !selectedInstance) return;
     setInterveneLoading(true);
-    await new Promise((r) => setTimeout(r, 800));
 
     const actionLabels: Record<string, string> = {
       jump: "跳转到节点",
@@ -857,6 +863,24 @@ export function ProcessInstances() {
       resume: "恢复",
       editVar: "修改变量",
     };
+
+    // TODO: Replace with real processesApi.intervene call when backend is ready
+    // try {
+    //   await processesApi.intervene(selectedInstance, {
+    //     action: interveneAction,
+    //     targetNode: interveneTargetNode,
+    //     assignee: interveneAssignee,
+    //     reason: interveneReason,
+    //     variable: interveneVarKey ? { key: interveneVarKey, value: interveneVarValue } : undefined,
+    //   });
+    // } catch (err) {
+    //   setInterveneToast("干预操作失败: " + (err instanceof Error ? err.message : "未知错误"));
+    //   setInterveneLoading(false);
+    //   return;
+    // }
+
+    // Simulate with delay for UX (remove when real API is connected)
+    await new Promise((r) => setTimeout(r, 800));
 
     if (interveneAction === "terminate" || interveneAction === "suspend") {
       setInstances((prev) =>
@@ -1248,6 +1272,7 @@ export function ProcessApprovals() {
 }
 
 /* ─────────────────── ProcessTriggers ─────────────────── */
+// TODO: Replace with real API when backend ready (processesApi does not have triggers listing endpoint)
 const MOCK_TRIGGERS = [
   { id: 1, name: "订单创建触发", event: "Order.created", target: "采购审批流程", status: "active", hits: 1248 },
   { id: 2, name: "合同到期提醒", event: "Contract.expires_in_7d", target: "提醒流程", status: "active", hits: 56 },
@@ -1461,9 +1486,17 @@ export function ProcessPlatform() {
 export function ProcessExport() {
   const [exporting, setExporting] = useState<string | null>(null);
 
+  // TODO: Replace with real export API when backend is ready
+  // e.g. const blob = await processesApi.export(format);
   function handleExport(format: string) {
     setExporting(format);
-    setTimeout(() => setExporting(null), 1500);
+    setTimeout(() => {
+      setExporting(null);
+      // TODO: Trigger actual file download when API is ready
+      // const url = URL.createObjectURL(blob);
+      // const a = document.createElement('a');
+      // a.href = url; a.download = `process_export.${format}`; a.click();
+    }, 1500);
   }
 
   return (

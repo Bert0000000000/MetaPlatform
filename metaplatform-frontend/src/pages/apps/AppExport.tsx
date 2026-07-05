@@ -11,24 +11,28 @@ import { exportApi } from "@/lib/api";
 import { useSearchParams } from "react-router-dom";
 
 /* ── Export targets with initial checked state ── */
+// TODO: Replace with real API when backend ready (exportApi has generate/download but no listing endpoint)
 const INITIAL_FRONTEND = [
   { id: "vue", name: "VUE 工程", desc: "Vue 3 + Vite + Element Plus", checked: true, size: "~1.2MB" },
   { id: "react", name: "React 工程", desc: "React 19 + Vite + Ant Design", checked: false, size: "~1.4MB" },
   { id: "html", name: "静态 HTML", desc: "纯 HTML/CSS/JS 部署包", checked: false, size: "~200KB" },
 ];
 
+// TODO: Replace with real API when backend ready (exportApi has generate/download but no listing endpoint)
 const INITIAL_BACKEND = [
   { id: "java-spring", name: "Java Spring Boot", desc: "Java 21 + Spring Boot 3", checked: true, size: "~850KB" },
   { id: "python", name: "Python FastAPI", desc: "Python 3.12 + FastAPI + SQLAlchemy", checked: false, size: "~620KB" },
   { id: "node", name: "Node.js", desc: "Node.js 20 + Express + TypeScript", checked: false, size: "~480KB" },
 ];
 
+// TODO: Replace with real API when backend ready (exportApi has generate/download but no listing endpoint)
 const INITIAL_DB = [
   { id: "java-ddl", name: "DDL（建表语句）", desc: "PostgreSQL/MySQL 兼容", checked: true, size: "~12KB" },
   { id: "dml", name: "DML（初始化数据）", desc: "包含种子数据", checked: true, size: "~8KB" },
   { id: "flyway", name: "Flyway 迁移脚本", desc: "V1__init.sql ... V2__...", checked: false, size: "~4KB" },
 ];
 
+// TODO: Replace with real API when backend ready (exportApi has generate/download but no listing endpoint)
 const INITIAL_DEPLOY = [
   { id: "docker", name: "Docker 镜像", desc: "Dockerfile + docker build", checked: true, size: "~5KB" },
   { id: "compose", name: "Docker Compose", desc: "docker-compose.yml 多服务编排", checked: false, size: "~3KB" },

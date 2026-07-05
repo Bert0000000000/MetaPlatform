@@ -26,6 +26,7 @@ const environments = [
 ];
 
 /* ── Mock tenants for grayscale ── */
+// TODO: Replace with real API when backend ready (appsApi does not have tenants listing endpoint)
 const MOCK_TENANTS = [
   { id: "t1", name: "阿里云", plan: "企业版" },
   { id: "t2", name: "腾讯云", plan: "企业版" },
@@ -38,6 +39,7 @@ const MOCK_TENANTS = [
 ];
 
 /* ── Mock version history ── */
+// TODO: Replace with real API when backend ready (appsApi does not have versions listing endpoint)
 const MOCK_VERSIONS = [
   { version: "1.3.0", date: "2026-07-04", traffic: 70, status: "primary", parallel: false },
   { version: "1.2.0", date: "2026-06-20", traffic: 30, status: "running", parallel: true },

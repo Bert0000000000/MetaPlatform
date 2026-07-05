@@ -21,6 +21,7 @@ interface FileNode {
 }
 
 /* ── Sample React project ── */
+// TODO: Replace with real API when backend ready (no file system API endpoint exists for code editor)
 const INITIAL_TREE: FileNode[] = [
   {
     name: "src",

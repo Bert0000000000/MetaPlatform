@@ -228,6 +228,7 @@ export function OntologyElement({ elementKey }: { elementKey: string }) {
 
 /* ── Standalone ontology element pages for route-level usage ── */
 
+// TODO: Replace with real API when backend ready (ontologyApi does not have a standalone properties listing endpoint)
 const MOCK_PROPERTIES = [
   { id: 1, name: "客户编号", type: "短文本", object: "Customer", required: true, unique: true, desc: "客户唯一标识" },
   { id: 2, name: "客户名称", type: "短文本", object: "Customer", required: true, unique: false, desc: "客户全称" },
@@ -296,6 +297,7 @@ export function OntologyProperties() {
   );
 }
 
+// TODO: Replace with real API when backend ready (ontologyApi.listRelations() exists but data format may differ)
 const MOCK_LINKS = [
   { id: 1, name: "客户-订单", from: "Customer", to: "Order", type: "1:N", desc: "一个客户有多个订单" },
   { id: 2, name: "订单-产品", from: "Order", to: "Product", type: "N:N", desc: "订单包含多个产品" },
@@ -398,6 +400,7 @@ export function OntologyLinks() {
   );
 }
 
+// TODO: Replace with real API when backend ready (ontology API does not have actions listing endpoint)
 const MOCK_ACTIONS = [
   { id: 1, name: "创建订单", type: "新增", object: "Order", endpoint: "POST /api/orders", status: "active" },
   { id: 2, name: "查询客户列表", type: "查询", object: "Customer", endpoint: "GET /api/customers", status: "active" },
@@ -454,6 +457,7 @@ export function OntologyActions() {
   );
 }
 
+// TODO: Replace with real API when backend ready (ontology API does not have functions listing endpoint)
 const MOCK_FUNCTIONS = [
   { id: 1, name: "计算订单总额", type: "业务函数", lang: "JS", object: "Order", calls: 12480 },
   { id: 2, name: "库存扣减", type: "业务函数", lang: "JS", object: "Product", calls: 8640 },
@@ -509,6 +513,7 @@ export function OntologyFunctions() {
   );
 }
 
+// TODO: Replace with real API when backend ready (ontology API does not have rules listing endpoint)
 const MOCK_RULES = [
   { id: 1, name: "订单金额校验", type: "业务规则", trigger: "Order.before_save", condition: "amount > 0", status: "active" },
   { id: 2, name: "审批自动通过", type: "业务规则", trigger: "Approval.on_create", condition: "amount < 1000", status: "active" },
@@ -563,6 +568,7 @@ export function OntologyRules() {
   );
 }
 
+// TODO: Replace with real API when backend ready (ontology API does not have security rules listing endpoint)
 const MOCK_SECURITY_RULES = [
   { id: 1, name: "客户数据-行级权限", level: "数据级", object: "Customer", rule: "仅查看本部门客户", roles: "业务人员" },
   { id: 2, name: "订单金额-字段脱敏", level: "字段级", object: "Order", rule: "金额字段脱敏显示", roles: "非财务" },

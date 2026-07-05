@@ -70,6 +70,7 @@ function transformAuditLog(log: AuditLog) {
   };
 }
 
+// TODO: Replace with real API when backend ready (no announcements API endpoint exists)
 const ANNOUNCEMENTS = [
   { id: 1, title: "v1.3 新版本发布预告", time: "今早", type: "feature", link: "/admin" },
   { id: 2, title: "本周六 02:00-04:00 系统升级维护", time: "昨天", type: "warning", link: "/admin" },
@@ -878,6 +879,7 @@ const PORTAL_CATEGORIES = [
   { name: "开发工具", color: "bg-cyan-500", icon: Settings },
 ];
 
+// TODO: Replace with real API when backend ready (no portal apps listing API endpoint exists)
 const PORTAL_APPS = [
   { id: "crm", name: "CRM 客户管理", category: "业务系统", icon: Users, color: "bg-blue-500/10 text-blue-600", desc: "客户关系管理", pages: 12, version: "2.3", lastUsed: "10 分钟前" },
   { id: "erp", name: "ERP 企业资源", category: "业务系统", icon: Package, color: "bg-blue-500/10 text-blue-600", desc: "企业资源规划", pages: 24, version: "1.8", lastUsed: "30 分钟前" },
@@ -891,6 +893,7 @@ const PORTAL_APPS = [
   { id: "finance", name: "财务管理系统", category: "数据工具", icon: CreditCard, color: "bg-green-500/10 text-green-600", desc: "财务核算管理", pages: 20, version: "2.5", lastUsed: "本周" },
 ];
 
+// TODO: Replace with real API when backend ready (no portal announcements API endpoint exists)
 const PORTAL_ANNOUNCEMENTS = [
   { id: 1, title: "v2.0 全新改版上线通知", type: "feature", time: "今天 09:00", content: "全新门户首页改版，支持自定义布局和应用收藏" },
   { id: 2, title: "本周六凌晨系统维护公告", type: "warning", time: "昨天 14:30", content: "2026-07-05 02:00-06:00 系统升级维护" },
@@ -907,6 +910,7 @@ const QUICK_ACTIONS = [
   { name: "知识库", icon: FileText, color: "text-cyan-600 bg-cyan-50", link: "/knowledge" },
 ];
 
+// TODO: Replace with real API when backend ready (no portal todos API endpoint exists)
 const PORTAL_TODOS = [
   { id: 1, title: "审批：采购单 #2026-07-0231", type: "approval", urgency: "high", time: "30 分钟前", link: "/process/approval" },
   { id: 2, title: "任务：完成 Q3 销售预测报告", type: "task", urgency: "medium", time: "2 小时前", link: "/process/approval" },

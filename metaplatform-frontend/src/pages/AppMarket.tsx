@@ -133,7 +133,8 @@ const AppMarket: React.FC = () => {
 
   const handleInstall = useCallback(async (tpl: Template) => {
     setInstalling(tpl.id);
-    // Simulate installation by checking if object types already exist
+    // TODO: Replace with real marketplace API when available
+    // e.g. await marketplaceApi.installTemplate(tpl.id);
     await new Promise(r => setTimeout(r, 1000));
     setTemplates(prev => prev.map(t => t.id === tpl.id ? { ...t, installed: true } : t));
     setInstalling(null);

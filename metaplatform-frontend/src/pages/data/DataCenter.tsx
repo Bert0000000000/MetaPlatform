@@ -330,10 +330,16 @@ export function AskData() {
       sql = `SELECT DATE(created_at) as date, SUM(amount) as daily_total\nFROM orders\nWHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)\nGROUP BY date\nORDER BY date;`;
       result = "返回最近 30 天销售趋势数据";
       chartType = "line";
-      data = Array.from({ length: 12 }, (_, i) => ({
-        label: `${i + 1}月`,
-        value: Math.floor(Math.random() * 2000000) + 3000000,
-      }));
+      // TODO: Replace with real dataApi query when backend is ready
+      // data = await dataApi.query(sql);
+      data = [
+        { label: "1月", value: 3200000 }, { label: "2月", value: 3800000 },
+        { label: "3月", value: 4100000 }, { label: "4月", value: 3600000 },
+        { label: "5月", value: 4500000 }, { label: "6月", value: 4200000 },
+        { label: "7月", value: 4800000 }, { label: "8月", value: 4100000 },
+        { label: "9月", value: 3900000 }, { label: "10月", value: 4600000 },
+        { label: "11月", value: 5100000 }, { label: "12月", value: 4300000 },
+      ];
     } else if (lowerQ.includes("top") || lowerQ.includes("排名") || lowerQ.includes("排行")) {
       sql = `SELECT product_name, SUM(quantity) as total_sold\nFROM order_items\nGROUP BY product_name\nORDER BY total_sold DESC\nLIMIT 10;`;
       result = "返回 Top 10 热销商品";
@@ -910,6 +916,8 @@ export function AskData() {
             <Button
               onClick={() => {
                 setExportInProgress(true);
+                // TODO: Replace with real dataApi.export call when backend is ready
+                // const blob = await dataApi.export({ format: exportFormat, ... });
                 setTimeout(() => {
                   setExportInProgress(false);
                   setExportDialogOpen(false);
@@ -1700,6 +1708,14 @@ export function ChartGallery() {
 
   function renderMiniHeatmapChart() {
     const colors = ["#dbeafe", "#93c5fd", "#60a5fa", "#3b82f6", "#2563eb"];
+    // Deterministic heatmap pattern (seeded by position, not random)
+    const pattern = [
+      [2, 3, 4, 3, 2, 1, 0],
+      [1, 2, 3, 4, 3, 2, 1],
+      [0, 1, 3, 4, 4, 3, 1],
+      [1, 2, 2, 3, 3, 2, 0],
+      [0, 1, 1, 2, 2, 1, 0],
+    ];
     return (
       <svg viewBox="0 0 100 60" className="w-full h-full">
         {Array.from({ length: 5 }, (_, row) =>
@@ -1710,7 +1726,7 @@ export function ChartGallery() {
               y={row * 12 + 2}
               width="12"
               height="10"
-              fill={colors[Math.floor(Math.random() * 5)]}
+              fill={colors[pattern[row][col]]}
               rx="1"
             />
           ))
@@ -2702,6 +2718,8 @@ export function MasterData() {
     setSelectedRecords((prev) => prev.includes(id) ? prev.filter((r) => r !== id) : [...prev, id]);
   }
 
+  // TODO: Replace with real dataApi.autoMatch call when backend is ready
+  // e.g. const result = await dataApi.autoMatch(records);
   function handleAutoMatch() {
     setMatching(true);
     setTimeout(() => {

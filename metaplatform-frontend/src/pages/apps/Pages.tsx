@@ -30,6 +30,7 @@ interface Page {
   updatedAt: string;
 }
 
+// TODO: Replace with real API when backend ready (appsApi does not have pages listing endpoint)
 const INITIAL_PAGES: Page[] = [
   { id: "p-1", name: "客户档案", type: "表单", icon: FileEdit, status: "published", updatedAt: "2026-07-01" },
   { id: "p-2", name: "客户列表", type: "列表", icon: ClipboardList, status: "published", updatedAt: "2026-07-02" },
@@ -73,7 +74,8 @@ export default function Pages() {
     if (!newPageName.trim()) return;
     setCreating(true);
 
-    // Simulate a short delay
+    // TODO: Replace with real API call when pageApi.create is available
+    // const created = await pageApi.create({ name: newPageName.trim(), type: newPageType, appId });
     await new Promise((resolve) => setTimeout(resolve, 500));
 
     const newPage: Page = {

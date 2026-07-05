@@ -22,6 +22,7 @@ const KB_CATEGORIES = [
   { name: "政策法规", count: 64, icon: Scale, color: "bg-red-500" },
 ];
 
+// TODO: Replace with real API when backend ready (knowledgeApi.search() exists but no Q&A history endpoint)
 const QA_HISTORY = [
   { q: "客户合同的付款条款是什么？", hits: 5, topScore: 0.92, answer: "根据 5 篇文档：付款条款为月结 30 天，T+3 工作日内..." },
   { q: "如何申请差旅报销？", hits: 3, topScore: 0.88, answer: "需要登录 OA → 报销管理 → 填写差旅报销单 → 上传发票..." },
@@ -29,6 +30,7 @@ const QA_HISTORY = [
 ];
 
 // 知识图谱节点（mock）
+// TODO: Replace with real API when backend ready (knowledgeApi does not have graph nodes endpoint)
 const GRAPH_NODES = [
   { id: "客户", type: "entity", x: 50, y: 50 },
   { id: "订单", type: "entity", x: 150, y: 30 },

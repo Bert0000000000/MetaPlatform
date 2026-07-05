@@ -26,6 +26,7 @@ const OCR_DOC_TYPES: { id: OCRDocType; name: string; icon: LucideIcon; descripti
   { id: "business-card", name: "名片", icon: Contact, description: "个人名片识别" },
 ];
 
+// TODO: Replace with real API when backend ready (src/integrations/ocr.js exists - connect to real OCR API endpoint)
 const MOCK_OCR_RESULTS: Record<OCRDocType, OCRResult> = {
   "id-card": {
     type: "id-card",
