@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
+import { useParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { appsApi } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/ui/stat";
@@ -99,6 +101,7 @@ interface APITestResult {
 }
 
 export default function AppConfig() {
+  const { appId } = useParams();
   const [showKey, setShowKey] = useState(false);
   const [config, setConfig] = useState<AppConfigState>(INITIAL_CONFIG);
   const [saving, setSaving] = useState(false);
@@ -122,12 +125,37 @@ export default function AppConfig() {
   const [rateLimitWindowInput, setRateLimitWindowInput] = useState(config.rateLimitWindow);
 
   async function handleSave() {
+    if (!appId) {
+      setToast("未找到应用 ID");
+      return;
+    }
     setSaving(true);
-    // TODO: Replace with real API call when appsApi.updateConfig is available
-    // await appsApi.updateConfig(appId, config);
-    await new Promise((r) => setTimeout(r, 800));
-    setSaving(false);
-    setToast("配置已保存");
+    try {
+      // Save config entries via the API
+      const configEntries = [
+        { key: "publicAccess", value: String(config.publicAccess) },
+        { key: "requireApproval", value: String(config.requireApproval) },
+        { key: "rowPermission", value: String(config.rowPermission) },
+        { key: "fieldPermission", value: String(config.fieldPermission) },
+        { key: "apiKey", value: config.apiKey },
+        { key: "rateLimitValue", value: String(config.rateLimitValue) },
+        { key: "rateLimitWindow", value: config.rateLimitWindow },
+        { key: "notifications", value: JSON.stringify(config.notifications) },
+        { key: "webhooks", value: JSON.stringify(config.webhooks) },
+        { key: "imIntegrations", value: JSON.stringify(config.imIntegrations) },
+      ];
+      await Promise.all(
+        configEntries.map((entry) =>
+          appsApi.updateConfig(appId, entry.key, { value: entry.value })
+        )
+      );
+      setToast("配置已保存");
+    } catch (e) {
+      console.error("保存配置失败:", e);
+      setToast("保存失败，请重试");
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function handleRegenerateKey() {

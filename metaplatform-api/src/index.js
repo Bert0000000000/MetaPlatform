@@ -18,6 +18,11 @@ import pagesRoutes from "./routes/pages.js";
 import exportRoutes from "./routes/export.js";
 import llmRoutes from "./routes/llm.js";
 import dispatchRoutes from "./routes/dispatch.js";
+import announcementsRoutes from "./routes/announcements.js";
+import todosRoutes from "./routes/todos.js";
+import qualityRoutes from "./routes/quality.js";
+import versionsRoutes from "./routes/versions.js";
+import triggersRoutes from "./routes/triggers.js";
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -42,6 +47,11 @@ app.use("/api/pages", pagesRoutes);
 app.use("/api/export", exportRoutes);
 app.use("/api/llm", llmRoutes);
 app.use("/api/dispatch", dispatchRoutes);
+app.use("/api/announcements", announcementsRoutes);
+app.use("/api/todos", todosRoutes);
+app.use("/api/quality", qualityRoutes);
+app.use("/api/versions", versionsRoutes);
+app.use("/api/triggers", triggersRoutes);
 
 // ─── Health check ───────────────────────────────────────
 app.get("/api/health", (_req, res) => {

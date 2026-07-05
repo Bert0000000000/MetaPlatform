@@ -555,8 +555,14 @@ export function DepartmentList() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>取消</Button>
-            <Button onClick={() => {
-              // TODO: 调用 API 创建部门
+            <Button onClick={async () => {
+              if (!newDeptName.trim()) return;
+              try {
+                const newDept = await adminApi.createDepartment({ name: newDeptName.trim(), leader: newDeptLeader.trim() });
+                setDepartments((prev) => [...prev, newDept]);
+              } catch (e) {
+                console.error("创建部门失败:", e);
+              }
               setDialogOpen(false);
               setNewDeptName("");
               setNewDeptLeader("");
@@ -888,8 +894,12 @@ export function SystemSettings() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      // TODO: 实现 config 更新 API
-      await new Promise((r) => setTimeout(r, 500));
+      // Update each config entry via the API
+      await Promise.all(
+        config.map((c) => adminApi.updateConfig(c.key, { value: c.value }))
+      );
+    } catch (e: unknown) {
+      console.error("保存配置失败:", e);
     } finally {
       setSaving(false);
     }

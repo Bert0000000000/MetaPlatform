@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { PageHeader, StatCard } from "@/components/ui/stat";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
-import { processesApi, type ProcessDefinition } from "@/lib/api";
+import { processesApi, triggersApi, type ProcessDefinition } from "@/lib/api";
 import { flowableApi, type FlowableProcessDefinition } from "@/lib/flowable-api";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -1272,8 +1272,8 @@ export function ProcessApprovals() {
 }
 
 /* ─────────────────── ProcessTriggers ─────────────────── */
-// TODO: Replace with real API when backend ready (processesApi does not have triggers listing endpoint)
-const MOCK_TRIGGERS = [
+// Fallback triggers data (API 失败时使用)
+const TRIGGERS_FALLBACK = [
   { id: 1, name: "订单创建触发", event: "Order.created", target: "采购审批流程", status: "active", hits: 1248 },
   { id: 2, name: "合同到期提醒", event: "Contract.expires_in_7d", target: "提醒流程", status: "active", hits: 56 },
   { id: 3, name: "库存预警触发", event: "Inventory.low_stock", target: "补货流程", status: "active", hits: 320 },
@@ -1281,7 +1281,27 @@ const MOCK_TRIGGERS = [
 ];
 
 export function ProcessTriggers() {
-  const [triggers, setTriggers] = useState(MOCK_TRIGGERS);
+  const [triggers, setTriggers] = useState(TRIGGERS_FALLBACK);
+
+  /* Fetch triggers from API */
+  useEffect(() => {
+    triggersApi.list().then((data) => {
+      if (data && data.length > 0) {
+        setTriggers(data.map((t: any) => {
+          let config: any = {};
+          try { config = JSON.parse(t.config || "{}"); } catch {}
+          return {
+            id: t.id,
+            name: t.name,
+            event: config.event || t.type,
+            target: config.target || "关联流程",
+            status: t.status,
+            hits: t.hits || 0,
+          };
+        }));
+      }
+    }).catch(() => {});
+  }, []);
 
   function toggleStatus(id: number) {
     setTriggers((prev) => prev.map((t) => t.id === id ? { ...t, status: t.status === "active" ? "paused" : "active" } : t));

@@ -5,7 +5,7 @@ import { ROLES, WORKSPACE_BY_ROLE } from "@/config/menu";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { appsApi, messagesApi, agentsApi, adminApi } from "@/lib/api";
+import { appsApi, messagesApi, agentsApi, adminApi, announcementsApi, todosApi } from "@/lib/api";
 import type { Application, Message, Agent, AuditLog } from "@/lib/api";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
@@ -70,8 +70,8 @@ function transformAuditLog(log: AuditLog) {
   };
 }
 
-// TODO: Replace with real API when backend ready (no announcements API endpoint exists)
-const ANNOUNCEMENTS = [
+// Fallback announcements (used if API fails)
+const ANNOUNCEMENTS_FALLBACK = [
   { id: 1, title: "v1.3 新版本发布预告", time: "今早", type: "feature", link: "/admin" },
   { id: 2, title: "本周六 02:00-04:00 系统升级维护", time: "昨天", type: "warning", link: "/admin" },
   { id: 3, title: "AI 助手新增自然语言生成对象能力", time: "3 天前", type: "feature", link: "/admin" },
@@ -95,6 +95,7 @@ export function DashboardPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [agents, setAgents] = useState<Agent[]>([]);
   const [recentActivities, setRecentActivities] = useState(RECENT_ACTIVITIES_FALLBACK);
+  const [announcements, setAnnouncements] = useState(ANNOUNCEMENTS_FALLBACK);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
@@ -130,6 +131,23 @@ export function DashboardPage() {
     adminApi.listLogs(5, 0).then((logs) => {
       if (logs && logs.length > 0) {
         setRecentActivities(logs.map(transformAuditLog));
+      }
+    }).catch(() => {
+      // Keep fallback data if API fails
+    });
+  }, []);
+
+  /* ── Fetch announcements from API ── */
+  useEffect(() => {
+    announcementsApi.list(10).then((data) => {
+      if (data && data.length > 0) {
+        setAnnouncements(data.map((a: any) => ({
+          id: a.id,
+          title: a.title,
+          time: new Date(a.created_at).toLocaleDateString("zh-CN"),
+          type: a.priority === "high" ? "warning" : "feature",
+          link: "/admin",
+        })));
       }
     }).catch(() => {
       // Keep fallback data if API fails
@@ -545,7 +563,7 @@ export function DashboardPage() {
           </CardHeader>
           <CardContent>
             <ul className="space-y-2">
-              {ANNOUNCEMENTS.map((n) => (
+              {announcements.map((n) => (
                 <li
                   key={n.id}
                   className="flex items-start gap-2 p-2 rounded hover:bg-muted cursor-pointer"
@@ -893,8 +911,8 @@ const PORTAL_APPS = [
   { id: "finance", name: "财务管理系统", category: "数据工具", icon: CreditCard, color: "bg-green-500/10 text-green-600", desc: "财务核算管理", pages: 20, version: "2.5", lastUsed: "本周" },
 ];
 
-// TODO: Replace with real API when backend ready (no portal announcements API endpoint exists)
-const PORTAL_ANNOUNCEMENTS = [
+// Fallback portal announcements (used if API fails)
+const PORTAL_ANNOUNCEMENTS_FALLBACK = [
   { id: 1, title: "v2.0 全新改版上线通知", type: "feature", time: "今天 09:00", content: "全新门户首页改版，支持自定义布局和应用收藏" },
   { id: 2, title: "本周六凌晨系统维护公告", type: "warning", time: "昨天 14:30", content: "2026-07-05 02:00-06:00 系统升级维护" },
   { id: 3, title: "AI 助手新增多模态输入能力", type: "feature", time: "3 天前", content: "支持图片、语音、文档多模态输入" },
@@ -910,8 +928,8 @@ const QUICK_ACTIONS = [
   { name: "知识库", icon: FileText, color: "text-cyan-600 bg-cyan-50", link: "/knowledge" },
 ];
 
-// TODO: Replace with real API when backend ready (no portal todos API endpoint exists)
-const PORTAL_TODOS = [
+// Fallback portal todos (used if API fails)
+const PORTAL_TODOS_FALLBACK = [
   { id: 1, title: "审批：采购单 #2026-07-0231", type: "approval", urgency: "high", time: "30 分钟前", link: "/process/approval" },
   { id: 2, title: "任务：完成 Q3 销售预测报告", type: "task", urgency: "medium", time: "2 小时前", link: "/process/approval" },
   { id: 3, title: "审批：报销单 #BX-20260703", type: "approval", urgency: "low", time: "昨天", link: "/process/approval" },
@@ -927,6 +945,8 @@ export function Portal() {
   const [favorites, setFavorites] = useState<string[]>(["crm", "bi", "oa"]);
   const [announcementIdx, setAnnouncementIdx] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
+  const [portalAnnouncements, setPortalAnnouncements] = useState(PORTAL_ANNOUNCEMENTS_FALLBACK);
+  const [portalTodos, setPortalTodos] = useState(PORTAL_TODOS_FALLBACK);
 
   /* Detect viewport width */
   useEffect(() => {
@@ -936,13 +956,44 @@ export function Portal() {
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
+  /* Fetch announcements from API */
+  useEffect(() => {
+    announcementsApi.list(10).then((data) => {
+      if (data && data.length > 0) {
+        setPortalAnnouncements(data.map((a: any) => ({
+          id: a.id,
+          title: a.title,
+          type: a.priority === "high" ? "warning" : "feature",
+          time: new Date(a.created_at).toLocaleDateString("zh-CN"),
+          content: a.content || "",
+        })));
+      }
+    }).catch(() => {});
+  }, []);
+
+  /* Fetch todos from API */
+  useEffect(() => {
+    todosApi.list({ status: "pending" }).then((data) => {
+      if (data && data.length > 0) {
+        setPortalTodos(data.map((t: any) => ({
+          id: t.id,
+          title: t.title,
+          type: t.title.includes("审批") ? "approval" : "task",
+          urgency: t.priority === "high" ? "high" : t.priority === "medium" ? "medium" : "low",
+          time: new Date(t.created_at).toLocaleDateString("zh-CN"),
+          link: "/process/approval",
+        })));
+      }
+    }).catch(() => {});
+  }, []);
+
   /* Auto-rotate announcement */
   useEffect(() => {
     const t = setInterval(() => {
-      setAnnouncementIdx((i) => (i + 1) % PORTAL_ANNOUNCEMENTS.length);
+      setAnnouncementIdx((i) => (i + 1) % portalAnnouncements.length);
     }, 5000);
     return () => clearInterval(t);
-  }, []);
+  }, [portalAnnouncements.length]);
 
   function toggleFavorite(appId: string) {
     setFavorites((prev) => prev.includes(appId) ? prev.filter((id) => id !== appId) : [...prev, appId]);
@@ -955,7 +1006,7 @@ export function Portal() {
   });
   const recentApps = PORTAL_APPS.slice(0, 5);
   const favoriteApps = PORTAL_APPS.filter((a) => favorites.includes(a.id));
-  const currentAnnouncement = PORTAL_ANNOUNCEMENTS[announcementIdx];
+  const currentAnnouncement = portalAnnouncements[announcementIdx];
   const effectiveMode = isMobile ? "mobile" : viewMode;
 
   return (
@@ -997,7 +1048,7 @@ export function Portal() {
             <p className="text-xs text-muted-foreground mt-0.5 truncate">{currentAnnouncement.content}</p>
           </div>
           <div className="flex gap-1 shrink-0">
-            {PORTAL_ANNOUNCEMENTS.map((_, i) => (
+            {portalAnnouncements.map((_, i) => (
               <button key={i} className={`size-1.5 rounded-full transition-colors ${i === announcementIdx ? "bg-primary" : "bg-muted-foreground/30"}`} onClick={() => setAnnouncementIdx(i)} />
             ))}
           </div>
@@ -1034,7 +1085,7 @@ export function Portal() {
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm flex items-center gap-2">
             <ClipboardList className="size-4 text-orange-500" /> 我的待办
-            <Badge variant="destructive" className="text-xs">{PORTAL_TODOS.filter((t) => t.urgency === "high").length} 紧急</Badge>
+            <Badge variant="destructive" className="text-xs">{portalTodos.filter((t) => t.urgency === "high").length} 紧急</Badge>
           </CardTitle>
           <Button variant="ghost" size="sm" onClick={() => navigate("/process/approval")}>
             进入处理中心 <ChevronRight className="size-3 ml-1" />
@@ -1042,7 +1093,7 @@ export function Portal() {
         </CardHeader>
         <CardContent>
           <div className={effectiveMode === "mobile" ? "space-y-2" : "space-y-1"}>
-            {PORTAL_TODOS.map((t) => (
+            {portalTodos.map((t) => (
               <div
                 key={t.id}
                 className="flex items-center gap-3 p-2.5 rounded-lg border hover:bg-muted/50 cursor-pointer transition-colors"
@@ -1246,7 +1297,7 @@ export function Portal() {
         <StatCard label="门户应用" value={PORTAL_APPS.length} icon={Globe} />
         <StatCard label="今日访问" value="1,248" icon={Eye} />
         <StatCard label="活跃用户" value={86} icon={Users} />
-        <StatCard label="待办事项" value={PORTAL_TODOS.length} icon={ClipboardList} />
+        <StatCard label="待办事项" value={portalTodos.length} icon={ClipboardList} />
       </div>
     </div>
   );

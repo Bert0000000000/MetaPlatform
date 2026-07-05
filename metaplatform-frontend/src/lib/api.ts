@@ -76,6 +76,62 @@ export const appsApi = {
     request<Application>(`/apps/${id}/unpublish`, { method: "POST" }),
   listPublished: () => request<Application[]>("/apps/published"),
   getBySlug: (slug: string) => request<Application>(`/apps/slug/${slug}`),
+
+  // App Pages (nested under /api/apps/:id/pages)
+  listPages: (appId: string) =>
+    request<AppPage[]>(`/apps/${appId}/pages`),
+  createPage: (appId: string, data: Partial<AppPage>) =>
+    request<AppPage>(`/apps/${appId}/pages`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  updatePage: (appId: string, pageId: string, data: Partial<AppPage>) =>
+    request<AppPage>(`/apps/${appId}/pages/${pageId}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+  deletePage: (appId: string, pageId: string) =>
+    request(`/apps/${appId}/pages/${pageId}`, { method: "DELETE" }),
+
+  // App Config (nested under /api/apps/:id/config)
+  listConfig: (appId: string) =>
+    request<AppConfigItem[]>(`/apps/${appId}/config`),
+  createConfig: (appId: string, data: Partial<AppConfigItem>) =>
+    request<AppConfigItem>(`/apps/${appId}/config`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  updateConfig: (appId: string, key: string, data: Partial<AppConfigItem>) =>
+    request<AppConfigItem>(`/apps/${appId}/config/${key}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+};
+
+// ─── Pages (standalone) ──────────────────────────────────
+export const pagesApi = {
+  list: (appId?: string) => {
+    const qs = appId ? `?app_id=${appId}` : "";
+    return request<AppPage[]>(`/pages${qs}`);
+  },
+  get: (id: string) => request<AppPage>(`/pages/${id}`),
+  create: (data: Partial<AppPage>) =>
+    request<AppPage>("/pages", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  update: (id: string, data: Partial<AppPage>) =>
+    request<AppPage>(`/pages/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+  delete: (id: string) =>
+    request(`/pages/${id}`, { method: "DELETE" }),
+  reorder: (data: { items: Array<{ id: string; sort_order: number }> }) =>
+    request<{ updated: number }>("/pages/reorder", {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
 };
 
 // ─── Ontology ─────────────────────────────────────────────
@@ -109,6 +165,11 @@ export const ontologyApi = {
     ),
   deleteProperty: (id: string) =>
     request(`/ontology/properties/${id}`, { method: "DELETE" }),
+  updateProperty: (id: string, data: Partial<OntologyProperty>) =>
+    request<OntologyProperty>(`/ontology/properties/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
   listRelations: () => request<OntologyRelation[]>("/ontology/relations"),
   createRelation: (data: Partial<OntologyRelation>) =>
     request<OntologyRelation>("/ontology/relations", {
@@ -170,6 +231,11 @@ export const dataApi = {
       `/data/sources/${id}/test`,
     ),
   listMetrics: () => request<DataMetric[]>("/data/metrics"),
+  createMetric: (data: Partial<DataMetric>) =>
+    request<DataMetric>("/data/metrics", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
 };
 
 // ─── Knowledge ────────────────────────────────────────────
@@ -224,6 +290,11 @@ export const agentsApi = {
       method: "POST",
       body: JSON.stringify(data),
     }),
+  updateTask: (id: string, data: Partial<AgentTask>) =>
+    request<AgentTask>(`/agents/tasks/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
 };
 
 // ─── Export ────────────────────────────────────────────────
@@ -268,12 +339,27 @@ export const adminApi = {
   listRoles: () => request<Role[]>("/admin/roles"),
   listDepartments: () =>
     request<Department[]>("/admin/departments"),
+  createDepartment: (data: Partial<Department>) =>
+    request<Department>("/admin/departments", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
   listLogs: (limit = 20, offset = 0) =>
     request<AuditLog[]>(
       `/admin/logs?limit=${limit}&offset=${offset}`,
     ),
   listConfig: () =>
     request<SystemConfig[]>("/admin/config"),
+  updateConfig: (key: string, data: Partial<SystemConfig>) =>
+    request<SystemConfig>(`/admin/config/${key}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+  createLog: (data: Partial<AuditLog>) =>
+    request<AuditLog>("/admin/logs", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
 };
 
 // ─── Messages ─────────────────────────────────────────────
@@ -288,6 +374,111 @@ export const messagesApi = {
     }),
   unreadCount: () =>
     request<{ count: number }>("/messages/unread-count"),
+};
+
+// ─── Announcements ─────────────────────────────────────
+export const announcementsApi = {
+  list: async (limit = 10) => {
+    const res = await request<any[]>(`/announcements?limit=${limit}`);
+    return res;
+  },
+  create: async (data: any) => {
+    const res = await request<any>("/announcements", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+    return res;
+  },
+};
+
+// ─── Todos ─────────────────────────────────────────────
+export const todosApi = {
+  list: async (params?: { user_id?: string; status?: string }) => {
+    const qs = new URLSearchParams(params || {}).toString();
+    const res = await request<any[]>(`/todos${qs ? `?${qs}` : ""}`);
+    return res;
+  },
+  create: async (data: any) => {
+    const res = await request<any>("/todos", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+    return res;
+  },
+};
+
+// ─── Quality ───────────────────────────────────────────
+export const qualityApi = {
+  listCases: async () => {
+    const res = await request<any[]>("/quality/cases");
+    return res;
+  },
+  createCase: async (data: any) => {
+    const res = await request<any>("/quality/cases", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+    return res;
+  },
+  runCase: async (id: string, result: string, duration: number) => {
+    const res = await request<any>(`/quality/cases/${id}/run`, {
+      method: "PUT",
+      body: JSON.stringify({ result, duration }),
+    });
+    return res;
+  },
+  listBugs: async () => {
+    const res = await request<any[]>("/quality/bugs");
+    return res;
+  },
+  createBug: async (data: any) => {
+    const res = await request<any>("/quality/bugs", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+    return res;
+  },
+  updateBug: async (id: string, data: any) => {
+    const res = await request<any>(`/quality/bugs/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+    return res;
+  },
+};
+
+// ─── Versions ──────────────────────────────────────────
+export const versionsApi = {
+  listByApp: async (appId: string) => {
+    const res = await request<any[]>(`/versions/app/${appId}`);
+    return res;
+  },
+  create: async (data: any) => {
+    const res = await request<any>("/versions", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+    return res;
+  },
+};
+
+// ─── Triggers ──────────────────────────────────────────
+export const triggersApi = {
+  list: async () => {
+    const res = await request<any[]>("/triggers");
+    return res;
+  },
+  create: async (data: any) => {
+    const res = await request<any>("/triggers", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+    return res;
+  },
+  delete: async (id: string) => {
+    const res = await request<any>(`/triggers/${id}`, { method: "DELETE" });
+    return res;
+  },
 };
 
 // ─── Types ────────────────────────────────────────────────
@@ -471,4 +662,26 @@ export interface SystemConfig {
   key: string;
   value: string;
   description?: string;
+}
+
+export interface AppPage {
+  id: string;
+  app_id: string;
+  name: string;
+  type: string;
+  icon?: string;
+  status: string;
+  config?: string;
+  sort_order: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface AppConfigItem {
+  id: string;
+  app_id: string;
+  key: string;
+  value?: string;
+  description?: string;
+  updated_at?: string;
 }

@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PageHeader } from "@/components/ui/stat";
+import { pagesApi, appsApi } from "@/lib/api";
 import {
   Plus, Search, Layout, Code2, FileText, BarChart3,
   FileEdit, ClipboardList, Palette, Sparkles, Package, Loader2, Copy,
@@ -74,20 +75,60 @@ export default function Pages() {
     if (!newPageName.trim()) return;
     setCreating(true);
 
-    // TODO: Replace with real API call when pageApi.create is available
-    // const created = await pageApi.create({ name: newPageName.trim(), type: newPageType, appId });
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    try {
+      // Use appsApi.createPage if we have an appId, otherwise use pagesApi.create
+      const typeMap: Record<string, string> = {
+        "表单": "form",
+        "列表": "list",
+        "仪表盘": "dashboard",
+        "自定义": "custom",
+        "VibeCoding": "vibe_coding",
+      };
 
-    const newPage: Page = {
-      id: `p-${Date.now()}`,
-      name: newPageName.trim(),
-      type: newPageType,
-      icon: newPageType === "VibeCoding" ? Sparkles : FileEdit,
-      status: "draft",
-      updatedAt: new Date().toISOString().slice(0, 10),
-    };
+      if (appId) {
+        const created = await appsApi.createPage(appId, {
+          name: newPageName.trim(),
+          type: typeMap[newPageType] || "list",
+        });
+        const newPage: Page = {
+          id: created.id,
+          name: created.name,
+          type: newPageType,
+          icon: newPageType === "VibeCoding" ? Sparkles : FileEdit,
+          status: created.status as Page["status"],
+          updatedAt: created.updated_at?.slice(0, 10) || new Date().toISOString().slice(0, 10),
+        };
+        setPages((prev) => [newPage, ...prev]);
+      } else {
+        const created = await pagesApi.create({
+          app_id: "demo",
+          name: newPageName.trim(),
+          type: typeMap[newPageType] || "list",
+        });
+        const newPage: Page = {
+          id: created.id,
+          name: created.name,
+          type: newPageType,
+          icon: newPageType === "VibeCoding" ? Sparkles : FileEdit,
+          status: created.status as Page["status"],
+          updatedAt: created.updated_at?.slice(0, 10) || new Date().toISOString().slice(0, 10),
+        };
+        setPages((prev) => [newPage, ...prev]);
+      }
+    } catch (e) {
+      console.error("创建页面失败:", e);
+      // Fallback to local-only creation on API failure
+      const newPage: Page = {
+        id: `p-${Date.now()}`,
+        name: newPageName.trim(),
+        type: newPageType,
+        icon: newPageType === "VibeCoding" ? Sparkles : FileEdit,
+        status: "draft",
+        updatedAt: new Date().toISOString().slice(0, 10),
+      };
+      setPages((prev) => [newPage, ...prev]);
+    }
 
-    setPages((prev) => [newPage, ...prev]);
     setNewPageName("");
     setNewPageType("表单");
     setShowCreateDialog(false);

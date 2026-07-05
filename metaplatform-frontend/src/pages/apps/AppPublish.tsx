@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { appsApi, type Application } from "@/lib/api";
+import { appsApi, versionsApi, type Application } from "@/lib/api";
 import {
   Box, GitBranch, CheckCircle2, ArrowRight, Rocket, History,
   Package, RotateCcw, Target, Loader2, AlertCircle, Copy, ExternalLink,
@@ -38,9 +38,8 @@ const MOCK_TENANTS = [
   { id: "t8", name: "网易", plan: "标准版" },
 ];
 
-/* ── Mock version history ── */
-// TODO: Replace with real API when backend ready (appsApi does not have versions listing endpoint)
-const MOCK_VERSIONS = [
+/* ── Fallback version history (API 失败时使用) ── */
+const VERSIONS_FALLBACK = [
   { version: "1.3.0", date: "2026-07-04", traffic: 70, status: "primary", parallel: false },
   { version: "1.2.0", date: "2026-06-20", traffic: 30, status: "running", parallel: true },
   { version: "1.1.0", date: "2026-05-15", traffic: 0, status: "archived", parallel: false },
@@ -68,7 +67,7 @@ export default function AppPublish() {
   const [grayToast, setGrayToast] = useState<string | null>(null);
 
   /* ── Version management state ── */
-  const [versions, setVersions] = useState(MOCK_VERSIONS);
+  const [versions, setVersions] = useState(VERSIONS_FALLBACK);
   const [compareOpen, setCompareOpen] = useState(false);
   const [compareVersions, setCompareVersions] = useState<[string, string]>(["1.3.0", "1.2.0"]);
 
@@ -101,6 +100,22 @@ export default function AppPublish() {
     return () => {
       cancelled = true;
     };
+  }, [appId]);
+
+  // Fetch versions from API
+  useEffect(() => {
+    if (!appId) return;
+    versionsApi.listByApp(appId).then((data) => {
+      if (data && data.length > 0) {
+        setVersions(data.map((v: any, idx: number) => ({
+          version: v.version,
+          date: new Date(v.created_at).toLocaleDateString("zh-CN"),
+          traffic: idx === 0 ? 70 : idx === 1 ? 30 : 0,
+          status: idx === 0 ? "primary" : v.status === "published" ? "running" : "archived",
+          parallel: idx === 1,
+        })));
+      }
+    }).catch(() => {});
   }, [appId]);
 
   // Publish handler

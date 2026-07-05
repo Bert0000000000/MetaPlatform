@@ -35,6 +35,12 @@ db.exec(`
   DELETE FROM applications;
   DELETE FROM users;
   DELETE FROM system_config;
+  DELETE FROM announcements;
+  DELETE FROM todos;
+  DELETE FROM test_cases;
+  DELETE FROM bugs;
+  DELETE FROM app_versions;
+  DELETE FROM process_triggers;
 `);
 
 // ════════════════════════════════════════════════════════
@@ -362,24 +368,141 @@ for (const c of configs) {
 console.log(`  ✅ System Config: ${configs.length}`);
 
 // ════════════════════════════════════════════════════════
+//  Announcements (4)
+// ════════════════════════════════════════════════════════
+const announcementsList = [
+  { id: "ann-1", title: "v1.3 新版本发布预告", content: "MetaPlatform v1.3 即将发布，新增 AI 自动生成测试用例能力，优化流程引擎性能。", priority: "high" },
+  { id: "ann-2", title: "本周六 02:00-04:00 系统升级维护", content: "为提升系统稳定性，本周六凌晨将进行系统维护升级，届时服务将暂停。", priority: "high" },
+  { id: "ann-3", title: "AI 助手新增自然语言生成对象能力", content: "AI 助手现已支持通过自然语言描述自动生成业务对象模型，大幅提高建模效率。", priority: "normal" },
+  { id: "ann-4", title: "数据安全合规培训通知", content: "请全员于 7 月 10 日前完成数据安全合规培训课程。", priority: "normal" },
+];
+
+const insertAnnouncement = db.prepare(
+  `INSERT INTO announcements (id, title, content, priority, status, created_at, updated_at) VALUES (?, ?, ?, ?, 'active', ?, ?)`
+);
+for (const a of announcementsList) {
+  insertAnnouncement.run(a.id, a.title, a.content, a.priority, now, now);
+}
+console.log(`  Announcements: ${announcementsList.length}`);
+
+// ════════════════════════════════════════════════════════
+//  Todos (5)
+// ════════════════════════════════════════════════════════
+const todosList = [
+  { id: "todo-1", user_id: "u-business", title: "审批：采购单 #2026-07-0231", description: "技术部提交的服务器采购申请", status: "pending", priority: "high" },
+  { id: "todo-2", user_id: "u-business", title: "完成 Q3 销售预测报告", description: "基于上半年数据完成第三季度销售预测", status: "pending", priority: "medium" },
+  { id: "todo-3", user_id: "u-developer", title: "审批：报销单 #BX-20260703", description: "差旅费用报销 2500 元", status: "pending", priority: "low" },
+  { id: "todo-4", user_id: "u-developer", title: "更新客户资料 #CRM-8932", description: "更新 ABC 公司联系人信息", status: "pending", priority: "medium" },
+  { id: "todo-5", user_id: "u-business", title: "审批：合同续签 #HT-2026-Q3", description: "与 XYZ 公司的服务合同续签审批", status: "pending", priority: "high" },
+];
+
+const insertTodo = db.prepare(
+  `INSERT INTO todos (id, user_id, title, description, status, priority, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+);
+for (const t of todosList) {
+  insertTodo.run(t.id, t.user_id, t.title, t.description, t.status, t.priority, now, now);
+}
+console.log(`  Todos: ${todosList.length}`);
+
+// ════════════════════════════════════════════════════════
+//  Test Cases (5)
+// ════════════════════════════════════════════════════════
+const testCasesList = [
+  { id: "tc-1", name: "客户对象建模 CRUD", module: "本体引擎", type: "functional", priority: "high", steps: "1.创建客户对象 2.添加属性 3.保存 4.查询 5.修改 6.删除", expected: "所有操作成功，数据一致", status: "completed", result: "passed", duration: 2300 },
+  { id: "tc-2", name: "请假流程端到端", module: "流程引擎", type: "functional", priority: "high", steps: "1.发起请假 2.主管审批 3.HR 备案 4.完成", expected: "流程正常流转，状态正确", status: "completed", result: "passed", duration: 12400 },
+  { id: "tc-3", name: "报销审批页面回归", module: "应用中心", type: "functional", priority: "high", steps: "1.登录 2.打开报销页面 3.填写表单 4.提交 5.验证", expected: "页面正常渲染，提交成功", status: "completed", result: "failed", duration: 45200 },
+  { id: "tc-4", name: "知识库 RAG 检索性能", module: "知识库", type: "performance", priority: "medium", steps: "1.准备 1000 文档 2.构建索引 3.执行检索 4.统计响应时间", expected: "P95 < 2s", status: "completed", result: "passed", duration: 8100 },
+  { id: "tc-5", name: "数据中心 Doris SQL 集成", module: "数据中心", type: "integration", priority: "high", steps: "1.配置连接 2.执行查询 3.验证结果", expected: "查询返回正确数据", status: "pending", result: null, duration: null },
+];
+
+const insertTestCase = db.prepare(
+  `INSERT INTO test_cases (id, name, module, type, priority, steps, expected, status, result, duration, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+);
+for (const tc of testCasesList) {
+  insertTestCase.run(tc.id, tc.name, tc.module, tc.type, tc.priority, tc.steps, tc.expected, tc.status, tc.result, tc.duration, now, now);
+}
+console.log(`  Test Cases: ${testCasesList.length}`);
+
+// ════════════════════════════════════════════════════════
+//  Bugs (5)
+// ════════════════════════════════════════════════════════
+const bugsList = [
+  { id: "bug-1", title: "客户详情页加载慢（>3s）", description: "客户详情页在大数据量下加载超过 3 秒", severity: "high", status: "open", assignee: "张伟", module: "客户管理", steps_to_reproduce: "1.进入客户管理 2.点击包含 1000+ 订单的客户 3.观察加载时间" },
+  { id: "bug-2", title: "审批流加签功能不可用", description: "在审批过程中选择加签时页面报错", severity: "high", status: "fixed", assignee: "李娜", module: "报销审批", steps_to_reproduce: "1.发起报销审批 2.进入审批页面 3.点击加签 4.选择审批人 5.提交" },
+  { id: "bug-3", title: "销售看板图表数据缺失 7/1", description: "7 月 1 日的销售数据在看板中未显示", severity: "medium", status: "verifying", assignee: "王强", module: "销售看板", steps_to_reproduce: "1.打开销售看板 2.查看 7 月 1 日数据 3.发现数据为空" },
+  { id: "bug-4", title: "智能体回答错乱（中英文混排）", description: "智能体在处理中英文混合输入时回答内容错乱", severity: "medium", status: "open", assignee: "刘敏", module: "智能体助手", steps_to_reproduce: "1.打开智能体 2.输入中英文混合文本 3.观察回答" },
+  { id: "bug-5", title: "导出 PDF 中文乱码", description: "导出的 PDF 文件中中文字符显示为乱码", severity: "low", status: "closed", assignee: "陈红", module: "销售看板", steps_to_reproduce: "1.打开销售看板 2.点击导出 PDF 3.打开 PDF 文件 4.查看中文内容" },
+];
+
+const insertBug = db.prepare(
+  `INSERT INTO bugs (id, title, description, severity, status, assignee, module, steps_to_reproduce, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+);
+for (const b of bugsList) {
+  insertBug.run(b.id, b.title, b.description, b.severity, b.status, b.assignee, b.module, b.steps_to_reproduce, now, now);
+}
+console.log(`  Bugs: ${bugsList.length}`);
+
+// ════════════════════════════════════════════════════════
+//  App Versions (4)
+// ════════════════════════════════════════════════════════
+const versionsList = [
+  { id: "ver-1", app_id: "app-crm", version: "1.3.0", description: "新增 AI 智能推荐，优化客户画像", status: "published" },
+  { id: "ver-2", app_id: "app-crm", version: "1.2.0", description: "支持批量导入客户数据", status: "published" },
+  { id: "ver-3", app_id: "app-crm", version: "1.1.0", description: "增加合同管理模块", status: "archived" },
+  { id: "ver-4", app_id: "app-crm", version: "1.0.0", description: "初始版本，基础客户管理", status: "archived" },
+];
+
+const insertVersion = db.prepare(
+  `INSERT INTO app_versions (id, app_id, version, description, status, created_at) VALUES (?, ?, ?, ?, ?, ?)`
+);
+for (const v of versionsList) {
+  insertVersion.run(v.id, v.app_id, v.version, v.description, v.status, now);
+}
+console.log(`  App Versions: ${versionsList.length}`);
+
+// ════════════════════════════════════════════════════════
+//  Process Triggers (4)
+// ════════════════════════════════════════════════════════
+const triggersList = [
+  { id: "trig-1", process_id: "proc-purchase", name: "订单创建触发", type: "event", config: '{"event": "Order.created", "target": "采购审批流程"}', status: "active", hits: 1248 },
+  { id: "trig-2", process_id: "proc-contract", name: "合同到期提醒", type: "timer", config: '{"cron": "0 9 * * *", "condition": "expires_in_7d"}', status: "active", hits: 56 },
+  { id: "trig-3", process_id: "proc-purchase", name: "库存预警触发", type: "event", config: '{"event": "Inventory.low_stock", "target": "补货流程"}', status: "active", hits: 320 },
+  { id: "trig-4", process_id: "proc-expense", name: "审批超时升级", type: "timer", config: '{"cron": "0 */2 * * *", "timeout_hours": 24}', status: "paused", hits: 12 },
+];
+
+const insertTrigger = db.prepare(
+  `INSERT INTO process_triggers (id, process_id, name, type, config, status, hits, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+);
+for (const tr of triggersList) {
+  insertTrigger.run(tr.id, tr.process_id, tr.name, tr.type, tr.config, tr.status, tr.hits, now);
+}
+console.log(`  Process Triggers: ${triggersList.length}`);
+
+// ════════════════════════════════════════════════════════
 //  Summary
 // ════════════════════════════════════════════════════════
 console.log("\n" + "═".repeat(50));
 console.log("  🎉 Seed completed!");
 console.log("═".repeat(50));
 console.log(`
-  Users:            ${users.length}
-  Applications:     ${apps.length}
-  App Pages:        ${pagesList.length}
-  Ontology Objects: ${objects.length} (${objects.reduce((s, o) => s + o.properties.length, 0)} properties)
-  Relations:        ${relations.length}
-  Process Defs:     ${processes.length}
+  Users:             ${users.length}
+  Applications:      ${apps.length}
+  App Pages:         ${pagesList.length}
+  Ontology Objects:  ${objects.length} (${objects.reduce((s, o) => s + o.properties.length, 0)} properties)
+  Relations:         ${relations.length}
+  Process Defs:      ${processes.length}
   Process Instances: ${instances.length}
-  Data Sources:     ${dataSources.length}
-  Knowledge Docs:   ${docs.length}
-  Agents:           ${agentsList.length}
-  Agent Tasks:      ${tasks.length}
-  Messages:         ${messagesList.length}
-  Audit Logs:       ${logs.length}
-  System Config:    ${configs.length}
+  Data Sources:      ${dataSources.length}
+  Knowledge Docs:    ${docs.length}
+  Agents:            ${agentsList.length}
+  Agent Tasks:       ${tasks.length}
+  Messages:          ${messagesList.length}
+  Audit Logs:        ${logs.length}
+  System Config:     ${configs.length}
+  Announcements:     ${announcementsList.length}
+  Todos:             ${todosList.length}
+  Test Cases:        ${testCasesList.length}
+  Bugs:              ${bugsList.length}
+  App Versions:      ${versionsList.length}
+  Process Triggers:  ${triggersList.length}
 `);

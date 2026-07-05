@@ -259,6 +259,82 @@ db.exec(`
     request_type TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
+
+  -- Announcements
+  CREATE TABLE IF NOT EXISTS announcements (
+    id TEXT PRIMARY KEY,
+    title TEXT NOT NULL,
+    content TEXT,
+    priority TEXT DEFAULT 'normal',
+    status TEXT DEFAULT 'active',
+    created_at TEXT DEFAULT (datetime('now')),
+    updated_at TEXT DEFAULT (datetime('now'))
+  );
+
+  -- Todos
+  CREATE TABLE IF NOT EXISTS todos (
+    id TEXT PRIMARY KEY,
+    user_id TEXT,
+    title TEXT NOT NULL,
+    description TEXT,
+    status TEXT DEFAULT 'pending',
+    priority TEXT DEFAULT 'medium',
+    due_date TEXT,
+    created_at TEXT DEFAULT (datetime('now')),
+    updated_at TEXT DEFAULT (datetime('now'))
+  );
+
+  -- Quality Test Cases
+  CREATE TABLE IF NOT EXISTS test_cases (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    module TEXT,
+    type TEXT DEFAULT 'functional',
+    priority TEXT DEFAULT 'medium',
+    steps TEXT,
+    expected TEXT,
+    status TEXT DEFAULT 'pending',
+    result TEXT,
+    duration INTEGER,
+    created_at TEXT DEFAULT (datetime('now')),
+    updated_at TEXT DEFAULT (datetime('now'))
+  );
+
+  -- Quality Bugs
+  CREATE TABLE IF NOT EXISTS bugs (
+    id TEXT PRIMARY KEY,
+    title TEXT NOT NULL,
+    description TEXT,
+    severity TEXT DEFAULT 'medium',
+    status TEXT DEFAULT 'open',
+    assignee TEXT,
+    module TEXT,
+    steps_to_reproduce TEXT,
+    created_at TEXT DEFAULT (datetime('now')),
+    updated_at TEXT DEFAULT (datetime('now'))
+  );
+
+  -- App Versions
+  CREATE TABLE IF NOT EXISTS app_versions (
+    id TEXT PRIMARY KEY,
+    app_id TEXT NOT NULL,
+    version TEXT NOT NULL,
+    description TEXT,
+    status TEXT DEFAULT 'draft',
+    created_at TEXT DEFAULT (datetime('now'))
+  );
+
+  -- Process Triggers
+  CREATE TABLE IF NOT EXISTS process_triggers (
+    id TEXT PRIMARY KEY,
+    process_id TEXT,
+    name TEXT NOT NULL,
+    type TEXT DEFAULT 'timer',
+    config TEXT,
+    status TEXT DEFAULT 'active',
+    hits INTEGER DEFAULT 0,
+    created_at TEXT DEFAULT (datetime('now'))
+  );
 `);
 
 // ─── Migrations (additive) ─────────────────────────────────

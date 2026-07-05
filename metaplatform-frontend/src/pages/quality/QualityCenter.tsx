@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { PageHeader } from "@/components/ui/stat";
+import { qualityApi } from "@/lib/api";
 import { TestTube, Bot, Play, CheckCircle2, XCircle, Loader2, Bug, FileText, Plus, Gauge, Sparkles, GitBranch, AlertCircle, Zap, FlaskConical, BarChart3, Download, Activity, Settings, Search, Send, Monitor, Wrench, Eye, Clock, Shield } from "lucide-react";
 
 const statusConfig = {
@@ -27,9 +28,8 @@ const priorityConfig = {
   P2: { label: "P2", variant: "outline" as const },
 };
 
-// 测试用例初始数据（本地状态管理，无 quality API）
-// TODO: Replace with real API call when backend is ready (no quality API exists yet)
-const INITIAL_TEST_CASES = [
+// 测试用例 fallback 数据（API 失败时使用）
+const TEST_CASES_FALLBACK = [
   { id: "t-1", name: "客户对象建模 CRUD", module: "本体引擎", type: "单元" as const, status: "passed" as const, priority: "P0" as const, lastRun: "10min ago", duration: "2.3s" },
   { id: "t-2", name: "请假流程端到端", module: "流程引擎", type: "流程" as const, status: "passed" as const, priority: "P0" as const, lastRun: "1h ago", duration: "12.4s" },
   { id: "t-3", name: "报销审批页面回归", module: "应用中心", type: "UI" as const, status: "failed" as const, priority: "P0" as const, lastRun: "30min ago", duration: "45.2s" },
@@ -37,8 +37,8 @@ const INITIAL_TEST_CASES = [
   { id: "t-5", name: "数据中心 Doris SQL 集成", module: "数据中心", type: "集成" as const, status: "running" as const, priority: "P0" as const, lastRun: "running", duration: "-" },
 ];
 
-// 缺陷跟踪
-const BUGS = [
+// 缺陷跟踪 fallback 数据（API 失败时使用）
+const BUGS_FALLBACK = [
   { id: "BUG-1284", title: "客户详情页加载慢（>3s）", module: "客户管理", severity: "P0", status: "open", assignee: "张伟", createdAt: "今天 09:42" },
   { id: "BUG-1283", title: "审批流加签功能不可用", module: "报销审批", severity: "P0", status: "fixed", assignee: "李娜", createdAt: "昨天 16:20" },
   { id: "BUG-1282", title: "销售看板图表数据缺失 7/1", module: "销售看板", severity: "P1", status: "verifying", assignee: "王强", createdAt: "昨天 14:30" },
@@ -64,7 +64,25 @@ const AI_GENERATED = [
 ];
 
 export function TestCases({ onAdoptFromAI }: { onAdoptFromAI?: (caseItem: { name: string; module: string; type: string }) => void }) {
-  const [cases, setCases] = useState(INITIAL_TEST_CASES);
+  const [cases, setCases] = useState(TEST_CASES_FALLBACK);
+
+  /* Fetch test cases from API */
+  useEffect(() => {
+    qualityApi.listCases().then((data) => {
+      if (data && data.length > 0) {
+        setCases(data.map((tc: any) => ({
+          id: tc.id,
+          name: tc.name,
+          module: tc.module || "未分类",
+          type: (tc.type === "functional" ? "单元" : tc.type === "performance" ? "性能" : tc.type === "integration" ? "集成" : "单元") as "单元" | "集成" | "UI" | "流程" | "性能",
+          status: (tc.result === "passed" ? "passed" : tc.result === "failed" ? "failed" : tc.status === "completed" ? "passed" : "draft") as "passed" | "failed" | "running" | "skipped" | "draft",
+          priority: (tc.priority === "high" ? "P0" : tc.priority === "medium" ? "P1" : "P2") as "P0" | "P1" | "P2",
+          lastRun: tc.status === "completed" ? new Date(tc.updated_at).toLocaleDateString("zh-CN") : "未运行",
+          duration: tc.duration ? `${(tc.duration / 1000).toFixed(1)}s` : "-",
+        })));
+      }
+    }).catch(() => {});
+  }, []);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [aiDialogOpen, setAiDialogOpen] = useState(false);
   const [form, setForm] = useState({ name: "", module: "", type: "单元", priority: "P1" });
@@ -288,7 +306,24 @@ export function TestCases({ onAdoptFromAI }: { onAdoptFromAI?: (caseItem: { name
 }
 
 export function BugTracker() {
-  const [bugs, setBugs] = useState(BUGS);
+  const [bugs, setBugs] = useState(BUGS_FALLBACK);
+
+  /* Fetch bugs from API */
+  useEffect(() => {
+    qualityApi.listBugs().then((data) => {
+      if (data && data.length > 0) {
+        setBugs(data.map((b: any) => ({
+          id: b.id.toUpperCase().replace("BUG-", "BUG-"),
+          title: b.title,
+          module: b.module || "未分类",
+          severity: b.severity === "high" ? "P0" : b.severity === "medium" ? "P1" : "P2",
+          status: b.status,
+          assignee: b.assignee || "待分配",
+          createdAt: new Date(b.created_at).toLocaleDateString("zh-CN"),
+        })));
+      }
+    }).catch(() => {});
+  }, []);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState({ title: "", module: "", severity: "P1", assignee: "" });
   const p0Count = bugs.filter((b) => b.severity === "P0").length;
@@ -475,7 +510,43 @@ export function AIGenerateCases({ onAdopt }: { onAdopt?: (caseItem: { name: stri
 }
 
 export function QualityDashboard() {
-  const [cases, setCases] = useState(INITIAL_TEST_CASES);
+  const [cases, setCases] = useState(TEST_CASES_FALLBACK);
+  const [bugsData, setBugsData] = useState(BUGS_FALLBACK);
+
+  /* Fetch test cases from API */
+  useEffect(() => {
+    qualityApi.listCases().then((data) => {
+      if (data && data.length > 0) {
+        setCases(data.map((tc: any) => ({
+          id: tc.id,
+          name: tc.name,
+          module: tc.module || "未分类",
+          type: (tc.type === "functional" ? "单元" : tc.type === "performance" ? "性能" : tc.type === "integration" ? "集成" : "单元") as "单元" | "集成" | "UI" | "流程" | "性能",
+          status: (tc.result === "passed" ? "passed" : tc.result === "failed" ? "failed" : tc.status === "completed" ? "passed" : "draft") as "passed" | "failed" | "running" | "skipped" | "draft",
+          priority: (tc.priority === "high" ? "P0" : tc.priority === "medium" ? "P1" : "P2") as "P0" | "P1" | "P2",
+          lastRun: tc.status === "completed" ? new Date(tc.updated_at).toLocaleDateString("zh-CN") : "未运行",
+          duration: tc.duration ? `${(tc.duration / 1000).toFixed(1)}s` : "-",
+        })));
+      }
+    }).catch(() => {});
+  }, []);
+
+  /* Fetch bugs from API */
+  useEffect(() => {
+    qualityApi.listBugs().then((data) => {
+      if (data && data.length > 0) {
+        setBugsData(data.map((b: any) => ({
+          id: b.id.toUpperCase().replace("BUG-", "BUG-"),
+          title: b.title,
+          module: b.module || "未分类",
+          severity: b.severity === "high" ? "P0" : b.severity === "medium" ? "P1" : "P2",
+          status: b.status,
+          assignee: b.assignee || "待分配",
+          createdAt: new Date(b.created_at).toLocaleDateString("zh-CN"),
+        })));
+      }
+    }).catch(() => {});
+  }, []);
   const [aiDialogOpen, setAiDialogOpen] = useState(false);
 
   const caseCount = cases.length;
@@ -518,7 +589,7 @@ export function QualityDashboard() {
         <StatCard label="用例总数" value={caseCount} icon={FlaskConical} />
         <StatCard label="通过率" value={`${passRate}%`} trend={2.1} icon={CheckCircle2} />
         <StatCard label="失败用例" value={failedCount} icon={XCircle} />
-        <StatCard label="缺陷数" value={BUGS.length} icon={BarChart3} />
+        <StatCard label="缺陷数" value={bugsData.length} icon={BarChart3} />
       </div>
 
       <Tabs defaultValue="dashboard">
