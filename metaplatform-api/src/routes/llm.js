@@ -9,10 +9,26 @@ import db from "../db.js";
 
 const router = Router();
 
-// ─── Configuration ────────────────────────────────────────
-const LLM_BASE_URL = process.env.LLM_BASE_URL || "https://api.openai.com/v1";
-const LLM_API_KEY = process.env.LLM_API_KEY || "sk-your-real-api-key-here";
-const LLM_DEFAULT_MODEL = process.env.LLM_MODEL || "gpt-4o-mini";
+// ─── Configuration (DB-first, env fallback) ────────────────
+function getConfig(key, fallback) {
+  try {
+    const row = db.prepare("SELECT value FROM system_config WHERE key = ?").get(key);
+    return row ? row.value : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function getLlmConfig() {
+  return {
+    baseUrl: getConfig("llm_base_url", process.env.LLM_BASE_URL || "https://api.openai.com/v1"),
+    apiKey: getConfig("llm_api_key", process.env.LLM_API_KEY || ""),
+    model: getConfig("llm_model", process.env.LLM_MODEL || "gpt-4o-mini"),
+    embeddingModel: getConfig("llm_embedding_model", "text-embedding-3-small"),
+    maxTokens: parseInt(getConfig("llm_max_tokens", "4096"), 10),
+    temperature: parseFloat(getConfig("llm_temperature", "0.7")),
+  };
+}
 
 // ─── Available models ─────────────────────────────────────
 const AVAILABLE_MODELS = [
@@ -43,13 +59,13 @@ function recordUsage(model, promptTokens, completionTokens, userId, requestType)
 }
 
 // ─── Helper: call OpenAI-compatible API ───────────────────
-async function callLLM(endpoint, body) {
-  const url = `${LLM_BASE_URL}${endpoint}`;
+async function callLLM(endpoint, body, llmCfg) {
+  const url = `${llmCfg.baseUrl}${endpoint}`;
   const response = await fetch(url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${LLM_API_KEY}`,
+      Authorization: `Bearer ${llmCfg.apiKey}`,
     },
     body: JSON.stringify(body),
   });
@@ -76,12 +92,13 @@ router.post("/chat", async (req, res, next) => {
       });
     }
 
-    const selectedModel = model || LLM_DEFAULT_MODEL;
+    const llmCfg = getLlmConfig();
+    const selectedModel = model || llmCfg.model;
     const requestBody = {
       model: selectedModel,
       messages,
-      temperature: temperature ?? 0.7,
-      max_tokens: maxTokens || 1024,
+      temperature: temperature ?? llmCfg.temperature,
+      max_tokens: maxTokens || llmCfg.maxTokens,
     };
 
     // Add streaming header info
@@ -89,7 +106,7 @@ router.post("/chat", async (req, res, next) => {
     res.set("X-LLM-Model", selectedModel);
     res.set("X-LLM-Provider", "openai-compatible");
 
-    const data = await callLLM("/chat/completions", requestBody);
+    const data = await callLLM("/chat/completions", requestBody, llmCfg);
 
     // Record usage
     if (data.usage) {
@@ -139,19 +156,20 @@ router.post("/completion", async (req, res, next) => {
       });
     }
 
-    const selectedModel = model || LLM_DEFAULT_MODEL;
+    const llmCfg = getLlmConfig();
+    const selectedModel = model || llmCfg.model;
 
     // Convert prompt to chat format for better compatibility
     const requestBody = {
       model: selectedModel,
       messages: [{ role: "user", content: prompt }],
-      temperature: temperature ?? 0.7,
-      max_tokens: maxTokens || 1024,
+      temperature: temperature ?? llmCfg.temperature,
+      max_tokens: maxTokens || llmCfg.maxTokens,
     };
 
     res.set("X-LLM-Model", selectedModel);
 
-    const data = await callLLM("/chat/completions", requestBody);
+    const data = await callLLM("/chat/completions", requestBody, llmCfg);
 
     // Record usage
     if (data.usage) {
@@ -200,7 +218,8 @@ router.post("/embedding", async (req, res, next) => {
       });
     }
 
-    const selectedModel = model || "text-embedding-3-small";
+    const llmCfg = getLlmConfig();
+    const selectedModel = model || llmCfg.embeddingModel;
     const requestBody = {
       model: selectedModel,
       input: Array.isArray(input) ? input : [input],
@@ -208,7 +227,7 @@ router.post("/embedding", async (req, res, next) => {
 
     res.set("X-LLM-Model", selectedModel);
 
-    const data = await callLLM("/embeddings", requestBody);
+    const data = await callLLM("/embeddings", requestBody, llmCfg);
 
     // Record usage
     if (data.usage) {

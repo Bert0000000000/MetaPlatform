@@ -315,4 +315,95 @@ router.put("/config/:key", (req, res, next) => {
   }
 });
 
+// ─── LLM / AI Gateway Config ─────────────────────────────
+const LLM_CONFIG_KEYS = [
+  { key: "llm_base_url", label: "Base URL", description: "LLM API 地址", placeholder: "https://api.openai.com/v1" },
+  { key: "llm_api_key", label: "API Key", description: "LLM API 密钥", placeholder: "sk-..." },
+  { key: "llm_model", label: "默认模型", description: "默认聊天模型", placeholder: "gpt-4o-mini" },
+  { key: "llm_embedding_model", label: "Embedding 模型", description: "向量嵌入模型", placeholder: "text-embedding-3-small" },
+  { key: "llm_max_tokens", label: "最大 Token", description: "单次请求最大 token 数", placeholder: "4096" },
+  { key: "llm_temperature", label: "Temperature", description: "生成温度 (0-2)", placeholder: "0.7" },
+];
+
+// GET /llm-config — get all LLM config items
+router.get("/llm-config", (_req, res, next) => {
+  try {
+    const items = LLM_CONFIG_KEYS.map((item) => {
+      const row = db.prepare("SELECT value FROM system_config WHERE key = ?").get(item.key);
+      return { ...item, value: row ? row.value : "" };
+    });
+    res.json({ success: true, data: items });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PUT /llm-config — batch update LLM config
+router.put("/llm-config", (req, res, next) => {
+  try {
+    const { items } = req.body;
+    if (!items || !Array.isArray(items)) {
+      return res.status(400).json({ success: false, error: "items 为必填项" });
+    }
+    const now = new Date().toISOString();
+    const upsert = db.prepare(
+      `INSERT INTO system_config (key, value, description, updated_at) VALUES (?, ?, ?, ?)
+       ON CONFLICT(key) DO UPDATE SET value = ?, updated_at = ?`
+    );
+    const tx = db.transaction(() => {
+      for (const item of items) {
+        const meta = LLM_CONFIG_KEYS.find((k) => k.key === item.key);
+        if (!meta) continue;
+        upsert.run(item.key, item.value || "", meta.description, now, item.value || "", now);
+      }
+    });
+    tx();
+    // Return updated config
+    const updated = LLM_CONFIG_KEYS.map((item) => {
+      const row = db.prepare("SELECT value FROM system_config WHERE key = ?").get(item.key);
+      return { ...item, value: row ? row.value : "" };
+    });
+    res.json({ success: true, data: updated });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /llm-config/status — test LLM connectivity
+router.get("/llm-config/status", async (_req, res, next) => {
+  try {
+    const rows = db.prepare("SELECT key, value FROM system_config WHERE key IN (?,?,?,?,?,?)").all(
+      "llm_base_url", "llm_api_key", "llm_model", "llm_embedding_model", "llm_max_tokens", "llm_temperature"
+    );
+    const cfg = {};
+    for (const r of rows) cfg[r.key] = r.value;
+
+    const baseUrl = cfg.llm_base_url || process.env.LLM_BASE_URL || "https://api.openai.com/v1";
+    const apiKey = cfg.llm_api_key || process.env.LLM_API_KEY || "";
+
+    if (!apiKey) {
+      return res.json({ success: true, data: { connected: false, reason: "未配置 API Key" } });
+    }
+
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 5000);
+      const resp = await fetch(`${baseUrl}/models`, {
+        headers: { Authorization: `Bearer ${apiKey}` },
+        signal: controller.signal,
+      });
+      clearTimeout(timeout);
+      if (resp.ok) {
+        res.json({ success: true, data: { connected: true, baseUrl, model: cfg.llm_model || "gpt-4o-mini" } });
+      } else {
+        res.json({ success: true, data: { connected: false, reason: `HTTP ${resp.status}` } });
+      }
+    } catch {
+      res.json({ success: true, data: { connected: false, reason: "连接超时或地址不可达" } });
+    }
+  } catch (err) {
+    next(err);
+  }
+});
+
 export default router;

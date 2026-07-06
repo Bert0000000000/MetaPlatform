@@ -448,6 +448,20 @@ export const adminApi = {
       method: "POST",
       body: JSON.stringify(data),
     }),
+  // LLM / AI Gateway config
+  getLlmConfig: () =>
+    request<{ key: string; label: string; description: string; placeholder: string; value: string }[]>(
+      "/admin/llm-config",
+    ),
+  saveLlmConfig: (items: { key: string; value: string }[]) =>
+    request<{ key: string; label: string; value: string }[]>("/admin/llm-config", {
+      method: "PUT",
+      body: JSON.stringify({ items }),
+    }),
+  testLlmConnection: () =>
+    request<{ connected: boolean; reason?: string; baseUrl?: string; model?: string }>(
+      "/admin/llm-config/status",
+    ),
 };
 
 // ─── Messages ─────────────────────────────────────────────

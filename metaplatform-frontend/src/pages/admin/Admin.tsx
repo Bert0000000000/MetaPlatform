@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { adminApi, type User, type Role, type Department, type AuditLog, type SystemConfig } from "@/lib/api";
-import { Users, Shield, Server, Cpu, Database, Activity, Plus, MoreHorizontal, BarChart3, AlertTriangle, Building2, Settings2, BookText, FileText, Clock, Edit, Trash2, Search, Filter, KeyRound, Lock, Eye, Monitor, Package, Handshake, Megaphone, Settings, DollarSign, Palette, Wrench, TestTube, Home, Bot, Smartphone, RefreshCw, Dna, CheckCircle2, BookOpen, Cloud, Circle, Radio, Loader2, Download, Upload, HardDrive, GitBranch, Layers, Globe, Puzzle, Calendar, ArrowUp, ArrowDown } from "lucide-react";
+import { Users, Shield, Server, Cpu, Database, Activity, Plus, MoreHorizontal, BarChart3, AlertTriangle, Building2, Settings2, BookText, FileText, Clock, Edit, Trash2, Search, Filter, KeyRound, Lock, Eye, Monitor, Package, Handshake, Megaphone, Settings, DollarSign, Palette, Wrench, TestTube, Home, Bot, Smartphone, RefreshCw, Dna, CheckCircle2, BookOpen, Cloud, Circle, Radio, Loader2, Download, Upload, HardDrive, GitBranch, Layers, Globe, Puzzle, Calendar, ArrowUp, ArrowDown, Zap } from "lucide-react";
 import { PageHeader } from "@/components/ui/stat";
 
 const roleLabels: Record<string, string> = {
@@ -1078,6 +1078,110 @@ export function OperationLog() {
   );
 }
 
+// ─── AI Gateway Config ─────────────────────────────────────
+function AIGatewayConfig() {
+  const [items, setItems] = useState<{ key: string; label: string; description: string; placeholder: string; value: string }[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [status, setStatus] = useState<{ connected: boolean; reason?: string } | null>(null);
+  const [testing, setTesting] = useState(false);
+
+  useEffect(() => {
+    adminApi.getLlmConfig().then(setItems).catch(() => {}).finally(() => setLoading(false));
+  }, []);
+
+  const handleChange = (key: string, value: string) => {
+    setItems((prev) => prev.map((item) => (item.key === key ? { ...item, value } : item)));
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await adminApi.saveLlmConfig(items.map(({ key, value }) => ({ key, value })));
+    } catch (e) {
+      console.error("保存 LLM 配置失败:", e);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleTest = async () => {
+    setTesting(true);
+    setStatus(null);
+    try {
+      // Save first, then test
+      await adminApi.saveLlmConfig(items.map(({ key, value }) => ({ key, value })));
+      const result = await adminApi.testLlmConnection();
+      setStatus(result);
+    } catch {
+      setStatus({ connected: false, reason: "测试请求失败" });
+    } finally {
+      setTesting(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <Card>
+        <CardContent className="flex items-center justify-center py-8">
+          <Loader2 className="size-5 animate-spin text-muted-foreground" />
+          <span className="ml-2 text-sm text-muted-foreground">加载 AI 配置...</span>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0">
+        <div>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Bot className="size-4" /> AI Gateway 配置
+          </CardTitle>
+          <CardDescription>配置 LLM 服务的连接参数（Base URL、API Key、模型等）</CardDescription>
+        </div>
+        <div className="flex items-center gap-2">
+          {status && (
+            <Badge variant={status.connected ? "default" : "destructive"} className={status.connected ? "bg-green-500/10 text-green-600 border-green-200" : ""}>
+              {status.connected ? "连接正常" : status.reason || "连接失败"}
+            </Badge>
+          )}
+          <Button size="sm" variant="outline" onClick={handleTest} disabled={testing || saving}>
+            {testing ? <Loader2 className="size-3 mr-1 animate-spin" /> : <Zap className="size-3 mr-1" />}
+            测试连接
+          </Button>
+          <Button size="sm" onClick={handleSave} disabled={saving || testing}>
+            {saving && <Loader2 className="size-3 mr-1 animate-spin" />}
+            保存配置
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {items.map((item) => (
+            <div key={item.key} className="space-y-1.5">
+              <Label className="text-sm font-medium">
+                {item.label}
+                {item.key === "llm_api_key" && (
+                  <span className="text-xs text-muted-foreground ml-1">（敏感信息，保存后加密存储）</span>
+                )}
+              </Label>
+              <Input
+                type={item.key === "llm_api_key" ? "password" : "text"}
+                value={item.value}
+                onChange={(e) => handleChange(item.key, e.target.value)}
+                placeholder={item.placeholder}
+                className="h-8 text-sm"
+              />
+              <p className="text-xs text-muted-foreground">{item.description}</p>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 // ─── SystemSettings ────────────────────────────────────────
 export function SystemSettings() {
   const [config, setConfig] = useState<SystemConfig[]>([]);
@@ -1242,11 +1346,12 @@ export function SystemSettings() {
           </CardContent>
         </Card>
       </div>
+
+      {/* AI Gateway Config */}
+      <AIGatewayConfig />
     </div>
   );
 }
-
-// ─── AdminDashboard ────────────────────────────────────────
 export function AdminDashboard() {
   const [userCount, setUserCount] = useState<number>(0);
   const [roleCount, setRoleCount] = useState<number>(0);

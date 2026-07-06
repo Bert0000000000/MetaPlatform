@@ -34,7 +34,7 @@ import {
   Hammer,
 } from "lucide-react";
 
-export type Role = "executive" | "business" | "developer" | "architect" | "ops";
+export type Role = "super_admin" | "admin" | "executive" | "business" | "developer" | "architect" | "ops";
 
 export type MenuKey =
   | "dashboard"
@@ -65,9 +65,19 @@ export interface RoleConfig {
 }
 
 /**
- * 5 类角色定义
+ * 7 类角色定义
  */
 export const ROLES: RoleConfig[] = [
+  {
+    id: "super_admin",
+    label: "超级管理员",
+    description: "拥有全部系统权限",
+  },
+  {
+    id: "admin",
+    label: "管理员",
+    description: "系统管理/配置管理",
+  },
   {
     id: "executive",
     label: "领导用户",
@@ -186,9 +196,16 @@ export const MENU_ITEMS: MenuItem[] = [
 ];
 
 /**
- * 5 类角色的一级菜单可见性
+ * 7 类角色的一级菜单可见性
  */
+const ALL_MENUS: MenuKey[] = [
+  "dashboard", "superai", "architecture", "apps", "process", "data",
+  "ontology", "quality", "knowledge", "market", "agents", "admin",
+];
+
 export const MENU_BY_ROLE: Record<Role, MenuKey[]> = {
+  super_admin: ALL_MENUS,
+  admin: ALL_MENUS,
   executive: [
     "dashboard",
     "superai",

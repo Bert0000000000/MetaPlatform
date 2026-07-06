@@ -14,6 +14,8 @@ function getInitialRole(): Role {
   if (typeof window === "undefined") return "business";
   const stored = window.localStorage.getItem(STORAGE_KEY);
   if (
+    stored === "super_admin" ||
+    stored === "admin" ||
     stored === "executive" ||
     stored === "business" ||
     stored === "developer" ||
