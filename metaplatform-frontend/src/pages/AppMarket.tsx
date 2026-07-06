@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { listObjectTypes } from "../api/ontologyApi";
 import { ObjectTypeSummary } from "../types/schema";
+import { marketApi } from "../lib/api";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -127,14 +128,31 @@ const AppMarket: React.FC = () => {
     listObjectTypes().then(setObjectTypes).catch(() => {});
   }, []);
 
+  /* Fetch templates from market API */
+  useEffect(() => {
+    marketApi.listTemplates().then((data) => {
+      if (data && data.length > 0) {
+        setTemplates(data.map((t: any) => ({
+          id: t.id,
+          name: t.name,
+          description: t.description || "",
+          category: t.category || "通用",
+          icon: "\u{1F4E6}",
+          objectTypes: [],
+          fields: {},
+          installed: false,
+        })));
+      }
+    }).catch(() => {});
+  }, []);
+
   const filtered = selectedCategory === "全部"
     ? templates
     : templates.filter(t => t.category === selectedCategory);
 
   const handleInstall = useCallback(async (tpl: Template) => {
     setInstalling(tpl.id);
-    // TODO: Replace with real marketplace API when available
-    // e.g. await marketplaceApi.installTemplate(tpl.id);
+    marketApi.installTemplate(tpl.id).catch(() => {});
     await new Promise(r => setTimeout(r, 1000));
     setTemplates(prev => prev.map(t => t.id === tpl.id ? { ...t, installed: true } : t));
     setInstalling(null);

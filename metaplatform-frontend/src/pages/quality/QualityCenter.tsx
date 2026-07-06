@@ -512,6 +512,14 @@ export function AIGenerateCases({ onAdopt }: { onAdopt?: (caseItem: { name: stri
 export function QualityDashboard() {
   const [cases, setCases] = useState(TEST_CASES_FALLBACK);
   const [bugsData, setBugsData] = useState(BUGS_FALLBACK);
+  const [stats, setStats] = useState<{ totalCases: number; passedCases: number; failedCases: number; passRate: string; totalBugs: number; openBugs: number } | null>(null);
+
+  /* Fetch quality stats from API */
+  useEffect(() => {
+    qualityApi.getStats().then((data) => {
+      setStats(data);
+    }).catch(() => {});
+  }, []);
 
   /* Fetch test cases from API */
   useEffect(() => {
@@ -549,10 +557,11 @@ export function QualityDashboard() {
   }, []);
   const [aiDialogOpen, setAiDialogOpen] = useState(false);
 
-  const caseCount = cases.length;
-  const passedCount = cases.filter((t) => t.status === "passed").length;
-  const failedCount = cases.filter((t) => t.status === "failed").length;
-  const passRate = caseCount > 0 ? ((passedCount / caseCount) * 100).toFixed(1) : "0";
+  const caseCount = stats?.totalCases ?? cases.length;
+  const passedCount = stats?.passedCases ?? cases.filter((t) => t.status === "passed").length;
+  const failedCount = stats?.failedCases ?? cases.filter((t) => t.status === "failed").length;
+  const passRate = stats?.passRate ?? (caseCount > 0 ? ((passedCount / caseCount) * 100).toFixed(1) : "0");
+  const bugCount = stats?.totalBugs ?? bugsData.length;
 
   function handleAdoptFromAI(caseItem: { name: string; type: string }) {
     setCases((prev) => [...prev, {
@@ -589,7 +598,7 @@ export function QualityDashboard() {
         <StatCard label="用例总数" value={caseCount} icon={FlaskConical} />
         <StatCard label="通过率" value={`${passRate}%`} trend={2.1} icon={CheckCircle2} />
         <StatCard label="失败用例" value={failedCount} icon={XCircle} />
-        <StatCard label="缺陷数" value={bugsData.length} icon={BarChart3} />
+        <StatCard label="缺陷数" value={bugCount} icon={BarChart3} />
       </div>
 
       <Tabs defaultValue="dashboard">

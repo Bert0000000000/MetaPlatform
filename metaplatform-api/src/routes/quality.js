@@ -72,4 +72,25 @@ router.put("/bugs/:id", (req, res) => {
   res.json({ success: true });
 });
 
+// GET /api/quality/stats
+router.get("/stats", (_req, res) => {
+  const totalCases = db.prepare("SELECT COUNT(*) as count FROM test_cases").get().count;
+  const passedCases = db.prepare("SELECT COUNT(*) as count FROM test_cases WHERE result = 'passed'").get().count;
+  const failedCases = db.prepare("SELECT COUNT(*) as count FROM test_cases WHERE result = 'failed'").get().count;
+  const totalBugs = db.prepare("SELECT COUNT(*) as count FROM bugs").get().count;
+  const openBugs = db.prepare("SELECT COUNT(*) as count FROM bugs WHERE status = 'open'").get().count;
+
+  res.json({
+    success: true,
+    data: {
+      totalCases,
+      passedCases,
+      failedCases,
+      passRate: totalCases > 0 ? ((passedCases / totalCases) * 100).toFixed(1) : "0",
+      totalBugs,
+      openBugs,
+    },
+  });
+});
+
 export default router;

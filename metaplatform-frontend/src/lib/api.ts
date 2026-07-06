@@ -506,6 +506,17 @@ export const qualityApi = {
     });
     return res;
   },
+  getStats: async () => {
+    const res = await request<{
+      totalCases: number;
+      passedCases: number;
+      failedCases: number;
+      passRate: string;
+      totalBugs: number;
+      openBugs: number;
+    }>("/quality/stats");
+    return res;
+  },
 };
 
 // ─── Versions ──────────────────────────────────────────
@@ -611,6 +622,59 @@ export const knowledgeGraphApi = {
     });
     const json = await res.json();
     return json.data;
+  },
+};
+
+// ─── Market ────────────────────────────────────────────
+export const marketApi = {
+  listTemplates: async (category?: string) => {
+    const qs = category ? `?category=${encodeURIComponent(category)}` : "";
+    const res = await request<any[]>(`/market/templates${qs}`);
+    return res;
+  },
+  createTemplate: async (data: any) => {
+    const res = await request<any>("/market/templates", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+    return res;
+  },
+  installTemplate: async (id: string) => {
+    const res = await request<any>(`/market/templates/${id}/install`, {
+      method: "POST",
+    });
+    return res;
+  },
+};
+
+// ─── Filesystem (WebIDE) ──────────────────────────────
+export const filesystemApi = {
+  listFiles: async (params: { app_id?: string; parent_id?: string }) => {
+    const qs = new URLSearchParams(
+      Object.fromEntries(Object.entries(params).filter(([, v]) => v !== undefined)),
+    ).toString();
+    const res = await request<any[]>(`/filesystem/files${qs ? `?${qs}` : ""}`);
+    return res;
+  },
+  createFile: async (data: any) => {
+    const res = await request<any>("/filesystem/files", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+    return res;
+  },
+  updateFile: async (id: string, data: any) => {
+    const res = await request<any>(`/filesystem/files/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+    return res;
+  },
+  deleteFile: async (id: string) => {
+    const res = await request<any>(`/filesystem/files/${id}`, {
+      method: "DELETE",
+    });
+    return res;
   },
 };
 

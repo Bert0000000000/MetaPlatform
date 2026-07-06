@@ -49,6 +49,8 @@ db.exec(`
   DELETE FROM knowledge_qa;
   DELETE FROM knowledge_graph_edges;
   DELETE FROM knowledge_graph_nodes;
+  DELETE FROM market_templates;
+  DELETE FROM fs_files;
 `);
 
 // ════════════════════════════════════════════════════════
@@ -650,6 +652,73 @@ for (const e of kgEdges) {
 console.log(`  Knowledge Graph Edges: ${kgEdges.length}`);
 
 // ════════════════════════════════════════════════════════
+//  Market Templates (8)
+// ════════════════════════════════════════════════════════
+const marketTemplatesList = [
+  { id: "mt-1", name: "CRM 通用模板", description: "客户关系管理全套本体模板，包含客户、订单、合同等对象", category: "本体模板", author: "百特搭官方", price: 0, downloads: 12480, rating: 4.8 },
+  { id: "mt-2", name: "HR 全套", description: "人力资源管理模板，涵盖员工、考勤、薪资、培训等", category: "本体模板", author: "百特搭官方", price: 0, downloads: 8921, rating: 4.7 },
+  { id: "mt-3", name: "财务记账", description: "财务审批与记账工作流模板", category: "工作流", author: "生态合作", price: 0, downloads: 5430, rating: 4.6 },
+  { id: "mt-4", name: "销售智能体", description: "AI 销售助手智能体，自动跟进客户", category: "Agent", author: "ISV", price: 299, downloads: 3210, rating: 4.9 },
+  { id: "mt-5", name: "OCR 文字识别", description: "OCR 文字识别 Skill，支持多语言", category: "Skill", author: "百特搭官方", price: 0, downloads: 9876, rating: 4.5 },
+  { id: "mt-6", name: "HR 简历解析", description: "AI 简历解析与人才匹配 Skill", category: "本体模板", author: "百特搭官方", price: 0, downloads: 4210, rating: 4.4 },
+  { id: "mt-7", name: "供应链预测", description: "基于历史数据的需求预测 Agent", category: "Agent", author: "供应链实验室", price: 999, downloads: 2180, rating: 4.7 },
+  { id: "mt-8", name: "合同审查流程", description: "法务合同审查自动化工作流", category: "工作流", author: "法智 AI", price: 99, downloads: 3560, rating: 4.5 },
+];
+
+const insertMarketTemplate = db.prepare(
+  `INSERT INTO market_templates (id, name, description, category, author, price, downloads, rating, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'active', ?)`
+);
+for (const mt of marketTemplatesList) {
+  insertMarketTemplate.run(mt.id, mt.name, mt.description, mt.category, mt.author, mt.price, mt.downloads, mt.rating, now);
+}
+console.log(`  Market Templates: ${marketTemplatesList.length}`);
+
+// ════════════════════════════════════════════════════════
+//  File System (WebIDE sample project)
+// ════════════════════════════════════════════════════════
+const fsAppId = "app-vibe";
+
+// Root folders and files
+const fsFilesList = [
+  // src/ (root folder)
+  { id: "fs-src", app_id: fsAppId, parent_id: null, name: "src", is_dir: 1, content: "" },
+  // src/components/ (subfolder)
+  { id: "fs-components", app_id: fsAppId, parent_id: "fs-src", name: "components", is_dir: 1, content: "" },
+  // src/components/Button.tsx
+  { id: "fs-button", app_id: fsAppId, parent_id: "fs-components", name: "Button.tsx", is_dir: 0, content: 'import React from "react";\n\nexport function Button({ variant = "primary", children, onClick }: any) {\n  return <button className={`btn btn-${variant}`} onClick={onClick}>{children}</button>;\n}' },
+  // src/components/Card.tsx
+  { id: "fs-card", app_id: fsAppId, parent_id: "fs-components", name: "Card.tsx", is_dir: 0, content: 'import React from "react";\n\nexport function Card({ title, children }: any) {\n  return (\n    <div className="rounded-lg border bg-white shadow-sm">\n      {title && <div className="border-b px-4 py-3"><h3 className="font-semibold text-sm">{title}</h3></div>}\n      <div className="p-4">{children}</div>\n    </div>\n  );\n}' },
+  // src/pages/ (subfolder)
+  { id: "fs-pages", app_id: fsAppId, parent_id: "fs-src", name: "pages", is_dir: 1, content: "" },
+  // src/pages/App.tsx
+  { id: "fs-app", app_id: fsAppId, parent_id: "fs-pages", name: "App.tsx", is_dir: 0, content: 'import { BrowserRouter, Routes, Route } from "react-router-dom";\nimport { Home } from "./Home";\nimport { Dashboard } from "./Dashboard";\n\nexport default function App() {\n  return (\n    <BrowserRouter>\n      <Routes>\n        <Route path="/" element={<Home />} />\n        <Route path="/dashboard" element={<Dashboard />} />\n      </Routes>\n    </BrowserRouter>\n  );\n}' },
+  // src/pages/Home.tsx
+  { id: "fs-home", app_id: fsAppId, parent_id: "fs-pages", name: "Home.tsx", is_dir: 0, content: 'export function Home() {\n  return <h2>Welcome Home</h2>;\n}' },
+  // src/pages/Dashboard.tsx
+  { id: "fs-dashboard", app_id: fsAppId, parent_id: "fs-pages", name: "Dashboard.tsx", is_dir: 0, content: 'export function Dashboard() {\n  return <h2>Dashboard</h2>;\n}' },
+  // src/styles/ (subfolder)
+  { id: "fs-styles", app_id: fsAppId, parent_id: "fs-src", name: "styles", is_dir: 1, content: "" },
+  // src/styles/globals.css
+  { id: "fs-globals-css", app_id: fsAppId, parent_id: "fs-styles", name: "globals.css", is_dir: 0, content: "@tailwind base;\n@tailwind components;\n@tailwind utilities;\n\n:root {\n  --primary: #3b82f6;\n}" },
+  // src/index.tsx
+  { id: "fs-index", app_id: fsAppId, parent_id: "fs-src", name: "index.tsx", is_dir: 0, content: 'import React from "react";\nimport ReactDOM from "react-dom/client";\nimport App from "./pages/App";\nimport "./styles/globals.css";\n\nReactDOM.createRoot(document.getElementById("root")!).render(\n  <React.StrictMode><App /></React.StrictMode>\n);' },
+  // package.json
+  { id: "fs-package", app_id: fsAppId, parent_id: null, name: "package.json", is_dir: 0, content: '{\n  "name": "my-react-app",\n  "version": "1.0.0",\n  "scripts": { "dev": "vite", "build": "tsc && vite build" }\n}' },
+  // tsconfig.json
+  { id: "fs-tsconfig", app_id: fsAppId, parent_id: null, name: "tsconfig.json", is_dir: 0, content: '{\n  "compilerOptions": { "target": "ES2020", "module": "ESNext", "jsx": "react-jsx", "strict": true }\n}' },
+  // index.html
+  { id: "fs-html", app_id: fsAppId, parent_id: null, name: "index.html", is_dir: 0, content: '<!DOCTYPE html>\n<html lang="en">\n<head>\n  <meta charset="UTF-8" />\n  <title>My React App</title>\n</head>\n<body>\n  <div id="root"></div>\n  <script type="module" src="/src/index.tsx"></script>\n</body>\n</html>' },
+];
+
+const insertFsFile = db.prepare(
+  `INSERT INTO fs_files (id, app_id, parent_id, name, is_dir, content, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+);
+for (const f of fsFilesList) {
+  insertFsFile.run(f.id, f.app_id, f.parent_id, f.name, f.is_dir, f.content, now, now);
+}
+console.log(`  File System (WebIDE): ${fsFilesList.length} files`);
+
+// ════════════════════════════════════════════════════════
 //  Summary
 // ════════════════════════════════════════════════════════
 console.log("\n" + "═".repeat(50));
@@ -683,4 +752,6 @@ console.log(`
   Export History:    ${exportHistoryList.length}
   Knowledge Q&A:     ${knowledgeQaList.length}
   Knowledge Graph:   ${kgNodes.length} nodes, ${kgEdges.length} edges
+  Market Templates:  ${marketTemplatesList.length}
+  File System:       ${fsFilesList.length} files
 `);

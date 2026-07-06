@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Star, Download, Boxes, Sparkles, Workflow, BookOpen, Code, Plus, Package, Bot, Store, Users, DollarSign, Check, Crown, Building2, Briefcase, Sprout, X, Search, Eye, FileText, Zap, Globe } from "lucide-react";
+import { marketApi } from "@/lib/api";
 
 /* ── 本体模板初始数据（本地状态管理，无 market API） ── */
 // TODO: Replace with real API call when backend is ready (no market API exists yet)
@@ -103,9 +104,29 @@ interface OntologyTemplatesProps {
 }
 
 function OntologyTemplates({ installedTemplates, onInstall, filterCategory }: OntologyTemplatesProps) {
-  let templates = INITIAL_TEMPLATES.filter((t) => t.type === "本体模板" || t.type === "工作流");
+  const [templates, setTemplates] = useState(INITIAL_TEMPLATES);
+
+  /* Fetch templates from API */
+  useEffect(() => {
+    marketApi.listTemplates(filterCategory || undefined).then((data) => {
+      if (data && data.length > 0) {
+        setTemplates(data.map((t: any) => ({
+          id: t.id,
+          name: t.name,
+          type: t.category || "general",
+          industry: t.category || "通用",
+          downloads: t.downloads || 0,
+          rating: t.rating || 4.5,
+          price: t.price === 0 ? "免费" as const : `¥${t.price}` as any,
+          author: t.author || "未知",
+        })));
+      }
+    }).catch(() => {});
+  }, [filterCategory]);
+
+  let displayTemplates = templates.filter((t) => t.type === "本体模板" || t.type === "工作流");
   if (filterCategory) {
-    templates = INITIAL_TEMPLATES.filter((t) => t.type === filterCategory);
+    displayTemplates = templates.filter((t) => t.type === filterCategory);
   }
 
   return (
@@ -122,7 +143,7 @@ function OntologyTemplates({ installedTemplates, onInstall, filterCategory }: On
         <CardDescription>按行业 / 场景划分的本体模板</CardDescription>
       </CardHeader>
       <CardContent>
-        {templates.length === 0 ? (
+        {displayTemplates.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
             <Package className="size-8 mb-2" />
             <p className="text-sm">该分类暂无模板</p>
@@ -142,7 +163,7 @@ function OntologyTemplates({ installedTemplates, onInstall, filterCategory }: On
               </TableRow>
             </TableHeader>
             <TableBody>
-              {templates.map((t) => {
+              {displayTemplates.map((t) => {
                 const isInstalled = installedTemplates.has(t.id);
                 return (
                   <TableRow key={t.id}>
@@ -363,6 +384,7 @@ export function MarketDashboard() {
 
   /* Install template handler */
   function handleInstallTemplate(id: string, name: string) {
+    marketApi.installTemplate(id).catch(() => {});
     setInstalledTemplates((prev) => new Set(prev).add(id));
     setToast(`安装成功：${name}`);
   }

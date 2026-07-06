@@ -424,6 +424,32 @@ db.exec(`
     description TEXT,
     created_at TEXT DEFAULT (datetime('now'))
   );
+
+  -- Market Templates
+  CREATE TABLE IF NOT EXISTS market_templates (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    description TEXT,
+    category TEXT DEFAULT 'general',
+    author TEXT,
+    price REAL DEFAULT 0,
+    downloads INTEGER DEFAULT 0,
+    rating REAL DEFAULT 4.5,
+    status TEXT DEFAULT 'active',
+    created_at TEXT DEFAULT (datetime('now'))
+  );
+
+  -- File System (WebIDE)
+  CREATE TABLE IF NOT EXISTS fs_files (
+    id TEXT PRIMARY KEY,
+    app_id TEXT,
+    parent_id TEXT,
+    name TEXT NOT NULL,
+    is_dir INTEGER DEFAULT 0,
+    content TEXT DEFAULT '',
+    created_at TEXT DEFAULT (datetime('now')),
+    updated_at TEXT DEFAULT (datetime('now'))
+  );
 `);
 
 // ─── Migrations (additive) ─────────────────────────────────

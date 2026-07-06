@@ -1,8 +1,9 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { CodeEditor } from "@/components/CodeEditor";
+import { filesystemApi } from "@/lib/api";
 import {
   FileCode, Folder, FolderOpen, Play, Terminal as TerminalIcon, Settings,
   ChevronRight, ChevronDown, Save, Wand2, X, Plus, Square,
@@ -289,6 +290,41 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
   },
 ];
 
+/* ── Build tree from flat filesystem API response ── */
+function buildTreeFromFlat(files: any[]): FileNode[] {
+  const nodeMap = new Map<string, FileNode>();
+  const roots: FileNode[] = [];
+
+  // First pass: create all nodes
+  for (const f of files) {
+    nodeMap.set(f.id, {
+      name: f.name,
+      type: f.is_dir ? "folder" : "file",
+      children: f.is_dir ? [] : undefined,
+      language: f.is_dir ? undefined : getLanguage(f.name),
+      content: f.content || "",
+      expanded: false,
+    });
+  }
+
+  // Second pass: build parent-child relationships
+  for (const f of files) {
+    const node = nodeMap.get(f.id)!;
+    if (f.parent_id && nodeMap.has(f.parent_id)) {
+      nodeMap.get(f.parent_id)!.children!.push(node);
+    } else if (!f.parent_id) {
+      roots.push(node);
+    }
+  }
+
+  // Expand top-level folders
+  for (const root of roots) {
+    if (root.type === "folder") root.expanded = true;
+  }
+
+  return roots;
+}
+
 /* ── Open file entry ── */
 interface OpenFile {
   path: string;
@@ -408,7 +444,19 @@ function TerminalPanel({ logs }: { logs: string[] }) {
 
 /* ── Main WebIDE ── */
 export default function WebIDE() {
-  const [tree] = useState<FileNode[]>(INITIAL_TREE);
+  const [tree, setTree] = useState<FileNode[]>(INITIAL_TREE);
+  const [showTerminal, setShowTerminal] = useState(true);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  /* Fetch file tree from filesystem API */
+  useEffect(() => {
+    filesystemApi.listFiles({ app_id: "app-vibe" }).then((data) => {
+      if (data && data.length > 0) {
+        setTree(buildTreeFromFlat(data));
+      }
+    }).catch(() => {});
+  }, []);
+
   const [openFiles, setOpenFiles] = useState<OpenFile[]>(() => {
     // Open App.tsx by default
     const allFiles = flattenTree(tree);
@@ -431,8 +479,6 @@ export default function WebIDE() {
     "[info] TypeScript 5.7.3",
     "[info] Vite 7.0.0 ready",
   ]);
-  const [showTerminal, setShowTerminal] = useState(true);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const openFile = useCallback((path: string, node: FileNode) => {
     const existing = openFiles.find((f) => f.name === node.name);
