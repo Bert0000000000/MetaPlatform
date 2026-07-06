@@ -101,21 +101,72 @@ router.get("/roles", (_req, res) => {
 });
 
 // ════════════════════════════════════════════════════════
-//  Departments (hardcoded)
+//  Departments (database-backed CRUD)
 // ════════════════════════════════════════════════════════
 
-const DEPARTMENTS = [
-  { id: "tech", name: "技术部", parent_id: null },
-  { id: "product", name: "产品部", parent_id: null },
-  { id: "sales", name: "销售部", parent_id: null },
-  { id: "hr", name: "人力资源部", parent_id: null },
-  { id: "finance", name: "财务部", parent_id: null },
-  { id: "ops", name: "运营部", parent_id: null },
-];
-
 // GET /departments — list departments
-router.get("/departments", (_req, res) => {
-  res.json({ success: true, data: DEPARTMENTS });
+router.get("/departments", (_req, res, next) => {
+  try {
+    const rows = db.prepare("SELECT * FROM departments ORDER BY sort_order, created_at").all();
+    res.json({ success: true, data: rows });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /departments — create department
+router.post("/departments", (req, res, next) => {
+  try {
+    const { name, parent_id, leader, icon } = req.body;
+    if (!name) return res.status(400).json({ success: false, error: "name 为必填项" });
+    const id = uuid();
+    const now = new Date().toISOString();
+    db.prepare(
+      `INSERT INTO departments (id, name, parent_id, leader, icon, status, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, 'active', ?, ?)`
+    ).run(id, name, parent_id || null, leader || null, icon || null, now, now);
+    const row = db.prepare("SELECT * FROM departments WHERE id = ?").get(id);
+    res.status(201).json({ success: true, data: row });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PUT /departments/:id — update department
+router.put("/departments/:id", (req, res, next) => {
+  try {
+    const existing = db.prepare("SELECT * FROM departments WHERE id = ?").get(req.params.id);
+    if (!existing) return res.status(404).json({ success: false, error: "部门不存在" });
+    const { name, parent_id, leader, icon, status } = req.body;
+    const now = new Date().toISOString();
+    db.prepare(
+      `UPDATE departments SET name = ?, parent_id = ?, leader = ?, icon = ?, status = ?, updated_at = ? WHERE id = ?`
+    ).run(
+      name ?? existing.name,
+      parent_id !== undefined ? parent_id : existing.parent_id,
+      leader !== undefined ? leader : existing.leader,
+      icon !== undefined ? icon : existing.icon,
+      status ?? existing.status,
+      now,
+      req.params.id
+    );
+    const row = db.prepare("SELECT * FROM departments WHERE id = ?").get(req.params.id);
+    res.json({ success: true, data: row });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// DELETE /departments/:id — delete department
+router.delete("/departments/:id", (req, res, next) => {
+  try {
+    const existing = db.prepare("SELECT * FROM departments WHERE id = ?").get(req.params.id);
+    if (!existing) return res.status(404).json({ success: false, error: "部门不存在" });
+    db.prepare("DELETE FROM departments WHERE id = ?").run(req.params.id);
+    res.json({ success: true, data: { id: req.params.id } });
+  } catch (err) {
+    next(err);
+  }
 });
 
 // ════════════════════════════════════════════════════════

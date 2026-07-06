@@ -335,6 +335,75 @@ db.exec(`
     hits INTEGER DEFAULT 0,
     created_at TEXT DEFAULT (datetime('now'))
   );
+
+  -- Departments
+  CREATE TABLE IF NOT EXISTS departments (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    parent_id TEXT,
+    leader TEXT,
+    icon TEXT,
+    sort_order INTEGER DEFAULT 0,
+    status TEXT DEFAULT 'active',
+    created_at TEXT DEFAULT (datetime('now')),
+    updated_at TEXT DEFAULT (datetime('now'))
+  );
+
+  -- Ontology Actions
+  CREATE TABLE IF NOT EXISTS ontology_actions (
+    id TEXT PRIMARY KEY,
+    object_id TEXT,
+    name TEXT NOT NULL,
+    type TEXT DEFAULT 'custom',
+    trigger_type TEXT DEFAULT 'manual',
+    config TEXT,
+    status TEXT DEFAULT 'active',
+    created_at TEXT DEFAULT (datetime('now'))
+  );
+
+  -- Ontology Functions
+  CREATE TABLE IF NOT EXISTS ontology_functions (
+    id TEXT PRIMARY KEY,
+    object_id TEXT,
+    name TEXT NOT NULL,
+    type TEXT DEFAULT 'custom',
+    expression TEXT,
+    description TEXT,
+    status TEXT DEFAULT 'active',
+    created_at TEXT DEFAULT (datetime('now'))
+  );
+
+  -- Ontology Rules
+  CREATE TABLE IF NOT EXISTS ontology_rules (
+    id TEXT PRIMARY KEY,
+    object_id TEXT,
+    name TEXT NOT NULL,
+    type TEXT DEFAULT 'validation',
+    condition_expr TEXT,
+    action TEXT,
+    status TEXT DEFAULT 'active',
+    created_at TEXT DEFAULT (datetime('now'))
+  );
+
+  -- Export History
+  CREATE TABLE IF NOT EXISTS export_history (
+    id TEXT PRIMARY KEY,
+    app_id TEXT,
+    type TEXT,
+    format TEXT,
+    status TEXT DEFAULT 'completed',
+    file_path TEXT,
+    created_at TEXT DEFAULT (datetime('now'))
+  );
+
+  -- Knowledge Q&A
+  CREATE TABLE IF NOT EXISTS knowledge_qa (
+    id TEXT PRIMARY KEY,
+    question TEXT NOT NULL,
+    answer TEXT,
+    source_doc_id TEXT,
+    created_at TEXT DEFAULT (datetime('now'))
+  );
 `);
 
 // ─── Migrations (additive) ─────────────────────────────────

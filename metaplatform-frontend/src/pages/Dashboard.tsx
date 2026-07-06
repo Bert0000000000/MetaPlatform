@@ -947,6 +947,7 @@ export function Portal() {
   const [isMobile, setIsMobile] = useState(false);
   const [portalAnnouncements, setPortalAnnouncements] = useState(PORTAL_ANNOUNCEMENTS_FALLBACK);
   const [portalTodos, setPortalTodos] = useState(PORTAL_TODOS_FALLBACK);
+  const [portalApps, setPortalApps] = useState(PORTAL_APPS);
 
   /* Detect viewport width */
   useEffect(() => {
@@ -987,6 +988,33 @@ export function Portal() {
     }).catch(() => {});
   }, []);
 
+  /* Fetch apps from API */
+  useEffect(() => {
+    appsApi.list().then((data) => {
+      if (data && data.length > 0) {
+        const categoryColorMap: Record<string, string> = {
+          traditional: "bg-blue-500/10 text-blue-600",
+          ai: "bg-pink-500/10 text-pink-600",
+        };
+        const categoryNameMap: Record<string, string> = {
+          traditional: "业务系统",
+          ai: "AI 应用",
+        };
+        setPortalApps(data.map((a: any) => ({
+          id: a.id,
+          name: a.name,
+          category: categoryNameMap[a.category] || "业务系统",
+          icon: resolveIcon(a.icon),
+          color: categoryColorMap[a.category] || "bg-blue-500/10 text-blue-600",
+          desc: a.description || "",
+          pages: a.pages_count || 0,
+          version: a.version || "v0.1",
+          lastUsed: a.updated_at ? new Date(a.updated_at).toLocaleDateString("zh-CN") : "—",
+        })));
+      }
+    }).catch(() => {});
+  }, []);
+
   /* Auto-rotate announcement */
   useEffect(() => {
     const t = setInterval(() => {
@@ -999,13 +1027,13 @@ export function Portal() {
     setFavorites((prev) => prev.includes(appId) ? prev.filter((id) => id !== appId) : [...prev, appId]);
   }
 
-  const filteredApps = PORTAL_APPS.filter((a) => {
+  const filteredApps = portalApps.filter((a) => {
     if (categoryFilter !== "all" && a.category !== categoryFilter) return false;
     if (searchQuery && !a.name.includes(searchQuery) && !a.desc.includes(searchQuery)) return false;
     return true;
   });
-  const recentApps = PORTAL_APPS.slice(0, 5);
-  const favoriteApps = PORTAL_APPS.filter((a) => favorites.includes(a.id));
+  const recentApps = portalApps.slice(0, 5);
+  const favoriteApps = portalApps.filter((a) => favorites.includes(a.id));
   const currentAnnouncement = portalAnnouncements[announcementIdx];
   const effectiveMode = isMobile ? "mobile" : viewMode;
 
@@ -1294,7 +1322,7 @@ export function Portal() {
 
       {/* Stats bar */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <StatCard label="门户应用" value={PORTAL_APPS.length} icon={Globe} />
+        <StatCard label="门户应用" value={portalApps.length} icon={Globe} />
         <StatCard label="今日访问" value="1,248" icon={Eye} />
         <StatCard label="活跃用户" value={86} icon={Users} />
         <StatCard label="待办事项" value={portalTodos.length} icon={ClipboardList} />

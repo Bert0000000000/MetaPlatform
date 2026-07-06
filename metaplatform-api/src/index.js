@@ -23,6 +23,8 @@ import todosRoutes from "./routes/todos.js";
 import qualityRoutes from "./routes/quality.js";
 import versionsRoutes from "./routes/versions.js";
 import triggersRoutes from "./routes/triggers.js";
+import exportHistoryRoutes from "./routes/export-history.js";
+import knowledgeQaRoutes from "./routes/knowledge-qa.js";
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -52,6 +54,8 @@ app.use("/api/todos", todosRoutes);
 app.use("/api/quality", qualityRoutes);
 app.use("/api/versions", versionsRoutes);
 app.use("/api/triggers", triggersRoutes);
+app.use("/api/export-history", exportHistoryRoutes);
+app.use("/api/knowledge/qa", knowledgeQaRoutes);
 
 // ─── Health check ───────────────────────────────────────
 app.get("/api/health", (_req, res) => {

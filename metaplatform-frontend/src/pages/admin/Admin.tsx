@@ -458,22 +458,66 @@ export function DepartmentList() {
   const [newDeptName, setNewDeptName] = useState("");
   const [newDeptLeader, setNewDeptLeader] = useState("");
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const data = await adminApi.listDepartments();
-        if (!cancelled) setDepartments(data);
-      } catch (e: unknown) {
-        if (!cancelled) setError(e instanceof Error ? e.message : "加载部门失败");
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, []);
+  // Edit state
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editDept, setEditDept] = useState<Department | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editLeader, setEditLeader] = useState("");
+
+  // Delete state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Department | null>(null);
+
+  const fetchDepartments = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await adminApi.listDepartments();
+      setDepartments(data);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "加载部门失败");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { fetchDepartments(); }, []);
+
+  const handleEdit = (dept: Department) => {
+    setEditDept(dept);
+    setEditName(dept.name || "");
+    setEditLeader(dept.leader || "");
+    setEditDialogOpen(true);
+  };
+
+  const handleEditSubmit = async () => {
+    if (!editDept || !editName.trim()) return;
+    try {
+      await adminApi.updateDepartment(editDept.id, { name: editName.trim(), leader: editLeader.trim() });
+      await fetchDepartments();
+    } catch (e) {
+      console.error("更新部门失败:", e);
+    }
+    setEditDialogOpen(false);
+    setEditDept(null);
+  };
+
+  const handleDelete = (dept: Department) => {
+    setDeleteTarget(dept);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteTarget) return;
+    try {
+      await adminApi.deleteDepartment(deleteTarget.id);
+      setDepartments((prev) => prev.filter((d) => d.id !== deleteTarget.id));
+    } catch (e) {
+      console.error("删除部门失败:", e);
+    }
+    setDeleteDialogOpen(false);
+    setDeleteTarget(null);
+  };
 
   return (
     <Card>
@@ -524,8 +568,11 @@ export function DepartmentList() {
                     <TableCell>{d.count}</TableCell>
                     <TableCell>{d.leader}</TableCell>
                     <TableCell className="text-right">
-                      <Button variant="ghost" size="icon" className="size-8">
+                      <Button variant="ghost" size="icon" className="size-8" onClick={() => handleEdit(d)}>
                         <Edit className="size-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="size-8" onClick={() => handleDelete(d)}>
+                        <Trash2 className="size-4" />
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -567,6 +614,44 @@ export function DepartmentList() {
               setNewDeptName("");
               setNewDeptLeader("");
             }}>创建</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 编辑部门对话框 */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>编辑部门</DialogTitle>
+            <DialogDescription>修改部门信息</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-dept-name">部门名称</Label>
+              <Input id="edit-dept-name" value={editName} onChange={(e) => setEditName(e.target.value)} placeholder="请输入部门名称" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-dept-leader">负责人</Label>
+              <Input id="edit-dept-leader" value={editLeader} onChange={(e) => setEditLeader(e.target.value)} placeholder="请输入负责人姓名" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>取消</Button>
+            <Button onClick={handleEditSubmit}>保存</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 删除部门确认对话框 */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>确认删除</DialogTitle>
+            <DialogDescription>确定要删除部门「{deleteTarget?.name}」吗？此操作不可撤销。</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>取消</Button>
+            <Button variant="destructive" onClick={handleDeleteConfirm}>删除</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

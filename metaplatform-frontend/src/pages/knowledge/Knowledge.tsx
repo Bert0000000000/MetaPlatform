@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { knowledgeApi, type KnowledgeDocument } from "@/lib/api";
+import { knowledgeApi, knowledgeQaApi, type KnowledgeDocument } from "@/lib/api";
 import { FileText, Upload, Search, Eye, FolderTree, Sparkles, Send, Network, Clock, BookMarked, Tag, GitCommit, Brain, MessageSquare, BookOpen, Ruler, Briefcase, ScrollText, NotebookPen, Scale, Puzzle, Hash, Trash2, Bell, Plus, CheckCircle2, RefreshCw, Download, Activity, XCircle } from "lucide-react";
 import { StatCard, PageHeader } from "@/components/ui/stat";
 
@@ -281,22 +281,39 @@ export function SmartQA() {
   const [results, setResults] = useState<{ q: string; hits: number; topScore: number; answer: string }[]>(QA_HISTORY);
   const [searching, setSearching] = useState(false);
 
+  /* Fetch Q&A history from API */
+  useEffect(() => {
+    knowledgeQaApi.list(10).then((data) => {
+      if (data && data.length > 0) {
+        const mapped = data.map((item: any) => ({
+          q: item.question,
+          hits: 1,
+          topScore: 0.85,
+          answer: item.answer || "暂无回答",
+        }));
+        setResults(mapped);
+      }
+    }).catch(() => {});
+  }, []);
+
   async function ask(query: string) {
     if (!query.trim()) return;
     setSearching(true);
     try {
       const docs = await knowledgeApi.search(query);
+      const answer = docs.length > 0
+        ? `根据知识库检索到 ${docs.length} 篇相关文档：${docs.map((d) => d.title).join("、")}。`
+        : "未找到相关文档，请尝试其他关键词。";
       setResults((r) => [
-        {
-          q: query,
-          hits: docs.length,
-          topScore: docs.length > 0 ? 0.86 : 0,
-          answer: docs.length > 0
-            ? `根据知识库检索到 ${docs.length} 篇相关文档：${docs.map((d) => d.title).join("、")}。`
-            : "未找到相关文档，请尝试其他关键词。",
-        },
+        { q: query, hits: docs.length, topScore: docs.length > 0 ? 0.86 : 0, answer },
         ...r,
       ]);
+      // Save Q&A to backend
+      knowledgeQaApi.create({
+        question: query,
+        answer,
+        source_doc_id: docs.length > 0 ? docs[0].id : null,
+      }).catch(() => {});
     } catch {
       setResults((r) => [
         { q: query, hits: 0, topScore: 0, answer: "检索失败，请稍后重试。" },

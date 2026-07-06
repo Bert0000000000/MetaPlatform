@@ -5,9 +5,9 @@ import { PageHeader } from "@/components/ui/stat";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Code2, Database, Server, Smartphone, Download, FileCode, Container, Loader2, CheckCircle2, FileDown, X, ChevronDown, ChevronRight, Copy, ExternalLink } from "lucide-react";
+import { Code2, Database, Server, Smartphone, Download, FileCode, Container, Loader2, CheckCircle2, FileDown, X, ChevronDown, ChevronRight, Copy, ExternalLink, Clock } from "lucide-react";
 import { useState, useEffect } from "react";
-import { exportApi } from "@/lib/api";
+import { exportApi, exportHistoryApi } from "@/lib/api";
 import { useSearchParams } from "react-router-dom";
 
 /* ── Export targets with initial checked state ── */
@@ -78,6 +78,14 @@ export default function AppExport() {
   const [expandedFiles, setExpandedFiles] = useState<Set<string>>(new Set());
   const [fileFilter, setFileFilter] = useState("");
   const [copiedFile, setCopiedFile] = useState<string | null>(null);
+
+  /* ── Export history from API ── */
+  const [exportHistory, setExportHistory] = useState<any[]>([]);
+  useEffect(() => {
+    exportHistoryApi.list().then((data) => {
+      if (data && data.length > 0) setExportHistory(data);
+    }).catch(() => {});
+  }, []);
 
   /* ── Toggle checkbox helper ── */
   function toggleItem(
@@ -449,6 +457,35 @@ export default function AppExport() {
           </div>
         </CardContent>
       </Card>
+
+      {/* ── Export History ── */}
+      {exportHistory.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Clock className="size-4" /> 导出历史
+            </CardTitle>
+            <CardDescription>最近的导出记录</CardDescription>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="divide-y">
+              {exportHistory.map((record: any) => (
+                <div key={record.id} className="flex items-center gap-3 px-4 py-3 hover:bg-muted/30">
+                  <CheckCircle2 className="size-4 text-green-500 shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium truncate">{record.type} - {record.format}</div>
+                    <div className="text-xs text-muted-foreground">{record.file_path}</div>
+                  </div>
+                  <Badge variant="outline" className="text-xs shrink-0">{record.status}</Badge>
+                  <span className="text-xs text-muted-foreground shrink-0">
+                    {record.created_at ? new Date(record.created_at).toLocaleDateString("zh-CN") : ""}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* ── Export Progress & Results Dialog ── */}
       <Dialog open={exportDialogOpen} onOpenChange={exporting ? undefined : handleCloseExport}>

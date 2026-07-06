@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { ontologyApi, type OntologyAction, type OntologyFunction, type OntologyRule } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -400,18 +401,23 @@ export function OntologyLinks() {
   );
 }
 
-// TODO: Replace with real API when backend ready (ontology API does not have actions listing endpoint)
-const MOCK_ACTIONS = [
-  { id: 1, name: "创建订单", type: "新增", object: "Order", endpoint: "POST /api/orders", status: "active" },
-  { id: 2, name: "查询客户列表", type: "查询", object: "Customer", endpoint: "GET /api/customers", status: "active" },
-  { id: 3, name: "更新合同状态", type: "更新", object: "Contract", endpoint: "PATCH /api/contracts/:id", status: "active" },
-  { id: 4, name: "删除草稿发票", type: "删除", object: "Invoice", endpoint: "DELETE /api/invoices/:id", status: "active" },
-  { id: 5, name: "批量导入客户", type: "导入", object: "Customer", endpoint: "POST /api/customers/import", status: "active" },
-  { id: 6, name: "导出订单报表", type: "导出", object: "Order", endpoint: "GET /api/orders/export", status: "active" },
-  { id: 7, name: "自定义-发送通知", type: "自定义", object: "-", endpoint: "POST /api/actions/notify", status: "draft" },
+const FALLBACK_ACTIONS: OntologyAction[] = [
+  { id: "1", name: "创建订单", type: "create", trigger_type: "manual", object_id: "obj-order", config: '{"endpoint": "POST /api/orders"}', status: "active" },
+  { id: "2", name: "查询客户列表", type: "query", trigger_type: "manual", object_id: "obj-customer", config: '{"endpoint": "GET /api/customers"}', status: "active" },
+  { id: "3", name: "更新合同状态", type: "update", trigger_type: "manual", object_id: "obj-contract", config: '{"endpoint": "PATCH /api/contracts/:id"}', status: "active" },
+  { id: "4", name: "删除草稿发票", type: "delete", trigger_type: "manual", object_id: "obj-invoice", config: '{"endpoint": "DELETE /api/invoices/:id"}', status: "active" },
+  { id: "5", name: "批量导入客户", type: "import", trigger_type: "manual", object_id: "obj-customer", config: '{"endpoint": "POST /api/customers/import"}', status: "active" },
+  { id: "6", name: "导出订单报表", type: "export", trigger_type: "manual", object_id: "obj-order", config: '{"endpoint": "GET /api/orders/export"}', status: "active" },
+  { id: "7", name: "自定义-发送通知", type: "custom", trigger_type: "event", config: '{"endpoint": "POST /api/actions/notify"}', status: "draft" },
 ];
 
 export function OntologyActions() {
+  const [actions, setActions] = useState<OntologyAction[]>(FALLBACK_ACTIONS);
+
+  useEffect(() => {
+    ontologyApi.listActions().then(setActions).catch(() => {});
+  }, []);
+
   return (
     <div className="flex flex-col gap-4">
       <PageHeader
@@ -422,7 +428,7 @@ export function OntologyActions() {
       <Card>
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2"><Zap className="size-4" /> 动作列表</CardTitle>
-          <CardDescription>{MOCK_ACTIONS.length} 个动作</CardDescription>
+          <CardDescription>{actions.length} 个动作</CardDescription>
         </CardHeader>
         <CardContent className="p-0">
           <Table>
@@ -437,18 +443,22 @@ export function OntologyActions() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {MOCK_ACTIONS.map((a) => (
-                <TableRow key={a.id}>
-                  <TableCell className="font-medium">{a.name}</TableCell>
-                  <TableCell><Badge variant="outline">{a.type}</Badge></TableCell>
-                  <TableCell>{a.object !== "-" ? <Badge variant="secondary">{a.object}</Badge> : <span className="text-muted-foreground text-xs">-</span>}</TableCell>
-                  <TableCell className="font-mono text-xs">{a.endpoint}</TableCell>
-                  <TableCell><Badge variant={a.status === "active" ? "default" : "secondary"}>{a.status === "active" ? "已启用" : "草稿"}</Badge></TableCell>
-                  <TableCell className="text-right">
-                    <Button variant="ghost" size="icon" className="size-8"><Edit className="size-4" /></Button>
-                  </TableCell>
-                </TableRow>
-              ))}
+              {actions.map((a) => {
+                let endpoint = "-";
+                try { endpoint = a.config ? JSON.parse(a.config).endpoint || "-" : "-"; } catch {}
+                return (
+                  <TableRow key={a.id}>
+                    <TableCell className="font-medium">{a.name}</TableCell>
+                    <TableCell><Badge variant="outline">{a.type}</Badge></TableCell>
+                    <TableCell>{a.object_id ? <Badge variant="secondary">{a.object_id}</Badge> : <span className="text-muted-foreground text-xs">-</span>}</TableCell>
+                    <TableCell className="font-mono text-xs">{endpoint}</TableCell>
+                    <TableCell><Badge variant={a.status === "active" ? "default" : "secondary"}>{a.status === "active" ? "已启用" : "草稿"}</Badge></TableCell>
+                    <TableCell className="text-right">
+                      <Button variant="ghost" size="icon" className="size-8"><Edit className="size-4" /></Button>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </CardContent>
@@ -457,17 +467,22 @@ export function OntologyActions() {
   );
 }
 
-// TODO: Replace with real API when backend ready (ontology API does not have functions listing endpoint)
-const MOCK_FUNCTIONS = [
-  { id: 1, name: "计算订单总额", type: "业务函数", lang: "JS", object: "Order", calls: 12480 },
-  { id: 2, name: "库存扣减", type: "业务函数", lang: "JS", object: "Product", calls: 8640 },
-  { id: 3, name: "审批规则-金额阈值", type: "业务规则函数", lang: "DRL", object: "-", calls: 3200 },
-  { id: 4, name: "自动生成编号", type: "业务函数", lang: "JS", object: "-", calls: 6400 },
-  { id: 5, name: "AI 风险评估", type: "AI 规则函数", lang: "Python", object: "Contract", calls: 480 },
-  { id: 6, name: "服务编排-下单流程", type: "服务编排", lang: "YAML", object: "-", calls: 2400 },
+const FALLBACK_FUNCTIONS: OntologyFunction[] = [
+  { id: "1", name: "计算订单总额", type: "business", object_id: "obj-order", expression: "sum(items[].price * items[].qty)", description: "计算订单总额", status: "active" },
+  { id: "2", name: "库存扣减", type: "business", object_id: "obj-product", expression: "product.stock -= order.quantity", description: "下单后扣减库存", status: "active" },
+  { id: "3", name: "审批规则-金额阈值", type: "rule", expression: "IF amount > 10000 THEN require_manager_approval", description: "金额超过1万需主管审批", status: "active" },
+  { id: "4", name: "自动生成编号", type: "business", expression: "PREFIX + SEQ(6)", description: "自动生成带前缀的序列号", status: "active" },
+  { id: "5", name: "AI 风险评估", type: "ai", object_id: "obj-contract", expression: "llm.risk_score(contract_text)", description: "使用 LLM 评估合同风险", status: "active" },
+  { id: "6", name: "服务编排-下单流程", type: "orchestration", expression: "validate -> check_stock -> create_order -> notify", description: "组合多个服务形成下单流程", status: "active" },
 ];
 
 export function OntologyFunctions() {
+  const [functions, setFunctions] = useState<OntologyFunction[]>(FALLBACK_FUNCTIONS);
+
+  useEffect(() => {
+    ontologyApi.listFunctions().then(setFunctions).catch(() => {});
+  }, []);
+
   return (
     <div className="flex flex-col gap-4">
       <PageHeader
@@ -478,7 +493,7 @@ export function OntologyFunctions() {
       <Card>
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2"><Calculator className="size-4" /> 函数列表</CardTitle>
-          <CardDescription>{MOCK_FUNCTIONS.length} 个函数</CardDescription>
+          <CardDescription>{functions.length} 个函数</CardDescription>
         </CardHeader>
         <CardContent className="p-0">
           <Table>
@@ -486,20 +501,20 @@ export function OntologyFunctions() {
               <TableRow>
                 <TableHead>函数名</TableHead>
                 <TableHead>类型</TableHead>
-                <TableHead>语言</TableHead>
+                <TableHead>表达式</TableHead>
                 <TableHead>关联对象</TableHead>
-                <TableHead className="text-right">调用次数</TableHead>
+                <TableHead>状态</TableHead>
                 <TableHead className="text-right">操作</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {MOCK_FUNCTIONS.map((f) => (
+              {functions.map((f) => (
                 <TableRow key={f.id}>
                   <TableCell className="font-medium">{f.name}</TableCell>
                   <TableCell><Badge variant="outline">{f.type}</Badge></TableCell>
-                  <TableCell><Badge variant="secondary" className="font-mono text-xs">{f.lang}</Badge></TableCell>
-                  <TableCell>{f.object !== "-" ? <Badge variant="secondary">{f.object}</Badge> : <span className="text-muted-foreground text-xs">-</span>}</TableCell>
-                  <TableCell className="text-right">{f.calls.toLocaleString()}</TableCell>
+                  <TableCell className="font-mono text-xs max-w-[200px] truncate">{f.expression || "-"}</TableCell>
+                  <TableCell>{f.object_id ? <Badge variant="secondary">{f.object_id}</Badge> : <span className="text-muted-foreground text-xs">-</span>}</TableCell>
+                  <TableCell><Badge variant={f.status === "active" ? "default" : "secondary"}>{f.status === "active" ? "已启用" : "草稿"}</Badge></TableCell>
                   <TableCell className="text-right">
                     <Button variant="ghost" size="icon" className="size-8"><Edit className="size-4" /></Button>
                   </TableCell>
@@ -513,16 +528,21 @@ export function OntologyFunctions() {
   );
 }
 
-// TODO: Replace with real API when backend ready (ontology API does not have rules listing endpoint)
-const MOCK_RULES = [
-  { id: 1, name: "订单金额校验", type: "业务规则", trigger: "Order.before_save", condition: "amount > 0", status: "active" },
-  { id: 2, name: "审批自动通过", type: "业务规则", trigger: "Approval.on_create", condition: "amount < 1000", status: "active" },
-  { id: 3, name: "库存补货触发", type: "业务规则", trigger: "Product.after_update", condition: "stock < safety_stock", status: "active" },
-  { id: 4, name: "合同到期通知", type: "服务编排", trigger: "Schedule.daily", condition: "expires_in_30d", status: "paused" },
-  { id: 5, name: "DMN-客户分级", type: "决策表", trigger: "Customer.after_save", condition: "DMN 表", status: "active" },
+const FALLBACK_RULES: OntologyRule[] = [
+  { id: "1", name: "订单金额校验", type: "validation", object_id: "obj-order", condition_expr: "amount > 0", action: "reject", status: "active" },
+  { id: "2", name: "审批自动通过", type: "automation", condition_expr: "amount < 1000", action: "auto_approve", status: "active" },
+  { id: "3", name: "库存补货触发", type: "automation", object_id: "obj-product", condition_expr: "stock < safety_stock", action: "trigger_restock", status: "active" },
+  { id: "4", name: "合同到期通知", type: "orchestration", condition_expr: "expires_in_30d", action: "send_notification", status: "paused" },
+  { id: "5", name: "DMN-客户分级", type: "decision", object_id: "obj-customer", condition_expr: "DMN_TABLE(customer_score)", action: "set_level", status: "active" },
 ];
 
 export function OntologyRules() {
+  const [rules, setRules] = useState<OntologyRule[]>(FALLBACK_RULES);
+
+  useEffect(() => {
+    ontologyApi.listRules().then(setRules).catch(() => {});
+  }, []);
+
   return (
     <div className="flex flex-col gap-4">
       <PageHeader
@@ -533,7 +553,7 @@ export function OntologyRules() {
       <Card>
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2"><Settings className="size-4" /> 规则列表</CardTitle>
-          <CardDescription>{MOCK_RULES.length} 条规则</CardDescription>
+          <CardDescription>{rules.length} 条规则</CardDescription>
         </CardHeader>
         <CardContent className="p-0">
           <Table>
@@ -541,19 +561,19 @@ export function OntologyRules() {
               <TableRow>
                 <TableHead>规则名</TableHead>
                 <TableHead>类型</TableHead>
-                <TableHead>触发点</TableHead>
                 <TableHead>条件</TableHead>
+                <TableHead>动作</TableHead>
                 <TableHead>状态</TableHead>
                 <TableHead className="text-right">操作</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {MOCK_RULES.map((r) => (
+              {rules.map((r) => (
                 <TableRow key={r.id}>
                   <TableCell className="font-medium">{r.name}</TableCell>
                   <TableCell><Badge variant="outline">{r.type}</Badge></TableCell>
-                  <TableCell className="font-mono text-xs">{r.trigger}</TableCell>
-                  <TableCell className="font-mono text-xs">{r.condition}</TableCell>
+                  <TableCell className="font-mono text-xs">{r.condition_expr || "-"}</TableCell>
+                  <TableCell className="font-mono text-xs">{r.action || "-"}</TableCell>
                   <TableCell><Badge variant={r.status === "active" ? "default" : "secondary"}>{r.status === "active" ? "已启用" : "已暂停"}</Badge></TableCell>
                   <TableCell className="text-right">
                     <Button variant="ghost" size="icon" className="size-8"><Edit className="size-4" /></Button>

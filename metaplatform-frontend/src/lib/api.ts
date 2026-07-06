@@ -176,6 +176,60 @@ export const ontologyApi = {
       method: "POST",
       body: JSON.stringify(data),
     }),
+
+  // Actions
+  listActions: (objectId?: string) => {
+    const qs = objectId ? `?object_id=${objectId}` : "";
+    return request<OntologyAction[]>(`/ontology/actions${qs}`);
+  },
+  createAction: (data: Partial<OntologyAction>) =>
+    request<OntologyAction>("/ontology/actions", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  updateAction: (id: string, data: Partial<OntologyAction>) =>
+    request<OntologyAction>(`/ontology/actions/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+  deleteAction: (id: string) =>
+    request(`/ontology/actions/${id}`, { method: "DELETE" }),
+
+  // Functions
+  listFunctions: (objectId?: string) => {
+    const qs = objectId ? `?object_id=${objectId}` : "";
+    return request<OntologyFunction[]>(`/ontology/functions${qs}`);
+  },
+  createFunction: (data: Partial<OntologyFunction>) =>
+    request<OntologyFunction>("/ontology/functions", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  updateFunction: (id: string, data: Partial<OntologyFunction>) =>
+    request<OntologyFunction>(`/ontology/functions/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+  deleteFunction: (id: string) =>
+    request(`/ontology/functions/${id}`, { method: "DELETE" }),
+
+  // Rules
+  listRules: (objectId?: string) => {
+    const qs = objectId ? `?object_id=${objectId}` : "";
+    return request<OntologyRule[]>(`/ontology/rules${qs}`);
+  },
+  createRule: (data: Partial<OntologyRule>) =>
+    request<OntologyRule>("/ontology/rules", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  updateRule: (id: string, data: Partial<OntologyRule>) =>
+    request<OntologyRule>(`/ontology/rules/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+  deleteRule: (id: string) =>
+    request(`/ontology/rules/${id}`, { method: "DELETE" }),
 };
 
 // ─── Processes ────────────────────────────────────────────
@@ -344,6 +398,13 @@ export const adminApi = {
       method: "POST",
       body: JSON.stringify(data),
     }),
+  updateDepartment: (id: string, data: Partial<Department>) =>
+    request<Department>(`/admin/departments/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+  deleteDepartment: (id: string) =>
+    request(`/admin/departments/${id}`, { method: "DELETE" }),
   listLogs: (limit = 20, offset = 0) =>
     request<AuditLog[]>(
       `/admin/logs?limit=${limit}&offset=${offset}`,
@@ -481,6 +542,36 @@ export const triggersApi = {
   },
 };
 
+// ─── Export History ─────────────────────────────────────
+export const exportHistoryApi = {
+  list: async () => {
+    const res = await request<any[]>("/export-history");
+    return res;
+  },
+  create: async (data: any) => {
+    const res = await request<any>("/export-history", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+    return res;
+  },
+};
+
+// ─── Knowledge Q&A ─────────────────────────────────────
+export const knowledgeQaApi = {
+  list: async (limit = 20) => {
+    const res = await request<any[]>(`/knowledge/qa?limit=${limit}`);
+    return res;
+  },
+  create: async (data: any) => {
+    const res = await request<any>("/knowledge/qa", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+    return res;
+  },
+};
+
 // ─── Types ────────────────────────────────────────────────
 export interface User {
   id: string;
@@ -543,6 +634,39 @@ export interface OntologyRelation {
   type: string;
   label?: string;
   description?: string;
+}
+
+export interface OntologyAction {
+  id: string;
+  object_id?: string;
+  name: string;
+  type: string;
+  trigger_type: string;
+  config?: string;
+  status: string;
+  created_at?: string;
+}
+
+export interface OntologyFunction {
+  id: string;
+  object_id?: string;
+  name: string;
+  type: string;
+  expression?: string;
+  description?: string;
+  status: string;
+  created_at?: string;
+}
+
+export interface OntologyRule {
+  id: string;
+  object_id?: string;
+  name: string;
+  type: string;
+  condition_expr?: string;
+  action?: string;
+  status: string;
+  created_at?: string;
 }
 
 export interface ProcessDefinition {

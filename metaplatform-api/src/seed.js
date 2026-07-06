@@ -27,12 +27,16 @@ db.exec(`
   DELETE FROM process_instances;
   DELETE FROM process_definitions;
   DELETE FROM ontology_relations;
+  DELETE FROM ontology_rules;
+  DELETE FROM ontology_functions;
+  DELETE FROM ontology_actions;
   DELETE FROM ontology_properties;
   DELETE FROM ontology_objects;
   DELETE FROM data_sources;
   DELETE FROM app_pages;
   DELETE FROM app_configs;
   DELETE FROM applications;
+  DELETE FROM departments;
   DELETE FROM users;
   DELETE FROM system_config;
   DELETE FROM announcements;
@@ -41,6 +45,8 @@ db.exec(`
   DELETE FROM bugs;
   DELETE FROM app_versions;
   DELETE FROM process_triggers;
+  DELETE FROM export_history;
+  DELETE FROM knowledge_qa;
 `);
 
 // ════════════════════════════════════════════════════════
@@ -199,6 +205,86 @@ for (const r of relations) {
   insertRel.run(uuid(), r.source, r.target, r.type, r.label, `${r.label}关系`, now);
 }
 console.log(`  ✅ Ontology Relations: ${relations.length}`);
+
+// ════════════════════════════════════════════════════════
+//  Ontology Actions (7)
+// ════════════════════════════════════════════════════════
+const actionsList = [
+  { id: "act-1", object_id: "obj-order", name: "创建订单", type: "create", trigger_type: "manual", config: '{"endpoint": "POST /api/orders"}', status: "active" },
+  { id: "act-2", object_id: "obj-customer", name: "查询客户列表", type: "query", trigger_type: "manual", config: '{"endpoint": "GET /api/customers"}', status: "active" },
+  { id: "act-3", object_id: "obj-contract", name: "更新合同状态", type: "update", trigger_type: "manual", config: '{"endpoint": "PATCH /api/contracts/:id"}', status: "active" },
+  { id: "act-4", object_id: "obj-invoice", name: "删除草稿发票", type: "delete", trigger_type: "manual", config: '{"endpoint": "DELETE /api/invoices/:id"}', status: "active" },
+  { id: "act-5", object_id: "obj-customer", name: "批量导入客户", type: "import", trigger_type: "manual", config: '{"endpoint": "POST /api/customers/import"}', status: "active" },
+  { id: "act-6", object_id: "obj-order", name: "导出订单报表", type: "export", trigger_type: "manual", config: '{"endpoint": "GET /api/orders/export"}', status: "active" },
+  { id: "act-7", object_id: null, name: "自定义-发送通知", type: "custom", trigger_type: "event", config: '{"endpoint": "POST /api/actions/notify"}', status: "draft" },
+];
+
+const insertAction = db.prepare(
+  `INSERT INTO ontology_actions (id, object_id, name, type, trigger_type, config, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+);
+for (const a of actionsList) {
+  insertAction.run(a.id, a.object_id, a.name, a.type, a.trigger_type, a.config, a.status, now);
+}
+console.log(`  ✅ Ontology Actions: ${actionsList.length}`);
+
+// ════════════════════════════════════════════════════════
+//  Ontology Functions (6)
+// ════════════════════════════════════════════════════════
+const functionsList = [
+  { id: "fn-1", object_id: "obj-order", name: "计算订单总额", type: "business", expression: "sum(items[].price * items[].qty)", description: "计算订单中所有商品的总金额", status: "active" },
+  { id: "fn-2", object_id: "obj-product", name: "库存扣减", type: "business", expression: "product.stock -= order.quantity", description: "下单后自动扣减库存", status: "active" },
+  { id: "fn-3", object_id: null, name: "审批规则-金额阈值", type: "rule", expression: "IF amount > 10000 THEN require_manager_approval", description: "金额超过1万需主管审批", status: "active" },
+  { id: "fn-4", object_id: null, name: "自动生成编号", type: "business", expression: "PREFIX + SEQ(6)", description: "自动生成带前缀的序列号", status: "active" },
+  { id: "fn-5", object_id: "obj-contract", name: "AI 风险评估", type: "ai", expression: "llm.risk_score(contract_text)", description: "使用 LLM 评估合同风险", status: "active" },
+  { id: "fn-6", object_id: null, name: "服务编排-下单流程", type: "orchestration", expression: "validate -> check_stock -> create_order -> notify", description: "组合多个服务形成下单流程", status: "active" },
+];
+
+const insertFunction = db.prepare(
+  `INSERT INTO ontology_functions (id, object_id, name, type, expression, description, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+);
+for (const f of functionsList) {
+  insertFunction.run(f.id, f.object_id, f.name, f.type, f.expression, f.description, f.status, now);
+}
+console.log(`  ✅ Ontology Functions: ${functionsList.length}`);
+
+// ════════════════════════════════════════════════════════
+//  Ontology Rules (5)
+// ════════════════════════════════════════════════════════
+const rulesList = [
+  { id: "rule-1", object_id: "obj-order", name: "订单金额校验", type: "validation", condition_expr: "amount > 0", action: "reject", status: "active" },
+  { id: "rule-2", object_id: null, name: "审批自动通过", type: "automation", condition_expr: "amount < 1000", action: "auto_approve", status: "active" },
+  { id: "rule-3", object_id: "obj-product", name: "库存补货触发", type: "automation", condition_expr: "stock < safety_stock", action: "trigger_restock", status: "active" },
+  { id: "rule-4", object_id: null, name: "合同到期通知", type: "orchestration", condition_expr: "expires_in_30d", action: "send_notification", status: "paused" },
+  { id: "rule-5", object_id: "obj-customer", name: "DMN-客户分级", type: "decision", condition_expr: "DMN_TABLE(customer_score)", action: "set_level", status: "active" },
+];
+
+const insertRule = db.prepare(
+  `INSERT INTO ontology_rules (id, object_id, name, type, condition_expr, action, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+);
+for (const r of rulesList) {
+  insertRule.run(r.id, r.object_id, r.name, r.type, r.condition_expr, r.action, r.status, now);
+}
+console.log(`  ✅ Ontology Rules: ${rulesList.length}`);
+
+// ════════════════════════════════════════════════════════
+//  Departments (6)
+// ════════════════════════════════════════════════════════
+const departmentsList = [
+  { id: "dept-tech", name: "技术部", parent_id: null, leader: "赵架构", icon: "Code" },
+  { id: "dept-product", name: "产品部", parent_id: null, leader: "孙产品", icon: "Lightbulb" },
+  { id: "dept-sales", name: "销售部", parent_id: null, leader: "张经理", icon: "TrendingUp" },
+  { id: "dept-hr", name: "人力资源部", parent_id: null, leader: "周HR", icon: "Users" },
+  { id: "dept-finance", name: "财务部", parent_id: null, leader: "吴财务", icon: "DollarSign" },
+  { id: "dept-ops", name: "运营部", parent_id: null, leader: "郑运营", icon: "Activity" },
+];
+
+const insertDept = db.prepare(
+  `INSERT INTO departments (id, name, parent_id, leader, icon, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 'active', ?, ?)`
+);
+for (const d of departmentsList) {
+  insertDept.run(d.id, d.name, d.parent_id, d.leader, d.icon, now, now);
+}
+console.log(`  ✅ Departments: ${departmentsList.length}`);
 
 // ════════════════════════════════════════════════════════
 //  Process Definitions (3)
@@ -479,6 +565,43 @@ for (const tr of triggersList) {
 console.log(`  Process Triggers: ${triggersList.length}`);
 
 // ════════════════════════════════════════════════════════
+//  Export History (4)
+// ════════════════════════════════════════════════════════
+const exportHistoryList = [
+  { id: "exp-1", app_id: "app-crm", type: "frontend", format: "vue", status: "completed", file_path: "/exports/crm-vue-20260701.zip" },
+  { id: "exp-2", app_id: "app-crm", type: "backend", format: "java-spring", status: "completed", file_path: "/exports/crm-spring-20260701.zip" },
+  { id: "exp-3", app_id: "app-expense", type: "database", format: "ddl", status: "completed", file_path: "/exports/expense-ddl-20260628.sql" },
+  { id: "exp-4", app_id: "app-crm", type: "deploy", format: "docker", status: "completed", file_path: "/exports/crm-docker-20260625.tar" },
+];
+
+const insertExportHistory = db.prepare(
+  `INSERT INTO export_history (id, app_id, type, format, status, file_path, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)`
+);
+for (const e of exportHistoryList) {
+  insertExportHistory.run(e.id, e.app_id, e.type, e.format, e.status, e.file_path, now);
+}
+console.log(`  Export History: ${exportHistoryList.length}`);
+
+// ════════════════════════════════════════════════════════
+//  Knowledge Q&A (5)
+// ════════════════════════════════════════════════════════
+const knowledgeQaList = [
+  { id: "qa-1", question: "客户合同的付款条款是什么？", answer: "根据知识库文档：付款条款为月结 30 天，T+3 工作日内完成付款。大客户可申请月结 60 天。", source_doc_id: "doc-3" },
+  { id: "qa-2", question: "如何申请差旅报销？", answer: "需要登录 OA 系统，进入报销管理模块，填写差旅报销单并上传发票照片，提交后由直属主管审批。", source_doc_id: "doc-4" },
+  { id: "qa-3", question: "Q3 销售目标是多少？", answer: "根据 2026 Q3 销售计划：总目标 4.2 亿元，华东区 1.5 亿，华南区 1.2 亿，华北区 0.8 亿，西部区 0.7 亿。", source_doc_id: "doc-1" },
+  { id: "qa-4", question: "平台支持哪些流程节点？", answer: "MetaPlatform 流程引擎支持：开始节点、审批节点、条件分支、并行网关、通知节点、子流程、定时器、结束节点等。", source_doc_id: "doc-4" },
+  { id: "qa-5", question: "如何创建新的业务对象？", answer: "进入对象管理页面，点击新建对象按钮，填写对象名称和标签，然后添加属性定义（支持文本、数字、日期、选择等类型）。", source_doc_id: "doc-3" },
+];
+
+const insertKnowledgeQa = db.prepare(
+  `INSERT INTO knowledge_qa (id, question, answer, source_doc_id, created_at) VALUES (?, ?, ?, ?, ?)`
+);
+for (const qa of knowledgeQaList) {
+  insertKnowledgeQa.run(qa.id, qa.question, qa.answer, qa.source_doc_id, now);
+}
+console.log(`  Knowledge Q&A: ${knowledgeQaList.length}`);
+
+// ════════════════════════════════════════════════════════
 //  Summary
 // ════════════════════════════════════════════════════════
 console.log("\n" + "═".repeat(50));
@@ -486,10 +609,14 @@ console.log("  🎉 Seed completed!");
 console.log("═".repeat(50));
 console.log(`
   Users:             ${users.length}
+  Departments:       ${departmentsList.length}
   Applications:      ${apps.length}
   App Pages:         ${pagesList.length}
   Ontology Objects:  ${objects.length} (${objects.reduce((s, o) => s + o.properties.length, 0)} properties)
   Relations:         ${relations.length}
+  Ontology Actions:  ${actionsList.length}
+  Ontology Functions: ${functionsList.length}
+  Ontology Rules:    ${rulesList.length}
   Process Defs:      ${processes.length}
   Process Instances: ${instances.length}
   Data Sources:      ${dataSources.length}
@@ -505,4 +632,6 @@ console.log(`
   Bugs:              ${bugsList.length}
   App Versions:      ${versionsList.length}
   Process Triggers:  ${triggersList.length}
+  Export History:    ${exportHistoryList.length}
+  Knowledge Q&A:     ${knowledgeQaList.length}
 `);
