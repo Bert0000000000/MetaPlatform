@@ -383,53 +383,161 @@ export function BusinessArchitecture() {
         </TabsContent>
 
         <TabsContent value="value" className="mt-4">
+          {/* ── Summary Stats Row ── */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+            {[
+              { label: "价值流阶段", value: valueChain.length, icon: GitBranch, color: "text-blue-600" },
+              { label: "覆盖应用", value: new Set(valueChain.flatMap((v) => v.apps)).size, icon: Smartphone, color: "text-green-600" },
+              { label: "关联流程", value: 32, icon: RefreshCw, color: "text-amber-600" },
+              { label: "端到端时效", value: "4.2 天", icon: Zap, color: "text-purple-600" },
+            ].map((s) => {
+              const Icon = s.icon;
+              return (
+                <div key={s.label} className="flex items-center gap-3 rounded-lg border bg-card p-3">
+                  <div className={`size-9 rounded-lg bg-muted flex items-center justify-center ${s.color}`}>
+                    <Icon className="size-4" />
+                  </div>
+                  <div>
+                    <div className="text-lg font-semibold leading-tight">{s.value}</div>
+                    <div className="text-xs text-muted-foreground">{s.label}</div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* ── Porter's Value Chain Header ── */}
           <Card>
-            <CardHeader>
-              <CardTitle className="text-base">端到端价值链</CardTitle>
-              <CardDescription>企业核心价值流转路径 - 研发 / 采购 / 生产 / 销售 / 服务</CardDescription>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <GitBranch className="size-4 text-primary" />
+                    端到端价值链（Primary Activities）
+                  </CardTitle>
+                  <CardDescription>Michael Porter 价值链模型 — 从市场获取到客户服务的完整价值流转</CardDescription>
+                </div>
+                <Badge variant="outline" className="text-xs">
+                  <Workflow className="size-3 mr-1" />
+                  {valueChain.length} 阶段
+                </Badge>
+              </div>
             </CardHeader>
             <CardContent>
-              {/* F3.1.1 SVG 价值链可视化 */}
-              <div className="mb-4">
-                <svg viewBox="0 0 900 160" className="w-full h-auto" xmlns="http://www.w3.org/2000/svg">
+              {/* ── Horizontal Flow ── */}
+              <div className="relative">
+                {/* Flow line behind cards */}
+                <div className="absolute top-[52px] left-0 right-0 h-0.5 bg-gradient-to-r from-red-400 via-amber-400 via-green-400 via-blue-400 to-purple-400 hidden md:block" />
+
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 relative">
                   {valueChain.map((v, i) => {
-                    const x = 20 + i * 145;
-                    const colors = ["#ef4444", "#f97316", "#eab308", "#22c55e", "#3b82f6", "#8b5cf6"];
+                    const Icon = v.icon;
+                    const colorSchemes = [
+                      { ring: "ring-red-400", bg: "bg-red-50 dark:bg-red-950/30", text: "text-red-600", badge: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300" },
+                      { ring: "ring-orange-400", bg: "bg-orange-50 dark:bg-orange-950/30", text: "text-orange-600", badge: "bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300" },
+                      { ring: "ring-amber-400", bg: "bg-amber-50 dark:bg-amber-950/30", text: "text-amber-600", badge: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300" },
+                      { ring: "ring-green-400", bg: "bg-green-50 dark:bg-green-950/30", text: "text-green-600", badge: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" },
+                      { ring: "ring-blue-400", bg: "bg-blue-50 dark:bg-blue-950/30", text: "text-blue-600", badge: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" },
+                      { ring: "ring-purple-400", bg: "bg-purple-50 dark:bg-purple-950/30", text: "text-purple-600", badge: "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300" },
+                    ];
+                    const scheme = colorSchemes[i % colorSchemes.length];
+
                     return (
-                      <g key={v.name}>
-                        <rect x={x} y="20" width="120" height="80" rx="8" fill={colors[i]} fillOpacity="0.12" stroke={colors[i]} strokeWidth="2" />
-                        <text x={x + 60} y="52" textAnchor="middle" fontSize="12" fontWeight="600" fill={colors[i]}>{v.name}</text>
-                        <text x={x + 60} y="72" textAnchor="middle" fontSize="10" fill="#888">{v.apps.join(" / ")}</text>
+                      <div key={v.name} className="group relative">
+                        {/* Step Number */}
+                        <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 z-10">
+                          <div className={`size-5 rounded-full ${scheme.badge} flex items-center justify-center text-[10px] font-bold ring-2 ring-background`}>
+                            {i + 1}
+                          </div>
+                        </div>
+
+                        {/* Card */}
+                        <div className={`rounded-xl border-2 border-transparent ${scheme.bg} ring-1 ${scheme.ring}/20 p-4 pt-5 hover:ring-2 hover:${scheme.ring}/60 transition-all duration-200 cursor-pointer h-full`}>
+                          {/* Icon */}
+                          <div className={`size-10 rounded-lg ${scheme.badge} flex items-center justify-center mb-3 group-hover:scale-110 transition-transform`}>
+                            <Icon className={`size-5 ${scheme.text}`} />
+                          </div>
+
+                          {/* Name */}
+                          <h4 className="font-semibold text-sm mb-1">{v.name}</h4>
+
+                          {/* Description */}
+                          <p className="text-xs text-muted-foreground mb-3 leading-relaxed">
+                            {["市场洞察与获客", "产品设计与研发", "供应商与物料管理", "制造与质量控制", "渠道销售与运营", "售后与客户成功"][i]}
+                          </p>
+
+                          {/* Apps */}
+                          <div className="flex flex-wrap gap-1 mb-2">
+                            {v.apps.map((app) => (
+                              <Badge key={app} variant="secondary" className="text-[10px] px-1.5 py-0">
+                                {app}
+                              </Badge>
+                            ))}
+                          </div>
+
+                          {/* KPIs */}
+                          <div className="flex items-center justify-between pt-2 border-t border-border/50">
+                            <span className="text-[10px] text-muted-foreground">流程</span>
+                            <span className="text-xs font-semibold">{[8, 12, 6, 15, 10, 5][i]}</span>
+                          </div>
+                        </div>
+
+                        {/* Flow Arrow */}
                         {i < valueChain.length - 1 && (
-                          <>
-                            <line x1={x + 120} y1="60" x2={x + 145} y2="60" stroke="#94a3b8" strokeWidth="2" markerEnd="url(#arrowhead)" />
-                          </>
+                          <div className="absolute top-[52px] -right-2 z-10 hidden lg:flex items-center">
+                            <div className="size-5 rounded-full bg-background border-2 border-border flex items-center justify-center">
+                              <ArrowRight className="size-3 text-muted-foreground" />
+                            </div>
+                          </div>
                         )}
-                        <text x={x + 60} y="130" textAnchor="middle" fontSize="10" fill="#666">L{i + 1}</text>
-                      </g>
+                      </div>
                     );
                   })}
-                  <defs>
-                    <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
-                      <polygon points="0 0, 8 3, 0 6" fill="#94a3b8" />
-                    </marker>
-                  </defs>
-                </svg>
+                </div>
               </div>
-              {/* Fallback card view */}
-              <div className="flex flex-wrap items-center gap-2">
-                {valueChain.map((v, i) => (
-                  <div key={v.name} className="flex items-center gap-2">
-                    <div className="rounded-lg border-2 border-primary/30 bg-primary/5 px-4 py-3 hover:bg-primary/10 cursor-pointer transition-colors">
-                      <div className="text-2xl"><v.icon className="size-6" /></div>
-                      <div className="font-medium text-sm mt-1">{v.name}</div>
-                      <div className="text-xs text-muted-foreground mt-0.5">
-                        {v.apps.join(" . ")}
+
+              {/* ── Supporting Systems Row ── */}
+              <div className="mt-6 pt-4 border-t">
+                <div className="flex items-center gap-2 mb-3">
+                  <Server className="size-3.5 text-muted-foreground" />
+                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">支撑系统（Supporting Systems）</span>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
+                  {valueChain.map((v, i) => (
+                    <div key={v.name} className="rounded-lg border bg-muted/30 p-2.5">
+                      <div className="text-[10px] font-medium text-muted-foreground mb-1.5">{v.name}</div>
+                      <div className="flex flex-wrap gap-1">
+                        {v.apps.map((app) => (
+                          <code key={app} className="text-[10px] bg-background rounded px-1 py-0.5 border font-mono">
+                            {app}
+                          </code>
+                        ))}
                       </div>
                     </div>
-                    {i < valueChain.length - 1 && <ArrowRight className="size-4 text-muted-foreground" />}
-                  </div>
-                ))}
+                  ))}
+                </div>
+              </div>
+
+              {/* ── Flow Legend ── */}
+              <div className="mt-4 pt-3 border-t flex flex-wrap items-center gap-4 text-[10px] text-muted-foreground">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-3 h-3 rounded-full bg-gradient-to-r from-red-400 to-purple-400" />
+                  <span>价值流转方向</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-3 h-3 rounded bg-blue-100 border border-blue-200" />
+                  <span>阶段编号</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-3 h-3 rounded bg-muted border" />
+                  <span>支撑系统</span>
+                </div>
+                <div className="ml-auto">
+                  <Button variant="ghost" size="sm" className="h-6 text-[10px]" onClick={() => downloadJSON(valueChain.map(({ icon: _i, ...rest }) => rest), "value-chain.json")}>
+                    <Download className="size-3 mr-1" />
+                    导出 JSON
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>
