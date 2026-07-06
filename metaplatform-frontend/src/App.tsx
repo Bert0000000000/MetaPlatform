@@ -26,6 +26,7 @@ import VibeCoding from "@/pages/apps/VibeCoding";
 import WebIDE from "@/pages/apps/WebIDE";
 import FormDesigner from "@/pages/apps/FormDesigner";
 import FDEWorkbench from "@/pages/apps/FDEWorkbench";
+import PageEditor from "@/pages/apps/PageEditor";
 
 // 流程中心
 import ProcessList, { ProcessInstances, ProcessApprovals, ProcessTriggers, ProcessAnalysis, ProcessPlatform, ProcessExport } from "@/pages/process/ProcessList";
@@ -133,6 +134,7 @@ export default function App() {
               <Route path="/apps/:appId/export" element={<AppExport />} />
               <Route path="/apps/:appId/ide" element={<WebIDE />} />
               <Route path="/apps/:appId/fde" element={<FDEWorkbench />} />
+              <Route path="/apps/:appId/page-editor" element={<PageEditor />} />
 
               {/* 5. 流程中心 */}
               <Route path="/process" element={<ProcessList />} />

@@ -1,17 +1,16 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/ui/stat";
-import { pagesApi, appsApi, type AppPage } from "@/lib/api";
+import { appsApi, type AppPage } from "@/lib/api";
 import {
-  Plus, Search, Layout, Code2, FileText, BarChart3,
-  FileEdit, ClipboardList, Palette, Sparkles, Package, Loader2, Copy, Trash2,
+  Plus, Search, FileText, Loader2, Trash2, Edit, Wand2,
+  Monitor, FolderOpen, ChevronRight, ChevronDown, Copy, Eye,
+  FileCode, FileEdit, LayoutDashboard, Palette, Sparkles,
 } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -22,396 +21,417 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 
-interface Page {
-  id: string;
-  name: string;
-  type: "表单" | "列表" | "仪表盘" | "自定义" | "VibeCoding";
-  icon: LucideIcon;
-  status: "published" | "draft" | "archived";
-  updatedAt: string;
-}
-
-// TODO: Replace with real API when backend ready (appsApi does not have pages listing endpoint)
-const INITIAL_PAGES: Page[] = [
-  { id: "p-1", name: "客户档案", type: "表单", icon: FileEdit, status: "published", updatedAt: "2026-07-01" },
-  { id: "p-2", name: "客户列表", type: "列表", icon: ClipboardList, status: "published", updatedAt: "2026-07-02" },
-  { id: "p-3", name: "销售仪表盘", type: "仪表盘", icon: BarChart3, status: "published", updatedAt: "2026-07-01" },
-  { id: "p-4", name: "客户画像自定义页", type: "自定义", icon: Palette, status: "draft", updatedAt: "2026-07-03" },
-  { id: "p-5", name: "VibeCoding Demo", type: "VibeCoding", icon: Sparkles, status: "draft", updatedAt: "2026-07-03" },
-  { id: "p-6", name: "订单管理", type: "列表", icon: Package, status: "published", updatedAt: "2026-06-28" },
-];
-
-const TYPE_ICON_MAP: Record<Page["type"], React.ReactNode> = {
-  表单: <FileText className="size-4" />,
-  列表: <Layout className="size-4" />,
-  仪表盘: <BarChart3 className="size-4" />,
-  自定义: <Code2 className="size-4" />,
-  VibeCoding: <Code2 className="size-4" />,
+const TYPE_META: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
+  form: { label: "表单", icon: <FileEdit className="size-3.5" />, color: "text-blue-500" },
+  list: { label: "列表", icon: <LayoutDashboard className="size-3.5" />, color: "text-green-500" },
+  dashboard: { label: "仪表盘", icon: <LayoutDashboard className="size-3.5" />, color: "text-purple-500" },
+  custom: { label: "自定义", icon: <Palette className="size-3.5" />, color: "text-orange-500" },
+  vibe_coding: { label: "VibeCoding", icon: <Sparkles className="size-3.5" />, color: "text-pink-500" },
+  lowcode: { label: "LowCode", icon: <Palette className="size-3.5" />, color: "text-blue-500" },
+  procode: { label: "ProCode", icon: <FileCode className="size-3.5" />, color: "text-green-500" },
+  ai: { label: "AI 生成", icon: <Wand2 className="size-3.5" />, color: "text-purple-500" },
 };
 
-const PAGE_TYPE_OPTIONS: Array<{ value: Page["type"]; label: string }> = [
-  { value: "表单", label: "表单" },
-  { value: "列表", label: "列表" },
-  { value: "仪表盘", label: "仪表盘" },
-  { value: "自定义", label: "自定义" },
-  { value: "VibeCoding", label: "VibeCoding" },
+const TYPE_OPTIONS = [
+  { value: "lowcode", label: "LowCode", icon: <Palette className="size-4" /> },
+  { value: "procode", label: "ProCode", icon: <FileCode className="size-4" /> },
+  { value: "ai", label: "AI 生成", icon: <Wand2 className="size-4" /> },
 ];
 
 export default function Pages() {
   const navigate = useNavigate();
   const { appId } = useParams();
-  const [pages, setPages] = useState<Page[]>(INITIAL_PAGES);
+
+  const [pages, setPages] = useState<AppPage[]>([]);
+  const [selectedPage, setSelectedPage] = useState<AppPage | null>(null);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
 
   // Create dialog state
-  const [showCreateDialog, setShowCreateDialog] = useState(false);
-  const [creating, setCreating] = useState(false);
+  const [newPageDialogOpen, setNewPageDialogOpen] = useState(false);
   const [newPageName, setNewPageName] = useState("");
-  const [newPageType, setNewPageType] = useState<Page["type"]>("表单");
+  const [newPageType, setNewPageType] = useState("lowcode");
+  const [creating, setCreating] = useState(false);
 
   // Delete dialog state
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [deletingPage, setDeletingPage] = useState<Page | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deletingPage, setDeletingPage] = useState<AppPage | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  // Load pages from backend API on mount
-  useEffect(() => {
+  // Load pages from API
+  const loadPages = async () => {
     if (!appId) return;
-    let cancelled = false;
-    appsApi
-      .listPages(appId)
-      .then((data) => {
-        if (cancelled || !data) return;
-        const mapped: Page[] = data.map((p: AppPage) => ({
-          id: p.id,
-          name: p.name,
-          type: (p.type === "form" ? "表单"
-            : p.type === "list" ? "列表"
-            : p.type === "dashboard" ? "仪表盘"
-            : p.type === "custom" ? "自定义"
-            : p.type === "vibe_coding" ? "VibeCoding"
-            : p.type) as Page["type"],
-          icon: p.type === "vibe_coding" ? Sparkles : FileEdit,
-          status: p.status as Page["status"],
-          updatedAt: p.updated_at?.slice(0, 10) || new Date().toISOString().slice(0, 10),
-        }));
-        setPages(mapped);
-      })
-      .catch((err) => {
-        console.error("加载页面列表失败，使用本地数据:", err);
-      });
-    return () => { cancelled = true; };
-  }, [appId]);
-
-  // Refetch pages from API
-  const refetchPages = async () => {
-    if (!appId) return;
+    setLoading(true);
     try {
       const data = await appsApi.listPages(appId);
-      if (!data) return;
-      const mapped: Page[] = data.map((p: AppPage) => ({
-        id: p.id,
-        name: p.name,
-        type: (p.type === "form" ? "表单"
-          : p.type === "list" ? "列表"
-          : p.type === "dashboard" ? "仪表盘"
-          : p.type === "custom" ? "自定义"
-          : p.type === "vibe_coding" ? "VibeCoding"
-          : p.type) as Page["type"],
-        icon: p.type === "vibe_coding" ? Sparkles : FileEdit,
-        status: p.status as Page["status"],
-        updatedAt: p.updated_at?.slice(0, 10) || new Date().toISOString().slice(0, 10),
-      }));
-      setPages(mapped);
+      setPages(data || []);
     } catch (err) {
-      console.error("刷新页面列表失败:", err);
+      console.error("加载页面列表失败:", err);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const filtered = pages.filter((p) => p.name.includes(search));
+  useEffect(() => {
+    loadPages();
+  }, [appId]);
 
+  const filteredPages = pages.filter(
+    (p) => p.name.includes(search) || (TYPE_META[p.type]?.label || "").includes(search)
+  );
+
+  // Create page and navigate to editor
   const handleCreatePage = async () => {
-    if (!newPageName.trim()) return;
+    if (!appId || !newPageName.trim()) return;
     setCreating(true);
-
     try {
-      // Use appsApi.createPage if we have an appId, otherwise use pagesApi.create
-      const typeMap: Record<string, string> = {
-        "表单": "form",
-        "列表": "list",
-        "仪表盘": "dashboard",
-        "自定义": "custom",
-        "VibeCoding": "vibe_coding",
-      };
-
-      if (appId) {
-        await appsApi.createPage(appId, {
-          name: newPageName.trim(),
-          type: typeMap[newPageType] || "list",
-        });
-        // Refetch pages from API instead of just appending
-        await refetchPages();
+      const result = await appsApi.createPage(appId, {
+        name: newPageName.trim(),
+        type: newPageType,
+      });
+      setNewPageDialogOpen(false);
+      setNewPageName("");
+      setNewPageType("lowcode");
+      // Navigate to page editor
+      if (result && result.id) {
+        navigate(`/apps/${appId}/page-editor?pageId=${result.id}`);
       } else {
-        await pagesApi.create({
-          app_id: "demo",
-          name: newPageName.trim(),
-          type: typeMap[newPageType] || "list",
-        });
-        // Refetch pages from API
-        await refetchPages();
+        await loadPages();
       }
     } catch (e) {
       console.error("创建页面失败:", e);
-      // Fallback to local-only creation on API failure
-      const newPage: Page = {
-        id: `p-${Date.now()}`,
-        name: newPageName.trim(),
-        type: newPageType,
-        icon: newPageType === "VibeCoding" ? Sparkles : FileEdit,
-        status: "draft",
-        updatedAt: new Date().toISOString().slice(0, 10),
-      };
-      setPages((prev) => [newPage, ...prev]);
-    }
-
-    setNewPageName("");
-    setNewPageType("表单");
-    setShowCreateDialog(false);
-    setCreating(false);
-  };
-
-  const handleCardClick = (page: Page) => {
-    // Navigate to page designer/preview based on type
-    if (page.type === "VibeCoding") {
-      navigate(`/apps/${appId || "demo"}/vibe-coding?pageId=${page.id}`);
-    } else {
-      navigate(`/apps/${appId || "demo"}/page-designer?pageId=${page.id}`);
+    } finally {
+      setCreating(false);
     }
   };
 
-  // F4.4.1.5 页面复制
-  const handleCopyPage = (page: Page) => {
-    const newPage: Page = {
-      id: `p-${Date.now()}`,
-      name: `${page.name} (副本)`,
-      type: page.type,
-      icon: page.icon,
-      status: "draft",
-      updatedAt: new Date().toISOString().slice(0, 10),
-    };
-    setPages((prev) => [newPage, ...prev]);
+  // Duplicate page
+  const handleDuplicatePage = async (page: AppPage) => {
+    if (!appId) return;
+    try {
+      await appsApi.createPage(appId, {
+        name: `${page.name} (副本)`,
+        type: page.type,
+        config: page.config,
+      });
+      await loadPages();
+    } catch (e) {
+      console.error("复制页面失败:", e);
+    }
   };
 
-  // Delete page with confirmation
-  const handleDeleteClick = (page: Page, e: React.MouseEvent) => {
+  // Delete page
+  const handleDeleteClick = (page: AppPage, e: React.MouseEvent) => {
     e.stopPropagation();
     setDeletingPage(page);
-    setShowDeleteDialog(true);
+    setDeleteDialogOpen(true);
   };
 
   const handleConfirmDelete = async () => {
-    if (!deletingPage || !appId) return;
+    if (!appId || !deletingPage) return;
     setDeleting(true);
     try {
       await appsApi.deletePage(appId, deletingPage.id);
-      // Refetch from API after deletion
-      await refetchPages();
+      if (selectedPage?.id === deletingPage.id) {
+        setSelectedPage(null);
+      }
+      await loadPages();
     } catch (err) {
       console.error("删除页面失败:", err);
-      // Fallback: remove locally on API failure
-      setPages((prev) => prev.filter((p) => p.id !== deletingPage.id));
     } finally {
       setDeleting(false);
-      setShowDeleteDialog(false);
+      setDeleteDialogOpen(false);
       setDeletingPage(null);
     }
   };
 
+  const getPageMeta = (type: string) =>
+    TYPE_META[type] || { label: type, icon: <FileText className="size-3.5" />, color: "text-muted-foreground" };
+
   return (
-    <div className="flex flex-col gap-6 p-6">
+    <div className="flex flex-col gap-0 p-6 h-[calc(100vh-100px)]">
       <PageHeader
         title="页面"
-        description="LowCode + VUE + VibeCoding 三轨"
+        description="管理应用页面结构"
         action={
-          <div className="flex gap-2">
-            <Button variant="outline" className="gap-2">
-              <Code2 className="size-4" /> VibeCoding
-            </Button>
-            <Button className="gap-2" onClick={() => setShowCreateDialog(true)}>
-              <Plus className="size-4" /> 新建页面
-            </Button>
-          </div>
+          <Button className="gap-2" onClick={() => setNewPageDialogOpen(true)}>
+            <Plus className="size-4" /> 新建页面
+          </Button>
         }
       />
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-sm text-muted-foreground">表单</div>
-            <div className="text-xl font-semibold mt-1">
-              {pages.filter((p) => p.type === "表单").length}
+      <div className="flex flex-1 border rounded-lg overflow-hidden mt-4">
+        {/* Left: Page Tree Panel */}
+        <div className="w-72 border-r bg-muted/10 flex flex-col">
+          {/* Search */}
+          <div className="p-3 border-b">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
+              <Input
+                placeholder="搜索页面..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-8 h-8 text-sm"
+              />
             </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-sm text-muted-foreground">列表</div>
-            <div className="text-xl font-semibold mt-1">
-              {pages.filter((p) => p.type === "列表").length}
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-sm text-muted-foreground">仪表盘</div>
-            <div className="text-xl font-semibold mt-1">
-              {pages.filter((p) => p.type === "仪表盘").length}
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-sm text-muted-foreground">自定义/VibeCoding</div>
-            <div className="text-xl font-semibold mt-1">
-              {pages.filter((p) => p.type === "自定义" || p.type === "VibeCoding").length}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+          </div>
 
-      {/* Search */}
-      <div className="relative max-w-md">
-        <Search className="absolute left-2 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-        <Input
-          placeholder="搜索页面..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="pl-8"
-        />
-      </div>
+          {/* Tree */}
+          <div className="flex-1 overflow-y-auto p-2">
+            {loading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="size-5 animate-spin text-muted-foreground" />
+              </div>
+            ) : filteredPages.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+                <FolderOpen className="size-8 mb-2 opacity-30" />
+                <p className="text-xs">
+                  {search ? "没有匹配的页面" : "暂无页面"}
+                </p>
+                {!search && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="mt-2 text-xs"
+                    onClick={() => setNewPageDialogOpen(true)}
+                  >
+                    <Plus className="size-3 mr-1" /> 创建第一个页面
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-0.5">
+                {/* Root node */}
+                <div className="flex items-center gap-1.5 px-2 py-1.5 text-xs font-semibold text-muted-foreground">
+                  <ChevronDown className="size-3" />
+                  <FolderOpen className="size-3.5 text-amber-500" />
+                  <span>页面 ({filteredPages.length})</span>
+                </div>
 
-      {/* Page cards */}
-      {filtered.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 gap-3">
-          <FileText className="size-10 text-muted-foreground" />
-          <p className="text-sm text-muted-foreground">
-            {search ? "没有匹配的页面" : "暂无页面"}
-          </p>
-          {!search && (
-            <Button variant="outline" size="sm" onClick={() => setShowCreateDialog(true)}>
-              <Plus className="size-4 mr-1" /> 新建页面
-            </Button>
+                {/* Page nodes */}
+                {filteredPages.map((page) => {
+                  const meta = getPageMeta(page.type);
+                  const isSelected = selectedPage?.id === page.id;
+                  return (
+                    <div
+                      key={page.id}
+                      onClick={() => setSelectedPage(page)}
+                      className={`group flex items-center gap-2 pl-6 pr-2 py-1.5 rounded cursor-pointer text-sm transition-colors ${
+                        isSelected
+                          ? "bg-primary text-primary-foreground"
+                          : "hover:bg-muted text-foreground"
+                      }`}
+                    >
+                      <span className={`${isSelected ? "text-primary-foreground" : meta.color}`}>
+                        {meta.icon}
+                      </span>
+                      <span className="flex-1 truncate text-[13px]">{page.name}</span>
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded ${
+                        isSelected ? "bg-primary-foreground/20" : "bg-muted"
+                      }`}>
+                        {meta.label}
+                      </span>
+                      {/* Hover actions */}
+                      <div className={`flex gap-0.5 ${isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100"} transition-opacity`}>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/apps/${appId}/page-editor?pageId=${page.id}`);
+                          }}
+                          className={`p-0.5 rounded hover:bg-${isSelected ? "primary-foreground/20" : "accent"}`}
+                          title="编辑"
+                        >
+                          <Edit className="size-3" />
+                        </button>
+                        <button
+                          onClick={(e) => handleDeleteClick(page, e)}
+                          className={`p-0.5 rounded hover:bg-destructive/20`}
+                          title="删除"
+                        >
+                          <Trash2 className="size-3" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Right: Page Detail Panel */}
+        <div className="flex-1 flex flex-col">
+          {selectedPage ? (
+            <div className="flex flex-col h-full">
+              {/* Page Header Bar */}
+              <div className="flex items-center justify-between border-b px-5 py-3">
+                <div className="flex items-center gap-3">
+                  <div className={`p-1.5 rounded-md bg-muted ${getPageMeta(selectedPage.type).color}`}>
+                    {getPageMeta(selectedPage.type).icon}
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold">{selectedPage.name}</h3>
+                    <p className="text-xs text-muted-foreground">
+                      类型: {getPageMeta(selectedPage.type).label}
+                      {selectedPage.created_at && (
+                        <span> | 创建于 {selectedPage.created_at.slice(0, 10)}</span>
+                      )}
+                      {selectedPage.updated_at && (
+                        <span> | 更新于 {selectedPage.updated_at.slice(0, 10)}</span>
+                      )}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => navigate(`/apps/${appId}/page-editor?pageId=${selectedPage.id}`)}
+                  >
+                    <Edit className="size-3.5 mr-1" /> 编辑页面
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => navigate(`/apps/${appId}/page-editor?mode=ai&pageId=${selectedPage.id}`)}
+                  >
+                    <Wand2 className="size-3.5 mr-1" /> AI 编辑
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleDuplicatePage(selectedPage)}
+                  >
+                    <Copy className="size-3.5 mr-1" /> 复制
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={(e) => handleDeleteClick(selectedPage, e)}
+                  >
+                    <Trash2 className="size-3.5 mr-1" /> 删除
+                  </Button>
+                </div>
+              </div>
+
+              {/* Page Preview Area */}
+              <div className="flex-1 p-5 overflow-y-auto bg-muted/20">
+                <div className="border rounded-lg bg-white p-6 max-w-2xl mx-auto shadow-sm">
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className={`p-1 rounded ${getPageMeta(selectedPage.type).color}`}>
+                      {getPageMeta(selectedPage.type).icon}
+                    </div>
+                    <h2 className="text-lg font-semibold">{selectedPage.name}</h2>
+                    <Badge variant="outline" className="text-[10px]">
+                      {getPageMeta(selectedPage.type).label}
+                    </Badge>
+                    <Badge
+                      variant={selectedPage.status === "published" ? "default" : "secondary"}
+                      className="text-[10px]"
+                    >
+                      {selectedPage.status === "published" ? "已发布" : "草稿"}
+                    </Badge>
+                  </div>
+
+                  {selectedPage.config ? (
+                    <div className="space-y-3">
+                      <p className="text-sm text-muted-foreground">
+                        此页面已包含组件配置，点击下方按钮进入编辑器查看和修改。
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      页面暂无内容，点击编辑开始设计。
+                    </p>
+                  )}
+
+                  <div className="mt-5 border-2 border-dashed rounded-lg p-8 text-center text-muted-foreground">
+                    <Monitor className="size-10 mx-auto mb-3 opacity-30" />
+                    <p className="text-sm">页面预览区域</p>
+                    <p className="text-xs mt-1">进入编辑器后可实时预览页面效果</p>
+                    <Button
+                      className="mt-4"
+                      size="sm"
+                      onClick={() => navigate(`/apps/${appId}/page-editor?pageId=${selectedPage.id}`)}
+                    >
+                      <Edit className="size-3.5 mr-1" /> 开始编辑
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground">
+              <Monitor className="size-12 mb-3 opacity-20" />
+              <p className="text-sm">选择左侧页面进行查看</p>
+              <p className="text-xs mt-1">或点击「新建页面」开始创建</p>
+            </div>
           )}
         </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filtered.map((page) => (
-            <Card
-              key={page.id}
-              className="cursor-pointer hover:border-primary transition-colors"
-              onClick={() => handleCardClick(page)}
-            >
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <page.icon className="size-5" />
-                  <Badge variant="outline" className="gap-1">
-                    {TYPE_ICON_MAP[page.type]} {page.type}
-                  </Badge>
-                </div>
-                <CardTitle className="text-base mt-2">{page.name}</CardTitle>
-                <CardDescription>最后更新: {page.updatedAt}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center justify-between">
-                  <Badge variant={page.status === "published" ? "default" : "secondary"}>
-                    {page.status === "published" ? "已发布" : page.status === "draft" ? "草稿" : "已归档"}
-                  </Badge>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 px-2 text-xs"
-                    onClick={(e) => { e.stopPropagation(); handleCopyPage(page); }}
-                    title="复制页面"
-                  >
-                    <Copy className="size-3 mr-1" /> 复制
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 px-2 text-xs text-destructive hover:text-destructive"
-                    onClick={(e) => handleDeleteClick(page, e)}
-                    title="删除页面"
-                  >
-                    <Trash2 className="size-3" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
+      </div>
 
-      {/* Create Page Dialog */}
-      <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+      {/* New Page Dialog */}
+      <Dialog open={newPageDialogOpen} onOpenChange={setNewPageDialogOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>新建页面</DialogTitle>
-            <DialogDescription>创建一个新页面，选择页面类型</DialogDescription>
+            <DialogDescription>选择页面类型并命名</DialogDescription>
           </DialogHeader>
-
-          <div className="space-y-4 py-2">
+          <div className="space-y-4">
             <div className="space-y-1.5">
-              <Label htmlFor="page-name">页面名称 *</Label>
+              <Label htmlFor="new-page-name">页面名称 *</Label>
               <Input
-                id="page-name"
-                placeholder="如：客户详情页、订单列表"
+                id="new-page-name"
                 value={newPageName}
                 onChange={(e) => setNewPageName(e.target.value)}
+                placeholder="如：客户详情页、订单列表"
+                autoFocus
               />
             </div>
             <div className="space-y-1.5">
               <Label>页面类型</Label>
-              <div className="grid grid-cols-2 gap-2">
-                {PAGE_TYPE_OPTIONS.map((opt) => (
+              <div className="grid grid-cols-3 gap-2">
+                {TYPE_OPTIONS.map((t) => (
                   <button
-                    key={opt.value}
+                    key={t.value}
                     type="button"
-                    onClick={() => setNewPageType(opt.value)}
-                    className={`text-left rounded border p-3 transition-all hover:border-primary ${
-                      newPageType === opt.value
+                    onClick={() => setNewPageType(t.value)}
+                    className={`flex flex-col items-center gap-1.5 p-3 border rounded-lg transition-all ${
+                      newPageType === t.value
                         ? "border-primary bg-primary/5"
-                        : "border-border"
+                        : "hover:border-primary/50"
                     }`}
                   >
-                    <div className="flex items-center gap-2">
-                      {TYPE_ICON_MAP[opt.value]}
-                      <span className="text-sm font-medium">{opt.label}</span>
+                    <div className={newPageType === t.value ? "text-primary" : "text-muted-foreground"}>
+                      {t.icon}
                     </div>
+                    <span className="text-xs font-medium">{t.label}</span>
                   </button>
                 ))}
               </div>
             </div>
           </div>
-
           <DialogFooter>
             <DialogClose asChild>
-              <Button variant="outline">取消</Button>
+              <Button variant="outline" disabled={creating}>取消</Button>
             </DialogClose>
-            <Button onClick={handleCreatePage} disabled={creating || !newPageName.trim()}>
+            <Button
+              onClick={handleCreatePage}
+              disabled={creating || !newPageName.trim()}
+            >
               {creating ? (
                 <Loader2 className="size-4 mr-1 animate-spin" />
               ) : (
                 <Plus className="size-4 mr-1" />
               )}
-              {creating ? "创建中..." : "创建"}
+              {creating ? "创建中..." : "创建并编辑"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Delete Page Confirmation Dialog */}
-      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>删除页面</DialogTitle>
