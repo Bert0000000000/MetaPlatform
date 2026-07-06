@@ -29,6 +29,35 @@ router.post("/templates", (req, res) => {
   res.json({ success: true, data: { id, name } });
 });
 
+// PUT /api/market/templates/:id
+router.put("/templates/:id", (req, res) => {
+  const existing = db.prepare("SELECT * FROM market_templates WHERE id = ?").get(req.params.id);
+  if (!existing) return res.status(404).json({ success: false, error: "模板不存在" });
+  const { name, description, category, icon, config } = req.body;
+  const now = new Date().toISOString();
+  db.prepare(
+    `UPDATE market_templates SET name = ?, description = ?, category = ?, icon = ?, config = ?, updated_at = ? WHERE id = ?`
+  ).run(
+    name ?? existing.name,
+    description !== undefined ? description : existing.description,
+    category ?? existing.category,
+    icon !== undefined ? icon : existing.icon,
+    config !== undefined ? config : existing.config,
+    now,
+    req.params.id
+  );
+  const row = db.prepare("SELECT * FROM market_templates WHERE id = ?").get(req.params.id);
+  res.json({ success: true, data: row });
+});
+
+// DELETE /api/market/templates/:id
+router.delete("/templates/:id", (req, res) => {
+  const existing = db.prepare("SELECT * FROM market_templates WHERE id = ?").get(req.params.id);
+  if (!existing) return res.status(404).json({ success: false, error: "模板不存在" });
+  db.prepare("DELETE FROM market_templates WHERE id = ?").run(req.params.id);
+  res.json({ success: true, data: { id: req.params.id } });
+});
+
 // POST /api/market/templates/:id/install
 router.post("/templates/:id/install", (req, res) => {
   db.prepare(

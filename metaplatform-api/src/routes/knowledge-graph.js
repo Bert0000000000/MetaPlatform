@@ -39,6 +39,40 @@ router.post("/nodes", (req, res, next) => {
   }
 });
 
+// PUT /nodes/:id — update node
+router.put("/nodes/:id", (req, res, next) => {
+  try {
+    const existing = db.prepare("SELECT * FROM knowledge_graph_nodes WHERE id = ?").get(req.params.id);
+    if (!existing) return res.status(404).json({ success: false, error: "节点不存在" });
+    const { name, type, properties } = req.body;
+    db.prepare(
+      `UPDATE knowledge_graph_nodes SET name = ?, type = ?, metadata = ? WHERE id = ?`
+    ).run(
+      name ?? existing.name,
+      type ?? existing.type,
+      properties !== undefined ? JSON.stringify(properties) : existing.metadata,
+      req.params.id
+    );
+    const row = db.prepare("SELECT * FROM knowledge_graph_nodes WHERE id = ?").get(req.params.id);
+    res.json({ success: true, data: row });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// DELETE /nodes/:id — delete node and related edges
+router.delete("/nodes/:id", (req, res, next) => {
+  try {
+    const existing = db.prepare("SELECT * FROM knowledge_graph_nodes WHERE id = ?").get(req.params.id);
+    if (!existing) return res.status(404).json({ success: false, error: "节点不存在" });
+    db.prepare("DELETE FROM knowledge_graph_edges WHERE source_id = ? OR target_id = ?").run(req.params.id, req.params.id);
+    db.prepare("DELETE FROM knowledge_graph_nodes WHERE id = ?").run(req.params.id);
+    res.json({ success: true, data: { id: req.params.id } });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // ════════════════════════════════════════════════════════
 //  Graph Edges
 // ════════════════════════════════════════════════════════
@@ -66,6 +100,38 @@ router.post("/edges", (req, res, next) => {
     ).run(id, source_id, target_id, relation_type || "related", description || null, now);
     const row = db.prepare("SELECT * FROM knowledge_graph_edges WHERE id = ?").get(id);
     res.status(201).json({ success: true, data: row });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PUT /edges/:id — update edge
+router.put("/edges/:id", (req, res, next) => {
+  try {
+    const existing = db.prepare("SELECT * FROM knowledge_graph_edges WHERE id = ?").get(req.params.id);
+    if (!existing) return res.status(404).json({ success: false, error: "边不存在" });
+    const { relation_type, properties } = req.body;
+    db.prepare(
+      `UPDATE knowledge_graph_edges SET relation_type = ?, description = ? WHERE id = ?`
+    ).run(
+      relation_type ?? existing.relation_type,
+      properties !== undefined ? JSON.stringify(properties) : existing.description,
+      req.params.id
+    );
+    const row = db.prepare("SELECT * FROM knowledge_graph_edges WHERE id = ?").get(req.params.id);
+    res.json({ success: true, data: row });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// DELETE /edges/:id — delete edge
+router.delete("/edges/:id", (req, res, next) => {
+  try {
+    const existing = db.prepare("SELECT * FROM knowledge_graph_edges WHERE id = ?").get(req.params.id);
+    if (!existing) return res.status(404).json({ success: false, error: "边不存在" });
+    db.prepare("DELETE FROM knowledge_graph_edges WHERE id = ?").run(req.params.id);
+    res.json({ success: true, data: { id: req.params.id } });
   } catch (err) {
     next(err);
   }

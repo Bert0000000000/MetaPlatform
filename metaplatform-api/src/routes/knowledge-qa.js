@@ -45,4 +45,26 @@ router.delete("/:id", (req, res, next) => {
   }
 });
 
+// PUT /:id — update Q&A record
+router.put("/:id", (req, res, next) => {
+  try {
+    const existing = db.prepare("SELECT * FROM knowledge_qa WHERE id = ?").get(req.params.id);
+    if (!existing) return res.status(404).json({ success: false, error: "记录不存在" });
+    const { question, answer, category, tags } = req.body;
+    db.prepare(
+      `UPDATE knowledge_qa SET question = ?, answer = ?, category = ?, tags = ? WHERE id = ?`
+    ).run(
+      question ?? existing.question,
+      answer !== undefined ? answer : existing.answer,
+      category !== undefined ? category : existing.category,
+      tags !== undefined ? (Array.isArray(tags) ? JSON.stringify(tags) : tags) : existing.tags,
+      req.params.id
+    );
+    const row = db.prepare("SELECT * FROM knowledge_qa WHERE id = ?").get(req.params.id);
+    res.json({ success: true, data: row });
+  } catch (err) {
+    next(err);
+  }
+});
+
 export default router;

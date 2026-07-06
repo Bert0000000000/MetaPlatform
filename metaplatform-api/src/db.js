@@ -474,7 +474,37 @@ db.exec(`
     period TEXT,
     created_at TEXT DEFAULT (datetime('now'))
   );
+
+  -- Roles (RBAC)
+  CREATE TABLE IF NOT EXISTS roles (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    label TEXT,
+    permissions TEXT,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+  );
 `);
+
+// ─── Seed default roles if table is empty ─────────────────
+const roleCount = db.prepare("SELECT COUNT(*) AS cnt FROM roles").get().cnt;
+if (roleCount === 0) {
+  const insertRole = db.prepare(
+    "INSERT INTO roles (id, name, label, permissions) VALUES (?, ?, ?, ?)"
+  );
+  const seedRoles = db.transaction((roles) => {
+    for (const r of roles) {
+      insertRole.run(r.id, r.name, r.label, JSON.stringify(r.permissions));
+    }
+  });
+  seedRoles([
+    { id: "executive", name: "高管", label: "Executive", permissions: ["dashboard.view", "reports.view", "apps.view"] },
+    { id: "business", name: "业务人员", label: "Business User", permissions: ["apps.view", "apps.edit", "data.view", "process.start"] },
+    { id: "developer", name: "开发者", label: "Developer", permissions: ["apps.*", "ontology.*", "data.*", "process.*", "code.edit"] },
+    { id: "architect", name: "架构师", label: "Architect", permissions: ["apps.*", "ontology.*", "data.*", "process.*", "system.design"] },
+    { id: "ops", name: "运维", label: "Operations", permissions: ["system.*", "monitoring.*", "logs.view", "config.edit"] },
+    { id: "admin", name: "管理员", label: "Administrator", permissions: ["*"] },
+  ]);
+}
 
 // ─── Migrations (additive) ─────────────────────────────────
 try {
@@ -491,6 +521,33 @@ try {
 } catch {}
 try {
   db.exec(`ALTER TABLE applications ADD COLUMN publish_config TEXT`);
+} catch {}
+
+// Market templates: icon, config, updated_at
+try {
+  db.exec(`ALTER TABLE market_templates ADD COLUMN icon TEXT`);
+} catch {}
+try {
+  db.exec(`ALTER TABLE market_templates ADD COLUMN config TEXT`);
+} catch {}
+try {
+  db.exec(`ALTER TABLE market_templates ADD COLUMN updated_at TEXT`);
+} catch {}
+
+// Knowledge Q&A: category, tags
+try {
+  db.exec(`ALTER TABLE knowledge_qa ADD COLUMN category TEXT`);
+} catch {}
+try {
+  db.exec(`ALTER TABLE knowledge_qa ADD COLUMN tags TEXT`);
+} catch {}
+
+// Process triggers: event_type, enabled
+try {
+  db.exec(`ALTER TABLE process_triggers ADD COLUMN event_type TEXT`);
+} catch {}
+try {
+  db.exec(`ALTER TABLE process_triggers ADD COLUMN enabled INTEGER DEFAULT 1`);
 } catch {}
 
 export default db;

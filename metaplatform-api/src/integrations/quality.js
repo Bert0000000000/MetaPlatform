@@ -24,17 +24,7 @@ function isConfigured() {
   return Boolean(QUALITY_API_URL);
 }
 
-/**
- * Create a stub method that logs a message and returns null
- * @param {string} methodName
- * @returns {Function}
- */
-function stub(methodName) {
-  return (...args) => {
-    console.warn(`[Quality] ${methodName}: Service not configured (QUALITY_API_URL is not set). Args:`, JSON.stringify(args.slice(0, 2)));
-    return null;
-  };
-}
+// Fallback when QUALITY_API_URL is not configured — returns simulated results for development
 
 /**
  * Generate a mock test result for a single test case

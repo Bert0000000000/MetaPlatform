@@ -20,6 +20,25 @@ router.post("/", (req, res) => {
   res.json({ success: true, data: { id, name } });
 });
 
+// PUT /api/triggers/:id
+router.put("/:id", (req, res) => {
+  const existing = db.prepare("SELECT * FROM process_triggers WHERE id = ?").get(req.params.id);
+  if (!existing) return res.status(404).json({ success: false, error: "触发器不存在" });
+  const { name, event_type, action_type, config, enabled } = req.body;
+  db.prepare(
+    `UPDATE process_triggers SET name = ?, event_type = ?, type = ?, config = ?, enabled = ? WHERE id = ?`
+  ).run(
+    name ?? existing.name,
+    event_type !== undefined ? event_type : existing.event_type,
+    action_type ?? existing.type,
+    config !== undefined ? config : existing.config,
+    enabled !== undefined ? (enabled ? 1 : 0) : existing.enabled,
+    req.params.id
+  );
+  const row = db.prepare("SELECT * FROM process_triggers WHERE id = ?").get(req.params.id);
+  res.json({ success: true, data: row });
+});
+
 // DELETE /api/triggers/:id
 router.delete("/:id", (req, res) => {
   db.prepare("DELETE FROM process_triggers WHERE id = ?").run(req.params.id);

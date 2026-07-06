@@ -480,6 +480,7 @@ export const ${toCamelCase(obj.name)}Api = {
       const columns = relatedObj
         ? (relatedObj.properties || []).slice(0, 6).map((p) => p)
         : [];
+      const tableName = relatedObj ? toKebabCase(relatedObj.name) : toKebabCase(page.name);
 
       template = `<template>
   <div class="${toKebabCase(page.name)}-view">
@@ -496,26 +497,82 @@ ${columns.map((c) => `      <el-table-column prop="${c.name}" label="${c.label}"
         </template>
       </el-table-column>
     </el-table>
+
+    <el-dialog v-model="dialogVisible" :title="dialogTitle" width="500px">
+      <el-form :model="formData" label-width="100px">
+${columns.map((c) => `        <el-form-item label="${c.label}">
+          <el-input v-model="formData.${c.name}" />
+        </el-form-item>`).join("\n")}
+      </el-form>
+      <template #footer>
+        <el-button @click="dialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="handleSubmit">确定</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>`;
 
       scriptExtra = `
 const tableData = ref<any[]>([]);
 const loading = ref(false);
+const dialogVisible = ref(false);
+const dialogTitle = ref("新增");
+const formData = reactive<Record<string, any>>({});
+const editId = ref<string | null>(null);
 
 async function fetchData() {
   loading.value = true;
   try {
-    // TODO: Replace with actual API call
-    tableData.value = [];
+    const res = await api.get("/${tableName}");
+    tableData.value = Array.isArray(res) ? res : (res as any).data || [];
+  } catch (err) {
+    console.error("Failed to fetch data:", err);
   } finally {
     loading.value = false;
   }
 }
 
-function handleCreate() { /* TODO */ }
-function handleEdit(row: any) { /* TODO */ }
-function handleDelete(row: any) { /* TODO */ }
+function handleCreate() {
+  editId.value = null;
+  dialogTitle.value = "新增";
+  Object.keys(formData).forEach((key) => delete formData[key]);
+  dialogVisible.value = true;
+}
+
+function handleEdit(row: any) {
+  editId.value = row.id;
+  dialogTitle.value = "编辑";
+  Object.keys(formData).forEach((key) => delete formData[key]);
+  Object.assign(formData, row);
+  dialogVisible.value = true;
+}
+
+async function handleDelete(row: any) {
+  try {
+    await ElMessageBox.confirm("确定要删除这条记录吗？", "确认删除", { type: "warning" });
+    await api.delete(\`/${tableName}/\${row.id}\`);
+    ElMessage.success("删除成功");
+    fetchData();
+  } catch (e: any) {
+    if (e !== "cancel") ElMessage.error("删除失败");
+  }
+}
+
+async function handleSubmit() {
+  try {
+    if (editId.value) {
+      await api.put(\`/${tableName}/\${editId.value}\`, { ...formData });
+      ElMessage.success("更新成功");
+    } else {
+      await api.post("/${tableName}", { ...formData });
+      ElMessage.success("新增成功");
+    }
+    dialogVisible.value = false;
+    fetchData();
+  } catch (e) {
+    ElMessage.error("操作失败");
+  }
+}
 
 onMounted(fetchData);`;
     } else if (pageType === "form") {
@@ -539,9 +596,13 @@ onMounted(fetchData);`;
       scriptExtra = `
 const form = reactive({ name: "", description: "" });
 
-function handleSubmit() {
-  // TODO: Submit form data
-  ElMessage.success("提交成功");
+async function handleSubmit() {
+  try {
+    await api.post("/${toKebabCase(page.name)}", { ...form });
+    ElMessage.success("提交成功");
+  } catch (err) {
+    ElMessage.error("提交失败");
+  }
 }
 
 function handleReset() {
@@ -575,8 +636,12 @@ function handleReset() {
     }
 
     const imports = [];
-    if (pageType === "form") {
+    if (pageType === "list") {
+      imports.push(`import { ElMessage, ElMessageBox } from "element-plus";`);
+      imports.push(`import api from "@/api";`);
+    } else if (pageType === "form") {
       imports.push(`import { ElMessage } from "element-plus";`);
+      imports.push(`import api from "@/api";`);
     }
 
     files.push({

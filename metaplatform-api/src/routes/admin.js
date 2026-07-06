@@ -83,9 +83,10 @@ router.delete("/users/:id", (req, res, next) => {
 });
 
 // ════════════════════════════════════════════════════════
-//  Roles (hardcoded RBAC)
+//  Roles (database-backed RBAC)
 // ════════════════════════════════════════════════════════
 
+// Seed data kept only as documentation / reference for initial population
 const RBAC_ROLES = [
   { id: "executive", name: "高管", label: "Executive", permissions: ["dashboard.view", "reports.view", "apps.view"] },
   { id: "business", name: "业务人员", label: "Business User", permissions: ["apps.view", "apps.edit", "data.view", "process.start"] },
@@ -95,9 +96,71 @@ const RBAC_ROLES = [
   { id: "admin", name: "管理员", label: "Administrator", permissions: ["*"] },
 ];
 
-// GET /roles — list roles
-router.get("/roles", (_req, res) => {
-  res.json({ success: true, data: RBAC_ROLES });
+// GET /roles — list roles from database
+router.get("/roles", (_req, res, next) => {
+  try {
+    const rows = db.prepare("SELECT * FROM roles ORDER BY created_at").all();
+    const data = rows.map((r) => ({
+      ...r,
+      permissions: JSON.parse(r.permissions || "[]"),
+    }));
+    res.json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /roles — create a new role
+router.post("/roles", (req, res, next) => {
+  try {
+    const { id, name, label, permissions } = req.body;
+    if (!id || !name) return res.status(400).json({ success: false, error: "id, name 为必填项" });
+    const existing = db.prepare("SELECT id FROM roles WHERE id = ?").get(id);
+    if (existing) return res.status(409).json({ success: false, error: "角色ID已存在" });
+    db.prepare(
+      `INSERT INTO roles (id, name, label, permissions) VALUES (?, ?, ?, ?)`
+    ).run(id, name, label || null, JSON.stringify(permissions || []));
+    const row = db.prepare("SELECT * FROM roles WHERE id = ?").get(id);
+    res.status(201).json({ success: true, data: { ...row, permissions: JSON.parse(row.permissions || "[]") } });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PUT /roles/:id — update a role
+router.put("/roles/:id", (req, res, next) => {
+  try {
+    const existing = db.prepare("SELECT * FROM roles WHERE id = ?").get(req.params.id);
+    if (!existing) return res.status(404).json({ success: false, error: "角色不存在" });
+    const { name, label, permissions } = req.body;
+    db.prepare(
+      `UPDATE roles SET name = ?, label = ?, permissions = ? WHERE id = ?`
+    ).run(
+      name ?? existing.name,
+      label !== undefined ? label : existing.label,
+      permissions !== undefined ? JSON.stringify(permissions) : existing.permissions,
+      req.params.id
+    );
+    const row = db.prepare("SELECT * FROM roles WHERE id = ?").get(req.params.id);
+    res.json({ success: true, data: { ...row, permissions: JSON.parse(row.permissions || "[]") } });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// DELETE /roles/:id — delete a role (cannot delete 'admin')
+router.delete("/roles/:id", (req, res, next) => {
+  try {
+    if (req.params.id === "admin") {
+      return res.status(403).json({ success: false, error: "不能删除管理员角色" });
+    }
+    const existing = db.prepare("SELECT * FROM roles WHERE id = ?").get(req.params.id);
+    if (!existing) return res.status(404).json({ success: false, error: "角色不存在" });
+    db.prepare("DELETE FROM roles WHERE id = ?").run(req.params.id);
+    res.json({ success: true, data: { id: req.params.id } });
+  } catch (err) {
+    next(err);
+  }
 });
 
 // ════════════════════════════════════════════════════════

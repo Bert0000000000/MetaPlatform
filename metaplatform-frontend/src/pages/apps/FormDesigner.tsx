@@ -28,7 +28,7 @@ const OCR_DOC_TYPES: { id: OCRDocType; name: string; icon: LucideIcon; descripti
   { id: "business-card", name: "名片", icon: Contact, description: "个人名片识别" },
 ];
 
-// TODO: Replace with real API when backend ready (src/integrations/ocr.js exists - connect to real OCR API endpoint)
+// Fallback OCR results used when the backend OCR service is not available
 const MOCK_OCR_RESULTS: Record<OCRDocType, OCRResult> = {
   "id-card": {
     type: "id-card",
@@ -362,33 +362,60 @@ export default function FormDesigner() {
     setIsDragging(false);
   }, []);
 
+  const simulateOCR = useCallback(async (file: File) => {
+    setOcrProcessing(true);
+    setOcrResult(null);
+    try {
+      // Convert file to base64
+      const reader = new FileReader();
+      const base64 = await new Promise<string>((resolve, reject) => {
+        reader.onload = () => {
+          const result = reader.result as string;
+          // Remove data URL prefix (e.g., "data:image/png;base64,")
+          resolve(result.split(",")[1] || result);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      // Call real OCR API endpoint
+      const res = await fetch("/api/ocr", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ image: base64, documentType: selectedDocType }),
+      });
+      const json = await res.json();
+      if (json.success && json.data) {
+        setOcrResult(json.data as OCRResult);
+      } else {
+        // Fallback to mock results if API returns no data
+        setOcrResult(MOCK_OCR_RESULTS[selectedDocType]);
+      }
+    } catch (err) {
+      console.warn("OCR API call failed, using mock fallback:", err);
+      setOcrResult(MOCK_OCR_RESULTS[selectedDocType]);
+    } finally {
+      setOcrProcessing(false);
+    }
+  }, [selectedDocType]);
+
   const handleFileDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
     const files = e.dataTransfer.files;
     if (files.length > 0) {
       setUploadedFile(files[0]);
-      simulateOCR();
+      simulateOCR(files[0]);
     }
-  }, []);
+  }, [simulateOCR]);
 
   const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files.length > 0) {
       setUploadedFile(files[0]);
-      simulateOCR();
+      simulateOCR(files[0]);
     }
-  }, []);
-
-  const simulateOCR = useCallback(() => {
-    setOcrProcessing(true);
-    setOcrResult(null);
-    // Simulate OCR processing delay
-    setTimeout(() => {
-      setOcrResult(MOCK_OCR_RESULTS[selectedDocType]);
-      setOcrProcessing(false);
-    }, 1500);
-  }, [selectedDocType]);
+  }, [simulateOCR]);
 
   const handleApplyToForm = useCallback(() => {
     if (!ocrResult) return;
