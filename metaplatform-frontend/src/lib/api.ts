@@ -248,6 +248,16 @@ export const ontologyApi = {
     }),
   deleteRule: (id: string) =>
     request(`/ontology/rules/${id}`, { method: "DELETE" }),
+
+  // Security Rules
+  listSecurityRules: () => request<any[]>("/ontology/security-rules"),
+  createSecurityRule: (data: any) => request("/ontology/security-rules", { method: "POST", body: JSON.stringify(data) }),
+  updateSecurityRule: (id: number, data: any) => request(`/ontology/security-rules/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+  deleteSecurityRule: (id: number) => request(`/ontology/security-rules/${id}`, { method: "DELETE" }),
+
+  // Auto Numbers
+  listAutoNumbers: () => request<any[]>("/ontology/auto-numbers"),
+  createAutoNumber: (data: any) => request("/ontology/auto-numbers", { method: "POST", body: JSON.stringify(data) }),
 };
 
 // ─── Processes ────────────────────────────────────────────
@@ -308,6 +318,15 @@ export const dataApi = {
       method: "POST",
       body: JSON.stringify(data),
     }),
+
+  // ETL Tasks
+  listETLTasks: () => request<any[]>("/data/etl-tasks"),
+
+  // Quality Rules
+  listQualityRules: () => request<any[]>("/data/quality-rules"),
+
+  // Realtime Events
+  listRealtimeEvents: () => request<any[]>("/data/realtime-events"),
 };
 
 // ─── Knowledge ────────────────────────────────────────────
@@ -338,6 +357,15 @@ export const knowledgeApi = {
     request<{ category: string; count: number }[]>(
       "/knowledge/categories",
     ),
+
+  // Processing Jobs
+  listProcessingJobs: () => request<any[]>("/knowledge/processing-jobs"),
+  createProcessingJob: (data: any) => request("/knowledge/processing-jobs", { method: "POST", body: JSON.stringify(data) }),
+
+  // Subscriptions
+  listSubscriptions: () => request<any[]>("/knowledge/subscriptions"),
+  createSubscription: (data: any) => request("/knowledge/subscriptions", { method: "POST", body: JSON.stringify(data) }),
+  toggleSubscription: (id: number, data: any) => request(`/knowledge/subscriptions/${id}`, { method: "PUT", body: JSON.stringify(data) }),
 };
 
 // ─── Agents ───────────────────────────────────────────────
@@ -558,6 +586,59 @@ export const qualityApi = {
     }>("/quality/stats");
     return res;
   },
+
+  // Ontology Tests
+  listOntologyTests: async () => {
+    const res = await request<any[]>("/quality/ontology-tests");
+    return res;
+  },
+  runOntologyTest: async (id: number) => {
+    const res = await request<any>(`/quality/ontology-tests/${id}/run`, { method: "POST" });
+    return res;
+  },
+
+  // UI Tests
+  listUITests: async () => {
+    const res = await request<any[]>("/quality/ui-tests");
+    return res;
+  },
+  runUITest: async (id: number) => {
+    const res = await request<any>(`/quality/ui-tests/${id}/run`, { method: "POST" });
+    return res;
+  },
+
+  // Process Tests
+  listProcessTests: async () => {
+    const res = await request<any[]>("/quality/process-tests");
+    return res;
+  },
+  runProcessTest: async (id: number) => {
+    const res = await request<any>(`/quality/process-tests/${id}/run`, { method: "POST" });
+    return res;
+  },
+
+  // AI Fixes
+  listAIFixes: async () => {
+    const res = await request<any[]>("/quality/ai-fixes");
+    return res;
+  },
+  applyAIFix: async (id: number) => {
+    const res = await request<any>(`/quality/ai-fixes/${id}/apply`, { method: "POST" });
+    return res;
+  },
+
+  // Reports
+  listReports: async () => {
+    const res = await request<any[]>("/quality/reports");
+    return res;
+  },
+  createReport: async (data: any) => {
+    const res = await request<any>("/quality/reports", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+    return res;
+  },
 };
 
 // ─── Versions ──────────────────────────────────────────
@@ -692,6 +773,36 @@ export const marketApi = {
     const res = await request<any>(`/market/templates/${id}/install`, {
       method: "POST",
     });
+    return res;
+  },
+
+  // Developers
+  listDevelopers: async () => {
+    const res = await request<any[]>("/market/developers");
+    return res;
+  },
+
+  // Skills
+  listSkills: async () => {
+    const res = await request<any[]>("/market/skills");
+    return res;
+  },
+
+  // Workflow Templates
+  listWorkflowTemplates: async () => {
+    const res = await request<any[]>("/market/workflow-templates");
+    return res;
+  },
+
+  // Knowledge Packages
+  listKnowledgePackages: async () => {
+    const res = await request<any[]>("/market/knowledge-packages");
+    return res;
+  },
+
+  // API Library
+  listAPILibrary: async () => {
+    const res = await request<any[]>("/market/api-library");
     return res;
   },
 };

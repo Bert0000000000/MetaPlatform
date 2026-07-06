@@ -702,6 +702,14 @@ const procStatusConfig: Record<string, { label: string; variant: "default" | "se
 
 export function KnowledgeProcessing() {
   const [jobs, setJobs] = useState(PROCESSING_JOBS);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    knowledgeApi.listProcessingJobs()
+      .then((data) => { if (data && data.length > 0) setJobs(data); })
+      .catch(() => { /* keep fallback */ })
+      .finally(() => setLoading(false));
+  }, []);
 
   function retryJob(id: number) {
     setJobs((prev) => prev.map((j) => j.id === id ? { ...j, status: "running", progress: 0 } : j));
@@ -738,6 +746,7 @@ export function KnowledgeProcessing() {
               </TableRow>
             </TableHeader>
             <TableBody>
+              {loading && <TableRow><TableCell colSpan={6} className="text-center py-4 text-muted-foreground">加载中...</TableCell></TableRow>}
               {jobs.map((j) => {
                 const s = procStatusConfig[j.status];
                 return (
@@ -850,8 +859,18 @@ const SUBSCRIPTIONS = [
 
 export function KnowledgeSubscribe() {
   const [subs, setSubs] = useState(SUBSCRIPTIONS);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    knowledgeApi.listSubscriptions()
+      .then((data) => { if (data && data.length > 0) setSubs(data); })
+      .catch(() => { /* keep fallback */ })
+      .finally(() => setLoading(false));
+  }, []);
 
   function toggleSub(id: number) {
+    const newStatus = subs.find((s) => s.id === id)?.status === "active" ? "paused" : "active";
+    knowledgeApi.toggleSubscription(id, { status: newStatus }).catch(() => {});
     setSubs((prev) => prev.map((s) => s.id === id ? { ...s, status: s.status === "active" ? "paused" : "active" } : s));
   }
 
@@ -882,6 +901,7 @@ export function KnowledgeSubscribe() {
               </TableRow>
             </TableHeader>
             <TableBody>
+              {loading && <TableRow><TableCell colSpan={6} className="text-center py-4 text-muted-foreground">加载中...</TableCell></TableRow>}
               {subs.map((s) => (
                 <TableRow key={s.id}>
                   <TableCell className="font-medium">{s.name}</TableCell>

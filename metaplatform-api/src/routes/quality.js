@@ -165,6 +165,112 @@ router.get("/stats", (_req, res) => {
   });
 });
 
+// ─── Ontology Tests ──────────────────────────────────────
+
+// GET /ontology-tests
+router.get("/ontology-tests", (_req, res) => {
+  const rows = db.prepare("SELECT * FROM quality_ontology_tests ORDER BY created_at DESC").all();
+  res.json({ success: true, data: rows });
+});
+
+// POST /ontology-tests/:id/run — run ontology test
+router.post("/ontology-tests/:id/run", (req, res) => {
+  const test = db.prepare("SELECT * FROM quality_ontology_tests WHERE id = ?").get(req.params.id);
+  if (!test) return res.status(404).json({ success: false, error: "测试不存在" });
+  const now = new Date().toISOString();
+  const passed = test.checks - Math.floor(Math.random() * 3);
+  const failed = test.checks - passed;
+  const status = failed === 0 ? "passed" : "failed";
+  db.prepare(
+    "UPDATE quality_ontology_tests SET passed = ?, failed = ?, status = ?, last_run = ? WHERE id = ?"
+  ).run(passed, failed, status, now, req.params.id);
+  const row = db.prepare("SELECT * FROM quality_ontology_tests WHERE id = ?").get(req.params.id);
+  res.json({ success: true, data: row });
+});
+
+// ─── UI Tests ────────────────────────────────────────────
+
+// GET /ui-tests
+router.get("/ui-tests", (_req, res) => {
+  const rows = db.prepare("SELECT * FROM quality_ui_tests ORDER BY created_at DESC").all();
+  res.json({ success: true, data: rows });
+});
+
+// POST /ui-tests/:id/run — run UI test
+router.post("/ui-tests/:id/run", (req, res) => {
+  const test = db.prepare("SELECT * FROM quality_ui_tests WHERE id = ?").get(req.params.id);
+  if (!test) return res.status(404).json({ success: false, error: "测试不存在" });
+  const now = new Date().toISOString();
+  const duration = (1 + Math.random() * 4).toFixed(1) + "s";
+  const status = Math.random() > 0.2 ? "passed" : "failed";
+  db.prepare(
+    "UPDATE quality_ui_tests SET status = ?, duration = ?, last_run = ? WHERE id = ?"
+  ).run(status, duration, now, req.params.id);
+  const row = db.prepare("SELECT * FROM quality_ui_tests WHERE id = ?").get(req.params.id);
+  res.json({ success: true, data: row });
+});
+
+// ─── Process Tests ───────────────────────────────────────
+
+// GET /process-tests
+router.get("/process-tests", (_req, res) => {
+  const rows = db.prepare("SELECT * FROM quality_process_tests ORDER BY created_at DESC").all();
+  res.json({ success: true, data: rows });
+});
+
+// POST /process-tests/:id/run — run process test
+router.post("/process-tests/:id/run", (req, res) => {
+  const test = db.prepare("SELECT * FROM quality_process_tests WHERE id = ?").get(req.params.id);
+  if (!test) return res.status(404).json({ success: false, error: "测试不存在" });
+  const now = new Date().toISOString();
+  const coverage = (70 + Math.random() * 30).toFixed(1);
+  const status = parseFloat(coverage) >= 80 ? "passed" : "failed";
+  db.prepare(
+    "UPDATE quality_process_tests SET coverage = ?, status = ?, last_run = ? WHERE id = ?"
+  ).run(parseFloat(coverage), status, now, req.params.id);
+  const row = db.prepare("SELECT * FROM quality_process_tests WHERE id = ?").get(req.params.id);
+  res.json({ success: true, data: row });
+});
+
+// ─── AI Fixes ────────────────────────────────────────────
+
+// GET /ai-fixes
+router.get("/ai-fixes", (_req, res) => {
+  const rows = db.prepare("SELECT * FROM quality_ai_fixes ORDER BY created_at DESC").all();
+  res.json({ success: true, data: rows });
+});
+
+// POST /ai-fixes/:id/apply — apply AI fix
+router.post("/ai-fixes/:id/apply", (req, res) => {
+  const fix = db.prepare("SELECT * FROM quality_ai_fixes WHERE id = ?").get(req.params.id);
+  if (!fix) return res.status(404).json({ success: false, error: "修复建议不存在" });
+  const now = new Date().toISOString();
+  db.prepare(
+    "UPDATE quality_ai_fixes SET status = 'applied', applied_at = ? WHERE id = ?"
+  ).run(now, req.params.id);
+  const row = db.prepare("SELECT * FROM quality_ai_fixes WHERE id = ?").get(req.params.id);
+  res.json({ success: true, data: row });
+});
+
+// ─── Reports ─────────────────────────────────────────────
+
+// GET /reports
+router.get("/reports", (_req, res) => {
+  const rows = db.prepare("SELECT * FROM quality_reports ORDER BY created_at DESC").all();
+  res.json({ success: true, data: rows });
+});
+
+// POST /reports — create report
+router.post("/reports", (req, res) => {
+  const { name, version, total_cases, passed_cases, failed_cases, bug_count, coverage } = req.body;
+  if (!name) return res.status(400).json({ success: false, error: "name 为必填项" });
+  const result = db.prepare(
+    "INSERT INTO quality_reports (name, version, total_cases, passed_cases, failed_cases, bug_count, coverage) VALUES (?, ?, ?, ?, ?, ?, ?)"
+  ).run(name, version || null, total_cases ?? 0, passed_cases ?? 0, failed_cases ?? 0, bug_count ?? 0, coverage ?? 0);
+  const row = db.prepare("SELECT * FROM quality_reports WHERE id = ?").get(result.lastInsertRowid);
+  res.status(201).json({ success: true, data: row });
+});
+
 // GET / — quality module overview
 router.get("/", (req, res) => {
   try {

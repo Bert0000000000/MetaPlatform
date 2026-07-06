@@ -447,6 +447,142 @@ router.delete("/rules/:id", (req, res, next) => {
   }
 });
 
+// ════════════════════════════════════════════════════════
+//  Security Rules
+// ════════════════════════════════════════════════════════
+
+// GET /security-rules — list all security rules
+router.get("/security-rules", (req, res, next) => {
+  try {
+    const rows = db.prepare("SELECT * FROM ontology_security_rules ORDER BY created_at DESC").all();
+    res.json({ success: true, data: rows });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /security-rules — create security rule
+router.post("/security-rules", (req, res, next) => {
+  try {
+    const { name, level, object_name, rule, roles, status } = req.body;
+    if (!name) return res.status(400).json({ success: false, error: "name 为必填项" });
+    const result = db.prepare(
+      `INSERT INTO ontology_security_rules (name, level, object_name, rule, roles, status) VALUES (?, ?, ?, ?, ?, ?)`
+    ).run(name, level || "字段级", object_name || null, rule || null, roles || null, status || "active");
+    const row = db.prepare("SELECT * FROM ontology_security_rules WHERE id = ?").get(result.lastInsertRowid);
+    res.status(201).json({ success: true, data: row });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PUT /security-rules/:id — update security rule
+router.put("/security-rules/:id", (req, res, next) => {
+  try {
+    const existing = db.prepare("SELECT * FROM ontology_security_rules WHERE id = ?").get(req.params.id);
+    if (!existing) return res.status(404).json({ success: false, error: "安全规则不存在" });
+    const { name, level, object_name, rule, roles, status } = req.body;
+    const now = new Date().toISOString();
+    db.prepare(
+      `UPDATE ontology_security_rules SET name = ?, level = ?, object_name = ?, rule = ?, roles = ?, status = ?, updated_at = ? WHERE id = ?`
+    ).run(
+      name ?? existing.name,
+      level ?? existing.level,
+      object_name !== undefined ? object_name : existing.object_name,
+      rule !== undefined ? rule : existing.rule,
+      roles !== undefined ? roles : existing.roles,
+      status ?? existing.status,
+      now,
+      req.params.id
+    );
+    const row = db.prepare("SELECT * FROM ontology_security_rules WHERE id = ?").get(req.params.id);
+    res.json({ success: true, data: row });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// DELETE /security-rules/:id — delete security rule
+router.delete("/security-rules/:id", (req, res, next) => {
+  try {
+    const existing = db.prepare("SELECT * FROM ontology_security_rules WHERE id = ?").get(req.params.id);
+    if (!existing) return res.status(404).json({ success: false, error: "安全规则不存在" });
+    db.prepare("DELETE FROM ontology_security_rules WHERE id = ?").run(req.params.id);
+    res.json({ success: true, data: { id: Number(req.params.id) } });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ════════════════════════════════════════════════════════
+//  Auto Numbers
+// ════════════════════════════════════════════════════════
+
+// GET /auto-numbers — list all auto-number rules
+router.get("/auto-numbers", (req, res, next) => {
+  try {
+    const rows = db.prepare("SELECT * FROM ontology_auto_numbers ORDER BY created_at DESC").all();
+    res.json({ success: true, data: rows });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /auto-numbers — create auto-number rule
+router.post("/auto-numbers", (req, res, next) => {
+  try {
+    const { name, object_name, prefix, format, current_value, status } = req.body;
+    if (!name || !object_name || !prefix) {
+      return res.status(400).json({ success: false, error: "name, object_name, prefix 为必填项" });
+    }
+    const result = db.prepare(
+      `INSERT INTO ontology_auto_numbers (name, object_name, prefix, format, current_value, status) VALUES (?, ?, ?, ?, ?, ?)`
+    ).run(name, object_name, prefix, format || "PREFIX-{YYYY}{MM}{seq:4}", current_value ?? 0, status || "active");
+    const row = db.prepare("SELECT * FROM ontology_auto_numbers WHERE id = ?").get(result.lastInsertRowid);
+    res.status(201).json({ success: true, data: row });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PUT /auto-numbers/:id — update auto-number rule
+router.put("/auto-numbers/:id", (req, res, next) => {
+  try {
+    const existing = db.prepare("SELECT * FROM ontology_auto_numbers WHERE id = ?").get(req.params.id);
+    if (!existing) return res.status(404).json({ success: false, error: "编号规则不存在" });
+    const { name, object_name, prefix, format, current_value, status } = req.body;
+    const now = new Date().toISOString();
+    db.prepare(
+      `UPDATE ontology_auto_numbers SET name = ?, object_name = ?, prefix = ?, format = ?, current_value = ?, status = ?, updated_at = ? WHERE id = ?`
+    ).run(
+      name ?? existing.name,
+      object_name ?? existing.object_name,
+      prefix ?? existing.prefix,
+      format ?? existing.format,
+      current_value !== undefined ? current_value : existing.current_value,
+      status ?? existing.status,
+      now,
+      req.params.id
+    );
+    const row = db.prepare("SELECT * FROM ontology_auto_numbers WHERE id = ?").get(req.params.id);
+    res.json({ success: true, data: row });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// DELETE /auto-numbers/:id — delete auto-number rule
+router.delete("/auto-numbers/:id", (req, res, next) => {
+  try {
+    const existing = db.prepare("SELECT * FROM ontology_auto_numbers WHERE id = ?").get(req.params.id);
+    if (!existing) return res.status(404).json({ success: false, error: "编号规则不存在" });
+    db.prepare("DELETE FROM ontology_auto_numbers WHERE id = ?").run(req.params.id);
+    res.json({ success: true, data: { id: Number(req.params.id) } });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // GET / — ontology overview
 router.get("/", (req, res) => {
   try {

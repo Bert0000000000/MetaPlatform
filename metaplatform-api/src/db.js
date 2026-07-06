@@ -483,6 +483,211 @@ db.exec(`
     permissions TEXT,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP
   );
+
+  -- Ontology security rules
+  CREATE TABLE IF NOT EXISTS ontology_security_rules (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    level TEXT NOT NULL DEFAULT '字段级',
+    object_name TEXT,
+    rule TEXT,
+    roles TEXT,
+    status TEXT NOT NULL DEFAULT 'active',
+    created_at TEXT DEFAULT (datetime('now')),
+    updated_at TEXT DEFAULT (datetime('now'))
+  );
+
+  -- Auto-number rules
+  CREATE TABLE IF NOT EXISTS ontology_auto_numbers (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    object_name TEXT NOT NULL,
+    prefix TEXT NOT NULL,
+    format TEXT NOT NULL DEFAULT 'PREFIX-{YYYY}{MM}{seq:4}',
+    current_value INTEGER NOT NULL DEFAULT 0,
+    status TEXT NOT NULL DEFAULT 'active',
+    created_at TEXT DEFAULT (datetime('now')),
+    updated_at TEXT DEFAULT (datetime('now'))
+  );
+
+  -- Quality ontology tests
+  CREATE TABLE IF NOT EXISTS quality_ontology_tests (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    object_name TEXT NOT NULL,
+    checks INTEGER NOT NULL DEFAULT 0,
+    passed INTEGER NOT NULL DEFAULT 0,
+    failed INTEGER NOT NULL DEFAULT 0,
+    status TEXT NOT NULL DEFAULT 'pending',
+    last_run TEXT,
+    created_at TEXT DEFAULT (datetime('now'))
+  );
+
+  -- Quality UI tests
+  CREATE TABLE IF NOT EXISTS quality_ui_tests (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    page TEXT,
+    steps INTEGER NOT NULL DEFAULT 0,
+    status TEXT NOT NULL DEFAULT 'pending',
+    duration TEXT,
+    last_run TEXT,
+    created_at TEXT DEFAULT (datetime('now'))
+  );
+
+  -- Quality process tests
+  CREATE TABLE IF NOT EXISTS quality_process_tests (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    nodes INTEGER NOT NULL DEFAULT 0,
+    coverage REAL NOT NULL DEFAULT 0,
+    status TEXT NOT NULL DEFAULT 'pending',
+    last_run TEXT,
+    created_at TEXT DEFAULT (datetime('now'))
+  );
+
+  -- Quality AI fixes
+  CREATE TABLE IF NOT EXISTS quality_ai_fixes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    bug_id TEXT,
+    title TEXT NOT NULL,
+    suggestion TEXT,
+    confidence REAL NOT NULL DEFAULT 0,
+    status TEXT NOT NULL DEFAULT 'pending',
+    applied_at TEXT,
+    created_at TEXT DEFAULT (datetime('now'))
+  );
+
+  -- Quality test reports
+  CREATE TABLE IF NOT EXISTS quality_reports (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    version TEXT,
+    total_cases INTEGER NOT NULL DEFAULT 0,
+    passed_cases INTEGER NOT NULL DEFAULT 0,
+    failed_cases INTEGER NOT NULL DEFAULT 0,
+    bug_count INTEGER NOT NULL DEFAULT 0,
+    coverage REAL NOT NULL DEFAULT 0,
+    created_at TEXT DEFAULT (datetime('now'))
+  );
+
+  -- Knowledge processing jobs
+  CREATE TABLE IF NOT EXISTS knowledge_processing_jobs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    doc_name TEXT NOT NULL,
+    task TEXT NOT NULL DEFAULT '向量化 + 图谱抽取',
+    status TEXT NOT NULL DEFAULT 'pending',
+    progress INTEGER NOT NULL DEFAULT 0,
+    duration TEXT,
+    created_at TEXT DEFAULT (datetime('now')),
+    updated_at TEXT DEFAULT (datetime('now'))
+  );
+
+  -- Knowledge subscriptions
+  CREATE TABLE IF NOT EXISTS knowledge_subscriptions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    category TEXT,
+    frequency TEXT NOT NULL DEFAULT '实时',
+    status TEXT NOT NULL DEFAULT 'active',
+    last_notified TEXT,
+    created_at TEXT DEFAULT (datetime('now'))
+  );
+
+  -- Data ETL tasks
+  CREATE TABLE IF NOT EXISTS data_etl_tasks (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    source TEXT,
+    target TEXT,
+    schedule TEXT,
+    status TEXT NOT NULL DEFAULT 'stopped',
+    last_run TEXT,
+    next_run TEXT,
+    created_at TEXT DEFAULT (datetime('now'))
+  );
+
+  -- Data quality rules
+  CREATE TABLE IF NOT EXISTS data_quality_rules (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    table_name TEXT NOT NULL,
+    rule TEXT NOT NULL,
+    severity TEXT NOT NULL DEFAULT 'warning',
+    status TEXT NOT NULL DEFAULT 'pending',
+    coverage REAL NOT NULL DEFAULT 0,
+    created_at TEXT DEFAULT (datetime('now'))
+  );
+
+  -- Data realtime events
+  CREATE TABLE IF NOT EXISTS data_realtime_events (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    event TEXT NOT NULL,
+    source TEXT,
+    level TEXT NOT NULL DEFAULT 'info',
+    time TEXT NOT NULL,
+    created_at TEXT DEFAULT (datetime('now'))
+  );
+
+  -- Market developers
+  CREATE TABLE IF NOT EXISTS market_developers (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    rank_num INTEGER NOT NULL DEFAULT 0,
+    name TEXT NOT NULL,
+    apps INTEGER NOT NULL DEFAULT 0,
+    downloads INTEGER NOT NULL DEFAULT 0,
+    revenue TEXT DEFAULT '¥0',
+    created_at TEXT DEFAULT (datetime('now'))
+  );
+
+  -- Market skills
+  CREATE TABLE IF NOT EXISTS market_skills (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    author TEXT,
+    desc TEXT,
+    category TEXT,
+    installs INTEGER NOT NULL DEFAULT 0,
+    rating REAL NOT NULL DEFAULT 0,
+    status TEXT NOT NULL DEFAULT 'active',
+    created_at TEXT DEFAULT (datetime('now'))
+  );
+
+  -- Market workflow templates
+  CREATE TABLE IF NOT EXISTS market_workflow_templates (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    category TEXT,
+    nodes INTEGER NOT NULL DEFAULT 0,
+    installs INTEGER NOT NULL DEFAULT 0,
+    rating REAL NOT NULL DEFAULT 0,
+    status TEXT NOT NULL DEFAULT 'active',
+    created_at TEXT DEFAULT (datetime('now'))
+  );
+
+  -- Market knowledge packages
+  CREATE TABLE IF NOT EXISTS market_knowledge_packages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    docs INTEGER NOT NULL DEFAULT 0,
+    author TEXT,
+    category TEXT,
+    subscribers INTEGER NOT NULL DEFAULT 0,
+    rating REAL NOT NULL DEFAULT 0,
+    status TEXT NOT NULL DEFAULT 'active',
+    created_at TEXT DEFAULT (datetime('now'))
+  );
+
+  -- Market API library
+  CREATE TABLE IF NOT EXISTS market_api_library (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    category TEXT,
+    endpoints INTEGER NOT NULL DEFAULT 0,
+    version TEXT DEFAULT '1.0',
+    calls INTEGER NOT NULL DEFAULT 0,
+    status TEXT NOT NULL DEFAULT 'active',
+    created_at TEXT DEFAULT (datetime('now'))
+  );
 `);
 
 // ─── Seed default roles if table is empty ─────────────────
@@ -754,6 +959,288 @@ for (const [section, data] of Object.entries(archSections)) {
       "INSERT INTO system_config (key, value, description, updated_at) VALUES (?, ?, ?, datetime('now'))"
     ).run(key, JSON.stringify(data), `Architecture center ${section} data`);
   }
+}
+
+// ─── Seed data for new tables ────────────────────────────────
+// Only seed if tables are empty (idempotent)
+
+// Ontology security rules
+const secRuleCount = db.prepare("SELECT COUNT(*) AS cnt FROM ontology_security_rules").get().cnt;
+if (secRuleCount === 0) {
+  const ins = db.prepare(`INSERT INTO ontology_security_rules (name, level, object_name, rule, roles, status) VALUES (?, ?, ?, ?, ?, ?)`);
+  const seedSecRules = db.transaction((rows) => { for (const r of rows) ins.run(...r); });
+  seedSecRules([
+    ["客户手机号脱敏", "字段级", "客户", "phone LIKE '1%' THEN CONCAT(LEFT(phone,3), '****', RIGHT(phone,4))", "业务人员,客服", "active"],
+    ["合同金额字段加密", "字段级", "合同", "AES_ENCRYPT(amount, @key)", "财务主管,高管", "active"],
+    ["供应商银行账号脱敏", "字段级", "供应商", "bank_account: show last 4 only", "采购经理", "active"],
+    ["员工薪资字段隐藏", "字段级", "员工", "salary = NULL FOR non-HR roles", "HR经理", "active"],
+    ["客户等级权限控制", "行级", "客户", "role = 'sales' AND region = user.region", "销售总监", "active"],
+    ["订单数据部门隔离", "行级", "订单", "department_id = user.department_id", "业务人员", "active"],
+    ["BI报表数据脱敏", "报表级", "BI系统", "mask PII columns in aggregated reports", "高管,管理员", "active"],
+  ]);
+}
+
+// Auto-number rules
+const autoNumCount = db.prepare("SELECT COUNT(*) AS cnt FROM ontology_auto_numbers").get().cnt;
+if (autoNumCount === 0) {
+  const ins = db.prepare(`INSERT INTO ontology_auto_numbers (name, object_name, prefix, format, current_value, status) VALUES (?, ?, ?, ?, ?, ?)`);
+  const seedAutoNums = db.transaction((rows) => { for (const r of rows) ins.run(...r); });
+  seedAutoNums([
+    ["客户编号", "客户", "KH", "KH-{YYYY}{MM}{seq:4}", 1042, "active"],
+    ["商机编号", "商机", "SJ", "SJ-{YYYY}{seq:6}", 358, "active"],
+    ["合同编号", "合同", "HT", "HT-{YYYY}{MM}{seq:5}", 891, "active"],
+    ["订单编号", "订单", "DD", "DD-{YYYY}{MMDD}{seq:4}", 5621, "active"],
+    ["产品编号", "产品", "CP", "CP-{seq:6}", 234, "active"],
+    ["工单编号", "工单", "GD", "GD-{YYYY}{seq:6}", 7823, "active"],
+    ["供应商编号", "供应商", "GYS", "GYS-{seq:4}", 156, "active"],
+    ["员工工号", "员工", "EMP", "EMP-{YYYY}{seq:4}", 423, "active"],
+  ]);
+}
+
+// Quality ontology tests
+const qOntTestCount = db.prepare("SELECT COUNT(*) AS cnt FROM quality_ontology_tests").get().cnt;
+if (qOntTestCount === 0) {
+  const ins = db.prepare(`INSERT INTO quality_ontology_tests (name, object_name, checks, passed, failed, status, last_run) VALUES (?, ?, ?, ?, ?, ?, ?)`);
+  const seedQOnt = db.transaction((rows) => { for (const r of rows) ins.run(...r); });
+  seedQOnt([
+    ["客户对象完整性检查", "客户", 24, 22, 2, "passed", "2026-07-06 14:30:00"],
+    ["订单对象属性校验", "订单", 18, 18, 0, "passed", "2026-07-06 14:32:00"],
+    ["产品对象关系验证", "产品", 12, 10, 2, "failed", "2026-07-06 14:35:00"],
+    ["供应商对象规则检查", "供应商", 15, 15, 0, "passed", "2026-07-06 14:38:00"],
+    ["员工对象权限校验", "员工", 20, 18, 2, "failed", "2026-07-06 14:40:00"],
+    ["合同对象编号规则", "合同", 8, 8, 0, "passed", "2026-07-06 14:42:00"],
+    ["工单对象状态机验证", "工单", 14, 13, 1, "passed", "2026-07-06 15:00:00"],
+    ["部门对象层级校验", "部门", 10, 10, 0, "passed", "2026-07-06 15:02:00"],
+  ]);
+}
+
+// Quality UI tests
+const qUiTestCount = db.prepare("SELECT COUNT(*) AS cnt FROM quality_ui_tests").get().cnt;
+if (qUiTestCount === 0) {
+  const ins = db.prepare(`INSERT INTO quality_ui_tests (name, page, steps, status, duration, last_run) VALUES (?, ?, ?, ?, ?, ?)`);
+  const seedQUi = db.transaction((rows) => { for (const r of rows) ins.run(...r); });
+  seedQUi([
+    ["客户列表页面加载", "/apps/crm/objects/客户", 5, "passed", "1.2s", "2026-07-06 15:10:00"],
+    ["订单创建表单验证", "/apps/crm/objects/订单/new", 8, "passed", "2.1s", "2026-07-06 15:12:00"],
+    ["合同详情页权限控制", "/apps/crm/objects/合同/1", 6, "failed", "3.5s", "2026-07-06 15:15:00"],
+    ["产品搜索功能", "/apps/erp/products", 4, "passed", "0.8s", "2026-07-06 15:18:00"],
+    ["数据大屏渲染", "/dashboard/screen", 10, "passed", "4.2s", "2026-07-06 15:20:00"],
+    ["审批流程页面交互", "/process/approvals", 12, "passed", "3.8s", "2026-07-06 15:22:00"],
+    ["知识库文档搜索", "/knowledge/search", 6, "passed", "1.5s", "2026-07-06 15:25:00"],
+    ["仪表盘统计卡片", "/dashboard/stats", 8, "failed", "5.0s", "2026-07-06 15:28:00"],
+    ["用户管理列表", "/admin/users", 5, "passed", "1.0s", "2026-07-06 15:30:00"],
+    ["BPMN流程设计器", "/process/designer", 15, "pending", null, null],
+  ]);
+}
+
+// Quality process tests
+const qProcTestCount = db.prepare("SELECT COUNT(*) AS cnt FROM quality_process_tests").get().cnt;
+if (qProcTestCount === 0) {
+  const ins = db.prepare(`INSERT INTO quality_process_tests (name, nodes, coverage, status, last_run) VALUES (?, ?, ?, ?, ?)`);
+  const seedQProc = db.transaction((rows) => { for (const r of rows) ins.run(...r); });
+  seedQProc([
+    ["销售管理流程", 12, 92.5, "passed", "2026-07-06 16:00:00"],
+    ["采购审批流程", 8, 87.3, "passed", "2026-07-06 16:05:00"],
+    ["费用报销流程", 6, 100.0, "passed", "2026-07-06 16:08:00"],
+    ["合同审批流程", 10, 78.5, "failed", "2026-07-06 16:10:00"],
+    ["招聘管理流程", 15, 65.2, "failed", "2026-07-06 16:12:00"],
+    ["工单处理流程", 9, 95.0, "passed", "2026-07-06 16:15:00"],
+    ["库存预警流程", 5, 100.0, "passed", "2026-07-06 16:18:00"],
+  ]);
+}
+
+// Quality AI fixes
+const qAiFixCount = db.prepare("SELECT COUNT(*) AS cnt FROM quality_ai_fixes").get().cnt;
+if (qAiFixCount === 0) {
+  const ins = db.prepare(`INSERT INTO quality_ai_fixes (bug_id, title, suggestion, confidence, status, applied_at) VALUES (?, ?, ?, ?, ?, ?)`);
+  const seedQFix = db.transaction((rows) => { for (const r of rows) ins.run(...r); });
+  seedQFix([
+    ["BUG-001", "合同详情页权限绕过", "在路由守卫中添加角色校验中间件", 0.95, "applied", "2026-07-05 10:30:00"],
+    ["BUG-002", "订单金额计算精度丢失", "将浮点运算改为 Decimal.js 精确计算", 0.92, "applied", "2026-07-05 14:00:00"],
+    ["BUG-003", "产品搜索结果排序异常", "修正 ORDER BY 子句中的字段映射", 0.88, "pending", null],
+    ["BUG-004", "仪表盘统计卡片加载超时", "添加数据库索引并优化查询语句", 0.85, "pending", null],
+    ["BUG-005", "审批流程状态同步延迟", "使用 WebSocket 推送替代轮询机制", 0.78, "pending", null],
+    ["BUG-006", "客户列表导出CSV乱码", "在 CSV 导出中添加 UTF-8 BOM 头", 0.98, "applied", "2026-07-06 09:00:00"],
+  ]);
+}
+
+// Quality test reports
+const qReportCount = db.prepare("SELECT COUNT(*) AS cnt FROM quality_reports").get().cnt;
+if (qReportCount === 0) {
+  const ins = db.prepare(`INSERT INTO quality_reports (name, version, total_cases, passed_cases, failed_cases, bug_count, coverage) VALUES (?, ?, ?, ?, ?, ?, ?)`);
+  const seedQReport = db.transaction((rows) => { for (const r of rows) ins.run(...r); });
+  seedQReport([
+    ["v1.0 全量回归测试报告", "v1.0", 120, 112, 8, 5, 92.3],
+    ["v1.1 功能测试报告", "v1.1", 85, 80, 5, 3, 88.5],
+    ["v1.2 性能测试报告", "v1.2", 45, 43, 2, 1, 95.0],
+    ["v2.0 集成测试报告", "v2.0", 200, 185, 15, 12, 85.7],
+    ["v2.0 安全测试报告", "v2.0", 60, 55, 5, 4, 91.2],
+  ]);
+}
+
+// Knowledge processing jobs
+const kProcJobCount = db.prepare("SELECT COUNT(*) AS cnt FROM knowledge_processing_jobs").get().cnt;
+if (kProcJobCount === 0) {
+  const ins = db.prepare(`INSERT INTO knowledge_processing_jobs (doc_name, task, status, progress, duration) VALUES (?, ?, ?, ?, ?)`);
+  const seedKProc = db.transaction((rows) => { for (const r of rows) ins.run(...r); });
+  seedKProc([
+    ["产品设计文档.pdf", "向量化 + 图谱抽取", "completed", 100, "2m 35s"],
+    ["API接口规范.md", "向量化 + 图谱抽取", "completed", 100, "1m 12s"],
+    ["客户案例集.docx", "向量化 + 图谱抽取", "running", 67, null],
+    ["技术架构白皮书.pdf", "向量化 + 图谱抽取", "running", 34, null],
+    ["运营数据分析报告.xlsx", "向量化", "pending", 0, null],
+    ["用户手册v3.pdf", "图谱抽取", "pending", 0, null],
+    ["销售培训资料.pptx", "向量化 + 图谱抽取", "completed", 100, "3m 08s"],
+    ["质量管理体系文档.pdf", "向量化 + 图谱抽取", "failed", 45, null],
+  ]);
+}
+
+// Knowledge subscriptions
+const kSubCount = db.prepare("SELECT COUNT(*) AS cnt FROM knowledge_subscriptions").get().cnt;
+if (kSubCount === 0) {
+  const ins = db.prepare(`INSERT INTO knowledge_subscriptions (name, category, frequency, status, last_notified) VALUES (?, ?, ?, ?, ?)`);
+  const seedKSub = db.transaction((rows) => { for (const r of rows) ins.run(...r); });
+  seedKSub([
+    ["产品更新通知", "产品文档", "实时", "active", "2026-07-07 08:30:00"],
+    ["API变更追踪", "技术文档", "每日", "active", "2026-07-06 09:00:00"],
+    ["行业研究报告", "外部研究", "每周", "active", "2026-07-01 10:00:00"],
+    ["客户案例更新", "客户案例", "实时", "active", "2026-07-07 07:15:00"],
+    ["竞品分析报告", "市场分析", "每周", "inactive", "2026-06-24 09:00:00"],
+    ["内部培训材料", "培训资料", "每月", "active", "2026-07-01 08:00:00"],
+  ]);
+}
+
+// Data ETL tasks
+const etlCount = db.prepare("SELECT COUNT(*) AS cnt FROM data_etl_tasks").get().cnt;
+if (etlCount === 0) {
+  const ins = db.prepare(`INSERT INTO data_etl_tasks (name, source, target, schedule, status, last_run, next_run) VALUES (?, ?, ?, ?, ?, ?, ?)`);
+  const seedEtl = db.transaction((rows) => { for (const r of rows) ins.run(...r); });
+  seedEtl([
+    ["CRM客户数据同步", "CRM-Mysql", "数据仓库-DWD", "每小时", "running", "2026-07-07 09:00:00", "2026-07-07 10:00:00"],
+    ["订单数据ETL", "ERP-Oracle", "数据仓库-ODS", "每30分钟", "running", "2026-07-07 09:30:00", "2026-07-07 10:00:00"],
+    ["日志数据采集", "Nginx日志", "ES集群", "实时", "running", "2026-07-07 09:59:00", null],
+    ["财务数据月结", "ERP-Oracle", "财务报表库", "每月1号", "completed", "2026-07-01 02:00:00", "2026-08-01 02:00:00"],
+    ["HR考勤数据导入", "考勤系统-API", "HR数据库", "每日", "stopped", "2026-07-06 23:00:00", null],
+    ["BI指标聚合", "数据仓库-DWS", "BI-ADS", "每小时", "running", "2026-07-07 09:00:00", "2026-07-07 10:00:00"],
+  ]);
+}
+
+// Data quality rules
+const dqRuleCount = db.prepare("SELECT COUNT(*) AS cnt FROM data_quality_rules").get().cnt;
+if (dqRuleCount === 0) {
+  const ins = db.prepare(`INSERT INTO data_quality_rules (table_name, rule, severity, status, coverage) VALUES (?, ?, ?, ?, ?)`);
+  const seedDqRule = db.transaction((rows) => { for (const r of rows) ins.run(...r); });
+  seedDqRule([
+    ["customers", "email 格式校验 (RFC 5322)", "error", "active", 98.5],
+    ["customers", "手机号必须11位数字", "error", "active", 99.2],
+    ["orders", "金额必须大于0", "error", "active", 100.0],
+    ["orders", "订单日期不能晚于当前日期", "warning", "active", 97.8],
+    ["products", "产品名称不能为空且不超过200字", "warning", "active", 99.9],
+    ["employees", "身份证号格式校验", "error", "pending", 0],
+    ["contracts", "合同金额与订单金额一致", "warning", "active", 85.3],
+    ["suppliers", "供应商编码唯一性", "error", "active", 100.0],
+    ["departments", "部门层级不超过5级", "info", "active", 95.0],
+  ]);
+}
+
+// Data realtime events
+const drtEventCount = db.prepare("SELECT COUNT(*) AS cnt FROM data_realtime_events").get().cnt;
+if (drtEventCount === 0) {
+  const ins = db.prepare(`INSERT INTO data_realtime_events (event, source, level, time) VALUES (?, ?, ?, ?)`);
+  const seedRtEvt = db.transaction((rows) => { for (const r of rows) ins.run(...r); });
+  seedRtEvt([
+    ["订单创建", "CRM系统", "info", "2026-07-07 09:58:32"],
+    ["库存预警: SKU-10023 低于安全库存", "ERP系统", "warning", "2026-07-07 09:55:10"],
+    ["数据同步失败: CRM-Mysql 连接超时", "ETL引擎", "error", "2026-07-07 09:50:05"],
+    ["用户登录: admin@company.com", "认证服务", "info", "2026-07-07 09:48:22"],
+    ["报表生成完成: 月度销售报表", "BI系统", "info", "2026-07-07 09:45:00"],
+    ["接口调用异常: /api/payment/callback 返回500", "支付网关", "error", "2026-07-07 09:40:33"],
+    ["CPU使用率超过85%", "监控系统", "warning", "2026-07-07 09:35:18"],
+    ["新客户注册: 杭州XX科技有限公司", "CRM系统", "info", "2026-07-07 09:30:00"],
+  ]);
+}
+
+// Market developers
+const mDevCount = db.prepare("SELECT COUNT(*) AS cnt FROM market_developers").get().cnt;
+if (mDevCount === 0) {
+  const ins = db.prepare(`INSERT INTO market_developers (rank_num, name, apps, downloads, revenue) VALUES (?, ?, ?, ?, ?)`);
+  const seedMDev = db.transaction((rows) => { for (const r of rows) ins.run(...r); });
+  seedMDev([
+    [1, "MetaPlatform官方", 28, 15680, "¥128,500"],
+    [2, "企业数字化工作室", 15, 8920, "¥65,200"],
+    [3, "AI应用工坊", 12, 7650, "¥52,800"],
+    [4, "流程自动化团队", 9, 5430, "¥38,600"],
+    [5, "数据智能实验室", 7, 4210, "¥28,900"],
+    [6, "低代码先锋", 6, 3580, "¥22,100"],
+    [7, "行业解决方案组", 5, 2890, "¥18,500"],
+    [8, "开源社区贡献者", 4, 2100, "¥0"],
+  ]);
+}
+
+// Market skills
+const mSkillCount = db.prepare("SELECT COUNT(*) AS cnt FROM market_skills").get().cnt;
+if (mSkillCount === 0) {
+  const ins = db.prepare(`INSERT INTO market_skills (name, author, "desc", category, installs, rating) VALUES (?, ?, ?, ?, ?, ?)`);
+  const seedMSkill = db.transaction((rows) => { for (const r of rows) ins.run(...r); });
+  seedMSkill([
+    ["智能客服助手", "MetaPlatform官方", "基于大模型的智能客服对话能力", "AI能力", 3280, 4.8],
+    ["数据可视化套件", "数据智能实验室", "丰富的图表组件和仪表盘模板", "前端组件", 2150, 4.6],
+    ["OCR文字识别", "AI应用工坊", "支持中英文票据、文档图片识别", "AI能力", 1890, 4.5],
+    ["流程审批引擎", "流程自动化团队", "灵活的多级审批流配置引擎", "业务引擎", 1560, 4.7],
+    ["报表导出工具", "低代码先锋", "支持Excel/PDF/CSV多格式导出", "数据工具", 1230, 4.3],
+    ["微信小程序适配器", "企业数字化工作室", "一键将应用发布为微信小程序", "平台扩展", 980, 4.4],
+    ["电子签章集成", "行业解决方案组", "对接主流电子签章服务商", "集成能力", 750, 4.2],
+  ]);
+}
+
+// Market workflow templates
+const mWfCount = db.prepare("SELECT COUNT(*) AS cnt FROM market_workflow_templates").get().cnt;
+if (mWfCount === 0) {
+  const ins = db.prepare(`INSERT INTO market_workflow_templates (name, category, nodes, installs, rating) VALUES (?, ?, ?, ?, ?)`);
+  const seedMWf = db.transaction((rows) => { for (const r of rows) ins.run(...r); });
+  seedMWf([
+    ["标准销售流程", "销售管理", 8, 2340, 4.7],
+    ["采购审批流程", "供应链", 6, 1890, 4.5],
+    ["员工入职流程", "人力资源", 12, 1560, 4.6],
+    ["费用报销流程", "财务管理", 5, 1230, 4.4],
+    ["客户投诉处理", "客户服务", 10, 980, 4.3],
+    ["项目立项审批", "项目管理", 7, 870, 4.5],
+    ["合同续签流程", "合同管理", 9, 760, 4.2],
+    ["IT变更管理", "运维管理", 14, 650, 4.1],
+  ]);
+}
+
+// Market knowledge packages
+const mKgCount = db.prepare("SELECT COUNT(*) AS cnt FROM market_knowledge_packages").get().cnt;
+if (mKgCount === 0) {
+  const ins = db.prepare(`INSERT INTO market_knowledge_packages (name, docs, author, category, subscribers, rating) VALUES (?, ?, ?, ?, ?, ?)`);
+  const seedMKg = db.transaction((rows) => { for (const r of rows) ins.run(...r); });
+  seedMKg([
+    ["制造业数字化转型指南", 45, "MetaPlatform官方", "行业方案", 1560, 4.8],
+    ["零售行业知识图谱", 32, "行业解决方案组", "行业方案", 1230, 4.6],
+    ["企业合规与风控手册", 28, "企业数字化工作室", "合规管理", 980, 4.5],
+    ["AI应用开发最佳实践", 56, "AI应用工坊", "技术文档", 2100, 4.7],
+    ["数据分析方法论", 38, "数据智能实验室", "数据分析", 1450, 4.4],
+    ["低代码开发入门到精通", 42, "低代码先锋", "培训教程", 1890, 4.3],
+    ["供应链管理百科", 35, "行业解决方案组", "行业方案", 870, 4.2],
+  ]);
+}
+
+// Market API library
+const mApiCount = db.prepare("SELECT COUNT(*) AS cnt FROM market_api_library").get().cnt;
+if (mApiCount === 0) {
+  const ins = db.prepare(`INSERT INTO market_api_library (name, category, endpoints, version, calls) VALUES (?, ?, ?, ?, ?)`);
+  const seedMApi = db.transaction((rows) => { for (const r of rows) ins.run(...r); });
+  seedMApi([
+    ["企业微信API", "IM通讯", 24, "2.1", 158000],
+    ["钉钉开放平台", "IM通讯", 32, "3.0", 123000],
+    ["支付宝支付", "支付网关", 12, "1.5", 89000],
+    ["高德地图API", "地图服务", 18, "2.0", 65000],
+    ["腾讯云OCR", "AI服务", 8, "1.2", 45000],
+    ["阿里云短信", "消息通知", 6, "1.0", 78000],
+    ["七牛云存储", "文件存储", 10, "1.3", 52000],
+    ["天眼查企业信息", "数据服务", 15, "2.0", 34000],
+  ]);
 }
 
 export default db;

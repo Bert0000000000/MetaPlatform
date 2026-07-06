@@ -1378,8 +1378,16 @@ export function DataQuality() {
       return stored ? JSON.parse(stored) : QUALITY_RULES;
     } catch { return QUALITY_RULES; }
   });
+  const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState({ table: "", rule: "", severity: "warning" });
+
+  useEffect(() => {
+    dataApi.listQualityRules()
+      .then((data) => { if (data && data.length > 0) setRules(data); })
+      .catch(() => { /* keep fallback */ })
+      .finally(() => setLoading(false));
+  }, []);
 
   useEffect(() => {
     try { localStorage.setItem(DQ_STORAGE_KEY, JSON.stringify(rules)); } catch {}
@@ -1411,6 +1419,7 @@ export function DataQuality() {
         </Button>
       </CardHeader>
       <CardContent className="p-0">
+        {loading && <div className="text-center py-4 text-muted-foreground">加载中...</div>}
         <Table>
           <TableHeader>
             <TableRow>
@@ -1492,8 +1501,16 @@ export function ETLTasks() {
       return stored ? JSON.parse(stored) : ETL_TASKS;
     } catch { return ETL_TASKS; }
   });
+  const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState({ name: "", source: "", target: "", schedule: "" });
+
+  useEffect(() => {
+    dataApi.listETLTasks()
+      .then((data) => { if (data && data.length > 0) setTasks(data); })
+      .catch(() => { /* keep fallback */ })
+      .finally(() => setLoading(false));
+  }, []);
 
   useEffect(() => {
     try { localStorage.setItem(ETL_STORAGE_KEY, JSON.stringify(tasks)); } catch {}
@@ -1534,6 +1551,7 @@ export function ETLTasks() {
         </Button>
       </CardHeader>
       <CardContent className="p-0">
+        {loading && <div className="text-center py-4 text-muted-foreground">加载中...</div>}
         <Table>
           <TableHeader>
             <TableRow>
@@ -1621,8 +1639,16 @@ export function RealTimeMonitor() {
       return stored ? JSON.parse(stored) : REAL_TIME;
     } catch { return REAL_TIME; }
   });
+  const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState({ event: "", source: "" });
+
+  useEffect(() => {
+    dataApi.listRealtimeEvents()
+      .then((data) => { if (data && data.length > 0) setEvents(data); })
+      .catch(() => { /* keep fallback */ })
+      .finally(() => setLoading(false));
+  }, []);
 
   useEffect(() => {
     try { localStorage.setItem(RT_STORAGE_KEY, JSON.stringify(events)); } catch {}
@@ -1662,6 +1688,7 @@ export function RealTimeMonitor() {
         </div>
       </CardHeader>
       <CardContent>
+        {loading && <div className="text-center py-4 text-muted-foreground">加载中...</div>}
         <div className="space-y-2 max-h-[400px] overflow-y-auto">
           {events.length === 0 && (
             <div className="text-center py-8 text-muted-foreground">暂无事件记录</div>

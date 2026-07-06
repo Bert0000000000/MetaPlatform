@@ -1083,8 +1083,16 @@ const ONTOLOGY_TESTS = [
 ];
 
 export function OntologyTesting() {
-  const [tests] = useState(ONTOLOGY_TESTS);
+  const [tests, setTests] = useState(ONTOLOGY_TESTS);
+  const [loading, setLoading] = useState(true);
   const [running, setRunning] = useState(false);
+
+  useEffect(() => {
+    qualityApi.listOntologyTests()
+      .then((data) => { if (data && data.length > 0) setTests(data); })
+      .catch(() => { /* keep fallback */ })
+      .finally(() => setLoading(false));
+  }, []);
 
   function runAll() {
     setRunning(true);
@@ -1113,6 +1121,7 @@ export function OntologyTesting() {
           <Table>
             <TableHeader><TableRow><TableHead>测试名</TableHead><TableHead>对象</TableHead><TableHead>检查项</TableHead><TableHead>通过</TableHead><TableHead>失败</TableHead><TableHead>状态</TableHead><TableHead className="text-right">操作</TableHead></TableRow></TableHeader>
             <TableBody>
+              {loading && <TableRow><TableCell colSpan={7} className="text-center py-4 text-muted-foreground">加载中...</TableCell></TableRow>}
               {tests.map((t) => (
                 <TableRow key={t.id}>
                   <TableCell className="font-medium">{t.name}</TableCell>
@@ -1143,13 +1152,23 @@ const AI_UI_TESTS = [
 ];
 
 export function AIUITesting() {
+  const [uiTests, setUiTests] = useState(AI_UI_TESTS);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    qualityApi.listUITests()
+      .then((data) => { if (data && data.length > 0) setUiTests(data); })
+      .catch(() => { /* keep fallback */ })
+      .finally(() => setLoading(false));
+  }, []);
+
   return (
     <div className="flex flex-col gap-6 p-6">
       <PageHeader title="AI UI 测试" description="AI 驱动的 UI 自动化测试，自动识别页面元素并生成测试脚本" action={<Button className="gap-2"><Sparkles className="size-4" /> AI 生成用例</Button>} />
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-        <StatCard label="UI 测试数" value={AI_UI_TESTS.length} icon={Monitor} />
-        <StatCard label="通过" value={AI_UI_TESTS.filter((t) => t.status === "passed").length} icon={CheckCircle2} />
-        <StatCard label="失败" value={AI_UI_TESTS.filter((t) => t.status === "failed").length} icon={XCircle} />
+        <StatCard label="UI 测试数" value={uiTests.length} icon={Monitor} />
+        <StatCard label="通过" value={uiTests.filter((t) => t.status === "passed").length} icon={CheckCircle2} />
+        <StatCard label="失败" value={uiTests.filter((t) => t.status === "failed").length} icon={XCircle} />
         <StatCard label="覆盖率" value="85.7%" icon={BarChart3} />
       </div>
       <Card>
@@ -1158,7 +1177,8 @@ export function AIUITesting() {
           <Table>
             <TableHeader><TableRow><TableHead>名称</TableHead><TableHead>页面</TableHead><TableHead>步骤数</TableHead><TableHead>耗时</TableHead><TableHead>状态</TableHead><TableHead className="text-right">操作</TableHead></TableRow></TableHeader>
             <TableBody>
-              {AI_UI_TESTS.map((t) => (
+              {loading && <TableRow><TableCell colSpan={6} className="text-center py-4 text-muted-foreground">加载中...</TableCell></TableRow>}
+              {uiTests.map((t) => (
                 <TableRow key={t.id}>
                   <TableCell className="font-medium">{t.name}</TableCell>
                   <TableCell className="font-mono text-xs">{t.page}</TableCell>
@@ -1186,14 +1206,24 @@ const PROCESS_TESTS = [
 ];
 
 export function ProcessTesting() {
+  const [processTests, setProcessTests] = useState(PROCESS_TESTS);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    qualityApi.listProcessTests()
+      .then((data) => { if (data && data.length > 0) setProcessTests(data); })
+      .catch(() => { /* keep fallback */ })
+      .finally(() => setLoading(false));
+  }, []);
+
   return (
     <div className="flex flex-col gap-6 p-6">
       <PageHeader title="流程测试" description="端到端流程自动化测试与节点覆盖率分析" action={<Button className="gap-2"><Play className="size-4" /> 运行全部</Button>} />
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-        <StatCard label="流程测试数" value={PROCESS_TESTS.length} icon={GitBranch} />
-        <StatCard label="通过" value={PROCESS_TESTS.filter((t) => t.status === "passed").length} icon={CheckCircle2} />
+        <StatCard label="流程测试数" value={processTests.length} icon={GitBranch} />
+        <StatCard label="通过" value={processTests.filter((t) => t.status === "passed").length} icon={CheckCircle2} />
         <StatCard label="平均覆盖率" value="80.5%" icon={BarChart3} />
-        <StatCard label="总节点" value={PROCESS_TESTS.reduce((s, t) => s + t.nodes, 0)} icon={Activity} />
+        <StatCard label="总节点" value={processTests.reduce((s, t) => s + t.nodes, 0)} icon={Activity} />
       </div>
       <Card>
         <CardHeader><CardTitle className="text-base flex items-center gap-2"><GitBranch className="size-4" /> 流程测试套件</CardTitle></CardHeader>
@@ -1201,7 +1231,8 @@ export function ProcessTesting() {
           <Table>
             <TableHeader><TableRow><TableHead>名称</TableHead><TableHead>节点数</TableHead><TableHead>覆盖率</TableHead><TableHead>状态</TableHead><TableHead>上次运行</TableHead><TableHead className="text-right">操作</TableHead></TableRow></TableHeader>
             <TableBody>
-              {PROCESS_TESTS.map((t) => (
+              {loading && <TableRow><TableCell colSpan={6} className="text-center py-4 text-muted-foreground">加载中...</TableCell></TableRow>}
+              {processTests.map((t) => (
                 <TableRow key={t.id}>
                   <TableCell className="font-medium">{t.name}</TableCell>
                   <TableCell>{t.nodes}</TableCell>
@@ -1229,7 +1260,15 @@ const AI_FIXES = [
 
 export function AIBugFix() {
   const [fixes, setFixes] = useState(AI_FIXES);
+  const [loading, setLoading] = useState(true);
   function applyFix(id: number) { setFixes((prev) => prev.map((f) => f.id === id ? { ...f, status: "applied" } : f)); }
+
+  useEffect(() => {
+    qualityApi.listAIFixes()
+      .then((data) => { if (data && data.length > 0) setFixes(data); })
+      .catch(() => { /* keep fallback */ })
+      .finally(() => setLoading(false));
+  }, []);
 
   return (
     <div className="flex flex-col gap-6 p-6">
@@ -1237,6 +1276,7 @@ export function AIBugFix() {
       <Card>
         <CardHeader><CardTitle className="text-base flex items-center gap-2"><Wrench className="size-4" /> AI 修复建议</CardTitle></CardHeader>
         <CardContent>
+          {loading && <div className="text-center py-4 text-muted-foreground">加载中...</div>}
           <div className="space-y-4">
             {fixes.map((f) => (
               <div key={f.id} className="border rounded-lg p-4">
@@ -1263,6 +1303,25 @@ export function AIBugFix() {
 /* ─────────────────── TestReport ─────────────────── */
 // TODO: needs backend API - no test report endpoint exists yet
 export function TestReport() {
+  const [reports, setReports] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    qualityApi.listReports()
+      .then((data) => { if (data && data.length > 0) setReports(data); })
+      .catch(() => { /* keep empty */ })
+      .finally(() => setLoading(false));
+  }, []);
+
+  const fallbackReports = [
+    { name: "每日回归测试报告", time: "今天 10:30" },
+    { name: "v1.3 发版测试报告", time: "昨天 18:00" },
+    { name: "性能测试报告", time: "2 天前" },
+    { name: "安全扫描报告", time: "3 天前" },
+  ];
+
+  const displayReports = reports.length > 0 ? reports : fallbackReports;
+
   return (
     <div className="flex flex-col gap-6 p-6">
       <PageHeader title="测试报告" description="生成和查看各类测试报告" action={<Button className="gap-2"><Download className="size-4" /> 导出报告</Button>} />
@@ -1276,15 +1335,11 @@ export function TestReport() {
         <Card>
           <CardHeader><CardTitle className="text-base">最新报告</CardTitle></CardHeader>
           <CardContent>
+            {loading && <div className="text-center py-4 text-muted-foreground">加载中...</div>}
             <div className="space-y-3">
-              {[
-                { name: "每日回归测试报告", time: "今天 10:30" },
-                { name: "v1.3 发版测试报告", time: "昨天 18:00" },
-                { name: "性能测试报告", time: "2 天前" },
-                { name: "安全扫描报告", time: "3 天前" },
-              ].map((r) => (
-                <div key={r.name} className="flex items-center justify-between p-2 border rounded">
-                  <div><div className="font-medium text-sm">{r.name}</div><div className="text-xs text-muted-foreground">{r.time}</div></div>
+              {displayReports.map((r: any) => (
+                <div key={r.name || r.id} className="flex items-center justify-between p-2 border rounded">
+                  <div><div className="font-medium text-sm">{r.name || r.title}</div><div className="text-xs text-muted-foreground">{r.time || r.created_at || ""}</div></div>
                   <Button variant="ghost" size="sm"><Download className="size-3 mr-1" />下载</Button>
                 </div>
               ))}

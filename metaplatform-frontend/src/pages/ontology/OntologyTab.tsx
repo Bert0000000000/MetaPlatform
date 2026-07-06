@@ -664,6 +664,15 @@ const SENSITIVE_PATTERNS = [
 export function OntologySecurity() {
   const [sensitiveDialogOpen, setSensitiveDialogOpen] = useState(false);
   const [patterns, setPatterns] = useState(SENSITIVE_PATTERNS);
+  const [securityRules, setSecurityRules] = useState(MOCK_SECURITY_RULES);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    ontologyApi.listSecurityRules()
+      .then((data) => { if (data && data.length > 0) setSecurityRules(data); })
+      .catch(() => { /* keep fallback */ })
+      .finally(() => setLoading(false));
+  }, []);
 
   return (
     <div className="flex flex-col gap-6 p-6">
@@ -752,7 +761,10 @@ export function OntologySecurity() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {MOCK_SECURITY_RULES.map((r) => (
+              {loading && (
+                <TableRow><TableCell colSpan={6} className="text-center py-4 text-muted-foreground">加载中...</TableCell></TableRow>
+              )}
+              {securityRules.map((r) => (
                 <TableRow key={r.id}>
                   <TableCell className="font-medium">{r.name}</TableCell>
                   <TableCell><Badge variant="outline">{r.level}</Badge></TableCell>
@@ -782,8 +794,16 @@ const AUTO_NUMBER_RULES = [
 
 export function AutoNumberRules() {
   const [rules, setRules] = useState(AUTO_NUMBER_RULES);
+  const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState({ object: "", prefix: "", suffix: "", seqLength: "6", reset: "每年" });
+
+  useEffect(() => {
+    ontologyApi.listAutoNumbers()
+      .then((data) => { if (data && data.length > 0) setRules(data); })
+      .catch(() => { /* keep fallback */ })
+      .finally(() => setLoading(false));
+  }, []);
 
   return (
     <Card>
@@ -797,6 +817,7 @@ export function AutoNumberRules() {
         <Button size="sm" onClick={() => setDialogOpen(true)}><Plus className="size-3 mr-1" /> 新建规则</Button>
       </CardHeader>
       <CardContent className="p-0">
+        {loading && <div className="text-center py-4 text-muted-foreground">加载中...</div>}
         <Table>
           <TableHeader>
             <TableRow>

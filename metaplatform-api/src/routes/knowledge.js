@@ -131,6 +131,98 @@ router.get("/categories", (_req, res, next) => {
   }
 });
 
+// ════════════════════════════════════════════════════════
+//  Processing Jobs
+// ════════════════════════════════════════════════════════
+
+// GET /processing-jobs — list processing jobs
+router.get("/processing-jobs", (req, res, next) => {
+  try {
+    const rows = db.prepare("SELECT * FROM knowledge_processing_jobs ORDER BY created_at DESC").all();
+    res.json({ success: true, data: rows });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /processing-jobs — create processing job
+router.post("/processing-jobs", (req, res, next) => {
+  try {
+    const { doc_name, task } = req.body;
+    if (!doc_name) return res.status(400).json({ success: false, error: "doc_name 为必填项" });
+    const result = db.prepare(
+      `INSERT INTO knowledge_processing_jobs (doc_name, task, status, progress) VALUES (?, ?, 'pending', 0)`
+    ).run(doc_name, task || "向量化 + 图谱抽取");
+    const row = db.prepare("SELECT * FROM knowledge_processing_jobs WHERE id = ?").get(result.lastInsertRowid);
+    res.status(201).json({ success: true, data: row });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ════════════════════════════════════════════════════════
+//  Subscriptions
+// ════════════════════════════════════════════════════════
+
+// GET /subscriptions — list subscriptions
+router.get("/subscriptions", (req, res, next) => {
+  try {
+    const rows = db.prepare("SELECT * FROM knowledge_subscriptions ORDER BY created_at DESC").all();
+    res.json({ success: true, data: rows });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /subscriptions — create subscription
+router.post("/subscriptions", (req, res, next) => {
+  try {
+    const { name, category, frequency, status } = req.body;
+    if (!name) return res.status(400).json({ success: false, error: "name 为必填项" });
+    const result = db.prepare(
+      `INSERT INTO knowledge_subscriptions (name, category, frequency, status) VALUES (?, ?, ?, ?)`
+    ).run(name, category || null, frequency || "实时", status || "active");
+    const row = db.prepare("SELECT * FROM knowledge_subscriptions WHERE id = ?").get(result.lastInsertRowid);
+    res.status(201).json({ success: true, data: row });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PUT /subscriptions/:id — update subscription (toggle status)
+router.put("/subscriptions/:id", (req, res, next) => {
+  try {
+    const existing = db.prepare("SELECT * FROM knowledge_subscriptions WHERE id = ?").get(req.params.id);
+    if (!existing) return res.status(404).json({ success: false, error: "订阅不存在" });
+    const { name, category, frequency, status } = req.body;
+    db.prepare(
+      `UPDATE knowledge_subscriptions SET name = ?, category = ?, frequency = ?, status = ? WHERE id = ?`
+    ).run(
+      name ?? existing.name,
+      category !== undefined ? category : existing.category,
+      frequency ?? existing.frequency,
+      status ?? existing.status,
+      req.params.id
+    );
+    const row = db.prepare("SELECT * FROM knowledge_subscriptions WHERE id = ?").get(req.params.id);
+    res.json({ success: true, data: row });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// DELETE /subscriptions/:id — delete subscription
+router.delete("/subscriptions/:id", (req, res, next) => {
+  try {
+    const existing = db.prepare("SELECT * FROM knowledge_subscriptions WHERE id = ?").get(req.params.id);
+    if (!existing) return res.status(404).json({ success: false, error: "订阅不存在" });
+    db.prepare("DELETE FROM knowledge_subscriptions WHERE id = ?").run(req.params.id);
+    res.json({ success: true, data: { id: Number(req.params.id) } });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // GET / — knowledge base overview
 router.get("/", (req, res) => {
   try {

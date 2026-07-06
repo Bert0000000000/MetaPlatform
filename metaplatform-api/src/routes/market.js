@@ -66,6 +66,100 @@ router.post("/templates/:id/install", (req, res) => {
   res.json({ success: true, data: { message: "Template installed" } });
 });
 
+// ════════════════════════════════════════════════════════
+//  Developers
+// ════════════════════════════════════════════════════════
+
+// GET /developers — list developers
+router.get("/developers", (_req, res) => {
+  const rows = db.prepare("SELECT * FROM market_developers ORDER BY rank_num ASC").all();
+  res.json({ success: true, data: rows });
+});
+
+// ════════════════════════════════════════════════════════
+//  Skills
+// ════════════════════════════════════════════════════════
+
+// GET /skills — list skills
+router.get("/skills", (_req, res) => {
+  const rows = db.prepare("SELECT * FROM market_skills ORDER BY installs DESC").all();
+  res.json({ success: true, data: rows });
+});
+
+// POST /skills — create skill
+router.post("/skills", (req, res) => {
+  const { name, author, desc, category, installs, rating } = req.body;
+  if (!name) return res.status(400).json({ success: false, error: "name 为必填项" });
+  const result = db.prepare(
+    'INSERT INTO market_skills (name, author, "desc", category, installs, rating) VALUES (?, ?, ?, ?, ?, ?)'
+  ).run(name, author || null, desc || null, category || null, installs ?? 0, rating ?? 0);
+  const row = db.prepare("SELECT * FROM market_skills WHERE id = ?").get(result.lastInsertRowid);
+  res.status(201).json({ success: true, data: row });
+});
+
+// ════════════════════════════════════════════════════════
+//  Workflow Templates
+// ════════════════════════════════════════════════════════
+
+// GET /workflow-templates — list workflow templates
+router.get("/workflow-templates", (_req, res) => {
+  const rows = db.prepare("SELECT * FROM market_workflow_templates ORDER BY installs DESC").all();
+  res.json({ success: true, data: rows });
+});
+
+// POST /workflow-templates — create workflow template
+router.post("/workflow-templates", (req, res) => {
+  const { name, category, nodes, installs, rating } = req.body;
+  if (!name) return res.status(400).json({ success: false, error: "name 为必填项" });
+  const result = db.prepare(
+    "INSERT INTO market_workflow_templates (name, category, nodes, installs, rating) VALUES (?, ?, ?, ?, ?)"
+  ).run(name, category || null, nodes ?? 0, installs ?? 0, rating ?? 0);
+  const row = db.prepare("SELECT * FROM market_workflow_templates WHERE id = ?").get(result.lastInsertRowid);
+  res.status(201).json({ success: true, data: row });
+});
+
+// ════════════════════════════════════════════════════════
+//  Knowledge Packages
+// ════════════════════════════════════════════════════════
+
+// GET /knowledge-packages — list knowledge packages
+router.get("/knowledge-packages", (_req, res) => {
+  const rows = db.prepare("SELECT * FROM market_knowledge_packages ORDER BY subscribers DESC").all();
+  res.json({ success: true, data: rows });
+});
+
+// POST /knowledge-packages — create knowledge package
+router.post("/knowledge-packages", (req, res) => {
+  const { name, docs, author, category, subscribers, rating } = req.body;
+  if (!name) return res.status(400).json({ success: false, error: "name 为必填项" });
+  const result = db.prepare(
+    "INSERT INTO market_knowledge_packages (name, docs, author, category, subscribers, rating) VALUES (?, ?, ?, ?, ?, ?)"
+  ).run(name, docs ?? 0, author || null, category || null, subscribers ?? 0, rating ?? 0);
+  const row = db.prepare("SELECT * FROM market_knowledge_packages WHERE id = ?").get(result.lastInsertRowid);
+  res.status(201).json({ success: true, data: row });
+});
+
+// ════════════════════════════════════════════════════════
+//  API Library
+// ════════════════════════════════════════════════════════
+
+// GET /api-library — list API library
+router.get("/api-library", (_req, res) => {
+  const rows = db.prepare("SELECT * FROM market_api_library ORDER BY calls DESC").all();
+  res.json({ success: true, data: rows });
+});
+
+// POST /api-library — create API library entry
+router.post("/api-library", (req, res) => {
+  const { name, category, endpoints, version, calls } = req.body;
+  if (!name) return res.status(400).json({ success: false, error: "name 为必填项" });
+  const result = db.prepare(
+    "INSERT INTO market_api_library (name, category, endpoints, version, calls) VALUES (?, ?, ?, ?, ?)"
+  ).run(name, category || null, endpoints ?? 0, version || "1.0", calls ?? 0);
+  const row = db.prepare("SELECT * FROM market_api_library WHERE id = ?").get(result.lastInsertRowid);
+  res.status(201).json({ success: true, data: row });
+});
+
 // GET / — marketplace overview
 router.get("/", (req, res) => {
   try {

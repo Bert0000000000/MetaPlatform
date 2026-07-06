@@ -379,6 +379,16 @@ function MySubscriptions({ onRenew, subscriptions, setSubscriptions }: MySubscri
 
 /* ─────────────────── DeveloperRank ─────────────────── */
 function DeveloperRank() {
+  const [developers, setDevelopers] = useState(DEVELOPERS);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    marketApi.listDevelopers()
+      .then((data) => { if (data && data.length > 0) setDevelopers(data); })
+      .catch(() => { /* keep fallback */ })
+      .finally(() => setLoading(false));
+  }, []);
+
   return (
     <Card>
       <CardHeader>
@@ -388,6 +398,7 @@ function DeveloperRank() {
         <CardDescription>本月云市场最活跃的开发者</CardDescription>
       </CardHeader>
       <CardContent className="p-0">
+        {loading && <div className="text-center py-4 text-muted-foreground">加载中...</div>}
         <Table>
           <TableHeader>
             <TableRow>
@@ -399,7 +410,7 @@ function DeveloperRank() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {DEVELOPERS.map((d) => (
+            {developers.map((d) => (
               <TableRow key={d.rank}>
                 <TableCell>
                   <d.badge className="size-5 inline" />
@@ -728,6 +739,16 @@ const SKILL_MARKET = [
 
 export function SkillMarketPage() {
   const [installed, setInstalled] = useState<Set<number>>(new Set());
+  const [skills, setSkills] = useState(SKILL_MARKET);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    marketApi.listSkills()
+      .then((data) => { if (data && data.length > 0) setSkills(data); })
+      .catch(() => { /* keep fallback */ })
+      .finally(() => setLoading(false));
+  }, []);
+
   return (
     <div className="p-4 space-y-4">
       <div className="flex items-center justify-between">
@@ -737,8 +758,9 @@ export function SkillMarketPage() {
         </div>
         <Button size="sm"><Plus className="size-3 mr-1" />发布 Skill</Button>
       </div>
+      {loading && <div className="text-center py-8 text-muted-foreground">加载中...</div>}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {SKILL_MARKET.map((s) => (
+        {skills.map((s) => (
           <Card key={s.id} className="hover:border-primary transition-colors">
             <CardHeader>
               <div className="flex items-start justify-between">
@@ -779,6 +801,16 @@ const WORKFLOW_TEMPLATES = [
 ];
 
 export function WorkflowTemplatesPage() {
+  const [templates, setTemplates] = useState(WORKFLOW_TEMPLATES);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    marketApi.listWorkflowTemplates()
+      .then((data) => { if (data && data.length > 0) setTemplates(data); })
+      .catch(() => { /* keep fallback */ })
+      .finally(() => setLoading(false));
+  }, []);
+
   return (
     <div className="p-4 space-y-4">
       <div className="flex items-center justify-between">
@@ -790,10 +822,11 @@ export function WorkflowTemplatesPage() {
       <Card>
         <CardHeader><CardTitle className="text-base flex items-center gap-2"><Workflow className="size-4" /> 模板列表</CardTitle></CardHeader>
         <CardContent className="p-0">
+          {loading && <div className="text-center py-4 text-muted-foreground">加载中...</div>}
           <Table>
             <TableHeader><TableRow><TableHead>名称</TableHead><TableHead>分类</TableHead><TableHead>节点数</TableHead><TableHead>作者</TableHead><TableHead>下载量</TableHead><TableHead>评分</TableHead><TableHead className="text-right">操作</TableHead></TableRow></TableHeader>
             <TableBody>
-              {WORKFLOW_TEMPLATES.map((t) => (
+              {templates.map((t) => (
                 <TableRow key={t.id}>
                   <TableCell className="font-medium">{t.name}</TableCell>
                   <TableCell><Badge variant="outline">{t.category}</Badge></TableCell>
@@ -822,6 +855,16 @@ const KNOWLEDGE_PACKAGES = [
 ];
 
 export function KnowledgePackagesPage() {
+  const [packages, setPackages] = useState(KNOWLEDGE_PACKAGES);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    marketApi.listKnowledgePackages()
+      .then((data) => { if (data && data.length > 0) setPackages(data); })
+      .catch(() => { /* keep fallback */ })
+      .finally(() => setLoading(false));
+  }, []);
+
   return (
     <div className="p-4 space-y-4">
       <div className="flex items-center justify-between">
@@ -830,8 +873,9 @@ export function KnowledgePackagesPage() {
           <p className="text-sm text-muted-foreground mt-1">行业知识包，可直接订阅并应用于智能体</p>
         </div>
       </div>
+      {loading && <div className="text-center py-8 text-muted-foreground">加载中...</div>}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {KNOWLEDGE_PACKAGES.map((k) => (
+        {packages.map((k) => (
           <Card key={k.id} className="hover:border-primary transition-colors">
             <CardHeader>
               <div className="flex items-start justify-between">
@@ -865,6 +909,16 @@ const API_LIBRARY = [
 ];
 
 export function APILibraryPage() {
+  const [apiList, setApiList] = useState(API_LIBRARY);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    marketApi.listAPILibrary()
+      .then((data) => { if (data && data.length > 0) setApiList(data); })
+      .catch(() => { /* keep fallback */ })
+      .finally(() => setLoading(false));
+  }, []);
+
   return (
     <div className="p-4 space-y-4">
       <div className="flex items-center justify-between">
@@ -876,10 +930,11 @@ export function APILibraryPage() {
       <Card>
         <CardHeader><CardTitle className="text-base flex items-center gap-2"><Code className="size-4" /> API 列表</CardTitle></CardHeader>
         <CardContent className="p-0">
+          {loading && <div className="text-center py-4 text-muted-foreground">加载中...</div>}
           <Table>
             <TableHeader><TableRow><TableHead>名称</TableHead><TableHead>分类</TableHead><TableHead>端点数</TableHead><TableHead>作者</TableHead><TableHead>版本</TableHead><TableHead className="text-right">操作</TableHead></TableRow></TableHeader>
             <TableBody>
-              {API_LIBRARY.map((a) => (
+              {apiList.map((a) => (
                 <TableRow key={a.id}>
                   <TableCell className="font-medium">{a.name}</TableCell>
                   <TableCell><Badge variant="outline">{a.category}</Badge></TableCell>

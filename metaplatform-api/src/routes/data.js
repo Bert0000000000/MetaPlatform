@@ -417,6 +417,153 @@ router.post("/export", (req, res, next) => {
   }
 });
 
+// ════════════════════════════════════════════════════════
+//  ETL Tasks
+// ════════════════════════════════════════════════════════
+
+// GET /etl-tasks — list ETL tasks
+router.get("/etl-tasks", (_req, res, next) => {
+  try {
+    const rows = db.prepare("SELECT * FROM data_etl_tasks ORDER BY created_at DESC").all();
+    res.json({ success: true, data: rows });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /etl-tasks — create ETL task
+router.post("/etl-tasks", (req, res, next) => {
+  try {
+    const { name, source, target, schedule, status } = req.body;
+    if (!name) return res.status(400).json({ success: false, error: "name 为必填项" });
+    const result = db.prepare(
+      `INSERT INTO data_etl_tasks (name, source, target, schedule, status) VALUES (?, ?, ?, ?, ?)`
+    ).run(name, source || null, target || null, schedule || null, status || "stopped");
+    const row = db.prepare("SELECT * FROM data_etl_tasks WHERE id = ?").get(result.lastInsertRowid);
+    res.status(201).json({ success: true, data: row });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PUT /etl-tasks/:id — update ETL task
+router.put("/etl-tasks/:id", (req, res, next) => {
+  try {
+    const existing = db.prepare("SELECT * FROM data_etl_tasks WHERE id = ?").get(req.params.id);
+    if (!existing) return res.status(404).json({ success: false, error: "ETL任务不存在" });
+    const { name, source, target, schedule, status, last_run, next_run } = req.body;
+    db.prepare(
+      `UPDATE data_etl_tasks SET name = ?, source = ?, target = ?, schedule = ?, status = ?, last_run = ?, next_run = ? WHERE id = ?`
+    ).run(
+      name ?? existing.name,
+      source !== undefined ? source : existing.source,
+      target !== undefined ? target : existing.target,
+      schedule !== undefined ? schedule : existing.schedule,
+      status ?? existing.status,
+      last_run !== undefined ? last_run : existing.last_run,
+      next_run !== undefined ? next_run : existing.next_run,
+      req.params.id
+    );
+    const row = db.prepare("SELECT * FROM data_etl_tasks WHERE id = ?").get(req.params.id);
+    res.json({ success: true, data: row });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// DELETE /etl-tasks/:id — delete ETL task
+router.delete("/etl-tasks/:id", (req, res, next) => {
+  try {
+    const existing = db.prepare("SELECT * FROM data_etl_tasks WHERE id = ?").get(req.params.id);
+    if (!existing) return res.status(404).json({ success: false, error: "ETL任务不存在" });
+    db.prepare("DELETE FROM data_etl_tasks WHERE id = ?").run(req.params.id);
+    res.json({ success: true, data: { id: Number(req.params.id) } });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ════════════════════════════════════════════════════════
+//  Data Quality Rules
+// ════════════════════════════════════════════════════════
+
+// GET /quality-rules — list quality rules
+router.get("/quality-rules", (_req, res, next) => {
+  try {
+    const rows = db.prepare("SELECT * FROM data_quality_rules ORDER BY created_at DESC").all();
+    res.json({ success: true, data: rows });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /quality-rules — create quality rule
+router.post("/quality-rules", (req, res, next) => {
+  try {
+    const { table_name, rule, severity, status, coverage } = req.body;
+    if (!table_name || !rule) return res.status(400).json({ success: false, error: "table_name, rule 为必填项" });
+    const result = db.prepare(
+      `INSERT INTO data_quality_rules (table_name, rule, severity, status, coverage) VALUES (?, ?, ?, ?, ?)`
+    ).run(table_name, rule, severity || "warning", status || "pending", coverage ?? 0);
+    const row = db.prepare("SELECT * FROM data_quality_rules WHERE id = ?").get(result.lastInsertRowid);
+    res.status(201).json({ success: true, data: row });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PUT /quality-rules/:id — update quality rule
+router.put("/quality-rules/:id", (req, res, next) => {
+  try {
+    const existing = db.prepare("SELECT * FROM data_quality_rules WHERE id = ?").get(req.params.id);
+    if (!existing) return res.status(404).json({ success: false, error: "质量规则不存在" });
+    const { table_name, rule, severity, status, coverage } = req.body;
+    db.prepare(
+      `UPDATE data_quality_rules SET table_name = ?, rule = ?, severity = ?, status = ?, coverage = ? WHERE id = ?`
+    ).run(
+      table_name ?? existing.table_name,
+      rule ?? existing.rule,
+      severity ?? existing.severity,
+      status ?? existing.status,
+      coverage !== undefined ? coverage : existing.coverage,
+      req.params.id
+    );
+    const row = db.prepare("SELECT * FROM data_quality_rules WHERE id = ?").get(req.params.id);
+    res.json({ success: true, data: row });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ════════════════════════════════════════════════════════
+//  Realtime Events
+// ════════════════════════════════════════════════════════
+
+// GET /realtime-events — list realtime events
+router.get("/realtime-events", (_req, res, next) => {
+  try {
+    const rows = db.prepare("SELECT * FROM data_realtime_events ORDER BY time DESC").all();
+    res.json({ success: true, data: rows });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /realtime-events — create event
+router.post("/realtime-events", (req, res, next) => {
+  try {
+    const { event, source, level, time } = req.body;
+    if (!event) return res.status(400).json({ success: false, error: "event 为必填项" });
+    const result = db.prepare(
+      `INSERT INTO data_realtime_events (event, source, level, time) VALUES (?, ?, ?, ?)`
+    ).run(event, source || null, level || "info", time || new Date().toISOString());
+    const row = db.prepare("SELECT * FROM data_realtime_events WHERE id = ?").get(result.lastInsertRowid);
+    res.status(201).json({ success: true, data: row });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // GET / — data module overview
 router.get("/", (req, res) => {
   try {
