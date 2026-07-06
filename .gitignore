@@ -3,11 +3,16 @@
 **/*.class
 **/*.jar
 **/*.war
+**/dist/
 
 # Node
 **/node_modules/
 **/package-lock.json
 **/.vite/
+
+# Backend runtime
+metaplatform-api/data/
+metaplatform-api/backups/
 
 # IDE
 .idea/
