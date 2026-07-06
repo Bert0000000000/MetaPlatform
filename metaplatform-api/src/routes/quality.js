@@ -165,4 +165,15 @@ router.get("/stats", (_req, res) => {
   });
 });
 
+// GET / — quality module overview
+router.get("/", (req, res) => {
+  try {
+    const cases = db.prepare("SELECT COUNT(*) AS cnt FROM test_cases").get().cnt;
+    const bugs = db.prepare("SELECT COUNT(*) AS cnt FROM bugs").get().cnt;
+    res.json({ success: true, data: { cases, bugs } });
+  } catch (err) {
+    res.json({ success: true, data: { cases: 0, bugs: 0 } });
+  }
+});
+
 export default router;

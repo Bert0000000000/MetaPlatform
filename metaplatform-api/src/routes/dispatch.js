@@ -397,4 +397,39 @@ router.post("/execute", async (req, res) => {
   }
 });
 
+// POST / — dispatch agent query
+router.post("/", async (req, res, next) => {
+  try {
+    const { agent, query, input, messages } = req.body;
+    const agentName = agent || "default";
+    const queryText = query || input || (messages?.length ? messages[messages.length - 1]?.content : "");
+    if (!queryText) {
+      return res.status(400).json({ success: false, error: "query/input 为必填项" });
+    }
+    // Try LLM call
+    const rows = db.prepare("SELECT key, value FROM system_config WHERE key IN ('llm_base_url','llm_api_key','llm_model')").all();
+    const cfg = {};
+    for (const r of rows) cfg[r.key] = r.value;
+    const baseUrl = cfg.llm_base_url || process.env.LLM_BASE_URL || "https://api.openai.com/v1";
+    const apiKey = cfg.llm_api_key || process.env.LLM_API_KEY || "";
+    const model = cfg.llm_model || process.env.LLM_MODEL || "gpt-4o-mini";
+    if (!apiKey) {
+      return res.json({ success: true, data: { agent: agentName, response: "AI Gateway 未配置 API Key，请在后台管理中配置。", model } });
+    }
+    const resp = await fetch(`${baseUrl}/chat/completions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify({ model, messages: messages || [{ role: "user", content: queryText }], max_tokens: 1024 }),
+    });
+    if (!resp.ok) {
+      return res.json({ success: true, data: { agent: agentName, response: `LLM API 错误: ${resp.status}`, model } });
+    }
+    const data = await resp.json();
+    const reply = data.choices?.[0]?.message?.content || "无响应";
+    res.json({ success: true, data: { agent: agentName, response: reply, model, usage: data.usage } });
+  } catch (err) {
+    next(err);
+  }
+});
+
 export default router;

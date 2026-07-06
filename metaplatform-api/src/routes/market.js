@@ -66,4 +66,14 @@ router.post("/templates/:id/install", (req, res) => {
   res.json({ success: true, data: { message: "Template installed" } });
 });
 
+// GET / — marketplace overview
+router.get("/", (req, res) => {
+  try {
+    const templates = db.prepare("SELECT COUNT(*) AS cnt FROM market_templates").get().cnt;
+    res.json({ success: true, data: { templates } });
+  } catch (err) {
+    res.json({ success: true, data: { templates: 0 } });
+  }
+});
+
 export default router;

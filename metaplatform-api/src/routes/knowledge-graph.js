@@ -137,4 +137,15 @@ router.delete("/edges/:id", (req, res, next) => {
   }
 });
 
+// GET / — knowledge graph overview
+router.get("/", (req, res) => {
+  try {
+    const nodes = db.prepare("SELECT COUNT(*) AS cnt FROM knowledge_graph_nodes").get().cnt;
+    const edges = db.prepare("SELECT COUNT(*) AS cnt FROM knowledge_graph_edges").get().cnt;
+    res.json({ success: true, data: { nodes, edges } });
+  } catch (err) {
+    res.json({ success: true, data: { nodes: 0, edges: 0 } });
+  }
+});
+
 export default router;

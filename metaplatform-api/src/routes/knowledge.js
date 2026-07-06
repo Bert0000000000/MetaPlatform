@@ -131,4 +131,15 @@ router.get("/categories", (_req, res, next) => {
   }
 });
 
+// GET / — knowledge base overview
+router.get("/", (req, res) => {
+  try {
+    const docs = db.prepare("SELECT COUNT(*) AS cnt FROM knowledge_documents").get().cnt;
+    const cats = db.prepare("SELECT COUNT(DISTINCT category) AS cnt FROM knowledge_documents WHERE category IS NOT NULL").get().cnt;
+    res.json({ success: true, data: { documents: docs, categories: cats } });
+  } catch (err) {
+    res.json({ success: true, data: { documents: 0, categories: 0 } });
+  }
+});
+
 export default router;

@@ -447,4 +447,16 @@ router.delete("/rules/:id", (req, res, next) => {
   }
 });
 
+// GET / — ontology overview
+router.get("/", (req, res) => {
+  try {
+    const objects = db.prepare("SELECT COUNT(*) AS cnt FROM ontology_objects").get().cnt;
+    const relations = db.prepare("SELECT COUNT(*) AS cnt FROM ontology_relations").get().cnt;
+    const actions = db.prepare("SELECT COUNT(*) AS cnt FROM ontology_actions").get().cnt;
+    res.json({ success: true, data: { objects, relations, actions } });
+  } catch (err) {
+    res.json({ success: true, data: { objects: 0, relations: 0, actions: 0 } });
+  }
+});
+
 export default router;

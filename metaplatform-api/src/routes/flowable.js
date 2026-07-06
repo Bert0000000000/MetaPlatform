@@ -190,4 +190,9 @@ router.get("/history/process-instances", (req, res) => {
   return proxyToFlowable(req, res, { path: "/history/historic-process-instances" });
 });
 
+// GET /processes — alias for process-definitions (proxied to Flowable REST)
+router.get("/processes", (req, res) => {
+  return proxyToFlowable(req, res, { path: "/repository/process-definitions" });
+});
+
 export default router;

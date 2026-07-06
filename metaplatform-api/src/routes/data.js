@@ -417,4 +417,14 @@ router.post("/export", (req, res, next) => {
   }
 });
 
+// GET / — data module overview
+router.get("/", (req, res) => {
+  try {
+    const sources = db.prepare("SELECT COUNT(*) AS cnt FROM data_sources").get().cnt;
+    res.json({ success: true, data: { sources } });
+  } catch (err) {
+    res.json({ success: true, data: { sources: 0 } });
+  }
+});
+
 export default router;
