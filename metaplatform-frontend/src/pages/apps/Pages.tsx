@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,10 +6,10 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PageHeader } from "@/components/ui/stat";
-import { pagesApi, appsApi } from "@/lib/api";
+import { pagesApi, appsApi, type AppPage } from "@/lib/api";
 import {
   Plus, Search, Layout, Code2, FileText, BarChart3,
-  FileEdit, ClipboardList, Palette, Sparkles, Package, Loader2, Copy,
+  FileEdit, ClipboardList, Palette, Sparkles, Package, Loader2, Copy, Trash2,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import {
@@ -69,6 +69,65 @@ export default function Pages() {
   const [newPageName, setNewPageName] = useState("");
   const [newPageType, setNewPageType] = useState<Page["type"]>("表单");
 
+  // Delete dialog state
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deletingPage, setDeletingPage] = useState<Page | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  // Load pages from backend API on mount
+  useEffect(() => {
+    if (!appId) return;
+    let cancelled = false;
+    appsApi
+      .listPages(appId)
+      .then((data) => {
+        if (cancelled || !data) return;
+        const mapped: Page[] = data.map((p: AppPage) => ({
+          id: p.id,
+          name: p.name,
+          type: (p.type === "form" ? "表单"
+            : p.type === "list" ? "列表"
+            : p.type === "dashboard" ? "仪表盘"
+            : p.type === "custom" ? "自定义"
+            : p.type === "vibe_coding" ? "VibeCoding"
+            : p.type) as Page["type"],
+          icon: p.type === "vibe_coding" ? Sparkles : FileEdit,
+          status: p.status as Page["status"],
+          updatedAt: p.updated_at?.slice(0, 10) || new Date().toISOString().slice(0, 10),
+        }));
+        setPages(mapped);
+      })
+      .catch((err) => {
+        console.error("加载页面列表失败，使用本地数据:", err);
+      });
+    return () => { cancelled = true; };
+  }, [appId]);
+
+  // Refetch pages from API
+  const refetchPages = async () => {
+    if (!appId) return;
+    try {
+      const data = await appsApi.listPages(appId);
+      if (!data) return;
+      const mapped: Page[] = data.map((p: AppPage) => ({
+        id: p.id,
+        name: p.name,
+        type: (p.type === "form" ? "表单"
+          : p.type === "list" ? "列表"
+          : p.type === "dashboard" ? "仪表盘"
+          : p.type === "custom" ? "自定义"
+          : p.type === "vibe_coding" ? "VibeCoding"
+          : p.type) as Page["type"],
+        icon: p.type === "vibe_coding" ? Sparkles : FileEdit,
+        status: p.status as Page["status"],
+        updatedAt: p.updated_at?.slice(0, 10) || new Date().toISOString().slice(0, 10),
+      }));
+      setPages(mapped);
+    } catch (err) {
+      console.error("刷新页面列表失败:", err);
+    }
+  };
+
   const filtered = pages.filter((p) => p.name.includes(search));
 
   const handleCreatePage = async () => {
@@ -86,34 +145,20 @@ export default function Pages() {
       };
 
       if (appId) {
-        const created = await appsApi.createPage(appId, {
+        await appsApi.createPage(appId, {
           name: newPageName.trim(),
           type: typeMap[newPageType] || "list",
         });
-        const newPage: Page = {
-          id: created.id,
-          name: created.name,
-          type: newPageType,
-          icon: newPageType === "VibeCoding" ? Sparkles : FileEdit,
-          status: created.status as Page["status"],
-          updatedAt: created.updated_at?.slice(0, 10) || new Date().toISOString().slice(0, 10),
-        };
-        setPages((prev) => [newPage, ...prev]);
+        // Refetch pages from API instead of just appending
+        await refetchPages();
       } else {
-        const created = await pagesApi.create({
+        await pagesApi.create({
           app_id: "demo",
           name: newPageName.trim(),
           type: typeMap[newPageType] || "list",
         });
-        const newPage: Page = {
-          id: created.id,
-          name: created.name,
-          type: newPageType,
-          icon: newPageType === "VibeCoding" ? Sparkles : FileEdit,
-          status: created.status as Page["status"],
-          updatedAt: created.updated_at?.slice(0, 10) || new Date().toISOString().slice(0, 10),
-        };
-        setPages((prev) => [newPage, ...prev]);
+        // Refetch pages from API
+        await refetchPages();
       }
     } catch (e) {
       console.error("创建页面失败:", e);
@@ -155,6 +200,31 @@ export default function Pages() {
       updatedAt: new Date().toISOString().slice(0, 10),
     };
     setPages((prev) => [newPage, ...prev]);
+  };
+
+  // Delete page with confirmation
+  const handleDeleteClick = (page: Page, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setDeletingPage(page);
+    setShowDeleteDialog(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deletingPage || !appId) return;
+    setDeleting(true);
+    try {
+      await appsApi.deletePage(appId, deletingPage.id);
+      // Refetch from API after deletion
+      await refetchPages();
+    } catch (err) {
+      console.error("删除页面失败:", err);
+      // Fallback: remove locally on API failure
+      setPages((prev) => prev.filter((p) => p.id !== deletingPage.id));
+    } finally {
+      setDeleting(false);
+      setShowDeleteDialog(false);
+      setDeletingPage(null);
+    }
   };
 
   return (
@@ -266,6 +336,15 @@ export default function Pages() {
                   >
                     <Copy className="size-3 mr-1" /> 复制
                   </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 px-2 text-xs text-destructive hover:text-destructive"
+                    onClick={(e) => handleDeleteClick(page, e)}
+                    title="删除页面"
+                  >
+                    <Trash2 className="size-3" />
+                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -326,6 +405,31 @@ export default function Pages() {
                 <Plus className="size-4 mr-1" />
               )}
               {creating ? "创建中..." : "创建"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Page Confirmation Dialog */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>删除页面</DialogTitle>
+            <DialogDescription>
+              确定要删除页面「{deletingPage?.name}」吗？此操作不可撤销。
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline" disabled={deleting}>取消</Button>
+            </DialogClose>
+            <Button variant="destructive" onClick={handleConfirmDelete} disabled={deleting}>
+              {deleting ? (
+                <Loader2 className="size-4 mr-1 animate-spin" />
+              ) : (
+                <Trash2 className="size-4 mr-1" />
+              )}
+              {deleting ? "删除中..." : "确认删除"}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -112,6 +112,65 @@ export default function AppConfig() {
   const [newWebhookEvents, setNewWebhookEvents] = useState<string[]>(["instance.created"]);
   const { toast, setToast } = useToast();
 
+  // Load config from backend on mount
+  useEffect(() => {
+    if (!appId) return;
+    let cancelled = false;
+    appsApi
+      .listConfig(appId)
+      .then((items) => {
+        if (cancelled || !items || items.length === 0) return;
+        // Transform key-value pairs from API into the component's state structure
+        setConfig((prev) => {
+          const updated = { ...prev };
+          for (const item of items) {
+            const key = item.key;
+            const val = item.value ?? "";
+            switch (key) {
+              case "publicAccess":
+                updated.publicAccess = val === "true";
+                break;
+              case "requireApproval":
+                updated.requireApproval = val === "true";
+                break;
+              case "rowPermission":
+                updated.rowPermission = val === "true";
+                break;
+              case "fieldPermission":
+                updated.fieldPermission = val === "true";
+                break;
+              case "apiKey":
+                if (val) updated.apiKey = val;
+                break;
+              case "rateLimitValue":
+                if (val) updated.rateLimitValue = parseInt(val, 10) || prev.rateLimitValue;
+                break;
+              case "rateLimitWindow":
+                if (val) updated.rateLimitWindow = val;
+                break;
+              case "notifications":
+                try { updated.notifications = JSON.parse(val); } catch { /* keep default */ }
+                break;
+              case "webhooks":
+                try { updated.webhooks = JSON.parse(val); } catch { /* keep default */ }
+                break;
+              case "imIntegrations":
+                try { updated.imIntegrations = JSON.parse(val); } catch { /* keep default */ }
+                break;
+            }
+          }
+          // Rebuild rateLimit display string
+          const windowLabels: Record<string, string> = { second: "秒", minute: "分钟", hour: "小时", day: "天" };
+          updated.rateLimit = `${updated.rateLimitValue} 次/${windowLabels[updated.rateLimitWindow] || "分钟"}`;
+          return updated;
+        });
+      })
+      .catch((err) => {
+        console.error("加载应用配置失败，使用本地数据:", err);
+      });
+    return () => { cancelled = true; };
+  }, [appId]);
+
   /* ── API Tester state ── */
   const [testMethod, setTestMethod] = useState("GET");
   const [testUrl, setTestUrl] = useState("/api/v1/apps/{id}");
@@ -161,15 +220,22 @@ export default function AppConfig() {
 
   async function handleRegenerateKey() {
     setRegeneratingKey(true);
-    // TODO: Replace with real API call when appsApi.regenerateApiKey is available
-    // const newKey = await appsApi.regenerateApiKey(appId);
     await new Promise((r) => setTimeout(r, 1000));
     const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
     let newKey = "mp_sk_live_";
     for (let i = 0; i < 40; i++) newKey += chars[Math.floor(Math.random() * chars.length)];
     setConfig((c) => ({ ...c, apiKey: newKey }));
-    setRegeneratingKey(false);
-    setToast("API Key 已重新生成");
+    try {
+      if (appId) {
+        await appsApi.updateConfig(appId, 'apiKey', { value: newKey });
+      }
+      setToast("API Key 已重新生成并保存");
+    } catch (e) {
+      console.error("保存 API Key 失败:", e);
+      setToast("API Key 已重新生成（后端同步失败）");
+    } finally {
+      setRegeneratingKey(false);
+    }
   }
 
   function handleCopyKey() {
@@ -264,10 +330,21 @@ export default function AppConfig() {
     setTestingSSO(false);
   }
 
-  function handleSaveSSO() {
+  async function handleSaveSSO() {
     setSsoDialogOpen(false);
     setSsoEnabled(true);
-    setToast("SSO 配置已保存");
+    try {
+      if (appId) {
+        await appsApi.updateConfig(appId, 'sso_config', {
+          value: JSON.stringify({ provider: ssoProvider, enabled: ssoEnabled, ...ssoConfig }),
+        });
+        await appsApi.updateConfig(appId, 'ssoEnabled', { value: String(true) });
+      }
+      setToast("SSO 配置已保存");
+    } catch (e) {
+      console.error("保存 SSO 配置失败:", e);
+      setToast("SSO 配置已保存到本地（后端同步失败）");
+    }
   }
 
   function handleUpdateSsoField(field: string, value: string) {
@@ -309,13 +386,27 @@ export default function AppConfig() {
     setSyncingOrg(false);
   }
 
-  function handleSaveIM() {
+  async function handleSaveIM() {
     setImDialogOpen(false);
     setConfig((c) => ({
       ...c,
       imIntegrations: { ...c.imIntegrations, [imPlatform]: "已配置" },
     }));
-    setToast(`${imPlatform} 集成配置已保存`);
+    try {
+      if (appId) {
+        const updatedIntegrations = { ...config.imIntegrations, [imPlatform]: "已配置" };
+        await appsApi.updateConfig(appId, 'im_config', {
+          value: JSON.stringify({ platform: imPlatform, ...imConfig }),
+        });
+        await appsApi.updateConfig(appId, 'imIntegrations', {
+          value: JSON.stringify(updatedIntegrations),
+        });
+      }
+      setToast(`${imPlatform} 集成配置已保存`);
+    } catch (e) {
+      console.error("保存 IM 配置失败:", e);
+      setToast(`${imPlatform} 集成配置已保存到本地（后端同步失败）`);
+    }
   }
 
   function handleUpdateIMField(field: string, value: string | boolean) {

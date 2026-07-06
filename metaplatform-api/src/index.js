@@ -28,6 +28,7 @@ import knowledgeQaRoutes from "./routes/knowledge-qa.js";
 import knowledgeGraphRoutes from "./routes/knowledge-graph.js";
 import marketRoutes from "./routes/market.js";
 import filesystemRoutes from "./routes/filesystem.js";
+import orchestrationsRoutes from "./routes/orchestrations.js";
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -62,6 +63,7 @@ app.use("/api/knowledge/qa", knowledgeQaRoutes);
 app.use("/api/knowledge/graph", knowledgeGraphRoutes);
 app.use("/api/market", marketRoutes);
 app.use("/api/filesystem", filesystemRoutes);
+app.use("/api/orchestrations", orchestrationsRoutes);
 
 // ─── Health check ───────────────────────────────────────
 app.get("/api/health", (_req, res) => {

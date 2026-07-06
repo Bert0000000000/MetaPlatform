@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Save, Eye, Smartphone, Monitor, Tablet, Settings, Trash2, Copy, Plus, Type, Hash, Calendar, Mail, Phone, ListChecks, FileText, Upload, Star, Sliders, ToggleLeft, Sparkles, FileEdit, Clock, ClipboardList, Circle, CheckSquare, Paperclip, Image, PenTool, MapPin, TreeDeciduous, Scan, FileImage, CreditCard, Receipt, Contact, Check, Gauge, Printer, TreePine, LayoutDashboard, Loader2 } from "lucide-react";
+import { filesystemApi } from "@/lib/api";
+import { toast } from "sonner";
 import type { LucideIcon } from "lucide-react";
 
 // OCR Document Types
@@ -100,6 +102,15 @@ interface FieldDef {
   color: string;
 }
 
+// Runtime form field (without icon/color - those come from the library lookup)
+interface FormField {
+  id: string;
+  type: string;
+  label: string;
+  placeholder: string;
+  required: boolean;
+}
+
 const FIELD_LIBRARY: FieldDef[] = [
   { id: "single-text", type: "单行文本", label: "单行文本", required: false, icon: Type, color: "bg-blue-500" },
   { id: "multi-text", type: "多行文本", label: "多行文本", required: false, icon: FileEdit, color: "bg-green-500" },
@@ -127,22 +138,97 @@ const FIELD_LIBRARY: FieldDef[] = [
   { id: "dashboard-embed", type: "仪表盘", label: "仪表盘内嵌", required: false, icon: LayoutDashboard, color: "bg-blue-600" },
 ];
 
-const INITIAL_FORM: { id: string; label: string; type: string; icon: LucideIcon }[] = [
-  { id: "f1", label: "客户名称", type: "单行文本", icon: Type },
-  { id: "f2", label: "客户编号", type: "单行文本", icon: Type },
-  { id: "f3", label: "行业类型", type: "下拉选择", icon: ClipboardList },
-  { id: "f4", label: "联系电话", type: "手机号", icon: Smartphone },
-  { id: "f5", label: "邮箱", type: "邮箱", icon: Mail },
-  { id: "f6", label: "客户等级", type: "单选", icon: Circle },
-  { id: "f7", label: "重要程度", type: "评分", icon: Star },
-  { id: "f8", label: "备注", type: "多行文本", icon: FileEdit },
+// Lookup icon + color from the FIELD_LIBRARY by type
+function getFieldMeta(type: string): { icon: LucideIcon; color: string } {
+  const lib = FIELD_LIBRARY.find((f) => f.type === type);
+  return lib ? { icon: lib.icon, color: lib.color } : { icon: Type, color: "bg-gray-500" };
+}
+
+// Default initial form fields
+const DEFAULT_FORM_FIELDS: FormField[] = [
+  { id: "f1", type: "单行文本", label: "客户名称", placeholder: "请输入客户名称", required: true },
+  { id: "f2", type: "单行文本", label: "客户编号", placeholder: "请输入客户编号", required: false },
+  { id: "f3", type: "下拉选择", label: "行业类型", placeholder: "请选择行业类型", required: false },
+  { id: "f4", type: "手机号", label: "联系电话", placeholder: "请输入联系电话", required: false },
+  { id: "f5", type: "邮箱", label: "邮箱", placeholder: "请输入邮箱", required: false },
+  { id: "f6", type: "单选", label: "客户等级", placeholder: "", required: false },
+  { id: "f7", type: "评分", label: "重要程度", placeholder: "", required: false },
+  { id: "f8", type: "多行文本", label: "备注", placeholder: "请输入备注", required: false },
 ];
 
-export default function FormDesigner() {
-  const [device, setDevice] = useState<"desktop" | "tablet" | "mobile">("desktop");
-  const [selectedField, setSelectedField] = useState<string | null>("f3");
+// Helper: map a FormField type to a canvas-rendering template (same as before but driven by runtime data)
+function renderFieldInput(f: FormField) {
+  switch (f.type) {
+    case "单行文本":
+      return <Input placeholder={f.placeholder || `请输入${f.label}`} className="mt-1" />;
+    case "多行文本":
+      return <textarea placeholder={f.placeholder || `请输入${f.label}`} className="mt-1 w-full border rounded p-2 text-sm" rows={2} />;
+    case "数字":
+      return <Input type="number" placeholder={f.placeholder || `请输入${f.label}`} className="mt-1" />;
+    case "日期":
+      return <Input type="date" className="mt-1" />;
+    case "日期时间":
+      return <Input type="datetime-local" className="mt-1" />;
+    case "邮箱":
+      return <Input type="email" placeholder={f.placeholder || "example@company.com"} className="mt-1" />;
+    case "手机号":
+      return <Input placeholder={f.placeholder || "138 0013 8000"} className="mt-1" />;
+    case "下拉选择":
+      return (
+        <select className="mt-1 w-full border rounded p-2 text-sm">
+          <option>请选择...</option>
+        </select>
+      );
+    case "单选":
+      return (
+        <div className="flex gap-2 mt-1">
+          {["选项A", "选项B", "选项C"].map((o) => (
+            <label key={o} className="flex items-center gap-1 text-sm">
+              <input type="radio" name={f.id} /> {o}
+            </label>
+          ))}
+        </div>
+      );
+    case "多选":
+      return (
+        <div className="flex gap-2 mt-1">
+          {["选项A", "选项B", "选项C"].map((o) => (
+            <label key={o} className="flex items-center gap-1 text-sm">
+              <input type="checkbox" /> {o}
+            </label>
+          ))}
+        </div>
+      );
+    case "评分":
+      return (
+        <div className="flex gap-1 mt-1">
+          {[1, 2, 3, 4, 5].map((n) => (
+            <Star key={n} className="size-5 text-yellow-500 fill-yellow-500" />
+          ))}
+        </div>
+      );
+    case "开关":
+      return <div className="mt-1"><input type="checkbox" className="toggle" /></div>;
+    case "文件上传":
+      return <div className="mt-1 border-2 border-dashed rounded p-2 text-center text-xs text-muted-foreground">点击或拖拽上传文件</div>;
+    case "图片上传":
+      return <div className="mt-1 border-2 border-dashed rounded p-2 text-center text-xs text-muted-foreground">点击或拖拽上传图片</div>;
+    default:
+      return <Input placeholder={f.placeholder || `请输入${f.label}`} className="mt-1" />;
+  }
+}
 
-  // OCR State
+export default function FormDesigner() {
+  // ─── Form Fields (runtime, from save/load) ────────────
+  const [formFields, setFormFields] = useState<FormField[]>(DEFAULT_FORM_FIELDS);
+  const [draggedType, setDraggedType] = useState<string | null>(null);
+  const [selectedFieldIndex, setSelectedFieldIndex] = useState<number | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  // ─── Device preview ───────────────────────────────────
+  const [device, setDevice] = useState<"desktop" | "tablet" | "mobile">("desktop");
+
+  // ─── OCR State ────────────────────────────────────────
   const [ocrDialogOpen, setOcrDialogOpen] = useState(false);
   const [selectedDocType, setSelectedDocType] = useState<OCRDocType>("id-card");
   const [isDragging, setIsDragging] = useState(false);
@@ -158,6 +244,115 @@ export default function FormDesigner() {
   // F4.4.5.5 打印模板 state
   const [printDialogOpen, setPrintDialogOpen] = useState(false);
 
+  // ─── Load saved form on mount (placeholder appId / pageId) ──────
+  // TODO: replace with real appId/pageId from route params
+  const appId = "app-default";
+  const pageId = "form-customer";
+
+  useEffect(() => {
+    const loadForm = async () => {
+      try {
+        const files = await filesystemApi.listFiles({ app_id: appId });
+        const formFile = files.find(
+          (f: any) => f.name === `form-${pageId}.json` && !f.is_dir,
+        );
+        if (formFile) {
+          const parsed = JSON.parse(formFile.content || "{}");
+          if (parsed.fields && Array.isArray(parsed.fields)) {
+            setFormFields(parsed.fields);
+          }
+        }
+      } catch {
+        // silently keep default fields
+      }
+    };
+    loadForm();
+  }, []);
+
+  // ─── Drag-and-drop: field library → canvas ────────────
+  const handleFieldDragStart = useCallback((e: React.DragEvent, fieldType: string) => {
+    e.dataTransfer.setData("fieldType", fieldType);
+    e.dataTransfer.effectAllowed = "copy";
+    setDraggedType(fieldType);
+  }, []);
+
+  const handleCanvasDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "copy";
+  }, []);
+
+  const handleCanvasDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    const fieldType = e.dataTransfer.getData("fieldType") || draggedType;
+    if (fieldType) {
+      const newField: FormField = {
+        id: `field-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        type: fieldType,
+        label: fieldType,
+        placeholder: "",
+        required: false,
+      };
+      setFormFields((prev) => [...prev, newField]);
+      setDraggedType(null);
+      // Auto-select the newly added field
+      setSelectedFieldIndex(formFields.length); // will be the new last index
+    }
+  }, [draggedType, formFields.length]);
+
+  // ─── Field selection in canvas ────────────────────────
+  const handleSelectField = useCallback((index: number) => {
+    setSelectedFieldIndex((prev) => (prev === index ? null : index));
+  }, []);
+
+  // ─── Delete field ─────────────────────────────────────
+  const handleDeleteField = useCallback(() => {
+    if (selectedFieldIndex !== null) {
+      setFormFields((prev) => prev.filter((_, i) => i !== selectedFieldIndex));
+      setSelectedFieldIndex(null);
+    }
+  }, [selectedFieldIndex]);
+
+  // ─── Property editing helpers ─────────────────────────
+  const updateFieldProperty = useCallback(
+    (key: keyof FormField, value: string | boolean) => {
+      if (selectedFieldIndex === null) return;
+      setFormFields((prev) =>
+        prev.map((f, i) => (i === selectedFieldIndex ? { ...f, [key]: value } : f)),
+      );
+    },
+    [selectedFieldIndex],
+  );
+
+  // ─── Save form to filesystem ──────────────────────────
+  const handleSaveForm = useCallback(async () => {
+    setSaving(true);
+    try {
+      const formDef = { fields: formFields, layout: "vertical" };
+      const content = JSON.stringify(formDef, null, 2);
+      // Try to find existing form file
+      const files = await filesystemApi.listFiles({ app_id: appId });
+      const existing = files.find(
+        (f: any) => f.name === `form-${pageId}.json` && !f.is_dir,
+      );
+      if (existing) {
+        await filesystemApi.updateFile(existing.id, { content });
+      } else {
+        await filesystemApi.createFile({
+          app_id: appId,
+          name: `form-${pageId}.json`,
+          is_dir: false,
+          content,
+        });
+      }
+      toast.success("表单保存成功");
+    } catch (err: any) {
+      toast.error("保存失败: " + (err.message || "未知错误"));
+    } finally {
+      setSaving(false);
+    }
+  }, [formFields, appId, pageId]);
+
+  // ─── OCR handlers ─────────────────────────────────────
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(true);
@@ -167,7 +362,7 @@ export default function FormDesigner() {
     setIsDragging(false);
   }, []);
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
+  const handleFileDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
     const files = e.dataTransfer.files;
@@ -197,9 +392,16 @@ export default function FormDesigner() {
 
   const handleApplyToForm = useCallback(() => {
     if (!ocrResult) return;
-    // Here you would map OCR fields to form fields
-    // For now, we just close the dialog and show a success message
-    alert("OCR 结果已应用到表单字段");
+    // Map OCR fields to form fields
+    const ocrFields: FormField[] = Object.entries(ocrResult.fields).map(([key, value], idx) => ({
+      id: `ocr-${Date.now()}-${idx}`,
+      type: "单行文本",
+      label: key,
+      placeholder: value,
+      required: false,
+    }));
+    setFormFields((prev) => [...prev, ...ocrFields]);
+    toast.success(`已将 ${ocrFields.length} 个 OCR 字段添加到表单`);
     setOcrDialogOpen(false);
     setOcrResult(null);
     setUploadedFile(null);
@@ -214,6 +416,9 @@ export default function FormDesigner() {
       setInvoiceVerified(true);
     }, 2000);
   }, []);
+
+  // ─── Derived: selected field object ───────────────────
+  const selectedField = selectedFieldIndex !== null ? formFields[selectedFieldIndex] : null;
 
   return (
     <div className="flex flex-col gap-4 h-[calc(100vh-180px)]">
@@ -238,8 +443,12 @@ export default function FormDesigner() {
               <Eye className="size-3 mr-1" />
               预览
             </Button>
-            <Button size="sm">
-              <Save className="size-3 mr-1" />
+            <Button size="sm" onClick={handleSaveForm} disabled={saving}>
+              {saving ? (
+                <Loader2 className="size-3 mr-1 animate-spin" />
+              ) : (
+                <Save className="size-3 mr-1" />
+              )}
               保存
             </Button>
           </div>
@@ -259,6 +468,7 @@ export default function FormDesigner() {
                 <div
                   key={f.id}
                   draggable
+                  onDragStart={(e) => handleFieldDragStart(e, f.type)}
                   className="flex items-center gap-2 p-2 border rounded cursor-move hover:border-primary bg-white text-xs"
                 >
                   <span className={`${f.color} size-6 rounded text-white flex items-center justify-center`}><f.icon className="size-3" /></span>
@@ -297,62 +507,88 @@ export default function FormDesigner() {
             </div>
           </CardHeader>
           <CardContent className="flex-1 p-0 overflow-auto bg-muted/30">
-            <div className={`mx-auto bg-white my-4 border rounded shadow-sm transition-all ${
-              device === "desktop" ? "max-w-3xl" : device === "tablet" ? "max-w-md" : "max-w-xs"
-            }`}>
+            <div
+              className={`mx-auto bg-white my-4 border rounded shadow-sm transition-all ${
+                device === "desktop" ? "max-w-3xl" : device === "tablet" ? "max-w-md" : "max-w-xs"
+              }`}
+              onDragOver={handleCanvasDragOver}
+              onDrop={handleCanvasDrop}
+            >
               <div className="p-4 border-b">
                 <h3 className="font-medium">客户档案表单</h3>
                 <p className="text-xs text-muted-foreground">用于录入新客户基本信息</p>
               </div>
-              <div className="p-4 space-y-3">
-                {INITIAL_FORM.map((f) => (
-                  <div
-                    key={f.id}
-                    onClick={() => setSelectedField(f.id)}
-                    className={`p-3 border rounded cursor-pointer hover:border-primary ${
-                      selectedField === f.id ? "border-primary bg-primary/5 ring-2 ring-primary/20" : ""
-                    }`}
-                  >
-                    <Label className="flex items-center gap-1">
-                      <f.icon className="size-4" />
-                      <span>{f.label}</span>
-                      {f.id === "f1" && <Badge variant="destructive" className="text-[10px] ml-1">必填</Badge>}
-                    </Label>
-                    {f.type === "单行文本" && <Input placeholder={`请输入${f.label}`} className="mt-1" />}
-                    {f.type === "多行文本" && <textarea placeholder={`请输入${f.label}`} className="mt-1 w-full border rounded p-2 text-sm" rows={2} />}
-                    {f.type === "下拉选择" && (
-                      <select className="mt-1 w-full border rounded p-2 text-sm">
-                        <option>请选择...</option>
-                      </select>
-                    )}
-                    {f.type === "单选" && (
-                      <div className="flex gap-2 mt-1">
-                        {["普通", "重要", "战略"].map((o) => (
-                          <label key={o} className="flex items-center gap-1 text-sm">
-                            <input type="radio" name={f.id} /> {o}
-                          </label>
-                        ))}
-                      </div>
-                    )}
-                    {f.type === "评分" && (
-                      <div className="flex gap-1 mt-1">
-                        {[1, 2, 3, 4, 5].map((n) => (
-                          <Star key={n} className="size-5 text-yellow-500 fill-yellow-500" />
-                        ))}
-                      </div>
-                    )}
-                    {f.type === "手机号" && <Input placeholder="138 0013 8000" className="mt-1" />}
-                    {f.type === "邮箱" && <Input type="email" placeholder="example@company.com" className="mt-1" />}
+              <div className="p-4 space-y-3 min-h-[200px]">
+                {formFields.length === 0 && (
+                  <div className="text-center text-muted-foreground text-sm py-12 border-2 border-dashed rounded">
+                    从左侧字段库拖拽字段到此处
                   </div>
-                ))}
-                <Button variant="outline" className="w-full">
+                )}
+                {formFields.map((f, idx) => {
+                  const meta = getFieldMeta(f.type);
+                  const Icon = meta.icon;
+                  return (
+                    <div
+                      key={f.id}
+                      onClick={() => handleSelectField(idx)}
+                      className={`p-3 border rounded cursor-pointer hover:border-primary transition-colors ${
+                        selectedFieldIndex === idx
+                          ? "border-primary bg-primary/5 ring-2 ring-primary/20"
+                          : ""
+                      }`}
+                    >
+                      <Label className="flex items-center gap-1">
+                        <Icon className="size-4" />
+                        <span>{f.label}</span>
+                        {f.required && <Badge variant="destructive" className="text-[10px] ml-1">必填</Badge>}
+                      </Label>
+                      {renderFieldInput(f)}
+                      {selectedFieldIndex === idx && (
+                        <div className="flex justify-end mt-2">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteField();
+                            }}
+                          >
+                            <Trash2 className="size-3 mr-1" />
+                            删除字段
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => {
+                    const newField: FormField = {
+                      id: `field-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+                      type: "单行文本",
+                      label: "新字段",
+                      placeholder: "",
+                      required: false,
+                    };
+                    setFormFields((prev) => [...prev, newField]);
+                    setSelectedFieldIndex(formFields.length);
+                  }}
+                >
                   <Plus className="size-3 mr-1" />
                   添加字段
                 </Button>
               </div>
               <div className="p-4 border-t flex justify-end gap-2">
-                <Button variant="outline">取消</Button>
-                <Button>保存</Button>
+                <Button variant="outline" onClick={() => { setFormFields(DEFAULT_FORM_FIELDS); setSelectedFieldIndex(null); }}>
+                  取消
+                </Button>
+                <Button onClick={handleSaveForm} disabled={saving}>
+                  {saving ? <Loader2 className="size-3 mr-1 animate-spin" /> : <Save className="size-3 mr-1" />}
+                  保存
+                </Button>
               </div>
             </div>
           </CardContent>
@@ -369,16 +605,29 @@ export default function FormDesigner() {
             {selectedField ? (
               <>
                 <div>
-                  <Label className="text-xs">字段标签</Label>
-                  <Input defaultValue={INITIAL_FORM.find((f) => f.id === selectedField)?.label} className="mt-1" />
+                  <Label className="text-xs">字段类型</Label>
+                  <div className="mt-1 text-xs bg-muted rounded px-2 py-1">{selectedField.type}</div>
                 </div>
                 <div>
-                  <Label className="text-xs">字段名</Label>
-                  <Input defaultValue={selectedField} className="mt-1 font-mono text-xs" />
+                  <Label className="text-xs">字段标签</Label>
+                  <Input
+                    value={selectedField.label}
+                    onChange={(e) => updateFieldProperty("label", e.target.value)}
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs">字段 ID</Label>
+                  <Input value={selectedField.id} className="mt-1 font-mono text-xs" readOnly />
                 </div>
                 <div>
                   <Label className="text-xs">占位符</Label>
-                  <Input placeholder="请输入占位符" className="mt-1" />
+                  <Input
+                    value={selectedField.placeholder}
+                    onChange={(e) => updateFieldProperty("placeholder", e.target.value)}
+                    placeholder="请输入占位符"
+                    className="mt-1"
+                  />
                 </div>
                 <div>
                   <Label className="text-xs">默认值</Label>
@@ -387,7 +636,14 @@ export default function FormDesigner() {
                 <div>
                   <Label className="text-xs">校验规则</Label>
                   <div className="space-y-1 mt-1">
-                    {["必填", "唯一", "邮箱格式", "手机号格式", "数值范围"].map((r) => (
+                    <label className="flex items-center gap-1 text-xs">
+                      <input
+                        type="checkbox"
+                        checked={selectedField.required}
+                        onChange={(e) => updateFieldProperty("required", e.target.checked)}
+                      /> 必填
+                    </label>
+                    {["唯一", "邮箱格式", "手机号格式", "数值范围"].map((r) => (
                       <label key={r} className="flex items-center gap-1 text-xs">
                         <input type="checkbox" /> {r}
                       </label>
@@ -403,11 +659,25 @@ export default function FormDesigner() {
                   </select>
                 </div>
                 <div className="flex gap-2 pt-2">
-                  <Button size="sm" variant="outline" className="flex-1">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => {
+                      if (selectedFieldIndex === null) return;
+                      const copy = { ...formFields[selectedFieldIndex], id: `field-${Date.now()}-copy` };
+                      setFormFields((prev) => [
+                        ...prev.slice(0, selectedFieldIndex + 1),
+                        copy,
+                        ...prev.slice(selectedFieldIndex + 1),
+                      ]);
+                      setSelectedFieldIndex(selectedFieldIndex + 1);
+                    }}
+                  >
                     <Copy className="size-3 mr-1" />
                     复制
                   </Button>
-                  <Button size="sm" variant="outline">
+                  <Button size="sm" variant="outline" onClick={handleDeleteField}>
                     <Trash2 className="size-3 text-red-500" />
                   </Button>
                 </div>
@@ -465,7 +735,7 @@ export default function FormDesigner() {
               }`}
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
+              onDrop={handleFileDrop}
               onClick={() => fileInputRef.current?.click()}
             >
               <input

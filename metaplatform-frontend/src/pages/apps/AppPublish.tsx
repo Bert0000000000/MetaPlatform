@@ -118,6 +118,19 @@ export default function AppPublish() {
     }).catch(() => {});
   }, [appId]);
 
+  // Load existing gray release config from API
+  useEffect(() => {
+    if (!appId) return;
+    appsApi.getGrayConfig(appId).then((config) => {
+      if (config) {
+        setGrayStrategy(config.strategy || "percent");
+        setGrayPercent(config.percentage || 0);
+        setGrayTenants(config.tenants || []);
+        if ((config.percentage || 0) > 0) setGrayActive(true);
+      }
+    }).catch(() => {});
+  }, [appId]);
+
   // Publish handler
   const handlePublish = async () => {
     if (!appId) return;
@@ -169,16 +182,34 @@ export default function AppPublish() {
 
   function confirmGrayAction() {
     if (grayAction === "start") {
+      const newPct = 10;
       setGrayActive(true);
-      setGrayPercent(10);
+      setGrayPercent(newPct);
+      // Persist to backend
+      if (appId) {
+        appsApi.setGrayConfig(appId, { strategy: grayStrategy, percentage: newPct, tenants: grayTenants }).catch(() => {});
+      }
       setGrayToast("灰度发布已启动，当前流量 10%");
     } else if (grayAction === "promote") {
       setGrayPercent(100);
       setGrayActive(false);
+      if (appId) {
+        appsApi.setGrayConfig(appId, { strategy: grayStrategy, percentage: 100, tenants: grayTenants }).catch(() => {});
+      }
       setGrayToast("已全量发布，灰度结束");
     } else if (grayAction === "rollback") {
       setGrayPercent(0);
       setGrayActive(false);
+      if (appId) {
+        // Use the first non-primary active version for rollback, or reset gray config
+        const rollbackVersion = versions.find((v) => v.status === "running");
+        if (rollbackVersion) {
+          // Find version id from API if available - for now just reset gray config
+          appsApi.setGrayConfig(appId, { strategy: grayStrategy, percentage: 0, tenants: [] }).catch(() => {});
+        } else {
+          appsApi.setGrayConfig(appId, { strategy: grayStrategy, percentage: 0, tenants: [] }).catch(() => {});
+        }
+      }
       setGrayToast("灰度已回滚");
     }
     setGrayConfirmOpen(false);
@@ -189,6 +220,10 @@ export default function AppPublish() {
     setGrayPercent(val);
     if (val > 0 && val < 100) setGrayActive(true);
     if (val === 0) setGrayActive(false);
+    // Persist gray config on slider change
+    if (appId) {
+      appsApi.setGrayConfig(appId, { strategy: grayStrategy, percentage: val, tenants: grayTenants }).catch(() => {});
+    }
   }
 
   function handleToggleGrayTenant(tenantId: string) {
@@ -222,6 +257,25 @@ export default function AppPublish() {
 
   function handleOpenCompare() {
     setCompareOpen(true);
+  }
+
+  async function handleVersionRollback(versionStr: string) {
+    if (!appId) return;
+    try {
+      // Find the version record by version string from the API
+      const versionData = await versionsApi.listByApp(appId);
+      const target = versionData?.find((v: any) => v.version === versionStr);
+      if (target) {
+        await appsApi.rollback(appId, { versionId: target.id });
+        // Refresh app data
+        const refreshed = await appsApi.get(appId);
+        setApp(refreshed);
+        setGrayToast(`已回滚到版本 ${versionStr}`);
+      }
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "回滚失败";
+      setGrayToast(message);
+    }
   }
 
   const publishedUrl = app?.app_slug
@@ -554,6 +608,16 @@ export default function AppPublish() {
                     {v.status !== "primary" && v.status !== "archived" && (
                       <Button variant="outline" size="sm" onClick={() => handleSwitchPrimary(idx)}>
                         切换主版本
+                      </Button>
+                    )}
+                    {v.status === "archived" && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-destructive"
+                        onClick={() => handleVersionRollback(v.version)}
+                      >
+                        <RotateCcw className="size-3 mr-1" /> 版本回滚
                       </Button>
                     )}
                   </div>

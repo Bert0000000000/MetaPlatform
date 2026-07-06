@@ -335,6 +335,61 @@ ${routeDefs}
   ],
 });
 
+// ════════════════════════════════════════════════════════
+//  GET /download/:appId — Download all generated files by app
+// ════════════════════════════════════════════════════════
+
+router.get("/download/:appId", (req, res, next) => {
+  try {
+    const app = db.prepare("SELECT * FROM applications WHERE id = ?").get(req.params.appId);
+    if (!app) {
+      return res.status(404).json({ success: false, error: "应用不存在" });
+    }
+
+    // Read app pages
+    const pages = db.prepare(
+      "SELECT * FROM app_pages WHERE app_id = ? ORDER BY sort_order ASC, created_at ASC"
+    ).all(req.params.appId);
+
+    // Read ontology objects with properties
+    const objects = db.prepare(
+      "SELECT * FROM ontology_objects WHERE app_id = ? ORDER BY created_at ASC"
+    ).all(req.params.appId);
+
+    const objectsWithProps = objects.map((obj) => {
+      const properties = db.prepare(
+        "SELECT * FROM ontology_properties WHERE object_id = ? ORDER BY sort_order"
+      ).all(obj.id);
+      return { ...obj, properties };
+    });
+
+    // Generate all file categories
+    const frontendFiles = generateVueTarget(app, pages, objectsWithProps);
+    const backendFiles = generateSpringTarget(app, objectsWithProps);
+    const databaseFiles = generateDdlTarget(app, objectsWithProps);
+    const deployFiles = generateDockerTarget(app);
+
+    const allFiles = [...frontendFiles, ...backendFiles, ...databaseFiles, ...deployFiles];
+
+    if (allFiles.length === 0) {
+      return res.status(404).json({ success: false, error: "应用没有可导出的内容" });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        frontend: frontendFiles,
+        backend: backendFiles,
+        database: databaseFiles,
+        deploy: deployFiles,
+        app: { id: app.id, name: app.name, version: app.version },
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 export default router;
 `,
   });

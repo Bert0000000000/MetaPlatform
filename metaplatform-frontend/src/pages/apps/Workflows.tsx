@@ -1,15 +1,17 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/ui/stat";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { processesApi, type ProcessDefinition } from "@/lib/api";
 import {
   Plus, GitBranch, FileCode, Boxes, Settings, ChevronRight,
   Circle, Pause, CircleDot, Shield, User, ScrollText, Scale,
   FileText, Download, Upload, Save, BarChart3, Clock,
   ArrowRightLeft, MoreHorizontal, Loader2, AlertCircle, Inbox,
+  Trash2, Archive,
 } from "lucide-react";
 
 const eventTypes = [
@@ -68,6 +70,21 @@ export default function Workflows() {
   const [processes, setProcesses] = useState<ProcessDefinition[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const bpmnInputRef = useRef<HTMLInputElement>(null);
+
+  /* ── Delete dialog state ── */
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<ProcessDefinition | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  /* ── BPMN import toast ── */
+  const [importToast, setImportToast] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!importToast) return;
+    const t = setTimeout(() => setImportToast(null), 3000);
+    return () => clearTimeout(t);
+  }, [importToast]);
 
   const fetchProcesses = useCallback(() => {
     setLoading(true);
@@ -90,6 +107,48 @@ export default function Workflows() {
     fetchProcesses();
   }, [fetchProcesses]);
 
+  /* ── Delete handler ── */
+  function handleDeleteClick(proc: ProcessDefinition, e: React.MouseEvent) {
+    e.stopPropagation();
+    setDeleteTarget(proc);
+    setDeleteDialogOpen(true);
+  }
+
+  async function confirmDelete() {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      await processesApi.delete(deleteTarget.id);
+      setProcesses((prev) => prev.filter((p) => p.id !== deleteTarget.id));
+      setImportToast("流程已删除");
+    } catch {
+      setError("删除流程失败");
+    } finally {
+      setDeleting(false);
+      setDeleteDialogOpen(false);
+      setDeleteTarget(null);
+    }
+  }
+
+  /* ── BPMN import handler ── */
+  function handleBpmnImportClick() {
+    bpmnInputRef.current?.click();
+  }
+
+  function handleBpmnFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    // TODO: Real BPMN XML parsing would use bpmn.js library
+    // For now, just accept the file and show a success toast
+    const reader = new FileReader();
+    reader.onload = () => {
+      setImportToast(`BPMN 文件 "${file.name}" 导入成功（解析功能待集成 bpmn.js）`);
+    };
+    reader.readAsText(file);
+    // Reset input so the same file can be selected again
+    e.target.value = "";
+  }
+
   return (
     <div className="flex flex-col gap-6 p-6">
       <PageHeader
@@ -97,7 +156,14 @@ export default function Workflows() {
         description="BPMN 2.0 规范 · 业务流程 + 审批流程 + 服务编排"
         action={
           <div className="flex gap-2">
-            <Button variant="outline" className="gap-2">
+            <input
+              ref={bpmnInputRef}
+              type="file"
+              accept=".bpmn,.xml"
+              className="hidden"
+              onChange={handleBpmnFileChange}
+            />
+            <Button variant="outline" className="gap-2" onClick={handleBpmnImportClick}>
               <FileCode className="size-4" /> 导入 BPMN XML
             </Button>
             <Button className="gap-2" onClick={() => navigate("/process/designer")}>
@@ -169,11 +235,21 @@ export default function Workflows() {
                       variant={
                         proc.status === "active" || proc.status === "published"
                           ? "default"
+                          : proc.status === "archived"
+                          ? "outline"
                           : "secondary"
                       }
                     >
-                      {STATUS_LABELS[proc.status] ?? proc.status}
+                      {proc.status === "active" ? "运行中" : proc.status === "published" ? "已发布" : proc.status === "archived" ? "已归档" : STATUS_LABELS[proc.status] ?? proc.status ?? "草稿"}
                     </Badge>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="size-8 text-destructive hover:text-destructive"
+                      onClick={(e) => handleDeleteClick(proc, e)}
+                    >
+                      <Trash2 className="size-4" />
+                    </Button>
                   </div>
                 </div>
               ))}
@@ -318,6 +394,34 @@ export default function Workflows() {
           </CardContent>
         </Card>
       </div>
+
+      {/* ── Delete confirmation dialog ── */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>确认删除流程</DialogTitle>
+            <DialogDescription>
+              确定要删除流程 "{deleteTarget?.name}" 吗？此操作不可撤销。
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)} disabled={deleting}>
+              取消
+            </Button>
+            <Button variant="destructive" onClick={confirmDelete} disabled={deleting}>
+              {deleting ? <Loader2 className="size-4 animate-spin mr-1" /> : <Trash2 className="size-4 mr-1" />}
+              {deleting ? "删除中..." : "确认删除"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Toast */}
+      {importToast && (
+        <div className="fixed top-4 right-4 z-50 rounded-md bg-foreground px-4 py-2 text-sm text-background shadow-lg">
+          {importToast}
+        </div>
+      )}
     </div>
   );
 }

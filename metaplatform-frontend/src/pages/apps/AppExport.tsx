@@ -153,25 +153,50 @@ export default function AppExport() {
     URL.revokeObjectURL(url);
   }
 
-  /* ── Download all files as combined text (browser-side) ── */
-  function downloadAllFiles() {
-    if (!exportResult || exportResult.files.length === 0) return;
-
-    // Create a concatenated file with all source code
+  /* ── Helper: create a download blob from file list ── */
+  function triggerTextDownload(files: { name: string; content: string; type: string }[], fileName: string) {
     const separator = "\n" + "=".repeat(80) + "\n";
-    const combined = exportResult.files.map((f) => {
+    const combined = files.map((f) => {
       return `// ─── File: ${f.name} ${"─".repeat(Math.max(0, 60 - f.name.length))}\n${f.content}`;
     }).join(separator);
 
-    const blob = new Blob([combined], { type: "text/plain;charset=utf-8" });
+    const header = `// ═══════════════════════════════════════════════════════════════\n// MetaPlatform Code Export — ${files.length} files\n// Generated: ${new Date().toISOString()}\n// ═══════════════════════════════════════════════════════════════\n\n`;
+    const blob = new Blob([header + combined], { type: "text/plain;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `${exportResult.app.name || "export"}-all-files.txt`;
+    link.download = fileName;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+  }
+
+  /* ── Download all files — tries backend endpoint first, falls back to local result ── */
+  async function downloadAllFiles() {
+    // Try backend endpoint first
+    if (appId) {
+      try {
+        const data = await exportApi.downloadAll(appId);
+        const allFiles = [
+          ...(data.frontend || []),
+          ...(data.backend || []),
+          ...(data.database || []),
+          ...(data.deploy || []),
+        ];
+        if (allFiles.length > 0) {
+          const appName = data.app?.name || exportResult?.app?.name || "export";
+          triggerTextDownload(allFiles, `${appName}-export-all.txt`);
+          return;
+        }
+      } catch {
+        // Backend download failed, fall through to local fallback
+      }
+    }
+
+    // Fallback: use locally fetched exportResult
+    if (!exportResult || exportResult.files.length === 0) return;
+    triggerTextDownload(exportResult.files, `${exportResult.app.name || "export"}-all-files.txt`);
   }
 
   /* ── Filter files ── */

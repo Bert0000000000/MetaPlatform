@@ -719,6 +719,22 @@ for (const f of fsFilesList) {
 console.log(`  File System (WebIDE): ${fsFilesList.length} files`);
 
 // ════════════════════════════════════════════════════════
+//  Orchestrations (3 sample orchestrations)
+// ════════════════════════════════════════════════════════
+const orchestrationsList = [
+  { id: "orch-1", name: "客户数据同步", type: "custom", adapters: JSON.stringify(["sql", "http"]), status: "active", trigger_type: "timer", config: JSON.stringify({}), last_run: now },
+  { id: "orch-2", name: "订单通知推送", type: "custom", adapters: JSON.stringify(["connector", "http"]), status: "draft", trigger_type: "data", config: JSON.stringify({}) },
+  { id: "orch-3", name: "报表自动生成", type: "custom", adapters: JSON.stringify(["groovy", "sql"]), status: "error", trigger_type: "timer", config: JSON.stringify({}) },
+];
+const insertOrch = db.prepare(
+  `INSERT INTO orchestrations (id, name, type, adapters, status, trigger_type, config, last_run, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+);
+for (const o of orchestrationsList) {
+  insertOrch.run(o.id, o.name, o.type, o.adapters, o.status, o.trigger_type, o.config, o.last_run || null, now, now);
+}
+console.log(`  Orchestrations: ${orchestrationsList.length}`);
+
+// ════════════════════════════════════════════════════════
 //  Summary
 // ════════════════════════════════════════════════════════
 console.log("\n" + "═".repeat(50));
@@ -754,4 +770,5 @@ console.log(`
   Knowledge Graph:   ${kgNodes.length} nodes, ${kgEdges.length} edges
   Market Templates:  ${marketTemplatesList.length}
   File System:       ${fsFilesList.length} files
+  Orchestrations:    ${orchestrationsList.length}
 `);

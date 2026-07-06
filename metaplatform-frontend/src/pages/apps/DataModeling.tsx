@@ -8,9 +8,10 @@ import { Label } from "@/components/ui/label";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { PageHeader } from "@/components/ui/stat";
 import { ontologyApi, type OntologyObject } from "@/lib/api";
+import { llmApi } from "@/lib/llm-api";
 import {
   Plus, Search, Sparkles, Edit, Trash2, Link2,
-  Loader2, AlertCircle, Inbox, Box, Database, X,
+  Loader2, AlertCircle, Inbox, Box, Database, X, Save,
   Brain, GitBranch, Hash, Globe, ArrowRight, Type,
 } from "lucide-react";
 import {
@@ -40,6 +41,15 @@ export default function DataModeling() {
 
   // Delete state
   const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  // Edit dialog state
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingObject, setEditingObject] = useState<OntologyObject | null>(null);
+  const [editObjectName, setEditObjectName] = useState("");
+  const [editObjectLabel, setEditObjectLabel] = useState("");
+  const [editObjectDescription, setEditObjectDescription] = useState("");
+  const [editing, setEditing] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
 
   // F4.3.6 AI Field Recommendation dialog
   const [showAIRecommend, setShowAIRecommend] = useState(false);
@@ -131,13 +141,96 @@ export default function DataModeling() {
     }
   };
 
+  // Edit object
+  const handleEditClick = (obj: OntologyObject) => {
+    setEditingObject(obj);
+    setEditObjectName(obj.name);
+    setEditObjectLabel(obj.label || "");
+    setEditObjectDescription(obj.description || "");
+    setEditError(null);
+    setEditDialogOpen(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingObject) return;
+    if (!editObjectName.trim() || !editObjectLabel.trim()) {
+      setEditError("对象名和中文名均为必填");
+      return;
+    }
+    setEditing(true);
+    setEditError(null);
+    try {
+      await ontologyApi.updateObject(editingObject.id, {
+        name: editObjectName.trim(),
+        label: editObjectLabel.trim(),
+        description: editObjectDescription.trim() || undefined,
+      });
+      // Refresh the object list
+      fetchObjects();
+      setEditDialogOpen(false);
+      setEditingObject(null);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "更新对象失败";
+      setEditError(message);
+    } finally {
+      setEditing(false);
+    }
+  };
+
   // F4.3.6 AI Field Recommendation
-  const handleAIRecommend = (objectName: string) => {
+  const handleAIRecommend = async (objectName: string) => {
     setAiTargetObject(objectName);
     setShowAIRecommend(true);
     setAiRecommending(true);
     setAiFields([]);
-    setTimeout(() => {
+
+    try {
+      const response = await llmApi.chat(
+        [
+          {
+            role: "system",
+            content: "You are a database schema expert. When given an entity name, suggest appropriate database fields. Return ONLY a JSON array of objects with fields: name (snake_case), type (text/number/datetime/boolean/enum/reference/array), and reason (brief Chinese explanation). Suggest 5-8 fields that are commonly needed. Do not include id field. Return only the JSON array, no other text.",
+          },
+          {
+            role: "user",
+            content: `Generate database fields for a "${objectName}" entity. Return as JSON array.`,
+          },
+        ],
+        { temperature: 0.7, maxTokens: 1024 }
+      );
+
+      // Parse the LLM response
+      let parsed: { name: string; type: string; reason: string }[] = [];
+      try {
+        // Try to extract JSON from the response (may be wrapped in markdown code block)
+        let text = response.content.trim();
+        if (text.startsWith("```")) {
+          text = text.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "");
+        }
+        parsed = JSON.parse(text);
+        if (!Array.isArray(parsed)) {
+          throw new Error("Response is not an array");
+        }
+      } catch {
+        // If parsing fails, try to extract fields from free text
+        parsed = [];
+      }
+
+      if (parsed.length > 0) {
+        setAiFields(parsed);
+      } else {
+        // Fallback to mock data if LLM response cannot be parsed
+        setAiFields([
+          { name: "created_at", type: "datetime", reason: "记录创建时间，便于审计" },
+          { name: "updated_at", type: "datetime", reason: "记录最后更新时间" },
+          { name: "status", type: "enum", reason: "状态管理，支持工作流" },
+          { name: "owner_id", type: "reference", reason: "关联用户，支持权限控制" },
+          { name: "tags", type: "array", reason: "标签字段，便于分类搜索" },
+        ]);
+      }
+    } catch (err) {
+      console.error("AI 字段推荐失败:", err);
+      // Fallback to mock data on error
       setAiFields([
         { name: "created_at", type: "datetime", reason: "记录创建时间，便于审计" },
         { name: "updated_at", type: "datetime", reason: "记录最后更新时间" },
@@ -145,8 +238,9 @@ export default function DataModeling() {
         { name: "owner_id", type: "reference", reason: "关联用户，支持权限控制" },
         { name: "tags", type: "array", reason: "标签字段，便于分类搜索" },
       ]);
+    } finally {
       setAiRecommending(false);
-    }, 1500);
+    }
   };
 
   // Loading state
@@ -264,7 +358,7 @@ export default function DataModeling() {
                       <Button variant="ghost" size="icon" className="size-8" title="虚拟模型" onClick={() => { setVirtualModelTarget(obj.name); setShowVirtualModel(true); }}>
                         <Globe className="size-4 text-cyan-500" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="size-8">
+                      <Button variant="ghost" size="icon" className="size-8" title="编辑对象" onClick={() => handleEditClick(obj)}>
                         <Edit className="size-4" />
                       </Button>
                       <Button
@@ -375,6 +469,66 @@ export default function DataModeling() {
                 <Plus className="size-4 mr-1" />
               )}
               {creating ? "创建中..." : "创建"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Object Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>编辑对象</DialogTitle>
+            <DialogDescription>修改对象「{editingObject?.name}」的基本信息</DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-obj-name">对象名（英文标识） *</Label>
+              <Input
+                id="edit-obj-name"
+                placeholder="如：Customer、Order"
+                value={editObjectName}
+                onChange={(e) => setEditObjectName(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-obj-label">中文名 *</Label>
+              <Input
+                id="edit-obj-label"
+                placeholder="如：客户、订单"
+                value={editObjectLabel}
+                onChange={(e) => setEditObjectLabel(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-obj-desc">描述</Label>
+              <Input
+                id="edit-obj-desc"
+                placeholder="简要说明该对象的用途"
+                value={editObjectDescription}
+                onChange={(e) => setEditObjectDescription(e.target.value)}
+              />
+            </div>
+
+            {editError && (
+              <div className="text-sm text-destructive bg-destructive/10 border border-destructive/30 rounded p-2">
+                {editError}
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline" disabled={editing}>取消</Button>
+            </DialogClose>
+            <Button onClick={handleSaveEdit} disabled={editing}>
+              {editing ? (
+                <Loader2 className="size-4 mr-1 animate-spin" />
+              ) : (
+                <Save className="size-4 mr-1" />
+              )}
+              {editing ? "保存中..." : "保存"}
             </Button>
           </DialogFooter>
         </DialogContent>

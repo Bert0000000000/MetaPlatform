@@ -106,6 +106,24 @@ export const appsApi = {
       method: "PUT",
       body: JSON.stringify(data),
     }),
+
+  // Gray release
+  getGrayConfig: (appId: string) =>
+    request<{ strategy: string; percentage: number; tenants: string[]; userGroups: string[] } | null>(
+      `/apps/${appId}/gray`,
+    ),
+  setGrayConfig: (appId: string, data: { strategy: string; percentage: number; tenants?: string[]; userGroups?: string[] }) =>
+    request<{ strategy: string; percentage: number }>(`/apps/${appId}/gray`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+  rollback: (appId: string, data: { versionId: string }) =>
+    request<{ message: string }>(`/apps/${appId}/rollback`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  activity: (appId: string, limit = 10) =>
+    request<any[]>(`/apps/${appId}/activity?limit=${limit}`),
 };
 
 // ─── Pages (standalone) ──────────────────────────────────
@@ -373,6 +391,15 @@ export const exportApi = {
       method: "POST",
       body: JSON.stringify({ appId, targets }),
     }),
+  /** Download all generated files for an app from backend (GET endpoint) */
+  downloadAll: (appId: string) =>
+    request<{
+      frontend: Array<{ name: string; content: string; type: string }>;
+      backend: Array<{ name: string; content: string; type: string }>;
+      database: Array<{ name: string; content: string; type: string }>;
+      deploy: Array<{ name: string; content: string; type: string }>;
+      app: { id: string; name: string; version: string };
+    }>(`/export/download/${appId}`),
 };
 
 // ─── Admin ────────────────────────────────────────────────
@@ -678,6 +705,36 @@ export const filesystemApi = {
   },
 };
 
+// ─── Orchestrations ────────────────────────────────────
+export const orchestrationsApi = {
+  list: async () => {
+    const res = await request<any[]>("/orchestrations");
+    return res;
+  },
+  get: async (id: string) => {
+    const res = await request<any>(`/orchestrations/${id}`);
+    return res;
+  },
+  create: async (data: any) => {
+    const res = await request<any>("/orchestrations", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+    return res;
+  },
+  update: async (id: string, data: any) => {
+    const res = await request<any>(`/orchestrations/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+    return res;
+  },
+  delete: async (id: string) => {
+    const res = await request<any>(`/orchestrations/${id}`, { method: "DELETE" });
+    return res;
+  },
+};
+
 // ─── Types ────────────────────────────────────────────────
 export interface User {
   id: string;
@@ -913,5 +970,18 @@ export interface AppConfigItem {
   key: string;
   value?: string;
   description?: string;
+  updated_at?: string;
+}
+
+export interface Orchestration {
+  id: string;
+  name: string;
+  type: string;
+  adapters: string[];
+  status: "active" | "draft" | "error";
+  trigger_type: string;
+  config?: string;
+  last_run?: string;
+  created_at?: string;
   updated_at?: string;
 }

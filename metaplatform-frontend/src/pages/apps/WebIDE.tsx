@@ -1,14 +1,20 @@
 import { useState, useCallback, useRef, useEffect } from "react";
+import { useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { CodeEditor } from "@/components/CodeEditor";
 import { filesystemApi } from "@/lib/api";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+} from "@/components/ui/dialog";
 import {
   FileCode, Folder, FolderOpen, Play, Terminal as TerminalIcon, Settings,
   ChevronRight, ChevronDown, Save, Wand2, X, Plus, Square,
   FileJson, FileText, File, Braces, Search, GitBranch, Maximize2, Minimize2,
-  Copy, Download, RefreshCw,
+  Copy, Download, RefreshCw, Trash2,
 } from "lucide-react";
 
 /* ── File tree types ── */
@@ -372,7 +378,7 @@ function getLanguage(name: string): string {
 }
 
 /* ── FileTree component ── */
-function FileTree({ nodes, onOpen, depth = 0 }: { nodes: FileNode[]; onOpen: (path: string, node: FileNode) => void; depth?: number }) {
+function FileTree({ nodes, onOpen, onDelete, depth = 0 }: { nodes: FileNode[]; onOpen: (path: string, node: FileNode) => void; onDelete?: (name: string) => void; depth?: number }) {
   const [expanded, setExpanded] = useState<Record<string, boolean>>(() => {
     const map: Record<string, boolean> = {};
     function walk(nodes: FileNode[]) {
@@ -416,9 +422,20 @@ function FileTree({ nodes, onOpen, depth = 0 }: { nodes: FileNode[]; onOpen: (pa
                 </>
               )}
               <span className="truncate">{node.name}</span>
+              {!isFolder && onDelete && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-4 ml-auto opacity-0 group-hover:opacity-100 hover:opacity-100 shrink-0"
+                  onClick={(e) => { e.stopPropagation(); onDelete(node.name); }}
+                  title="删除文件"
+                >
+                  <Trash2 className="size-2.5 text-destructive" />
+                </Button>
+              )}
             </div>
             {isFolder && isOpen && node.children && (
-              <FileTree nodes={node.children} onOpen={onOpen} depth={depth + 1} />
+              <FileTree nodes={node.children} onOpen={onOpen} onDelete={onDelete} depth={depth + 1} />
             )}
           </div>
         );
@@ -444,18 +461,37 @@ function TerminalPanel({ logs }: { logs: string[] }) {
 
 /* ── Main WebIDE ── */
 export default function WebIDE() {
+  const { appId } = useParams();
   const [tree, setTree] = useState<FileNode[]>(INITIAL_TREE);
   const [showTerminal, setShowTerminal] = useState(true);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
-  /* Fetch file tree from filesystem API */
+  /* Toast state */
+  const [toast, setToast] = useState<string | null>(null);
   useEffect(() => {
-    filesystemApi.listFiles({ app_id: "app-vibe" }).then((data) => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 2500);
+    return () => clearTimeout(t);
+  }, [toast]);
+
+  /* Create file dialog state */
+  const [createFileDialogOpen, setCreateFileDialogOpen] = useState(false);
+  const [newFileName, setNewFileName] = useState("");
+  const [creatingFile, setCreatingFile] = useState(false);
+
+  /* Fetch file tree from filesystem API */
+  const fetchFileTree = useCallback(() => {
+    const targetAppId = appId || "app-vibe";
+    filesystemApi.listFiles({ app_id: targetAppId }).then((data) => {
       if (data && data.length > 0) {
         setTree(buildTreeFromFlat(data));
       }
     }).catch(() => {});
-  }, []);
+  }, [appId]);
+
+  useEffect(() => {
+    fetchFileTree();
+  }, [fetchFileTree]);
 
   const [openFiles, setOpenFiles] = useState<OpenFile[]>(() => {
     // Open App.tsx by default
@@ -511,6 +547,69 @@ export default function WebIDE() {
     setOpenFiles((prev) => prev.map((f) => f.name === name ? { ...f, content, modified: true } : f));
   }, []);
 
+  /* ── Save file to backend ── */
+  const handleSaveFile = useCallback(async () => {
+    if (!activeFile) {
+      setToast("没有打开的文件");
+      return;
+    }
+    const targetAppId = appId || "app-vibe";
+    try {
+      // Find the file's ID from the tree by searching flat
+      const allFlat = flattenTree(tree);
+      const match = allFlat.find((f) => f.path === activeFile.path);
+      // Use filesystemApi.updateFile with the file name as identifier
+      // The backend expects file ID, but for now we use path-based lookup
+      const fileId = (match?.node as any)?.id || activeFile.path;
+      await filesystemApi.updateFile(fileId, { content: activeFile.content });
+      // Mark as saved
+      setOpenFiles((prev) => prev.map((f) => f.name === activeFile.name ? { ...f, modified: false } : f));
+      setToast(`${activeFile.name} 已保存`);
+      setTerminalLogs((prev) => [...prev, `\n[info] Saved ${activeFile.name}`]);
+    } catch (err) {
+      console.error("保存文件失败:", err);
+      setToast("保存失败，请重试");
+      setTerminalLogs((prev) => [...prev, `\n[error] Failed to save ${activeFile.name}`]);
+    }
+  }, [activeFile, tree, appId]);
+
+  /* ── Create new file ── */
+  const handleCreateFile = useCallback(async () => {
+    if (!newFileName.trim()) return;
+    const targetAppId = appId || "app-vibe";
+    setCreatingFile(true);
+    try {
+      await filesystemApi.createFile({
+        app_id: targetAppId,
+        name: newFileName.trim(),
+        is_dir: false,
+        content: "",
+      });
+      setToast(`文件 "${newFileName.trim()}" 创建成功`);
+      setCreateFileDialogOpen(false);
+      setNewFileName("");
+      fetchFileTree();
+    } catch (err) {
+      console.error("创建文件失败:", err);
+      setToast("创建文件失败");
+    } finally {
+      setCreatingFile(false);
+    }
+  }, [newFileName, appId, fetchFileTree]);
+
+  /* ── Delete file from backend ── */
+  const handleDeleteFile = useCallback(async (fileName: string, fileId?: string) => {
+    if (!confirm(`确定要删除 "${fileName}" 吗？`)) return;
+    try {
+      await filesystemApi.deleteFile(fileId || fileName);
+      setToast(`文件 "${fileName}" 已删除`);
+      fetchFileTree();
+    } catch (err) {
+      console.error("删除文件失败:", err);
+      setToast("删除文件失败");
+    }
+  }, [fetchFileTree]);
+
   const activeFile = openFiles.find((f) => f.name === activeTab);
 
   function handleRun() {
@@ -565,9 +664,7 @@ export default function WebIDE() {
           <Button variant="ghost" size="sm" className="h-7 gap-1" onClick={handleFormat}>
             <Wand2 className="size-3" /> Format
           </Button>
-          <Button variant="ghost" size="sm" className="h-7 gap-1" onClick={() => {
-            setTerminalLogs((prev) => [...prev, `\n[info] Saving ${activeFile?.name || "all files"}...`]);
-          }}>
+          <Button variant="ghost" size="sm" className="h-7 gap-1" onClick={handleSaveFile}>
             <Save className="size-3" /> Save
           </Button>
           <div className="w-px h-4 bg-border mx-1" />
@@ -595,8 +692,11 @@ export default function WebIDE() {
             <div className="flex items-center justify-between px-3 py-2 border-b">
               <span className="text-xs font-semibold uppercase text-muted-foreground">Explorer</span>
               <div className="flex gap-0.5">
-                <Button variant="ghost" size="icon" className="size-5">
+                <Button variant="ghost" size="icon" className="size-5" onClick={() => setCreateFileDialogOpen(true)} title="新建文件">
                   <Plus className="size-3" />
+                </Button>
+                <Button variant="ghost" size="icon" className="size-5" onClick={fetchFileTree} title="刷新文件树">
+                  <RefreshCw className="size-3" />
                 </Button>
                 <Button variant="ghost" size="icon" className="size-5" onClick={() => setSidebarCollapsed(true)}>
                   <Minimize2 className="size-3" />
@@ -605,7 +705,7 @@ export default function WebIDE() {
             </div>
             <ScrollArea className="flex-1">
               <div className="py-1">
-                <FileTree nodes={tree} onOpen={openFile} />
+                <FileTree nodes={tree} onOpen={openFile} onDelete={(name) => handleDeleteFile(name)} />
               </div>
             </ScrollArea>
           </div>
@@ -695,6 +795,43 @@ export default function WebIDE() {
           </div>
         </div>
       </div>
+
+      {/* Toast */}
+      {toast && (
+        <div className="fixed top-4 right-4 z-50 rounded-md bg-foreground px-4 py-2 text-sm text-background shadow-lg">
+          {toast}
+        </div>
+      )}
+
+      {/* Create File Dialog */}
+      <Dialog open={createFileDialogOpen} onOpenChange={setCreateFileDialogOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>新建文件</DialogTitle>
+            <DialogDescription>输入文件名来创建一个新文件</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="new-file-name">文件名</Label>
+              <Input
+                id="new-file-name"
+                placeholder="如: MyComponent.tsx"
+                value={newFileName}
+                onChange={(e) => setNewFileName(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") handleCreateFile(); }}
+                autoFocus
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setCreateFileDialogOpen(false); setNewFileName(""); }}>取消</Button>
+            <Button onClick={handleCreateFile} disabled={creatingFile || !newFileName.trim()}>
+              {creatingFile && <Loader2 className="size-3 mr-1 animate-spin" />}
+              创建
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

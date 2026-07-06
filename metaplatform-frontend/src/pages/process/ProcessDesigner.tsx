@@ -1,13 +1,15 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
+import { processesApi } from "@/lib/api";
 import {
   Save, Play, Download, Copy, Settings, Plus, Trash2, Circle, Square, Diamond, GitBranch, GitMerge,
   User, Mail, Database, Cloud, Zap, Code, FileText, Clock, ArrowRight, Check, AlertTriangle, Pause, MoreHorizontal, Search, Bot,
   CircleDot, ArrowUp, RotateCcw, Radio, Hand, Ruler, Send, Package, Phone, CreditCard, X,
+  Loader2,
   type LucideIcon,
 } from "lucide-react";
 
@@ -260,6 +262,34 @@ function ProcessInstances() {
 }
 
 export function ProcessDesigner() {
+  const [saving, setSaving] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 2500);
+    return () => clearTimeout(t);
+  }, [toast]);
+
+  async function handleSave() {
+    setSaving(true);
+    try {
+      const processData = {
+        name: "采购审批流程",
+        type: "business",
+        status: "active" as const,
+        version: 3,
+        description: "采购审批流程 v3.1 - BPMN 2.0 规范",
+      };
+      await processesApi.create(processData);
+      setToast("流程已保存成功");
+    } catch (err) {
+      setToast("保存失败: " + (err instanceof Error ? err.message : "未知错误"));
+    } finally {
+      setSaving(false);
+    }
+  }
+
   return (
     <div className="flex flex-col gap-6 p-6">
       <div className="flex items-center justify-between">
@@ -271,7 +301,10 @@ export function ProcessDesigner() {
           <Button variant="outline" size="sm"><Bot className="size-3 mr-1" />AI 助手</Button>
           <Button variant="outline" size="sm"><Download className="size-3 mr-1" />导出 BPMN</Button>
           <Button variant="outline" size="sm"><Play className="size-3 mr-1" />试运行</Button>
-          <Button size="sm"><Save className="size-3 mr-1" />保存</Button>
+          <Button size="sm" onClick={handleSave} disabled={saving}>
+            {saving ? <Loader2 className="size-3 mr-1 animate-spin" /> : <Save className="size-3 mr-1" />}
+            {saving ? "保存中..." : "保存"}
+          </Button>
         </div>
       </div>
 
@@ -306,6 +339,13 @@ export function ProcessDesigner() {
       </div>
 
       <ProcessInstances />
+
+      {/* Toast */}
+      {toast && (
+        <div className="fixed top-4 right-4 z-50 rounded-md bg-foreground px-4 py-2 text-sm text-background shadow-lg">
+          {toast}
+        </div>
+      )}
     </div>
   );
 }

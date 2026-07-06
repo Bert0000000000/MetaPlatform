@@ -439,6 +439,20 @@ db.exec(`
     created_at TEXT DEFAULT (datetime('now'))
   );
 
+  -- Orchestrations
+  CREATE TABLE IF NOT EXISTS orchestrations (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    type TEXT DEFAULT 'custom',
+    adapters TEXT,
+    status TEXT DEFAULT 'draft',
+    trigger_type TEXT DEFAULT 'manual',
+    config TEXT,
+    last_run TEXT,
+    created_at TEXT DEFAULT (datetime('now')),
+    updated_at TEXT DEFAULT (datetime('now'))
+  );
+
   -- File System (WebIDE)
   CREATE TABLE IF NOT EXISTS fs_files (
     id TEXT PRIMARY KEY,

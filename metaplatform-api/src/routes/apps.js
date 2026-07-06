@@ -479,7 +479,7 @@ router.post("/:id/test-im", (req, res, next) => {
   }
 });
 
-// POST /:id/sync-org — sync organization structure
+// ─── POST /:id/sync-org — sync organization structure ─────────
 router.post("/:id/sync-org", (req, res, next) => {
   try {
     const app = db.prepare("SELECT id FROM applications WHERE id = ?").get(req.params.id);
@@ -487,6 +487,89 @@ router.post("/:id/sync-org", (req, res, next) => {
 
     const { source } = req.body;
     res.json({ success: true, data: { synced: 12, source } });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ════════════════════════════════════════════════════════
+//  Gray Release & Version Management
+// ════════════════════════════════════════════════════════
+
+// ─── PUT /:id/gray — configure gray release ────────────────
+router.put("/:id/gray", (req, res, next) => {
+  try {
+    const { strategy, percentage, tenants, userGroups } = req.body;
+    const app = db.prepare("SELECT * FROM applications WHERE id = ?").get(req.params.id);
+    if (!app) return res.status(404).json({ success: false, error: "App not found" });
+
+    const config = JSON.stringify({ strategy, percentage, tenants, userGroups });
+    db.prepare("UPDATE applications SET updated_at = datetime('now') WHERE id = ?").run(req.params.id);
+
+    // Store in app_configs
+    const existing = db.prepare("SELECT * FROM app_configs WHERE app_id = ? AND key = ?").get(req.params.id, "gray_release");
+    if (existing) {
+      db.prepare("UPDATE app_configs SET value = ?, updated_at = datetime('now') WHERE app_id = ? AND key = ?").run(config, req.params.id, "gray_release");
+    } else {
+      const id = uuid();
+      db.prepare("INSERT INTO app_configs (id, app_id, key, value, updated_at) VALUES (?, ?, ?, ?, datetime('now'))").run(id, req.params.id, "gray_release", config);
+    }
+
+    res.json({ success: true, data: { strategy, percentage } });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ─── GET /:id/gray — get gray release config ───────────────
+router.get("/:id/gray", (req, res, next) => {
+  try {
+    const app = db.prepare("SELECT id FROM applications WHERE id = ?").get(req.params.id);
+    if (!app) return res.status(404).json({ success: false, error: "应用不存在" });
+
+    const row = db.prepare("SELECT * FROM app_configs WHERE app_id = ? AND key = ?").get(req.params.id, "gray_release");
+    if (!row) return res.json({ success: true, data: null });
+
+    let config = null;
+    try { config = JSON.parse(row.value); } catch {}
+    res.json({ success: true, data: config });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ─── POST /:id/rollback — rollback to a previous version ────
+router.post("/:id/rollback", (req, res, next) => {
+  try {
+    const { versionId } = req.body;
+    if (!versionId) return res.status(400).json({ success: false, error: "versionId 为必填项" });
+
+    const app = db.prepare("SELECT id FROM applications WHERE id = ?").get(req.params.id);
+    if (!app) return res.status(404).json({ success: false, error: "应用不存在" });
+
+    // Mark current active versions as rolled_back
+    db.prepare("UPDATE app_versions SET status = 'rolled_back' WHERE app_id = ? AND status = 'active'").run(req.params.id);
+    // Activate the target version
+    db.prepare("UPDATE app_versions SET status = 'active', updated_at = datetime('now') WHERE id = ?").run(versionId);
+
+    // Also update the application's version field
+    const targetVersion = db.prepare("SELECT version FROM app_versions WHERE id = ?").get(versionId);
+    if (targetVersion) {
+      db.prepare("UPDATE applications SET version = ?, updated_at = datetime('now') WHERE id = ?").run(targetVersion.version, req.params.id);
+    }
+
+    res.json({ success: true, data: { message: "Rollback successful" } });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ─── GET /:id/activity — get app activity logs ──────────────
+router.get("/:id/activity", (req, res, next) => {
+  try {
+    const { limit = 10 } = req.query;
+    const logs = db.prepare("SELECT * FROM audit_logs WHERE entity_id = ? ORDER BY created_at DESC LIMIT ?").all(req.params.id, Number(limit));
+    res.json({ success: true, data: logs });
   } catch (err) {
     next(err);
   }

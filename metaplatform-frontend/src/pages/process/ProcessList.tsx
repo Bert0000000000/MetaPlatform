@@ -48,6 +48,8 @@ export default function ProcessList() {
   const [flowableDefs, setFlowableDefs] = useState<FlowableProcessDefinition[]>([]);
   const [loading, setLoading] = useState(true);
   const [flowableAvailable, setFlowableAvailable] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [viewMode, setViewMode] = useState<"list" | "tree" | "kanban">("list");
 
   /* ── Simulation state ── */
   const [simDialogOpen, setSimDialogOpen] = useState(false);
@@ -148,6 +150,14 @@ export default function ProcessList() {
 
   const totalCount = definitions.length + flowableDefs.length;
 
+  const filteredDefinitions = definitions.filter((p) =>
+    !searchQuery || (p.name || "").toLowerCase().includes(searchQuery.toLowerCase())
+  );
+  const filteredFlowableDefs = flowableDefs.filter((p) =>
+    !searchQuery || (p.name || "").toLowerCase().includes(searchQuery.toLowerCase())
+  );
+  const filteredTotalCount = filteredDefinitions.length + filteredFlowableDefs.length;
+
   return (
     <div className="flex flex-col gap-6 p-6">
       <PageHeader
@@ -186,13 +196,13 @@ export default function ProcessList() {
           {/* F4.4.3 list capability toolbar */}
           <div className="flex items-center gap-1">
             {/* F4.4.3.6 树+列表布局 toggle */}
-            <Button variant="ghost" size="icon" className="size-8" title="列表视图">
+            <Button variant={viewMode === "list" ? "default" : "ghost"} size="icon" className="size-8" title="列表视图" onClick={() => setViewMode("list")}>
               <List className="size-4" />
             </Button>
-            <Button variant="ghost" size="icon" className="size-8" title="树形视图">
+            <Button variant={viewMode === "tree" ? "default" : "ghost"} size="icon" className="size-8" title="树形视图" onClick={() => setViewMode("tree")}>
               <TreePine className="size-4" />
             </Button>
-            <Button variant="ghost" size="icon" className="size-8" title="看板视图">
+            <Button variant={viewMode === "kanban" ? "default" : "ghost"} size="icon" className="size-8" title="看板视图" onClick={() => setViewMode("kanban")}>
               <LayoutGrid className="size-4" />
             </Button>
             <div className="w-px h-5 bg-border mx-1" />
@@ -220,14 +230,14 @@ export default function ProcessList() {
                     <GitBranch className="size-4" /> 流程列表
                   </CardTitle>
                   <CardDescription>
-                    {loading ? "加载中..." : `共 ${totalCount} 个流程定义`}
+                    {loading ? "加载中..." : searchQuery ? `搜索结果: ${filteredTotalCount} 个流程定义` : `共 ${totalCount} 个流程定义`}
                   </CardDescription>
                 </div>
                 {/* F4.4.3.11 全文查询 */}
                 <div className="flex items-center gap-2">
                   <div className="relative">
                     <Search className="absolute left-2 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
-                    <Input placeholder="全文查询..." className="pl-8 h-8 w-48 text-sm" />
+                    <Input placeholder="全文查询..." className="pl-8 h-8 w-48 text-sm" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
                   </div>
                   <div className="flex gap-1">
                     {["全部", "业务流程", "审批流程", "已激活"].map((chip) => (
@@ -261,6 +271,12 @@ export default function ProcessList() {
                     <Plus className="size-3 mr-1" /> 去创建
                   </Button>
                 </div>
+              ) : viewMode !== "list" ? (
+                <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+                  {viewMode === "tree" ? <TreePine className="size-10 mb-3 opacity-40" /> : <LayoutGrid className="size-10 mb-3 opacity-40" />}
+                  <p className="text-sm">{viewMode === "tree" ? "树形视图" : "看板视图"}即将上线</p>
+                  <p className="text-xs text-muted-foreground mt-1">请先使用列表视图</p>
+                </div>
               ) : (
                 <Table>
                   <TableHeader>
@@ -274,7 +290,7 @@ export default function ProcessList() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {definitions.map((p) => (
+                    {filteredDefinitions.map((p) => (
                       <TableRow key={p.id}>
                         <TableCell className="font-medium">{p.name || "(未命名)"}</TableCell>
                         <TableCell className="font-mono text-xs">{p.id}</TableCell>
@@ -299,7 +315,7 @@ export default function ProcessList() {
                         </TableCell>
                       </TableRow>
                     ))}
-                    {flowableDefs.map((p) => (
+                    {filteredFlowableDefs.map((p) => (
                       <TableRow key={p.id}>
                         <TableCell className="font-medium">{p.name || "(未命名)"}</TableCell>
                         <TableCell className="font-mono text-xs">{p.key}</TableCell>
@@ -819,6 +835,33 @@ export function ProcessInstances() {
   const [instances, setInstances] = useState(MOCK_INSTANCES);
   const [search, setSearch] = useState("");
 
+  // Load instances from backend API on mount
+  useEffect(() => {
+    let cancelled = false;
+    processesApi
+      .listInstances()
+      .then((data) => {
+        if (cancelled || !data) return;
+        // Map API response to local format, using MOCK_INSTANCES fields as fallback
+        const mapped = data.map((inst: any) => ({
+          id: inst.id || inst.instance_id || `PI-${Date.now()}`,
+          name: inst.name || inst.title || inst.id || "未命名实例",
+          definition: inst.definition || inst.definition_name || inst.process_key || "未知流程",
+          status: inst.status || "running",
+          start: inst.start || inst.started_at || inst.created_at || "",
+          duration: inst.duration || "",
+          current: inst.current || inst.current_node || inst.activity || "",
+        }));
+        if (mapped.length > 0) {
+          setInstances(mapped);
+        }
+      })
+      .catch((err) => {
+        console.error("加载流程实例失败，使用本地数据:", err);
+      });
+    return () => { cancelled = true; };
+  }, []);
+
   /* ── Intervention state ── */
   const [interveneDialogOpen, setInterveneDialogOpen] = useState(false);
   const [selectedInstance, setSelectedInstance] = useState<string | null>(null);
@@ -836,6 +879,30 @@ export function ProcessInstances() {
     const t = setTimeout(() => setInterveneToast(null), 2500);
     return () => clearTimeout(t);
   }, [interveneToast]);
+
+  /* ── Load real instances from API ── */
+  useEffect(() => {
+    processesApi.listInstances()
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          const mapped = data.map((inst: any) => ({
+            id: inst.id || inst.instance_id || `PI-${Date.now()}`,
+            name: inst.name || inst.title || `${inst.definition_id || "流程"} - ${inst.initiator_id || "未知"}`,
+            definition: inst.definition_id || inst.definition || "未知流程",
+            status: inst.status || "running",
+            start: inst.started_at ? new Date(inst.started_at).toLocaleString("zh-CN", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }) : "--",
+            duration: inst.ended_at && inst.started_at
+              ? `${Math.round((new Date(inst.ended_at).getTime() - new Date(inst.started_at).getTime()) / 60000)}m`
+              : inst.status === "completed" ? "已完成" : "进行中",
+            current: inst.current_node || inst.status || "--",
+          }));
+          setInstances(mapped);
+        }
+      })
+      .catch(() => {
+        // Keep MOCK_INSTANCES as fallback
+      });
+  }, []);
 
   const filtered = instances.filter((i) => i.name.includes(search) || i.id.includes(search));
 
@@ -1121,6 +1188,30 @@ export function ProcessApprovals() {
   const [stampTarget, setStampTarget] = useState<string | null>(null);
   const [stampSaved, setStampSaved] = useState(false);
 
+  /* ── Load real approval tasks from Flowable API ── */
+  useEffect(() => {
+    flowableApi.listTasks()
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          const mapped = data.map((task: any) => ({
+            id: task.id || `AP-${Date.now()}`,
+            title: task.name || task.description || "未命名审批",
+            submitter: task.assignee || "系统",
+            type: task.processDefinitionId || "审批流程",
+            status: "pending" as const,
+            priority: (task.priority ?? 0) >= 75 ? "high" as const : "normal" as const,
+            time: task.createTime
+              ? new Date(task.createTime).toLocaleString("zh-CN", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })
+              : "--",
+          }));
+          setApprovals(mapped);
+        }
+      })
+      .catch(() => {
+        // Keep MY_APPROVALS as fallback
+      });
+  }, []);
+
   const filtered = filter === "all" ? approvals : approvals.filter((a) => a.status === filter);
   const pendingCount = approvals.filter((a) => a.status === "pending").length;
 
@@ -1269,8 +1360,30 @@ const TRIGGERS_FALLBACK = [
   { id: 4, name: "审批超时升级", event: "Approval.timeout", target: "升级审批流程", status: "paused", hits: 12 },
 ];
 
+interface TriggerItem {
+  id: string | number;
+  name: string;
+  event: string;
+  target: string;
+  status: string;
+  hits: number;
+}
+
 export function ProcessTriggers() {
-  const [triggers, setTriggers] = useState(TRIGGERS_FALLBACK);
+  const [triggers, setTriggers] = useState<TriggerItem[]>(TRIGGERS_FALLBACK);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [newTrigger, setNewTrigger] = useState({ name: "", event: "", target: "", status: "active" });
+  const [creating, setCreating] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<TriggerItem | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 2500);
+    return () => clearTimeout(t);
+  }, [toast]);
 
   /* Fetch triggers from API */
   useEffect(() => {
@@ -1292,8 +1405,64 @@ export function ProcessTriggers() {
     }).catch(() => {});
   }, []);
 
-  function toggleStatus(id: number) {
+  function toggleStatus(id: string | number) {
     setTriggers((prev) => prev.map((t) => t.id === id ? { ...t, status: t.status === "active" ? "paused" : "active" } : t));
+  }
+
+  /* Create trigger */
+  async function handleCreateTrigger() {
+    if (!newTrigger.name || !newTrigger.event) return;
+    setCreating(true);
+    try {
+      const created = await triggersApi.create({
+        name: newTrigger.name,
+        type: newTrigger.event,
+        config: JSON.stringify({ event: newTrigger.event, target: newTrigger.target }),
+        status: newTrigger.status,
+      });
+      let config: any = {};
+      try { config = JSON.parse(created.config || "{}"); } catch {}
+      setTriggers((prev) => [
+        ...prev,
+        {
+          id: created.id,
+          name: created.name,
+          event: config.event || created.type,
+          target: config.target || "关联流程",
+          status: created.status,
+          hits: 0,
+        },
+      ]);
+      setCreateOpen(false);
+      setNewTrigger({ name: "", event: "", target: "", status: "active" });
+      setToast("触发器创建成功");
+    } catch {
+      setToast("创建触发器失败");
+    } finally {
+      setCreating(false);
+    }
+  }
+
+  /* Delete trigger */
+  function handleDeleteClick(trigger: TriggerItem) {
+    setDeleteTarget(trigger);
+    setDeleteOpen(true);
+  }
+
+  async function confirmDeleteTrigger() {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      await triggersApi.delete(String(deleteTarget.id));
+      setTriggers((prev) => prev.filter((t) => t.id !== deleteTarget.id));
+      setToast("触发器已删除");
+    } catch {
+      setToast("删除触发器失败");
+    } finally {
+      setDeleting(false);
+      setDeleteOpen(false);
+      setDeleteTarget(null);
+    }
   }
 
   return (
@@ -1302,7 +1471,7 @@ export function ProcessTriggers() {
         title="触发器管理"
         description="基于事件驱动的流程自动触发配置"
         action={
-          <Button className="gap-2">
+          <Button className="gap-2" onClick={() => setCreateOpen(true)}>
             <Plus className="size-4" /> 新建触发器
           </Button>
         }
@@ -1345,9 +1514,14 @@ export function ProcessTriggers() {
                   </TableCell>
                   <TableCell className="text-right">{t.hits.toLocaleString()}</TableCell>
                   <TableCell className="text-right">
-                    <Button variant="ghost" size="sm" onClick={() => toggleStatus(t.id)}>
-                      {t.status === "active" ? "暂停" : "启用"}
-                    </Button>
+                    <div className="flex items-center justify-end gap-1">
+                      <Button variant="ghost" size="sm" onClick={() => toggleStatus(t.id)}>
+                        {t.status === "active" ? "暂停" : "启用"}
+                      </Button>
+                      <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => handleDeleteClick(t)}>
+                        删除
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -1355,12 +1529,160 @@ export function ProcessTriggers() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* ── Create trigger dialog ── */}
+      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>新建触发器</DialogTitle>
+            <DialogDescription>配置事件触发条件和目标流程</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>触发器名称</Label>
+              <Input
+                value={newTrigger.name}
+                onChange={(e) => setNewTrigger((prev) => ({ ...prev, name: e.target.value }))}
+                placeholder="例如：订单创建触发"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>事件类型</Label>
+              <Input
+                value={newTrigger.event}
+                onChange={(e) => setNewTrigger((prev) => ({ ...prev, event: e.target.value }))}
+                placeholder="例如：Order.created"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>目标流程</Label>
+              <Input
+                value={newTrigger.target}
+                onChange={(e) => setNewTrigger((prev) => ({ ...prev, target: e.target.value }))}
+                placeholder="例如：采购审批流程"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCreateOpen(false)} disabled={creating}>取消</Button>
+            <Button onClick={handleCreateTrigger} disabled={creating || !newTrigger.name || !newTrigger.event}>
+              {creating ? <Loader2 className="size-4 animate-spin mr-1" /> : <Plus className="size-4 mr-1" />}
+              {creating ? "创建中..." : "创建"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Delete confirmation dialog ── */}
+      <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>确认删除触发器</DialogTitle>
+            <DialogDescription>
+              确定要删除触发器 "{deleteTarget?.name}" 吗？此操作不可撤销。
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteOpen(false)} disabled={deleting}>取消</Button>
+            <Button variant="destructive" onClick={confirmDeleteTrigger} disabled={deleting}>
+              {deleting ? <Loader2 className="size-4 animate-spin mr-1" /> : null}
+              {deleting ? "删除中..." : "确认删除"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Toast */}
+      {toast && (
+        <div className="fixed top-4 right-4 z-50 rounded-md bg-foreground px-4 py-2 text-sm text-background shadow-lg">
+          {toast}
+        </div>
+      )}
     </div>
   );
 }
 
 /* ─────────────────── ProcessAnalysis ─────────────────── */
 export function ProcessAnalysis() {
+  const [instances, setInstances] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    processesApi.listInstances()
+      .then((data) => setInstances(Array.isArray(data) ? data : []))
+      .catch(() => setInstances([]))
+      .finally(() => setLoading(false));
+  }, []);
+
+  // Compute real statistics from instance data
+  const totalInstances = instances.length;
+  const completedInstances = instances.filter((i) => i.status === "completed").length;
+  const runningInstances = instances.filter((i) => i.status === "running" || i.status === "active").length;
+  const failedInstances = instances.filter((i) => i.status === "failed").length;
+
+  // Compute average completion time (from started_at to completed_at)
+  const completedWithTime = instances.filter((i) => i.status === "completed" && i.started_at && i.completed_at);
+  let avgCompletionTime = "--";
+  if (completedWithTime.length > 0) {
+    const totalMs = completedWithTime.reduce((sum, i) => {
+      const start = new Date(i.started_at).getTime();
+      const end = new Date(i.completed_at).getTime();
+      return sum + (end - start);
+    }, 0);
+    const avgMs = totalMs / completedWithTime.length;
+    const avgHours = avgMs / (1000 * 60 * 60);
+    if (avgHours < 1) {
+      avgCompletionTime = `${Math.round(avgHours * 60)}m`;
+    } else if (avgHours < 24) {
+      avgCompletionTime = `${avgHours.toFixed(1)}h`;
+    } else {
+      avgCompletionTime = `${(avgHours / 24).toFixed(1)}d`;
+    }
+  }
+
+  // Success rate
+  const successRate = totalInstances > 0
+    ? `${((completedInstances / totalInstances) * 100).toFixed(1)}%`
+    : "--";
+
+  // Weekly completions (instances completed in the last 7 days)
+  const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+  const weeklyCompleted = instances.filter((i) =>
+    i.status === "completed" && i.completed_at && new Date(i.completed_at).getTime() >= weekAgo
+  ).length;
+
+  // Timeout rate (instances that took more than 24h and are still running or failed)
+  const timeoutThreshold = 24 * 60 * 60 * 1000;
+  const timeoutInstances = instances.filter((i) => {
+    if (i.status === "completed") return false;
+    if (!i.started_at) return false;
+    return Date.now() - new Date(i.started_at).getTime() > timeoutThreshold;
+  }).length;
+  const timeoutRate = totalInstances > 0
+    ? `${((timeoutInstances / totalInstances) * 100).toFixed(1)}%`
+    : "--";
+
+  // Process efficiency ranking - group by definition_id
+  const processStats: Record<string, { name: string; count: number; completed: number; totalDuration: number }> = {};
+  instances.forEach((i) => {
+    const key = i.definition_id || i.process_definition_id || i.name || "unknown";
+    if (!processStats[key]) {
+      processStats[key] = { name: i.name || i.process_name || key, count: 0, completed: 0, totalDuration: 0 };
+    }
+    processStats[key].count++;
+    if (i.status === "completed" && i.started_at && i.completed_at) {
+      processStats[key].completed++;
+      processStats[key].totalDuration += new Date(i.completed_at).getTime() - new Date(i.started_at).getTime();
+    }
+  });
+  const processRanking = Object.values(processStats)
+    .map((p) => ({
+      name: p.name,
+      avg: p.completed > 0 ? (p.totalDuration / p.completed / (1000 * 60 * 60)).toFixed(1) + "h" : "--",
+      rate: p.count > 0 ? Math.round((p.completed / p.count) * 100) : 0,
+    }))
+    .sort((a, b) => a.rate - b.rate);
+
   return (
     <div className="flex flex-col gap-6 p-6">
       <PageHeader
@@ -1374,10 +1696,18 @@ export function ProcessAnalysis() {
       />
 
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-        <StatCard label="平均审批时长" value="4.2h" icon={Timer} />
-        <StatCard label="流程完成率" value="92.3%" icon={CheckCircle} />
-        <StatCard label="超时率" value="3.8%" trend={-1.2} icon={AlertTriangle} />
-        <StatCard label="本周完成" value={186} icon={Activity} />
+        <StatCard label="平均审批时长" value={loading ? "..." : avgCompletionTime} icon={Timer} />
+        <StatCard label="流程完成率" value={loading ? "..." : successRate} icon={CheckCircle} />
+        <StatCard label="超时率" value={loading ? "..." : timeoutRate} trend={-1.2} icon={AlertTriangle} />
+        <StatCard label="本周完成" value={loading ? "..." : weeklyCompleted} icon={Activity} />
+      </div>
+
+      {/* Summary cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+        <StatCard label="总实例数" value={loading ? "..." : totalInstances} icon={GitBranch} />
+        <StatCard label="已完成" value={loading ? "..." : completedInstances} icon={CheckCircle} />
+        <StatCard label="运行中" value={loading ? "..." : runningInstances} icon={Activity} />
+        <StatCard label="失败" value={loading ? "..." : failedInstances} icon={AlertTriangle} />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1386,26 +1716,31 @@ export function ProcessAnalysis() {
             <CardTitle className="text-base flex items-center gap-2">
               <BarChart3 className="size-4" /> 流程效率排名
             </CardTitle>
-            <CardDescription>按平均耗时排名（从低到高）</CardDescription>
+            <CardDescription>按完成率排名（从低到高）</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {[
-                { name: "请假审批", avg: "1.2h", rate: 98 },
-                { name: "报销审批", avg: "3.5h", rate: 95 },
-                { name: "采购审批", avg: "4.8h", rate: 91 },
-                { name: "合同审批", avg: "12.3h", rate: 88 },
-                { name: "入职流程", avg: "24.5h", rate: 82 },
-              ].map((p) => (
-                <div key={p.name} className="flex items-center gap-3">
-                  <span className="text-sm font-medium w-20">{p.name}</span>
-                  <div className="flex-1 bg-muted rounded-full h-2">
-                    <div className="bg-primary rounded-full h-2 transition-all" style={{ width: `${p.rate}%` }} />
+            {loading ? (
+              <div className="flex items-center justify-center py-8 text-muted-foreground">
+                <Loader2 className="size-5 animate-spin mr-2" /> 加载中...
+              </div>
+            ) : processRanking.length > 0 ? (
+              <div className="space-y-3">
+                {processRanking.slice(0, 5).map((p) => (
+                  <div key={p.name} className="flex items-center gap-3">
+                    <span className="text-sm font-medium w-20 truncate">{p.name}</span>
+                    <div className="flex-1 bg-muted rounded-full h-2">
+                      <div className="bg-primary rounded-full h-2 transition-all" style={{ width: `${p.rate}%` }} />
+                    </div>
+                    <span className="text-xs text-muted-foreground w-12 text-right">{p.avg}</span>
                   </div>
-                  <span className="text-xs text-muted-foreground w-12 text-right">{p.avg}</span>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+                <BarChart3 className="size-8 mb-2 opacity-40" />
+                <p className="text-sm">暂无流程实例数据</p>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -1417,21 +1752,34 @@ export function ProcessAnalysis() {
             <CardDescription>识别最长耗时节点</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {[
-                { node: "法务审核", process: "合同审批", avgWait: "8.2h", severity: "high" },
-                { node: "财务复核", process: "采购审批", avgWait: "3.5h", severity: "medium" },
-                { node: "IT 账号创建", process: "入职流程", avgWait: "2.1h", severity: "low" },
-              ].map((b) => (
-                <div key={b.node} className="flex items-center gap-3 p-3 border rounded-lg">
-                  <AlertTriangle className={`size-4 shrink-0 ${b.severity === "high" ? "text-red-500" : b.severity === "medium" ? "text-orange-500" : "text-yellow-500"}`} />
-                  <div className="flex-1">
-                    <div className="font-medium text-sm">{b.node}</div>
-                    <div className="text-xs text-muted-foreground">{b.process} / 平均等待 {b.avgWait}</div>
+            {loading ? (
+              <div className="flex items-center justify-center py-8 text-muted-foreground">
+                <Loader2 className="size-5 animate-spin mr-2" /> 加载中...
+              </div>
+            ) : processRanking.length > 0 ? (
+              <div className="space-y-3">
+                {processRanking.filter((p) => p.avg !== "--").sort((a, b) => parseFloat(b.avg) - parseFloat(a.avg)).slice(0, 3).map((p, idx) => (
+                  <div key={p.name} className="flex items-center gap-3 p-3 border rounded-lg">
+                    <AlertTriangle className={`size-4 shrink-0 ${idx === 0 ? "text-red-500" : idx === 1 ? "text-orange-500" : "text-yellow-500"}`} />
+                    <div className="flex-1">
+                      <div className="font-medium text-sm">{p.name}</div>
+                      <div className="text-xs text-muted-foreground">平均耗时 {p.avg} / 完成率 {p.rate}%</div>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+                {processRanking.filter((p) => p.avg !== "--").length === 0 && (
+                  <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+                    <AlertTriangle className="size-8 mb-2 opacity-40" />
+                    <p className="text-sm">暂无可分析的瓶颈数据</p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+                <AlertTriangle className="size-8 mb-2 opacity-40" />
+                <p className="text-sm">暂无流程实例数据</p>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

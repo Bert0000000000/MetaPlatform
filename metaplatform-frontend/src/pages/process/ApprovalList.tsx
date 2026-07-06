@@ -31,7 +31,17 @@ export default function ApprovalList() {
   const [completingId, setCompletingId] = useState<string | null>(null);
   const [selectedTasks, setSelectedTasks] = useState<Set<string>>(new Set());
   const [batchProcessing, setBatchProcessing] = useState(false);
-  const [approvalDialog, setApprovalDialog] = useState<{ open: boolean; type: string; title: string }>({ open: false, type: "", title: "" });
+  const [approvalDialog, setApprovalDialog] = useState<{ open: boolean; type: string; title: string; taskId: string }>({ open: false, type: "", title: "", taskId: "" });
+  const [approvalDialogComment, setApprovalDialogComment] = useState("");
+  const [approvalDialogUser, setApprovalDialogUser] = useState("");
+  const [approvalDialogLoading, setApprovalDialogLoading] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 2500);
+    return () => clearTimeout(t);
+  }, [toast]);
 
   const fetchTasks = useCallback(async () => {
     try {
@@ -96,6 +106,52 @@ export default function ApprovalList() {
     setSelectedTasks(new Set());
     setBatchProcessing(false);
     await fetchTasks();
+  }
+
+  async function handleApprovalConfirm() {
+    const { type, taskId } = approvalDialog;
+    if (!taskId) return;
+    setApprovalDialogLoading(true);
+    try {
+      switch (type) {
+        case "transfer": {
+          const assignee = approvalDialogUser || "user1";
+          await flowableApi.delegateTask(taskId, assignee);
+          break;
+        }
+        case "counterSign": {
+          // For counterSign, complete the task with counterSign variable
+          await flowableApi.completeTask(taskId, {
+            action: "counterSign",
+            assignee: approvalDialogUser || "user1",
+            comment: approvalDialogComment,
+          });
+          break;
+        }
+        case "terminate": {
+          await flowableApi.completeTask(taskId, { action: "terminate", approved: false });
+          break;
+        }
+        default: {
+          // Fallback: add comment via completeTask with comment variable
+          await flowableApi.completeTask(taskId, {
+            action: type,
+            comment: approvalDialogComment,
+            assignee: approvalDialogUser || undefined,
+          });
+          break;
+        }
+      }
+      setToast(`${approvalDialog.title}操作已提交`);
+      setApprovalDialog({ open: false, type: "", title: "", taskId: "" });
+      setApprovalDialogComment("");
+      setApprovalDialogUser("");
+      await fetchTasks();
+    } catch (err) {
+      setToast("操作失败: " + (err instanceof Error ? err.message : "未知错误"));
+    } finally {
+      setApprovalDialogLoading(false);
+    }
   }
 
   const formatDate = (dateStr?: string) => {
@@ -252,31 +308,31 @@ export default function ApprovalList() {
                               驳回
                             </Button>
                             {/* 加签 */}
-                            <Button variant="ghost" size="icon" className="size-7" title="加签" onClick={() => setApprovalDialog({ open: true, type: "counterSign", title: "加签" })}>
+                            <Button variant="ghost" size="icon" className="size-7" title="加签" onClick={() => setApprovalDialog({ open: true, type: "counterSign", title: "加签", taskId: task.id })}>
                               <UserPlus className="size-3" />
                             </Button>
                             {/* 转办 */}
-                            <Button variant="ghost" size="icon" className="size-7" title="转办" onClick={() => setApprovalDialog({ open: true, type: "transfer", title: "转办" })}>
+                            <Button variant="ghost" size="icon" className="size-7" title="转办" onClick={() => setApprovalDialog({ open: true, type: "transfer", title: "转办", taskId: task.id })}>
                               <MoveRight className="size-3" />
                             </Button>
                             {/* 知会 */}
-                            <Button variant="ghost" size="icon" className="size-7" title="知会" onClick={() => setApprovalDialog({ open: true, type: "notify", title: "知会" })}>
+                            <Button variant="ghost" size="icon" className="size-7" title="知会" onClick={() => setApprovalDialog({ open: true, type: "notify", title: "知会", taskId: task.id })}>
                               <Bell className="size-3" />
                             </Button>
                             {/* 催办 */}
-                            <Button variant="ghost" size="icon" className="size-7" title="催办" onClick={() => setApprovalDialog({ open: true, type: "urge", title: "催办" })}>
+                            <Button variant="ghost" size="icon" className="size-7" title="催办" onClick={() => setApprovalDialog({ open: true, type: "urge", title: "催办", taskId: task.id })}>
                               <Rocket className="size-3" />
                             </Button>
                             {/* 暂存 */}
-                            <Button variant="ghost" size="icon" className="size-7" title="暂存" onClick={() => setApprovalDialog({ open: true, type: "save", title: "暂存" })}>
+                            <Button variant="ghost" size="icon" className="size-7" title="暂存" onClick={() => setApprovalDialog({ open: true, type: "save", title: "暂存", taskId: task.id })}>
                               <SaveIcon className="size-3" />
                             </Button>
                             {/* 终止 */}
-                            <Button variant="ghost" size="icon" className="size-7" title="终止" onClick={() => setApprovalDialog({ open: true, type: "terminate", title: "终止" })}>
+                            <Button variant="ghost" size="icon" className="size-7" title="终止" onClick={() => setApprovalDialog({ open: true, type: "terminate", title: "终止", taskId: task.id })}>
                               <StopCircle className="size-3" />
                             </Button>
                             {/* 撤回 */}
-                            <Button variant="ghost" size="icon" className="size-7" title="撤回" onClick={() => setApprovalDialog({ open: true, type: "withdraw", title: "撤回" })}>
+                            <Button variant="ghost" size="icon" className="size-7" title="撤回" onClick={() => setApprovalDialog({ open: true, type: "withdraw", title: "撤回", taskId: task.id })}>
                               <RotateCcw className="size-3" />
                             </Button>
                           </div>
@@ -320,7 +376,7 @@ export default function ApprovalList() {
             {(approvalDialog.type === "counterSign" || approvalDialog.type === "transfer" || approvalDialog.type === "notify") && (
               <div className="space-y-2">
                 <Label>选择人员</Label>
-                <Select defaultValue="">
+                <Select value={approvalDialogUser} onValueChange={setApprovalDialogUser}>
                   <SelectTrigger><SelectValue placeholder="请选择" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="user1">张伟</SelectItem>
@@ -333,15 +389,25 @@ export default function ApprovalList() {
             {/* For all: show reason input */}
             <div className="space-y-2">
               <Label>备注</Label>
-              <Textarea placeholder="请输入备注..." />
+              <Textarea placeholder="请输入备注..." value={approvalDialogComment} onChange={(e) => setApprovalDialogComment(e.target.value)} />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setApprovalDialog(prev => ({ ...prev, open: false }))}>取消</Button>
-            <Button onClick={() => { alert(approvalDialog.title + "操作已提交"); setApprovalDialog(prev => ({ ...prev, open: false })); }}>确认</Button>
+            <Button variant="outline" onClick={() => { setApprovalDialog({ open: false, type: "", title: "", taskId: "" }); setApprovalDialogComment(""); setApprovalDialogUser(""); }}>取消</Button>
+            <Button onClick={handleApprovalConfirm} disabled={approvalDialogLoading}>
+              {approvalDialogLoading && <Loader2 className="size-3 mr-1 animate-spin" />}
+              确认
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Toast */}
+      {toast && (
+        <div className="fixed top-4 right-4 z-50 rounded-md bg-foreground px-4 py-2 text-sm text-background shadow-lg">
+          {toast}
+        </div>
+      )}
     </div>
   );
 }

@@ -128,7 +128,7 @@ export function DashboardPage() {
 
   /* ── Fetch audit log for recent activities ── */
   useEffect(() => {
-    adminApi.listLogs(5, 0).then((logs) => {
+    adminApi.listLogs(20, 0).then((logs) => {
       if (logs && logs.length > 0) {
         setRecentActivities(logs.map(transformAuditLog));
       }
@@ -164,6 +164,10 @@ export function DashboardPage() {
   /* ── Computed values ── */
   const unreadMessages = messages.filter((m) => !m.read);
   const activeAgents = agents.filter((a) => a.status === "active" || a.status === "online");
+  const publishedApps = apps.filter((a) => a.status === "published");
+  const totalObjects = apps.reduce((sum, a) => sum + (a.objects_count || 0), 0);
+  const totalPages = apps.reduce((sum, a) => sum + (a.pages_count || 0), 0);
+  const totalFlows = apps.reduce((sum, a) => sum + (a.flows_count || 0), 0);
 
   return (
     <div className="flex flex-col gap-4 p-4">
@@ -230,14 +234,37 @@ export function DashboardPage() {
             <div className="text-xl font-bold mt-1">
               {loading ? <Loader2 className="size-5 animate-spin" /> : apps.length}
             </div>
+            {!loading && (
+              <div className="text-xs text-muted-foreground mt-0.5">
+                {publishedApps.length} 个已发布
+              </div>
+            )}
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-3">
-            <div className="text-xs text-muted-foreground">未读消息</div>
+            <div className="text-xs text-muted-foreground">对象总数</div>
+            <div className="text-xl font-bold mt-1 text-blue-600">
+              {loading ? <Loader2 className="size-5 animate-spin" /> : totalObjects}
+            </div>
+            {!loading && (
+              <div className="text-xs text-muted-foreground mt-0.5">
+                {totalPages} 页面 / {totalFlows} 流程
+              </div>
+            )}
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-3">
+            <div className="text-xs text-muted-foreground">待办事项</div>
             <div className="text-xl font-bold mt-1 text-red-600">
               {loading ? <Loader2 className="size-5 animate-spin" /> : unreadMessages.length}
             </div>
+            {!loading && (
+              <div className="text-xs text-muted-foreground mt-0.5">
+                共 {messages.length} 条消息
+              </div>
+            )}
           </CardContent>
         </Card>
         <Card>
@@ -246,14 +273,11 @@ export function DashboardPage() {
             <div className="text-xl font-bold mt-1">
               {loading ? <Loader2 className="size-5 animate-spin" /> : agents.length}
             </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-3">
-            <div className="text-xs text-muted-foreground">在线智能体</div>
-            <div className="text-xl font-bold mt-1 text-green-600">
-              {loading ? <Loader2 className="size-5 animate-spin" /> : activeAgents.length}
-            </div>
+            {!loading && (
+              <div className="text-xs text-green-600 mt-0.5">
+                {activeAgents.length} 个在线
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -303,9 +327,14 @@ export function DashboardPage() {
                     <span className="text-sm">本月任务完成率</span>
                   </div>
                   <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
-                    <div className="h-full bg-green-500 rounded-full" style={{ width: "94%" }} />
+                    <div
+                      className="h-full bg-green-500 rounded-full"
+                      style={{ width: `${agents.length > 0 ? Math.round((activeAgents.length / agents.length) * 100) : 0}%` }}
+                    />
                   </div>
-                  <span className="text-sm font-bold text-green-600">94.2%</span>
+                  <span className="text-sm font-bold text-green-600">
+                    {agents.length > 0 ? `${Math.round((activeAgents.length / agents.length) * 100)}%` : "--"}
+                  </span>
                 </div>
               </div>
             )}
