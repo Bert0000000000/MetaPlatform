@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { appsApi, filesystemApi } from "@/lib/api";
 import type { PageComponent, PageVersion } from "./types";
+import { getMockComponents } from "./mockData";
 
 export interface UsePageEditorReturn {
   pageData: any;
@@ -52,6 +53,10 @@ export function usePageEditor(appId: string | undefined, pageId: string | null):
         if (parsed.components) setComponents(parsed.components);
         if (parsed.version) setCurrentVersion(parsed.version);
         if (parsed.versionHistory) setVersions(parsed.versionHistory);
+      } else if (page) {
+        // No saved content — inject mock data based on page type
+        const mockComps = getMockComponents(page.type || "form", page.name);
+        setComponents(mockComps);
       }
     } catch (e) { console.error("Failed to load page:", e); }
     setLoading(false);

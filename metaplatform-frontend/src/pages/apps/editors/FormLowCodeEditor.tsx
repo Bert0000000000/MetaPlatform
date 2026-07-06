@@ -1,4 +1,5 @@
 import { useState, DragEvent } from "react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -85,8 +86,10 @@ export function FormLowCodeEditor({ components, setComponents, selectedCompId, s
     <div className="flex gap-0 h-full">
       {/* Left: Component Palette + Span Selector */}
       <div className="w-40 border-r pr-3 shrink-0 overflow-y-auto">
-        <h4 className="text-[10px] font-semibold text-muted-foreground uppercase mb-2">组件库</h4>
-        <div className="space-y-1">
+        <div className="px-2 py-2 border-b">
+          <h4 className="text-[10px] font-semibold text-muted-foreground uppercase">组件库</h4>
+        </div>
+        <div className="py-2 space-y-1">
           {PALETTE_ITEMS.map(c => (
             <button key={c.type} draggable onDragStart={(e) => e.dataTransfer.setData("componentType", c.type)}
               onClick={() => addComponent(c.type)}
@@ -95,9 +98,11 @@ export function FormLowCodeEditor({ components, setComponents, selectedCompId, s
             </button>
           ))}
         </div>
-        <h4 className="text-[10px] font-semibold text-muted-foreground uppercase mt-4 mb-2">布局宽度</h4>
-        <SpanSelector onSelect={setAddSpan} />
-        <div className="mt-3 pt-2 border-t text-[10px] text-muted-foreground">{components.length} 个组件</div>
+        <div className="px-2 py-2 border-t border-b">
+          <h4 className="text-[10px] font-semibold text-muted-foreground uppercase mb-2">布局宽度</h4>
+          <SpanSelector onSelect={setAddSpan} />
+        </div>
+        <div className="px-2 py-2 border-t text-[10px] text-muted-foreground">{components.length} 个组件</div>
       </div>
 
       {/* Center: Canvas */}

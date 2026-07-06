@@ -1,5 +1,6 @@
 import { NavLink, useParams } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { ChevronLeft } from "lucide-react";
 
 const appTabs = [
   { key: "overview", label: "概览" },
@@ -22,6 +23,15 @@ export function AppDetailTabs() {
   return (
     <div className="border-b bg-background px-4">
       <nav className="flex h-11 items-center gap-0 overflow-x-auto">
+        {/* 返回应用列表 */}
+        <NavLink
+          to="/apps"
+          className="inline-flex h-11 items-center px-2 text-sm font-medium whitespace-nowrap transition-colors text-muted-foreground hover:text-foreground mr-1"
+        >
+          <ChevronLeft className="size-4 mr-0.5" />
+          应用列表
+        </NavLink>
+        <div className="w-px h-5 bg-border mx-1 shrink-0" />
         {appTabs.map((t) => (
           <NavLink
             key={t.key}

@@ -63,10 +63,13 @@ const CATEGORIES: CategoryNode[] = [
  * - Proper TypeScript typing
  */
 export function ListPageEditor({ components, setComponents, setDirty }: BaseEditorProps) {
-  // ── Sync columns from parent component data ──
+  // ── Sync columns and rows from parent component data ──
   const existingConfig = components?.[0]?.props;
   const [columns, setColumns] = useState<ColumnDef[]>(
     existingConfig?.columns || DEFAULT_COLUMNS
+  );
+  const [rows, setRows] = useState<Record<string, string>[]>(
+    existingConfig?.rows || []
   );
   const [config, setConfig] = useState<ListConfig>(existingConfig?.config || {
     supportSearch: true,
@@ -269,44 +272,49 @@ export function ListPageEditor({ components, setComponents, setDirty }: BaseEdit
               </tr>
             </thead>
             <tbody>
-              {Array.from({ length: 10 }, (_, i) => (
-                <tr
-                  key={i}
-                  className="border-b hover:bg-muted/30 transition-colors"
-                >
-                  {columns.map((col, j) => (
-                    <td key={j} className="px-3 py-2">
-                      {col.field === "index" ? (
-                        <span className="text-muted-foreground">{i + 1}</span>
-                      ) : col.field === "actions" ? (
-                        <div className="flex items-center gap-1">
-                          <button
-                            className="p-1 rounded hover:bg-primary/10 text-primary"
-                            title="编辑"
-                          >
-                            <Edit className="size-3" />
-                          </button>
-                          <button
-                            className="p-1 rounded hover:bg-destructive/10 text-destructive"
-                            title="删除"
-                          >
-                            <Trash2 className="size-3" />
-                          </button>
-                        </div>
-                      ) : (
-                        <span className="text-muted-foreground">--</span>
-                      )}
-                    </td>
-                  ))}
-                </tr>
-              ))}
+              {rows.length > 0 ? (
+                rows.map((row, i) => (
+                  <tr key={i} className="border-b hover:bg-muted/30 transition-colors">
+                    {columns.map((col, j) => (
+                      <td key={j} className="px-3 py-2">
+                        {col.field === "index" ? (
+                          <span className="text-muted-foreground">{i + 1}</span>
+                        ) : col.field === "actions" ? (
+                          <div className="flex items-center gap-1">
+                            <button className="p-1 rounded hover:bg-primary/10 text-primary" title="编辑"><Edit className="size-3" /></button>
+                            <button className="p-1 rounded hover:bg-destructive/10 text-destructive" title="删除"><Trash2 className="size-3" /></button>
+                          </div>
+                        ) : (
+                          <span>{row[col.field] || "--"}</span>
+                        )}
+                      </td>
+                    ))}
+                  </tr>
+                ))
+              ) : (
+                Array.from({ length: 10 }, (_, i) => (
+                  <tr key={i} className="border-b hover:bg-muted/30 transition-colors">
+                    {columns.map((col, j) => (
+                      <td key={j} className="px-3 py-2">
+                        {col.field === "index" ? <span className="text-muted-foreground">{i + 1}</span>
+                        : col.field === "actions" ? (
+                          <div className="flex items-center gap-1">
+                            <button className="p-1 rounded hover:bg-primary/10 text-primary" title="编辑"><Edit className="size-3" /></button>
+                            <button className="p-1 rounded hover:bg-destructive/10 text-destructive" title="删除"><Trash2 className="size-3" /></button>
+                          </div>
+                        ) : <span className="text-muted-foreground">--</span>}
+                      </td>
+                    ))}
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
 
         {/* Pagination */}
         <div className="flex items-center justify-between px-4 py-2 border-t text-xs text-muted-foreground">
-          <span>共 10 条</span>
+          <span>共 {rows.length || 10} 条</span>
           <div className="flex items-center gap-1">
             <button className="px-2 py-0.5 border rounded hover:bg-muted">
               上一页

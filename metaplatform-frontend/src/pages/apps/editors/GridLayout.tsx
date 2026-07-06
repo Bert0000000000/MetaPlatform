@@ -130,7 +130,7 @@ function GridCell({
   );
 }
 
-/** Span selector buttons for adding new components */
+/** Span selector buttons for adding new components — neutral gray style */
 export function SpanSelector({ onSelect }: { onSelect: (span: GridSpan) => void }) {
   const options: { span: GridSpan; label: string; width: string }[] = [
     { span: 12, label: "全行", width: "w-full" },
@@ -144,10 +144,10 @@ export function SpanSelector({ onSelect }: { onSelect: (span: GridSpan) => void 
         <button
           key={o.span}
           onClick={() => onSelect(o.span)}
-          className="flex flex-col items-center gap-0.5 px-2 py-1 border rounded text-[10px] hover:border-primary hover:bg-primary/5 transition-colors"
+          className="flex flex-col items-center gap-0.5 px-2 py-1 border border-[#d6d4d0] rounded text-[10px] hover:border-[#94a3b8] hover:bg-[#f8f7f5] transition-colors"
         >
-          <div className={`${o.width} h-1.5 bg-primary/30 rounded`} />
-          <span>{o.label}</span>
+          <div className={`${o.width} h-1.5 bg-[#94a3b8]/30 rounded`} />
+          <span className="text-[#64748b]">{o.label}</span>
         </button>
       ))}
     </div>

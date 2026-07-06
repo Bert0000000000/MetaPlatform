@@ -1,6 +1,16 @@
 /**
  * Custom React Flow node components for BPMN 2.0 elements.
- * Each node has proper BPMN visual styling, Lucide icons, and connection handles.
+ *
+ * "Systematic Rhythm" design — clinical, minimal, unified.
+ *
+ * Color system (4 semantic + neutral):
+ *   Start:    #22c55e (green)
+ *   End:      #ef4444 (red)
+ *   Neutral:  #94a3b8 (icon, handle, lines)
+ *   Border:   #d6d4d0 (node), #d1d5db (dashed)
+ *   Bg:       #fff (events/tasks), #f0efed (gateways)
+ *
+ * All tasks/gateways use identical neutral styling — differentiated by icon only.
  */
 import { memo } from "react";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
@@ -24,45 +34,66 @@ import {
   MessageSquareText,
 } from "lucide-react";
 
-// ---------- Shared Handle Styles ----------
+// ==================== Design Tokens ====================
+
+const C = {
+  // Semantic
+  start: "#22c55e",
+  end: "#ef4444",
+  // Neutral
+  icon: "#94a3b8",
+  border: "#d6d4d0",
+  borderLight: "#e2e0dc",
+  dashedBorder: "#d1d5db",
+  // Backgrounds
+  white: "#fff",
+  node: "#f8f7f5",
+  gateway: "#f0efed",
+  annotationBg: "#f8fafc",
+} as const;
+
+// Selected state — subtle border change, no shadow
+const SELECTED_BORDER = "#94a3b8";
+
+// ==================== Shared Handle Styles ====================
 
 const handleStyle: React.CSSProperties = {
   width: 8,
   height: 8,
   border: "2px solid #fff",
-  background: "#6366f1",
+  background: C.icon,
 };
 
 const sourceHandleStyle: React.CSSProperties = { ...handleStyle };
 const targetHandleStyle: React.CSSProperties = { ...handleStyle };
 
-// ---------- Shared Types ----------
+// ==================== Shared Types ====================
 
 interface BpmnNodeData {
   label?: string;
   [key: string]: unknown;
 }
 
-// ==================== Start Event ====================
+// ==================== Event Nodes (circle 40×40) ====================
+
+// --- Start Event ---
+// White bg, green border (2px), green play triangle. No shadow.
 
 export const StartEventNode = memo(({ data, selected }: NodeProps) => {
   const d = data as BpmnNodeData;
   return (
-    <div
-      className="relative"
-      style={{ width: 40, height: 40 }}
-    >
+    <div className="relative" style={{ width: 40, height: 40 }}>
       <div
-        className="flex items-center justify-center rounded-full border-2 transition-shadow"
+        className="flex items-center justify-center rounded-full"
         style={{
           width: 40,
           height: 40,
-          borderColor: selected ? "#22c55e" : "#16a34a",
-          background: selected ? "#dcfce7" : "#f0fdf4",
-          boxShadow: selected ? "0 0 0 3px rgba(34,197,94,0.3)" : "none",
+          border: `2px solid ${selected ? SELECTED_BORDER : C.start}`,
+          background: C.white,
+          transition: "border-color 0.15s",
         }}
       >
-        <Play className="size-4 text-green-600" />
+        <Play className="size-4" style={{ color: C.start }} />
       </div>
       {d.label && (
         <div
@@ -78,23 +109,32 @@ export const StartEventNode = memo(({ data, selected }: NodeProps) => {
 });
 StartEventNode.displayName = "StartEventNode";
 
-// ==================== End Event ====================
+// --- End Event ---
+// White bg, red border (3px — thicker than start), solid red dot inside.
 
 export const EndEventNode = memo(({ data, selected }: NodeProps) => {
   const d = data as BpmnNodeData;
   return (
     <div className="relative" style={{ width: 40, height: 40 }}>
       <div
-        className="flex items-center justify-center rounded-full border-[3px] transition-shadow"
+        className="flex items-center justify-center rounded-full"
         style={{
           width: 40,
           height: 40,
-          borderColor: selected ? "#ef4444" : "#dc2626",
-          background: selected ? "#fee2e2" : "#fef2f2",
-          boxShadow: selected ? "0 0 0 3px rgba(239,68,68,0.3)" : "none",
+          border: `3px solid ${selected ? SELECTED_BORDER : C.end}`,
+          background: C.white,
+          transition: "border-color 0.15s",
         }}
       >
-        <Octagon className="size-4 text-red-600" />
+        <div
+          style={{
+            width: 12,
+            height: 12,
+            borderRadius: "50%",
+            background: selected ? SELECTED_BORDER : C.end,
+            transition: "background 0.15s",
+          }}
+        />
       </div>
       {d.label && (
         <div
@@ -110,23 +150,24 @@ export const EndEventNode = memo(({ data, selected }: NodeProps) => {
 });
 EndEventNode.displayName = "EndEventNode";
 
-// ==================== Timer Event ====================
+// --- Timer Event ---
+// White bg, neutral border, clock icon.
 
 export const TimerEventNode = memo(({ data, selected }: NodeProps) => {
   const d = data as BpmnNodeData;
   return (
     <div className="relative" style={{ width: 40, height: 40 }}>
       <div
-        className="flex items-center justify-center rounded-full border-2 transition-shadow"
+        className="flex items-center justify-center rounded-full"
         style={{
           width: 40,
           height: 40,
-          borderColor: selected ? "#f59e0b" : "#d97706",
-          background: selected ? "#fef3c7" : "#fffbeb",
-          boxShadow: selected ? "0 0 0 3px rgba(245,158,11,0.3)" : "none",
+          border: `2px solid ${selected ? SELECTED_BORDER : C.border}`,
+          background: C.white,
+          transition: "border-color 0.15s",
         }}
       >
-        <Clock className="size-4 text-amber-600" />
+        <Clock className="size-4" style={{ color: C.icon }} />
       </div>
       {d.label && (
         <div
@@ -142,23 +183,24 @@ export const TimerEventNode = memo(({ data, selected }: NodeProps) => {
 });
 TimerEventNode.displayName = "TimerEventNode";
 
-// ==================== Message Event ====================
+// --- Message Event ---
+// White bg, neutral border, mail icon.
 
 export const MessageEventNode = memo(({ data, selected }: NodeProps) => {
   const d = data as BpmnNodeData;
   return (
     <div className="relative" style={{ width: 40, height: 40 }}>
       <div
-        className="flex items-center justify-center rounded-full border-2 transition-shadow"
+        className="flex items-center justify-center rounded-full"
         style={{
           width: 40,
           height: 40,
-          borderColor: selected ? "#3b82f6" : "#2563eb",
-          background: selected ? "#dbeafe" : "#eff6ff",
-          boxShadow: selected ? "0 0 0 3px rgba(59,130,246,0.3)" : "none",
+          border: `2px solid ${selected ? SELECTED_BORDER : C.border}`,
+          background: C.white,
+          transition: "border-color 0.15s",
         }}
       >
-        <Mail className="size-4 text-blue-600" />
+        <Mail className="size-4" style={{ color: C.icon }} />
       </div>
       {d.label && (
         <div
@@ -175,42 +217,51 @@ export const MessageEventNode = memo(({ data, selected }: NodeProps) => {
 });
 MessageEventNode.displayName = "MessageEventNode";
 
-// ==================== Task Base Component ====================
+// ==================== Task Nodes (rounded rectangle) ====================
 
+/**
+ * Unified task node — matches canvas design exactly:
+ * - White/off-white bg (#f8f7f5), gray border (#d6d4d0)
+ * - Gray icon badge (circle #f3f1ee bg, #d6d4d0 border, #94a3b8 icon)
+ * - No shadows, no colored accents
+ * - Differentiated solely by icon
+ */
 function TaskNodeBase({
   data,
   selected,
-  color,
-  bgColor,
-  borderColor,
   Icon,
 }: {
   data: BpmnNodeData;
   selected?: boolean;
-  color: string;
-  bgColor: string;
-  borderColor: string;
   Icon: React.ElementType;
 }) {
   return (
     <div
-      className="relative rounded-lg border-2 transition-shadow flex items-center gap-2 px-3 py-2"
+      className="relative flex items-center gap-2 px-3 py-2"
       style={{
         minWidth: 120,
         minHeight: 52,
-        borderColor: selected ? color : borderColor,
-        background: selected ? bgColor : "#fff",
-        boxShadow: selected ? `0 0 0 3px ${color}33` : "0 1px 3px rgba(0,0,0,0.1)",
+        borderRadius: 8,
+        border: `1.2px solid ${selected ? SELECTED_BORDER : C.border}`,
+        background: C.node,
+        transition: "border-color 0.15s",
       }}
     >
+      {/* Icon badge — gray circle with icon */}
       <div
-        className="flex items-center justify-center rounded size-7 shrink-0"
-        style={{ background: `${color}18` }}
+        className="flex items-center justify-center shrink-0"
+        style={{
+          width: 24,
+          height: 24,
+          borderRadius: "50%",
+          background: "#f3f1ee",
+          border: `0.8px solid ${C.border}`,
+        }}
       >
-        <Icon className="size-4" style={{ color }} />
+        <Icon className="size-3.5" style={{ color: C.icon }} />
       </div>
       <div className="flex flex-col min-w-0">
-        <span className="text-xs font-semibold text-foreground truncate">
+        <span className="text-xs font-medium text-foreground truncate">
           {data.label || "Task"}
         </span>
         {data.assignee && (
@@ -230,78 +281,53 @@ function TaskNodeBase({
   );
 }
 
-// ==================== User Task ====================
-
 export const UserTaskNode = memo(({ data, selected }: NodeProps) => (
-  <TaskNodeBase
-    data={data as BpmnNodeData}
-    selected={selected}
-    color="#3b82f6"
-    bgColor="#dbeafe"
-    borderColor="#93c5fd"
-    Icon={User}
-  />
+  <TaskNodeBase data={data as BpmnNodeData} selected={selected} Icon={User} />
 ));
 UserTaskNode.displayName = "UserTaskNode";
 
-// ==================== Service Task ====================
-
 export const ServiceTaskNode = memo(({ data, selected }: NodeProps) => (
-  <TaskNodeBase
-    data={data as BpmnNodeData}
-    selected={selected}
-    color="#f97316"
-    bgColor="#ffedd5"
-    borderColor="#fdba74"
-    Icon={Cog}
-  />
+  <TaskNodeBase data={data as BpmnNodeData} selected={selected} Icon={Cog} />
 ));
 ServiceTaskNode.displayName = "ServiceTaskNode";
 
-// ==================== Script Task ====================
-
 export const ScriptTaskNode = memo(({ data, selected }: NodeProps) => (
-  <TaskNodeBase
-    data={data as BpmnNodeData}
-    selected={selected}
-    color="#8b5cf6"
-    bgColor="#ede9fe"
-    borderColor="#c4b5fd"
-    Icon={Code}
-  />
+  <TaskNodeBase data={data as BpmnNodeData} selected={selected} Icon={Code} />
 ));
 ScriptTaskNode.displayName = "ScriptTaskNode";
 
-// ==================== Business Rule Task ====================
-
 export const BusinessRuleTaskNode = memo(({ data, selected }: NodeProps) => (
-  <TaskNodeBase
-    data={data as BpmnNodeData}
-    selected={selected}
-    color="#ec4899"
-    bgColor="#fce7f3"
-    borderColor="#f9a8d4"
-    Icon={Layers}
-  />
+  <TaskNodeBase data={data as BpmnNodeData} selected={selected} Icon={Layers} />
 ));
 BusinessRuleTaskNode.displayName = "BusinessRuleTaskNode";
 
-// ==================== Gateway Base Component ====================
+export const CallActivityNode = memo(({ data, selected }: NodeProps) => (
+  <TaskNodeBase data={data as BpmnNodeData} selected={selected} Icon={Phone} />
+));
+CallActivityNode.displayName = "CallActivityNode";
 
+export const AIDecisionNode = memo(({ data, selected }: NodeProps) => (
+  <TaskNodeBase data={data as BpmnNodeData} selected={selected} Icon={Sparkles} />
+));
+AIDecisionNode.displayName = "AIDecisionNode";
+
+// ==================== Gateway Nodes (diamond 48×48) ====================
+
+/**
+ * Unified gateway node — matches canvas design exactly:
+ * - White/off-white bg (#f0efed), gray border (#d6d4d0)
+ * - Gray icon (X, +, circle)
+ * - No shadows, no colored accents
+ * - Differentiated solely by icon
+ */
 function GatewayNodeBase({
   data,
   selected,
-  color,
-  bgColor,
-  borderColor,
   Icon,
   iconContent,
 }: {
   data: BpmnNodeData;
   selected?: boolean;
-  color: string;
-  bgColor: string;
-  borderColor: string;
   Icon?: React.ElementType;
   iconContent?: React.ReactNode;
 }) {
@@ -309,19 +335,19 @@ function GatewayNodeBase({
     <div className="relative" style={{ width: 48, height: 48 }}>
       {/* Diamond shape */}
       <div
-        className="flex items-center justify-center transition-shadow"
+        className="flex items-center justify-center"
         style={{
           width: 48,
           height: 48,
           transform: "rotate(45deg)",
-          border: `2px solid ${selected ? color : borderColor}`,
-          background: selected ? bgColor : "#fff",
+          border: `1.2px solid ${selected ? SELECTED_BORDER : C.border}`,
+          background: C.gateway,
           borderRadius: 6,
-          boxShadow: selected ? `0 0 0 3px ${color}33` : "0 1px 3px rgba(0,0,0,0.1)",
+          transition: "border-color 0.15s",
         }}
       >
         <div style={{ transform: "rotate(-45deg)" }}>
-          {iconContent || (Icon && <Icon className="size-4" style={{ color }} />)}
+          {iconContent || (Icon && <Icon className="size-4" style={{ color: C.icon }} />)}
         </div>
       </div>
       {data.label && (
@@ -340,66 +366,53 @@ function GatewayNodeBase({
   );
 }
 
-// ==================== Exclusive Gateway ====================
-
 export const ExclusiveGatewayNode = memo(({ data, selected }: NodeProps) => (
-  <GatewayNodeBase
-    data={data as BpmnNodeData}
-    selected={selected}
-    color="#eab308"
-    bgColor="#fef9c3"
-    borderColor="#fde047"
-    Icon={GitBranch}
-  />
+  <GatewayNodeBase data={data as BpmnNodeData} selected={selected} Icon={GitBranch} />
 ));
 ExclusiveGatewayNode.displayName = "ExclusiveGatewayNode";
-
-// ==================== Parallel Gateway ====================
 
 export const ParallelGatewayNode = memo(({ data, selected }: NodeProps) => (
   <GatewayNodeBase
     data={data as BpmnNodeData}
     selected={selected}
-    color="#22c55e"
-    bgColor="#dcfce7"
-    borderColor="#86efac"
-    iconContent={<Plus className="size-4 text-green-600" />}
+    iconContent={<Plus className="size-4" style={{ color: C.icon }} />}
   />
 ));
 ParallelGatewayNode.displayName = "ParallelGatewayNode";
-
-// ==================== Inclusive Gateway ====================
 
 export const InclusiveGatewayNode = memo(({ data, selected }: NodeProps) => (
   <GatewayNodeBase
     data={data as BpmnNodeData}
     selected={selected}
-    color="#06b6d4"
-    bgColor="#cffafe"
-    borderColor="#67e8f9"
-    iconContent={<Circle className="size-4 text-cyan-600" />}
+    iconContent={<Circle className="size-4" style={{ color: C.icon }} />}
   />
 ));
 InclusiveGatewayNode.displayName = "InclusiveGatewayNode";
 
-// ==================== Subprocess ====================
+export const EventGatewayNode = memo(({ data, selected }: NodeProps) => (
+  <GatewayNodeBase data={data as BpmnNodeData} selected={selected} Icon={Zap} />
+));
+EventGatewayNode.displayName = "EventGatewayNode";
+
+// ==================== Container Nodes ====================
 
 export const SubProcessNode = memo(({ data, selected }: NodeProps) => {
   const d = data as BpmnNodeData;
   return (
     <div
-      className="relative rounded-lg border-2 border-dashed transition-shadow px-4 py-3"
+      className="relative px-4 py-3"
       style={{
         minWidth: 200,
         minHeight: 120,
-        borderColor: selected ? "#6366f1" : "#a5b4fc",
-        background: selected ? "#eef2ff" : "#f8fafc",
-        boxShadow: selected ? "0 0 0 3px rgba(99,102,241,0.3)" : "0 1px 3px rgba(0,0,0,0.1)",
+        borderRadius: 8,
+        border: `1.2px dashed ${selected ? SELECTED_BORDER : C.dashedBorder}`,
+        background: C.white,
+        transition: "border-color 0.15s",
       }}
     >
       <div className="flex items-center gap-2 mb-2">
-        <Layers className="size-4 text-indigo-500" />
-        <span className="text-xs font-semibold text-foreground">
+        <Layers className="size-4" style={{ color: C.icon }} />
+        <span className="text-xs font-medium text-foreground">
           {d.label || "Subprocess"}
         </span>
       </div>
@@ -413,38 +426,23 @@ export const SubProcessNode = memo(({ data, selected }: NodeProps) => {
 });
 SubProcessNode.displayName = "SubProcessNode";
 
-// ==================== Call Activity ====================
-
-export const CallActivityNode = memo(({ data, selected }: NodeProps) => (
-  <TaskNodeBase
-    data={data as BpmnNodeData}
-    selected={selected}
-    color="#6366f1"
-    bgColor="#eef2ff"
-    borderColor="#a5b4fc"
-    Icon={Phone}
-  />
-));
-CallActivityNode.displayName = "CallActivityNode";
-
-// ==================== Group ====================
-
 export const GroupNode = memo(({ data, selected }: NodeProps) => {
   const d = data as BpmnNodeData;
   return (
     <div
-      className="relative rounded-lg border-2 border-dashed transition-shadow px-4 py-3"
+      className="relative px-4 py-3"
       style={{
         minWidth: 180,
         minHeight: 100,
-        borderColor: selected ? "#a855f7" : "#d8b4fe",
-        background: selected ? "#faf5ff" : "#fdf4ff",
-        boxShadow: selected ? "0 0 0 3px rgba(168,85,247,0.3)" : "none",
+        borderRadius: 8,
+        border: `1.2px dashed ${selected ? SELECTED_BORDER : C.dashedBorder}`,
+        background: C.white,
+        transition: "border-color 0.15s",
       }}
     >
       <div className="flex items-center gap-2 mb-1">
-        <Group className="size-4 text-purple-500" />
-        <span className="text-xs font-semibold text-foreground">
+        <Group className="size-4" style={{ color: C.icon }} />
+        <span className="text-xs font-medium text-foreground">
           {d.label || "Group"}
         </span>
       </div>
@@ -458,64 +456,23 @@ export const GroupNode = memo(({ data, selected }: NodeProps) => {
 });
 GroupNode.displayName = "GroupNode";
 
-// ==================== Text Annotation ====================
-
-export const TextAnnotationNode = memo(({ data, selected }: NodeProps) => {
-  const d = data as BpmnNodeData;
-  return (
-    <div
-      className="relative rounded-lg border-l-[3px] transition-shadow px-3 py-2"
-      style={{
-        minWidth: 140,
-        minHeight: 48,
-        borderColor: selected ? "#0ea5e9" : "#7dd3fc",
-        background: selected ? "#f0f9ff" : "#f8fafc",
-        boxShadow: selected ? "0 0 0 3px rgba(14,165,233,0.3)" : "0 1px 2px rgba(0,0,0,0.06)",
-      }}
-    >
-      <div className="flex items-center gap-2">
-        <MessageSquareText className="size-3.5 text-sky-500 shrink-0" />
-        <span className="text-xs text-foreground">
-          {d.label || "Text Annotation"}
-        </span>
-      </div>
-    </div>
-  );
-});
-TextAnnotationNode.displayName = "TextAnnotationNode";
-
-// ==================== AI Decision Node (F4.5.6.12) ====================
-
-export const AIDecisionNode = memo(({ data, selected }: NodeProps) => (
-  <TaskNodeBase
-    data={data as BpmnNodeData}
-    selected={selected}
-    color="#9333ea"
-    bgColor="#faf5ff"
-    borderColor="#d8b4fe"
-    Icon={Sparkles}
-  />
-));
-AIDecisionNode.displayName = "AIDecisionNode";
-
-// ==================== Event Subprocess (F4.5.6.14) ====================
-
 export const EventSubprocessNode = memo(({ data, selected }: NodeProps) => {
   const d = data as BpmnNodeData;
   return (
     <div
-      className="relative rounded-lg border-2 border-dashed transition-shadow px-4 py-3"
+      className="relative px-4 py-3"
       style={{
         minWidth: 200,
         minHeight: 100,
-        borderColor: selected ? "#f59e0b" : "#fcd34d",
-        background: selected ? "#fffbeb" : "#fefce8",
-        boxShadow: selected ? "0 0 0 3px rgba(245,158,11,0.3)" : "0 1px 3px rgba(0,0,0,0.1)",
+        borderRadius: 8,
+        border: `1.2px dashed ${selected ? SELECTED_BORDER : C.dashedBorder}`,
+        background: C.white,
+        transition: "border-color 0.15s",
       }}
     >
       <div className="flex items-center gap-2 mb-1">
-        <Zap className="size-4 text-amber-500" />
-        <span className="text-xs font-semibold text-foreground">
+        <Zap className="size-4" style={{ color: C.icon }} />
+        <span className="text-xs font-medium text-foreground">
           {d.label || "Event Subprocess"}
         </span>
       </div>
@@ -529,21 +486,87 @@ export const EventSubprocessNode = memo(({ data, selected }: NodeProps) => {
 });
 EventSubprocessNode.displayName = "EventSubprocessNode";
 
-// ==================== Event Gateway (F4.5.6.20) ====================
+// ==================== Annotation Nodes ====================
 
-export const EventGatewayNode = memo(({ data, selected }: NodeProps) => (
-  <GatewayNodeBase
-    data={data as BpmnNodeData}
-    selected={selected}
-    color="#f59e0b"
-    bgColor="#fffbeb"
-    borderColor="#fcd34d"
-    Icon={Zap}
-  />
-));
-EventGatewayNode.displayName = "EventGatewayNode";
+export const TextAnnotationNode = memo(({ data, selected }: NodeProps) => {
+  const d = data as BpmnNodeData;
+  return (
+    <div
+      className="relative px-3 py-2"
+      style={{
+        minWidth: 140,
+        minHeight: 48,
+        borderLeft: `2px solid ${selected ? SELECTED_BORDER : C.icon}`,
+        borderRadius: 4,
+        background: C.annotationBg,
+        transition: "border-color 0.15s",
+      }}
+    >
+      <div className="flex items-center gap-2">
+        <MessageSquareText className="size-3.5 shrink-0" style={{ color: C.icon }} />
+        <span className="text-xs text-foreground">
+          {d.label || "Text Annotation"}
+        </span>
+      </div>
+    </div>
+  );
+});
+TextAnnotationNode.displayName = "TextAnnotationNode";
 
-// ---------- Node Type Registry ----------
+// ==================== Approval Node ====================
+
+/**
+ * Approval node — special task for review/approval workflows.
+ * Same visual as TaskNodeBase but with a distinct icon (Shield).
+ * Uses gray/neutral style matching the design system.
+ */
+export const ApprovalNode = memo(({ data, selected }: NodeProps) => {
+  const d = data as BpmnNodeData;
+  return (
+    <div
+      className="relative flex items-center gap-2 px-3 py-2"
+      style={{
+        minWidth: 120,
+        minHeight: 52,
+        borderRadius: 8,
+        border: `1.2px solid ${selected ? SELECTED_BORDER : C.border}`,
+        background: C.node,
+        transition: "border-color 0.15s",
+      }}
+    >
+      {/* Shield icon badge */}
+      <div
+        className="flex items-center justify-center shrink-0"
+        style={{
+          width: 24,
+          height: 24,
+          borderRadius: "50%",
+          background: "#f3f1ee",
+          border: `0.8px solid ${C.border}`,
+        }}
+      >
+        <svg className="size-3.5" style={{ color: C.icon }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+        </svg>
+      </div>
+      <div className="flex flex-col min-w-0">
+        <span className="text-xs font-medium text-foreground truncate">
+          {d.label || "Approval"}
+        </span>
+        {d.approvalType && (
+          <span className="text-[10px] text-muted-foreground truncate">
+            {String(d.approvalType)}
+          </span>
+        )}
+      </div>
+      <Handle type="target" position={Position.Left} style={targetHandleStyle} />
+      <Handle type="source" position={Position.Right} style={sourceHandleStyle} />
+    </div>
+  );
+});
+ApprovalNode.displayName = "ApprovalNode";
+
+// ==================== Node Type Registry ====================
 
 export const bpmnNodeTypes = {
   startEvent: StartEventNode,
@@ -554,6 +577,7 @@ export const bpmnNodeTypes = {
   serviceTask: ServiceTaskNode,
   scriptTask: ScriptTaskNode,
   businessRuleTask: BusinessRuleTaskNode,
+  approvalTask: ApprovalNode,
   exclusiveGateway: ExclusiveGatewayNode,
   parallelGateway: ParallelGatewayNode,
   inclusiveGateway: InclusiveGatewayNode,
@@ -566,7 +590,7 @@ export const bpmnNodeTypes = {
   eventGateway: EventGatewayNode,
 };
 
-// ---------- Node Type Metadata (for palette) ----------
+// ==================== Node Type Metadata (for palette) ====================
 
 export interface BpmnNodeTypeMeta {
   type: string;
@@ -581,27 +605,27 @@ export interface BpmnNodeTypeMeta {
 
 export const bpmnNodeTypeRegistry: BpmnNodeTypeMeta[] = [
   // Events
-  { type: "startEvent", label: "Start Event", category: "Events", color: "#16a34a", bgColor: "#dcfce7", borderColor: "#86efac", Icon: Play, defaultData: { label: "Start" } },
-  { type: "endEvent", label: "End Event", category: "Events", color: "#dc2626", bgColor: "#fee2e2", borderColor: "#fca5a5", Icon: Octagon, defaultData: { label: "End" } },
-  { type: "timerEvent", label: "Timer Event", category: "Events", color: "#d97706", bgColor: "#fef3c7", borderColor: "#fcd34d", Icon: Clock, defaultData: { label: "Timer" } },
-  { type: "messageEvent", label: "Message Event", category: "Events", color: "#2563eb", bgColor: "#dbeafe", borderColor: "#93c5fd", Icon: Mail, defaultData: { label: "Message" } },
-  // Tasks
-  { type: "userTask", label: "User Task", category: "Tasks", color: "#3b82f6", bgColor: "#dbeafe", borderColor: "#93c5fd", Icon: User, defaultData: { label: "User Task", assignee: "" } },
-  { type: "serviceTask", label: "Service Task", category: "Tasks", color: "#f97316", bgColor: "#ffedd5", borderColor: "#fdba74", Icon: Cog, defaultData: { label: "Service Task", delegateExpression: "" } },
-  { type: "scriptTask", label: "Script Task", category: "Tasks", color: "#8b5cf6", bgColor: "#ede9fe", borderColor: "#c4b5fd", Icon: Code, defaultData: { label: "Script Task", scriptFormat: "groovy", script: "" } },
-  { type: "businessRuleTask", label: "Business Rule", category: "Tasks", color: "#ec4899", bgColor: "#fce7f3", borderColor: "#f9a8d4", Icon: Layers, defaultData: { label: "Business Rule" } },
-  // Gateways
-  { type: "exclusiveGateway", label: "Exclusive", category: "Gateways", color: "#eab308", bgColor: "#fef9c3", borderColor: "#fde047", Icon: GitBranch, defaultData: { label: "XOR" } },
-  { type: "parallelGateway", label: "Parallel", category: "Gateways", color: "#22c55e", bgColor: "#dcfce7", borderColor: "#86efac", Icon: Plus, defaultData: { label: "AND" } },
-  { type: "inclusiveGateway", label: "Inclusive", category: "Gateways", color: "#06b6d4", bgColor: "#cffafe", borderColor: "#67e8f9", Icon: Circle, defaultData: { label: "OR" } },
+  { type: "startEvent", label: "Start Event", category: "Events", color: C.start, bgColor: C.white, borderColor: C.start, Icon: Play, defaultData: { label: "Start" } },
+  { type: "endEvent", label: "End Event", category: "Events", color: C.end, bgColor: C.white, borderColor: C.end, Icon: Octagon, defaultData: { label: "End" } },
+  { type: "timerEvent", label: "Timer Event", category: "Events", color: C.icon, bgColor: C.white, borderColor: C.border, Icon: Clock, defaultData: { label: "Timer" } },
+  { type: "messageEvent", label: "Message Event", category: "Events", color: C.icon, bgColor: C.white, borderColor: C.border, Icon: Mail, defaultData: { label: "Message" } },
+  // Tasks — all neutral
+  { type: "userTask", label: "User Task", category: "Tasks", color: C.icon, bgColor: C.node, borderColor: C.border, Icon: User, defaultData: { label: "User Task", assignee: "" } },
+  { type: "serviceTask", label: "Service Task", category: "Tasks", color: C.icon, bgColor: C.node, borderColor: C.border, Icon: Cog, defaultData: { label: "Service Task", delegateExpression: "" } },
+  { type: "scriptTask", label: "Script Task", category: "Tasks", color: C.icon, bgColor: C.node, borderColor: C.border, Icon: Code, defaultData: { label: "Script Task", scriptFormat: "groovy", script: "" } },
+  { type: "businessRuleTask", label: "Business Rule", category: "Tasks", color: C.icon, bgColor: C.node, borderColor: C.border, Icon: Layers, defaultData: { label: "Business Rule" } },
+  { type: "approvalTask", label: "Approval", category: "Tasks", color: C.icon, bgColor: C.node, borderColor: C.border, Icon: Layers, defaultData: { label: "Approval", approvalType: "or" } },
+  { type: "aiDecision", label: "AI Decision", category: "Tasks", color: C.icon, bgColor: C.node, borderColor: C.border, Icon: Sparkles, defaultData: { label: "AI Decision" } },
+  // Gateways — all neutral
+  { type: "exclusiveGateway", label: "Exclusive", category: "Gateways", color: C.icon, bgColor: C.gateway, borderColor: C.border, Icon: GitBranch, defaultData: { label: "XOR" } },
+  { type: "parallelGateway", label: "Parallel", category: "Gateways", color: C.icon, bgColor: C.gateway, borderColor: C.border, Icon: Plus, defaultData: { label: "AND" } },
+  { type: "inclusiveGateway", label: "Inclusive", category: "Gateways", color: C.icon, bgColor: C.gateway, borderColor: C.border, Icon: Circle, defaultData: { label: "OR" } },
+  { type: "eventGateway", label: "Event Gateway", category: "Gateways", color: C.icon, bgColor: C.gateway, borderColor: C.border, Icon: Zap, defaultData: { label: "Event" } },
   // Subprocess
-  { type: "subprocess", label: "Subprocess", category: "Subprocess", color: "#6366f1", bgColor: "#eef2ff", borderColor: "#a5b4fc", Icon: Layers, defaultData: { label: "Subprocess" } },
-  { type: "callActivity", label: "Call Activity", category: "Subprocess", color: "#6366f1", bgColor: "#eef2ff", borderColor: "#a5b4fc", Icon: Phone, defaultData: { label: "Call Activity" } },
+  { type: "subprocess", label: "Subprocess", category: "Subprocess", color: C.icon, bgColor: C.white, borderColor: C.dashedBorder, Icon: Layers, defaultData: { label: "Subprocess" } },
+  { type: "callActivity", label: "Call Activity", category: "Subprocess", color: C.icon, bgColor: C.node, borderColor: C.border, Icon: Phone, defaultData: { label: "Call Activity" } },
+  { type: "eventSubprocess", label: "Event Subprocess", category: "Subprocess", color: C.icon, bgColor: C.white, borderColor: C.dashedBorder, Icon: Zap, defaultData: { label: "Event Subprocess" } },
   // Artifacts
-  { type: "group", label: "Group", category: "Artifacts", color: "#a855f7", bgColor: "#faf5ff", borderColor: "#d8b4fe", Icon: Group, defaultData: { label: "Group" } },
-  { type: "textAnnotation", label: "Text Annotation", category: "Artifacts", color: "#0ea5e9", bgColor: "#f0f9ff", borderColor: "#7dd3fc", Icon: MessageSquareText, defaultData: { label: "Annotation" } },
-  // AI & Advanced
-  { type: "aiDecision", label: "AI Decision", category: "Tasks", color: "#9333ea", bgColor: "#faf5ff", borderColor: "#d8b4fe", Icon: Sparkles, defaultData: { label: "AI Decision" } },
-  { type: "eventSubprocess", label: "Event Subprocess", category: "Subprocess", color: "#f59e0b", bgColor: "#fffbeb", borderColor: "#fcd34d", Icon: Zap, defaultData: { label: "Event Subprocess" } },
-  { type: "eventGateway", label: "Event Gateway", category: "Gateways", color: "#f59e0b", bgColor: "#fffbeb", borderColor: "#fcd34d", Icon: Zap, defaultData: { label: "Event" } },
+  { type: "group", label: "Group", category: "Artifacts", color: C.icon, bgColor: C.white, borderColor: C.dashedBorder, Icon: Group, defaultData: { label: "Group" } },
+  { type: "textAnnotation", label: "Text Annotation", category: "Artifacts", color: C.icon, bgColor: C.annotationBg, borderColor: C.icon, Icon: MessageSquareText, defaultData: { label: "Annotation" } },
 ];

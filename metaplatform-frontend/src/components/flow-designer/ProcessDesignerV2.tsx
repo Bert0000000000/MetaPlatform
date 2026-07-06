@@ -59,21 +59,49 @@ function generateId(prefix: string): string {
 // ---------- Default start/end nodes ----------
 
 const defaultNodes: Node[] = [
-  {
-    id: "start_1",
-    type: "startEvent",
-    position: { x: 100, y: 250 },
-    data: { label: "Start" },
-  },
-  {
-    id: "end_1",
-    type: "endEvent",
-    position: { x: 700, y: 250 },
-    data: { label: "End" },
-  },
+  // Start Event
+  { id: "start_1", type: "startEvent", position: { x: 80, y: 220 }, data: { label: "Start" } },
+
+  // User Task
+  { id: "user_task_1", type: "userTask", position: { x: 220, y: 210 }, data: { label: "User Task" } },
+
+  // XOR Gateway (exclusive)
+  { id: "gateway_xor", type: "exclusiveGateway", position: { x: 430, y: 224 }, data: { label: "XOR" } },
+
+  // Service Task (upper branch)
+  { id: "service_task_1", type: "serviceTask", position: { x: 580, y: 110 }, data: { label: "Service Task" } },
+
+  // Script Task (lower branch)
+  { id: "script_task_1", type: "scriptTask", position: { x: 580, y: 310 }, data: { label: "Script Task" } },
+
+  // AND Gateway (parallel)
+  { id: "gateway_and", type: "parallelGateway", position: { x: 790, y: 224 }, data: { label: "AND" } },
+
+  // Approval Task
+  { id: "user_task_2", type: "userTask", position: { x: 940, y: 210 }, data: { label: "Approval" } },
+
+  // End Event
+  { id: "end_1", type: "endEvent", position: { x: 1140, y: 220 }, data: { label: "End" } },
 ];
 
-const defaultEdges: Edge[] = [];
+const defaultEdges: Edge[] = [
+  // Start → User Task
+  { id: "e_start_ut1", source: "start_1", target: "user_task_1", type: "default" },
+  // User Task → XOR Gateway
+  { id: "e_ut1_gw1", source: "user_task_1", target: "gateway_xor", type: "default" },
+  // XOR Gateway → Service Task (upper branch, via bottom source handle)
+  { id: "e_gw1_st1", source: "gateway_xor", target: "service_task_1", type: "default", sourceHandle: "bottom" },
+  // XOR Gateway → Script Task (lower branch, via bottom source handle)
+  { id: "e_gw1_sc1", source: "gateway_xor", target: "script_task_1", type: "default", sourceHandle: "bottom" },
+  // Service Task → AND Gateway
+  { id: "e_st1_gw2", source: "service_task_1", target: "gateway_and", type: "default" },
+  // Script Task → AND Gateway
+  { id: "e_sc1_gw2", source: "script_task_1", target: "gateway_and", type: "default" },
+  // AND Gateway → Approval
+  { id: "e_gw2_ut2", source: "gateway_and", target: "user_task_2", type: "default" },
+  // Approval → End
+  { id: "e_ut2_end", source: "user_task_2", target: "end_1", type: "default" },
+];
 
 // ---------- Props ----------
 
@@ -198,9 +226,9 @@ export function ProcessDesignerV2({
       const newEdge: Edge = {
         ...connection,
         id: edgeId,
-        type: "default",
+        type: "smoothstep",
         animated: false,
-        style: { strokeWidth: 2, stroke: "#64748b" },
+        style: { strokeWidth: 1, stroke: "#94a3b8" },
         data: {},
       };
       setEdges((eds) => addEdge(newEdge, eds));
@@ -230,10 +258,10 @@ export function ProcessDesignerV2({
         /* ignore */
       }
 
-      const bounds = reactFlowWrapper.current.getBoundingClientRect();
+      // screenToFlowPosition expects screen (viewport) coordinates directly
       const position = rfInstance.screenToFlowPosition({
-        x: event.clientX - bounds.left,
-        y: event.clientY - bounds.top,
+        x: event.clientX,
+        y: event.clientY,
       });
 
       const newNode: Node = {
@@ -559,8 +587,8 @@ export function ProcessDesignerV2({
             fitView
             deleteKeyCode={null} /* We handle delete ourselves */
             defaultEdgeOptions={{
-              type: "default",
-              style: { strokeWidth: 2, stroke: "#64748b" },
+              type: "smoothstep",
+              style: { strokeWidth: 1, stroke: "#94a3b8" },
               animated: false,
             }}
             proOptions={{ hideAttribution: true }}

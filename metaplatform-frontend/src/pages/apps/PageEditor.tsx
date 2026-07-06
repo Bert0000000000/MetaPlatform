@@ -5,7 +5,7 @@ import { EditorShell } from "./editors/EditorShell";
 import { FormLowCodeEditor } from "./editors/FormLowCodeEditor";
 import { ListPageEditor } from "./editors/ListPageEditor";
 import { ReportEditor } from "./editors/ReportEditor";
-import { FlowEditor } from "./editors/FlowEditor";
+import { ProcessDesignerV2 } from "@/components/flow-designer/ProcessDesignerV2";
 import { BIEditor } from "./editors/BIEditor";
 import { TYPE_META } from "./editors/types";
 
@@ -65,7 +65,7 @@ export default function PageEditor() {
       case "dashboard": case "report":
         return <ReportEditor {...commonProps} />;
       case "workflow":
-        return <FlowEditor {...commonProps} />;
+        return <ProcessDesignerV2 className="flex-1" />;
       case "bi":
         return <BIEditor {...commonProps} />;
       default:
