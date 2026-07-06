@@ -115,7 +115,7 @@ export default function ApprovalList() {
   };
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6 p-6">
       <PageHeader
         title="审批流程"
         description="单据审批 / 工作流自动协作"

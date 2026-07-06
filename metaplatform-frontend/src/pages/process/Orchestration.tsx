@@ -34,7 +34,7 @@ export default function Orchestration() {
   const navigate = useNavigate();
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6 p-6">
       <PageHeader
         title="服务编排"
         description="6 大适配器 + 3 触发方式 + 节点类型"
