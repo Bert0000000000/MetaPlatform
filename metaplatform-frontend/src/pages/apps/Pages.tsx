@@ -19,6 +19,9 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
   DialogDescription, DialogFooter, DialogClose,
 } from "@/components/ui/dialog";
+import {
+  FormOrLowCodeEditor, ListPageEditor, ReportEditor, FlowEditor, BIEditor,
+} from "./PageEditor";
 
 /* ── Types ── */
 interface PageComponent {
@@ -701,76 +704,87 @@ export default function Pages() {
                 </div>
               )}
 
-              {/* Editor Body: Left palette + Canvas + Right props */}
-              <div className="flex flex-1 overflow-hidden">
-                {/* Component Palette */}
-                <div className="w-40 border-r p-2.5 overflow-y-auto">
-                  <h3 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">组件库</h3>
-                  <div className="space-y-1">
-                    {COMPONENT_PALETTE.map(c => (
-                      <button key={c.type}
-                        draggable onDragStart={() => setDraggedType(c.type)}
-                        onClick={() => addComponent(c.type)}
-                        className="flex items-center gap-2 w-full px-2 py-1.5 rounded text-xs hover:bg-primary/5 hover:border-primary/30 border border-transparent transition-colors cursor-grab active:cursor-grabbing text-left">
-                        <span className="text-muted-foreground">{c.icon}</span>
-                        <span>{c.label}</span>
-                      </button>
-                    ))}
-                  </div>
-                  <div className="mt-3 pt-2 border-t text-[10px] text-muted-foreground">
-                    <p>{components.length} 个组件</p>
-                  </div>
-                </div>
-
-                {/* Canvas */}
-                <div className="flex-1 overflow-y-auto bg-muted/20 p-4 flex justify-center"
-                  onDragOver={(e) => e.preventDefault()}
-                  onDrop={() => { if (draggedType) { addComponent(draggedType); setDraggedType(null); } }}>
-                  <div className="bg-white border rounded-lg shadow-sm overflow-y-auto" style={{ width: deviceWidth, minHeight: "400px" }}>
-                    <div className="p-4">{renderCanvas()}</div>
-                  </div>
-                </div>
-
-                {/* Properties Panel */}
-                <div className="w-56 border-l p-3 overflow-y-auto">
-                  <h3 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">属性面板</h3>
-                  {selectedComp ? (
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <Badge variant="outline" className="text-[10px]">{selectedComp.label}</Badge>
-                        <button onClick={() => setSelectedCompId(null)} className="text-muted-foreground hover:text-foreground">
-                          <X className="size-3" />
+              {/* Editor Body: Route to type-specific editor */}
+              {selectedPage.type === "list" ? (
+                <ListPageEditor components={components} setComponents={setComponents} setDirty={setDirty} />
+              ) : selectedPage.type === "dashboard" || selectedPage.type === "report" ? (
+                <ReportEditor components={components} setComponents={setComponents} setDirty={setDirty} />
+              ) : selectedPage.type === "workflow" ? (
+                <FlowEditor components={components} setComponents={setComponents} setDirty={setDirty} />
+              ) : selectedPage.type === "bi" ? (
+                <BIEditor components={components} setComponents={setComponents} setDirty={setDirty} />
+              ) : (
+                /* Default: form/lowcode - Component Palette + Canvas + Properties */
+                <div className="flex flex-1 overflow-hidden">
+                  {/* Component Palette */}
+                  <div className="w-40 border-r p-2.5 overflow-y-auto">
+                    <h3 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">组件库</h3>
+                    <div className="space-y-1">
+                      {COMPONENT_PALETTE.map(c => (
+                        <button key={c.type}
+                          draggable onDragStart={() => setDraggedType(c.type)}
+                          onClick={() => addComponent(c.type)}
+                          className="flex items-center gap-2 w-full px-2 py-1.5 rounded text-xs hover:bg-primary/5 hover:border-primary/30 border border-transparent transition-colors cursor-grab active:cursor-grabbing text-left">
+                          <span className="text-muted-foreground">{c.icon}</span>
+                          <span>{c.label}</span>
                         </button>
-                      </div>
-                      <div><Label className="text-[10px] text-muted-foreground">组件 ID</Label>
-                        <p className="text-xs font-mono text-muted-foreground">{selectedComp.id}</p>
-                      </div>
-                      <div><Label className="text-[10px] text-muted-foreground">标题文本</Label>
-                        <Input value={selectedComp.props.text || ""} onChange={(e) => updateComponent(selectedComp.id, { text: e.target.value })}
-                          className="h-7 text-xs" placeholder="输入文本..." />
-                      </div>
-                      <div><Label className="text-[10px] text-muted-foreground">占位符</Label>
-                        <Input value={selectedComp.props.placeholder || ""} onChange={(e) => updateComponent(selectedComp.id, { placeholder: e.target.value })}
-                          className="h-7 text-xs" placeholder="输入占位符..." />
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <Label className="text-[10px] text-muted-foreground">必填</Label>
-                        <input type="checkbox" checked={selectedComp.props.required || false}
-                          onChange={(e) => updateComponent(selectedComp.id, { required: e.target.checked })}
-                          className="size-3.5" />
-                      </div>
-                      <Button variant="destructive" size="sm" className="w-full h-7 text-xs" onClick={() => removeComponent(selectedComp.id)}>
-                        <Trash2 className="size-3 mr-1" /> 删除组件
-                      </Button>
+                      ))}
                     </div>
-                  ) : (
-                    <div className="text-center py-8 text-muted-foreground">
-                      <Settings className="size-6 mx-auto mb-2 opacity-20" />
-                      <p className="text-[10px]">点击组件查看属性</p>
+                    <div className="mt-3 pt-2 border-t text-[10px] text-muted-foreground">
+                      <p>{components.length} 个组件</p>
                     </div>
-                  )}
+                  </div>
+
+                  {/* Canvas */}
+                  <div className="flex-1 overflow-y-auto bg-muted/20 p-4 flex justify-center"
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={() => { if (draggedType) { addComponent(draggedType); setDraggedType(null); } }}>
+                    <div className="bg-white border rounded-lg shadow-sm overflow-y-auto" style={{ width: deviceWidth, minHeight: "400px" }}>
+                      <div className="p-4">{renderCanvas()}</div>
+                    </div>
+                  </div>
+
+                  {/* Properties Panel */}
+                  <div className="w-56 border-l p-3 overflow-y-auto">
+                    <h3 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">属性面板</h3>
+                    {selectedComp ? (
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <Badge variant="outline" className="text-[10px]">{selectedComp.label}</Badge>
+                          <button onClick={() => setSelectedCompId(null)} className="text-muted-foreground hover:text-foreground">
+                            <X className="size-3" />
+                          </button>
+                        </div>
+                        <div><Label className="text-[10px] text-muted-foreground">组件 ID</Label>
+                          <p className="text-xs font-mono text-muted-foreground">{selectedComp.id}</p>
+                        </div>
+                        <div><Label className="text-[10px] text-muted-foreground">标题文本</Label>
+                          <Input value={selectedComp.props.text || ""} onChange={(e) => updateComponent(selectedComp.id, { text: e.target.value })}
+                            className="h-7 text-xs" placeholder="输入文本..." />
+                        </div>
+                        <div><Label className="text-[10px] text-muted-foreground">占位符</Label>
+                          <Input value={selectedComp.props.placeholder || ""} onChange={(e) => updateComponent(selectedComp.id, { placeholder: e.target.value })}
+                            className="h-7 text-xs" placeholder="输入占位符..." />
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <Label className="text-[10px] text-muted-foreground">必填</Label>
+                          <input type="checkbox" checked={selectedComp.props.required || false}
+                            onChange={(e) => updateComponent(selectedComp.id, { required: e.target.checked })}
+                            className="size-3.5" />
+                        </div>
+                        <Button variant="destructive" size="sm" className="w-full h-7 text-xs" onClick={() => removeComponent(selectedComp.id)}>
+                          <Trash2 className="size-3 mr-1" /> 删除组件
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <Settings className="size-6 mx-auto mb-2 opacity-20" />
+                        <p className="text-[10px]">点击组件查看属性</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
             </>
           ) : (
             /* Empty state */

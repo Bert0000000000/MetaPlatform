@@ -9,6 +9,7 @@ import {
   Bot, Loader2, Hash, Clock, ChevronDown, Sparkles,
   FileText, LayoutDashboard, GitBranch, Database, BarChart3,
   Layers, FileEdit, FileCode, Palette, Send, X,
+  FolderOpen, Search, ChevronRight, Settings, Edit, Trash2,
 } from "lucide-react";
 import { AICoPilot } from "./editors/AICoPilot";
 
@@ -276,7 +277,7 @@ export default function PageEditor() {
 
 // Inline Editor Components (will be extracted to separate files later)
 
-function FormOrLowCodeEditor({ components, setComponents, selectedCompId, setSelectedCompId, setDirty }: any) {
+export function FormOrLowCodeEditor({ components, setComponents, selectedCompId, setSelectedCompId, setDirty }: any) {
   const COMPONENT_PALETTE = [
     { type: "heading", label: "标题", icon: "H1" },
     { type: "text", label: "文本", icon: "T" },
@@ -429,7 +430,7 @@ function FormOrLowCodeEditor({ components, setComponents, selectedCompId, setSel
 }
 
 // List Page Editor
-function ListPageEditor({ components, setComponents, setDirty }: any) {
+export function ListPageEditor({ components, setComponents, setDirty }: any) {
   // ── State ──
   const [columns, setColumns] = useState(components?.[0]?.props?.columns || [
     { name: "序号", field: "index", width: "60px", sortable: false },
@@ -690,7 +691,7 @@ function ListPageEditor({ components, setComponents, setDirty }: any) {
 }
 
 // Report/Dashboard Editor
-function ReportEditor({ components, setComponents, setDirty }: any) {
+export function ReportEditor({ components, setComponents, setDirty }: any) {
   const [widgets, setWidgets] = useState<{ type: string; title: string; span: number }[]>(
     components?.length > 0 ? components[0]?.props?.widgets || [] : [
       { type: "kpi", title: "KPI 指标卡", span: 3 },
@@ -754,7 +755,7 @@ function ReportEditor({ components, setComponents, setDirty }: any) {
 }
 
 // Flow Editor (inline, NOT redirect to process center)
-function FlowEditor({ components, setComponents, setDirty }: any) {
+export function FlowEditor({ components, setComponents, setDirty }: any) {
   const [nodes, setNodes] = useState<{ id: string; type: string; label: string; x: number; y: number }[]>(
     components?.[0]?.props?.nodes || [
       { id: "start", type: "start", label: "开始", x: 50, y: 200 },
@@ -872,7 +873,7 @@ function FlowEditor({ components, setComponents, setDirty }: any) {
 }
 
 // BI Editor
-function BIEditor({ components, setComponents, setDirty }: any) {
+export function BIEditor({ components, setComponents, setDirty }: any) {
   const [agents, setAgents] = useState<{ name: string; model: string; status: string }[]>(
     components?.[0]?.props?.agents || [
       { name: "销售助手", model: "GPT-4", status: "active" },
