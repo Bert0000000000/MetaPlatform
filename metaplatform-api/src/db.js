@@ -570,4 +570,190 @@ try {
   db.exec(`ALTER TABLE process_triggers ADD COLUMN enabled INTEGER DEFAULT 1`);
 } catch {}
 
+// ─── Architecture Center seed data ──────────────────────────────
+const archSections = {
+  // ─── Business Architecture ────────────────────────────
+  ba: {
+    ba_layers: [
+      { level: 1, name: "战略层", desc: "企业战略目标与愿景", count: 2, color: "#6366f1" },
+      { level: 2, name: "业务层", desc: "核心业务流程与价值链", count: 4, color: "#8b5cf6" },
+      { level: 3, name: "能力层", desc: "组织核心业务能力", count: 6, color: "#a78bfa" },
+      { level: 4, name: "流程层", desc: "端到端业务流程", count: 8, color: "#c4b5fd" },
+      { level: 5, name: "角色层", desc: "业务角色与职责", count: 10, color: "#ddd6fe" },
+      { level: 6, name: "事件层", desc: "业务事件与触发规则", count: 12, color: "#ede9fe" }
+    ],
+    value_chain: [
+      { name: "市场洞察", apps: ["BI系统", "CRM"] },
+      { name: "产品设计", apps: ["PLM", "项目管理"] },
+      { name: "供应链管理", apps: ["ERP", "SRM"] },
+      { name: "营销销售", apps: ["CRM", "营销平台"] },
+      { name: "客户服务", apps: ["CRM", "工单系统"] },
+      { name: "财务结算", apps: ["ERP", "财务系统"] }
+    ],
+    capabilities: [
+      { name: "战略管理", subCaps: ["战略规划", "目标分解", "绩效监控"] },
+      { name: "客户管理", subCaps: ["客户获取", "客户维护", "客户分析"] },
+      { name: "产品管理", subCaps: ["需求管理", "产品规划", "版本管理"] },
+      { name: "供应链管理", subCaps: ["采购管理", "库存管理", "物流管理"] },
+      { name: "营销管理", subCaps: ["市场活动", "渠道管理", "品牌管理"] },
+      { name: "销售管理", subCaps: ["商机管理", "合同管理", "回款管理"] },
+      { name: "服务管理", subCaps: ["工单管理", "知识库", "满意度"] },
+      { name: "财务管理", subCaps: ["预算管理", "成本核算", "财务报表"] },
+      { name: "人力资源", subCaps: ["招聘管理", "培训管理", "绩效考核"] },
+      { name: "项目管理", subCaps: ["立项管理", "进度跟踪", "资源调配"] },
+      { name: "质量管理", subCaps: ["质量标准", "质量检测", "质量改进"] },
+      { name: "IT运维", subCaps: ["系统监控", "故障处理", "变更管理"] }
+    ],
+    roles: [
+      { role: "CEO", dept: "高管层", caps: ["战略规划", "目标分解"], flows: ["战略制定流程", "经营分析流程"], apps: ["BI系统", "OA"] },
+      { role: "销售总监", dept: "销售部", caps: ["商机管理", "合同管理"], flows: ["销售管理流程", "合同审批流程"], apps: ["CRM", "合同系统"] },
+      { role: "产品经理", dept: "产品部", caps: ["需求管理", "产品规划"], flows: ["需求管理流程", "产品发布流程"], apps: ["JIRA", "产品管理平台"] },
+      { role: "采购经理", dept: "采购部", caps: ["采购管理", "供应商管理"], flows: ["采购管理流程", "供应商准入流程"], apps: ["ERP", "SRM"] },
+      { role: "财务主管", dept: "财务部", caps: ["预算管理", "成本核算"], flows: ["费用报销流程", "预算审批流程"], apps: ["ERP", "财务系统"] },
+      { role: "HR经理", dept: "人力资源部", caps: ["招聘管理", "培训管理"], flows: ["招聘管理流程", "培训管理流程"], apps: ["HR系统", "OA"] },
+      { role: "项目经理", dept: "项目管理部", caps: ["立项管理", "进度跟踪"], flows: ["项目立项流程", "项目验收流程"], apps: ["项目管理系统", "JIRA"] },
+      { role: "运维工程师", dept: "IT运维部", caps: ["系统监控", "故障处理"], flows: ["故障处理流程", "变更管理流程"], apps: ["监控平台", "CMDB"] }
+    ],
+    events: [
+      { name: "客户下单", trigger: "客户提交订单", type: "外部事件", process: "订单处理流程", freq: "高" },
+      { name: "库存预警", trigger: "库存低于阈值", type: "系统事件", process: "采购补货流程", freq: "中" },
+      { name: "合同到期", trigger: "合同到期前30天", type: "定时事件", process: "合同续签流程", freq: "低" },
+      { name: "工单创建", trigger: "客户提交服务请求", type: "外部事件", process: "工单处理流程", freq: "高" },
+      { name: "费用超支", trigger: "费用超出预算", type: "系统事件", process: "预算调整流程", freq: "中" },
+      { name: "绩效到期", trigger: "季度末", type: "定时事件", process: "绩效考核流程", freq: "低" },
+      { name: "系统故障", trigger: "监控告警", type: "系统事件", process: "故障处理流程", freq: "中" },
+      { name: "招聘需求", trigger: "部门提交HC申请", type: "内部事件", process: "招聘管理流程", freq: "中" }
+    ],
+    objects: [
+      { name: "客户", domain: "客户域", fields: ["客户ID", "名称", "类型", "联系方式", "等级"], relations: ["联系人", "商机", "合同"] },
+      { name: "商机", domain: "客户域", fields: ["商机ID", "名称", "金额", "阶段", "预计成交日期"], relations: ["客户", "报价", "合同"] },
+      { name: "合同", domain: "客户域", fields: ["合同ID", "编号", "金额", "状态", "签署日期"], relations: ["客户", "订单", "回款"] },
+      { name: "产品", domain: "产品域", fields: ["产品ID", "名称", "分类", "价格", "状态"], relations: ["订单", "BOM", "库存"] },
+      { name: "订单", domain: "订单域", fields: ["订单ID", "编号", "客户", "金额", "状态"], relations: ["客户", "产品", "发货"] },
+      { name: "供应商", domain: "供应链域", fields: ["供应商ID", "名称", "类型", "评级", "联系方式"], relations: ["采购单", "合同"] },
+      { name: "员工", domain: "人事域", fields: ["工号", "姓名", "部门", "职位", "入职日期"], relations: ["部门", "考勤", "薪资"] },
+      { name: "部门", domain: "人事域", fields: ["部门ID", "名称", "上级部门", "负责人", "人数"], relations: ["员工", "预算"] },
+      { name: "工单", domain: "服务域", fields: ["工单ID", "标题", "类型", "状态", "处理人"], relations: ["客户", "知识库", "处理记录"] }
+    ]
+  },
+
+  // ─── Application Architecture ─────────────────────────
+  aa: {
+    app_dependencies: [
+      { from: "CRM", to: "ERP", calls: "客户/合同同步", type: "数据同步" },
+      { from: "ERP", to: "财务系统", calls: "应收应付", type: "接口调用" },
+      { from: "CRM", to: "BI系统", calls: "销售报表", type: "数据查询" },
+      { from: "OA", to: "HR系统", calls: "考勤/审批", type: "流程驱动" },
+      { from: "项目管理", to: "JIRA", calls: "任务同步", type: "数据同步" }
+    ],
+    app_flow_matrix: [
+      { app: "CRM", flows: ["销售管理", "客户管理", "合同管理"], data: ["客户数据", "商机数据", "合同数据"], pages: ["客户列表", "商机看板", "合同详情"] },
+      { app: "ERP", flows: ["采购管理", "库存管理", "生产管理"], data: ["供应商数据", "库存数据", "BOM数据"], pages: ["采购单列表", "库存看板", "生产计划"] },
+      { app: "OA", flows: ["审批流程", "公告管理", "日程管理"], data: ["审批数据", "公告数据", "日程数据"], pages: ["审批中心", "公告列表", "日程视图"] },
+      { app: "HR系统", flows: ["招聘管理", "培训管理", "绩效管理"], data: ["员工数据", "培训数据", "绩效数据"], pages: ["员工花名册", "培训课程", "绩效考核"] },
+      { app: "BI系统", flows: ["数据采集", "报表分析", "数据可视化"], data: ["经营数据", "业务数据", "财务数据"], pages: ["仪表盘", "报表中心", "数据大屏"] },
+      { app: "项目管理", flows: ["项目立项", "进度跟踪", "资源管理"], data: ["项目数据", "任务数据", "资源数据"], pages: ["项目列表", "甘特图", "资源视图"] }
+    ],
+    biz_app_matrix: [
+      { process: "销售管理", crm: true, erp: false, hr: false, bi: true, oa: true, bpm: true },
+      { process: "采购管理", crm: false, erp: true, hr: false, bi: true, oa: true, bpm: true },
+      { process: "库存管理", crm: false, erp: true, hr: false, bi: true, oa: false, bpm: false },
+      { process: "人事管理", crm: false, erp: false, hr: true, bi: true, oa: true, bpm: true },
+      { process: "财务管理", crm: false, erp: true, hr: false, bi: true, oa: true, bpm: true },
+      { process: "项目管理", crm: false, erp: false, hr: false, bi: true, oa: true, bpm: true },
+      { process: "客户服务", crm: true, erp: false, hr: false, bi: true, oa: true, bpm: true },
+      { process: "质量管理", crm: false, erp: true, hr: false, bi: true, oa: false, bpm: true }
+    ],
+    app_data_matrix: [
+      { app: "CRM", domains: [true, true, false, false, false, true] },
+      { app: "ERP", domains: [false, true, true, true, false, true] },
+      { app: "OA", domains: [false, false, false, false, true, true] },
+      { app: "HR系统", domains: [false, false, false, false, true, false] },
+      { app: "BI系统", domains: [true, true, true, true, true, true] },
+      { app: "项目管理", domains: [false, false, false, false, true, true] }
+    ]
+  },
+
+  // ─── Data Architecture ────────────────────────────────
+  da: {
+    data_domains: [
+      { name: "客户域", objects: 12, apps: 8 },
+      { name: "订单域", objects: 15, apps: 6 },
+      { name: "产品域", objects: 10, apps: 5 },
+      { name: "财务域", objects: 18, apps: 7 },
+      { name: "人事域", objects: 14, apps: 4 },
+      { name: "运营域", objects: 20, apps: 10 }
+    ],
+    lake_warehouse: [
+      { layer: "ODS", name: "操作数据层", count: 156, desc: "原始数据接入与存储" },
+      { layer: "DWD", name: "明细数据层", count: 203, desc: "数据清洗与标准化" },
+      { layer: "DWS", name: "汇总数据层", count: 87, desc: "按主题汇总统计" },
+      { layer: "ADS", name: "应用数据层", count: 45, desc: "面向应用的数据服务" }
+    ],
+    data_distribution: {
+      lake: [
+        { name: "客户数据湖", size: "2.5TB", tables: 45 },
+        { name: "交易数据湖", size: "5.8TB", tables: 120 },
+        { name: "行为数据湖", size: "1.2TB", tables: 35 }
+      ],
+      warehouse: [
+        { layer: "ODS", size: "800GB", tables: 156 },
+        { layer: "DWD", size: "1.2TB", tables: 203 },
+        { layer: "DWS", size: "600GB", tables: 87 },
+        { layer: "ADS", size: "200GB", tables: 45 }
+      ],
+      realtime: [
+        { name: "实时交易", size: "50GB", count: 12 },
+        { name: "实时监控", size: "20GB", count: 8 },
+        { name: "实时推送", size: "10GB", count: 6 }
+      ]
+    }
+  },
+
+  // ─── Tech Architecture ────────────────────────────────
+  ta: {
+    tech_stack: [
+      { layer: "前端", items: ["Vue 3", "TypeScript", "Element Plus", "Vite"] },
+      { layer: "后端", items: ["Node.js", "Express", "better-sqlite3", "RESTful API"] },
+      { layer: "AI/LLM", items: ["GPT-4", "Claude", "LangChain", "向量数据库"] },
+      { layer: "数据", items: ["ClickHouse", "Redis", "Elasticsearch", "Kafka"] },
+      { layer: "基础设施", items: ["Docker", "Nginx", "GitHub Actions", "PM2"] },
+      { layer: "监控", items: ["Prometheus", "Grafana", "Sentry", "ELK Stack"] }
+    ],
+    deploy_topology: [
+      { label: "应用服务器", value: "3节点集群" },
+      { label: "数据库", value: "主从复制" },
+      { label: "负载均衡", value: "Nginx Upstream" },
+      { label: "CDN", value: "静态资源加速" }
+    ],
+    observability: [
+      { label: "日志采集", value: "ELK Stack" },
+      { label: "指标监控", value: "Prometheus + Grafana" },
+      { label: "链路追踪", value: "OpenTelemetry" },
+      { label: "告警通知", value: "飞书 + 邮件" }
+    ],
+    tech_selection: [
+      { layer: "前端框架", a: "Vue 2", b: "Vue 3", chosen: "Vue 3", score: 9 },
+      { layer: "UI组件库", a: "Element UI", b: "Element Plus", chosen: "Element Plus", score: 8 },
+      { layer: "构建工具", a: "Webpack", b: "Vite", chosen: "Vite", score: 9 },
+      { layer: "后端框架", a: "Koa", b: "Express", chosen: "Express", score: 8 },
+      { layer: "数据库", a: "MySQL", b: "SQLite", chosen: "SQLite", score: 7 },
+      { layer: "缓存", a: "Memcached", b: "Redis", chosen: "Redis", score: 9 },
+      { layer: "搜索引擎", a: "Solr", b: "Elasticsearch", chosen: "Elasticsearch", score: 9 },
+      { layer: "消息队列", a: "RabbitMQ", b: "Kafka", chosen: "Kafka", score: 8 },
+      { layer: "容器化", a: "Podman", b: "Docker", chosen: "Docker", score: 9 }
+    ]
+  }
+};
+
+for (const [section, data] of Object.entries(archSections)) {
+  const key = `architecture_${section}`;
+  const existing = db.prepare("SELECT key FROM system_config WHERE key = ?").get(key);
+  if (!existing) {
+    db.prepare(
+      "INSERT INTO system_config (key, value, description, updated_at) VALUES (?, ?, ?, datetime('now'))"
+    ).run(key, JSON.stringify(data), `Architecture center ${section} data`);
+  }
+}
+
 export default db;

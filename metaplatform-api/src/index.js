@@ -30,6 +30,7 @@ import marketRoutes from "./routes/market.js";
 import filesystemRoutes from "./routes/filesystem.js";
 import orchestrationsRoutes from "./routes/orchestrations.js";
 import ocrRoutes from "./routes/ocr.js";
+import architectureRoutes from "./routes/architecture.js";
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -66,6 +67,7 @@ app.use("/api/market", marketRoutes);
 app.use("/api/filesystem", filesystemRoutes);
 app.use("/api/orchestrations", orchestrationsRoutes);
 app.use("/api/ocr", ocrRoutes);
+app.use("/api/architecture", architectureRoutes);
 
 // ─── Health check ───────────────────────────────────────
 app.get("/api/health", (_req, res) => {

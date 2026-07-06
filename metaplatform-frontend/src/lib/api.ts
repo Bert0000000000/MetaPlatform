@@ -594,6 +594,14 @@ export const triggersApi = {
   },
 };
 
+// ─── Architecture ──────────────────────────────────────
+export const architectureApi = {
+  getSection: (section: "ba" | "aa" | "da" | "ta") =>
+    request<Record<string, unknown>>(`/architecture/${section}`),
+  updateSection: (section: "ba" | "aa" | "da" | "ta", data: Record<string, unknown>) =>
+    request(`/architecture/${section}`, { method: "PUT", body: JSON.stringify(data) }),
+};
+
 // ─── Export History ─────────────────────────────────────
 export const exportHistoryApi = {
   list: async () => {

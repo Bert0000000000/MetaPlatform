@@ -7,8 +7,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  Building2, Database, Server, Layers, GitBranch, FileText, Plus, Network, Cpu, Workflow, Box, ArrowRight, ArrowDown, BarChart3, Filter, Download, Link, Lightbulb, RefreshCw, User, Zap, Package, Megaphone, FlaskConical, Truck, Factory, Briefcase, Headphones, Smartphone, ClipboardList, DollarSign, Users, Handshake, X, Eye, Search, ChevronDown, Shield, Upload, Lock, Globe, ToggleLeft, ToggleRight,
+  Building2, Database, Server, Layers, GitBranch, FileText, Plus, Network, Cpu, Workflow, Box, ArrowRight, ArrowDown, BarChart3, Filter, Download, Link, Lightbulb, RefreshCw, User, Zap, Package, Megaphone, FlaskConical, Truck, Factory, Briefcase, Headphones, Smartphone, ClipboardList, DollarSign, Users, Handshake, X, Eye, Search, ChevronDown, Shield, Upload, Lock, Globe, ToggleLeft, ToggleRight, Loader2,
 } from "lucide-react";
+import { architectureApi } from "@/lib/api";
 
 /* ═══════════════════════ Toast helper ═══════════════════════ */
 function useToast() {
@@ -57,7 +58,26 @@ interface BALayer {
   color: string;
 }
 
-const INITIAL_BA_LAYERS: BALayer[] = [
+/* Icon/color lookup maps for API data (frontend-only properties) */
+const BA_LEVEL_META: Record<string, { icon: React.ElementType; color: string }> = {
+  L1: { icon: Link, color: "bg-red-500" },
+  L2: { icon: Lightbulb, color: "bg-orange-500" },
+  L3: { icon: RefreshCw, color: "bg-amber-500" },
+  L4: { icon: User, color: "bg-green-500" },
+  L5: { icon: Zap, color: "bg-blue-500" },
+  L6: { icon: Package, color: "bg-purple-500" },
+};
+
+const VALUE_CHAIN_ICON_MAP: Record<string, React.ElementType> = {
+  "市场获取": Megaphone,
+  "产品研发": FlaskConical,
+  "采购供应": Truck,
+  "生产制造": Factory,
+  "营销销售": Briefcase,
+  "客户服务": Headphones,
+};
+
+const INITIAL_BA_LAYERS_FALLBACK: BALayer[] = [
   { level: "L1", name: "价值链", desc: "端到端价值流", count: 5, icon: Link, color: "bg-red-500" },
   { level: "L2", name: "业务能力", desc: "可独立提供价值的业务能力", count: 28, icon: Lightbulb, color: "bg-orange-500" },
   { level: "L3", name: "业务流程", desc: "端到端业务流程图", count: 64, icon: RefreshCw, color: "bg-amber-500" },
@@ -66,7 +86,7 @@ const INITIAL_BA_LAYERS: BALayer[] = [
   { level: "L6", name: "业务对象", desc: "业务层面的核心对象", count: 56, icon: Package, color: "bg-purple-500" },
 ];
 
-const VALUE_CHAIN = [
+const VALUE_CHAIN_FALLBACK = [
   { name: "市场获取", apps: ["CRM", "营销"], icon: Megaphone },
   { name: "产品研发", apps: ["PLM", "项目管理"], icon: FlaskConical },
   { name: "采购供应", apps: ["SRM", "WMS"], icon: Truck },
@@ -76,7 +96,7 @@ const VALUE_CHAIN = [
 ];
 
 /* ═══════════════════════ Application Architecture Data ═══════════════════════ */
-const APP_DEPENDENCIES = [
+const APP_DEPENDENCIES_FALLBACK = [
   { from: "客户管理 CRM", to: "数据中台", calls: 1240, type: "数据查询" },
   { from: "报销审批", to: "财务系统", calls: 580, type: "凭证写入" },
   { from: "销售看板", to: "客户管理 CRM", calls: 920, type: "API 调用" },
@@ -84,7 +104,7 @@ const APP_DEPENDENCIES = [
   { from: "采购流程", to: "ERP", calls: 432, type: "数据同步" },
 ];
 
-const APP_FLOW_MATRIX = [
+const APP_FLOW_MATRIX_FALLBACK = [
   { app: "客户管理 CRM", flows: 5, data: 3, pages: 12 },
   { app: "报销审批", flows: 3, data: 2, pages: 8 },
   { app: "销售看板", flows: 10, data: 5, pages: 15 },
@@ -94,7 +114,16 @@ const APP_FLOW_MATRIX = [
 ];
 
 /* ═══════════════════════ Data Architecture Data ═══════════════════════ */
-const DATA_DOMAINS = [
+const DATA_DOMAIN_ICON_MAP: Record<string, { icon: React.ElementType; color: string }> = {
+  "客户域": { icon: Handshake, color: "bg-blue-500" },
+  "订单域": { icon: ClipboardList, color: "bg-green-500" },
+  "产品域": { icon: Package, color: "bg-orange-500" },
+  "财务域": { icon: DollarSign, color: "bg-yellow-500" },
+  "人事域": { icon: Users, color: "bg-purple-500" },
+  "运营域": { icon: BarChart3, color: "bg-pink-500" },
+};
+
+const DATA_DOMAINS_FALLBACK = [
   { name: "客户域", objects: 8, apps: ["CRM", "销售看板"], icon: Handshake, color: "bg-blue-500" },
   { name: "订单域", objects: 12, apps: ["CRM", "ERP"], icon: ClipboardList, color: "bg-green-500" },
   { name: "产品域", objects: 6, apps: ["PLM", "电商"], icon: Package, color: "bg-orange-500" },
@@ -104,7 +133,7 @@ const DATA_DOMAINS = [
 ];
 
 /* ═══════════════════════ Tech Architecture Data ═══════════════════════ */
-const TECH_STACK = [
+const TECH_STACK_FALLBACK = [
   { layer: "前端", items: ["React 19", "Tailwind 4", "Vite 7", "shadcn/ui", "React Router 7"] },
   { layer: "后端", items: ["Java 21", "Spring Boot 3", "Spring Cloud", "Flowable 7", "GraphQL"] },
   { layer: "数据库", items: ["PostgreSQL 16", "Neo4j 5", "Milvus 2.4", "Redis 7", "ClickHouse"] },
@@ -113,28 +142,31 @@ const TECH_STACK = [
   { layer: "AI", items: ["LLM Gateway", "LangGraph", "DeepSeek", "Qwen", "BGE-M3"] },
 ];
 
-const DEPLOY_TOPOLOGY = [
+const DEPLOY_TOPOLOGY_FALLBACK = [
   { label: "集群", value: "K8s 1.29 (3 节点)" },
   { label: "负载均衡", value: "Nginx + Istio" },
   { label: "服务网格", value: "Istio 1.20" },
   { label: "CI/CD", value: "GitHub Actions + ArgoCD" },
 ];
 
-const OBSERVABILITY = [
+const OBSERVABILITY_FALLBACK = [
   { label: "日志", value: "ELK 8.x" },
   { label: "监控", value: "Prometheus + Grafana" },
   { label: "链路追踪", value: "Jaeger" },
   { label: "告警", value: "AlertManager" },
 ];
 
-const CAPABILITY_LIST = [
+const CAPABILITY_LIST_FALLBACK = [
   "营销管理", "销售管理", "客户服务", "采购管理", "生产管理", "仓储物流",
   "财务管理", "人力资源", "研发管理", "质量管理", "法务合规", "战略规划",
 ];
 
 /* ═══════════════════════ BusinessArchitecture ═══════════════════════ */
 export function BusinessArchitecture() {
-  const [baLayers, setBALayers] = useState<BALayer[]>(INITIAL_BA_LAYERS);
+  const [baLayers, setBALayers] = useState<BALayer[]>(INITIAL_BA_LAYERS_FALLBACK);
+  const [valueChain, setValueChain] = useState(INITIAL_BA_LAYERS_FALLBACK.length ? VALUE_CHAIN_FALLBACK : []);
+  const [capabilityList, setCapabilityList] = useState<string[]>(CAPABILITY_LIST_FALLBACK);
+  const [loading, setLoading] = useState(true);
   const [showFilter, setShowFilter] = useState(false);
   const [filterLevel, setFilterLevel] = useState<string>("");
   const [showAddDialog, setShowAddDialog] = useState(false);
@@ -145,6 +177,31 @@ export function BusinessArchitecture() {
   const [showImportDialog, setShowImportDialog] = useState(false);
   const [designMode, setDesignMode] = useState(true);
   const { toast, setToast } = useToast();
+
+  /* Fetch data from API on mount */
+  useEffect(() => {
+    architectureApi.getSection("ba").then((sectionData) => {
+      if (sectionData?.layers) {
+        const apiLayers: BALayer[] = (sectionData.layers as Record<string, unknown>[]).map((l) => {
+          const level = l.level as string;
+          const meta = BA_LEVEL_META[level] || { icon: Layers, color: "bg-gray-500" };
+          return { ...l, icon: meta.icon, color: meta.color } as unknown as BALayer;
+        });
+        setBALayers(apiLayers);
+      }
+      if (sectionData?.valueChain) {
+        const apiVC = (sectionData.valueChain as Record<string, unknown>[]).map((v) => {
+          const name = v.name as string;
+          const icon = VALUE_CHAIN_ICON_MAP[name] || Link;
+          return { ...v, icon } as { name: string; apps: string[]; icon: React.ElementType };
+        });
+        setValueChain(apiVC);
+      }
+      if (sectionData?.capabilityList) {
+        setCapabilityList(sectionData.capabilityList as string[]);
+      }
+    }).catch(() => { /* use fallback */ }).finally(() => setLoading(false));
+  }, []);
 
   /* Filter */
   const filteredLayers = filterLevel
@@ -166,7 +223,7 @@ export function BusinessArchitecture() {
   }
 
   /* Add layer */
-  function handleAddLayer() {
+  async function handleAddLayer() {
     if (!newLayerName.trim()) return;
     const nextLevel = `L${baLayers.length + 1}`;
     const newLayer: BALayer = {
@@ -177,11 +234,14 @@ export function BusinessArchitecture() {
       icon: Layers,
       color: "bg-gray-500",
     };
-    setBALayers((prev) => [...prev, newLayer]);
+    const updated = [...baLayers, newLayer];
+    setBALayers(updated);
     setNewLayerName("");
     setNewLayerDesc("");
     setShowAddDialog(false);
     setToast(`已新增层级：${newLayer.level} ${newLayer.name}`);
+    /* Persist to API (fire-and-forget, strip icon/color) */
+    architectureApi.updateSection("ba", { layers: updated.map(({ icon: _i, color: _c, ...rest }) => rest) }).catch(() => {});
   }
 
   /* Row click */
@@ -192,6 +252,13 @@ export function BusinessArchitecture() {
 
   return (
     <div className="flex flex-col gap-6 p-6">
+      {/* Loading spinner */}
+      {loading && (
+        <div className="flex items-center justify-center py-12 text-muted-foreground">
+          <Loader2 className="size-6 animate-spin mr-2" /> 加载中...
+        </div>
+      )}
+
       {/* Toast */}
       {toast && (
         <div className="fixed top-4 right-4 z-50 rounded-md bg-foreground px-4 py-2 text-sm text-background shadow-lg">
@@ -325,7 +392,7 @@ export function BusinessArchitecture() {
               {/* F3.1.1 SVG 价值链可视化 */}
               <div className="mb-4">
                 <svg viewBox="0 0 900 160" className="w-full h-auto" xmlns="http://www.w3.org/2000/svg">
-                  {VALUE_CHAIN.map((v, i) => {
+                  {valueChain.map((v, i) => {
                     const x = 20 + i * 145;
                     const colors = ["#ef4444", "#f97316", "#eab308", "#22c55e", "#3b82f6", "#8b5cf6"];
                     return (
@@ -333,7 +400,7 @@ export function BusinessArchitecture() {
                         <rect x={x} y="20" width="120" height="80" rx="8" fill={colors[i]} fillOpacity="0.12" stroke={colors[i]} strokeWidth="2" />
                         <text x={x + 60} y="52" textAnchor="middle" fontSize="12" fontWeight="600" fill={colors[i]}>{v.name}</text>
                         <text x={x + 60} y="72" textAnchor="middle" fontSize="10" fill="#888">{v.apps.join(" / ")}</text>
-                        {i < VALUE_CHAIN.length - 1 && (
+                        {i < valueChain.length - 1 && (
                           <>
                             <line x1={x + 120} y1="60" x2={x + 145} y2="60" stroke="#94a3b8" strokeWidth="2" markerEnd="url(#arrowhead)" />
                           </>
@@ -351,7 +418,7 @@ export function BusinessArchitecture() {
               </div>
               {/* Fallback card view */}
               <div className="flex flex-wrap items-center gap-2">
-                {VALUE_CHAIN.map((v, i) => (
+                {valueChain.map((v, i) => (
                   <div key={v.name} className="flex items-center gap-2">
                     <div className="rounded-lg border-2 border-primary/30 bg-primary/5 px-4 py-3 hover:bg-primary/10 cursor-pointer transition-colors">
                       <div className="text-2xl"><v.icon className="size-6" /></div>
@@ -360,7 +427,7 @@ export function BusinessArchitecture() {
                         {v.apps.join(" . ")}
                       </div>
                     </div>
-                    {i < VALUE_CHAIN.length - 1 && <ArrowRight className="size-4 text-muted-foreground" />}
+                    {i < valueChain.length - 1 && <ArrowRight className="size-4 text-muted-foreground" />}
                   </div>
                 ))}
               </div>
@@ -376,7 +443,7 @@ export function BusinessArchitecture() {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                {CAPABILITY_LIST.map((c, i) => {
+                {capabilityList.map((c, i) => {
                   const subCaps = [
                     ["线索管理", "商机管理", "客户画像"],
                     ["订单管理", "报价管理", "合同管理"],
@@ -656,38 +723,56 @@ export function BusinessArchitecture() {
 
 /* ═══════════════════════ ApplicationArchitecture ═══════════════════════ */
 export function ApplicationArchitecture() {
+  const [appDeps, setAppDeps] = useState(APP_DEPENDENCIES_FALLBACK);
+  const [appMatrix, setAppMatrix] = useState(APP_FLOW_MATRIX_FALLBACK);
+  const [loading, setLoading] = useState(true);
   const [showFilter, setShowFilter] = useState(false);
   const [filterType, setFilterType] = useState<string>("");
   const [showDetailDialog, setShowDetailDialog] = useState(false);
-  const [selectedApp, setSelectedApp] = useState<(typeof APP_FLOW_MATRIX)[number] | null>(null);
+  const [selectedApp, setSelectedApp] = useState<(typeof APP_FLOW_MATRIX_FALLBACK)[number] | null>(null);
   const { toast, setToast } = useToast();
 
-  const filteredDeps = filterType
-    ? APP_DEPENDENCIES.filter((d) => d.type === filterType)
-    : APP_DEPENDENCIES;
+  /* Fetch data from API on mount */
+  useEffect(() => {
+    architectureApi.getSection("aa").then((sectionData) => {
+      if (sectionData?.dependencies) setAppDeps(sectionData.dependencies as typeof APP_DEPENDENCIES_FALLBACK);
+      if (sectionData?.matrix) setAppMatrix(sectionData.matrix as typeof APP_FLOW_MATRIX_FALLBACK);
+    }).catch(() => { /* use fallback */ }).finally(() => setLoading(false));
+  }, []);
 
-  const depTypes = [...new Set(APP_DEPENDENCIES.map((d) => d.type))];
+  const filteredDeps = filterType
+    ? appDeps.filter((d) => d.type === filterType)
+    : appDeps;
+
+  const depTypes = [...new Set(appDeps.map((d) => d.type))];
 
   function handleExport() {
-    const data = { dependencies: APP_DEPENDENCIES, matrix: APP_FLOW_MATRIX };
+    const data = { dependencies: appDeps, matrix: appMatrix };
     downloadJSON(data, "application-architecture.json");
     setToast("导出成功：application-architecture.json");
   }
 
   function handleExportCSV() {
     const headers = ["调用方", "被调用方", "调用次数", "类型"];
-    const rows = APP_DEPENDENCIES.map((d) => [d.from, d.to, d.calls, d.type]);
+    const rows = appDeps.map((d) => [d.from, d.to, d.calls, d.type]);
     downloadCSV(headers, rows, "application-dependencies.csv");
     setToast("导出成功：application-dependencies.csv");
   }
 
-  function handleAppClick(app: (typeof APP_FLOW_MATRIX)[number]) {
+  function handleAppClick(app: (typeof APP_FLOW_MATRIX_FALLBACK)[number]) {
     setSelectedApp(app);
     setShowDetailDialog(true);
   }
 
   return (
     <div className="flex flex-col gap-6 p-6">
+      {/* Loading spinner */}
+      {loading && (
+        <div className="flex items-center justify-center py-12 text-muted-foreground">
+          <Loader2 className="size-6 animate-spin mr-2" /> 加载中...
+        </div>
+      )}
+
       {toast && (
         <div className="fixed top-4 right-4 z-50 rounded-md bg-foreground px-4 py-2 text-sm text-background shadow-lg">{toast}</div>
       )}
@@ -818,7 +903,7 @@ export function ApplicationArchitecture() {
                   </tr>
                 </thead>
                 <tbody>
-                  {APP_FLOW_MATRIX.map((m, i) => {
+                  {appMatrix.map((m, i) => {
                     const complexity = m.flows * 2 + m.data * 3 + m.pages;
                     return (
                       <tr
@@ -874,7 +959,7 @@ export function ApplicationArchitecture() {
                   </g>
                 ))}
                 {/* Dependency arrows */}
-                {APP_DEPENDENCIES.map((dep, i) => {
+                {appDeps.map((dep, i) => {
                   const nodeMap: Record<string, { x: number; y: number }> = {
                     "客户管理 CRM": { x: 350, y: 60 },
                     "数据中台": { x: 150, y: 200 },
@@ -1047,30 +1132,61 @@ export function ApplicationArchitecture() {
 }
 
 /* ═══════════════════════ DataArchitecture ═══════════════════════ */
+interface DataDomainItem {
+  name: string;
+  objects: number;
+  apps: string[];
+  icon: React.ElementType;
+  color: string;
+}
+
 export function DataArchitecture() {
+  const [dataDomains, setDataDomains] = useState<DataDomainItem[]>(DATA_DOMAINS_FALLBACK);
+  const [loading, setLoading] = useState(true);
   const [showDetailDialog, setShowDetailDialog] = useState(false);
-  const [selectedDomain, setSelectedDomain] = useState<(typeof DATA_DOMAINS)[number] | null>(null);
+  const [selectedDomain, setSelectedDomain] = useState<DataDomainItem | null>(null);
   const { toast, setToast } = useToast();
 
+  /* Fetch data from API on mount */
+  useEffect(() => {
+    architectureApi.getSection("da").then((sectionData) => {
+      if (sectionData?.domains) {
+        const apiDomains: DataDomainItem[] = (sectionData.domains as Record<string, unknown>[]).map((d) => {
+          const name = d.name as string;
+          const meta = DATA_DOMAIN_ICON_MAP[name] || { icon: Database, color: "bg-gray-500" };
+          return { ...d, icon: meta.icon, color: meta.color } as unknown as DataDomainItem;
+        });
+        setDataDomains(apiDomains);
+      }
+    }).catch(() => { /* use fallback */ }).finally(() => setLoading(false));
+  }, []);
+
   function handleExport() {
-    downloadJSON(DATA_DOMAINS, "data-architecture-domains.json");
+    downloadJSON(dataDomains.map(({ icon: _i, color: _c, ...rest }) => rest), "data-architecture-domains.json");
     setToast("导出成功：data-architecture-domains.json");
   }
 
   function handleExportCSV() {
     const headers = ["域", "对象数", "关联应用"];
-    const rows = DATA_DOMAINS.map((d) => [d.name, d.objects, d.apps.join("/")]);
+    const rows = dataDomains.map((d) => [d.name, d.objects, d.apps.join("/")]);
     downloadCSV(headers, rows, "data-architecture-domains.csv");
     setToast("导出成功：data-architecture-domains.csv");
   }
 
-  function handleDomainClick(domain: (typeof DATA_DOMAINS)[number]) {
+  function handleDomainClick(domain: DataDomainItem) {
     setSelectedDomain(domain);
     setShowDetailDialog(true);
   }
 
   return (
     <div className="flex flex-col gap-6 p-6">
+      {/* Loading spinner */}
+      {loading && (
+        <div className="flex items-center justify-center py-12 text-muted-foreground">
+          <Loader2 className="size-6 animate-spin mr-2" /> 加载中...
+        </div>
+      )}
+
       {toast && (
         <div className="fixed top-4 right-4 z-50 rounded-md bg-foreground px-4 py-2 text-sm text-background shadow-lg">{toast}</div>
       )}
@@ -1093,7 +1209,7 @@ export function DataArchitecture() {
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-        {DATA_DOMAINS.map((d) => (
+        {dataDomains.map((d) => (
           <Card key={d.name} className="cursor-pointer hover:border-primary transition-colors" onClick={() => handleDomainClick(d)}>
             <CardContent className="p-4 text-center">
               <div className={`size-12 rounded-full ${d.color} text-white flex items-center justify-center mx-auto`}>
@@ -1267,13 +1383,26 @@ export function DataArchitecture() {
 
 /* ═══════════════════════ TechArchitecture ═══════════════════════ */
 export function TechArchitecture() {
+  const [techStack, setTechStack] = useState(TECH_STACK_FALLBACK);
+  const [deployTopology, setDeployTopology] = useState(DEPLOY_TOPOLOGY_FALLBACK);
+  const [observability, setObservability] = useState(OBSERVABILITY_FALLBACK);
+  const [loading, setLoading] = useState(true);
   const [showDetailDialog, setShowDetailDialog] = useState(false);
-  const [selectedStack, setSelectedStack] = useState<(typeof TECH_STACK)[number] | null>(null);
+  const [selectedStack, setSelectedStack] = useState<(typeof TECH_STACK_FALLBACK)[number] | null>(null);
   const [designMode, setDesignMode] = useState(true);
   const { toast, setToast } = useToast();
 
+  /* Fetch data from API on mount */
+  useEffect(() => {
+    architectureApi.getSection("ta").then((sectionData) => {
+      if (sectionData?.techStack) setTechStack(sectionData.techStack as typeof TECH_STACK_FALLBACK);
+      if (sectionData?.deploy) setDeployTopology(sectionData.deploy as typeof DEPLOY_TOPOLOGY_FALLBACK);
+      if (sectionData?.observability) setObservability(sectionData.observability as typeof OBSERVABILITY_FALLBACK);
+    }).catch(() => { /* use fallback */ }).finally(() => setLoading(false));
+  }, []);
+
   function handleExport() {
-    const data = { techStack: TECH_STACK, deploy: DEPLOY_TOPOLOGY, observability: OBSERVABILITY };
+    const data = { techStack, deploy: deployTopology, observability };
     downloadJSON(data, "tech-architecture.json");
     setToast("导出成功：tech-architecture.json");
   }
@@ -1281,18 +1410,24 @@ export function TechArchitecture() {
   function handleExportCSV() {
     const headers = ["层级", "技术"];
     const rows: (string | number)[][] = [];
-    TECH_STACK.forEach((s) => s.items.forEach((t) => rows.push([s.layer, t])));
+    techStack.forEach((s) => s.items.forEach((t) => rows.push([s.layer, t])));
     downloadCSV(headers, rows, "tech-architecture.csv");
     setToast("导出成功：tech-architecture.csv");
   }
 
-  function handleStackClick(stack: (typeof TECH_STACK)[number]) {
+  function handleStackClick(stack: (typeof TECH_STACK_FALLBACK)[number]) {
     setSelectedStack(stack);
     setShowDetailDialog(true);
   }
 
   return (
     <div className="flex flex-col gap-6 p-6">
+      {/* Loading spinner */}
+      {loading && (
+        <div className="flex items-center justify-center py-12 text-muted-foreground">
+          <Loader2 className="size-6 animate-spin mr-2" /> 加载中...
+        </div>
+      )}
       {toast && (
         <div className="fixed top-4 right-4 z-50 rounded-md bg-foreground px-4 py-2 text-sm text-background shadow-lg">{toast}</div>
       )}
@@ -1326,7 +1461,7 @@ export function TechArchitecture() {
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {TECH_STACK.map((s) => (
+            {techStack.map((s) => (
               <div
                 key={s.layer}
                 className="rounded-lg border p-3 cursor-pointer hover:border-primary transition-colors"
@@ -1494,7 +1629,7 @@ export function TechArchitecture() {
           </CardHeader>
           <CardContent>
             <div className="space-y-2 text-sm">
-              {DEPLOY_TOPOLOGY.map((item) => (
+              {deployTopology.map((item) => (
                 <div key={item.label} className="flex justify-between p-2 border rounded">
                   <span>{item.label}</span><span className="font-mono text-xs">{item.value}</span>
                 </div>
@@ -1509,7 +1644,7 @@ export function TechArchitecture() {
           </CardHeader>
           <CardContent>
             <div className="space-y-2 text-sm">
-              {OBSERVABILITY.map((item) => (
+              {observability.map((item) => (
                 <div key={item.label} className="flex justify-between p-2 border rounded">
                   <span>{item.label}</span><span className="font-mono text-xs">{item.value}</span>
                 </div>
