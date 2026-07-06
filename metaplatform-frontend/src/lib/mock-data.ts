@@ -1,3 +1,4 @@
+// Fallback data for offline/error states. Primary data comes from API calls.
 /**
  * Mock 数据中心 —— 模拟后端 API 响应
  * 后续可逐步替换为真实 API 调用

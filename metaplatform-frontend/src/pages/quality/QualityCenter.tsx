@@ -103,26 +103,38 @@ export function TestCases({ onAdoptFromAI }: { onAdoptFromAI?: (caseItem: { name
     setForm({ name: "", module: "", type: "单元", priority: "P1" });
   }
 
-  // TODO: Replace with real test execution API when qualityApi is available
-  // e.g. const result = await qualityApi.runTest(id);
-  function handleRun(id: string) {
+  // Run a test case by calling the backend API
+  async function handleRun(id: string) {
     setCases((prev) => prev.map((c) => c.id === id ? { ...c, status: "running" as const, lastRun: "运行中..." } : c));
-    // Simulate test execution with deterministic results based on test case properties
-    setTimeout(() => {
-      setCases((prev) => prev.map((c) => {
-        if (c.id !== id) return c;
-        // Determine result based on test case priority and type (deterministic, not random)
-        const isP0Critical = c.priority === "P0";
-        const isUITest = c.type === "UI";
-        // P0 tests pass unless they are UI tests (simulating higher flakiness for UI)
-        const result: "passed" | "failed" = (isP0Critical && isUITest) ? "failed" : "passed";
-        // Duration based on test type (deterministic)
-        const durationMap: Record<string, string> = {
-          "单元": "2.3s", "集成": "5.1s", "UI": "8.4s", "流程": "12.4s", "性能": "15.2s",
-        };
-        return { ...c, status: result, lastRun: "刚刚", duration: durationMap[c.type] || "3.0s" };
-      }));
-    }, 1500);
+    try {
+      const token = localStorage.getItem("mp_token");
+      const response = await fetch(`/api/quality/test-cases/${id}/run`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+      const json = await response.json();
+      if (json.success && json.data) {
+        const tc = json.data;
+        setCases((prev) => prev.map((c) => {
+          if (c.id !== id) return c;
+          return {
+            ...c,
+            status: (tc.result === "passed" ? "passed" : tc.result === "failed" ? "failed" : "passed") as "passed" | "failed",
+            lastRun: "刚刚",
+            duration: tc.duration ? `${(tc.duration / 1000).toFixed(1)}s` : "-",
+          };
+        }));
+      } else {
+        // API returned error, mark as failed
+        setCases((prev) => prev.map((c) => c.id === id ? { ...c, status: "failed" as const, lastRun: "失败" } : c));
+      }
+    } catch (err) {
+      // Network error, mark as failed
+      setCases((prev) => prev.map((c) => c.id === id ? { ...c, status: "failed" as const, lastRun: "请求失败" } : c));
+    }
   }
 
   return (

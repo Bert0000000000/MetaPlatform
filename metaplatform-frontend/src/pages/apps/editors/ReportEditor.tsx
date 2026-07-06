@@ -13,6 +13,15 @@ import {
   Gauge, Filter, AreaChart, Trash2, Settings,
   LayoutDashboard,
 } from "lucide-react";
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
+  LineChart as ReLineChart, Line,
+  PieChart as RePieChart, Pie, Cell,
+  AreaChart as ReAreaChart, Area,
+  RadialBarChart, RadialBar,
+  FunnelChart, Funnel,
+  ResponsiveContainer, Legend,
+} from "recharts";
 import { GridLayout, SpanSelector, type GridItem, type GridSpan } from "./GridLayout";
 import type { BaseEditorProps, PageComponent } from "./types";
 
@@ -51,88 +60,184 @@ const CHART_COLOR = "#94a3b8";
 const CHART_COLOR_LIGHT = "#cbd5e1";
 const CHART_BG = "#f8f7f5";
 
-// ── SVG chart placeholder renderers ──
-function BarChartPlaceholder() {
-  const bars = [60, 80, 45, 90, 70, 55, 85, 40];
+// ── Sample data for charts ──
+const monthlySalesData = [
+  { month: "1月", sales: 42000, target: 40000 },
+  { month: "2月", sales: 38000, target: 42000 },
+  { month: "3月", sales: 55000, target: 45000 },
+  { month: "4月", sales: 48000, target: 50000 },
+  { month: "5月", sales: 62000, target: 55000 },
+  { month: "6月", sales: 58000, target: 58000 },
+  { month: "7月", sales: 71000, target: 60000 },
+  { month: "8月", sales: 65000, target: 62000 },
+];
+
+const userGrowthData = [
+  { month: "1月", users: 1200, newUsers: 320 },
+  { month: "2月", users: 1450, newUsers: 250 },
+  { month: "3月", users: 1780, newUsers: 330 },
+  { month: "4月", users: 2100, newUsers: 320 },
+  { month: "5月", users: 2560, newUsers: 460 },
+  { month: "6月", users: 2890, newUsers: 330 },
+  { month: "7月", users: 3340, newUsers: 450 },
+  { month: "8月", users: 3780, newUsers: 440 },
+];
+
+const categoryData = [
+  { name: "电子产品", value: 35 },
+  { name: "办公用品", value: 25 },
+  { name: "食品饮料", value: 20 },
+  { name: "其他",     value: 20 },
+];
+
+const areaData = [
+  { month: "1月", 华东: 28000, 华北: 18000, 华南: 15000 },
+  { month: "2月", 华东: 25000, 华北: 16000, 华南: 14000 },
+  { month: "3月", 华东: 35000, 华北: 22000, 华南: 19000 },
+  { month: "4月", 华东: 31000, 华北: 20000, 华南: 17000 },
+  { month: "5月", 华东: 40000, 华北: 26000, 华南: 22000 },
+  { month: "6月", 华东: 37000, 华北: 24000, 华南: 20000 },
+  { month: "7月", 华东: 45000, 华北: 30000, 华南: 25000 },
+  { month: "8月", 华东: 42000, 华北: 28000, 华南: 23000 },
+];
+
+const funnelData = [
+  { name: "访问", value: 12000 },
+  { name: "注册", value: 7200 },
+  { name: "激活", value: 4800 },
+  { name: "付费", value: 2400 },
+  { name: "续费", value: 1680 },
+];
+
+// ── Recharts chart renderers ──
+function BarChartRenderer() {
   return (
-    <svg viewBox="0 0 200 80" className="w-full h-full">
-      {bars.map((h, i) => (
-        <rect key={i} x={i * 24 + 4} y={80 - h} width="18" height={h}
-          fill={CHART_COLOR} fillOpacity={0.3 + i * 0.08} rx="2" />
-      ))}
-    </svg>
+    <ResponsiveContainer width="100%" height="100%">
+      <BarChart data={monthlySalesData} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
+        <CartesianGrid strokeDasharray="3 3" stroke="#e2e0dc" vertical={false} />
+        <XAxis dataKey="month" tick={{ fontSize: 10, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
+        <YAxis tick={{ fontSize: 10, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
+        <Tooltip
+          contentStyle={{ fontSize: 11, border: "1px solid #d6d4d0", borderRadius: 4, background: "#fff" }}
+        />
+        <Bar dataKey="sales" fill={CHART_COLOR} radius={[2, 2, 0, 0]} barSize={20} name="实际销售" />
+        <Bar dataKey="target" fill={CHART_COLOR_LIGHT} radius={[2, 2, 0, 0]} barSize={20} name="目标" />
+      </BarChart>
+    </ResponsiveContainer>
   );
 }
 
-function LineChartPlaceholder() {
-  const points = "10,60 35,40 60,55 85,25 110,35 135,20 160,30 185,15";
-  const areaPoints = points + " 185,80 10,80";
+function LineChartRenderer() {
   return (
-    <svg viewBox="0 0 200 80" className="w-full h-full">
-      <polygon points={areaPoints} fill={CHART_COLOR} fillOpacity="0.08" />
-      <polyline points={points} fill="none" stroke={CHART_COLOR} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-      {points.split(" ").map((p, i) => {
-        const [cx, cy] = p.split(",").map(Number);
-        return <circle key={i} cx={cx} cy={cy} r="2.5" fill="#fff" stroke={CHART_COLOR} strokeWidth="1.5" />;
-      })}
-    </svg>
+    <ResponsiveContainer width="100%" height="100%">
+      <ReLineChart data={userGrowthData} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
+        <CartesianGrid strokeDasharray="3 3" stroke="#e2e0dc" vertical={false} />
+        <XAxis dataKey="month" tick={{ fontSize: 10, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
+        <YAxis tick={{ fontSize: 10, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
+        <Tooltip
+          contentStyle={{ fontSize: 11, border: "1px solid #d6d4d0", borderRadius: 4, background: "#fff" }}
+        />
+        <Area type="monotone" dataKey="users" stroke="none" fill={CHART_COLOR} fillOpacity={0.1} />
+        <Line type="monotone" dataKey="users" stroke={CHART_COLOR} strokeWidth={2} dot={{ r: 2, fill: "#fff", stroke: CHART_COLOR, strokeWidth: 1.5 }} activeDot={{ r: 3 }} name="总用户" />
+        <Line type="monotone" dataKey="newUsers" stroke={CHART_COLOR_LIGHT} strokeWidth={1.5} dot={{ r: 2, fill: "#fff", stroke: CHART_COLOR_LIGHT, strokeWidth: 1.5 }} activeDot={{ r: 3 }} name="新增用户" strokeDasharray="4 4" />
+      </ReLineChart>
+    </ResponsiveContainer>
   );
 }
 
-function PieChartPlaceholder() {
-  const segments = [
-    { pct: 35, color: CHART_COLOR },
-    { pct: 25, color: CHART_COLOR_LIGHT },
-    { pct: 20, color: "#a1a1aa" },
-    { pct: 20, color: "#d4d4d8" },
+function PieChartRenderer() {
+  const PIE_COLORS = [CHART_COLOR, CHART_COLOR_LIGHT, "#a1a1aa", "#d4d4d8"];
+  return (
+    <ResponsiveContainer width="100%" height="100%">
+      <RePieChart>
+        <Pie
+          data={categoryData}
+          cx="50%"
+          cy="50%"
+          innerRadius="40%"
+          outerRadius="75%"
+          paddingAngle={2}
+          dataKey="value"
+          stroke="none"
+        >
+          {categoryData.map((_entry, index) => (
+            <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+          ))}
+        </Pie>
+        <Tooltip
+          contentStyle={{ fontSize: 11, border: "1px solid #d6d4d0", borderRadius: 4, background: "#fff" }}
+          formatter={(value: number) => [`${value}%`, "占比"]}
+        />
+        <Legend
+          iconType="circle"
+          iconSize={6}
+          wrapperStyle={{ fontSize: 10, color: "#94a3b8" }}
+        />
+      </RePieChart>
+    </ResponsiveContainer>
+  );
+}
+
+function AreaChartRenderer() {
+  return (
+    <ResponsiveContainer width="100%" height="100%">
+      <ReAreaChart data={areaData} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
+        <CartesianGrid strokeDasharray="3 3" stroke="#e2e0dc" vertical={false} />
+        <XAxis dataKey="month" tick={{ fontSize: 10, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
+        <YAxis tick={{ fontSize: 10, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
+        <Tooltip
+          contentStyle={{ fontSize: 11, border: "1px solid #d6d4d0", borderRadius: 4, background: "#fff" }}
+        />
+        <Area type="monotone" dataKey="华东" stroke={CHART_COLOR} fill={CHART_COLOR} fillOpacity={0.2} strokeWidth={1.5} />
+        <Area type="monotone" dataKey="华北" stroke={CHART_COLOR_LIGHT} fill={CHART_COLOR_LIGHT} fillOpacity={0.15} strokeWidth={1.5} />
+        <Area type="monotone" dataKey="华南" stroke="#a1a1aa" fill="#a1a1aa" fillOpacity={0.1} strokeWidth={1.5} />
+        <Legend
+          iconType="circle"
+          iconSize={6}
+          wrapperStyle={{ fontSize: 10, color: "#94a3b8" }}
+        />
+      </ReAreaChart>
+    </ResponsiveContainer>
+  );
+}
+
+function GaugeRenderer() {
+  const gaugeData = [
+    { name: "目标完成率", value: 72, fill: CHART_COLOR },
   ];
-  let cum = 0;
-  const paths = segments.map((seg) => {
-    const start = cum;
-    cum += seg.pct;
-    const r = 32;
-    const cx = 45;
-    const cy = 45;
-    const startAngle = (start / 100) * Math.PI * 2 - Math.PI / 2;
-    const endAngle = (cum / 100) * Math.PI * 2 - Math.PI / 2;
-    const x1 = cx + r * Math.cos(startAngle);
-    const y1 = cy + r * Math.sin(startAngle);
-    const x2 = cx + r * Math.cos(endAngle);
-    const y2 = cy + r * Math.sin(endAngle);
-    const largeArc = seg.pct > 50 ? 1 : 0;
-    return `M${cx},${cy} L${x1},${y1} A${r},${r} 0 ${largeArc},1 ${x2},${y2} Z`;
-  });
   return (
-    <svg viewBox="0 0 90 90" className="w-full h-full">
-      {paths.map((d, i) => (
-        <path key={i} d={d} fill={segments[i].color} fillOpacity="0.6" stroke="#fff" strokeWidth="1" />
-      ))}
-    </svg>
+    <ResponsiveContainer width="100%" height="100%">
+      <RadialBarChart
+        cx="50%"
+        cy="50%"
+        innerRadius="60%"
+        outerRadius="90%"
+        startAngle={180}
+        endAngle={0}
+        barSize={10}
+        data={gaugeData}
+      >
+        <RadialBar
+          background={{ fill: "#e2e0dc" }}
+          dataKey="value"
+          cornerRadius={5}
+          isAnimationActive={true}
+        />
+        <text
+          x="50%"
+          y="50%"
+          textAnchor="middle"
+          dominantBaseline="middle"
+          fontSize={16}
+          fontWeight={600}
+          fill="#64748b"
+        >
+          72%
+        </text>
+      </RadialBarChart>
+    </ResponsiveContainer>
   );
 }
-
-function AreaChartPlaceholder() {
-  const points = "10,55 35,35 60,50 85,20 110,30 135,15 160,25 185,10";
-  const areaPoints = points + " 185,80 10,80";
-  return (
-    <svg viewBox="0 0 200 80" className="w-full h-full">
-      <polygon points={areaPoints} fill={CHART_COLOR} fillOpacity="0.1" />
-      <polyline points={points} fill="none" stroke={CHART_COLOR} strokeWidth="1.5" />
-    </svg>
-  );
-}
-
-function GaugePlaceholder() {
-  return (
-    <svg viewBox="0 0 100 60" className="w-full h-full">
-      <path d="M10,55 A40,40 0 0,1 90,55" fill="none" stroke={CHART_LIGHT} strokeWidth="6" strokeLinecap="round" />
-      <path d="M10,55 A40,40 0 0,1 70,18" fill="none" stroke={CHART_COLOR} strokeWidth="6" strokeLinecap="round" />
-      <text x="50" y="50" textAnchor="middle" fontSize="12" fontWeight="500" fill="#64748b">72%</text>
-    </svg>
-  );
-}
-
-const CHART_LIGHT = "#e2e0dc";
 
 function TablePlaceholder() {
   return (
@@ -157,15 +262,33 @@ function TablePlaceholder() {
   );
 }
 
-function FunnelPlaceholder() {
-  const steps = [100, 75, 50, 30];
+function FunnelChartRenderer() {
   return (
-    <svg viewBox="0 0 200 80" className="w-full h-full">
-      {steps.map((w, i) => (
-        <rect key={i} x={(200 - w * 1.6) / 2} y={i * 19 + 2} width={w * 1.6} height="16" rx="2"
-          fill={CHART_COLOR} fillOpacity={0.6 - i * 0.12} />
-      ))}
-    </svg>
+    <ResponsiveContainer width="100%" height="100%">
+      <FunnelChart>
+        <Tooltip
+          contentStyle={{ fontSize: 11, border: "1px solid #d6d4d0", borderRadius: 4, background: "#fff" }}
+        />
+        <Funnel
+          dataKey="value"
+          data={funnelData}
+          isAnimationActive
+        >
+          {funnelData.map((_entry, index) => (
+            <Cell
+              key={`cell-${index}`}
+              fill={index % 2 === 0 ? CHART_COLOR : CHART_COLOR_LIGHT}
+              stroke="none"
+            />
+          ))}
+        </Funnel>
+        <Legend
+          iconType="circle"
+          iconSize={6}
+          wrapperStyle={{ fontSize: 10, color: "#94a3b8" }}
+        />
+      </FunnelChart>
+    </ResponsiveContainer>
   );
 }
 
@@ -176,13 +299,13 @@ const CHART_RENDERERS: Record<string, () => React.ReactNode> = {
       <span className="text-[10px] text-[#94a3b8] mt-1">待配置数据源</span>
     </div>
   ),
-  bar: BarChartPlaceholder,
-  line: LineChartPlaceholder,
-  pie: PieChartPlaceholder,
-  area: AreaChartPlaceholder,
-  gauge: GaugePlaceholder,
+  bar: BarChartRenderer,
+  line: LineChartRenderer,
+  pie: PieChartRenderer,
+  area: AreaChartRenderer,
+  gauge: GaugeRenderer,
   table: TablePlaceholder,
-  funnel: FunnelPlaceholder,
+  funnel: FunnelChartRenderer,
 };
 
 /**

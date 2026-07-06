@@ -464,6 +464,16 @@ db.exec(`
     created_at TEXT DEFAULT (datetime('now')),
     updated_at TEXT DEFAULT (datetime('now'))
   );
+
+  -- Data Metrics
+  CREATE TABLE IF NOT EXISTS data_metrics (
+    id TEXT PRIMARY KEY,
+    source_id TEXT,
+    metric_name TEXT NOT NULL,
+    metric_value REAL,
+    period TEXT,
+    created_at TEXT DEFAULT (datetime('now'))
+  );
 `);
 
 // ─── Migrations (additive) ─────────────────────────────────

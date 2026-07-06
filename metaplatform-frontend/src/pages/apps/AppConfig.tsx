@@ -440,73 +440,40 @@ export default function AppConfig() {
     setToast("限流配置已更新");
   }
 
-  // TODO: Replace with real API when backend ready (mockResponses is simulated test data)
-  /* ── Run API test ── */
+  /* ── Run API test via backend proxy ── */
   async function handleRunTest() {
     setTesting(true);
     setTestResult(null);
-    const startTime = Date.now();
-    // TODO: Replace with real API test call when backend is ready
-    // try {
-    //   const parsedHeaders = JSON.parse(testHeaders);
-    //   const response = await fetch(testUrl, {
-    //     method: testMethod,
-    //     headers: parsedHeaders,
-    //     body: ["POST", "PUT", "PATCH"].includes(testMethod) ? testBody : undefined,
-    //   });
-    //   const elapsed = Date.now() - startTime;
-    //   const body = response.status !== 204 ? await response.text() : "";
-    //   setTestResult({ status: response.status, statusText: response.statusText, time: elapsed, body });
-    // } catch (err: any) {
-    //   setTestResult({ status: 0, statusText: "Network Error", time: Date.now() - startTime, body: err.message });
-    // }
-    // --- Simulation fallback (remove when real API is connected) ---
-    await new Promise((r) => setTimeout(r, 800));
-    const mockResponses: Record<string, APITestResult> = {
-      GET: {
-        status: 200,
-        statusText: "OK",
-        time: 67,
-        body: JSON.stringify({
-          id: "app_001",
-          name: "销售管理系统",
-          status: "published",
-          version: "1.2.0",
-          createdAt: "2026-01-15T08:30:00Z",
-          instances: 1234,
-        }, null, 2),
-      },
-      POST: {
-        status: 201,
-        statusText: "Created",
-        time: 123,
-        body: JSON.stringify({
-          id: "inst_789",
-          appId: "app_001",
-          status: "active",
-          createdAt: new Date().toISOString(),
-          data: { name: "test" },
-        }, null, 2),
-      },
-      PUT: {
-        status: 200,
-        statusText: "OK",
-        time: 78,
-        body: JSON.stringify({
-          id: "inst_789",
-          updatedAt: new Date().toISOString(),
-          changes: 1,
-        }, null, 2),
-      },
-      DELETE: {
-        status: 204,
-        statusText: "No Content",
-        time: 42,
-        body: "",
-      },
-    };
-    setTestResult(mockResponses[testMethod] || mockResponses.GET);
-    setTesting(false);
+    try {
+      // Build the full URL: if testUrl starts with /, prepend the current origin
+      let targetUrl = testUrl;
+      if (testUrl.startsWith("/")) {
+        targetUrl = window.location.origin + testUrl;
+      }
+
+      const parsedHeaders = JSON.parse(testHeaders);
+      const result = await api.post(`/api/apps/${appId}/test-api`, {
+        url: targetUrl,
+        method: testMethod,
+        headers: parsedHeaders,
+        body: ["POST", "PUT", "PATCH"].includes(testMethod) ? testBody : undefined,
+      });
+      if (result && result.data) {
+        const { status, statusText, time, body } = result.data;
+        setTestResult({ status, statusText, time, body: body || "" });
+      } else {
+        setTestResult({ status: 0, statusText: "No Response", time: 0, body: "Backend returned no data" });
+      }
+    } catch (err: any) {
+      setTestResult({
+        status: 0,
+        statusText: "Error",
+        time: 0,
+        body: err?.message || "Request failed",
+      });
+    } finally {
+      setTesting(false);
+    }
   }
 
   return (

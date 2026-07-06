@@ -26,4 +26,35 @@ router.post("/", (req, res) => {
   res.json({ success: true, data: { id, title, content, priority } });
 });
 
+// PUT /api/announcements/:id
+router.put("/:id", (req, res) => {
+  const announcement = db.prepare("SELECT * FROM announcements WHERE id = ?").get(req.params.id);
+  if (!announcement) {
+    return res.status(404).json({ success: false, message: "Announcement not found" });
+  }
+  const { title, content, category, priority, target_audience, expires_at } = req.body;
+  db.prepare(
+    "UPDATE announcements SET title = ?, content = ?, category = ?, priority = ?, target_audience = ?, expires_at = ?, updated_at = datetime('now') WHERE id = ?",
+  ).run(
+    title ?? announcement.title,
+    content ?? announcement.content,
+    category ?? announcement.category,
+    priority ?? announcement.priority,
+    target_audience ?? announcement.target_audience,
+    expires_at ?? announcement.expires_at,
+    req.params.id,
+  );
+  res.json({ success: true, data: { id: req.params.id, title: title ?? announcement.title } });
+});
+
+// DELETE /api/announcements/:id
+router.delete("/:id", (req, res) => {
+  const announcement = db.prepare("SELECT * FROM announcements WHERE id = ?").get(req.params.id);
+  if (!announcement) {
+    return res.status(404).json({ success: false, message: "Announcement not found" });
+  }
+  db.prepare("DELETE FROM announcements WHERE id = ?").run(req.params.id);
+  res.json({ success: true, data: { id: req.params.id } });
+});
+
 export default router;

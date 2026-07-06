@@ -33,4 +33,34 @@ router.post("/", (req, res) => {
   res.json({ success: true, data: { id, title } });
 });
 
+// PUT /api/todos/:id
+router.put("/:id", (req, res) => {
+  const todo = db.prepare("SELECT * FROM todos WHERE id = ?").get(req.params.id);
+  if (!todo) {
+    return res.status(404).json({ success: false, message: "Todo not found" });
+  }
+  const { title, description, priority, status, due_date } = req.body;
+  db.prepare(
+    "UPDATE todos SET title = ?, description = ?, priority = ?, status = ?, due_date = ?, updated_at = datetime('now') WHERE id = ?",
+  ).run(
+    title ?? todo.title,
+    description ?? todo.description,
+    priority ?? todo.priority,
+    status ?? todo.status,
+    due_date ?? todo.due_date,
+    req.params.id,
+  );
+  res.json({ success: true, data: { id: req.params.id, title: title ?? todo.title } });
+});
+
+// DELETE /api/todos/:id
+router.delete("/:id", (req, res) => {
+  const todo = db.prepare("SELECT * FROM todos WHERE id = ?").get(req.params.id);
+  if (!todo) {
+    return res.status(404).json({ success: false, message: "Todo not found" });
+  }
+  db.prepare("DELETE FROM todos WHERE id = ?").run(req.params.id);
+  res.json({ success: true, data: { id: req.params.id } });
+});
+
 export default router;

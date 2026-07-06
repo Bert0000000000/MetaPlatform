@@ -22,4 +22,30 @@ router.post("/", (req, res) => {
   res.json({ success: true, data: { id, version } });
 });
 
+// PUT /api/versions/:id
+router.put("/:id", (req, res) => {
+  const appVersion = db.prepare("SELECT * FROM app_versions WHERE id = ?").get(req.params.id);
+  if (!appVersion) {
+    return res.status(404).json({ success: false, message: "Version not found" });
+  }
+  const { description } = req.body;
+  db.prepare(
+    "UPDATE app_versions SET description = ?, updated_at = datetime('now') WHERE id = ?",
+  ).run(description ?? appVersion.description, req.params.id);
+  res.json({ success: true, data: { id: req.params.id, description: description ?? appVersion.description } });
+});
+
+// DELETE /api/versions/:id
+router.delete("/:id", (req, res) => {
+  const appVersion = db.prepare("SELECT * FROM app_versions WHERE id = ?").get(req.params.id);
+  if (!appVersion) {
+    return res.status(404).json({ success: false, message: "Version not found" });
+  }
+  if (appVersion.status !== "draft") {
+    return res.status(400).json({ success: false, message: "Only draft versions can be deleted" });
+  }
+  db.prepare("DELETE FROM app_versions WHERE id = ?").run(req.params.id);
+  res.json({ success: true, data: { id: req.params.id } });
+});
+
 export default router;

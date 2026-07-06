@@ -31,6 +31,57 @@ router.put("/cases/:id/run", (req, res) => {
   res.json({ success: true });
 });
 
+// POST /api/quality/test-cases/:id/run — Simulate test execution
+// Sets status to "running", then after a delay resolves to "passed" or "failed"
+router.post("/test-cases/:id/run", (req, res) => {
+  const testCase = db.prepare("SELECT * FROM test_cases WHERE id = ?").get(req.params.id);
+  if (!testCase) {
+    return res.status(404).json({ success: false, error: "Test case not found" });
+  }
+
+  // Set status to "running"
+  db.prepare(
+    "UPDATE test_cases SET status = 'running', result = NULL, updated_at = datetime('now') WHERE id = ?",
+  ).run(req.params.id);
+
+  // Simulate test execution with a brief delay (1-2 seconds based on test type)
+  const delay = testCase.type === "performance" ? 2000 : testCase.type === "integration" ? 1500 : 1000;
+
+  setTimeout(() => {
+    // Determine result: P0 + UI tests have higher chance of failure, otherwise pass
+    const isP0 = testCase.priority === "high";
+    const isUI = testCase.type === "functional" && testCase.name && testCase.name.toLowerCase().includes("ui");
+    const result = (isP0 && isUI) ? "failed" : "passed";
+    const duration = delay + Math.floor(Math.random() * 500);
+
+    db.prepare(
+      "UPDATE test_cases SET status = 'completed', result = ?, duration = ?, updated_at = datetime('now') WHERE id = ?",
+    ).run(result, duration, req.params.id);
+
+    // Return the updated test case
+    const updated = db.prepare("SELECT * FROM test_cases WHERE id = ?").get(req.params.id);
+    res.json({ success: true, data: updated });
+  }, delay);
+});
+
+// PUT /api/quality/cases/:id
+router.put("/cases/:id", (req, res) => {
+  const testCase = db.prepare("SELECT * FROM test_cases WHERE id = ?").get(req.params.id);
+  if (!testCase) {
+    return res.status(404).json({ success: false, message: "Test case not found" });
+  }
+  const { status, result, notes } = req.body;
+  db.prepare(
+    "UPDATE test_cases SET status = ?, result = ?, notes = ?, updated_at = datetime('now') WHERE id = ?",
+  ).run(
+    status ?? testCase.status,
+    result ?? testCase.result,
+    notes ?? testCase.notes,
+    req.params.id,
+  );
+  res.json({ success: true, data: { id: req.params.id } });
+});
+
 // ─── Bugs ────────────────────────────────────────────────
 
 // GET /api/quality/bugs
@@ -51,25 +102,46 @@ router.post("/bugs", (req, res) => {
 
 // PUT /api/quality/bugs/:id
 router.put("/bugs/:id", (req, res) => {
-  const { status, severity, assignee } = req.body;
+  const bug = db.prepare("SELECT * FROM bugs WHERE id = ?").get(req.params.id);
+  if (!bug) {
+    return res.status(404).json({ success: false, message: "Bug not found" });
+  }
+  const { status, severity, assignee, notes } = req.body;
   const updates = [];
   const params = [];
-  if (status) {
+  if (status !== undefined) {
     updates.push("status = ?");
     params.push(status);
   }
-  if (severity) {
+  if (severity !== undefined) {
     updates.push("severity = ?");
     params.push(severity);
   }
-  if (assignee) {
+  if (assignee !== undefined) {
     updates.push("assignee = ?");
     params.push(assignee);
+  }
+  if (notes !== undefined) {
+    updates.push("notes = ?");
+    params.push(notes);
+  }
+  if (updates.length === 0) {
+    return res.status(400).json({ success: false, message: "No fields to update" });
   }
   updates.push("updated_at = datetime('now')");
   params.push(req.params.id);
   db.prepare(`UPDATE bugs SET ${updates.join(", ")} WHERE id = ?`).run(...params);
-  res.json({ success: true });
+  res.json({ success: true, data: { id: req.params.id } });
+});
+
+// DELETE /api/quality/bugs/:id
+router.delete("/bugs/:id", (req, res) => {
+  const bug = db.prepare("SELECT * FROM bugs WHERE id = ?").get(req.params.id);
+  if (!bug) {
+    return res.status(404).json({ success: false, message: "Bug not found" });
+  }
+  db.prepare("DELETE FROM bugs WHERE id = ?").run(req.params.id);
+  res.json({ success: true, data: { id: req.params.id } });
 });
 
 // GET /api/quality/stats
