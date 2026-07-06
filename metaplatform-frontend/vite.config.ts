@@ -177,6 +177,56 @@ export default defineConfig({
         target: "http://localhost:3001",
         changeOrigin: true,
       },
+      // Versions
+      "/api/versions": {
+        target: "http://localhost:3001",
+        changeOrigin: true,
+      },
+      // Triggers
+      "/api/triggers": {
+        target: "http://localhost:3001",
+        changeOrigin: true,
+      },
+      // Export history
+      "/api/export-history": {
+        target: "http://localhost:3001",
+        changeOrigin: true,
+      },
+      // Quality
+      "/api/quality": {
+        target: "http://localhost:3001",
+        changeOrigin: true,
+      },
+      // Announcements
+      "/api/announcements": {
+        target: "http://localhost:3001",
+        changeOrigin: true,
+      },
+      // Todos
+      "/api/todos": {
+        target: "http://localhost:3001",
+        changeOrigin: true,
+      },
+      // Market
+      "/api/market": {
+        target: "http://localhost:3001",
+        changeOrigin: true,
+      },
+      // Filesystem
+      "/api/filesystem": {
+        target: "http://localhost:3001",
+        changeOrigin: true,
+      },
+      // Orchestrations
+      "/api/orchestrations": {
+        target: "http://localhost:3001",
+        changeOrigin: true,
+      },
+      // Pages (legacy)
+      "/api/pages": {
+        target: "http://localhost:3001",
+        changeOrigin: true,
+      },
     },
   },
 });
