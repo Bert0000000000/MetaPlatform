@@ -160,7 +160,7 @@ export default function ObjectDetail() {
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6 p-6">
       <div className="flex items-center gap-3">
         <Link to="/ontology">
           <Button variant="ghost" size="icon"><ChevronLeft className="size-4" /></Button>

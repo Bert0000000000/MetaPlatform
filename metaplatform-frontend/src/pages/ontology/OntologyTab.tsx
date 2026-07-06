@@ -247,7 +247,7 @@ export function OntologyProperties() {
   const filtered = properties.filter((p) => p.name.includes(search) || p.object.includes(search));
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6 p-6">
       <PageHeader
         title="属性管理"
         description="管理所有对象的属性定义（25 种字段类型）"
@@ -315,7 +315,7 @@ export function OntologyLinks() {
     { from: "Employee", to: "Contract", type: "1:N", confidence: 91, reason: "员工-合同 一对多关系，基于审批记录推断" },
   ];
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6 p-6">
       <PageHeader
         title="关系管理"
         description="定义对象间的关系（1:1 / 1:N / N:N）"
@@ -419,7 +419,7 @@ export function OntologyActions() {
   }, []);
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6 p-6">
       <PageHeader
         title="动作管理"
         description="CRUD 动作 + 自定义动作配置"
@@ -484,7 +484,7 @@ export function OntologyFunctions() {
   }, []);
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6 p-6">
       <PageHeader
         title="函数管理"
         description="业务函数 + AI 规则函数 + 服务编排"
@@ -544,7 +544,7 @@ export function OntologyRules() {
   }, []);
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6 p-6">
       <PageHeader
         title="流程规则"
         description="条件触发 + 服务编排 + DMN 决策表"
@@ -610,7 +610,7 @@ export function OntologySecurity() {
   const [patterns, setPatterns] = useState(SENSITIVE_PATTERNS);
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6 p-6">
       <PageHeader
         title="安全配置"
         description="数据/字段/动作级权限 + ABAC 策略"
@@ -808,7 +808,7 @@ export function AutoNumberRules() {
 
 export function OntologyGovernance() {
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6 p-6">
       <PageHeader
         title="治理与发布"
         description="本体地图、导入导出、多环境发布与版本管理"

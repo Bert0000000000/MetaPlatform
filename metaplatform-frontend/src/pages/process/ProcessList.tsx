@@ -149,7 +149,7 @@ export default function ProcessList() {
   const totalCount = definitions.length + flowableDefs.length;
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6 p-6">
       <PageHeader
         title="流程中心"
         description="业务流程 + 审批流程 + 服务编排（BPMN 2.0 规范）"
@@ -893,7 +893,7 @@ export function ProcessInstances() {
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6 p-6">
       <PageHeader
         title="流程实例"
         description="查看所有运行中、已完成和异常的流程实例"
@@ -1147,7 +1147,7 @@ export function ProcessApprovals() {
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6 p-6">
       <PageHeader
         title="审批中心"
         description="个人审批待办与已办事项"
@@ -1297,7 +1297,7 @@ export function ProcessTriggers() {
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6 p-6">
       <PageHeader
         title="触发器管理"
         description="基于事件驱动的流程自动触发配置"
@@ -1362,7 +1362,7 @@ export function ProcessTriggers() {
 /* ─────────────────── ProcessAnalysis ─────────────────── */
 export function ProcessAnalysis() {
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6 p-6">
       <PageHeader
         title="流程分析"
         description="流程效率分析、瓶颈识别与优化建议"
@@ -1442,7 +1442,7 @@ export function ProcessAnalysis() {
 /* ─────────────────── ProcessPlatform ─────────────────── */
 export function ProcessPlatform() {
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6 p-6">
       <PageHeader
         title="流程中台"
         description="流程中台 API 文档与接入指南"
@@ -1509,7 +1509,7 @@ export function ProcessExport() {
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6 p-6">
       <PageHeader
         title="流程导出"
         description="导出流程定义、实例数据和分析报告"

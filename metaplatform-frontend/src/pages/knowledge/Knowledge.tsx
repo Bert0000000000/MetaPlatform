@@ -628,7 +628,7 @@ export function KnowledgeProcessing() {
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6 p-6">
       <PageHeader
         title="知识加工"
         description="文档向量化、实体抽取、知识图谱构建"
@@ -709,7 +709,7 @@ export function KnowledgeSearch() {
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6 p-6">
       <PageHeader title="知识搜索" description="基于 RAG 的语义搜索，支持自然语言查询" />
       <Card>
         <CardHeader>
@@ -769,7 +769,7 @@ export function KnowledgeSubscribe() {
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6 p-6">
       <PageHeader
         title="知识订阅"
         description="订阅知识库分类变更通知，及时获取最新文档"

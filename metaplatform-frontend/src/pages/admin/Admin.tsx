@@ -1259,7 +1259,7 @@ export function AdminDashboard() {
 /* ─────────────────── OrgStructure ─────────────────── */
 export function OrgStructure() {
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6 p-6">
       <PageHeader title="组织架构" description="管理公司组织架构、部门层级和人员编制" action={<Button className="gap-2"><Plus className="size-4" /> 新建部门</Button>} />
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
         <StatCard label="部门总数" value={10} icon={Building2} />
@@ -1389,7 +1389,7 @@ export function AdminMonitor() {
 /* ─────────────────── AdminBackup ─────────────────── */
 export function AdminBackup() {
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6 p-6">
       <PageHeader title="备份恢复" description="数据库备份策略、手动备份和数据恢复" action={<Button className="gap-2"><Download className="size-4" /> 立即备份</Button>} />
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <StatCard label="最近备份" value="2 小时前" icon={Clock} />
@@ -1433,7 +1433,7 @@ export function AdminDeploy() {
   ]);
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6 p-6">
       <PageHeader title="集群部署" description="管理开发、测试和生产环境的集群部署" action={<Button className="gap-2"><Plus className="size-4" /> 新建环境</Button>} />
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <StatCard label="环境总数" value={environments.length} icon={Server} />
@@ -1479,7 +1479,7 @@ const BILLING_PLANS = [
 
 export function AdminBilling() {
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6 p-6">
       <PageHeader title="计费订阅" description="平台资源使用计费、套餐和账单管理" />
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
         <StatCard label="本月费用" value="¥12,480" icon={DollarSign} />
@@ -1588,7 +1588,7 @@ export function AdminPlugins() {
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6 p-6">
       <PageHeader title="插件管理" description="管理平台扩展插件和第三方集成" />
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <StatCard label="已安装" value={plugins.filter((p) => p.status === "installed").length} icon={Package} />

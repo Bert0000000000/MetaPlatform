@@ -806,9 +806,9 @@ export function OntologyTesting() {
   const totalPassed = tests.reduce((s, t) => s + t.passed, 0);
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6 p-6">
       <PageHeader
-        title="本体测试"
+        title="质量中心"
         description="自动验证本体对象、属性、关系和规则的完整性"
         action={<Button className="gap-2" onClick={runAll} disabled={running}>{running ? <Loader2 className="size-4 animate-spin" /> : <Play className="size-4" />} {running ? "运行中..." : "运行全部"}</Button>}
       />
@@ -854,7 +854,7 @@ const AI_UI_TESTS = [
 
 export function AIUITesting() {
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6 p-6">
       <PageHeader title="AI UI 测试" description="AI 驱动的 UI 自动化测试，自动识别页面元素并生成测试脚本" action={<Button className="gap-2"><Sparkles className="size-4" /> AI 生成用例</Button>} />
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
         <StatCard label="UI 测试数" value={AI_UI_TESTS.length} icon={Monitor} />
@@ -896,7 +896,7 @@ const PROCESS_TESTS = [
 
 export function ProcessTesting() {
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6 p-6">
       <PageHeader title="流程测试" description="端到端流程自动化测试与节点覆盖率分析" action={<Button className="gap-2"><Play className="size-4" /> 运行全部</Button>} />
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
         <StatCard label="流程测试数" value={PROCESS_TESTS.length} icon={GitBranch} />
@@ -940,7 +940,7 @@ export function AIBugFix() {
   function applyFix(id: number) { setFixes((prev) => prev.map((f) => f.id === id ? { ...f, status: "applied" } : f)); }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6 p-6">
       <PageHeader title="AI Bug 修复" description="AI 分析缺陷根因并自动生成修复建议" action={<Button className="gap-2"><Sparkles className="size-4" /> AI 分析新缺陷</Button>} />
       <Card>
         <CardHeader><CardTitle className="text-base flex items-center gap-2"><Wrench className="size-4" /> AI 修复建议</CardTitle></CardHeader>
@@ -971,7 +971,7 @@ export function AIBugFix() {
 /* ─────────────────── TestReport ─────────────────── */
 export function TestReport() {
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6 p-6">
       <PageHeader title="测试报告" description="生成和查看各类测试报告" action={<Button className="gap-2"><Download className="size-4" /> 导出报告</Button>} />
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
         <StatCard label="总用例数" value={73} icon={FlaskConical} />

@@ -1148,7 +1148,7 @@ export function DecisionPush() {
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6 p-6">
       <PageHeader
         title="决策推送"
         description="基于数据指标的自动化决策规则与消息推送"
@@ -1228,9 +1228,9 @@ export function DataLakehouse() {
   const filtered = filter === "all" ? LAKE_TABLES : LAKE_TABLES.filter((t) => t.layer === filter);
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6 p-6">
       <PageHeader
-        title="数据湖仓"
+        title="数据中心"
         description="统一存储 Raw / ODS / DWD / DWS / ADS 分层数据"
         action={
           <Button variant="outline" className="gap-2">
@@ -1310,7 +1310,7 @@ export function DataKnowledge() {
   const filtered = docs.filter((d) => d.title.includes(search) || d.category.includes(search));
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6 p-6">
       <PageHeader
         title="数据知识库"
         description="数据字典、模型文档与业务口径说明"
@@ -2436,7 +2436,7 @@ export function ReportCenter() {
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6 p-6">
       {toast && <div className="fixed top-4 right-4 z-50 rounded-md bg-foreground px-4 py-2 text-sm text-background shadow-lg">{toast}</div>}
 
       {/* Template Gallery */}
@@ -2798,7 +2798,7 @@ export function MasterData() {
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6 p-6">
       {toast && <div className="fixed top-4 right-4 z-50 rounded-md bg-foreground px-4 py-2 text-sm text-background shadow-lg">{toast}</div>}
 
       <div className="flex items-center justify-between">

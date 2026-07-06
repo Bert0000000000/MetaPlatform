@@ -596,7 +596,7 @@ export function MyApps() {
   }, []);
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6 p-6">
       <PageHeader title="我的应用" description="我创建和使用的应用" action={<Button className="gap-2" onClick={() => navigate("/apps/new")}><Plus className="size-4" /> 新建应用</Button>} />
       {loading ? (
         <div className="flex items-center justify-center py-12 text-muted-foreground"><Loader2 className="size-5 animate-spin mr-2" />加载中...</div>
@@ -639,7 +639,7 @@ export function MyAgents() {
   const assignedAgents = agents.filter((a) => a.assigned_to === "current_user" || a.status === "active");
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6 p-6">
       <PageHeader title="我的数字员工" description="分配给我的 AI 数字员工" action={<Button className="gap-2"><Plus className="size-4" /> 创建数字员工</Button>} />
 
       {/* F1.3.4 使用统计 */}
@@ -806,7 +806,7 @@ export function DashboardMessages() {
   const unread = messages.filter((m) => !m.read);
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6 p-6">
       <PageHeader title="消息" description="系统通知、审批提醒和团队消息" action={<Button variant="outline" className="gap-2"><CheckCircle2 className="size-4" /> 全部已读</Button>} />
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <StatCard label="未读消息" value={unread.length} icon={Bell} />

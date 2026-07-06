@@ -550,7 +550,7 @@ export function AgentIdentity() {
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6 p-6">
       <PageHeader title="身份与记忆" description="管理数字员工的身份设定、记忆系统和上下文配置" />
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <StatCard label="已配置身份" value={AGENT_IDENTITIES.length} icon={User} />
@@ -631,7 +631,7 @@ export function AgentIdentity() {
 /* ─────────────────── AgentWorkspace ─────────────────── */
 export function AgentWorkspace() {
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6 p-6">
       <PageHeader title="工作空间" description="为数字员工分配独立的工作空间和资源" />
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
         <StatCard label="工作空间" value={5} icon={Wrench} />
@@ -666,7 +666,7 @@ export function AgentWorkspace() {
 /* ─────────────────── AgentPermissions ─────────────────── */
 export function AgentPermissions() {
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6 p-6">
       <PageHeader title="权限渠道" description="管理数字员工的数据访问权限和消息推送渠道" />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card>
@@ -724,7 +724,7 @@ export function AgentIMChannel() {
   ]);
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6 p-6">
       <PageHeader title="IM 渠道接入" description="配置飞书、钉钉、企业微信 Bot 接入" />
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {channels.map((ch) => (
@@ -764,7 +764,7 @@ export function AgentIMChannel() {
 /* ─────────────────── AgentModel ─────────────────── */
 export function AgentModel() {
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6 p-6">
       <PageHeader title="模型及用量" description="管理数字员工的模型配置和 Token 用量监控" />
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
         <StatCard label="本月 Token" value="1,248,000" icon={Cpu} />
