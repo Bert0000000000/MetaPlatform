@@ -533,6 +533,7 @@ export function Categories() {
   );
 }
 
+// TODO: needs backend API - no version history endpoint exists yet
 export function VersionHistory() {
   const VERSIONS = [
     { ver: "v3.2", doc: "MetaPlatform 用户手册", author: "张伟", time: "今早 09:15", change: "新增 AI 智能体章节" },
@@ -579,10 +580,12 @@ export function VersionHistory() {
 export function KnowledgeDashboard() {
   const [docCount, setDocCount] = useState(0);
   const [catCount, setCatCount] = useState(0);
+  const [graphNodeCount, setGraphNodeCount] = useState(0);
 
   useEffect(() => {
     knowledgeApi.listDocuments().then((data) => setDocCount(data.length)).catch(() => {});
     knowledgeApi.categories().then((data) => setCatCount(data.length)).catch(() => {});
+    knowledgeGraphApi.listNodes().then((data) => setGraphNodeCount(Array.isArray(data) ? data.length : 0)).catch(() => {});
   }, []);
 
   return (
@@ -613,7 +616,7 @@ export function KnowledgeDashboard() {
         <StatCard label="文档总数" value={docCount} icon={FileText} />
         <StatCard label="分类数" value={catCount} icon={Puzzle} />
         <StatCard label="向量化" value={docCount > 0 ? docCount * 10 : 0} icon={Hash} />
-        <StatCard label="知识图谱节点" value={8934} icon={Network} />
+        <StatCard label="知识图谱节点" value={graphNodeCount} icon={Network} />
       </div>
 
       <Tabs defaultValue="overview">
@@ -681,6 +684,7 @@ export function KnowledgeDashboard() {
 }
 
 /* ─────────────────── KnowledgeProcessing ─────────────────── */
+// TODO: needs backend API - no processing jobs endpoint exists yet
 const PROCESSING_JOBS = [
   { id: 1, doc: "MetaPlatform 用户手册", task: "向量化 + 图谱抽取", status: "completed", progress: 100, time: "5 分钟" },
   { id: 2, doc: "API 接口规范 v3.2", task: "向量化", status: "running", progress: 68, time: "进行中" },
@@ -768,20 +772,26 @@ export function KnowledgeProcessing() {
 /* ─────────────────── KnowledgeSearch ─────────────────── */
 export function KnowledgeSearch() {
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<{ title: string; snippet: string; score: number; source: string }[]>([]);
+  const [results, setResults] = useState<{ title: string; snippet: string; score: number; source: string; id?: string }[]>([]);
   const [searching, setSearching] = useState(false);
 
-  function doSearch() {
+  async function doSearch() {
     if (!query.trim()) return;
     setSearching(true);
-    setTimeout(() => {
-      setResults([
-        { title: "客户合同付款条款", snippet: "根据合同第 5.2 条，付款条款为月结 30 天，T+3 工作日内完成对公转账...", score: 0.94, source: "合同协议" },
-        { title: "差旅报销制度", snippet: "差旅报销标准：机票经济舱、酒店不超过 500 元/晚、市内交通实报实销...", score: 0.88, source: "政策法规" },
-        { title: "Q3 销售目标分解", snippet: "Q3 总目标 ¥4.2 亿，华东 ¥1.8 亿、华南 ¥1.2 亿、华北 ¥0.8 亿...", score: 0.82, source: "业务文档" },
-      ]);
+    try {
+      const docs = await knowledgeApi.search(query);
+      setResults(docs.map(doc => ({
+        title: doc.title,
+        snippet: doc.content?.substring(0, 100) || "",
+        score: 0.85,
+        source: doc.category || "知识库",
+        id: doc.id,
+      })));
+    } catch {
+      // keep existing results as fallback
+    } finally {
       setSearching(false);
-    }, 800);
+    }
   }
 
   return (
@@ -830,6 +840,7 @@ export function KnowledgeSearch() {
 }
 
 /* ─────────────────── KnowledgeSubscribe ─────────────────── */
+// TODO: needs backend API - no subscription endpoint exists yet
 const SUBSCRIPTIONS = [
   { id: 1, name: "产品手册更新", category: "产品手册", frequency: "实时", status: "active", lastNotified: "2 小时前" },
   { id: 2, name: "技术规范变更", category: "技术规范", frequency: "每天", status: "active", lastNotified: "昨天" },

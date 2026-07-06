@@ -894,10 +894,11 @@ export function QualityDashboard() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-xl font-semibold">68 / 73</div>
-                <p className="text-xs text-muted-foreground mt-1">93.2% 通过</p>
+                <div className="text-xl font-semibold">{stats?.passedCases ?? passedCount} / {stats?.totalCases ?? caseCount}</div>
+                <p className="text-xs text-muted-foreground mt-1">{stats?.passRate ?? passRate}% 通过</p>
               </CardContent>
             </Card>
+            {/* TODO: needs backend API - per-category stats not available yet */}
             <Card>
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2">
@@ -909,6 +910,7 @@ export function QualityDashboard() {
                 <p className="text-xs text-muted-foreground mt-1">85.7% 通过</p>
               </CardContent>
             </Card>
+            {/* TODO: needs backend API - per-category stats not available yet */}
             <Card>
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2">
@@ -1071,6 +1073,7 @@ export function QualityDashboard() {
 }
 
 /* ─────────────────── OntologyTesting ─────────────────── */
+// TODO: needs backend API - no ontology testing endpoint exists yet
 const ONTOLOGY_TESTS = [
   { id: 1, name: "Customer 对象完整性", object: "Customer", checks: 18, passed: 17, failed: 1, status: "warning" },
   { id: 2, name: "Order 关系校验", object: "Order", checks: 12, passed: 12, failed: 0, status: "passed" },
@@ -1130,6 +1133,7 @@ export function OntologyTesting() {
 }
 
 /* ─────────────────── AIUITesting ─────────────────── */
+// TODO: needs backend API - no AI UI testing endpoint exists yet
 const AI_UI_TESTS = [
   { id: 1, name: "登录页表单验证", page: "/login", steps: 5, status: "passed", duration: "3.2s" },
   { id: 2, name: "客户列表分页", page: "/customers", steps: 8, status: "passed", duration: "5.1s" },
@@ -1173,6 +1177,7 @@ export function AIUITesting() {
 }
 
 /* ─────────────────── ProcessTesting ─────────────────── */
+// TODO: needs backend API - no process testing endpoint exists yet
 const PROCESS_TESTS = [
   { id: 1, name: "采购审批全流程", nodes: 5, coverage: 100, status: "passed", lastRun: "2 小时前" },
   { id: 2, name: "报销审批-超时升级", nodes: 7, coverage: 85, status: "passed", lastRun: "3 小时前" },
@@ -1215,6 +1220,7 @@ export function ProcessTesting() {
 }
 
 /* ─────────────────── AIBugFix ─────────────────── */
+// TODO: needs backend API - no AI bug fix endpoint exists yet
 const AI_FIXES = [
   { id: 1, bug: "BUG-1284", title: "客户详情页加载慢", suggestion: "添加分页加载 + 虚拟滚动", confidence: 92, status: "pending", effort: "低" },
   { id: 2, bug: "BUG-1283", title: "审批流加签功能不可用", suggestion: "修复加签节点类型判断逻辑", confidence: 88, status: "applied", effort: "中" },
@@ -1255,6 +1261,7 @@ export function AIBugFix() {
 }
 
 /* ─────────────────── TestReport ─────────────────── */
+// TODO: needs backend API - no test report endpoint exists yet
 export function TestReport() {
   return (
     <div className="flex flex-col gap-6 p-6">

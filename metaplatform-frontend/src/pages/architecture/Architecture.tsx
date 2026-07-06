@@ -161,11 +161,106 @@ const CAPABILITY_LIST_FALLBACK = [
   "财务管理", "人力资源", "研发管理", "质量管理", "法务合规", "战略规划",
 ];
 
+const ROLES_FALLBACK = [
+  { role: "销售经理", dept: "销售部", caps: ["商机管理", "报价管理", "客户画像"], flows: 5, apps: 2 },
+  { role: "采购主管", dept: "采购部", caps: ["供应商管理", "采购申请", "比价管理"], flows: 4, apps: 2 },
+  { role: "生产主管", dept: "制造部", caps: ["生产计划", "质量检测", "库存管理"], flows: 6, apps: 2 },
+  { role: "财务主管", dept: "财务部", caps: ["应收应付", "总账管理", "预算管控"], flows: 3, apps: 2 },
+  { role: "HR 主管", dept: "人力资源", caps: ["招聘管理", "薪酬绩效", "培训发展"], flows: 4, apps: 1 },
+  { role: "客服主管", dept: "客服中心", caps: ["工单管理", "满意度调查", "知识库"], flows: 3, apps: 2 },
+  { role: "研发主管", dept: "研发中心", caps: ["项目管理", "需求管理", "版本发布"], flows: 5, apps: 1 },
+  { role: "合规专员", dept: "法务部", caps: ["合同审查", "合规审计", "风险管理"], flows: 2, apps: 1 },
+];
+
+const EVENTS_FALLBACK = [
+  { name: "客户创建", trigger: "CRM 新建客户", type: "业务事件", process: "客户审核流程", freq: 32 },
+  { name: "订单生成", trigger: "下单完成", type: "业务事件", process: "订单确认流程", freq: 128 },
+  { name: "库存预警", trigger: "库存低于阈值", type: "系统事件", process: "自动补货流程", freq: 8 },
+  { name: "审批超时", trigger: "审批节点超 48h", type: "异常事件", process: "升级通知流程", freq: 5 },
+  { name: "合同到期", trigger: "合同到期前 30 天", type: "时间事件", process: "续约提醒流程", freq: 3 },
+  { name: "支付成功", trigger: "支付回调", type: "系统事件", process: "订单状态更新", freq: 96 },
+  { name: "质量不合格", trigger: "检验不通过", type: "异常事件", process: "退货处理流程", freq: 2 },
+  { name: "员工入职", trigger: "HR 系统新增", type: "业务事件", process: "入职审批流程", freq: 4 },
+];
+
+const OBJECTS_FALLBACK = [
+  { name: "客户", domain: "客户域", fields: 24, relations: 8, icon: Users },
+  { name: "订单", domain: "订单域", fields: 32, relations: 12, icon: ClipboardList },
+  { name: "产品", domain: "产品域", fields: 18, relations: 6, icon: Package },
+  { name: "供应商", domain: "采购域", fields: 20, relations: 5, icon: Truck },
+  { name: "员工", domain: "人事域", fields: 28, relations: 10, icon: User },
+  { name: "合同", domain: "法务域", fields: 15, relations: 4, icon: FileText },
+  { name: "发票", domain: "财务域", fields: 12, relations: 3, icon: DollarSign },
+  { name: "工单", domain: "客服域", fields: 16, relations: 6, icon: ClipboardList },
+  { name: "项目", domain: "研发域", fields: 22, relations: 8, icon: Briefcase },
+];
+
+const BIZ_APP_MATRIX_FALLBACK = [
+  { process: "客户跟进", crm: true, erp: false, hr: false, bi: true, oa: false, bpm: false },
+  { process: "采购审批", crm: false, erp: true, hr: false, bi: false, oa: true, bpm: true },
+  { process: "员工入职", crm: false, erp: false, hr: true, bi: false, oa: true, bpm: true },
+  { process: "报销流程", crm: false, erp: true, hr: false, bi: false, oa: true, bpm: true },
+  { process: "销售预测", crm: true, erp: true, hr: false, bi: true, oa: false, bpm: false },
+  { process: "绩效考核", crm: false, erp: false, hr: true, bi: true, oa: true, bpm: false },
+  { process: "合同审批", crm: true, erp: true, hr: false, bi: false, oa: true, bpm: true },
+  { process: "库存盘点", crm: false, erp: true, hr: false, bi: true, oa: false, bpm: false },
+];
+
+const APP_DATA_MATRIX_FALLBACK = [
+  { app: "CRM", domains: [true, true, false, false, false, true] },
+  { app: "ERP", domains: [false, true, true, true, false, false] },
+  { app: "HR", domains: [false, false, false, false, true, false] },
+  { app: "BI", domains: [true, true, true, true, true, true] },
+  { app: "OA", domains: [false, false, false, true, true, false] },
+  { app: "BPM", domains: [false, false, false, false, false, false] },
+];
+
+const LAKE_WAREHOUSE_FALLBACK = [
+  { layer: "ODS", name: "原始层", count: 38, color: "border-l-blue-500", desc: "原始数据同步" },
+  { layer: "DWD", name: "明细层", count: 24, color: "border-l-green-500", desc: "清洗 & 去重" },
+  { layer: "DWS", name: "汇总层", count: 12, color: "border-l-orange-500", desc: "主题汇总" },
+  { layer: "ADS", name: "应用层", count: 18, color: "border-l-red-500", desc: "面向应用" },
+];
+
+const DATA_DISTRIBUTION_FALLBACK = {
+  dataLake: [
+    { name: "原始日志", size: "2.4 TB", tables: 128 },
+    { name: "埋点数据", size: "1.8 TB", tables: 64 },
+    { name: "外部数据", size: "640 GB", tables: 32 },
+  ],
+  dataWarehouse: [
+    { name: "ODS 原始层", size: "1.2 TB", tables: 38 },
+    { name: "DWD 明细层", size: "860 GB", tables: 24 },
+    { name: "DWS 汇总层", size: "320 GB", tables: 12 },
+    { name: "ADS 应用层", size: "480 GB", tables: 18 },
+  ],
+  realtime: [
+    { name: "Kafka Topics", size: "128 GB", tables: 16 },
+    { name: "Redis 缓存", size: "32 GB", tables: 8 },
+    { name: "ClickHouse", size: "256 GB", tables: 6 },
+  ],
+};
+
+const TECH_SELECTION_FALLBACK = [
+  { layer: "前端框架", a: "React 19", b: "Vue 3.4", chosen: "React 19", score: 92 },
+  { layer: "UI 组件库", a: "shadcn/ui", b: "Ant Design 5", chosen: "shadcn/ui", score: 88 },
+  { layer: "后端框架", a: "Spring Boot 3", b: "NestJS 10", chosen: "Spring Boot 3", score: 90 },
+  { layer: "关系数据库", a: "PostgreSQL 16", b: "MySQL 8", chosen: "PostgreSQL 16", score: 95 },
+  { layer: "图数据库", a: "Neo4j 5", b: "ArangoDB", chosen: "Neo4j 5", score: 85 },
+  { layer: "向量数据库", a: "Milvus 2.4", b: "Weaviate", chosen: "Milvus 2.4", score: 87 },
+  { layer: "消息队列", a: "Kafka 3.6", b: "RocketMQ 5", chosen: "Kafka 3.6", score: 91 },
+  { layer: "容器编排", a: "Kubernetes", b: "Docker Swarm", chosen: "Kubernetes", score: 96 },
+  { layer: "AI 模型", a: "DeepSeek", b: "Qwen 2", chosen: "DeepSeek", score: 89 },
+];
+
 /* ═══════════════════════ BusinessArchitecture ═══════════════════════ */
 export function BusinessArchitecture() {
   const [baLayers, setBALayers] = useState<BALayer[]>(INITIAL_BA_LAYERS_FALLBACK);
   const [valueChain, setValueChain] = useState(INITIAL_BA_LAYERS_FALLBACK.length ? VALUE_CHAIN_FALLBACK : []);
   const [capabilityList, setCapabilityList] = useState<string[]>(CAPABILITY_LIST_FALLBACK);
+  const [roles, setRoles] = useState(ROLES_FALLBACK);
+  const [events, setEvents] = useState(EVENTS_FALLBACK);
+  const [objects, setObjects] = useState(OBJECTS_FALLBACK);
   const [loading, setLoading] = useState(true);
   const [showFilter, setShowFilter] = useState(false);
   const [filterLevel, setFilterLevel] = useState<string>("");
@@ -208,6 +303,9 @@ export function BusinessArchitecture() {
       if (sectionData?.capabilityList) {
         setCapabilityList(sectionData.capabilityList as string[]);
       }
+      if (sectionData?.roles) setRoles(sectionData.roles as typeof ROLES_FALLBACK);
+      if (sectionData?.events) setEvents(sectionData.events as typeof EVENTS_FALLBACK);
+      if (sectionData?.objects) setObjects(sectionData.objects as typeof OBJECTS_FALLBACK);
     }).catch(() => { /* use fallback */ }).finally(() => setLoading(false));
   }, []);
 
@@ -776,16 +874,7 @@ export function BusinessArchitecture() {
                   </tr>
                 </thead>
                 <tbody>
-                  {[
-                    { role: "销售经理", dept: "销售部", caps: ["商机管理", "报价管理", "客户画像"], flows: 5, apps: 2 },
-                    { role: "采购主管", dept: "采购部", caps: ["供应商管理", "采购申请", "比价管理"], flows: 4, apps: 2 },
-                    { role: "生产主管", dept: "制造部", caps: ["生产计划", "质量检测", "库存管理"], flows: 6, apps: 2 },
-                    { role: "财务主管", dept: "财务部", caps: ["应收应付", "总账管理", "预算管控"], flows: 3, apps: 2 },
-                    { role: "HR 主管", dept: "人力资源", caps: ["招聘管理", "薪酬绩效", "培训发展"], flows: 4, apps: 1 },
-                    { role: "客服主管", dept: "客服中心", caps: ["工单管理", "满意度调查", "知识库"], flows: 3, apps: 2 },
-                    { role: "研发主管", dept: "研发中心", caps: ["项目管理", "需求管理", "版本发布"], flows: 5, apps: 1 },
-                    { role: "合规专员", dept: "法务部", caps: ["合同审查", "合规审计", "风险管理"], flows: 2, apps: 1 },
-                  ].map((r, i) => (
+                  {roles.map((r, i) => (
                     <tr key={i} className="border-b last:border-0 hover:bg-muted/30 cursor-pointer">
                       <td className="px-4 py-3 font-medium flex items-center gap-2">
                         <User className="size-4 text-primary" /> {r.role}
@@ -825,16 +914,7 @@ export function BusinessArchitecture() {
                   </tr>
                 </thead>
                 <tbody>
-                  {[
-                    { name: "客户创建", trigger: "CRM 新建客户", type: "业务事件", process: "客户审核流程", freq: 32 },
-                    { name: "订单生成", trigger: "下单完成", type: "业务事件", process: "订单确认流程", freq: 128 },
-                    { name: "库存预警", trigger: "库存低于阈值", type: "系统事件", process: "自动补货流程", freq: 8 },
-                    { name: "审批超时", trigger: "审批节点超 48h", type: "异常事件", process: "升级通知流程", freq: 5 },
-                    { name: "合同到期", trigger: "合同到期前 30 天", type: "时间事件", process: "续约提醒流程", freq: 3 },
-                    { name: "支付成功", trigger: "支付回调", type: "系统事件", process: "订单状态更新", freq: 96 },
-                    { name: "质量不合格", trigger: "检验不通过", type: "异常事件", process: "退货处理流程", freq: 2 },
-                    { name: "员工入职", trigger: "HR 系统新增", type: "业务事件", process: "入职审批流程", freq: 4 },
-                  ].map((e, i) => (
+                  {events.map((e, i) => (
                     <tr key={i} className="border-b last:border-0 hover:bg-muted/30 cursor-pointer">
                       <td className="px-4 py-3 font-medium">{e.name}</td>
                       <td className="px-4 py-3 text-muted-foreground">{e.trigger}</td>
@@ -862,17 +942,7 @@ export function BusinessArchitecture() {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                {[
-                  { name: "客户", domain: "客户域", fields: 24, relations: 8, icon: Users },
-                  { name: "订单", domain: "订单域", fields: 32, relations: 12, icon: ClipboardList },
-                  { name: "产品", domain: "产品域", fields: 18, relations: 6, icon: Package },
-                  { name: "供应商", domain: "采购域", fields: 20, relations: 5, icon: Truck },
-                  { name: "员工", domain: "人事域", fields: 28, relations: 10, icon: User },
-                  { name: "合同", domain: "法务域", fields: 15, relations: 4, icon: FileText },
-                  { name: "发票", domain: "财务域", fields: 12, relations: 3, icon: DollarSign },
-                  { name: "工单", domain: "客服域", fields: 16, relations: 6, icon: ClipboardList },
-                  { name: "项目", domain: "研发域", fields: 22, relations: 8, icon: Briefcase },
-                ].map((obj, i) => (
+                {objects.map((obj, i) => (
                   <div key={i} className="rounded-lg border p-4 hover:border-primary cursor-pointer transition-colors">
                     <div className="flex items-start justify-between">
                       <div className="flex items-center gap-2">
@@ -1002,6 +1072,8 @@ export function BusinessArchitecture() {
 export function ApplicationArchitecture() {
   const [appDeps, setAppDeps] = useState(APP_DEPENDENCIES_FALLBACK);
   const [appMatrix, setAppMatrix] = useState(APP_FLOW_MATRIX_FALLBACK);
+  const [bizAppMatrix, setBizAppMatrix] = useState(BIZ_APP_MATRIX_FALLBACK);
+  const [appDataMatrix, setAppDataMatrix] = useState(APP_DATA_MATRIX_FALLBACK);
   const [loading, setLoading] = useState(true);
   const [showFilter, setShowFilter] = useState(false);
   const [filterType, setFilterType] = useState<string>("");
@@ -1014,6 +1086,8 @@ export function ApplicationArchitecture() {
     architectureApi.getSection("aa").then((sectionData) => {
       if (sectionData?.dependencies) setAppDeps(sectionData.dependencies as typeof APP_DEPENDENCIES_FALLBACK);
       if (sectionData?.matrix) setAppMatrix(sectionData.matrix as typeof APP_FLOW_MATRIX_FALLBACK);
+      if (sectionData?.biz_app_matrix) setBizAppMatrix(sectionData.biz_app_matrix as typeof BIZ_APP_MATRIX_FALLBACK);
+      if (sectionData?.app_data_matrix) setAppDataMatrix(sectionData.app_data_matrix as typeof APP_DATA_MATRIX_FALLBACK);
     }).catch(() => { /* use fallback */ }).finally(() => setLoading(false));
   }, []);
 
@@ -1287,16 +1361,7 @@ export function ApplicationArchitecture() {
                   </tr>
                 </thead>
                 <tbody>
-                  {[
-                    { process: "客户跟进", crm: true, erp: false, hr: false, bi: true, oa: false, bpm: false },
-                    { process: "采购审批", crm: false, erp: true, hr: false, bi: false, oa: true, bpm: true },
-                    { process: "员工入职", crm: false, erp: false, hr: true, bi: false, oa: true, bpm: true },
-                    { process: "报销流程", crm: false, erp: true, hr: false, bi: false, oa: true, bpm: true },
-                    { process: "销售预测", crm: true, erp: true, hr: false, bi: true, oa: false, bpm: false },
-                    { process: "绩效考核", crm: false, erp: false, hr: true, bi: true, oa: true, bpm: false },
-                    { process: "合同审批", crm: true, erp: true, hr: false, bi: false, oa: true, bpm: true },
-                    { process: "库存盘点", crm: false, erp: true, hr: false, bi: true, oa: false, bpm: false },
-                  ].map((row, i) => (
+                  {bizAppMatrix.map((row, i) => (
                     <tr key={i} className="border-b last:border-0 hover:bg-muted/30">
                       <td className="px-4 py-3 font-medium">{row.process}</td>
                       {([row.crm, row.erp, row.hr, row.bi, row.oa, row.bpm]).map((v, j) => (
@@ -1333,14 +1398,7 @@ export function ApplicationArchitecture() {
                   </tr>
                 </thead>
                 <tbody>
-                  {[
-                    { app: "CRM", domains: [true, true, false, false, false, true] },
-                    { app: "ERP", domains: [false, true, true, true, false, false] },
-                    { app: "HR", domains: [false, false, false, false, true, false] },
-                    { app: "BI", domains: [true, true, true, true, true, true] },
-                    { app: "OA", domains: [false, false, false, true, true, false] },
-                    { app: "BPM", domains: [false, false, false, false, false, false] },
-                  ].map((row, i) => (
+                  {appDataMatrix.map((row, i) => (
                     <tr key={i} className="border-b last:border-0 hover:bg-muted/30">
                       <td className="px-4 py-3 font-medium">{row.app}</td>
                       {row.domains.map((v, j) => (
@@ -1419,6 +1477,8 @@ interface DataDomainItem {
 
 export function DataArchitecture() {
   const [dataDomains, setDataDomains] = useState<DataDomainItem[]>(DATA_DOMAINS_FALLBACK);
+  const [lakeWarehouse, setLakeWarehouse] = useState(LAKE_WAREHOUSE_FALLBACK);
+  const [dataDistribution, setDataDistribution] = useState(DATA_DISTRIBUTION_FALLBACK);
   const [loading, setLoading] = useState(true);
   const [showDetailDialog, setShowDetailDialog] = useState(false);
   const [selectedDomain, setSelectedDomain] = useState<DataDomainItem | null>(null);
@@ -1435,6 +1495,8 @@ export function DataArchitecture() {
         });
         setDataDomains(apiDomains);
       }
+      if (sectionData?.lake_warehouse) setLakeWarehouse(sectionData.lake_warehouse as typeof LAKE_WAREHOUSE_FALLBACK);
+      if (sectionData?.data_distribution) setDataDistribution(sectionData.data_distribution as typeof DATA_DISTRIBUTION_FALLBACK);
     }).catch(() => { /* use fallback */ }).finally(() => setLoading(false));
   }, []);
 
@@ -1507,12 +1569,7 @@ export function DataArchitecture() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-            {[
-              { layer: "ODS", name: "原始层", count: 38, color: "border-l-blue-500", desc: "原始数据同步" },
-              { layer: "DWD", name: "明细层", count: 24, color: "border-l-green-500", desc: "清洗 & 去重" },
-              { layer: "DWS", name: "汇总层", count: 12, color: "border-l-orange-500", desc: "主题汇总" },
-              { layer: "ADS", name: "应用层", count: 18, color: "border-l-red-500", desc: "面向应用" },
-            ].map((l) => (
+            {lakeWarehouse.map((l) => (
               <div key={l.layer} className={`rounded border-l-4 ${l.color} border-y border-r p-3 cursor-pointer hover:border-primary transition-colors`}>
                 <div className="text-xs text-muted-foreground">{l.layer}</div>
                 <div className="font-medium">{l.name}</div>
@@ -1539,11 +1596,7 @@ export function DataArchitecture() {
                 <span className="font-medium">数据湖 (Data Lake)</span>
               </div>
               <div className="space-y-2">
-                {[
-                  { name: "原始日志", size: "2.4 TB", tables: 128 },
-                  { name: "埋点数据", size: "1.8 TB", tables: 64 },
-                  { name: "外部数据", size: "640 GB", tables: 32 },
-                ].map((item) => (
+                {dataDistribution.dataLake.map((item) => (
                   <div key={item.name} className="flex items-center justify-between p-2 rounded bg-blue-50/50 dark:bg-blue-950/20 text-sm">
                     <span>{item.name}</span>
                     <div className="flex items-center gap-3 text-xs text-muted-foreground">
@@ -1565,12 +1618,7 @@ export function DataArchitecture() {
                 <span className="font-medium">数仓 (Warehouse)</span>
               </div>
               <div className="space-y-2">
-                {[
-                  { name: "ODS 原始层", size: "1.2 TB", tables: 38 },
-                  { name: "DWD 明细层", size: "860 GB", tables: 24 },
-                  { name: "DWS 汇总层", size: "320 GB", tables: 12 },
-                  { name: "ADS 应用层", size: "480 GB", tables: 18 },
-                ].map((item) => (
+                {dataDistribution.dataWarehouse.map((item) => (
                   <div key={item.name} className="flex items-center justify-between p-2 rounded bg-green-50/50 dark:bg-green-950/20 text-sm">
                     <span>{item.name}</span>
                     <div className="flex items-center gap-3 text-xs text-muted-foreground">
@@ -1592,11 +1640,7 @@ export function DataArchitecture() {
                 <span className="font-medium">实时层 (Realtime)</span>
               </div>
               <div className="space-y-2">
-                {[
-                  { name: "Kafka Topics", size: "128 GB", tables: 16 },
-                  { name: "Redis 缓存", size: "32 GB", tables: 8 },
-                  { name: "ClickHouse", size: "256 GB", tables: 6 },
-                ].map((item) => (
+                {dataDistribution.realtime.map((item) => (
                   <div key={item.name} className="flex items-center justify-between p-2 rounded bg-orange-50/50 dark:bg-orange-950/20 text-sm">
                     <span>{item.name}</span>
                     <div className="flex items-center gap-3 text-xs text-muted-foreground">
@@ -1663,6 +1707,7 @@ export function TechArchitecture() {
   const [techStack, setTechStack] = useState(TECH_STACK_FALLBACK);
   const [deployTopology, setDeployTopology] = useState(DEPLOY_TOPOLOGY_FALLBACK);
   const [observability, setObservability] = useState(OBSERVABILITY_FALLBACK);
+  const [techSelection, setTechSelection] = useState(TECH_SELECTION_FALLBACK);
   const [loading, setLoading] = useState(true);
   const [showDetailDialog, setShowDetailDialog] = useState(false);
   const [selectedStack, setSelectedStack] = useState<(typeof TECH_STACK_FALLBACK)[number] | null>(null);
@@ -1675,6 +1720,7 @@ export function TechArchitecture() {
       if (sectionData?.techStack) setTechStack(sectionData.techStack as typeof TECH_STACK_FALLBACK);
       if (sectionData?.deploy) setDeployTopology(sectionData.deploy as typeof DEPLOY_TOPOLOGY_FALLBACK);
       if (sectionData?.observability) setObservability(sectionData.observability as typeof OBSERVABILITY_FALLBACK);
+      if (sectionData?.tech_selection) setTechSelection(sectionData.tech_selection as typeof TECH_SELECTION_FALLBACK);
     }).catch(() => { /* use fallback */ }).finally(() => setLoading(false));
   }, []);
 
@@ -1869,17 +1915,7 @@ export function TechArchitecture() {
               </tr>
             </thead>
             <tbody>
-              {[
-                { layer: "前端框架", a: "React 19", b: "Vue 3.4", chosen: "React 19", score: 92 },
-                { layer: "UI 组件库", a: "shadcn/ui", b: "Ant Design 5", chosen: "shadcn/ui", score: 88 },
-                { layer: "后端框架", a: "Spring Boot 3", b: "NestJS 10", chosen: "Spring Boot 3", score: 90 },
-                { layer: "关系数据库", a: "PostgreSQL 16", b: "MySQL 8", chosen: "PostgreSQL 16", score: 95 },
-                { layer: "图数据库", a: "Neo4j 5", b: "ArangoDB", chosen: "Neo4j 5", score: 85 },
-                { layer: "向量数据库", a: "Milvus 2.4", b: "Weaviate", chosen: "Milvus 2.4", score: 87 },
-                { layer: "消息队列", a: "Kafka 3.6", b: "RocketMQ 5", chosen: "Kafka 3.6", score: 91 },
-                { layer: "容器编排", a: "Kubernetes", b: "Docker Swarm", chosen: "Kubernetes", score: 96 },
-                { layer: "AI 模型", a: "DeepSeek", b: "Qwen 2", chosen: "DeepSeek", score: 89 },
-              ].map((row, i) => (
+              {techSelection.map((row, i) => (
                 <tr key={i} className="border-b last:border-0 hover:bg-muted/30 cursor-pointer">
                   <td className="px-4 py-3 font-medium">{row.layer}</td>
                   <td className="px-4 py-3">{row.a}</td>

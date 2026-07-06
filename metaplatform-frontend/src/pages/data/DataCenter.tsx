@@ -34,6 +34,7 @@ const sourceTypeIcons: Record<string, React.ElementType> = {
 };
 
 // ETL 任务
+// TODO: needs backend API for ETL task data
 const ETL_TASKS = [
   { id: 1, name: "订单 → DWD 同步", source: "MySQL 订单库", target: "DWD 层", schedule: "每小时", status: "running", duration: "2 分钟", lastRun: "12 分钟前" },
   { id: 2, name: "客户主数据抽取", source: "PostgreSQL CRM", target: "DWS 层", schedule: "每天 02:00", status: "completed", duration: "38 分钟", lastRun: "8 小时前" },
@@ -53,6 +54,7 @@ const QUALITY_RULES = [
 ];
 
 // 实时监控
+// TODO: needs backend API for real-time monitoring data
 const REAL_TIME = [
   { time: "12:48:32", event: "订单 #20260703-482 创建", source: "MySQL" },
   { time: "12:48:18", event: "客户 客户编号=8392 信息更新", source: "PostgreSQL" },

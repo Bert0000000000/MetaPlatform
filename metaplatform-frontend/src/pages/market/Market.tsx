@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -61,6 +61,7 @@ const MY_SUBSCRIPTIONS_INIT = [
   { id: 4, name: "高级图表库", author: "ChartPro", price: "¥99/月", nextBill: "2026-07-15", status: "expiring", usage: "续费提醒" },
 ];
 
+// TODO: needs backend API for developer ranking data
 const DEVELOPERS = [
   { rank: 1, name: "数澜科技", apps: 18, downloads: 28400, revenue: "¥86,400", badge: Crown },
   { rank: 2, name: "MetaPlatform 官方", apps: 24, downloads: 24600, revenue: "¥0", badge: Building2 },
@@ -69,14 +70,16 @@ const DEVELOPERS = [
   { rank: 5, name: "招聘专家", apps: 6, downloads: 9800, revenue: "¥12,600", badge: Sprout },
 ];
 
-const CATEGORIES = [
-  { name: "本体模板", count: 86, icon: Boxes, color: "bg-blue-500" },
-  { name: "Skill", count: 42, icon: Sparkles, color: "bg-purple-500" },
-  { name: "Agent", count: 38, icon: Workflow, color: "bg-green-500" },
-  { name: "工作流", count: 28, icon: Package, color: "bg-yellow-500" },
-  { name: "知识包", count: 32, icon: BookOpen, color: "bg-red-500" },
-  { name: "API", count: 19, icon: Code, color: "bg-indigo-500" },
-];
+/* ── Category icon/color mapping for dynamically derived categories ── */
+const CATEGORY_ICON_MAP: Record<string, { icon: typeof Boxes; color: string }> = {
+  "本体模板": { icon: Boxes, color: "bg-blue-500" },
+  "Skill": { icon: Sparkles, color: "bg-purple-500" },
+  "Agent": { icon: Workflow, color: "bg-green-500" },
+  "工作流": { icon: Package, color: "bg-yellow-500" },
+  "知识包": { icon: BookOpen, color: "bg-red-500" },
+  "API": { icon: Code, color: "bg-indigo-500" },
+};
+const DEFAULT_CATEGORY_STYLE = { icon: Boxes, color: "bg-gray-500" };
 
 /* ── Category name → template type filter mapping ── */
 const CATEGORY_FILTER_MAP: Record<string, string> = {
@@ -424,6 +427,33 @@ export function MarketDashboard() {
   const [filterCategory, setFilterCategory] = useState<string | null>(null);
   const { toast, setToast } = useToast();
 
+  /* Fetch all templates for overview stats and categories */
+  const [allTemplates, setAllTemplates] = useState<any[]>([]);
+  useEffect(() => {
+    marketApi.listTemplates().then((data) => {
+      if (data && data.length > 0) {
+        setAllTemplates(data);
+      }
+    }).catch(() => {});
+  }, []);
+
+  /* Derive categories dynamically from template data */
+  const categories = useMemo(() => {
+    const counts: Record<string, number> = {};
+    allTemplates.forEach((t: any) => {
+      const cat = t.category || "其他";
+      counts[cat] = (counts[cat] || 0) + 1;
+    });
+    return Object.entries(counts).map(([name, count]) => {
+      const style = CATEGORY_ICON_MAP[name] || DEFAULT_CATEGORY_STYLE;
+      return { name, count, icon: style.icon, color: style.color };
+    });
+  }, [allTemplates]);
+
+  /* Derive stats from template data */
+  const totalTemplates = allTemplates.length;
+  const totalDownloads = allTemplates.reduce((sum: number, t: any) => sum + (t.downloads || 0), 0);
+
   /* Persist subscriptions to localStorage */
   useEffect(() => {
     try { localStorage.setItem(SUB_STORAGE_KEY, JSON.stringify(subscriptions)); } catch {}
@@ -501,10 +531,11 @@ export function MarketDashboard() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-        <StatCard label="模板总数" value={245} icon={Package} />
-        <StatCard label="本月下载" value={12480} trend={18.5} icon={Download} />
+        <StatCard label="模板总数" value={totalTemplates} icon={Package} />
+        <StatCard label="本月下载" value={totalDownloads} trend={18.5} icon={Download} />
+        {/* TODO: needs backend API for active developer count */}
         <StatCard label="活跃开发者" value={186} icon={Code} />
-        <StatCard label="已安装应用" value={32 + totalInstalled} icon={Check} />
+        <StatCard label="已安装应用" value={totalInstalled} icon={Check} />
       </div>
 
       <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v); if (v !== "ontology") setFilterCategory(null); }}>
@@ -518,7 +549,7 @@ export function MarketDashboard() {
 
         <TabsContent value="overview" className="mt-4 space-y-4">
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-            {CATEGORIES.map((c) => {
+            {categories.map((c) => {
               const Icon = c.icon;
               return (
                 <Card
@@ -686,6 +717,7 @@ export function DeveloperRankPage() {
 }
 
 /* ── Skill Market page ── */
+// TODO: needs backend API for skill market data
 const SKILL_MARKET = [
   { id: 1, name: "数据查询 Skill", author: "MetaPlatform", desc: "自然语言查询数据库", installs: 6240, rating: 4.8, price: "免费" },
   { id: 2, name: "文档解析 Skill", author: "数澜科技", desc: "PDF/Word/Excel 智能解析", installs: 4180, rating: 4.7, price: "免费" },
@@ -737,6 +769,7 @@ export function SkillMarketPage() {
 }
 
 /* ── Workflow Templates page ── */
+// TODO: needs backend API for workflow template data
 const WORKFLOW_TEMPLATES = [
   { id: 1, name: "采购审批流程模板", category: "采购", nodes: 5, author: "MetaPlatform", installs: 3240, rating: 4.7 },
   { id: 2, name: "员工入职流程模板", category: "HR", nodes: 8, author: "HR 专家", installs: 2180, rating: 4.6 },
@@ -780,6 +813,7 @@ export function WorkflowTemplatesPage() {
 }
 
 /* ── Knowledge Packages page ── */
+// TODO: needs backend API for knowledge package data
 const KNOWLEDGE_PACKAGES = [
   { id: 1, name: "制造业知识包", docs: 248, author: "行业专家", installs: 1840, category: "制造业" },
   { id: 2, name: "零售业知识包", docs: 186, author: "零售研究院", installs: 1320, category: "零售" },
@@ -821,6 +855,7 @@ export function KnowledgePackagesPage() {
 }
 
 /* ── API Library page ── */
+// TODO: needs backend API for API library data
 const API_LIBRARY = [
   { id: 1, name: "订单管理 API", category: "电商", endpoints: 12, author: "MetaPlatform", version: "v2.1" },
   { id: 2, name: "客户管理 API", category: "CRM", endpoints: 8, author: "MetaPlatform", version: "v1.8" },

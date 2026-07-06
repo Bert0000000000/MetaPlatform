@@ -690,6 +690,8 @@ function TasksTab() {
   const [newTaskDialogOpen, setNewTaskDialogOpen] = useState(false);
   const [newTaskName, setNewTaskName] = useState("");
   const [newTaskAgent, setNewTaskAgent] = useState("");
+  const [newTaskAgentId, setNewTaskAgentId] = useState<string>("");
+  const [agentsList, setAgentsList] = useState<{ id: string; name: string }[]>([]);
   const [tasks, setTasks] = useState(RECENT_TASKS_FALLBACK);
   const [tasksLoading, setTasksLoading] = useState(true);
 
@@ -699,6 +701,7 @@ function TasksTab() {
       try {
         const agents = await agentsApi.list();
         if (cancelled) return;
+        setAgentsList(agents.map((a) => ({ id: a.id, name: a.name })));
         const agentNameMap: Record<string, string> = {};
         agents.forEach((a) => { agentNameMap[a.id] = a.name; });
         const allTasks = await Promise.all(
@@ -804,18 +807,21 @@ function TasksTab() {
             <div className="space-y-2">
               <Label>指定智能体</Label>
               <div className="grid grid-cols-2 gap-2">
-                {["数据分析智能体", "报表生成智能体", "流程分析智能体", "文档撰写智能体"].map((agent) => (
+                {agentsList.map((agent) => (
                   <button
-                    key={agent}
+                    key={agent.id}
                     type="button"
-                    onClick={() => setNewTaskAgent(agent)}
+                    onClick={() => { setNewTaskAgent(agent.name); setNewTaskAgentId(agent.id); }}
                     className={`text-left rounded border p-2 text-xs transition-all hover:border-primary ${
-                      newTaskAgent === agent ? "border-primary bg-primary/5" : ""
+                      newTaskAgent === agent.name ? "border-primary bg-primary/5" : ""
                     }`}
                   >
-                    {agent}
+                    {agent.name}
                   </button>
                 ))}
+                {agentsList.length === 0 && (
+                  <p className="text-xs text-muted-foreground col-span-2">加载中...</p>
+                )}
               </div>
             </div>
           </div>

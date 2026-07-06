@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ontologyApi, type OntologyAction, type OntologyFunction, type OntologyRule } from "@/lib/api";
+import { ontologyApi, type OntologyAction, type OntologyFunction, type OntologyRule, type OntologyObject, type OntologyProperty, type OntologyRelation } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -32,8 +32,34 @@ const fieldTypes = [
 
 export function OntologyElement({ elementKey }: { elementKey: string }) {
   const element = element7of8.find((e) => e.key === elementKey);
+  const [objects, setObjects] = useState<OntologyObject[]>([]);
+  const [properties, setProperties] = useState<Record<string, OntologyProperty[]>>({});
+  const [relations, setRelations] = useState<OntologyRelation[]>([]);
+
+  useEffect(() => {
+    if (elementKey === "1-objects") {
+      ontologyApi.listObjects().then(setObjects).catch(() => {});
+    } else if (elementKey === "2-properties") {
+      ontologyApi.listObjects().then((objs) => {
+        Promise.all(objs.map((o) => ontologyApi.listProperties(o.id).then((props) => ({ objectId: o.id, props }))))
+          .then((results) => {
+            const map: Record<string, OntologyProperty[]> = {};
+            results.forEach((r) => { map[r.objectId] = r.props; });
+            setProperties(map);
+          }).catch(() => {});
+      }).catch(() => {});
+    } else if (elementKey === "3-links") {
+      ontologyApi.listRelations().then(setRelations).catch(() => {});
+    }
+  }, [elementKey]);
+
   if (!element) return null;
   const Icon = element.icon;
+
+  const iconMap: Record<string, React.ElementType> = {
+    Customer: User, Order: Package, Product: Tag, Employee: Users,
+    Contract: FileText, Invoice: Receipt,
+  };
 
   return (
     <div className="flex flex-col gap-6 p-6">
@@ -54,25 +80,24 @@ export function OntologyElement({ elementKey }: { elementKey: string }) {
 
       {elementKey === "1-objects" && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[
-            { name: "Customer", label: "客户", icon: User, props: 18 },
-            { name: "Order", label: "订单", icon: Package, props: 24 },
-            { name: "Product", label: "产品", icon: Tag, props: 16 },
-            { name: "Employee", label: "员工", icon: Users, props: 22 },
-            { name: "Contract", label: "合同", icon: FileText, props: 30 },
-            { name: "Invoice", label: "发票", icon: Receipt, props: 14 },
-          ].map((o) => (
-            <Card key={o.name} className="cursor-pointer hover:border-primary">
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <span className="text-3xl"><o.icon className="size-8" /></span>
-                  <Badge variant="secondary">{o.props} 属性</Badge>
-                </div>
-                <CardTitle className="text-base mt-2">{o.label}</CardTitle>
-                <CardDescription className="font-mono">{o.name}</CardDescription>
-              </CardHeader>
-            </Card>
-          ))}
+          {objects.length === 0 && (
+            <div className="col-span-full text-center py-8 text-muted-foreground">加载中...</div>
+          )}
+          {objects.map((o) => {
+            const ObjIcon = iconMap[o.name] || Box;
+            return (
+              <Card key={o.id} className="cursor-pointer hover:border-primary">
+                <CardHeader>
+                  <div className="flex items-start justify-between">
+                    <span className="text-3xl"><ObjIcon className="size-8" /></span>
+                    <Badge variant="secondary">{o.properties_count} 属性</Badge>
+                  </div>
+                  <CardTitle className="text-base mt-2">{o.label}</CardTitle>
+                  <CardDescription className="font-mono">{o.name}</CardDescription>
+                </CardHeader>
+              </Card>
+            );
+          })}
         </div>
       )}
 
@@ -97,19 +122,19 @@ export function OntologyElement({ elementKey }: { elementKey: string }) {
       {elementKey === "3-links" && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">关系类型</CardTitle>
+            <CardTitle className="text-base">关系列表</CardTitle>
+            <CardDescription>{relations.length} 条关系定义</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {[
-                { type: "1:1 一对一", desc: "用户-档案" },
-                { type: "1:N 一对多", desc: "客户-订单" },
-                { type: "N:N 多对多", desc: "学生-课程" },
-              ].map((r) => (
-                <div key={r.type} className="border rounded p-4 text-center">
+              {relations.length === 0 && (
+                <div className="col-span-full text-center py-4 text-muted-foreground">暂无关系数据</div>
+              )}
+              {relations.map((r) => (
+                <div key={r.id} className="border rounded p-4 text-center">
                   <div className="text-2xl mb-2"><Link className="size-6 mx-auto" /></div>
-                  <div className="font-medium">{r.type}</div>
-                  <div className="text-xs text-muted-foreground mt-1">{r.desc}</div>
+                  <div className="font-medium">{r.label || r.type}</div>
+                  <div className="text-xs text-muted-foreground mt-1">{r.description || `${r.source_object_id} -> ${r.target_object_id}`}</div>
                 </div>
               ))}
             </div>
@@ -229,43 +254,66 @@ export function OntologyElement({ elementKey }: { elementKey: string }) {
 
 /* ── Standalone ontology element pages for route-level usage ── */
 
-// TODO: Replace with real API when backend ready (ontologyApi does not have a standalone properties listing endpoint)
-const MOCK_PROPERTIES = [
-  { id: 1, name: "客户编号", type: "短文本", object: "Customer", required: true, unique: true, desc: "客户唯一标识" },
-  { id: 2, name: "客户名称", type: "短文本", object: "Customer", required: true, unique: false, desc: "客户全称" },
-  { id: 3, name: "订单金额", type: "金额", object: "Order", required: true, unique: false, desc: "订单总金额" },
-  { id: 4, name: "订单日期", type: "日期", object: "Order", required: true, unique: false, desc: "下单日期" },
-  { id: 5, name: "产品SKU", type: "短文本", object: "Product", required: true, unique: true, desc: "产品唯一编码" },
-  { id: 6, name: "员工邮箱", type: "链接", object: "Employee", required: true, unique: true, desc: "企业邮箱" },
-  { id: 7, name: "合同金额", type: "金额", object: "Contract", required: true, unique: false, desc: "合同总金额" },
-  { id: 8, name: "发票号", type: "短文本", object: "Invoice", required: true, unique: true, desc: "发票唯一编号" },
-];
+// Properties loaded from ontologyApi.listProperties() per object
+interface PropertyRow {
+  id: string;
+  name: string;
+  type: string;
+  object: string;
+  required: boolean;
+  unique: boolean;
+  desc: string;
+}
 
 export function OntologyProperties() {
-  const [properties] = useState(MOCK_PROPERTIES);
+  const [properties, setProperties] = useState<PropertyRow[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const filtered = properties.filter((p) => p.name.includes(search) || p.object.includes(search));
+    const filtered = properties.filter((p) => p.name.includes(search) || p.object.includes(search));
 
-  return (
-    <div className="flex flex-col gap-6 p-6">
-      <PageHeader
-        title="属性管理"
-        description="管理所有对象的属性定义（25 种字段类型）"
-        action={<Button className="gap-2"><Plus className="size-4" /> 新建属性</Button>}
-      />
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0">
-          <CardTitle className="text-base flex items-center gap-2"><Hash className="size-4" /> 属性列表</CardTitle>
-          <div className="flex gap-2">
-            <div className="relative">
-              <Search className="size-3 absolute left-2 top-2.5 text-muted-foreground" />
-              <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="搜索属性..." className="border rounded pl-7 pr-2 py-1 text-sm w-40" />
+    useEffect(() => {
+      ontologyApi.listObjects().then((objs) => {
+        Promise.all(objs.map((o) =>
+          ontologyApi.listProperties(o.id).then((props) =>
+            props.map((p) => ({
+              id: p.id,
+              name: p.name || p.label,
+              type: p.type,
+              object: o.name,
+              required: !!p.required,
+              unique: !!p.unique_field,
+              desc: p.description || "",
+            }))
+          )
+        )).then((allProps) => {
+          setProperties(allProps.flat());
+          setLoading(false);
+        }).catch(() => setLoading(false));
+      }).catch(() => setLoading(false));
+    }, []);
+
+    return (
+      <div className="flex flex-col gap-6 p-6">
+        <PageHeader
+          title="属性管理"
+          description="管理所有对象的属性定义（25 种字段类型）"
+          action={<Button className="gap-2"><Plus className="size-4" /> 新建属性</Button>}
+        />
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0">
+            <CardTitle className="text-base flex items-center gap-2"><Hash className="size-4" /> 属性列表</CardTitle>
+            <div className="flex gap-2">
+              <div className="relative">
+                <Search className="size-3 absolute left-2 top-2.5 text-muted-foreground" />
+                <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="搜索属性..." className="border rounded pl-7 pr-2 py-1 text-sm w-40" />
+              </div>
+              <Button variant="outline" size="sm"><Sparkles className="size-3 mr-1" />AI 推荐</Button>
             </div>
-            <Button variant="outline" size="sm"><Sparkles className="size-3 mr-1" />AI 推荐</Button>
-          </div>
-        </CardHeader>
-        <CardContent className="p-0">
-          <Table>
+          </CardHeader>
+          <CardContent className="p-0">
+            {loading && <div className="text-center py-8 text-muted-foreground">加载中...</div>}
+            {!loading && (
+            <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>属性名</TableHead>
@@ -292,23 +340,25 @@ export function OntologyProperties() {
               ))}
             </TableBody>
           </Table>
+            )}
         </CardContent>
       </Card>
     </div>
   );
 }
 
-// TODO: Replace with real API when backend ready (ontologyApi.listRelations() exists but data format may differ)
-const MOCK_LINKS = [
-  { id: 1, name: "客户-订单", from: "Customer", to: "Order", type: "1:N", desc: "一个客户有多个订单" },
-  { id: 2, name: "订单-产品", from: "Order", to: "Product", type: "N:N", desc: "订单包含多个产品" },
-  { id: 3, name: "客户-合同", from: "Customer", to: "Contract", type: "1:N", desc: "一个客户签多份合同" },
-  { id: 4, name: "员工-部门", from: "Employee", to: "Department", type: "N:1", desc: "多员工属同一部门" },
-  { id: 5, name: "发票-订单", from: "Invoice", to: "Order", type: "1:1", desc: "发票对应订单" },
-];
-
+// Relations loaded from ontologyApi.listRelations()
 export function OntologyLinks() {
+  const [links, setLinks] = useState<OntologyRelation[]>([]);
+  const [loading, setLoading] = useState(true);
   const [aiSuggestOpen, setAiSuggestOpen] = useState(false);
+
+  useEffect(() => {
+    ontologyApi.listRelations().then((data) => {
+      setLinks(data);
+      setLoading(false);
+    }).catch(() => setLoading(false));
+  }, []);
   const suggestedRels = [
     { from: "Customer", to: "Invoice", type: "1:N", confidence: 94, reason: "客户-发票 一对多关系，基于历史数据推断" },
     { from: "Product", to: "Contract", type: "N:N", confidence: 87, reason: "产品-合同 多对多关系，基于业务模式推断" },
@@ -365,7 +415,7 @@ export function OntologyLinks() {
       <Card>
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2"><Link2 className="size-4" /> 关系列表</CardTitle>
-          <CardDescription>{MOCK_LINKS.length} 条关系定义</CardDescription>
+          <CardDescription>{links.length} 条关系定义</CardDescription>
         </CardHeader>
         <CardContent className="p-0">
           <Table>
@@ -380,13 +430,19 @@ export function OntologyLinks() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {MOCK_LINKS.map((l) => (
+              {loading && (
+                <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">加载中...</TableCell></TableRow>
+              )}
+              {!loading && links.length === 0 && (
+                <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">暂无关系数据</TableCell></TableRow>
+              )}
+              {!loading && links.map((l) => (
                 <TableRow key={l.id}>
-                  <TableCell className="font-medium">{l.name}</TableCell>
-                  <TableCell><Badge variant="secondary">{l.from}</Badge></TableCell>
+                  <TableCell className="font-medium">{l.label || l.type}</TableCell>
+                  <TableCell><Badge variant="secondary">{l.source_object_id}</Badge></TableCell>
                   <TableCell><Badge variant="outline">{l.type}</Badge></TableCell>
-                  <TableCell><Badge variant="secondary">{l.to}</Badge></TableCell>
-                  <TableCell className="text-xs text-muted-foreground">{l.desc}</TableCell>
+                  <TableCell><Badge variant="secondary">{l.target_object_id}</Badge></TableCell>
+                  <TableCell className="text-xs text-muted-foreground">{l.description || "-"}</TableCell>
                   <TableCell className="text-right">
                     <Button variant="ghost" size="icon" className="size-8"><Eye className="size-4" /></Button>
                     <Button variant="ghost" size="icon" className="size-8"><Edit className="size-4" /></Button>
@@ -588,7 +644,7 @@ export function OntologyRules() {
   );
 }
 
-// TODO: Replace with real API when backend ready (ontology API does not have security rules listing endpoint)
+// TODO: needs backend API - security rules listing endpoint does not exist yet
 const MOCK_SECURITY_RULES = [
   { id: 1, name: "客户数据-行级权限", level: "数据级", object: "Customer", rule: "仅查看本部门客户", roles: "业务人员" },
   { id: 2, name: "订单金额-字段脱敏", level: "字段级", object: "Order", rule: "金额字段脱敏显示", roles: "非财务" },
@@ -717,6 +773,7 @@ export function OntologySecurity() {
 }
 
 /* ── Auto Number Rules (F7.6.4) ── */
+// TODO: needs backend API - auto number rules listing endpoint does not exist yet
 const AUTO_NUMBER_RULES = [
   { id: 1, object: "Order", prefix: "ORD-", suffix: "", seqLength: 6, reset: "每年", next: "ORD-000042" },
   { id: 2, object: "Invoice", prefix: "INV-", suffix: "", seqLength: 8, reset: "每月", next: "INV-00001234" },
@@ -806,6 +863,7 @@ export function AutoNumberRules() {
   );
 }
 
+// TODO: needs backend API - governance data does not have a dedicated endpoint yet
 export function OntologyGovernance() {
   return (
     <div className="flex flex-col gap-6 p-6">
