@@ -1,7 +1,7 @@
 import axios from "axios";
 import { PageConfigSummary, PageRender } from "../types/schema";
 
-const http = axios.create({ baseURL: "/api/v1" });
+const http = axios.create({ baseURL: "/api" });
 
 /* ---- Page Config CRUD ---- */
 

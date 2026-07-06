@@ -99,11 +99,19 @@ console.log(`  ✅ Applications: ${apps.length}`);
 //  App Pages (17)
 // ════════════════════════════════════════════════════════
 const pagesList = [
-  // CRM (app-crm) — 4 pages
+  // CRM (app-crm) — 12 pages (all types)
   { id: "page-crm-1", app_id: "app-crm", name: "客户列表", type: "list", icon: "Users", status: "published", sort_order: 0 },
   { id: "page-crm-2", app_id: "app-crm", name: "商机看板", type: "dashboard", icon: "Kanban", status: "published", sort_order: 1 },
   { id: "page-crm-3", app_id: "app-crm", name: "合同管理", type: "list", icon: "FileText", status: "published", sort_order: 2 },
-  { id: "page-crm-4", app_id: "app-crm", name: "数据报表", type: "chart", icon: "BarChart3", status: "published", sort_order: 3 },
+  { id: "page-crm-4", app_id: "app-crm", name: "数据报表", type: "report", icon: "BarChart3", status: "published", sort_order: 3 },
+  { id: "page-crm-5", app_id: "app-crm", name: "客户登记表", type: "form", icon: "FileEdit", status: "published", sort_order: 4 },
+  { id: "page-crm-6", app_id: "app-crm", name: "订单审批流程", type: "workflow", icon: "GitBranch", status: "published", sort_order: 5 },
+  { id: "page-crm-7", app_id: "app-crm", name: "合同审批流程", type: "workflow", icon: "GitBranch", status: "published", sort_order: 6 },
+  { id: "page-crm-8", app_id: "app-crm", name: "销售分析", type: "bi", icon: "Layers", status: "published", sort_order: 7 },
+  { id: "page-crm-9", app_id: "app-crm", name: "产品录入", type: "lowcode", icon: "Palette", status: "draft", sort_order: 8 },
+  { id: "page-crm-10", app_id: "app-crm", name: "智能客服", type: "ai", icon: "Sparkles", status: "draft", sort_order: 9 },
+  { id: "page-crm-11", app_id: "app-crm", name: "自定义仪表盘", type: "custom", icon: "LayoutDashboard", status: "draft", sort_order: 10 },
+  { id: "page-crm-12", app_id: "app-crm", name: "订单列表", type: "list", icon: "List", status: "published", sort_order: 11 },
   // 报销审批 (app-expense) — 3 pages
   { id: "page-exp-1", app_id: "app-expense", name: "报销单", type: "list", icon: "Receipt", status: "published", sort_order: 0 },
   { id: "page-exp-2", app_id: "app-expense", name: "审批记录", type: "list", icon: "CheckSquare", status: "published", sort_order: 1 },

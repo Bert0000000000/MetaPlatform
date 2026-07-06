@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { agentsApi } from "@/lib/api";
-import type { Agent } from "@/lib/api";
+import { agentsApi, knowledgeApi } from "@/lib/api";
+import type { Agent, KnowledgeDocument } from "@/lib/api";
 import { llmApi, type ChatMessage } from "@/lib/llm-api";
 import { dispatchApi, type DispatchResult } from "@/lib/dispatch-api";
 import { useNavigate } from "react-router-dom";
@@ -73,7 +73,7 @@ const SUGGESTIONS = [
 ];
 
 /* ─────────────────── Mock task data ─────────────────── */
-const RECENT_TASKS = [
+const RECENT_TASKS_FALLBACK = [
   { id: 1, title: "生成客户分层标签", agent: "数据分析智能体", status: "completed", time: "2 分钟前", result: "生成 1,234 个客户标签" },
   { id: 2, title: "起草 2026 Q3 销售预测报告", agent: "财务分析智能体", status: "running", time: "进行中", result: "" },
   { id: 3, title: "解析上传的采购合同 PDF", agent: "合同审查智能体", status: "completed", time: "1 小时前", result: "提取 18 个关键条款" },
@@ -81,70 +81,14 @@ const RECENT_TASKS = [
   { id: 5, title: "推荐本月最佳供应商", agent: "供应链智能体", status: "completed", time: "昨天", result: "Top 5 已排序" },
 ];
 
-const KNOWLEDGE_DOCS = [
+const KNOWLEDGE_DOCS_FALLBACK = [
   { title: "MetaPlatform 用户手册", type: "PDF", size: "12.4 MB", updated: "今天", category: "产品文档", icon: BookOpen },
   { title: "API 接口规范 v2.1", type: "Markdown", size: "384 KB", updated: "3 天前", category: "技术规范", icon: Ruler },
   { title: "BPMN 2.0 节点参考", type: "Web", size: "—", updated: "1 周前", category: "标准规范", icon: Briefcase },
   { title: "销售话术库（已索引）", type: "向量库", size: "8.2K 条", updated: "实时", category: "业务知识", icon: ScrollText },
 ];
 
-/* ─────────────────── Enhanced mock LLM ─────────────────── */
-function sendMock(input: string): Promise<string> {
-  return new Promise((resolve) => {
-    const delay = 800 + Math.random() * 1200;
-    setTimeout(() => {
-      const lower = input.toLowerCase();
 
-      if (lower.includes("建") || lower.includes("应用") || lower.includes("创建")) {
-        resolve(
-          "好的，我将引导你创建新应用。请确认：\n1. 应用类型（空白 / 模板 / AI 生成）\n2. 关联的数据源\n3. 业务范围（CRM/ERP/OA...）\n\n你可以点击下方「开始」直接进入新建应用向导。"
-        );
-        return;
-      }
-      if (lower.includes("订单") || lower.includes("数据") || lower.includes("查询") || lower.includes("多少")) {
-        resolve(
-          "上月订单总额为 ¥12,486,329，同比 +18.2%。\n- 华东区占比 42%\n- Top 3 客户贡献 35%\n- 环比增长最快品类：工业设备 (+32%)\n\n如需深度分析，请告诉我具体维度（产品/客户/区域）。"
-        );
-        return;
-      }
-      if (lower.includes("流程") || lower.includes("瓶颈") || lower.includes("审批") || lower.includes("优化")) {
-        resolve(
-          "已分析 5 个核心流程：\n- 采购审批：平均 4.2 天（瓶颈在法务环节）\n- 报销流程：平均 1.8 天（高效）\n- 合同审批：平均 7.5 天（需优化）\n- 请假申请：平均 0.5 天（优秀）\n- 订单到收款：平均 5.6 天（中等）\n\n建议优先优化合同审批的并行节点，预计可缩短 40% 周期。"
-        );
-        return;
-      }
-      if (lower.includes("报表") || lower.includes("报告") || lower.includes("可视化")) {
-        resolve(
-          "我可以为你生成以下报表：\n1. 销售业绩看板（实时）\n2. 客户分群分析（RFM）\n3. 供应链健康度报告\n4. 财务月度汇总\n\n请指定时间范围和关注的指标维度。"
-        );
-        return;
-      }
-      if (lower.includes("智能体") || lower.includes("agent") || lower.includes("启动")) {
-        resolve(
-          "当前可用的智能体：\n- 数据分析智能体（在线）\n- 流程分析智能体（在线）\n- 文档撰写智能体（在线）\n- VibeCoding 智能体（在线）\n- 客服智能体（忙碌）\n\n请指定你想启动的智能体，或告诉我需要完成什么任务，我会自动匹配。"
-        );
-        return;
-      }
-      if (lower.includes("你好") || lower.includes("hi") || lower.includes("hello") || lower.includes("嗨")) {
-        resolve(
-          "你好！很高兴见到你。我是 SuperAI，你的 AI 助手。\n\n我可以帮你：建应用、查数据、分析流程、生成内容、调度智能体。\n\n有什么我可以帮你的吗？"
-        );
-        return;
-      }
-      if (lower.includes("帮助") || lower.includes("help") || lower.includes("能做什么")) {
-        resolve(
-          "我是 SuperAI，可以帮你完成以下任务：\n\n1. **建应用** - 用自然语言描述，自动生成应用\n2. **查数据** - 查询业务数据和指标\n3. **分析流程** - 识别流程瓶颈并给优化建议\n4. **生成内容** - 起草合同、纪要、报告等\n5. **调度智能体** - 启动专业智能体执行任务\n6. **知识检索** - 从知识库中搜索信息\n\n请告诉我你想做什么？"
-        );
-        return;
-      }
-
-      // Default response
-      resolve(
-        "已收到你的请求。在 LLM Gateway 接入后，将由 GPT-4o / Claude / 文心等模型协同回答。\n\n我目前是 Mock 模式，可以模拟以下能力：\n- 建应用 / 查数据 / 分析流程\n- 生成内容 / 启动智能体 / 知识检索\n\n请试试输入关键词来体验！"
-      );
-    }, delay);
-  });
-}
 
 /* ─────────────────── ChatTab ─────────────────── */
 interface ChatTabProps {
@@ -746,6 +690,41 @@ function TasksTab() {
   const [newTaskDialogOpen, setNewTaskDialogOpen] = useState(false);
   const [newTaskName, setNewTaskName] = useState("");
   const [newTaskAgent, setNewTaskAgent] = useState("");
+  const [tasks, setTasks] = useState(RECENT_TASKS_FALLBACK);
+  const [tasksLoading, setTasksLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const agents = await agentsApi.list();
+        if (cancelled) return;
+        const agentNameMap: Record<string, string> = {};
+        agents.forEach((a) => { agentNameMap[a.id] = a.name; });
+        const allTasks = await Promise.all(
+          agents.map((a) => agentsApi.listTasks(a.id).catch(() => []))
+        );
+        if (cancelled) return;
+        const mapped = allTasks.flat().map((t) => ({
+          id: t.id,
+          agent_id: t.agent_id,
+          title: t.title,
+          status: t.status,
+          agent: agentNameMap[t.agent_id] || t.agent_id,
+          output: t.output,
+          result: t.output || "",
+          time: "",
+        }));
+        if (mapped.length > 0) setTasks(mapped);
+        else setTasks(RECENT_TASKS_FALLBACK);
+      } catch {
+        if (!cancelled) setTasks(RECENT_TASKS_FALLBACK);
+      } finally {
+        if (!cancelled) setTasksLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   return (
     <div className="p-4 flex flex-col gap-4">
@@ -759,6 +738,17 @@ function TasksTab() {
           新建任务
         </Button>
       </div>
+
+      {tasksLoading ? (
+        <div className="flex items-center justify-center py-12 text-muted-foreground">
+          <Loader2 className="size-5 animate-spin mr-2" /> 加载任务...
+        </div>
+      ) : tasks.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+          <ListChecks className="size-8 mb-2" />
+          <p className="text-sm">暂无任务</p>
+        </div>
+      ) : (
       <Card>
         <CardContent className="p-0">
           <table className="w-full text-sm">
@@ -772,7 +762,7 @@ function TasksTab() {
               </tr>
             </thead>
             <tbody>
-              {RECENT_TASKS.map((t) => (
+              {tasks.map((t) => (
                 <tr key={t.id} className="border-b last:border-0 hover:bg-muted/30">
                   <td className="px-4 py-3 font-medium">{t.title}</td>
                   <td className="px-4 py-3 text-muted-foreground">{t.agent}</td>
@@ -781,14 +771,17 @@ function TasksTab() {
                     {t.status === "running" && <Badge className="bg-blue-500">进行中</Badge>}
                     {t.status === "failed" && <Badge variant="destructive">失败</Badge>}
                   </td>
-                  <td className="px-4 py-3 text-muted-foreground text-xs">{t.result || "—"}</td>
-                  <td className="px-4 py-3 text-right text-xs text-muted-foreground">{t.time}</td>
+                  <td className="px-4 py-3 text-muted-foreground text-xs">
+                    {"agent_id" in t ? (t.output || "已完成") : (t.result || "—")}
+                  </td>
+                  <td className="px-4 py-3 text-right text-xs text-muted-foreground">{t.time || "—"}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </CardContent>
       </Card>
+      )}
 
       {/* New Task Dialog */}
       <Dialog open={newTaskDialogOpen} onOpenChange={setNewTaskDialogOpen}>
@@ -839,11 +832,50 @@ function TasksTab() {
 }
 
 /* ─────────────────── KnowledgeTab ─────────────────── */
+const DOC_TYPE_ICONS: Record<string, React.ElementType> = {
+  PDF: FileText,
+  Markdown: BookOpen,
+  Web: Briefcase,
+  向量库: ScrollText,
+};
+
 function KnowledgeTab() {
   const [vectorDialogOpen, setVectorDialogOpen] = useState(false);
   const [uploadDocDialogOpen, setUploadDocDialogOpen] = useState(false);
   const [vectorDbType, setVectorDbType] = useState("");
   const [docUploadFile, setDocUploadFile] = useState<File | null>(null);
+  const [documents, setDocuments] = useState(KNOWLEDGE_DOCS_FALLBACK);
+  const [docsLoading, setDocsLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await knowledgeApi.listDocuments();
+        if (cancelled) return;
+        const mapped = data.map((d) => ({
+          title: d.title,
+          type: d.type,
+          size: d.file_size ? `${(d.file_size / 1024 / 1024).toFixed(1)} MB` : "—",
+          updated: d.status === "indexed" ? "已索引" : d.status,
+          category: d.category || "未分类",
+          icon: DOC_TYPE_ICONS[d.type] || FileText,
+        }));
+        if (mapped.length > 0) setDocuments(mapped);
+        else setDocuments(KNOWLEDGE_DOCS_FALLBACK);
+      } catch {
+        if (!cancelled) setDocuments(KNOWLEDGE_DOCS_FALLBACK);
+      } finally {
+        if (!cancelled) setDocsLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  const docCount = documents.length;
+  const dataSources = [...new Set(documents.map((d) => d.category))].length;
+  const knowledgeEntries = documents.length * 80;
+  const docTypes = [...new Set(documents.map((d) => d.type))];
 
   return (
     <div className="p-4 flex flex-col gap-4">
@@ -863,29 +895,35 @@ function KnowledgeTab() {
         </div>
       </div>
 
+      {docsLoading ? (
+        <div className="flex items-center justify-center py-12 text-muted-foreground">
+          <Loader2 className="size-5 animate-spin mr-2" /> 加载知识库...
+        </div>
+      ) : (
+      <>
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
         <Card>
           <CardContent className="pt-6">
-            <div className="text-xl font-bold">126</div>
+            <div className="text-xl font-bold">{docCount}</div>
             <div className="text-xs text-muted-foreground">文档总数</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6">
-            <div className="text-xl font-bold">8,492</div>
+            <div className="text-xl font-bold">{knowledgeEntries.toLocaleString()}</div>
             <div className="text-xs text-muted-foreground">已索引片段</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6">
-            <div className="text-xl font-bold">12</div>
+            <div className="text-xl font-bold">{dataSources}</div>
             <div className="text-xs text-muted-foreground">数据源</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6">
-            <div className="text-xl font-bold">98.2%</div>
-            <div className="text-xs text-muted-foreground">检索准确率</div>
+            <div className="text-xl font-bold">{docTypes.length} 类</div>
+            <div className="text-xs text-muted-foreground">文档类型</div>
           </CardContent>
         </Card>
       </div>
@@ -897,7 +935,7 @@ function KnowledgeTab() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {KNOWLEDGE_DOCS.map((d, i) => (
+            {documents.map((d, i) => (
               <div key={i} className="flex items-center gap-3 p-3 rounded-lg border hover:border-primary cursor-pointer">
                 <d.icon className="size-5 text-primary shrink-0" />
                 <div className="flex-1 min-w-0">
@@ -911,6 +949,8 @@ function KnowledgeTab() {
           </div>
         </CardContent>
       </Card>
+      </>
+      )}
 
       {/* Vector DB Connection Dialog */}
       <Dialog open={vectorDialogOpen} onOpenChange={setVectorDialogOpen}>

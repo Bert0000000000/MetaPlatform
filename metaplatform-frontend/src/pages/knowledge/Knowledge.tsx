@@ -10,17 +10,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { knowledgeApi, knowledgeQaApi, knowledgeGraphApi, type KnowledgeDocument } from "@/lib/api";
-import { FileText, Upload, Search, Eye, FolderTree, Sparkles, Send, Network, Clock, BookMarked, Tag, GitCommit, Brain, MessageSquare, BookOpen, Ruler, Briefcase, ScrollText, NotebookPen, Scale, Puzzle, Hash, Trash2, Bell, Plus, CheckCircle2, RefreshCw, Download, Activity, XCircle } from "lucide-react";
+import { FileText, Upload, Search, Eye, FolderTree, Sparkles, Send, Network, Clock, BookMarked, Tag, GitCommit, Brain, MessageSquare, BookOpen, Ruler, Briefcase, ScrollText, NotebookPen, Scale, Puzzle, Hash, Trash2, Bell, Plus, CheckCircle2, RefreshCw, Download, Activity, XCircle, Edit } from "lucide-react";
 import { StatCard, PageHeader } from "@/components/ui/stat";
-
-const KB_CATEGORIES = [
-  { name: "产品手册", count: 86, icon: BookOpen, color: "bg-blue-500" },
-  { name: "技术规范", count: 124, icon: Ruler, color: "bg-purple-500" },
-  { name: "业务文档", count: 248, icon: Briefcase, color: "bg-green-500" },
-  { name: "合同协议", count: 178, icon: ScrollText, color: "bg-orange-500" },
-  { name: "会议纪要", count: 326, icon: NotebookPen, color: "bg-pink-500" },
-  { name: "政策法规", count: 64, icon: Scale, color: "bg-red-500" },
-];
 
 // TODO: Replace with real API when backend ready (knowledgeApi.search() exists but no Q&A history endpoint)
 const QA_HISTORY = [
@@ -390,9 +381,31 @@ export function SmartQA() {
   );
 }
 
+/* ─────────────────── Categories ─────────────────── */
+const KB_CAT_STORAGE_KEY = "mp_kb_categories";
+const KB_CATEGORIES_DEFAULT = [
+  { category: "产品手册", count: 86 },
+  { category: "技术规范", count: 124 },
+  { category: "业务文档", count: 248 },
+  { category: "合同协议", count: 178 },
+  { category: "会议纪要", count: 326 },
+  { category: "政策法规", count: 64 },
+];
+
+function loadKbCategories(): { category: string; count: number }[] {
+  try {
+    const stored = localStorage.getItem(KB_CAT_STORAGE_KEY);
+    if (stored) return JSON.parse(stored);
+  } catch { /* ignore */ }
+  return KB_CATEGORIES_DEFAULT;
+}
+
 export function Categories() {
-  const [cats, setCats] = useState<{ category: string; count: number }[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [cats, setCats] = useState<{ category: string; count: number }[]>(loadKbCategories);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editCat, setEditCat] = useState<{ category: string; count: number } | null>(null);
+  const [newName, setNewName] = useState("");
+  const [newCount, setNewCount] = useState("0");
 
   const catIcons: Record<string, React.ElementType> = {
     "产品手册": BookOpen,
@@ -411,34 +424,66 @@ export function Categories() {
     "政策法规": "bg-red-500",
   };
 
+  /* Persist to localStorage */
   useEffect(() => {
-    knowledgeApi.categories().then((data) => {
-      setCats(data);
-      setLoading(false);
-    }).catch(() => setLoading(false));
-  }, []);
+    try { localStorage.setItem(KB_CAT_STORAGE_KEY, JSON.stringify(cats)); } catch { /* ignore */ }
+  }, [cats]);
+
+  function handleAdd() {
+    setEditCat(null);
+    setNewName("");
+    setNewCount("0");
+    setDialogOpen(true);
+  }
+
+  function handleEdit(c: { category: string; count: number }) {
+    setEditCat(c);
+    setNewName(c.category);
+    setNewCount(String(c.count));
+    setDialogOpen(true);
+  }
+
+  function handleSave() {
+    if (!newName.trim()) return;
+    if (editCat) {
+      setCats((prev) => prev.map((c) => c.category === editCat.category ? { category: newName.trim(), count: parseInt(newCount) || 0 } : c));
+    } else {
+      setCats((prev) => [...prev, { category: newName.trim(), count: parseInt(newCount) || 0 }]);
+    }
+    setDialogOpen(false);
+  }
+
+  function handleDelete(name: string) {
+    if (!confirm(`确定删除分类「${name}」？`)) return;
+    setCats((prev) => prev.filter((c) => c.category !== name));
+  }
 
   const totalCount = cats.reduce((sum, c) => sum + c.count, 0);
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="text-base flex items-center gap-2">
-          <Tag className="size-4" /> 文档分类
-        </CardTitle>
-        <CardDescription>{cats.length} 个分类，共 {totalCount} 篇文档</CardDescription>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0">
+        <div>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Tag className="size-4" /> 文档分类
+          </CardTitle>
+          <CardDescription>{cats.length} 个分类，共 {totalCount} 篇文档</CardDescription>
+        </div>
+        <Button size="sm" onClick={handleAdd}>
+          <Plus className="size-3 mr-1" />
+          新建分类
+        </Button>
       </CardHeader>
       <CardContent>
-        {loading && <div className="text-center py-4 text-muted-foreground">加载中...</div>}
-        {!loading && cats.length === 0 && (
-          <div className="text-center py-4 text-muted-foreground">暂无分类</div>
+        {cats.length === 0 && (
+          <div className="text-center py-4 text-muted-foreground">暂无分类，点击上方按钮新建</div>
         )}
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
           {cats.map((c) => {
             const Icon = catIcons[c.category] || Tag;
             const color = catColors[c.category] || "bg-gray-500";
             return (
-              <div key={c.category} className="rounded-lg border p-4 hover:border-primary cursor-pointer">
+              <div key={c.category} className="rounded-lg border p-4 hover:border-primary cursor-pointer group relative">
                 <div className="flex items-center gap-3">
                   <div className={`size-10 rounded-lg ${color} text-white flex items-center justify-center`}>
                     <Icon className="size-5" />
@@ -448,11 +493,42 @@ export function Categories() {
                     <div className="text-xs text-muted-foreground">{c.count} 篇文档</div>
                   </div>
                 </div>
+                <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Button variant="ghost" size="icon" className="size-6" onClick={(e) => { e.stopPropagation(); handleEdit(c); }}>
+                    <Edit className="size-3" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="size-6 text-destructive" onClick={(e) => { e.stopPropagation(); handleDelete(c.category); }}>
+                    <Trash2 className="size-3" />
+                  </Button>
+                </div>
               </div>
             );
           })}
         </div>
       </CardContent>
+
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editCat ? "编辑分类" : "新建分类"}</DialogTitle>
+            <DialogDescription>{editCat ? "修改分类信息" : "添加一个新的文档分类"}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>分类名称</Label>
+              <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="如：产品手册" />
+            </div>
+            <div className="space-y-2">
+              <Label>文档数量</Label>
+              <Input type="number" value={newCount} onChange={(e) => setNewCount(e.target.value)} placeholder="0" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>取消</Button>
+            <Button onClick={handleSave} disabled={!newName.trim()}>{editCat ? "保存" : "创建"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }

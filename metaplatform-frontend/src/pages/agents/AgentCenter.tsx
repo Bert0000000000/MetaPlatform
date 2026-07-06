@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { agentsApi, type Agent, type AgentTask } from "@/lib/api";
-import { Bot, Plus, MessageSquare, Brain, Sparkles, Users, FileText, Wrench, Activity, GitBranch, Mail, Calendar, BarChart3, Zap, Clock, CheckCircle2, Search, NotebookPen, Code, ScrollText, DollarSign, Handshake, Truck, Circle, User, Trash2, Settings, Shield, Database, Key, MemoryStick, Cpu, Eye } from "lucide-react";
+import { Bot, Plus, MessageSquare, Brain, Sparkles, Users, FileText, Wrench, Activity, GitBranch, Mail, Calendar, BarChart3, Zap, Clock, CheckCircle2, Search, NotebookPen, Code, ScrollText, DollarSign, Handshake, Truck, Circle, User, Trash2, Settings, Shield, Database, Key, MemoryStick, Cpu, Eye, X } from "lucide-react";
 import { PageHeader } from "@/components/ui/stat";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 
@@ -20,25 +20,49 @@ const statusConfig = {
   offline: { label: "离线", color: "bg-gray-400" },
 };
 
-const SKILLS = [
-  { name: "数据查询", icon: Search, category: "数据" },
-  { name: "报表生成", icon: BarChart3, category: "数据" },
-  { name: "邮件起草", icon: Mail, category: "办公" },
-  { name: "会议纪要", icon: NotebookPen, category: "办公" },
-  { name: "日程安排", icon: Calendar, category: "办公" },
-  { name: "代码生成", icon: Code, category: "技术" },
-  { name: "合同审查", icon: ScrollText, category: "法务" },
-  { name: "财务核算", icon: DollarSign, category: "财务" },
-  { name: "客户分析", icon: Handshake, category: "销售" },
-  { name: "供应链预测", icon: Truck, category: "供应链" },
+const SKILLS_STORAGE_KEY = "mp_agent_skills";
+const SKILLS_DEFAULT = [
+  { name: "数据查询", category: "数据" },
+  { name: "报表生成", category: "数据" },
+  { name: "邮件起草", category: "办公" },
+  { name: "会议纪要", category: "办公" },
+  { name: "日程安排", category: "办公" },
+  { name: "代码生成", category: "技术" },
+  { name: "合同审查", category: "法务" },
+  { name: "财务核算", category: "财务" },
+  { name: "客户分析", category: "销售" },
+  { name: "供应链预测", category: "供应链" },
 ];
 
-const COLLAB_HISTORY = [
+const SKILL_ICON_MAP: Record<string, React.ElementType> = {
+  "数据查询": Search, "报表生成": BarChart3, "邮件起草": Mail, "会议纪要": NotebookPen,
+  "日程安排": Calendar, "代码生成": Code, "合同审查": ScrollText, "财务核算": DollarSign,
+  "客户分析": Handshake, "供应链预测": Truck,
+};
+
+function loadAgentSkills(): { name: string; category: string }[] {
+  try {
+    const stored = localStorage.getItem(SKILLS_STORAGE_KEY);
+    if (stored) return JSON.parse(stored);
+  } catch { /* ignore */ }
+  return SKILLS_DEFAULT;
+}
+
+const COLLAB_STORAGE_KEY = "mp_agent_collab";
+const COLLAB_HISTORY_DEFAULT = [
   { id: 1, scenario: "Q3 销售预测报告", agents: ["数据分析", "财务分析", "业务洞察"], duration: "12 分钟", status: "completed", result: "生成报告 1 份 + 风险点 5 个" },
   { id: 2, scenario: "客户流失预警分析", agents: ["客户分析", "数据分析"], duration: "8 分钟", status: "completed", result: "识别 23 个高风险客户" },
   { id: 3, scenario: "采购合同风险审查", agents: ["合同审查", "法务助手"], duration: "20 分钟", status: "running", result: "进行中" },
   { id: 4, scenario: "员工满意度调查分析", agents: ["HR 智能体", "文本分析"], duration: "15 分钟", status: "completed", result: "输出 3 个改进建议" },
 ];
+
+function loadCollabHistory() {
+  try {
+    const stored = localStorage.getItem(COLLAB_STORAGE_KEY);
+    if (stored) return JSON.parse(stored);
+  } catch { /* ignore */ }
+  return COLLAB_HISTORY_DEFAULT;
+}
 
 export function AgentList() {
   const [agents, setAgents] = useState<Agent[]>([]);
@@ -263,37 +287,123 @@ export function AgentList() {
 }
 
 export function AgentSkills() {
+  const [skills, setSkills] = useState(loadAgentSkills);
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [newSkillName, setNewSkillName] = useState("");
+  const [newSkillCategory, setNewSkillCategory] = useState("数据");
+
+  /* Persist to localStorage */
+  useEffect(() => {
+    try { localStorage.setItem(SKILLS_STORAGE_KEY, JSON.stringify(skills)); } catch { /* ignore */ }
+  }, [skills]);
+
+  function handleAdd() {
+    if (!newSkillName.trim()) return;
+    setSkills((prev) => [...prev, { name: newSkillName.trim(), category: newSkillCategory }]);
+    setNewSkillName("");
+    setNewSkillCategory("数据");
+    setAddDialogOpen(false);
+  }
+
+  function handleRemove(name: string) {
+    setSkills((prev) => prev.filter((s) => s.name !== name));
+  }
+
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="text-base flex items-center gap-2">
-          <Wrench className="size-4" /> 技能广场
-        </CardTitle>
-        <CardDescription>10 类预置技能，可赋予任意数字员工</CardDescription>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0">
+        <div>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Wrench className="size-4" /> 技能广场
+          </CardTitle>
+          <CardDescription>{skills.length} 类预置技能，可赋予任意数字员工</CardDescription>
+        </div>
+        <Button size="sm" onClick={() => setAddDialogOpen(true)}>
+          <Plus className="size-3 mr-1" />
+          新增技能
+        </Button>
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-          {SKILLS.map((s) => (
-            <div key={s.name} className="rounded-lg border p-3 text-center hover:border-primary cursor-pointer">
-              <div className="text-2xl"><s.icon className="size-6" /></div>
-              <div className="font-medium text-sm mt-1">{s.name}</div>
-              <Badge variant="outline" className="text-xs mt-1">{s.category}</Badge>
-            </div>
-          ))}
+          {skills.map((s) => {
+            const Icon = SKILL_ICON_MAP[s.name] || Wrench;
+            return (
+              <div key={s.name} className="rounded-lg border p-3 text-center hover:border-primary cursor-pointer group relative">
+                <div className="text-2xl"><Icon className="size-6" /></div>
+                <div className="font-medium text-sm mt-1">{s.name}</div>
+                <Badge variant="outline" className="text-xs mt-1">{s.category}</Badge>
+                <Button
+                  variant="ghost" size="icon" className="size-5 absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity text-destructive"
+                  onClick={(e) => { e.stopPropagation(); handleRemove(s.name); }}
+                >
+                  <X className="size-3" />
+                </Button>
+              </div>
+            );
+          })}
         </div>
       </CardContent>
+
+      <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>新增技能</DialogTitle>
+            <DialogDescription>添加一个新技能到技能广场</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>技能名称</Label>
+              <Input value={newSkillName} onChange={(e) => setNewSkillName(e.target.value)} placeholder="如：数据查询" />
+            </div>
+            <div className="space-y-2">
+              <Label>分类</Label>
+              <Select value={newSkillCategory} onValueChange={setNewSkillCategory}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {["数据", "办公", "技术", "法务", "财务", "销售", "供应链", "其他"].map((c) => (
+                    <SelectItem key={c} value={c}>{c}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddDialogOpen(false)}>取消</Button>
+            <Button onClick={handleAdd} disabled={!newSkillName.trim()}>创建</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
 
-const DECISION_MEETINGS = [
-  { id: 1, topic: "Q3 销售策略决策", agents: ["数据分析", "销售顾问", "财务分析"], status: "completed", startTime: "10:30", duration: "25 分钟", decision: "调整华东区域定价策略，预计增收 15%" },
-  { id: 2, topic: "供应商评估会议", agents: ["供应链分析", "财务审核", "法务审查"], status: "running", startTime: "14:00", duration: "进行中", decision: "..." },
-  { id: 3, topic: "新员工入职方案", agents: ["HR 智能体", "IT 运维", "行政管理"], status: "completed", startTime: "09:00", duration: "18 分钟", decision: "统一入职流程，新增 3 天导师制" },
-];
-
 export function AgentCollaboration() {
-  const [meetings] = useState(DECISION_MEETINGS);
+  const [meetings, setMeetings] = useState(loadCollabHistory);
+  const [collabDialogOpen, setCollabDialogOpen] = useState(false);
+  const [newScenario, setNewScenario] = useState("");
+  const [newAgents, setNewAgents] = useState("");
+
+  /* Persist to localStorage */
+  useEffect(() => {
+    try { localStorage.setItem(COLLAB_STORAGE_KEY, JSON.stringify(meetings)); } catch { /* ignore */ }
+  }, [meetings]);
+
+  function handleLogCollaboration() {
+    if (!newScenario.trim()) return;
+    const agentList = newAgents.split(",").map((s) => s.trim()).filter(Boolean);
+    const newEntry = {
+      id: Date.now(),
+      scenario: newScenario.trim(),
+      agents: agentList.length > 0 ? agentList : ["未知智能体"],
+      duration: "刚刚",
+      status: "running" as const,
+      result: "进行中",
+    };
+    setMeetings((prev: typeof meetings) => [newEntry, ...prev]);
+    setNewScenario("");
+    setNewAgents("");
+    setCollabDialogOpen(false);
+  }
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -349,19 +459,19 @@ export function AgentCollaboration() {
               <div key={m.id} className="border rounded-lg p-4">
                 <div className="flex items-start justify-between">
                   <div>
-                    <div className="font-medium text-sm">{m.topic}</div>
-                    <div className="text-xs text-muted-foreground mt-1">{m.startTime} / {m.duration}</div>
+                    <div className="font-medium text-sm">{m.scenario}</div>
+                    <div className="text-xs text-muted-foreground mt-1">耗时: {m.duration}</div>
                   </div>
                   <Badge variant={m.status === "completed" ? "secondary" : "default"} className={m.status === "completed" ? "text-green-600" : ""}>
                     {m.status === "completed" ? "已结束" : "进行中"}
                   </Badge>
                 </div>
                 <div className="flex gap-1 mt-2 flex-wrap">
-                  {m.agents.map((a) => <Badge key={a} variant="outline" className="text-xs">{a}</Badge>)}
+                  {m.agents.map((a: string) => <Badge key={a} variant="outline" className="text-xs">{a}</Badge>)}
                 </div>
-                {m.decision !== "..." && (
+                {m.result && m.result !== "进行中" && (
                   <div className="mt-2 p-2 bg-muted/30 rounded text-xs">
-                    <span className="font-medium">决策结果: </span>{m.decision}
+                    <span className="font-medium">决策结果: </span>{m.result}
                   </div>
                 )}
               </div>
@@ -371,9 +481,15 @@ export function AgentCollaboration() {
       </Card>
 
       <Card>
-        <CardHeader>
-          <CardTitle className="text-base">协作历史</CardTitle>
-          <CardDescription>多智能体协作执行的场景记录</CardDescription>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0">
+          <div>
+            <CardTitle className="text-base">协作历史</CardTitle>
+            <CardDescription>多智能体协作执行的场景记录</CardDescription>
+          </div>
+          <Button size="sm" onClick={() => setCollabDialogOpen(true)}>
+            <Plus className="size-3 mr-1" />
+            发起协作
+          </Button>
         </CardHeader>
         <CardContent className="p-0">
           <table className="w-full text-sm">
@@ -387,7 +503,7 @@ export function AgentCollaboration() {
               </tr>
             </thead>
             <tbody>
-              {COLLAB_HISTORY.map((c) => (
+              {meetings.map((c: any) => (
                 <tr key={c.id} className="border-b last:border-0 hover:bg-muted/30">
                   <td className="px-4 py-3 font-medium">{c.scenario}</td>
                   <td className="px-4 py-3">
@@ -409,6 +525,30 @@ export function AgentCollaboration() {
           </table>
         </CardContent>
       </Card>
+
+      {/* Collaboration Dialog */}
+      <Dialog open={collabDialogOpen} onOpenChange={setCollabDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>发起多智能体协作</DialogTitle>
+            <DialogDescription>记录一次新的智能体协作事件</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>协作场景</Label>
+              <Input value={newScenario} onChange={(e) => setNewScenario(e.target.value)} placeholder="如：Q3 销售预测报告" />
+            </div>
+            <div className="space-y-2">
+              <Label>参与智能体（逗号分隔）</Label>
+              <Input value={newAgents} onChange={(e) => setNewAgents(e.target.value)} placeholder="如：数据分析, 财务分析" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCollabDialogOpen(false)}>取消</Button>
+            <Button onClick={handleLogCollaboration} disabled={!newScenario.trim()}>发起协作</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

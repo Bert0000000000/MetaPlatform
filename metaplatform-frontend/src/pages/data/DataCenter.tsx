@@ -1367,16 +1367,31 @@ export function DataKnowledge() {
   );
 }
 
+const DQ_STORAGE_KEY = "mp_quality_rules";
+
 export function DataQuality() {
-  const [rules, setRules] = useState(QUALITY_RULES);
+  const [rules, setRules] = useState<typeof QUALITY_RULES>(() => {
+    try {
+      const stored = localStorage.getItem(DQ_STORAGE_KEY);
+      return stored ? JSON.parse(stored) : QUALITY_RULES;
+    } catch { return QUALITY_RULES; }
+  });
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState({ table: "", rule: "", severity: "warning" });
 
+  useEffect(() => {
+    try { localStorage.setItem(DQ_STORAGE_KEY, JSON.stringify(rules)); } catch {}
+  }, [rules]);
+
   function handleAddRule() {
     if (!form.table.trim() || !form.rule.trim()) return;
-    setRules((prev) => [...prev, { id: prev.length + 1, table: form.table, rule: form.rule, severity: form.severity, status: "passed", coverage: 100 }]);
+    setRules((prev) => [...prev, { id: Date.now(), table: form.table, rule: form.rule, severity: form.severity, status: "passed", coverage: 100 }]);
     setDialogOpen(false);
     setForm({ table: "", rule: "", severity: "warning" });
+  }
+
+  function handleDeleteRule(id: number) {
+    setRules((prev) => prev.filter((r) => r.id !== id));
   }
 
   return (
@@ -1402,6 +1417,7 @@ export function DataQuality() {
               <TableHead>级别</TableHead>
               <TableHead>状态</TableHead>
               <TableHead className="text-right">覆盖率</TableHead>
+              <TableHead className="text-right">操作</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -1418,6 +1434,11 @@ export function DataQuality() {
                   {r.status === "warning" && <Badge variant="outline" className="text-orange-500">警告</Badge>}
                 </TableCell>
                 <TableCell className="text-right">{r.coverage}%</TableCell>
+                <TableCell className="text-right">
+                  <Button variant="ghost" size="icon" className="size-8 text-destructive" onClick={() => handleDeleteRule(r.id)} title="删除">
+                    <Trash2 className="size-4" />
+                  </Button>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -1460,15 +1481,26 @@ export function DataQuality() {
   );
 }
 
+const ETL_STORAGE_KEY = "mp_etl_tasks";
+
 export function ETLTasks() {
-  const [tasks, setTasks] = useState(ETL_TASKS);
+  const [tasks, setTasks] = useState<typeof ETL_TASKS>(() => {
+    try {
+      const stored = localStorage.getItem(ETL_STORAGE_KEY);
+      return stored ? JSON.parse(stored) : ETL_TASKS;
+    } catch { return ETL_TASKS; }
+  });
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState({ name: "", source: "", target: "", schedule: "" });
+
+  useEffect(() => {
+    try { localStorage.setItem(ETL_STORAGE_KEY, JSON.stringify(tasks)); } catch {}
+  }, [tasks]);
 
   function handleAddTask() {
     if (!form.name.trim()) return;
     setTasks((prev) => [...prev, {
-      id: prev.length + 1,
+      id: Date.now(),
       name: form.name,
       source: form.source,
       target: form.target,
@@ -1479,6 +1511,10 @@ export function ETLTasks() {
     }]);
     setDialogOpen(false);
     setForm({ name: "", source: "", target: "", schedule: "" });
+  }
+
+  function handleDeleteTask(id: number) {
+    setTasks((prev) => prev.filter((t) => t.id !== id));
   }
 
   return (
@@ -1505,6 +1541,7 @@ export function ETLTasks() {
               <TableHead>耗时</TableHead>
               <TableHead>上次运行</TableHead>
               <TableHead>状态</TableHead>
+              <TableHead className="text-right">操作</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -1525,6 +1562,11 @@ export function ETLTasks() {
                   {t.status === "running" && <Badge className="bg-blue-500">运行中</Badge>}
                   {t.status === "completed" && <Badge variant="secondary" className="text-green-600">完成</Badge>}
                   {t.status === "failed" && <Badge variant="destructive">失败</Badge>}
+                </TableCell>
+                <TableCell className="text-right">
+                  <Button variant="ghost" size="icon" className="size-8 text-destructive" onClick={() => handleDeleteTask(t.id)} title="删除">
+                    <Trash2 className="size-4" />
+                  </Button>
                 </TableCell>
               </TableRow>
             ))}
@@ -1568,19 +1610,62 @@ export function ETLTasks() {
   );
 }
 
+const RT_STORAGE_KEY = "mp_realtime_events";
+
 export function RealTimeMonitor() {
+  const [events, setEvents] = useState<typeof REAL_TIME>(() => {
+    try {
+      const stored = localStorage.getItem(RT_STORAGE_KEY);
+      return stored ? JSON.parse(stored) : REAL_TIME;
+    } catch { return REAL_TIME; }
+  });
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [form, setForm] = useState({ event: "", source: "" });
+
+  useEffect(() => {
+    try { localStorage.setItem(RT_STORAGE_KEY, JSON.stringify(events)); } catch {}
+  }, [events]);
+
+  function handleAddEvent() {
+    if (!form.event.trim()) return;
+    const now = new Date();
+    const time = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}:${String(now.getSeconds()).padStart(2, "0")}`;
+    setEvents((prev) => [{ time, event: form.event, source: form.source || "手动" }, ...prev]);
+    setDialogOpen(false);
+    setForm({ event: "", source: "" });
+  }
+
+  function handleClearEvents() {
+    setEvents([]);
+  }
+
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="text-base flex items-center gap-2">
-          <Activity className="size-4 text-green-500 animate-pulse" /> 实时数据流
-        </CardTitle>
-        <CardDescription>实时同步事件（每 5 秒刷新）</CardDescription>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0">
+        <div>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Activity className="size-4 text-green-500 animate-pulse" /> 实时数据流
+          </CardTitle>
+          <CardDescription>{events.length} 条事件记录</CardDescription>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={handleClearEvents}>
+            <Trash2 className="size-3 mr-1" />
+            清空
+          </Button>
+          <Button size="sm" onClick={() => setDialogOpen(true)}>
+            <Plus className="size-3 mr-1" />
+            添加事件
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
         <div className="space-y-2 max-h-[400px] overflow-y-auto">
-          {REAL_TIME.map((e, i) => (
-            <div key={i} className="flex items-center gap-3 p-2 border rounded text-sm">
+          {events.length === 0 && (
+            <div className="text-center py-8 text-muted-foreground">暂无事件记录</div>
+          )}
+          {events.map((e, i) => (
+            <div key={`${e.time}-${i}`} className="flex items-center gap-3 p-2 border rounded text-sm">
               <Clock className="size-3 text-muted-foreground shrink-0" />
               <span className="font-mono text-xs text-muted-foreground w-20 shrink-0">{e.time}</span>
               <span className="flex-1 truncate">{e.event}</span>
@@ -1589,6 +1674,29 @@ export function RealTimeMonitor() {
           ))}
         </div>
       </CardContent>
+
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>添加监控事件</DialogTitle>
+            <DialogDescription>手动记录一条数据事件</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>事件描述</Label>
+              <Input value={form.event} onChange={(e) => setForm((f) => ({ ...f, event: e.target.value }))} placeholder="如：订单 #12345 创建" />
+            </div>
+            <div className="space-y-2">
+              <Label>来源</Label>
+              <Input value={form.source} onChange={(e) => setForm((f) => ({ ...f, source: e.target.value }))} placeholder="如：MySQL / API / ERP" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>取消</Button>
+            <Button onClick={handleAddEvent}>添加</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }

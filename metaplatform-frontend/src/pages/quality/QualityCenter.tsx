@@ -12,7 +12,8 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { PageHeader } from "@/components/ui/stat";
 import { qualityApi } from "@/lib/api";
-import { TestTube, Bot, Play, CheckCircle2, XCircle, Loader2, Bug, FileText, Plus, Gauge, Sparkles, GitBranch, AlertCircle, Zap, FlaskConical, BarChart3, Download, Activity, Settings, Search, Send, Monitor, Wrench, Eye, Clock, Shield } from "lucide-react";
+import { llmApi } from "@/lib/llm-api";
+import { TestTube, Bot, Play, CheckCircle2, XCircle, Loader2, Bug, FileText, Plus, Gauge, Sparkles, GitBranch, AlertCircle, Zap, FlaskConical, BarChart3, Download, Activity, Settings, Search, Send, Monitor, Wrench, Eye, Clock, Shield, Trash2 } from "lucide-react";
 
 const statusConfig = {
   passed: { label: "通过", variant: "default" as const, icon: CheckCircle2 },
@@ -85,6 +86,50 @@ export function TestCases({ onAdoptFromAI }: { onAdoptFromAI?: (caseItem: { name
   }, []);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [aiDialogOpen, setAiDialogOpen] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState("");
+  const [aiGenerating, setAiGenerating] = useState(false);
+  const [aiGenerated, setAiGenerated] = useState(AI_GENERATED);
+  const [aiError, setAiError] = useState<string | null>(null);
+
+  async function handleAIGenerate() {
+    if (!aiPrompt.trim()) return;
+    setAiGenerating(true);
+    setAiError(null);
+    try {
+      const response = await llmApi.chat([
+        {
+          role: "system",
+          content: `你是一个测试用例生成专家。根据用户描述的对象、流程或页面，生成测试用例列表。
+请以 JSON 数组格式返回，每个元素包含：
+- name: 用例名称（字符串）
+- type: 用例类型，从 "边界测试"、"流程测试"、"性能测试"、"功能测试"、"集成测试" 中选择
+- confidence: 置信度 0-100 的数字
+
+只返回 JSON 数组，不要包含其他文字。示例：
+[{"name":"测试用例名称","type":"边界测试","confidence":90}]`,
+        },
+        { role: "user", content: aiPrompt },
+      ], { temperature: 0.7, maxTokens: 1000 });
+
+      const content = response.content.trim();
+      const jsonMatch = content.match(/\[[\s\S]*\]/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        setAiGenerated(parsed.map((item: { name?: string; type?: string; confidence?: number }) => ({
+          name: item.name || "未命名用例",
+          type: item.type || "功能测试",
+          source: "AI 根据用户描述生成",
+          confidence: item.confidence || 80,
+        })));
+      } else {
+        setAiError("AI 返回格式无法解析，请重试");
+      }
+    } catch (e) {
+      setAiError(e instanceof Error ? e.message : "生成失败");
+    } finally {
+      setAiGenerating(false);
+    }
+  }
   const [form, setForm] = useState({ name: "", module: "", type: "单元", priority: "P1" });
 
   function handleAddCase() {
@@ -258,11 +303,24 @@ export function TestCases({ onAdoptFromAI }: { onAdoptFromAI?: (caseItem: { name
             <DialogTitle className="flex items-center gap-2">
               <Sparkles className="size-4 text-primary" /> AI 自动生成测试用例
             </DialogTitle>
-            <DialogDescription>根据对象 / 流程 / 页面 AI 自动推荐测试用例</DialogDescription>
+            <DialogDescription>描述对象 / 流程 / 页面，AI 自动推荐测试用例</DialogDescription>
           </DialogHeader>
+          <div className="flex gap-2 mb-2">
+            <Input
+              value={aiPrompt}
+              onChange={(e) => setAiPrompt(e.target.value)}
+              placeholder="如：客户对象的 CRUD 操作"
+              onKeyDown={(e) => e.key === "Enter" && handleAIGenerate()}
+              disabled={aiGenerating}
+            />
+            <Button size="sm" onClick={handleAIGenerate} disabled={aiGenerating || !aiPrompt.trim()}>
+              {aiGenerating ? <Loader2 className="size-3 animate-spin" /> : <Sparkles className="size-3" />}
+            </Button>
+          </div>
+          {aiError && <div className="text-xs text-destructive mb-2">{aiError}</div>}
           <div className="space-y-3 max-h-80 overflow-y-auto">
-            {AI_GENERATED.map((g, i) => (
-              <div key={i} className="flex items-center gap-3 p-3 border rounded-lg">
+            {aiGenerated.map((g, i) => (
+              <div key={`${g.name}-${i}`} className="flex items-center gap-3 p-3 border rounded-lg">
                 <Sparkles className="size-4 text-primary shrink-0" />
                 <div className="flex-1">
                   <div className="font-medium text-sm">{g.name}</div>
@@ -271,17 +329,22 @@ export function TestCases({ onAdoptFromAI }: { onAdoptFromAI?: (caseItem: { name
                   </div>
                 </div>
                 <Badge variant="outline" className="text-xs">置信度 {g.confidence}%</Badge>
-                <Button size="sm" variant="outline" onClick={() => {
+                <Button size="sm" variant="outline" onClick={async () => {
+                  const newId = `t-ai-${Date.now()}-${i}`;
+                  const mappedType = (g.type.includes("边界") || g.type.includes("单元") ? "单元" : g.type.includes("流程") ? "流程" : g.type.includes("性能") ? "性能" : "集成") as "单元" | "集成" | "UI" | "流程" | "性能";
                   setCases((prev) => [...prev, {
-                    id: `t-ai-${Date.now()}-${i}`,
+                    id: newId,
                     name: g.name,
                     module: "AI 生成",
-                    type: (g.type.includes("边界") || g.type.includes("单元") ? "单元" : g.type.includes("流程") ? "流程" : g.type.includes("性能") ? "性能" : "集成") as "单元" | "集成" | "UI" | "流程" | "性能",
+                    type: mappedType,
                     status: "draft" as const,
                     priority: "P1" as const,
                     lastRun: "未运行",
                     duration: "-",
                   }]);
+                  try {
+                    await qualityApi.createCase({ name: g.name, module: "AI 生成", type: mappedType === "单元" ? "functional" : mappedType === "性能" ? "performance" : "integration", priority: "medium" });
+                  } catch (e) { console.warn("Failed to persist AI case:", e); }
                   onAdoptFromAI?.({ name: g.name, module: "AI 生成", type: g.type });
                 }}>
                   采纳
@@ -291,20 +354,25 @@ export function TestCases({ onAdoptFromAI }: { onAdoptFromAI?: (caseItem: { name
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setAiDialogOpen(false)}>关闭</Button>
-            <Button onClick={() => {
+            <Button onClick={async () => {
               // 一键全部采纳
-              AI_GENERATED.forEach((g, i) => {
+              for (let i = 0; i < aiGenerated.length; i++) {
+                const g = aiGenerated[i];
+                const mappedType = (g.type.includes("边界") || g.type.includes("单元") ? "单元" : g.type.includes("流程") ? "流程" : g.type.includes("性能") ? "性能" : "集成") as "单元" | "集成" | "UI" | "流程" | "性能";
                 setCases((prev) => [...prev, {
                   id: `t-ai-batch-${Date.now()}-${i}`,
                   name: g.name,
                   module: "AI 生成",
-                  type: (g.type.includes("边界") || g.type.includes("单元") ? "单元" : g.type.includes("流程") ? "流程" : g.type.includes("性能") ? "性能" : "集成") as "单元" | "集成" | "UI" | "流程" | "性能",
+                  type: mappedType,
                   status: "draft" as const,
                   priority: "P1" as const,
                   lastRun: "未运行",
                   duration: "-",
                 }]);
-              });
+                try {
+                  await qualityApi.createCase({ name: g.name, module: "AI 生成", type: mappedType === "单元" ? "functional" : mappedType === "性能" ? "performance" : "integration", priority: "medium" });
+                } catch (e) { console.warn("Failed to persist AI case:", e); }
+              }
               setAiDialogOpen(false);
             }}>
               <Sparkles className="size-3 mr-1" />
@@ -448,14 +516,50 @@ export function BugTracker() {
   );
 }
 
+const PERF_STORAGE_KEY = "mp_perf_tests";
+
 export function PerfMonitor() {
+  const [perfTests, setPerfTests] = useState<typeof PERF_TESTS>(() => {
+    try {
+      const stored = localStorage.getItem(PERF_STORAGE_KEY);
+      return stored ? JSON.parse(stored) : PERF_TESTS;
+    } catch { return PERF_TESTS; }
+  });
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [form, setForm] = useState({ name: "", p50: "", p95: "", target: "" });
+
+  useEffect(() => {
+    try { localStorage.setItem(PERF_STORAGE_KEY, JSON.stringify(perfTests)); } catch {}
+  }, [perfTests]);
+
+  function handleAddTest() {
+    if (!form.name.trim()) return;
+    const p50 = parseFloat(form.p50) || 0;
+    const p95 = parseFloat(form.p95) || 0;
+    const target = parseFloat(form.target) || 0;
+    const status = p95 <= target ? "passed" : p95 <= target * 1.1 ? "warning" : "failed";
+    setPerfTests((prev) => [...prev, { name: form.name, p50, p95, target, status }]);
+    setDialogOpen(false);
+    setForm({ name: "", p50: "", p95: "", target: "" });
+  }
+
+  function handleDeleteTest(name: string) {
+    setPerfTests((prev) => prev.filter((t) => t.name !== name));
+  }
+
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="text-base flex items-center gap-2">
-          <Gauge className="size-4" /> 性能监控
-        </CardTitle>
-        <CardDescription>基于真实用户监控（RUM）的性能指标</CardDescription>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0">
+        <div>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Gauge className="size-4" /> 性能监控
+          </CardTitle>
+          <CardDescription>{perfTests.length} 个性能指标（基于 RUM）</CardDescription>
+        </div>
+        <Button size="sm" onClick={() => setDialogOpen(true)}>
+          <Plus className="size-3 mr-1" />
+          添加指标
+        </Button>
       </CardHeader>
       <CardContent className="p-0">
         <Table>
@@ -466,10 +570,11 @@ export function PerfMonitor() {
               <TableHead>P95</TableHead>
               <TableHead>目标</TableHead>
               <TableHead>状态</TableHead>
+              <TableHead className="text-right">操作</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {PERF_TESTS.map((p) => (
+            {perfTests.map((p) => (
               <TableRow key={p.name}>
                 <TableCell className="font-medium">{p.name}</TableCell>
                 <TableCell>{p.p50}s</TableCell>
@@ -480,28 +585,136 @@ export function PerfMonitor() {
                   {p.status === "warning" && <Badge variant="outline" className="text-orange-500">接近阈值</Badge>}
                   {p.status === "failed" && <Badge variant="destructive">超时</Badge>}
                 </TableCell>
+                <TableCell className="text-right">
+                  <Button variant="ghost" size="icon" className="size-8 text-destructive" onClick={() => handleDeleteTest(p.name)} title="删除">
+                    <Trash2 className="size-4" />
+                  </Button>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </CardContent>
+
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>添加性能指标</DialogTitle>
+            <DialogDescription>配置新的性能监控指标</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>指标名</Label>
+              <Input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} placeholder="如：首屏加载" />
+            </div>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label>P50 (秒)</Label>
+                <Input type="number" step="0.1" value={form.p50} onChange={(e) => setForm((f) => ({ ...f, p50: e.target.value }))} placeholder="0.8" />
+              </div>
+              <div className="space-y-2">
+                <Label>P95 (秒)</Label>
+                <Input type="number" step="0.1" value={form.p95} onChange={(e) => setForm((f) => ({ ...f, p95: e.target.value }))} placeholder="1.4" />
+              </div>
+              <div className="space-y-2">
+                <Label>目标 (秒)</Label>
+                <Input type="number" step="0.1" value={form.target} onChange={(e) => setForm((f) => ({ ...f, target: e.target.value }))} placeholder="1.5" />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>取消</Button>
+            <Button onClick={handleAddTest}>添加</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
 
 export function AIGenerateCases({ onAdopt }: { onAdopt?: (caseItem: { name: string; type: string }) => void }) {
+  const [prompt, setPrompt] = useState("");
+  const [generating, setGenerating] = useState(false);
+  const [generated, setGenerated] = useState(AI_GENERATED);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleGenerate() {
+    if (!prompt.trim()) return;
+    setGenerating(true);
+    setError(null);
+    try {
+      const response = await llmApi.chat([
+        {
+          role: "system",
+          content: `你是一个测试用例生成专家。根据用户描述的对象、流程或页面，生成测试用例列表。
+请以 JSON 数组格式返回，每个元素包含：
+- name: 用例名称（字符串）
+- type: 用例类型，从 "边界测试"、"流程测试"、"性能测试"、"功能测试"、"集成测试" 中选择
+- confidence: 置信度 0-100 的数字
+
+只返回 JSON 数组，不要包含其他文字。示例：
+[{"name":"测试用例名称","type":"边界测试","confidence":90}]`,
+        },
+        {
+          role: "user",
+          content: prompt,
+        },
+      ], { temperature: 0.7, maxTokens: 1000 });
+
+      const content = response.content.trim();
+      // Try to extract JSON from the response
+      const jsonMatch = content.match(/\[[\s\S]*\]/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        const cases = parsed.map((item: { name?: string; type?: string; confidence?: number }) => ({
+          name: item.name || "未命名用例",
+          type: item.type || "功能测试",
+          source: "AI 根据用户描述生成",
+          confidence: item.confidence || 80,
+        }));
+        setGenerated(cases);
+      } else {
+        setError("AI 返回格式无法解析，请重试");
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "生成失败，请检查网络连接");
+    } finally {
+      setGenerating(false);
+    }
+  }
+
   return (
     <Card>
       <CardHeader>
         <CardTitle className="text-base flex items-center gap-2">
           <Sparkles className="size-4 text-primary" /> AI 自动生成用例
         </CardTitle>
-        <CardDescription>根据对象/流程/页面 AI 自动推荐测试用例</CardDescription>
+        <CardDescription>描述对象/流程/页面，AI 自动推荐测试用例</CardDescription>
       </CardHeader>
       <CardContent>
+        <div className="flex gap-2 mb-4">
+          <Input
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            placeholder="描述需要生成测试用例的对象、流程或页面，如：客户对象的 CRUD 操作"
+            onKeyDown={(e) => e.key === "Enter" && handleGenerate()}
+            disabled={generating}
+          />
+          <Button onClick={handleGenerate} disabled={generating || !prompt.trim()}>
+            {generating ? <Loader2 className="size-3 mr-1 animate-spin" /> : <Sparkles className="size-3 mr-1" />}
+            {generating ? "生成中..." : "生成"}
+          </Button>
+        </div>
+
+        {error && (
+          <div className="text-sm text-destructive mb-3 p-2 border border-destructive/20 rounded bg-destructive/5">
+            {error}
+          </div>
+        )}
+
         <div className="space-y-3">
-          {AI_GENERATED.map((g, i) => (
-            <div key={i} className="flex items-center gap-3 p-3 border rounded-lg">
+          {generated.map((g, i) => (
+            <div key={`${g.name}-${i}`} className="flex items-center gap-3 p-3 border rounded-lg">
               <Sparkles className="size-4 text-primary shrink-0" />
               <div className="flex-1">
                 <div className="font-medium text-sm">{g.name}</div>
@@ -568,6 +781,50 @@ export function QualityDashboard() {
     }).catch(() => {});
   }, []);
   const [aiDialogOpen, setAiDialogOpen] = useState(false);
+  const [aiDashPrompt, setAiDashPrompt] = useState("");
+  const [aiDashGenerating, setAiDashGenerating] = useState(false);
+  const [aiDashGenerated, setAiDashGenerated] = useState(AI_GENERATED);
+  const [aiDashError, setAiDashError] = useState<string | null>(null);
+
+  async function handleDashAIGenerate() {
+    if (!aiDashPrompt.trim()) return;
+    setAiDashGenerating(true);
+    setAiDashError(null);
+    try {
+      const response = await llmApi.chat([
+        {
+          role: "system",
+          content: `你是一个测试用例生成专家。根据用户描述的对象、流程或页面，生成测试用例列表。
+请以 JSON 数组格式返回，每个元素包含：
+- name: 用例名称（字符串）
+- type: 用例类型，从 "边界测试"、"流程测试"、"性能测试"、"功能测试"、"集成测试" 中选择
+- confidence: 置信度 0-100 的数字
+
+只返回 JSON 数组，不要包含其他文字。示例：
+[{"name":"测试用例名称","type":"边界测试","confidence":90}]`,
+        },
+        { role: "user", content: aiDashPrompt },
+      ], { temperature: 0.7, maxTokens: 1000 });
+
+      const content = response.content.trim();
+      const jsonMatch = content.match(/\[[\s\S]*\]/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        setAiDashGenerated(parsed.map((item: { name?: string; type?: string; confidence?: number }) => ({
+          name: item.name || "未命名用例",
+          type: item.type || "功能测试",
+          source: "AI 根据用户描述生成",
+          confidence: item.confidence || 80,
+        })));
+      } else {
+        setAiDashError("AI 返回格式无法解析，请重试");
+      }
+    } catch (e) {
+      setAiDashError(e instanceof Error ? e.message : "生成失败");
+    } finally {
+      setAiDashGenerating(false);
+    }
+  }
 
   const caseCount = stats?.totalCases ?? cases.length;
   const passedCount = stats?.passedCases ?? cases.filter((t) => t.status === "passed").length;
@@ -575,17 +832,21 @@ export function QualityDashboard() {
   const passRate = stats?.passRate ?? (caseCount > 0 ? ((passedCount / caseCount) * 100).toFixed(1) : "0");
   const bugCount = stats?.totalBugs ?? bugsData.length;
 
-  function handleAdoptFromAI(caseItem: { name: string; type: string }) {
+  async function handleAdoptFromAI(caseItem: { name: string; type: string }) {
+    const mappedType = (caseItem.type.includes("边界") || caseItem.type.includes("单元") ? "单元" : caseItem.type.includes("流程") ? "流程" : caseItem.type.includes("性能") ? "性能" : "集成") as "单元" | "集成" | "UI" | "流程" | "性能";
     setCases((prev) => [...prev, {
       id: `t-adopt-${Date.now()}`,
       name: caseItem.name,
       module: "AI 生成",
-      type: (caseItem.type.includes("边界") || caseItem.type.includes("单元") ? "单元" : caseItem.type.includes("流程") ? "流程" : caseItem.type.includes("性能") ? "性能" : "集成") as "单元" | "集成" | "UI" | "流程" | "性能",
+      type: mappedType,
       status: "draft" as const,
       priority: "P1" as const,
       lastRun: "未运行",
       duration: "-",
     }]);
+    try {
+      await qualityApi.createCase({ name: caseItem.name, module: "AI 生成", type: mappedType === "单元" ? "functional" : mappedType === "性能" ? "performance" : "integration", priority: "medium" });
+    } catch (e) { console.warn("Failed to persist AI case:", e); }
   }
 
   return (
@@ -761,11 +1022,24 @@ export function QualityDashboard() {
             <DialogTitle className="flex items-center gap-2">
               <Sparkles className="size-4 text-primary" /> AI 自动生成测试用例
             </DialogTitle>
-            <DialogDescription>根据对象 / 流程 / 页面 AI 自动推荐测试用例</DialogDescription>
+            <DialogDescription>描述对象 / 流程 / 页面，AI 自动推荐测试用例</DialogDescription>
           </DialogHeader>
+          <div className="flex gap-2 mb-2">
+            <Input
+              value={aiDashPrompt}
+              onChange={(e) => setAiDashPrompt(e.target.value)}
+              placeholder="如：客户对象的 CRUD 操作"
+              onKeyDown={(e) => e.key === "Enter" && handleDashAIGenerate()}
+              disabled={aiDashGenerating}
+            />
+            <Button size="sm" onClick={handleDashAIGenerate} disabled={aiDashGenerating || !aiDashPrompt.trim()}>
+              {aiDashGenerating ? <Loader2 className="size-3 animate-spin" /> : <Sparkles className="size-3" />}
+            </Button>
+          </div>
+          {aiDashError && <div className="text-xs text-destructive mb-2">{aiDashError}</div>}
           <div className="space-y-3 max-h-80 overflow-y-auto">
-            {AI_GENERATED.map((g, i) => (
-              <div key={i} className="flex items-center gap-3 p-3 border rounded-lg">
+            {aiDashGenerated.map((g, i) => (
+              <div key={`${g.name}-${i}`} className="flex items-center gap-3 p-3 border rounded-lg">
                 <Sparkles className="size-4 text-primary shrink-0" />
                 <div className="flex-1">
                   <div className="font-medium text-sm">{g.name}</div>
@@ -784,7 +1058,7 @@ export function QualityDashboard() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setAiDialogOpen(false)}>关闭</Button>
             <Button onClick={() => {
-              AI_GENERATED.forEach((g) => handleAdoptFromAI({ name: g.name, type: g.type }));
+              aiDashGenerated.forEach((g) => handleAdoptFromAI({ name: g.name, type: g.type }));
               setAiDialogOpen(false);
             }}>
               <Sparkles className="size-3 mr-1" /> 全部采纳

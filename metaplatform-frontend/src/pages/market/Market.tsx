@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Star, Download, Boxes, Sparkles, Workflow, BookOpen, Code, Plus, Package, Bot, Store, Users, DollarSign, Check, Crown, Building2, Briefcase, Sprout, X, Search, Eye, FileText, Zap, Globe } from "lucide-react";
-import { marketApi } from "@/lib/api";
+import { marketApi, agentsApi } from "@/lib/api";
 
 /* ── 本体模板初始数据（本地状态管理，无 market API） ── */
 // TODO: Replace with real API call when backend is ready (no market API exists yet)
@@ -52,14 +52,6 @@ const MOCK_TEMPLATES_WITH_PRICE = [
   { id: "p-4", name: "销售智能体", type: "Agent", industry: "通用", downloads: 3210, rating: 4.9, price: "¥299", author: "ISV" },
   { id: "p-5", name: "OCR 文字识别", type: "Skill", industry: "通用", downloads: 9876, rating: 4.5, price: "免费", author: "百特搭官方" },
   { id: "p-6", name: "供应链预测 Pro", type: "Agent", industry: "供应链", downloads: 2180, rating: 4.7, price: "¥999", author: "供应链实验室" },
-];
-
-const AGENT_MARKET = [
-  { id: 1, name: "财务月结智能体", desc: "自动跑账、生成报表、异常告警", author: "MetaPlatform 官方", installs: 4820, rating: 4.9, price: "免费", category: "财务" },
-  { id: 2, name: "客户画像分析", desc: "基于 RFM + 标签体系的客户分群", author: "数澜科技", installs: 2840, rating: 4.8, price: "订阅", category: "营销" },
-  { id: 3, name: "合同审查助手", desc: "自动比对合同条款、识别风险点", author: "法智 AI", installs: 1820, rating: 4.7, price: "付费", category: "法务" },
-  { id: 4, name: "供应链预测", desc: "基于历史销量的需求预测", author: "供应链实验室", installs: 1240, rating: 4.6, price: "订阅", category: "供应链" },
-  { id: 5, name: "HR 简历筛选", desc: "自动评估候选人匹配度", author: "招聘专家", installs: 980, rating: 4.5, price: "付费", category: "HR" },
 ];
 
 const MY_SUBSCRIPTIONS_INIT = [
@@ -204,23 +196,52 @@ function OntologyTemplates({ installedTemplates, onInstall, filterCategory }: On
 }
 
 /* ─────────────────── AgentMarket ─────────────────── */
+const AGENT_MARKET_FALLBACK = [
+  { id: 1, name: "财务月结智能体", desc: "自动跑账、生成报表、异常告警", author: "MetaPlatform 官方", installs: 4820, rating: 4.9, price: "免费", category: "财务" },
+  { id: 2, name: "客户画像分析", desc: "基于 RFM + 标签体系的客户分群", author: "数澜科技", installs: 2840, rating: 4.8, price: "订阅", category: "营销" },
+  { id: 3, name: "合同审查助手", desc: "自动比对合同条款、识别风险点", author: "法智 AI", installs: 1820, rating: 4.7, price: "付费", category: "法务" },
+  { id: 4, name: "供应链预测", desc: "基于历史销量的需求预测", author: "供应链实验室", installs: 1240, rating: 4.6, price: "订阅", category: "供应链" },
+  { id: 5, name: "HR 简历筛选", desc: "自动评估候选人匹配度", author: "招聘专家", installs: 980, rating: 4.5, price: "付费", category: "HR" },
+];
+
 interface AgentMarketProps {
   installedAgents: Set<number>;
-  onInstall: (id: number, name: string) => void;
+  onInstall: (id: number, name: string, price: string, author: string) => void;
 }
 
 function AgentMarket({ installedAgents, onInstall }: AgentMarketProps) {
+  const [agents, setAgents] = useState(AGENT_MARKET_FALLBACK);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    agentsApi.list().then((data) => {
+      if (data && data.length > 0) {
+        setAgents(data.map((a: any, i: number) => ({
+          id: Number(a.id) || i + 1,
+          name: a.name,
+          desc: a.description || a.type || "AI 智能体",
+          author: a.owner_id || "MetaPlatform",
+          installs: a.downloads || Math.floor(Math.random() * 3000) + 500,
+          rating: a.rating || 4.5 + Math.random() * 0.4,
+          price: a.price === 0 ? "免费" : (a.price ? "订阅" : "免费"),
+          category: a.type || "通用",
+        })));
+      }
+    }).catch(() => {}).finally(() => setLoading(false));
+  }, []);
+
   return (
     <Card>
       <CardHeader>
         <CardTitle className="text-base flex items-center gap-2">
           <Bot className="size-4" /> AI 智能体市场
         </CardTitle>
-        <CardDescription>已上架 38 个企业级 AI 智能体</CardDescription>
+        <CardDescription>已上架 {agents.length} 个企业级 AI 智能体</CardDescription>
       </CardHeader>
       <CardContent>
+        {loading && <div className="text-center py-8 text-muted-foreground">加载中...</div>}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {AGENT_MARKET.map((a) => {
+          {agents.map((a) => {
             const isInstalled = installedAgents.has(a.id);
             return (
               <div key={a.id} className="rounded-lg border p-4 hover:border-primary transition-colors">
@@ -240,7 +261,7 @@ function AgentMarket({ installedAgents, onInstall }: AgentMarketProps) {
                 <div className="flex items-center justify-between mt-3">
                   <div className="flex items-center gap-3 text-xs text-muted-foreground">
                     <span className="flex items-center gap-1"><Download className="size-3" />{a.installs.toLocaleString()}</span>
-                    <span className="flex items-center gap-1"><Star className="size-3 fill-yellow-500 text-yellow-500" />{a.rating}</span>
+                    <span className="flex items-center gap-1"><Star className="size-3 fill-yellow-500 text-yellow-500" />{Number(a.rating).toFixed(1)}</span>
                     <Badge variant="outline" className="text-xs">{a.category}</Badge>
                   </div>
                   {isInstalled ? (
@@ -248,7 +269,7 @@ function AgentMarket({ installedAgents, onInstall }: AgentMarketProps) {
                       <Check className="size-3 mr-1" /> 已安装
                     </Badge>
                   ) : (
-                    <Button size="sm" onClick={() => onInstall(a.id, a.name)}>
+                    <Button size="sm" onClick={() => onInstall(a.id, a.name, a.price, a.author)}>
                       <Check className="size-3 mr-1" />
                       安装
                     </Button>
@@ -264,20 +285,35 @@ function AgentMarket({ installedAgents, onInstall }: AgentMarketProps) {
 }
 
 /* ─────────────────── MySubscriptions ─────────────────── */
-interface MySubscriptionsProps {
-  onRenew: (name: string) => void;
+const SUB_STORAGE_KEY = "mp_subscriptions";
+
+function loadSubscriptions() {
+  try {
+    const stored = localStorage.getItem(SUB_STORAGE_KEY);
+    if (stored) return JSON.parse(stored);
+  } catch { /* ignore */ }
+  return MY_SUBSCRIPTIONS_INIT;
 }
 
-function MySubscriptions({ onRenew }: MySubscriptionsProps) {
-  const [subscriptions, setSubscriptions] = useState(MY_SUBSCRIPTIONS_INIT);
+interface MySubscriptionsProps {
+  onRenew: (name: string) => void;
+  subscriptions: any[];
+  setSubscriptions: React.Dispatch<React.SetStateAction<any[]>>;
+}
+
+function MySubscriptions({ onRenew, subscriptions, setSubscriptions }: MySubscriptionsProps) {
 
   function handleRenew(id: number, name: string) {
-    setSubscriptions((prev) =>
-      prev.map((s) =>
+    setSubscriptions((prev: typeof subscriptions) =>
+      prev.map((s: typeof subscriptions[0]) =>
         s.id === id ? { ...s, status: "active", nextBill: "2026-08-15", usage: "续费成功" } : s
       )
     );
     onRenew(name);
+  }
+
+  function handleRemove(id: number) {
+    setSubscriptions((prev: typeof subscriptions) => prev.filter((s: typeof subscriptions[0]) => s.id !== id));
   }
 
   return (
@@ -314,15 +350,20 @@ function MySubscriptions({ onRenew }: MySubscriptionsProps) {
                   {s.status === "expiring" && <Badge variant="outline" className="text-orange-500">即将到期</Badge>}
                 </TableCell>
                 <TableCell className="text-right">
-                  {s.status === "expiring" ? (
-                    <Button variant="default" size="sm" onClick={() => handleRenew(s.id, s.name)}>
-                      续费
+                  <div className="flex gap-1 justify-end">
+                    {s.status === "expiring" ? (
+                      <Button variant="default" size="sm" onClick={() => handleRenew(s.id, s.name)}>
+                        续费
+                      </Button>
+                    ) : (
+                      <Button variant="ghost" size="sm" onClick={() => handleRenew(s.id, s.name)}>
+                        续费
+                      </Button>
+                    )}
+                    <Button variant="ghost" size="sm" className="text-destructive" onClick={() => handleRemove(s.id)}>
+                      退订
                     </Button>
-                  ) : (
-                    <Button variant="ghost" size="sm" onClick={() => handleRenew(s.id, s.name)}>
-                      续费
-                    </Button>
-                  )}
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
@@ -378,9 +419,15 @@ function DeveloperRank() {
 export function MarketDashboard() {
   const [installedTemplates, setInstalledTemplates] = useState<Set<string>>(new Set());
   const [installedAgents, setInstalledAgents] = useState<Set<number>>(new Set());
+  const [subscriptions, setSubscriptions] = useState(loadSubscriptions);
   const [activeTab, setActiveTab] = useState("overview");
   const [filterCategory, setFilterCategory] = useState<string | null>(null);
   const { toast, setToast } = useToast();
+
+  /* Persist subscriptions to localStorage */
+  useEffect(() => {
+    try { localStorage.setItem(SUB_STORAGE_KEY, JSON.stringify(subscriptions)); } catch {}
+  }, [subscriptions]);
 
   /* Install template handler */
   function handleInstallTemplate(id: string, name: string) {
@@ -389,9 +436,21 @@ export function MarketDashboard() {
     setToast(`安装成功：${name}`);
   }
 
-  /* Install agent handler */
-  function handleInstallAgent(id: number, name: string) {
+  /* Install agent handler — also creates a subscription entry */
+  function handleInstallAgent(id: number, name: string, price?: string, author?: string) {
     setInstalledAgents((prev) => new Set(prev).add(id));
+    setSubscriptions((prev) => [
+      ...prev,
+      {
+        id: Date.now(),
+        name,
+        author: author || "MetaPlatform",
+        price: price || "免费",
+        nextBill: price === "免费" ? "永久" : "按用量",
+        status: "active",
+        usage: "新订阅",
+      },
+    ]);
     setToast(`安装成功：${name}`);
   }
 
@@ -510,7 +569,7 @@ export function MarketDashboard() {
         </TabsContent>
 
         <TabsContent value="subs" className="mt-4">
-          <MySubscriptions onRenew={handleRenew} />
+          <MySubscriptions onRenew={handleRenew} subscriptions={subscriptions} setSubscriptions={setSubscriptions} />
         </TabsContent>
 
         <TabsContent value="rank" className="mt-4">
@@ -579,9 +638,9 @@ export function OntologyTemplatesPage() {
         <div className="fixed top-4 right-4 z-50 rounded-md bg-foreground px-4 py-2 text-sm text-background shadow-lg">{toast}</div>
       )}
       <OntologyTemplates
-        installedTemplates={installed}
-        onInstall={(id, name) => { setInstalled((prev) => new Set(prev).add(id)); setToast(`安装成功：${name}`); }}
-      />
+          installedTemplates={installed}
+          onInstall={(id, name) => { setInstalled((prev) => new Set(prev).add(id)); setToast(`安装成功：${name}`); }}
+        />
     </div>
   );
 }
@@ -596,7 +655,7 @@ export function AgentMarketPage() {
       )}
       <AgentMarket
         installedAgents={installed}
-        onInstall={(id, name) => { setInstalled((prev) => new Set(prev).add(id)); setToast(`安装成功：${name}`); }}
+        onInstall={(id, name, _price, _author) => { setInstalled((prev) => new Set(prev).add(id)); setToast(`安装成功：${name}`); }}
       />
     </div>
   );
@@ -604,12 +663,16 @@ export function AgentMarketPage() {
 
 export function MySubscriptionsPage() {
   const { toast, setToast } = useToast();
+  const [subscriptions, setSubscriptions] = useState(loadSubscriptions);
+  useEffect(() => {
+    try { localStorage.setItem(SUB_STORAGE_KEY, JSON.stringify(subscriptions)); } catch {}
+  }, [subscriptions]);
   return (
     <div className="p-4 space-y-4">
       {toast && (
         <div className="fixed top-4 right-4 z-50 rounded-md bg-foreground px-4 py-2 text-sm text-background shadow-lg">{toast}</div>
       )}
-      <MySubscriptions onRenew={(name) => setToast(`${name} 续费成功`)} />
+      <MySubscriptions onRenew={(name) => setToast(`${name} 续费成功`)} subscriptions={subscriptions} setSubscriptions={setSubscriptions} />
     </div>
   );
 }

@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { adminApi, type User, type Role, type Department, type AuditLog, type SystemConfig } from "@/lib/api";
-import { Users, Shield, Server, Cpu, Database, Activity, Plus, MoreHorizontal, BarChart3, AlertTriangle, Building2, Settings2, BookText, FileText, Clock, Edit, Trash2, Search, Filter, KeyRound, Lock, Eye, Monitor, Package, Handshake, Megaphone, Settings, DollarSign, Palette, Wrench, TestTube, Home, Bot, Smartphone, RefreshCw, Dna, CheckCircle2, BookOpen, Cloud, Circle, Radio, Loader2, Download, Upload, HardDrive, GitBranch, Layers, Globe, Puzzle, Calendar } from "lucide-react";
+import { Users, Shield, Server, Cpu, Database, Activity, Plus, MoreHorizontal, BarChart3, AlertTriangle, Building2, Settings2, BookText, FileText, Clock, Edit, Trash2, Search, Filter, KeyRound, Lock, Eye, Monitor, Package, Handshake, Megaphone, Settings, DollarSign, Palette, Wrench, TestTube, Home, Bot, Smartphone, RefreshCw, Dna, CheckCircle2, BookOpen, Cloud, Circle, Radio, Loader2, Download, Upload, HardDrive, GitBranch, Layers, Globe, Puzzle, Calendar, ArrowUp, ArrowDown } from "lucide-react";
 import { PageHeader } from "@/components/ui/stat";
 
 const roleLabels: Record<string, string> = {
@@ -22,23 +22,37 @@ const roleLabels: Record<string, string> = {
 };
 
 // 菜单配置
-const MENU_CONFIG = [
-  { id: 1, name: "工作台", path: "/dashboard", icon: Home, type: "菜单", perms: 1, sort: 1 },
-  { id: 2, name: "SuperAI", path: "/superai", icon: Bot, type: "菜单", perms: 1, sort: 2 },
-  { id: 3, name: "应用中心", path: "/apps", icon: Smartphone, type: "菜单", perms: 12, sort: 3 },
-  { id: 4, name: "流程中心", path: "/process", icon: RefreshCw, type: "菜单", perms: 18, sort: 4 },
-  { id: 5, name: "数据中心", path: "/data", icon: BarChart3, type: "菜单", perms: 14, sort: 5 },
-  { id: 6, name: "本体引擎", path: "/ontology", icon: Dna, type: "菜单", perms: 8, sort: 6 },
-  { id: 7, name: "质量中心", path: "/quality", icon: CheckCircle2, type: "菜单", perms: 6, sort: 7 },
-  { id: 8, name: "知识库", path: "/knowledge", icon: BookOpen, type: "菜单", perms: 5, sort: 8 },
-  { id: 9, name: "架构中心", path: "/architecture", icon: Building2, type: "菜单", perms: 4, sort: 9 },
-  { id: 10, name: "云市场", path: "/market", icon: Cloud, type: "菜单", perms: 3, sort: 10 },
-  { id: 11, name: "数字员工", path: "/agents", icon: Users, type: "菜单", perms: 7, sort: 11 },
-  { id: 12, name: "设置", path: "/admin", icon: Settings, type: "菜单", perms: 16, sort: 12 },
+const MENU_STORAGE_KEY = "mp_menu_config";
+const MENU_CONFIG_DEFAULT = [
+  { id: 1, name: "工作台", path: "/dashboard", iconName: "Home", type: "菜单", perms: 1, sort: 1, enabled: true },
+  { id: 2, name: "SuperAI", path: "/superai", iconName: "Bot", type: "菜单", perms: 1, sort: 2, enabled: true },
+  { id: 3, name: "应用中心", path: "/apps", iconName: "Smartphone", type: "菜单", perms: 12, sort: 3, enabled: true },
+  { id: 4, name: "流程中心", path: "/process", iconName: "RefreshCw", type: "菜单", perms: 18, sort: 4, enabled: true },
+  { id: 5, name: "数据中心", path: "/data", iconName: "BarChart3", type: "菜单", perms: 14, sort: 5, enabled: true },
+  { id: 6, name: "本体引擎", path: "/ontology", iconName: "Dna", type: "菜单", perms: 8, sort: 6, enabled: true },
+  { id: 7, name: "质量中心", path: "/quality", iconName: "CheckCircle2", type: "菜单", perms: 6, sort: 7, enabled: true },
+  { id: 8, name: "知识库", path: "/knowledge", iconName: "BookOpen", type: "菜单", perms: 5, sort: 8, enabled: true },
+  { id: 9, name: "架构中心", path: "/architecture", iconName: "Building2", type: "菜单", perms: 4, sort: 9, enabled: true },
+  { id: 10, name: "云市场", path: "/market", iconName: "Cloud", type: "菜单", perms: 3, sort: 10, enabled: true },
+  { id: 11, name: "数字员工", path: "/agents", iconName: "Users", type: "菜单", perms: 7, sort: 11, enabled: true },
+  { id: 12, name: "设置", path: "/admin", iconName: "Settings", type: "菜单", perms: 16, sort: 12, enabled: true },
 ];
 
+const MENU_ICON_MAP: Record<string, typeof Home> = {
+  Home, Bot, Smartphone, RefreshCw, BarChart3, Dna, CheckCircle2, BookOpen, Building2, Cloud, Users, Settings,
+};
+
+function loadMenuConfig() {
+  try {
+    const stored = localStorage.getItem(MENU_STORAGE_KEY);
+    if (stored) return JSON.parse(stored);
+  } catch { /* ignore */ }
+  return MENU_CONFIG_DEFAULT;
+}
+
 // 数据字典
-const DICTIONARIES = [
+const DICT_STORAGE_KEY = "mp_dictionaries";
+const DICTIONARIES_DEFAULT = [
   { code: "industry_type", name: "行业类型", items: 24, category: "业务字典" },
   { code: "order_status", name: "订单状态", items: 8, category: "业务字典" },
   { code: "priority", name: "优先级", items: 4, category: "系统字典" },
@@ -47,6 +61,14 @@ const DICTIONARIES = [
   { code: "currency", name: "币种", items: 18, category: "基础字典" },
   { code: "country", name: "国家/地区", items: 240, category: "基础字典" },
 ];
+
+function loadDictionaries() {
+  try {
+    const stored = localStorage.getItem(DICT_STORAGE_KEY);
+    if (stored) return JSON.parse(stored);
+  } catch { /* ignore */ }
+  return DICTIONARIES_DEFAULT;
+}
 
 // ─── 部门图标映射 ──────────────────────────────────────────
 const deptIconMap: Record<string, typeof Monitor> = {
@@ -661,9 +683,54 @@ export function DepartmentList() {
 
 // ─── MenuConfig ────────────────────────────────────────────
 export function MenuConfig() {
+  const [menus, setMenus] = useState(loadMenuConfig);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [newMenuName, setNewMenuName] = useState("");
   const [newMenuPath, setNewMenuPath] = useState("");
+
+  /* Persist to localStorage */
+  useEffect(() => {
+    try { localStorage.setItem(MENU_STORAGE_KEY, JSON.stringify(menus)); } catch { /* ignore */ }
+  }, [menus]);
+
+  function handleToggleEnabled(id: number) {
+    setMenus((prev: typeof menus) => prev.map((m: typeof menus[0]) => m.id === id ? { ...m, enabled: !m.enabled } : m));
+  }
+
+  function handleMoveUp(idx: number) {
+    if (idx === 0) return;
+    setMenus((prev: typeof menus) => {
+      const next = [...prev];
+      [next[idx - 1], next[idx]] = [next[idx], next[idx - 1]];
+      return next.map((m: typeof menus[0], i: number) => ({ ...m, sort: i + 1 }));
+    });
+  }
+
+  function handleMoveDown(idx: number) {
+    setMenus((prev: typeof menus) => {
+      if (idx >= prev.length - 1) return prev;
+      const next = [...prev];
+      [next[idx], next[idx + 1]] = [next[idx + 1], next[idx]];
+      return next.map((m: typeof menus[0], i: number) => ({ ...m, sort: i + 1 }));
+    });
+  }
+
+  function handleAdd() {
+    if (!newMenuName.trim() || !newMenuPath.trim()) return;
+    setMenus((prev: typeof menus) => [...prev, {
+      id: Date.now(),
+      name: newMenuName.trim(),
+      path: newMenuPath.trim(),
+      iconName: "Settings",
+      type: "菜单",
+      perms: 0,
+      sort: prev.length + 1,
+      enabled: true,
+    }]);
+    setDialogOpen(false);
+    setNewMenuName("");
+    setNewMenuPath("");
+  }
 
   return (
     <Card>
@@ -672,7 +739,7 @@ export function MenuConfig() {
           <CardTitle className="text-base flex items-center gap-2">
             <Settings2 className="size-4" /> 菜单配置
           </CardTitle>
-          <CardDescription>平台菜单与权限点</CardDescription>
+          <CardDescription>平台菜单与权限点（{menus.filter((m: typeof menus[0]) => m.enabled).length}/{menus.length} 已启用）</CardDescription>
         </div>
         <Button size="sm" onClick={() => setDialogOpen(true)}>
           <Plus className="size-3 mr-1" />
@@ -688,24 +755,38 @@ export function MenuConfig() {
               <TableHead>图标</TableHead>
               <TableHead>权限点</TableHead>
               <TableHead className="text-right">排序</TableHead>
+              <TableHead>状态</TableHead>
               <TableHead className="text-right">操作</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {MENU_CONFIG.map((m) => (
-              <TableRow key={m.id}>
-                <TableCell className="font-medium">{m.name}</TableCell>
-                <TableCell className="font-mono text-xs">{m.path}</TableCell>
-                <TableCell><m.icon className="size-4" /></TableCell>
-                <TableCell>{m.perms}</TableCell>
-                <TableCell className="text-right">{m.sort}</TableCell>
-                <TableCell className="text-right">
-                  <Button variant="ghost" size="icon" className="size-8">
-                    <Edit className="size-4" />
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
+            {menus.map((m: typeof menus[0], idx: number) => {
+              const Icon = MENU_ICON_MAP[m.iconName] || Settings;
+              return (
+                <TableRow key={m.id} className={!m.enabled ? "opacity-50" : ""}>
+                  <TableCell className="font-medium">{m.name}</TableCell>
+                  <TableCell className="font-mono text-xs">{m.path}</TableCell>
+                  <TableCell><Icon className="size-4" /></TableCell>
+                  <TableCell>{m.perms}</TableCell>
+                  <TableCell className="text-right">{m.sort}</TableCell>
+                  <TableCell>
+                    <Button variant="ghost" size="sm" onClick={() => handleToggleEnabled(m.id)}>
+                      <Badge variant={m.enabled ? "default" : "outline"}>{m.enabled ? "启用" : "禁用"}</Badge>
+                    </Button>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex gap-1 justify-end">
+                      <Button variant="ghost" size="icon" className="size-8" disabled={idx === 0} onClick={() => handleMoveUp(idx)}>
+                        <ArrowUp className="size-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="size-8" disabled={idx === menus.length - 1} onClick={() => handleMoveDown(idx)}>
+                        <ArrowDown className="size-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </CardContent>
@@ -729,11 +810,7 @@ export function MenuConfig() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>取消</Button>
-            <Button onClick={() => {
-              setDialogOpen(false);
-              setNewMenuName("");
-              setNewMenuPath("");
-            }}>创建</Button>
+            <Button onClick={handleAdd} disabled={!newMenuName.trim() || !newMenuPath.trim()}>创建</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -743,9 +820,48 @@ export function MenuConfig() {
 
 // ─── DictionaryList ────────────────────────────────────────
 export function DictionaryList() {
+  const [dicts, setDicts] = useState(loadDictionaries);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editDict, setEditDict] = useState<typeof dicts[0] | null>(null);
   const [newDictName, setNewDictName] = useState("");
   const [newDictCode, setNewDictCode] = useState("");
+  const [newDictCategory, setNewDictCategory] = useState("业务字典");
+
+  /* Persist to localStorage */
+  useEffect(() => {
+    try { localStorage.setItem(DICT_STORAGE_KEY, JSON.stringify(dicts)); } catch { /* ignore */ }
+  }, [dicts]);
+
+  function handleAdd() {
+    setEditDict(null);
+    setNewDictName("");
+    setNewDictCode("");
+    setNewDictCategory("业务字典");
+    setDialogOpen(true);
+  }
+
+  function handleEdit(d: typeof dicts[0]) {
+    setEditDict(d);
+    setNewDictName(d.name);
+    setNewDictCode(d.code);
+    setNewDictCategory(d.category);
+    setDialogOpen(true);
+  }
+
+  function handleSave() {
+    if (!newDictName.trim() || !newDictCode.trim()) return;
+    if (editDict) {
+      setDicts((prev: typeof dicts) => prev.map((d: typeof dicts[0]) => d.code === editDict.code ? { ...d, name: newDictName.trim(), code: newDictCode.trim(), category: newDictCategory } : d));
+    } else {
+      setDicts((prev: typeof dicts) => [...prev, { code: newDictCode.trim(), name: newDictName.trim(), items: 0, category: newDictCategory }]);
+    }
+    setDialogOpen(false);
+  }
+
+  function handleDelete(code: string) {
+    if (!confirm("确定删除该字典？")) return;
+    setDicts((prev: typeof dicts) => prev.filter((d: typeof dicts[0]) => d.code !== code));
+  }
 
   return (
     <Card>
@@ -754,9 +870,9 @@ export function DictionaryList() {
           <CardTitle className="text-base flex items-center gap-2">
             <BookText className="size-4" /> 数据字典
           </CardTitle>
-          <CardDescription>系统级业务字典（{DICTIONARIES.length} 个）</CardDescription>
+          <CardDescription>系统级业务字典（{dicts.length} 个）</CardDescription>
         </div>
-        <Button size="sm" onClick={() => setDialogOpen(true)}>
+        <Button size="sm" onClick={handleAdd}>
           <Plus className="size-3 mr-1" />
           新建字典
         </Button>
@@ -773,7 +889,7 @@ export function DictionaryList() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {DICTIONARIES.map((d) => (
+            {dicts.map((d: typeof dicts[0]) => (
               <TableRow key={d.code}>
                 <TableCell className="font-medium">{d.name}</TableCell>
                 <TableCell className="font-mono text-xs">{d.code}</TableCell>
@@ -782,9 +898,14 @@ export function DictionaryList() {
                   <Badge variant="outline">{d.category}</Badge>
                 </TableCell>
                 <TableCell className="text-right">
-                  <Button variant="ghost" size="icon" className="size-8">
-                    <Eye className="size-4" />
-                  </Button>
+                  <div className="flex gap-1 justify-end">
+                    <Button variant="ghost" size="icon" className="size-8" onClick={() => handleEdit(d)}>
+                      <Edit className="size-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="size-8 text-destructive" onClick={() => handleDelete(d.code)}>
+                      <Trash2 className="size-4" />
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
@@ -792,12 +913,12 @@ export function DictionaryList() {
         </Table>
       </CardContent>
 
-      {/* 新建字典对话框 */}
+      {/* 新建/编辑字典对话框 */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>新建字典</DialogTitle>
-            <DialogDescription>添加一个新的数据字典</DialogDescription>
+            <DialogTitle>{editDict ? "编辑字典" : "新建字典"}</DialogTitle>
+            <DialogDescription>{editDict ? "修改字典信息" : "添加一个新的数据字典"}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
@@ -806,16 +927,23 @@ export function DictionaryList() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="dict-code">字典编码</Label>
-              <Input id="dict-code" value={newDictCode} onChange={(e) => setNewDictCode(e.target.value)} placeholder="e.g. order_type" />
+              <Input id="dict-code" value={newDictCode} onChange={(e) => setNewDictCode(e.target.value)} placeholder="e.g. order_type" disabled={!!editDict} />
+            </div>
+            <div className="space-y-2">
+              <Label>分类</Label>
+              <Select value={newDictCategory} onValueChange={setNewDictCategory}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {["业务字典", "系统字典", "基础字典"].map((c) => (
+                    <SelectItem key={c} value={c}>{c}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>取消</Button>
-            <Button onClick={() => {
-              setDialogOpen(false);
-              setNewDictName("");
-              setNewDictCode("");
-            }}>创建</Button>
+            <Button onClick={handleSave} disabled={!newDictName.trim() || !newDictCode.trim()}>{editDict ? "保存" : "创建"}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const http = axios.create({ baseURL: "/api/v1" });
+const http = axios.create({ baseURL: "/api" });
 
 export async function listCapabilities(category?: string) {
   const { data } = await http.get("/capabilities", {

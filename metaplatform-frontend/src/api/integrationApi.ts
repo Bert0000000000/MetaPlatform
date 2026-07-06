@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const http = axios.create({ baseURL: "/api/v1" });
+const http = axios.create({ baseURL: "/api" });
 
 export async function listConnectors(
   tenantId: string = "00000000-0000-0000-0000-000000000001",
