@@ -497,16 +497,36 @@ if (roleCount === 0) {
     }
   });
   seedRoles([
+    { id: "super_admin", name: "超级管理员", label: "Super Admin", permissions: ["*"] },
     { id: "executive", name: "高管", label: "Executive", permissions: ["dashboard.view", "reports.view", "apps.view"] },
     { id: "business", name: "业务人员", label: "Business User", permissions: ["apps.view", "apps.edit", "data.view", "process.start"] },
     { id: "developer", name: "开发者", label: "Developer", permissions: ["apps.*", "ontology.*", "data.*", "process.*", "code.edit"] },
     { id: "architect", name: "架构师", label: "Architect", permissions: ["apps.*", "ontology.*", "data.*", "process.*", "system.design"] },
     { id: "ops", name: "运维", label: "Operations", permissions: ["system.*", "monitoring.*", "logs.view", "config.edit"] },
-    { id: "admin", name: "管理员", label: "Administrator", permissions: ["*"] },
+    { id: "admin", name: "管理员", label: "Administrator", permissions: ["dashboard.view", "reports.view", "apps.view", "apps.edit", "data.view", "ontology.view", "process.view", "quality.view", "knowledge.view", "agents.view", "system.view"] },
   ]);
 }
 
 // ─── Migrations (additive) ─────────────────────────────────
+// Ensure super_admin role exists in existing databases
+try {
+  const sa = db.prepare("SELECT id FROM roles WHERE id = ?").get("super_admin");
+  if (!sa) {
+    db.prepare(
+      "INSERT INTO roles (id, name, label, permissions) VALUES (?, ?, ?, ?)"
+    ).run("super_admin", "超级管理员", "Super Admin", JSON.stringify(["*"]));
+  }
+} catch {}
+// Downgrade old admin role permissions from wildcard to standard admin
+try {
+  const adminRole = db.prepare("SELECT id, permissions FROM roles WHERE id = ?").get("admin");
+  if (adminRole && adminRole.permissions === '["*"]') {
+    db.prepare("UPDATE roles SET permissions = ? WHERE id = ?").run(
+      JSON.stringify(["dashboard.view", "reports.view", "apps.view", "apps.edit", "data.view", "ontology.view", "process.view", "quality.view", "knowledge.view", "agents.view", "system.view"]),
+      "admin"
+    );
+  }
+} catch {}
 try {
   db.exec(`ALTER TABLE applications ADD COLUMN app_slug TEXT`);
 } catch {}

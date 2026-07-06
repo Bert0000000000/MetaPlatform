@@ -88,12 +88,13 @@ router.delete("/users/:id", (req, res, next) => {
 
 // Seed data kept only as documentation / reference for initial population
 const RBAC_ROLES = [
+  { id: "super_admin", name: "超级管理员", label: "Super Admin", permissions: ["*"] },
   { id: "executive", name: "高管", label: "Executive", permissions: ["dashboard.view", "reports.view", "apps.view"] },
   { id: "business", name: "业务人员", label: "Business User", permissions: ["apps.view", "apps.edit", "data.view", "process.start"] },
   { id: "developer", name: "开发者", label: "Developer", permissions: ["apps.*", "ontology.*", "data.*", "process.*", "code.edit"] },
   { id: "architect", name: "架构师", label: "Architect", permissions: ["apps.*", "ontology.*", "data.*", "process.*", "system.design"] },
   { id: "ops", name: "运维", label: "Operations", permissions: ["system.*", "monitoring.*", "logs.view", "config.edit"] },
-  { id: "admin", name: "管理员", label: "Administrator", permissions: ["*"] },
+  { id: "admin", name: "管理员", label: "Administrator", permissions: ["dashboard.view", "reports.view", "apps.view", "apps.edit", "data.view", "ontology.view", "process.view", "quality.view", "knowledge.view", "agents.view", "system.view"] },
 ];
 
 // GET /roles — list roles from database

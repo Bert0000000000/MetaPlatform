@@ -14,11 +14,13 @@ import { Users, Shield, Server, Cpu, Database, Activity, Plus, MoreHorizontal, B
 import { PageHeader } from "@/components/ui/stat";
 
 const roleLabels: Record<string, string> = {
+  super_admin: "超级管理员",
   executive: "领导",
   business: "业务",
   developer: "开发",
   architect: "架构师",
   ops: "运维",
+  admin: "管理员",
 };
 
 // 菜单配置
@@ -436,25 +438,27 @@ export function RoleList() {
               <TableRow>
                 <TableHead>角色名</TableHead>
                 <TableHead>角色代码</TableHead>
-                <TableHead>用户数</TableHead>
                 <TableHead>权限数</TableHead>
-                <TableHead>描述</TableHead>
-                <TableHead>类型</TableHead>
+                <TableHead>权限概览</TableHead>
                 <TableHead className="text-right">操作</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {roles.map((r) => (
+              {roles.map((r) => {
+                const perms = r.permissions || [];
+                const isWildcard = perms.includes("*");
+                return (
                 <TableRow key={r.id}>
-                  <TableCell className="font-medium">{r.name}</TableCell>
-                  <TableCell className="font-mono text-xs">{r.code}</TableCell>
-                  <TableCell>{r.userCount}</TableCell>
-                  <TableCell>{r.permissionCount}</TableCell>
-                  <TableCell className="text-xs text-muted-foreground">{r.desc}</TableCell>
-                  <TableCell>
-                    <Badge variant={r.builtin ? "secondary" : "outline"}>
-                      {r.builtin ? "内置" : "自定义"}
-                    </Badge>
+                  <TableCell className="font-medium">
+                    <div className="flex items-center gap-2">
+                      {isWildcard && <Badge className="bg-red-500/10 text-red-600 border-red-200 text-xs">ALL</Badge>}
+                      {r.name}
+                    </div>
+                  </TableCell>
+                  <TableCell className="font-mono text-xs">{r.id}</TableCell>
+                  <TableCell>{isWildcard ? "全部" : perms.length}</TableCell>
+                  <TableCell className="text-xs text-muted-foreground max-w-[200px] truncate">
+                    {isWildcard ? "拥有所有系统权限" : perms.slice(0, 4).join(", ") + (perms.length > 4 ? "..." : "")}
                   </TableCell>
                   <TableCell className="text-right">
                     <Button variant="ghost" size="icon" className="size-8">
@@ -462,7 +466,8 @@ export function RoleList() {
                     </Button>
                   </TableCell>
                 </TableRow>
-              ))}
+                );
+              })}
             </TableBody>
           </Table>
         )}

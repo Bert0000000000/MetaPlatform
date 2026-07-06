@@ -904,13 +904,15 @@ export interface AgentTask {
 }
 
 export interface Role {
-  id: number;
+  id: string;
   name: string;
-  code: string;
-  userCount: number;
-  permissionCount: number;
-  desc: string;
-  builtin: boolean;
+  label?: string;
+  code?: string;
+  permissions?: string[];
+  userCount?: number;
+  permissionCount?: number;
+  desc?: string;
+  builtin?: boolean;
 }
 
 export interface Department {
