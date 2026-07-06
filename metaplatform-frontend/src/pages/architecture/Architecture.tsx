@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  Building2, Database, Server, Layers, GitBranch, FileText, Plus, Network, Cpu, Workflow, Box, ArrowRight, ArrowDown, BarChart3, Filter, Download, Link, Lightbulb, RefreshCw, User, Zap, Package, Megaphone, FlaskConical, Truck, Factory, Briefcase, Headphones, Smartphone, ClipboardList, DollarSign, Users, Handshake, X, Eye, Search, ChevronDown, Shield, Upload, Lock, Globe, ToggleLeft, ToggleRight, Loader2,
+  Building2, Database, Server, Layers, GitBranch, FileText, Plus, Network, Cpu, Workflow, Box, ArrowRight, ArrowDown, BarChart3, Filter, Download, Link, Lightbulb, RefreshCw, User, Zap, Package, Megaphone, FlaskConical, Truck, Factory, Briefcase, Headphones, Smartphone, ClipboardList, DollarSign, Users, Handshake, X, Eye, Search, ChevronDown, Shield, Upload, Lock, Globe, ToggleLeft, ToggleRight, Loader2, Edit,
 } from "lucide-react";
 import { architectureApi } from "@/lib/api";
 
@@ -178,6 +178,14 @@ export function BusinessArchitecture() {
   const [designMode, setDesignMode] = useState(true);
   const { toast, setToast } = useToast();
 
+  // Value chain editing
+  const [showVCEditDialog, setShowVCEditDialog] = useState(false);
+  const [editingVCIndex, setEditingVCIndex] = useState<number | null>(null);
+  const [vcEditName, setVCEditName] = useState("");
+  const [vcEditDesc, setVCEditDesc] = useState("");
+  const [vcEditApps, setVCEditApps] = useState("");
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+
   /* Fetch data from API on mount */
   useEffect(() => {
     architectureApi.getSection("ba").then((sectionData) => {
@@ -202,6 +210,61 @@ export function BusinessArchitecture() {
       }
     }).catch(() => { /* use fallback */ }).finally(() => setLoading(false));
   }, []);
+
+  /* ── Value chain helpers ── */
+  const saveValueChain = (newVC: typeof valueChain) => {
+    setValueChain(newVC);
+    architectureApi.updateSection("ba", {
+      valueChain: newVC.map(({ icon: _i, ...rest }) => rest)
+    }).catch(() => {});
+  };
+
+  const handleAddVCStage = () => {
+    const newStage = { name: "新阶段", apps: ["系统A"], icon: Box, desc: "阶段描述" };
+    const newVC = [...valueChain, newStage];
+    saveValueChain(newVC);
+    setToast("已添加阶段");
+  };
+
+  const handleEditVCStage = (index: number) => {
+    const v = valueChain[index];
+    setEditingVCIndex(index);
+    setVCEditName(v.name);
+    setVCEditDesc((v as any).desc || "");
+    setVCEditApps(v.apps.join(", "));
+    setShowVCEditDialog(true);
+  };
+
+  const handleSaveVCEdit = () => {
+    if (editingVCIndex === null) return;
+    const newVC = [...valueChain];
+    newVC[editingVCIndex] = {
+      ...newVC[editingVCIndex],
+      name: vcEditName,
+      desc: vcEditDesc,
+      apps: vcEditApps.split(",").map(s => s.trim()).filter(Boolean),
+    } as any;
+    saveValueChain(newVC);
+    setShowVCEditDialog(false);
+    setToast("已保存");
+  };
+
+  const handleDeleteVCStage = (index: number) => {
+    const newVC = valueChain.filter((_, i) => i !== index);
+    saveValueChain(newVC);
+    setToast("已删除阶段");
+  };
+
+  const handleDragStart = (index: number) => { setDragIndex(index); };
+  const handleDragOver = (e: React.DragEvent) => { e.preventDefault(); };
+  const handleDrop = (targetIndex: number) => {
+    if (dragIndex === null || dragIndex === targetIndex) return;
+    const newVC = [...valueChain];
+    const [moved] = newVC.splice(dragIndex, 1);
+    newVC.splice(targetIndex, 0, moved);
+    saveValueChain(newVC);
+    setDragIndex(null);
+  };
 
   /* Filter */
   const filteredLayers = filterLevel
@@ -388,117 +451,265 @@ export function BusinessArchitecture() {
               <div className="flex items-center justify-between">
                 <div>
                   <CardTitle className="text-base">端到端价值链</CardTitle>
-                  <CardDescription>Michael Porter 价值链模型 — 从市场获取到客户服务的完整价值流转</CardDescription>
+                  <CardDescription>
+                    {designMode
+                      ? "设计态 — 拖拽调整顺序，点击编辑节点属性"
+                      : "Michael Porter 价值链模型 — 从市场获取到客户服务的完整价值流转"}
+                  </CardDescription>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="text-xs">
-                    {valueChain.length} 阶段
-                  </Badge>
+                  {designMode && (
+                    <Button size="sm" variant="outline" onClick={handleAddVCStage} className="h-7 text-xs">
+                      <Plus className="size-3 mr-1" /> 添加阶段
+                    </Button>
+                  )}
+                  <Badge variant="outline" className="text-xs">{valueChain.length} 阶段</Badge>
                   <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => downloadJSON(valueChain.map(({ icon: _i, ...rest }) => rest), "value-chain.json")}>
-                    <Download className="size-3 mr-1" />
-                    导出
+                    <Download className="size-3 mr-1" /> 导出
                   </Button>
                 </div>
               </div>
             </CardHeader>
             <CardContent className="p-0">
-              {/* ── Flow SVG (consistent with dependency graph / topology style) ── */}
-              <div className="px-4 pt-2">
-                <svg viewBox="0 0 1100 170" className="w-full h-auto" xmlns="http://www.w3.org/2000/svg">
-                  <defs>
-                    <marker id="vc-arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
-                      <polygon points="0 0, 8 3, 0 6" fill="#94a3b8" />
-                    </marker>
-                  </defs>
-                  {valueChain.map((v, i) => {
-                    const x = 10 + i * 180;
-                    const w = 150;
-                    const h = 80;
-                    const cy = 15;
-                    const colors = ["#3b82f6", "#f97316", "#eab308", "#22c55e", "#8b5cf6", "#ec4899"];
-                    const color = colors[i % colors.length];
-                    return (
-                      <g key={v.name}>
-                        {/* Node rect — same style as dependency graph: rx=8, fillOpacity=0.15, strokeWidth=2 */}
-                        <rect x={x} y={cy} width={w} height={h} rx="8" fill={color} fillOpacity="0.15" stroke={color} strokeWidth="2" />
-                        {/* Icon badge — 24x24 circle, #f3f1ee bg, #d6d4d0 border */}
-                        <circle cx={x + 20} cy={cy + 20} r="12" fill="#f3f1ee" stroke="#d6d4d0" strokeWidth="0.8" />
-                        <text x={x + 20} y={cy + 24} textAnchor="middle" fontSize="10" fill={color} fontWeight="600">{"▸"}</text>
-                        {/* Name */}
-                        <text x={x + 38} y={cy + 24} fontSize="12" fontWeight="600" fill={color}>{v.name}</text>
-                        {/* Description */}
-                        <text x={x + w / 2} y={cy + 44} textAnchor="middle" fontSize="9" fill="#666">
-                          {["市场洞察与获客", "产品设计与研发", "供应商与物料管理", "制造与质量控制", "渠道销售与运营", "售后与客户成功"][i]}
-                        </text>
-                        {/* Apps as code tags */}
-                        {v.apps.map((app, ai) => (
-                          <g key={app}>
-                            <rect x={x + 10 + ai * 65} y={cy + 54} width="60" height="18" rx="4" fill="#f8f7f5" stroke="#d6d4d0" strokeWidth="0.8" />
-                            <text x={x + 40 + ai * 65} y={cy + 67} textAnchor="middle" fontSize="9" fontFamily="monospace" fill="#666">{app}</text>
-                          </g>
-                        ))}
-                        {/* Flow arrow — same style as dep graph: stroke #94a3b8, strokeWidth 1.5, dashed */}
-                        {i < valueChain.length - 1 && (
-                          <>
-                            <line x1={x + w + 2} y1={cy + h / 2} x2={x + w + 26} y2={cy + h / 2} stroke="#94a3b8" strokeWidth="1.5" strokeDasharray="4 2" markerEnd="url(#vc-arrow)" />
-                          </>
-                        )}
-                        {/* Step label */}
-                        <text x={x + w / 2} y={cy + h + 16} textAnchor="middle" fontSize="9" fontWeight="500" fill="#94a3b8">L1 · 阶段 {i + 1}</text>
-                      </g>
-                    );
-                  })}
-                </svg>
-              </div>
+              {designMode ? (
+                /* ── Design Mode: Editable Canvas ── */
+                <div className="px-4 pt-2 pb-4">
+                  {/* Canvas area */}
+                  <div className="rounded-lg border-2 border-dashed p-4 min-h-[120px]" style={{ borderColor: "#d6d4d0", background: "#fafaf9" }}>
+                    <div className="flex flex-wrap items-start gap-3">
+                      {valueChain.map((v, i) => {
+                        const colors = ["#3b82f6", "#f97316", "#eab308", "#22c55e", "#8b5cf6", "#ec4899"];
+                        const color = colors[i % colors.length];
+                        const Icon = v.icon;
+                        return (
+                          <div key={`${v.name}-${i}`} className="flex items-center">
+                            <div
+                              draggable
+                              onDragStart={() => handleDragStart(i)}
+                              onDragOver={handleDragOver}
+                              onDrop={() => handleDrop(i)}
+                              className="group relative rounded-lg border cursor-grab active:cursor-grabbing transition-all hover:shadow-md"
+                              style={{ borderColor: "#d6d4d0", background: "#f8f7f5", minWidth: 160 }}
+                            >
+                              {/* Drag handle */}
+                              <div className="absolute top-1 left-2 text-[10px] cursor-grab" style={{ color: "#94a3b8" }}>⋮⋮</div>
 
-              {/* ── Supporting Systems (table style, consistent with project tables) ── */}
-              <div className="px-4 pt-4 pb-2 border-t mt-2">
-                <div className="flex items-center gap-2 mb-2">
-                  <Server className="size-3.5" style={{ color: "#94a3b8" }} />
-                  <span className="text-xs font-medium" style={{ color: "#94a3b8" }}>支撑系统</span>
-                </div>
-                <div className="flex items-center justify-between gap-3 flex-wrap">
-                  {valueChain.map((v, i) => {
-                    const colors = ["#3b82f6", "#f97316", "#eab308", "#22c55e", "#8b5cf6", "#ec4899"];
-                    const color = colors[i % colors.length];
-                    return (
-                      <div key={v.name} className="flex items-center gap-2">
-                        <div className="rounded-lg border px-3 py-2" style={{ borderColor: "#d6d4d0", background: "#f8f7f5" }}>
-                          <div className="text-[10px] font-medium" style={{ color }}>{v.name}</div>
-                          <div className="flex gap-1 mt-1">
-                            {v.apps.map((app) => (
-                              <code key={app} className="text-[10px] rounded px-1 py-0.5 border font-mono" style={{ borderColor: "#d1d5db", background: "#fff" }}>
-                                {app}
-                              </code>
-                            ))}
+                              {/* Delete button */}
+                              <button
+                                onClick={() => handleDeleteVCStage(i)}
+                                className="absolute top-1 right-1 size-5 rounded-full bg-red-50 border border-red-200 items-center justify-center hidden group-hover:flex hover:bg-red-100"
+                              >
+                                <X className="size-3 text-red-500" />
+                              </button>
+
+                              {/* Content */}
+                              <div className="p-3 pt-2">
+                                {/* Step number + icon */}
+                                <div className="flex items-center gap-2 mb-2">
+                                  <div className="size-6 rounded-full flex items-center justify-center text-[10px] font-bold" style={{ background: color, color: "#fff" }}>
+                                    {i + 1}
+                                  </div>
+                                  <div className="size-6 rounded flex items-center justify-center" style={{ background: `${color}15`, border: `1px solid ${color}30` }}>
+                                    <Icon className="size-3.5" style={{ color }} />
+                                  </div>
+                                </div>
+                                {/* Name */}
+                                <div className="font-medium text-xs mb-0.5">{v.name}</div>
+                                {/* Apps */}
+                                <div className="flex flex-wrap gap-1 mb-2">
+                                  {v.apps.map(app => (
+                                    <code key={app} className="text-[10px] rounded px-1 py-0.5 border font-mono" style={{ borderColor: "#d1d5db", background: "#fff" }}>
+                                      {app}
+                                    </code>
+                                  ))}
+                                </div>
+                                {/* Edit button */}
+                                <button
+                                  onClick={() => handleEditVCStage(i)}
+                                  className="w-full text-[10px] py-1 rounded border text-center hover:bg-background transition-colors"
+                                  style={{ borderColor: "#d6d4d0", color: "#94a3b8" }}
+                                >
+                                  <Edit className="size-3 inline mr-1" /> 编辑
+                                </button>
+                              </div>
+                            </div>
+                            {/* Arrow between stages */}
+                            {i < valueChain.length - 1 && (
+                              <div className="flex items-center px-1 shrink-0">
+                                <ArrowRight className="size-4" style={{ color: "#94a3b8" }} />
+                              </div>
+                            )}
                           </div>
-                        </div>
-                        {i < valueChain.length - 1 && (
-                          <ArrowRight className="size-3 shrink-0" style={{ color: "#94a3b8" }} />
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
+                        );
+                      })}
+                      {/* Add button at the end */}
+                      <button
+                        onClick={handleAddVCStage}
+                        className="rounded-lg border-2 border-dashed flex flex-col items-center justify-center gap-1 hover:border-primary/50 hover:bg-primary/5 transition-colors"
+                        style={{ borderColor: "#d6d4d0", minWidth: 120, minHeight: 120, color: "#94a3b8" }}
+                      >
+                        <Plus className="size-4" />
+                        <span className="text-[10px]">添加阶段</span>
+                      </button>
+                    </div>
+                  </div>
 
-              {/* ── Legend (consistent with project legend style) ── */}
-              <div className="px-4 py-3 border-t flex flex-wrap items-center gap-4">
-                <div className="flex items-center gap-1.5">
-                  <div className="w-4 h-3 rounded" style={{ border: "2px solid #3b82f6", background: "rgba(59,130,246,0.15)" }} />
-                  <span className="text-[10px]" style={{ color: "#666" }}>价值流阶段节点</span>
+                  {/* Supporting systems */}
+                  <div className="mt-3">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Server className="size-3.5" style={{ color: "#94a3b8" }} />
+                      <span className="text-xs font-medium" style={{ color: "#94a3b8" }}>支撑系统</span>
+                    </div>
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                      {valueChain.map((v, i) => {
+                        const colors = ["#3b82f6", "#f97316", "#eab308", "#22c55e", "#8b5cf6", "#ec4899"];
+                        const color = colors[i % colors.length];
+                        return (
+                          <div key={`sup-${v.name}-${i}`} className="flex items-center gap-1">
+                            <div className="rounded border px-2 py-1.5" style={{ borderColor: "#d6d4d0", background: "#f8f7f5" }}>
+                              <div className="text-[10px] font-medium" style={{ color }}>{v.name}</div>
+                              <div className="flex gap-1 mt-0.5">
+                                {v.apps.map(app => (
+                                  <code key={app} className="text-[10px] rounded px-0.5 border font-mono" style={{ borderColor: "#d1d5db", background: "#fff" }}>{app}</code>
+                                ))}
+                              </div>
+                            </div>
+                            {i < valueChain.length - 1 && <ArrowRight className="size-2.5 shrink-0" style={{ color: "#94a3b8" }} />}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <div className="w-6 h-px" style={{ background: "#94a3b8", borderTop: "1.5px dashed #94a3b8" }} />
-                  <span className="text-[10px]" style={{ color: "#666" }}>价值流转方向</span>
+              ) : (
+                /* ── Run Mode: SVG Visualization ── */
+                <div>
+                  <div className="px-4 pt-2">
+                    <svg viewBox="0 0 1100 170" className="w-full h-auto" xmlns="http://www.w3.org/2000/svg">
+                      <defs>
+                        <marker id="vc-arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+                          <polygon points="0 0, 8 3, 0 6" fill="#94a3b8" />
+                        </marker>
+                      </defs>
+                      {valueChain.map((v, i) => {
+                        const x = 10 + i * 180;
+                        const w = 150;
+                        const h = 80;
+                        const cy = 15;
+                        const colors = ["#3b82f6", "#f97316", "#eab308", "#22c55e", "#8b5cf6", "#ec4899"];
+                        const color = colors[i % colors.length];
+                        return (
+                          <g key={v.name}>
+                            {/* Node rect — same style as dependency graph: rx=8, fillOpacity=0.15, strokeWidth=2 */}
+                            <rect x={x} y={cy} width={w} height={h} rx="8" fill={color} fillOpacity="0.15" stroke={color} strokeWidth="2" />
+                            {/* Icon badge — 24x24 circle, #f3f1ee bg, #d6d4d0 border */}
+                            <circle cx={x + 20} cy={cy + 20} r="12" fill="#f3f1ee" stroke="#d6d4d0" strokeWidth="0.8" />
+                            <text x={x + 20} y={cy + 24} textAnchor="middle" fontSize="10" fill={color} fontWeight="600">{"▸"}</text>
+                            {/* Name */}
+                            <text x={x + 38} y={cy + 24} fontSize="12" fontWeight="600" fill={color}>{v.name}</text>
+                            {/* Description */}
+                            <text x={x + w / 2} y={cy + 44} textAnchor="middle" fontSize="9" fill="#666">
+                              {["市场洞察与获客", "产品设计与研发", "供应商与物料管理", "制造与质量控制", "渠道销售与运营", "售后与客户成功"][i]}
+                            </text>
+                            {/* Apps as code tags */}
+                            {v.apps.map((app, ai) => (
+                              <g key={app}>
+                                <rect x={x + 10 + ai * 65} y={cy + 54} width="60" height="18" rx="4" fill="#f8f7f5" stroke="#d6d4d0" strokeWidth="0.8" />
+                                <text x={x + 40 + ai * 65} y={cy + 67} textAnchor="middle" fontSize="9" fontFamily="monospace" fill="#666">{app}</text>
+                              </g>
+                            ))}
+                            {/* Flow arrow — same style as dep graph: stroke #94a3b8, strokeWidth 1.5, dashed */}
+                            {i < valueChain.length - 1 && (
+                              <>
+                                <line x1={x + w + 2} y1={cy + h / 2} x2={x + w + 26} y2={cy + h / 2} stroke="#94a3b8" strokeWidth="1.5" strokeDasharray="4 2" markerEnd="url(#vc-arrow)" />
+                              </>
+                            )}
+                            {/* Step label */}
+                            <text x={x + w / 2} y={cy + h + 16} textAnchor="middle" fontSize="9" fontWeight="500" fill="#94a3b8">L1 · 阶段 {i + 1}</text>
+                          </g>
+                        );
+                      })}
+                    </svg>
+                  </div>
+
+                  {/* ── Supporting Systems (table style, consistent with project tables) ── */}
+                  <div className="px-4 pt-4 pb-2 border-t mt-2">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Server className="size-3.5" style={{ color: "#94a3b8" }} />
+                      <span className="text-xs font-medium" style={{ color: "#94a3b8" }}>支撑系统</span>
+                    </div>
+                    <div className="flex items-center justify-between gap-3 flex-wrap">
+                      {valueChain.map((v, i) => {
+                        const colors = ["#3b82f6", "#f97316", "#eab308", "#22c55e", "#8b5cf6", "#ec4899"];
+                        const color = colors[i % colors.length];
+                        return (
+                          <div key={v.name} className="flex items-center gap-2">
+                            <div className="rounded-lg border px-3 py-2" style={{ borderColor: "#d6d4d0", background: "#f8f7f5" }}>
+                              <div className="text-[10px] font-medium" style={{ color }}>{v.name}</div>
+                              <div className="flex gap-1 mt-1">
+                                {v.apps.map((app) => (
+                                  <code key={app} className="text-[10px] rounded px-1 py-0.5 border font-mono" style={{ borderColor: "#d1d5db", background: "#fff" }}>
+                                    {app}
+                                  </code>
+                                ))}
+                              </div>
+                            </div>
+                            {i < valueChain.length - 1 && (
+                              <ArrowRight className="size-3 shrink-0" style={{ color: "#94a3b8" }} />
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* ── Legend (consistent with project legend style) ── */}
+                  <div className="px-4 py-3 border-t flex flex-wrap items-center gap-4">
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-4 h-3 rounded" style={{ border: "2px solid #3b82f6", background: "rgba(59,130,246,0.15)" }} />
+                      <span className="text-[10px]" style={{ color: "#666" }}>价值流阶段节点</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-6 h-px" style={{ background: "#94a3b8", borderTop: "1.5px dashed #94a3b8" }} />
+                      <span className="text-[10px]" style={{ color: "#666" }}>价值流转方向</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-4 h-3 rounded" style={{ border: "0.8px solid #d6d4d0", background: "#f8f7f5" }} />
+                      <span className="text-[10px]" style={{ color: "#666" }}>应用系统</span>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <div className="w-4 h-3 rounded" style={{ border: "0.8px solid #d6d4d0", background: "#f8f7f5" }} />
-                  <span className="text-[10px]" style={{ color: "#666" }}>应用系统</span>
-                </div>
-              </div>
+              )}
             </CardContent>
           </Card>
+
+          {/* ── Edit Dialog ── */}
+          <Dialog open={showVCEditDialog} onOpenChange={setShowVCEditDialog}>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>编辑价值流阶段</DialogTitle>
+                <DialogDescription>修改阶段名称、描述和关联应用</DialogDescription>
+              </DialogHeader>
+              <div className="space-y-3">
+                <div>
+                  <Label className="text-xs">阶段名称</Label>
+                  <Input value={vcEditName} onChange={e => setVCEditName(e.target.value)} placeholder="如：市场获取" className="h-8 text-sm mt-1" />
+                </div>
+                <div>
+                  <Label className="text-xs">阶段描述</Label>
+                  <Input value={vcEditDesc} onChange={e => setVCEditDesc(e.target.value)} placeholder="如：市场洞察与获客" className="h-8 text-sm mt-1" />
+                </div>
+                <div>
+                  <Label className="text-xs">关联应用（逗号分隔）</Label>
+                  <Input value={vcEditApps} onChange={e => setVCEditApps(e.target.value)} placeholder="如：CRM, 营销" className="h-8 text-sm mt-1" />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" size="sm" onClick={() => setShowVCEditDialog(false)}>取消</Button>
+                <Button size="sm" onClick={handleSaveVCEdit}>保存</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </TabsContent>
 
         <TabsContent value="capability" className="mt-4">
