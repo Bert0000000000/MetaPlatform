@@ -5,38 +5,29 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/ui/stat";
-import { appsApi, filesystemApi, type AppPage } from "@/lib/api";
+import { appsApi, type AppPage } from "@/lib/api";
 import {
   Plus, Search, FileText, Loader2, Trash2, Edit, Wand2,
-  Monitor, FolderOpen, ChevronRight, ChevronDown, Copy,
+  Monitor, Smartphone, Tablet, FolderOpen, ChevronRight, ChevronDown, Copy,
   FileCode, FileEdit, LayoutDashboard, Palette, Sparkles,
   Save, RotateCcw, Clock, Hash, X,
   Type, Image, Square, List, Table2, CreditCard, Minus,
   GripVertical, Eye, Settings, Menu, Database, BarChart3,
-  GitBranch, FileJson, Layers, BookOpen,
+  GitBranch, FileJson, Layers, BookOpen, Bot,
 } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
   DialogDescription, DialogFooter, DialogClose,
 } from "@/components/ui/dialog";
 import {
-  FormOrLowCodeEditor, ListPageEditor, ReportEditor, FlowEditor, BIEditor,
-} from "./PageEditor";
-
-/* ── Types ── */
-interface PageComponent {
-  id: string;
-  type: string;
-  label: string;
-  props: Record<string, any>;
-  children?: PageComponent[];
-}
-
-interface PageVersion {
-  version: number;
-  timestamp: string;
-  components: PageComponent[];
-}
+  FormLowCodeEditor, ListPageEditor, ReportEditor, FlowEditor, BIEditor,
+} from "./editors";
+import {
+  TYPE_META, COMPONENT_PALETTE, PAGE_TYPE_OPTIONS,
+} from "./editors/types";
+import { usePageEditor } from "./editors/usePageEditor";
+import { EditorShell } from "./editors/EditorShell";
+import type { PageComponent, PageVersion } from "./editors/types";
 
 /** 分类定义 — 对应截图中的彩色图标分类 */
 interface TreeCategory {
@@ -88,35 +79,7 @@ const TREE_CATEGORIES: TreeCategory[] = [
   },
 ];
 
-const TYPE_META: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
-  form:        { label: "表单",     icon: <FileEdit className="size-3.5" />,       color: "text-blue-500" },
-  list:        { label: "列表",     icon: <LayoutDashboard className="size-3.5" />, color: "text-green-500" },
-  dashboard:   { label: "仪表盘",   icon: <BarChart3 className="size-3.5" />,      color: "text-purple-500" },
-  custom:      { label: "自定义",   icon: <Palette className="size-3.5" />,        color: "text-orange-500" },
-  vibe_coding: { label: "VibeCoding", icon: <Sparkles className="size-3.5" />,     color: "text-pink-500" },
-  lowcode:     { label: "LowCode",  icon: <Palette className="size-3.5" />,        color: "text-blue-500" },
-  procode:     { label: "ProCode",  icon: <FileCode className="size-3.5" />,       color: "text-green-500" },
-  ai:          { label: "AI 生成",  icon: <Wand2 className="size-3.5" />,          color: "text-purple-500" },
-};
-
-const TYPE_OPTIONS = [
-  { value: "lowcode", label: "LowCode",  icon: <Palette className="size-4" /> },
-  { value: "procode", label: "ProCode",  icon: <FileCode className="size-4" /> },
-  { value: "ai",      label: "AI 生成",  icon: <Wand2 className="size-4" /> },
-];
-
-const COMPONENT_PALETTE = [
-  { type: "heading",   label: "标题",   icon: <Type className="size-3.5" /> },
-  { type: "text",      label: "文本",   icon: <FileText className="size-3.5" /> },
-  { type: "button",    label: "按钮",   icon: <Square className="size-3.5" /> },
-  { type: "input",     label: "输入框", icon: <CreditCard className="size-3.5" /> },
-  { type: "image",     label: "图片",   icon: <Image className="size-3.5" /> },
-  { type: "container", label: "容器",   icon: <Square className="size-3.5" /> },
-  { type: "list",      label: "列表",   icon: <List className="size-3.5" /> },
-  { type: "table",     label: "表格",   icon: <Table2 className="size-3.5" /> },
-  { type: "card",      label: "卡片",   icon: <CreditCard className="size-3.5" /> },
-  { type: "divider",   label: "分割线", icon: <Minus className="size-3.5" /> },
-];
+/* ── State ── */
 
 export default function Pages() {
   const navigate = useNavigate();
@@ -127,21 +90,13 @@ export default function Pages() {
   const [selectedPage, setSelectedPage] = useState<AppPage | null>(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [appName, setAppName] = useState("应用");
   const [categories, setCategories] = useState<TreeCategory[]>(TREE_CATEGORIES);
 
   /* ── Editor state ── */
-  const [components, setComponents] = useState<PageComponent[]>([]);
-  const [selectedCompId, setSelectedCompId] = useState<string | null>(null);
-  const [pageName, setPageName] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [dirty, setDirty] = useState(false);
+  const [editingPageId, setEditingPageId] = useState<string | null>(null);
   const [draggedType, setDraggedType] = useState<string | null>(null);
-  const [device, setDevice] = useState<"desktop" | "tablet" | "mobile">("desktop");
-
-  /* ── Version history ── */
-  const [versions, setVersions] = useState<PageVersion[]>([]);
-  const [currentVersion, setCurrentVersion] = useState(0);
-  const [showVersions, setShowVersions] = useState(false);
+  const editor = usePageEditor(appId, editingPageId);
 
   /* ── Dialogs ── */
   const [newPageDialogOpen, setNewPageDialogOpen] = useState(false);
@@ -159,6 +114,8 @@ export default function Pages() {
     try {
       const data = await appsApi.listPages(appId);
       setPages(data || []);
+      const app = await appsApi.get(appId);
+      setAppName(app?.name || "应用");
     } catch (err) {
       console.error("加载页面列表失败:", err);
     } finally {
@@ -168,81 +125,16 @@ export default function Pages() {
 
   useEffect(() => { loadPages(); }, [loadPages]);
 
-  /* ── Load page content when selected ── */
-  useEffect(() => {
-    if (!selectedPage || !appId) return;
-    setPageName(selectedPage.name);
-    // Try to load saved content from filesystem
-    const loadContent = async () => {
-      try {
-        const files = await filesystemApi.listFiles({ app_id: appId });
-        const configFile = files?.find((f: any) =>
-          f.name === `page-${selectedPage.id}.json` ||
-          f.name === `${selectedPage.name}.json`
-        );
-        if (configFile && configFile.content) {
-          const parsed = JSON.parse(configFile.content);
-          if (parsed.components) {
-            setComponents(parsed.components);
-            if (parsed.version) {
-              setCurrentVersion(parsed.version);
-              // Build version history from stored versions
-              if (parsed.versionHistory) {
-                setVersions(parsed.versionHistory);
-              } else {
-                setVersions([{
-                  version: parsed.version || 1,
-                  timestamp: selectedPage.updated_at || new Date().toISOString(),
-                  components: parsed.components,
-                }]);
-              }
-            } else {
-              setCurrentVersion(1);
-              setVersions([{
-                version: 1,
-                timestamp: selectedPage.updated_at || new Date().toISOString(),
-                components: parsed.components,
-              }]);
-            }
-            setDirty(false);
-            // Set initial snapshot for dirty comparison
-            setSnapshot({ name: selectedPage.name, components: parsed.components });
-            return;
-          }
-        }
-      } catch (e) {
-        console.log("未找到已保存的页面内容，使用空白画布");
-      }
-      // Default: empty canvas with version 1
-      setComponents([]);
-      setCurrentVersion(1);
-      setVersions([]);
-      setDirty(false);
-      setSnapshot({ name: selectedPage.name, components: [] });
-    };
-    loadContent();
-  }, [selectedPage?.id, appId]);
-
-  /* ── Dirty tracking via snapshot comparison ── */
-  const [snapshot, setSnapshot] = useState<{ name: string; components: PageComponent[] } | null>(null);
-
-  // Update snapshot after load or save
-  const updateSnapshot = useCallback((name: string, comps: PageComponent[]) => {
-    setSnapshot({ name, components: JSON.parse(JSON.stringify(comps)) });
-    setDirty(false);
-  }, []);
-
-  // Recompute dirty by comparing with snapshot
-  useEffect(() => {
-    if (!snapshot) { setDirty(false); return; }
-    const nameChanged = pageName !== snapshot.name;
-    const compsChanged = JSON.stringify(components) !== JSON.stringify(snapshot.components);
-    setDirty(nameChanged || compsChanged);
-  }, [components, pageName, snapshot]);
-
   /* ── Helpers ── */
-  const getPageMeta = (type: string) =>
-    TYPE_META[type] || { label: type, icon: <FileText className="size-3.5" />, color: "text-muted-foreground" };
+  const getPageMeta = (type: string) => {
+    const meta = TYPE_META[type];
+    if (meta) return meta;
+    return { label: type, icon: FileText, color: "text-muted-foreground" as string };
+  };
+  const renderPageIcon = (type: string, className = "size-3.5") => {
+    const IconComp = getPageMeta(type).icon;
+    return <IconComp className={className} />;
+  };
 
   const filteredPages = pages.filter(
     (p) => p.name.includes(search) || (TYPE_META[p.type]?.label || "").includes(search)
@@ -275,21 +167,21 @@ export default function Pages() {
       label: meta?.label || type,
       props: {},
     };
-    setComponents(prev => [...prev, newComp]);
-    setSelectedCompId(newComp.id);
+    editor.setComponents(prev => [...prev, newComp]);
+    editor.setSelectedCompId(newComp.id);
   };
 
   const removeComponent = (id: string) => {
-    setComponents(prev => prev.filter(c => c.id !== id));
-    if (selectedCompId === id) setSelectedCompId(null);
+    editor.setComponents(prev => prev.filter(c => c.id !== id));
+    if (editor.selectedCompId === id) editor.setSelectedCompId(null);
   };
 
   const updateComponent = (id: string, props: Record<string, any>) => {
-    setComponents(prev => prev.map(c => c.id === id ? { ...c, props: { ...c.props, ...props } } : c));
+    editor.setComponents(prev => prev.map(c => c.id === id ? { ...c, props: { ...c.props, ...props } } : c));
   };
 
   const moveComponent = (fromIdx: number, toIdx: number) => {
-    setComponents(prev => {
+    editor.setComponents(prev => {
       const next = [...prev];
       const [moved] = next.splice(fromIdx, 1);
       next.splice(toIdx, 0, moved);
@@ -297,49 +189,7 @@ export default function Pages() {
     });
   };
 
-  const selectedComp = components.find(c => c.id === selectedCompId) || null;
-
-  /* ── Save ── */
-  const handleSave = async () => {
-    if (!selectedPage || !appId) return;
-    setSaving(true);
-    try {
-      const newVer = currentVersion + 1;
-      const newVersion: PageVersion = {
-        version: newVer,
-        timestamp: new Date().toISOString(),
-        components: [...components],
-      };
-      const pageDef = {
-        name: pageName,
-        components,
-        version: newVer,
-        versionHistory: [...versions, newVersion].slice(-20), // keep last 20
-      };
-      const fileName = `page-${selectedPage.id}.json`;
-      // Try update first, fallback to create
-      try {
-        const files = await filesystemApi.listFiles({ app_id: appId });
-        const existing = files?.find((f: any) => f.name === fileName);
-        if (existing) {
-          await filesystemApi.updateFile(existing.id, { content: JSON.stringify(pageDef, null, 2) });
-        } else {
-          await filesystemApi.createFile({ app_id: appId, name: fileName, is_dir: false, content: JSON.stringify(pageDef, null, 2) });
-        }
-      } catch {
-        await filesystemApi.createFile({ app_id: appId, name: fileName, is_dir: false, content: JSON.stringify(pageDef, null, 2) });
-      }
-      setCurrentVersion(newVer);
-      setVersions(prev => [...prev, newVersion]);
-      // Update snapshot to mark as clean
-      setSnapshot({ name: pageName, components: JSON.parse(JSON.stringify(components)) });
-      setDirty(false);
-    } catch (e) {
-      console.error("保存失败:", e);
-    } finally {
-      setSaving(false);
-    }
-  };
+  const selectedComp = editor.components.find(c => c.id === editor.selectedCompId) || null;
 
   /* ── Page CRUD ── */
   const handleCreatePage = async () => {
@@ -354,6 +204,7 @@ export default function Pages() {
       if (result?.id) {
         const newPage = { id: result.id, name: newPageName.trim(), type: newPageType } as AppPage;
         setSelectedPage(newPage);
+        setEditingPageId(result.id);
       }
     } catch (e) { console.error("创建页面失败:", e); }
     finally { setCreating(false); }
@@ -378,23 +229,20 @@ export default function Pages() {
     setDeleting(true);
     try {
       await appsApi.deletePage(appId, deletingPage.id);
-      if (selectedPage?.id === deletingPage.id) setSelectedPage(null);
+      if (selectedPage?.id === deletingPage.id) {
+        setSelectedPage(null);
+        setEditingPageId(null);
+      }
       await loadPages();
     } catch (e) { console.error("删除页面失败:", e); }
     finally { setDeleting(false); setDeleteDialogOpen(false); setDeletingPage(null); }
   };
 
-  const handleRestoreVersion = (ver: PageVersion) => {
-    setComponents([...ver.components]);
-    setCurrentVersion(ver.version);
-    setShowVersions(false);
-  };
-
-  const deviceWidth = device === "desktop" ? "100%" : device === "tablet" ? "768px" : "375px";
+  const deviceWidth = editor.device === "desktop" ? "100%" : editor.device === "tablet" ? "768px" : "375px";
 
   /* ── Render canvas ── */
   const renderCanvas = () => {
-    if (components.length === 0) {
+    if (editor.components.length === 0) {
       return (
         <div className="flex flex-col items-center justify-center h-full text-muted-foreground py-12">
           <LayoutDashboard className="size-10 mb-3 opacity-20" />
@@ -403,13 +251,13 @@ export default function Pages() {
         </div>
       );
     }
-    return components.map((comp, idx) => (
+    return editor.components.map((comp, idx) => (
       <div key={comp.id}
         draggable
         onDragStart={() => setDraggedType(comp.type)}
-        onClick={() => setSelectedCompId(comp.id)}
+        onClick={() => editor.setSelectedCompId(comp.id)}
         className={`group relative p-3 border rounded-md mb-2 cursor-pointer transition-all ${
-          selectedCompId === comp.id
+          editor.selectedCompId === comp.id
             ? "border-primary bg-primary/5 ring-1 ring-primary/20"
             : "border-border hover:border-primary/30 hover:bg-muted/30"
         }`}
@@ -425,7 +273,7 @@ export default function Pages() {
               <button onClick={(e) => { e.stopPropagation(); moveComponent(idx, idx - 1); }}
                 className="p-0.5 rounded hover:bg-muted text-xs" title="上移">↑</button>
             )}
-            {idx < components.length - 1 && (
+            {idx < editor.components.length - 1 && (
               <button onClick={(e) => { e.stopPropagation(); moveComponent(idx, idx + 1); }}
                 className="p-0.5 rounded hover:bg-muted text-xs" title="下移">↓</button>
             )}
@@ -513,7 +361,7 @@ export default function Pages() {
                 <div className="flex items-center gap-1.5 px-2 py-1 text-xs font-semibold text-muted-foreground">
                   <ChevronDown className="size-3" />
                   <FolderOpen className="size-3.5 text-amber-500" />
-                  <span>采购需求</span>
+                  <span>{appName}</span>
                 </div>
 
                 {/* Category groups */}
@@ -550,7 +398,7 @@ export default function Pages() {
                               const isSelected = selectedPage?.id === page.id;
                               return (
                                 <div key={page.id}
-                                  onClick={() => setSelectedPage(page)}
+                                  onClick={() => { setSelectedPage(page); setEditingPageId(page.id); }}
                                   className={`group flex items-center gap-2 pl-14 pr-2 py-1 rounded cursor-pointer text-[13px] transition-colors ${
                                     isSelected
                                       ? "bg-primary/10 text-primary font-medium"
@@ -558,13 +406,13 @@ export default function Pages() {
                                   }`}
                                 >
                                   <span className={`shrink-0 ${isSelected ? "text-primary" : meta.color}`}>
-                                    {meta.icon}
+                                    {renderPageIcon(page.type)}
                                   </span>
                                   <span className="flex-1 truncate">{page.name}</span>
                                   {/* Hover actions */}
                                   <div className={`flex gap-0.5 ${isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100"} transition-opacity`}>
                                     <button
-                                      onClick={(e) => { e.stopPropagation(); setSelectedPage(page); }}
+                                      onClick={(e) => { e.stopPropagation(); setSelectedPage(page); setEditingPageId(page.id); }}
                                       className="p-0.5 rounded hover:bg-muted" title="编辑">
                                       <Edit className="size-3" />
                                     </button>
@@ -600,12 +448,12 @@ export default function Pages() {
                       const isSelected = selectedPage?.id === page.id;
                       return (
                         <div key={page.id}
-                          onClick={() => setSelectedPage(page)}
+                          onClick={() => { setSelectedPage(page); setEditingPageId(page.id); }}
                           className={`group flex items-center gap-2 pl-14 pr-2 py-1 rounded cursor-pointer text-[13px] transition-colors ${
                             isSelected ? "bg-primary/10 text-primary font-medium" : "hover:bg-muted/50 text-foreground"
                           }`}
                         >
-                          <span className={`shrink-0 ${isSelected ? "text-primary" : meta.color}`}>{meta.icon}</span>
+                          <span className={`shrink-0 ${isSelected ? "text-primary" : meta.color}`}>{renderPageIcon(page.type)}</span>
                           <span className="flex-1 truncate">{page.name}</span>
                         </div>
                       );
@@ -620,172 +468,34 @@ export default function Pages() {
         {/* ── Right: Inline Editor ── */}
         <div className="flex-1 flex flex-col">
           {selectedPage ? (
-            <>
-              {/* Editor Toolbar */}
-              <div className="flex items-center justify-between border-b px-4 py-2 bg-background">
-                <div className="flex items-center gap-3">
-                  <div className={`p-1 rounded ${getPageMeta(selectedPage.type).color}`}>
-                    {getPageMeta(selectedPage.type).icon}
-                  </div>
-                  <Input value={pageName} onChange={(e) => setPageName(e.target.value)}
-                    className="h-7 w-48 text-sm font-semibold border-none shadow-none focus-visible:ring-0 px-0" />
-                  <Badge variant="outline" className="text-[10px]">{getPageMeta(selectedPage.type).label}</Badge>
-                  {dirty && <Badge variant="secondary" className="text-[10px] gap-1"><span className="size-1.5 rounded-full bg-orange-400 inline-block" />未保存</Badge>}
-                </div>
-                <div className="flex items-center gap-2">
-                  {/* Version badge */}
-                  <button onClick={() => setShowVersions(!showVersions)}
-                    className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground px-2 py-1 rounded hover:bg-muted transition-colors"
-                    title="版本历史">
-                    <Hash className="size-3" />
-                    <span>v{currentVersion}</span>
-                    {versions.length > 0 && <span className="text-[10px]">({versions.length})</span>}
-                  </button>
-                  {/* Device preview */}
-                  <div className="flex gap-0.5 border rounded p-0.5">
-                    {(["desktop", "tablet", "mobile"] as const).map(d => (
-                      <button key={d} onClick={() => setDevice(d)}
-                        className={`p-1 rounded text-xs ${device === d ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
-                        title={d === "desktop" ? "桌面" : d === "tablet" ? "平板" : "手机"}>
-                        {d === "desktop" ? <Monitor className="size-3.5" /> : d === "tablet" ? <Eye className="size-3.5" /> : <Monitor className="size-3.5" />}
-                      </button>
-                    ))}
-                  </div>
-                  {/* Full editor button */}
-                  <Button variant="ghost" size="sm" className="h-7 text-xs"
-                    onClick={() => navigate(`/apps/${appId}/page-editor?pageId=${selectedPage.id}`)}>
-                    <Edit className="size-3 mr-1" /> 完整编辑器
-                  </Button>
-                  {/* Save */}
-                  <Button size="sm" className="h-7 text-xs" onClick={handleSave} disabled={saving || !dirty}>
-                    {saving ? <Loader2 className="size-3 mr-1 animate-spin" /> : <Save className="size-3 mr-1" />}
-                    {saving ? "保存中" : "保存"}
-                  </Button>
-                </div>
-              </div>
-
-              {/* Version History Panel (slide down) */}
-              {showVersions && (
-                <div className="border-b bg-muted/30 px-4 py-3 max-h-48 overflow-y-auto">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-semibold">版本历史</span>
-                    <button onClick={() => setShowVersions(false)} className="text-muted-foreground hover:text-foreground">
-                      <X className="size-3.5" />
-                    </button>
-                  </div>
-                  {versions.length === 0 ? (
-                    <p className="text-xs text-muted-foreground">暂无版本记录</p>
-                  ) : (
-                    <div className="space-y-1">
-                      {[...versions].reverse().map((ver) => (
-                        <div key={ver.version}
-                          className={`flex items-center justify-between px-2 py-1.5 rounded text-xs ${ver.version === currentVersion ? "bg-primary/10 border border-primary/20" : "hover:bg-muted"}`}>
-                          <div className="flex items-center gap-2">
-                            <Hash className="size-3 text-muted-foreground" />
-                            <span className="font-medium">v{ver.version}</span>
-                            <span className="text-muted-foreground">{ver.components?.length || 0} 个组件</span>
-                            <span className="text-muted-foreground/60 flex items-center gap-0.5">
-                              <Clock className="size-2.5" />
-                              {ver.timestamp ? new Date(ver.timestamp).toLocaleString("zh-CN", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "--"}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            {ver.version === currentVersion && <Badge variant="default" className="text-[10px] py-0">当前</Badge>}
-                            {ver.version !== currentVersion && (
-                              <Button variant="ghost" size="sm" className="h-5 text-[10px] px-1.5" onClick={() => handleRestoreVersion(ver)}>
-                                <RotateCcw className="size-2.5 mr-0.5" /> 恢复
-                              </Button>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Editor Body: Route to type-specific editor */}
+            <EditorShell
+              pageName={editor.pageName}
+              onPageNameChange={(name) => { editor.setPageName(name); editor.markDirty(); }}
+              pageType={selectedPage.type}
+              dirty={editor.dirty}
+              currentVersion={editor.currentVersion}
+              versions={editor.versions}
+              onRestoreVersion={editor.restoreVersion}
+              device={editor.device}
+              onDeviceChange={editor.setDevice}
+              showAI={editor.showAI}
+              onToggleAI={() => editor.setShowAI(!editor.showAI)}
+              saving={editor.saving}
+              onSave={editor.savePage}
+            >
               {selectedPage.type === "list" ? (
-                <ListPageEditor components={components} setComponents={setComponents} setDirty={setDirty} />
+                <ListPageEditor components={editor.components} setComponents={editor.setComponents} setDirty={editor.setDirty} />
               ) : selectedPage.type === "dashboard" || selectedPage.type === "report" ? (
-                <ReportEditor components={components} setComponents={setComponents} setDirty={setDirty} />
+                <ReportEditor components={editor.components} setComponents={editor.setComponents} setDirty={editor.setDirty} />
               ) : selectedPage.type === "workflow" ? (
-                <FlowEditor components={components} setComponents={setComponents} setDirty={setDirty} />
+                <FlowEditor components={editor.components} setComponents={editor.setComponents} setDirty={editor.setDirty} />
               ) : selectedPage.type === "bi" ? (
-                <BIEditor components={components} setComponents={setComponents} setDirty={setDirty} />
+                <BIEditor components={editor.components} setComponents={editor.setComponents} setDirty={editor.setDirty} />
               ) : (
-                /* Default: form/lowcode - Component Palette + Canvas + Properties */
-                <div className="flex flex-1 overflow-hidden">
-                  {/* Component Palette */}
-                  <div className="w-40 border-r p-2.5 overflow-y-auto">
-                    <h3 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">组件库</h3>
-                    <div className="space-y-1">
-                      {COMPONENT_PALETTE.map(c => (
-                        <button key={c.type}
-                          draggable onDragStart={() => setDraggedType(c.type)}
-                          onClick={() => addComponent(c.type)}
-                          className="flex items-center gap-2 w-full px-2 py-1.5 rounded text-xs hover:bg-primary/5 hover:border-primary/30 border border-transparent transition-colors cursor-grab active:cursor-grabbing text-left">
-                          <span className="text-muted-foreground">{c.icon}</span>
-                          <span>{c.label}</span>
-                        </button>
-                      ))}
-                    </div>
-                    <div className="mt-3 pt-2 border-t text-[10px] text-muted-foreground">
-                      <p>{components.length} 个组件</p>
-                    </div>
-                  </div>
-
-                  {/* Canvas */}
-                  <div className="flex-1 overflow-y-auto bg-muted/20 p-4 flex justify-center"
-                    onDragOver={(e) => e.preventDefault()}
-                    onDrop={() => { if (draggedType) { addComponent(draggedType); setDraggedType(null); } }}>
-                    <div className="bg-white border rounded-lg shadow-sm overflow-y-auto" style={{ width: deviceWidth, minHeight: "400px" }}>
-                      <div className="p-4">{renderCanvas()}</div>
-                    </div>
-                  </div>
-
-                  {/* Properties Panel */}
-                  <div className="w-56 border-l p-3 overflow-y-auto">
-                    <h3 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">属性面板</h3>
-                    {selectedComp ? (
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                          <Badge variant="outline" className="text-[10px]">{selectedComp.label}</Badge>
-                          <button onClick={() => setSelectedCompId(null)} className="text-muted-foreground hover:text-foreground">
-                            <X className="size-3" />
-                          </button>
-                        </div>
-                        <div><Label className="text-[10px] text-muted-foreground">组件 ID</Label>
-                          <p className="text-xs font-mono text-muted-foreground">{selectedComp.id}</p>
-                        </div>
-                        <div><Label className="text-[10px] text-muted-foreground">标题文本</Label>
-                          <Input value={selectedComp.props.text || ""} onChange={(e) => updateComponent(selectedComp.id, { text: e.target.value })}
-                            className="h-7 text-xs" placeholder="输入文本..." />
-                        </div>
-                        <div><Label className="text-[10px] text-muted-foreground">占位符</Label>
-                          <Input value={selectedComp.props.placeholder || ""} onChange={(e) => updateComponent(selectedComp.id, { placeholder: e.target.value })}
-                            className="h-7 text-xs" placeholder="输入占位符..." />
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <Label className="text-[10px] text-muted-foreground">必填</Label>
-                          <input type="checkbox" checked={selectedComp.props.required || false}
-                            onChange={(e) => updateComponent(selectedComp.id, { required: e.target.checked })}
-                            className="size-3.5" />
-                        </div>
-                        <Button variant="destructive" size="sm" className="w-full h-7 text-xs" onClick={() => removeComponent(selectedComp.id)}>
-                          <Trash2 className="size-3 mr-1" /> 删除组件
-                        </Button>
-                      </div>
-                    ) : (
-                      <div className="text-center py-8 text-muted-foreground">
-                        <Settings className="size-6 mx-auto mb-2 opacity-20" />
-                        <p className="text-[10px]">点击组件查看属性</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
+                /* Default: form/lowcode */
+                <FormLowCodeEditor components={editor.components} setComponents={editor.setComponents} setDirty={editor.setDirty} selectedCompId={editor.selectedCompId} setSelectedCompId={editor.setSelectedCompId} />
               )}
-            </>
+            </EditorShell>
           ) : (
             /* Empty state */
             <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground">
@@ -813,7 +523,7 @@ export default function Pages() {
             <div className="space-y-1.5">
               <Label>页面类型</Label>
               <div className="grid grid-cols-3 gap-2">
-                {TYPE_OPTIONS.map((t) => (
+                {PAGE_TYPE_OPTIONS.map((t) => (
                   <button key={t.value} type="button" onClick={() => setNewPageType(t.value)}
                     className={`flex flex-col items-center gap-1.5 p-3 border rounded-lg transition-all ${
                       newPageType === t.value ? "border-primary bg-primary/5" : "hover:border-primary/50"
