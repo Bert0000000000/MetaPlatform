@@ -10,9 +10,10 @@ import {
   Plus, Search, FileText, Loader2, Trash2, Edit, Wand2,
   Monitor, FolderOpen, ChevronRight, ChevronDown, Copy,
   FileCode, FileEdit, LayoutDashboard, Palette, Sparkles,
-  Save, Undo2, RotateCcw, CheckCircle, Clock, Hash, X,
+  Save, RotateCcw, Clock, Hash, X,
   Type, Image, Square, List, Table2, CreditCard, Minus,
-  GripVertical, Eye, Settings,
+  GripVertical, Eye, Settings, Menu, Database, BarChart3,
+  GitBranch, FileJson, Layers, BookOpen,
 } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
@@ -34,15 +35,65 @@ interface PageVersion {
   components: PageComponent[];
 }
 
+/** 分类定义 — 对应截图中的彩色图标分类 */
+interface TreeCategory {
+  id: string;
+  label: string;
+  icon: React.ReactNode;
+  color: string;       // tailwind color class
+  bgColor: string;     // background color for icon
+  typeFilter: string[]; // which page types belong here
+  expanded: boolean;
+}
+
+/** 分类配置 */
+const TREE_CATEGORIES: TreeCategory[] = [
+  {
+    id: "business-model", label: "业务模型", icon: <Database className="size-3.5" />,
+    color: "text-red-500", bgColor: "bg-red-50", typeFilter: ["business_model", "custom"],
+    expanded: true,
+  },
+  {
+    id: "forms", label: "表单页面", icon: <FileEdit className="size-3.5" />,
+    color: "text-blue-500", bgColor: "bg-blue-50", typeFilter: ["form", "lowcode"],
+    expanded: false,
+  },
+  {
+    id: "lists", label: "列表页面", icon: <LayoutDashboard className="size-3.5" />,
+    color: "text-green-500", bgColor: "bg-green-50", typeFilter: ["list"],
+    expanded: false,
+  },
+  {
+    id: "vue-pages", label: "Vue 页面", icon: <FileJson className="size-3.5" />,
+    color: "text-emerald-500", bgColor: "bg-emerald-50", typeFilter: ["vue", "procode"],
+    expanded: false,
+  },
+  {
+    id: "workflows", label: "业务流程", icon: <GitBranch className="size-3.5" />,
+    color: "text-amber-500", bgColor: "bg-amber-50", typeFilter: ["workflow"],
+    expanded: false,
+  },
+  {
+    id: "reports", label: "报表页面", icon: <BarChart3 className="size-3.5" />,
+    color: "text-indigo-500", bgColor: "bg-indigo-50", typeFilter: ["report", "dashboard"],
+    expanded: false,
+  },
+  {
+    id: "bi", label: "商业智能", icon: <Layers className="size-3.5" />,
+    color: "text-violet-500", bgColor: "bg-violet-50", typeFilter: ["bi", "analytics"],
+    expanded: false,
+  },
+];
+
 const TYPE_META: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
-  form:      { label: "表单",     icon: <FileEdit className="size-3.5" />,   color: "text-blue-500" },
-  list:      { label: "列表",     icon: <LayoutDashboard className="size-3.5" />, color: "text-green-500" },
-  dashboard: { label: "仪表盘",   icon: <LayoutDashboard className="size-3.5" />, color: "text-purple-500" },
-  custom:    { label: "自定义",   icon: <Palette className="size-3.5" />,   color: "text-orange-500" },
-  vibe_coding: { label: "VibeCoding", icon: <Sparkles className="size-3.5" />, color: "text-pink-500" },
-  lowcode:   { label: "LowCode",  icon: <Palette className="size-3.5" />,   color: "text-blue-500" },
-  procode:   { label: "ProCode",  icon: <FileCode className="size-3.5" />,   color: "text-green-500" },
-  ai:        { label: "AI 生成",  icon: <Wand2 className="size-3.5" />,     color: "text-purple-500" },
+  form:        { label: "表单",     icon: <FileEdit className="size-3.5" />,       color: "text-blue-500" },
+  list:        { label: "列表",     icon: <LayoutDashboard className="size-3.5" />, color: "text-green-500" },
+  dashboard:   { label: "仪表盘",   icon: <BarChart3 className="size-3.5" />,      color: "text-purple-500" },
+  custom:      { label: "自定义",   icon: <Palette className="size-3.5" />,        color: "text-orange-500" },
+  vibe_coding: { label: "VibeCoding", icon: <Sparkles className="size-3.5" />,     color: "text-pink-500" },
+  lowcode:     { label: "LowCode",  icon: <Palette className="size-3.5" />,        color: "text-blue-500" },
+  procode:     { label: "ProCode",  icon: <FileCode className="size-3.5" />,       color: "text-green-500" },
+  ai:          { label: "AI 生成",  icon: <Wand2 className="size-3.5" />,          color: "text-purple-500" },
 };
 
 const TYPE_OPTIONS = [
@@ -73,6 +124,7 @@ export default function Pages() {
   const [selectedPage, setSelectedPage] = useState<AppPage | null>(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [categories, setCategories] = useState<TreeCategory[]>(TREE_CATEGORIES);
 
   /* ── Editor state ── */
   const [components, setComponents] = useState<PageComponent[]>([]);
@@ -192,6 +244,24 @@ export default function Pages() {
   const filteredPages = pages.filter(
     (p) => p.name.includes(search) || (TYPE_META[p.type]?.label || "").includes(search)
   );
+
+  /** 切换分类展开/折叠 */
+  const toggleCategory = (catId: string) => {
+    setCategories(prev => prev.map(c => c.id === catId ? { ...c, expanded: !c.expanded } : c));
+  };
+
+  /** 按分类分组页面 — 每个页面只归入第一个匹配的分类 */
+  const groupedByCategory = categories.map(cat => ({
+    ...cat,
+    pages: pages.filter(p => {
+      const pageType = p.type || "lowcode";
+      return cat.typeFilter.includes(pageType);
+    }),
+  }));
+
+  /** 未分类的页面 — 不属于任何分类的页面 */
+  const categorizedTypeSet = new Set(categories.flatMap(c => c.typeFilter));
+  const uncategorizedPages = pages.filter(p => !categorizedTypeSet.has(p.type || "lowcode"));
 
   /* ── Component operations ── */
   const addComponent = (type: string) => {
@@ -392,59 +462,153 @@ export default function Pages() {
       />
 
       <div className="flex flex-1 border rounded-lg overflow-hidden mt-4">
-        {/* ── Left: Page Tree Panel ── */}
-        <div className="w-72 border-r bg-muted/10 flex flex-col">
-          <div className="p-3 border-b">
+        {/* ── Left: Page Tree Panel (截图风格) ── */}
+        <div className="w-72 border-r bg-white flex flex-col">
+          {/* Header: 应用搭建 + 菜单图标 */}
+          <div className="flex items-center justify-between px-4 py-3 border-b">
+            <span className="text-sm font-semibold">应用搭建</span>
+            <button className="p-1 rounded hover:bg-muted text-muted-foreground">
+              <Menu className="size-4" />
+            </button>
+          </div>
+
+          {/* Search */}
+          <div className="px-3 py-2">
             <div className="relative">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
-              <Input placeholder="搜索页面..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-8 h-8 text-sm" />
+              <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
+              <Input placeholder="请输入" value={search} onChange={(e) => setSearch(e.target.value)}
+                className="h-8 text-sm pr-8 bg-muted/30" />
             </div>
           </div>
-          <div className="flex-1 overflow-y-auto p-2">
+
+          {/* Module Section Header: 模块 + add button */}
+          <div className="flex items-center justify-between px-4 py-1.5">
+            <span className="text-xs font-semibold text-muted-foreground">模块</span>
+            <button className="p-0.5 rounded hover:bg-muted text-muted-foreground" title="新建模块"
+              onClick={() => setNewPageDialogOpen(true)}>
+              <Plus className="size-3.5" />
+            </button>
+          </div>
+
+          {/* Tree */}
+          <div className="flex-1 overflow-y-auto px-2 pb-3">
             {loading ? (
-              <div className="flex items-center justify-center py-8"><Loader2 className="size-5 animate-spin text-muted-foreground" /></div>
-            ) : filteredPages.length === 0 ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="size-5 animate-spin text-muted-foreground" />
+              </div>
+            ) : pages.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
                 <FolderOpen className="size-8 mb-2 opacity-30" />
-                <p className="text-xs">{search ? "没有匹配的页面" : "暂无页面"}</p>
-                {!search && (
-                  <Button variant="ghost" size="sm" className="mt-2 text-xs" onClick={() => setNewPageDialogOpen(true)}>
-                    <Plus className="size-3 mr-1" /> 创建第一个页面
-                  </Button>
-                )}
+                <p className="text-xs">暂无页面</p>
+                <Button variant="ghost" size="sm" className="mt-2 text-xs" onClick={() => setNewPageDialogOpen(true)}>
+                  <Plus className="size-3 mr-1" /> 创建第一个页面
+                </Button>
               </div>
             ) : (
               <div className="space-y-0.5">
-                <div className="flex items-center gap-1.5 px-2 py-1.5 text-xs font-semibold text-muted-foreground">
+                {/* Root module node */}
+                <div className="flex items-center gap-1.5 px-2 py-1 text-xs font-semibold text-muted-foreground">
                   <ChevronDown className="size-3" />
                   <FolderOpen className="size-3.5 text-amber-500" />
-                  <span>页面 ({filteredPages.length})</span>
+                  <span>采购需求</span>
                 </div>
-                {filteredPages.map((page) => {
-                  const meta = getPageMeta(page.type);
-                  const isSelected = selectedPage?.id === page.id;
-                  return (
-                    <div key={page.id} onClick={() => setSelectedPage(page)}
-                      className={`group flex items-center gap-2 pl-6 pr-2 py-1.5 rounded cursor-pointer text-sm transition-colors ${
-                        isSelected ? "bg-primary text-primary-foreground" : "hover:bg-muted text-foreground"
-                      }`}>
-                      <span className={isSelected ? "text-primary-foreground" : meta.color}>{meta.icon}</span>
-                      <span className="flex-1 truncate text-[13px]">{page.name}</span>
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded ${isSelected ? "bg-primary-foreground/20" : "bg-muted"}`}>
-                        {meta.label}
-                      </span>
-                      <div className={`flex gap-0.5 ${isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100"} transition-opacity`}>
-                        <button onClick={(e) => { e.stopPropagation(); setSelectedPage(page); }}
-                          className="p-0.5 rounded hover:bg-primary-foreground/20" title="编辑">
-                          <Edit className="size-3" />
-                        </button>
-                        <button onClick={(e) => handleDeleteClick(page, e)} className="p-0.5 rounded hover:bg-destructive/20" title="删除">
-                          <Trash2 className="size-3" />
-                        </button>
+
+                {/* Category groups */}
+                {groupedByCategory
+                  .filter(cat => cat.pages.length > 0 || !search)
+                  .map(cat => {
+                    const catPages = search
+                      ? cat.pages.filter(p => p.name.includes(search))
+                      : cat.pages;
+                    return (
+                      <div key={cat.id}>
+                        {/* Category header (expandable) */}
+                        <div
+                          onClick={() => toggleCategory(cat.id)}
+                          className="flex items-center gap-2 pl-6 pr-2 py-1.5 rounded cursor-pointer text-sm hover:bg-muted/50 transition-colors"
+                        >
+                          {cat.expanded ? (
+                            <ChevronDown className="size-3 text-muted-foreground shrink-0" />
+                          ) : (
+                            <ChevronRight className="size-3 text-muted-foreground shrink-0" />
+                          )}
+                          <span className={`${cat.color} shrink-0`}>{cat.icon}</span>
+                          <span className="flex-1 text-[13px] font-medium">{cat.label}</span>
+                          {catPages.length > 0 && (
+                            <span className="text-[10px] text-muted-foreground">{catPages.length}</span>
+                          )}
+                        </div>
+
+                        {/* Category pages (when expanded) */}
+                        {cat.expanded && catPages.length > 0 && (
+                          <div className="space-y-0.5">
+                            {catPages.map(page => {
+                              const meta = getPageMeta(page.type);
+                              const isSelected = selectedPage?.id === page.id;
+                              return (
+                                <div key={page.id}
+                                  onClick={() => setSelectedPage(page)}
+                                  className={`group flex items-center gap-2 pl-14 pr-2 py-1 rounded cursor-pointer text-[13px] transition-colors ${
+                                    isSelected
+                                      ? "bg-primary/10 text-primary font-medium"
+                                      : "hover:bg-muted/50 text-foreground"
+                                  }`}
+                                >
+                                  <span className={`shrink-0 ${isSelected ? "text-primary" : meta.color}`}>
+                                    {meta.icon}
+                                  </span>
+                                  <span className="flex-1 truncate">{page.name}</span>
+                                  {/* Hover actions */}
+                                  <div className={`flex gap-0.5 ${isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100"} transition-opacity`}>
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); setSelectedPage(page); }}
+                                      className="p-0.5 rounded hover:bg-muted" title="编辑">
+                                      <Edit className="size-3" />
+                                    </button>
+                                    <button
+                                      onClick={(e) => handleDeleteClick(page, e)}
+                                      className="p-0.5 rounded hover:bg-destructive/20 text-destructive" title="删除">
+                                      <Trash2 className="size-3" />
+                                    </button>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
+                    );
+                  })}
+
+                {/* Uncategorized pages (shown in default category) */}
+                {uncategorizedPages.length > 0 && (
+                  <div>
+                    <div
+                      onClick={() => toggleCategory("uncategorized")}
+                      className="flex items-center gap-2 pl-6 pr-2 py-1.5 rounded cursor-pointer text-sm hover:bg-muted/50 transition-colors"
+                    >
+                      <ChevronRight className="size-3 text-muted-foreground shrink-0" />
+                      <span className="text-gray-400 shrink-0"><FileText className="size-3.5" /></span>
+                      <span className="flex-1 text-[13px] font-medium">其他页面</span>
+                      <span className="text-[10px] text-muted-foreground">{uncategorizedPages.length}</span>
                     </div>
-                  );
-                })}
+                    {search && uncategorizedPages.map(page => {
+                      const meta = getPageMeta(page.type);
+                      const isSelected = selectedPage?.id === page.id;
+                      return (
+                        <div key={page.id}
+                          onClick={() => setSelectedPage(page)}
+                          className={`group flex items-center gap-2 pl-14 pr-2 py-1 rounded cursor-pointer text-[13px] transition-colors ${
+                            isSelected ? "bg-primary/10 text-primary font-medium" : "hover:bg-muted/50 text-foreground"
+                          }`}
+                        >
+                          <span className={`shrink-0 ${isSelected ? "text-primary" : meta.color}`}>{meta.icon}</span>
+                          <span className="flex-1 truncate">{page.name}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             )}
           </div>
