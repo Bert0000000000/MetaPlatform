@@ -430,94 +430,259 @@ function FormOrLowCodeEditor({ components, setComponents, selectedCompId, setSel
 
 // List Page Editor
 function ListPageEditor({ components, setComponents, setDirty }: any) {
-  const [columns, setColumns] = useState<{ name: string; field: string; width: string; sortable: boolean }[]>(
-    components?.length > 0 ? components[0]?.props?.columns || [] : [
-      { name: "ID", field: "id", width: "80px", sortable: true },
-      { name: "名称", field: "name", width: "auto", sortable: true },
-      { name: "状态", field: "status", width: "100px", sortable: false },
-      { name: "创建时间", field: "created_at", width: "120px", sortable: true },
-    ]
-  );
+  // ── State ──
+  const [columns, setColumns] = useState(components?.[0]?.props?.columns || [
+    { name: "序号", field: "index", width: "60px", sortable: false },
+    { name: "表单名称", field: "name", width: "auto", sortable: true },
+    { name: "创建人", field: "creator", width: "120px", sortable: true },
+    { name: "创建人", field: "author", width: "120px", sortable: true },
+    { name: "更新时间", field: "updated_at", width: "140px", sortable: true },
+    { name: "操作", field: "actions", width: "80px", sortable: false },
+  ]);
   const [dataSource, setDataSource] = useState(components?.[0]?.props?.dataSource || "");
-  const [filterFields, setFilterFields] = useState(components?.[0]?.props?.filters || ["搜索"]);
+  const [searchText, setSearchText] = useState("");
+  const [dateRange, setDateRange] = useState({ start: "", end: "" });
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [expandedCats, setExpandedCats] = useState<Set<string>>(new Set(["gifts", "employee"]));
 
-  const addColumn = () => setColumns(prev => [...prev, { name: "新列", field: "new_field", width: "100px", sortable: false }]);
-  const removeColumn = (idx: number) => setColumns(prev => prev.filter((_: any, i: number) => i !== idx));
+  // ── Config Panel State ──
+  const [config, setConfig] = useState({
+    supportSearch: true,
+    includeChildren: true,
+    selectLevel: "children" as "all" | "children" | "leaf",
+    defaultExpand: "level1" as "all" | "level1" | "none",
+    expandLevel: 1,
+  });
+
+  // ── Category Tree ──
+  const categories = [
+    { id: "gifts", label: "节日礼品", children: [
+      { id: "gifts-custom", label: "定制礼品" },
+      { id: "gifts-standard", label: "标准礼品" },
+    ]},
+    { id: "employee", label: "员工礼品", children: [
+      { id: "employee-birthday", label: "生日礼物" },
+      { id: "employee-holiday", label: "节假日礼品" },
+    ]},
+    { id: "office", label: "办公设备", children: [] },
+    { id: "network", label: "网络设备", children: [] },
+    { id: "computer", label: "电脑配件", children: [] },
+  ];
+
+  const toggleCat = (id: string) => {
+    setExpandedCats(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const addColumn = () => setColumns((prev: any[]) => [...prev, { name: "新列", field: "new_field", width: "100px", sortable: false }]);
+  const removeColumn = (idx: number) => setColumns((prev: any[]) => prev.filter((_: any, i: number) => i !== idx));
 
   return (
-    <div className="space-y-4">
-      <h3 className="text-sm font-semibold">列表页面编辑器</h3>
-
-      {/* Data Source */}
-      <div className="border rounded-lg p-3">
-        <h4 className="text-xs font-medium mb-2">数据源</h4>
-        <select value={dataSource} onChange={(e) => setDataSource(e.target.value)}
-          className="w-full border rounded px-2 py-1.5 text-sm">
-          <option value="">选择数据源...</option>
-          <option value="customers">客户对象 (Customer)</option>
-          <option value="orders">订单对象 (Order)</option>
-          <option value="products">产品对象 (Product)</option>
-          <option value="contracts">合同对象 (Contract)</option>
-        </select>
-      </div>
-
-      {/* Columns */}
-      <div className="border rounded-lg p-3">
-        <div className="flex items-center justify-between mb-2">
-          <h4 className="text-xs font-medium">列配置</h4>
-          <button onClick={addColumn} className="text-xs text-primary hover:underline">+ 添加列</button>
+    <div className="flex gap-0 h-[calc(100vh-200px)] min-h-[400px]">
+      {/* ═══ Left: Category Tree ═══ */}
+      <div className="w-52 border-r flex flex-col shrink-0">
+        {/* Header */}
+        <div className="flex items-center justify-between px-3 py-2 border-b">
+          <div className="flex items-center gap-2 text-xs font-semibold">
+            <FolderOpen className="size-3.5 text-amber-500" />
+            全部
+          </div>
+          <button className="text-xs text-primary">重置</button>
         </div>
-        <div className="space-y-1.5">
-          {columns.map((col: any, idx: number) => (
-            <div key={idx} className="flex items-center gap-2 text-xs">
-              <input value={col.name} onChange={(e) => {
-                const newCols = [...columns]; newCols[idx] = { ...col, name: e.target.value }; setColumns(newCols);
-              }} className="flex-1 border rounded px-2 py-1" placeholder="列名" />
-              <input value={col.field} onChange={(e) => {
-                const newCols = [...columns]; newCols[idx] = { ...col, field: e.target.value }; setColumns(newCols);
-              }} className="flex-1 border rounded px-2 py-1" placeholder="字段名" />
-              <input value={col.width} onChange={(e) => {
-                const newCols = [...columns]; newCols[idx] = { ...col, width: e.target.value }; setColumns(newCols);
-              }} className="w-20 border rounded px-2 py-1" placeholder="宽度" />
-              <label className="flex items-center gap-1 text-[10px]">
-                <input type="checkbox" checked={col.sortable} onChange={(e) => {
-                  const newCols = [...columns]; newCols[idx] = { ...col, sortable: e.target.checked }; setColumns(newCols);
-                }} className="size-3" /> 排序
-              </label>
-              <button onClick={() => removeColumn(idx)} className="text-destructive hover:underline text-[10px]">删除</button>
+        {/* Search */}
+        <div className="px-3 py-2">
+          <div className="relative">
+            <Search className="absolute left-2 top-1/2 -translate-y-1/2 size-3 text-muted-foreground" />
+            <input placeholder="请输入" value={searchText} onChange={(e) => setSearchText(e.target.value)}
+              className="w-full h-7 pl-6 pr-2 text-xs border rounded" />
+          </div>
+        </div>
+        {/* Tree */}
+        <div className="flex-1 overflow-y-auto px-1 pb-2">
+          {categories.map(cat => (
+            <div key={cat.id}>
+              <div onClick={() => cat.children.length > 0 && toggleCat(cat.id)}
+                className={`flex items-center gap-1 px-2 py-1 text-xs rounded cursor-pointer hover:bg-muted ${
+                  selectedCategory === cat.id ? "bg-primary/10 text-primary font-medium" : ""
+                }`}
+                style={{ paddingLeft: "8px" }}>
+                {cat.children.length > 0 ? (
+                  expandedCats.has(cat.id)
+                    ? <ChevronDown className="size-3 shrink-0 text-muted-foreground" />
+                    : <ChevronRight className="size-3 shrink-0 text-muted-foreground" />
+                ) : <span className="size-3" />}
+                <span>{cat.label}</span>
+              </div>
+              {expandedCats.has(cat.id) && cat.children.map(child => (
+                <div key={child.id}
+                  onClick={() => setSelectedCategory(child.id)}
+                  className={`flex items-center gap-1 px-2 py-1 text-xs rounded cursor-pointer hover:bg-muted ${
+                    selectedCategory === child.id ? "bg-primary/10 text-primary font-medium" : ""
+                  }`}
+                  style={{ paddingLeft: "28px" }}>
+                  <span>{child.label}</span>
+                </div>
+              ))}
             </div>
           ))}
         </div>
       </div>
 
-      {/* Filter Bar */}
-      <div className="border rounded-lg p-3">
-        <h4 className="text-xs font-medium mb-2">筛选栏</h4>
-        <div className="flex flex-wrap gap-1.5">
-          {filterFields.map((f: string, i: number) => (
-            <Badge key={i} variant="secondary" className="text-[10px]">{f}</Badge>
-          ))}
-          <button onClick={() => setFilterFields((prev: string[]) => [...prev, "新筛选条件"])}
-            className="text-[10px] text-primary hover:underline">+ 添加</button>
+      {/* ═══ Center: Data Table ═══ */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Filter Bar */}
+        <div className="flex items-center gap-2 px-4 py-2 border-b flex-wrap">
+          <div className="relative">
+            <input placeholder="合同中..." className="h-7 w-24 pr-2 text-xs border rounded" />
+          </div>
+          <div className="relative">
+            <Search className="absolute left-2 top-1/2 -translate-y-1/2 size-3 text-muted-foreground" />
+            <input placeholder="请输入" className="h-7 pl-6 pr-2 text-xs border rounded w-28" />
+          </div>
+          <span className="text-xs text-muted-foreground">创建时间</span>
+          <input type="date" value={dateRange.start} onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
+            className="h-7 px-2 text-xs border rounded w-28" />
+          <span className="text-[10px] text-muted-foreground">~</span>
+          <input type="date" value={dateRange.end} onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
+            className="h-7 px-2 text-xs border rounded w-28" />
+          <button className="h-7 px-4 text-xs bg-primary text-primary-foreground rounded hover:bg-primary/90">查询</button>
+          <button className="h-7 px-3 text-xs border rounded hover:bg-muted">重置</button>
+        </div>
+
+        {/* Table */}
+        <div className="flex-1 overflow-auto">
+          <table className="w-full text-xs">
+            <thead className="bg-muted/50 sticky top-0">
+              <tr>
+                {columns.map((col: any, i: number) => (
+                  <th key={i} className="px-3 py-2 text-left font-medium text-muted-foreground border-b whitespace-nowrap">
+                    {col.name}
+                    {col.sortable && <span className="ml-1 text-[10px]">↕</span>}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {Array.from({ length: 10 }, (_, i) => (
+                <tr key={i} className="border-b hover:bg-muted/30 transition-colors">
+                  {columns.map((col: any, j: number) => (
+                    <td key={j} className="px-3 py-2">
+                      {col.field === "index" ? <span className="text-muted-foreground">{i + 1}</span> :
+                       col.field === "actions" ? (
+                        <div className="flex items-center gap-1">
+                          <button className="p-1 rounded hover:bg-primary/10 text-primary" title="编辑">
+                            <Edit className="size-3" />
+                          </button>
+                          <button className="p-1 rounded hover:bg-destructive/10 text-destructive" title="删除">
+                            <Trash2 className="size-3" />
+                          </button>
+                        </div>
+                      ) : <span className="text-muted-foreground">--</span>}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Pagination */}
+        <div className="flex items-center justify-between px-4 py-2 border-t text-xs text-muted-foreground">
+          <span>共 10 条</span>
+          <div className="flex items-center gap-1">
+            <button className="px-2 py-0.5 border rounded hover:bg-muted">上一页</button>
+            <button className="px-2 py-0.5 bg-primary text-primary-foreground rounded">1</button>
+            <button className="px-2 py-0.5 border rounded hover:bg-muted">2</button>
+            <button className="px-2 py-0.5 border rounded hover:bg-muted">下一页</button>
+          </div>
         </div>
       </div>
 
-      {/* Preview */}
-      <div className="border rounded-lg p-3">
-        <h4 className="text-xs font-medium mb-2">预览</h4>
-        <div className="border rounded overflow-hidden text-xs">
-          <table className="w-full">
-            <thead className="bg-muted">
-              <tr>{columns.map((col: any, i: number) => (
-                <th key={i} className="px-3 py-2 text-left font-medium">{col.name}</th>
-              ))}</tr>
-            </thead>
-            <tbody>
-              <tr className="border-t"><td colSpan={columns.length} className="px-3 py-4 text-center text-muted-foreground">
-                数据将从数据源加载
-              </td></tr>
-            </tbody>
-          </table>
+      {/* ═══ Right: Config Panel ═══ */}
+      <div className="w-56 border-l flex flex-col shrink-0">
+        <div className="flex items-center justify-between px-3 py-2 border-b">
+          <div className="flex items-center gap-1.5 text-xs font-semibold">
+            <Settings className="size-3.5" /> 配置规则
+          </div>
+          <button className="h-5 px-3 text-[10px] bg-primary text-primary-foreground rounded hover:bg-primary/90">保存</button>
+        </div>
+        <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4">
+          {/* 设置 */}
+          <div>
+            <p className="text-[11px] font-medium mb-2">设置</p>
+            <label className="flex items-center justify-between text-xs mb-2 cursor-pointer">
+              <span>支持搜索</span>
+              <div className={`w-8 h-4 rounded-full relative transition-colors ${config.supportSearch ? "bg-primary" : "bg-muted"}`}
+                onClick={() => setConfig(p => ({ ...p, supportSearch: !p.supportSearch }))}>
+                <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full shadow transition-transform ${config.supportSearch ? "left-4.5" : "left-0.5"}`} />
+              </div>
+            </label>
+            <label className="flex items-center justify-between text-xs cursor-pointer">
+              <span>包含子级节点</span>
+              <div className={`w-8 h-4 rounded-full relative transition-colors ${config.includeChildren ? "bg-primary" : "bg-muted"}`}
+                onClick={() => setConfig(p => ({ ...p, includeChildren: !p.includeChildren }))}>
+                <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full shadow transition-transform ${config.includeChildren ? "left-4.5" : "left-0.5"}`} />
+              </div>
+            </label>
+          </div>
+
+          {/* 可选层级 */}
+          <div>
+            <p className="text-[11px] font-medium mb-2">可选层级</p>
+            <div className="space-y-1.5">
+              {[
+                { value: "all" as const, label: "全部节点" },
+                { value: "children" as const, label: "指定节点" },
+                { value: "leaf" as const, label: "仅末级节点" },
+              ].map(opt => (
+                <label key={opt.value} className="flex items-center gap-2 text-xs cursor-pointer">
+                  <input type="radio" name="selectLevel" checked={config.selectLevel === opt.value}
+                    onChange={() => setConfig(p => ({ ...p, selectLevel: opt.value }))}
+                    className="size-3 accent-primary" />
+                  <span>{opt.label}</span>
+                  {opt.value === "children" && config.selectLevel === "children" && (
+                    <span className="text-[10px] text-muted-foreground border rounded px-1 py-0.5">级以下节点</span>
+                  )}
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* 默认展开状态 */}
+          <div>
+            <p className="text-[11px] font-medium mb-2">默认展开状态</p>
+            <div className="space-y-1.5">
+              {[
+                { value: "all" as const, label: "展开全部" },
+                { value: "level1" as const, label: "1 级", extra: true },
+                { value: "none" as const, label: "收起全部" },
+              ].map(opt => (
+                <label key={opt.value} className="flex items-center gap-2 text-xs cursor-pointer">
+                  <input type="radio" name="defaultExpand" checked={config.defaultExpand === opt.value}
+                    onChange={() => setConfig(p => ({ ...p, defaultExpand: opt.value }))}
+                    className="size-3 accent-primary" />
+                  <span>{opt.label}</span>
+                  {opt.extra && config.defaultExpand === "level1" && (
+                    <div className="flex items-center gap-1">
+                      <span className="text-[10px] text-muted-foreground">级</span>
+                      <input type="number" value={config.expandLevel} min={1} max={10}
+                        onChange={(e) => setConfig(p => ({ ...p, expandLevel: Number(e.target.value) }))}
+                        className="w-8 h-5 text-center text-[10px] border rounded" />
+                    </div>
+                  )}
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* 数据设置 */}
+          <div>
+            <p className="text-[11px] font-medium mb-2">数据设置</p>
+            <button className="text-xs text-primary hover:underline">设置</button>
+          </div>
         </div>
       </div>
     </div>
