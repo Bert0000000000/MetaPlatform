@@ -25,6 +25,7 @@ import versionsRoutes from "./routes/versions.js";
 import triggersRoutes from "./routes/triggers.js";
 import exportHistoryRoutes from "./routes/export-history.js";
 import knowledgeQaRoutes from "./routes/knowledge-qa.js";
+import knowledgeGraphRoutes from "./routes/knowledge-graph.js";
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -56,6 +57,7 @@ app.use("/api/versions", versionsRoutes);
 app.use("/api/triggers", triggersRoutes);
 app.use("/api/export-history", exportHistoryRoutes);
 app.use("/api/knowledge/qa", knowledgeQaRoutes);
+app.use("/api/knowledge/graph", knowledgeGraphRoutes);
 
 // ─── Health check ───────────────────────────────────────
 app.get("/api/health", (_req, res) => {

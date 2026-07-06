@@ -404,6 +404,26 @@ db.exec(`
     source_doc_id TEXT,
     created_at TEXT DEFAULT (datetime('now'))
   );
+
+  -- Knowledge Graph Nodes
+  CREATE TABLE IF NOT EXISTS knowledge_graph_nodes (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    type TEXT DEFAULT 'concept',
+    description TEXT,
+    metadata TEXT,
+    created_at TEXT DEFAULT (datetime('now'))
+  );
+
+  -- Knowledge Graph Edges
+  CREATE TABLE IF NOT EXISTS knowledge_graph_edges (
+    id TEXT PRIMARY KEY,
+    source_id TEXT NOT NULL,
+    target_id TEXT NOT NULL,
+    relation_type TEXT DEFAULT 'related',
+    description TEXT,
+    created_at TEXT DEFAULT (datetime('now'))
+  );
 `);
 
 // ─── Migrations (additive) ─────────────────────────────────

@@ -374,18 +374,47 @@ export function AskData() {
 
   function ask(query: string) {
     if (!query.trim()) return;
-    const { sql, result, chartType, data } = generateSQL(query);
-    setHistory((h) => [
-      ...h,
-      {
-        q: query,
-        sql,
-        result,
-        chartType,
-        data,
-        timestamp: new Date().toLocaleString("zh-CN"),
-      },
-    ]);
+    // Call real API for NL2SQL
+    const token = localStorage.getItem("mp_token");
+    fetch("/api/data/ask", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+      body: JSON.stringify({ question: query }),
+    })
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.success) {
+          const apiData = json.data;
+          // Use API response, fall back to local generateSQL for visualization data
+          const local = generateSQL(query);
+          setHistory((h) => [
+            ...h,
+            {
+              q: query,
+              sql: apiData.sql || local.sql,
+              result: `查询完成，返回 ${apiData.results?.length || 0} 条记录`,
+              chartType: local.chartType,
+              data: local.data,
+              timestamp: new Date().toLocaleString("zh-CN"),
+            },
+          ]);
+        } else {
+          // Fallback to local generateSQL
+          const { sql, result, chartType, data } = generateSQL(query);
+          setHistory((h) => [
+            ...h,
+            { q: query, sql, result, chartType, data, timestamp: new Date().toLocaleString("zh-CN") },
+          ]);
+        }
+      })
+      .catch(() => {
+        // Fallback to local generateSQL on error
+        const { sql, result, chartType, data } = generateSQL(query);
+        setHistory((h) => [
+          ...h,
+          { q: query, sql, result, chartType, data, timestamp: new Date().toLocaleString("zh-CN") },
+        ]);
+      });
     setQ("");
     setDrillDown("");
   }

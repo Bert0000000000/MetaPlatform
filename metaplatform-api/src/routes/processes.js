@@ -157,4 +157,28 @@ router.put("/instances/:id", (req, res, next) => {
   }
 });
 
+// POST /instances/:id/intervene — process intervention
+router.post("/instances/:id/intervene", (req, res, next) => {
+  try {
+    const instance = db.prepare("SELECT * FROM process_instances WHERE id = ?").get(req.params.id);
+    if (!instance) return res.status(404).json({ success: false, error: "流程实例不存在" });
+
+    const { action, reason } = req.body;
+    if (!action) return res.status(400).json({ success: false, error: "action 为必填项" });
+
+    let newStatus = instance.status;
+    if (action === "suspend") newStatus = "suspended";
+    else if (action === "resume") newStatus = "running";
+    else if (action === "terminate") newStatus = "terminated";
+
+    const now = new Date().toISOString();
+    db.prepare("UPDATE process_instances SET status = ?, ended_at = ? WHERE id = ?")
+      .run(newStatus, (action === "terminate") ? now : instance.ended_at, req.params.id);
+
+    res.json({ success: true, data: { id: req.params.id, status: newStatus, action, reason } });
+  } catch (err) {
+    next(err);
+  }
+});
+
 export default router;

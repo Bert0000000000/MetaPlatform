@@ -47,6 +47,8 @@ db.exec(`
   DELETE FROM process_triggers;
   DELETE FROM export_history;
   DELETE FROM knowledge_qa;
+  DELETE FROM knowledge_graph_edges;
+  DELETE FROM knowledge_graph_nodes;
 `);
 
 // ════════════════════════════════════════════════════════
@@ -602,6 +604,52 @@ for (const qa of knowledgeQaList) {
 console.log(`  Knowledge Q&A: ${knowledgeQaList.length}`);
 
 // ════════════════════════════════════════════════════════
+//  Knowledge Graph Nodes (8)
+// ════════════════════════════════════════════════════════
+const kgNodes = [
+  { id: "kg-node-1", name: "客户", type: "entity", description: "企业客户实体，包含客户基本信息" },
+  { id: "kg-node-2", name: "订单", type: "entity", description: "客户订单，关联产品与交易" },
+  { id: "kg-node-3", name: "合同", type: "entity", description: "客户签署的业务合同" },
+  { id: "kg-node-4", name: "付款", type: "entity", description: "订单付款记录" },
+  { id: "kg-node-5", name: "发票", type: "entity", description: "开具的发票信息" },
+  { id: "kg-node-6", name: "产品", type: "entity", description: "公司产品目录" },
+  { id: "kg-node-7", name: "员工", type: "entity", description: "公司内部员工" },
+  { id: "kg-node-8", name: "部门", type: "entity", description: "组织架构部门" },
+];
+
+const insertKgNode = db.prepare(
+  `INSERT INTO knowledge_graph_nodes (id, name, type, description, metadata, created_at) VALUES (?, ?, ?, ?, ?, ?)`
+);
+for (const n of kgNodes) {
+  insertKgNode.run(n.id, n.name, n.type, n.description, null, now);
+}
+console.log(`  Knowledge Graph Nodes: ${kgNodes.length}`);
+
+// ════════════════════════════════════════════════════════
+//  Knowledge Graph Edges (10)
+// ════════════════════════════════════════════════════════
+const kgEdges = [
+  { id: "kg-edge-1", source_id: "kg-node-1", target_id: "kg-node-2", relation_type: "places", description: "客户下订单" },
+  { id: "kg-edge-2", source_id: "kg-node-1", target_id: "kg-node-3", relation_type: "signs", description: "客户签署合同" },
+  { id: "kg-edge-3", source_id: "kg-node-2", target_id: "kg-node-4", relation_type: "triggers", description: "订单触发付款" },
+  { id: "kg-edge-4", source_id: "kg-node-4", target_id: "kg-node-5", relation_type: "generates", description: "付款生成发票" },
+  { id: "kg-edge-5", source_id: "kg-node-2", target_id: "kg-node-6", relation_type: "contains", description: "订单包含产品" },
+  { id: "kg-edge-6", source_id: "kg-node-7", target_id: "kg-node-8", relation_type: "belongs_to", description: "员工属于部门" },
+  { id: "kg-edge-7", source_id: "kg-node-7", target_id: "kg-node-1", relation_type: "manages", description: "员工管理客户" },
+  { id: "kg-edge-8", source_id: "kg-node-3", target_id: "kg-node-2", relation_type: "covers", description: "合同覆盖订单" },
+  { id: "kg-edge-9", source_id: "kg-node-6", target_id: "kg-node-5", relation_type: "invoiced_as", description: "产品开票" },
+  { id: "kg-edge-10", source_id: "kg-node-8", target_id: "kg-node-3", relation_type: "approves", description: "部门审批合同" },
+];
+
+const insertKgEdge = db.prepare(
+  `INSERT INTO knowledge_graph_edges (id, source_id, target_id, relation_type, description, created_at) VALUES (?, ?, ?, ?, ?, ?)`
+);
+for (const e of kgEdges) {
+  insertKgEdge.run(e.id, e.source_id, e.target_id, e.relation_type, e.description, now);
+}
+console.log(`  Knowledge Graph Edges: ${kgEdges.length}`);
+
+// ════════════════════════════════════════════════════════
 //  Summary
 // ════════════════════════════════════════════════════════
 console.log("\n" + "═".repeat(50));
@@ -634,4 +682,5 @@ console.log(`
   Process Triggers:  ${triggersList.length}
   Export History:    ${exportHistoryList.length}
   Knowledge Q&A:     ${knowledgeQaList.length}
+  Knowledge Graph:   ${kgNodes.length} nodes, ${kgEdges.length} edges
 `);

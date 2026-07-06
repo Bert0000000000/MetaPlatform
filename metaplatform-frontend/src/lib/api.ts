@@ -572,6 +572,48 @@ export const knowledgeQaApi = {
   },
 };
 
+// ─── Knowledge Graph ───────────────────────────────────
+export const knowledgeGraphApi = {
+  listNodes: async () => {
+    const res = await fetch(`${BASE_URL}/knowledge/graph/nodes`, {
+      headers: { "Authorization": `Bearer ${localStorage.getItem("mp_token")}` },
+    });
+    const json = await res.json();
+    return json.data;
+  },
+  createNode: async (data: any) => {
+    const res = await fetch(`${BASE_URL}/knowledge/graph/nodes`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${localStorage.getItem("mp_token")}`,
+      },
+      body: JSON.stringify(data),
+    });
+    const json = await res.json();
+    return json.data;
+  },
+  listEdges: async () => {
+    const res = await fetch(`${BASE_URL}/knowledge/graph/edges`, {
+      headers: { "Authorization": `Bearer ${localStorage.getItem("mp_token")}` },
+    });
+    const json = await res.json();
+    return json.data;
+  },
+  createEdge: async (data: any) => {
+    const res = await fetch(`${BASE_URL}/knowledge/graph/edges`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${localStorage.getItem("mp_token")}`,
+      },
+      body: JSON.stringify(data),
+    });
+    const json = await res.json();
+    return json.data;
+  },
+};
+
 // ─── Types ────────────────────────────────────────────────
 export interface User {
   id: string;

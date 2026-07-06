@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+const api = { post: (url: string, data: any) => fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('mp_token')}` }, body: JSON.stringify(data) }).then(r => r.json()) };
 import { Key, Globe, Bell, Link2, Shield, Webhook, Eye, EyeOff, BookOpen, Hash, MessageCircle, MessagesSquare, Save, Loader2, Check, Copy, Send, ArrowRight, Clock, Zap, FileText, RefreshCw, Trash2, Plus, ExternalLink, Lock, Users, Building2, Sliders, ShieldCheck, TestTube2, Workflow, ChevronRight, ChevronDown, Pencil, Wand2, Crosshair, Layers, Gauge, ArrowLeftRight, Scale, Percent, FastForward, Rewind, ToggleLeft, UserPlus, UserCheck, MoveRight, StopCircle, Wrench, Settings, Image, Upload, Server } from "lucide-react";
 
 /* ── Toast helper ── */
@@ -246,11 +247,21 @@ export default function AppConfig() {
 
   async function handleTestSSO() {
     setTestingSSO(true);
-    // TODO: Replace with real SSO test API call
-    // const result = await authApi.testSSOConnection(ssoProvider, ssoConfig);
-    await new Promise((r) => setTimeout(r, 1500));
+    try {
+      const result = await api.post(`/api/apps/${appId}/test-sso`, {
+        provider: ssoProvider,
+        url: ssoConfig.ssoUrl,
+        clientId: ssoConfig.clientId,
+      });
+      if (result.success) {
+        setToast(`SSO 连接测试成功 (${result.data.latency}ms)`);
+      } else {
+        setToast("SSO 连接测试失败");
+      }
+    } catch {
+      setToast("SSO 连接测试失败");
+    }
     setTestingSSO(false);
-    setToast("SSO 连接测试成功");
   }
 
   function handleSaveSSO() {
@@ -265,20 +276,37 @@ export default function AppConfig() {
 
   async function handleTestIM() {
     setTestingIM(true);
-    // TODO: Replace with real IM test API call
-    // const result = await integrationApi.testIM(imPlatform, imConfig);
-    await new Promise((r) => setTimeout(r, 1000));
+    try {
+      const result = await api.post(`/api/apps/${appId}/test-im`, {
+        platform: imPlatform,
+        webhook: imConfig.webhookUrl,
+      });
+      if (result.success) {
+        setToast(`${imPlatform} 测试消息已发送 (${result.data.latency}ms)`);
+      } else {
+        setToast(`${imPlatform} 测试失败`);
+      }
+    } catch {
+      setToast(`${imPlatform} 测试失败`);
+    }
     setTestingIM(false);
-    setToast(`${imPlatform} 测试消息已发送`);
   }
 
   async function handleSyncOrg() {
     setSyncingOrg(true);
-    // TODO: Replace with real org sync API call
-    // const result = await integrationApi.syncOrganization(imPlatform);
-    await new Promise((r) => setTimeout(r, 2000));
+    try {
+      const result = await api.post(`/api/apps/${appId}/sync-org`, {
+        source: imPlatform,
+      });
+      if (result.success) {
+        setToast(`${imPlatform} 组织架构同步完成 (已同步 ${result.data.synced} 条记录)`);
+      } else {
+        setToast(`${imPlatform} 组织架构同步失败`);
+      }
+    } catch {
+      setToast(`${imPlatform} 组织架构同步失败`);
+    }
     setSyncingOrg(false);
-    setToast(`${imPlatform} 组织架构同步完成`);
   }
 
   function handleSaveIM() {

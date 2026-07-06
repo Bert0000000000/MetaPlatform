@@ -864,38 +864,27 @@ export function ProcessInstances() {
       editVar: "修改变量",
     };
 
-    // TODO: Replace with real processesApi.intervene call when backend is ready
-    // try {
-    //   await processesApi.intervene(selectedInstance, {
-    //     action: interveneAction,
-    //     targetNode: interveneTargetNode,
-    //     assignee: interveneAssignee,
-    //     reason: interveneReason,
-    //     variable: interveneVarKey ? { key: interveneVarKey, value: interveneVarValue } : undefined,
-    //   });
-    // } catch (err) {
-    //   setInterveneToast("干预操作失败: " + (err instanceof Error ? err.message : "未知错误"));
-    //   setInterveneLoading(false);
-    //   return;
-    // }
+    try {
+      const token = localStorage.getItem("mp_token");
+      const res = await fetch(`/api/processes/instances/${selectedInstance}/intervene`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+        body: JSON.stringify({ action: interveneAction, reason: interveneReason }),
+      });
+      const json = await res.json();
+      if (!json.success) throw new Error(json.error || "干预操作失败");
 
-    // Simulate with delay for UX (remove when real API is connected)
-    await new Promise((r) => setTimeout(r, 800));
-
-    if (interveneAction === "terminate" || interveneAction === "suspend") {
+      // Update local state based on API response
+      const newStatus = json.data.status;
       setInstances((prev) =>
         prev.map((i) =>
-          i.id === selectedInstance
-            ? { ...i, status: interveneAction === "terminate" ? "failed" : "suspended" }
-            : i
+          i.id === selectedInstance ? { ...i, status: newStatus } : i
         )
       );
-    } else if (interveneAction === "resume") {
-      setInstances((prev) =>
-        prev.map((i) =>
-          i.id === selectedInstance ? { ...i, status: "running" } : i
-        )
-      );
+    } catch (err) {
+      setInterveneToast("干预操作失败: " + (err instanceof Error ? err.message : "未知错误"));
+      setInterveneLoading(false);
+      return;
     }
 
     setInterveneLoading(false);

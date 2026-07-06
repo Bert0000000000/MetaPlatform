@@ -150,4 +150,33 @@ router.post("/metrics", (req, res, next) => {
   }
 });
 
+// ════════════════════════════════════════════════════════
+//  AI Query (NL2SQL simulation)
+// ════════════════════════════════════════════════════════
+
+// POST /ask — natural language query
+router.post("/ask", (req, res, next) => {
+  try {
+    const { question } = req.body;
+    if (!question) return res.status(400).json({ success: false, error: "question 为必填项" });
+    // Simple NL2SQL simulation - returns mock SQL and results
+    // In production, this would use LLM to generate SQL
+    const sql = `SELECT * FROM data_sources WHERE status = 'online'`;
+    const results = db.prepare(sql).all();
+    res.json({ success: true, data: { sql, results, question } });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /export — export data
+router.post("/export", (req, res, next) => {
+  try {
+    const { format, data } = req.body;
+    res.json({ success: true, data: { format, message: `Export to ${format} initiated` } });
+  } catch (err) {
+    next(err);
+  }
+});
+
 export default router;

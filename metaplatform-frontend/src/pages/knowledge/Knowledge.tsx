@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { knowledgeApi, knowledgeQaApi, type KnowledgeDocument } from "@/lib/api";
+import { knowledgeApi, knowledgeQaApi, knowledgeGraphApi, type KnowledgeDocument } from "@/lib/api";
 import { FileText, Upload, Search, Eye, FolderTree, Sparkles, Send, Network, Clock, BookMarked, Tag, GitCommit, Brain, MessageSquare, BookOpen, Ruler, Briefcase, ScrollText, NotebookPen, Scale, Puzzle, Hash, Trash2, Bell, Plus, CheckCircle2, RefreshCw, Download, Activity, XCircle } from "lucide-react";
 import { StatCard, PageHeader } from "@/components/ui/stat";
 
@@ -29,19 +29,8 @@ const QA_HISTORY = [
   { q: "Q3 销售目标是多少？", hits: 4, topScore: 0.85, answer: "根据 2026 Q3 销售计划：总目标 ¥4.2 亿，按区域分配..." },
 ];
 
-// 知识图谱节点（mock）
-// TODO: Replace with real API when backend ready (knowledgeApi does not have graph nodes endpoint)
-const GRAPH_NODES = [
-  { id: "客户", type: "entity", x: 50, y: 50 },
-  { id: "订单", type: "entity", x: 150, y: 30 },
-  { id: "合同", type: "entity", x: 150, y: 110 },
-  { id: "付款", type: "entity", x: 250, y: 70 },
-  { id: "发票", type: "entity", x: 250, y: 150 },
-  { id: "客户-签署-合同", type: "relation", x: 100, y: 80 },
-  { id: "合同-包含-订单", type: "relation", x: 200, y: 60 },
-  { id: "订单-触发-付款", type: "relation", x: 200, y: 110 },
-  { id: "付款-生成-发票", type: "relation", x: 250, y: 110 },
-];
+// 知识图谱节点 - 从 API 获取
+const GRAPH_NODES: { id: string; type: string; x: number; y: number }[] = [];
 
 export function DocumentList() {
   const [docs, setDocs] = useState<KnowledgeDocument[]>([]);
@@ -216,6 +205,30 @@ export function DocumentList() {
 }
 
 export function KnowledgeGraph() {
+  const [nodes, setNodes] = useState<any[]>([]);
+  const [edges, setEdges] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    Promise.all([knowledgeGraphApi.listNodes(), knowledgeGraphApi.listEdges()])
+      .then(([n, e]) => {
+        setNodes(n || []);
+        setEdges(e || []);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  // Layout nodes in a circular pattern
+  const layoutNodes = nodes.map((n, i) => {
+    const angle = (2 * Math.PI * i) / nodes.length;
+    const cx = 160 + 80 * Math.cos(angle);
+    const cy = 100 + 60 * Math.sin(angle);
+    return { ...n, x: cx, y: cy };
+  });
+
+  const nodeMap = new Map(layoutNodes.map((n) => [n.id, n]));
+
   return (
     <Card>
       <CardHeader>
@@ -225,52 +238,58 @@ export function KnowledgeGraph() {
         <CardDescription>从文档中抽取的实体与关系（GraphRAG 可用）</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="relative h-[400px] bg-muted/30 rounded-lg overflow-hidden">
-          <svg className="w-full h-full" viewBox="0 0 320 200" preserveAspectRatio="xMidYMid meet">
-            {/* 连线 */}
-            <line x1="60" y1="55" x2="140" y2="35" stroke="#94a3b8" strokeWidth="1" />
-            <line x1="60" y1="55" x2="140" y2="115" stroke="#94a3b8" strokeWidth="1" />
-            <line x1="160" y1="35" x2="240" y2="75" stroke="#94a3b8" strokeWidth="1" />
-            <line x1="160" y1="115" x2="240" y2="75" stroke="#94a3b8" strokeWidth="1" />
-            <line x1="260" y1="75" x2="260" y2="155" stroke="#94a3b8" strokeWidth="1" />
+        {loading && <div className="text-center py-8 text-muted-foreground">加载中...</div>}
+        {!loading && (
+          <>
+            <div className="relative h-[400px] bg-muted/30 rounded-lg overflow-hidden">
+              <svg className="w-full h-full" viewBox="0 0 320 200" preserveAspectRatio="xMidYMid meet">
+                {/* 连线 */}
+                {edges.map((e) => {
+                  const source = nodeMap.get(e.source_id);
+                  const target = nodeMap.get(e.target_id);
+                  if (!source || !target) return null;
+                  return (
+                    <line key={e.id} x1={source.x} y1={source.y} x2={target.x} y2={target.y} stroke="#94a3b8" strokeWidth="1" />
+                  );
+                })}
 
-            {/* 节点 */}
-            <g>
-              <circle cx="50" cy="50" r="20" fill="#3b82f6" />
-              <text x="50" y="55" textAnchor="middle" fill="white" fontSize="10">客户</text>
-            </g>
-            <g>
-              <circle cx="150" cy="30" r="18" fill="#8b5cf6" />
-              <text x="150" y="35" textAnchor="middle" fill="white" fontSize="10">订单</text>
-            </g>
-            <g>
-              <circle cx="150" cy="110" r="18" fill="#ec4899" />
-              <text x="150" y="115" textAnchor="middle" fill="white" fontSize="10">合同</text>
-            </g>
-            <g>
-              <circle cx="250" cy="70" r="18" fill="#f59e0b" />
-              <text x="250" y="75" textAnchor="middle" fill="white" fontSize="10">付款</text>
-            </g>
-            <g>
-              <circle cx="250" cy="150" r="18" fill="#10b981" />
-              <text x="250" y="155" textAnchor="middle" fill="white" fontSize="10">发票</text>
-            </g>
+                {/* 节点 */}
+                {layoutNodes.map((n) => {
+                  const colors: Record<string, string> = {
+                    entity: "#3b82f6",
+                    concept: "#8b5cf6",
+                    relation: "#ec4899",
+                  };
+                  return (
+                    <g key={n.id}>
+                      <circle cx={n.x} cy={n.y} r={18} fill={colors[n.type] || "#6b7280"} />
+                      <text x={n.x} y={n.y + 4} textAnchor="middle" fill="white" fontSize="9">{n.name}</text>
+                    </g>
+                  );
+                })}
 
-            {/* 关系标签 */}
-            <text x="95" y="40" fontSize="8" fill="#64748b">签署</text>
-            <text x="95" y="90" fontSize="8" fill="#64748b">属于</text>
-            <text x="200" y="50" fontSize="8" fill="#64748b">触发</text>
-            <text x="200" y="100" fontSize="8" fill="#64748b">基于</text>
-            <text x="270" y="115" fontSize="8" fill="#64748b">生成</text>
-          </svg>
-        </div>
+                {/* 关系标签 */}
+                {edges.map((e) => {
+                  const source = nodeMap.get(e.source_id);
+                  const target = nodeMap.get(e.target_id);
+                  if (!source || !target) return null;
+                  const mx = (source.x + target.x) / 2;
+                  const my = (source.y + target.y) / 2 - 4;
+                  return (
+                    <text key={`label-${e.id}`} x={mx} y={my} fontSize="7" fill="#64748b" textAnchor="middle">{e.relation_type}</text>
+                  );
+                })}
+              </svg>
+            </div>
 
-        <div className="mt-3 flex flex-wrap gap-2 text-xs">
-          <Badge variant="outline">5 个实体</Badge>
-          <Badge variant="outline">5 条关系</Badge>
-          <Badge variant="outline">自动抽取</Badge>
-          <Badge variant="outline">置信度 ≥ 0.8</Badge>
-        </div>
+            <div className="mt-3 flex flex-wrap gap-2 text-xs">
+              <Badge variant="outline">{nodes.length} 个实体</Badge>
+              <Badge variant="outline">{edges.length} 条关系</Badge>
+              <Badge variant="outline">自动抽取</Badge>
+              <Badge variant="outline">置信度 ≥ 0.8</Badge>
+            </div>
+          </>
+        )}
       </CardContent>
     </Card>
   );
