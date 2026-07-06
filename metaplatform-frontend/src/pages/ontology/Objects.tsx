@@ -91,7 +91,7 @@ export default function Objects() {
   );
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6 p-6">
       <PageHeader
         title="对象（Objects）"
         description="本体 8 要素之第 1 要素：业务对象建模"

@@ -61,7 +61,7 @@ export default function AppOverview() {
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6 p-6">
       <PageHeader
         title={app.name}
         description={`${app.description || "暂无描述"} · v${app.version} · ${app.category}`}

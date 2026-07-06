@@ -100,7 +100,7 @@ export default function NewAppWizard() {
   };
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6 p-6">
       <div>
         <h1 className="text-xl font-bold">新建应用</h1>
         <p className="text-sm text-muted-foreground mt-1">4 步创建应用：选择方式 → 基本信息 → 数据源 → 确认</p>

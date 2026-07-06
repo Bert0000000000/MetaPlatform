@@ -36,7 +36,7 @@ export function OntologyElement({ elementKey }: { elementKey: string }) {
   const Icon = element.icon;
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6 p-6">
       <PageHeader
         title={element.title}
         description={element.desc}

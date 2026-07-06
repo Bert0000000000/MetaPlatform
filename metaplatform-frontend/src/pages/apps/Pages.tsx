@@ -158,7 +158,7 @@ export default function Pages() {
   };
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6 p-6">
       <PageHeader
         title="页面"
         description="LowCode + VUE + VibeCoding 三轨"

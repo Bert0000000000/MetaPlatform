@@ -260,7 +260,7 @@ export default function AppExport() {
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6 p-6">
       <PageHeader
         title="应用导出（CODE EXPORT）"
         description={appId ? `正在导出应用: ${appId}` : "将应用导出为可独立部署的完整工程（前端 + 后端 + 数据库 + 部署）"}

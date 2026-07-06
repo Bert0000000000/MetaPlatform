@@ -91,7 +91,7 @@ export default function Workflows() {
   }, [fetchProcesses]);
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6 p-6">
       <PageHeader
         title="流程"
         description="BPMN 2.0 规范 · 业务流程 + 审批流程 + 服务编排"

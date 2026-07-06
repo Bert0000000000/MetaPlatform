@@ -249,7 +249,7 @@ export default function AppPublish() {
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6 p-6">
       <PageHeader
         title="应用发布"
         description={isPublished ? `已发布 · slug: ${app.app_slug ?? "N/A"}` : "未发布"}
