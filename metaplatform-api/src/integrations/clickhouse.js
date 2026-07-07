@@ -78,8 +78,19 @@ export async function createTable(table, columns, engine = "MergeTree", orderBy 
     const cols = columns
       .map((c) => `${c.name} ${c.type}${c.default ? ` DEFAULT ${c.default}` : ""}`)
       .join(", ");
-    const orderClause = orderBy === "tuple()" ? "" : `ORDER BY (${orderBy})`;
-    const query = `CREATE TABLE IF NOT EXISTS ${table} (${cols}) ENGINE = ${engine}() ${orderClause}`;
+    // CH requires:
+    //   - tuple literal like `tuple()` or `(a, b)` for multi-key ORDER BY
+    //   - bare identifier for single-key (e.g. `ORDER BY id`)
+    let orderClause = "";
+    if (orderBy && orderBy !== "tuple()") {
+      // If it looks like a comma-separated list, wrap in parens; otherwise bare
+      if (orderBy.includes(",")) {
+        orderClause = `ORDER BY (${orderBy})`;
+      } else {
+        orderClause = `ORDER BY ${orderBy}`;
+      }
+    }
+    const query = `CREATE TABLE IF NOT EXISTS ${table} (${cols}) ENGINE = ${engine} ${orderClause}`;
     await client.command({ query });
     return { table, created: true };
   } catch (err) {

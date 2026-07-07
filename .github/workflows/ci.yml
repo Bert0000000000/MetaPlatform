@@ -136,30 +136,18 @@ jobs:
           for i in {1..30}; do
             curl -sf http://localhost:3001/api/health && break || sleep 2
           done
-      - name: Run Phase 1-5 integration smoke tests
+      - name: Install jq (required by run.sh)
+        run: sudo apt-get install -y jq
+
+      - name: Run full integration test suite
         run: |
-          set -e
-          echo "--- Health ---"
-          curl -sf http://localhost:3001/api/health
-          echo ""
-          echo "--- Storage ---"
-          curl -sf http://localhost:3001/api/storage/health | head -c 500
-          echo ""
-          echo "--- AI ---"
-          curl -sf http://localhost:3001/api/ai/status | head -c 500
-          echo ""
-          echo "--- Analytics ---"
-          curl -sf http://localhost:3001/api/analytics/status | head -c 500
-          echo ""
-          echo "--- Observability metrics ---"
-          n=$(curl -sf http://localhost:3001/api/observability/metrics | grep -c '^metaplatform_')
-          echo "metaplatform_ metric lines: $n"
-          [ "$n" -gt 10 ]
-          echo "--- OpenAPI ---"
-          n=$(curl -sf http://localhost:3001/api/openapi.json | python -c "import sys,json; d=json.load(sys.stdin); print(len(d['paths']))")
-          echo "OpenAPI paths: $n"
-          [ "$n" -gt 50 ]
-          echo "All smoke tests passed"
+          # The bash test runner exercises every API endpoint group with assertions.
+          # Mirrored by tests/integration/run.ps1 for Windows dev.
+          bash tests/integration/run.sh
+        env:
+          BASE_URL: http://localhost:3001
+          EMAIL: admin@metaplatform.com
+          PASSWORD: admin123
 
   # ─── 3. K8s manifest validation ─────────────────────────────
   k8s-validate:

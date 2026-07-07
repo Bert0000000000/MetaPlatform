@@ -18,33 +18,60 @@
 import db from "./db.js";
 import { logger } from "./observability/logger.js";
 
+// ─── Schema setup ────────────────────────────────────────
 let ensuredSchema = false;
 function ensureSchema() {
   if (ensuredSchema) return;
   try {
-    db.exec(`
-      CREATE TABLE IF NOT EXISTS scheduler_jobs (
-        name TEXT PRIMARY KEY,
-        cron TEXT NOT NULL,
-        enabled INTEGER NOT NULL DEFAULT 1,
-        last_run TEXT,
-        next_run TEXT,
-        run_count INTEGER NOT NULL DEFAULT 0,
-        last_status TEXT,
-        last_error TEXT,
-        created_at TEXT NOT NULL DEFAULT (datetime('now'))
-      );
-      CREATE TABLE IF NOT EXISTS scheduler_runs (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        job_name TEXT NOT NULL,
-        started_at TEXT NOT NULL DEFAULT (datetime('now')),
-        finished_at TEXT,
-        status TEXT NOT NULL,
-        duration_ms INTEGER,
-        error TEXT,
-        FOREIGN KEY (job_name) REFERENCES scheduler_jobs(name)
-      );
-    `);
+    const isPg = !!process.env.DATABASE_URL;
+    if (isPg) {
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS scheduler_jobs (
+          name TEXT PRIMARY KEY,
+          cron TEXT NOT NULL,
+          enabled INTEGER NOT NULL DEFAULT 1,
+          last_run TEXT,
+          next_run TEXT,
+          run_count INTEGER NOT NULL DEFAULT 0,
+          last_status TEXT,
+          last_error TEXT,
+          created_at TIMESTAMP NOT NULL DEFAULT NOW()
+        );
+        CREATE TABLE IF NOT EXISTS scheduler_runs (
+          id BIGSERIAL PRIMARY KEY,
+          job_name TEXT NOT NULL,
+          started_at TIMESTAMP NOT NULL DEFAULT NOW(),
+          finished_at TIMESTAMP,
+          status TEXT NOT NULL,
+          duration_ms INTEGER,
+          error TEXT
+        );
+      `);
+    } else {
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS scheduler_jobs (
+          name TEXT PRIMARY KEY,
+          cron TEXT NOT NULL,
+          enabled INTEGER NOT NULL DEFAULT 1,
+          last_run TEXT,
+          next_run TEXT,
+          run_count INTEGER NOT NULL DEFAULT 0,
+          last_status TEXT,
+          last_error TEXT,
+          created_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+        CREATE TABLE IF NOT EXISTS scheduler_runs (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          job_name TEXT NOT NULL,
+          started_at TEXT NOT NULL DEFAULT (datetime('now')),
+          finished_at TEXT,
+          status TEXT NOT NULL,
+          duration_ms INTEGER,
+          error TEXT,
+          FOREIGN KEY (job_name) REFERENCES scheduler_jobs(name)
+        );
+      `);
+    }
     ensuredSchema = true;
   } catch (err) {
     console.warn("[Scheduler] schema setup failed:", err.message);
