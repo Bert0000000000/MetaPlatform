@@ -512,55 +512,69 @@ function ChatTab({ messages, setMessages, agentPrompt, onAgentPromptConsumed }: 
             </div>
           )}
 
-          <Card>
-            <CardContent className="p-3">
-              <div className="flex items-end gap-2">
-                {/* Multi-modal input buttons */}
-                <div className="flex flex-col gap-1">
-                  {/* Hidden file inputs */}
-                  <input ref={imageInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleImageUpload} />
-                  <input ref={docInputRef} type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.ppt,.pptx" multiple className="hidden" onChange={handleDocUpload} />
+          <Card className="rounded-2xl border-border/60 shadow-sm overflow-hidden bg-card/80 backdrop-blur-sm">
+            <CardContent className="p-0">
+              {/* Hidden file inputs — kept at the top so any layout change
+                  can't accidentally hide them behind other content. */}
+              <input ref={imageInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleImageUpload} />
+              <input ref={docInputRef} type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.ppt,.pptx" multiple className="hidden" onChange={handleDocUpload} />
 
-                  <div className="flex gap-1">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="size-7"
-                      title="上传图片"
-                      onClick={() => imageInputRef.current?.click()}
-                      disabled={isTyping}
-                    >
-                      <ImageIcon className="size-4 text-muted-foreground hover:text-primary" />
-                    </Button>
-                    <Button
-                      variant={isRecording ? "destructive" : "ghost"}
-                      size="icon"
-                      className="size-7"
-                      title={isRecording ? "停止录音" : "语音输入"}
-                      onClick={toggleRecording}
-                      disabled={isTyping}
-                    >
-                      {isRecording ? <MicOff className="size-4" /> : <Mic className="size-4 text-muted-foreground hover:text-primary" />}
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="size-7"
-                      title="上传文档 (PDF/Word/Excel)"
-                      onClick={() => docInputRef.current?.click()}
-                      disabled={isTyping}
-                    >
-                      <Paperclip className="size-4 text-muted-foreground hover:text-primary" />
-                    </Button>
-                  </div>
+              {/* ── Composer: toolbar | textarea | send ───────────── */}
+              <div className="flex items-end gap-1 px-3 pt-3 pb-2">
+                {/* Toolbar — icon buttons grouped in a pill container
+                    so they read as one affordance, not three floating
+                    dots. Hover: tinted background; recording: red. */}
+                <div className="flex items-center gap-0.5 rounded-full bg-muted/60 p-0.5 shrink-0">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="size-8 rounded-full text-muted-foreground hover:bg-background hover:text-primary"
+                    title="上传图片"
+                    onClick={() => imageInputRef.current?.click()}
+                    disabled={isTyping}
+                  >
+                    <ImageIcon className="size-4" />
+                  </Button>
+                  <Button
+                    variant={isRecording ? "destructive" : "ghost"}
+                    size="icon"
+                    className={
+                      isRecording
+                        ? "size-8 rounded-full"
+                        : "size-8 rounded-full text-muted-foreground hover:bg-background hover:text-primary"
+                    }
+                    title={isRecording ? "停止录音" : "语音输入"}
+                    onClick={toggleRecording}
+                    disabled={isTyping}
+                  >
+                    {isRecording ? <MicOff className="size-4" /> : <Mic className="size-4" />}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="size-8 rounded-full text-muted-foreground hover:bg-background hover:text-primary"
+                    title="上传文档 (PDF/Word/Excel)"
+                    onClick={() => docInputRef.current?.click()}
+                    disabled={isTyping}
+                  >
+                    <Paperclip className="size-4" />
+                  </Button>
                 </div>
 
+                {/* Textarea — fills the middle, auto-grows up to 6 rows.
+                    Internal padding keeps cursor away from the rounded
+                    corners; focus state is a soft ring, not an outline. */}
                 <textarea
-                  className="flex-1 resize-none border-0 bg-transparent p-2 text-sm focus:outline-none placeholder:text-muted-foreground"
-                  placeholder="问我任何问题...(按 Enter 发送，Shift+Enter 换行)"
-                  rows={2}
+                  className="flex-1 resize-none border-0 bg-transparent px-2 py-2 text-sm leading-6 focus:outline-none placeholder:text-muted-foreground/80 disabled:opacity-60"
+                  placeholder="问我任何问题…（Enter 发送 · Shift+Enter 换行）"
+                  rows={1}
                   value={input}
-                  onChange={(e) => setInput(e.target.value)}
+                  onChange={(e) => {
+                    setInput(e.target.value);
+                    const ta = e.currentTarget;
+                    ta.style.height = "auto";
+                    ta.style.height = Math.min(ta.scrollHeight, 144) + "px";
+                  }}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && !e.shiftKey) {
                       e.preventDefault();
@@ -569,23 +583,39 @@ function ChatTab({ messages, setMessages, agentPrompt, onAgentPromptConsumed }: 
                   }}
                   disabled={isTyping || isRecording}
                 />
-                <Button onClick={() => send()} size="icon" aria-label="发送" disabled={isTyping || isRecording}>
+
+                {/* Send — circular primary, disabled state preserved.
+                    Slightly bigger than toolbar icons so it reads as
+                    the primary action. */}
+                <Button
+                  onClick={() => send()}
+                  size="icon"
+                  aria-label="发送"
+                  disabled={isTyping || isRecording || !input.trim()}
+                  className="size-10 rounded-full shadow-sm transition-transform hover:scale-[1.03] active:scale-95"
+                >
                   {isTyping ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
                 </Button>
               </div>
-              <div className="mt-2 flex items-center gap-2 text-xs flex-wrap">
-                <Sparkles className="size-3 text-primary shrink-0" />
-                <span className="text-muted-foreground shrink-0">智能建议：</span>
+
+              {/* ── Suggestion chips ───────────────────────────────── */}
+              <div className="flex items-center gap-1.5 px-3 py-2 border-t border-border/40 bg-muted/20 overflow-x-auto">
+                <Sparkles className="size-3.5 text-primary shrink-0" />
+                <span className="text-xs text-muted-foreground shrink-0 mr-0.5">试试</span>
                 {SUGGESTIONS.slice(0, 3).map((s, i) => (
                   <button
                     key={i}
                     onClick={() => send(s.text)}
-                    className="hover:underline text-foreground disabled:opacity-50"
                     disabled={isTyping}
+                    className="group inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-background px-2.5 py-1 text-xs text-foreground/80 hover:border-primary/40 hover:bg-primary/5 hover:text-primary disabled:opacity-50 transition-colors shrink-0"
                   >
-                    <s.icon className="size-3 mr-1 inline" />{s.text}
+                    <s.icon className="size-3 text-muted-foreground group-hover:text-primary transition-colors" />
+                    {s.text}
                   </button>
                 ))}
+                <span className="ml-auto text-[11px] text-muted-foreground/70 shrink-0 pl-2 tabular-nums">
+                  {input.length} / 4000
+                </span>
               </div>
             </CardContent>
           </Card>
