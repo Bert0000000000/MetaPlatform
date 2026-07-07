@@ -218,6 +218,15 @@ async function bootstrap() {
       }
     }).catch((err) => console.warn(`  -> [runtime] reattach failed: ${err.message}`));
 
+    // Background pruner: keeps historical published containers bounded so
+    // /app/<historicalSlug> history doesn't leak ports (range 31001-31499).
+    if (process.env.RUNTIME_PRUNE_ENABLED !== "false") {
+      import("./services/runtime-pruner.js").then(({ startPruner }) => {
+        const s = startPruner({ db, aliasMap });
+        console.log(`  -> [pruner] started (intervalMs=${s.intervalMs})`);
+      }).catch((err) => console.warn(`  -> [pruner] start failed: ${err.message}`));
+    }
+
     if (process.env.CDC_ENABLED !== "false") {
       cdc.start();
     }

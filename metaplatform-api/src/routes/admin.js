@@ -508,4 +508,15 @@ router.get("/runtime/summary", async (_req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// POST /runtime/prune — manually trigger one prune pass.
+// Returns the same structured report that the periodic pruner logs.
+router.post("/runtime/prune", async (_req, res, next) => {
+  try {
+    const { pruneOnce } = await import("../services/runtime-pruner.js");
+    const { aliasMap } = await import("../services/runtime-orchestrator.js");
+    const report = await pruneOnce({ db, aliasMap });
+    res.json({ success: true, data: report });
+  } catch (err) { next(err); }
+});
+
 export default router;

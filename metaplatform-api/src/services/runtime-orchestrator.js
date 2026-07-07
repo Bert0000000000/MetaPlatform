@@ -67,6 +67,7 @@ const REGISTRY = new Map(); // slug -> { containerId, port, snapshotPath }
 // reverse-proxy at `/app/<baseSlug>` hands requests to the live
 // container; users can also visit the historical URL directly.
 const BASE_TO_LATEST = new Map();
+export const aliasMap = BASE_TO_LATEST;
 
 let docker = null;
 let dockerProbe = null;
@@ -81,6 +82,7 @@ async function getDocker() {
   docker = new Docker(DOCKER_HOST ? { host: DOCKER_HOST } : undefined);
   return docker;
 }
+export { getDocker };
 
 export async function probe() {
   if (dockerProbe) return dockerProbe;

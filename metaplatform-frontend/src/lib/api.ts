@@ -195,6 +195,16 @@ export const appsApi = {
       serving_mode: string;
     }>;
   }>(`/admin/runtime/summary`),
+  pruneRuntimes: () =>
+    request<{
+      started_at: string;
+      finished_at?: string;
+      kept?: number;
+      pruned?: Array<{ slug: string; reason: string }>;
+      orphan_pruned?: string[];
+      error?: string | null;
+      skipped?: string;
+    }>(`/admin/runtime/prune`, { method: "POST" }),
 };
 
 // ─── Analytics (strategic dashboard) ──────────────────────

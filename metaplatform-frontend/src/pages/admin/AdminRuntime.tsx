@@ -50,6 +50,13 @@ export function AdminRuntime() {
   const [data, setData] = useState<Summary | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [pruning, setPruning] = useState(false);
+  const [pruneReport, setPruneReport] = useState<{
+    pruned: Array<{ slug: string; reason: string }>;
+    orphan_pruned: string[];
+    kept: number;
+    finished_at: string;
+  } | null>(null);
 
   const refresh = async () => {
     setLoading(true);
@@ -60,6 +67,22 @@ export function AdminRuntime() {
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally { setLoading(false); }
+  };
+
+  const prune = async () => {
+    setPruning(true);
+    try {
+      const r = await appsApi.pruneRuntimes();
+      if (r?.skipped) {
+        setError(`Pruner skipped: ${r.skipped}`);
+      } else {
+        setPruneReport(r as any);
+        // After prune the port pool may have freed up — refresh summary
+        refresh();
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally { setPruning(false); }
   };
 
   useEffect(() => {
@@ -83,6 +106,11 @@ export function AdminRuntime() {
         <Button variant="outline" size="sm" onClick={refresh} disabled={loading}>
           <RefreshCw className={cn("size-3 mr-1", loading && "animate-spin")} />
           刷新
+        </Button>
+        <Button variant="outline" size="sm" onClick={prune} disabled={pruning}
+                title="清理过期/孤立的发布容器，释放端口 (31001-31499)">
+          <Trash2 className={cn("size-3 mr-1", pruning && "animate-pulse")} />
+          {pruning ? "清理中…" : "立即清理"}
         </Button>
       </div>
 
@@ -203,6 +231,49 @@ export function AdminRuntime() {
         <Server className="size-3" />
         仪表盘每 8 秒自动刷新；Docker 状态变化会立即反映在「Docker 守护进程」卡片
       </div>
+
+      {pruneReport && (
+        <Card className="border-l-4 border-l-emerald-500">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Trash2 className="size-4 text-emerald-500" />
+              最近一次清理结果
+              <span className="text-xs text-muted-foreground font-normal">
+                {new Date(pruneReport.finished_at).toLocaleString("zh-CN")}
+              </span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="text-sm space-y-2">
+            <div className="flex gap-4 flex-wrap">
+              <span className="flex items-center gap-1">
+                <CheckCircle2 className="size-3 text-green-600" />
+                保留 <strong>{pruneReport.kept}</strong> 个容器
+              </span>
+              <span className="flex items-center gap-1">
+                <Trash2 className="size-3 text-emerald-600" />
+                清理过期 <strong>{pruneReport.pruned?.length ?? 0}</strong> 个
+              </span>
+              <span className="flex items-center gap-1">
+                <AlertTriangle className="size-3 text-amber-600" />
+                清理孤立 <strong>{pruneReport.orphan_pruned?.length ?? 0}</strong> 个
+              </span>
+            </div>
+            {(pruneReport.pruned?.length > 0 || pruneReport.orphan_pruned?.length > 0) && (
+              <details className="text-xs">
+                <summary className="cursor-pointer text-muted-foreground">查看详情</summary>
+                <div className="mt-2 space-y-1 font-mono">
+                  {pruneReport.pruned?.map((p) => (
+                    <div key={p.slug}>↳ {p.slug} <span className="text-muted-foreground">({p.reason})</span></div>
+                  ))}
+                  {pruneReport.orphan_pruned?.map((s) => (
+                    <div key={s} className="text-amber-700">↳ orphan: {s}</div>
+                  ))}
+                </div>
+              </details>
+            )}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
