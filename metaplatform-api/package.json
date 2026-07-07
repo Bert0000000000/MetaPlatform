@@ -6,9 +6,11 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "node --watch src/index.js",
-    "seed": "node src/seed.js"
+    "seed": "node src/seed.js",
+    "seed:storage": "node src/seed-storage.js"
   },
   "dependencies": {
+    "@elastic/elasticsearch": "^8.19.1",
     "bcryptjs": "^3.0.3",
     "better-sqlite3": "^11.0.0",
     "casbin": "^5.51.1",

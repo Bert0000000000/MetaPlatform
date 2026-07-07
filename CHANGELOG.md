@@ -6,6 +6,62 @@
 
 ---
 
+## [v1.2.0] - 2026-07-07
+
+### 新增 (Added)
+- **Phase 2 完成：存储层升级**
+  - **Neo4j 5.20 本体图谱引擎**
+    - 真实 Docker 容器部署（`bolt://localhost:7687`）
+    - 4 个 ontology 对象 + 3 个关系已 seed 到图数据库
+    - 提供子图查询、节点合并、关系创建、Cypher 原生查询
+  - **Elasticsearch 8.13 全文检索**
+    - 真实 Docker 容器部署（`http://localhost:9200`，cluster status: green）
+    - 中文友好 standard analyzer + English keyword
+    - 提供 bulk 索引、多字段 multi_match 搜索、highlight
+    - 已 seed 10+ 个文档（7 知识库 + 3 测试）
+  - **MinIO 对象存储**
+    - 真实 Docker 容器部署（`localhost:9000`，console: `localhost:9001`）
+    - 自动创建 bucket、multipart 文件上传、presigned URL、对象列表
+  - **Milvus 向量数据库** + 内存 cosine-similarity fallback
+    - Milvus SDK 与内存实现自动切换
+    - 提供 collection 创建、向量插入、top-K 相似度搜索
+    - 默认 embedding dim = 384（BGE-small 兼容）
+  - **Kafka 3.7 事件总线**
+    - 复用已有 `mp-kafka-spike` broker（KRaft 单节点）
+    - producer + consumer + 领域事件 helper（knowledge/ontology/process/file）
+  - **统一存储路由 `/api/storage`**
+    - `GET /health` — 所有后端聚合健康检查
+    - Neo4j: `/neo4j/query`, `/neo4j/node`, `/neo4j/relation`, `/neo4j/subgraph/:id`, `/neo4j/relations/:id`, `/neo4j/node/:id`
+    - ES: `/es/search`, `/es/index`, `/es/bulk`, `/es/:id`
+    - Milvus: `/milvus/collection`, `/milvus/insert`, `/milvus/search`, `/milvus/collections`, `/milvus/collection/:name`
+    - MinIO: `/minio/upload` (multipart), `/minio/url/*`, `/minio/list`, `/minio/*`
+    - Kafka: `/kafka/publish`, `/kafka/topics`, `/kafka/subscribe`
+  - **ESM 重构**：`integrations/*` 从 CommonJS 转为 ESM
+    - `neo4j.js` / `elasticsearch.js` / `milvus.js` / `minio.js` 全部 `export async function`
+    - 新增 `kafka.js`（完整 producer/consumer）
+    - `keycloak.js` / `argocd.js` / `ocr.js` / `simulation.js` / `quality.js` 改 ESM stub
+    - barrel `index.js` 提供 `initAll()` + `healthCheckAll()`
+  - **Seed 脚本 `seed-storage.js`**：从 PG 读取数据同步到 Neo4j/ES/Milvus
+  - **Docker Compose** 增加 neo4j / elasticsearch / minio / kafka 4 个服务
+  - **`.env.example` + `.env`** 增加所有 Phase 2 配置项
+
+### 变更 (Changed)
+- `index.js` 启动时调用 `initAll()` 初始化 5 个存储后端
+- 健康检查 `/api/health` 集成所有存储后端状态
+- ES 客户端降级到 `@elastic/elasticsearch@^8.13.0` 兼容 ES 8.x 服务端
+- `db-pg.js` 默认不 DROP schema（仅 `DB_PG_RESET_SCHEMA=1` 时重置）
+
+### 验证 (Verified)
+- 集成测试脚本 `test-phase2.ps1`：10/11 步骤通过
+  - Neo4j: 4 nodes / 4 edges subgraph 查询、节点创建、Kafka emit 联动
+  - ES: bulk 索引 3 文档、英文/中文 multi_match + highlight
+  - Milvus: collection 列表、内存 cosine-similarity 搜索
+  - MinIO: 文件上传 + Kafka emit、对象列表查询
+  - Kafka: 1 条事件发布到 `metaplatform.test.event`
+  - Health: 5 个后端全部 connected/green
+
+---
+
 ## [v1.1.0] - 2026-07-07
 
 ### 新增 (Added)

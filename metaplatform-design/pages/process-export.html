@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html class="light" lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>流程中心 - 流程导出 - MetaPlatform</title>
+    <style id="theme-vars">
+:root {
+  --color-primary: #3b82f6;
+  --color-primary-hover: #2563eb;
+  --color-primary-light: #eff6ff;
+  --color-bg: #ffffff;
+  --color-bg-secondary: #f8fafc;
+  --color-surface: #ffffff;
+  --color-surface-hover: #f8fafc;
+  --color-sidebar-bg: #0f172a;
+  --color-sidebar-text: #94a3b8;
+  --color-sidebar-text-hover: #cbd5e1;
+  --color-sidebar-active-bg: rgba(59, 130, 246, 0.15);
+  --color-sidebar-active-text: #60a5fa;
+  --color-sidebar-border: rgba(148, 163, 184, 0.1);
+  --color-text-primary: #0f172a;
+  --color-text-secondary: #64748b;
+  --color-text-inverse: #ffffff;
+  --color-border: #e2e8f0;
+  --state-success: #22c55e;
+  --state-success-bg: #f0fdf4;
+  --state-warning: #f59e0b;
+  --state-warning-bg: #fffbeb;
+  --state-error: #ef4444;
+  --state-error-bg: #fef2f2;
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans SC", sans-serif;
+  --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  --font-size-xs: 11px;
+  --font-size-sm: 12px;
+  --font-size-base: 13px;
+  --font-size-lg: 14px;
+  --font-size-xl: 18px;
+  --font-size-2xl: 22px;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --line-height-normal: 1.5;
+  --spacing-xs: 2px;
+  --spacing-sm: 4px;
+  --spacing-md: 8px;
+  --spacing-lg: 12px;
+  --spacing-xl: 16px;
+  --spacing-2xl: 24px;
+  --radius-sm: 3px;
+  --radius-md: 4px;
+  --radius-lg: 6px;
+  --radius-full: 9999px;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-float: 0 8px 24px rgba(0, 0, 0, 0.1);
+  --sidebar-width: 220px;
+}
+    </style>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+@theme inline { --color-primary: var(--color-primary); --color-border: var(--color-border); }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; font-family: var(--font-sans); font-size: var(--font-size-base); color: var(--color-text-primary); background: var(--color-bg); line-height: var(--line-height-normal); -webkit-font-smoothing: antialiased; }
+input, textarea, select, button { font-family: inherit; font-size: inherit; }
+.nav-item { display: flex; align-items: center; gap: var(--spacing-lg); padding: var(--spacing-md) var(--spacing-xl); font-size: var(--font-size-sm); font-weight: var(--font-weight-normal); color: var(--color-sidebar-text); border-radius: var(--radius-md); cursor: pointer; transition: all 0.15s; text-decoration: none; border: none; background: none; width: 100%; text-align: left; }
+.nav-item:hover { background: var(--color-sidebar-active-bg); color: var(--color-sidebar-text-hover); }
+.nav-item svg { width: 16px; height: 16px; flex-shrink: 0; }
+.tab-item { display: flex; align-items: center; gap: var(--spacing-sm); padding: var(--spacing-sm) var(--spacing-lg); font-size: var(--font-size-sm); font-weight: var(--font-weight-normal); color: var(--color-text-secondary); border-bottom: 2px solid transparent; cursor: pointer; transition: all 0.15s; white-space: nowrap; background: none; border-top: none; border-left: none; border-right: none; }
+.tab-item:hover { color: var(--color-text-primary); }
+.tab-item.active { color: var(--color-primary); border-bottom-color: var(--color-primary); font-weight: var(--font-weight-medium); }
+.btn { display: inline-flex; align-items: center; gap: var(--spacing-sm); padding: var(--spacing-sm) var(--spacing-lg); font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); border-radius: var(--radius-md); cursor: pointer; transition: all 0.15s; white-space: nowrap; border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-text-primary); }
+.btn:hover { background: var(--color-surface-hover); }
+.btn svg { width: 14px; height: 14px; }
+.btn-primary { border-color: var(--color-primary); background: var(--color-primary); color: var(--color-text-inverse); }
+.btn-primary:hover { background: var(--color-primary-hover); }
+.btn-ghost { border-color: transparent; color: var(--color-text-secondary); }
+.btn-ghost:hover { background: var(--color-bg-secondary); }
+.inp { width: 100%; padding: 6px 10px; font-size: var(--font-size-sm); border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-bg); color: var(--color-text-primary); outline: none; transition: border-color 0.15s; }
+.inp:focus { border-color: var(--color-primary); box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.12); }
+.inp::placeholder { color: var(--color-text-secondary); }
+.badge { display: inline-flex; align-items: center; padding: 1px 6px; font-size: var(--font-size-xs); font-weight: var(--font-weight-medium); border-radius: var(--radius-full); }
+.badge-default { background: var(--color-bg-secondary); color: var(--color-text-secondary); }
+.badge-primary { background: var(--color-primary-light); color: var(--color-primary); }
+.badge-success { background: var(--state-success-bg); color: var(--state-success); }
+.badge-warning { background: var(--state-warning-bg); color: var(--state-warning); }
+.badge-error { background: var(--state-error-bg); color: var(--state-error); }
+.card { border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface); }
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: var(--radius-full); }
+table { width: 100%; border-collapse: collapse; }
+th, td { text-align: left; padding: var(--spacing-md) var(--spacing-lg); font-size: var(--font-size-sm); white-space: nowrap; }
+th { color: var(--color-text-secondary); font-weight: var(--font-weight-medium); background: var(--color-bg-secondary); border-bottom: 1px solid var(--color-border); }
+td { color: var(--color-text-primary); border-bottom: 1px solid var(--color-border); }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: var(--color-surface-hover); }
+.pagination { display: flex; align-items: center; gap: var(--spacing-sm); }
+.page-btn { display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text-primary); font-size: var(--font-size-sm); cursor: pointer; transition: all 0.15s; }
+.page-btn:hover { background: var(--color-surface-hover); }
+.page-btn.active { border-color: var(--color-primary); background: var(--color-primary); color: var(--color-text-inverse); }
+
+    </style>
+</head>
+<body>
+<div style="display:flex; height:100vh; width:100vw; overflow:hidden;">
+
+    <!-- SIDEBAR -->
+    <aside style="width:var(--sidebar-width); background:var(--color-sidebar-bg); display:flex; flex-direction:column; flex-shrink:0; border-right:1px solid var(--color-sidebar-border);">
+        <div style="height:56px; padding:0 var(--spacing-xl); display:flex; align-items:center; border-bottom:1px solid var(--color-sidebar-border);">
+            <span style="color:var(--color-text-inverse); font-size:var(--font-size-lg); font-weight:var(--font-weight-semibold);">MetaPlatform</span>
+        </div>
+        <nav style="flex:1; overflow-y:auto; padding:var(--spacing-md) var(--spacing-md); display:flex; flex-direction:column; gap:1px;">
+            <a class="nav-item" data-dom-id="nav-dashboard"><i data-lucide="layout-dashboard"></i><span>工作台</span></a>
+            <a class="nav-item" data-dom-id="nav-superai"><i data-lucide="sparkles"></i><span>SuperAI</span></a>
+            <a class="nav-item" data-dom-id="nav-architecture"><i data-lucide="building-2"></i><span>架构中心</span></a>
+            <a class="nav-item" data-dom-id="nav-apps"><i data-lucide="app-window"></i><span>应用中心</span></a>
+            <a class="nav-item" data-dom-id="nav-process" style="background: rgba(59,130,246,0.15); color: #60a5fa;"><i data-lucide="git-branch"></i><span>流程中心</span></a>
+            <a class="nav-item" data-dom-id="nav-data"><i data-lucide="database"></i><span>数据中心</span></a>
+            <a class="nav-item" data-dom-id="nav-ontology"><i data-lucide="brain"></i><span>本体引擎</span></a>
+            <a class="nav-item" data-dom-id="nav-quality"><i data-lucide="shield-check"></i><span>质量中心</span></a>
+            <a class="nav-item" data-dom-id="nav-knowledge"><i data-lucide="book-open"></i><span>知识库</span></a>
+            <a class="nav-item" data-dom-id="nav-market"><i data-lucide="cloud"></i><span>云市场</span></a>
+            <a class="nav-item" data-dom-id="nav-agents"><i data-lucide="bot"></i><span>数字员工</span></a>
+            <a class="nav-item" data-dom-id="nav-admin"><i data-lucide="settings"></i><span>后台管理</span></a>
+        </nav>
+        <div style="padding:var(--spacing-lg) var(--spacing-xl); border-top:1px solid var(--color-sidebar-border); font-size:var(--font-size-xs); color:var(--color-sidebar-text);">
+            v1.2 · 本体论驱动 AI 平台
+        </div>
+    </aside>
+
+    <!-- MAIN AREA -->
+    <div style="flex:1; display:flex; flex-direction:column; min-width:0;">
+
+        <!-- TOPBAR -->
+        <header style="height:56px; border-bottom:1px solid var(--color-border); background:var(--color-surface); display:flex; align-items:center; padding:0 var(--spacing-xl); flex-shrink:0; gap:var(--spacing-lg);">
+            <div style="width:260px; display:flex; align-items:center; gap:var(--spacing-sm); padding:var(--spacing-sm) var(--spacing-lg); border:1px solid var(--color-border); border-radius:var(--radius-md); background:var(--color-bg-secondary); cursor:pointer;">
+                <i data-lucide="search" style="width:14px; height:14px; color:var(--color-text-secondary);"></i>
+                <span style="font-size:var(--font-size-sm); color:var(--color-text-secondary); flex:1;">搜索或 AI 助手</span>
+                <span style="font-size:var(--font-size-xs); color:var(--color-text-secondary); background:var(--color-bg); padding:1px 4px; border-radius:var(--radius-sm); border:1px solid var(--color-border);">&#8984;K</span>
+            </div>
+            <div style="flex:1;"></div>
+            <button style="position:relative; background:none; border:none; cursor:pointer; color:var(--color-text-secondary); padding:var(--spacing-sm);">
+                <i data-lucide="bell" style="width:16px; height:16px;"></i>
+                <span style="position:absolute; top:-2px; right:-2px; width:8px; height:8px; background:var(--state-error); border-radius:var(--radius-full); border:1px solid var(--color-surface);"></span>
+            </button>
+            <div style="display:flex; align-items:center; gap:var(--spacing-sm); padding:var(--spacing-sm) var(--spacing-md); border:1px solid var(--color-border); border-radius:var(--radius-md); cursor:pointer; font-size:var(--font-size-sm); color:var(--color-text-primary);">
+                <div style="width:22px; height:22px; border-radius:var(--radius-full); background:rgba(59,130,246,0.15); color:var(--color-primary); font-size:var(--font-size-xs); font-weight:var(--font-weight-medium); display:flex; align-items:center; justify-content:center;">A</div>
+                <span>Admin</span>
+                <i data-lucide="chevron-down" style="width:12px; height:12px;"></i>
+            </div>
+        </header>
+
+        <!-- TAB BAR -->
+        <div style="border-bottom:1px solid var(--color-border); background:var(--color-surface); display:flex; padding:0 var(--spacing-xl); flex-shrink:0; overflow-x:auto;">
+            <button class="tab-item" data-dom-id="tab-process-business">业务流程</button>
+            <button class="tab-item" data-dom-id="tab-process-approval">审批流程</button>
+            <button class="tab-item" data-dom-id="tab-process-orchestration">服务编排</button>
+            <button class="tab-item" data-dom-id="tab-process-instances">流程实例</button>
+            <button class="tab-item" data-dom-id="tab-process-approvalcenter">审批中心</button>
+            <button class="tab-item" data-dom-id="tab-process-triggers">触发器</button>
+            <button class="tab-item" data-dom-id="tab-process-analytics">流程分析</button>
+            <button class="tab-item" data-dom-id="tab-process-middleware">流程中台</button>
+            <button class="tab-item active" data-dom-id="tab-process-export">流程导出</button>
+        </div>
+
+        <!-- PAGE CONTENT -->
+        <main style="flex:1; overflow-y:auto; background:var(--color-bg-secondary);">
+            <div style="max-width:1280px; margin:0 auto; padding:var(--spacing-2xl) var(--spacing-2xl);">
+
+                <!-- Header -->
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:var(--spacing-2xl);">
+                    <div>
+                        <div style="display:flex; align-items:center; gap:var(--spacing-lg); margin-bottom:var(--spacing-xs);">
+                            <i data-lucide="download" style="width:20px; height:20px; color:var(--color-primary);"></i>
+                            <h1 style="font-size:var(--font-size-xl); font-weight:var(--font-weight-semibold); color:var(--color-text-primary);">流程导出</h1>
+                        </div>
+                        <p style="font-size:var(--font-size-sm); color:var(--color-text-secondary); margin-left:32px;">导出流程定义为标准格式文件</p>
+                    </div>
+                </div>
+
+                <!-- Export Config -->
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:var(--spacing-lg); margin-bottom:var(--spacing-2xl);">
+
+                    <!-- Select Process -->
+                    <div class="card" style="padding:var(--spacing-xl);">
+                        <div style="font-size:var(--font-size-sm); font-weight:var(--font-weight-medium); color:var(--color-text-primary); margin-bottom:var(--spacing-lg);">选择流程</div>
+                        <div style="margin-bottom:var(--spacing-lg);">
+                            <div style="font-size:var(--font-size-xs); font-weight:var(--font-weight-medium); color:var(--color-text-secondary); margin-bottom:var(--spacing-sm); text-transform:uppercase; letter-spacing:0.04em;">搜索流程</div>
+                            <input type="text" class="inp" placeholder="输入流程名称搜索..."/>
+                        </div>
+                        <div style="display:flex; flex-direction:column; gap:var(--spacing-sm);">
+                            <label style="display:flex; align-items:center; gap:var(--spacing-md); padding:var(--spacing-md); border:1px solid var(--color-border); border-radius:var(--radius-md); cursor:pointer;">
+                                <input type="checkbox" checked style="accent-color:var(--color-primary); width:14px; height:14px;"/>
+                                <div style="flex:1;">
+                                    <div style="font-size:var(--font-size-sm); font-weight:var(--font-weight-medium);">费用报销审批</div>
+                                    <div style="font-size:var(--font-size-xs); color:var(--color-text-secondary);">v2.3 · 审批流程</div>
+                                </div>
+                                <span class="badge badge-success">已发布</span>
+                            </label>
+                            <label style="display:flex; align-items:center; gap:var(--spacing-md); padding:var(--spacing-md); border:1px solid var(--color-border); border-radius:var(--radius-md); cursor:pointer;">
+                                <input type="checkbox" style="accent-color:var(--color-primary); width:14px; height:14px;"/>
+                                <div style="flex:1;">
+                                    <div style="font-size:var(--font-size-sm); font-weight:var(--font-weight-medium);">采购订单审批</div>
+                                    <div style="font-size:var(--font-size-xs); color:var(--color-text-secondary);">v1.8 · 审批流程</div>
+                                </div>
+                                <span class="badge badge-success">已发布</span>
+                            </label>
+                            <label style="display:flex; align-items:center; gap:var(--spacing-md); padding:var(--spacing-md); border:1px solid var(--color-border); border-radius:var(--radius-md); cursor:pointer;">
+                                <input type="checkbox" style="accent-color:var(--color-primary); width:14px; height:14px;"/>
+                                <div style="flex:1;">
+                                    <div style="font-size:var(--font-size-sm); font-weight:var(--font-weight-medium);">请假审批流程</div>
+                                    <div style="font-size:var(--font-size-xs); color:var(--color-text-secondary);">v3.1 · 审批流程</div>
+                                </div>
+                                <span class="badge badge-primary">草稿</span>
+                            </label>
+                            <label style="display:flex; align-items:center; gap:var(--spacing-md); padding:var(--spacing-md); border:1px solid var(--color-border); border-radius:var(--radius-md); cursor:pointer;">
+                                <input type="checkbox" style="accent-color:var(--color-primary); width:14px; height:14px;"/>
+                                <div style="flex:1;">
+                                    <div style="font-size:var(--font-size-sm); font-weight:var(--font-weight-medium);">合同签署流程</div>
+                                    <div style="font-size:var(--font-size-xs); color:var(--color-text-secondary);">v1.2 · 数据流程</div>
+                                </div>
+                                <span class="badge badge-success">已发布</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Export Settings -->
+                    <div class="card" style="padding:var(--spacing-xl);">
+                        <div style="font-size:var(--font-size-sm); font-weight:var(--font-weight-medium); color:var(--color-text-primary); margin-bottom:var(--spacing-lg);">导出配置</div>
+                        <div style="margin-bottom:var(--spacing-lg);">
+                            <div style="font-size:var(--font-size-xs); font-weight:var(--font-weight-medium); color:var(--color-text-secondary); margin-bottom:var(--spacing-sm); text-transform:uppercase; letter-spacing:0.04em;">导出格式</div>
+                            <div style="display:flex; gap:var(--spacing-md);">
+                                <label style="display:flex; align-items:center; gap:var(--spacing-md); padding:var(--spacing-lg); border:2px solid var(--color-primary); border-radius:var(--radius-md); cursor:pointer; background:var(--color-primary-light); flex:1;">
+                                    <input type="radio" name="format" checked style="accent-color:var(--color-primary);"/>
+                                    <div>
+                                        <div style="font-size:var(--font-size-sm); font-weight:var(--font-weight-medium); color:var(--color-primary);">BPMN 2.0</div>
+                                        <div style="font-size:var(--font-size-xs); color:var(--color-text-secondary);">标准流程建模格式</div>
+                                    </div>
+                                </label>
+                                <label style="display:flex; align-items:center; gap:var(--spacing-md); padding:var(--spacing-lg); border:1px solid var(--color-border); border-radius:var(--radius-md); cursor:pointer; flex:1;">
+                                    <input type="radio" name="format" style="accent-color:var(--color-primary);"/>
+                                    <div>
+                                        <div style="font-size:var(--font-size-sm); font-weight:var(--font-weight-medium);">XML</div>
+                                        <div style="font-size:var(--font-size-xs); color:var(--color-text-secondary);">可扩展标记格式</div>
+                                    </div>
+                                </label>
+                                <label style="display:flex; align-items:center; gap:var(--spacing-md); padding:var(--spacing-lg); border:1px solid var(--color-border); border-radius:var(--radius-md); cursor:pointer; flex:1;">
+                                    <input type="radio" name="format" style="accent-color:var(--color-primary);"/>
+                                    <div>
+                                        <div style="font-size:var(--font-size-sm); font-weight:var(--font-weight-medium);">JSON</div>
+                                        <div style="font-size:var(--font-size-xs); color:var(--color-text-secondary);">轻量级数据格式</div>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                        <div style="margin-bottom:var(--spacing-lg);">
+                            <div style="font-size:var(--font-size-xs); font-weight:var(--font-weight-medium); color:var(--color-text-secondary); margin-bottom:var(--spacing-sm); text-transform:uppercase; letter-spacing:0.04em;">导出范围</div>
+                            <div style="display:flex; gap:var(--spacing-md);">
+                                <label style="display:flex; align-items:center; gap:var(--spacing-sm); font-size:var(--font-size-sm); cursor:pointer;">
+                                    <input type="checkbox" checked style="accent-color:var(--color-primary); width:14px; height:14px;"/>
+                                    <span>流程定义</span>
+                                </label>
+                                <label style="display:flex; align-items:center; gap:var(--spacing-sm); font-size:var(--font-size-sm); cursor:pointer;">
+                                    <input type="checkbox" checked style="accent-color:var(--color-primary); width:14px; height:14px;"/>
+                                    <span>节点配置</span>
+                                </label>
+                                <label style="display:flex; align-items:center; gap:var(--spacing-sm); font-size:var(--font-size-sm); cursor:pointer;">
+                                    <input type="checkbox" style="accent-color:var(--color-primary); width:14px; height:14px;"/>
+                                    <span>表单定义</span>
+                                </label>
+                                <label style="display:flex; align-items:center; gap:var(--spacing-sm); font-size:var(--font-size-sm); cursor:pointer;">
+                                    <input type="checkbox" style="accent-color:var(--color-primary); width:14px; height:14px;"/>
+                                    <span>权限配置</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div style="margin-bottom:var(--spacing-lg);">
+                            <div style="font-size:var(--font-size-xs); font-weight:var(--font-weight-medium); color:var(--color-text-secondary); margin-bottom:var(--spacing-sm); text-transform:uppercase; letter-spacing:0.04em;">文件编码</div>
+                            <select class="inp" style="cursor:pointer;">
+                                <option>UTF-8</option>
+                                <option>GBK</option>
+                                <option>ISO-8859-1</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-primary" style="width:100%; justify-content:center; padding:var(--spacing-md);"><i data-lucide="download"></i> 开始导出</button>
+                    </div>
+                </div>
+
+                <!-- Export History -->
+                <div class="card" style="padding:var(--spacing-xl);">
+                    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:var(--spacing-lg);">
+                        <span style="font-size:var(--font-size-sm); font-weight:var(--font-weight-medium); color:var(--color-text-primary);">导出历史</span>
+                        <button class="btn btn-ghost" style="font-size:var(--font-size-xs);"><i data-lucide="trash-2" style="width:12px; height:12px;"></i> 清空历史</button>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>导出时间</th>
+                                <th>流程名称</th>
+                                <th>格式</th>
+                                <th>文件大小</th>
+                                <th>操作人</th>
+                                <th>状态</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td style="color:var(--color-text-secondary);">2024-01-15 14:32</td>
+                                <td style="font-weight:var(--font-weight-medium);">费用报销审批</td>
+                                <td><span class="badge badge-default">BPMN</span></td>
+                                <td style="font-family:var(--font-mono); color:var(--color-text-secondary);">24.5 KB</td>
+                                <td>Admin</td>
+                                <td><span class="badge badge-success">成功</span></td>
+                                <td><button class="btn btn-ghost" style="font-size:var(--font-size-xs);"><i data-lucide="download"></i> 下载</button></td>
+                            </tr>
+                            <tr>
+                                <td style="color:var(--color-text-secondary);">2024-01-14 10:15</td>
+                                <td style="font-weight:var(--font-weight-medium);">采购订单审批</td>
+                                <td><span class="badge badge-default">JSON</span></td>
+                                <td style="font-family:var(--font-mono); color:var(--color-text-secondary);">18.2 KB</td>
+                                <td>Admin</td>
+                                <td><span class="badge badge-success">成功</span></td>
+                                <td><button class="btn btn-ghost" style="font-size:var(--font-size-xs);"><i data-lucide="download"></i> 下载</button></td>
+                            </tr>
+                            <tr>
+                                <td style="color:var(--color-text-secondary);">2024-01-13 16:48</td>
+                                <td style="font-weight:var(--font-weight-medium);">请假审批流程</td>
+                                <td><span class="badge badge-default">XML</span></td>
+                                <td style="font-family:var(--font-mono); color:var(--color-text-secondary);">31.8 KB</td>
+                                <td>Admin</td>
+                                <td><span class="badge badge-success">成功</span></td>
+                                <td><button class="btn btn-ghost" style="font-size:var(--font-size-xs);"><i data-lucide="download"></i> 下载</button></td>
+                            </tr>
+                            <tr>
+                                <td style="color:var(--color-text-secondary);">2024-01-12 09:30</td>
+                                <td style="font-weight:var(--font-weight-medium);">合同签署流程</td>
+                                <td><span class="badge badge-default">BPMN</span></td>
+                                <td style="font-family:var(--font-mono); color:var(--color-text-secondary);">22.1 KB</td>
+                                <td>Admin</td>
+                                <td><span class="badge badge-error">失败</span></td>
+                                <td><button class="btn btn-ghost" style="font-size:var(--font-size-xs);"><i data-lucide="refresh-cw"></i> 重试</button></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+        </main>
+    </div>
+</div>
+<script>lucide.createIcons();</script>
+</body>
+</html>

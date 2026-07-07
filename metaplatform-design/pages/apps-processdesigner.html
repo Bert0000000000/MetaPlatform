@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html class="light" lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>应用中心 - 流程设计器 - MetaPlatform</title>
+    <style id="theme-vars">
+:root {
+  --color-primary: #3b82f6;
+  --color-primary-hover: #2563eb;
+  --color-primary-light: #eff6ff;
+  --color-bg: #ffffff;
+  --color-bg-secondary: #f8fafc;
+  --color-surface: #ffffff;
+  --color-surface-hover: #f8fafc;
+  --color-sidebar-bg: #0f172a;
+  --color-sidebar-text: #94a3b8;
+  --color-sidebar-text-hover: #cbd5e1;
+  --color-sidebar-active-bg: rgba(59, 130, 246, 0.15);
+  --color-sidebar-active-text: #60a5fa;
+  --color-sidebar-border: rgba(148, 163, 184, 0.1);
+  --color-text-primary: #0f172a;
+  --color-text-secondary: #64748b;
+  --color-text-inverse: #ffffff;
+  --color-border: #e2e8f0;
+  --state-success: #22c55e;
+  --state-success-bg: #f0fdf4;
+  --state-warning: #f59e0b;
+  --state-warning-bg: #fffbeb;
+  --state-error: #ef4444;
+  --state-error-bg: #fef2f2;
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans SC", sans-serif;
+  --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  --font-size-xs: 11px;
+  --font-size-sm: 12px;
+  --font-size-base: 13px;
+  --font-size-lg: 14px;
+  --font-size-xl: 18px;
+  --font-size-2xl: 22px;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --line-height-normal: 1.5;
+  --spacing-xs: 2px;
+  --spacing-sm: 4px;
+  --spacing-md: 8px;
+  --spacing-lg: 12px;
+  --spacing-xl: 16px;
+  --spacing-2xl: 24px;
+  --radius-sm: 3px;
+  --radius-md: 4px;
+  --radius-lg: 6px;
+  --radius-full: 9999px;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-float: 0 8px 24px rgba(0, 0, 0, 0.1);
+  --sidebar-width: 220px;
+}
+    </style>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+    @theme inline { --color-primary: var(--color-primary); --color-border: var(--color-border); }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; overflow: hidden; font-family: var(--font-sans); font-size: var(--font-size-base); color: var(--color-text-primary); background: var(--color-bg); line-height: var(--line-height-normal); -webkit-font-smoothing: antialiased; }
+    input, textarea, select, button { font-family: inherit; font-size: inherit; }
+    .nav-item { display: flex; align-items: center; gap: var(--spacing-lg); padding: var(--spacing-md) var(--spacing-xl); font-size: var(--font-size-sm); font-weight: var(--font-weight-normal); color: var(--color-sidebar-text); border-radius: var(--radius-md); cursor: pointer; transition: all 0.15s; text-decoration: none; border: none; background: none; width: 100%; text-align: left; }
+    .nav-item:hover { background: var(--color-sidebar-active-bg); color: var(--color-sidebar-text-hover); }
+    .nav-item.active { background: var(--color-sidebar-active-bg); color: var(--color-sidebar-active-text); font-weight: var(--font-weight-medium); }
+    .nav-item svg { width: 16px; height: 16px; flex-shrink: 0; }
+    .tab-item { display: flex; align-items: center; gap: var(--spacing-sm); padding: var(--spacing-sm) var(--spacing-lg); font-size: var(--font-size-sm); font-weight: var(--font-weight-normal); color: var(--color-text-secondary); border-bottom: 2px solid transparent; cursor: pointer; transition: all 0.15s; white-space: nowrap; background: none; border-top: none; border-left: none; border-right: none; }
+    .tab-item:hover { color: var(--color-text-primary); }
+    .tab-item.active { color: var(--color-primary); border-bottom-color: var(--color-primary); font-weight: var(--font-weight-medium); }
+    .btn { display: inline-flex; align-items: center; gap: var(--spacing-sm); padding: var(--spacing-sm) var(--spacing-lg); font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); border-radius: var(--radius-md); cursor: pointer; transition: all 0.15s; white-space: nowrap; border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-text-primary); }
+    .btn:hover { background: var(--color-surface-hover); }
+    .btn svg { width: 14px; height: 14px; }
+    .btn-primary { border-color: var(--color-primary); background: var(--color-primary); color: var(--color-text-inverse); }
+    .btn-primary:hover { background: var(--color-primary-hover); }
+    .btn-ghost { border-color: transparent; color: var(--color-text-secondary); }
+    .btn-ghost:hover { background: var(--color-bg-secondary); }
+    .badge { display: inline-flex; align-items: center; padding: 1px 6px; font-size: var(--font-size-xs); font-weight: var(--font-weight-medium); border-radius: var(--radius-full); }
+    .badge-default { background: var(--color-bg-secondary); color: var(--color-text-secondary); }
+    .badge-primary { background: var(--color-primary-light); color: var(--color-primary); }
+    .badge-success { background: var(--state-success-bg); color: var(--state-success); }
+    .badge-warning { background: var(--state-warning-bg); color: var(--state-warning); }
+    .badge-error { background: var(--state-error-bg); color: var(--state-error); }
+    .card { border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface); }
+    .inp { display: flex; align-items: center; gap: var(--spacing-sm); padding: var(--spacing-sm) var(--spacing-md); font-size: var(--font-size-sm); border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-bg); color: var(--color-text-primary); width: 100%; outline: none; transition: border-color 0.15s; }
+    .inp:focus { border-color: var(--color-primary); }
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: var(--radius-full); }
+    .flow-node { border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface); padding: var(--spacing-lg) var(--spacing-xl); min-width: 140px; text-align: center; cursor: pointer; transition: all 0.15s; position: relative; }
+    .flow-node:hover { border-color: var(--color-primary); }
+    .flow-node.selected { border-color: var(--color-primary); box-shadow: 0 0 0 1px var(--color-primary); }
+    .flow-node .node-icon { width: 28px; height: 28px; border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; margin: 0 auto var(--spacing-sm); }
+    .flow-node .node-icon svg { width: 14px; height: 14px; }
+    .flow-node .node-title { font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); color: var(--color-text-primary); }
+    .flow-node .node-desc { font-size: var(--font-size-xs); color: var(--color-text-secondary); margin-top: var(--spacing-xs); }
+    .connector { position: absolute; width: 40px; height: 1px; background: var(--color-border); }
+    .prop-row { display: flex; align-items: center; gap: var(--spacing-lg); padding: var(--spacing-sm) 0; }
+    .prop-label { font-size: var(--font-size-sm); color: var(--color-text-secondary); width: 56px; flex-shrink: 0; }
+    .prop-field { flex: 1; }
+    </style>
+</head>
+<body>
+<div style="display:flex; height:100vh; width:100vw; overflow:hidden;">
+
+    <!-- SIDEBAR -->
+    <aside style="width:var(--sidebar-width); background:var(--color-sidebar-bg); display:flex; flex-direction:column; flex-shrink:0; border-right:1px solid var(--color-sidebar-border);">
+        <div style="height:56px; padding:0 var(--spacing-xl); display:flex; align-items:center; border-bottom:1px solid var(--color-sidebar-border);">
+            <span style="color:var(--color-text-inverse); font-size:var(--font-size-lg); font-weight:var(--font-weight-semibold);">MetaPlatform</span>
+        </div>
+        <nav style="flex:1; overflow-y:auto; padding:var(--spacing-md) var(--spacing-md); display:flex; flex-direction:column; gap:1px;">
+            <a class="nav-item" data-dom-id="nav-dashboard"><i data-lucide="layout-dashboard"></i><span>工作台</span></a>
+            <a class="nav-item" data-dom-id="nav-superai"><i data-lucide="sparkles"></i><span>SuperAI</span></a>
+            <a class="nav-item" data-dom-id="nav-architecture"><i data-lucide="building-2"></i><span>架构中心</span></a>
+            <a class="nav-item active" data-dom-id="nav-apps"><i data-lucide="app-window"></i><span>应用中心</span></a>
+            <a class="nav-item" data-dom-id="nav-process"><i data-lucide="git-branch"></i><span>流程中心</span></a>
+            <a class="nav-item" data-dom-id="nav-data"><i data-lucide="database"></i><span>数据中心</span></a>
+            <a class="nav-item" data-dom-id="nav-ontology"><i data-lucide="brain"></i><span>本体引擎</span></a>
+            <a class="nav-item" data-dom-id="nav-quality"><i data-lucide="shield-check"></i><span>质量中心</span></a>
+            <a class="nav-item" data-dom-id="nav-knowledge"><i data-lucide="book-open"></i><span>知识库</span></a>
+            <a class="nav-item" data-dom-id="nav-market"><i data-lucide="cloud"></i><span>云市场</span></a>
+            <a class="nav-item" data-dom-id="nav-agents"><i data-lucide="bot"></i><span>数字员工</span></a>
+            <a class="nav-item" data-dom-id="nav-admin"><i data-lucide="settings"></i><span>后台管理</span></a>
+        </nav>
+        <div style="padding:var(--spacing-lg) var(--spacing-xl); border-top:1px solid var(--color-sidebar-border); font-size:var(--font-size-xs); color:var(--color-sidebar-text);">
+            v1.2 · 本体论驱动 AI 平台
+        </div>
+    </aside>
+
+    <!-- MAIN AREA -->
+    <div style="flex:1; display:flex; flex-direction:column; min-width:0;">
+
+        <!-- TOPBAR -->
+        <header style="height:56px; border-bottom:1px solid var(--color-border); background:var(--color-surface); display:flex; align-items:center; padding:0 var(--spacing-xl); flex-shrink:0; gap:var(--spacing-lg);">
+            <div style="width:260px; display:flex; align-items:center; gap:var(--spacing-sm); padding:var(--spacing-sm) var(--spacing-lg); border:1px solid var(--color-border); border-radius:var(--radius-md); background:var(--color-bg-secondary); cursor:pointer;">
+                <i data-lucide="search" style="width:14px; height:14px; color:var(--color-text-secondary);"></i>
+                <span style="font-size:var(--font-size-sm); color:var(--color-text-secondary); flex:1;">搜索或 AI 助手</span>
+                <span style="font-size:var(--font-size-xs); color:var(--color-text-secondary); background:var(--color-bg); padding:1px 4px; border-radius:var(--radius-sm); border:1px solid var(--color-border);">⌘K</span>
+            </div>
+            <div style="flex:1;"></div>
+            <button style="position:relative; background:none; border:none; cursor:pointer; color:var(--color-text-secondary); padding:var(--spacing-sm);">
+                <i data-lucide="bell" style="width:16px; height:16px;"></i>
+                <span style="position:absolute; top:-2px; right:-2px; width:8px; height:8px; background:var(--state-error); border-radius:var(--radius-full); border:1px solid var(--color-surface);"></span>
+            </button>
+            <div style="display:flex; align-items:center; gap:var(--spacing-sm); padding:var(--spacing-sm) var(--spacing-md); border:1px solid var(--color-border); border-radius:var(--radius-md); cursor:pointer; font-size:var(--font-size-sm); color:var(--color-text-primary);">
+                <div style="width:22px; height:22px; border-radius:var(--radius-full); background:rgba(59,130,246,0.15); color:var(--color-primary); font-size:var(--font-size-xs); font-weight:var(--font-weight-medium); display:flex; align-items:center; justify-content:center;">A</div>
+                <span>Admin</span>
+                <i data-lucide="chevron-down" style="width:12px; height:12px;"></i>
+            </div>
+        </header>
+
+        <!-- TAB BAR -->
+        <div style="border-bottom:1px solid var(--color-border); background:var(--color-surface); display:flex; padding:0 var(--spacing-xl); flex-shrink:0; overflow-x:auto;">
+            <button class="tab-item" data-dom-id="tab-apps-list">应用列表</button>
+            <button class="tab-item" data-dom-id="tab-apps-overview">概览</button>
+            <button class="tab-item" data-dom-id="tab-apps-modeling">业务数据建模</button>
+            <button class="tab-item" data-dom-id="tab-apps-pagedesigner">页面设计器</button>
+            <button class="tab-item active" data-dom-id="tab-apps-processdesigner">流程设计器</button>
+            <button class="tab-item" data-dom-id="tab-apps-config">应用配置</button>
+            <button class="tab-item" data-dom-id="tab-apps-publish">应用发布</button>
+            <button class="tab-item" data-dom-id="tab-apps-export">应用导出</button>
+        </div>
+
+        <!-- PAGE CONTENT -->
+        <main style="flex:1; overflow:hidden; display:flex; flex-direction:column;">
+
+            <!-- Flow Designer Toolbar -->
+            <div style="height:40px; border-bottom:1px solid var(--color-border); background:var(--color-surface); display:flex; align-items:center; padding:0 var(--spacing-xl); gap:var(--spacing-lg); flex-shrink:0;">
+                <span style="font-size:var(--font-size-sm); font-weight:var(--font-weight-medium); color:var(--color-text-primary);">CRM 客户管理</span>
+                <span style="font-size:var(--font-size-xs); color:var(--color-text-secondary);">/</span>
+                <span style="font-size:var(--font-size-sm); color:var(--color-text-secondary);">客户审批流程</span>
+                <div style="flex:1;"></div>
+                <button class="btn btn-ghost"><i data-lucide="undo-2" style="width:14px; height:14px;"></i></button>
+                <button class="btn btn-ghost"><i data-lucide="redo-2" style="width:14px; height:14px;"></i></button>
+                <div style="width:1px; height:16px; background:var(--color-border);"></div>
+                <button class="btn btn-ghost"><i data-lucide="zoom-out" style="width:14px; height:14px;"></i></button>
+                <span style="font-size:var(--font-size-xs); color:var(--color-text-secondary); min-width:36px; text-align:center;">100%</span>
+                <button class="btn btn-ghost"><i data-lucide="zoom-in" style="width:14px; height:14px;"></i></button>
+                <button class="btn btn-ghost"><i data-lucide="maximize-2" style="width:14px; height:14px;"></i></button>
+                <div style="width:1px; height:16px; background:var(--color-border);"></div>
+                <button class="btn btn-primary"><i data-lucide="save" style="width:14px; height:14px;"></i> 保存</button>
+            </div>
+
+            <!-- Canvas + Right Panel -->
+            <div style="flex:1; display:flex; overflow:hidden;">
+
+                <!-- Canvas Area -->
+                <div style="flex:1; overflow:auto; background:var(--color-bg-secondary); position:relative;">
+                    <!-- Grid background dots -->
+                    <div style="position:absolute; inset:0; background-image:radial-gradient(circle, var(--color-border) 1px, transparent 1px); background-size:20px 20px; opacity:0.5;"></div>
+                    <div style="position:relative; min-width:800px; min-height:500px; padding:var(--spacing-2xl);">
+                        <svg style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none;" viewBox="0 0 800 500">
+                            <!-- Connector lines -->
+                            <defs>
+                                <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+                                    <polygon points="0 0, 8 3, 0 6" fill="var(--color-text-secondary)" />
+                                </marker>
+                            </defs>
+                            <!-- Start -> Approve -->
+                            <line x1="160" y1="80" x2="160" y2="130" stroke="var(--color-text-secondary)" stroke-width="1.5" marker-end="url(#arrowhead)" />
+                            <!-- Approve -> Process -->
+                            <line x1="160" y1="195" x2="160" y2="240" stroke="var(--color-text-secondary)" stroke-width="1.5" marker-end="url(#arrowhead)" />
+                            <!-- Process -> Decision -->
+                            <line x1="160" y1="310" x2="160" y2="360" stroke="var(--color-text-secondary)" stroke-width="1.5" marker-end="url(#arrowhead)" />
+                            <!-- Decision -> End (approve path) -->
+                            <line x1="220" y1="400" x2="400" y2="400" stroke="var(--state-success)" stroke-width="1.5" marker-end="url(#arrowhead)" />
+                            <!-- Decision -> Approve (reject path - loop back) -->
+                            <line x1="100" y1="400" x2="100" y2="165" stroke="var(--state-error)" stroke-width="1.5" marker-end="url(#arrowhead)" stroke-dasharray="4 2" />
+                            <!-- Labels -->
+                            <text x="310" y="393" font-size="10" fill="var(--state-success)">通过</text>
+                            <text x="55" y="280" font-size="10" fill="var(--state-error)">驳回</text>
+                        </svg>
+
+                        <!-- Flow Nodes positioned absolutely -->
+                        <!-- Start Node -->
+                        <div class="flow-node" style="position:absolute; left:80px; top:30px;">
+                            <div class="node-icon" style="background:var(--state-success-bg); color:var(--state-success);">
+                                <i data-lucide="play"></i>
+                            </div>
+                            <div class="node-title">开始</div>
+                            <div class="node-desc">流程触发</div>
+                        </div>
+
+                        <!-- Approve Node -->
+                        <div class="flow-node selected" style="position:absolute; left:80px; top:140px;">
+                            <div class="node-icon" style="background:var(--color-primary-light); color:var(--color-primary);">
+                                <i data-lucide="user-check"></i>
+                            </div>
+                            <div class="node-title">主管审批</div>
+                            <div class="node-desc">审批节点</div>
+                        </div>
+
+                        <!-- Process Node -->
+                        <div class="flow-node" style="position:absolute; left:80px; top:250px;">
+                            <div class="node-icon" style="background:var(--color-primary-light); color:var(--color-primary);">
+                                <i data-lucide="cpu"></i>
+                            </div>
+                            <div class="node-title">数据处理</div>
+                            <div class="node-desc">自动处理</div>
+                        </div>
+
+                        <!-- Decision Node -->
+                        <div class="flow-node" style="position:absolute; left:80px; top:360px; min-width:140px;">
+                            <div class="node-icon" style="background:var(--state-warning-bg); color:var(--state-warning);">
+                                <i data-lucide="git-merge"></i>
+                            </div>
+                            <div class="node-title">结果判断</div>
+                            <div class="node-desc">条件分支</div>
+                        </div>
+
+                        <!-- End Node -->
+                        <div class="flow-node" style="position:absolute; left:420px; top:360px;">
+                            <div class="node-icon" style="background:var(--state-error-bg); color:var(--state-error);">
+                                <i data-lucide="square"></i>
+                            </div>
+                            <div class="node-title">结束</div>
+                            <div class="node-desc">流程终止</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Node Property Panel -->
+                <div style="width:240px; border-left:1px solid var(--color-border); background:var(--color-surface); overflow-y:auto; flex-shrink:0;">
+                    <div style="padding:var(--spacing-md) var(--spacing-lg); font-size:var(--font-size-sm); font-weight:var(--font-weight-medium); color:var(--color-text-primary); border-bottom:1px solid var(--color-border); display:flex; align-items:center; justify-content:space-between;">
+                        <span>节点属性</span>
+                        <span class="badge badge-primary">审批节点</span>
+                    </div>
+
+                    <div style="padding:var(--spacing-lg);">
+                        <!-- Node Name -->
+                        <div style="margin-bottom:var(--spacing-xl);">
+                            <div style="font-size:var(--font-size-xs); font-weight:var(--font-weight-medium); color:var(--color-text-secondary); margin-bottom:var(--spacing-sm);">节点名称</div>
+                            <input class="inp" value="主管审批" />
+                        </div>
+
+                        <!-- Node Type -->
+                        <div style="margin-bottom:var(--spacing-xl);">
+                            <div style="font-size:var(--font-size-xs); font-weight:var(--font-weight-medium); color:var(--color-text-secondary); margin-bottom:var(--spacing-sm);">节点类型</div>
+                            <select class="inp" style="cursor:pointer;">
+                                <option selected>人工审批</option>
+                                <option>自动处理</option>
+                                <option>条件判断</option>
+                                <option>子流程</option>
+                            </select>
+                        </div>
+
+                        <!-- Approver -->
+                        <div style="margin-bottom:var(--spacing-xl);">
+                            <div style="font-size:var(--font-size-xs); font-weight:var(--font-weight-medium); color:var(--color-text-secondary); margin-bottom:var(--spacing-sm);">审批人</div>
+                            <select class="inp" style="cursor:pointer;">
+                                <option>部门主管</option>
+                                <option>指定人员</option>
+                                <option>角色</option>
+                            </select>
+                        </div>
+
+                        <!-- Timeout -->
+                        <div style="margin-bottom:var(--spacing-xl);">
+                            <div style="font-size:var(--font-size-xs); font-weight:var(--font-weight-medium); color:var(--color-text-secondary); margin-bottom:var(--spacing-sm);">超时设置</div>
+                            <input class="inp" value="24 小时" />
+                        </div>
+
+                        <!-- Actions Section -->
+                        <div style="margin-bottom:var(--spacing-xl);">
+                            <div style="font-size:var(--font-size-xs); font-weight:var(--font-weight-medium); color:var(--color-text-secondary); margin-bottom:var(--spacing-md); padding-bottom:var(--spacing-sm); border-bottom:1px solid var(--color-border);">超时动作</div>
+                            <div style="display:flex; align-items:center; gap:var(--spacing-sm); padding:var(--spacing-sm) 0;">
+                                <span class="prop-label">动作</span>
+                                <div class="prop-field">
+                                    <select class="inp" style="cursor:pointer;">
+                                        <option>自动通过</option>
+                                        <option>自动驳回</option>
+                                        <option>通知上级</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Notification -->
+                        <div style="margin-bottom:var(--spacing-xl);">
+                            <div style="font-size:var(--font-size-xs); font-weight:var(--font-weight-medium); color:var(--color-text-secondary); margin-bottom:var(--spacing-md); padding-bottom:var(--spacing-sm); border-bottom:1px solid var(--color-border);">通知设置</div>
+                            <div style="display:flex; flex-direction:column; gap:var(--spacing-sm);">
+                                <label style="display:flex; align-items:center; gap:var(--spacing-sm); font-size:var(--font-size-sm); color:var(--color-text-primary); cursor:pointer;">
+                                    <input type="checkbox" checked style="accent-color:var(--color-primary);" />
+                                    站内消息
+                                </label>
+                                <label style="display:flex; align-items:center; gap:var(--spacing-sm); font-size:var(--font-size-sm); color:var(--color-text-primary); cursor:pointer;">
+                                    <input type="checkbox" checked style="accent-color:var(--color-primary);" />
+                                    邮件通知
+                                </label>
+                                <label style="display:flex; align-items:center; gap:var(--spacing-sm); font-size:var(--font-size-sm); color:var(--color-text-primary); cursor:pointer;">
+                                    <input type="checkbox" style="accent-color:var(--color-primary);" />
+                                    飞书通知
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Delete -->
+                        <div style="padding-top:var(--spacing-lg); border-top:1px solid var(--color-border); display:flex; gap:var(--spacing-sm);">
+                            <button class="btn" style="flex:1; font-size:var(--font-size-xs); justify-content:center;"><i data-lucide="copy" style="width:12px; height:12px;"></i> 复制</button>
+                            <button class="btn" style="flex:1; font-size:var(--font-size-xs); justify-content:center; color:var(--state-error); border-color:var(--state-error);"><i data-lucide="trash-2" style="width:12px; height:12px;"></i> 删除</button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+</div>
+<script>lucide.createIcons();</script>
+</body>
+</html>

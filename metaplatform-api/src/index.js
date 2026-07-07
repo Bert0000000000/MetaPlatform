@@ -40,7 +40,9 @@ import filesystemRoutes from "./routes/filesystem.js";
 import orchestrationsRoutes from "./routes/orchestrations.js";
 import ocrRoutes from "./routes/ocr.js";
 import architectureRoutes from "./routes/architecture.js";
+import storageRoutes from "./routes/storage.js";
 import { cacheMiddleware, redisHealthCheck } from "./middleware/cache.js";
+import { initAll, healthCheckAll } from "./integrations/index.js";
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -101,19 +103,28 @@ app.use("/api/orchestrations", authenticate, cacheMiddleware(30), orchestrations
 app.use("/api/ocr", authenticate, cacheMiddleware(30), ocrRoutes);
 app.use("/api/architecture", authenticate, cacheMiddleware(60), architectureRoutes);
 
+// Phase 2: Unified storage layer endpoints (Neo4j / ES / Milvus / MinIO / Kafka)
+app.use("/api/storage", authenticate, storageRoutes);
+
 // ─── Health check (public, optional auth) ────────────────
 app.get("/api/health", optionalAuth, async (_req, res) => {
-  const redisStatus = await redisHealthCheck();
-  const dbStatus = process.env.DATABASE_URL ? "postgresql" : "sqlite";
-  res.json({
-    success: true,
-    data: {
-      status: "ok",
-      database: dbStatus,
-      cache: redisStatus.status,
-      timestamp: new Date().toISOString(),
-    },
-  });
+  try {
+    const redisStatus = await redisHealthCheck();
+    const dbStatus = process.env.DATABASE_URL ? "postgresql" : "sqlite";
+    const storageHealth = await healthCheckAll().catch((e) => ({ error: e.message }));
+    res.json({
+      success: true,
+      data: {
+        status: "ok",
+        database: dbStatus,
+        cache: redisStatus.status,
+        storage: storageHealth,
+        timestamp: new Date().toISOString(),
+      },
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
 });
 
 // ─── Error handler ──────────────────────────────────────
@@ -125,9 +136,23 @@ app.use((err, _req, res, _next) => {
   });
 });
 
-// ─── Start server ───────────────────────────────────────
-app.listen(PORT, () => {
-  console.log(`\n  MetaPlatform API server running at:`);
-  console.log(`  -> http://localhost:${PORT}`);
-  console.log(`  -> Press Ctrl+C to stop\n`);
+// ─── Initialize storage backends ───────────────────────
+async function bootstrap() {
+  try {
+    await initAll();
+  } catch (err) {
+    console.warn("[Bootstrap] initAll failed:", err.message);
+  }
+
+  // ─── Start server ───────────────────────────────────────
+  app.listen(PORT, () => {
+    console.log(`\n  MetaPlatform API server running at:`);
+    console.log(`  -> http://localhost:${PORT}`);
+    console.log(`  -> Press Ctrl+C to stop\n`);
+  });
+}
+
+bootstrap().catch((err) => {
+  console.error("[Bootstrap] Fatal error:", err);
+  process.exit(1);
 });

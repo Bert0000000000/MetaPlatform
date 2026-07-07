@@ -1,0 +1,9 @@
+{
+  "dependencies": {
+    "@elastic/elasticsearch": "^9.4.2",
+    "@zilliz/milvus2-sdk-node": "^3.0.3",
+    "kafkajs": "^2.2.4",
+    "minio": "^8.0.7",
+    "neo4j-driver": "^6.2.0"
+  }
+}

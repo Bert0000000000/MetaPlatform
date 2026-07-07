@@ -157,4 +157,180 @@
             <div style="max-width:1280px; margin:0 auto; padding:var(--spacing-2xl) var(--spacing-2xl);">
 
                 <!-- Header -->
-                <div style="display:flex; align-items:center; justify-content:
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:var(--spacing-2xl);">
+                    <div>
+                        <div style="display:flex; align-items:center; gap:var(--spacing-lg); margin-bottom:var(--spacing-xs);">
+                            <i data-lucide="app-window" style="width:20px; height:20px; color:var(--color-primary);"></i>
+                            <h1 style="font-size:var(--font-size-xl); font-weight:var(--font-weight-semibold); color:var(--color-text-primary);">应用概览</h1>
+                        </div>
+                        <p style="font-size:var(--font-size-sm); color:var(--color-text-secondary); margin-left:32px;">查看应用整体运营情况</p>
+                    </div>
+                </div>
+
+                <!-- Stats Row -->
+                <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:var(--spacing-xl); margin-bottom:var(--spacing-xl);">
+                    <div class="card" style="padding:var(--spacing-xl); text-align:center;">
+                        <div style="font-size:var(--font-size-sm); color:var(--color-text-secondary); margin-bottom:var(--spacing-md);">总应用</div>
+                        <div style="font-size:var(--font-size-2xl); font-weight:var(--font-weight-semibold); color:var(--color-text-primary);">11</div>
+                    </div>
+                    <div class="card" style="padding:var(--spacing-xl); text-align:center;">
+                        <div style="font-size:var(--font-size-sm); color:var(--color-text-secondary); margin-bottom:var(--spacing-md);">总对象</div>
+                        <div style="font-size:var(--font-size-2xl); font-weight:var(--font-weight-semibold); color:var(--color-text-primary);">86</div>
+                    </div>
+                    <div class="card" style="padding:var(--spacing-xl); text-align:center;">
+                        <div style="font-size:var(--font-size-sm); color:var(--color-text-secondary); margin-bottom:var(--spacing-md);">总页面</div>
+                        <div style="font-size:var(--font-size-2xl); font-weight:var(--font-weight-semibold); color:var(--color-text-primary);">58</div>
+                    </div>
+                    <div class="card" style="padding:var(--spacing-xl); text-align:center;">
+                        <div style="font-size:var(--font-size-sm); color:var(--color-text-secondary); margin-bottom:var(--spacing-md);">总流程</div>
+                        <div style="font-size:var(--font-size-2xl); font-weight:var(--font-weight-semibold); color:var(--color-text-primary);">18</div>
+                    </div>
+                </div>
+
+                <!-- Activity Chart -->
+                <div class="card" style="padding:var(--spacing-xl); margin-bottom:var(--spacing-xl);">
+                    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:var(--spacing-xl);">
+                        <span style="font-size:var(--font-size-sm); font-weight:var(--font-weight-medium); color:var(--color-text-primary);">应用活跃度</span>
+                        <div style="display:flex; gap:var(--spacing-sm);">
+                            <button class="btn btn-ghost" style="font-size:var(--font-size-xs);">周</button>
+                            <button class="btn btn-ghost" style="font-size:var(--font-size-xs); border:1px solid var(--color-border);">月</button>
+                        </div>
+                    </div>
+                    <svg viewBox="0 0 600 180" style="width:100%; height:180px;">
+                        <!-- Grid lines -->
+                        <line x1="0" y1="36" x2="600" y2="36" stroke="var(--color-border)" stroke-width="1" stroke-dasharray="4,4"/>
+                        <line x1="0" y1="72" x2="600" y2="72" stroke="var(--color-border)" stroke-width="1" stroke-dasharray="4,4"/>
+                        <line x1="0" y1="108" x2="600" y2="108" stroke="var(--color-border)" stroke-width="1" stroke-dasharray="4,4"/>
+                        <line x1="0" y1="144" x2="600" y2="144" stroke="var(--color-border)" stroke-width="1"/>
+                        <!-- Area fill -->
+                        <polygon points="50,108 140,72 230,90 320,54 410,36 500,60 560,45 560,144 50,144" fill="var(--color-primary)" opacity="0.08"/>
+                        <!-- Line -->
+                        <polyline points="50,108 140,72 230,90 320,54 410,36 500,60 560,45" fill="none" stroke="var(--color-primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <!-- Dots -->
+                        <circle cx="50" cy="108" r="3" fill="var(--color-primary)"/>
+                        <circle cx="140" cy="72" r="3" fill="var(--color-primary)"/>
+                        <circle cx="230" cy="90" r="3" fill="var(--color-primary)"/>
+                        <circle cx="320" cy="54" r="3" fill="var(--color-primary)"/>
+                        <circle cx="410" cy="36" r="3" fill="var(--color-primary)"/>
+                        <circle cx="500" cy="60" r="3" fill="var(--color-primary)"/>
+                        <circle cx="560" cy="45" r="3" fill="var(--color-primary)"/>
+                        <!-- Labels -->
+                        <text x="50" y="166" text-anchor="middle" font-size="11" fill="var(--color-text-secondary)">周一</text>
+                        <text x="140" y="166" text-anchor="middle" font-size="11" fill="var(--color-text-secondary)">周二</text>
+                        <text x="230" y="166" text-anchor="middle" font-size="11" fill="var(--color-text-secondary)">周三</text>
+                        <text x="320" y="166" text-anchor="middle" font-size="11" fill="var(--color-text-secondary)">周四</text>
+                        <text x="410" y="166" text-anchor="middle" font-size="11" fill="var(--color-text-secondary)">周五</text>
+                        <text x="500" y="166" text-anchor="middle" font-size="11" fill="var(--color-text-secondary)">周六</text>
+                        <text x="560" y="166" text-anchor="middle" font-size="11" fill="var(--color-text-secondary)">周日</text>
+                    </svg>
+                </div>
+
+                <!-- Bottom Grid -->
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:var(--spacing-xl);">
+                    <!-- Recent Deployments -->
+                    <div class="card" style="padding:var(--spacing-xl);">
+                        <div style="font-size:var(--font-size-sm); font-weight:var(--font-weight-medium); color:var(--color-text-primary); margin-bottom:var(--spacing-xl);">最近部署</div>
+                        <div style="display:flex; flex-direction:column; gap:var(--spacing-lg);">
+                            <div style="display:flex; align-items:center; justify-content:space-between;">
+                                <div style="display:flex; align-items:center; gap:var(--spacing-lg);">
+                                    <span style="font-size:var(--font-size-xs); color:var(--color-text-secondary); width:80px;">10:30</span>
+                                    <span style="font-size:var(--font-size-sm); color:var(--color-text-primary);">CRM客户管理</span>
+                                </div>
+                                <div style="display:flex; align-items:center; gap:var(--spacing-sm);">
+                                    <span style="font-size:var(--font-size-xs); color:var(--color-text-secondary);">v2.1.0</span>
+                                    <span class="badge badge-success">成功</span>
+                                </div>
+                            </div>
+                            <div style="display:flex; align-items:center; justify-content:space-between;">
+                                <div style="display:flex; align-items:center; gap:var(--spacing-lg);">
+                                    <span style="font-size:var(--font-size-xs); color:var(--color-text-secondary); width:80px;">09:15</span>
+                                    <span style="font-size:var(--font-size-sm); color:var(--color-text-primary);">OA办公系统</span>
+                                </div>
+                                <div style="display:flex; align-items:center; gap:var(--spacing-sm);">
+                                    <span style="font-size:var(--font-size-xs); color:var(--color-text-secondary);">v1.8.3</span>
+                                    <span class="badge badge-success">成功</span>
+                                </div>
+                            </div>
+                            <div style="display:flex; align-items:center; justify-content:space-between;">
+                                <div style="display:flex; align-items:center; gap:var(--spacing-lg);">
+                                    <span style="font-size:var(--font-size-xs); color:var(--color-text-secondary); width:80px;">昨日 18:20</span>
+                                    <span style="font-size:var(--font-size-sm); color:var(--color-text-primary);">BPM流程引擎</span>
+                                </div>
+                                <div style="display:flex; align-items:center; gap:var(--spacing-sm);">
+                                    <span style="font-size:var(--font-size-xs); color:var(--color-text-secondary);">v3.0.1</span>
+                                    <span class="badge badge-warning">进行中</span>
+                                </div>
+                            </div>
+                            <div style="display:flex; align-items:center; justify-content:space-between;">
+                                <div style="display:flex; align-items:center; gap:var(--spacing-lg);">
+                                    <span style="font-size:var(--font-size-xs); color:var(--color-text-secondary); width:80px;">昨日 14:05</span>
+                                    <span style="font-size:var(--font-size-sm); color:var(--color-text-primary);">BI数据分析</span>
+                                </div>
+                                <div style="display:flex; align-items:center; gap:var(--spacing-sm);">
+                                    <span style="font-size:var(--font-size-xs); color:var(--color-text-secondary);">v1.2.7</span>
+                                    <span class="badge badge-success">成功</span>
+                                </div>
+                            </div>
+                            <div style="display:flex; align-items:center; justify-content:space-between;">
+                                <div style="display:flex; align-items:center; gap:var(--spacing-lg);">
+                                    <span style="font-size:var(--font-size-xs); color:var(--color-text-secondary); width:80px;">昨日 10:00</span>
+                                    <span style="font-size:var(--font-size-sm); color:var(--color-text-primary);">HR人力系统</span>
+                                </div>
+                                <div style="display:flex; align-items:center; gap:var(--spacing-sm);">
+                                    <span style="font-size:var(--font-size-xs); color:var(--color-text-secondary);">v2.5.0</span>
+                                    <span class="badge badge-error">失败</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Top 5 Apps -->
+                    <div class="card" style="padding:var(--spacing-xl);">
+                        <div style="font-size:var(--font-size-sm); font-weight:var(--font-weight-medium); color:var(--color-text-primary); margin-bottom:var(--spacing-xl);">热门应用 TOP5</div>
+                        <div style="display:flex; flex-direction:column; gap:var(--spacing-lg);">
+                            <div style="display:flex; align-items:center; justify-content:space-between;">
+                                <div style="display:flex; align-items:center; gap:var(--spacing-lg);">
+                                    <span style="width:18px; height:18px; border-radius:var(--radius-full); background:var(--color-primary); color:var(--color-text-inverse); font-size:var(--font-size-xs); font-weight:var(--font-weight-medium); display:flex; align-items:center; justify-content:center;">1</span>
+                                    <span style="font-size:var(--font-size-sm); color:var(--color-text-primary);">CRM客户管理</span>
+                                </div>
+                                <span style="font-size:var(--font-size-sm); color:var(--color-text-secondary);">2,450 次/日</span>
+                            </div>
+                            <div style="display:flex; align-items:center; justify-content:space-between;">
+                                <div style="display:flex; align-items:center; gap:var(--spacing-lg);">
+                                    <span style="width:18px; height:18px; border-radius:var(--radius-full); background:var(--color-primary-light); color:var(--color-primary); font-size:var(--font-size-xs); font-weight:var(--font-weight-medium); display:flex; align-items:center; justify-content:center;">2</span>
+                                    <span style="font-size:var(--font-size-sm); color:var(--color-text-primary);">OA办公系统</span>
+                                </div>
+                                <span style="font-size:var(--font-size-sm); color:var(--color-text-secondary);">1,890 次/日</span>
+                            </div>
+                            <div style="display:flex; align-items:center; justify-content:space-between;">
+                                <div style="display:flex; align-items:center; gap:var(--spacing-lg);">
+                                    <span style="width:18px; height:18px; border-radius:var(--radius-full); background:var(--color-bg-secondary); color:var(--color-text-secondary); font-size:var(--font-size-xs); font-weight:var(--font-weight-medium); display:flex; align-items:center; justify-content:center;">3</span>
+                                    <span style="font-size:var(--font-size-sm); color:var(--color-text-primary);">BI数据分析</span>
+                                </div>
+                                <span style="font-size:var(--font-size-sm); color:var(--color-text-secondary);">1,520 次/日</span>
+                            </div>
+                            <div style="display:flex; align-items:center; justify-content:space-between;">
+                                <div style="display:flex; align-items:center; gap:var(--spacing-lg);">
+                                    <span style="width:18px; height:18px; border-radius:var(--radius-full); background:var(--color-bg-secondary); color:var(--color-text-secondary); font-size:var(--font-size-xs); font-weight:var(--font-weight-medium); display:flex; align-items:center; justify-content:center;">4</span>
+                                    <span style="font-size:var(--font-size-sm); color:var(--color-text-primary);">BPM流程引擎</span>
+                                </div>
+                                <span style="font-size:var(--font-size-sm); color:var(--color-text-secondary);">980 次/日</span>
+                            </div>
+                            <div style="display:flex; align-items:center; justify-content:space-between;">
+                                <div style="display:flex; align-items:center; gap:var(--spacing-lg);">
+                                    <span style="width:18px; height:18px; border-radius:var(--radius-full); background:var(--color-bg-secondary); color:var(--color-text-secondary); font-size:var(--font-size-xs); font-weight:var(--font-weight-medium); display:flex; align-items:center; justify-content:center;">5</span>
+                                    <span style="font-size:var(--font-size-sm); color:var(--color-text-primary);">HR人力系统</span>
+                                </div>
+                                <span style="font-size:var(--font-size-sm); color:var(--color-text-secondary);">756 次/日</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+</div>
+<script>lucide.createIcons();</script>
+</body>
+</html>

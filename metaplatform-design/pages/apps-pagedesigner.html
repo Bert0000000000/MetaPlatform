@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html class="light" lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>应用中心 - 页面设计器 - MetaPlatform</title>
+    <style id="theme-vars">
+:root {
+  --color-primary: #3b82f6;
+  --color-primary-hover: #2563eb;
+  --color-primary-light: #eff6ff;
+  --color-bg: #ffffff;
+  --color-bg-secondary: #f8fafc;
+  --color-surface: #ffffff;
+  --color-surface-hover: #f8fafc;
+  --color-sidebar-bg: #0f172a;
+  --color-sidebar-text: #94a3b8;
+  --color-sidebar-text-hover: #cbd5e1;
+  --color-sidebar-active-bg: rgba(59, 130, 246, 0.15);
+  --color-sidebar-active-text: #60a5fa;
+  --color-sidebar-border: rgba(148, 163, 184, 0.1);
+  --color-text-primary: #0f172a;
+  --color-text-secondary: #64748b;
+  --color-text-inverse: #ffffff;
+  --color-border: #e2e8f0;
+  --state-success: #22c55e;
+  --state-success-bg: #f0fdf4;
+  --state-warning: #f59e0b;
+  --state-warning-bg: #fffbeb;
+  --state-error: #ef4444;
+  --state-error-bg: #fef2f2;
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans SC", sans-serif;
+  --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  --font-size-xs: 11px;
+  --font-size-sm: 12px;
+  --font-size-base: 13px;
+  --font-size-lg: 14px;
+  --font-size-xl: 18px;
+  --font-size-2xl: 22px;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --line-height-normal: 1.5;
+  --spacing-xs: 2px;
+  --spacing-sm: 4px;
+  --spacing-md: 8px;
+  --spacing-lg: 12px;
+  --spacing-xl: 16px;
+  --spacing-2xl: 24px;
+  --radius-sm: 3px;
+  --radius-md: 4px;
+  --radius-lg: 6px;
+  --radius-full: 9999px;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-float: 0 8px 24px rgba(0, 0, 0, 0.1);
+  --sidebar-width: 220px;
+}
+    </style>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+    @theme inline { --color-primary: var(--color-primary); --color-border: var(--color-border); }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; overflow: hidden; font-family: var(--font-sans); font-size: var(--font-size-base); color: var(--color-text-primary); background: var(--color-bg); line-height: var(--line-height-normal); -webkit-font-smoothing: antialiased; }
+    input, textarea, select, button { font-family: inherit; font-size: inherit; }
+    .nav-item { display: flex; align-items: center; gap: var(--spacing-lg); padding: var(--spacing-md) var(--spacing-xl); font-size: var(--font-size-sm); font-weight: var(--font-weight-normal); color: var(--color-sidebar-text); border-radius: var(--radius-md); cursor: pointer; transition: all 0.15s; text-decoration: none; border: none; background: none; width: 100%; text-align: left; }
+    .nav-item:hover { background: var(--color-sidebar-active-bg); color: var(--color-sidebar-text-hover); }
+    .nav-item.active { background: var(--color-sidebar-active-bg); color: var(--color-sidebar-active-text); font-weight: var(--font-weight-medium); }
+    .nav-item svg { width: 16px; height: 16px; flex-shrink: 0; }
+    .tab-item { display: flex; align-items: center; gap: var(--spacing-sm); padding: var(--spacing-sm) var(--spacing-lg); font-size: var(--font-size-sm); font-weight: var(--font-weight-normal); color: var(--color-text-secondary); border-bottom: 2px solid transparent; cursor: pointer; transition: all 0.15s; white-space: nowrap; background: none; border-top: none; border-left: none; border-right: none; }
+    .tab-item:hover { color: var(--color-text-primary); }
+    .tab-item.active { color: var(--color-primary); border-bottom-color: var(--color-primary); font-weight: var(--font-weight-medium); }
+    .btn { display: inline-flex; align-items: center; gap: var(--spacing-sm); padding: var(--spacing-sm) var(--spacing-lg); font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); border-radius: var(--radius-md); cursor: pointer; transition: all 0.15s; white-space: nowrap; border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-text-primary); }
+    .btn:hover { background: var(--color-surface-hover); }
+    .btn svg { width: 14px; height: 14px; }
+    .btn-primary { border-color: var(--color-primary); background: var(--color-primary); color: var(--color-text-inverse); }
+    .btn-primary:hover { background: var(--color-primary-hover); }
+    .btn-ghost { border-color: transparent; color: var(--color-text-secondary); }
+    .btn-ghost:hover { background: var(--color-bg-secondary); }
+    .badge { display: inline-flex; align-items: center; padding: 1px 6px; font-size: var(--font-size-xs); font-weight: var(--font-weight-medium); border-radius: var(--radius-full); }
+    .badge-default { background: var(--color-bg-secondary); color: var(--color-text-secondary); }
+    .badge-primary { background: var(--color-primary-light); color: var(--color-primary); }
+    .badge-success { background: var(--state-success-bg); color: var(--state-success); }
+    .badge-warning { background: var(--state-warning-bg); color: var(--state-warning); }
+    .badge-error { background: var(--state-error-bg); color: var(--state-error); }
+    .card { border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface); }
+    .inp { display: flex; align-items: center; gap: var(--spacing-sm); padding: var(--spacing-sm) var(--spacing-md); font-size: var(--font-size-sm); border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-bg); color: var(--color-text-primary); width: 100%; outline: none; transition: border-color 0.15s; }
+    .inp:focus { border-color: var(--color-primary); }
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: var(--radius-full); }
+    .comp-item { display: flex; align-items: center; gap: var(--spacing-md); padding: var(--spacing-sm) var(--spacing-md); font-size: var(--font-size-sm); color: var(--color-text-secondary); border-radius: var(--radius-md); cursor: grab; transition: all 0.15s; }
+    .comp-item:hover { background: var(--color-surface-hover); color: var(--color-text-primary); }
+    .comp-item svg { width: 14px; height: 14px; flex-shrink: 0; color: var(--color-text-secondary); }
+    .prop-row { display: flex; align-items: center; gap: var(--spacing-lg); padding: var(--spacing-sm) 0; }
+    .prop-label { font-size: var(--font-size-sm); color: var(--color-text-secondary); width: 56px; flex-shrink: 0; }
+    .prop-field { flex: 1; }
+    .canvas-placeholder { border: 1px dashed var(--color-border); border-radius: var(--radius-md); padding: var(--spacing-2xl); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--spacing-lg); color: var(--color-text-secondary); font-size: var(--font-size-sm); background: rgba(59,130,246,0.02); }
+    .canvas-el { border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); }
+    .canvas-el.selected { border-color: var(--color-primary); box-shadow: 0 0 0 1px var(--color-primary); }
+    </style>
+</head>
+<body>
+<div style="display:flex; height:100vh; width:100vw; overflow:hidden;">
+
+    <!-- SIDEBAR -->
+    <aside style="width:var(--sidebar-width); background:var(--color-sidebar-bg); display:flex; flex-direction:column; flex-shrink:0; border-right:1px solid var(--color-sidebar-border);">
+        <div style="height:56px; padding:0 var(--spacing-xl); display:flex; align-items:center; border-bottom:1px solid var(--color-sidebar-border);">
+            <span style="color:var(--color-text-inverse); font-size:var(--font-size-lg); font-weight:var(--font-weight-semibold);">MetaPlatform</span>
+        </div>
+        <nav style="flex:1; overflow-y:auto; padding:var(--spacing-md) var(--spacing-md); display:flex; flex-direction:column; gap:1px;">
+            <a class="nav-item" data-dom-id="nav-dashboard"><i data-lucide="layout-dashboard"></i><span>工作台</span></a>
+            <a class="nav-item" data-dom-id="nav-superai"><i data-lucide="sparkles"></i><span>SuperAI</span></a>
+            <a class="nav-item" data-dom-id="nav-architecture"><i data-lucide="building-2"></i><span>架构中心</span></a>
+            <a class="nav-item active" data-dom-id="nav-apps"><i data-lucide="app-window"></i><span>应用中心</span></a>
+            <a class="nav-item" data-dom-id="nav-process"><i data-lucide="git-branch"></i><span>流程中心</span></a>
+            <a class="nav-item" data-dom-id="nav-data"><i data-lucide="database"></i><span>数据中心</span></a>
+            <a class="nav-item" data-dom-id="nav-ontology"><i data-lucide="brain"></i><span>本体引擎</span></a>
+            <a class="nav-item" data-dom-id="nav-quality"><i data-lucide="shield-check"></i><span>质量中心</span></a>
+            <a class="nav-item" data-dom-id="nav-knowledge"><i data-lucide="book-open"></i><span>知识库</span></a>
+            <a class="nav-item" data-dom-id="nav-market"><i data-lucide="cloud"></i><span>云市场</span></a>
+            <a class="nav-item" data-dom-id="nav-agents"><i data-lucide="bot"></i><span>数字员工</span></a>
+            <a class="nav-item" data-dom-id="nav-admin"><i data-lucide="settings"></i><span>后台管理</span></a>
+        </nav>
+        <div style="padding:var(--spacing-lg) var(--spacing-xl); border-top:1px solid var(--color-sidebar-border); font-size:var(--font-size-xs); color:var(--color-sidebar-text);">
+            v1.2 · 本体论驱动 AI 平台
+        </div>
+    </aside>
+
+    <!-- MAIN AREA -->
+    <div style="flex:1; display:flex; flex-direction:column; min-width:0;">
+
+        <!-- TOPBAR -->
+        <header style="height:56px; border-bottom:1px solid var(--color-border); background:var(--color-surface); display:flex; align-items:center; padding:0 var(--spacing-xl); flex-shrink:0; gap:var(--spacing-lg);">
+            <div style="width:260px; display:flex; align-items:center; gap:var(--spacing-sm); padding:var(--spacing-sm) var(--spacing-lg); border:1px solid var(--color-border); border-radius:var(--radius-md); background:var(--color-bg-secondary); cursor:pointer;">
+                <i data-lucide="search" style="width:14px; height:14px; color:var(--color-text-secondary);"></i>
+                <span style="font-size:var(--font-size-sm); color:var(--color-text-secondary); flex:1;">搜索或 AI 助手</span>
+                <span style="font-size:var(--font-size-xs); color:var(--color-text-secondary); background:var(--color-bg); padding:1px 4px; border-radius:var(--radius-sm); border:1px solid var(--color-border);">⌘K</span>
+            </div>
+            <div style="flex:1;"></div>
+            <button style="position:relative; background:none; border:none; cursor:pointer; color:var(--color-text-secondary); padding:var(--spacing-sm);">
+                <i data-lucide="bell" style="width:16px; height:16px;"></i>
+                <span style="position:absolute; top:-2px; right:-2px; width:8px; height:8px; background:var(--state-error); border-radius:var(--radius-full); border:1px solid var(--color-surface);"></span>
+            </button>
+            <div style="display:flex; align-items:center; gap:var(--spacing-sm); padding:var(--spacing-sm) var(--spacing-md); border:1px solid var(--color-border); border-radius:var(--radius-md); cursor:pointer; font-size:var(--font-size-sm); color:var(--color-text-primary);">
+                <div style="width:22px; height:22px; border-radius:var(--radius-full); background:rgba(59,130,246,0.15); color:var(--color-primary); font-size:var(--font-size-xs); font-weight:var(--font-weight-medium); display:flex; align-items:center; justify-content:center;">A</div>
+                <span>Admin</span>
+                <i data-lucide="chevron-down" style="width:12px; height:12px;"></i>
+            </div>
+        </header>
+
+        <!-- TAB BAR -->
+        <div style="border-bottom:1px solid var(--color-border); background:var(--color-surface); display:flex; padding:0 var(--spacing-xl); flex-shrink:0; overflow-x:auto;">
+            <button class="tab-item" data-dom-id="tab-apps-list">应用列表</button>
+            <button class="tab-item" data-dom-id="tab-apps-overview">概览</button>
+            <button class="tab-item" data-dom-id="tab-apps-modeling">业务数据建模</button>
+            <button class="tab-item active" data-dom-id="tab-apps-pagedesigner">页面设计器</button>
+            <button class="tab-item" data-dom-id="tab-apps-processdesigner">流程设计器</button>
+            <button class="tab-item" data-dom-id="tab-apps-config">应用配置</button>
+            <button class="tab-item" data-dom-id="tab-apps-publish">应用发布</button>
+            <button class="tab-item" data-dom-id="tab-apps-export">应用导出</button>
+        </div>
+
+        <!-- PAGE CONTENT: 3-column page designer -->
+        <main style="flex:1; overflow:hidden; display:flex; flex-direction:column;">
+
+            <!-- Designer Toolbar -->
+            <div style="height:40px; border-bottom:1px solid var(--color-border); background:var(--color-surface); display:flex; align-items:center; padding:0 var(--spacing-xl); gap:var(--spacing-lg); flex-shrink:0;">
+                <span style="font-size:var(--font-size-sm); font-weight:var(--font-weight-medium); color:var(--color-text-primary);">CRM 客户管理</span>
+                <span style="font-size:var(--font-size-xs); color:var(--color-text-secondary);">/</span>
+                <span style="font-size:var(--font-size-sm); color:var(--color-text-secondary);">客户列表页</span>
+                <div style="flex:1;"></div>
+                <button class="btn btn-ghost"><i data-lucide="undo-2" style="width:14px; height:14px;"></i></button>
+                <button class="btn btn-ghost"><i data-lucide="redo-2" style="width:14px; height:14px;"></i></button>
+                <div style="width:1px; height:16px; background:var(--color-border);"></div>
+                <button class="btn btn-ghost"><i data-lucide="eye" style="width:14px; height:14px;"></i> 预览</button>
+                <button class="btn btn-primary"><i data-lucide="save" style="width:14px; height:14px;"></i> 保存</button>
+            </div>
+
+            <!-- 3-column layout -->
+            <div style="flex:1; display:flex; overflow:hidden;">
+
+                <!-- Left: Component Panel -->
+                <div style="width:220px; border-right:1px solid var(--color-border); background:var(--color-surface); overflow-y:auto; flex-shrink:0;">
+                    <div style="padding:var(--spacing-md) var(--spacing-lg); font-size:var(--font-size-sm); font-weight:var(--font-weight-medium); color:var(--color-text-primary); border-bottom:1px solid var(--color-border);">组件面板</div>
+
+                    <!-- Basic Components -->
+                    <div style="padding:var(--spacing-sm) var(--spacing-md);">
+                        <div style="padding:var(--spacing-sm) var(--spacing-md); font-size:var(--font-size-xs); font-weight:var(--font-weight-medium); color:var(--color-text-secondary); text-transform:uppercase; letter-spacing:0.5px;">基础组件</div>
+                        <div class="comp-item"><i data-lucide="type"></i><span>文本</span></div>
+                        <div class="comp-item"><i data-lucide="image"></i><span>图片</span></div>
+                        <div class="comp-item"><i data-lucide="link"></i><span>链接</span></div>
+                        <div class="comp-item"><i data-lucide="minus"></i><span>分割线</span></div>
+                        <div class="comp-item"><i data-lucide="layout-grid"></i><span>栅格</span></div>
+                    </div>
+
+                    <!-- Form Components -->
+                    <div style="padding:var(--spacing-sm) var(--spacing-md);">
+                        <div style="padding:var(--spacing-sm) var(--spacing-md); font-size:var(--font-size-xs); font-weight:var(--font-weight-medium); color:var(--color-text-secondary); text-transform:uppercase; letter-spacing:0.5px;">表单组件</div>
+                        <div class="comp-item"><i data-lucide="text-cursor-input"></i><span>输入框</span></div>
+                        <div class="comp-item"><i data-lucide="text-cursor"></i><span>文本域</span></div>
+                        <div class="comp-item"><i data-lucide="list"></i><span>下拉选择</span></div>
+                        <div class="comp-item"><i data-lucide="check-square"></i><span>复选框</span></div>
+                        <div class="comp-item"><i data-lucide="calendar"></i><span>日期选择</span></div>
+                    </div>
+
+                    <!-- Data Components -->
+                    <div style="padding:var(--spacing-sm) var(--spacing-md);">
+                        <div style="padding:var(--spacing-sm) var(--spacing-md); font-size:var(--font-size-xs); font-weight:var(--font-weight-medium); color:var(--color-text-secondary); text-transform:uppercase; letter-spacing:0.5px;">数据组件</div>
+                        <div class="comp-item"><i data-lucide="table-2"></i><span>数据表格</span></div>
+                        <div class="comp-item"><i data-lucide="bar-chart-3"></i><span>图表</span></div>
+                        <div class="comp-item"><i data-lucide="list-ordered"></i><span>列表视图</span></div>
+                        <div class="comp-item"><i data-lucide="credit-card"></i><span>详情卡片</span></div>
+                    </div>
+                </div>
+
+                <!-- Center: Canvas -->
+                <div style="flex:1; overflow:auto; background:var(--color-bg-secondary); position:relative;">
+                    <div style="max-width:900px; margin:var(--spacing-2xl) auto; padding:var(--spacing-2xl);">
+                        <!-- Page Header -->
+                        <div class="canvas-el" style="padding:var(--spacing-lg) var(--spacing-xl); margin-bottom:var(--spacing-lg); display:flex; align-items:center; justify-content:space-between;">
+                            <div style="display:flex; align-items:center; gap:var(--spacing-lg);">
+                                <i data-lucide="arrow-left" style="width:16px; height:16px; color:var(--color-text-secondary);"></i>
+                                <span style="font-size:var(--font-size-lg); font-weight:var(--font-weight-medium);">客户列表</span>
+                            </div>
+                            <button class="btn btn-primary" style="font-size:var(--font-size-xs); padding:var(--spacing-xs) var(--spacing-md);"><i data-lucide="plus" style="width:12px; height:12px;"></i> 新建客户</button>
+                        </div>
+
+                        <!-- Search Bar -->
+                        <div class="canvas-el" style="padding:var(--spacing-md) var(--spacing-xl); margin-bottom:var(--spacing-lg); display:flex; align-items:center; gap:var(--spacing-md);">
+                            <div style="flex:1; display:flex; align-items:center; gap:var(--spacing-sm); padding:var(--spacing-sm) var(--spacing-md); border:1px solid var(--color-border); border-radius:var(--radius-md); background:var(--color-bg);">
+                                <i data-lucide="search" style="width:14px; height:14px; color:var(--color-text-secondary);"></i>
+                                <span style="font-size:var(--font-size-sm); color:var(--color-text-secondary);">搜索客户名称、联系人...</span>
+                            </div>
+                            <button class="btn" style="font-size:var(--font-size-xs);"><i data-lucide="filter" style="width:12px; height:12px;"></i> 筛选</button>
+                            <button class="btn" style="font-size:var(--font-size-xs);"><i data-lucide="sliders-horizontal" style="width:12px; height:12px;"></i> 排序</button>
+                        </div>
+
+                        <!-- Data Table -->
+                        <div class="canvas-el selected" style="overflow:hidden;">
+                            <div style="display:flex; align-items:center; padding:var(--spacing-md) var(--spacing-xl); border-bottom:1px solid var(--color-border); font-size:var(--font-size-sm); color:var(--color-text-secondary); background:var(--color-bg-secondary);">
+                                <div style="flex:2;">客户名称</div>
+                                <div style="flex:2;">联系人</div>
+                                <div style="flex:1;">状态</div>
+                                <div style="flex:1;">创建时间</div>
+                                <div style="flex:0 0 80px; text-align:right;">操作</div>
+                            </div>
+                            <div style="display:flex; align-items:center; padding:var(--spacing-md) var(--spacing-xl); border-bottom:1px solid var(--color-border); font-size:var(--font-size-sm);">
+                                <div style="flex:2; font-weight:var(--font-weight-medium);">北京科技有限公司</div>
+                                <div style="flex:2; color:var(--color-text-secondary);">张三</div>
+                                <div style="flex:1;"><span class="badge badge-success">活跃</span></div>
+                                <div style="flex:1; color:var(--color-text-secondary); font-size:var(--font-size-xs);">2026-06-15</div>
+                                <div style="flex:0 0 80px; text-align:right; display:flex; justify-content:flex-end; gap:var(--spacing-sm);">
+                                    <button class="btn-ghost" style="background:none; border:none; cursor:pointer; color:var(--color-text-secondary); padding:var(--spacing-xs);"><i data-lucide="pencil" style="width:13px; height:13px;"></i></button>
+                                    <button class="btn-ghost" style="background:none; border:none; cursor:pointer; color:var(--color-text-secondary); padding:var(--spacing-xs);"><i data-lucide="trash-2" style="width:13px; height:13px;"></i></button>
+                                </div>
+                            </div>
+                            <div style="display:flex; align-items:center; padding:var(--spacing-md) var(--spacing-xl); border-bottom:1px solid var(--color-border); font-size:var(--font-size-sm);">
+                                <div style="flex:2; font-weight:var(--font-weight-medium);">上海贸易集团</div>
+                                <div style="flex:2; color:var(--color-text-secondary);">李四</div>
+                                <div style="flex:1;"><span class="badge badge-warning">跟进中</span></div>
+                                <div style="flex:1; color:var(--color-text-secondary); font-size:var(--font-size-xs);">2026-06-12</div>
+                                <div style="flex:0 0 80px; text-align:right; display:flex; justify-content:flex-end; gap:var(--spacing-sm);">
+                                    <button class="btn-ghost" style="background:none; border:none; cursor:pointer; color:var(--color-text-secondary); padding:var(--spacing-xs);"><i data-lucide="pencil" style="width:13px; height:13px;"></i></button>
+                                    <button class="btn-ghost" style="background:none; border:none; cursor:pointer; color:var(--color-text-secondary); padding:var(--spacing-xs);"><i data-lucide="trash-2" style="width:13px; height:13px;"></i></button>
+                                </div>
+                            </div>
+                            <div style="display:flex; align-items:center; padding:var(--spacing-md) var(--spacing-xl); font-size:var(--font-size-sm);">
+                                <div style="flex:2; font-weight:var(--font-weight-medium);">深圳创新科技</div>
+                                <div style="flex:2; color:var(--color-text-secondary);">王五</div>
+                                <div style="flex:1;"><span class="badge badge-default">潜在</span></div>
+                                <div style="flex:1; color:var(--color-text-secondary); font-size:var(--font-size-xs);">2026-06-08</div>
+                                <div style="flex:0 0 80px; text-align:right; display:flex; justify-content:flex-end; gap:var(--spacing-sm);">
+                                    <button class="btn-ghost" style="background:none; border:none; cursor:pointer; color:var(--color-text-secondary); padding:var(--spacing-xs);"><i data-lucide="pencil" style="width:13px; height:13px;"></i></button>
+                                    <button class="btn-ghost" style="background:none; border:none; cursor:pointer; color:var(--color-text-secondary); padding:var(--spacing-xs);"><i data-lucide="trash-2" style="width:13px; height:13px;"></i></button>
+                                </div>
+                            </div>
+                            <div style="display:flex; align-items:center; padding:var(--spacing-md) var(--spacing-xl); border-top:1px solid var(--color-border); font-size:var(--font-size-xs); color:var(--color-text-secondary); justify-content:space-between;">
+                                <span>共 56 条记录</span>
+                                <div style="display:flex; align-items:center; gap:var(--spacing-sm);">
+                                    <button class="btn btn-ghost" style="font-size:var(--font-size-xs); padding:var(--spacing-xs) var(--spacing-md);">&lt;</button>
+                                    <button class="btn" style="font-size:var(--font-size-xs); padding:var(--spacing-xs) var(--spacing-md); border-color:var(--color-primary); color:var(--color-primary);">1</button>
+                                    <button class="btn btn-ghost" style="font-size:var(--font-size-xs); padding:var(--spacing-xs) var(--spacing-md);">2</button>
+                                    <button class="btn btn-ghost" style="font-size:var(--font-size-xs); padding:var(--spacing-xs) var(--spacing-md);">3</button>
+                                    <button class="btn btn-ghost" style="font-size:var(--font-size-xs); padding:var(--spacing-xs) var(--spacing-md);">&gt;</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Property Panel -->
+                <div style="width:240px; border-left:1px solid var(--color-border); background:var(--color-surface); overflow-y:auto; flex-shrink:0;">
+                    <div style="padding:var(--spacing-md) var(--spacing-lg); font-size:var(--font-size-sm); font-weight:var(--font-weight-medium); color:var(--color-text-primary); border-bottom:1px solid var(--color-border); display:flex; align-items:center; justify-content:space-between;">
+                        <span>属性面板</span>
+                        <span class="badge badge-primary">数据表格</span>
+                    </div>
+
+                    <div style="padding:var(--spacing-lg);">
+                        <!-- Component Name -->
+                        <div style="margin-bottom:var(--spacing-xl);">
+                            <div style="font-size:var(--font-size-xs); font-weight:var(--font-weight-medium); color:var(--color-text-secondary); margin-bottom:var(--spacing-sm);">组件名称</div>
+                            <input class="inp" value="customerTable" />
+                        </div>
+
+                        <!-- Data Source -->
+                        <div style="margin-bottom:var(--spacing-xl);">
+                            <div style="font-size:var(--font-size-xs); font-weight:var(--font-weight-medium); color:var(--color-text-secondary); margin-bottom:var(--spacing-sm);">数据源</div>
+                            <select class="inp" style="cursor:pointer;">
+                                <option>Customer 对象</option>
+                                <option>Order 对象</option>
+                                <option>自定义查询</option>
+                            </select>
+                        </div>
+
+                        <!-- Style Section -->
+                        <div style="margin-bottom:var(--spacing-xl);">
+                            <div style="font-size:var(--font-size-xs); font-weight:var(--font-weight-medium); color:var(--color-text-secondary); margin-bottom:var(--spacing-md); padding-bottom:var(--spacing-sm); border-bottom:1px solid var(--color-border);">样式设置</div>
+                            <div class="prop-row">
+                                <span class="prop-label">宽度</span>
+                                <div class="prop-field"><input class="inp" value="100%" /></div>
+                            </div>
+                            <div class="prop-row">
+                                <span class="prop-label">高度</span>
+                                <div class="prop-field"><input class="inp" value="auto" /></div>
+                            </div>
+                            <div class="prop-row">
+                                <span class="prop-label">圆角</span>
+                                <div class="prop-field"><input class="inp" value="6px" /></div>
+                            </div>
+                            <div class="prop-row">
+                                <span class="prop-label">边框</span>
+                                <div class="prop-field"><input class="inp" value="1px solid" /></div>
+                            </div>
+                        </div>
+
+                        <!-- Events Section -->
+                        <div style="margin-bottom:var(--spacing-xl);">
+                            <div style="font-size:var(--font-size-xs); font-weight:var(--font-weight-medium); color:var(--color-text-secondary); margin-bottom:var(--spacing-md); padding-bottom:var(--spacing-sm); border-bottom:1px solid var(--color-border);">事件配置</div>
+                            <div style="display:flex; align-items:center; gap:var(--spacing-sm); padding:var(--spacing-sm) 0;">
+                                <span class="prop-label">行点击</span>
+                                <div class="prop-field">
+                                    <select class="inp" style="cursor:pointer;">
+                                        <option>打开详情页</option>
+                                        <option>弹窗显示</option>
+                                        <option>无操作</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div style="display:flex; align-items:center; gap:var(--spacing-sm); padding:var(--spacing-sm) 0;">
+                                <span class="prop-label">行删除</span>
+                                <div class="prop-field">
+                                    <select class="inp" style="cursor:pointer;">
+                                        <option>确认后删除</option>
+                                        <option>直接删除</option>
+                                        <option>无操作</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Actions -->
+                        <div style="padding-top:var(--spacing-lg); border-top:1px solid var(--color-border); display:flex; gap:var(--spacing-sm);">
+                            <button class="btn" style="flex:1; font-size:var(--font-size-xs); justify-content:center;"><i data-lucide="copy" style="width:12px; height:12px;"></i> 复制</button>
+                            <button class="btn" style="flex:1; font-size:var(--font-size-xs); justify-content:center; color:var(--state-error); border-color:var(--state-error);"><i data-lucide="trash-2" style="width:12px; height:12px;"></i> 删除</button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+</div>
+<script>lucide.createIcons();</script>
+</body>
+</html>

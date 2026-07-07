@@ -1,100 +1,116 @@
 /**
- * Neo4j Graph Database Integration
+ * Neo4j Graph Database Integration (ESM)
+ *
+ * Phase 2: Storage Layer Upgrade — Production-grade ontology engine.
  *
  * Provides connection, query, and node management for the knowledge graph.
  * When NEO4J_URL is not configured, exports stub methods that log and return null.
- *
- * @module integrations/neo4j
  */
 
-const NEO4J_URL = process.env.NEO4J_URL || '';
-const NEO4J_USER = process.env.NEO4J_USER || 'neo4j';
-const NEO4J_PASSWORD = process.env.NEO4J_PASSWORD || '';
+const NEO4J_URL = process.env.NEO4J_URL || "";
+const NEO4J_USER = process.env.NEO4J_USER || "neo4j";
+const NEO4J_PASSWORD = process.env.NEO4J_PASSWORD || "";
+const NEO4J_DATABASE = process.env.NEO4J_DATABASE || "neo4j";
 
 let driver = null;
-let neo4j = null;
+let neo4jLib = null;
+let connected = false;
 
 /**
  * Check if Neo4j is configured via environment variables
- * @returns {boolean}
  */
-function isConfigured() {
+export function isConfigured() {
   return Boolean(NEO4J_URL);
 }
 
 /**
  * Create a stub method that logs a message and returns null
- * @param {string} methodName
- * @returns {Function}
  */
 function stub(methodName) {
   return (...args) => {
-    console.warn(`[Neo4j] ${methodName}: Service not configured (NEO4J_URL is not set). Args:`, JSON.stringify(args));
+    console.warn(`[Neo4j] ${methodName}: Service not configured (NEO4J_URL is not set). Args:`, JSON.stringify(args.slice(0, 2)));
     return null;
   };
 }
 
 /**
  * Connect to the Neo4j database
- * @returns {Promise<object|null>} The driver instance or null
  */
-async function connect() {
+export async function connect() {
   if (!isConfigured()) {
-    console.warn('[Neo4j] connect: Service not configured (NEO4J_URL is not set)');
+    console.warn("[Neo4j] connect: Service not configured (NEO4J_URL is not set)");
     return null;
   }
 
+  if (driver && connected) return driver;
+
   try {
-    // Dynamic require to avoid crash when driver is not installed
-    if (!neo4j) {
+    if (!neo4jLib) {
       try {
-        neo4j = require('neo4j-driver');
+        neo4jLib = await import("neo4j-driver");
       } catch (e) {
-        console.error('[Neo4j] neo4j-driver package not installed. Run: npm install neo4j-driver');
+        console.error("[Neo4j] neo4j-driver package not installed. Run: npm install neo4j-driver");
         return null;
       }
     }
 
-    driver = neo4j.driver(
+    driver = neo4jLib.default.driver(
       NEO4J_URL,
-      neo4j.auth.basic(NEO4J_USER, NEO4J_PASSWORD),
-      { maxConnectionPoolSize: 50, connectionAcquisitionTimeout: 30000 }
+      neo4jLib.default.auth.basic(NEO4J_USER, NEO4J_PASSWORD),
+      {
+        maxConnectionPoolSize: 50,
+        connectionAcquisitionTimeout: 30000,
+        disableLosslessIntegers: true,
+      }
     );
 
     // Verify connectivity
     await driver.verifyConnectivity();
-    console.log(`[Neo4j] Connected to ${NEO4J_URL}`);
+    connected = true;
+    console.log(`[Neo4j] Connected to ${NEO4J_URL} (db=${NEO4J_DATABASE})`);
     return driver;
   } catch (err) {
-    console.error('[Neo4j] Connection failed:', err.message);
+    console.error("[Neo4j] Connection failed:", err.message);
     driver = null;
+    connected = false;
     return null;
   }
 }
 
 /**
  * Execute a Cypher query against the Neo4j database
- * @param {string} cypher - The Cypher query string
- * @param {object} [params={}] - Query parameters
- * @returns {Promise<object[]|null>} Array of records or null
  */
-async function queryGraph(cypher, params = {}) {
-  if (!isConfigured()) {
-    return stub('queryGraph')(cypher, params);
-  }
-
+export async function queryGraph(cypher, params = {}) {
+  if (!isConfigured()) return stub("queryGraph")(cypher, params);
   if (!driver) {
     await connect();
     if (!driver) return null;
   }
 
-  const session = driver.session();
+  const session = driver.session({ database: NEO4J_DATABASE });
   try {
     const result = await session.run(cypher, params);
     return result.records.map((record) => record.toObject());
   } catch (err) {
-    console.error('[Neo4j] queryGraph error:', err.message);
+    console.error("[Neo4j] queryGraph error:", err.message);
     throw err;
+  } finally {
+    await session.close();
+  }
+}
+
+/**
+ * Run a unit of work within a transaction
+ */
+export async function transaction(work) {
+  if (!isConfigured()) return stub("transaction")();
+  if (!driver) {
+    await connect();
+    if (!driver) return null;
+  }
+  const session = driver.session({ database: NEO4J_DATABASE });
+  try {
+    return await session.executeWrite(work);
   } finally {
     await session.close();
   }
@@ -102,29 +118,23 @@ async function queryGraph(cypher, params = {}) {
 
 /**
  * Create a node in the knowledge graph
- * @param {string} label - Node label (e.g., 'Person', 'Concept')
- * @param {object} properties - Node properties
- * @returns {Promise<object|null>} The created node or null
  */
-async function createNode(label, properties) {
-  if (!isConfigured()) {
-    return stub('createNode')(label, properties);
-  }
-
+export async function createNode(label, properties) {
+  if (!isConfigured()) return stub("createNode")(label, properties);
   if (!driver) {
     await connect();
     if (!driver) return null;
   }
-
-  const session = driver.session();
+  const session = driver.session({ database: NEO4J_DATABASE });
   try {
-    const result = await session.run(
-      `CREATE (n:${label} $props) RETURN n`,
-      { props: properties }
-    );
-    return result.records[0]?.get('n').properties || null;
+    const result = await session.run(`CREATE (n:${label} $props) RETURN n, id(n) AS _id`, {
+      props: properties,
+    });
+    const record = result.records[0];
+    if (!record) return null;
+    return { id: record.get("_id"), properties: record.get("n").properties };
   } catch (err) {
-    console.error('[Neo4j] createNode error:', err.message);
+    console.error("[Neo4j] createNode error:", err.message);
     throw err;
   } finally {
     await session.close();
@@ -132,38 +142,129 @@ async function createNode(label, properties) {
 }
 
 /**
- * Find relationships for a given node
- * @param {string} nodeId - The node ID or name
- * @param {string} [relType] - Optional relationship type filter
- * @returns {Promise<object[]|null>} Array of relationships or null
+ * Merge a node (upsert by unique key)
  */
-async function findRelations(nodeId, relType) {
-  if (!isConfigured()) {
-    return stub('findRelations')(nodeId, relType);
-  }
-
+export async function mergeNode(label, uniqueKey, properties) {
+  if (!isConfigured()) return stub("mergeNode")(label, uniqueKey, properties);
   if (!driver) {
     await connect();
     if (!driver) return null;
   }
-
-  const session = driver.session();
+  const session = driver.session({ database: NEO4J_DATABASE });
   try {
-    const relClause = relType ? `[r:${relType}]` : '[r]';
     const result = await session.run(
-      `MATCH (n)-${relClause}-(m) WHERE id(n) = $nodeId OR n.name = $nodeId RETURN n, r, m`,
-      { nodeId }
+      `MERGE (n:${label} { ${uniqueKey}: $keyValue })
+       ON CREATE SET n = $props
+       ON MATCH SET n += $props
+       RETURN n, id(n) AS _id`,
+      { keyValue: properties[uniqueKey], props: properties }
     );
+    const record = result.records[0];
+    if (!record) return null;
+    return { id: record.get("_id"), properties: record.get("n").properties };
+  } catch (err) {
+    console.error("[Neo4j] mergeNode error:", err.message);
+    throw err;
+  } finally {
+    await session.close();
+  }
+}
+
+/**
+ * Find relationships for a given node by id or property value
+ */
+export async function findRelations(nodeId, relType, direction = "BOTH") {
+  if (!isConfigured()) return stub("findRelations")(nodeId, relType);
+  if (!driver) {
+    await connect();
+    if (!driver) return null;
+  }
+  const session = driver.session({ database: NEO4J_DATABASE });
+  try {
+    const relClause = relType ? `[r:${relType}]` : "[r]";
+    const arrow =
+      direction === "OUT" ? "-]->" : direction === "IN" ? "<-]-" : "-";
+    const cypher = `MATCH (n)${arrow}${relClause}${arrow.replace("-", "-")}(m)
+                    WHERE id(n) = $nodeId OR n.name = $nodeId OR n.id = $nodeId
+                    RETURN n, r, m, type(r) AS _rtype`;
+    const result = await session.run(cypher, { nodeId });
     return result.records.map((record) => ({
-      node: record.get('n').properties,
+      node: record.get("n").properties,
       relationship: {
-        type: record.get('r').type,
-        properties: record.get('r').properties,
+        type: record.get("_rtype"),
+        properties: record.get("r").properties || {},
       },
-      related: record.get('m').properties,
+      related: record.get("m").properties,
     }));
   } catch (err) {
-    console.error('[Neo4j] findRelations error:', err.message);
+    console.error("[Neo4j] findRelations error:", err.message);
+    throw err;
+  } finally {
+    await session.close();
+  }
+}
+
+/**
+ * Get subgraph within N hops of a node (for ontology visualization)
+ */
+export async function getSubgraph(nodeId, depth = 2, limit = 100) {
+  if (!isConfigured()) return stub("getSubgraph")(nodeId, depth, limit);
+  if (!driver) {
+    await connect();
+    if (!driver) return null;
+  }
+  const session = driver.session({ database: NEO4J_DATABASE });
+  try {
+    const cypher = `
+      MATCH path = (n)-[*1..${Math.min(depth, 5)}]-(m)
+      WHERE n.id = $nodeId OR n.name = $nodeId
+      RETURN nodes(path) AS nodes, relationships(path) AS rels
+      LIMIT ${Math.min(limit, 500)}
+    `;
+    const result = await session.run(cypher, { nodeId });
+    const nodeMap = new Map();
+    const edges = [];
+    for (const record of result.records) {
+      for (const node of record.get("nodes")) {
+        const p = node.properties;
+        nodeMap.set(p.id || p.name || node.identity.toString(), p);
+      }
+      for (const rel of record.get("rels")) {
+        edges.push({
+          source: rel.startNodeElementId,
+          target: rel.endNodeElementId,
+          type: rel.type,
+          properties: rel.properties || {},
+        });
+      }
+    }
+    return { nodes: [...nodeMap.values()], edges };
+  } catch (err) {
+    console.error("[Neo4j] getSubgraph error:", err.message);
+    throw err;
+  } finally {
+    await session.close();
+  }
+}
+
+/**
+ * Delete a node and all its relationships
+ */
+export async function deleteNode(nodeId) {
+  if (!isConfigured()) return stub("deleteNode")(nodeId);
+  if (!driver) {
+    await connect();
+    if (!driver) return null;
+  }
+  const session = driver.session({ database: NEO4J_DATABASE });
+  try {
+    const result = await session.run(
+      `MATCH (n) WHERE n.id = $nodeId OR n.name = $nodeId DETACH DELETE n RETURN count(n) AS deleted`,
+      { nodeId }
+    );
+    return result.records[0]?.get("deleted") || 0;
+  } catch (err) {
+    console.error("[Neo4j] deleteNode error:", err.message);
     throw err;
   } finally {
     await session.close();
@@ -172,25 +273,41 @@ async function findRelations(nodeId, relType) {
 
 /**
  * Close the Neo4j driver connection
- * @returns {Promise<void>}
  */
-async function close() {
+export async function close() {
   if (driver) {
     await driver.close();
     driver = null;
-    console.log('[Neo4j] Connection closed');
+    connected = false;
+    console.log("[Neo4j] Connection closed");
   }
 }
 
-// Export real or stub methods based on configuration
-if (isConfigured()) {
-  module.exports = { connect, queryGraph, createNode, findRelations, close };
-} else {
-  module.exports = {
-    connect: stub('connect'),
-    queryGraph: stub('queryGraph'),
-    createNode: stub('createNode'),
-    findRelations: stub('findRelations'),
-    close: stub('close'),
-  };
+/**
+ * Health check
+ */
+export async function healthCheck() {
+  if (!isConfigured()) return { status: "disabled" };
+  try {
+    if (!driver) await connect();
+    if (!driver) return { status: "unreachable" };
+    await driver.verifyConnectivity();
+    return { status: "connected", url: NEO4J_URL, database: NEO4J_DATABASE };
+  } catch (err) {
+    return { status: "error", error: err.message };
+  }
 }
+
+export default {
+  isConfigured,
+  connect,
+  queryGraph,
+  transaction,
+  createNode,
+  mergeNode,
+  findRelations,
+  getSubgraph,
+  deleteNode,
+  close,
+  healthCheck,
+};

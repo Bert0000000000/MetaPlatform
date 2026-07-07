@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html class="light" lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>质量中心 - AI Bug修复 - MetaPlatform</title>
+    <style id="theme-vars">
+:root {
+  --color-primary: #3b82f6;
+  --color-primary-hover: #2563eb;
+  --color-primary-light: #eff6ff;
+  --color-bg: #ffffff;
+  --color-bg-secondary: #f8fafc;
+  --color-surface: #ffffff;
+  --color-surface-hover: #f8fafc;
+  --color-sidebar-bg: #0f172a;
+  --color-sidebar-text: #94a3b8;
+  --color-sidebar-text-hover: #cbd5e1;
+  --color-sidebar-active-bg: rgba(59, 130, 246, 0.15);
+  --color-sidebar-active-text: #60a5fa;
+  --color-sidebar-border: rgba(148, 163, 184, 0.1);
+  --color-text-primary: #0f172a;
+  --color-text-secondary: #64748b;
+  --color-text-inverse: #ffffff;
+  --color-border: #e2e8f0;
+  --state-success: #22c55e;
+  --state-success-bg: #f0fdf4;
+  --state-warning: #f59e0b;
+  --state-warning-bg: #fffbeb;
+  --state-error: #ef4444;
+  --state-error-bg: #fef2f2;
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans SC", sans-serif;
+  --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  --font-size-xs: 11px;
+  --font-size-sm: 12px;
+  --font-size-base: 13px;
+  --font-size-lg: 14px;
+  --font-size-xl: 18px;
+  --font-size-2xl: 22px;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --line-height-normal: 1.5;
+  --spacing-xs: 2px;
+  --spacing-sm: 4px;
+  --spacing-md: 8px;
+  --spacing-lg: 12px;
+  --spacing-xl: 16px;
+  --spacing-2xl: 24px;
+  --radius-sm: 3px;
+  --radius-md: 4px;
+  --radius-lg: 6px;
+  --radius-full: 9999px;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-float: 0 8px 24px rgba(0, 0, 0, 0.1);
+  --sidebar-width: 220px;
+}
+    </style>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+    @theme inline { --color-primary: var(--color-primary); --color-border: var(--color-border); }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; overflow: hidden; font-family: var(--font-sans); font-size: var(--font-size-base); color: var(--color-text-primary); background: var(--color-bg); line-height: var(--line-height-normal); -webkit-font-smoothing: antialiased; }
+    input, textarea, select, button { font-family: inherit; font-size: inherit; }
+    .nav-item { display: flex; align-items: center; gap: var(--spacing-lg); padding: var(--spacing-md) var(--spacing-xl); font-size: var(--font-size-sm); font-weight: var(--font-weight-normal); color: var(--color-sidebar-text); border-radius: var(--radius-md); cursor: pointer; transition: all 0.15s; text-decoration: none; border: none; background: none; width: 100%; text-align: left; }
+    .nav-item:hover { background: var(--color-sidebar-active-bg); color: var(--color-sidebar-text-hover); }
+    .nav-item svg { width: 16px; height: 16px; flex-shrink: 0; }
+    .tab-item { display: flex; align-items: center; gap: var(--spacing-sm); padding: var(--spacing-sm) var(--spacing-lg); font-size: var(--font-size-sm); font-weight: var(--font-weight-normal); color: var(--color-text-secondary); border-bottom: 2px solid transparent; cursor: pointer; transition: all 0.15s; white-space: nowrap; background: none; border-top: none; border-left: none; border-right: none; }
+    .tab-item:hover { color: var(--color-text-primary); }
+    .tab-item.active { color: var(--color-primary); border-bottom-color: var(--color-primary); font-weight: var(--font-weight-medium); }
+    .btn { display: inline-flex; align-items: center; gap: var(--spacing-sm); padding: var(--spacing-sm) var(--spacing-lg); font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); border-radius: var(--radius-md); cursor: pointer; transition: all 0.15s; white-space: nowrap; border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-text-primary); }
+    .btn:hover { background: var(--color-surface-hover); }
+    .btn svg { width: 14px; height: 14px; }
+    .btn-primary { border-color: var(--color-primary); background: var(--color-primary); color: var(--color-text-inverse); }
+    .btn-primary:hover { background: var(--color-primary-hover); }
+    .btn-ghost { border-color: transparent; color: var(--color-text-secondary); }
+    .btn-ghost:hover { background: var(--color-bg-secondary); }
+    .inp { width: 100%; padding: 6px 10px; font-size: var(--font-size-sm); border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-bg); color: var(--color-text-primary); outline: none; transition: border-color 0.15s; }
+    .inp:focus { border-color: var(--color-primary); box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.12); }
+    .inp::placeholder { color: var(--color-text-secondary); }
+    .badge { display: inline-flex; align-items: center; padding: 1px 6px; font-size: var(--font-size-xs); font-weight: var(--font-weight-medium); border-radius: var(--radius-full); }
+    .badge-default { background: var(--color-bg-secondary); color: var(--color-text-secondary); }
+    .badge-primary { background: var(--color-primary-light); color: var(--color-primary); }
+    .badge-success { background: var(--state-success-bg); color: var(--state-success); }
+    .badge-warning { background: var(--state-warning-bg); color: var(--state-warning); }
+    .badge-error { background: var(--state-error-bg); color: var(--state-error); }
+    .card { border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface); }
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: var(--radius-full); }
+    </style>
+</head>
+<body>
+<div style="display:flex; height:100vh; width:100vw; overflow:hidden;">
+
+    <!-- SIDEBAR -->
+    <aside style="width:var(--sidebar-width); background:var(--color-sidebar-bg); display:flex; flex-direction:column; flex-shrink:0; border-right:1px solid var(--color-sidebar-border);">
+        <div style="height:56px; padding:0 var(--spacing-xl); display:flex; align-items:center; border-bottom:1px solid var(--color-sidebar-border);">
+            <span style="color:var(--color-text-inverse); font-size:var(--font-size-lg); font-weight:var(--font-weight-semibold);">MetaPlatform</span>
+        </div>
+        <nav style="flex:1; overflow-y:auto; padding:var(--spacing-md) var(--spacing-md); display:flex; flex-direction:column; gap:1px;">
+            <a class="nav-item" data-dom-id="nav-dashboard"><i data-lucide="layout-dashboard"></i><span>工作台</span></a>
+            <a class="nav-item" data-dom-id="nav-superai"><i data-lucide="sparkles"></i><span>SuperAI</span></a>
+            <a class="nav-item" data-dom-id="nav-architecture"><i data-lucide="building-2"></i><span>架构中心</span></a>
+            <a class="nav-item" data-dom-id="nav-apps"><i data-lucide="app-window"></i><span>应用中心</span></a>
+            <a class="nav-item" data-dom-id="nav-process"><i data-lucide="git-branch"></i><span>流程中心</span></a>
+            <a class="nav-item" data-dom-id="nav-data"><i data-lucide="database"></i><span>数据中心</span></a>
+            <a class="nav-item" data-dom-id="nav-ontology"><i data-lucide="brain"></i><span>本体引擎</span></a>
+            <a class="nav-item" data-dom-id="nav-quality" style="background: rgba(59,130,246,0.15); color: #60a5fa;"><i data-lucide="shield-check"></i><span>质量中心</span></a>
+            <a class="nav-item" data-dom-id="nav-knowledge"><i data-lucide="book-open"></i><span>知识库</span></a>
+            <a class="nav-item" data-dom-id="nav-market"><i data-lucide="cloud"></i><span>云市场</span></a>
+            <a class="nav-item" data-dom-id="nav-agents"><i data-lucide="bot"></i><span>数字员工</span></a>
+            <a class="nav-item" data-dom-id="nav-admin"><i data-lucide="settings"></i><span>后台管理</span></a>
+        </nav>
+        <div style="padding:var(--spacing-lg) var(--spacing-xl); border-top:1px solid var(--color-sidebar-border); font-size:var(--font-size-xs); color:var(--color-sidebar-text);">
+            v1.2 · 本体论驱动 AI 平台
+        </div>
+    </aside>
+
+    <!-- MAIN AREA -->
+    <div style="flex:1; display:flex; flex-direction:column; min-width:0;">
+
+        <!-- TOPBAR -->
+        <header style="height:56px; border-bottom:1px solid var(--color-border); background:var(--color-surface); display:flex; align-items:center; padding:0 var(--spacing-xl); flex-shrink:0; gap:var(--spacing-lg);">
+            <div style="width:260px; display:flex; align-items:center; gap:var(--spacing-sm); padding:var(--spacing-sm) var(--spacing-lg); border:1px solid var(--color-border); border-radius:var(--radius-md); background:var(--color-bg-secondary); cursor:pointer;">
+                <i data-lucide="search" style="width:14px; height:14px; color:var(--color-text-secondary);"></i>
+                <span style="font-size:var(--font-size-sm); color:var(--color-text-secondary); flex:1;">搜索或 AI 助手</span>
+                <span style="font-size:var(--font-size-xs); color:var(--color-text-secondary); background:var(--color-bg); padding:1px 4px; border-radius:var(--radius-sm); border:1px solid var(--color-border);">⌘K</span>
+            </div>
+            <div style="flex:1;"></div>
+            <button style="position:relative; background:none; border:none; cursor:pointer; color:var(--color-text-secondary); padding:var(--spacing-sm);">
+                <i data-lucide="bell" style="width:16px; height:16px;"></i>
+                <span style="position:absolute; top:-2px; right:-2px; width:8px; height:8px; background:var(--state-error); border-radius:var(--radius-full); border:1px solid var(--color-surface);"></span>
+            </button>
+            <div style="display:flex; align-items:center; gap:var(--spacing-sm); padding:var(--spacing-sm) var(--spacing-md); border:1px solid var(--color-border); border-radius:var(--radius-md); cursor:pointer; font-size:var(--font-size-sm); color:var(--color-text-primary);">
+                <div style="width:22px; height:22px; border-radius:var(--radius-full); background:rgba(59,130,246,0.15); color:var(--color-primary); font-size:var(--font-size-xs); font-weight:var(--font-weight-medium); display:flex; align-items:center; justify-content:center;">A</div>
+                <span>Admin</span>
+                <i data-lucide="chevron-down" style="width:12px; height:12px;"></i>
+            </div>
+        </header>
+
+        <!-- TAB BAR -->
+        <div style="border-bottom:1px solid var(--color-border); background:var(--color-surface); display:flex; padding:0 var(--spacing-xl); flex-shrink:0; overflow-x:auto;">
+            <button class="tab-item" data-dom-id="tab-quality-testcases">测试用例</button>
+            <button class="tab-item" data-dom-id="tab-quality-ontology">本体测试</button>
+            <button class="tab-item" data-dom-id="tab-quality-aiui">AI UI测试</button>
+            <button class="tab-item" data-dom-id="tab-quality-process">流程测试</button>
+            <button class="tab-item active" data-dom-id="tab-quality-bugfix">AI Bug修复</button>
+            <button class="tab-item" data-dom-id="tab-quality-reports">测试报告</button>
+        </div>
+
+        <!-- PAGE CONTENT -->
+        <main style="flex:1; overflow-y:auto; background:var(--color-bg-secondary);">
+            <div style="padding:var(--spacing-xl); max-width:1280px; display:flex; gap:var(--spacing-xl);">
+
+                <!-- Left: Bug List -->
+                <div class="card" style="width:320px; flex-shrink:0; display:flex; flex-direction:column; overflow:hidden;">
+                    <div style="padding:var(--spacing-lg) var(--spacing-xl); border-bottom:1px solid var(--color-border); display:flex; align-items:center; justify-content:space-between;">
+                        <span style="font-size:var(--font-size-sm); font-weight:var(--font-weight-semibold); color:var(--color-text-primary);">Bug 列表</span>
+                        <span class="badge badge-error">12</span>
+                    </div>
+                    <div style="flex:1; overflow-y:auto;">
+                        <!-- Bug item 1 - selected -->
+                        <div style="padding:var(--spacing-lg); border-bottom:1px solid var(--color-border); cursor:pointer; background:var(--color-primary-light); border-left:3px solid var(--color-primary);">
+                            <div style="display:flex; align-items:center; gap:var(--spacing-sm); margin-bottom:var(--spacing-xs);">
+                                <span class="badge badge-error">P0</span>
+                                <span class="badge badge-primary">修复中</span>
+                            </div>
+                            <div style="font-size:var(--font-size-sm); font-weight:var(--font-weight-medium); color:var(--color-primary);">客户表单提交后数据丢失</div>
+                            <div style="font-size:var(--font-size-xs); color:var(--color-text-secondary); margin-top:var(--spacing-xs);">BUG-0042 · 客户管理 · 2h前</div>
+                        </div>
+                        <!-- Bug item 2 -->
+                        <div style="padding:var(--spacing-lg); border-bottom:1px solid var(--color-border); cursor:pointer; border-left:3px solid transparent;" onmouseover="this.style.background='var(--color-surface-hover)'" onmouseout="this.style.background='transparent'">
+                            <div style="display:flex; align-items:center; gap:var(--spacing-sm); margin-bottom:var(--spacing-xs);">
+                                <span class="badge badge-error">P0</span>
+                                <span class="badge badge-warning">待修复</span>
+                            </div>
+                            <div style="font-size:var(--font-size-sm); font-weight:var(--font-weight-medium); color:var(--color-text-primary);">审批流程节点死循环</div>
+                            <div style="font-size:var(--font-size-xs); color:var(--color-text-secondary); margin-top:var(--spacing-xs);">BUG-0041 · 流程中心 · 5h前</div>
+                        </div>
+                        <!-- Bug item 3 -->
+                        <div style="padding:var(--spacing-lg); border-bottom:1px solid var(--color-border); cursor:pointer; border-left:3px solid transparent;" onmouseover="this.style.background='var(--color-surface-hover)'" onmouseout="this.style.background='transparent'">
+                            <div style="display:flex; align-items:center; gap:var(--spacing-sm); margin-bottom:var(--spacing-xs);">
+                                <span class="badge badge-warning">P1</span>
+                                <span class="badge badge-warning">待修复</span>
+                            </div>
+                            <div style="font-size:var(--font-size-sm); font-weight:var(--font-weight-medium); color:var(--color-text-primary);">仪表盘图表数据不刷新</div>
+                            <div style="font-size:var(--font-size-xs); color:var(--color-text-secondary); margin-top:var(--spacing-xs);">BUG-0040 · 工作台 · 1天前</div>
+                        </div>
+                        <!-- Bug item 4 -->
+                        <div style="padding:var(--spacing-lg); border-bottom:1px solid var(--color-border); cursor:pointer; border-left:3px solid transparent;" onmouseover="this.style.background='var(--color-surface-hover)'" onmouseout="this.style.background='transparent'">
+                            <div style="display:flex; align-items:center; gap:var(--spacing-sm); margin-bottom:var(--spacing-xs);">
+                                <span class="badge badge-warning">P1</span>
+                                <span class="badge badge-success">已修复</span>
+                            </div>
+                            <div style="font-size:var(--font-size-sm); font-weight:var(--font-weight-medium); color:var(--color-text-primary);">订单列表分页参数异常</div>
+                            <div style="font-size:var(--font-size-xs); color:var(--color-text-secondary); margin-top:var(--spacing-xs);">BUG-0039 · 应用中心 · 1天前</div>
+                        </div>
+                        <!-- Bug item 5 -->
+                        <div style="padding:var(--spacing-lg); border-bottom:1px solid var(--color-border); cursor:pointer; border-left:3px solid transparent;" onmouseover="this.style.background='var(--color-surface-hover)'" onmouseout="this.style.background='transparent'">
+                            <div style="display:flex; align-items:center; gap:var(--spacing-sm); margin-bottom:var(--spacing-xs);">
+                                <span class="badge badge-default">P2</span>
+                                <span class="badge badge-success">已修复</span>
+                            </div>
+                            <div style="font-size:var(--font-size-sm); font-weight:var(--font-weight-medium); color:var(--color-text-primary);">搜索框输入延迟卡顿</div>
+                            <div style="font-size:var(--font-size-xs); color:var(--color-text-secondary); margin-top:var(--spacing-xs);">BUG-0038 · 全局组件 · 2天前</div>
+                        </div>
+                        <!-- Bug item 6 -->
+                        <div style="padding:var(--spacing-lg); cursor:pointer; border-left:3px solid transparent;" onmouseover="this.style.background='var(--color-surface-hover)'" onmouseout="this.style.background='transparent'">
+                            <div style="display:flex; align-items:center; gap:var(--spacing-sm); margin-bottom:var(--spacing-xs);">
+                                <span class="badge badge-default">P2</span>
+                                <span class="badge badge-success">已修复</span>
+                            </div>
+                            <div style="font-size:var(--font-size-sm); font-weight:var(--font-weight-medium); color:var(--color-text-primary);">侧边栏收起状态丢失</div>
+                            <div style="font-size:var(--font-size-xs); color:var(--color-text-secondary); margin-top:var(--spacing-xs);">BUG-0037 · 布局框架 · 3天前</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Bug Detail -->
+                <div style="flex:1; min-width:0;">
+                    <!-- Detail Header -->
+                    <div class="card" style="margin-bottom:var(--spacing-xl); overflow:hidden;">
+                        <div style="padding:var(--spacing-xl);">
+                            <div style="display:flex; align-items:center; gap:var(--spacing-lg); margin-bottom:var(--spacing-lg);">
+                                <span class="badge badge-error">P0</span>
+                                <span class="badge badge-primary">修复中</span>
+                                <span style="font-size:var(--font-size-xs); color:var(--color-text-secondary); font-family:var(--font-mono);">BUG-0042</span>
+                                <div style="flex:1;"></div>
+                                <button class="btn" style="font-size:var(--font-size-xs);"><i data-lucide="user" style="width:12px; height:12px;"></i>Admin · 2h前创建</button>
+                            </div>
+                            <h2 style="font-size:var(--font-size-xl); font-weight:var(--font-weight-semibold); color:var(--color-text-primary); margin-bottom:var(--spacing-md);">客户表单提交后数据丢失</h2>
+                            <p style="font-size:var(--font-size-sm); color:var(--color-text-secondary); line-height:var(--line-height-normal);">
+                                在客户管理页面中，当用户填写客户信息表单并点击提交后，部分字段数据未正确保存到数据库。具体表现为：联系电话和备注字段在提交后显示为空值，但其他字段（客户名称、类型）正常保存。
+                            </p>
+                        </div>
+                        <div style="border-top:1px solid var(--color-border); padding:var(--spacing-lg) var(--spacing-xl); display:flex; gap:var(--spacing-2xl);">
+                            <div style="font-size:var(--font-size-xs);">
+                                <span style="color:var(--color-text-secondary);">模块</span>
+                                <span style="color:var(--color-text-primary); margin-left:var(--spacing-sm); font-weight:var(--font-weight-medium);">客户管理</span>
+                            </div>
+                            <div style="font-size:var(--font-size-xs);">
+                                <span style="color:var(--color-text-secondary);">类型</span>
+                                <span style="color:var(--color-text-primary); margin-left:var(--spacing-sm); font-weight:var(--font-weight-medium);">数据丢失</span>
+                            </div>
+                            <div style="font-size:var(--font-size-xs);">
+                                <span style="color:var(--color-text-secondary);">AI置信度</span>
+                                <span style="color:var(--state-success); margin-left:var(--spacing-sm); font-weight:var(--font-weight-semibold);">92%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Reproduce Steps -->
+                    <div class="card" style="margin-bottom:var(--spacing-xl); overflow:hidden;">
+                        <div style="padding:var(--spacing-lg) var(--spacing-xl); border-bottom:1px solid var(--color-border); font-size:var(--font-size-sm); font-weight:var(--font-weight-semibold); color:var(--color-text-primary); display:flex; align-items:center; gap:var(--spacing-sm);">
+                            <i data-lucide="list-ordered" style="width:14px; height:14px; color:var(--color-primary);"></i>
+                            复现步骤
+                        </div>
+                        <div style="padding:var(--spacing-lg) var(--spacing-xl);">
+                            <ol style="font-size:var(--font-size-sm); color:var(--color-text-secondary); line-height:1.8; padding-left:var(--spacing-xl);">
+                                <li>进入客户管理页面，点击"新增客户"按钮</li>
+                                <li>填写客户名称、客户类型、联系电话（13800138000）、备注（测试备注信息）</li>
+                                <li>点击"保存"按钮提交表单</li>
+                                <li>返回客户列表，找到刚创建的客户记录</li>
+                                <li>点击编辑，观察联系电话和备注字段是否为空</li>
+                            </ol>
+                        </div>
+                    </div>
+
+                    <!-- AI Fix Suggestion + Before/After -->
+                    <div style="display:flex; gap:var(--spacing-xl);">
+                        <!-- AI Fix Suggestion -->
+                        <div class="card" style="flex:1; overflow:hidden;">
+                            <div style="padding:var(--spacing-lg) var(--spacing-xl); border-bottom:1px solid var(--color-border); font-size:var(--font-size-sm); font-weight:var(--font-weight-semibold); color:var(--color-text-primary); display:flex; align-items:center; gap:var(--spacing-sm);">
+                                <i data-lucide="sparkles" style="width:14px; height:14px; color:var(--color-primary);"></i>
+                                AI 修复建议
+                            </div>
+                            <div style="padding:var(--spacing-lg) var(--spacing-xl);">
+                                <div style="font-size:var(--font-size-sm); color:var(--color-text-secondary); line-height:var(--line-height-normal); margin-bottom:var(--spacing-lg);">
+                                    <span style="font-weight:var(--font-weight-medium); color:var(--color-text-primary);">根因分析：</span>
+                                    表单提交接口 <code style="background:var(--color-bg-secondary); padding:1px 4px; border-radius:var(--radius-sm); font-family:var(--font-mono); font-size:var(--font-size-xs);">/api/customer/create</code> 的请求体中缺少 <code style="background:var(--color-bg-secondary); padding:1px 4px; border-radius:var(--radius-sm); font-family:var(--font-mono); font-size:var(--font-size-xs);">phone</code> 和 <code style="background:var(--color-bg-secondary); padding:1px 4px; border-radius:var(--radius-sm); font-family:var(--font-mono); font-size:var(--font-size-xs);">remark</code> 字段映射。
+                                </div>
+                                <div style="font-size:var(--font-size-sm); color:var(--color-text-secondary); line-height:var(--line-height-normal); margin-bottom:var(--spacing-lg);">
+                                    <span style="font-weight:var(--font-weight-medium); color:var(--color-text-primary);">修复方案：</span>
+                                    在 <code style="background:var(--color-bg-secondary); padding:1px 4px; border-radius:var(--radius-sm); font-family:var(--font-mono); font-size:var(--font-size-xs);">CustomerFormMapper.java</code> 中补充字段映射关系，并在 DTO 校验中添加非空约束。
+                                </div>
+                                <div style="display:flex; gap:var(--spacing-sm);">
+                                    <button class="btn btn-primary" style="font-size:var(--font-size-xs);"><i data-lucide="check" style="width:12px; height:12px;"></i>采纳修复</button>
+                                    <button class="btn" style="font-size:var(--font-size-xs);"><i data-lucide="copy" style="width:12px; height:12px;"></i>复制代码</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Before/After Comparison -->
+                        <div class="card" style="flex:1; overflow:hidden;">
+                            <div style="padding:var(--spacing-lg) var(--spacing-xl); border-bottom:1px solid var(--color-border); font-size:var(--font-size-sm); font-weight:var(--font-weight-semibold); color:var(--color-text-primary); display:flex; align-items:center; gap:var(--spacing-sm);">
+                                <i data-lucide="git-compare" style="width:14px; height:14px; color:var(--state-warning);"></i>
+                                修复前后对比
+                            </div>
+                            <div style="padding:var(--spacing-lg) var(--spacing-xl);">
+                                <!-- Before -->
+                                <div style="margin-bottom:var(--spacing-lg);">
+                                    <div style="font-size:var(--font-size-xs); font-weight:var(--font-weight-medium); color:var(--state-error); margin-bottom:var(--spacing-sm); display:flex; align-items:center; gap:var(--spacing-sm);">
+                                        <i data-lucide="circle-x" style="width:12px; height:12px;"></i>修复前
+                                    </div>
+                                    <div style="background:var(--color-bg-secondary); border-radius:var(--radius-md); padding:var(--spacing-md) var(--spacing-lg); font-family:var(--font-mono); font-size:var(--font-size-xs); color:var(--color-text-secondary); line-height:1.8; border-left:3px solid var(--state-error);">
+                                        <div>@PostMapping("/create")</div>
+                                        <div>public Customer create(<span style="color:var(--state-error); text-decoration:line-through;">CustomerDTO dto</span>) {</div>
+                                        <div>&nbsp;&nbsp;return service.save(dto);</div>
+                                        <div>}</div>
+                                    </div>
+                                </div>
+                                <!-- After -->
+                                <div>
+                                    <div style="font-size:var(--font-size-xs); font-weight:var(--font-weight-medium); color:var(--state-success); margin-bottom:var(--spacing-sm); display:flex; align-items:center; gap:var(--spacing-sm);">
+                                        <i data-lucide="circle-check" style="width:12px; height:12px;"></i>修复后
+                                    </div>
+                                    <div style="background:var(--state-success-bg); border-radius:var(--radius-md); padding:var(--spacing-md) var(--spacing-lg); font-family:var(--font-mono); font-size:var(--font-size-xs); color:var(--color-text-secondary); line-height:1.8; border-left:3px solid var(--state-success);">
+                                        <div>@PostMapping("/create")</div>
+                                        <div>public Customer create(<span style="color:var(--state-success); font-weight:var(--font-weight-medium);">@Valid @RequestBody CustomerDTO dto</span>) {</div>
+                                        <div>&nbsp;&nbsp;Customer entity = <span style="color:var(--state-success);">mapper.toEntity(dto);</span></div>
+                                        <div>&nbsp;&nbsp;<span style="color:var(--state-success);">entity.setPhone(dto.getPhone());</span></div>
+                                        <div>&nbsp;&nbsp;<span style="color:var(--state-success);">entity.setRemark(dto.getRemark());</span></div>
+                                        <div>&nbsp;&nbsp;return repository.save(entity);</div>
+                                        <div>}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+        </main>
+    </div>
+</div>
+<script>lucide.createIcons();</script>
+</body>
+</html>

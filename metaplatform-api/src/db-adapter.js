@@ -15,20 +15,16 @@
  *
  * No route file changes required.
  */
-import { initDB as initPg } from "./db-pg.js";
-
-// Top-level await is supported in ESM (package.json "type": "module")
-
 let _db;
 
 if (process.env.DATABASE_URL) {
   // ── PostgreSQL mode ────────────────────────────────────
   console.log("[db-adapter] Using PostgreSQL:", process.env.DATABASE_URL.replace(/:[^:@]+@/, ":***@"));
-  _db = await initPg();
+  const { initDB } = await import("./db-pg.js");
+  _db = await initDB();
 } else {
   // ── SQLite mode (backward compatible) ─────────────────
-  // Re-export the synchronous better-sqlite3 instance unchanged.
-  // This keeps all existing code working exactly as before.
+  console.log("[db-adapter] Using SQLite (better-sqlite3)");
   const { default: sqliteDb } = await import("./db-sqlite.js");
   _db = sqliteDb;
 }

@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html class="light" lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>流程中心 - 流程分析 - MetaPlatform</title>
+    <style id="theme-vars">
+:root {
+  --color-primary: #3b82f6;
+  --color-primary-hover: #2563eb;
+  --color-primary-light: #eff6ff;
+  --color-bg: #ffffff;
+  --color-bg-secondary: #f8fafc;
+  --color-surface: #ffffff;
+  --color-surface-hover: #f8fafc;
+  --color-sidebar-bg: #0f172a;
+  --color-sidebar-text: #94a3b8;
+  --color-sidebar-text-hover: #cbd5e1;
+  --color-sidebar-active-bg: rgba(59, 130, 246, 0.15);
+  --color-sidebar-active-text: #60a5fa;
+  --color-sidebar-border: rgba(148, 163, 184, 0.1);
+  --color-text-primary: #0f172a;
+  --color-text-secondary: #64748b;
+  --color-text-inverse: #ffffff;
+  --color-border: #e2e8f0;
+  --state-success: #22c55e;
+  --state-success-bg: #f0fdf4;
+  --state-warning: #f59e0b;
+  --state-warning-bg: #fffbeb;
+  --state-error: #ef4444;
+  --state-error-bg: #fef2f2;
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans SC", sans-serif;
+  --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  --font-size-xs: 11px;
+  --font-size-sm: 12px;
+  --font-size-base: 13px;
+  --font-size-lg: 14px;
+  --font-size-xl: 18px;
+  --font-size-2xl: 22px;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --line-height-normal: 1.5;
+  --spacing-xs: 2px;
+  --spacing-sm: 4px;
+  --spacing-md: 8px;
+  --spacing-lg: 12px;
+  --spacing-xl: 16px;
+  --spacing-2xl: 24px;
+  --radius-sm: 3px;
+  --radius-md: 4px;
+  --radius-lg: 6px;
+  --radius-full: 9999px;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-float: 0 8px 24px rgba(0, 0, 0, 0.1);
+  --sidebar-width: 220px;
+}
+    </style>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+@theme inline { --color-primary: var(--color-primary); --color-border: var(--color-border); }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; font-family: var(--font-sans); font-size: var(--font-size-base); color: var(--color-text-primary); background: var(--color-bg); line-height: var(--line-height-normal); -webkit-font-smoothing: antialiased; }
+input, textarea, select, button { font-family: inherit; font-size: inherit; }
+.nav-item { display: flex; align-items: center; gap: var(--spacing-lg); padding: var(--spacing-md) var(--spacing-xl); font-size: var(--font-size-sm); font-weight: var(--font-weight-normal); color: var(--color-sidebar-text); border-radius: var(--radius-md); cursor: pointer; transition: all 0.15s; text-decoration: none; border: none; background: none; width: 100%; text-align: left; }
+.nav-item:hover { background: var(--color-sidebar-active-bg); color: var(--color-sidebar-text-hover); }
+.nav-item svg { width: 16px; height: 16px; flex-shrink: 0; }
+.tab-item { display: flex; align-items: center; gap: var(--spacing-sm); padding: var(--spacing-sm) var(--spacing-lg); font-size: var(--font-size-sm); font-weight: var(--font-weight-normal); color: var(--color-text-secondary); border-bottom: 2px solid transparent; cursor: pointer; transition: all 0.15s; white-space: nowrap; background: none; border-top: none; border-left: none; border-right: none; }
+.tab-item:hover { color: var(--color-text-primary); }
+.tab-item.active { color: var(--color-primary); border-bottom-color: var(--color-primary); font-weight: var(--font-weight-medium); }
+.btn { display: inline-flex; align-items: center; gap: var(--spacing-sm); padding: var(--spacing-sm) var(--spacing-lg); font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); border-radius: var(--radius-md); cursor: pointer; transition: all 0.15s; white-space: nowrap; border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-text-primary); }
+.btn:hover { background: var(--color-surface-hover); }
+.btn svg { width: 14px; height: 14px; }
+.btn-primary { border-color: var(--color-primary); background: var(--color-primary); color: var(--color-text-inverse); }
+.btn-primary:hover { background: var(--color-primary-hover); }
+.btn-ghost { border-color: transparent; color: var(--color-text-secondary); }
+.btn-ghost:hover { background: var(--color-bg-secondary); }
+.inp { width: 100%; padding: 6px 10px; font-size: var(--font-size-sm); border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-bg); color: var(--color-text-primary); outline: none; transition: border-color 0.15s; }
+.inp:focus { border-color: var(--color-primary); box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.12); }
+.inp::placeholder { color: var(--color-text-secondary); }
+.badge { display: inline-flex; align-items: center; padding: 1px 6px; font-size: var(--font-size-xs); font-weight: var(--font-weight-medium); border-radius: var(--radius-full); }
+.badge-default { background: var(--color-bg-secondary); color: var(--color-text-secondary); }
+.badge-primary { background: var(--color-primary-light); color: var(--color-primary); }
+.badge-success { background: var(--state-success-bg); color: var(--state-success); }
+.badge-warning { background: var(--state-warning-bg); color: var(--state-warning); }
+.badge-error { background: var(--state-error-bg); color: var(--state-error); }
+.card { border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface); }
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: var(--radius-full); }
+table { width: 100%; border-collapse: collapse; }
+th, td { text-align: left; padding: var(--spacing-md) var(--spacing-lg); font-size: var(--font-size-sm); white-space: nowrap; }
+th { color: var(--color-text-secondary); font-weight: var(--font-weight-medium); background: var(--color-bg-secondary); border-bottom: 1px solid var(--color-border); }
+td { color: var(--color-text-primary); border-bottom: 1px solid var(--color-border); }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: var(--color-surface-hover); }
+.pagination { display: flex; align-items: center; gap: var(--spacing-sm); }
+.page-btn { display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text-primary); font-size: var(--font-size-sm); cursor: pointer; transition: all 0.15s; }
+.page-btn:hover { background: var(--color-surface-hover); }
+.page-btn.active { border-color: var(--color-primary); background: var(--color-primary); color: var(--color-text-inverse); }
+.stat-card { border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface); padding: var(--spacing-lg) var(--spacing-xl); flex: 1; display: flex; align-items: center; gap: var(--spacing-lg); }
+    </style>
+</head>
+<body>
+<div style="display:flex; height:100vh; width:100vw; overflow:hidden;">
+
+    <!-- SIDEBAR -->
+    <aside style="width:var(--sidebar-width); background:var(--color-sidebar-bg); display:flex; flex-direction:column; flex-shrink:0; border-right:1px solid var(--color-sidebar-border);">
+        <div style="height:56px; padding:0 var(--spacing-xl); display:flex; align-items:center; border-bottom:1px solid var(--color-sidebar-border);">
+            <span style="color:var(--color-text-inverse); font-size:var(--font-size-lg); font-weight:var(--font-weight-semibold);">MetaPlatform</span>
+        </div>
+        <nav style="flex:1; overflow-y:auto; padding:var(--spacing-md) var(--spacing-md); display:flex; flex-direction:column; gap:1px;">
+            <a class="nav-item" data-dom-id="nav-dashboard"><i data-lucide="layout-dashboard"></i><span>工作台</span></a>
+            <a class="nav-item" data-dom-id="nav-superai"><i data-lucide="sparkles"></i><span>SuperAI</span></a>
+            <a class="nav-item" data-dom-id="nav-architecture"><i data-lucide="building-2"></i><span>架构中心</span></a>
+            <a class="nav-item" data-dom-id="nav-apps"><i data-lucide="app-window"></i><span>应用中心</span></a>
+            <a class="nav-item" data-dom-id="nav-process" style="background: rgba(59,130,246,0.15); color: #60a5fa;"><i data-lucide="git-branch"></i><span>流程中心</span></a>
+            <a class="nav-item" data-dom-id="nav-data"><i data-lucide="database"></i><span>数据中心</span></a>
+            <a class="nav-item" data-dom-id="nav-ontology"><i data-lucide="brain"></i><span>本体引擎</span></a>
+            <a class="nav-item" data-dom-id="nav-quality"><i data-lucide="shield-check"></i><span>质量中心</span></a>
+            <a class="nav-item" data-dom-id="nav-knowledge"><i data-lucide="book-open"></i><span>知识库</span></a>
+            <a class="nav-item" data-dom-id="nav-market"><i data-lucide="cloud"></i><span>云市场</span></a>
+            <a class="nav-item" data-dom-id="nav-agents"><i data-lucide="bot"></i><span>数字员工</span></a>
+            <a class="nav-item" data-dom-id="nav-admin"><i data-lucide="settings"></i><span>后台管理</span></a>
+        </nav>
+        <div style="padding:var(--spacing-lg) var(--spacing-xl); border-top:1px solid var(--color-sidebar-border); font-size:var(--font-size-xs); color:var(--color-sidebar-text);">
+            v1.2 · 本体论驱动 AI 平台
+        </div>
+    </aside>
+
+    <!-- MAIN AREA -->
+    <div style="flex:1; display:flex; flex-direction:column; min-width:0;">
+
+        <!-- TOPBAR -->
+        <header style="height:56px; border-bottom:1px solid var(--color-border); background:var(--color-surface); display:flex; align-items:center; padding:0 var(--spacing-xl); flex-shrink:0; gap:var(--spacing-lg);">
+            <div style="width:260px; display:flex; align-items:center; gap:var(--spacing-sm); padding:var(--spacing-sm) var(--spacing-lg); border:1px solid var(--color-border); border-radius:var(--radius-md); background:var(--color-bg-secondary); cursor:pointer;">
+                <i data-lucide="search" style="width:14px; height:14px; color:var(--color-text-secondary);"></i>
+                <span style="font-size:var(--font-size-sm); color:var(--color-text-secondary); flex:1;">搜索或 AI 助手</span>
+                <span style="font-size:var(--font-size-xs); color:var(--color-text-secondary); background:var(--color-bg); padding:1px 4px; border-radius:var(--radius-sm); border:1px solid var(--color-border);">&#8984;K</span>
+            </div>
+            <div style="flex:1;"></div>
+            <button style="position:relative; background:none; border:none; cursor:pointer; color:var(--color-text-secondary); padding:var(--spacing-sm);">
+                <i data-lucide="bell" style="width:16px; height:16px;"></i>
+                <span style="position:absolute; top:-2px; right:-2px; width:8px; height:8px; background:var(--state-error); border-radius:var(--radius-full); border:1px solid var(--color-surface);"></span>
+            </button>
+            <div style="display:flex; align-items:center; gap:var(--spacing-sm); padding:var(--spacing-sm) var(--spacing-md); border:1px solid var(--color-border); border-radius:var(--radius-md); cursor:pointer; font-size:var(--font-size-sm); color:var(--color-text-primary);">
+                <div style="width:22px; height:22px; border-radius:var(--radius-full); background:rgba(59,130,246,0.15); color:var(--color-primary); font-size:var(--font-size-xs); font-weight:var(--font-weight-medium); display:flex; align-items:center; justify-content:center;">A</div>
+                <span>Admin</span>
+                <i data-lucide="chevron-down" style="width:12px; height:12px;"></i>
+            </div>
+        </header>
+
+        <!-- TAB BAR -->
+        <div style="border-bottom:1px solid var(--color-border); background:var(--color-surface); display:flex; padding:0 var(--spacing-xl); flex-shrink:0; overflow-x:auto;">
+            <button class="tab-item" data-dom-id="tab-process-business">业务流程</button>
+            <button class="tab-item" data-dom-id="tab-process-approval">审批流程</button>
+            <button class="tab-item" data-dom-id="tab-process-orchestration">服务编排</button>
+            <button class="tab-item" data-dom-id="tab-process-instances">流程实例</button>
+            <button class="tab-item" data-dom-id="tab-process-approvalcenter">审批中心</button>
+            <button class="tab-item" data-dom-id="tab-process-triggers">触发器</button>
+            <button class="tab-item active" data-dom-id="tab-process-analytics">流程分析</button>
+            <button class="tab-item" data-dom-id="tab-process-middleware">流程中台</button>
+            <button class="tab-item" data-dom-id="tab-process-export">流程导出</button>
+        </div>
+
+        <!-- PAGE CONTENT -->
+        <main style="flex:1; overflow-y:auto; background:var(--color-bg-secondary);">
+            <div style="max-width:1280px; margin:0 auto; padding:var(--spacing-2xl) var(--spacing-2xl);">
+
+                <!-- Header -->
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:var(--spacing-2xl);">
+                    <div>
+                        <div style="display:flex; align-items:center; gap:var(--spacing-lg); margin-bottom:var(--spacing-xs);">
+                            <i data-lucide="bar-chart-3" style="width:20px; height:20px; color:var(--color-primary);"></i>
+                            <h1 style="font-size:var(--font-size-xl); font-weight:var(--font-weight-semibold); color:var(--color-text-primary);">流程分析</h1>
+                        </div>
+                        <p style="font-size:var(--font-size-sm); color:var(--color-text-secondary); margin-left:32px;">流程运行数据分析与效率监控</p>
+                    </div>
+                    <div style="display:flex; gap:var(--spacing-md);">
+                        <select class="inp" style="width:auto; min-width:120px;">
+                            <option>最近 7 天</option>
+                            <option>最近 30 天</option>
+                            <option>最近 90 天</option>
+                        </select>
+                        <button class="btn"><i data-lucide="download"></i> 导出报告</button>
+                    </div>
+                </div>
+
+                <!-- Stats Cards -->
+                <div style="display:flex; gap:var(--spacing-lg); margin-bottom:var(--spacing-2xl);">
+                    <div class="stat-card">
+                        <div style="width:36px; height:36px; border-radius:var(--radius-lg); background:var(--color-primary-light); color:var(--color-primary); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                            <i data-lucide="git-branch" style="width:18px; height:18px;"></i>
+                        </div>
+                        <div>
+                            <div style="font-size:var(--font-size-sm); color:var(--color-text-secondary);">总流程数</div>
+                            <div style="font-size:var(--font-size-xl); font-weight:var(--font-weight-semibold); color:var(--color-text-primary);">128</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div style="width:36px; height:36px; border-radius:var(--radius-lg); background:var(--color-primary-light); color:var(--color-primary); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                            <i data-lucide="play-circle" style="width:18px; height:18px;"></i>
+                        </div>
+                        <div>
+                            <div style="font-size:var(--font-size-sm); color:var(--color-text-secondary);">运行中</div>
+                            <div style="font-size:var(--font-size-xl); font-weight:var(--font-weight-semibold); color:var(--color-primary);">23</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div style="width:36px; height:36px; border-radius:var(--radius-lg); background:var(--state-success-bg); color:var(--state-success); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                            <i data-lucide="check-circle" style="width:18px; height:18px;"></i>
+                        </div>
+                        <div>
+                            <div style="font-size:var(--font-size-sm); color:var(--color-text-secondary);">已完成</div>
+                            <div style="font-size:var(--font-size-xl); font-weight:var(--font-weight-semibold); color:var(--state-success);">1,024</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div style="width:36px; height:36px; border-radius:var(--radius-lg); background:var(--state-error-bg); color:var(--state-error); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                            <i data-lucide="alert-triangle" style="width:18px; height:18px;"></i>
+                        </div>
+                        <div>
+                            <div style="font-size:var(--font-size-sm); color:var(--color-text-secondary);">异常率</div>
+                            <div style="font-size:var(--font-size-xl); font-weight:var(--font-weight-semibold); color:var(--state-error);">3.2%</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts -->
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:var(--spacing-lg); margin-bottom:var(--spacing-2xl);">
+                    <!-- Chart 1: Trend -->
+                    <div class="card" style="padding:var(--spacing-xl);">
+                        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:var(--spacing-lg);">
+                            <span style="font-size:var(--font-size-sm); font-weight:var(--font-weight-medium); color:var(--color-text-primary);">流程执行趋势</span>
+                            <span class="badge badge-default">近7天</span>
+                        </div>
+                        <svg viewBox="0 0 400 200" width="100%" style="display:block;">
+                            <!-- Grid -->
+                            <line x1="40" y1="20" x2="40" y2="170" stroke="var(--color-border)" stroke-width="0.5"/>
+                            <line x1="40" y1="170" x2="380" y2="170" stroke="var(--color-border)" stroke-width="0.5"/>
+                            <line x1="40" y1="95" x2="380" y2="95" stroke="var(--color-border)" stroke-width="0.5" stroke-dasharray="3 3"/>
+                            <line x1="40" y1="57" x2="380" y2="57" stroke="var(--color-border)" stroke-width="0.5" stroke-dasharray="3 3"/>
+                            <line x1="40" y1="133" x2="380" y2="133" stroke="var(--color-border)" stroke-width="0.5" stroke-dasharray="3 3"/>
+                            <!-- Y labels -->
+                            <text x="32" y="173" style="font-size:9px; fill:var(--color-text-secondary); text-anchor:end;">0</text>
+                            <text x="32" y="98" style="font-size:9px; fill:var(--color-text-secondary); text-anchor:end;">50</text>
+                            <text x="32" y="60" style="font-size:9px; fill:var(--color-text-secondary); text-anchor:end;">100</text>
+                            <!-- X labels -->
+                            <text x="70" y="185" style="font-size:9px; fill:var(--color-text-secondary); text-anchor:middle;">周一</text>
+                            <text x="120" y="185" style="font-size:9px; fill:var(--color-text-secondary); text-anchor:middle;">周二</text>
+                            <text x="170" y="185" style="font-size:9px; fill:var(--color-text-secondary); text-anchor:middle;">周三</text>
+                            <text x="220" y="185" style="font-size:9px; fill:var(--color-text-secondary); text-anchor:middle;">周四</text>
+                            <text x="270" y="185" style="font-size:9px; fill:var(--color-text-secondary); text-anchor:middle;">周五</text>
+                            <text x="320" y="185" style="font-size:9px; fill:var(--color-text-secondary); text-anchor:middle;">周六</text>
+                            <text x="370" y="185" style="font-size:9px; fill:var(--color-text-secondary); text-anchor:middle;">周日</text>
+                            <!-- Area fill -->
+                            <polygon points="70,120 120,95 170,70 220,85 270,50 320,130 370,145 370,170 70,170" fill="rgba(59,130,246,0.08)"/>
+                            <!-- Line -->
+                            <polyline points="70,120 120,95 170,70 220,85 270,50 320,130 370,145" fill="none" stroke="var(--color-primary)" stroke-width="2" stroke-linejoin="round"/>
+                            <!-- Dots -->
+                            <circle cx="70" cy="120" r="3" fill="var(--color-primary)"/>
+                            <circle cx="120" cy="95" r="3" fill="var(--color-primary)"/>
+                            <circle cx="170" cy="70" r="3" fill="var(--color-primary)"/>
+                            <circle cx="220" cy="85" r="3" fill="var(--color-primary)"/>
+                            <circle cx="270" cy="50" r="4" fill="var(--color-primary)" stroke="var(--color-surface)" stroke-width="2"/>
+                            <circle cx="320" cy="130" r="3" fill="var(--color-primary)"/>
+                            <circle cx="370" cy="145" r="3" fill="var(--color-primary)"/>
+                        </svg>
+                    </div>
+
+                    <!-- Chart 2: Distribution -->
+                    <div class="card" style="padding:var(--spacing-xl);">
+                        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:var(--spacing-lg);">
+                            <span style="font-size:var(--font-size-sm); font-weight:var(--font-weight-medium); color:var(--color-text-primary);">流程类型分布</span>
+                            <span class="badge badge-default">本月</span>
+                        </div>
+                        <svg viewBox="0 0 400 200" width="100%" style="display:block;">
+                            <!-- Donut chart -->
+                            <circle cx="130" cy="100" r="65" fill="none" stroke="var(--color-border)" stroke-width="18"/>
+                            <circle cx="130" cy="100" r="65" fill="none" stroke="var(--color-primary)" stroke-width="18" stroke-dasharray="163 245" stroke-dashoffset="0" transform="rotate(-90 130 100)"/>
+                            <circle cx="130" cy="100" r="65" fill="none" stroke="var(--state-success)" stroke-width="18" stroke-dasharray="98 310" stroke-dashoffset="-163" transform="rotate(-90 130 100)"/>
+                            <circle cx="130" cy="100" r="65" fill="none" stroke="var(--state-warning)" stroke-width="18" stroke-dasharray="65 343" stroke-dashoffset="-261" transform="rotate(-90 130 100)"/>
+                            <circle cx="130" cy="100" r="65" fill="none" stroke="var(--state-error)" stroke-width="18" stroke-dasharray="82 326" stroke-dashoffset="-326" transform="rotate(-90 130 100)"/>
+                            <text x="130" y="96" style="font-size:18px; font-weight:var(--font-weight-semibold); fill:var(--color-text-primary); text-anchor:middle;">1,047</text>
+                            <text x="130" y="112" style="font-size:10px; fill:var(--color-text-secondary); text-anchor:middle;">总执行数</text>
+                            <!-- Legend -->
+                            <rect x="240" y="40" width="8" height="8" rx="2" fill="var(--color-primary)"/>
+                            <text x="254" y="48" style="font-size:11px; fill:var(--color-text-primary);">审批流程 40%</text>
+                            <rect x="240" y="62" width="8" height="8" rx="2" fill="var(--state-success)"/>
+                            <text x="254" y="70" style="font-size:11px; fill:var(--color-text-primary);">数据流程 24%</text>
+                            <rect x="240" y="84" width="8" height="8" rx="2" fill="var(--state-warning)"/>
+                            <text x="254" y="92" style="font-size:11px; fill:var(--color-text-primary);">集成流程 16%</text>
+                            <rect x="240" y="106" width="8" height="8" rx="2" fill="var(--state-error)"/>
+                            <text x="254" y="114" style="font-size:11px; fill:var(--color-text-primary);">异常终止 20%</text>
+                        </svg>
+                    </div>
+                </div>
+
+                <!-- Efficiency Ranking -->
+                <div class="card" style="padding:var(--spacing-xl);">
+                    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:var(--spacing-lg);">
+                        <span style="font-size:var(--font-size-sm); font-weight:var(--font-weight-medium); color:var(--color-text-primary);">流程效率排名</span>
+                        <button class="btn btn-ghost" style="font-size:var(--font-size-xs);"><i data-lucide="arrow-up-down" style="width:12px; height:12px;"></i> 排序</button>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>排名</th>
+                                <th>流程名称</th>
+                                <th>平均耗时</th>
+                                <th>完成率</th>
+                                <th>本周执行</th>
+                                <th>效率评分</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span style="display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; border-radius:var(--radius-full); background:var(--color-primary-light); color:var(--color-primary); font-size:var(--font-size-xs); font-weight:var(--font-weight-semibold);">1</span></td>
+                                <td style="font-weight:var(--font-weight-medium);">费用报销审批</td>
+                                <td style="font-family:var(--font-mono); color:var(--color-text-secondary);">1.2h</td>
+                                <td><span class="badge badge-success">98.5%</span></td>
+                                <td>86</td>
+                                <td><div style="display:flex; align-items:center; gap:var(--spacing-sm);"><div style="width:60px; height:6px; background:var(--color-bg-secondary); border-radius:var(--radius-full); overflow:hidden;"><div style="width:95%; height:100%; background:var(--color-primary); border-radius:var(--radius-full);"></div></div><span style="font-size:var(--font-size-xs); color:var(--color-text-secondary);">95</span></div></td>
+                            </tr>
+                            <tr>
+                                <td><span style="display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; border-radius:var(--radius-full); background:var(--color-primary-light); color:var(--color-primary); font-size:var(--font-size-xs); font-weight:var(--font-weight-semibold);">2</span></td>
+                                <td style="font-weight:var(--font-weight-medium);">请假审批流程</td>
+                                <td style="font-family:var(--font-mono); color:var(--color-text-secondary);">0.8h</td>
+                                <td><span class="badge badge-success">99.2%</span></td>
+                                <td>64</td>
+                                <td><div style="display:flex; align-items:center; gap:var(--spacing-sm);"><div style="width:60px; height:6px; background:var(--color-bg-secondary); border-radius:var(--radius-full); overflow:hidden;"><div style="width:92%; height:100%; background:var(--color-primary); border-radius:var(--radius-full);"></div></div><span style="font-size:var(--font-size-xs); color:var(--color-text-secondary);">92</span></div></td>
+                            </tr>
+                            <tr>
+                                <td><span style="display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; border-radius:var(--radius-full); background:var(--color-primary-light); color:var(--color-primary); font-size:var(--font-size-xs); font-weight:var(--font-weight-semibold);">3</span></td>
+                                <td style="font-weight:var(--font-weight-medium);">采购订单审批</td>
+                                <td style="font-family:var(--font-mono); color:var(--color-text-secondary);">2.5h</td>
+                                <td><span class="badge badge-primary">95.8%</span></td>
+                                <td>42</td>
+                                <td><div style="display:flex; align-items:center; gap:var(--spacing-sm);"><div style="width:60px; height:6px; background:var(--color-bg-secondary); border-radius:var(--radius-full); overflow:hidden;"><div style="width:88%; height:100%; background:var(--state-success); border-radius:var(--radius-full);"></div></div><span style="font-size:var(--font-size-xs); color:var(--color-text-secondary);">88</span></div></td>
+                            </tr>
+                            <tr>
+                                <td><span style="display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; border-radius:var(--radius-full); background:var(--color-bg-secondary); color:var(--color-text-secondary); font-size:var(--font-size-xs); font-weight:var(--font-weight-semibold);">4</span></td>
+                                <td style="font-weight:var(--font-weight-medium);">合同签署流程</td>
+                                <td style="font-family:var(--font-mono); color:var(--color-text-secondary);">4.8h</td>
+                                <td><span class="badge badge-primary">91.3%</span></td>
+                                <td>18</td>
+                                <td><div style="display:flex; align-items:center; gap:var(--spacing-sm);"><div style="width:60px; height:6px; background:var(--color-bg-secondary); border-radius:var(--radius-full); overflow:hidden;"><div style="width:76%; height:100%; background:var(--state-warning); border-radius:var(--radius-full);"></div></div><span style="font-size:var(--font-size-xs); color:var(--color-text-secondary);">76</span></div></td>
+                            </tr>
+                            <tr>
+                                <td><span style="display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; border-radius:var(--radius-full); background:var(--color-bg-secondary); color:var(--color-text-secondary); font-size:var(--font-size-xs); font-weight:var(--font-weight-semibold);">5</span></td>
+                                <td style="font-weight:var(--font-weight-medium);">入职审批流程</td>
+                                <td style="font-family:var(--font-mono); color:var(--color-text-secondary);">6.2h</td>
+                                <td><span class="badge badge-warning">87.1%</span></td>
+                                <td>12</td>
+                                <td><div style="display:flex; align-items:center; gap:var(--spacing-sm);"><div style="width:60px; height:6px; background:var(--color-bg-secondary); border-radius:var(--radius-full); overflow:hidden;"><div style="width:65%; height:100%; background:var(--state-warning); border-radius:var(--radius-full);"></div></div><span style="font-size:var(--font-size-xs); color:var(--color-text-secondary);">65</span></div></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+        </main>
+    </div>
+</div>
+<script>lucide.createIcons();</script>
+</body>
+</html>

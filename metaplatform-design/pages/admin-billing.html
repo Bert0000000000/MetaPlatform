@@ -103,4 +103,195 @@
             <a class="nav-item" data-dom-id="nav-apps"><i data-lucide="app-window"></i><span>应用中心</span></a>
             <a class="nav-item" data-dom-id="nav-process"><i data-lucide="git-branch"></i><span>流程中心</span></a>
             <a class="nav-item" data-dom-id="nav-data"><i data-lucide="database"></i><span>数据中心</span></a>
-            <a class="nav-item" data-dom-id="
+            <a class="nav-item" data-dom-id="nav-ontology"><i data-lucide="brain"></i><span>本体引擎</span></a>
+            <a class="nav-item" data-dom-id="nav-quality"><i data-lucide="shield-check"></i><span>质量中心</span></a>
+            <a class="nav-item" data-dom-id="nav-knowledge"><i data-lucide="book-open"></i><span>知识库</span></a>
+            <a class="nav-item" data-dom-id="nav-market"><i data-lucide="cloud"></i><span>云市场</span></a>
+            <a class="nav-item" data-dom-id="nav-agents"><i data-lucide="bot"></i><span>数字员工</span></a>
+            <a class="nav-item" data-dom-id="nav-admin" style="background: rgba(59,130,246,0.15); color: #60a5fa;"><i data-lucide="settings"></i><span>后台管理</span></a>
+        </nav>
+        <div style="padding:var(--spacing-lg) var(--spacing-xl); border-top:1px solid var(--color-sidebar-border); font-size:var(--font-size-xs); color:var(--color-sidebar-text);">
+            v1.2 · 本体论驱动 AI 平台
+        </div>
+    </aside>
+
+    <!-- MAIN AREA -->
+    <div style="flex:1; display:flex; flex-direction:column; min-width:0;">
+
+        <!-- TOPBAR -->
+        <header style="height:56px; border-bottom:1px solid var(--color-border); background:var(--color-surface); display:flex; align-items:center; padding:0 var(--spacing-xl); flex-shrink:0; gap:var(--spacing-lg);">
+            <div style="width:260px; display:flex; align-items:center; gap:var(--spacing-sm); padding:var(--spacing-sm) var(--spacing-lg); border:1px solid var(--color-border); border-radius:var(--radius-md); background:var(--color-bg-secondary); cursor:pointer;">
+                <i data-lucide="search" style="width:14px; height:14px; color:var(--color-text-secondary);"></i>
+                <span style="font-size:var(--font-size-sm); color:var(--color-text-secondary); flex:1;">搜索或 AI 助手</span>
+                <span style="font-size:var(--font-size-xs); color:var(--color-text-secondary); background:var(--color-bg); padding:1px 4px; border-radius:var(--radius-sm); border:1px solid var(--color-border);">&#8984;K</span>
+            </div>
+            <div style="flex:1;"></div>
+            <button style="position:relative; background:none; border:none; cursor:pointer; color:var(--color-text-secondary); padding:var(--spacing-sm);">
+                <i data-lucide="bell" style="width:16px; height:16px;"></i>
+                <span style="position:absolute; top:-2px; right:-2px; width:8px; height:8px; background:var(--state-error); border-radius:var(--radius-full); border:1px solid var(--color-surface);"></span>
+            </button>
+            <div style="display:flex; align-items:center; gap:var(--spacing-sm); padding:var(--spacing-sm) var(--spacing-md); border:1px solid var(--color-border); border-radius:var(--radius-md); cursor:pointer; font-size:var(--font-size-sm); color:var(--color-text-primary);">
+                <div style="width:22px; height:22px; border-radius:var(--radius-full); background:rgba(59,130,246,0.15); color:var(--color-primary); font-size:var(--font-size-xs); font-weight:var(--font-weight-medium); display:flex; align-items:center; justify-content:center;">A</div>
+                <span>Admin</span>
+                <i data-lucide="chevron-down" style="width:12px; height:12px;"></i>
+            </div>
+        </header>
+
+        <!-- TAB BAR -->
+        <div style="border-bottom:1px solid var(--color-border); background:var(--color-surface); display:flex; padding:0 var(--spacing-xl); flex-shrink:0; overflow-x:auto;">
+            <button class="tab-item" data-tab="tab-admin-users">用户</button>
+            <button class="tab-item" data-tab="tab-admin-permissions">权限</button>
+            <button class="tab-item" data-tab="tab-admin-org">组织架构</button>
+            <button class="tab-item" data-tab="tab-admin-logs">监控日志</button>
+            <button class="tab-item" data-tab="tab-admin-backup">备份恢复</button>
+            <button class="tab-item" data-tab="tab-admin-deploy">部署环境</button>
+            <button class="tab-item active" data-tab="tab-admin-billing">计费</button>
+            <button class="tab-item" data-tab="tab-admin-plugins">插件管理</button>
+        </div>
+
+        <!-- PAGE CONTENT -->
+        <main style="flex:1; overflow-y:auto; background:var(--color-bg-secondary);">
+            <div style="max-width:1280px; margin:0 auto; padding:var(--spacing-2xl) var(--spacing-2xl);">
+
+                <!-- Header -->
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:var(--spacing-2xl);">
+                    <div>
+                        <div style="display:flex; align-items:center; gap:var(--spacing-lg); margin-bottom:var(--spacing-xs);">
+                            <i data-lucide="credit-card" style="width:20px; height:20px; color:var(--color-primary);"></i>
+                            <h1 style="font-size:var(--font-size-xl); font-weight:var(--font-weight-semibold); color:var(--color-text-primary);">计费中心</h1>
+                        </div>
+                        <p style="font-size:var(--font-size-sm); color:var(--color-text-secondary); margin-left:32px;">管理订阅套餐和用量统计</p>
+                    </div>
+                </div>
+
+                <!-- Current Subscription Card -->
+                <div class="card" style="padding:var(--spacing-xl); margin-bottom:var(--spacing-lg);">
+                    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:var(--spacing-lg);">
+                        <div style="display:flex; align-items:center; gap:var(--spacing-lg);">
+                            <i data-lucide="crown" style="width:20px; height:20px; color:var(--color-primary);"></i>
+                            <span style="font-size:var(--font-size-base); font-weight:var(--font-weight-medium); color:var(--color-text-primary);">当前订阅</span>
+                        </div>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:var(--spacing-2xl);">
+                        <div>
+                            <span style="font-size:var(--font-size-xl); font-weight:var(--font-weight-semibold); color:var(--color-text-primary);">专业版</span>
+                            <span class="badge badge-success" style="margin-left:var(--spacing-md);">生效中</span>
+                        </div>
+                        <div style="width:1px; height:20px; background:var(--color-border);"></div>
+                        <div style="font-size:var(--font-size-sm); color:var(--color-text-secondary);">
+                            <i data-lucide="calendar" style="width:12px; height:12px; vertical-align:-2px;"></i>
+                            2024-01-01 至 2024-12-31
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Usage Stats -->
+                <div style="display:flex; gap:var(--spacing-lg); margin-bottom:var(--spacing-2xl);">
+                    <div class="card" style="padding:var(--spacing-lg) var(--spacing-xl); flex:1;">
+                        <div style="font-size:var(--font-size-sm); color:var(--color-text-secondary); margin-bottom:var(--spacing-xs);">今日</div>
+                        <div style="font-size:var(--font-size-xl); font-weight:var(--font-weight-semibold); color:var(--color-text-primary);">1,234 tokens</div>
+                        <div style="font-size:var(--font-size-sm); color:var(--color-text-secondary); margin-top:var(--spacing-xs);">¥12.34</div>
+                    </div>
+                    <div class="card" style="padding:var(--spacing-lg) var(--spacing-xl); flex:1;">
+                        <div style="font-size:var(--font-size-sm); color:var(--color-text-secondary); margin-bottom:var(--spacing-xs);">本月</div>
+                        <div style="font-size:var(--font-size-xl); font-weight:var(--font-weight-semibold); color:var(--color-text-primary);">12,450 tokens</div>
+                        <div style="font-size:var(--font-size-sm); color:var(--color-text-secondary); margin-top:var(--spacing-xs);">¥124.50</div>
+                    </div>
+                    <div class="card" style="padding:var(--spacing-lg) var(--spacing-xl); flex:1;">
+                        <div style="font-size:var(--font-size-sm); color:var(--color-text-secondary); margin-bottom:var(--spacing-xs);">累计</div>
+                        <div style="font-size:var(--font-size-xl); font-weight:var(--font-weight-semibold); color:var(--color-text-primary);">156,780 tokens</div>
+                        <div style="font-size:var(--font-size-sm); color:var(--color-text-secondary); margin-top:var(--spacing-xs);">¥1,567.80</div>
+                    </div>
+                </div>
+
+                <!-- Plan Selection -->
+                <div style="margin-bottom:var(--spacing-lg);">
+                    <h2 style="font-size:var(--font-size-lg); font-weight:var(--font-weight-medium); color:var(--color-text-primary); margin-bottom:var(--spacing-lg);">选择套餐</h2>
+                </div>
+                <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:var(--spacing-lg);">
+
+                    <!-- Plan: 基础版 (current) -->
+                    <div class="card" style="padding:var(--spacing-xl); border:2px solid var(--color-primary); display:flex; flex-direction:column;">
+                        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:var(--spacing-md);">
+                            <span style="font-size:var(--font-size-base); font-weight:var(--font-weight-medium); color:var(--color-text-primary);">基础版</span>
+                            <span class="badge badge-primary">当前套餐</span>
+                        </div>
+                        <div style="margin-bottom:var(--spacing-lg);">
+                            <span style="font-size:var(--font-size-xl); font-weight:var(--font-weight-semibold); color:var(--color-text-primary);">¥99</span>
+                            <span style="font-size:var(--font-size-sm); color:var(--color-text-secondary);">/月</span>
+                        </div>
+                        <div style="flex:1; margin-bottom:var(--spacing-lg);">
+                            <div style="display:flex; align-items:center; gap:var(--spacing-sm); margin-bottom:var(--spacing-md); font-size:var(--font-size-sm); color:var(--color-text-secondary);">
+                                <i data-lucide="check" style="width:12px; height:12px; color:var(--color-primary);"></i>
+                                <span>10,000 tokens/月</span>
+                            </div>
+                            <div style="display:flex; align-items:center; gap:var(--spacing-sm); font-size:var(--font-size-sm); color:var(--color-text-secondary);">
+                                <i data-lucide="check" style="width:12px; height:12px; color:var(--color-primary);"></i>
+                                <span>5 个应用</span>
+                            </div>
+                        </div>
+                        <button class="btn" style="width:100%; justify-content:center; opacity:0.5; cursor:not-allowed;" disabled>当前套餐</button>
+                    </div>
+
+                    <!-- Plan: 专业版 (recommended) -->
+                    <div class="card" style="padding:var(--spacing-xl); border:2px solid var(--color-primary); position:relative; display:flex; flex-direction:column;">
+                        <div style="position:absolute; top:-1px; left:50%; transform:translateX(-50%); background:var(--color-primary); color:var(--color-text-inverse); font-size:var(--font-size-xs); font-weight:var(--font-weight-medium); padding:1px 8px; border-radius:var(--radius-md) var(--radius-md) 0 0;">推荐</div>
+                        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:var(--spacing-md);">
+                            <span style="font-size:var(--font-size-base); font-weight:var(--font-weight-medium); color:var(--color-text-primary);">专业版</span>
+                        </div>
+                        <div style="margin-bottom:var(--spacing-lg);">
+                            <span style="font-size:var(--font-size-xl); font-weight:var(--font-weight-semibold); color:var(--color-text-primary);">¥299</span>
+                            <span style="font-size:var(--font-size-sm); color:var(--color-text-secondary);">/月</span>
+                        </div>
+                        <div style="flex:1; margin-bottom:var(--spacing-lg);">
+                            <div style="display:flex; align-items:center; gap:var(--spacing-sm); margin-bottom:var(--spacing-md); font-size:var(--font-size-sm); color:var(--color-text-secondary);">
+                                <i data-lucide="check" style="width:12px; height:12px; color:var(--color-primary);"></i>
+                                <span>50,000 tokens/月</span>
+                            </div>
+                            <div style="display:flex; align-items:center; gap:var(--spacing-sm); margin-bottom:var(--spacing-md); font-size:var(--font-size-sm); color:var(--color-text-secondary);">
+                                <i data-lucide="check" style="width:12px; height:12px; color:var(--color-primary);"></i>
+                                <span>20 个应用</span>
+                            </div>
+                            <div style="display:flex; align-items:center; gap:var(--spacing-sm); font-size:var(--font-size-sm); color:var(--color-text-secondary);">
+                                <i data-lucide="check" style="width:12px; height:12px; color:var(--color-primary);"></i>
+                                <span>优先技术支持</span>
+                            </div>
+                        </div>
+                        <button class="btn btn-primary" style="width:100%; justify-content:center;">升级</button>
+                    </div>
+
+                    <!-- Plan: 企业版 -->
+                    <div class="card" style="padding:var(--spacing-xl); display:flex; flex-direction:column;">
+                        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:var(--spacing-md);">
+                            <span style="font-size:var(--font-size-base); font-weight:var(--font-weight-medium); color:var(--color-text-primary);">企业版</span>
+                        </div>
+                        <div style="margin-bottom:var(--spacing-lg);">
+                            <span style="font-size:var(--font-size-xl); font-weight:var(--font-weight-semibold); color:var(--color-text-primary);">¥999</span>
+                            <span style="font-size:var(--font-size-sm); color:var(--color-text-secondary);">/月</span>
+                        </div>
+                        <div style="flex:1; margin-bottom:var(--spacing-lg);">
+                            <div style="display:flex; align-items:center; gap:var(--spacing-sm); margin-bottom:var(--spacing-md); font-size:var(--font-size-sm); color:var(--color-text-secondary);">
+                                <i data-lucide="check" style="width:12px; height:12px; color:var(--color-primary);"></i>
+                                <span>200,000 tokens/月</span>
+                            </div>
+                            <div style="display:flex; align-items:center; gap:var(--spacing-sm); margin-bottom:var(--spacing-md); font-size:var(--font-size-sm); color:var(--color-text-secondary);">
+                                <i data-lucide="check" style="width:12px; height:12px; color:var(--color-primary);"></i>
+                                <span>无限应用</span>
+                            </div>
+                            <div style="display:flex; align-items:center; gap:var(--spacing-sm); font-size:var(--font-size-sm); color:var(--color-text-secondary);">
+                                <i data-lucide="check" style="width:12px; height:12px; color:var(--color-primary);"></i>
+                                <span>专属客户经理</span>
+                            </div>
+                        </div>
+                        <button class="btn" style="width:100%; justify-content:center;">升级</button>
+                    </div>
+
+                </div>
+
+            </div>
+        </main>
+    </div>
+</div>
+<script>lucide.createIcons();</script>
+</body>
+</html>

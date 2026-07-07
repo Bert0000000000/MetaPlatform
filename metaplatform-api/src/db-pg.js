@@ -1055,11 +1055,17 @@ export async function initDB() {
   console.log("[db-pg] Connected to PostgreSQL via worker thread");
 
   // ─── Create schema ─────────────────────────────────────
-  // Reset schema to avoid type conflicts with pre-existing tables
-  // (e.g. old tables may have timestamp columns; new schema uses TEXT).
-  try { wc.exec("DROP SCHEMA public CASCADE"); } catch {}
-  wc.exec("CREATE SCHEMA public");
-  wc.exec(SCHEMA_SQL);
+  // By default the worker creates schema if missing and applies migrations.
+  // Set DB_PG_RESET_SCHEMA=1 to drop & recreate (dev convenience).
+  if (process.env.DB_PG_RESET_SCHEMA === "1") {
+    console.log("[db-pg] WARNING: dropping and recreating public schema (DB_PG_RESET_SCHEMA=1)");
+    try { wc.exec("DROP SCHEMA public CASCADE"); } catch {}
+    wc.exec("CREATE SCHEMA public");
+    wc.exec(SCHEMA_SQL);
+  } else {
+    // Idempotent: create tables if they don't exist
+    wc.exec(SCHEMA_SQL);
+  }
 
   // ─── Run migrations ────────────────────────────────────
   for (const m of MIGRATIONS) {
