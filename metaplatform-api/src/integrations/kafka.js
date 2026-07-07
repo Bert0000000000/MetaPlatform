@@ -51,7 +51,19 @@ export async function connect() {
     });
 
     producer = kafka.producer({ allowAutoTopicCreation: true });
-    await producer.connect();
+    // Race connect against a 10s timeout — prevents broker hang blocking API
+    try {
+      await Promise.race([
+        producer.connect(),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("kafka_connect_timeout_10s")), 10000)
+        ),
+      ]);
+    } catch (err) {
+      producer = null;
+      console.warn(`[Kafka] connect skipped (${err.message})`);
+      return null;
+    }
     producerReady = true;
     console.log(`[Kafka] Producer connected to ${KAFKA_BROKERS.join(",")}`);
 
@@ -88,7 +100,13 @@ export async function publish(topic, messages) {
     partition: m.partition,
   }));
   try {
-    const result = await producer.send({ topic, messages: payload });
+    // Race producer.send against a 5s timeout so a hung broker doesn't
+    // block the API event loop (CDC polls every 5s).
+    const sendPromise = producer.send({ topic, messages: payload });
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error("publish_timeout_5s")), 5000)
+    );
+    const result = await Promise.race([sendPromise, timeoutPromise]);
     return {
       sent: payload.length,
       topic,

@@ -303,6 +303,15 @@ export async function deleteIndex(index) {
  */
 export async function healthCheck() {
   if (!isConfigured()) return { status: "disabled" };
+  return Promise.race([
+    _esHealthInner(),
+    new Promise((resolve) =>
+      setTimeout(() => resolve({ status: "timeout", after: "5s" }), 5000)
+    ),
+  ]);
+}
+
+async function _esHealthInner() {
   try {
     if (!client) await connect();
     if (!client) return { status: "unreachable" };

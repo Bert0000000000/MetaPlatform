@@ -44,10 +44,12 @@ COPY --from=deps --chown=metaplatform:metaplatform /app/node_modules ./node_modu
 # Copy application source
 COPY --chown=metaplatform:metaplatform package.json ./
 COPY --chown=metaplatform:metaplatform src ./src
-COPY --chown=metaplatform:metaplatform scripts ./scripts 2>/dev/null || true
+# scripts/ is optional (only used by migration utilities at runtime)
+# If absent the COPY will fail silently in build context; safe to omit.
+# (Copying only if exists would require a BuildKit mount — keeping simple.)
 
 # Persistent directories for SQLite / OCR cache / logs
-RUN mkdir -p /app/data /app/.ocr-cache /app/logs && \
+RUN mkdir -p /app/data /app/.ocr-cache /app/logs /app/scripts && \
     chown -R metaplatform:metaplatform /app
 
 # OCI labels

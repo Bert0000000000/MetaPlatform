@@ -34,6 +34,24 @@ import quality from "./quality.js";
  * Aggregate health check across all storage backends
  */
 export async function healthCheckAll() {
+  // Race the whole aggregate against a 3s deadline so a hung backend
+  // never blocks /api/health indefinitely. Use a real setTimeout
+  // ref so node can clean up the timer.
+  let timer;
+  const timeout = new Promise((resolve) => {
+    timer = setTimeout(
+      () => resolve({ status: "aggregate_timeout", after: "3s" }),
+      3000
+    );
+  });
+  try {
+    return await Promise.race([_healthCheckAllInner(), timeout]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function _healthCheckAllInner() {
   // Dynamic import to avoid circular dependency with integrations/clickhouse.js
   let clickhouseHealth = { status: "error", error: "module_not_loaded" };
   try {

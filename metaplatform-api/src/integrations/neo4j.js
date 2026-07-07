@@ -59,7 +59,8 @@ export async function connect() {
       neo4jLib.default.auth.basic(NEO4J_USER, NEO4J_PASSWORD),
       {
         maxConnectionPoolSize: 50,
-        connectionAcquisitionTimeout: 30000,
+        connectionAcquisitionTimeout: 5000,
+        connectTimeout: 5000,
         disableLosslessIntegers: true,
       }
     );
@@ -288,6 +289,16 @@ export async function close() {
  */
 export async function healthCheck() {
   if (!isConfigured()) return { status: "disabled" };
+  // 5s timeout so a hung driver never blocks /api/health
+  return Promise.race([
+    _neo4jHealthInner(),
+    new Promise((resolve) =>
+      setTimeout(() => resolve({ status: "timeout", after: "5s" }), 5000)
+    ),
+  ]);
+}
+
+async function _neo4jHealthInner() {
   try {
     if (!driver) await connect();
     if (!driver) return { status: "unreachable" };

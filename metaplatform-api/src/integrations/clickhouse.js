@@ -191,6 +191,15 @@ export async function listTables() {
 
 export async function healthCheck() {
   if (!isConfigured()) return { status: "disabled" };
+  return Promise.race([
+    _chHealthInner(),
+    new Promise((resolve) =>
+      setTimeout(() => resolve({ status: "timeout", after: "5s" }), 5000)
+    ),
+  ]);
+}
+
+async function _chHealthInner() {
   try {
     if (!client) await connect();
     if (!client) return { status: "unreachable" };

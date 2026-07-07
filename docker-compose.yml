@@ -97,6 +97,26 @@ services:
     volumes:
       - kafkadata:/var/lib/kafka/data
 
+  # ── ClickHouse (analytics OLAP — Phase 3) ─────────────
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.3
+    container_name: mp-clickhouse
+    environment:
+      CLICKHOUSE_DB: metaplatform
+      CLICKHOUSE_USER: meta
+      CLICKHOUSE_PASSWORD: metaplatform2026
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: "1"
+    ports:
+      - "8123:8123"
+      - "9000:9000"
+    volumes:
+      - clickhousedata:/var/lib/clickhouse
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8123/ping || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   # ── MetaPlatform API ────────────────────────────────
   api:
     build:
@@ -120,6 +140,9 @@ services:
       KAFKA_BROKERS: kafka:9092
       KAFKA_CLIENT_ID: metaplatform-api
       KAFKA_GROUP_ID: metaplatform-api-consumers
+      CLICKHOUSE_URL: http://clickhouse:8123
+      CLICKHOUSE_USER: meta
+      CLICKHOUSE_PASSWORD: metaplatform2026
       NODE_ENV: production
       PORT: 3001
     ports:
@@ -128,6 +151,8 @@ services:
       postgres:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      clickhouse:
         condition: service_healthy
 
   # ── MetaPlatform Frontend ───────────────────────────
