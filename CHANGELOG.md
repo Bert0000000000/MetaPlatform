@@ -6,6 +6,41 @@
 
 ---
 
+## [v1.1.0] - 2026-07-07
+
+### 新增 (Added)
+- **Phase 0 完成：生产化基础设施搭建**
+  - PostgreSQL 适配器（`db-adapter.js` + `db-pg.js` + `pg-worker.mjs`）
+    - 双驱动模式：`DATABASE_URL` 存在时用 PostgreSQL，否则用 SQLite（向后兼容）
+    - Worker Thread + SharedArrayBuffer + Atomics.wait 实现同步代理，零路由文件改动
+    - 50+ 张表完整 schema + 种子数据移植到 PostgreSQL 语法
+  - Redis 缓存中间件（`middleware/cache.js`）
+    - GET 请求自动缓存（默认 30s TTL）
+    - POST/PUT/DELETE 自动失效对应前缀的缓存
+    - Redis 不可用时自动降级（无感知）
+    - 响应头 `X-Cache: HIT/MISS` 标识缓存状态
+  - 健康检查增强：返回 `database`（postgresql/sqlite）+ `cache`（connected/disconnected）
+  - Docker Compose 编排（`docker-compose.yml`）
+    - PostgreSQL 16 + Redis 7 + API + Frontend（Nginx）
+    - 健康检查 + 依赖启动顺序
+  - GitHub Actions CI/CD（`.github/workflows/ci.yml`）
+    - 后端测试：PG 服务容器 + 51 个端点 curl 健康检查
+    - 前端构建：TypeScript 编译 + Vite 生产构建
+    - Docker 构建：仅 main 分支触发
+  - API Dockerfile + 前端 Dockerfile（多阶段构建）
+  - Nginx 配置：SPA fallback + API 反向代理
+
+### 变更 (Changed)
+- 所有 27 个路由文件适配 PostgreSQL 异步查询（通过同步代理，零改动）
+- `db.js` 重构为 adapter 入口，支持 SQLite/PostgreSQL 双模式切换
+
+### 验证 (Verified)
+- PostgreSQL 模式：51/51 API 端点全部通过
+- Redis 缓存：首次 MISS → 二次 HIT → POST 后自动失效
+- Docker Compose：一键启动全栈
+
+---
+
 ## [v1.0.0] - 2026-07-07
 
 ### 🎉 正式发布 — 全平台前后端联调完成，零硬编码数据
