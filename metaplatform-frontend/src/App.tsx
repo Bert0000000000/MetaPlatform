@@ -1,10 +1,69 @@
 import { BrowserRouter, Navigate, Route, Routes, useParams } from "react-router-dom";
+import { Component, type ReactNode } from "react";
 import { RoleProvider } from "@/contexts/RoleContext";
 import { Layout } from "@/components/Layout";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppDetailTabs } from "@/components/AppDetailTabs";
-import { Package } from "lucide-react";
+import { Package, AlertTriangle } from "lucide-react";
 import { isAuthenticated } from "@/lib/auth";
+
+/**
+ * Top-level error boundary. Without this, an uncaught exception in any
+ * route component (e.g. legacy data shape mismatch) tears down the
+ * whole React tree and leaves the user staring at a blank page.
+ * This boundary catches the error, shows a friendly recovery panel,
+ * and lets the user navigate back without losing the platform shell.
+ */
+class ErrorBoundary extends Component<
+  { children: ReactNode },
+  { error: Error | null }
+> {
+  state = { error: null as Error | null };
+  static getDerivedStateFromError(error: Error) {
+    return { error };
+  }
+  componentDidCatch(error: Error, info: { componentStack?: string }) {
+    // Surface to the dev console so the engineer sees the same stack.
+    // eslint-disable-next-line no-console
+    console.error("[ErrorBoundary] Uncaught in route tree:", error, info.componentStack);
+  }
+  reset = () => {
+    this.setState({ error: null });
+    // Hard reload to recover from corrupted in-memory state.
+    if (typeof window !== "undefined") window.location.assign("/dashboard");
+  };
+  render() {
+    if (this.state.error) {
+      return (
+        <div className="flex flex-col items-center justify-center min-h-[60vh] p-6 text-center">
+          <AlertTriangle className="size-12 text-destructive mb-3" />
+          <h1 className="text-lg font-semibold mb-1">页面加载失败</h1>
+          <p className="text-sm text-muted-foreground max-w-md mb-4">
+            该页面的某个组件抛出了未捕获的异常。通常由旧数据格式与新组件不兼容引起。
+          </p>
+          <pre className="text-[11px] text-left bg-muted/40 border rounded p-3 max-w-2xl overflow-auto mb-4">
+            {String(this.state.error?.message ?? this.state.error)}
+          </pre>
+          <div className="flex gap-2">
+            <button
+              onClick={this.reset}
+              className="inline-flex items-center justify-center rounded-md bg-primary text-primary-foreground px-4 py-2 text-sm hover:bg-primary/90"
+            >
+              返回工作台
+            </button>
+            <button
+              onClick={() => location.reload()}
+              className="inline-flex items-center justify-center rounded-md border px-4 py-2 text-sm hover:bg-accent"
+            >
+              强制刷新
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 // Published app (public, no platform layout)
 import PublishedApp from "@/pages/PublishedApp";
@@ -99,6 +158,7 @@ export default function App() {
     <BrowserRouter>
       <RoleProvider>
         <TooltipProvider>
+          <ErrorBoundary>
           <Routes>
             {/* Login (public) */}
             <Route path="/login" element={<Login />} />
@@ -270,6 +330,7 @@ export default function App() {
               <Route path="*" element={<Navigate to="/dashboard" replace />} />
             </Route>
           </Routes>
+          </ErrorBoundary>
         </TooltipProvider>
       </RoleProvider>
     </BrowserRouter>

@@ -2485,15 +2485,43 @@ export function TechArchitecture() {
   useEffect(() => {
     architectureApi.getSection("ta").then((sectionData: any) => {
       if (sectionData?.techStack) setTechStack(sectionData.techStack as typeof TECH_STACK_FALLBACK);
-      // ta.deploy  legacy: list of {label,value}; new shape: Topology {nodes,edges}
-      if (sectionData?.deploy) {
-        const d = sectionData.deploy;
-        if (Array.isArray(d?.nodes) && Array.isArray(d?.edges)) {
-          setDeployTopology(d as Topology);
-        }
-        // legacy list-shape silently falls back to Topology default
+      // Normalise ta.deploy into a Topology. Two legacy shapes need
+      // to be handled:
+      //   1. plain array [{label,value}, ...] from the old summary card
+      //   2. arbitrary object missing nodes/edges
+      // If we can't recognise either, keep the in-state Topology
+      // default — better than setting state to a non-Topology value
+      // and crashing on .map.
+      const d = sectionData?.deploy;
+      if (Array.isArray(d?.nodes) && Array.isArray(d?.edges)) {
+        setDeployTopology(d as Topology);
+      } else if (Array.isArray(d)) {
+        // Legacy list shape — synthesise a Topology so the canvas
+        // still has something to render instead of white-screening.
+        const migrated: Topology = {
+          nodes: d.map((item: any, i: number) => ({
+            id: `legacy-${i}`,
+            x: 30 + (i % 3) * 140,
+            y: 30 + Math.floor(i / 3) * 90,
+            w: 120,
+            h: 56,
+            name: String(item.label ?? `节点 ${i + 1}`),
+            layer: "slate",
+          })),
+          edges: [],
+        };
+        setDeployTopology(migrated);
+        // Self-heal the store so next reload is the new shape.
+        architectureApi.updateSection("ta", { deploy: migrated }).catch(() => {});
+      } else if (d && typeof d === "object") {
+        setDeployTopology({ nodes: Array.isArray(d.nodes) ? d.nodes : [], edges: Array.isArray(d.edges) ? d.edges : [] });
       }
-      if (sectionData?.svcDeps) setSvcDeps(sectionData.svcDeps as Topology);
+      const s = sectionData?.svcDeps;
+      if (Array.isArray(s?.nodes) && Array.isArray(s?.edges)) {
+        setSvcDeps(s as Topology);
+      } else if (s && typeof s === "object") {
+        setSvcDeps({ nodes: Array.isArray(s.nodes) ? s.nodes : [], edges: Array.isArray(s.edges) ? s.edges : [] });
+      }
       if (sectionData?.observability) setObservability(sectionData.observability as typeof OBSERVABILITY_FALLBACK);
       if (sectionData?.tech_selection) setTechSelection(sectionData.tech_selection as typeof TECH_SELECTION_FALLBACK);
     }).catch(() => { /* use fallback */ }).finally(() => setLoading(false));
@@ -2760,21 +2788,11 @@ export function TechArchitecture() {
       </Card>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">部署拓扑</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2 text-sm">
-              {deployTopology.map((item) => (
-                <div key={item.label} className="flex justify-between p-2 border rounded">
-                  <span>{item.label}</span><span className="font-mono text-xs">{item.value}</span>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
+        {/* The old "部署拓扑" / "可观测性" mini-cards duplicated the
+            summary that lives at the top of the deployment diagram
+            card. Removed since they relied on the legacy
+            deployTopology: {label,value}[] shape that the topology
+            canvas no longer uses. */}
         <Card>
           <CardHeader>
             <CardTitle className="text-base">可观测性</CardTitle>
