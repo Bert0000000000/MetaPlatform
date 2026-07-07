@@ -1,0 +1,21 @@
+meta {
+  name: List notifications
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/notifications?limit=10
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+tests {
+  test("returns array", function() {
+    expect(res.body.data).to.be.an('array');
+  });
+}

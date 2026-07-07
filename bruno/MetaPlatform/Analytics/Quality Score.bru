@@ -1,0 +1,44 @@
+meta {
+  name: Quality score
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/analytics/quality/score
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "sample": [
+      { "id": 1, "email": "ok@example.com", "age": 25 },
+      { "id": 2, "email": "bad", "age": 17 },
+      { "id": 3, "email": "ok2@example.com", "age": 30 }
+    ],
+    "rules": [
+      { "column": "email", "type": "regex", "pattern": "^[^@]+@[^@]+\\.[^@]+$" },
+      { "column": "age", "type": "range", "min": 18, "max": 150 }
+    ]
+  }
+}
+
+tests {
+  test("returns score", function() {
+    expect(res.body.data.score).to.be.a('number');
+    expect(res.body.data.score).to.be.at.least(0);
+    expect(res.body.data.score).to.be.at.most(1);
+  });
+  test("returns grade", function() {
+    expect(res.body.data.grade).to.match(/^[A-F]$/);
+  });
+}

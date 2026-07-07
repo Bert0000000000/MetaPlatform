@@ -1,0 +1,25 @@
+meta {
+  name: OpenAPI spec
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/openapi.json
+  body: none
+  auth: none
+}
+
+docs {
+  Full OpenAPI 3.0.3 spec covering all 121 paths.
+  The Swagger UI is served at /api/docs/.
+}
+
+tests {
+  test("is OpenAPI 3", function() {
+    expect(res.body.openapi).to.match(/^3\./);
+  });
+  test("has at least 100 paths", function() {
+    expect(Object.keys(res.body.paths).length).to.be.at.least(100);
+  });
+}

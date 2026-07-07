@@ -1,0 +1,37 @@
+meta {
+  name: Send test notification
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/notifications/test
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "title": "Test from Bruno",
+    "body": "Manual test of notification channels",
+    "category": "test.bruno",
+    "channels": ["inapp"]
+  }
+}
+
+tests {
+  test("delivered", function() {
+    expect(res.body.data.delivered).to.equal(true);
+  });
+  test("has id", function() {
+    expect(res.body.data.id).to.be.a('string');
+  });
+}

@@ -1,0 +1,44 @@
+meta {
+  name: Chat completion
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/ai/chat
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "messages": [
+      { "role": "user", "content": "What is MetaPlatform?" }
+    ],
+    "temperature": 0.3,
+    "maxTokens": 200
+  }
+}
+
+docs {
+  Without an LLM_API_KEY set, this returns echo mode output.
+  Set LLM_API_KEY=sk-... in the API server env for real completions.
+}
+
+tests {
+  test("returns content", function() {
+    expect(res.body.data.content).to.be.a('string');
+    expect(res.body.data.content.length).to.be.greaterThan(0);
+  });
+  test("provider echoed", function() {
+    expect(res.body.data.provider).to.be.a('string');
+  });
+}

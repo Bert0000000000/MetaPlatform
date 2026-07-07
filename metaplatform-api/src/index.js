@@ -43,10 +43,13 @@ import architectureRoutes from "./routes/architecture.js";
 import storageRoutes from "./routes/storage.js";
 import aiRoutes from "./routes/ai.js";
 import analyticsRoutes from "./routes/analytics.js";
+import notificationsRoutes from "./routes/notifications.js";
+import schedulerRoutes from "./routes/scheduler.js";
 import { cacheMiddleware, redisHealthCheck } from "./middleware/cache.js";
 import { initAll, healthCheckAll } from "./integrations/index.js";
 import cdc from "./cdc.js";
 import observabilityRoutes from "./routes/observability.js";
+import openapiRoutes from "./openapi.js";
 import { metricsMiddleware } from "./observability/metrics.js";
 import { loggerMiddleware } from "./observability/logger.js";
 import { tracerMiddleware } from "./observability/tracer.js";
@@ -80,9 +83,11 @@ app.use(generalLimiter);                  // Apply general rate limiting
 app.use(tracerMiddleware);
 app.use(loggerMiddleware);
 app.use(metricsMiddleware);
-app.use(tracerMiddleware);
-app.use(loggerMiddleware);
-app.use(metricsMiddleware);
+// Tenant resolver: runs after authenticate middleware (attached per-route below)
+app.use((req, res, next) => {
+  if (req.user) tenantResolver(req, res, next);
+  else next();
+});
 
 // ─── Routes ──────────────────────────────────────────────
 // Auth routes — PUBLIC for login/register, rate-limited separately
@@ -126,6 +131,12 @@ app.use("/api/analytics", authenticate, analyticsRoutes);
 // Phase 5: Observability — metrics (public scrape), logs/traces/audit (auth)
 app.use("/api/observability", observabilityRoutes);
 
+app.use("/api/notifications", authenticate, notificationsRoutes);
+app.use("/api/scheduler", authenticate, schedulerRoutes);
+
+// API documentation (OpenAPI 3 + Swagger UI)
+app.use("/api", openapiRoutes);
+
 // ─── Health check (public, optional auth) ────────────────
 app.get("/api/health", optionalAuth, async (_req, res) => {
   try {
@@ -165,13 +176,28 @@ async function bootstrap() {
   }
 
   // ─── Start server ───────────────────────────────────────
-  app.listen(PORT, () => {
+  const server = app.listen(PORT, () => {
     console.log(`\n  MetaPlatform API server running at:`);
     console.log(`  -> http://localhost:${PORT}`);
     console.log(`  -> Press Ctrl+C to stop\n`);
 
     if (process.env.CDC_ENABLED !== "false") {
       cdc.start();
+    }
+
+    // Start task scheduler (Phase 7)
+    if (process.env.SCHEDULER_ENABLED !== "false") {
+      import("./scheduler.js").then((s) => s.start()).catch((err) =>
+        console.warn("[Scheduler] start failed:", err.message)
+      );
+    }
+
+    // Attach notification WebSocket gateway
+    if (process.env.NOTIFICATIONS_WS_ENABLED !== "false") {
+      import("./notifications/websocket.js").then(({ attachNotificationWs }) => {
+        attachNotificationWs(server, "/api/notifications/ws");
+        console.log(`  -> WebSocket: ws://localhost:${PORT}/api/notifications/ws`);
+      }).catch((err) => console.warn("[Notifications] WS attach failed:", err.message));
     }
   });
 }

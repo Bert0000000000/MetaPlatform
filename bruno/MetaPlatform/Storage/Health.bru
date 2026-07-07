@@ -1,0 +1,30 @@
+meta {
+  name: Storage health
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/storage/health
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+docs {
+  Returns health status for all 7 backend services (PostgreSQL, Redis,
+  Neo4j, Elasticsearch, Milvus, MinIO, Kafka).
+}
+
+tests {
+  test("returns 7 services", function() {
+    const services = res.body.data;
+    expect(Object.keys(services).length).to.be.at.least(7);
+  });
+  test("postgres is connected", function() {
+    expect(res.body.data.postgres.status).to.equal('connected');
+  });
+}

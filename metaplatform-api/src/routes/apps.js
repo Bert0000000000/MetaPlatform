@@ -6,6 +6,7 @@ import { v4 as uuid } from "uuid";
 import http from "http";
 import https from "https";
 import db from "../db.js";
+import { tenantGuard } from "../middleware/tenant.js";
 
 const router = Router();
 
@@ -92,7 +93,7 @@ router.get("/:id", async (req, res, next) => {
 });
 
 // ─── POST / ── create application ───────────────────────
-router.post("/", async (req, res, next) => {
+router.post("/", tenantGuard, async (req, res, next) => {
   try {
     const { name, description, category, icon } = req.body;
     if (!name || !category || !icon) {

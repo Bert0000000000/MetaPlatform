@@ -6,6 +6,59 @@
 
 ---
 
+## [v1.7.0] - 2026-07-07
+
+### 新增 (Added)
+- **Phase 7 完成：基础工程 + DX 强化**
+  - **D. 多阶段 Dockerfile**
+    - API image: 3-stage build (`builder` / `deps` / `runtime`)，Alpine base，tini PID 1，非 root user (uid 10001)，HEALTHCHECK `/api/health`，OCI labels
+    - Frontend image: Vite build → nginx 1.27-alpine，HEALTHCHECK `/`
+  - **M. OpenAPI 3 + Swagger UI**
+    - `src/openapi.js`：自动生成 OpenAPI 3.0.3 规范，覆盖 121 个 paths、31 个 tags
+    - 端点：`GET /api/openapi.json` + `GET /api/docs` (Swagger UI)
+    - bearerAuth security scheme + 可复用 schemas（LoginRequest/ChatRequest/HealthResponse）
+    - 与每一类路由文件一一对应（Auth/Apps/Ontology/AI/Analytics/Observability...）
+  - **A. vitest 单元测试**
+    - `tests/quality.test.js` (11 tests), `nl2sql.test.js` (12), `simulator.test.js` (3), `metrics.test.js` (2), `logger.test.js` (3), `tracer.test.js` (4), `openapi.test.js` (6), `tenant.test.js` (9)
+    - 8 个测试文件 / **50/50 测试通过**
+    - `vitest.config.js` + `npm test` / `npm run test:coverage`
+  - **B. CI 升级**（`.github/workflows/ci.yml`）
+    - 5 个 job：`backend-unit` (vitest + coverage) → `backend-integration` (PG+Redis+Neo4j+ES+MinIO+Kafka+ClickHouse 服务 + smoke tests) → `k8s-validate` (Python validator) → `frontend-build` (tsc + vite) → `docker-build` (BuildKit + GHA cache)
+    - Backend-integration job 等待所有 7 后端端口就绪后才启动 API
+  - **F. Notification 系统**
+    - `src/notifications/manager.js`：多通道分发（inapp / email / webhook）
+    - inapp: 持久化到 `notifications` 表 + 标记已读 + 未读计数
+    - email: SMTP (nodemailer) 或 stub-log 模式
+    - webhook: HMAC SHA256 签名 + 5s timeout
+    - WebSocket gateway `src/notifications/websocket.js`：JWT 认证 / 心跳 / 实时推送
+    - REST 路由 `/api/notifications` (5 endpoints)
+  - **G. 任务调度器 (Cron)**
+    - `src/scheduler.js`：5-field cron parser / 持久化 jobs / 运行历史
+    - REST 路由 `/api/scheduler` (7 endpoints)：status/jobs/CRUD/enable/disable/runNow/runs
+    - 2 个 built-in jobs: `metrics.heartbeat` (every 5m) + `cdc.emit_heartbeat` (every 1m)
+  - **N. Bruno API 集合**
+    - `bruno/MetaPlatform/`：20 个 .bru 文件覆盖核心端点
+    - 含 Auth / Health / Storage / AI / Analytics / Observability / Notifications / Scheduler / OpenAPI
+    - 自动 token 注入 + 内置测试断言
+  - **I. 多租户隔离**
+    - `src/middleware/tenant.js`：`tenantResolver` (从 JWT 或 X-Tenant-Id header 解析) + `tenantGuard` (拦截 body 中错误 tenantId)
+    - admin 可通过 `X-Tenant-Id` header 切换；普通用户只看自己
+    - `routes/apps.js` POST 应用 tenantGuard
+    - 9 个 vitest 测试覆盖所有分支
+
+### 新增依赖
+- `swagger-ui-express` ^5
+- `ws` ^8
+- `vitest` ^4 + `@vitest/coverage-v8` (devDependencies)
+
+### 验证 (Verified)
+- vitest: **50/50 PASS** across 8 test files
+- Phase 7 integration test: **12/12 PASS**
+- API 启动验证：API + 8 个后端 + CDC + Scheduler (2 jobs) + WebSocket 全部就绪
+- Bruno collection: 20 个请求覆盖核心端点
+
+---
+
 ## [v1.6.0] - 2026-07-07
 
 ### 新增 (Added)

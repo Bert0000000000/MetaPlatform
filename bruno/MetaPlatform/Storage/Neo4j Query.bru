@@ -1,0 +1,35 @@
+meta {
+  name: Neo4j Query
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/storage/neo4j/query
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "cypher": "MATCH (n) RETURN count(n) AS total LIMIT 1",
+    "params": {}
+  }
+}
+
+tests {
+  test("status is 200", function() {
+    expect(res.status).to.equal(200);
+  });
+  test("returns rows", function() {
+    expect(res.body.data).to.be.an('array');
+  });
+}

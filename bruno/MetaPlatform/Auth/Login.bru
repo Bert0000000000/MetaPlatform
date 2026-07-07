@@ -1,0 +1,43 @@
+meta {
+  name: Login
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/api/auth/login
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "email": "{{email}}",
+    "password": "{{password}}"
+  }
+}
+
+script:post-response {
+  if (res.body.data && res.body.data.token) {
+    bru.setEnvVar("token", res.body.data.token);
+  }
+}
+
+docs {
+  Returns a JWT bearer token. The token is auto-saved to the `token`
+  environment variable for use by subsequent requests.
+}
+
+tests {
+  test("status is 200", function() {
+    expect(res.status).to.equal(200);
+  });
+  test("returns token", function() {
+    expect(res.body.data.token).to.be.a('string');
+    expect(res.body.data.token.length).to.be.greaterThan(50);
+  });
+}
