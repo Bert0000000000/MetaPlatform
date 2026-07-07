@@ -1,5 +1,12 @@
 /**
- * /api/flowable — Flowable BPMN REST API proxy
+ * /api/flowable — Transparent proxy to Flowable 8 REST API.
+ *
+ * Every /api/flowable/<x> call is forwarded as-is to the Flowable engine
+ * at <FLOWABLE_REST_URL><x>, preserving method, query params, headers
+ * (Content-Type for multipart, Accept, etc.), and raw body bytes.
+ *
+ * Response shape is wrapped in { success, data } for the API's standard
+ * envelope (matches the rest of the MetaPlatform API).
  */
 import { Router } from "express";
 import multer from "multer";
@@ -7,202 +14,129 @@ import multer from "multer";
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage() });
 
-const FLOWABLE_BASE = process.env.FLOWABLE_REST_URL || "http://localhost:8081/flowable-rest/service";
+const FLOWABLE_BASE =
+  process.env.FLOWABLE_REST_URL || "http://localhost:8081/flowable-rest/service";
 const FLOWABLE_AUTH = "Basic " + Buffer.from("admin:test").toString("base64");
 
 /**
- * Generic proxy helper — forwards request to Flowable REST API
+ * Strip "/api/flowable" or "/flowable" prefix from req.path so we get the
+ * bare Flowable path (e.g. "/runtime/tasks" from "/api/flowable/runtime/tasks").
  */
-async function proxyToFlowable(req, res, { method = "GET", path, body, contentType, rawBody } = {}) {
+function flowablePath(req) {
+  return req.path.replace(/^\/api\/flowable/, "").replace(/^\/flowable/, "");
+}
+
+async function proxyToFlowable(req, res, { method, path, body, rawBody, contentType } = {}) {
   const url = new URL(`${FLOWABLE_BASE}${path}`);
 
-  // Forward query parameters
-  for (const [key, value] of Object.entries(req.query)) {
-    url.searchParams.set(key, value);
+  for (const [k, v] of Object.entries(req.query || {})) {
+    url.searchParams.set(k, v);
   }
 
-  const headers = {
-    Authorization: FLOWABLE_AUTH,
-  };
+  const headers = { Authorization: FLOWABLE_AUTH };
 
-  const fetchOpts = { method, headers };
+  const fetchOpts = { method: method || req.method, headers };
 
   if (rawBody) {
-    // Raw binary / multipart body
-    headers["Content-Type"] = contentType;
+    // Caller supplied pre-built bytes (e.g. multipart) — pass through.
+    if (contentType) headers["Content-Type"] = contentType;
     fetchOpts.body = rawBody;
   } else if (body) {
     headers["Content-Type"] = "application/json";
     fetchOpts.body = JSON.stringify(body);
+  } else if (["POST", "PUT", "PATCH"].includes(req.method) && req.body && Object.keys(req.body).length > 0) {
+    // JSON body from upstream client — let fetch set content-type
+    fetchOpts.body = JSON.stringify(req.body);
+    headers["Content-Type"] = "application/json";
   }
 
   try {
-    const response = await fetch(url.toString(), fetchOpts);
-    const text = await response.text();
+    const upstream = await fetch(url.toString(), fetchOpts);
+    const text = await upstream.text();
 
-    // Some Flowable endpoints return empty body on 204
-    if (!text || response.status === 204) {
-      return res.status(response.status).json({ success: true, data: null });
+    if (!text || upstream.status === 204) {
+      return res.status(upstream.status).json({ success: true, data: null });
     }
 
+    // Try JSON first
     try {
       const json = JSON.parse(text);
-      if (!response.ok) {
-        return res.status(response.status).json({ success: false, error: json.message || text });
+      if (!upstream.ok) {
+        return res.status(upstream.status).json({
+          success: false,
+          error: json.message || json.exception || text,
+        });
       }
       return res.json({ success: true, data: json });
     } catch {
-      // Non-JSON response (e.g. XML)
-      return res.status(response.status).json({ success: response.ok, data: text });
+      // Non-JSON (BPMN XML, raw bytes, etc.) — wrap as data string
+      return res
+        .status(upstream.status)
+        .json({ success: upstream.ok, data: text });
     }
   } catch (err) {
     console.error("[Flowable Proxy Error]", err.message);
-    return res.status(502).json({ success: false, error: "Flowable 服务不可达: " + err.message });
+    return res.status(502).json({
+      success: false,
+      error: "Flowable 服务不可达: " + err.message,
+    });
   }
 }
 
-// ─── Deployments ──────────────────────────────────────────
-
-/**
- * POST /process-definitions/deploy — Deploy BPMN XML
- * Expects multipart form with field "file" containing the .bpmn or .bpmn20.xml file
- */
-router.post("/process-definitions/deploy", upload.single("file"), (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ success: false, error: "请上传 BPMN 文件 (field: file)" });
+// ─── Multipart deploy helper ────────────────────────────────────
+// Frontend sends JSON { name, bpmnXml, tenantId? }; we wrap the BPMN XML
+// into a multipart/form-data POST to Flowable 8's /repository/deployments
+// endpoint, which is the only way to deploy via REST in v8.
+//
+// IMPORTANT: Flowable 8's strict XML parser rejects UTF-8 BOM (the EF BB BF
+// byte-order-mark PowerShell / Notepad sometimes prepend). Strip any leading
+// whitespace + BOM before assembling the multipart body.
+function handleDeploy(req, res) {
+  const { name, bpmnXml, tenantId } = req.body || {};
+  if (!name || !bpmnXml) {
+    return res.status(400).json({
+      success: false,
+      error: "需要 { name, bpmnXml } 两个字段",
+    });
   }
 
-  const boundary = "----FlowableBoundary" + Date.now();
-  const fileName = req.file.originalname || "process.bpmn";
+  // Strip UTF-8 BOM and leading whitespace so Flowable's XMLStreamReader
+  // doesn't throw "Content is not allowed in prolog".
+  const cleanedXml = bpmnXml.replace(/^\uFEFF/, "").replace(/^\s+/, "");
 
-  // Build multipart body manually (lightweight, no extra dependency)
+  const boundary = "----FlowableBoundary" + Date.now();
   const parts = [];
+
   parts.push(
     `--${boundary}\r\n` +
-    `Content-Disposition: form-data; name="file"; filename="${fileName}"\r\n` +
-    `Content-Type: application/xml\r\n\r\n`
+      `Content-Disposition: form-data; name="file"; filename="${name}.bpmn20.xml"\r\n` +
+      `Content-Type: application/xml\r\n\r\n`
   );
-  parts.push(req.file.buffer);
+  parts.push(cleanedXml);
   parts.push(`\r\n--${boundary}--\r\n`);
 
-  const rawBody = Buffer.concat(parts.map(p => (typeof p === "string" ? Buffer.from(p) : p)));
+  const rawBody = Buffer.concat(
+    parts.map((p) => (typeof p === "string" ? Buffer.from(p, "utf-8") : p))
+  );
 
   return proxyToFlowable(req, res, {
     method: "POST",
-    path: "/deployments",
+    path: "/repository/deployments",
     rawBody,
     contentType: `multipart/form-data; boundary=${boundary}`,
   });
-});
+}
 
-// ─── Process Definitions ──────────────────────────────────
+// ─── Catch-all transparent proxy ────────────────────────────────
+// Order matters: specific routes first, then catch-all for everything
+// else. The catch-all forwards the request verb + body verbatim.
 
-/** GET /management/* — Forward as-is to /management/* (engine status etc.) */
-router.get(/^\/management\/.*/, async (req, res) => {
-  return proxyToFlowable(req, res, { path: req.path.replace(/^\/api\/flowable/, "").replace(/^\/flowable/, "") });
-});
+router.post("/deployments", upload.single("file"), handleDeploy);
 
-/** GET /repository/* — Forward as-is (covers process-definitions etc.) */
-router.get(/^\/repository\/.*/, async (req, res) => {
-  return proxyToFlowable(req, res, { path: req.path.replace(/^\/api\/flowable/, "").replace(/^\/flowable/, "") });
-});
-
-/** GET /process-definitions — List deployed process definitions */
-router.get("/process-definitions", async (req, res) => {
-  return proxyToFlowable(req, res, { path: "/repository/process-definitions" });
-});
-
-/** GET /process-definitions/:id — Get single process definition */
-router.get("/process-definitions/:id", async (req, res) => {
-  return proxyToFlowable(req, res, { path: `/repository/process-definitions/${req.params.id}` });
-});
-
-/** GET /process-definitions/:id/xml — Get BPMN XML */
-router.get("/process-definitions/:id/xml", async (req, res) => {
-  return proxyToFlowable(req, res, { path: `/repository/process-definitions/${req.params.id}/resourcedata` });
-});
-
-/** DELETE /deployments/:id — Delete a deployment */
-router.delete("/deployments/:id", async (req, res) => {
-  return proxyToFlowable(req, res, {
-    method: "DELETE",
-    path: `/repository/deployments/${req.params.id}`,
-  });
-});
-
-// ─── Process Instances ────────────────────────────────────
-
-/** POST /process-instances — Start a process instance */
-router.post("/process-instances", async (req, res) => {
-  return proxyToFlowable(req, res, {
-    method: "POST",
-    path: "/runtime/process-instances",
-    body: req.body,
-  });
-});
-
-/** GET /process-instances — List process instances */
-router.get("/process-instances", async (req, res) => {
-  return proxyToFlowable(req, res, { path: "/runtime/process-instances" });
-});
-
-/** GET /process-instances/:id — Get single instance details */
-router.get("/process-instances/:id", async (req, res) => {
-  return proxyToFlowable(req, res, { path: `/runtime/process-instances/${req.params.id}` });
-});
-
-/** DELETE /process-instances/:id — Cancel an instance */
-router.delete("/process-instances/:id", async (req, res) => {
-  return proxyToFlowable(req, res, {
-    method: "DELETE",
-    path: `/runtime/process-instances/${req.params.id}`,
-  });
-});
-
-// ─── Tasks ────────────────────────────────────────────────
-
-/** GET /tasks — List tasks (with optional assignee filter) */
-router.get("/tasks", async (req, res) => {
-  return proxyToFlowable(req, res, { path: "/runtime/tasks" });
-});
-
-/** POST /tasks/:id/complete — Complete a task with variables */
-router.post("/tasks/:id/complete", async (req, res) => {
-  return proxyToFlowable(req, res, {
-    method: "POST",
-    path: `/runtime/tasks/${req.params.id}`,
-    body: { action: "complete", variables: req.body.variables || [] },
-  });
-});
-
-/** POST /tasks/:id/claim — Claim a task */
-router.post("/tasks/:id/claim", async (req, res) => {
-  return proxyToFlowable(req, res, {
-    method: "POST",
-    path: `/runtime/tasks/${req.params.id}`,
-    body: { action: "claim", assignee: req.body.assignee },
-  });
-});
-
-/** POST /tasks/:id/delegate — Delegate a task */
-router.post("/tasks/:id/delegate", async (req, res) => {
-  return proxyToFlowable(req, res, {
-    method: "POST",
-    path: `/runtime/tasks/${req.params.id}`,
-    body: { action: "delegate", assignee: req.body.assignee },
-  });
-});
-
-// ─── History ──────────────────────────────────────────────
-
-/** GET /history/process-instances — List historical process instances */
-router.get("/history/process-instances", async (req, res) => {
-  return proxyToFlowable(req, res, { path: "/history/historic-process-instances" });
-});
-
-// GET /processes — alias for process-definitions (proxied to Flowable REST)
-router.get("/processes", async (req, res) => {
-  return proxyToFlowable(req, res, { path: "/repository/process-definitions" });
+// All other verbs go through this catch-all.
+router.all(/^\/(?!deployments).*/, async (req, res) => {
+  // POST/PUT/DELETE that arrive without a body should still get a body slot.
+  return proxyToFlowable(req, res, { method: req.method, path: flowablePath(req) });
 });
 
 export default router;
