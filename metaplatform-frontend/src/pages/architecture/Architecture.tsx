@@ -11,6 +11,49 @@ import {
 } from "lucide-react";
 import { architectureApi } from "@/lib/api";
 
+/**
+ * Architecture-layer color tokens (per docs/brainstorm/design-spec §4.1).
+ * Each architecture layer gets a single accent color so deployment /
+ * dependency diagrams are legible at a glance. Tokens are HSL so they
+ * compose with Tailwind's dark-mode and tint utilities.
+ *
+ *   blue   = L1 用户面 / 流程自动化
+ *   orange = L2-1 业务对象
+ *   green  = L2-2 本体引擎 + 知识图谱
+ *   red    = L2-3 数据 / 知识统一层
+ *   violet = L3-1 AI Substrate（横切基质）
+ *   slate  = L3-3 平台底座
+ *   zinc   = L3-4 存储与基础设施
+ */
+type ArchLayer = "blue" | "orange" | "green" | "red" | "violet" | "slate" | "zinc";
+
+function layerColor(layer: ArchLayer) {
+  const map: Record<ArchLayer, { fill: string; stroke: string; text: string; dot: string }> = {
+    blue:   { fill: "hsl(217 91% 96%)", stroke: "hsl(217 91% 60%)",  text: "hsl(217 91% 30%)", dot: "bg-blue-500"    },
+    orange: { fill: "hsl(25 95% 96%)",  stroke: "hsl(25 95% 53%)",   text: "hsl(25 95% 28%)",  dot: "bg-orange-500"  },
+    green:  { fill: "hsl(142 71% 95%)", stroke: "hsl(142 71% 45%)",  text: "hsl(142 71% 25%)", dot: "bg-green-500"   },
+    red:    { fill: "hsl(0 86% 96%)",   stroke: "hsl(0 86% 60%)",   text: "hsl(0 86% 30%)",   dot: "bg-red-500"     },
+    violet: { fill: "hsl(258 90% 96%)", stroke: "hsl(258 90% 60%)",  text: "hsl(258 90% 30%)", dot: "bg-violet-500"  },
+    slate:  { fill: "hsl(215 16% 95%)", stroke: "hsl(215 16% 47%)",  text: "hsl(215 25% 27%)", dot: "bg-slate-500"   },
+    zinc:   { fill: "hsl(220 14% 96%)", stroke: "hsl(220 9% 46%)",   text: "hsl(220 13% 25%)", dot: "bg-zinc-500"    },
+  };
+  return map[layer];
+}
+
+/**
+ * Small dot+label chip used below each diagram so the color tokens
+ * are not arbitrary — every diagram now carries an explicit legend.
+ */
+function LegendChip({ color, label }: { color: ArchLayer; label: string }) {
+  const c = layerColor(color);
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      <span className={`size-2 rounded-full ${c.dot}`} aria-hidden />
+      {label}
+    </span>
+  );
+}
+
 /* ═══════════════════════ Toast helper ═══════════════════════ */
 function useToast() {
   const [toast, setToast] = useState<string | null>(null);
@@ -1807,91 +1850,129 @@ export function TechArchitecture() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* F3.4.2 部署拓扑图 */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">部署拓扑图</CardTitle>
-            <CardDescription>服务器 / 容器 / 区域部署架构</CardDescription>
+        <Card className="overflow-hidden border-border/60">
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2">
+              <span className="size-2 rounded-full bg-slate-900" aria-hidden />
+              <CardTitle className="text-base">部署拓扑图</CardTitle>
+            </div>
+            <CardDescription className="pl-4">服务器 / 容器 / 区域部署架构（L3-5 部署层）</CardDescription>
           </CardHeader>
-          <CardContent>
-            <svg viewBox="0 0 400 300" className="w-full h-auto" xmlns="http://www.w3.org/2000/svg">
-              {/* Region */}
-              <rect x="10" y="10" width="380" height="280" rx="8" fill="#f0f9ff" stroke="#3b82f6" strokeWidth="1" strokeDasharray="4 2" />
-              <text x="30" y="30" fontSize="11" fontWeight="600" fill="#3b82f6">Region: China-East-2</text>
-              {/* Load Balancer */}
-              <rect x="130" y="45" width="140" height="35" rx="6" fill="#dbeafe" stroke="#3b82f6" strokeWidth="1.5" />
-              <text x="200" y="67" textAnchor="middle" fontSize="11" fontWeight="600" fill="#1e40af">Nginx + Istio</text>
-              {/* K8s Cluster */}
-              <rect x="30" y="100" width="340" height="170" rx="6" fill="#f0fdf4" stroke="#22c55e" strokeWidth="1" strokeDasharray="4 2" />
-              <text x="50" y="120" fontSize="10" fontWeight="600" fill="#22c55e">K8s 1.29 Cluster (3 Nodes)</text>
-              {/* Pods */}
+          <CardContent className="pt-0">
+            <svg viewBox="0 0 400 300" className="w-full h-auto" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="部署拓扑图">
+              {/* Region — 部署层（黑色） */}
+              <rect x="10" y="10" width="380" height="280" rx="8" fill="hsl(220 14% 96%)" stroke="hsl(220 13% 30%)" strokeWidth="1" strokeDasharray="4 2" />
+              <text x="30" y="30" fontSize="11" fontWeight="600" fill="hsl(220 13% 25%)">Region: China-East-2</text>
+
+              {/* Edge LB — 部署层（黑色/深色） */}
+              <rect x="130" y="45" width="140" height="35" rx="6" fill="hsl(220 13% 92%)" stroke="hsl(220 13% 30%)" strokeWidth="1.5" />
+              <text x="200" y="67" textAnchor="middle" fontSize="11" fontWeight="600" fill="hsl(220 13% 25%)">Nginx + Istio</text>
+
+              {/* K8s Cluster — 平台底座（灰色） */}
+              <rect x="30" y="100" width="340" height="170" rx="6" fill="hsl(215 16% 95%)" stroke="hsl(215 14% 55%)" strokeWidth="1" strokeDasharray="4 2" />
+              <text x="50" y="120" fontSize="10" fontWeight="600" fill="hsl(215 14% 40%)">K8s 1.29 Cluster (3 Nodes)</text>
+
+              {/* Pods — color-coded by architecture layer per design spec §4.1 */}
               {[
-                { name: "API Gateway", x: 50, y: 135, color: "#8b5cf6" },
-                { name: "App Service", x: 155, y: 135, color: "#3b82f6" },
-                { name: "AI Service", x: 260, y: 135, color: "#ec4899" },
-                { name: "DB Primary", x: 50, y: 200, color: "#f97316" },
-                { name: "DB Replica", x: 155, y: 200, color: "#f97316" },
-                { name: "Redis", x: 260, y: 200, color: "#ef4444" },
-              ].map((pod) => (
-                <g key={pod.name}>
-                  <rect x={pod.x} y={pod.y} width="90" height="50" rx="6" fill={pod.color} fillOpacity="0.1" stroke={pod.color} strokeWidth="1.5" />
-                  <text x={pod.x + 45} y={pod.y + 30} textAnchor="middle" fontSize="10" fontWeight="500" fill={pod.color}>{pod.name}</text>
-                </g>
-              ))}
-              {/* Lines from LB to pods */}
-              <line x1="170" y1="80" x2="95" y2="135" stroke="#94a3b8" strokeWidth="1" />
-              <line x1="200" y1="80" x2="200" y2="135" stroke="#94a3b8" strokeWidth="1" />
-              <line x1="230" y1="80" x2="305" y2="135" stroke="#94a3b8" strokeWidth="1" />
+                { name: "API Gateway",  x: 50,  y: 135, layer: "slate"  }, // L3-3 平台底座
+                { name: "App Service",  x: 155, y: 135, layer: "blue"   }, // L1 用户面微服务
+                { name: "AI Service",   x: 260, y: 135, layer: "violet" }, // L3-1 AI Substrate
+                { name: "DB Primary",   x: 50,  y: 200, layer: "zinc"   }, // L3-4 存储
+                { name: "DB Replica",   x: 155, y: 200, layer: "zinc"   }, // L3-4 存储
+                { name: "Redis Cache",  x: 260, y: 200, layer: "zinc"   }, // L3-4 基础设施
+              ].map((pod) => {
+                const c = layerColor(pod.layer);
+                return (
+                  <g key={pod.name}>
+                    <rect x={pod.x} y={pod.y} width="90" height="50" rx="6"
+                          fill={c.fill} stroke={c.stroke} strokeWidth="1.5" />
+                    <text x={pod.x + 45} y={pod.y + 30} textAnchor="middle"
+                          fontSize="10" fontWeight="500" fill={c.text}>{pod.name}</text>
+                  </g>
+                );
+              })}
+
+              {/* Edges — uniform neutral */}
+              <line x1="170" y1="80" x2="95"  y2="135" stroke="hsl(215 14% 65%)" strokeWidth="1" />
+              <line x1="200" y1="80" x2="200" y2="135" stroke="hsl(215 14% 65%)" strokeWidth="1" />
+              <line x1="230" y1="80" x2="305" y2="135" stroke="hsl(215 14% 65%)" strokeWidth="1" />
             </svg>
-            <div className="text-xs text-muted-foreground mt-2">
+
+            {/* Legend — explicit token map so the colors are legible */}
+            <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1.5 text-[11px] text-muted-foreground">
+              <LegendChip color="slate"  label="L3-3 平台底座" />
+              <LegendChip color="blue"   label="L1 用户面" />
+              <LegendChip color="violet" label="L3-1 AI Substrate" />
+              <LegendChip color="zinc"   label="L3-4 基础设施" />
+            </div>
+            <div className="text-xs text-muted-foreground mt-3">
               {designMode ? "设计态：可拖拽调整节点位置" : "运行态：实时健康状态监控"}
             </div>
           </CardContent>
         </Card>
 
         {/* F3.4.3 服务依赖图 */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">服务依赖图</CardTitle>
-            <CardDescription>微服务间通信关系</CardDescription>
+        <Card className="overflow-hidden border-border/60">
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2">
+              <span className="size-2 rounded-full bg-blue-500" aria-hidden />
+              <CardTitle className="text-base">服务依赖图</CardTitle>
+            </div>
+            <CardDescription className="pl-4">微服务间通信关系（L1 用户面 + L3 底座）</CardDescription>
           </CardHeader>
-          <CardContent>
-            <svg viewBox="0 0 400 300" className="w-full h-auto" xmlns="http://www.w3.org/2000/svg">
+          <CardContent className="pt-0">
+            <svg viewBox="0 0 400 300" className="w-full h-auto" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="服务依赖图">
               <defs>
                 <marker id="svc-arrow" markerWidth="6" markerHeight="5" refX="6" refY="2.5" orient="auto">
-                  <polygon points="0 0, 6 2.5, 0 5" fill="#94a3b8" />
+                  <polygon points="0 0, 6 2.5, 0 5" fill="hsl(215 14% 55%)" />
                 </marker>
               </defs>
-              {/* Service nodes */}
+              {/* Service nodes — color-coded by architecture layer */}
               {[
-                { name: "API Gateway", x: 200, y: 40, color: "#8b5cf6" },
-                { name: "User Service", x: 80, y: 130, color: "#3b82f6" },
-                { name: "Order Service", x: 200, y: 130, color: "#22c55e" },
-                { name: "AI Service", x: 320, y: 130, color: "#ec4899" },
-                { name: "Auth Service", x: 80, y: 230, color: "#f97316" },
-                { name: "DB Service", x: 200, y: 230, color: "#eab308" },
-                { name: "LLM Gateway", x: 320, y: 230, color: "#ef4444" },
-              ].map((svc) => (
-                <g key={svc.name}>
-                  <circle cx={svc.x} cy={svc.y} r="28" fill={svc.color} fillOpacity="0.1" stroke={svc.color} strokeWidth="2" />
-                  <text x={svc.x} y={svc.y + 4} textAnchor="middle" fontSize="9" fontWeight="600" fill={svc.color}>{svc.name}</text>
-                </g>
-              ))}
+                { name: "API Gateway", x: 200, y: 40,  layer: "slate"  },
+                { name: "User Service", x: 80,  y: 130, layer: "blue"   },
+                { name: "Order Service", x: 200, y: 130, layer: "blue"   },
+                { name: "AI Service",   x: 320, y: 130, layer: "violet" },
+                { name: "Auth Service", x: 80,  y: 230, layer: "slate"  },
+                { name: "DB Service",   x: 200, y: 230, layer: "zinc"   },
+                { name: "LLM Gateway",  x: 320, y: 230, layer: "violet" },
+              ].map((svc) => {
+                const c = layerColor(svc.layer);
+                return (
+                  <g key={svc.name}>
+                    <circle cx={svc.x} cy={svc.y} r="28"
+                            fill={c.fill} stroke={c.stroke} strokeWidth="2" />
+                    <text x={svc.x} y={svc.y + 4} textAnchor="middle"
+                          fontSize="9" fontWeight="600" fill={c.text}>{svc.name}</text>
+                  </g>
+                );
+              })}
               {/* Service connections */}
               {[
-                { from: { x: 200, y: 68 }, to: { x: 80, y: 102 } },
+                { from: { x: 200, y: 68 }, to: { x: 80,  y: 102 } },
                 { from: { x: 200, y: 68 }, to: { x: 200, y: 102 } },
                 { from: { x: 200, y: 68 }, to: { x: 320, y: 102 } },
-                { from: { x: 80, y: 158 }, to: { x: 80, y: 202 } },
+                { from: { x: 80,  y: 158 }, to: { x: 80,  y: 202 } },
                 { from: { x: 200, y: 158 }, to: { x: 200, y: 202 } },
                 { from: { x: 320, y: 158 }, to: { x: 320, y: 202 } },
                 { from: { x: 108, y: 130 }, to: { x: 172, y: 130 } },
                 { from: { x: 228, y: 130 }, to: { x: 292, y: 130 } },
               ].map((conn, i) => (
-                <line key={i} x1={conn.from.x} y1={conn.from.y} x2={conn.to.x} y2={conn.to.y} stroke="#94a3b8" strokeWidth="1.5" markerEnd="url(#svc-arrow)" />
+                <line key={i} x1={conn.from.x} y1={conn.from.y}
+                      x2={conn.to.x} y2={conn.to.y}
+                      stroke="hsl(215 14% 65%)" strokeWidth="1.5"
+                      markerEnd="url(#svc-arrow)" />
               ))}
             </svg>
-            <div className="text-xs text-muted-foreground mt-2">
-              圆形节点 = 微服务 | 箭头 = 调用方向 | 共 7 个核心服务
+
+            <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1.5 text-[11px] text-muted-foreground">
+              <LegendChip color="blue"   label="L1 业务微服务" />
+              <LegendChip color="slate"  label="L3-3 平台底座" />
+              <LegendChip color="violet" label="L3-1 AI Substrate" />
+              <LegendChip color="zinc"   label="L3-4 基础设施" />
+            </div>
+            <div className="text-xs text-muted-foreground mt-3">
+              圆形节点 = 微服务 ｜ 箭头 = 调用方向 ｜ 共 7 个核心服务
             </div>
           </CardContent>
         </Card>
