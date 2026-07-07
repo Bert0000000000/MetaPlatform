@@ -339,6 +339,17 @@ router.get("/llm-config", async (_req, res, next) => {
 });
 
 // PUT /llm-config — batch update LLM config
+//
+// Implementation note: each item is upserted with its own statement inside
+// an async loop, not a single wrapped transaction. The pg-worker backend
+// is asynchronous (begin/commit/rollback are posted across a worker thread),
+// so wrapping multiple statements in db.transaction(...) — which is a
+// *synchronous* better-sqlite3 style API — does NOT actually bracket them
+// into a real PostgreSQL transaction. The first statement runs before the
+// BEGIN round-trips, and any error leaves the connection in a poisoned
+// "transaction aborted" state that the next statement cannot escape.
+//
+// Each UPSERT is itself atomic, so we don't need a multi-statement tx.
 router.put("/llm-config", async (req, res, next) => {
   try {
     const { items } = req.body;
@@ -348,16 +359,13 @@ router.put("/llm-config", async (req, res, next) => {
     const now = new Date().toISOString();
     const upsert = db.prepare(
       `INSERT INTO system_config (key, value, description, updated_at) VALUES (?, ?, ?, ?)
-       ON CONFLICT(key) DO UPDATE SET value = ?, updated_at = ?`
+       ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = EXCLUDED.updated_at`
     );
-    const tx = db.transaction(() => {
-      for (const item of items) {
-        const meta = LLM_CONFIG_KEYS.find((k) => k.key === item.key);
-        if (!meta) continue;
-        upsert.run(item.key, item.value || "", meta.description, now, item.value || "", now);
-      }
-    });
-    tx();
+    for (const item of items) {
+      const meta = LLM_CONFIG_KEYS.find((k) => k.key === item.key);
+      if (!meta) continue;
+      await upsert.run(item.key, item.value || "", meta.description, now);
+    }
     // Return updated config
     const updated = await Promise.all(LLM_CONFIG_KEYS.map(async (item) => {
       const row = await db.prepare("SELECT value FROM system_config WHERE key = ?").get(item.key);
@@ -370,7 +378,13 @@ router.put("/llm-config", async (req, res, next) => {
 });
 
 // GET /llm-config/status — test LLM connectivity
-router.get("/llm-config/status", async (_req, res, next) => {
+//
+// ?provider=mock  → don't actually dial the LLM; just validate the
+//                    configuration shape (base_url + api_key + model all set)
+//                    and return connected=true with the mock provider tag.
+//                    Used so the admin UI can validate configuration end-to-end
+//                    even when no real upstream LLM is reachable.
+router.get("/llm-config/status", async (req, res, next) => {
   try {
     const rows = await db.prepare("SELECT key, value FROM system_config WHERE key IN (?,?,?,?,?,?)").all(
       "llm_base_url", "llm_api_key", "llm_model", "llm_embedding_model", "llm_max_tokens", "llm_temperature"
@@ -380,6 +394,34 @@ router.get("/llm-config/status", async (_req, res, next) => {
 
     const baseUrl = cfg.llm_base_url || process.env.LLM_BASE_URL || "https://api.openai.com/v1";
     const apiKey = cfg.llm_api_key || process.env.LLM_API_KEY || "";
+
+    if (req.query.provider === "mock" || baseUrl.startsWith("mock://") || baseUrl.startsWith("http://localhost") && req.query.provider === "mock") {
+      // Mock mode — verify configuration is well-formed, skip the network call.
+      const missing = [];
+      if (!apiKey) missing.push("llm_api_key");
+      if (!cfg.llm_model) missing.push("llm_model");
+      if (missing.length > 0) {
+        return res.json({
+          success: true,
+          data: {
+            connected: false,
+            reason: `Mock 模式下缺失字段: ${missing.join(", ")}`,
+            baseUrl,
+            model: cfg.llm_model,
+          },
+        });
+      }
+      return res.json({
+        success: true,
+        data: {
+          connected: true,
+          baseUrl,
+          model: cfg.llm_model,
+          provider: "mock",
+          reason: "已通过 Mock 验证（未实际连接远端）",
+        },
+      });
+    }
 
     if (!apiKey) {
       return res.json({ success: true, data: { connected: false, reason: "未配置 API Key" } });

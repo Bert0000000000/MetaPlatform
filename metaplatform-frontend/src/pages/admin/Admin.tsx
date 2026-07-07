@@ -1105,13 +1105,13 @@ function AIGatewayConfig() {
     }
   };
 
-  const handleTest = async () => {
+  const handleTest = async (mode: "mock" | "real" = "real") => {
     setTesting(true);
     setStatus(null);
     try {
-      // Save first, then test
+      // Save first, then test (so the test reflects the latest inputs)
       await adminApi.saveLlmConfig(items.map(({ key, value }) => ({ key, value })));
-      const result = await adminApi.testLlmConnection();
+      const result = await adminApi.testLlmConnection(mode);
       setStatus(result);
     } catch {
       setStatus({ connected: false, reason: "测试请求失败" });
@@ -1146,9 +1146,12 @@ function AIGatewayConfig() {
               {status.connected ? "连接正常" : status.reason || "连接失败"}
             </Badge>
           )}
-          <Button size="sm" variant="outline" onClick={handleTest} disabled={testing || saving}>
+          <Button size="sm" variant="outline" onClick={() => handleTest("mock")} disabled={testing || saving} title="不连远端，只校验已写入数据库的字段是否齐全">
             {testing ? <Loader2 className="size-3 mr-1 animate-spin" /> : <Zap className="size-3 mr-1" />}
-            测试连接
+            Mock 测试
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => handleTest("real")} disabled={testing || saving} title="真实调用 base_url/models 接口">
+            真实测试
           </Button>
           <Button size="sm" onClick={handleSave} disabled={saving || testing}>
             {saving && <Loader2 className="size-3 mr-1 animate-spin" />}

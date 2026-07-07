@@ -504,9 +504,9 @@ export const adminApi = {
       method: "PUT",
       body: JSON.stringify({ items }),
     }),
-  testLlmConnection: () =>
+  testLlmConnection: (provider?: "mock" | "real") =>
     request<{ connected: boolean; reason?: string; baseUrl?: string; model?: string }>(
-      "/admin/llm-config/status",
+      `/admin/llm-config/status${provider ? `?provider=${provider}` : ""}`,
     ),
 };
 
