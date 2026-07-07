@@ -1,15 +1,5 @@
 /**
- * Process Simulation Integration (ESM, stub)
- *
- * Phase 2 / Phase 5: What-if scenario simulator.
- * Stub implementation — full simulator arrives with the data stack in Phase 4.
+ * Simulation stub -> real implementation delegating to ai/simulator.js
  */
-
-export async function simulate(_scenarioId, _params = {}) {
-  return {
-    stub: true,
-    note: "Discrete-event simulator pending — Phase 4 deliverable",
-  };
-}
-
-export default { simulate };
+export { simulate } from "../ai/simulator.js";
+export { default } from "../ai/simulator.js";

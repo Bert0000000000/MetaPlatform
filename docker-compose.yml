@@ -148,3 +148,4 @@ volumes:
   esdata:
   miniodata:
   kafkadata:
+  clickhousedata:

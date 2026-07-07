@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.110.0",
+    "@clickhouse/client": "^1.23.0",
     "@elastic/elasticsearch": "^8.19.1",
     "bcryptjs": "^3.0.3",
     "better-sqlite3": "^11.0.0",

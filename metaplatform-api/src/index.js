@@ -42,8 +42,10 @@ import ocrRoutes from "./routes/ocr.js";
 import architectureRoutes from "./routes/architecture.js";
 import storageRoutes from "./routes/storage.js";
 import aiRoutes from "./routes/ai.js";
+import analyticsRoutes from "./routes/analytics.js";
 import { cacheMiddleware, redisHealthCheck } from "./middleware/cache.js";
 import { initAll, healthCheckAll } from "./integrations/index.js";
+import cdc from "./cdc.js";
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -109,6 +111,7 @@ app.use("/api/storage", authenticate, storageRoutes);
 
 // Phase 3: AI substrate endpoints (embeddings / LLM / agent / RAG / OCR)
 app.use("/api/ai", authenticate, aiRoutes);
+app.use("/api/analytics", authenticate, analyticsRoutes);
 
 // ─── Health check (public, optional auth) ────────────────
 app.get("/api/health", optionalAuth, async (_req, res) => {
@@ -153,6 +156,10 @@ async function bootstrap() {
     console.log(`\n  MetaPlatform API server running at:`);
     console.log(`  -> http://localhost:${PORT}`);
     console.log(`  -> Press Ctrl+C to stop\n`);
+
+    if (process.env.CDC_ENABLED !== "false") {
+      cdc.start();
+    }
   });
 }
 

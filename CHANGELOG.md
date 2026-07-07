@@ -6,6 +6,57 @@
 
 ---
 
+## [v1.4.0] - 2026-07-07
+
+### 新增 (Added)
+- **Phase 4 完成：数据栈搭建**
+  - **ClickHouse 列存 OLAP** (`src/integrations/clickhouse.js`)
+    - 真实 Docker 容器（`clickhouse-server:24.3`，port 8124 HTTP + 9002 native）
+    - createTable / insert / query / aggregate / timeSeries / truncate / listTables
+    - JSONEachRow 格式，MergingTree 引擎
+  - **NL2SQL 服务** (`src/ai/nl2sql.js`)
+    - LLM → SQL 生成 + 强安全护栏：禁 INSERT/UPDATE/DELETE/DROP/ALTER/CREATE
+    - 多语句自动拒绝、强制 LIMIT clause、whitelist 表名
+    - **Echo 模式 heuristic**：无 API Key 时按模式自动生成 SQL（count/list/top/recent）
+  - **CDC 变更数据捕获** (`src/cdc.js`)
+    - PostgreSQL → Kafka polling-based CDC（`watermark` + `id` 字段）
+    - 自动追踪 5 张表：ontology_objects / knowledge_documents / process_instances / messages / todos
+    - 5 秒轮询周期，可重启 reset 高水位
+  - **数据质量引擎** (`src/ai/quality.js`)
+    - 7 种规则：not_null / unique / regex / range / enum / min_length / max_length
+    - 加权评分 + grade（A/B/C/D/F）+ issue 列表
+    - auto-infer rules：自动从样本推断 email regex、numeric range
+  - **离散事件模拟器** (`src/ai/simulator.js`)
+    - Monte Carlo：多服务队列 + 指数分布到达/服务时间
+    - 输出 utilization / avg / p50 / p95 / p99 等待时间 + 最大队列长度
+  - **统一 Analytics 路由** (`src/routes/analytics.js`)
+    - `GET /status` — ClickHouse + CDC 综合状态
+    - ClickHouse: `/clickhouse/{query,insert,create-table,truncate,tables}`
+    - NL2SQL: `/nl2sql`
+    - CDC: `/cdc/{status,poll,start,stop,reset}`
+    - Quality: `/quality/{score,infer-rules,rule-types}`
+    - Simulator: `/simulate`
+  - **优化 stub**：`integrations/quality.js` + `integrations/simulation.js` 改为委托到真实实现
+- Docker Compose 增加 clickhouse 服务
+- `.env` 增加 CLICKHOUSE_URL / CDC_ENABLED / CDC_TABLES / CDC_POLL_INTERVAL_MS 等配置
+
+### 变更 (Changed)
+- `index.js` 启动时自动调用 `cdc.start()`（可用 `CDC_ENABLED=false` 关闭）
+- `routes/analytics.js` 使用 `import * as clickhouse` 避免 barrel 循环引用
+
+### 新增依赖
+- `@clickhouse/client` ^1.x
+
+### 验证 (Verified)
+- Phase 4 集成测试 `test-phase4.ps1`：**15/15 通过**
+  - ClickHouse: create / insert 10 / aggregate (2 groups) / time series / truncate / list tables
+  - NL2SQL: heuristic 正确生成 `SELECT count(*) AS total FROM ontology_objects LIMIT 100` + 安全护栏拒绝 INSERT
+  - CDC: running + 手动 poll emit 11 events，5 张表追踪
+  - Quality: score=0.6429 grade=D 4 issues，auto-infer 6 rules (email regex + age range + id not_null)
+  - Simulator: 50 trials Monte Carlo，utilization=0.83 avg_wait=2056s p95_wait=23083s
+
+---
+
 ## [v1.3.0] - 2026-07-07
 
 ### 新增 (Added)
