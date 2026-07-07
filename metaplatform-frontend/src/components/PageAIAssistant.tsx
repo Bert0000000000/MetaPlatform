@@ -46,13 +46,21 @@ function getPageContext(pathname: string): { title: string; description: string 
 /* ── Real AI response via LLM API ── */
 async function getAIReply(question: string, context: { title: string; description: string }): Promise<string> {
   try {
+    // Don't pin a model — backend falls back to whatever the operator
+    // saved in [后台管理 → AI Gateway 配置] (llm_model in system_config).
+    // Hard-coding "gpt-4o-mini" was shadowing Qwen / DeepSeek / etc.
     const response = await llmApi.chat([
       { role: "system", content: `你是「${context.title}」页面的AI助手。${context.description}。请用中文简洁回答用户问题。` },
       { role: "user", content: question }
-    ], { model: "gpt-4o-mini", temperature: 0.7, maxTokens: 512 });
+    ], { temperature: 0.7, maxTokens: 512 });
     return response.content;
-  } catch {
-    return `我是页面助手，当前页面是「${context.title}」。${context.description}\n\nAI 服务暂时不可用，请稍后再试。`;
+  } catch (err) {
+    // Surface the underlying failure to the user instead of swallowing it
+    // into a generic "service unavailable". Helps the operator diagnose
+    // whether it's a missing API key, a wrong model name, or a network
+    // problem from [后台管理 → AI Gateway 配置].
+    const reason = err instanceof Error ? err.message : String(err);
+    return `我是页面助手，当前页面是「${context.title}」。${context.description}\n\nAI 调用失败：${reason}\n\n（提示：可在【后台管理 → AI Gateway 配置】中把 Base URL 改成 mock://... 进入 Mock 模式试一下，或填入真实的 Provider 信息。）`;
   }
 }
 

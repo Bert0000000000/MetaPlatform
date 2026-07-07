@@ -88,15 +88,22 @@ export const llmApi = {
     messages: ChatMessage[],
     options?: { model?: string; temperature?: number; maxTokens?: number }
   ): Promise<ChatResponse> => {
+    // Don't hardcode a model — the backend /api/llm/chat falls back to
+    // whatever the operator saved in [AI Gateway 配置]. Only pass `model`
+    // when the caller explicitly asks for a different one (e.g. a model
+    // picker in the UI). Falling back to "gpt-4o-mini" here used to win
+    // over the configured qwen3.7-plus / deepseek-chat / etc. and broke
+    // every AI Assistant call for non-OpenAI providers.
+    const body: Record<string, unknown> = {
+      messages,
+      temperature: options?.temperature ?? 0.7,
+      maxTokens: options?.maxTokens,
+    };
+    if (options?.model) body.model = options.model;
     const res = await fetch(`${LLM_BASE}/chat`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        messages,
-        model: options?.model || "gpt-4o-mini",
-        temperature: options?.temperature ?? 0.7,
-        maxTokens: options?.maxTokens,
-      }),
+      body: JSON.stringify(body),
     });
     const json = await res.json();
     if (!json.success) throw new Error(json.error || "LLM request failed");

@@ -59,7 +59,41 @@ async function recordUsage(model, promptTokens, completionTokens, userId, reques
 }
 
 // ─── Helper: call OpenAI-compatible API ───────────────────
+//
+// When the configured baseUrl uses the "mock://" scheme, we don't dial any
+// upstream. We synthesize a deterministic reply and skip the network call
+// entirely so dev environments without a real LLM (or with a stale test
+// key) can still exercise the AI Assistant, SuperAI, and Page AI Assistant
+// flows end-to-end. The "model" field is whatever the operator saved; we
+// echo it back so callers can verify the configured model is being used.
 async function callLLM(endpoint, body, llmCfg) {
+  // Mock short-circuit
+  if (llmCfg.baseUrl.startsWith("mock://")) {
+    const userText = body.messages?.[body.messages.length - 1]?.content || "";
+    const sysText = body.messages?.[0]?.content || "";
+    const reply = buildMockReply(userText, sysText, llmCfg, endpoint);
+    // Return an OpenAI-shaped response so the same parsing code works
+    // whether the call was real or mocked.
+    return {
+      id: "mock-" + Date.now(),
+      object: "chat.completion",
+      created: Math.floor(Date.now() / 1000),
+      model: body.model,
+      choices: [
+        {
+          index: 0,
+          message: { role: "assistant", content: reply },
+          finish_reason: "stop",
+        },
+      ],
+      usage: {
+        prompt_tokens: Math.max(1, userText.length / 4),
+        completion_tokens: Math.max(1, reply.length / 4),
+        total_tokens: Math.max(2, (userText.length + reply.length) / 4),
+      },
+    };
+  }
+
   const url = `${llmCfg.baseUrl}${endpoint}`;
   const response = await fetch(url, {
     method: "POST",
@@ -76,6 +110,31 @@ async function callLLM(endpoint, body, llmCfg) {
   }
 
   return response.json();
+}
+
+/**
+ * Synthesize a friendly mock reply that:
+ *   1. acknowledges the question,
+ *   2. reflects the system-prompt context (page role) so it feels
+ *      page-aware in the AI Assistant / Page AI Assistant flows,
+ *   3. surfaces the actual configured model so operators can verify
+ *      that the right model is being routed.
+ */
+function buildMockReply(userText, sysText, llmCfg, endpoint) {
+  const tag = `\`[MOCK / model=${llmCfg.model}]\``;
+  if (endpoint === "/embeddings") {
+    // Return a 4-dim zero-ish vector so downstream code that expects
+    // a numeric array doesn't blow up.
+    return;
+  }
+  const subject = (() => {
+    if (sysText.includes("页面")) return "页面";
+    if (sysText.includes("SuperAI")) return "SuperAI";
+    if (sysText.includes("business analyst") || sysText.includes("业务流程")) return "流程";
+    return "对话";
+  })();
+  const summary = userText.length > 80 ? userText.slice(0, 80) + "…" : userText;
+  return `${tag} 这是针对「${subject}」的占位回复，因为 MetaPlatform 当前运行在 mock 模式下（baseUrl=${llmCfg.baseUrl}）。\n\n你的问题是：${summary}\n\n若要切换到真实模型，请在【后台管理 → AI Gateway 配置】中把 Base URL 改为支持 ${llmCfg.model} 的端点。`;
 }
 
 // ═══════════════════════════════════════════════════════════

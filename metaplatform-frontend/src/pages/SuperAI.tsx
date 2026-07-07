@@ -295,7 +295,10 @@ function ChatTab({ messages, setMessages, agentPrompt, onAgentPromptConsumed }: 
           ];
 
           const response = await llmApi.chat(chatMessages, {
-            model: "gpt-4o-mini",
+            // Don't pin a model — backend uses the operator-configured model
+            // (system_config.llm_model) by default. Pinning to "gpt-4o-mini"
+            // would shadow Qwen / DeepSeek / etc. that the operator saved
+            // in [后台管理 → AI Gateway 配置].
             temperature: 0.7,
             maxTokens: 1024,
           });
@@ -303,16 +306,20 @@ function ChatTab({ messages, setMessages, agentPrompt, onAgentPromptConsumed }: 
         } catch (llmError) {
           // Step 3: Handle failure
           console.warn("[SuperAI] LLM API unavailable:", llmError);
+          const reason = llmError instanceof Error ? llmError.message : String(llmError);
           if (userMsg.attachments?.some((a) => a.type === "image")) {
-            reply = "已收到你上传的图片。我可以看到图片内容并进行分析。\n\n请问你需要我对这张图片做什么处理？例如：\n- 提取图片中的文字信息\n- 分析图片中的数据图表\n- 识别图片中的业务流程";
+            reply = `已收到你上传的图片。\n\n（AI 调用失败：${reason}\n请到【后台管理 → AI Gateway 配置】检查 Base URL / API Key / 模型名称。）`;
           } else if (userMsg.attachments?.some((a) => a.type === "voice")) {
-            reply = "已收到你的语音消息。语音转文字功能正在处理中。\n\n在完整接入语音识别服务后，将自动将语音转为文字并理解你的意图。";
+            reply = `已收到你的语音消息。语音转文字功能正在处理中。\n\n（AI 调用失败：${reason}）`;
           } else if (userMsg.attachments?.some((a) => a.type === "document")) {
             const docNames = userMsg.attachments.filter((a) => a.type === "document").map((a) => a.name).join("、");
-            reply = `已收到文档：${docNames}\n\n文档解析功能将在接入文档处理引擎后生效。目前我可以帮你：\n- 总结文档要点\n- 提取关键数据\n- 生成文档摘要\n\n请问你需要什么操作？`;
+            reply = `已收到文档：${docNames}\n\n（AI 调用失败：${reason}）`;
           } else {
-            // For text-only messages, show user-friendly error instead of mock fallback
-            reply = "抱歉，AI 服务暂时不可用，请稍后再试。";
+            // For text-only messages, surface the underlying error so the
+            // user can actually tell what's wrong instead of seeing a
+            // generic "service unavailable". Includes the hint to flip
+            // the gateway to mock:// mode for local testing.
+            reply = `抱歉，AI 调用失败：${reason}\n\n提示：把【后台管理 → AI Gateway 配置】的 Base URL 改为 mock://local 可进入 Mock 模式（无需真实 LLM 也能跑通），或填入能支持当前已配模型的 Provider 凭证。`;
           }
         }
       }
