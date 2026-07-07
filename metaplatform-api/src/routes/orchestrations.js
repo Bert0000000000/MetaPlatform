@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from "uuid";
 const router = Router();
 
 // GET /api/orchestrations
-router.get("/", (req, res) => {
+router.get("/", async (req, res) => {
   const rows = db
     .prepare("SELECT * FROM orchestrations ORDER BY created_at DESC")
     .all();
@@ -13,7 +13,7 @@ router.get("/", (req, res) => {
 });
 
 // GET /api/orchestrations/:id
-router.get("/:id", (req, res) => {
+router.get("/:id", async (req, res) => {
   const row = db
     .prepare("SELECT * FROM orchestrations WHERE id = ?")
     .get(req.params.id);
@@ -24,10 +24,10 @@ router.get("/:id", (req, res) => {
 });
 
 // POST /api/orchestrations
-router.post("/", (req, res) => {
+router.post("/", async (req, res) => {
   const { name, type, adapters, trigger_type, config } = req.body;
   const id = uuidv4();
-  db.prepare(
+  await db.prepare(
     "INSERT INTO orchestrations (id, name, type, adapters, trigger_type, config) VALUES (?, ?, ?, ?, ?, ?)",
   ).run(
     id,
@@ -41,7 +41,7 @@ router.post("/", (req, res) => {
 });
 
 // PUT /api/orchestrations/:id
-router.put("/:id", (req, res) => {
+router.put("/:id", async (req, res) => {
   const { name, adapters, status, config, trigger_type } = req.body;
   const updates = [];
   const params = [];
@@ -67,15 +67,15 @@ router.put("/:id", (req, res) => {
   }
   updates.push("updated_at = datetime('now')");
   params.push(req.params.id);
-  db.prepare(`UPDATE orchestrations SET ${updates.join(", ")} WHERE id = ?`).run(
+  await db.prepare(`UPDATE orchestrations SET ${updates.join(", ")} WHERE id = ?`).run(
     ...params,
   );
   res.json({ success: true });
 });
 
 // DELETE /api/orchestrations/:id
-router.delete("/:id", (req, res) => {
-  db.prepare("DELETE FROM orchestrations WHERE id = ?").run(req.params.id);
+router.delete("/:id", async (req, res) => {
+  await db.prepare("DELETE FROM orchestrations WHERE id = ?").run(req.params.id);
   res.json({ success: true });
 });
 

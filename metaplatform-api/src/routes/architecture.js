@@ -11,13 +11,13 @@ const router = Router();
 const VALID_SECTIONS = ["ba", "aa", "da", "ta"];
 
 // GET /api/architecture/:section
-router.get("/:section", (req, res) => {
+router.get("/:section", async (req, res) => {
   const { section } = req.params;
   if (!VALID_SECTIONS.includes(section)) {
     return res.status(400).json({ success: false, message: `Invalid section: ${section}` });
   }
   const key = `architecture_${section}`;
-  const row = db.prepare("SELECT value FROM system_config WHERE key = ?").get(key);
+  const row = await db.prepare("SELECT value FROM system_config WHERE key = ?").get(key);
   if (!row) {
     return res.status(404).json({ success: false, message: `Section '${section}' not found` });
   }
@@ -25,7 +25,7 @@ router.get("/:section", (req, res) => {
 });
 
 // PUT /api/architecture/:section  — replace entire section data
-router.put("/:section", (req, res) => {
+router.put("/:section", async (req, res) => {
   const { section } = req.params;
   if (!VALID_SECTIONS.includes(section)) {
     return res.status(400).json({ success: false, message: `Invalid section: ${section}` });
@@ -35,12 +35,12 @@ router.put("/:section", (req, res) => {
   if (!incoming || typeof incoming !== "object") {
     return res.status(400).json({ success: false, message: "Request body must be a JSON object" });
   }
-  const existing = db.prepare("SELECT key FROM system_config WHERE key = ?").get(key);
+  const existing = await db.prepare("SELECT key FROM system_config WHERE key = ?").get(key);
   if (existing) {
-    db.prepare("UPDATE system_config SET value = ?, updated_at = datetime('now') WHERE key = ?")
+    await db.prepare("UPDATE system_config SET value = ?, updated_at = datetime('now') WHERE key = ?")
       .run(JSON.stringify(incoming), key);
   } else {
-    db.prepare(
+    await db.prepare(
       "INSERT INTO system_config (key, value, description, updated_at) VALUES (?, ?, ?, datetime('now'))"
     ).run(key, JSON.stringify(incoming), `Architecture center ${section} data`);
   }
@@ -53,21 +53,21 @@ router.put("/:section", (req, res) => {
 // PUT   /api/architecture/:section/item        — body: { field, item }
 // DELETE /api/architecture/:section/item/:id    — query: ?field=xxx
 
-function getSectionData(section) {
+async function getSectionData(section) {
   const key = `architecture_${section}`;
-  const row = db.prepare("SELECT value FROM system_config WHERE key = ?").get(key);
+  const row = await db.prepare("SELECT value FROM system_config WHERE key = ?").get(key);
   if (!row) return null;
   return JSON.parse(row.value);
 }
 
-function saveSectionData(section, data) {
+async function saveSectionData(section, data) {
   const key = `architecture_${section}`;
-  db.prepare("UPDATE system_config SET value = ?, updated_at = datetime('now') WHERE key = ?")
+  await db.prepare("UPDATE system_config SET value = ?, updated_at = datetime('now') WHERE key = ?")
     .run(JSON.stringify(data), key);
 }
 
 // POST /api/architecture/:section/item
-router.post("/:section/item", (req, res) => {
+router.post("/:section/item", async (req, res) => {
   const { section } = req.params;
   if (!VALID_SECTIONS.includes(section)) {
     return res.status(400).json({ success: false, message: `Invalid section: ${section}` });
@@ -76,7 +76,7 @@ router.post("/:section/item", (req, res) => {
   if (!field || !item) {
     return res.status(400).json({ success: false, message: "Missing 'field' or 'item' in body" });
   }
-  const data = getSectionData(section);
+  const data = await getSectionData(section);
   if (!data) {
     return res.status(404).json({ success: false, message: `Section '${section}' not found` });
   }
@@ -85,12 +85,12 @@ router.post("/:section/item", (req, res) => {
   }
   const newItem = { id: uuidv4(), ...item };
   data[field].push(newItem);
-  saveSectionData(section, data);
+  await saveSectionData(section, data);
   res.json({ success: true, data: newItem });
 });
 
 // PUT /api/architecture/:section/item
-router.put("/:section/item", (req, res) => {
+router.put("/:section/item", async (req, res) => {
   const { section } = req.params;
   if (!VALID_SECTIONS.includes(section)) {
     return res.status(400).json({ success: false, message: `Invalid section: ${section}` });
@@ -99,7 +99,7 @@ router.put("/:section/item", (req, res) => {
   if (!field || !item || !item.id) {
     return res.status(400).json({ success: false, message: "Missing 'field', 'item', or 'item.id'" });
   }
-  const data = getSectionData(section);
+  const data = await getSectionData(section);
   if (!data) {
     return res.status(404).json({ success: false, message: `Section '${section}' not found` });
   }
@@ -111,12 +111,12 @@ router.put("/:section/item", (req, res) => {
     return res.status(404).json({ success: false, message: `Item '${item.id}' not found in '${field}'` });
   }
   data[field][idx] = { ...data[field][idx], ...item };
-  saveSectionData(section, data);
+  await saveSectionData(section, data);
   res.json({ success: true, data: data[field][idx] });
 });
 
 // DELETE /api/architecture/:section/item/:id
-router.delete("/:section/item/:id", (req, res) => {
+router.delete("/:section/item/:id", async (req, res) => {
   const { section, id } = req.params;
   if (!VALID_SECTIONS.includes(section)) {
     return res.status(400).json({ success: false, message: `Invalid section: ${section}` });
@@ -125,7 +125,7 @@ router.delete("/:section/item/:id", (req, res) => {
   if (!field) {
     return res.status(400).json({ success: false, message: "Missing '?field=' query parameter" });
   }
-  const data = getSectionData(section);
+  const data = await getSectionData(section);
   if (!data) {
     return res.status(404).json({ success: false, message: `Section '${section}' not found` });
   }
@@ -137,7 +137,7 @@ router.delete("/:section/item/:id", (req, res) => {
     return res.status(404).json({ success: false, message: `Item '${id}' not found in '${field}'` });
   }
   const removed = data[field].splice(idx, 1)[0];
-  saveSectionData(section, data);
+  await saveSectionData(section, data);
   res.json({ success: true, data: removed });
 });
 

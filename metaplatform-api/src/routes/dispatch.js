@@ -142,11 +142,11 @@ async function executeAgent(agent, action, params, user) {
       case "apps": {
         if (action === "create" && params.name) {
           const id = uuid();
-          db.prepare(`INSERT INTO applications (id, name, description, category, status, icon) VALUES (?, ?, ?, ?, ?, ?)`)
+          await db.prepare(`INSERT INTO applications (id, name, description, category, status, icon) VALUES (?, ?, ?, ?, ?, ?)`)
             .run(id, params.name, `由 SuperAI 创建`, "traditional", "draft", "Smartphone");
           results.push({ type: "created", module: "apps", id, name: params.name, link: `/apps/${id}/overview` });
         } else {
-          const apps = db.prepare(`SELECT * FROM applications ORDER BY updated_at DESC LIMIT 10`).all();
+          const apps = await db.prepare(`SELECT * FROM applications ORDER BY updated_at DESC LIMIT 10`).all();
           results.push({ type: "list", module: "apps", data: apps, count: apps.length });
         }
         break;
@@ -155,11 +155,11 @@ async function executeAgent(agent, action, params, user) {
       case "ontology": {
         if (action === "create" && params.name) {
           const id = uuid();
-          db.prepare(`INSERT INTO ontology_objects (id, name, label, status) VALUES (?, ?, ?, ?)`)
+          await db.prepare(`INSERT INTO ontology_objects (id, name, label, status) VALUES (?, ?, ?, ?)`)
             .run(id, params.name, params.name, "active");
           results.push({ type: "created", module: "ontology", id, name: params.name, link: `/ontology/object/${id}` });
         } else {
-          const objects = db.prepare(`SELECT * FROM ontology_objects ORDER BY created_at DESC LIMIT 10`).all();
+          const objects = await db.prepare(`SELECT * FROM ontology_objects ORDER BY created_at DESC LIMIT 10`).all();
           results.push({ type: "list", module: "ontology", data: objects, count: objects.length });
         }
         break;
@@ -169,7 +169,7 @@ async function executeAgent(agent, action, params, user) {
         if (action === "create") {
           results.push({ type: "navigate", module: "processes", link: "/process/designer", message: "已打开流程设计器" });
         } else {
-          const defs = db.prepare(`SELECT * FROM process_definitions ORDER BY created_at DESC LIMIT 10`).all();
+          const defs = await db.prepare(`SELECT * FROM process_definitions ORDER BY created_at DESC LIMIT 10`).all();
           results.push({ type: "list", module: "processes", data: defs, count: defs.length });
         }
         break;
@@ -177,11 +177,11 @@ async function executeAgent(agent, action, params, user) {
       
       case "data": {
         if (action === "query" || action === "analyze") {
-          const sources = db.prepare(`SELECT * FROM data_sources`).all();
-          const metrics = db.prepare(`SELECT * FROM data_metrics`).all();
+          const sources = await db.prepare(`SELECT * FROM data_sources`).all();
+          const metrics = await db.prepare(`SELECT * FROM data_metrics`).all();
           results.push({ type: "list", module: "data", data: { sources, metrics }, count: sources.length });
         } else {
-          const sources = db.prepare(`SELECT * FROM data_sources ORDER BY created_at DESC LIMIT 10`).all();
+          const sources = await db.prepare(`SELECT * FROM data_sources ORDER BY created_at DESC LIMIT 10`).all();
           results.push({ type: "list", module: "data", data: sources, count: sources.length });
         }
         break;
@@ -189,18 +189,18 @@ async function executeAgent(agent, action, params, user) {
       
       case "knowledge": {
         if (action === "query" || action === "search") {
-          const docs = db.prepare(`SELECT * FROM knowledge_documents WHERE title LIKE ? OR content LIKE ? LIMIT 10`)
+          const docs = await db.prepare(`SELECT * FROM knowledge_documents WHERE title LIKE ? OR content LIKE ? LIMIT 10`)
             .all(`%${params.name || ""}%`, `%${params.name || ""}%`);
           results.push({ type: "search", module: "knowledge", data: docs, count: docs.length });
         } else {
-          const docs = db.prepare(`SELECT * FROM knowledge_documents ORDER BY created_at DESC LIMIT 10`).all();
+          const docs = await db.prepare(`SELECT * FROM knowledge_documents ORDER BY created_at DESC LIMIT 10`).all();
           results.push({ type: "list", module: "knowledge", data: docs, count: docs.length });
         }
         break;
       }
       
       case "agents": {
-        const agents = db.prepare(`SELECT * FROM agents ORDER BY created_at DESC`).all();
+        const agents = await db.prepare(`SELECT * FROM agents ORDER BY created_at DESC`).all();
         const online = agents.filter((a) => a.status === "online").length;
         results.push({ type: "list", module: "agents", data: agents, count: agents.length, online });
         break;
@@ -208,12 +208,12 @@ async function executeAgent(agent, action, params, user) {
       
       case "admin": {
         if (action === "list" || action === "analyze") {
-          const users = db.prepare(`SELECT COUNT(*) as count FROM users`).get();
-          const roles = db.prepare(`SELECT COUNT(*) as count FROM roles`).get();
-          const logs = db.prepare(`SELECT COUNT(*) as count FROM audit_logs`).get();
+          const users = await db.prepare(`SELECT COUNT(*) as count FROM users`).get();
+          const roles = await db.prepare(`SELECT COUNT(*) as count FROM roles`).get();
+          const logs = await db.prepare(`SELECT COUNT(*) as count FROM audit_logs`).get();
           results.push({ type: "stats", module: "admin", data: { users: users.count, roles: roles.count, logs: logs.count } });
         } else {
-          const users = db.prepare(`SELECT * FROM users ORDER BY created_at DESC LIMIT 10`).all();
+          const users = await db.prepare(`SELECT * FROM users ORDER BY created_at DESC LIMIT 10`).all();
           results.push({ type: "list", module: "admin", data: users, count: users.length });
         }
         break;
@@ -282,7 +282,7 @@ function getModuleName(module) {
 // ─── Routes ───────────────────────────────────────────────
 
 /** GET /agents — List all available agents */
-router.get("/agents", (_req, res) => {
+router.get("/agents", async (_req, res) => {
   res.json({ success: true, data: AGENTS });
 });
 
@@ -347,7 +347,7 @@ router.post("/dispatch", async (req, res) => {
     
     // Log dispatch to audit
     try {
-      db.prepare(`INSERT INTO audit_logs (id, user_id, user_name, action, module, target, detail) VALUES (?, ?, ?, ?, ?, ?, ?)`)
+      await db.prepare(`INSERT INTO audit_logs (id, user_id, user_name, action, module, target, detail) VALUES (?, ?, ?, ?, ?, ?, ?)`)
         .run(uuid(), req.user?.id || "system", req.user?.name || "SuperAI", "dispatch", "superai", intent.agents.map((a) => a.id).join(","), message);
     } catch { /* ignore audit errors */ }
     
@@ -407,7 +407,7 @@ router.post("/", async (req, res, next) => {
       return res.status(400).json({ success: false, error: "query/input 为必填项" });
     }
     // Try LLM call
-    const rows = db.prepare("SELECT key, value FROM system_config WHERE key IN ('llm_base_url','llm_api_key','llm_model')").all();
+    const rows = await db.prepare("SELECT key, value FROM system_config WHERE key IN ('llm_base_url','llm_api_key','llm_model')").all();
     const cfg = {};
     for (const r of rows) cfg[r.key] = r.value;
     const baseUrl = cfg.llm_base_url || process.env.LLM_BASE_URL || "https://api.openai.com/v1";

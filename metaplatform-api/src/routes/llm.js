@@ -10,23 +10,23 @@ import db from "../db.js";
 const router = Router();
 
 // ─── Configuration (DB-first, env fallback) ────────────────
-function getConfig(key, fallback) {
+async function getConfig(key, fallback) {
   try {
-    const row = db.prepare("SELECT value FROM system_config WHERE key = ?").get(key);
+    const row = await db.prepare("SELECT value FROM system_config WHERE key = ?").get(key);
     return row ? row.value : fallback;
   } catch {
     return fallback;
   }
 }
 
-function getLlmConfig() {
+async function getLlmConfig() {
   return {
-    baseUrl: getConfig("llm_base_url", process.env.LLM_BASE_URL || "https://api.openai.com/v1"),
-    apiKey: getConfig("llm_api_key", process.env.LLM_API_KEY || ""),
-    model: getConfig("llm_model", process.env.LLM_MODEL || "gpt-4o-mini"),
-    embeddingModel: getConfig("llm_embedding_model", "text-embedding-3-small"),
-    maxTokens: parseInt(getConfig("llm_max_tokens", "4096"), 10),
-    temperature: parseFloat(getConfig("llm_temperature", "0.7")),
+    baseUrl: await getConfig("llm_base_url", process.env.LLM_BASE_URL || "https://api.openai.com/v1"),
+    apiKey: await getConfig("llm_api_key", process.env.LLM_API_KEY || ""),
+    model: await getConfig("llm_model", process.env.LLM_MODEL || "gpt-4o-mini"),
+    embeddingModel: await getConfig("llm_embedding_model", "text-embedding-3-small"),
+    maxTokens: parseInt(await getConfig("llm_max_tokens", "4096"), 10),
+    temperature: parseFloat(await getConfig("llm_temperature", "0.7")),
   };
 }
 
@@ -45,11 +45,11 @@ const AVAILABLE_MODELS = [
 ];
 
 // ─── Helper: record usage ─────────────────────────────────
-function recordUsage(model, promptTokens, completionTokens, userId, requestType) {
+async function recordUsage(model, promptTokens, completionTokens, userId, requestType) {
   try {
     const id = uuid();
     const totalTokens = promptTokens + completionTokens;
-    db.prepare(
+    await db.prepare(
       `INSERT INTO llm_usage (id, model, prompt_tokens, completion_tokens, total_tokens, user_id, request_type, created_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))`
     ).run(id, model, promptTokens, completionTokens, totalTokens, userId || null, requestType);
@@ -92,7 +92,7 @@ router.post("/chat", async (req, res, next) => {
       });
     }
 
-    const llmCfg = getLlmConfig();
+    const llmCfg = await getLlmConfig();
     const selectedModel = model || llmCfg.model;
     const requestBody = {
       model: selectedModel,
@@ -110,7 +110,7 @@ router.post("/chat", async (req, res, next) => {
 
     // Record usage
     if (data.usage) {
-      recordUsage(
+      await recordUsage(
         selectedModel,
         data.usage.prompt_tokens || 0,
         data.usage.completion_tokens || 0,
@@ -156,7 +156,7 @@ router.post("/completion", async (req, res, next) => {
       });
     }
 
-    const llmCfg = getLlmConfig();
+    const llmCfg = await getLlmConfig();
     const selectedModel = model || llmCfg.model;
 
     // Convert prompt to chat format for better compatibility
@@ -173,7 +173,7 @@ router.post("/completion", async (req, res, next) => {
 
     // Record usage
     if (data.usage) {
-      recordUsage(
+      await recordUsage(
         selectedModel,
         data.usage.prompt_tokens || 0,
         data.usage.completion_tokens || 0,
@@ -218,7 +218,7 @@ router.post("/embedding", async (req, res, next) => {
       });
     }
 
-    const llmCfg = getLlmConfig();
+    const llmCfg = await getLlmConfig();
     const selectedModel = model || llmCfg.embeddingModel;
     const requestBody = {
       model: selectedModel,
@@ -231,7 +231,7 @@ router.post("/embedding", async (req, res, next) => {
 
     // Record usage
     if (data.usage) {
-      recordUsage(
+      await recordUsage(
         selectedModel,
         data.usage.prompt_tokens || 0,
         0,
@@ -262,7 +262,7 @@ router.post("/embedding", async (req, res, next) => {
 // ═══════════════════════════════════════════════════════════
 //  GET /models — List available models
 // ═══════════════════════════════════════════════════════════
-router.get("/models", (_req, res) => {
+router.get("/models", async (_req, res) => {
   res.json({
     success: true,
     data: AVAILABLE_MODELS,
@@ -272,13 +272,13 @@ router.get("/models", (_req, res) => {
 // ═══════════════════════════════════════════════════════════
 //  GET /usage — Get token usage stats
 // ═══════════════════════════════════════════════════════════
-router.get("/usage", (req, res, next) => {
+router.get("/usage", async (req, res, next) => {
   try {
     const { days } = req.query;
     const dayFilter = parseInt(days) || 30;
 
     // Total usage
-    const total = db.prepare(
+    const total = await db.prepare(
       `SELECT 
         COALESCE(SUM(total_tokens), 0) as totalTokens,
         COUNT(*) as requests
@@ -287,7 +287,7 @@ router.get("/usage", (req, res, next) => {
     ).get(dayFilter);
 
     // Usage by model
-    const byModel = db.prepare(
+    const byModel = await db.prepare(
       `SELECT 
         model,
         SUM(total_tokens) as totalTokens,
@@ -299,7 +299,7 @@ router.get("/usage", (req, res, next) => {
     ).all(dayFilter);
 
     // Usage by type
-    const byType = db.prepare(
+    const byType = await db.prepare(
       `SELECT 
         request_type,
         SUM(total_tokens) as totalTokens,
@@ -310,7 +310,7 @@ router.get("/usage", (req, res, next) => {
     ).all(dayFilter);
 
     // Daily usage (last 7 days)
-    const daily = db.prepare(
+    const daily = await db.prepare(
       `SELECT 
         date(created_at) as date,
         SUM(total_tokens) as totalTokens,

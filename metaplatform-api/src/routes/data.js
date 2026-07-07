@@ -14,9 +14,9 @@ const router = Router();
 // ════════════════════════════════════════════════════════
 
 // GET /sources — list data sources
-router.get("/sources", (_req, res, next) => {
+router.get("/sources", async (_req, res, next) => {
   try {
-    const rows = db.prepare("SELECT * FROM data_sources ORDER BY created_at DESC").all();
+    const rows = await db.prepare("SELECT * FROM data_sources ORDER BY created_at DESC").all();
     res.json({ success: true, data: rows });
   } catch (err) {
     next(err);
@@ -24,17 +24,17 @@ router.get("/sources", (_req, res, next) => {
 });
 
 // POST /sources — create data source
-router.post("/sources", (req, res, next) => {
+router.post("/sources", async (req, res, next) => {
   try {
     const { name, type, host, port, database_name, username, password_encrypted, description } = req.body;
     if (!name || !type) return res.status(400).json({ success: false, error: "name, type 为必填项" });
     const id = uuid();
     const now = new Date().toISOString();
-    db.prepare(
+    await db.prepare(
       `INSERT INTO data_sources (id, name, type, host, port, database_name, username, password_encrypted, status, description, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'offline', ?, ?, ?)`
     ).run(id, name, type, host || null, port || null, database_name || null, username || null, password_encrypted || null, description || "", now, now);
-    const row = db.prepare("SELECT * FROM data_sources WHERE id = ?").get(id);
+    const row = await db.prepare("SELECT * FROM data_sources WHERE id = ?").get(id);
     res.status(201).json({ success: true, data: row });
   } catch (err) {
     next(err);
@@ -42,14 +42,14 @@ router.post("/sources", (req, res, next) => {
 });
 
 // PUT /sources/:id — update data source
-router.put("/sources/:id", (req, res, next) => {
+router.put("/sources/:id", async (req, res, next) => {
   try {
-    const existing = db.prepare("SELECT * FROM data_sources WHERE id = ?").get(req.params.id);
+    const existing = await db.prepare("SELECT * FROM data_sources WHERE id = ?").get(req.params.id);
     if (!existing) return res.status(404).json({ success: false, error: "数据源不存在" });
 
     const { name, type, host, port, database_name, username, password_encrypted, status, description } = req.body;
     const now = new Date().toISOString();
-    db.prepare(
+    await db.prepare(
       `UPDATE data_sources SET name = ?, type = ?, host = ?, port = ?, database_name = ?, username = ?, password_encrypted = ?, status = ?, description = ?, updated_at = ? WHERE id = ?`
     ).run(
       name ?? existing.name,
@@ -64,7 +64,7 @@ router.put("/sources/:id", (req, res, next) => {
       now,
       req.params.id
     );
-    const row = db.prepare("SELECT * FROM data_sources WHERE id = ?").get(req.params.id);
+    const row = await db.prepare("SELECT * FROM data_sources WHERE id = ?").get(req.params.id);
     res.json({ success: true, data: row });
   } catch (err) {
     next(err);
@@ -72,11 +72,11 @@ router.put("/sources/:id", (req, res, next) => {
 });
 
 // DELETE /sources/:id — delete data source
-router.delete("/sources/:id", (req, res, next) => {
+router.delete("/sources/:id", async (req, res, next) => {
   try {
-    const existing = db.prepare("SELECT * FROM data_sources WHERE id = ?").get(req.params.id);
+    const existing = await db.prepare("SELECT * FROM data_sources WHERE id = ?").get(req.params.id);
     if (!existing) return res.status(404).json({ success: false, error: "数据源不存在" });
-    db.prepare("DELETE FROM data_sources WHERE id = ?").run(req.params.id);
+    await db.prepare("DELETE FROM data_sources WHERE id = ?").run(req.params.id);
     res.json({ success: true, data: { id: req.params.id } });
   } catch (err) {
     next(err);
@@ -86,7 +86,7 @@ router.delete("/sources/:id", (req, res, next) => {
 // GET /sources/:id/test — test connection (real connectivity check)
 router.get("/sources/:id/test", async (req, res, next) => {
   try {
-    const existing = db.prepare("SELECT * FROM data_sources WHERE id = ?").get(req.params.id);
+    const existing = await db.prepare("SELECT * FROM data_sources WHERE id = ?").get(req.params.id);
     if (!existing) return res.status(404).json({ success: false, error: "数据源不存在" });
 
     const startTime = Date.now();
@@ -165,7 +165,7 @@ router.get("/sources/:id/test", async (req, res, next) => {
     // Update data source status based on test result
     try {
       const newStatus = connected ? "online" : "offline";
-      db.prepare("UPDATE data_sources SET status = ?, updated_at = datetime('now') WHERE id = ?")
+      await db.prepare("UPDATE data_sources SET status = ?, updated_at = datetime('now') WHERE id = ?")
         .run(newStatus, req.params.id);
     } catch {}
 
@@ -187,25 +187,25 @@ router.get("/sources/:id/test", async (req, res, next) => {
 // ════════════════════════════════════════════════════════
 
 // GET /metrics — list metrics (from data_metrics table, with fallback to computed counts)
-router.get("/metrics", (_req, res, next) => {
+router.get("/metrics", async (_req, res, next) => {
   try {
     // Try to get metrics from the data_metrics table first
-    const metrics = db.prepare("SELECT * FROM data_metrics ORDER BY created_at DESC").all();
+    const metrics = await db.prepare("SELECT * FROM data_metrics ORDER BY created_at DESC").all();
 
     if (metrics.length > 0) {
       return res.json({ success: true, data: metrics });
     }
 
     // Fallback: compute metrics from data_sources and other tables
-    const sourceCount = db.prepare("SELECT COUNT(*) AS cnt FROM data_sources").get().cnt;
-    const onlineCount = db.prepare("SELECT COUNT(*) AS cnt FROM data_sources WHERE status = 'online'").get().cnt;
-    const offlineCount = db.prepare("SELECT COUNT(*) AS cnt FROM data_sources WHERE status = 'offline'").get().cnt;
-    const appCount = db.prepare("SELECT COUNT(*) AS cnt FROM applications").get().cnt;
-    const objectCount = db.prepare("SELECT COUNT(*) AS cnt FROM ontology_objects").get().cnt;
-    const processCount = db.prepare("SELECT COUNT(*) AS cnt FROM process_definitions").get().cnt;
-    const docCount = db.prepare("SELECT COUNT(*) AS cnt FROM knowledge_documents").get().cnt;
-    const agentCount = db.prepare("SELECT COUNT(*) AS cnt FROM agents").get().cnt;
-    const userCount = db.prepare("SELECT COUNT(*) AS cnt FROM users").get().cnt;
+    const sourceCount = await db.prepare("SELECT COUNT(*) AS cnt FROM data_sources").get().cnt;
+    const onlineCount = await db.prepare("SELECT COUNT(*) AS cnt FROM data_sources WHERE status = 'online'").get().cnt;
+    const offlineCount = await db.prepare("SELECT COUNT(*) AS cnt FROM data_sources WHERE status = 'offline'").get().cnt;
+    const appCount = await db.prepare("SELECT COUNT(*) AS cnt FROM applications").get().cnt;
+    const objectCount = await db.prepare("SELECT COUNT(*) AS cnt FROM ontology_objects").get().cnt;
+    const processCount = await db.prepare("SELECT COUNT(*) AS cnt FROM process_definitions").get().cnt;
+    const docCount = await db.prepare("SELECT COUNT(*) AS cnt FROM knowledge_documents").get().cnt;
+    const agentCount = await db.prepare("SELECT COUNT(*) AS cnt FROM agents").get().cnt;
+    const userCount = await db.prepare("SELECT COUNT(*) AS cnt FROM users").get().cnt;
 
     res.json({
       success: true,
@@ -227,16 +227,16 @@ router.get("/metrics", (_req, res, next) => {
 });
 
 // POST /metrics — create metric (store in data_metrics table)
-router.post("/metrics", (req, res, next) => {
+router.post("/metrics", async (req, res, next) => {
   try {
     const { source_id, metric_name, metric_value, period } = req.body;
     if (!metric_name) return res.status(400).json({ success: false, error: "metric_name 为必填项" });
     const id = uuid();
     const now = new Date().toISOString();
-    db.prepare(
+    await db.prepare(
       `INSERT INTO data_metrics (id, source_id, metric_name, metric_value, period, created_at) VALUES (?, ?, ?, ?, ?, ?)`
     ).run(id, source_id || null, metric_name, metric_value ?? null, period || null, now);
-    const row = db.prepare("SELECT * FROM data_metrics WHERE id = ?").get(id);
+    const row = await db.prepare("SELECT * FROM data_metrics WHERE id = ?").get(id);
     res.status(201).json({ success: true, data: row });
   } catch (err) {
     next(err);
@@ -248,7 +248,7 @@ router.post("/metrics", (req, res, next) => {
 // ════════════════════════════════════════════════════════
 
 // POST /ask — natural language query (keyword-matching NL2SQL)
-router.post("/ask", (req, res, next) => {
+router.post("/ask", async (req, res, next) => {
   try {
     const { question } = req.body;
     if (!question) return res.status(400).json({ success: false, error: "question 为必填项" });
@@ -342,7 +342,7 @@ router.post("/ask", (req, res, next) => {
       });
     }
 
-    const results = db.prepare(sql).all();
+    const results = await db.prepare(sql).all();
     res.json({ success: true, data: { sql, results, question, table } });
   } catch (err) {
     next(err);
@@ -350,7 +350,7 @@ router.post("/ask", (req, res, next) => {
 });
 
 // POST /export — export data as CSV
-router.post("/export", (req, res, next) => {
+router.post("/export", async (req, res, next) => {
   try {
     const { format, table, query, columns } = req.body;
 
@@ -382,7 +382,7 @@ router.post("/export", (req, res, next) => {
       sql = `SELECT ${colList} FROM ${targetTable} LIMIT 10000`;
     }
 
-    const rows = db.prepare(sql).all();
+    const rows = await db.prepare(sql).all();
 
     if (rows.length === 0) {
       return res.status(200).json({ success: true, data: { message: "没有数据可导出", count: 0 } });
@@ -422,9 +422,9 @@ router.post("/export", (req, res, next) => {
 // ════════════════════════════════════════════════════════
 
 // GET /etl-tasks — list ETL tasks
-router.get("/etl-tasks", (_req, res, next) => {
+router.get("/etl-tasks", async (_req, res, next) => {
   try {
-    const rows = db.prepare("SELECT * FROM data_etl_tasks ORDER BY created_at DESC").all();
+    const rows = await db.prepare("SELECT * FROM data_etl_tasks ORDER BY created_at DESC").all();
     res.json({ success: true, data: rows });
   } catch (err) {
     next(err);
@@ -432,14 +432,14 @@ router.get("/etl-tasks", (_req, res, next) => {
 });
 
 // POST /etl-tasks — create ETL task
-router.post("/etl-tasks", (req, res, next) => {
+router.post("/etl-tasks", async (req, res, next) => {
   try {
     const { name, source, target, schedule, status } = req.body;
     if (!name) return res.status(400).json({ success: false, error: "name 为必填项" });
-    const result = db.prepare(
+    const result = await db.prepare(
       `INSERT INTO data_etl_tasks (name, source, target, schedule, status) VALUES (?, ?, ?, ?, ?)`
     ).run(name, source || null, target || null, schedule || null, status || "stopped");
-    const row = db.prepare("SELECT * FROM data_etl_tasks WHERE id = ?").get(result.lastInsertRowid);
+    const row = await db.prepare("SELECT * FROM data_etl_tasks WHERE id = ?").get(result.lastInsertRowid);
     res.status(201).json({ success: true, data: row });
   } catch (err) {
     next(err);
@@ -447,12 +447,12 @@ router.post("/etl-tasks", (req, res, next) => {
 });
 
 // PUT /etl-tasks/:id — update ETL task
-router.put("/etl-tasks/:id", (req, res, next) => {
+router.put("/etl-tasks/:id", async (req, res, next) => {
   try {
-    const existing = db.prepare("SELECT * FROM data_etl_tasks WHERE id = ?").get(req.params.id);
+    const existing = await db.prepare("SELECT * FROM data_etl_tasks WHERE id = ?").get(req.params.id);
     if (!existing) return res.status(404).json({ success: false, error: "ETL任务不存在" });
     const { name, source, target, schedule, status, last_run, next_run } = req.body;
-    db.prepare(
+    await db.prepare(
       `UPDATE data_etl_tasks SET name = ?, source = ?, target = ?, schedule = ?, status = ?, last_run = ?, next_run = ? WHERE id = ?`
     ).run(
       name ?? existing.name,
@@ -464,7 +464,7 @@ router.put("/etl-tasks/:id", (req, res, next) => {
       next_run !== undefined ? next_run : existing.next_run,
       req.params.id
     );
-    const row = db.prepare("SELECT * FROM data_etl_tasks WHERE id = ?").get(req.params.id);
+    const row = await db.prepare("SELECT * FROM data_etl_tasks WHERE id = ?").get(req.params.id);
     res.json({ success: true, data: row });
   } catch (err) {
     next(err);
@@ -472,11 +472,11 @@ router.put("/etl-tasks/:id", (req, res, next) => {
 });
 
 // DELETE /etl-tasks/:id — delete ETL task
-router.delete("/etl-tasks/:id", (req, res, next) => {
+router.delete("/etl-tasks/:id", async (req, res, next) => {
   try {
-    const existing = db.prepare("SELECT * FROM data_etl_tasks WHERE id = ?").get(req.params.id);
+    const existing = await db.prepare("SELECT * FROM data_etl_tasks WHERE id = ?").get(req.params.id);
     if (!existing) return res.status(404).json({ success: false, error: "ETL任务不存在" });
-    db.prepare("DELETE FROM data_etl_tasks WHERE id = ?").run(req.params.id);
+    await db.prepare("DELETE FROM data_etl_tasks WHERE id = ?").run(req.params.id);
     res.json({ success: true, data: { id: Number(req.params.id) } });
   } catch (err) {
     next(err);
@@ -488,9 +488,9 @@ router.delete("/etl-tasks/:id", (req, res, next) => {
 // ════════════════════════════════════════════════════════
 
 // GET /quality-rules — list quality rules
-router.get("/quality-rules", (_req, res, next) => {
+router.get("/quality-rules", async (_req, res, next) => {
   try {
-    const rows = db.prepare("SELECT * FROM data_quality_rules ORDER BY created_at DESC").all();
+    const rows = await db.prepare("SELECT * FROM data_quality_rules ORDER BY created_at DESC").all();
     res.json({ success: true, data: rows });
   } catch (err) {
     next(err);
@@ -498,14 +498,14 @@ router.get("/quality-rules", (_req, res, next) => {
 });
 
 // POST /quality-rules — create quality rule
-router.post("/quality-rules", (req, res, next) => {
+router.post("/quality-rules", async (req, res, next) => {
   try {
     const { table_name, rule, severity, status, coverage } = req.body;
     if (!table_name || !rule) return res.status(400).json({ success: false, error: "table_name, rule 为必填项" });
-    const result = db.prepare(
+    const result = await db.prepare(
       `INSERT INTO data_quality_rules (table_name, rule, severity, status, coverage) VALUES (?, ?, ?, ?, ?)`
     ).run(table_name, rule, severity || "warning", status || "pending", coverage ?? 0);
-    const row = db.prepare("SELECT * FROM data_quality_rules WHERE id = ?").get(result.lastInsertRowid);
+    const row = await db.prepare("SELECT * FROM data_quality_rules WHERE id = ?").get(result.lastInsertRowid);
     res.status(201).json({ success: true, data: row });
   } catch (err) {
     next(err);
@@ -513,12 +513,12 @@ router.post("/quality-rules", (req, res, next) => {
 });
 
 // PUT /quality-rules/:id — update quality rule
-router.put("/quality-rules/:id", (req, res, next) => {
+router.put("/quality-rules/:id", async (req, res, next) => {
   try {
-    const existing = db.prepare("SELECT * FROM data_quality_rules WHERE id = ?").get(req.params.id);
+    const existing = await db.prepare("SELECT * FROM data_quality_rules WHERE id = ?").get(req.params.id);
     if (!existing) return res.status(404).json({ success: false, error: "质量规则不存在" });
     const { table_name, rule, severity, status, coverage } = req.body;
-    db.prepare(
+    await db.prepare(
       `UPDATE data_quality_rules SET table_name = ?, rule = ?, severity = ?, status = ?, coverage = ? WHERE id = ?`
     ).run(
       table_name ?? existing.table_name,
@@ -528,7 +528,7 @@ router.put("/quality-rules/:id", (req, res, next) => {
       coverage !== undefined ? coverage : existing.coverage,
       req.params.id
     );
-    const row = db.prepare("SELECT * FROM data_quality_rules WHERE id = ?").get(req.params.id);
+    const row = await db.prepare("SELECT * FROM data_quality_rules WHERE id = ?").get(req.params.id);
     res.json({ success: true, data: row });
   } catch (err) {
     next(err);
@@ -540,9 +540,9 @@ router.put("/quality-rules/:id", (req, res, next) => {
 // ════════════════════════════════════════════════════════
 
 // GET /realtime-events — list realtime events
-router.get("/realtime-events", (_req, res, next) => {
+router.get("/realtime-events", async (_req, res, next) => {
   try {
-    const rows = db.prepare("SELECT * FROM data_realtime_events ORDER BY time DESC").all();
+    const rows = await db.prepare("SELECT * FROM data_realtime_events ORDER BY time DESC").all();
     res.json({ success: true, data: rows });
   } catch (err) {
     next(err);
@@ -550,14 +550,14 @@ router.get("/realtime-events", (_req, res, next) => {
 });
 
 // POST /realtime-events — create event
-router.post("/realtime-events", (req, res, next) => {
+router.post("/realtime-events", async (req, res, next) => {
   try {
     const { event, source, level, time } = req.body;
     if (!event) return res.status(400).json({ success: false, error: "event 为必填项" });
-    const result = db.prepare(
+    const result = await db.prepare(
       `INSERT INTO data_realtime_events (event, source, level, time) VALUES (?, ?, ?, ?)`
     ).run(event, source || null, level || "info", time || new Date().toISOString());
-    const row = db.prepare("SELECT * FROM data_realtime_events WHERE id = ?").get(result.lastInsertRowid);
+    const row = await db.prepare("SELECT * FROM data_realtime_events WHERE id = ?").get(result.lastInsertRowid);
     res.status(201).json({ success: true, data: row });
   } catch (err) {
     next(err);
@@ -565,9 +565,9 @@ router.post("/realtime-events", (req, res, next) => {
 });
 
 // GET / — data module overview
-router.get("/", (req, res) => {
+router.get("/", async (req, res) => {
   try {
-    const sources = db.prepare("SELECT COUNT(*) AS cnt FROM data_sources").get().cnt;
+    const sources = await db.prepare("SELECT COUNT(*) AS cnt FROM data_sources").get().cnt;
     res.json({ success: true, data: { sources } });
   } catch (err) {
     res.json({ success: true, data: { sources: 0 } });

@@ -339,29 +339,29 @@ ${routeDefs}
 //  GET /download/:appId — Download all generated files by app
 // ════════════════════════════════════════════════════════
 
-router.get("/download/:appId", (req, res, next) => {
+router.get("/download/:appId", async (req, res, next) => {
   try {
-    const app = db.prepare("SELECT * FROM applications WHERE id = ?").get(req.params.appId);
+    const app = await db.prepare("SELECT * FROM applications WHERE id = ?").get(req.params.appId);
     if (!app) {
       return res.status(404).json({ success: false, error: "应用不存在" });
     }
 
     // Read app pages
-    const pages = db.prepare(
+    const pages = await db.prepare(
       "SELECT * FROM app_pages WHERE app_id = ? ORDER BY sort_order ASC, created_at ASC"
     ).all(req.params.appId);
 
     // Read ontology objects with properties
-    const objects = db.prepare(
+    const objects = await db.prepare(
       "SELECT * FROM ontology_objects WHERE app_id = ? ORDER BY created_at ASC"
     ).all(req.params.appId);
 
-    const objectsWithProps = objects.map((obj) => {
-      const properties = db.prepare(
+    const objectsWithProps = await Promise.all(objects.map(async (obj) => {
+      const properties = await db.prepare(
         "SELECT * FROM ontology_properties WHERE object_id = ? ORDER BY sort_order"
       ).all(obj.id);
       return { ...obj, properties };
-    });
+    }));
 
     // Generate all file categories
     const frontendFiles = generateVueTarget(app, pages, objectsWithProps);
@@ -1333,7 +1333,7 @@ backend/target
 //  POST /generate — Generate export package
 // ════════════════════════════════════════════════════════
 
-router.post("/generate", (req, res, next) => {
+router.post("/generate", async (req, res, next) => {
   try {
     const { appId, targets = [], options = {} } = req.body;
 
@@ -1342,27 +1342,27 @@ router.post("/generate", (req, res, next) => {
     }
 
     // Read application
-    const app = db.prepare("SELECT * FROM applications WHERE id = ?").get(appId);
+    const app = await db.prepare("SELECT * FROM applications WHERE id = ?").get(appId);
     if (!app) {
       return res.status(404).json({ success: false, error: "应用不存在" });
     }
 
     // Read app pages
-    const pages = db.prepare(
+    const pages = await db.prepare(
       "SELECT * FROM app_pages WHERE app_id = ? ORDER BY sort_order ASC, created_at ASC"
     ).all(appId);
 
     // Read ontology objects with properties
-    const objects = db.prepare(
+    const objects = await db.prepare(
       "SELECT * FROM ontology_objects WHERE app_id = ? ORDER BY created_at ASC"
     ).all(appId);
 
-    const objectsWithProps = objects.map((obj) => {
-      const properties = db.prepare(
+    const objectsWithProps = await Promise.all(objects.map(async (obj) => {
+      const properties = await db.prepare(
         "SELECT * FROM ontology_properties WHERE object_id = ? ORDER BY sort_order"
       ).all(obj.id);
       return { ...obj, properties };
-    });
+    }));
 
     // Generate files based on selected targets
     const allFiles = [];
@@ -1415,7 +1415,7 @@ router.post("/generate", (req, res, next) => {
 //  POST /download — Download export as JSON file list
 // ════════════════════════════════════════════════════════
 
-router.post("/download", (req, res, next) => {
+router.post("/download", async (req, res, next) => {
   try {
     const { appId, targets = [] } = req.body;
 
@@ -1424,25 +1424,25 @@ router.post("/download", (req, res, next) => {
     }
 
     // Re-generate (same logic as /generate, but returns as downloadable)
-    const app = db.prepare("SELECT * FROM applications WHERE id = ?").get(appId);
+    const app = await db.prepare("SELECT * FROM applications WHERE id = ?").get(appId);
     if (!app) {
       return res.status(404).json({ success: false, error: "应用不存在" });
     }
 
-    const pages = db.prepare(
+    const pages = await db.prepare(
       "SELECT * FROM app_pages WHERE app_id = ? ORDER BY sort_order ASC, created_at ASC"
     ).all(appId);
 
-    const objects = db.prepare(
+    const objects = await db.prepare(
       "SELECT * FROM ontology_objects WHERE app_id = ? ORDER BY created_at ASC"
     ).all(appId);
 
-    const objectsWithProps = objects.map((obj) => {
-      const properties = db.prepare(
+    const objectsWithProps = await Promise.all(objects.map(async (obj) => {
+      const properties = await db.prepare(
         "SELECT * FROM ontology_properties WHERE object_id = ? ORDER BY sort_order"
       ).all(obj.id);
       return { ...obj, properties };
-    });
+    }));
 
     const allFiles = [];
 

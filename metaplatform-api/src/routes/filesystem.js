@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from "uuid";
 const router = Router();
 
 // GET /api/filesystem/files
-router.get("/files", (req, res) => {
+router.get("/files", async (req, res) => {
   const { app_id, parent_id } = req.query;
   let sql = "SELECT * FROM fs_files WHERE 1=1";
   const params = [];
@@ -20,22 +20,22 @@ router.get("/files", (req, res) => {
     sql += " AND parent_id IS NULL";
   }
   sql += " ORDER BY is_dir DESC, name ASC";
-  const rows = db.prepare(sql).all(...params);
+  const rows = await db.prepare(sql).all(...params);
   res.json({ success: true, data: rows });
 });
 
 // POST /api/filesystem/files
-router.post("/files", (req, res) => {
+router.post("/files", async (req, res) => {
   const { app_id, parent_id, name, is_dir = false, content = "" } = req.body;
   const id = uuidv4();
-  db.prepare(
+  await db.prepare(
     "INSERT INTO fs_files (id, app_id, parent_id, name, is_dir, content) VALUES (?, ?, ?, ?, ?, ?)",
   ).run(id, app_id, parent_id, name, is_dir ? 1 : 0, content);
   res.json({ success: true, data: { id, name } });
 });
 
 // PUT /api/filesystem/files/:id
-router.put("/files/:id", (req, res) => {
+router.put("/files/:id", async (req, res) => {
   const { content, name } = req.body;
   const updates = [];
   const params = [];
@@ -49,15 +49,15 @@ router.put("/files/:id", (req, res) => {
   }
   updates.push("updated_at = datetime('now')");
   params.push(req.params.id);
-  db.prepare(`UPDATE fs_files SET ${updates.join(", ")} WHERE id = ?`).run(
+  await db.prepare(`UPDATE fs_files SET ${updates.join(", ")} WHERE id = ?`).run(
     ...params,
   );
   res.json({ success: true });
 });
 
 // DELETE /api/filesystem/files/:id
-router.delete("/files/:id", (req, res) => {
-  db.prepare("DELETE FROM fs_files WHERE id = ?").run(req.params.id);
+router.delete("/files/:id", async (req, res) => {
+  await db.prepare("DELETE FROM fs_files WHERE id = ?").run(req.params.id);
   res.json({ success: true });
 });
 

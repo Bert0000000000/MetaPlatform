@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from "uuid";
 const router = Router();
 
 // GET /api/announcements
-router.get("/", (req, res) => {
+router.get("/", async (req, res) => {
   const { limit = 10 } = req.query;
   const rows = db
     .prepare("SELECT * FROM announcements WHERE status = ? ORDER BY created_at DESC LIMIT ?")
@@ -14,10 +14,10 @@ router.get("/", (req, res) => {
 });
 
 // POST /api/announcements
-router.post("/", (req, res) => {
+router.post("/", async (req, res) => {
   const { title, content, priority = "normal" } = req.body;
   const id = uuidv4();
-  db.prepare("INSERT INTO announcements (id, title, content, priority) VALUES (?, ?, ?, ?)").run(
+  await db.prepare("INSERT INTO announcements (id, title, content, priority) VALUES (?, ?, ?, ?)").run(
     id,
     title,
     content,
@@ -27,13 +27,13 @@ router.post("/", (req, res) => {
 });
 
 // PUT /api/announcements/:id
-router.put("/:id", (req, res) => {
-  const announcement = db.prepare("SELECT * FROM announcements WHERE id = ?").get(req.params.id);
+router.put("/:id", async (req, res) => {
+  const announcement = await db.prepare("SELECT * FROM announcements WHERE id = ?").get(req.params.id);
   if (!announcement) {
     return res.status(404).json({ success: false, message: "Announcement not found" });
   }
   const { title, content, category, priority, target_audience, expires_at } = req.body;
-  db.prepare(
+  await db.prepare(
     "UPDATE announcements SET title = ?, content = ?, category = ?, priority = ?, target_audience = ?, expires_at = ?, updated_at = datetime('now') WHERE id = ?",
   ).run(
     title ?? announcement.title,
@@ -48,12 +48,12 @@ router.put("/:id", (req, res) => {
 });
 
 // DELETE /api/announcements/:id
-router.delete("/:id", (req, res) => {
-  const announcement = db.prepare("SELECT * FROM announcements WHERE id = ?").get(req.params.id);
+router.delete("/:id", async (req, res) => {
+  const announcement = await db.prepare("SELECT * FROM announcements WHERE id = ?").get(req.params.id);
   if (!announcement) {
     return res.status(404).json({ success: false, message: "Announcement not found" });
   }
-  db.prepare("DELETE FROM announcements WHERE id = ?").run(req.params.id);
+  await db.prepare("DELETE FROM announcements WHERE id = ?").run(req.params.id);
   res.json({ success: true, data: { id: req.params.id } });
 });
 

@@ -7,7 +7,7 @@
       "version": 1,
       "createdAt": 1751516400000,
       "canvasData": {
-        "x": 0,
+        "x": 620,
         "y": 0,
         "group": 0
       },
@@ -73,7 +73,7 @@
       "createdAt": 1751516400000,
       "canvasData": {
         "x": 620,
-        "y": 0,
+        "y": 377,
         "group": 0
       },
       "devMetadata": {
@@ -138,7 +138,7 @@
       "createdAt": 1751516400000,
       "canvasData": {
         "x": 620,
-        "y": 377,
+        "y": 754,
         "group": 0
       },
       "devMetadata": {
@@ -203,7 +203,7 @@
       "createdAt": 1751516400000,
       "canvasData": {
         "x": 620,
-        "y": 754,
+        "y": 1131,
         "group": 0
       },
       "devMetadata": {
@@ -268,7 +268,7 @@
       "createdAt": 1751516400000,
       "canvasData": {
         "x": 620,
-        "y": 1131,
+        "y": 1508,
         "group": 0
       },
       "devMetadata": {
@@ -333,7 +333,7 @@
       "createdAt": 1751516400000,
       "canvasData": {
         "x": 620,
-        "y": 1508,
+        "y": 1885,
         "group": 0
       },
       "devMetadata": {
@@ -341,8 +341,7 @@
         "interactions": [
           {
             "domId": "nav-dashboard",
-            "targetPageId": "page-dashboard",
-            "hideEdge": true
+            "targetPageId": "page-dashboard"
           },
           {
             "domId": "nav-objectmanager",
@@ -362,13 +361,11 @@
           },
           {
             "domId": "nav-capability",
-            "targetPageId": "page-capability",
-            "hideEdge": true
+            "targetPageId": "page-capability"
           },
           {
             "domId": "nav-integration",
-            "targetPageId": "page-integration",
-            "hideEdge": true
+            "targetPageId": "page-integration"
           },
           {
             "domId": "nav-pageview",
@@ -401,7 +398,7 @@
       "createdAt": 1751516400000,
       "canvasData": {
         "x": 620,
-        "y": 1885,
+        "y": 2262,
         "group": 0
       },
       "devMetadata": {
@@ -409,8 +406,7 @@
         "interactions": [
           {
             "domId": "nav-dashboard",
-            "targetPageId": "page-dashboard",
-            "hideEdge": true
+            "targetPageId": "page-dashboard"
           },
           {
             "domId": "nav-objectmanager",
@@ -430,13 +426,11 @@
           },
           {
             "domId": "nav-dialogue",
-            "targetPageId": "page-dialogue",
-            "hideEdge": true
+            "targetPageId": "page-dialogue"
           },
           {
             "domId": "nav-integration",
-            "targetPageId": "page-integration",
-            "hideEdge": true
+            "targetPageId": "page-integration"
           },
           {
             "domId": "nav-pageview",
@@ -469,7 +463,7 @@
       "createdAt": 1751516400000,
       "canvasData": {
         "x": 620,
-        "y": 2262,
+        "y": 2639,
         "group": 0
       },
       "devMetadata": {
@@ -477,8 +471,7 @@
         "interactions": [
           {
             "domId": "nav-dashboard",
-            "targetPageId": "page-dashboard",
-            "hideEdge": true
+            "targetPageId": "page-dashboard"
           },
           {
             "domId": "nav-objectmanager",
@@ -498,13 +491,11 @@
           },
           {
             "domId": "nav-dialogue",
-            "targetPageId": "page-dialogue",
-            "hideEdge": true
+            "targetPageId": "page-dialogue"
           },
           {
             "domId": "nav-capability",
-            "targetPageId": "page-capability",
-            "hideEdge": true
+            "targetPageId": "page-capability"
           },
           {
             "domId": "nav-pageview",
@@ -537,7 +528,7 @@
       "createdAt": 1751516400000,
       "canvasData": {
         "x": 0,
-        "y": 2639,
+        "y": 1131,
         "group": 0
       },
       "devMetadata": {
@@ -545,43 +536,35 @@
         "interactions": [
           {
             "domId": "nav-dashboard",
-            "targetPageId": "page-dashboard",
-            "hideEdge": true
+            "targetPageId": "page-dashboard"
           },
           {
             "domId": "nav-objectmanager",
-            "targetPageId": "page-objectmanager",
-            "hideEdge": true
+            "targetPageId": "page-objectmanager"
           },
           {
             "domId": "nav-workshop",
-            "targetPageId": "page-workshop",
-            "hideEdge": true
+            "targetPageId": "page-workshop"
           },
           {
             "domId": "nav-designer",
-            "targetPageId": "page-designer",
-            "hideEdge": true
+            "targetPageId": "page-designer"
           },
           {
             "domId": "nav-process",
-            "targetPageId": "page-process",
-            "hideEdge": true
+            "targetPageId": "page-process"
           },
           {
             "domId": "nav-dialogue",
-            "targetPageId": "page-dialogue",
-            "hideEdge": true
+            "targetPageId": "page-dialogue"
           },
           {
             "domId": "nav-capability",
-            "targetPageId": "page-capability",
-            "hideEdge": true
+            "targetPageId": "page-capability"
           },
           {
             "domId": "nav-integration",
-            "targetPageId": "page-integration",
-            "hideEdge": true
+            "targetPageId": "page-integration"
           },
           {
             "domId": "nav-admin",
@@ -608,8 +591,8 @@
       "version": 1,
       "createdAt": 1751516400000,
       "canvasData": {
-        "x": 620,
-        "y": 2639,
+        "x": 0,
+        "y": 754,
         "group": 0
       },
       "devMetadata": {
@@ -617,43 +600,35 @@
         "interactions": [
           {
             "domId": "nav-dashboard",
-            "targetPageId": "page-dashboard",
-            "hideEdge": true
+            "targetPageId": "page-dashboard"
           },
           {
             "domId": "nav-objectmanager",
-            "targetPageId": "page-objectmanager",
-            "hideEdge": true
+            "targetPageId": "page-objectmanager"
           },
           {
             "domId": "nav-workshop",
-            "targetPageId": "page-workshop",
-            "hideEdge": true
+            "targetPageId": "page-workshop"
           },
           {
             "domId": "nav-designer",
-            "targetPageId": "page-designer",
-            "hideEdge": true
+            "targetPageId": "page-designer"
           },
           {
             "domId": "nav-process",
-            "targetPageId": "page-process",
-            "hideEdge": true
+            "targetPageId": "page-process"
           },
           {
             "domId": "nav-dialogue",
-            "targetPageId": "page-dialogue",
-            "hideEdge": true
+            "targetPageId": "page-dialogue"
           },
           {
             "domId": "nav-capability",
-            "targetPageId": "page-capability",
-            "hideEdge": true
+            "targetPageId": "page-capability"
           },
           {
             "domId": "nav-integration",
-            "targetPageId": "page-integration",
-            "hideEdge": true
+            "targetPageId": "page-integration"
           },
           {
             "domId": "nav-pageview",
@@ -680,8 +655,8 @@
       "version": 1,
       "createdAt": 1751516400000,
       "canvasData": {
-        "x": 1240,
-        "y": 2639,
+        "x": 0,
+        "y": 377,
         "group": 0
       },
       "devMetadata": {
@@ -689,43 +664,35 @@
         "interactions": [
           {
             "domId": "nav-dashboard",
-            "targetPageId": "page-dashboard",
-            "hideEdge": true
+            "targetPageId": "page-dashboard"
           },
           {
             "domId": "nav-objectmanager",
-            "targetPageId": "page-objectmanager",
-            "hideEdge": true
+            "targetPageId": "page-objectmanager"
           },
           {
             "domId": "nav-workshop",
-            "targetPageId": "page-workshop",
-            "hideEdge": true
+            "targetPageId": "page-workshop"
           },
           {
             "domId": "nav-designer",
-            "targetPageId": "page-designer",
-            "hideEdge": true
+            "targetPageId": "page-designer"
           },
           {
             "domId": "nav-process",
-            "targetPageId": "page-process",
-            "hideEdge": true
+            "targetPageId": "page-process"
           },
           {
             "domId": "nav-dialogue",
-            "targetPageId": "page-dialogue",
-            "hideEdge": true
+            "targetPageId": "page-dialogue"
           },
           {
             "domId": "nav-capability",
-            "targetPageId": "page-capability",
-            "hideEdge": true
+            "targetPageId": "page-capability"
           },
           {
             "domId": "nav-integration",
-            "targetPageId": "page-integration",
-            "hideEdge": true
+            "targetPageId": "page-integration"
           },
           {
             "domId": "nav-pageview",
@@ -752,8 +719,8 @@
       "version": 1,
       "createdAt": 1751516400000,
       "canvasData": {
-        "x": 1860,
-        "y": 2639,
+        "x": 0,
+        "y": 0,
         "group": 0
       },
       "devMetadata": {
@@ -761,43 +728,35 @@
         "interactions": [
           {
             "domId": "nav-dashboard",
-            "targetPageId": "page-dashboard",
-            "hideEdge": true
+            "targetPageId": "page-dashboard"
           },
           {
             "domId": "nav-objectmanager",
-            "targetPageId": "page-objectmanager",
-            "hideEdge": true
+            "targetPageId": "page-objectmanager"
           },
           {
             "domId": "nav-workshop",
-            "targetPageId": "page-workshop",
-            "hideEdge": true
+            "targetPageId": "page-workshop"
           },
           {
             "domId": "nav-designer",
-            "targetPageId": "page-designer",
-            "hideEdge": true
+            "targetPageId": "page-designer"
           },
           {
             "domId": "nav-process",
-            "targetPageId": "page-process",
-            "hideEdge": true
+            "targetPageId": "page-process"
           },
           {
             "domId": "nav-dialogue",
-            "targetPageId": "page-dialogue",
-            "hideEdge": true
+            "targetPageId": "page-dialogue"
           },
           {
             "domId": "nav-capability",
-            "targetPageId": "page-capability",
-            "hideEdge": true
+            "targetPageId": "page-capability"
           },
           {
             "domId": "nav-integration",
-            "targetPageId": "page-integration",
-            "hideEdge": true
+            "targetPageId": "page-integration"
           },
           {
             "domId": "nav-pageview",

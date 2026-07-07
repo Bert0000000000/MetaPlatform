@@ -12,9 +12,9 @@ const router = Router();
 // ════════════════════════════════════════════════════════
 
 // GET /users — list users
-router.get("/users", (_req, res, next) => {
+router.get("/users", async (_req, res, next) => {
   try {
-    const rows = db.prepare("SELECT * FROM users ORDER BY created_at DESC").all();
+    const rows = await db.prepare("SELECT * FROM users ORDER BY created_at DESC").all();
     res.json({ success: true, data: rows });
   } catch (err) {
     next(err);
@@ -22,21 +22,21 @@ router.get("/users", (_req, res, next) => {
 });
 
 // POST /users — create user
-router.post("/users", (req, res, next) => {
+router.post("/users", async (req, res, next) => {
   try {
     const { name, email, role, department, status, avatar } = req.body;
     if (!name || !email) return res.status(400).json({ success: false, error: "name, email 为必填项" });
 
-    const existing = db.prepare("SELECT id FROM users WHERE email = ?").get(email);
+    const existing = await db.prepare("SELECT id FROM users WHERE email = ?").get(email);
     if (existing) return res.status(409).json({ success: false, error: "邮箱已存在" });
 
     const id = uuid();
     const now = new Date().toISOString();
-    db.prepare(
+    await db.prepare(
       `INSERT INTO users (id, name, email, role, department, status, avatar, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
     ).run(id, name, email, role || "business", department || null, status || "active", avatar || null, now, now);
-    const row = db.prepare("SELECT * FROM users WHERE id = ?").get(id);
+    const row = await db.prepare("SELECT * FROM users WHERE id = ?").get(id);
     res.status(201).json({ success: true, data: row });
   } catch (err) {
     next(err);
@@ -44,14 +44,14 @@ router.post("/users", (req, res, next) => {
 });
 
 // PUT /users/:id — update user
-router.put("/users/:id", (req, res, next) => {
+router.put("/users/:id", async (req, res, next) => {
   try {
-    const existing = db.prepare("SELECT * FROM users WHERE id = ?").get(req.params.id);
+    const existing = await db.prepare("SELECT * FROM users WHERE id = ?").get(req.params.id);
     if (!existing) return res.status(404).json({ success: false, error: "用户不存在" });
 
     const { name, email, role, department, status, avatar } = req.body;
     const now = new Date().toISOString();
-    db.prepare(
+    await db.prepare(
       `UPDATE users SET name = ?, email = ?, role = ?, department = ?, status = ?, avatar = ?, updated_at = ? WHERE id = ?`
     ).run(
       name ?? existing.name,
@@ -63,7 +63,7 @@ router.put("/users/:id", (req, res, next) => {
       now,
       req.params.id
     );
-    const row = db.prepare("SELECT * FROM users WHERE id = ?").get(req.params.id);
+    const row = await db.prepare("SELECT * FROM users WHERE id = ?").get(req.params.id);
     res.json({ success: true, data: row });
   } catch (err) {
     next(err);
@@ -71,11 +71,11 @@ router.put("/users/:id", (req, res, next) => {
 });
 
 // DELETE /users/:id — delete user
-router.delete("/users/:id", (req, res, next) => {
+router.delete("/users/:id", async (req, res, next) => {
   try {
-    const existing = db.prepare("SELECT * FROM users WHERE id = ?").get(req.params.id);
+    const existing = await db.prepare("SELECT * FROM users WHERE id = ?").get(req.params.id);
     if (!existing) return res.status(404).json({ success: false, error: "用户不存在" });
-    db.prepare("DELETE FROM users WHERE id = ?").run(req.params.id);
+    await db.prepare("DELETE FROM users WHERE id = ?").run(req.params.id);
     res.json({ success: true, data: { id: req.params.id } });
   } catch (err) {
     next(err);
@@ -98,9 +98,9 @@ const RBAC_ROLES = [
 ];
 
 // GET /roles — list roles from database
-router.get("/roles", (_req, res, next) => {
+router.get("/roles", async (_req, res, next) => {
   try {
-    const rows = db.prepare("SELECT * FROM roles ORDER BY created_at").all();
+    const rows = await db.prepare("SELECT * FROM roles ORDER BY created_at").all();
     const data = rows.map((r) => ({
       ...r,
       permissions: JSON.parse(r.permissions || "[]"),
@@ -112,16 +112,16 @@ router.get("/roles", (_req, res, next) => {
 });
 
 // POST /roles — create a new role
-router.post("/roles", (req, res, next) => {
+router.post("/roles", async (req, res, next) => {
   try {
     const { id, name, label, permissions } = req.body;
     if (!id || !name) return res.status(400).json({ success: false, error: "id, name 为必填项" });
-    const existing = db.prepare("SELECT id FROM roles WHERE id = ?").get(id);
+    const existing = await db.prepare("SELECT id FROM roles WHERE id = ?").get(id);
     if (existing) return res.status(409).json({ success: false, error: "角色ID已存在" });
-    db.prepare(
+    await db.prepare(
       `INSERT INTO roles (id, name, label, permissions) VALUES (?, ?, ?, ?)`
     ).run(id, name, label || null, JSON.stringify(permissions || []));
-    const row = db.prepare("SELECT * FROM roles WHERE id = ?").get(id);
+    const row = await db.prepare("SELECT * FROM roles WHERE id = ?").get(id);
     res.status(201).json({ success: true, data: { ...row, permissions: JSON.parse(row.permissions || "[]") } });
   } catch (err) {
     next(err);
@@ -129,12 +129,12 @@ router.post("/roles", (req, res, next) => {
 });
 
 // PUT /roles/:id — update a role
-router.put("/roles/:id", (req, res, next) => {
+router.put("/roles/:id", async (req, res, next) => {
   try {
-    const existing = db.prepare("SELECT * FROM roles WHERE id = ?").get(req.params.id);
+    const existing = await db.prepare("SELECT * FROM roles WHERE id = ?").get(req.params.id);
     if (!existing) return res.status(404).json({ success: false, error: "角色不存在" });
     const { name, label, permissions } = req.body;
-    db.prepare(
+    await db.prepare(
       `UPDATE roles SET name = ?, label = ?, permissions = ? WHERE id = ?`
     ).run(
       name ?? existing.name,
@@ -142,7 +142,7 @@ router.put("/roles/:id", (req, res, next) => {
       permissions !== undefined ? JSON.stringify(permissions) : existing.permissions,
       req.params.id
     );
-    const row = db.prepare("SELECT * FROM roles WHERE id = ?").get(req.params.id);
+    const row = await db.prepare("SELECT * FROM roles WHERE id = ?").get(req.params.id);
     res.json({ success: true, data: { ...row, permissions: JSON.parse(row.permissions || "[]") } });
   } catch (err) {
     next(err);
@@ -150,14 +150,14 @@ router.put("/roles/:id", (req, res, next) => {
 });
 
 // DELETE /roles/:id — delete a role (cannot delete 'admin')
-router.delete("/roles/:id", (req, res, next) => {
+router.delete("/roles/:id", async (req, res, next) => {
   try {
     if (req.params.id === "admin") {
       return res.status(403).json({ success: false, error: "不能删除管理员角色" });
     }
-    const existing = db.prepare("SELECT * FROM roles WHERE id = ?").get(req.params.id);
+    const existing = await db.prepare("SELECT * FROM roles WHERE id = ?").get(req.params.id);
     if (!existing) return res.status(404).json({ success: false, error: "角色不存在" });
-    db.prepare("DELETE FROM roles WHERE id = ?").run(req.params.id);
+    await db.prepare("DELETE FROM roles WHERE id = ?").run(req.params.id);
     res.json({ success: true, data: { id: req.params.id } });
   } catch (err) {
     next(err);
@@ -169,9 +169,9 @@ router.delete("/roles/:id", (req, res, next) => {
 // ════════════════════════════════════════════════════════
 
 // GET /departments — list departments
-router.get("/departments", (_req, res, next) => {
+router.get("/departments", async (_req, res, next) => {
   try {
-    const rows = db.prepare("SELECT * FROM departments ORDER BY sort_order, created_at").all();
+    const rows = await db.prepare("SELECT * FROM departments ORDER BY sort_order, created_at").all();
     res.json({ success: true, data: rows });
   } catch (err) {
     next(err);
@@ -179,17 +179,17 @@ router.get("/departments", (_req, res, next) => {
 });
 
 // POST /departments — create department
-router.post("/departments", (req, res, next) => {
+router.post("/departments", async (req, res, next) => {
   try {
     const { name, parent_id, leader, icon } = req.body;
     if (!name) return res.status(400).json({ success: false, error: "name 为必填项" });
     const id = uuid();
     const now = new Date().toISOString();
-    db.prepare(
+    await db.prepare(
       `INSERT INTO departments (id, name, parent_id, leader, icon, status, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, 'active', ?, ?)`
     ).run(id, name, parent_id || null, leader || null, icon || null, now, now);
-    const row = db.prepare("SELECT * FROM departments WHERE id = ?").get(id);
+    const row = await db.prepare("SELECT * FROM departments WHERE id = ?").get(id);
     res.status(201).json({ success: true, data: row });
   } catch (err) {
     next(err);
@@ -197,13 +197,13 @@ router.post("/departments", (req, res, next) => {
 });
 
 // PUT /departments/:id — update department
-router.put("/departments/:id", (req, res, next) => {
+router.put("/departments/:id", async (req, res, next) => {
   try {
-    const existing = db.prepare("SELECT * FROM departments WHERE id = ?").get(req.params.id);
+    const existing = await db.prepare("SELECT * FROM departments WHERE id = ?").get(req.params.id);
     if (!existing) return res.status(404).json({ success: false, error: "部门不存在" });
     const { name, parent_id, leader, icon, status } = req.body;
     const now = new Date().toISOString();
-    db.prepare(
+    await db.prepare(
       `UPDATE departments SET name = ?, parent_id = ?, leader = ?, icon = ?, status = ?, updated_at = ? WHERE id = ?`
     ).run(
       name ?? existing.name,
@@ -214,7 +214,7 @@ router.put("/departments/:id", (req, res, next) => {
       now,
       req.params.id
     );
-    const row = db.prepare("SELECT * FROM departments WHERE id = ?").get(req.params.id);
+    const row = await db.prepare("SELECT * FROM departments WHERE id = ?").get(req.params.id);
     res.json({ success: true, data: row });
   } catch (err) {
     next(err);
@@ -222,11 +222,11 @@ router.put("/departments/:id", (req, res, next) => {
 });
 
 // DELETE /departments/:id — delete department
-router.delete("/departments/:id", (req, res, next) => {
+router.delete("/departments/:id", async (req, res, next) => {
   try {
-    const existing = db.prepare("SELECT * FROM departments WHERE id = ?").get(req.params.id);
+    const existing = await db.prepare("SELECT * FROM departments WHERE id = ?").get(req.params.id);
     if (!existing) return res.status(404).json({ success: false, error: "部门不存在" });
-    db.prepare("DELETE FROM departments WHERE id = ?").run(req.params.id);
+    await db.prepare("DELETE FROM departments WHERE id = ?").run(req.params.id);
     res.json({ success: true, data: { id: req.params.id } });
   } catch (err) {
     next(err);
@@ -238,12 +238,12 @@ router.delete("/departments/:id", (req, res, next) => {
 // ════════════════════════════════════════════════════════
 
 // GET /logs — list audit logs (with pagination)
-router.get("/logs", (req, res, next) => {
+router.get("/logs", async (req, res, next) => {
   try {
     const limit = parseInt(req.query.limit, 10) || 20;
     const offset = parseInt(req.query.offset, 10) || 0;
-    const total = db.prepare("SELECT COUNT(*) AS cnt FROM audit_logs").get().cnt;
-    const rows = db.prepare("SELECT * FROM audit_logs ORDER BY created_at DESC LIMIT ? OFFSET ?").all(limit, offset);
+    const total = await db.prepare("SELECT COUNT(*) AS cnt FROM audit_logs").get().cnt;
+    const rows = await db.prepare("SELECT * FROM audit_logs ORDER BY created_at DESC LIMIT ? OFFSET ?").all(limit, offset);
     res.json({ success: true, data: { rows, total, limit, offset } });
   } catch (err) {
     next(err);
@@ -251,13 +251,13 @@ router.get("/logs", (req, res, next) => {
 });
 
 // POST /logs — create audit log entry
-router.post("/logs", (req, res, next) => {
+router.post("/logs", async (req, res, next) => {
   try {
     const { action, module, target, detail, ip, result } = req.body;
     if (!action) return res.status(400).json({ success: false, error: "action 为必填项" });
     const id = uuid();
     const now = new Date().toISOString();
-    db.prepare(
+    await db.prepare(
       `INSERT INTO audit_logs (id, user_id, user_name, action, module, target, detail, ip, result, created_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     ).run(
@@ -272,7 +272,7 @@ router.post("/logs", (req, res, next) => {
       result || "success",
       now
     );
-    const row = db.prepare("SELECT * FROM audit_logs WHERE id = ?").get(id);
+    const row = await db.prepare("SELECT * FROM audit_logs WHERE id = ?").get(id);
     res.status(201).json({ success: true, data: row });
   } catch (err) {
     next(err);
@@ -284,9 +284,9 @@ router.post("/logs", (req, res, next) => {
 // ════════════════════════════════════════════════════════
 
 // GET /config — list system config
-router.get("/config", (_req, res, next) => {
+router.get("/config", async (_req, res, next) => {
   try {
-    const rows = db.prepare("SELECT * FROM system_config ORDER BY key").all();
+    const rows = await db.prepare("SELECT * FROM system_config ORDER BY key").all();
     res.json({ success: true, data: rows });
   } catch (err) {
     next(err);
@@ -294,21 +294,21 @@ router.get("/config", (_req, res, next) => {
 });
 
 // PUT /config/:key — update config value
-router.put("/config/:key", (req, res, next) => {
+router.put("/config/:key", async (req, res, next) => {
   try {
     const { value, description } = req.body;
     const now = new Date().toISOString();
-    const existing = db.prepare("SELECT * FROM system_config WHERE key = ?").get(req.params.key);
+    const existing = await db.prepare("SELECT * FROM system_config WHERE key = ?").get(req.params.key);
     if (existing) {
-      db.prepare(
+      await db.prepare(
         `UPDATE system_config SET value = ?, description = ?, updated_at = ? WHERE key = ?`
       ).run(value ?? existing.value, description ?? existing.description, now, req.params.key);
     } else {
-      db.prepare(
+      await db.prepare(
         `INSERT INTO system_config (key, value, description, updated_at) VALUES (?, ?, ?, ?)`
       ).run(req.params.key, value || null, description || "", now);
     }
-    const row = db.prepare("SELECT * FROM system_config WHERE key = ?").get(req.params.key);
+    const row = await db.prepare("SELECT * FROM system_config WHERE key = ?").get(req.params.key);
     res.json({ success: true, data: row });
   } catch (err) {
     next(err);
@@ -326,12 +326,12 @@ const LLM_CONFIG_KEYS = [
 ];
 
 // GET /llm-config — get all LLM config items
-router.get("/llm-config", (_req, res, next) => {
+router.get("/llm-config", async (_req, res, next) => {
   try {
-    const items = LLM_CONFIG_KEYS.map((item) => {
-      const row = db.prepare("SELECT value FROM system_config WHERE key = ?").get(item.key);
+    const items = await Promise.all(LLM_CONFIG_KEYS.map(async (item) => {
+      const row = await db.prepare("SELECT value FROM system_config WHERE key = ?").get(item.key);
       return { ...item, value: row ? row.value : "" };
-    });
+    }));
     res.json({ success: true, data: items });
   } catch (err) {
     next(err);
@@ -339,7 +339,7 @@ router.get("/llm-config", (_req, res, next) => {
 });
 
 // PUT /llm-config — batch update LLM config
-router.put("/llm-config", (req, res, next) => {
+router.put("/llm-config", async (req, res, next) => {
   try {
     const { items } = req.body;
     if (!items || !Array.isArray(items)) {
@@ -359,10 +359,10 @@ router.put("/llm-config", (req, res, next) => {
     });
     tx();
     // Return updated config
-    const updated = LLM_CONFIG_KEYS.map((item) => {
-      const row = db.prepare("SELECT value FROM system_config WHERE key = ?").get(item.key);
+    const updated = await Promise.all(LLM_CONFIG_KEYS.map(async (item) => {
+      const row = await db.prepare("SELECT value FROM system_config WHERE key = ?").get(item.key);
       return { ...item, value: row ? row.value : "" };
-    });
+    }));
     res.json({ success: true, data: updated });
   } catch (err) {
     next(err);
@@ -372,7 +372,7 @@ router.put("/llm-config", (req, res, next) => {
 // GET /llm-config/status — test LLM connectivity
 router.get("/llm-config/status", async (_req, res, next) => {
   try {
-    const rows = db.prepare("SELECT key, value FROM system_config WHERE key IN (?,?,?,?,?,?)").all(
+    const rows = await db.prepare("SELECT key, value FROM system_config WHERE key IN (?,?,?,?,?,?)").all(
       "llm_base_url", "llm_api_key", "llm_model", "llm_embedding_model", "llm_max_tokens", "llm_temperature"
     );
     const cfg = {};

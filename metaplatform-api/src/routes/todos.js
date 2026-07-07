@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from "uuid";
 const router = Router();
 
 // GET /api/todos
-router.get("/", (req, res) => {
+router.get("/", async (req, res) => {
   const { user_id, status, limit = 20 } = req.query;
   let sql = "SELECT * FROM todos WHERE 1=1";
   const params = [];
@@ -19,28 +19,28 @@ router.get("/", (req, res) => {
   }
   sql += " ORDER BY created_at DESC LIMIT ?";
   params.push(Number(limit));
-  const rows = db.prepare(sql).all(...params);
+  const rows = await db.prepare(sql).all(...params);
   res.json({ success: true, data: rows });
 });
 
 // POST /api/todos
-router.post("/", (req, res) => {
+router.post("/", async (req, res) => {
   const { user_id, title, description, priority = "medium", due_date } = req.body;
   const id = uuidv4();
-  db.prepare(
+  await db.prepare(
     "INSERT INTO todos (id, user_id, title, description, priority, due_date) VALUES (?, ?, ?, ?, ?, ?)",
   ).run(id, user_id, title, description, priority, due_date);
   res.json({ success: true, data: { id, title } });
 });
 
 // PUT /api/todos/:id
-router.put("/:id", (req, res) => {
-  const todo = db.prepare("SELECT * FROM todos WHERE id = ?").get(req.params.id);
+router.put("/:id", async (req, res) => {
+  const todo = await db.prepare("SELECT * FROM todos WHERE id = ?").get(req.params.id);
   if (!todo) {
     return res.status(404).json({ success: false, message: "Todo not found" });
   }
   const { title, description, priority, status, due_date } = req.body;
-  db.prepare(
+  await db.prepare(
     "UPDATE todos SET title = ?, description = ?, priority = ?, status = ?, due_date = ?, updated_at = datetime('now') WHERE id = ?",
   ).run(
     title ?? todo.title,
@@ -54,12 +54,12 @@ router.put("/:id", (req, res) => {
 });
 
 // DELETE /api/todos/:id
-router.delete("/:id", (req, res) => {
-  const todo = db.prepare("SELECT * FROM todos WHERE id = ?").get(req.params.id);
+router.delete("/:id", async (req, res) => {
+  const todo = await db.prepare("SELECT * FROM todos WHERE id = ?").get(req.params.id);
   if (!todo) {
     return res.status(404).json({ success: false, message: "Todo not found" });
   }
-  db.prepare("DELETE FROM todos WHERE id = ?").run(req.params.id);
+  await db.prepare("DELETE FROM todos WHERE id = ?").run(req.params.id);
   res.json({ success: true, data: { id: req.params.id } });
 });
 

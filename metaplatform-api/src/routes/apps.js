@@ -26,14 +26,14 @@ function generateSlug(name) {
 }
 
 // ─── GET / ── list all applications ─────────────────────
-router.get("/", (req, res, next) => {
+router.get("/", async (req, res, next) => {
   try {
     const { status } = req.query;
     let rows;
     if (status) {
-      rows = db.prepare("SELECT * FROM applications WHERE status = ? ORDER BY created_at DESC").all(status);
+      rows = await db.prepare("SELECT * FROM applications WHERE status = ? ORDER BY created_at DESC").all(status);
     } else {
-      rows = db.prepare("SELECT * FROM applications ORDER BY created_at DESC").all();
+      rows = await db.prepare("SELECT * FROM applications ORDER BY created_at DESC").all();
     }
     res.json({ success: true, data: rows });
   } catch (err) {
@@ -42,9 +42,9 @@ router.get("/", (req, res, next) => {
 });
 
 // ─── GET /published ── list all published apps (public) ───
-router.get("/published", (_req, res, next) => {
+router.get("/published", async (_req, res, next) => {
   try {
-    const rows = db.prepare(
+    const rows = await db.prepare(
       "SELECT id, name, description, category, icon, app_slug, published_url, published_version, published_at FROM applications WHERE status = 'published' ORDER BY published_at DESC"
     ).all();
     res.json({ success: true, data: rows });
@@ -54,9 +54,9 @@ router.get("/published", (_req, res, next) => {
 });
 
 // ─── GET /slug/:slug ── get app by slug (public) ──────────
-router.get("/slug/:slug", (req, res, next) => {
+router.get("/slug/:slug", async (req, res, next) => {
   try {
-    const row = db.prepare("SELECT * FROM applications WHERE app_slug = ? AND status = 'published'").get(req.params.slug);
+    const row = await db.prepare("SELECT * FROM applications WHERE app_slug = ? AND status = 'published'").get(req.params.slug);
     if (!row) return res.status(404).json({ success: false, error: "Published app not found" });
 
     // Try to parse pages from publish_config if available
@@ -81,9 +81,9 @@ router.get("/slug/:slug", (req, res, next) => {
 });
 
 // ─── GET /:id ── single application ─────────────────────
-router.get("/:id", (req, res, next) => {
+router.get("/:id", async (req, res, next) => {
   try {
-    const row = db.prepare("SELECT * FROM applications WHERE id = ?").get(req.params.id);
+    const row = await db.prepare("SELECT * FROM applications WHERE id = ?").get(req.params.id);
     if (!row) return res.status(404).json({ success: false, error: "应用不存在" });
     res.json({ success: true, data: row });
   } catch (err) {
@@ -92,7 +92,7 @@ router.get("/:id", (req, res, next) => {
 });
 
 // ─── POST / ── create application ───────────────────────
-router.post("/", (req, res, next) => {
+router.post("/", async (req, res, next) => {
   try {
     const { name, description, category, icon } = req.body;
     if (!name || !category || !icon) {
@@ -100,11 +100,11 @@ router.post("/", (req, res, next) => {
     }
     const id = uuid();
     const now = new Date().toISOString();
-    db.prepare(
+    await db.prepare(
       `INSERT INTO applications (id, name, description, category, icon, status, version, owner_id, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, 'draft', 'v0.1', ?, ?, ?)`
     ).run(id, name, description || "", category, icon, req.user?.id || null, now, now);
-    const row = db.prepare("SELECT * FROM applications WHERE id = ?").get(id);
+    const row = await db.prepare("SELECT * FROM applications WHERE id = ?").get(id);
     res.status(201).json({ success: true, data: row });
   } catch (err) {
     next(err);
@@ -112,14 +112,14 @@ router.post("/", (req, res, next) => {
 });
 
 // ─── PUT /:id ── update application ─────────────────────
-router.put("/:id", (req, res, next) => {
+router.put("/:id", async (req, res, next) => {
   try {
-    const existing = db.prepare("SELECT * FROM applications WHERE id = ?").get(req.params.id);
+    const existing = await db.prepare("SELECT * FROM applications WHERE id = ?").get(req.params.id);
     if (!existing) return res.status(404).json({ success: false, error: "应用不存在" });
 
     const { name, description, category, icon, status, version } = req.body;
     const now = new Date().toISOString();
-    db.prepare(
+    await db.prepare(
       `UPDATE applications
        SET name = ?, description = ?, category = ?, icon = ?, status = ?, version = ?, updated_at = ?
        WHERE id = ?`
@@ -133,7 +133,7 @@ router.put("/:id", (req, res, next) => {
       now,
       req.params.id
     );
-    const row = db.prepare("SELECT * FROM applications WHERE id = ?").get(req.params.id);
+    const row = await db.prepare("SELECT * FROM applications WHERE id = ?").get(req.params.id);
     res.json({ success: true, data: row });
   } catch (err) {
     next(err);
@@ -141,11 +141,11 @@ router.put("/:id", (req, res, next) => {
 });
 
 // ─── DELETE /:id ── delete application ──────────────────
-router.delete("/:id", (req, res, next) => {
+router.delete("/:id", async (req, res, next) => {
   try {
-    const existing = db.prepare("SELECT * FROM applications WHERE id = ?").get(req.params.id);
+    const existing = await db.prepare("SELECT * FROM applications WHERE id = ?").get(req.params.id);
     if (!existing) return res.status(404).json({ success: false, error: "应用不存在" });
-    db.prepare("DELETE FROM applications WHERE id = ?").run(req.params.id);
+    await db.prepare("DELETE FROM applications WHERE id = ?").run(req.params.id);
     res.json({ success: true, data: { id: req.params.id } });
   } catch (err) {
     next(err);
@@ -153,9 +153,9 @@ router.delete("/:id", (req, res, next) => {
 });
 
 // ─── POST /:id/publish ── publish an application ─────────
-router.post("/:id/publish", (req, res, next) => {
+router.post("/:id/publish", async (req, res, next) => {
   try {
-    const existing = db.prepare("SELECT * FROM applications WHERE id = ?").get(req.params.id);
+    const existing = await db.prepare("SELECT * FROM applications WHERE id = ?").get(req.params.id);
     if (!existing) return res.status(404).json({ success: false, error: "应用不存在" });
 
     const now = new Date().toISOString();
@@ -175,7 +175,7 @@ router.post("/:id/publish", (req, res, next) => {
     });
 
     // Update application record
-    db.prepare(
+    await db.prepare(
       `UPDATE applications
        SET status = 'published',
            app_slug = ?,
@@ -189,12 +189,12 @@ router.post("/:id/publish", (req, res, next) => {
 
     // Create publication snapshot record
     const pubId = uuid();
-    db.prepare(
+    await db.prepare(
       `INSERT INTO app_publications (id, app_id, slug, published_url, published_version, config_snapshot, created_at)
        VALUES (?, ?, ?, ?, ?, ?, ?)`
     ).run(pubId, req.params.id, slug, publishedUrl, version, publishConfig, now);
 
-    const row = db.prepare("SELECT * FROM applications WHERE id = ?").get(req.params.id);
+    const row = await db.prepare("SELECT * FROM applications WHERE id = ?").get(req.params.id);
     res.json({
       success: true,
       data: {
@@ -208,13 +208,13 @@ router.post("/:id/publish", (req, res, next) => {
 });
 
 // ─── POST /:id/unpublish ── unpublish an application ─────
-router.post("/:id/unpublish", (req, res, next) => {
+router.post("/:id/unpublish", async (req, res, next) => {
   try {
-    const existing = db.prepare("SELECT * FROM applications WHERE id = ?").get(req.params.id);
+    const existing = await db.prepare("SELECT * FROM applications WHERE id = ?").get(req.params.id);
     if (!existing) return res.status(404).json({ success: false, error: "应用不存在" });
 
     const now = new Date().toISOString();
-    db.prepare(
+    await db.prepare(
       `UPDATE applications
        SET status = 'draft',
            published_at = NULL,
@@ -222,7 +222,7 @@ router.post("/:id/unpublish", (req, res, next) => {
        WHERE id = ?`
     ).run(now, req.params.id);
 
-    const row = db.prepare("SELECT * FROM applications WHERE id = ?").get(req.params.id);
+    const row = await db.prepare("SELECT * FROM applications WHERE id = ?").get(req.params.id);
     res.json({ success: true, data: row });
   } catch (err) {
     next(err);
@@ -230,17 +230,17 @@ router.post("/:id/unpublish", (req, res, next) => {
 });
 
 // ─── GET /:id/stats ── app statistics ───────────────────
-router.get("/:id/stats", (req, res, next) => {
+router.get("/:id/stats", async (req, res, next) => {
   try {
-    const app = db.prepare("SELECT * FROM applications WHERE id = ?").get(req.params.id);
+    const app = await db.prepare("SELECT * FROM applications WHERE id = ?").get(req.params.id);
     if (!app) return res.status(404).json({ success: false, error: "应用不存在" });
 
-    const objects_count = db.prepare("SELECT COUNT(*) AS cnt FROM ontology_objects WHERE app_id = ?").get(req.params.id).cnt;
-    const pages_count = db.prepare("SELECT COUNT(*) AS cnt FROM app_pages WHERE app_id = ?").get(req.params.id).cnt;
-    const flows_count = db.prepare("SELECT COUNT(*) AS cnt FROM process_definitions WHERE app_id = ?").get(req.params.id).cnt;
+    const objects_count = await db.prepare("SELECT COUNT(*) AS cnt FROM ontology_objects WHERE app_id = ?").get(req.params.id).cnt;
+    const pages_count = await db.prepare("SELECT COUNT(*) AS cnt FROM app_pages WHERE app_id = ?").get(req.params.id).cnt;
+    const flows_count = await db.prepare("SELECT COUNT(*) AS cnt FROM process_definitions WHERE app_id = ?").get(req.params.id).cnt;
 
     // Also update the application's pages_count for consistency
-    db.prepare("UPDATE applications SET pages_count = ?, updated_at = ? WHERE id = ?")
+    await db.prepare("UPDATE applications SET pages_count = ?, updated_at = ? WHERE id = ?")
       .run(pages_count, new Date().toISOString(), req.params.id);
 
     res.json({
@@ -257,12 +257,12 @@ router.get("/:id/stats", (req, res, next) => {
 // ════════════════════════════════════════════════════════
 
 // ─── GET /:id/pages ── list all pages for this app ──────
-router.get("/:id/pages", (req, res, next) => {
+router.get("/:id/pages", async (req, res, next) => {
   try {
-    const app = db.prepare("SELECT id FROM applications WHERE id = ?").get(req.params.id);
+    const app = await db.prepare("SELECT id FROM applications WHERE id = ?").get(req.params.id);
     if (!app) return res.status(404).json({ success: false, error: "应用不存在" });
 
-    const rows = db.prepare(
+    const rows = await db.prepare(
       "SELECT * FROM app_pages WHERE app_id = ? ORDER BY sort_order ASC, created_at ASC"
     ).all(req.params.id);
     res.json({ success: true, data: rows });
@@ -272,9 +272,9 @@ router.get("/:id/pages", (req, res, next) => {
 });
 
 // ─── POST /:id/pages ── create a page for this app ──────
-router.post("/:id/pages", (req, res, next) => {
+router.post("/:id/pages", async (req, res, next) => {
   try {
-    const app = db.prepare("SELECT id FROM applications WHERE id = ?").get(req.params.id);
+    const app = await db.prepare("SELECT id FROM applications WHERE id = ?").get(req.params.id);
     if (!app) return res.status(404).json({ success: false, error: "应用不存在" });
 
     const { name, type, icon, config, status, sort_order } = req.body;
@@ -288,18 +288,18 @@ router.post("/:id/pages", (req, res, next) => {
 
     let order = sort_order;
     if (order === undefined || order === null) {
-      const maxRow = db.prepare(
+      const maxRow = await db.prepare(
         "SELECT MAX(sort_order) AS max_order FROM app_pages WHERE app_id = ?"
       ).get(req.params.id);
       order = (maxRow?.max_order ?? -1) + 1;
     }
 
-    db.prepare(
+    await db.prepare(
       `INSERT INTO app_pages (id, app_id, name, type, icon, status, config, sort_order, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     ).run(id, req.params.id, name, type || "list", icon || null, status || "draft", configStr, order, now, now);
 
-    const row = db.prepare("SELECT * FROM app_pages WHERE id = ?").get(id);
+    const row = await db.prepare("SELECT * FROM app_pages WHERE id = ?").get(id);
     res.status(201).json({ success: true, data: row });
   } catch (err) {
     next(err);
@@ -307,12 +307,12 @@ router.post("/:id/pages", (req, res, next) => {
 });
 
 // ─── PUT /:id/pages/:pageId ── update a page ────────────
-router.put("/:id/pages/:pageId", (req, res, next) => {
+router.put("/:id/pages/:pageId", async (req, res, next) => {
   try {
-    const app = db.prepare("SELECT id FROM applications WHERE id = ?").get(req.params.id);
+    const app = await db.prepare("SELECT id FROM applications WHERE id = ?").get(req.params.id);
     if (!app) return res.status(404).json({ success: false, error: "应用不存在" });
 
-    const existing = db.prepare(
+    const existing = await db.prepare(
       "SELECT * FROM app_pages WHERE id = ? AND app_id = ?"
     ).get(req.params.pageId, req.params.id);
     if (!existing) return res.status(404).json({ success: false, error: "页面不存在" });
@@ -321,7 +321,7 @@ router.put("/:id/pages/:pageId", (req, res, next) => {
     const now = new Date().toISOString();
     const configStr = typeof config === "object" ? JSON.stringify(config) : config ?? existing.config;
 
-    db.prepare(
+    await db.prepare(
       `UPDATE app_pages
        SET name = ?, type = ?, icon = ?, status = ?, config = ?, sort_order = ?, updated_at = ?
        WHERE id = ? AND app_id = ?`
@@ -337,7 +337,7 @@ router.put("/:id/pages/:pageId", (req, res, next) => {
       req.params.id
     );
 
-    const row = db.prepare("SELECT * FROM app_pages WHERE id = ?").get(req.params.pageId);
+    const row = await db.prepare("SELECT * FROM app_pages WHERE id = ?").get(req.params.pageId);
     res.json({ success: true, data: row });
   } catch (err) {
     next(err);
@@ -345,17 +345,17 @@ router.put("/:id/pages/:pageId", (req, res, next) => {
 });
 
 // ─── DELETE /:id/pages/:pageId ── delete a page ─────────
-router.delete("/:id/pages/:pageId", (req, res, next) => {
+router.delete("/:id/pages/:pageId", async (req, res, next) => {
   try {
-    const app = db.prepare("SELECT id FROM applications WHERE id = ?").get(req.params.id);
+    const app = await db.prepare("SELECT id FROM applications WHERE id = ?").get(req.params.id);
     if (!app) return res.status(404).json({ success: false, error: "应用不存在" });
 
-    const existing = db.prepare(
+    const existing = await db.prepare(
       "SELECT * FROM app_pages WHERE id = ? AND app_id = ?"
     ).get(req.params.pageId, req.params.id);
     if (!existing) return res.status(404).json({ success: false, error: "页面不存在" });
 
-    db.prepare("DELETE FROM app_pages WHERE id = ? AND app_id = ?").run(req.params.pageId, req.params.id);
+    await db.prepare("DELETE FROM app_pages WHERE id = ? AND app_id = ?").run(req.params.pageId, req.params.id);
     res.json({ success: true, data: { id: req.params.pageId } });
   } catch (err) {
     next(err);
@@ -367,12 +367,12 @@ router.delete("/:id/pages/:pageId", (req, res, next) => {
 // ════════════════════════════════════════════════════════
 
 // ─── GET /:id/config ── list all config key-value pairs ──
-router.get("/:id/config", (req, res, next) => {
+router.get("/:id/config", async (req, res, next) => {
   try {
-    const app = db.prepare("SELECT id FROM applications WHERE id = ?").get(req.params.id);
+    const app = await db.prepare("SELECT id FROM applications WHERE id = ?").get(req.params.id);
     if (!app) return res.status(404).json({ success: false, error: "应用不存在" });
 
-    const rows = db.prepare(
+    const rows = await db.prepare(
       "SELECT * FROM app_configs WHERE app_id = ? ORDER BY key ASC"
     ).all(req.params.id);
     res.json({ success: true, data: rows });
@@ -382,9 +382,9 @@ router.get("/:id/config", (req, res, next) => {
 });
 
 // ─── POST /:id/config ── create a config entry ──────────
-router.post("/:id/config", (req, res, next) => {
+router.post("/:id/config", async (req, res, next) => {
   try {
-    const app = db.prepare("SELECT id FROM applications WHERE id = ?").get(req.params.id);
+    const app = await db.prepare("SELECT id FROM applications WHERE id = ?").get(req.params.id);
     if (!app) return res.status(404).json({ success: false, error: "应用不存在" });
 
     const { key, value, description } = req.body;
@@ -393,7 +393,7 @@ router.post("/:id/config", (req, res, next) => {
     }
 
     // Check for duplicate key within the same app
-    const existingKey = db.prepare(
+    const existingKey = await db.prepare(
       "SELECT id FROM app_configs WHERE app_id = ? AND key = ?"
     ).get(req.params.id, key);
     if (existingKey) {
@@ -403,12 +403,12 @@ router.post("/:id/config", (req, res, next) => {
     const id = uuid();
     const now = new Date().toISOString();
 
-    db.prepare(
+    await db.prepare(
       `INSERT INTO app_configs (id, app_id, key, value, description, updated_at)
        VALUES (?, ?, ?, ?, ?, ?)`
     ).run(id, req.params.id, key, value || null, description || null, now);
 
-    const row = db.prepare("SELECT * FROM app_configs WHERE id = ?").get(id);
+    const row = await db.prepare("SELECT * FROM app_configs WHERE id = ?").get(id);
     res.status(201).json({ success: true, data: row });
   } catch (err) {
     next(err);
@@ -416,12 +416,12 @@ router.post("/:id/config", (req, res, next) => {
 });
 
 // ─── PUT /:id/config/:key ── update a config value ──────
-router.put("/:id/config/:key", (req, res, next) => {
+router.put("/:id/config/:key", async (req, res, next) => {
   try {
-    const app = db.prepare("SELECT id FROM applications WHERE id = ?").get(req.params.id);
+    const app = await db.prepare("SELECT id FROM applications WHERE id = ?").get(req.params.id);
     if (!app) return res.status(404).json({ success: false, error: "应用不存在" });
 
-    const existing = db.prepare(
+    const existing = await db.prepare(
       "SELECT * FROM app_configs WHERE app_id = ? AND key = ?"
     ).get(req.params.id, req.params.key);
     if (!existing) return res.status(404).json({ success: false, error: "配置项不存在" });
@@ -429,7 +429,7 @@ router.put("/:id/config/:key", (req, res, next) => {
     const { value, description } = req.body;
     const now = new Date().toISOString();
 
-    db.prepare(
+    await db.prepare(
       `UPDATE app_configs
        SET value = ?, description = ?, updated_at = ?
        WHERE app_id = ? AND key = ?`
@@ -441,7 +441,7 @@ router.put("/:id/config/:key", (req, res, next) => {
       req.params.key
     );
 
-    const row = db.prepare(
+    const row = await db.prepare(
       "SELECT * FROM app_configs WHERE app_id = ? AND key = ?"
     ).get(req.params.id, req.params.key);
     res.json({ success: true, data: row });
@@ -457,7 +457,7 @@ router.put("/:id/config/:key", (req, res, next) => {
 // POST /:id/test-sso — test SSO connection (real check against IdP endpoint)
 router.post("/:id/test-sso", async (req, res, next) => {
   try {
-    const app = db.prepare("SELECT id FROM applications WHERE id = ?").get(req.params.id);
+    const app = await db.prepare("SELECT id FROM applications WHERE id = ?").get(req.params.id);
     if (!app) return res.status(404).json({ success: false, error: "应用不存在" });
 
     const { provider, url, clientId } = req.body;
@@ -467,7 +467,7 @@ router.post("/:id/test-sso", async (req, res, next) => {
     let ssoProvider = provider;
     let ssoClientId = clientId;
     if (!ssoUrl) {
-      const configRow = db.prepare("SELECT value FROM app_configs WHERE app_id = ? AND key = ?").get(req.params.id, "sso_config");
+      const configRow = await db.prepare("SELECT value FROM app_configs WHERE app_id = ? AND key = ?").get(req.params.id, "sso_config");
       if (configRow && configRow.value) {
         try {
           const ssoConfig = JSON.parse(configRow.value);
@@ -517,13 +517,13 @@ router.post("/:id/test-sso", async (req, res, next) => {
     // Save SSO config if we have new values
     if (ssoUrl && (url || provider || clientId)) {
       const configVal = JSON.stringify({ url: ssoUrl, provider: ssoProvider, clientId: ssoClientId });
-      const existing = db.prepare("SELECT id FROM app_configs WHERE app_id = ? AND key = ?").get(req.params.id, "sso_config");
+      const existing = await db.prepare("SELECT id FROM app_configs WHERE app_id = ? AND key = ?").get(req.params.id, "sso_config");
       if (existing) {
-        db.prepare("UPDATE app_configs SET value = ?, updated_at = datetime('now') WHERE app_id = ? AND key = ?")
+        await db.prepare("UPDATE app_configs SET value = ?, updated_at = datetime('now') WHERE app_id = ? AND key = ?")
           .run(configVal, req.params.id, "sso_config");
       } else {
         const cfgId = uuid();
-        db.prepare("INSERT INTO app_configs (id, app_id, key, value, updated_at) VALUES (?, ?, ?, ?, datetime('now'))")
+        await db.prepare("INSERT INTO app_configs (id, app_id, key, value, updated_at) VALUES (?, ?, ?, ?, datetime('now'))")
           .run(cfgId, req.params.id, "sso_config", configVal);
       }
     }
@@ -546,7 +546,7 @@ router.post("/:id/test-sso", async (req, res, next) => {
 // POST /:id/test-im — test IM integration (real webhook connectivity check)
 router.post("/:id/test-im", async (req, res, next) => {
   try {
-    const app = db.prepare("SELECT id FROM applications WHERE id = ?").get(req.params.id);
+    const app = await db.prepare("SELECT id FROM applications WHERE id = ?").get(req.params.id);
     if (!app) return res.status(404).json({ success: false, error: "应用不存在" });
 
     const { platform, webhook } = req.body;
@@ -555,7 +555,7 @@ router.post("/:id/test-im", async (req, res, next) => {
     let imWebhook = webhook;
     let imPlatform = platform;
     if (!imWebhook) {
-      const configRow = db.prepare("SELECT value FROM app_configs WHERE app_id = ? AND key = ?").get(req.params.id, "im_config");
+      const configRow = await db.prepare("SELECT value FROM app_configs WHERE app_id = ? AND key = ?").get(req.params.id, "im_config");
       if (configRow && configRow.value) {
         try {
           const imConfig = JSON.parse(configRow.value);
@@ -603,13 +603,13 @@ router.post("/:id/test-im", async (req, res, next) => {
     // Save IM config if we have new values
     if (imWebhook && (webhook || platform)) {
       const configVal = JSON.stringify({ webhook: imWebhook, platform: imPlatform });
-      const existing = db.prepare("SELECT id FROM app_configs WHERE app_id = ? AND key = ?").get(req.params.id, "im_config");
+      const existing = await db.prepare("SELECT id FROM app_configs WHERE app_id = ? AND key = ?").get(req.params.id, "im_config");
       if (existing) {
-        db.prepare("UPDATE app_configs SET value = ?, updated_at = datetime('now') WHERE app_id = ? AND key = ?")
+        await db.prepare("UPDATE app_configs SET value = ?, updated_at = datetime('now') WHERE app_id = ? AND key = ?")
           .run(configVal, req.params.id, "im_config");
       } else {
         const cfgId = uuid();
-        db.prepare("INSERT INTO app_configs (id, app_id, key, value, updated_at) VALUES (?, ?, ?, ?, datetime('now'))")
+        await db.prepare("INSERT INTO app_configs (id, app_id, key, value, updated_at) VALUES (?, ?, ?, ?, datetime('now'))")
           .run(cfgId, req.params.id, "im_config", configVal);
       }
     }
@@ -630,18 +630,18 @@ router.post("/:id/test-im", async (req, res, next) => {
 });
 
 // POST /:id/sync-org — sync organization structure (real org sync from departments table)
-router.post("/:id/sync-org", (req, res, next) => {
+router.post("/:id/sync-org", async (req, res, next) => {
   try {
-    const app = db.prepare("SELECT id FROM applications WHERE id = ?").get(req.params.id);
+    const app = await db.prepare("SELECT id FROM applications WHERE id = ?").get(req.params.id);
     if (!app) return res.status(404).json({ success: false, error: "应用不存在" });
 
     const { source } = req.body;
 
     // Read the organization structure from the departments table
-    const departments = db.prepare("SELECT * FROM departments WHERE status = 'active' ORDER BY sort_order ASC").all();
+    const departments = await db.prepare("SELECT * FROM departments WHERE status = 'active' ORDER BY sort_order ASC").all();
 
     // Read all users to cross-reference with department assignments
-    const existingUsers = db.prepare("SELECT id, name, email, department FROM users").all();
+    const existingUsers = await db.prepare("SELECT id, name, email, department FROM users").all();
 
     let syncedCount = 0;
     let departmentsFound = departments.length;
@@ -661,13 +661,13 @@ router.post("/:id/sync-org", (req, res, next) => {
       user_count: existingUsers.length,
     };
 
-    const existingOrg = db.prepare("SELECT id FROM app_configs WHERE app_id = ? AND key = ?").get(req.params.id, orgKey);
+    const existingOrg = await db.prepare("SELECT id FROM app_configs WHERE app_id = ? AND key = ?").get(req.params.id, orgKey);
     if (existingOrg) {
-      db.prepare("UPDATE app_configs SET value = ?, updated_at = datetime('now') WHERE app_id = ? AND key = ?")
+      await db.prepare("UPDATE app_configs SET value = ?, updated_at = datetime('now') WHERE app_id = ? AND key = ?")
         .run(JSON.stringify(orgData), req.params.id, orgKey);
     } else {
       const cfgId = uuid();
-      db.prepare("INSERT INTO app_configs (id, app_id, key, value, updated_at) VALUES (?, ?, ?, ?, datetime('now'))")
+      await db.prepare("INSERT INTO app_configs (id, app_id, key, value, updated_at) VALUES (?, ?, ?, ?, datetime('now'))")
         .run(cfgId, req.params.id, orgKey, JSON.stringify(orgData));
     }
     syncedCount++;
@@ -704,7 +704,7 @@ router.post("/:id/sync-org", (req, res, next) => {
 // POST /:id/test-api — Proxy an HTTP request to a target URL and return the response
 router.post("/:id/test-api", async (req, res, next) => {
   try {
-    const app = db.prepare("SELECT id FROM applications WHERE id = ?").get(req.params.id);
+    const app = await db.prepare("SELECT id FROM applications WHERE id = ?").get(req.params.id);
     if (!app) return res.status(404).json({ success: false, error: "应用不存在" });
 
     const { url, method = "GET", headers = {}, body } = req.body;
@@ -788,22 +788,22 @@ router.post("/:id/test-api", async (req, res, next) => {
 // ════════════════════════════════════════════════════════
 
 // ─── PUT /:id/gray — configure gray release ────────────────
-router.put("/:id/gray", (req, res, next) => {
+router.put("/:id/gray", async (req, res, next) => {
   try {
     const { strategy, percentage, tenants, userGroups } = req.body;
-    const app = db.prepare("SELECT * FROM applications WHERE id = ?").get(req.params.id);
+    const app = await db.prepare("SELECT * FROM applications WHERE id = ?").get(req.params.id);
     if (!app) return res.status(404).json({ success: false, error: "App not found" });
 
     const config = JSON.stringify({ strategy, percentage, tenants, userGroups });
-    db.prepare("UPDATE applications SET updated_at = datetime('now') WHERE id = ?").run(req.params.id);
+    await db.prepare("UPDATE applications SET updated_at = datetime('now') WHERE id = ?").run(req.params.id);
 
     // Store in app_configs
-    const existing = db.prepare("SELECT * FROM app_configs WHERE app_id = ? AND key = ?").get(req.params.id, "gray_release");
+    const existing = await db.prepare("SELECT * FROM app_configs WHERE app_id = ? AND key = ?").get(req.params.id, "gray_release");
     if (existing) {
-      db.prepare("UPDATE app_configs SET value = ?, updated_at = datetime('now') WHERE app_id = ? AND key = ?").run(config, req.params.id, "gray_release");
+      await db.prepare("UPDATE app_configs SET value = ?, updated_at = datetime('now') WHERE app_id = ? AND key = ?").run(config, req.params.id, "gray_release");
     } else {
       const id = uuid();
-      db.prepare("INSERT INTO app_configs (id, app_id, key, value, updated_at) VALUES (?, ?, ?, ?, datetime('now'))").run(id, req.params.id, "gray_release", config);
+      await db.prepare("INSERT INTO app_configs (id, app_id, key, value, updated_at) VALUES (?, ?, ?, ?, datetime('now'))").run(id, req.params.id, "gray_release", config);
     }
 
     res.json({ success: true, data: { strategy, percentage } });
@@ -813,12 +813,12 @@ router.put("/:id/gray", (req, res, next) => {
 });
 
 // ─── GET /:id/gray — get gray release config ───────────────
-router.get("/:id/gray", (req, res, next) => {
+router.get("/:id/gray", async (req, res, next) => {
   try {
-    const app = db.prepare("SELECT id FROM applications WHERE id = ?").get(req.params.id);
+    const app = await db.prepare("SELECT id FROM applications WHERE id = ?").get(req.params.id);
     if (!app) return res.status(404).json({ success: false, error: "应用不存在" });
 
-    const row = db.prepare("SELECT * FROM app_configs WHERE app_id = ? AND key = ?").get(req.params.id, "gray_release");
+    const row = await db.prepare("SELECT * FROM app_configs WHERE app_id = ? AND key = ?").get(req.params.id, "gray_release");
     if (!row) return res.json({ success: true, data: null });
 
     let config = null;
@@ -830,23 +830,23 @@ router.get("/:id/gray", (req, res, next) => {
 });
 
 // ─── POST /:id/rollback — rollback to a previous version ────
-router.post("/:id/rollback", (req, res, next) => {
+router.post("/:id/rollback", async (req, res, next) => {
   try {
     const { versionId } = req.body;
     if (!versionId) return res.status(400).json({ success: false, error: "versionId 为必填项" });
 
-    const app = db.prepare("SELECT id FROM applications WHERE id = ?").get(req.params.id);
+    const app = await db.prepare("SELECT id FROM applications WHERE id = ?").get(req.params.id);
     if (!app) return res.status(404).json({ success: false, error: "应用不存在" });
 
     // Mark current active versions as rolled_back
-    db.prepare("UPDATE app_versions SET status = 'rolled_back' WHERE app_id = ? AND status = 'active'").run(req.params.id);
+    await db.prepare("UPDATE app_versions SET status = 'rolled_back' WHERE app_id = ? AND status = 'active'").run(req.params.id);
     // Activate the target version
-    db.prepare("UPDATE app_versions SET status = 'active', updated_at = datetime('now') WHERE id = ?").run(versionId);
+    await db.prepare("UPDATE app_versions SET status = 'active', updated_at = datetime('now') WHERE id = ?").run(versionId);
 
     // Also update the application's version field
-    const targetVersion = db.prepare("SELECT version FROM app_versions WHERE id = ?").get(versionId);
+    const targetVersion = await db.prepare("SELECT version FROM app_versions WHERE id = ?").get(versionId);
     if (targetVersion) {
-      db.prepare("UPDATE applications SET version = ?, updated_at = datetime('now') WHERE id = ?").run(targetVersion.version, req.params.id);
+      await db.prepare("UPDATE applications SET version = ?, updated_at = datetime('now') WHERE id = ?").run(targetVersion.version, req.params.id);
     }
 
     res.json({ success: true, data: { message: "Rollback successful" } });
@@ -856,10 +856,10 @@ router.post("/:id/rollback", (req, res, next) => {
 });
 
 // ─── GET /:id/activity — get app activity logs ──────────────
-router.get("/:id/activity", (req, res, next) => {
+router.get("/:id/activity", async (req, res, next) => {
   try {
     const { limit = 10 } = req.query;
-    const logs = db.prepare("SELECT * FROM audit_logs WHERE entity_id = ? ORDER BY created_at DESC LIMIT ?").all(req.params.id, Number(limit));
+    const logs = await db.prepare("SELECT * FROM audit_logs WHERE entity_id = ? ORDER BY created_at DESC LIMIT ?").all(req.params.id, Number(limit));
     res.json({ success: true, data: logs });
   } catch (err) {
     next(err);

@@ -3,418 +3,530 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>页面配置管理 - MetaPlatform</title>
+    <title>工作台 - MetaPlatform</title>
     <style id="theme-vars">
-/* ============================================================
- * MetaPlatform Design — Draft (精简版)
- * Compact, minimal, small-radius enterprise style
- * ============================================================ */
-
-/* ---- Brand Prefix: mp ---- */
-
 :root {
-  /* Primary */
   --color-primary: #3b82f6;
   --color-primary-hover: #2563eb;
   --color-primary-light: #eff6ff;
-
-  /* Neutral — minimal set */
   --color-bg: #ffffff;
   --color-bg-secondary: #f8fafc;
   --color-surface: #ffffff;
   --color-surface-hover: #f8fafc;
-
-  /* Sidebar */
   --color-sidebar-bg: #0f172a;
   --color-sidebar-text: #94a3b8;
   --color-sidebar-text-hover: #cbd5e1;
-  --color-sidebar-active-bg: var(--color-primary-subtle);
+  --color-sidebar-active-bg: rgba(59, 130, 246, 0.15);
   --color-sidebar-active-text: #60a5fa;
   --color-sidebar-border: rgba(148, 163, 184, 0.1);
-
-  /* Text — 3 levels only */
   --color-text-primary: #0f172a;
   --color-text-secondary: #64748b;
   --color-text-inverse: #ffffff;
-
-  /* Border — 1 token only */
   --color-border: #e2e8f0;
-
-  /* State — 3 semantic colors, bg derived */
   --state-success: #22c55e;
   --state-success-bg: #f0fdf4;
   --state-warning: #f59e0b;
   --state-warning-bg: #fffbeb;
   --state-error: #ef4444;
   --state-error-bg: #fef2f2;
-
-  /* ---- Typography ---- */
   --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans SC", sans-serif;
   --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
-
   --font-size-xs: 11px;
   --font-size-sm: 12px;
   --font-size-base: 13px;
   --font-size-lg: 14px;
   --font-size-xl: 18px;
   --font-size-2xl: 22px;
-
   --font-weight-normal: 400;
   --font-weight-medium: 500;
   --font-weight-semibold: 600;
-
   --line-height-normal: 1.5;
-
-  /* ---- Spacing — compact scale ---- */
   --spacing-xs: 2px;
   --spacing-sm: 4px;
   --spacing-md: 8px;
   --spacing-lg: 12px;
   --spacing-xl: 16px;
   --spacing-2xl: 24px;
-
-  /* ---- Radius — SMALL ---- */
   --radius-sm: 3px;
   --radius-md: 4px;
   --radius-lg: 6px;
   --radius-full: 9999px;
-
-  /* ---- Shadows — minimal ---- */
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
   --shadow-float: 0 8px 24px rgba(0, 0, 0, 0.1);
-
-  /* ---- Layout ---- */
   --sidebar-width: 220px;
 }
-
     </style>
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
-    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
-    <style type="text/tailwindcss">
-  @theme inline {
-    --color-primary: var(--color-primary);
-    --color-border: var(--color-border);
-  }
-  @layer base {
-    body { background: var(--color-surface); color: var(--color-text-primary); }
-    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
-    th { @apply whitespace-nowrap; }
-  }
-    </style>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-      .no-scrollbar::-webkit-scrollbar { display: none; }
-      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-      [data-icon] {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        -webkit-mask-size: contain;
-        mask-size: contain;
-        -webkit-mask-repeat: no-repeat;
-        mask-repeat: no-repeat;
-        -webkit-mask-position: center;
-        mask-position: center;
-        background-color: currentColor;
-      }
+    @theme inline { --color-primary: var(--color-primary); --color-border: var(--color-border); }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; overflow: hidden; font-family: var(--font-sans); font-size: var(--font-size-base); color: var(--color-text-primary); background: var(--color-bg); line-height: var(--line-height-normal); -webkit-font-smoothing: antialiased; }
+    input, textarea, select, button { font-family: inherit; font-size: inherit; }
+    .nav-item { display: flex; align-items: center; gap: var(--spacing-lg); padding: var(--spacing-md) var(--spacing-xl); font-size: var(--font-size-sm); font-weight: var(--font-weight-normal); color: var(--color-sidebar-text); border-radius: var(--radius-md); cursor: pointer; transition: all 0.15s; text-decoration: none; border: none; background: none; width: 100%; text-align: left; }
+    .nav-item:hover { background: var(--color-sidebar-active-bg); color: var(--color-sidebar-text-hover); }
+    .nav-item svg { width: 16px; height: 16px; flex-shrink: 0; }
+    .tab-item { display: flex; align-items: center; gap: var(--spacing-sm); padding: var(--spacing-sm) var(--spacing-lg); font-size: var(--font-size-sm); font-weight: var(--font-weight-normal); color: var(--color-text-secondary); border-bottom: 2px solid transparent; cursor: pointer; transition: all 0.15s; white-space: nowrap; background: none; border-top: none; border-left: none; border-right: none; }
+    .tab-item:hover { color: var(--color-text-primary); }
+    .tab-item.active { color: var(--color-primary); border-bottom-color: var(--color-primary); font-weight: var(--font-weight-medium); }
+    .btn { display: inline-flex; align-items: center; gap: var(--spacing-sm); padding: var(--spacing-sm) var(--spacing-lg); font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); border-radius: var(--radius-md); cursor: pointer; transition: all 0.15s; white-space: nowrap; border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-text-primary); }
+    .btn:hover { background: var(--color-surface-hover); }
+    .btn svg { width: 14px; height: 14px; }
+    .btn-primary { border-color: var(--color-primary); background: var(--color-primary); color: var(--color-text-inverse); }
+    .btn-primary:hover { background: var(--color-primary-hover); }
+    .btn-ghost { border-color: transparent; color: var(--color-text-secondary); }
+    .btn-ghost:hover { background: var(--color-bg-secondary); }
+    .inp { width: 100%; padding: 6px 10px; font-size: var(--font-size-sm); border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-bg); color: var(--color-text-primary); outline: none; transition: border-color 0.15s; }
+    .inp:focus { border-color: var(--color-primary); box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.12); }
+    .inp::placeholder { color: var(--color-text-secondary); }
+    .badge { display: inline-flex; align-items: center; padding: 1px 6px; font-size: var(--font-size-xs); font-weight: var(--font-weight-medium); border-radius: var(--radius-full); }
+    .badge-default { background: var(--color-bg-secondary); color: var(--color-text-secondary); }
+    .badge-primary { background: var(--color-primary-light); color: var(--color-primary); }
+    .badge-success { background: var(--state-success-bg); color: var(--state-success); }
+    .badge-warning { background: var(--state-warning-bg); color: var(--state-warning); }
+    .badge-error { background: var(--state-error-bg); color: var(--state-error); }
+    .card { border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface); }
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: var(--radius-full); }
     </style>
 </head>
-<body class="font-sans antialiased" style="font-family: var(--font-sans); font-size: var(--font-size-base);">
+<body>
+<div style="display:flex; height:100vh; width:100vw; overflow:hidden;">
 
-<div class="flex min-h-screen">
+    <!-- SIDEBAR -->
+    <aside style="width:var(--sidebar-width); background:var(--color-sidebar-bg); display:flex; flex-direction:column; flex-shrink:0; border-right:1px solid var(--color-sidebar-border);">
+        <div style="height:56px; padding:0 var(--spacing-xl); display:flex; align-items:center; border-bottom:1px solid var(--color-sidebar-border);">
+            <span style="color:var(--color-text-inverse); font-size:var(--font-size-lg); font-weight:var(--font-weight-semibold);">MetaPlatform</span>
+        </div>
+        <nav style="flex:1; overflow-y:auto; padding:var(--spacing-md) var(--spacing-md); display:flex; flex-direction:column; gap:1px;">
+            <a class="nav-item" data-dom-id="nav-dashboard" style="background: rgba(59,130,246,0.15); color: #60a5fa;"><i data-lucide="layout-dashboard"></i><span>工作台</span></a>
+            <a class="nav-item" data-dom-id="nav-superai"><i data-lucide="sparkles"></i><span>SuperAI</span></a>
+            <a class="nav-item" data-dom-id="nav-architecture"><i data-lucide="building-2"></i><span>架构中心</span></a>
+            <a class="nav-item" data-dom-id="nav-apps"><i data-lucide="app-window"></i><span>应用中心</span></a>
+            <a class="nav-item" data-dom-id="nav-process"><i data-lucide="git-branch"></i><span>流程中心</span></a>
+            <a class="nav-item" data-dom-id="nav-data"><i data-lucide="database"></i><span>数据中心</span></a>
+            <a class="nav-item" data-dom-id="nav-ontology"><i data-lucide="brain"></i><span>本体引擎</span></a>
+            <a class="nav-item" data-dom-id="nav-quality"><i data-lucide="shield-check"></i><span>质量中心</span></a>
+            <a class="nav-item" data-dom-id="nav-knowledge"><i data-lucide="book-open"></i><span>知识库</span></a>
+            <a class="nav-item" data-dom-id="nav-market"><i data-lucide="cloud"></i><span>云市场</span></a>
+            <a class="nav-item" data-dom-id="nav-agents"><i data-lucide="bot"></i><span>数字员工</span></a>
+            <a class="nav-item" data-dom-id="nav-admin"><i data-lucide="settings"></i><span>后台管理</span></a>
+        </nav>
+        <div style="padding:var(--spacing-lg) var(--spacing-xl); border-top:1px solid var(--color-sidebar-border); font-size:var(--font-size-xs); color:var(--color-sidebar-text);">
+            v1.2 · 本体论驱动 AI 平台
+        </div>
+    </aside>
 
-  <!-- Sidebar -->
-  <aside class="w-[220px] flex flex-col flex-shrink-0 fixed inset-y-0 left-0 z-10" style="background: var(--color-sidebar-bg);">
+    <!-- MAIN AREA -->
+    <div style="flex:1; display:flex; flex-direction:column; min-width:0;">
 
-    <!-- Brand -->
-    <div class="flex items-center gap-2 px-3 py-3" style="border-bottom: 1px solid var(--color-sidebar-border);">
-      <span class="w-8 h-8 text-white flex items-center justify-center font-bold text-xs" style="background: var(--color-primary); border-radius: var(--radius-md);">M</span>
-      <span class="text-sm font-semibold" style="color: var(--color-text-inverse)">MetaPlatform</span>
-    </div>
+        <!-- TOPBAR -->
+        <header style="height:56px; border-bottom:1px solid var(--color-border); background:var(--color-surface); display:flex; align-items:center; padding:0 var(--spacing-xl); flex-shrink:0; gap:var(--spacing-lg);">
+            <div style="width:260px; display:flex; align-items:center; gap:var(--spacing-sm); padding:var(--spacing-sm) var(--spacing-lg); border:1px solid var(--color-border); border-radius:var(--radius-md); background:var(--color-bg-secondary); cursor:pointer;">
+                <i data-lucide="search" style="width:14px; height:14px; color:var(--color-text-secondary);"></i>
+                <span style="font-size:var(--font-size-sm); color:var(--color-text-secondary); flex:1;">搜索或 AI 助手</span>
+                <span style="font-size:var(--font-size-xs); color:var(--color-text-secondary); background:var(--color-bg); padding:1px 4px; border-radius:var(--radius-sm); border:1px solid var(--color-border);">⌘K</span>
+            </div>
+            <div style="flex:1;"></div>
+            <button style="position:relative; background:none; border:none; cursor:pointer; color:var(--color-text-secondary); padding:var(--spacing-sm);">
+                <i data-lucide="bell" style="width:16px; height:16px;"></i>
+                <span style="position:absolute; top:-2px; right:-2px; width:8px; height:8px; background:var(--state-error); border-radius:var(--radius-full); border:1px solid var(--color-surface);"></span>
+            </button>
+            <div style="display:flex; align-items:center; gap:var(--spacing-sm); padding:var(--spacing-sm) var(--spacing-md); border:1px solid var(--color-border); border-radius:var(--radius-md); cursor:pointer; font-size:var(--font-size-sm); color:var(--color-text-primary);">
+                <div style="width:22px; height:22px; border-radius:var(--radius-full); background:rgba(59,130,246,0.15); color:var(--color-primary); font-size:var(--font-size-xs); font-weight:var(--font-weight-medium); display:flex; align-items:center; justify-content:center;">A</div>
+                <span>Admin</span>
+                <i data-lucide="chevron-down" style="width:12px; height:12px;"></i>
+            </div>
+        </header>
 
-    <!-- Nav -->
-    <nav class="flex flex-col px-2 py-3 gap-0.5 flex-1">
-
-      <!-- 1. 页面配置 (active) -->
-      <a data-nav-key="dashboard" data-dom-id="nav-dashboard" data-active="true" class="flex items-center gap-0.5 px-2.5 py-1.5 cursor-pointer" style="background: var(--color-sidebar-active-bg); color: var(--color-sidebar-active-text); border-radius: var(--radius-md); font-size: var(--font-size-sm);">
-        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="3" y="3" width="7" height="7" rx="1"/>
-          <rect x="14" y="3" width="7" height="7" rx="1"/>
-          <rect x="3" y="14" width="7" height="7" rx="1"/>
-          <rect x="14" y="14" width="7" height="7" rx="1"/>
-        </svg>
-        <span>页面配置</span>
-      </a>
-
-      <!-- 2. ObjectType -->
-      <a data-nav-key="objecttype" data-dom-id="nav-objectmanager" class="flex items-center gap-0.5 px-2.5 py-1.5 cursor-pointer transition-colors" style="color: var(--color-sidebar-text); border-radius: var(--radius-md); font-size: var(--font-size-sm);" onmouseover="this.style.background='rgba(255,255,255,0.05)';this.style.color='var(--color-sidebar-text-hover)'" onmouseout="this.style.background='transparent';this.style.color='var(--color-sidebar-text)'">
-        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
-          <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
-          <line x1="12" y1="22.08" x2="12" y2="12"/>
-        </svg>
-        <span>ObjectType</span>
-      </a>
-
-      <!-- 3. 建模范工场 -->
-      <a data-nav-key="modeling-workshop" data-dom-id="nav-workshop" class="flex items-center gap-0.5 px-2.5 py-1.5 cursor-pointer transition-colors" style="color: var(--color-sidebar-text); border-radius: var(--radius-md); font-size: var(--font-size-sm);" onmouseover="this.style.background='rgba(255,255,255,0.05)';this.style.color='var(--color-sidebar-text-hover)'" onmouseout="this.style.background='transparent';this.style.color='var(--color-sidebar-text)'">
-        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
-        </svg>
-        <span>建模特工场</span>
-      </a>
-
-      <!-- 4. 设计器 -->
-      <a data-nav-key="designer" data-dom-id="nav-designer" class="flex items-center gap-0.5 px-2.5 py-1.5 cursor-pointer transition-colors" style="color: var(--color-sidebar-text); border-radius: var(--radius-md); font-size: var(--font-size-sm);" onmouseover="this.style.background='rgba(255,255,255,0.05)';this.style.color='var(--color-sidebar-text-hover)'" onmouseout="this.style.background='transparent';this.style.color='var(--color-sidebar-text)'">
-        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 19l7-7 3 3-7 7-3-3z"/>
-          <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/>
-          <path d="M2 2l7.586 7.586"/>
-          <circle cx="11" cy="11" r="2"/>
-        </svg>
-        <span>设计器</span>
-      </a>
-
-      <!-- 5. 流程设计器 -->
-      <a data-nav-key="flow-designer" data-dom-id="nav-process" class="flex items-center gap-0.5 px-2.5 py-1.5 cursor-pointer transition-colors" style="color: var(--color-sidebar-text); border-radius: var(--radius-md); font-size: var(--font-size-sm);" onmouseover="this.style.background='rgba(255,255,255,0.05)';this.style.color='var(--color-sidebar-text-hover)'" onmouseout="this.style.background='transparent';this.style.color='var(--color-sidebar-text)'">
-        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="6" y1="3" x2="6" y2="15"/>
-          <circle cx="18" cy="6" r="3"/>
-          <circle cx="6" cy="18" r="3"/>
-          <path d="M18 9a9 9 0 0 1-9 9"/>
-        </svg>
-        <span>流程设计器</span>
-      </a>
-
-      <!-- 6. AI 对话 -->
-      <a data-nav-key="dialogue" data-dom-id="nav-dialogue" class="flex items-center gap-0.5 px-2.5 py-1.5 cursor-pointer transition-colors" style="color: var(--color-sidebar-text); border-radius: var(--radius-md); font-size: var(--font-size-sm);" onmouseover="this.style.background='rgba(255,255,255,0.05)';this.style.color='var(--color-sidebar-text-hover)'" onmouseout="this.style.background='transparent';this.style.color='var(--color-sidebar-text)'">
-        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-        </svg>
-        <span>AI 对话</span>
-      </a>
-
-      <!-- 7. 能力中心 -->
-      <a data-nav-key="capability" data-dom-id="nav-capability" class="flex items-center gap-0.5 px-2.5 py-1.5 cursor-pointer transition-colors" style="color: var(--color-sidebar-text); border-radius: var(--radius-md); font-size: var(--font-size-sm);" onmouseover="this.style.background='rgba(255,255,255,0.05)';this.style.color='var(--color-sidebar-text-hover)'" onmouseout="this.style.background='transparent';this.style.color='var(--color-sidebar-text)'">
-        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
-        </svg>
-        <span>能力中心</span>
-      </a>
-
-      <!-- 8. 集成中心 -->
-      <a data-nav-key="integration" data-dom-id="nav-integration" class="flex items-center gap-0.5 px-2.5 py-1.5 cursor-pointer transition-colors" style="color: var(--color-sidebar-text); border-radius: var(--radius-md); font-size: var(--font-size-sm);" onmouseover="this.style.background='rgba(255,255,255,0.05)';this.style.color='var(--color-sidebar-text-hover)'" onmouseout="this.style.background='transparent';this.style.color='var(--color-sidebar-text)'">
-        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
-          <polyline points="15 3 21 3 21 9"/>
-          <line x1="10" y1="14" x2="21" y2="3"/>
-        </svg>
-        <span>集成中心</span>
-      </a>
-
-      <div style="border-top: 1px solid rgba(148,163,184,0.1); margin: 8px 12px;"></div>
-
-      <!-- 页面预览 -->
-      <a data-dom-id="nav-pageview" class="flex items-center gap-0.5 px-2.5 py-1.5 cursor-pointer transition-colors" style="color: var(--color-sidebar-text); border-radius: var(--radius-md); font-size: var(--font-size-sm);" onmouseover="this.style.background='rgba(255,255,255,0.05)';this.style.color='var(--color-sidebar-text-hover)'" onmouseout="this.style.background='transparent';this.style.color='var(--color-sidebar-text)'">
-        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-        <span>页面预览</span>
-      </a>
-
-      <!-- 平台管理 -->
-      <a data-dom-id="nav-admin" class="flex items-center gap-0.5 px-2.5 py-1.5 cursor-pointer transition-colors" style="color: var(--color-sidebar-text); border-radius: var(--radius-md); font-size: var(--font-size-sm);" onmouseover="this.style.background='rgba(255,255,255,0.05)';this.style.color='var(--color-sidebar-text-hover)'" onmouseout="this.style.background='transparent';this.style.color='var(--color-sidebar-text)'">
-        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-        <span>平台管理</span>
-      </a>
-
-      <!-- 应用市场 -->
-      <a data-dom-id="nav-market" class="flex items-center gap-0.5 px-2.5 py-1.5 cursor-pointer transition-colors" style="color: var(--color-sidebar-text); border-radius: var(--radius-md); font-size: var(--font-size-sm);" onmouseover="this.style.background='rgba(255,255,255,0.05)';this.style.color='var(--color-sidebar-text-hover)'" onmouseout="this.style.background='transparent';this.style.color='var(--color-sidebar-text)'">
-        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
-        <span>应用市场</span>
-      </a>
-
-      <!-- 计费中心 -->
-      <a data-dom-id="nav-billing" class="flex items-center gap-0.5 px-2.5 py-1.5 cursor-pointer transition-colors" style="color: var(--color-sidebar-text); border-radius: var(--radius-md); font-size: var(--font-size-sm);" onmouseover="this.style.background='rgba(255,255,255,0.05)';this.style.color='var(--color-sidebar-text-hover)'" onmouseout="this.style.background='transparent';this.style.color='var(--color-sidebar-text)'">
-        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-        <span>计费中心</span>
-      </a>
-
-    </nav>
-
-    <!-- Bottom user area -->
-    <div class="px-3 py-3 flex items-center gap-2" style="border-top: 1px solid var(--color-sidebar-border);">
-      <div class="w-6 h-6 flex items-center justify-center" style="background: var(--color-sidebar-bg); color: var(--color-sidebar-text); border-radius: var(--radius-full); var(--font-size-xs) var(--font-weight-medium)">A</div>
-      <div class="flex-1 min-w-0">
-        <div class="truncate" style="color: var(--color-sidebar-text-hover); font-size: var(--font-size-sm);">Admin</div>
-        <div class="truncate" style="color: var(--color-text-secondary); font-size: var(--font-size-xs);">admin@metaplatform.io</div>
-      </div>
-    </div>
-
-  </aside>
-
-  <!-- Main content -->
-  <main class="flex-1 ml-[220px] p-5 min-w-0" style="background: var(--color-bg);">
-
-    <!-- Page Header -->
-    <div class="mb-3">
-      <h1 class="font-semibold" style="font-size: var(--font-size-xl); color: var(--color-text-primary); letter-spacing: -0.02em; line-height: 1.25; text-wrap: balance; word-break: keep-all;">页面配置管理</h1>
-      <p class="mt-1" style="font-size: var(--font-size-sm); color: var(--color-text-secondary);">管理已生成的页面配置，或从 ObjectType 一键生成新页面。</p>
-    </div>
-
-    <!-- Stats Row -->
-    <div class="flex gap-3 mb-3">
-      <div class="flex-1 px-3 py-3" style="border: 1px solid var(--color-border); border-radius: var(--radius-lg);">
-        <div class="font-semibold" style="font-size: var(--font-size-xl); color: var(--color-text-primary); font-variant-numeric: tabular-nums; line-height: 1.25;">12</div>
-        <div class="mt-0.5" style="font-size: var(--font-size-xs); color: var(--color-text-secondary);">总页面数</div>
-      </div>
-      <div class="flex-1 px-3 py-3" style="border: 1px solid var(--color-border); border-radius: var(--radius-lg);">
-        <div class="font-semibold" style="font-size: var(--font-size-xl); color: var(--color-text-primary); font-variant-numeric: tabular-nums; line-height: 1.25;">4</div>
-        <div class="mt-0.5" style="font-size: var(--font-size-xs); color: var(--color-text-secondary);">本月新增</div>
-      </div>
-      <div class="flex-1 px-3 py-3" style="border: 1px solid var(--color-border); border-radius: var(--radius-lg);">
-        <div class="font-semibold" style="font-size: var(--font-size-xl); color: var(--color-text-primary); font-variant-numeric: tabular-nums; line-height: 1.25;">8</div>
-        <div class="mt-0.5" style="font-size: var(--font-size-xs); color: var(--color-text-secondary);">活跃页面</div>
-      </div>
-    </div>
-
-    <!-- Quick Generate Section -->
-    <div class="mb-3">
-      <h2 class="font-medium mb-3" style="font-size: var(--font-size-lg); color: var(--color-text-primary);">快速生成页面</h2>
-      <div class="grid grid-cols-4 gap-3">
-
-        <!-- Card: 客户管理 -->
-        <div class="p-3 transition-colors" style="border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface); transition-duration: 150ms; transition-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);" onmouseover="this.style.borderColor='var(--color-primary-hover-light)'" onmouseout="this.style.borderColor='var(--color-border)'">
-          <div class="font-medium" style="font-size: var(--font-size-base); color: var(--color-text-primary);">客户管理</div>
-          <div class="mt-0.5" style="font-size: var(--font-size-xs); color: var(--color-text-secondary); font-family: var(--font-mono);">customer</div>
-          <p class="mt-1.5" style="font-size: var(--font-size-xs); color: var(--color-text-secondary); line-height: 1.5;">核心业务对象，包含客户基本信息</p>
-          <div class="mt-3">
-            <button class="inline-flex items-center justify-center text-white whitespace-nowrap transition-colors" style="font-size: var(--font-size-xs); font-weight: var(--font-weight-medium); padding: 4px 10px; border-radius: var(--radius-md); background: var(--color-primary); transition-property: background-color; transition-duration: 150ms;" onmouseover="this.style.background='var(--color-primary-hover)'" onmouseout="this.style.background='var(--color-primary)'" onfocus="this.style.outline='2px solid var(--color-primary)';this.style.outlineOffset='2px'" onblur="this.style.outline='none'">生成页面</button>
-          </div>
+        <!-- TAB BAR -->
+        <div style="border-bottom:1px solid var(--color-border); background:var(--color-surface); display:flex; padding:0 var(--spacing-xl); flex-shrink:0; overflow-x:auto;">
+            <button class="tab-item active" data-dom-id="tab-dashboard-workspace">工作台</button>
+            <button class="tab-item" data-dom-id="tab-dashboard-apps">我的应用</button>
+            <button class="tab-item" data-dom-id="tab-dashboard-agents">我的数字员工</button>
+            <button class="tab-item" data-dom-id="tab-dashboard-messages">消息</button>
+            <button class="tab-item" data-dom-id="tab-dashboard-portal">门户</button>
+            <button class="tab-item" data-dom-id="tab-dashboard-freepage">自由页面</button>
         </div>
 
-        <!-- Card: 工单系统 -->
-        <div class="p-3 transition-colors" style="border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface); transition-duration: 150ms; transition-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);" onmouseover="this.style.borderColor='var(--color-primary-hover-light)'" onmouseout="this.style.borderColor='var(--color-border)'">
-          <div class="font-medium" style="font-size: var(--font-size-base); color: var(--color-text-primary);">工单系统</div>
-          <div class="mt-0.5" style="font-size: var(--font-size-xs); color: var(--color-text-secondary); font-family: var(--font-mono);">ticket</div>
-          <p class="mt-1.5" style="font-size: var(--font-size-xs); color: var(--color-text-secondary); line-height: 1.5;">技术支持工单生命周期管理</p>
-          <div class="mt-3">
-            <button class="inline-flex items-center justify-center text-white whitespace-nowrap transition-colors" style="font-size: var(--font-size-xs); font-weight: var(--font-weight-medium); padding: 4px 10px; border-radius: var(--radius-md); background: var(--color-primary); transition-property: background-color; transition-duration: 150ms;" onmouseover="this.style.background='var(--color-primary-hover)'" onmouseout="this.style.background='var(--color-primary)'" onfocus="this.style.outline='2px solid var(--color-primary)';this.style.outlineOffset='2px'" onblur="this.style.outline='none'">生成页面</button>
-          </div>
-        </div>
+        <!-- PAGE CONTENT -->
+        <main style="flex:1; overflow-y:auto; background:var(--color-bg-secondary);">
+            <div style="padding: var(--spacing-xl); max-width: 1280px; margin: 0 auto;">
 
-        <!-- Card: 产品目录 -->
-        <div class="p-3 transition-colors" style="border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface); transition-duration: 150ms; transition-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);" onmouseover="this.style.borderColor='var(--color-primary-hover-light)'" onmouseout="this.style.borderColor='var(--color-border)'">
-          <div class="font-medium" style="font-size: var(--font-size-base); color: var(--color-text-primary);">产品目录</div>
-          <div class="mt-0.5" style="font-size: var(--font-size-xs); color: var(--color-text-secondary); font-family: var(--font-mono);">product</div>
-          <p class="mt-1.5" style="font-size: var(--font-size-xs); color: var(--color-text-secondary); line-height: 1.5;">产品信息与分类管理</p>
-          <div class="mt-3">
-            <button class="inline-flex items-center justify-center text-white whitespace-nowrap transition-colors" style="font-size: var(--font-size-xs); font-weight: var(--font-weight-medium); padding: 4px 10px; border-radius: var(--radius-md); background: var(--color-primary); transition-property: background-color; transition-duration: 150ms;" onmouseover="this.style.background='var(--color-primary-hover)'" onmouseout="this.style.background='var(--color-primary)'" onfocus="this.style.outline='2px solid var(--color-primary)';this.style.outlineOffset='2px'" onblur="this.style.outline='none'">生成页面</button>
-          </div>
-        </div>
+                <!-- 1. Header row -->
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:var(--spacing-2xl);">
+                    <div>
+                        <div style="font-size:var(--font-size-xl); font-weight:var(--font-weight-semibold);">欢迎回来，Admin</div>
+                        <div style="font-size:var(--font-size-sm); color:var(--color-text-secondary); margin-top:var(--spacing-xs);">管理员 . 工作台（角色化视图）</div>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:var(--spacing-md);">
+                        <button class="btn btn-ghost" style="display:inline-flex; align-items:center; gap:var(--spacing-sm);">
+                            <i data-lucide="refresh-cw" style="width:14px; height:14px;"></i>
+                            刷新
+                        </button>
+                        <span class="badge badge-primary">v1.2</span>
+                    </div>
+                </div>
 
-        <!-- Card: 销售线索 -->
-        <div class="p-3 transition-colors" style="border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface); transition-duration: 150ms; transition-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);" onmouseover="this.style.borderColor='var(--color-primary-hover-light)'" onmouseout="this.style.borderColor='var(--color-border)'">
-          <div class="font-medium" style="font-size: var(--font-size-base); color: var(--color-text-primary);">销售线索</div>
-          <div class="mt-0.5" style="font-size: var(--font-size-xs); color: var(--color-text-secondary); font-family: var(--font-mono);">lead</div>
-          <p class="mt-1.5" style="font-size: var(--font-size-xs); color: var(--color-text-secondary); line-height: 1.5;">销售线索跟踪与转化</p>
-          <div class="mt-3">
-            <button class="inline-flex items-center justify-center text-white whitespace-nowrap transition-colors" style="font-size: var(--font-size-xs); font-weight: var(--font-weight-medium); padding: 4px 10px; border-radius: var(--radius-md); background: var(--color-primary); transition-property: background-color; transition-duration: 150ms;" onmouseover="this.style.background='var(--color-primary-hover)'" onmouseout="this.style.background='var(--color-primary)'" onfocus="this.style.outline='2px solid var(--color-primary)';this.style.outlineOffset='2px'" onblur="this.style.outline='none'">生成页面</button>
-          </div>
-        </div>
+                <!-- 2. Role-based cards -->
+                <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:var(--spacing-lg); margin-bottom:var(--spacing-2xl);">
+                    <!-- 我的待办 -->
+                    <div class="card" style="border-left:4px solid var(--color-primary); padding:var(--spacing-lg);">
+                        <div style="display:flex; align-items:center; gap:var(--spacing-md); margin-bottom:var(--spacing-md);">
+                            <div style="width:28px; height:28px; border-radius:var(--radius-md); background:var(--color-primary-light); color:var(--color-primary); display:flex; align-items:center; justify-content:center;">
+                                <i data-lucide="check-square" style="width:14px; height:14px;"></i>
+                            </div>
+                            <span style="font-size:var(--font-size-sm); font-weight:var(--font-weight-medium);">我的待办</span>
+                        </div>
+                        <div style="font-size:var(--font-size-xl); font-weight:var(--font-weight-semibold);">5 项待办</div>
+                    </div>
+                    <!-- 最近应用 -->
+                    <div class="card" style="border-left:4px solid var(--state-success); padding:var(--spacing-lg);">
+                        <div style="display:flex; align-items:center; gap:var(--spacing-md); margin-bottom:var(--spacing-md);">
+                            <div style="width:28px; height:28px; border-radius:var(--radius-md); background:var(--state-success-bg); color:var(--state-success); display:flex; align-items:center; justify-content:center;">
+                                <i data-lucide="smartphone" style="width:14px; height:14px;"></i>
+                            </div>
+                            <span style="font-size:var(--font-size-sm); font-weight:var(--font-weight-medium);">最近应用</span>
+                        </div>
+                        <div style="font-size:var(--font-size-xl); font-weight:var(--font-weight-semibold);">3 个应用</div>
+                    </div>
+                    <!-- 我的数字员工 -->
+                    <div class="card" style="border-left:4px solid #a855f7; padding:var(--spacing-lg);">
+                        <div style="display:flex; align-items:center; gap:var(--spacing-md); margin-bottom:var(--spacing-md);">
+                            <div style="width:28px; height:28px; border-radius:var(--radius-md); background:#faf5ff; color:#a855f7; display:flex; align-items:center; justify-content:center;">
+                                <i data-lucide="bot" style="width:14px; height:14px;"></i>
+                            </div>
+                            <span style="font-size:var(--font-size-sm); font-weight:var(--font-weight-medium);">我的数字员工</span>
+                        </div>
+                        <div style="font-size:var(--font-size-xl); font-weight:var(--font-weight-semibold);">2 个在线</div>
+                    </div>
+                    <!-- 消息通知 -->
+                    <div class="card" style="border-left:4px solid var(--state-warning); padding:var(--spacing-lg);">
+                        <div style="display:flex; align-items:center; gap:var(--spacing-md); margin-bottom:var(--spacing-md);">
+                            <div style="width:28px; height:28px; border-radius:var(--radius-md); background:var(--state-warning-bg); color:var(--state-warning); display:flex; align-items:center; justify-content:center;">
+                                <i data-lucide="bell" style="width:14px; height:14px;"></i>
+                            </div>
+                            <span style="font-size:var(--font-size-sm); font-weight:var(--font-weight-medium);">消息通知</span>
+                        </div>
+                        <div style="font-size:var(--font-size-xl); font-weight:var(--font-weight-semibold);">8 条未读</div>
+                    </div>
+                </div>
 
-      </div>
+                <!-- 3. Quick stats -->
+                <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:var(--spacing-lg); margin-bottom:var(--spacing-2xl);">
+                    <div class="card" style="padding:var(--spacing-lg);">
+                        <div style="font-size:var(--font-size-sm); color:var(--color-text-secondary); margin-bottom:var(--spacing-sm);">应用总数</div>
+                        <div style="font-size:var(--font-size-xl); font-weight:var(--font-weight-semibold);">24</div>
+                        <div style="font-size:var(--font-size-xs); color:var(--color-text-secondary); margin-top:var(--spacing-xs);">6 个已发布</div>
+                    </div>
+                    <div class="card" style="padding:var(--spacing-lg);">
+                        <div style="font-size:var(--font-size-sm); color:var(--color-text-secondary); margin-bottom:var(--spacing-sm);">对象总数</div>
+                        <div style="font-size:var(--font-size-xl); font-weight:var(--font-weight-semibold);">156</div>
+                        <div style="font-size:var(--font-size-xs); color:var(--color-text-secondary); margin-top:var(--spacing-xs);">48 页面 / 23 流程</div>
+                    </div>
+                    <div class="card" style="padding:var(--spacing-lg);">
+                        <div style="font-size:var(--font-size-sm); color:var(--color-text-secondary); margin-bottom:var(--spacing-sm);">待办事项</div>
+                        <div style="font-size:var(--font-size-xl); font-weight:var(--font-weight-semibold);">5</div>
+                        <div style="font-size:var(--font-size-xs); color:var(--color-text-secondary); margin-top:var(--spacing-xs);">共 12 条消息</div>
+                    </div>
+                    <div class="card" style="padding:var(--spacing-lg);">
+                        <div style="font-size:var(--font-size-sm); color:var(--color-text-secondary); margin-bottom:var(--spacing-sm);">数字员工</div>
+                        <div style="font-size:var(--font-size-xl); font-weight:var(--font-weight-semibold);">8</div>
+                        <div style="font-size:var(--font-size-xs); color:var(--color-text-secondary); margin-top:var(--spacing-xs);">5 个在线</div>
+                    </div>
+                </div>
+
+                <!-- 4. Team recommendations -->
+                <div class="card" style="padding:var(--spacing-lg); margin-bottom:var(--spacing-2xl);">
+                    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:var(--spacing-lg);">
+                        <div>
+                            <div style="font-size:var(--font-size-base); font-weight:var(--font-weight-medium);">团队推荐</div>
+                            <div style="font-size:var(--font-size-xs); color:var(--color-text-secondary); margin-top:var(--spacing-xs);">根据团队使用习惯推荐</div>
+                        </div>
+                    </div>
+                    <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:var(--spacing-lg);">
+                        <!-- CRM客户管理 -->
+                        <div style="border:1px solid var(--color-border); border-radius:var(--radius-md); padding:var(--spacing-lg); display:flex; flex-direction:column; gap:var(--spacing-md);">
+                            <div style="display:flex; align-items:center; gap:var(--spacing-md);">
+                                <div style="width:32px; height:32px; border-radius:var(--radius-md); background:var(--color-primary-light); color:var(--color-primary); display:flex; align-items:center; justify-content:center;">
+                                    <i data-lucide="users" style="width:16px; height:16px;"></i>
+                                </div>
+                                <div>
+                                    <div style="font-size:var(--font-size-sm); font-weight:var(--font-weight-medium);">CRM客户管理</div>
+                                    <div style="font-size:var(--font-size-xs); color:var(--color-text-secondary);">1,280 次安装 · <span style="color:var(--state-warning);">★</span> 4.8 分</div>
+                                </div>
+                            </div>
+                            <button class="btn btn-primary" style="align-self:flex-start; font-size:var(--font-size-xs); padding:var(--spacing-xs) var(--spacing-md);">安装</button>
+                        </div>
+                        <!-- BI数据分析 -->
+                        <div style="border:1px solid var(--color-border); border-radius:var(--radius-md); padding:var(--spacing-lg); display:flex; flex-direction:column; gap:var(--spacing-md);">
+                            <div style="display:flex; align-items:center; gap:var(--spacing-md);">
+                                <div style="width:32px; height:32px; border-radius:var(--radius-md); background:#f0fdf4; color:var(--state-success); display:flex; align-items:center; justify-content:center;">
+                                    <i data-lucide="bar-chart-3" style="width:16px; height:16px;"></i>
+                                </div>
+                                <div>
+                                    <div style="font-size:var(--font-size-sm); font-weight:var(--font-weight-medium);">BI数据分析</div>
+                                    <div style="font-size:var(--font-size-xs); color:var(--color-text-secondary);">856 次安装 · <span style="color:var(--state-warning);">★</span> 4.6 分</div>
+                                </div>
+                            </div>
+                            <button class="btn btn-primary" style="align-self:flex-start; font-size:var(--font-size-xs); padding:var(--spacing-xs) var(--spacing-md);">安装</button>
+                        </div>
+                        <!-- BPM流程管理 -->
+                        <div style="border:1px solid var(--color-border); border-radius:var(--radius-md); padding:var(--spacing-lg); display:flex; flex-direction:column; gap:var(--spacing-md);">
+                            <div style="display:flex; align-items:center; gap:var(--spacing-md);">
+                                <div style="width:32px; height:32px; border-radius:var(--radius-md); background:#faf5ff; color:#a855f7; display:flex; align-items:center; justify-content:center;">
+                                    <i data-lucide="git-branch" style="width:16px; height:16px;"></i>
+                                </div>
+                                <div>
+                                    <div style="font-size:var(--font-size-sm); font-weight:var(--font-weight-medium);">BPM流程管理</div>
+                                    <div style="font-size:var(--font-size-xs); color:var(--color-text-secondary);">642 次安装 · <span style="color:var(--state-warning);">★</span> 4.5 分</div>
+                                </div>
+                            </div>
+                            <button class="btn btn-primary" style="align-self:flex-start; font-size:var(--font-size-xs); padding:var(--spacing-xs) var(--spacing-md);">安装</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 5. Recent apps + Recent activities -->
+                <div style="display:grid; grid-template-columns:1fr 2fr; gap:var(--spacing-lg); margin-bottom:var(--spacing-2xl);">
+                    <!-- Recent apps -->
+                    <div class="card" style="padding:var(--spacing-lg);">
+                        <div style="font-size:var(--font-size-base); font-weight:var(--font-weight-medium); margin-bottom:var(--spacing-lg);">最近应用</div>
+                        <div style="display:flex; flex-direction:column; gap:var(--spacing-sm);">
+                            <div style="display:flex; align-items:center; gap:var(--spacing-md); padding:var(--spacing-sm); border-radius:var(--radius-md); cursor:pointer;" onmouseover="this.style.background='var(--color-surface-hover)'" onmouseout="this.style.background='transparent'">
+                                <div style="width:28px; height:28px; border-radius:var(--radius-md); background:var(--color-primary-light); color:var(--color-primary); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                                    <i data-lucide="users" style="width:14px; height:14px;"></i>
+                                </div>
+                                <div style="flex:1; min-width:0;">
+                                    <div style="font-size:var(--font-size-sm); font-weight:var(--font-weight-medium); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">CRM客户管理</div>
+                                    <div style="font-size:var(--font-size-xs); color:var(--color-text-secondary);">客户管理</div>
+                                </div>
+                            </div>
+                            <div style="display:flex; align-items:center; gap:var(--spacing-md); padding:var(--spacing-sm); border-radius:var(--radius-md); cursor:pointer;" onmouseover="this.style.background='var(--color-surface-hover)'" onmouseout="this.style.background='transparent'">
+                                <div style="width:28px; height:28px; border-radius:var(--radius-md); background:#f0fdf4; color:var(--state-success); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                                    <i data-lucide="briefcase" style="width:14px; height:14px;"></i>
+                                </div>
+                                <div style="flex:1; min-width:0;">
+                                    <div style="font-size:var(--font-size-sm); font-weight:var(--font-weight-medium); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">OA协同办公</div>
+                                    <div style="font-size:var(--font-size-xs); color:var(--color-text-secondary);">协同办公</div>
+                                </div>
+                            </div>
+                            <div style="display:flex; align-items:center; gap:var(--spacing-md); padding:var(--spacing-sm); border-radius:var(--radius-md); cursor:pointer;" onmouseover="this.style.background='var(--color-surface-hover)'" onmouseout="this.style.background='transparent'">
+                                <div style="width:28px; height:28px; border-radius:var(--radius-md); background:var(--state-warning-bg); color:var(--state-warning); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                                    <i data-lucide="bar-chart-3" style="width:14px; height:14px;"></i>
+                                </div>
+                                <div style="flex:1; min-width:0;">
+                                    <div style="font-size:var(--font-size-sm); font-weight:var(--font-weight-medium); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">BI数据分析</div>
+                                    <div style="font-size:var(--font-size-xs); color:var(--color-text-secondary);">数据分析</div>
+                                </div>
+                            </div>
+                            <div style="display:flex; align-items:center; gap:var(--spacing-md); padding:var(--spacing-sm); border-radius:var(--radius-md); cursor:pointer;" onmouseover="this.style.background='var(--color-surface-hover)'" onmouseout="this.style.background='transparent'">
+                                <div style="width:28px; height:28px; border-radius:var(--radius-md); background:#faf5ff; color:#a855f7; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                                    <i data-lucide="kanban" style="width:14px; height:14px;"></i>
+                                </div>
+                                <div style="flex:1; min-width:0;">
+                                    <div style="font-size:var(--font-size-sm); font-weight:var(--font-weight-medium); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">项目管理</div>
+                                    <div style="font-size:var(--font-size-xs); color:var(--color-text-secondary);">项目管理</div>
+                                </div>
+                            </div>
+                            <div style="display:flex; align-items:center; gap:var(--spacing-md); padding:var(--spacing-sm); border-radius:var(--radius-md); cursor:pointer;" onmouseover="this.style.background='var(--color-surface-hover)'" onmouseout="this.style.background='transparent'">
+                                <div style="width:28px; height:28px; border-radius:var(--radius-md); background:#fef2f2; color:var(--state-error); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                                    <i data-lucide="user-circle" style="width:14px; height:14px;"></i>
+                                </div>
+                                <div style="flex:1; min-width:0;">
+                                    <div style="font-size:var(--font-size-sm); font-weight:var(--font-weight-medium); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">HR人力资源</div>
+                                    <div style="font-size:var(--font-size-xs); color:var(--color-text-secondary);">人力资源</div>
+                                </div>
+                            </div>
+                            <div style="display:flex; align-items:center; gap:var(--spacing-md); padding:var(--spacing-sm); border-radius:var(--radius-md); cursor:pointer;" onmouseover="this.style.background='var(--color-surface-hover)'" onmouseout="this.style.background='transparent'">
+                                <div style="width:28px; height:28px; border-radius:var(--radius-md); background:var(--color-bg-secondary); color:var(--color-text-secondary); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                                    <i data-lucide="calculator" style="width:14px; height:14px;"></i>
+                                </div>
+                                <div style="flex:1; min-width:0;">
+                                    <div style="font-size:var(--font-size-sm); font-weight:var(--font-weight-medium); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">财务系统</div>
+                                    <div style="font-size:var(--font-size-xs); color:var(--color-text-secondary);">财务管理</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recent activities -->
+                    <div class="card" style="padding:var(--spacing-lg);">
+                        <div style="font-size:var(--font-size-base); font-weight:var(--font-weight-medium); margin-bottom:var(--spacing-lg);">最近动态</div>
+                        <div style="display:flex; flex-direction:column; gap:0;">
+                            <!-- Timeline item 1 -->
+                            <div style="display:flex; gap:var(--spacing-lg); padding:var(--spacing-md) 0; border-bottom:1px solid var(--color-border);">
+                                <div style="flex-shrink:0; width:6px; display:flex; flex-direction:column; align-items:center; padding-top:var(--spacing-sm);">
+                                    <div style="width:6px; height:6px; border-radius:var(--radius-full); background:var(--color-primary);"></div>
+                                    <div style="width:1px; flex:1; background:var(--color-border);"></div>
+                                </div>
+                                <div style="flex:1; min-width:0;">
+                                    <div style="font-size:var(--font-size-sm); line-height:var(--line-height-normal);">
+                                        <span style="font-weight:var(--font-weight-medium);">张伟</span>
+                                        <span style="color:var(--color-text-secondary);"> 修改了 </span>
+                                        <span>客户对象/客户等级字段</span>
+                                    </div>
+                                    <div style="font-size:var(--font-size-xs); color:var(--color-text-secondary); margin-top:var(--spacing-xs);">10:42</div>
+                                </div>
+                            </div>
+                            <!-- Timeline item 2 -->
+                            <div style="display:flex; gap:var(--spacing-lg); padding:var(--spacing-md) 0; border-bottom:1px solid var(--color-border);">
+                                <div style="flex-shrink:0; width:6px; display:flex; flex-direction:column; align-items:center; padding-top:var(--spacing-sm);">
+                                    <div style="width:6px; height:6px; border-radius:var(--radius-full); background:var(--state-success);"></div>
+                                    <div style="width:1px; flex:1; background:var(--color-border);"></div>
+                                </div>
+                                <div style="flex:1; min-width:0;">
+                                    <div style="font-size:var(--font-size-sm); line-height:var(--line-height-normal);">
+                                        <span style="font-weight:var(--font-weight-medium);">李娜</span>
+                                        <span style="color:var(--color-text-secondary);"> 部署了 </span>
+                                        <span>CRM v2.3 → 测试环境</span>
+                                    </div>
+                                    <div style="font-size:var(--font-size-xs); color:var(--color-text-secondary); margin-top:var(--spacing-xs);">09:15</div>
+                                </div>
+                            </div>
+                            <!-- Timeline item 3 -->
+                            <div style="display:flex; gap:var(--spacing-lg); padding:var(--spacing-md) 0; border-bottom:1px solid var(--color-border);">
+                                <div style="flex-shrink:0; width:6px; display:flex; flex-direction:column; align-items:center; padding-top:var(--spacing-sm);">
+                                    <div style="width:6px; height:6px; border-radius:var(--radius-full); background:#a855f7;"></div>
+                                    <div style="width:1px; flex:1; background:var(--color-border);"></div>
+                                </div>
+                                <div style="flex:1; min-width:0;">
+                                    <div style="font-size:var(--font-size-sm); line-height:var(--line-height-normal);">
+                                        <span style="font-weight:var(--font-weight-medium);">王强</span>
+                                        <span style="color:var(--color-text-secondary);"> 新建了 </span>
+                                        <span>3 个页面（销售看板）</span>
+                                    </div>
+                                    <div style="font-size:var(--font-size-xs); color:var(--color-text-secondary); margin-top:var(--spacing-xs);">昨天</div>
+                                </div>
+                            </div>
+                            <!-- Timeline item 4 -->
+                            <div style="display:flex; gap:var(--spacing-lg); padding:var(--spacing-md) 0; border-bottom:1px solid var(--color-border);">
+                                <div style="flex-shrink:0; width:6px; display:flex; flex-direction:column; align-items:center; padding-top:var(--spacing-sm);">
+                                    <div style="width:6px; height:6px; border-radius:var(--radius-full); background:var(--state-warning);"></div>
+                                    <div style="width:1px; flex:1; background:var(--color-border);"></div>
+                                </div>
+                                <div style="flex:1; min-width:0;">
+                                    <div style="font-size:var(--font-size-sm); line-height:var(--line-height-normal);">
+                                        <span style="font-weight:var(--font-weight-medium);">刘敏</span>
+                                        <span style="color:var(--color-text-secondary);"> 配置了 </span>
+                                        <span>采购审批工作流（5 节点）</span>
+                                    </div>
+                                    <div style="font-size:var(--font-size-xs); color:var(--color-text-secondary); margin-top:var(--spacing-xs);">昨天</div>
+                                </div>
+                            </div>
+                            <!-- Timeline item 5 -->
+                            <div style="display:flex; gap:var(--spacing-lg); padding:var(--spacing-md) 0;">
+                                <div style="flex-shrink:0; width:6px; display:flex; flex-direction:column; align-items:center; padding-top:var(--spacing-sm);">
+                                    <div style="width:6px; height:6px; border-radius:var(--radius-full); background:var(--state-error);"></div>
+                                </div>
+                                <div style="flex:1; min-width:0;">
+                                    <div style="font-size:var(--font-size-sm); line-height:var(--line-height-normal);">
+                                        <span style="font-weight:var(--font-weight-medium);">陈红</span>
+                                        <span style="color:var(--color-text-secondary);"> 发布了 </span>
+                                        <span>OA 系统 v1.8 生产版本</span>
+                                    </div>
+                                    <div style="font-size:var(--font-size-xs); color:var(--color-text-secondary); margin-top:var(--spacing-xs);">2天前</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 6. Todos + Announcements -->
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:var(--spacing-lg); margin-bottom:var(--spacing-2xl);">
+                    <!-- Todos -->
+                    <div class="card" style="padding:var(--spacing-lg);">
+                        <div style="display:flex; align-items:center; gap:var(--spacing-sm); margin-bottom:var(--spacing-lg);">
+                            <span style="font-size:var(--font-size-base); font-weight:var(--font-weight-medium);">待办事项</span>
+                            <span class="badge badge-error">5</span>
+                        </div>
+                        <div style="display:flex; flex-direction:column; gap:var(--spacing-sm);">
+                            <div style="display:flex; align-items:center; gap:var(--spacing-md); padding:var(--spacing-sm) var(--spacing-md); border-radius:var(--radius-md); cursor:pointer;" onmouseover="this.style.background='var(--color-surface-hover)'" onmouseout="this.style.background='transparent'">
+                                <div style="width:6px; height:6px; border-radius:var(--radius-full); background:var(--state-error); flex-shrink:0;"></div>
+                                <div style="flex:1; min-width:0;">
+                                    <div style="font-size:var(--font-size-sm); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">审批客户等级变更申请</div>
+                                </div>
+                                <span class="badge badge-default">审批</span>
+                                <span style="font-size:var(--font-size-xs); color:var(--color-text-secondary); white-space:nowrap;">10:30</span>
+                            </div>
+                            <div style="display:flex; align-items:center; gap:var(--spacing-md); padding:var(--spacing-sm) var(--spacing-md); border-radius:var(--radius-md); cursor:pointer;" onmouseover="this.style.background='var(--color-surface-hover)'" onmouseout="this.style.background='transparent'">
+                                <div style="width:6px; height:6px; border-radius:var(--radius-full); background:var(--state-error); flex-shrink:0;"></div>
+                                <div style="flex:1; min-width:0;">
+                                    <div style="font-size:var(--font-size-sm); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">部署 CRM v2.3 到生产环境</div>
+                                </div>
+                                <span class="badge badge-primary">部署</span>
+                                <span style="font-size:var(--font-size-xs); color:var(--color-text-secondary); white-space:nowrap;">09:15</span>
+                            </div>
+                            <div style="display:flex; align-items:center; gap:var(--spacing-md); padding:var(--spacing-sm) var(--spacing-md); border-radius:var(--radius-md); cursor:pointer;" onmouseover="this.style.background='var(--color-surface-hover)'" onmouseout="this.style.background='transparent'">
+                                <div style="width:6px; height:6px; border-radius:var(--radius-full); background:var(--state-warning); flex-shrink:0;"></div>
+                                <div style="flex:1; min-width:0;">
+                                    <div style="font-size:var(--font-size-sm); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">审核销售看板页面设计稿</div>
+                                </div>
+                                <span class="badge badge-warning">审核</span>
+                                <span style="font-size:var(--font-size-xs); color:var(--color-text-secondary); white-space:nowrap;">昨天</span>
+                            </div>
+                            <div style="display:flex; align-items:center; gap:var(--spacing-md); padding:var(--spacing-sm) var(--spacing-md); border-radius:var(--radius-md); cursor:pointer;" onmouseover="this.style.background='var(--color-surface-hover)'" onmouseout="this.style.background='transparent'">
+                                <div style="width:6px; height:6px; border-radius:var(--radius-full); background:var(--state-warning); flex-shrink:0;"></div>
+                                <div style="flex:1; min-width:0;">
+                                    <div style="font-size:var(--font-size-sm); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">配置采购审批流程节点</div>
+                                </div>
+                                <span class="badge badge-default">配置</span>
+                                <span style="font-size:var(--font-size-xs); color:var(--color-text-secondary); white-space:nowrap;">昨天</span>
+                            </div>
+                            <div style="display:flex; align-items:center; gap:var(--spacing-md); padding:var(--spacing-sm) var(--spacing-md); border-radius:var(--radius-md); cursor:pointer;" onmouseover="this.style.background='var(--color-surface-hover)'" onmouseout="this.style.background='transparent'">
+                                <div style="width:6px; height:6px; border-radius:var(--radius-full); background:var(--color-text-secondary); flex-shrink:0;"></div>
+                                <div style="flex:1; min-width:0;">
+                                    <div style="font-size:var(--font-size-sm); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">更新 OA 系统 v1.8 发布文档</div>
+                                </div>
+                                <span class="badge badge-success">文档</span>
+                                <span style="font-size:var(--font-size-xs); color:var(--color-text-secondary); white-space:nowrap;">2天前</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Announcements -->
+                    <div class="card" style="padding:var(--spacing-lg);">
+                        <div style="font-size:var(--font-size-base); font-weight:var(--font-weight-medium); margin-bottom:var(--spacing-lg);">平台动态</div>
+                        <div style="display:flex; flex-direction:column; gap:var(--spacing-sm);">
+                            <div style="display:flex; align-items:flex-start; gap:var(--spacing-md); padding:var(--spacing-sm) var(--spacing-md); border-radius:var(--radius-md); cursor:pointer;" onmouseover="this.style.background='var(--color-surface-hover)'" onmouseout="this.style.background='transparent'">
+                                <div style="width:24px; height:24px; border-radius:var(--radius-md); background:var(--state-warning-bg); color:var(--state-warning); display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:1px;">
+                                    <i data-lucide="megaphone" style="width:12px; height:12px;"></i>
+                                </div>
+                                <div style="flex:1; min-width:0;">
+                                    <div style="font-size:var(--font-size-sm); font-weight:var(--font-weight-medium);">MetaPlatform v1.2 正式发布</div>
+                                    <div style="font-size:var(--font-size-xs); color:var(--color-text-secondary); margin-top:var(--spacing-xs);">新增本体引擎、数字员工管理等功能</div>
+                                    <div style="font-size:var(--font-size-xs); color:var(--color-text-secondary); margin-top:var(--spacing-xs);">3天前</div>
+                                </div>
+                            </div>
+                            <div style="display:flex; align-items:flex-start; gap:var(--spacing-md); padding:var(--spacing-sm) var(--spacing-md); border-radius:var(--radius-md); cursor:pointer;" onmouseover="this.style.background='var(--color-surface-hover)'" onmouseout="this.style.background='transparent'">
+                                <div style="width:24px; height:24px; border-radius:var(--radius-md); background:var(--color-primary-light); color:var(--color-primary); display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:1px;">
+                                    <i data-lucide="megaphone" style="width:12px; height:12px;"></i>
+                                </div>
+                                <div style="flex:1; min-width:0;">
+                                    <div style="font-size:var(--font-size-sm); font-weight:var(--font-weight-medium);">云市场新增 12 款应用模板</div>
+                                    <div style="font-size:var(--font-size-xs); color:var(--color-text-secondary); margin-top:var(--spacing-xs);">涵盖 CRM、HR、财务等多个业务场景</div>
+                                    <div style="font-size:var(--font-size-xs); color:var(--color-text-secondary); margin-top:var(--spacing-xs);">5天前</div>
+                                </div>
+                            </div>
+                            <div style="display:flex; align-items:flex-start; gap:var(--spacing-md); padding:var(--spacing-sm) var(--spacing-md); border-radius:var(--radius-md); cursor:pointer;" onmouseover="this.style.background='var(--color-surface-hover)'" onmouseout="this.style.background='transparent'">
+                                <div style="width:24px; height:24px; border-radius:var(--radius-md); background:var(--state-success-bg); color:var(--state-success); display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:1px;">
+                                    <i data-lucide="megaphone" style="width:12px; height:12px;"></i>
+                                </div>
+                                <div style="flex:1; min-width:0;">
+                                    <div style="font-size:var(--font-size-sm); font-weight:var(--font-weight-medium);">系统维护通知：7月10日 02:00-04:00</div>
+                                    <div style="font-size:var(--font-size-xs); color:var(--color-text-secondary); margin-top:var(--spacing-xs);">数据中心将进行例行升级维护</div>
+                                    <div style="font-size:var(--font-size-xs); color:var(--color-text-secondary); margin-top:var(--spacing-xs);">1周前</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
     </div>
-
-    <!-- Generated Pages Table -->
-    <div>
-      <h2 class="font-medium mb-3" style="font-size: var(--font-size-lg); color: var(--color-text-primary);">已生成页面 <span class="font-normal" style="font-size: var(--font-size-sm); color: var(--color-text-secondary);">(4)</span></h2>
-      <div style="border: 1px solid var(--color-border); border-radius: var(--radius-lg); overflow: hidden;">
-        <table class="w-full" style="font-size: var(--font-size-sm);">
-          <thead>
-            <tr style="background: var(--color-bg-secondary);">
-              <th class="text-left px-3 py-1.5 font-medium whitespace-nowrap" style="font-size: var(--font-size-xs); color: var(--color-text-secondary);">显示名称</th>
-              <th class="text-left px-3 py-1.5 font-medium whitespace-nowrap" style="font-size: var(--font-size-xs); color: var(--color-text-secondary);">名称</th>
-              <th class="text-left px-3 py-1.5 font-medium whitespace-nowrap" style="font-size: var(--font-size-xs); color: var(--color-text-secondary);">页面类型</th>
-              <th class="text-left px-3 py-1.5 font-medium whitespace-nowrap" style="font-size: var(--font-size-xs); color: var(--color-text-secondary);">创建时间</th>
-              <th class="text-right px-3 py-1.5 font-medium whitespace-nowrap" style="font-size: var(--font-size-xs); color: var(--color-text-secondary);">操作</th>
-            </tr>
-          </thead>
-          <tbody>
-            <!-- Row 1 -->
-            <tr style="border-top: 1px solid var(--color-border);">
-              <td class="px-3 py-1.5 whitespace-nowrap" style="font-size: var(--font-size-sm); color: var(--color-text-primary);">客户列表页</td>
-              <td class="px-3 py-1.5 whitespace-nowrap" style="color: var(--color-text-secondary); font-family: var(--font-mono); font-size: var(--font-size-xs);">customer_list</td>
-              <td class="px-3 py-1.5 whitespace-nowrap">
-                <span class="inline-flex items-center px-2 py-0.5 whitespace-nowrap" style="background: var(--color-bg-secondary); color: var(--color-text-secondary); border-radius: var(--radius-full); font-size: var(--font-size-xs);">列表页</span>
-              </td>
-              <td class="px-3 py-1.5 whitespace-nowrap" style="font-size: var(--font-size-xs); color: var(--color-text-secondary);">2026-06-28 14:30</td>
-              <td class="px-3 py-1.5 whitespace-nowrap text-right">
-                <div class="inline-flex items-center gap-1.5">
-                  <button class="inline-flex items-center justify-center whitespace-nowrap transition-colors" style="font-size: var(--font-size-xs); font-weight: var(--font-weight-medium); padding: 4px 10px; border-radius: var(--radius-md); border: 1px solid var(--color-border); color: var(--color-text-secondary); background: transparent; transition-property: border-color, color; transition-duration: 150ms;" onmouseover="this.style.borderColor='var(--color-primary)';this.style.color='var(--color-primary)'" onmouseout="this.style.borderColor='var(--color-border)';this.style.color='var(--color-text-secondary)'" onfocus="this.style.outline='2px solid var(--color-primary)';this.style.outlineOffset='2px'" onblur="this.style.outline='none'">预览</button>
-                  <button class="inline-flex items-center justify-center whitespace-nowrap transition-colors" style="font-size: var(--font-size-xs); font-weight: var(--font-weight-medium); padding: 4px 10px; border-radius: var(--radius-md); border: none; color: var(--state-error); background: transparent; transition-property: color; transition-duration: 150ms;" onmouseover="this.style.color='var(--state-error-hover)'" onmouseout="this.style.color='var(--state-error)'" onfocus="this.style.outline='2px solid var(--color-primary)';this.style.outlineOffset='2px'" onblur="this.style.outline='none'">删除</button>
-                </div>
-              </td>
-            </tr>
-            <!-- Row 2 -->
-            <tr style="border-top: 1px solid var(--color-border);">
-              <td class="px-3 py-1.5 whitespace-nowrap" style="font-size: var(--font-size-sm); color: var(--color-text-primary);">客户详情页</td>
-              <td class="px-3 py-1.5 whitespace-nowrap" style="color: var(--color-text-secondary); font-family: var(--font-mono); font-size: var(--font-size-xs);">customer_detail</td>
-              <td class="px-3 py-1.5 whitespace-nowrap">
-                <span class="inline-flex items-center px-2 py-0.5 whitespace-nowrap" style="background: var(--color-bg-secondary); color: var(--color-text-secondary); border-radius: var(--radius-full); font-size: var(--font-size-xs);">详情页</span>
-              </td>
-              <td class="px-3 py-1.5 whitespace-nowrap" style="font-size: var(--font-size-xs); color: var(--color-text-secondary);">2026-06-28 14:32</td>
-              <td class="px-3 py-1.5 whitespace-nowrap text-right">
-                <div class="inline-flex items-center gap-1.5">
-                  <button class="inline-flex items-center justify-center whitespace-nowrap transition-colors" style="font-size: var(--font-size-xs); font-weight: var(--font-weight-medium); padding: 4px 10px; border-radius: var(--radius-md); border: 1px solid var(--color-border); color: var(--color-text-secondary); background: transparent; transition-property: border-color, color; transition-duration: 150ms;" onmouseover="this.style.borderColor='var(--color-primary)';this.style.color='var(--color-primary)'" onmouseout="this.style.borderColor='var(--color-border)';this.style.color='var(--color-text-secondary)'" onfocus="this.style.outline='2px solid var(--color-primary)';this.style.outlineOffset='2px'" onblur="this.style.outline='none'">预览</button>
-                  <button class="inline-flex items-center justify-center whitespace-nowrap transition-colors" style="font-size: var(--font-size-xs); font-weight: var(--font-weight-medium); padding: 4px 10px; border-radius: var(--radius-md); border: none; color: var(--state-error); background: transparent; transition-property: color; transition-duration: 150ms;" onmouseover="this.style.color='var(--state-error-hover)'" onmouseout="this.style.color='var(--state-error)'" onfocus="this.style.outline='2px solid var(--color-primary)';this.style.outlineOffset='2px'" onblur="this.style.outline='none'">删除</button>
-                </div>
-              </td>
-            </tr>
-            <!-- Row 3 -->
-            <tr style="border-top: 1px solid var(--color-border);">
-              <td class="px-3 py-1.5 whitespace-nowrap" style="font-size: var(--font-size-sm); color: var(--color-text-primary);">工单列表页</td>
-              <td class="px-3 py-1.5 whitespace-nowrap" style="color: var(--color-text-secondary); font-family: var(--font-mono); font-size: var(--font-size-xs);">ticket_list</td>
-              <td class="px-3 py-1.5 whitespace-nowrap">
-                <span class="inline-flex items-center px-2 py-0.5 whitespace-nowrap" style="background: var(--color-bg-secondary); color: var(--color-text-secondary); border-radius: var(--radius-full); font-size: var(--font-size-xs);">列表页</span>
-              </td>
-              <td class="px-3 py-1.5 whitespace-nowrap" style="font-size: var(--font-size-xs); color: var(--color-text-secondary);">2026-06-30 09:15</td>
-              <td class="px-3 py-1.5 whitespace-nowrap text-right">
-                <div class="inline-flex items-center gap-1.5">
-                  <button class="inline-flex items-center justify-center whitespace-nowrap transition-colors" style="font-size: var(--font-size-xs); font-weight: var(--font-weight-medium); padding: 4px 10px; border-radius: var(--radius-md); border: 1px solid var(--color-border); color: var(--color-text-secondary); background: transparent; transition-property: border-color, color; transition-duration: 150ms;" onmouseover="this.style.borderColor='var(--color-primary)';this.style.color='var(--color-primary)'" onmouseout="this.style.borderColor='var(--color-border)';this.style.color='var(--color-text-secondary)'" onfocus="this.style.outline='2px solid var(--color-primary)';this.style.outlineOffset='2px'" onblur="this.style.outline='none'">预览</button>
-                  <button class="inline-flex items-center justify-center whitespace-nowrap transition-colors" style="font-size: var(--font-size-xs); font-weight: var(--font-weight-medium); padding: 4px 10px; border-radius: var(--radius-md); border: none; color: var(--state-error); background: transparent; transition-property: color; transition-duration: 150ms;" onmouseover="this.style.color='var(--state-error-hover)'" onmouseout="this.style.color='var(--state-error)'" onfocus="this.style.outline='2px solid var(--color-primary)';this.style.outlineOffset='2px'" onblur="this.style.outline='none'">删除</button>
-                </div>
-              </td>
-            </tr>
-            <!-- Row 4 -->
-            <tr style="border-top: 1px solid var(--color-border);">
-              <td class="px-3 py-1.5 whitespace-nowrap" style="font-size: var(--font-size-sm); color: var(--color-text-primary);">产品列表页</td>
-              <td class="px-3 py-1.5 whitespace-nowrap" style="color: var(--color-text-secondary); font-family: var(--font-mono); font-size: var(--font-size-xs);">product_list</td>
-              <td class="px-3 py-1.5 whitespace-nowrap">
-                <span class="inline-flex items-center px-2 py-0.5 whitespace-nowrap" style="background: var(--color-bg-secondary); color: var(--color-text-secondary); border-radius: var(--radius-full); font-size: var(--font-size-xs);">列表页</span>
-              </td>
-              <td class="px-3 py-1.5 whitespace-nowrap" style="font-size: var(--font-size-xs); color: var(--color-text-secondary);">2026-07-01 16:45</td>
-              <td class="px-3 py-1.5 whitespace-nowrap text-right">
-                <div class="inline-flex items-center gap-1.5">
-                  <button class="inline-flex items-center justify-center whitespace-nowrap transition-colors" style="font-size: var(--font-size-xs); font-weight: var(--font-weight-medium); padding: 4px 10px; border-radius: var(--radius-md); border: 1px solid var(--color-border); color: var(--color-text-secondary); background: transparent; transition-property: border-color, color; transition-duration: 150ms;" onmouseover="this.style.borderColor='var(--color-primary)';this.style.color='var(--color-primary)'" onmouseout="this.style.borderColor='var(--color-border)';this.style.color='var(--color-text-secondary)'" onfocus="this.style.outline='2px solid var(--color-primary)';this.style.outlineOffset='2px'" onblur="this.style.outline='none'">预览</button>
-                  <button class="inline-flex items-center justify-center whitespace-nowrap transition-colors" style="font-size: var(--font-size-xs); font-weight: var(--font-weight-medium); padding: 4px 10px; border-radius: var(--radius-md); border: none; color: var(--state-error); background: transparent; transition-property: color; transition-duration: 150ms;" onmouseover="this.style.color='var(--state-error-hover)'" onmouseout="this.style.color='var(--state-error)'" onfocus="this.style.outline='2px solid var(--color-primary)';this.style.outlineOffset='2px'" onblur="this.style.outline='none'">删除</button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-  </main>
-
 </div>
-
-<!-- Reduced motion -->
-<style>
-  @media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after {
-      transition-duration: 0.01ms !important;
-    }
-  }
-</style>
-
+<script>lucide.createIcons();</script>
 </body>
 </html>

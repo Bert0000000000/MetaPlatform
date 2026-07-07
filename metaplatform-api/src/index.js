@@ -4,6 +4,14 @@
 import express from "express";
 import cors from "cors";
 import { authenticate } from "./middleware/auth.js";
+
+/**
+ * Wrap an async Express route handler so thrown/rejected errors
+ * are forwarded to the Express error-handling middleware.
+ */
+export function asyncHandler(fn) {
+  return (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
+}
 import authRoutes from "./routes/auth.js";
 import appsRoutes from "./routes/apps.js";
 import ontologyRoutes from "./routes/ontology.js";
@@ -31,6 +39,7 @@ import filesystemRoutes from "./routes/filesystem.js";
 import orchestrationsRoutes from "./routes/orchestrations.js";
 import ocrRoutes from "./routes/ocr.js";
 import architectureRoutes from "./routes/architecture.js";
+import { cacheMiddleware, redisHealthCheck } from "./middleware/cache.js";
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -40,38 +49,48 @@ app.use(cors());                          // Allow all origins (dev mode)
 app.use(express.json());                  // Parse JSON bodies
 app.use(authenticate);                    // JWT authentication
 
-// ─── Routes ─────────────────────────────────────────────
+// ─── Routes (with Redis cache for read-heavy endpoints) ─
 app.use("/api/auth", authRoutes);
-app.use("/api/apps", appsRoutes);
-app.use("/api/ontology", ontologyRoutes);
-app.use("/api/processes", processesRoutes);
-app.use("/api/data", dataRoutes);
-app.use("/api/knowledge", knowledgeRoutes);
-app.use("/api/agents", agentsRoutes);
-app.use("/api/admin", adminRoutes);
-app.use("/api/messages", messagesRoutes);
-app.use("/api/flowable", flowableRoutes);
-app.use("/api/pages", pagesRoutes);
+app.use("/api/apps", cacheMiddleware(30), appsRoutes);
+app.use("/api/ontology", cacheMiddleware(30), ontologyRoutes);
+app.use("/api/processes", cacheMiddleware(30), processesRoutes);
+app.use("/api/data", cacheMiddleware(30), dataRoutes);
+app.use("/api/knowledge", cacheMiddleware(30), knowledgeRoutes);
+app.use("/api/agents", cacheMiddleware(30), agentsRoutes);
+app.use("/api/admin", cacheMiddleware(30), adminRoutes);
+app.use("/api/messages", cacheMiddleware(15), messagesRoutes);
+app.use("/api/flowable", cacheMiddleware(30), flowableRoutes);
+app.use("/api/pages", cacheMiddleware(30), pagesRoutes);
 app.use("/api/export", exportRoutes);
-app.use("/api/llm", llmRoutes);
+app.use("/api/llm", cacheMiddleware(30), llmRoutes);
 app.use("/api/dispatch", dispatchRoutes);
-app.use("/api/announcements", announcementsRoutes);
-app.use("/api/todos", todosRoutes);
-app.use("/api/quality", qualityRoutes);
-app.use("/api/versions", versionsRoutes);
-app.use("/api/triggers", triggersRoutes);
-app.use("/api/export-history", exportHistoryRoutes);
-app.use("/api/knowledge/qa", knowledgeQaRoutes);
-app.use("/api/knowledge/graph", knowledgeGraphRoutes);
-app.use("/api/market", marketRoutes);
-app.use("/api/filesystem", filesystemRoutes);
-app.use("/api/orchestrations", orchestrationsRoutes);
-app.use("/api/ocr", ocrRoutes);
-app.use("/api/architecture", architectureRoutes);
+app.use("/api/announcements", cacheMiddleware(15), announcementsRoutes);
+app.use("/api/todos", cacheMiddleware(15), todosRoutes);
+app.use("/api/quality", cacheMiddleware(30), qualityRoutes);
+app.use("/api/versions", cacheMiddleware(30), versionsRoutes);
+app.use("/api/triggers", cacheMiddleware(30), triggersRoutes);
+app.use("/api/export-history", cacheMiddleware(30), exportHistoryRoutes);
+app.use("/api/knowledge/qa", cacheMiddleware(15), knowledgeQaRoutes);
+app.use("/api/knowledge/graph", cacheMiddleware(60), knowledgeGraphRoutes);
+app.use("/api/market", cacheMiddleware(30), marketRoutes);
+app.use("/api/filesystem", cacheMiddleware(30), filesystemRoutes);
+app.use("/api/orchestrations", cacheMiddleware(30), orchestrationsRoutes);
+app.use("/api/ocr", cacheMiddleware(30), ocrRoutes);
+app.use("/api/architecture", cacheMiddleware(60), architectureRoutes);
 
 // ─── Health check ───────────────────────────────────────
-app.get("/api/health", (_req, res) => {
-  res.json({ success: true, data: { status: "ok", timestamp: new Date().toISOString() } });
+app.get("/api/health", async (_req, res) => {
+  const redisStatus = await redisHealthCheck();
+  const dbStatus = process.env.DATABASE_URL ? "postgresql" : "sqlite";
+  res.json({
+    success: true,
+    data: {
+      status: "ok",
+      database: dbStatus,
+      cache: redisStatus.status,
+      timestamp: new Date().toISOString(),
+    },
+  });
 });
 
 // ─── Error handler ──────────────────────────────────────

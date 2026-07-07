@@ -12,9 +12,9 @@ const router = Router();
 // ════════════════════════════════════════════════════════
 
 // GET /nodes — list all nodes
-router.get("/nodes", (_req, res, next) => {
+router.get("/nodes", async (_req, res, next) => {
   try {
-    const rows = db.prepare("SELECT * FROM knowledge_graph_nodes ORDER BY created_at DESC").all();
+    const rows = await db.prepare("SELECT * FROM knowledge_graph_nodes ORDER BY created_at DESC").all();
     res.json({ success: true, data: rows });
   } catch (err) {
     next(err);
@@ -22,17 +22,17 @@ router.get("/nodes", (_req, res, next) => {
 });
 
 // POST /nodes — create node
-router.post("/nodes", (req, res, next) => {
+router.post("/nodes", async (req, res, next) => {
   try {
     const { name, type, description, metadata } = req.body;
     if (!name) return res.status(400).json({ success: false, error: "name 为必填项" });
     const id = uuid();
     const now = new Date().toISOString();
-    db.prepare(
+    await db.prepare(
       `INSERT INTO knowledge_graph_nodes (id, name, type, description, metadata, created_at)
        VALUES (?, ?, ?, ?, ?, ?)`
     ).run(id, name, type || "concept", description || null, metadata ? JSON.stringify(metadata) : null, now);
-    const row = db.prepare("SELECT * FROM knowledge_graph_nodes WHERE id = ?").get(id);
+    const row = await db.prepare("SELECT * FROM knowledge_graph_nodes WHERE id = ?").get(id);
     res.status(201).json({ success: true, data: row });
   } catch (err) {
     next(err);
@@ -40,12 +40,12 @@ router.post("/nodes", (req, res, next) => {
 });
 
 // PUT /nodes/:id — update node
-router.put("/nodes/:id", (req, res, next) => {
+router.put("/nodes/:id", async (req, res, next) => {
   try {
-    const existing = db.prepare("SELECT * FROM knowledge_graph_nodes WHERE id = ?").get(req.params.id);
+    const existing = await db.prepare("SELECT * FROM knowledge_graph_nodes WHERE id = ?").get(req.params.id);
     if (!existing) return res.status(404).json({ success: false, error: "节点不存在" });
     const { name, type, properties } = req.body;
-    db.prepare(
+    await db.prepare(
       `UPDATE knowledge_graph_nodes SET name = ?, type = ?, metadata = ? WHERE id = ?`
     ).run(
       name ?? existing.name,
@@ -53,7 +53,7 @@ router.put("/nodes/:id", (req, res, next) => {
       properties !== undefined ? JSON.stringify(properties) : existing.metadata,
       req.params.id
     );
-    const row = db.prepare("SELECT * FROM knowledge_graph_nodes WHERE id = ?").get(req.params.id);
+    const row = await db.prepare("SELECT * FROM knowledge_graph_nodes WHERE id = ?").get(req.params.id);
     res.json({ success: true, data: row });
   } catch (err) {
     next(err);
@@ -61,12 +61,12 @@ router.put("/nodes/:id", (req, res, next) => {
 });
 
 // DELETE /nodes/:id — delete node and related edges
-router.delete("/nodes/:id", (req, res, next) => {
+router.delete("/nodes/:id", async (req, res, next) => {
   try {
-    const existing = db.prepare("SELECT * FROM knowledge_graph_nodes WHERE id = ?").get(req.params.id);
+    const existing = await db.prepare("SELECT * FROM knowledge_graph_nodes WHERE id = ?").get(req.params.id);
     if (!existing) return res.status(404).json({ success: false, error: "节点不存在" });
-    db.prepare("DELETE FROM knowledge_graph_edges WHERE source_id = ? OR target_id = ?").run(req.params.id, req.params.id);
-    db.prepare("DELETE FROM knowledge_graph_nodes WHERE id = ?").run(req.params.id);
+    await db.prepare("DELETE FROM knowledge_graph_edges WHERE source_id = ? OR target_id = ?").run(req.params.id, req.params.id);
+    await db.prepare("DELETE FROM knowledge_graph_nodes WHERE id = ?").run(req.params.id);
     res.json({ success: true, data: { id: req.params.id } });
   } catch (err) {
     next(err);
@@ -78,9 +78,9 @@ router.delete("/nodes/:id", (req, res, next) => {
 // ════════════════════════════════════════════════════════
 
 // GET /edges — list all edges
-router.get("/edges", (_req, res, next) => {
+router.get("/edges", async (_req, res, next) => {
   try {
-    const rows = db.prepare("SELECT * FROM knowledge_graph_edges ORDER BY created_at DESC").all();
+    const rows = await db.prepare("SELECT * FROM knowledge_graph_edges ORDER BY created_at DESC").all();
     res.json({ success: true, data: rows });
   } catch (err) {
     next(err);
@@ -88,17 +88,17 @@ router.get("/edges", (_req, res, next) => {
 });
 
 // POST /edges — create edge
-router.post("/edges", (req, res, next) => {
+router.post("/edges", async (req, res, next) => {
   try {
     const { source_id, target_id, relation_type, description } = req.body;
     if (!source_id || !target_id) return res.status(400).json({ success: false, error: "source_id, target_id 为必填项" });
     const id = uuid();
     const now = new Date().toISOString();
-    db.prepare(
+    await db.prepare(
       `INSERT INTO knowledge_graph_edges (id, source_id, target_id, relation_type, description, created_at)
        VALUES (?, ?, ?, ?, ?, ?)`
     ).run(id, source_id, target_id, relation_type || "related", description || null, now);
-    const row = db.prepare("SELECT * FROM knowledge_graph_edges WHERE id = ?").get(id);
+    const row = await db.prepare("SELECT * FROM knowledge_graph_edges WHERE id = ?").get(id);
     res.status(201).json({ success: true, data: row });
   } catch (err) {
     next(err);
@@ -106,19 +106,19 @@ router.post("/edges", (req, res, next) => {
 });
 
 // PUT /edges/:id — update edge
-router.put("/edges/:id", (req, res, next) => {
+router.put("/edges/:id", async (req, res, next) => {
   try {
-    const existing = db.prepare("SELECT * FROM knowledge_graph_edges WHERE id = ?").get(req.params.id);
+    const existing = await db.prepare("SELECT * FROM knowledge_graph_edges WHERE id = ?").get(req.params.id);
     if (!existing) return res.status(404).json({ success: false, error: "边不存在" });
     const { relation_type, properties } = req.body;
-    db.prepare(
+    await db.prepare(
       `UPDATE knowledge_graph_edges SET relation_type = ?, description = ? WHERE id = ?`
     ).run(
       relation_type ?? existing.relation_type,
       properties !== undefined ? JSON.stringify(properties) : existing.description,
       req.params.id
     );
-    const row = db.prepare("SELECT * FROM knowledge_graph_edges WHERE id = ?").get(req.params.id);
+    const row = await db.prepare("SELECT * FROM knowledge_graph_edges WHERE id = ?").get(req.params.id);
     res.json({ success: true, data: row });
   } catch (err) {
     next(err);
@@ -126,11 +126,11 @@ router.put("/edges/:id", (req, res, next) => {
 });
 
 // DELETE /edges/:id — delete edge
-router.delete("/edges/:id", (req, res, next) => {
+router.delete("/edges/:id", async (req, res, next) => {
   try {
-    const existing = db.prepare("SELECT * FROM knowledge_graph_edges WHERE id = ?").get(req.params.id);
+    const existing = await db.prepare("SELECT * FROM knowledge_graph_edges WHERE id = ?").get(req.params.id);
     if (!existing) return res.status(404).json({ success: false, error: "边不存在" });
-    db.prepare("DELETE FROM knowledge_graph_edges WHERE id = ?").run(req.params.id);
+    await db.prepare("DELETE FROM knowledge_graph_edges WHERE id = ?").run(req.params.id);
     res.json({ success: true, data: { id: req.params.id } });
   } catch (err) {
     next(err);
@@ -138,10 +138,10 @@ router.delete("/edges/:id", (req, res, next) => {
 });
 
 // GET / — knowledge graph overview
-router.get("/", (req, res) => {
+router.get("/", async (req, res) => {
   try {
-    const nodes = db.prepare("SELECT COUNT(*) AS cnt FROM knowledge_graph_nodes").get().cnt;
-    const edges = db.prepare("SELECT COUNT(*) AS cnt FROM knowledge_graph_edges").get().cnt;
+    const nodes = await db.prepare("SELECT COUNT(*) AS cnt FROM knowledge_graph_nodes").get().cnt;
+    const edges = await db.prepare("SELECT COUNT(*) AS cnt FROM knowledge_graph_edges").get().cnt;
     res.json({ success: true, data: { nodes, edges } });
   } catch (err) {
     res.json({ success: true, data: { nodes: 0, edges: 0 } });

@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  backend-test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: metaplatform_test
+          POSTGRES_USER: mp
+          POSTGRES_PASSWORD: mp_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: cd metaplatform-api && npm ci
+      - run: cd metaplatform-api && DATABASE_URL=postgres://mp:mp_test@localhost:5432/metaplatform_test node -e "require('./src/db-adapter')"
+      - run: cd metaplatform-api && DATABASE_URL=postgres://mp:mp_test@localhost:5432/metaplatform_test node src/index.js &
+      - run: sleep 3
+      - run: curl -sf http://localhost:3001/api/apps || exit 1
+      - run: curl -sf http://localhost:3001/api/ontology || exit 1
+      - run: curl -sf http://localhost:3001/api/knowledge || exit 1
+      - run: curl -sf http://localhost:3001/api/quality || exit 1
+      - run: curl -sf http://localhost:3001/api/market || exit 1
+
+  frontend-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: cd metaplatform-frontend && npm ci
+      - run: cd metaplatform-frontend && npx tsc --noEmit
+      - run: cd metaplatform-frontend && npm run build
+
+  docker-build:
+    runs-on: ubuntu-latest
+    needs: [backend-test, frontend-build]
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker compose build

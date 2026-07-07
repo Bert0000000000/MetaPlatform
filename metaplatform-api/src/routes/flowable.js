@@ -98,22 +98,22 @@ router.post("/process-definitions/deploy", upload.single("file"), (req, res) => 
 // ─── Process Definitions ──────────────────────────────────
 
 /** GET /process-definitions — List deployed process definitions */
-router.get("/process-definitions", (req, res) => {
+router.get("/process-definitions", async (req, res) => {
   return proxyToFlowable(req, res, { path: "/repository/process-definitions" });
 });
 
 /** GET /process-definitions/:id — Get single process definition */
-router.get("/process-definitions/:id", (req, res) => {
+router.get("/process-definitions/:id", async (req, res) => {
   return proxyToFlowable(req, res, { path: `/repository/process-definitions/${req.params.id}` });
 });
 
 /** GET /process-definitions/:id/xml — Get BPMN XML */
-router.get("/process-definitions/:id/xml", (req, res) => {
+router.get("/process-definitions/:id/xml", async (req, res) => {
   return proxyToFlowable(req, res, { path: `/repository/process-definitions/${req.params.id}/resourcedata` });
 });
 
 /** DELETE /deployments/:id — Delete a deployment */
-router.delete("/deployments/:id", (req, res) => {
+router.delete("/deployments/:id", async (req, res) => {
   return proxyToFlowable(req, res, {
     method: "DELETE",
     path: `/repository/deployments/${req.params.id}`,
@@ -123,7 +123,7 @@ router.delete("/deployments/:id", (req, res) => {
 // ─── Process Instances ────────────────────────────────────
 
 /** POST /process-instances — Start a process instance */
-router.post("/process-instances", (req, res) => {
+router.post("/process-instances", async (req, res) => {
   return proxyToFlowable(req, res, {
     method: "POST",
     path: "/runtime/process-instances",
@@ -132,17 +132,17 @@ router.post("/process-instances", (req, res) => {
 });
 
 /** GET /process-instances — List process instances */
-router.get("/process-instances", (req, res) => {
+router.get("/process-instances", async (req, res) => {
   return proxyToFlowable(req, res, { path: "/runtime/process-instances" });
 });
 
 /** GET /process-instances/:id — Get single instance details */
-router.get("/process-instances/:id", (req, res) => {
+router.get("/process-instances/:id", async (req, res) => {
   return proxyToFlowable(req, res, { path: `/runtime/process-instances/${req.params.id}` });
 });
 
 /** DELETE /process-instances/:id — Cancel an instance */
-router.delete("/process-instances/:id", (req, res) => {
+router.delete("/process-instances/:id", async (req, res) => {
   return proxyToFlowable(req, res, {
     method: "DELETE",
     path: `/runtime/process-instances/${req.params.id}`,
@@ -152,12 +152,12 @@ router.delete("/process-instances/:id", (req, res) => {
 // ─── Tasks ────────────────────────────────────────────────
 
 /** GET /tasks — List tasks (with optional assignee filter) */
-router.get("/tasks", (req, res) => {
+router.get("/tasks", async (req, res) => {
   return proxyToFlowable(req, res, { path: "/runtime/tasks" });
 });
 
 /** POST /tasks/:id/complete — Complete a task with variables */
-router.post("/tasks/:id/complete", (req, res) => {
+router.post("/tasks/:id/complete", async (req, res) => {
   return proxyToFlowable(req, res, {
     method: "POST",
     path: `/runtime/tasks/${req.params.id}`,
@@ -166,7 +166,7 @@ router.post("/tasks/:id/complete", (req, res) => {
 });
 
 /** POST /tasks/:id/claim — Claim a task */
-router.post("/tasks/:id/claim", (req, res) => {
+router.post("/tasks/:id/claim", async (req, res) => {
   return proxyToFlowable(req, res, {
     method: "POST",
     path: `/runtime/tasks/${req.params.id}`,
@@ -175,7 +175,7 @@ router.post("/tasks/:id/claim", (req, res) => {
 });
 
 /** POST /tasks/:id/delegate — Delegate a task */
-router.post("/tasks/:id/delegate", (req, res) => {
+router.post("/tasks/:id/delegate", async (req, res) => {
   return proxyToFlowable(req, res, {
     method: "POST",
     path: `/runtime/tasks/${req.params.id}`,
@@ -186,12 +186,12 @@ router.post("/tasks/:id/delegate", (req, res) => {
 // ─── History ──────────────────────────────────────────────
 
 /** GET /history/process-instances — List historical process instances */
-router.get("/history/process-instances", (req, res) => {
+router.get("/history/process-instances", async (req, res) => {
   return proxyToFlowable(req, res, { path: "/history/historic-process-instances" });
 });
 
 // GET /processes — alias for process-definitions (proxied to Flowable REST)
-router.get("/processes", (req, res) => {
+router.get("/processes", async (req, res) => {
   return proxyToFlowable(req, res, { path: "/repository/process-definitions" });
 });
 
