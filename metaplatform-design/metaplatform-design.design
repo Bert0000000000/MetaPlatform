@@ -7613,6 +7613,6 @@
       "width": 800,
       "height": 600
     },
-    "showEdge": true
+    "showEdge": false
   }
 }

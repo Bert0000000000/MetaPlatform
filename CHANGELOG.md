@@ -6,6 +6,44 @@
 
 ---
 
+## [v1.6.0] - 2026-07-07
+
+### 新增 (Added)
+- **Phase 6 完成：K8s 部署**
+  - **生产级 K8s 清单** (`deploy/kubernetes/base/`)
+    - Namespace + ConfigMap + Secret template（CHANGE_ME）
+    - API Deployment (3 replicas, RollingUpdate maxSurge=1 maxUnavailable=0)
+    - 前端 Deployment (2 replicas, nginx 1.27-alpine)
+    - ClusterIP Services
+    - Ingress (NGINX, TLS via cert-manager, 安全响应头)
+    - HPA (3-10 replicas, CPU 70% / Mem 75%) + PDB (minAvailable=2)
+    - ServiceMonitor + PrometheusRule (4 个告警)
+    - podAntiAffinity + topology spread
+    - securityContext: runAsNonRoot, readOnlyRootFilesystem, drop ALL caps
+  - **Kustomize overlays** (`deploy/kubernetes/overlays/dev`, `prod`)
+    - dev: 1 replica, dev host
+    - prod: 5 replicas, prod host, 更大资源
+  - **Helm chart** (`deploy/helm/metaplatform/`)
+    - Chart.yaml v1.5.0 + 完整 values.yaml
+    - 9 templates：configmap / api-deployment / api-service / frontend-deployment /
+      ingress / hpa / servicemonitor / _helpers.tpl
+    - HPA / PDB / probes / serviceMonitor / prometheusRule 可配置
+    - 6 个后端开关（postgres/redis/neo4j/es/minio/kafka/clickhouse）
+  - **ArgoCD GitOps** (`deploy/argocd/`)
+    - `app-dev.yaml` + `app-prod.yaml` — auto-sync + self-heal + prune
+    - `AppProject` 限定 source repo + namespace + 资源白名单
+  - **部署文档** (`deploy/README.md`) — Kustomize / Helm / ArgoCD 三种部署路径
+  - **静态验证脚本** (`deploy/scripts/validate-k8s.py`)
+    - 校验 YAML 语法 / K8s 必填字段 / 命名规则 / namespace
+    - 校验 Kustomize overlays 引用真实资源
+    - 校验 Helm chart 结构 + 模板可渲染
+    - 校验 Helm templates 渲染后包含合法 K8s 文档
+
+### 验证 (Verified)
+- **26 个文件 / 17 个 K8s 对象 / 0 errors / 0 warnings** — `python deploy/scripts/validate-k8s.py .` 通过
+
+---
+
 ## [v1.5.0] - 2026-07-07
 
 ### 新增 (Added)

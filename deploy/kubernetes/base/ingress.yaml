@@ -1,0 +1,40 @@
+# Ingress for MetaPlatform
+# Requires NGINX Ingress Controller (or compatible) installed in cluster.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: metaplatform
+  namespace: metaplatform
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "120"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "120"
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      more_set_headers "X-Frame-Options: DENY";
+      more_set_headers "X-Content-Type-Options: nosniff";
+      more_set_headers "Referrer-Policy: no-referrer";
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - app.metaplatform.example.com
+      secretName: metaplatform-tls
+  rules:
+    - host: app.metaplatform.example.com
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: metaplatform-api
+                port:
+                  number: 80
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: metaplatform-frontend
+                port:
+                  number: 80

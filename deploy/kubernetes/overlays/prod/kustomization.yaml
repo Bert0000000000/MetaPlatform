@@ -1,0 +1,64 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: metaplatform-prod
+
+namePrefix: prod-
+
+resources:
+  - ../../base
+
+# In prod we want more replicas and stricter PDB
+patches:
+  - target:
+      kind: Deployment
+      name: metaplatform-api
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 5
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/cpu
+        value: 500m
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/memory
+        value: 1Gi
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/cpu
+        value: 2000m
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/memory
+        value: 3Gi
+
+  - target:
+      kind: HorizontalPodAutoscaler
+      name: metaplatform-api
+    patch: |-
+      - op: replace
+        path: /spec/minReplicas
+        value: 5
+      - op: replace
+        path: /spec/maxReplicas
+        value: 20
+
+  - target:
+      kind: PodDisruptionBudget
+      name: metaplatform-api
+    patch: |-
+      - op: replace
+        path: /spec/minAvailable
+        value: 3
+
+  - target:
+      kind: Ingress
+      name: metaplatform
+    patch: |-
+      - op: replace
+        path: /spec/rules/0/host
+        value: app.metaplatform.com
+      - op: replace
+        path: /spec/tls/0/hosts/0
+        value: app.metaplatform.com
+
+commonLabels:
+  env: prod

@@ -10,18 +10,10 @@ metadata:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 spec:
-  {{- if .Values.ingress.className }}
   ingressClassName: {{ .Values.ingress.className }}
-  {{- end }}
-  {{- if .Values.ingress.tls }}
+  {{- with .Values.ingress.tls }}
   tls:
-    {{- range .Values.ingress.tls }}
-    - hosts:
-        {{- range .hosts }}
-        - {{ . | quote }}
-        {{- end }}
-      secretName: {{ .secretName }}
-    {{- end }}
+    {{- toYaml . | nindent 4 }}
   {{- end }}
   rules:
     {{- range .Values.ingress.hosts }}
@@ -33,9 +25,13 @@ spec:
             pathType: {{ .pathType }}
             backend:
               service:
-                name: {{ include "metaplatform.fullname" $ }}-{{ .service }}
+                {{- if eq .path "/api" }}
+                name: {{ include "metaplatform.fullname" $ }}-api
+                {{- else }}
+                name: {{ include "metaplatform.fullname" $ }}-frontend
+                {{- end }}
                 port:
-                  number: {{ .port }}
+                  number: 80
           {{- end }}
     {{- end }}
 {{- end }}

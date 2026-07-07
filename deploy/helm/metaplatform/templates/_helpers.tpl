@@ -22,20 +22,35 @@ Create a default fully qualified app name.
 {{- end }}
 
 {{/*
-Common labels
+Common labels.
 */}}
 {{- define "metaplatform.labels" -}}
-helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-app.kubernetes.io/name: {{ include "metaplatform.name" . }}
-app.kubernetes.io/instance: {{ .Release.Name }}
+helm.sh/chart: {{ printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
+{{ include "metaplatform.selectorLabels" . }}
+{{- if .Chart.AppVersion }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+{{- end }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- end }}
 
 {{/*
-Component labels
+Selector labels.
 */}}
-{{- define "metaplatform.componentLabels" -}}
-{{ include "metaplatform.labels" .context }}
-app.kubernetes.io/component: {{ .component }}
+{{- define "metaplatform.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "metaplatform.name" . }}
+app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end }}
+
+{{/*
+API selector labels.
+*/}}
+{{- define "metaplatform.api.selectorLabels" -}}
+app: metaplatform-api
+{{- end }}
+
+{{/*
+Frontend selector labels.
+*/}}
+{{- define "metaplatform.frontend.selectorLabels" -}}
+app: metaplatform-frontend
 {{- end }}

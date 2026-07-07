@@ -1,0 +1,73 @@
+# ServiceMonitor — tells Prometheus Operator to scrape our /metrics endpoint
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: metaplatform-api
+  namespace: metaplatform
+  labels:
+    app: metaplatform-api
+    release: prometheus
+spec:
+  selector:
+    matchLabels:
+      app: metaplatform-api
+  endpoints:
+    - port: http
+      path: /api/observability/metrics
+      interval: 30s
+      scrapeTimeout: 10s
+      honorLabels: true
+---
+# PrometheusRule — alerts based on platform metrics
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: metaplatform-api
+  namespace: metaplatform
+spec:
+  groups:
+    - name: metaplatform-api.rules
+      interval: 30s
+      rules:
+        - alert: MetaPlatformAPIDown
+          expr: up{job="metaplatform-api"} == 0
+          for: 2m
+          labels:
+            severity: critical
+          annotations:
+            summary: "MetaPlatform API instance down"
+            description: "API instance {{ $labels.instance }} has been down for 2 minutes."
+
+        - alert: MetaPlatformBackendUnreachable
+          expr: metaplatform_backend_up == 0
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Backend {{ $labels.backend }} unreachable"
+            description: "Backend {{ $labels.backend }} has been unreachable for 5 minutes."
+
+        - alert: MetaPlatformHighErrorRate
+          expr: |
+            sum(rate(metaplatform_http_requests_total{status=~"5.."}[5m]))
+              /
+            sum(rate(metaplatform_http_requests_total[5m]))
+              > 0.05
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "High error rate"
+            description: "5xx error rate above 5% for 10 minutes."
+
+        - alert: MetaPlatformHighLatency
+          expr: |
+            histogram_quantile(0.95,
+              sum by (route, le) (rate(metaplatform_http_request_duration_seconds_bucket[5m]))
+            ) > 1.0
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "High p95 latency on {{ $labels.route }}"
+            description: "p95 latency above 1s on {{ $labels.route }}."
