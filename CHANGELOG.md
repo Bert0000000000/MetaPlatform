@@ -6,6 +6,62 @@
 
 ---
 
+## [v1.3.0] - 2026-07-07
+
+### 新增 (Added)
+- **Phase 3 完成：AI 基质增强**
+  - **Embeddings 服务** (`src/ai/embeddings.js`)
+    - OpenAI Provider：`text-embedding-3-small` (1536d) / `text-embedding-3-large` (3072d)
+    - Deterministic hash fallback (384d) — 无 API Key 也能跑
+    - Batch embed (chunks of 100)、topK cosine-similarity
+  - **LLM Gateway** (`src/ai/llm-gateway.js`)
+    - 多 Provider 抽象：OpenAI / Anthropic Claude / Echo (stub)
+    - `chat()` 同步调用、`streamChat()` AsyncIterable 流式输出
+    - 自动 provider 探测：`LLM_API_KEY` → OpenAI；`ANTHROPIC_API_KEY` → Anthropic；否则 echo
+    - SSE 流式端点 `/api/ai/chat/stream`
+  - **Agent Orchestrator** (`src/ai/agent.js`)
+    - Think-Act-Observe 循环，最多 N 步工具调用
+    - 内置 5 个工具：`search_knowledge` / `get_ontology_object` / `query_graph` / `get_process_status` / `emit_event`
+    - 自动解析 LLM 返回的 JSON 工具调用（支持 fenced 和 bare JSON）
+  - **OCR 服务** (`src/ai/ocr.js`)
+    - tesseract.js 集成，支持 `eng+chi_sim` 多语言
+    - Language detection 启发式（CJK/拉丁/数字比例）
+    - Worker 缓存复用，首次加载后毫秒级响应
+  - **RAG 服务** (`src/ai/rag.js`)
+    - 完整检索增强生成流程：embed → retrieve → context → LLM answer
+    - 混合打分：Milvus 向量检索 + Elasticsearch 关键词检索
+    - 自动 citations（每个引用带 id/title/score/source）
+    - Context window 限制（8000 字符默认）
+  - **统一 AI 路由** (`src/routes/ai.js`)
+    - `GET /api/ai/status` — 全部 AI 子系统健康
+    - `POST /api/ai/embed` / `embed/batch` — 文本向量化
+    - `POST /api/ai/chat` / `chat/stream` — 同步/流式聊天
+    - `POST /api/ai/agent` / `GET /api/ai/agent/tools` — Agent 运行
+    - `POST /api/ai/rag/index` / `rag/retrieve` / `rag/answer` — RAG 三段式
+    - `POST /api/ai/ocr` (multipart) / `ocr/detect` — OCR 识别 + 语言检测
+- `src/ai/index.js` barrel file + `getStatus()` 聚合
+
+### 变更 (Changed)
+- `seed-storage.js`：Milvus 向量改用真实 `embed()`（可走 OpenAI 或 deterministic）
+- `index.js`：注册 `app.use("/api/ai", authenticate, aiRoutes)`
+
+### 新增依赖
+- `openai` ^4.x
+- `@anthropic-ai/sdk` ^0.30.x
+- `tesseract.js` ^5.x
+
+### 验证 (Verified)
+- Phase 3 集成测试 `test-phase3-v2.ps1`：**12/12 通过**
+  - AI 状态：embeddings/llm/ocr/agent 全部上线
+  - Embeddings：384d 单文本 + 3 文档 batch
+  - LLM Chat：echo 模式 stub 输出（按预期）
+  - **RAG 索引** 3 文档 → **retrieve 4 chunks** 混合打分（vector 0.50 + keyword 0.98）
+  - **RAG end-to-end** 4 citations
+  - **Agent**：5 工具列表 + 单步运行成功
+  - **OCR detect**：English → `en`、Chinese → `zh` 都正确
+
+---
+
 ## [v1.2.0] - 2026-07-07
 
 ### 新增 (Added)

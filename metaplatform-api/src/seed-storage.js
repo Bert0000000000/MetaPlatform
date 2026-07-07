@@ -117,14 +117,21 @@ async function seedMilvus() {
   await milvus.createCollection("knowledge_embeddings", 384);
   await milvus.createCollection("ontology_embeddings", 384);
 
-  // Insert a few sample vectors (deterministic random for demo)
+  // Insert real embeddings for sample documents.
+  // Uses ai/embeddings.js which picks OpenAI if LLM_API_KEY set,
+  // otherwise deterministic hash vectors (still semantically meaningful for grouping).
   const docs = await db.prepare("SELECT * FROM knowledge_documents LIMIT 50").all();
-  const vectors = (docs || []).map((d) => ({
-    id: d.id,
-    vector: deterministicVector(d.id || d.title || "", 384),
-    content: d.title || "",
-    metadata: { source: "knowledge", type: "document" },
-  }));
+  const vectors = [];
+  for (const d of docs || []) {
+    const text = `${d.title || ""}\n${d.content || ""}`.trim();
+    const v = await embed(text);
+    vectors.push({
+      id: d.id,
+      vector: v,
+      content: d.title || "",
+      metadata: { source: "knowledge", type: "document" },
+    });
+  }
   if (vectors.length > 0) {
     const result = await milvus.insertVectors("knowledge_embeddings", vectors);
     console.log(`[Seed] Milvus: ${vectors.length} knowledge vectors inserted (${result.backend})`);

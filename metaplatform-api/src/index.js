@@ -41,6 +41,7 @@ import orchestrationsRoutes from "./routes/orchestrations.js";
 import ocrRoutes from "./routes/ocr.js";
 import architectureRoutes from "./routes/architecture.js";
 import storageRoutes from "./routes/storage.js";
+import aiRoutes from "./routes/ai.js";
 import { cacheMiddleware, redisHealthCheck } from "./middleware/cache.js";
 import { initAll, healthCheckAll } from "./integrations/index.js";
 
@@ -105,6 +106,9 @@ app.use("/api/architecture", authenticate, cacheMiddleware(60), architectureRout
 
 // Phase 2: Unified storage layer endpoints (Neo4j / ES / Milvus / MinIO / Kafka)
 app.use("/api/storage", authenticate, storageRoutes);
+
+// Phase 3: AI substrate endpoints (embeddings / LLM / agent / RAG / OCR)
+app.use("/api/ai", authenticate, aiRoutes);
 
 // ─── Health check (public, optional auth) ────────────────
 app.get("/api/health", optionalAuth, async (_req, res) => {

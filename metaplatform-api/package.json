@@ -10,6 +10,7 @@
     "seed:storage": "node src/seed-storage.js"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.110.0",
     "@elastic/elasticsearch": "^8.19.1",
     "bcryptjs": "^3.0.3",
     "better-sqlite3": "^11.0.0",
@@ -20,7 +21,9 @@
     "ioredis": "^5.11.1",
     "jsonwebtoken": "^9.0.2",
     "multer": "^2.2.0",
+    "openai": "^6.45.0",
     "pg": "^8.22.0",
+    "tesseract.js": "^7.0.0",
     "uuid": "^10.0.0"
   }
 }
