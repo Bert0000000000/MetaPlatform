@@ -34,7 +34,17 @@ import {
   Hammer,
 } from "lucide-react";
 
-export type Role = "super_admin" | "admin" | "executive" | "business" | "developer" | "architect" | "ops";
+export type Role =
+  | "super_admin"
+  | "admin"
+  | "executive"
+  | "business"
+  | "developer"
+  | "architect"
+  | "ops"
+  // Aliases used in some pages for "executive+"-style views:
+  | "leader"
+  | "manager";
 
 export type MenuKey =
   | "dashboard"

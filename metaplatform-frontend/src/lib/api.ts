@@ -1133,6 +1133,7 @@ export interface Agent {
   model?: string;
   skills?: string;
   owner_id?: string;
+  assigned_to?: string;
 }
 
 export interface AgentTask {

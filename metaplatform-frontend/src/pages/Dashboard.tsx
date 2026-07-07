@@ -56,7 +56,7 @@ const RECOMMENDED_TEMPLATES: RecommendedTemplate[] = [
 ];
 
 /* ── Mock data that stays (no API for audit log on dashboard) ── */
-const RECENT_ACTIVITIES_FALLBACK = [
+const RECENT_ACTIVITIES_FALLBACK: RecentActivity[] = [
   { time: "10:42", actor: "张伟", action: "修改了", target: "客户对象 / 客户等级字段", icon: Pencil, link: "/ontology" },
   { time: "09:15", actor: "李娜", action: "部署了", target: "CRM v2.3 → 测试环境", icon: Rocket, link: "/apps" },
   { time: "昨天", actor: "王强", action: "新建了", target: "3 个页面（销售看板）", icon: FileText, link: "/apps" },
@@ -91,11 +91,28 @@ function transformAuditLog(log: AuditLog) {
 }
 
 // Fallback announcements (used if API fails)
-const ANNOUNCEMENTS_FALLBACK = [
+const ANNOUNCEMENTS_FALLBACK: Announcement[] = [
   { id: 1, title: "v1.3 新版本发布预告", time: "今早", type: "feature", link: "/admin" },
   { id: 2, title: "本周六 02:00-04:00 系统升级维护", time: "昨天", type: "warning", link: "/admin" },
   { id: 3, title: "AI 助手新增自然语言生成对象能力", time: "3 天前", type: "feature", link: "/admin" },
 ];
+
+interface Announcement {
+  id: number | string;
+  title: string;
+  time: string;
+  type: string;
+  link: string;
+}
+
+interface RecentActivity {
+  time: string;
+  actor: string;
+  action: string;
+  target: string;
+  icon: React.ElementType;
+  link: string;
+}
 
 /* ── Priority icon helper for messages ── */
 function PriorityIcon({ type }: { type: string }) {
@@ -114,8 +131,8 @@ export function DashboardPage() {
   const [apps, setApps] = useState<Application[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [agents, setAgents] = useState<Agent[]>([]);
-  const [recentActivities, setRecentActivities] = useState(RECENT_ACTIVITIES_FALLBACK);
-  const [announcements, setAnnouncements] = useState(ANNOUNCEMENTS_FALLBACK);
+  const [recentActivities, setRecentActivities] = useState<RecentActivity[]>(RECENT_ACTIVITIES_FALLBACK);
+  const [announcements, setAnnouncements] = useState<Announcement[]>(ANNOUNCEMENTS_FALLBACK);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
@@ -1062,6 +1079,7 @@ function AgentCard({ agent }: { agent: Agent }) {
 export function DashboardMessages() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     messagesApi.list().then((data) => { setMessages(data); setLoading(false); }).catch(() => setLoading(false));
