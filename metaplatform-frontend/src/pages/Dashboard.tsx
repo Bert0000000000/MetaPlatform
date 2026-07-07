@@ -5,7 +5,7 @@ import { ROLES, WORKSPACE_BY_ROLE } from "@/config/menu";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { appsApi, messagesApi, agentsApi, adminApi, announcementsApi, todosApi, analyticsApi } from "@/lib/api";
+import { appsApi, messagesApi, agentsApi, adminApi, announcementsApi, todosApi, analyticsApi, authApi } from "@/lib/api";
 import type { Application, Message, Agent, AuditLog, StrategicMetrics } from "@/lib/api";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
@@ -151,6 +151,10 @@ export function DashboardPage() {
   const [strategicError, setStrategicError] = useState<string | null>(null);
   const showStrategic = role === "leader" || role === "admin";
 
+  // ── F1.3.1 我创建的数字员工 ──
+  const [myAgents, setMyAgents] = useState<Agent[]>([]);
+  const [myAgentsLoading, setMyAgentsLoading] = useState(true);
+
   /* ── Fetch real data ── */
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -224,6 +228,17 @@ export function DashboardPage() {
     }, 60000);
     return () => clearInterval(t);
   }, [showStrategic]);
+
+  // ── F1.3.1 我创建的数字员工 ──
+  useEffect(() => {
+    const userId = authApi.currentUserIdFromToken();
+    if (!userId) { setMyAgents([]); setMyAgentsLoading(false); return; }
+    setMyAgentsLoading(true);
+    agentsApi.listOwnedBy(userId)
+      .then((rows) => setMyAgents(Array.isArray(rows) ? rows : []))
+      .catch(() => setMyAgents([]))
+      .finally(() => setMyAgentsLoading(false));
+  }, []);
 
   /* ── Install a recommended template ──
      Creates a draft Application record via POST /api/apps and then
@@ -530,6 +545,64 @@ export function DashboardPage() {
           )}
         </section>
       )}
+
+      {/* F1.3.1 我创建的数字员工 (per-user, always visible) */}
+      <section data-testid="my-agents">
+        <div className="flex items-baseline justify-between mb-2">
+          <h3 className="text-base font-semibold flex items-center gap-2">
+            <Bot className="size-4 text-blue-500" />
+            我的数字员工
+            {!myAgentsLoading && (
+              <span className="text-xs text-muted-foreground font-normal">
+                · 共 {myAgents.length} 个
+              </span>
+            )}
+          </h3>
+          <Button variant="ghost" size="sm" onClick={() => navigate("/agents")}>
+            查看全部 <ArrowRight className="size-3 ml-1" />
+          </Button>
+        </div>
+
+        {myAgentsLoading ? (
+          <div className="text-sm text-muted-foreground">加载中…</div>
+        ) : myAgents.length === 0 ? (
+          <Card>
+            <CardContent className="p-6 text-sm text-muted-foreground flex flex-col items-center gap-2">
+              <Bot className="size-8 opacity-50" />
+              <span>尚未创建过数字员工。前往</span>
+              <Button size="sm" variant="outline" onClick={() => navigate("/agents")}>
+                <Plus className="size-3 mr-1" /> 新建数字员工
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {myAgents.slice(0, 6).map((a) => (
+              <Card key={a.id} className="cursor-pointer hover:border-primary transition-colors"
+                    onClick={() => navigate(`/agents/${a.id}`)}>
+                <CardContent className="p-4">
+                  <div className="flex items-start gap-3">
+                    <div className="size-10 rounded-full bg-blue-50 dark:bg-blue-950/30 flex items-center justify-center shrink-0">
+                      <Bot className="size-5 text-blue-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium truncate">{a.name}</span>
+                        <Badge variant={a.status === "active" ? "default" : "secondary"} className="text-[10px] px-1.5 py-0">
+                          {a.status}
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
+                        {a.description || a.type}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </section>
 
       {/* F1.1.4 领导版：数字员工概览 (visible for leader/manager roles) */}
       {(role === "leader" || role === "admin" || role === "manager") && (

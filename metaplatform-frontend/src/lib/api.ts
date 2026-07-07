@@ -55,6 +55,24 @@ export const authApi = {
       body: JSON.stringify(data),
     }),
   me: () => request<AuthUser>("/auth/me"),
+
+  /**
+   * Decode the current JWT payload (cheap; no signature check) — for
+   * narrowing UI by user-id without an extra /auth/me round trip.
+   * Returns null if no token or payload malformed.
+   */
+  currentUserIdFromToken: (): string | null => {
+    const t = getToken();
+    if (!t) return null;
+    try {
+      const payload = JSON.parse(
+        atob(t.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")),
+      );
+      return payload?.sub ?? null;
+    } catch {
+      return null;
+    }
+  },
   changePassword: (oldPassword: string, newPassword: string) =>
     request<{ message: string }>("/auth/password", {
       method: "PUT",
@@ -475,6 +493,9 @@ export const knowledgeApi = {
 // ─── Agents ───────────────────────────────────────────────
 export const agentsApi = {
   list: () => request<Agent[]>("/agents"),
+  // F1.3.1 我创建的数字员工 — server-side filter by owner_id
+  listOwnedBy: (ownerId: string) =>
+    request<Agent[]>(`/agents?owner=${encodeURIComponent(ownerId)}`),
   get: (id: string) => request<Agent>(`/agents/${id}`),
   create: (data: Partial<Agent>) =>
     request<Agent>("/agents", {

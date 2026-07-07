@@ -12,9 +12,19 @@ const router = Router();
 // ════════════════════════════════════════════════════════
 
 // GET / — list agents
-router.get("/", async (_req, res, next) => {
+// Filters:
+//   owner=<userId>   → only agents owned by <userId>  (F1.3.1 我创建的)
+router.get("/", async (req, res, next) => {
   try {
-    const rows = await db.prepare("SELECT * FROM agents ORDER BY created_at DESC").all();
+    const owner = req.query.owner;
+    let rows;
+    if (owner) {
+      rows = await db
+        .prepare("SELECT * FROM agents WHERE owner_id = ? ORDER BY created_at DESC")
+        .all(owner);
+    } else {
+      rows = await db.prepare("SELECT * FROM agents ORDER BY created_at DESC").all();
+    }
     res.json({ success: true, data: rows });
   } catch (err) {
     next(err);
