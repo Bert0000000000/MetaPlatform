@@ -1,8 +1,24 @@
 /**
  * LLM Gateway API client
  * Connects frontend to the /api/llm backend proxy
+ *
+ * All requests must carry the JWT in `Authorization: Bearer <token>`,
+ * otherwise the API's authenticate middleware (mounted at /api/llm in
+ * src/index.js) returns 401 "Missing or invalid authorization header".
+ * Tokens live in localStorage — we share auth.ts#getToken so we honour
+ * both the canonical key ("metaplatform_token") and the legacy fallback
+ * ("mp_token") used by older sessions.
  */
+import { getToken } from "./auth";
+
 const LLM_BASE = "/api/llm";
+
+function authHeaders(): Record<string, string> {
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  const token = getToken();
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+  return headers;
+}
 
 export interface ChatMessage {
   role: "system" | "user" | "assistant";
@@ -102,7 +118,7 @@ export const llmApi = {
     if (options?.model) body.model = options.model;
     const res = await fetch(`${LLM_BASE}/chat`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: authHeaders(),
       body: JSON.stringify(body),
     });
     const json = await res.json();
@@ -119,7 +135,7 @@ export const llmApi = {
   ): Promise<CompletionResponse> => {
     const res = await fetch(`${LLM_BASE}/completion`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: authHeaders(),
       body: JSON.stringify({
         prompt,
         model: options?.model,
@@ -141,7 +157,7 @@ export const llmApi = {
   ): Promise<EmbeddingResponse> => {
     const res = await fetch(`${LLM_BASE}/embedding`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: authHeaders(),
       body: JSON.stringify({ input, model }),
     });
     const json = await res.json();
@@ -153,7 +169,7 @@ export const llmApi = {
    * List available models
    */
   listModels: async (): Promise<ModelInfo[]> => {
-    const res = await fetch(`${LLM_BASE}/models`);
+    const res = await fetch(`${LLM_BASE}/models`, { headers: authHeaders() });
     const json = await res.json();
     return json.data;
   },
@@ -163,7 +179,7 @@ export const llmApi = {
    */
   getUsage: async (days?: number): Promise<UsageStats> => {
     const url = days ? `${LLM_BASE}/usage?days=${days}` : `${LLM_BASE}/usage`;
-    const res = await fetch(url);
+    const res = await fetch(url, { headers: authHeaders() });
     const json = await res.json();
     return json.data;
   },
