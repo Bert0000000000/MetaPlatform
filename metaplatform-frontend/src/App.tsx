@@ -4,9 +4,13 @@ import { Layout } from "@/components/Layout";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppDetailTabs } from "@/components/AppDetailTabs";
 import { Package } from "lucide-react";
+import { isAuthenticated } from "@/lib/auth";
 
 // Published app (public, no platform layout)
 import PublishedApp from "@/pages/PublishedApp";
+
+// Login (public, no platform layout)
+import Login from "@/pages/Login";
 
 // 通用页面
 import { DashboardPage, MyApps, MyAgents, DashboardMessages, Portal, FreePage } from "@/pages/Dashboard";
@@ -83,18 +87,28 @@ function OntologyElementWrapper() {
   return <OntologyElement elementKey={params.elementKey ?? "1-objects"} />;
 }
 
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  if (!isAuthenticated()) {
+    return <Navigate to="/login" replace />;
+  }
+  return <>{children}</>;
+}
+
 export default function App() {
   return (
     <BrowserRouter>
       <RoleProvider>
         <TooltipProvider>
           <Routes>
+            {/* Login (public) */}
+            <Route path="/login" element={<Login />} />
+
             {/* Published apps (outside Layout — no sidebar/topbar) */}
             <Route path="/app/:slug" element={<PublishedApp />} />
             <Route path="/app/:slug/page/:pageId" element={<PublishedApp />} />
 
             {/* Platform routes (with Layout sidebar/topbar) */}
-            <Route element={<Layout />}>
+            <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
               {/* 默认 */}
               <Route index element={<Navigate to="/dashboard" replace />} />
 

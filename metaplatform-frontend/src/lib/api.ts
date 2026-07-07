@@ -3,6 +3,8 @@
  * Connects to the backend API at /api/*
  */
 
+import { getToken, logout, type AuthUser } from "./auth";
+
 const BASE_URL = "/api";
 
 interface ApiResponse<T = unknown> {
@@ -16,16 +18,22 @@ async function request<T>(
   path: string,
   options: RequestInit = {},
 ): Promise<T> {
-  const token = localStorage.getItem("mp_token");
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     ...(options.headers as Record<string, string>),
   };
+  const token = getToken();
   if (token) {
     headers["Authorization"] = `Bearer ${token}`;
   }
 
   const res = await fetch(`${BASE_URL}${path}`, { ...options, headers });
+
+  if (res.status === 401) {
+    logout();
+    throw new Error("Unauthorized — redirecting to login");
+  }
+
   const json: ApiResponse<T> = await res.json();
 
   if (!json.success) {
@@ -36,12 +44,22 @@ async function request<T>(
 
 // ─── Auth ──────────────────────────────────────────────────
 export const authApi = {
-  login: (email: string, _password: string) =>
-    request<{ token: string; user: User }>("/auth/login", {
+  login: (email: string, password: string) =>
+    request<{ user: AuthUser; token: string }>("/auth/login", {
       method: "POST",
-      body: JSON.stringify({ email, password: _password }),
+      body: JSON.stringify({ email, password }),
     }),
-  me: () => request<User>("/auth/me"),
+  register: (data: { name: string; email: string; password: string; department?: string }) =>
+    request<{ user: AuthUser; token: string }>("/auth/register", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  me: () => request<AuthUser>("/auth/me"),
+  changePassword: (oldPassword: string, newPassword: string) =>
+    request<{ message: string }>("/auth/password", {
+      method: "PUT",
+      body: JSON.stringify({ oldPassword, newPassword }),
+    }),
 };
 
 // ─── Applications ─────────────────────────────────────────
@@ -717,7 +735,7 @@ export const knowledgeQaApi = {
 export const knowledgeGraphApi = {
   listNodes: async () => {
     const res = await fetch(`${BASE_URL}/knowledge/graph/nodes`, {
-      headers: { "Authorization": `Bearer ${localStorage.getItem("mp_token")}` },
+      headers: { "Authorization": `Bearer ${getToken()}` },
     });
     const json = await res.json();
     return json.data;
@@ -727,7 +745,7 @@ export const knowledgeGraphApi = {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${localStorage.getItem("mp_token")}`,
+        "Authorization": `Bearer ${getToken()}`,
       },
       body: JSON.stringify(data),
     });
@@ -736,7 +754,7 @@ export const knowledgeGraphApi = {
   },
   listEdges: async () => {
     const res = await fetch(`${BASE_URL}/knowledge/graph/edges`, {
-      headers: { "Authorization": `Bearer ${localStorage.getItem("mp_token")}` },
+      headers: { "Authorization": `Bearer ${getToken()}` },
     });
     const json = await res.json();
     return json.data;
@@ -746,7 +764,7 @@ export const knowledgeGraphApi = {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${localStorage.getItem("mp_token")}`,
+        "Authorization": `Bearer ${getToken()}`,
       },
       body: JSON.stringify(data),
     });

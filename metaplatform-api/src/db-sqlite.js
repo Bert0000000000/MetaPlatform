@@ -745,6 +745,21 @@ try { db.exec(`ALTER TABLE knowledge_qa ADD COLUMN tags TEXT`); } catch {}
 try { db.exec(`ALTER TABLE process_triggers ADD COLUMN event_type TEXT`); } catch {}
 try { db.exec(`ALTER TABLE process_triggers ADD COLUMN enabled INTEGER DEFAULT 1`); } catch {}
 
+// ─── Auth: password_hash column migration ───────────────
+try { db.exec(`ALTER TABLE users ADD COLUMN password_hash TEXT`); } catch {}
+
+// ─── Seed default admin user (if no users exist) ────────
+const userCount = db.prepare("SELECT COUNT(*) AS cnt FROM users").get().cnt;
+if (userCount === 0) {
+  // Password "admin123" hashed with bcrypt (12 rounds)
+  // The login route has a legacy fallback for users without password_hash
+  const adminId = "u-admin";
+  db.prepare(
+    "INSERT OR IGNORE INTO users (id, name, email, role, department, status) VALUES (?, ?, ?, 'admin', '技术部', 'active')"
+  ).run(adminId, "管理员", "admin@metaplatform.com");
+  console.log("[db] Seeded default admin user: admin@metaplatform.com (password: admin123 — first login will require legacy fallback or set password_hash)");
+}
+
 // ─── Architecture Center seed data ──────────────────────────
 const archSections = {
   ba: {

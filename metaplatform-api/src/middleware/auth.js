@@ -1,39 +1,142 @@
 /**
- * JWT Authentication Middleware
+ * JWT Authentication Middleware — Production-grade
+ *
+ * Provides:
+ *   - Password hashing (bcryptjs, 12 rounds)
+ *   - JWT generation and verification
+ *   - Required auth middleware (rejects unauthenticated requests)
+ *   - Optional auth middleware (attaches user if token present)
+ *   - Role-based access control (RBAC)
+ *   - Permission-based access control
+ *   - Tenant isolation helper
  */
 import jwt from "jsonwebtoken";
+import bcrypt from "bcryptjs";
 
-const JWT_SECRET = "metaplatform-secret";
+const JWT_SECRET = process.env.JWT_SECRET || "metaplatform-prod-secret-change-in-production";
+const JWT_EXPIRES = "24h";
 
-/** Default admin user for dev mode (no token) */
-const DEFAULT_USER = {
-  id: "u-admin",
-  name: "管理员",
-  email: "admin@metaplatform.com",
-  role: "admin",
-  department: "技术部",
-};
+// ── Password hashing ──────────────────────────────────────
+export async function hashPassword(password) {
+  return bcrypt.hash(password, 12);
+}
 
-/**
- * Express middleware – validates Bearer token.
- * In dev mode, if no token is provided, req.user falls back to DEFAULT_USER.
- */
-export function authenticate(req, _res, next) {
+export async function comparePassword(password, hash) {
+  return bcrypt.compare(password, hash);
+}
+
+// ── JWT generation ────────────────────────────────────────
+export function generateToken(user) {
+  return jwt.sign(
+    {
+      sub: user.id,
+      email: user.email,
+      role: user.role,
+      name: user.name,
+      tenant_id: user.tenant_id || "default",
+    },
+    JWT_SECRET,
+    { expiresIn: JWT_EXPIRES }
+  );
+}
+
+// ── Auth middleware (REQUIRED token) ──────────────────────
+export function authenticate(req, res, next) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res
+      .status(401)
+      .json({ success: false, error: "Missing or invalid authorization header" });
+  }
   try {
-    const authHeader = req.headers.authorization;
-    if (authHeader && authHeader.startsWith("Bearer ")) {
-      const token = authHeader.slice(7);
-      const payload = jwt.verify(token, JWT_SECRET);
-      req.user = payload;
-    } else {
-      // Dev mode – allow without token
-      req.user = { ...DEFAULT_USER };
+    const token = authHeader.slice(7);
+    const payload = jwt.verify(token, JWT_SECRET);
+    req.user = {
+      id: payload.sub,
+      email: payload.email,
+      role: payload.role,
+      name: payload.name,
+      tenant_id: payload.tenant_id,
+    };
+    next();
+  } catch (err) {
+    return res
+      .status(401)
+      .json({ success: false, error: "Invalid or expired token" });
+  }
+}
+
+// ── Optional auth (attach user if token present, but don't reject) ──
+export function optionalAuth(req, _res, next) {
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    try {
+      const payload = jwt.verify(authHeader.slice(7), JWT_SECRET);
+      req.user = {
+        sub: payload.sub,
+        email: payload.email,
+        role: payload.role,
+        name: payload.name,
+        tenant_id: payload.tenant_id,
+      };
+    } catch {
+      // Invalid token — proceed without user context
     }
-  } catch {
-    // Token invalid – still allow in dev mode
-    req.user = { ...DEFAULT_USER };
   }
   next();
+}
+
+// ── RBAC middleware ───────────────────────────────────────
+// Usage: requireRole("admin") or requireRole("admin", "manager")
+export function requireRole(...roles) {
+  return (req, res, next) => {
+    if (!req.user) {
+      return res
+        .status(401)
+        .json({ success: false, error: "Authentication required" });
+    }
+    if (!roles.includes(req.user.role)) {
+      return res
+        .status(403)
+        .json({ success: false, error: `Requires role: ${roles.join(" or ")}` });
+    }
+    next();
+  };
+}
+
+// ── Permission-based access ───────────────────────────────
+const PERMISSIONS = {
+  admin: ["*"],
+  manager: ["read:*", "write:own", "approve:*"],
+  business: ["read:own", "write:own"],
+  viewer: ["read:own"],
+};
+
+export function requirePermission(permission) {
+  return (req, res, next) => {
+    if (!req.user) {
+      return res
+        .status(401)
+        .json({ success: false, error: "Authentication required" });
+    }
+    const userPerms = PERMISSIONS[req.user.role] || [];
+    const hasPermission =
+      userPerms.includes("*") || userPerms.includes(permission);
+    if (!hasPermission) {
+      return res
+        .status(403)
+        .json({ success: false, error: `Missing permission: ${permission}` });
+    }
+    next();
+  };
+}
+
+// ── Tenant isolation middleware ────────────────────────────
+export function withTenantFilter(queryFn) {
+  return (req, ...args) => {
+    const tenantId = req.user?.tenant_id || "default";
+    return queryFn(tenantId, ...args);
+  };
 }
 
 export { JWT_SECRET };

@@ -125,4 +125,216 @@
         <header style="height:56px; border-bottom:1px solid var(--color-border); background:var(--color-surface); display:flex; align-items:center; padding:0 var(--spacing-xl); flex-shrink:0; gap:var(--spacing-lg);">
             <div style="width:260px; display:flex; align-items:center; gap:var(--spacing-sm); padding:var(--spacing-sm) var(--spacing-lg); border:1px solid var(--color-border); border-radius:var(--radius-md); background:var(--color-bg-secondary); cursor:pointer;">
                 <i data-lucide="search" style="width:14px; height:14px; color:var(--color-text-secondary);"></i>
-                <span style="font-size:var(--font-size-sm); color:var(--color
+                <span style="font-size:var(--font-size-sm); color:var(--color-text-secondary); flex:1;">搜索或 AI 助手</span>
+                <span style="font-size:var(--font-size-xs); color:var(--color-text-secondary); background:var(--color-bg); padding:1px 4px; border-radius:var(--radius-sm); border:1px solid var(--color-border);">⌘K</span>
+            </div>
+            <div style="flex:1;"></div>
+            <button style="position:relative; background:none; border:none; cursor:pointer; color:var(--color-text-secondary); padding:var(--spacing-sm);">
+                <i data-lucide="bell" style="width:16px; height:16px;"></i>
+                <span style="position:absolute; top:-2px; right:-2px; width:8px; height:8px; background:var(--state-error); border-radius:var(--radius-full); border:1px solid var(--color-surface);"></span>
+            </button>
+            <div style="display:flex; align-items:center; gap:var(--spacing-sm); padding:var(--spacing-sm) var(--spacing-md); border:1px solid var(--color-border); border-radius:var(--radius-md); cursor:pointer; font-size:var(--font-size-sm); color:var(--color-text-primary);">
+                <div style="width:22px; height:22px; border-radius:var(--radius-full); background:rgba(59,130,246,0.15); color:var(--color-primary); font-size:var(--font-size-xs); font-weight:var(--font-weight-medium); display:flex; align-items:center; justify-content:center;">A</div>
+                <span>Admin</span>
+                <i data-lucide="chevron-down" style="width:12px; height:12px;"></i>
+            </div>
+        </header>
+
+        <!-- TAB BAR -->
+        <div style="border-bottom:1px solid var(--color-border); background:var(--color-surface); display:flex; padding:0 var(--spacing-xl); flex-shrink:0; overflow-x:auto;">
+            <button class="tab-item">应用列表</button>
+            <button class="tab-item">概览</button>
+            <button class="tab-item tab-apps-modeling active">业务数据建模</button>
+            <button class="tab-item">页面设计器</button>
+            <button class="tab-item">流程设计器</button>
+            <button class="tab-item">应用配置</button>
+            <button class="tab-item">应用发布</button>
+            <button class="tab-item">应用导出</button>
+        </div>
+
+        <!-- PAGE CONTENT -->
+        <main style="flex:1; overflow-y:auto; background:var(--color-bg-secondary);">
+            <div style="padding:var(--spacing-xl); max-width:1280px;">
+
+                <!-- Header -->
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:var(--spacing-xl);">
+                    <div>
+                        <h1 style="font-size:var(--font-size-xl); font-weight:var(--font-weight-semibold); color:var(--color-text-primary); margin-bottom:var(--spacing-xs);">业务数据建模</h1>
+                        <p style="font-size:var(--font-size-sm); color:var(--color-text-secondary);">Schema 驱动的业务对象可视化管理</p>
+                    </div>
+                    <button class="btn btn-primary"><i data-lucide="plus" style="width:14px; height:14px;"></i>新建 ObjectType</button>
+                </div>
+
+                <!-- Two-column layout -->
+                <div class="card" style="display:flex; height:calc(100vh - 200px); min-height:400px;">
+
+                    <!-- Left panel -->
+                    <div style="width:256px; border-right:1px solid var(--color-border); display:flex; flex-direction:column; flex-shrink:0;">
+                        <div style="padding:var(--spacing-lg); border-bottom:1px solid var(--color-border); font-size:var(--font-size-sm); font-weight:var(--font-weight-medium); color:var(--color-text-primary);">
+                            ObjectType 列表 (6)
+                        </div>
+                        <div style="flex:1; overflow-y:auto; padding:var(--spacing-sm) 0;">
+                            <div style="display:flex; align-items:center; gap:var(--spacing-lg); padding:var(--spacing-md) var(--spacing-xl); cursor:pointer; background:rgba(59,130,246,0.08); border-left:2px solid var(--color-primary);">
+                                <i data-lucide="box" style="width:14px; height:14px; color:var(--color-primary); flex-shrink:0;"></i>
+                                <div style="min-width:0;">
+                                    <div style="font-size:var(--font-size-sm); font-weight:var(--font-weight-medium); color:var(--color-text-primary);">客户信息</div>
+                                    <div style="font-size:var(--font-size-xs); color:var(--color-text-secondary); font-family:var(--font-mono);">customer_info</div>
+                                </div>
+                            </div>
+                            <div style="display:flex; align-items:center; gap:var(--spacing-lg); padding:var(--spacing-md) var(--spacing-xl); cursor:pointer; border-left:2px solid transparent;">
+                                <i data-lucide="box" style="width:14px; height:14px; color:var(--color-text-secondary); flex-shrink:0;"></i>
+                                <div style="min-width:0;">
+                                    <div style="font-size:var(--font-size-sm); color:var(--color-text-primary);">产品目录</div>
+                                    <div style="font-size:var(--font-size-xs); color:var(--color-text-secondary); font-family:var(--font-mono);">product</div>
+                                </div>
+                            </div>
+                            <div style="display:flex; align-items:center; gap:var(--spacing-lg); padding:var(--spacing-md) var(--spacing-xl); cursor:pointer; border-left:2px solid transparent;">
+                                <i data-lucide="box" style="width:14px; height:14px; color:var(--color-text-secondary); flex-shrink:0;"></i>
+                                <div style="min-width:0;">
+                                    <div style="font-size:var(--font-size-sm); color:var(--color-text-primary);">订单管理</div>
+                                    <div style="font-size:var(--font-size-xs); color:var(--color-text-secondary); font-family:var(--font-mono);">order</div>
+                                </div>
+                            </div>
+                            <div style="display:flex; align-items:center; gap:var(--spacing-lg); padding:var(--spacing-md) var(--spacing-xl); cursor:pointer; border-left:2px solid transparent;">
+                                <i data-lucide="box" style="width:14px; height:14px; color:var(--color-text-secondary); flex-shrink:0;"></i>
+                                <div style="min-width:0;">
+                                    <div style="font-size:var(--font-size-sm); color:var(--color-text-primary);">员工档案</div>
+                                    <div style="font-size:var(--font-size-xs); color:var(--color-text-secondary); font-family:var(--font-mono);">employee</div>
+                                </div>
+                            </div>
+                            <div style="display:flex; align-items:center; gap:var(--spacing-lg); padding:var(--spacing-md) var(--spacing-xl); cursor:pointer; border-left:2px solid transparent;">
+                                <i data-lucide="box" style="width:14px; height:14px; color:var(--color-text-secondary); flex-shrink:0;"></i>
+                                <div style="min-width:0;">
+                                    <div style="font-size:var(--font-size-sm); color:var(--color-text-primary);">供应商</div>
+                                    <div style="font-size:var(--font-size-xs); color:var(--color-text-secondary); font-family:var(--font-mono);">supplier</div>
+                                </div>
+                            </div>
+                            <div style="display:flex; align-items:center; gap:var(--spacing-lg); padding:var(--spacing-md) var(--spacing-xl); cursor:pointer; border-left:2px solid transparent;">
+                                <i data-lucide="box" style="width:14px; height:14px; color:var(--color-text-secondary); flex-shrink:0;"></i>
+                                <div style="min-width:0;">
+                                    <div style="font-size:var(--font-size-sm); color:var(--color-text-primary);">工单系统</div>
+                                    <div style="font-size:var(--font-size-xs); color:var(--color-text-secondary); font-family:var(--font-mono);">ticket</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right panel -->
+                    <div style="flex:1; display:flex; flex-direction:column; min-width:0;">
+                        <!-- Sub tab bar -->
+                        <div style="display:flex; align-items:center; justify-content:space-between; padding:var(--spacing-md) var(--spacing-xl); border-bottom:1px solid var(--color-border);">
+                            <div style="display:flex; gap:var(--spacing-xl);">
+                                <button class="tab-item active">字段管理</button>
+                                <button class="tab-item">生命周期</button>
+                                <button class="tab-item">基本信息</button>
+                                <button class="tab-item">预览</button>
+                            </div>
+                            <button class="btn btn-primary" style="padding:var(--spacing-sm) var(--spacing-xl);"><i data-lucide="save" style="width:14px; height:14px;"></i>保存</button>
+                        </div>
+
+                        <!-- Table header -->
+                        <div style="display:flex; align-items:center; justify-content:space-between; padding:var(--spacing-lg) var(--spacing-xl);">
+                            <span style="font-size:var(--font-size-sm); font-weight:var(--font-weight-medium); color:var(--color-text-primary);">字段定义 (12)</span>
+                            <button class="btn"><i data-lucide="plus" style="width:14px; height:14px;"></i>添加字段</button>
+                        </div>
+
+                        <!-- Table -->
+                        <div style="flex:1; overflow-y:auto; padding:0 var(--spacing-xl);">
+                            <table style="width:100%; border-collapse:collapse; font-size:var(--font-size-sm);">
+                                <thead>
+                                    <tr style="border-bottom:1px solid var(--color-border); text-align:left;">
+                                        <th style="padding:var(--spacing-md) var(--spacing-lg); font-weight:var(--font-weight-medium); color:var(--color-text-secondary); font-size:var(--font-size-xs); text-transform:uppercase; letter-spacing:0.5px;">字段名</th>
+                                        <th style="padding:var(--spacing-md) var(--spacing-lg); font-weight:var(--font-weight-medium); color:var(--color-text-secondary); font-size:var(--font-size-xs); text-transform:uppercase; letter-spacing:0.5px;">显示名</th>
+                                        <th style="padding:var(--spacing-md) var(--spacing-lg); font-weight:var(--font-weight-medium); color:var(--color-text-secondary); font-size:var(--font-size-xs); text-transform:uppercase; letter-spacing:0.5px;">类型</th>
+                                        <th style="padding:var(--spacing-md) var(--spacing-lg); font-weight:var(--font-weight-medium); color:var(--color-text-secondary); font-size:var(--font-size-xs); text-transform:uppercase; letter-spacing:0.5px;">必填</th>
+                                        <th style="padding:var(--spacing-md) var(--spacing-lg); font-weight:var(--font-weight-medium); color:var(--color-text-secondary); font-size:var(--font-size-xs); text-transform:uppercase; letter-spacing:0.5px;">可编辑</th>
+                                        <th style="padding:var(--spacing-md) var(--spacing-lg); font-weight:var(--font-weight-medium); color:var(--color-text-secondary); font-size:var(--font-size-xs); text-transform:uppercase; letter-spacing:0.5px;">操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr style="border-bottom:1px solid var(--color-border);">
+                                        <td style="padding:var(--spacing-lg);"><span style="font-family:var(--font-mono); color:var(--color-primary);">customerName</span></td>
+                                        <td style="padding:var(--spacing-lg);">客户名称</td>
+                                        <td style="padding:var(--spacing-lg);"><span class="badge badge-default">文本</span></td>
+                                        <td style="padding:var(--spacing-lg);"><span class="badge badge-success">Yes</span></td>
+                                        <td style="padding:var(--spacing-lg); color:var(--color-text-secondary);">-</td>
+                                        <td style="padding:var(--spacing-lg);">
+                                            <div style="display:flex; gap:var(--spacing-sm);">
+                                                <button class="btn btn-ghost" style="padding:2px var(--spacing-sm); font-size:var(--font-size-xs);">编辑</button>
+                                                <button class="btn btn-ghost" style="padding:2px var(--spacing-sm); font-size:var(--font-size-xs); color:var(--state-error);">删除</button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr style="border-bottom:1px solid var(--color-border);">
+                                        <td style="padding:var(--spacing-lg);"><span style="font-family:var(--font-mono); color:var(--color-primary);">email</span></td>
+                                        <td style="padding:var(--spacing-lg);">邮箱</td>
+                                        <td style="padding:var(--spacing-lg);"><span class="badge badge-default">邮箱</span></td>
+                                        <td style="padding:var(--spacing-lg);"><span class="badge badge-success">Yes</span></td>
+                                        <td style="padding:var(--spacing-lg); color:var(--color-text-secondary);">-</td>
+                                        <td style="padding:var(--spacing-lg);">
+                                            <div style="display:flex; gap:var(--spacing-sm);">
+                                                <button class="btn btn-ghost" style="padding:2px var(--spacing-sm); font-size:var(--font-size-xs);">编辑</button>
+                                                <button class="btn btn-ghost" style="padding:2px var(--spacing-sm); font-size:var(--font-size-xs); color:var(--state-error);">删除</button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr style="border-bottom:1px solid var(--color-border);">
+                                        <td style="padding:var(--spacing-lg);"><span style="font-family:var(--font-mono); color:var(--color-primary);">phone</span></td>
+                                        <td style="padding:var(--spacing-lg);">电话</td>
+                                        <td style="padding:var(--spacing-lg);"><span class="badge badge-default">电话</span></td>
+                                        <td style="padding:var(--spacing-lg);"><span class="badge badge-default">No</span></td>
+                                        <td style="padding:var(--spacing-lg);"><span class="badge badge-success">Yes</span></td>
+                                        <td style="padding:var(--spacing-lg);">
+                                            <div style="display:flex; gap:var(--spacing-sm);">
+                                                <button class="btn btn-ghost" style="padding:2px var(--spacing-sm); font-size:var(--font-size-xs);">编辑</button>
+                                                <button class="btn btn-ghost" style="padding:2px var(--spacing-sm); font-size:var(--font-size-xs); color:var(--state-error);">删除</button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr style="border-bottom:1px solid var(--color-border);">
+                                        <td style="padding:var(--spacing-lg);"><span style="font-family:var(--font-mono); color:var(--color-primary);">createdAt</span></td>
+                                        <td style="padding:var(--spacing-lg);">创建时间</td>
+                                        <td style="padding:var(--spacing-lg);"><span class="badge badge-primary">日期</span></td>
+                                        <td style="padding:var(--spacing-lg);"><span class="badge badge-default">No</span></td>
+                                        <td style="padding:var(--spacing-lg);"><span class="badge badge-default">No</span></td>
+                                        <td style="padding:var(--spacing-lg);">
+                                            <div style="display:flex; gap:var(--spacing-sm);">
+                                                <button class="btn btn-ghost" style="padding:2px var(--spacing-sm); font-size:var(--font-size-xs);">编辑</button>
+                                                <button class="btn btn-ghost" style="padding:2px var(--spacing-sm); font-size:var(--font-size-xs); color:var(--state-error);">删除</button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr style="border-bottom:1px solid var(--color-border);">
+                                        <td style="padding:var(--spacing-lg);"><span style="font-family:var(--font-mono); color:var(--color-primary);">status</span></td>
+                                        <td style="padding:var(--spacing-lg);">状态</td>
+                                        <td style="padding:var(--spacing-lg);"><span class="badge badge-warning">枚举</span></td>
+                                        <td style="padding:var(--spacing-lg);"><span class="badge badge-success">Yes</span></td>
+                                        <td style="padding:var(--spacing-lg);"><span class="badge badge-default">No</span></td>
+                                        <td style="padding:var(--spacing-lg);">
+                                            <div style="display:flex; gap:var(--spacing-sm);">
+                                                <button class="btn btn-ghost" style="padding:2px var(--spacing-sm); font-size:var(--font-size-xs);">编辑</button>
+                                                <button class="btn btn-ghost" style="padding:2px var(--spacing-sm); font-size:var(--font-size-xs); color:var(--state-error);">删除</button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- NL bar -->
+                        <div style="border-top:1px solid var(--color-border); padding:var(--spacing-lg) var(--spacing-xl); display:flex; align-items:center; gap:var(--spacing-lg); background:var(--color-surface);">
+                            <i data-lucide="sparkles" style="width:16px; height:16px; color:var(--color-primary); flex-shrink:0;"></i>
+                            <input class="inp" style="flex:1; border:1px solid var(--color-border);" placeholder="用自然语言描述你的业务对象，AI 自动生成..." />
+                            <button class="btn btn-primary" style="flex-shrink:0;"><i data-lucide="wand-2" style="width:14px; height:14px;"></i>AI 建模</button>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+        </main>
+    </div>
+</div>
+<script>lucide.createIcons();</script>
+</body>
+</html>

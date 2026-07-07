@@ -865,6 +865,7 @@ const MIGRATIONS = [
   `ALTER TABLE knowledge_qa ADD COLUMN IF NOT EXISTS tags TEXT`,
   `ALTER TABLE process_triggers ADD COLUMN IF NOT EXISTS event_type TEXT`,
   `ALTER TABLE process_triggers ADD COLUMN IF NOT EXISTS enabled INTEGER DEFAULT 1`,
+  `ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash VARCHAR(255)`,
 ];
 
 // ═══════════════════════════════════════════════════════════
@@ -1083,6 +1084,17 @@ export async function initDB() {
         [r.id, r.name, r.label, JSON.stringify(r.permissions)]
       );
     }
+  }
+
+  // ─── Seed default admin user ──────────────────────────────
+  const userRes = wc.query("SELECT COUNT(*)::int AS cnt FROM users");
+  if (userRes.rows[0].cnt === 0) {
+    const adminId = "u-admin";
+    wc.query(
+      "INSERT INTO users (id, name, email, role, department, status) VALUES ($1, $2, $3, 'admin', '技术部', 'active') ON CONFLICT DO NOTHING",
+      [adminId, "管理员", "admin@metaplatform.com"]
+    );
+    console.log("[db-pg] Seeded default admin user: admin@metaplatform.com (password: admin123 -- login route has legacy fallback)");
   }
 
   // ─── Architecture Center seed data ─────────────────────

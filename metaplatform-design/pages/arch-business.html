@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>流程中心 - 审批流程 - MetaPlatform</title>
+    <title>架构中心 - 业务架构 - MetaPlatform</title>
     <style id="theme-vars">
 :root {
   --color-primary: #3b82f6;
@@ -76,9 +76,6 @@
     .btn-primary:hover { background: var(--color-primary-hover); }
     .btn-ghost { border-color: transparent; color: var(--color-text-secondary); }
     .btn-ghost:hover { background: var(--color-bg-secondary); }
-    .inp { width: 100%; padding: 6px 10px; font-size: var(--font-size-sm); border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-bg); color: var(--color-text-primary); outline: none; transition: border-color 0.15s; }
-    .inp:focus { border-color: var(--color-primary); box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.12); }
-    .inp::placeholder { color: var(--color-text-secondary); }
     .badge { display: inline-flex; align-items: center; padding: 1px 6px; font-size: var(--font-size-xs); font-weight: var(--font-weight-medium); border-radius: var(--radius-full); }
     .badge-default { background: var(--color-bg-secondary); color: var(--color-text-secondary); }
     .badge-primary { background: var(--color-primary-light); color: var(--color-primary); }
@@ -102,9 +99,9 @@
         <nav style="flex:1; overflow-y:auto; padding:var(--spacing-md) var(--spacing-md); display:flex; flex-direction:column; gap:1px;">
             <a class="nav-item" data-dom-id="nav-dashboard"><i data-lucide="layout-dashboard"></i><span>工作台</span></a>
             <a class="nav-item" data-dom-id="nav-superai"><i data-lucide="sparkles"></i><span>SuperAI</span></a>
-            <a class="nav-item" data-dom-id="nav-architecture"><i data-lucide="building-2"></i><span>架构中心</span></a>
+            <a class="nav-item" data-dom-id="nav-architecture" style="background: rgba(59,130,246,0.15); color: #60a5fa;"><i data-lucide="building-2"></i><span>架构中心</span></a>
             <a class="nav-item" data-dom-id="nav-apps"><i data-lucide="app-window"></i><span>应用中心</span></a>
-            <a class="nav-item" data-dom-id="nav-process" style="background: rgba(59,130,246,0.15); color: #60a5fa;"><i data-lucide="git-branch"></i><span>流程中心</span></a>
+            <a class="nav-item" data-dom-id="nav-process"><i data-lucide="git-branch"></i><span>流程中心</span></a>
             <a class="nav-item" data-dom-id="nav-data"><i data-lucide="database"></i><span>数据中心</span></a>
             <a class="nav-item" data-dom-id="nav-ontology"><i data-lucide="brain"></i><span>本体引擎</span></a>
             <a class="nav-item" data-dom-id="nav-quality"><i data-lucide="shield-check"></i><span>质量中心</span></a>
@@ -126,7 +123,7 @@
             <div style="width:260px; display:flex; align-items:center; gap:var(--spacing-sm); padding:var(--spacing-sm) var(--spacing-lg); border:1px solid var(--color-border); border-radius:var(--radius-md); background:var(--color-bg-secondary); cursor:pointer;">
                 <i data-lucide="search" style="width:14px; height:14px; color:var(--color-text-secondary);"></i>
                 <span style="font-size:var(--font-size-sm); color:var(--color-text-secondary); flex:1;">搜索或 AI 助手</span>
-                <span style="font-size:var(--font-size-xs); color:var(--color-text-secondary); background:var(--color-bg); padding:1px 4px; border-radius:var(--radius-sm); border:1px solid var(--color-border);">⌘K</span>
+                <span style="font-size:var(--font-size-xs); color:var(--color-text-secondary); background:var(--color-bg); padding:1px 4px; border-radius:var(--radius-sm); border:1px solid var(--color-border);">&#8984;K</span>
             </div>
             <div style="flex:1;"></div>
             <button style="position:relative; background:none; border:none; cursor:pointer; color:var(--color-text-secondary); padding:var(--spacing-sm);">
@@ -142,15 +139,10 @@
 
         <!-- TAB BAR -->
         <div style="border-bottom:1px solid var(--color-border); background:var(--color-surface); display:flex; padding:0 var(--spacing-xl); flex-shrink:0; overflow-x:auto;">
-            <button class="tab-item" data-tab="tab-business">业务流程</button>
-            <button class="tab-item active" data-tab="tab-process-approval">审批流程</button>
-            <button class="tab-item" data-tab="tab-service-orchestration">服务编排</button>
-            <button class="tab-item" data-tab="tab-process-instance">流程实例</button>
-            <button class="tab-item" data-tab="tab-approval-center">审批中心</button>
-            <button class="tab-item" data-tab="tab-trigger">触发器</button>
-            <button class="tab-item" data-tab="tab-process-analytics">流程分析</button>
-            <button class="tab-item" data-tab="tab-process-middleware">流程中台</button>
-            <button class="tab-item" data-tab="tab-process-export">流程导出</button>
+            <button class="tab-item active" data-tab="tab-arch-business">业务架构</button>
+            <button class="tab-item" data-tab="tab-arch-app">应用架构</button>
+            <button class="tab-item" data-tab="tab-arch-data">数据架构</button>
+            <button class="tab-item" data-tab="tab-arch-tech">技术架构</button>
         </div>
 
         <!-- PAGE CONTENT -->
@@ -161,166 +153,139 @@
                 <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:var(--spacing-2xl);">
                     <div>
                         <div style="display:flex; align-items:center; gap:var(--spacing-lg); margin-bottom:var(--spacing-xs);">
-                            <i data-lucide="git-branch" style="width:20px; height:20px; color:var(--color-primary);"></i>
-                            <h1 style="font-size:var(--font-size-xl); font-weight:var(--font-weight-semibold); color:var(--color-text-primary);">审批流程</h1>
+                            <i data-lucide="building-2" style="width:20px; height:20px; color:var(--color-primary);"></i>
+                            <h1 style="font-size:var(--font-size-xl); font-weight:var(--font-weight-semibold); color:var(--color-text-primary);">业务架构</h1>
                         </div>
-                        <p style="font-size:var(--font-size-sm); color:var(--color-text-secondary); margin-left:32px;">管理和设计审批工作流</p>
+                        <p style="font-size:var(--font-size-sm); color:var(--color-text-secondary); margin-left:32px;">组织级业务能力与流程视图</p>
                     </div>
-                    <button class="btn btn-primary"><i data-lucide="plus"></i> 新建流程</button>
+                    <button class="btn btn-primary"><i data-lucide="plus"></i> 新建业务域</button>
                 </div>
 
                 <!-- Stats -->
                 <div style="display:flex; gap:var(--spacing-lg); margin-bottom:var(--spacing-2xl);">
                     <div class="card" style="padding:var(--spacing-lg) var(--spacing-xl); flex:1; display:flex; align-items:center; gap:var(--spacing-lg);">
-                        <i data-lucide="file-text" style="width:16px; height:16px; color:var(--color-primary);"></i>
+                        <i data-lucide="layers" style="width:16px; height:16px; color:var(--color-primary);"></i>
                         <div>
-                            <div style="font-size:var(--font-size-sm); color:var(--color-text-secondary);">流程定义</div>
-                            <div style="font-size:var(--font-size-xl); font-weight:var(--font-weight-semibold); color:var(--color-text-primary);">8</div>
+                            <div style="font-size:var(--font-size-sm); color:var(--color-text-secondary);">业务域</div>
+                            <div style="font-size:var(--font-size-xl); font-weight:var(--font-weight-semibold); color:var(--color-text-primary);">5</div>
                         </div>
                     </div>
                     <div class="card" style="padding:var(--spacing-lg) var(--spacing-xl); flex:1; display:flex; align-items:center; gap:var(--spacing-lg);">
-                        <i data-lucide="play" style="width:16px; height:16px; color:var(--state-success);"></i>
+                        <i data-lucide="puzzle" style="width:16px; height:16px; color:var(--state-success);"></i>
                         <div>
-                            <div style="font-size:var(--font-size-sm); color:var(--color-text-secondary);">运行中</div>
-                            <div style="font-size:var(--font-size-xl); font-weight:var(--font-weight-semibold); color:var(--color-text-primary);">12</div>
+                            <div style="font-size:var(--font-size-sm); color:var(--color-text-secondary);">业务能力</div>
+                            <div style="font-size:var(--font-size-xl); font-weight:var(--font-weight-semibold); color:var(--color-text-primary);">23</div>
                         </div>
                     </div>
                     <div class="card" style="padding:var(--spacing-lg) var(--spacing-xl); flex:1; display:flex; align-items:center; gap:var(--spacing-lg);">
-                        <i data-lucide="check-circle" style="width:16px; height:16px; color:var(--color-primary);"></i>
+                        <i data-lucide="workflow" style="width:16px; height:16px; color:var(--state-warning);"></i>
                         <div>
-                            <div style="font-size:var(--font-size-sm); color:var(--color-text-secondary);">本月完成</div>
-                            <div style="font-size:var(--font-size-xl); font-weight:var(--font-weight-semibold); color:var(--color-text-primary);">156</div>
-                        </div>
-                    </div>
-                    <div class="card" style="padding:var(--spacing-lg) var(--spacing-xl); flex:1; display:flex; align-items:center; gap:var(--spacing-lg);">
-                        <i data-lucide="clock" style="width:16px; height:16px; color:var(--state-warning);"></i>
-                        <div>
-                            <div style="font-size:var(--font-size-sm); color:var(--color-text-secondary);">平均耗时</div>
-                            <div style="font-size:var(--font-size-xl); font-weight:var(--font-weight-semibold); color:var(--color-text-primary);">2.3h</div>
+                            <div style="font-size:var(--font-size-sm); color:var(--color-text-secondary);">业务流程</div>
+                            <div style="font-size:var(--font-size-xl); font-weight:var(--font-weight-semibold); color:var(--color-text-primary);">18</div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Process List Grid -->
+                <!-- Domain Cards Grid -->
                 <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:var(--spacing-lg);">
 
-                    <!-- Card 1: 费用审批流程 -->
+                    <!-- Card 1: 销售管理 -->
                     <div class="card" style="padding:var(--spacing-xl); display:flex; flex-direction:column;">
                         <div style="display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:var(--spacing-md);">
                             <div style="display:flex; align-items:center; gap:var(--spacing-md);">
-                                <i data-lucide="receipt" style="width:16px; height:16px; color:var(--color-primary);"></i>
-                                <span style="font-size:var(--font-size-base); font-weight:var(--font-weight-medium); color:var(--color-text-primary);">费用审批流程</span>
+                                <div style="width:32px; height:32px; border-radius:var(--radius-md); background:var(--color-primary-light); display:flex; align-items:center; justify-content:center;">
+                                    <i data-lucide="shopping-bag" style="width:16px; height:16px; color:var(--color-primary);"></i>
+                                </div>
+                                <span style="font-size:var(--font-size-base); font-weight:var(--font-weight-medium); color:var(--color-text-primary);">销售管理</span>
                             </div>
-                            <span class="badge badge-primary">v2.1</span>
                         </div>
-                        <p style="font-size:var(--font-size-xs); color:var(--color-text-secondary); margin-bottom:var(--spacing-lg); flex:1;">标准费用审批，金额&gt;10000需经理审批</p>
+                        <p style="font-size:var(--font-size-xs); color:var(--color-text-secondary); margin-bottom:var(--spacing-lg); flex:1;">管理客户关系、销售机会和订单全流程</p>
                         <div style="display:flex; align-items:center; gap:var(--spacing-lg); margin-bottom:var(--spacing-lg); font-size:var(--font-size-xs); color:var(--color-text-secondary);">
-                            <span>节点: <span style="font-weight:var(--font-weight-medium); color:var(--color-text-primary);">7</span></span>
-                            <span>边: <span style="font-weight:var(--font-weight-medium); color:var(--color-text-primary);">6</span></span>
+                            <span><i data-lucide="puzzle" style="width:12px; height:12px; vertical-align:-2px;"></i> 8个能力</span>
+                            <span><i data-lucide="workflow" style="width:12px; height:12px; vertical-align:-2px;"></i> 6个流程</span>
                         </div>
-                        <div style="display:flex; gap:var(--spacing-sm); border-top:1px solid var(--color-border); padding-top:var(--spacing-lg);">
-                            <button class="btn" style="flex:1; justify-content:center;"><i data-lucide="edit-2"></i> 编辑</button>
-                            <button class="btn btn-ghost" style="flex:1; justify-content:center;">查看实例</button>
+                        <div style="border-top:1px solid var(--color-border); padding-top:var(--spacing-lg);">
+                            <button class="btn" style="width:100%; justify-content:center;"><i data-lucide="eye"></i> 查看</button>
                         </div>
                     </div>
 
-                    <!-- Card 2: 请假审批流程 -->
+                    <!-- Card 2: 采购管理 -->
                     <div class="card" style="padding:var(--spacing-xl); display:flex; flex-direction:column;">
                         <div style="display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:var(--spacing-md);">
                             <div style="display:flex; align-items:center; gap:var(--spacing-md);">
-                                <i data-lucide="calendar-off" style="width:16px; height:16px; color:var(--color-primary);"></i>
-                                <span style="font-size:var(--font-size-base); font-weight:var(--font-weight-medium); color:var(--color-text-primary);">请假审批流程</span>
+                                <div style="width:32px; height:32px; border-radius:var(--radius-md); background:var(--color-primary-light); display:flex; align-items:center; justify-content:center;">
+                                    <i data-lucide="cart" style="width:16px; height:16px; color:var(--color-primary);"></i>
+                                </div>
+                                <span style="font-size:var(--font-size-base); font-weight:var(--font-weight-medium); color:var(--color-text-primary);">采购管理</span>
                             </div>
-                            <span class="badge badge-primary">v1.5</span>
                         </div>
-                        <p style="font-size:var(--font-size-xs); color:var(--color-text-secondary); margin-bottom:var(--spacing-lg); flex:1;">员工请假审批，3天以上需主管审批</p>
+                        <p style="font-size:var(--font-size-xs); color:var(--color-text-secondary); margin-bottom:var(--spacing-lg); flex:1;">供应商管理和采购流程全生命周期</p>
                         <div style="display:flex; align-items:center; gap:var(--spacing-lg); margin-bottom:var(--spacing-lg); font-size:var(--font-size-xs); color:var(--color-text-secondary);">
-                            <span>节点: <span style="font-weight:var(--font-weight-medium); color:var(--color-text-primary);">5</span></span>
-                            <span>边: <span style="font-weight:var(--font-weight-medium); color:var(--color-text-primary);">4</span></span>
+                            <span><i data-lucide="puzzle" style="width:12px; height:12px; vertical-align:-2px;"></i> 6个能力</span>
+                            <span><i data-lucide="workflow" style="width:12px; height:12px; vertical-align:-2px;"></i> 4个流程</span>
                         </div>
-                        <div style="display:flex; gap:var(--spacing-sm); border-top:1px solid var(--color-border); padding-top:var(--spacing-lg);">
-                            <button class="btn" style="flex:1; justify-content:center;"><i data-lucide="edit-2"></i> 编辑</button>
-                            <button class="btn btn-ghost" style="flex:1; justify-content:center;">查看实例</button>
+                        <div style="border-top:1px solid var(--color-border); padding-top:var(--spacing-lg);">
+                            <button class="btn" style="width:100%; justify-content:center;"><i data-lucide="eye"></i> 查看</button>
                         </div>
                     </div>
 
-                    <!-- Card 3: 采购审批流程 -->
+                    <!-- Card 3: 财务管理 -->
                     <div class="card" style="padding:var(--spacing-xl); display:flex; flex-direction:column;">
                         <div style="display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:var(--spacing-md);">
                             <div style="display:flex; align-items:center; gap:var(--spacing-md);">
-                                <i data-lucide="shopping-cart" style="width:16px; height:16px; color:var(--color-primary);"></i>
-                                <span style="font-size:var(--font-size-base); font-weight:var(--font-weight-medium); color:var(--color-text-primary);">采购审批流程</span>
+                                <div style="width:32px; height:32px; border-radius:var(--radius-md); background:var(--color-primary-light); display:flex; align-items:center; justify-content:center;">
+                                    <i data-lucide="landmark" style="width:16px; height:16px; color:var(--color-primary);"></i>
+                                </div>
+                                <span style="font-size:var(--font-size-base); font-weight:var(--font-weight-medium); color:var(--color-text-primary);">财务管理</span>
                             </div>
-                            <span class="badge badge-primary">v1.8</span>
                         </div>
-                        <p style="font-size:var(--font-size-xs); color:var(--color-text-secondary); margin-bottom:var(--spacing-lg); flex:1;">采购申请审批，超预算需总监审批</p>
+                        <p style="font-size:var(--font-size-xs); color:var(--color-text-secondary); margin-bottom:var(--spacing-lg); flex:1;">财务核算、预算管理与资金管控</p>
                         <div style="display:flex; align-items:center; gap:var(--spacing-lg); margin-bottom:var(--spacing-lg); font-size:var(--font-size-xs); color:var(--color-text-secondary);">
-                            <span>节点: <span style="font-weight:var(--font-weight-medium); color:var(--color-text-primary);">6</span></span>
-                            <span>边: <span style="font-weight:var(--font-weight-medium); color:var(--color-text-primary);">5</span></span>
+                            <span><i data-lucide="puzzle" style="width:12px; height:12px; vertical-align:-2px;"></i> 5个能力</span>
+                            <span><i data-lucide="workflow" style="width:12px; height:12px; vertical-align:-2px;"></i> 3个流程</span>
                         </div>
-                        <div style="display:flex; gap:var(--spacing-sm); border-top:1px solid var(--color-border); padding-top:var(--spacing-lg);">
-                            <button class="btn" style="flex:1; justify-content:center;"><i data-lucide="edit-2"></i> 编辑</button>
-                            <button class="btn btn-ghost" style="flex:1; justify-content:center;">查看实例</button>
+                        <div style="border-top:1px solid var(--color-border); padding-top:var(--spacing-lg);">
+                            <button class="btn" style="width:100%; justify-content:center;"><i data-lucide="eye"></i> 查看</button>
                         </div>
                     </div>
 
-                    <!-- Card 4: 合同审批流程 -->
+                    <!-- Card 4: 人力资源管理 -->
                     <div class="card" style="padding:var(--spacing-xl); display:flex; flex-direction:column;">
                         <div style="display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:var(--spacing-md);">
                             <div style="display:flex; align-items:center; gap:var(--spacing-md);">
-                                <i data-lucide="file-signature" style="width:16px; height:16px; color:var(--color-primary);"></i>
-                                <span style="font-size:var(--font-size-base); font-weight:var(--font-weight-medium); color:var(--color-text-primary);">合同审批流程</span>
+                                <div style="width:32px; height:32px; border-radius:var(--radius-md); background:var(--color-primary-light); display:flex; align-items:center; justify-content:center;">
+                                    <i data-lucide="users" style="width:16px; height:16px; color:var(--color-primary);"></i>
+                                </div>
+                                <span style="font-size:var(--font-size-base); font-weight:var(--font-weight-medium); color:var(--color-text-primary);">人力资源管理</span>
                             </div>
-                            <span class="badge badge-primary">v2.0</span>
                         </div>
-                        <p style="font-size:var(--font-size-xs); color:var(--color-text-secondary); margin-bottom:var(--spacing-lg); flex:1;">合同签署审批，法务审核+财务审核</p>
+                        <p style="font-size:var(--font-size-xs); color:var(--color-text-secondary); margin-bottom:var(--spacing-lg); flex:1;">招聘、培训、绩效考核与员工发展</p>
                         <div style="display:flex; align-items:center; gap:var(--spacing-lg); margin-bottom:var(--spacing-lg); font-size:var(--font-size-xs); color:var(--color-text-secondary);">
-                            <span>节点: <span style="font-weight:var(--font-weight-medium); color:var(--color-text-primary);">8</span></span>
-                            <span>边: <span style="font-weight:var(--font-weight-medium); color:var(--color-text-primary);">7</span></span>
+                            <span><i data-lucide="puzzle" style="width:12px; height:12px; vertical-align:-2px;"></i> 7个能力</span>
+                            <span><i data-lucide="workflow" style="width:12px; height:12px; vertical-align:-2px;"></i> 5个流程</span>
                         </div>
-                        <div style="display:flex; gap:var(--spacing-sm); border-top:1px solid var(--color-border); padding-top:var(--spacing-lg);">
-                            <button class="btn" style="flex:1; justify-content:center;"><i data-lucide="edit-2"></i> 编辑</button>
-                            <button class="btn btn-ghost" style="flex:1; justify-content:center;">查看实例</button>
+                        <div style="border-top:1px solid var(--color-border); padding-top:var(--spacing-lg);">
+                            <button class="btn" style="width:100%; justify-content:center;"><i data-lucide="eye"></i> 查看</button>
                         </div>
                     </div>
 
-                    <!-- Card 5: 报销审批流程 -->
+                    <!-- Card 5: 供应链管理 -->
                     <div class="card" style="padding:var(--spacing-xl); display:flex; flex-direction:column;">
                         <div style="display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:var(--spacing-md);">
                             <div style="display:flex; align-items:center; gap:var(--spacing-md);">
-                                <i data-lucide="banknote" style="width:16px; height:16px; color:var(--color-primary);"></i>
-                                <span style="font-size:var(--font-size-base); font-weight:var(--font-weight-medium); color:var(--color-text-primary);">报销审批流程</span>
+                                <div style="width:32px; height:32px; border-radius:var(--radius-md); background:var(--color-primary-light); display:flex; align-items:center; justify-content:center;">
+                                    <i data-lucide="truck" style="width:16px; height:16px; color:var(--color-primary);"></i>
+                                </div>
+                                <span style="font-size:var(--font-size-base); font-weight:var(--font-weight-medium); color:var(--color-text-primary);">供应链管理</span>
                             </div>
-                            <span class="badge badge-primary">v1.2</span>
                         </div>
-                        <p style="font-size:var(--font-size-xs); color:var(--color-text-secondary); margin-bottom:var(--spacing-lg); flex:1;">费用报销审批，超5000需财务审核</p>
+                        <p style="font-size:var(--font-size-xs); color:var(--color-text-secondary); margin-bottom:var(--spacing-lg); flex:1;">仓储物流与供应链协同管理</p>
                         <div style="display:flex; align-items:center; gap:var(--spacing-lg); margin-bottom:var(--spacing-lg); font-size:var(--font-size-xs); color:var(--color-text-secondary);">
-                            <span>节点: <span style="font-weight:var(--font-weight-medium); color:var(--color-text-primary);">5</span></span>
-                            <span>边: <span style="font-weight:var(--font-weight-medium); color:var(--color-text-primary);">4</span></span>
+                            <span><i data-lucide="puzzle" style="width:12px; height:12px; vertical-align:-2px;"></i> 4个能力</span>
+                            <span><i data-lucide="workflow" style="width:12px; height:12px; vertical-align:-2px;"></i> 2个流程</span>
                         </div>
-                        <div style="display:flex; gap:var(--spacing-sm); border-top:1px solid var(--color-border); padding-top:var(--spacing-lg);">
-                            <button class="btn" style="flex:1; justify-content:center;"><i data-lucide="edit-2"></i> 编辑</button>
-                            <button class="btn btn-ghost" style="flex:1; justify-content:center;">查看实例</button>
-                        </div>
-                    </div>
-
-                    <!-- Card 6: 入职审批流程 -->
-                    <div class="card" style="padding:var(--spacing-xl); display:flex; flex-direction:column;">
-                        <div style="display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:var(--spacing-md);">
-                            <div style="display:flex; align-items:center; gap:var(--spacing-md);">
-                                <i data-lucide="user-plus" style="width:16px; height:16px; color:var(--color-primary);"></i>
-                                <span style="font-size:var(--font-size-base); font-weight:var(--font-weight-medium); color:var(--color-text-primary);">入职审批流程</span>
-                            </div>
-                            <span class="badge badge-default">v1.0</span>
-                        </div>
-                        <p style="font-size:var(--font-size-xs); color:var(--color-text-secondary); margin-bottom:var(--spacing-lg); flex:1;">新员工入职审批流程</p>
-                        <div style="display:flex; align-items:center; gap:var(--spacing-lg); margin-bottom:var(--spacing-lg); font-size:var(--font-size-xs); color:var(--color-text-secondary);">
-                            <span>节点: <span style="font-weight:var(--font-weight-medium); color:var(--color-text-primary);">4</span></span>
-                            <span>边: <span style="font-weight:var(--font-weight-medium); color:var(--color-text-primary);">3</span></span>
-                        </div>
-                        <div style="display:flex; gap:var(--spacing-sm); border-top:1px solid var(--color-border); padding-top:var(--spacing-lg);">
-                            <button class="btn" style="flex:1; justify-content:center;"><i data-lucide="edit-2"></i> 编辑</button>
-                            <button class="btn btn-ghost" style="flex:1; justify-content:center;">查看实例</button>
+                        <div style="border-top:1px solid var(--color-border); padding-top:var(--spacing-lg);">
+                            <button class="btn" style="width:100%; justify-content:center;"><i data-lucide="eye"></i> 查看</button>
                         </div>
                     </div>
 

@@ -3,7 +3,8 @@
  */
 import express from "express";
 import cors from "cors";
-import { authenticate } from "./middleware/auth.js";
+import rateLimit from "express-rate-limit";
+import { authenticate, optionalAuth } from "./middleware/auth.js";
 
 /**
  * Wrap an async Express route handler so thrown/rejected errors
@@ -44,42 +45,64 @@ import { cacheMiddleware, redisHealthCheck } from "./middleware/cache.js";
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// ─── Rate Limiters ────────────────────────────────────────
+// General rate limiter: 100 requests per minute per IP
+const generalLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: "Too many requests, please try again later" },
+});
+
+// Auth rate limiter: 10 requests per minute per IP (stricter for login/register)
+const authLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: "Too many authentication attempts, please try again later" },
+});
+
 // ─── Middleware ──────────────────────────────────────────
 app.use(cors());                          // Allow all origins (dev mode)
 app.use(express.json());                  // Parse JSON bodies
-app.use(authenticate);                    // JWT authentication
+app.use(generalLimiter);                  // Apply general rate limiting
 
-// ─── Routes (with Redis cache for read-heavy endpoints) ─
-app.use("/api/auth", authRoutes);
-app.use("/api/apps", cacheMiddleware(30), appsRoutes);
-app.use("/api/ontology", cacheMiddleware(30), ontologyRoutes);
-app.use("/api/processes", cacheMiddleware(30), processesRoutes);
-app.use("/api/data", cacheMiddleware(30), dataRoutes);
-app.use("/api/knowledge", cacheMiddleware(30), knowledgeRoutes);
-app.use("/api/agents", cacheMiddleware(30), agentsRoutes);
-app.use("/api/admin", cacheMiddleware(30), adminRoutes);
-app.use("/api/messages", cacheMiddleware(15), messagesRoutes);
-app.use("/api/flowable", cacheMiddleware(30), flowableRoutes);
-app.use("/api/pages", cacheMiddleware(30), pagesRoutes);
-app.use("/api/export", exportRoutes);
-app.use("/api/llm", cacheMiddleware(30), llmRoutes);
-app.use("/api/dispatch", dispatchRoutes);
-app.use("/api/announcements", cacheMiddleware(15), announcementsRoutes);
-app.use("/api/todos", cacheMiddleware(15), todosRoutes);
-app.use("/api/quality", cacheMiddleware(30), qualityRoutes);
-app.use("/api/versions", cacheMiddleware(30), versionsRoutes);
-app.use("/api/triggers", cacheMiddleware(30), triggersRoutes);
-app.use("/api/export-history", cacheMiddleware(30), exportHistoryRoutes);
-app.use("/api/knowledge/qa", cacheMiddleware(15), knowledgeQaRoutes);
-app.use("/api/knowledge/graph", cacheMiddleware(60), knowledgeGraphRoutes);
-app.use("/api/market", cacheMiddleware(30), marketRoutes);
-app.use("/api/filesystem", cacheMiddleware(30), filesystemRoutes);
-app.use("/api/orchestrations", cacheMiddleware(30), orchestrationsRoutes);
-app.use("/api/ocr", cacheMiddleware(30), ocrRoutes);
-app.use("/api/architecture", cacheMiddleware(60), architectureRoutes);
+// ─── Routes ──────────────────────────────────────────────
+// Auth routes — PUBLIC for login/register, rate-limited separately
+app.use("/api/auth", authLimiter, authRoutes);
 
-// ─── Health check ───────────────────────────────────────
-app.get("/api/health", async (_req, res) => {
+// Protected API routes — require Bearer token
+app.use("/api/apps", authenticate, cacheMiddleware(30), appsRoutes);
+app.use("/api/ontology", authenticate, cacheMiddleware(30), ontologyRoutes);
+app.use("/api/processes", authenticate, cacheMiddleware(30), processesRoutes);
+app.use("/api/data", authenticate, cacheMiddleware(30), dataRoutes);
+app.use("/api/knowledge", authenticate, cacheMiddleware(30), knowledgeRoutes);
+app.use("/api/agents", authenticate, cacheMiddleware(30), agentsRoutes);
+app.use("/api/admin", authenticate, cacheMiddleware(30), adminRoutes);
+app.use("/api/messages", authenticate, cacheMiddleware(15), messagesRoutes);
+app.use("/api/flowable", authenticate, cacheMiddleware(30), flowableRoutes);
+app.use("/api/pages", authenticate, cacheMiddleware(30), pagesRoutes);
+app.use("/api/export", authenticate, exportRoutes);
+app.use("/api/llm", authenticate, cacheMiddleware(30), llmRoutes);
+app.use("/api/dispatch", authenticate, dispatchRoutes);
+app.use("/api/announcements", authenticate, cacheMiddleware(15), announcementsRoutes);
+app.use("/api/todos", authenticate, cacheMiddleware(15), todosRoutes);
+app.use("/api/quality", authenticate, cacheMiddleware(30), qualityRoutes);
+app.use("/api/versions", authenticate, cacheMiddleware(30), versionsRoutes);
+app.use("/api/triggers", authenticate, cacheMiddleware(30), triggersRoutes);
+app.use("/api/export-history", authenticate, cacheMiddleware(30), exportHistoryRoutes);
+app.use("/api/knowledge/qa", authenticate, cacheMiddleware(15), knowledgeQaRoutes);
+app.use("/api/knowledge/graph", authenticate, cacheMiddleware(60), knowledgeGraphRoutes);
+app.use("/api/market", authenticate, cacheMiddleware(30), marketRoutes);
+app.use("/api/filesystem", authenticate, cacheMiddleware(30), filesystemRoutes);
+app.use("/api/orchestrations", authenticate, cacheMiddleware(30), orchestrationsRoutes);
+app.use("/api/ocr", authenticate, cacheMiddleware(30), ocrRoutes);
+app.use("/api/architecture", authenticate, cacheMiddleware(60), architectureRoutes);
+
+// ─── Health check (public, optional auth) ────────────────
+app.get("/api/health", optionalAuth, async (_req, res) => {
   const redisStatus = await redisHealthCheck();
   const dbStatus = process.env.DATABASE_URL ? "postgresql" : "sqlite";
   res.json({
@@ -105,6 +128,6 @@ app.use((err, _req, res, _next) => {
 // ─── Start server ───────────────────────────────────────
 app.listen(PORT, () => {
   console.log(`\n  MetaPlatform API server running at:`);
-  console.log(`  → http://localhost:${PORT}`);
-  console.log(`  → Press Ctrl+C to stop\n`);
+  console.log(`  -> http://localhost:${PORT}`);
+  console.log(`  -> Press Ctrl+C to stop\n`);
 });
