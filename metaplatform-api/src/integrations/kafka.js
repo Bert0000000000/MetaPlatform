@@ -47,7 +47,12 @@ export async function connect() {
       clientId: KAFKA_CLIENT_ID,
       brokers: KAFKA_BROKERS,
       logLevel: logLevel.WARN,
-      retry: { retries: 5, initialRetryTime: 300 },
+      // Don't spin on broker failures — the runtime API has its own 5s publish
+      // timeout. Kafka client retries just cause log noise and can starve the
+      // event loop on slow networks.
+      retry: { retries: 1, initialRetryTime: 200, maxRetryTime: 1000 },
+      connectionTimeout: 3000,
+      requestTimeout: 5000,
     });
 
     producer = kafka.producer({ allowAutoTopicCreation: true });

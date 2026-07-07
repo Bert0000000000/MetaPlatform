@@ -97,6 +97,16 @@ router.post("/process-definitions/deploy", upload.single("file"), (req, res) => 
 
 // ─── Process Definitions ──────────────────────────────────
 
+/** GET /management/* — Forward as-is to /management/* (engine status etc.) */
+router.get(/^\/management\/.*/, async (req, res) => {
+  return proxyToFlowable(req, res, { path: req.path.replace(/^\/api\/flowable/, "").replace(/^\/flowable/, "") });
+});
+
+/** GET /repository/* — Forward as-is (covers process-definitions etc.) */
+router.get(/^\/repository\/.*/, async (req, res) => {
+  return proxyToFlowable(req, res, { path: req.path.replace(/^\/api\/flowable/, "").replace(/^\/flowable/, "") });
+});
+
 /** GET /process-definitions — List deployed process definitions */
 router.get("/process-definitions", async (req, res) => {
   return proxyToFlowable(req, res, { path: "/repository/process-definitions" });

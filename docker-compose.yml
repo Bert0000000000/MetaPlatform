@@ -97,6 +97,32 @@ services:
     volumes:
       - kafkadata:/var/lib/kafka/data
 
+  # ── Flowable BPMN Engine (process orchestration) ───────────
+  flowable-rest:
+    image: flowable/flowable-rest:6.5.0
+    container_name: mp-flowable-rest
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:h2:mem:flowable;DB_CLOSE_DELAY=-1
+      - SPRING_DATASOURCE_DRIVER_CLASS_NAME=org.h2.Driver
+      - SPRING_DATASOURCE_USERNAME=sa
+      - SPRING_DATASOURCE_PASSWORD=
+      # flowable.rest.app is the prefix for RestAppProperties
+      # (verified by inspecting RestAppProperties.class in /app.war).
+      # Security is always on; basic auth admin is seeded from these vars
+      # by BootstrapConfiguration#initDefaultAdminUserAndPrivilegesRunner
+      # on first boot when no admin user exists.
+      - FLOWABLE_REST_APP_ADMIN_USER_ID=admin
+      - FLOWABLE_REST_APP_ADMIN_PASSWORD=test
+      - SERVER_PORT=8080
+    ports:
+      - "8081:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8080/flowable-rest/service/management/engine || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+
   # ── ClickHouse (analytics OLAP — Phase 3) ─────────────
   clickhouse:
     image: clickhouse/clickhouse-server:24.3

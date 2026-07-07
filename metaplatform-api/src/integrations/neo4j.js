@@ -90,13 +90,29 @@ export async function queryGraph(cypher, params = {}) {
 
   const session = driver.session({ database: NEO4J_DATABASE });
   try {
-    const result = await session.run(cypher, params);
+    // Race session.run() against a 5s timeout so a hung driver never blocks
+    // the API event loop.
+    const runPromise = session.run(cypher, params);
+    const result = await Promise.race([
+      runPromise,
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("neo4j_query_timeout_5s")), 5000)
+      ),
+    ]);
     return result.records.map((record) => record.toObject());
   } catch (err) {
     console.error("[Neo4j] queryGraph error:", err.message);
+    // Force-close the session on error/timeout
+    try { await session.close(); } catch {}
+    // Reset driver so next call reconnects fresh
+    if (err.message.includes("timeout")) {
+      try { await driver.close(); } catch {}
+      driver = null;
+      connected = false;
+    }
     throw err;
   } finally {
-    await session.close();
+    try { await session.close(); } catch {}
   }
 }
 
