@@ -7,6 +7,7 @@ import http from "http";
 import https from "https";
 import db from "../db.js";
 import { tenantGuard } from "../middleware/tenant.js";
+import { buildTemplateSeed, listTemplateKeys } from "../templates/apps.js";
 
 const router = Router();
 
@@ -93,24 +94,133 @@ router.get("/:id", async (req, res, next) => {
 });
 
 // ─── POST / ── create application ───────────────────────
+//
+// Accepts an optional `template` key (e.g. "crm", "bi", "bpm"). When the
+// key maps to a known template we seed the new application with its
+// ontology objects (+ their fields), app pages, and process
+// definitions so the user lands on a usable application instead of an
+// empty shell. Unknown template values fall back to the empty install
+// for forward-compatibility.
 router.post("/", tenantGuard, async (req, res, next) => {
   try {
-    const { name, description, category, icon } = req.body;
+    const { name, description, category, icon, template } = req.body;
     if (!name || !category || !icon) {
       return res.status(400).json({ success: false, error: "name, category, icon 为必填项" });
     }
     const id = uuid();
-    const now = new Date().toISOString();
+    const now = NOW();
+    const seed = template ? buildTemplateSeed(template) : null;
+    const objectsCount = seed?.objects?.length ?? 0;
+    const pagesCount   = seed?.pages?.length   ?? 0;
+    const flowsCount   = seed?.flows?.length   ?? 0;
+
     await db.prepare(
-      `INSERT INTO applications (id, name, description, category, icon, status, version, owner_id, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, 'draft', 'v0.1', ?, ?, ?)`
-    ).run(id, name, description || "", category, icon, req.user?.id || null, now, now);
+      `INSERT INTO applications (id, name, description, category, icon, status, version,
+                                  owner_id, objects_count, pages_count, flows_count,
+                                  created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, 'draft', 'v0.1', ?, ?, ?, ?, ?, ?)`
+    ).run(
+      id, name, description || "", category, icon,
+      req.user?.id || null,
+      objectsCount, pagesCount, flowsCount,
+      now, now,
+    );
+
+    // Persist template sub-resources, if any.
+    let seeded = null;
+    if (seed) {
+      seeded = await applyTemplateSeed(id, seed, now);
+    }
+
     const row = await db.prepare("SELECT * FROM applications WHERE id = ?").get(id);
-    res.status(201).json({ success: true, data: row });
-  } catch (err) {
-    next(err);
-  }
+    const responseRow = seeded
+      ? { ...row, _seedSummary: `${seeded.objects} 对象 · ${seeded.pages} 页面 · ${seeded.flows} 流程` }
+      : row;
+    res.status(201).json({
+      success: true,
+      data: responseRow,
+      seeded: seeded || undefined,
+      template: template || null,
+      availableTemplates: listTemplateKeys(),
+    });
+  } catch (err) { next(err); }
 });
+
+/* ── helpers (scoped to this route module) ── */
+function NOW() { return new Date().toISOString(); }
+
+/**
+ * Persist ontology objects + properties, app pages, and process
+ * definitions for a freshly-created application. Returns a small
+ * summary so the response can echo what was installed.
+ */
+async function applyTemplateSeed(appId, seed, now) {
+  let objectsCreated = 0;
+  let propertiesCreated = 0;
+  let pagesCreated = 0;
+  let flowsCreated = 0;
+
+  for (const obj of seed.objects || []) {
+    const objectId = uuid();
+    await db.prepare(
+      `INSERT INTO ontology_objects (id, app_id, name, label, description, icon, status,
+                                     properties_count, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, 'active', ?, ?, ?)`
+    ).run(
+      objectId, appId, obj.name, obj.label, obj.description || null, obj.icon || null,
+      (obj.properties || []).length, now, now,
+    );
+    for (const prop of obj.properties || []) {
+      await db.prepare(
+        `INSERT INTO ontology_properties (id, object_id, name, label, type, required,
+                                          unique_field, default_value, description,
+                                          sort_order, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      ).run(
+        uuid(), objectId, prop.name, prop.label,
+        prop.type || "text",
+        prop.required ? 1 : 0,
+        prop.unique_field ? 1 : 0,
+        prop.default_value ?? null,
+        prop.description || null,
+        prop.sort_order ?? 0,
+        now,
+      );
+      propertiesCreated++;
+    }
+    objectsCreated++;
+  }
+
+  for (const page of seed.pages || []) {
+    await db.prepare(
+      `INSERT INTO app_pages (id, app_id, name, type, icon, status, sort_order, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, 'draft', ?, ?, ?)`
+    ).run(
+      uuid(), appId, page.name, page.type || "list", page.icon || null,
+      page.sort_order ?? 0, now, now,
+    );
+    pagesCreated++;
+  }
+
+  for (const flow of seed.flows || []) {
+    await db.prepare(
+      `INSERT INTO process_definitions (id, app_id, name, type, status, version, bpmn_xml, description, created_at, updated_at)
+       VALUES (?, ?, ?, ?, 'draft', 1, ?, ?, ?, ?)`
+    ).run(
+      uuid(), appId, flow.name, flow.type || "business",
+      flow.bpmn_xml || null, flow.description || null,
+      now, now,
+    );
+    flowsCreated++;
+  }
+
+  return {
+    objects: objectsCreated,
+    properties: propertiesCreated,
+    pages: pagesCreated,
+    flows: flowsCreated,
+  };
+}
 
 // ─── PUT /:id ── update application ─────────────────────
 router.put("/:id", async (req, res, next) => {

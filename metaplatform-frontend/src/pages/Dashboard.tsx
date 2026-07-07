@@ -185,17 +185,25 @@ export function DashboardPage() {
     if (installingKey) return;
     setInstallingKey(tpl.key);
     try {
+      // Pass the template key so the backend can seed the matching
+      // ontology objects / pages / process definitions. Without this
+      // the application is just an empty shell — modules stay blank.
       const created = await appsApi.create({
         name: tpl.name,
         description: tpl.desc,
         category: tpl.category,
         icon: tpl.iconName,
+        template: tpl.key,
       } as any);
       setApps((prev) => [created, ...prev]);
       setInstalledFromTemplates((prev) => [...prev, created]);
-      setToast(`已安装：${tpl.name}`);
+      const summary = (created as any)?._seedSummary;
+      const hint = summary
+        ? `已安装：${tpl.name} · ${summary}`
+        : `已安装：${tpl.name}`;
+      setToast(hint);
       // Small delay so the toast registers visually before navigation.
-      setTimeout(() => navigate(`/apps/${created.id}/overview`), 250);
+      setTimeout(() => navigate(`/apps/${created.id}/overview`), 350);
     } catch (err) {
       const reason = err instanceof Error ? err.message : String(err);
       setToast(`安装失败：${reason}`);
