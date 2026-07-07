@@ -1234,6 +1234,11 @@ if (mApiCount === 0) {
     // historical environments. We persist the historical slug here
     // so we can re-attach after a platform restart.
     ["runtime_alias_slug",  "TEXT"],
+    // Initial deploy environment selected at app creation time
+    // (dev/test/staging/prod). Persisted so the platform knows which
+    // build ring the app was first deployed into; later promotion
+    // moves through the app_publications table.
+    ["environment",         "TEXT NOT NULL DEFAULT 'dev'"],
   ];
   for (const [name, decl] of adds) {
     if (!cols.includes(name)) {

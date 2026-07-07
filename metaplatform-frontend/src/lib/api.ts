@@ -87,7 +87,7 @@ export const appsApi = {
     return request<Application[]>(`/apps${qs}`);
   },
   get: (id: string) => request<Application>(`/apps/${id}`),
-  create: (data: Partial<Application>) =>
+  create: (data: Partial<Application> & { environment?: string }) =>
     request<Application>("/apps", {
       method: "POST",
       body: JSON.stringify(data),
@@ -99,6 +99,7 @@ export const appsApi = {
     icon?: string;
     description?: string;
     category?: string;
+    environment?: string;
   }) =>
     request<Application>("/apps/clone", {
       method: "POST",
@@ -1034,6 +1035,8 @@ export interface Application {
   runtime_container_id?: string | null;
   runtime_port?: number | null;
   runtime_mode?: "container" | "degraded" | null;
+  /** F3.5.5 多环境发布 — initial deploy ring (dev/test/staging/prod) */
+  environment?: "dev" | "test" | "staging" | "prod";
   created_at?: string;
   updated_at?: string;
 }

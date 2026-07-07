@@ -114,12 +114,14 @@ export default function NewAppWizard() {
               icon: state.icon || undefined,
               description: state.description || undefined,
               category: state.category,
+              environment: state.deployEnv,
             })
           : await appsApi.create({
               name: state.name,
               description: state.description,
               category: state.category,
               icon: state.icon,
+              environment: state.deployEnv,
             });
       navigate(`/apps/${newApp.id}/overview`);
     } catch (err: unknown) {

@@ -68,14 +68,18 @@ router.post("/clone", async (req, res, next) => {
     const newId = "app-" + Math.random().toString(36).slice(2, 10);
     const name = (req.body.name && String(req.body.name).trim()) || `${src.name} (副本)`;
     const now = new Date().toISOString();
+    const env = ["dev", "test", "staging", "prod"].includes(req.body.environment)
+      ? req.body.environment
+      : (src.environment ?? "dev");
 
     // ── 1. Insert new application row (draft, no slug) ──
     await db.prepare(
       `INSERT INTO applications
        (id, name, description, category, icon, status, app_slug,
-        objects_count, pages_count, flows_count, publish_config, created_at, updated_at)
+        objects_count, pages_count, flows_count, publish_config, environment,
+        created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, 'draft', NULL,
-               ?, ?, ?, ?, ?, ?)`
+               ?, ?, ?, ?, ?, ?, ?)`
     ).run(
       newId,
       name,
@@ -86,6 +90,7 @@ router.post("/clone", async (req, res, next) => {
       src.pages_count ?? 0,
       src.flows_count ?? 0,
       src.publish_config ?? null,
+      env,
       now, now
     );
 
@@ -210,7 +215,7 @@ router.get("/:id", async (req, res, next) => {
 // for forward-compatibility.
 router.post("/", tenantGuard, async (req, res, next) => {
   try {
-    const { name, description, category, icon, template } = req.body;
+    const { name, description, category, icon, template, environment } = req.body;
     if (!name || !category || !icon) {
       return res.status(400).json({ success: false, error: "name, category, icon 为必填项" });
     }
@@ -220,16 +225,19 @@ router.post("/", tenantGuard, async (req, res, next) => {
     const objectsCount = seed?.objects?.length ?? 0;
     const pagesCount   = seed?.pages?.length   ?? 0;
     const flowsCount   = seed?.flows?.length   ?? 0;
+    // Sanitise environment to the four known rings
+    const env = ["dev", "test", "staging", "prod"].includes(environment) ? environment : "dev";
 
     await db.prepare(
       `INSERT INTO applications (id, name, description, category, icon, status, version,
                                   owner_id, objects_count, pages_count, flows_count,
-                                  created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, 'draft', 'v0.1', ?, ?, ?, ?, ?, ?)`
+                                  environment, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, 'draft', 'v0.1', ?, ?, ?, ?, ?, ?, ?)`
     ).run(
       id, name, description || "", category, icon,
       req.user?.id || null,
       objectsCount, pagesCount, flowsCount,
+      env,
       now, now,
     );
 
