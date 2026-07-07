@@ -92,6 +92,18 @@ export const appsApi = {
       method: "POST",
       body: JSON.stringify(data),
     }),
+  // F4.1.7 复制现有应用
+  clone: (data: {
+    sourceAppId: string;
+    name: string;
+    icon?: string;
+    description?: string;
+    category?: string;
+  }) =>
+    request<Application>("/apps/clone", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
   update: (id: string, data: Partial<Application>) =>
     request<Application>(`/apps/${id}`, {
       method: "PUT",

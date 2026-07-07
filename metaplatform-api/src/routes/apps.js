@@ -51,6 +51,105 @@ router.get("/", async (req, res, next) => {
   }
 });
 
+// ─── POST /clone ── F4.1.7 复制现有应用 ────────────────
+// Body: { sourceAppId, name, icon?, description?, category? }
+// Copies the source row plus all its app_pages / app_config / flows /
+// ontology rows into a new application with the given name and a fresh
+// id. The cloned app starts as status='draft' so the user can review
+// before publishing.
+router.post("/clone", async (req, res, next) => {
+  try {
+    const { sourceAppId } = req.body || {};
+    if (!sourceAppId) return res.status(400).json({ success: false, error: "sourceAppId required" });
+
+    const src = await db.prepare("SELECT * FROM applications WHERE id = ?").get(sourceAppId);
+    if (!src) return res.status(404).json({ success: false, error: "Source app not found" });
+
+    const newId = "app-" + Math.random().toString(36).slice(2, 10);
+    const name = (req.body.name && String(req.body.name).trim()) || `${src.name} (副本)`;
+    const now = new Date().toISOString();
+
+    // ── 1. Insert new application row (draft, no slug) ──
+    await db.prepare(
+      `INSERT INTO applications
+       (id, name, description, category, icon, status, app_slug,
+        objects_count, pages_count, flows_count, publish_config, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, 'draft', NULL,
+               ?, ?, ?, ?, ?, ?)`
+    ).run(
+      newId,
+      name,
+      req.body.description ?? src.description ?? null,
+      req.body.category ?? src.category ?? "通用",
+      req.body.icon ?? src.icon ?? null,
+      src.objects_count ?? 0,
+      src.pages_count ?? 0,
+      src.flows_count ?? 0,
+      src.publish_config ?? null,
+      now, now
+    );
+
+    // ── 2. Copy app_pages ──
+    // Schema: id, app_id, name, type, icon, status, config, sort_order, created_at, updated_at
+    try {
+      const pageRows = await db.prepare("SELECT * FROM app_pages WHERE app_id = ?").all(sourceAppId);
+      for (const p of pageRows) {
+        await db.prepare(
+          `INSERT INTO app_pages
+           (id, app_id, name, type, icon, status, config, sort_order, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        ).run(
+          "pg-" + Math.random().toString(36).slice(2, 10),
+          newId, p.name, p.type, p.icon, p.status ?? "draft",
+          p.config, p.sort_order ?? 0, now, now
+        );
+      }
+    } catch (err) {
+      // Table might not exist on older db schemas — log but don't fail the clone
+      if (!/no such table/i.test(String(err?.message))) throw err;
+    }
+
+    // ── 3. Copy app_config (best-effort — schema is untyped so we
+    //    fall back to SELECT * and INSERT * if the table exists) ──
+    try {
+      const cfgInfo = await db.prepare("PRAGMA table_info(app_config)").all();
+      if (cfgInfo.length > 0) {
+        const cols = cfgInfo.map((c) => c.name);
+        const cfgRows = await db.prepare(`SELECT * FROM app_config WHERE app_id = ?`).all(sourceAppId);
+        for (const c of cfgRows) {
+          // Skip columns that don't exist on a heterogeneous schema
+          const values = cols.map((col) => (col === "id" ? `cfg-${Math.random().toString(36).slice(2, 10)}` : (c[col] ?? null)));
+          const placeholders = cols.map(() => "?").join(",");
+          await db.prepare(`INSERT INTO app_config (${cols.join(",")}) VALUES (${placeholders})`).run(...values);
+        }
+      }
+    } catch (err) {
+      if (!/no such table/i.test(String(err?.message))) throw err;
+    }
+
+    // ── 4. Copy flows (best-effort) ──
+    try {
+      const flowInfo = await db.prepare("PRAGMA table_info(flows)").all();
+      if (flowInfo.length > 0) {
+        const cols = flowInfo.map((c) => c.name);
+        const flowRows = await db.prepare(`SELECT * FROM flows WHERE app_id = ?`).all(sourceAppId);
+        for (const f of flowRows) {
+          const values = cols.map((col) => (col === "id" ? `fl-${Math.random().toString(36).slice(2, 10)}` : (f[col] ?? null)));
+          const placeholders = cols.map(() => "?").join(",");
+          await db.prepare(`INSERT INTO flows (${cols.join(",")}) VALUES (${placeholders})`).run(...values);
+        }
+      }
+    } catch (err) {
+      if (!/no such table/i.test(String(err?.message))) throw err;
+    }
+
+    const fresh = await db.prepare("SELECT * FROM applications WHERE id = ?").get(newId);
+    res.json({ success: true, data: fresh });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // ─── GET /published ── list all published apps (public) ───
 router.get("/published", async (_req, res, next) => {
   try {

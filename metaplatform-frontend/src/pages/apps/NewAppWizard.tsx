@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,15 +6,18 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Check, ChevronLeft, ChevronRight, Sparkles, Database, Wand2, FileEdit, BookOpen, Dna, Bot, Handshake, Package, Building2, Users, ClipboardList, BarChart3, Loader2, Zap } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Check, ChevronLeft, ChevronRight, Sparkles, Database, Wand2, FileEdit, BookOpen, Dna, Bot, Handshake, Package, Building2, Users, ClipboardList, BarChart3, Loader2, Zap, Copy } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { appsApi } from "@/lib/api";
+import type { Application } from "@/lib/api";
 
 type Step = 1 | 2 | 3 | 4;
 
 const CREATE_TYPES = [
   { id: "blank", title: "空白应用", desc: "从零开始，完全自定义数据模型与流程", icon: FileEdit },
-  { id: "template", title: "模板创建", desc: "从行业模板快速构建（CRM/ERP/OA...）", icon: BookOpen },
+  { id: "template", title: "行业模板", desc: "从行业模板快速构建（CRM/ERP/OA...）", icon: BookOpen },
+  { id: "clone", title: "复制现有应用", desc: "基于已有应用复制，自动带入对象、页面与流程", icon: Copy },
   { id: "ontology", title: "本体驱动", desc: "先定义业务对象，自动生成页面与流程", icon: Dna },
   { id: "ai", title: "AI 对话创建", desc: "用自然语言描述需求，AI 自动生成", icon: Bot },
 ];
@@ -38,6 +41,8 @@ const DATA_SOURCES = [
 interface WizardState {
   createType: string;
   template: string;
+  /** F4.1.7 复制现有应用 — 源应用 id (selected from /apps) */
+  sourceAppId: string;
   name: string;
   icon: string;
   description: string;
@@ -49,6 +54,7 @@ interface WizardState {
 const INITIAL: WizardState = {
   createType: "blank",
   template: "",
+  sourceAppId: "",
   name: "",
   icon: "",
   description: "",
@@ -65,12 +71,27 @@ export default function NewAppWizard() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   // F4.4.9.1 NoCode 模式
   const [noCodeMode, setNoCodeMode] = useState(false);
+  // F4.1.7 复制现有应用 — 用于 Step 1 选源应用
+  const [sourceApps, setSourceApps] = useState<Application[]>([]);
+  const [loadingSources, setLoadingSources] = useState(false);
+
+  useEffect(() => {
+    setLoadingSources(true);
+    appsApi.list({ status: "published" })
+      .then((rows) => setSourceApps(Array.isArray(rows) ? rows : []))
+      .catch(() => setSourceApps([]))
+      .finally(() => setLoadingSources(false));
+  }, []);
 
   const update = <K extends keyof WizardState>(k: K, v: WizardState[K]) =>
     setState((s) => ({ ...s, [k]: v }));
 
   const canNext = () => {
-    if (step === 1) return !!state.createType;
+    if (step === 1) {
+      if (!state.createType) return false;
+      if (state.createType === "clone") return !!state.sourceAppId;
+      return true;
+    }
     if (step === 2) return !!state.name && state.name.length >= 2;
     if (step === 3) return !!state.dataSource;
     return true;
@@ -84,12 +105,22 @@ export default function NewAppWizard() {
     setSubmitting(true);
     setSubmitError(null);
     try {
-      const newApp = await appsApi.create({
-        name: state.name,
-        description: state.description,
-        category: state.category,
-        icon: state.icon,
-      });
+      // F4.1.7 复制现有应用走专门的 clone endpoint，其它方式走 create
+      const newApp =
+        state.createType === "clone"
+          ? await appsApi.clone({
+              sourceAppId: state.sourceAppId,
+              name: state.name,
+              icon: state.icon || undefined,
+              description: state.description || undefined,
+              category: state.category,
+            })
+          : await appsApi.create({
+              name: state.name,
+              description: state.description,
+              category: state.category,
+              icon: state.icon,
+            });
       navigate(`/apps/${newApp.id}/overview`);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "创建应用失败";
@@ -204,6 +235,51 @@ export default function NewAppWizard() {
                       </button>
                     ))}
                   </div>
+                </div>
+              )}
+
+              {/* F4.1.7 复制现有应用 */}
+              {state.createType === "clone" && (
+                <div className="border-t pt-4 mt-4 space-y-2">
+                  <Label className="text-sm">选择源应用（基于已发布应用复制）</Label>
+                  {loadingSources ? (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Loader2 className="size-4 animate-spin" />加载中…
+                    </div>
+                  ) : sourceApps.length === 0 ? (
+                    <div className="text-sm text-muted-foreground">
+                      暂无可用的已发布应用
+                    </div>
+                  ) : (
+                    <Select
+                      value={state.sourceAppId}
+                      onValueChange={(v) => {
+                        const src = sourceApps.find((a) => a.id === v);
+                        update("sourceAppId", v);
+                        if (src) {
+                          // Pre-fill name with "(副本)" suffix and inherit category
+                          update("name", `${src.name} (副本)`);
+                          update("category", src.category || "通用");
+                          update("description", src.description || "");
+                        }
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="选择要复制的应用…" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {sourceApps.map((a) => (
+                          <SelectItem key={a.id} value={a.id}>
+                            {a.name}
+                            {a.app_slug ? ` · /${a.app_slug}` : ""}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                  <p className="text-xs text-muted-foreground">
+                    将自动带入所选应用的对象、页面与流程配置，并在 Step 4 确认时发起复制请求。
+                  </p>
                 </div>
               )}
             </div>
@@ -333,6 +409,12 @@ export default function NewAppWizard() {
                 <Row label="创建方式" value={CREATE_TYPES.find((t) => t.id === state.createType)?.title ?? ""} />
                 {state.template && (
                   <Row label="使用模板" value={TEMPLATES.find((t) => t.id === state.template)?.name ?? ""} />
+                )}
+                {state.createType === "clone" && state.sourceAppId && (
+                  <Row
+                    label="复制源应用"
+                    value={sourceApps.find((a) => a.id === state.sourceAppId)?.name ?? state.sourceAppId}
+                  />
                 )}
                 <Row label="应用名称" value={`${state.icon} ${state.name}`} />
                 {state.description && <Row label="描述" value={state.description} />}
