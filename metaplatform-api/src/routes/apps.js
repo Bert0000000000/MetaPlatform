@@ -811,6 +811,25 @@ router.put("/:id/config/:key", async (req, res, next) => {
   }
 });
 
+// ─── DELETE /:id/config/:key ── delete a config entry ──
+router.delete("/:id/config/:key", async (req, res, next) => {
+  try {
+    const app = await db.prepare("SELECT id FROM applications WHERE id = ?").get(req.params.id);
+    if (!app) return res.status(404).json({ success: false, error: "应用不存在" });
+
+    const result = await db.prepare(
+      "DELETE FROM app_configs WHERE app_id = ? AND key = ?"
+    ).run(req.params.id, req.params.key);
+
+    if (result.changes === 0) {
+      return res.status(404).json({ success: false, error: "配置项不存在" });
+    }
+    res.json({ success: true, data: { deleted: req.params.key } });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // ════════════════════════════════════════════════════════
 //  Advanced Integrations
 // ════════════════════════════════════════════════════════

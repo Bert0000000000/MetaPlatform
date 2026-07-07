@@ -514,6 +514,9 @@ export default function AppConfig() {
             <TabsTrigger value="integration" className="w-full justify-start data-[state=active]:bg-muted">
               <Link2 className="size-4 mr-2" /> 集成
             </TabsTrigger>
+            <TabsTrigger value="env" className="w-full justify-start data-[state=active]:bg-muted">
+              <Server className="size-4 mr-2" /> 环境变量
+            </TabsTrigger>
           </TabsList>
 
           <div className="flex-1 space-y-4">
@@ -1001,6 +1004,9 @@ export default function AppConfig() {
                 </Button>
               </div>
             </TabsContent>
+
+            {/* F4.6.21 环境变量 — wired to /api/apps/:id/config (CRUD) */}
+            <EnvVarsTab appId={appId} />
           </div>
         </div>
       </Tabs>
@@ -1293,5 +1299,144 @@ export default function AppConfig() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+/**
+ * EnvVarsTab — F4.6.21 application environment variables. Each row
+ * is a (key, value, description) triple persisted in `app_configs`.
+ *
+ * Wired to the existing backend endpoints (`GET/POST/PUT/DELETE
+ * /api/apps/:id/config[/key]`) so the row ordering matches the
+ * server-side `ORDER BY key ASC` and stays consistent across reloads.
+ */
+function EnvVarsTab({ appId }: { appId: string }) {
+  type Row = { id: string; app_id: string; key: string; value: string | null; description: string | null; updated_at: string };
+  const [rows, setRows] = useState<Row[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [editingKey, setEditingKey] = useState<string | null>(null);
+  const [showSecrets, setShowSecrets] = useState(false);
+  const [newKey, setNewKey] = useState("");
+  const [newValue, setNewValue] = useState("");
+  const [newDesc, setNewDesc] = useState("");
+
+  const refresh = async () => {
+    if (!appId) return;
+    setLoading(true);
+    try {
+      const data = (await appsApi.listConfig(appId)) as Row[];
+      setRows(Array.isArray(data) ? data : []);
+    } finally { setLoading(false); }
+  };
+  useEffect(() => { refresh(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [appId]);
+
+  const handleSave = async () => {
+    if (!newKey.trim()) return;
+    await appsApi.createConfig(appId, { key: newKey.trim(), value: newValue, description: newDesc });
+    setNewKey(""); setNewValue(""); setNewDesc("");
+    await refresh();
+  };
+  const handleUpdate = async (row: Row, value: string) => {
+    await appsApi.updateConfig(appId, row.key, { value });
+    await refresh();
+  };
+  const handleDelete = async (row: Row) => {
+    if (!window.confirm(`确定删除环境变量 "${row.key}"？`)) return;
+    await appsApi.deleteConfig(appId, row.key);
+    await refresh();
+  };
+
+  return (
+    <TabsContent value="env" className="mt-0 space-y-4">
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-base">环境变量</CardTitle>
+              <CardDescription>
+                应用级别的配置 KV，发布时可注入到运行时容器中
+              </CardDescription>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={() => setShowSecrets((s) => !s)}>
+                {showSecrets ? <EyeOff className="size-3 mr-1" /> : <Eye className="size-3 mr-1" />}
+                {showSecrets ? "隐藏" : "显示"}
+              </Button>
+              <Button variant="outline" size="sm" onClick={refresh} disabled={loading}>
+                <RefreshCw className={`size-3 mr-1 ${loading ? "animate-spin" : ""}`} />
+                刷新
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Add row */}
+          <div className="grid grid-cols-12 gap-2 items-end p-3 rounded-lg border bg-muted/30">
+            <div className="col-span-3">
+              <Label className="text-xs">Key</Label>
+              <Input value={newKey} onChange={(e) => setNewKey(e.target.value)} placeholder="API_BASE_URL" className="font-mono text-sm" />
+            </div>
+            <div className="col-span-5">
+              <Label className="text-xs">Value</Label>
+              <Input value={newValue} onChange={(e) => setNewValue(e.target.value)} type={showSecrets ? "text" : "password"} placeholder="https://api.example.com" className="font-mono text-sm" />
+            </div>
+            <div className="col-span-3">
+              <Label className="text-xs">说明</Label>
+              <Input value={newDesc} onChange={(e) => setNewDesc(e.target.value)} placeholder="可选" />
+            </div>
+            <div className="col-span-1">
+              <Button size="sm" className="w-full" onClick={handleSave} disabled={!newKey.trim() || loading}>
+                <Plus className="size-3" />
+              </Button>
+            </div>
+          </div>
+
+          {/* Existing rows */}
+          {loading && rows.length === 0 && (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="size-5 animate-spin text-muted-foreground" />
+            </div>
+          )}
+          {!loading && rows.length === 0 && (
+            <div className="text-center py-8 text-sm text-muted-foreground">
+              尚未配置环境变量
+            </div>
+          )}
+          {rows.map((row) => (
+            <div key={row.id} className="grid grid-cols-12 gap-2 items-center py-2 px-3 rounded-lg border bg-card">
+              <div className="col-span-3 font-mono text-sm font-medium">{row.key}</div>
+              <div className="col-span-5">
+                {editingKey === row.key ? (
+                  <Input
+                    defaultValue={row.value ?? ""}
+                    type={showSecrets ? "text" : "password"}
+                    className="font-mono text-sm h-8"
+                    autoFocus
+                    onBlur={(e) => {
+                      handleUpdate(row, e.target.value);
+                      setEditingKey(null);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+                      if (e.key === "Escape") setEditingKey(null);
+                    }}
+                  />
+                ) : (
+                  <code className="text-xs text-muted-foreground font-mono cursor-pointer hover:text-foreground" onClick={() => setEditingKey(row.key)}>
+                    {showSecrets ? (row.value || <span className="italic">(空)</span>) : (row.value ? "•".repeat(Math.min(row.value.length, 16)) : <span className="italic">(空)</span>)}
+                  </code>
+                )}
+              </div>
+              <div className="col-span-3 text-xs text-muted-foreground truncate">{row.description}</div>
+              <div className="col-span-1 flex justify-end">
+                <Button variant="ghost" size="sm" onClick={() => handleDelete(row)}>
+                  <Trash2 className="size-3" />
+                </Button>
+              </div>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+    </TabsContent>
   );
 }

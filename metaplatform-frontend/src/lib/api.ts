@@ -133,6 +133,10 @@ export const appsApi = {
       method: "PUT",
       body: JSON.stringify(data),
     }),
+  deleteConfig: (appId: string, key: string) =>
+    request<{ deleted: string }>(`/apps/${appId}/config/${key}`, {
+      method: "DELETE",
+    }),
 
   // Gray release
   getGrayConfig: (appId: string) =>
