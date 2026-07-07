@@ -46,6 +46,13 @@ export function buildPublishSnapshot(platformDb, app) {
     // can boot directly against this file.
     out.exec(SCHEMA_SQL);
 
+    // Snapshot is rebuilt from scratch on every publish — drop any
+    // existing rows first so re-publish can't hit a duplicate-key
+    // error. Foreign keys are off because we control all inserts and
+    // don't need cascading semantics.
+    out.pragma("foreign_keys = OFF");
+    out.exec("DELETE FROM applications; DELETE FROM ontology_objects; DELETE FROM ontology_properties; DELETE FROM app_pages; DELETE FROM process_definitions;");
+
     // The application row itself. Status is forced to `published` so
     // runtime routes only see published apps.
     const publishedApp = {
@@ -54,7 +61,7 @@ export function buildPublishSnapshot(platformDb, app) {
       updated_at: new Date().toISOString(),
     };
     out.prepare(`
-      INSERT INTO applications (
+      INSERT OR REPLACE INTO applications (
         id, name, description, category, status, icon, version,
         app_slug, published_url, published_version, published_at,
         publish_config, created_at, updated_at
@@ -82,7 +89,7 @@ export function buildPublishSnapshot(platformDb, app) {
       .prepare("SELECT * FROM ontology_objects WHERE app_id = ?")
       .all(app.id);
     const insertObject = out.prepare(`
-      INSERT INTO ontology_objects (
+      INSERT OR REPLACE INTO ontology_objects (
         id, app_id, name, label, description, icon, status,
         properties_count, actions_count, rules_count,
         created_at, updated_at
@@ -105,12 +112,18 @@ export function buildPublishSnapshot(platformDb, app) {
         .prepare("SELECT * FROM ontology_properties WHERE object_id = ? ORDER BY sort_order ASC")
         .all(obj.id);
       for (const prop of properties) {
-        insertProperty.run(
-          prop.id, prop.object_id, prop.name, prop.label, prop.type || "text",
-          prop.required ? 1 : 0, prop.unique_field ? 1 : 0,
-          prop.default_value ?? null, prop.description || null,
-          prop.sort_order || 0, prop.created_at,
-        );
+        try {
+          insertProperty.run(
+            prop.id, prop.object_id, prop.name, prop.label, prop.type || "text",
+            prop.required ? 1 : 0, prop.unique_field ? 1 : 0,
+            prop.default_value ?? null, prop.description || null,
+            prop.sort_order || 0, prop.created_at,
+          );
+        } catch (err) {
+          // eslint-disable-next-line no-console
+          console.log(JSON.stringify({ level: "warn", msg: "publish-snapshot.insertProperty failed", propId: prop.id, propName: prop.name, objectId: prop.object_id, err: String(err) }));
+          throw err;
+        }
       }
     }
 
@@ -137,7 +150,7 @@ export function buildPublishSnapshot(platformDb, app) {
       .prepare("SELECT * FROM process_definitions WHERE app_id = ?")
       .all(app.id);
     const insertFlow = out.prepare(`
-      INSERT INTO process_definitions (
+      INSERT OR REPLACE INTO process_definitions (
         id, app_id, name, type, status, version,
         bpmn_xml, description, created_at, updated_at
       ) VALUES (?,?,?,?,?,?,?,?,?,?)

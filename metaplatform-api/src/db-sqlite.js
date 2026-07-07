@@ -1228,6 +1228,12 @@ if (mApiCount === 0) {
     ["runtime_container_id","TEXT"],
     ["runtime_port",        "INTEGER"],
     ["runtime_mode",        "TEXT"],
+    // The actual slug the runtime container was spawned under. The
+    // application's canonical `app_slug` is the baseSlug, but every
+    // publish gets a fresh historicalSlug so the URL is stable for
+    // historical environments. We persist the historical slug here
+    // so we can re-attach after a platform restart.
+    ["runtime_alias_slug",  "TEXT"],
   ];
   for (const [name, decl] of adds) {
     if (!cols.includes(name)) {

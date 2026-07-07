@@ -55,6 +55,7 @@ import { loggerMiddleware } from "./observability/logger.js";
 import { tracerMiddleware } from "./observability/tracer.js";
 import { runtimeProxy } from "./services/runtime-proxy.js";
 import { reattach } from "./services/runtime-orchestrator.js";
+import db from "./db.js";
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -194,7 +195,7 @@ async function bootstrap() {
     // system survive platform restarts without dropping anyone out of
     // their published app. If the docker daemon is unreachable we
     // simply skip — runtimeProxy will fall back to the snapshot sqlite.
-    reattach().then((r) => {
+    reattach(db).then((r) => {
       if (r.degraded) {
         console.log(`  -> [runtime] degraded: ${r.error || "docker unreachable"}; using snapshot fallback`);
       } else if (r.reattached.length) {

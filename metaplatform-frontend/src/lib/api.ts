@@ -94,6 +94,15 @@ export const appsApi = {
     request<Application>(`/apps/${id}/unpublish`, { method: "POST" }),
   listPublished: () => request<Application[]>("/apps/published"),
   getBySlug: (slug: string) => request<Application>(`/apps/slug/${slug}`),
+  listPublications: (id: string) => request<{
+    id: string;
+    slug: string;
+    published_url: string;
+    published_version: string;
+    created_at: string;
+    environment: "production" | "archived";
+    isLive: boolean;
+  }[]>(`/apps/${id}/publications`),
 
   // App Pages (nested under /api/apps/:id/pages)
   listPages: (appId: string) =>

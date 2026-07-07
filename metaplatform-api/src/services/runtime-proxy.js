@@ -18,11 +18,8 @@
  * the platform process, or any other runtime.
  */
 import express from "express";
-import fs from "node:fs";
-import path from "node:path";
 import Database from "better-sqlite3";
 import http from "node:http";
-import { snapshotPath } from "../services/publish-snapshot.js";
 import { resolveTarget } from "../services/runtime-orchestrator.js";
 
 /**
@@ -36,7 +33,7 @@ function forwardToContainer(req, res, port) {
     host: "127.0.0.1",
     port,
     method: req.method,
-    path: upstreamPath + (req.url.includes("?") ? "" : ""),
+    path: upstreamPath,
     headers: { ...req.headers, host: `127.0.0.1:${port}` },
   };
   const upstream = http.request(options, (upstreamRes) => {
@@ -54,14 +51,17 @@ function forwardToContainer(req, res, port) {
 }
 
 /**
- * Read-only HTTP-style handler that pulls answers from the per-app
- * snapshot sqlite. We only implement the small handful of routes the
- * PublishedApp page actually uses — anything else returns 404 to keep
- * the surface tight.
+ * Build a fresh router that serves a single published app out of the
+ * per-app snapshot sqlite. The caller invokes this builder with a
+ * plain express.Router; we deliberately do NOT call into a full
+ * express app from inside another app because doing so requires
+ * mutating `req.url`, which Node's IncomingMessage forbids.
  */
-function mountDegradedApp(app, slug, snapshot) {
+function buildDegradedRouter(snapshot) {
   const db = new Database(snapshot, { fileMustExist: true, readonly: true });
-  app.get("/app/slug/:slug", (req, res) => {
+  const router = express.Router();
+
+  router.get("/app/slug/:slug", (req, res) => {
     const row = db.prepare("SELECT * FROM applications WHERE app_slug = ? AND status = 'published'").get(req.params.slug);
     if (!row) return res.status(404).json({ success: false, error: "Application not found" });
     let pages = [];
@@ -71,27 +71,27 @@ function mountDegradedApp(app, slug, snapshot) {
     }
     res.json({ success: true, data: { ...row, pages } });
   });
-  app.get("/ontology/objects", (req, res) => {
+  router.get("/ontology/objects", (req, res) => {
     const { app_id } = req.query;
     const rows = app_id
       ? db.prepare("SELECT * FROM ontology_objects WHERE app_id = ? ORDER BY created_at DESC").all(app_id)
       : db.prepare("SELECT * FROM ontology_objects ORDER BY created_at DESC").all();
     res.json({ success: true, data: rows });
   });
-  app.get("/ontology/objects/:id", (req, res) => {
+  router.get("/ontology/objects/:id", (req, res) => {
     const row = db.prepare("SELECT * FROM ontology_objects WHERE id = ?").get(req.params.id);
     if (!row) return res.status(404).json({ success: false, error: "Object not found" });
     res.json({ success: true, data: row });
   });
-  app.get("/ontology/objects/:id/properties", (req, res) => {
+  router.get("/ontology/objects/:id/properties", (req, res) => {
     const rows = db.prepare("SELECT * FROM ontology_properties WHERE object_id = ? ORDER BY sort_order ASC, created_at ASC").all(req.params.id);
     res.json({ success: true, data: rows });
   });
-  app.get("/apps/:id/pages", (req, res) => {
+  router.get("/apps/:id/pages", (req, res) => {
     const rows = db.prepare("SELECT * FROM app_pages WHERE app_id = ? ORDER BY sort_order ASC, created_at ASC").all(req.params.id);
     res.json({ success: true, data: rows });
   });
-  app.get("/processes", (req, res) => {
+  router.get("/processes", (req, res) => {
     const { app_id } = req.query;
     let sql = "SELECT * FROM process_definitions WHERE 1=1";
     const params = [];
@@ -99,15 +99,17 @@ function mountDegradedApp(app, slug, snapshot) {
     sql += " ORDER BY created_at DESC";
     res.json({ success: true, data: db.prepare(sql).all(...params) });
   });
-  app.get("/processes/:id", (req, res) => {
+  router.get("/processes/:id", (req, res) => {
     const row = db.prepare("SELECT * FROM process_definitions WHERE id = ?").get(req.params.id);
     if (!row) return res.status(404).json({ success: false, error: "Process not found" });
     res.json({ success: true, data: row });
   });
-  app.get("/health", (_req, res) => res.json({ success: true, data: { snapshot: snapshot, mode: "degraded" } }));
+  router.get("/health", (_req, res) => res.json({ success: true, data: { snapshot, mode: "degraded" } }));
+
+  return router;
 }
 
-export function runtimeProxy(options = {}) {
+export function runtimeProxy() {
   const router = express.Router();
 
   router.use(async (req, res, next) => {
@@ -117,24 +119,29 @@ export function runtimeProxy(options = {}) {
     if (!appMatch) return next();
 
     const slug = appMatch[1];
-    const target = await resolveTarget(slug);
+    let target;
+    try {
+      target = await resolveTarget(slug);
+    } catch (err) {
+      return res.status(500).json({ success: false, error: `Runtime resolution failed: ${err.message}` });
+    }
 
     if (target.mode === "container") {
       return forwardToContainer(req, res, target.port);
     }
     if (target.mode === "degraded") {
-      // Recurse into an inline router scoped to this slug. The slug
-      // becomes part of the URL the renderer sees (so the PublishedApp
-      // page behaves identically whether the runtime was a container
-      // or the in-process fallback).
-      const subApp = express();
-      mountDegradedApp(subApp, slug, target.snapshot);
+      // Strip the `/app/<slug>` prefix by hand because we can't mutate
+      // `req.url` on Node's IncomingMessage. The router's own routes
+      // match `/app/slug/:slug`, `/ontology/...`, etc., so we just
+      // call into it with a freshly-constructed request that has the
+      // prefix lopped off.
+      const inner = buildDegradedRouter(target.snapshot);
       const subReq = Object.create(req);
-      subReq.url = req.originalUrl.replace(/^\/app\/[^/]+/, "");
-      subReq.originalUrl = subReq.url;
+      const rewritten = req.originalUrl.replace(/^\/app\/[^/]+/, "") || "/";
+      subReq.url = rewritten;
+      subReq.originalUrl = rewritten;
       subReq.baseUrl = "";
-      subReq.path = subReq.url.split("?")[0];
-      return subApp.handle(subReq, res, next);
+      return inner.handle(subReq, res, next);
     }
     res.status(503).json({
       success: false,

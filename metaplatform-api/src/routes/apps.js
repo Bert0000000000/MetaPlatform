@@ -294,7 +294,17 @@ router.post("/:id/publish", async (req, res, next) => {
     let slug = existing.app_slug || generateSlug(existing.name);
     if (!slug) slug = `app-${(existing.id || "").replace(/-/g, "").slice(0, 12)}`;
 
+    // Each `app_publications` row is an immutable record of "this
+    // app was deployed at this URL at this time". The application
+    // row's `app_slug` is the *current* live slug, but historical
+    // publications need their own stable slug + URL so users can
+    // revisit an old build without colliding with newer deploys.
+    // We attach a short suffix derived from the publish timestamp;
+    // the live URL stays unchanged (`/app/<baseSlug>`).
+    const versionSuffix = Math.floor(Date.now() / 1000).toString(36);
+    const historicalSlug = `${slug}-${versionSuffix}`;
     const publishedUrl = `/app/${slug}`;
+    const historicalPublishedUrl = `/app/${historicalSlug}`;
     const publishConfig = JSON.stringify({
       pages: req.body.pages || [],
       config: req.body.config || {},
@@ -334,37 +344,43 @@ router.post("/:id/publish", async (req, res, next) => {
       });
     }
 
-    // Spawn the isolated runtime. If this fails we still consider the
-    // publish successful (the snapshot is on disk) but the runtime is
-    // "degraded".
+    // Spawn the isolated runtime for the *historical* slug — every
+    // publication gets its own container so the historical version
+    // stays reachable even after the live runtime gets re-published.
     let runtimeInfo;
     try {
       const updated = await db.prepare("SELECT * FROM applications WHERE id = ?").get(req.params.id);
-      runtimeInfo = await spawnRuntime({ slug, app: updated, snapshotFile });
+      runtimeInfo = await spawnRuntime({ slug: historicalSlug, app: updated, snapshotFile, baseSlug: slug });
     } catch (err) {
+      // eslint-disable-next-line no-console
+      console.log(JSON.stringify({ level: "warn", msg: "spawnRuntime failed", slug: historicalSlug, baseSlug: slug, err: String(err && err.stack || err) }));
       runtimeInfo = { degraded: true, error: err.message, snapshot: snapshotFile };
     }
 
     if (!runtimeInfo.degraded && runtimeInfo.containerId) {
       await db.prepare(
         `UPDATE applications
-         SET runtime_container_id = ?, runtime_port = ?, runtime_mode = 'container', updated_at = ?
+         SET runtime_container_id = ?, runtime_port = ?, runtime_mode = 'container',
+             runtime_alias_slug = ?, updated_at = ?
          WHERE id = ?`,
-      ).run(runtimeInfo.containerId, runtimeInfo.port, now, req.params.id);
+      ).run(runtimeInfo.containerId, runtimeInfo.port, historicalSlug, now, req.params.id);
     } else {
       await db.prepare(
         `UPDATE applications
-         SET runtime_mode = 'degraded', updated_at = ?
+         SET runtime_mode = 'degraded', runtime_alias_slug = ?, updated_at = ?
          WHERE id = ?`,
-      ).run(now, req.params.id);
+      ).run(historicalSlug, now, req.params.id);
     }
 
-    // Create publication snapshot record (for history / re-publish).
+    // Publication row carries the historical slug + URL so that
+    // re-visiting an old build points at its own container. The live
+    // `/app/<slug>` URL is the application's current row, which always
+    // tracks the latest publish.
     const pubId = uuid();
     await db.prepare(
       `INSERT INTO app_publications (id, app_id, slug, published_url, published_version, config_snapshot, created_at)
        VALUES (?, ?, ?, ?, ?, ?, ?)`
-    ).run(pubId, req.params.id, slug, publishedUrl, version, publishConfig, now);
+    ).run(pubId, req.params.id, historicalSlug, historicalPublishedUrl, version, publishConfig, now);
 
     const row = await db.prepare("SELECT * FROM applications WHERE id = ?").get(req.params.id);
     res.json({
@@ -378,6 +394,8 @@ router.post("/:id/publish", async (req, res, next) => {
           containerId: runtimeInfo.containerId ?? null,
           error: runtimeInfo.error ?? null,
           snapshot: snapshotFile,
+          historical_slug: historicalSlug,
+          historical_url: historicalPublishedUrl,
         },
       },
     });
@@ -409,6 +427,7 @@ router.post("/:id/unpublish", async (req, res, next) => {
            runtime_container_id = NULL,
            runtime_port = NULL,
            runtime_mode = NULL,
+           runtime_alias_slug = NULL,
            updated_at = ?
        WHERE id = ?`
     ).run(now, req.params.id);
@@ -449,6 +468,52 @@ router.get("/:id/runtime", async (req, res, next) => {
         published_url: existing.published_url,
       },
     });
+  } catch (err) { next(err); }
+});
+
+// ─── GET /:id/publications ── list published versions ────
+//
+// Each row in `app_publications` is a snapshot of the platform
+// recording that "this app, at this version, was made live at this
+// URL". We expose them so the publish tab can render one link per
+// deployed environment, and so power users can revisit a historical
+// build without losing the URL.
+//
+// The first row (newest) is the live production environment; older
+// rows are archived / superseded versions that still have their
+// snapshot sqlite on disk and a working `/app/<slug>` URL.
+router.get("/:id/publications", async (req, res, next) => {
+  try {
+    const existing = await db.prepare("SELECT * FROM applications WHERE id = ?").get(req.params.id);
+    if (!existing) return res.status(404).json({ success: false, error: "应用不存在" });
+
+    const rows = await db.prepare(
+      `SELECT id, slug, published_url, published_version,
+              created_at, app_id
+       FROM app_publications
+       WHERE app_id = ?
+       ORDER BY created_at DESC`
+    ).all(req.params.id);
+
+    // Decorate each row with a kind + live marker:
+    //
+    //   - the *most recent* publication row is the live production
+    //     environment (its container is the runtime that the platform
+    //     reverse-proxy hands `/app/<baseSlug>` requests to);
+    //   - earlier rows are historical builds. Their slug + URL are
+    //     still valid because each publication spawns its own
+    //     container.
+    //
+    // We can't compare by slug or version because both stay the same
+    // across re-publishes — the slug suffix and timestamp do not. We
+    // rely on the ordering returned by the SQL above (newest first).
+    const data = rows.map((row, idx) => ({
+      ...row,
+      environment: idx === 0 ? "production" : "archived",
+      isLive: idx === 0,
+    }));
+
+    res.json({ success: true, data });
   } catch (err) { next(err); }
 });
 

@@ -59,6 +59,14 @@ function toDockerBindPath(p) {
 // the single source of truth; on startup it tries to reattach to any
 // containers that already exist.
 const REGISTRY = new Map(); // slug -> { containerId, port, snapshotPath }
+// Per-app baseSlug → historicalSlug alias map. The application's
+// canonical published URL is `/app/<baseSlug>`, but every publish gets
+// its own historicalSlug so that re-publishing produces a fresh
+// container (each /app/<historicalSlug> URL still resolves). We map
+// baseSlug to the historicalSlug of the most recent publish so the
+// reverse-proxy at `/app/<baseSlug>` hands requests to the live
+// container; users can also visit the historical URL directly.
+const BASE_TO_LATEST = new Map();
 
 let docker = null;
 let dockerProbe = null;
@@ -91,8 +99,14 @@ async function probe() {
  * already running (left over from a previous process / restart) and
  * register it in REGISTRY. This lets the platform survive restarts
  * without losing runtime state.
+ *
+ * `reattachDb` is a sidekick that reads `applications.runtime_alias_slug`
+ * from the platform's primary sqlite and rehydrates the
+ * `BASE_TO_LATEST` alias map. The daemon's container list alone can't
+ * tell us which historical slug belongs to which baseSlug, so we lean
+ * on the persisted column for that.
  */
-export async function reattach() {
+export async function reattach(reattachDb) {
   const p = await probe();
   if (!p.ok) return { reattached: [], degraded: true, error: p.error };
   const d = await getDocker();
@@ -117,10 +131,34 @@ export async function reattach() {
     });
     reattached.push({ slug, port: publicPort, state: c.State });
   }
+
+  // Rebuild the baseSlug → historicalSlug alias map from the
+  // platform's applications table. We can only do this when the
+  // platform DB is available; the orchestrator is invoked before the
+  // rest of the platform has finished wiring up on cold start, so
+  // reattach() can be called without a db too.
+  if (reattachDb && typeof reattachDb.prepare === "function") {
+    try {
+      const rows = reattachDb.prepare(
+        "SELECT app_slug, runtime_alias_slug FROM applications WHERE runtime_alias_slug IS NOT NULL"
+      ).all();
+      for (const row of rows) {
+        if (row.app_slug && row.runtime_alias_slug) {
+          BASE_TO_LATEST.set(row.app_slug, row.runtime_alias_slug);
+        }
+      }
+      // eslint-disable-next-line no-console
+      console.log(JSON.stringify({ level: "info", msg: "runtime-orchestrator.reattach.aliases", count: rows.length }));
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.log(JSON.stringify({ level: "warn", msg: "runtime-orchestrator.reattach.aliases failed", err: String(err && err.stack || err) }));
+    }
+  }
+
   return { reattached, degraded: false };
 }
 
-export async function spawnRuntime({ slug, app, snapshotFile }) {
+export async function spawnRuntime({ slug, app, snapshotFile, baseSlug }) {
   const p = await probe();
   if (!p.ok) {
     return { degraded: true, error: p.error, snapshot: snapshotFile };
@@ -182,6 +220,13 @@ export async function spawnRuntime({ slug, app, snapshotFile }) {
   await container.start();
   const info = await container.inspect();
   REGISTRY.set(slug, { containerId: container.id, port, snapshotPath: snapshotFile });
+  // Remember the baseSlug → historicalSlug alias so the platform's
+  // reverse-proxy at `/app/<baseSlug>` hands requests to the live
+  // container. Re-publish replaces the alias; the previous container
+  // is removed by the tear-down above.
+  if (baseSlug && baseSlug !== slug) {
+    BASE_TO_LATEST.set(baseSlug, slug);
+  }
 
   // Wait briefly for the runtime to come up. Without this, the caller
   // sees a "running" container whose port is not yet accepting
@@ -203,7 +248,10 @@ export async function spawnRuntime({ slug, app, snapshotFile }) {
 }
 
 export async function stopRuntime(slug) {
-  const reg = REGISTRY.get(slug);
+  // Resolve the alias before stopping so a baseSlug gets the
+  // currently-aliased historical container killed.
+  const resolvedSlug = BASE_TO_LATEST.get(slug) || slug;
+  const reg = REGISTRY.get(resolvedSlug);
   if (!reg) return { removed: false, reason: "not registered" };
   const p = await probe();
   if (!p.ok) {
@@ -216,30 +264,58 @@ export async function stopRuntime(slug) {
     await c.stop({ t: 5 }).catch(() => {});
     await c.remove({ force: true }).catch(() => {});
   } catch (err) {
-    REGISTRY.delete(slug);
+    REGISTRY.delete(resolvedSlug);
+    if (BASE_TO_LATEST.get(slug) === resolvedSlug) BASE_TO_LATEST.delete(slug);
     return { removed: false, error: err.message };
   }
-  REGISTRY.delete(slug);
+  REGISTRY.delete(resolvedSlug);
+  if (BASE_TO_LATEST.get(slug) === resolvedSlug) BASE_TO_LATEST.delete(slug);
   return { removed: true };
 }
 
 export async function inspectRuntime(slug) {
-  const reg = REGISTRY.get(slug);
-  if (!reg) return { state: "absent", port: null };
+  const resolvedSlug = BASE_TO_LATEST.get(slug) || slug;
+  const reg = REGISTRY.get(resolvedSlug);
+  // If the registry doesn't have the alias cached (platform was
+  // restarted), still try the docker daemon directly — we just
+  // re-attach to the container and report its current state.
+  const containerName = `app-${resolvedSlug}`;
   const p = await probe();
-  if (!p.ok) return { ...reg, state: "degraded", error: p.error };
+  if (!p.ok) {
+    return reg
+      ? { ...reg, state: "degraded", error: p.error, runtimeSlug: resolvedSlug }
+      : { state: "absent", port: null, runtimeSlug: resolvedSlug, error: p.error };
+  }
   const d = await getDocker();
   try {
-    const info = await d.getContainer(reg.containerId).inspect();
+    const info = await d.getContainer(containerName).inspect();
+    // Refresh the registry with whatever we just learned so we don't
+    // re-pay this cost on the next call.
+    const publicPort = (info.NetworkSettings.Ports["3000/tcp"] || [])
+      .filter((pp) => pp.HostPort)
+      .map((pp) => Number(pp.HostPort))[0] || null;
+    REGISTRY.set(resolvedSlug, {
+      containerId: info.Id,
+      port: publicPort,
+      snapshotPath: snapshotPath(slug),
+    });
     return {
-      ...reg,
+      containerId: info.Id,
+      port: publicPort,
+      snapshotPath: snapshotPath(slug),
+      runtimeSlug: resolvedSlug,
       state: info.State.Status,
       running: info.State.Running,
       startedAt: info.State.StartedAt,
       finishedAt: info.State.FinishedAt,
     };
   } catch (err) {
-    return { ...reg, state: "missing", error: err.message };
+    return {
+      ...(reg || {}),
+      state: "absent",
+      runtimeSlug: resolvedSlug,
+      error: err.message,
+    };
   }
 }
 
@@ -283,8 +359,12 @@ function waitForHealth(port, timeoutMs) {
  * read-only degraded response from its own process.
  */
 export async function resolveTarget(slug) {
-  const reg = REGISTRY.get(slug);
-  const snap = snapshotPath(slug);
+  // If `slug` is the canonical baseSlug of a published app, the
+  // runtime container was actually spawned under a historical-slug
+  // suffix. The alias map redirects us.
+  const resolvedSlug = BASE_TO_LATEST.get(slug) || slug;
+  const reg = REGISTRY.get(resolvedSlug);
+  const snap = snapshotPath(slug);  // snapshot files are stored under base slug
   const snapExists = fs.existsSync(snap);
 
   if (!reg) {
@@ -302,7 +382,7 @@ export async function resolveTarget(slug) {
   try {
     const info = await d.getContainer(reg.containerId).inspect();
     if (info.State.Running) {
-      return { mode: "container", port: reg.port, snapshot: snap };
+      return { mode: "container", port: reg.port, snapshot: snap, runtimeSlug: resolvedSlug };
     }
   } catch {/* treat as missing */}
   return snapExists

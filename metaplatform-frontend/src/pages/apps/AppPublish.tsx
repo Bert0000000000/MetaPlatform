@@ -419,35 +419,7 @@ export default function AppPublish() {
         />
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">多环境管理</CardTitle>
-          <CardDescription>开发 → 测试 → 预览 → 生产</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center gap-2">
-            {environments.map((env, i) => (
-              <div key={env.name} className="flex items-center flex-1">
-                <div className="flex-1 border rounded-lg p-4">
-                  <div className="flex items-center gap-2">
-                    <div className={`size-2 rounded-full ${env.color}`} />
-                    <span className="font-medium text-sm">{env.name}</span>
-                  </div>
-                  <div className="text-xs text-muted-foreground mt-1">
-                    {isPublished ? app.version : "未部署"}
-                  </div>
-                  <Badge variant="outline" className="mt-2 text-xs">
-                    {isPublished ? "运行中" : "空闲"}
-                  </Badge>
-                </div>
-                {i < environments.length - 1 && (
-                  <ArrowRight className="size-4 text-muted-foreground mx-2" />
-                )}
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+      <PublishedEnvironments appId={appId!} />
 
       {/* ── 灰度发布 ── */}
       <Card>
@@ -808,5 +780,186 @@ export default function AppPublish() {
         </div>
       )}
     </div>
+  );
+}
+
+/**
+ * PublishedEnvironments — replaces the old "开发/测试/预览/生产" mock
+ * row. Each entry below is a real deployed environment (a row in
+ * `app_publications`): the live production entry links to the running
+ * isolated runtime, archived rows link to historical snapshots that
+ * still resolve at their `/app/<slug>` URL.
+ */
+function PublishedEnvironments({ appId }: { appId: string }) {
+  type Pub = {
+    id: string;
+    slug: string;
+    published_url: string;
+    published_version: string;
+    created_at: string;
+    environment: "production" | "archived";
+    isLive: boolean;
+  };
+
+  const [pubs, setPubs] = useState<Pub[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [runtimeInfo, setRuntimeInfo] = useState<{
+    running: boolean;
+    port: number | null;
+    containerId: string | null;
+    mode: string | null;
+    error?: string;
+  } | null>(null);
+
+  const refresh = async () => {
+    if (!appId) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const rows = (await appsApi.listPublications(appId)) as Pub[];
+      setPubs(Array.isArray(rows) ? rows : []);
+      const live = rows.find((r) => r.isLive);
+      if (live) {
+        try {
+          const rt = await appsApi.getRuntime(appId);
+          setRuntimeInfo({
+            running: !!rt?.runtime?.running,
+            port: rt?.runtime?.port ?? rt?.persisted?.port ?? null,
+            containerId: rt?.runtime?.containerId ?? rt?.persisted?.containerId ?? null,
+            mode: rt?.persisted?.mode ?? null,
+            error: rt?.runtime?.error,
+          });
+        } catch {/* keep pubs but no live runtime info */}
+      } else {
+        setRuntimeInfo(null);
+      }
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "加载发布环境失败");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    refresh();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [appId]);
+
+  // Live re-poll when the user clicks publish/unpublish from the parent
+  // component. The simpler path is to expose a refresh on window, but
+  // that fights React — instead we just refresh on a 5s timer while
+  // there are live publications.
+  useEffect(() => {
+    if (!pubs.some((p) => p.isLive)) return;
+    const t = setInterval(refresh, 5000);
+    return () => clearInterval(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pubs.some((p) => p.isLive)]);
+
+  const liveBadge = (pub: Pub) => {
+    if (pub.isLive) {
+      if (runtimeInfo?.running) return { label: "运行中", color: "bg-green-500" };
+      if (runtimeInfo?.mode === "degraded") return { label: "降级模式", color: "bg-yellow-500" };
+      return { label: "已停止", color: "bg-zinc-400" };
+    }
+    return { label: "已归档", color: "bg-zinc-400" };
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Layers className="size-4" /> 已发布环境
+            </CardTitle>
+            <CardDescription>
+              每一行对应一个真实部署的运行环境，点击链接直达该版本的访问地址
+            </CardDescription>
+          </div>
+          <Button variant="outline" size="sm" onClick={refresh} disabled={loading}>
+            <RefreshCw className={`size-3 mr-1 ${loading ? "animate-spin" : ""}`} />
+            刷新
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-2">
+        {error && (
+          <div className="rounded-md border border-destructive/30 bg-destructive/5 p-2 text-xs text-destructive">
+            {error}
+          </div>
+        )}
+
+        {loading && pubs.length === 0 && (
+          <div className="flex items-center justify-center py-6">
+            <Loader2 className="size-5 animate-spin text-muted-foreground" />
+          </div>
+        )}
+
+        {!loading && pubs.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-6 text-sm text-muted-foreground">
+            <Upload className="size-6 mb-2" />
+            尚未发布，点击右上角"发布新版本"创建第一个环境
+          </div>
+        )}
+
+        {pubs.map((pub) => {
+          const badge = liveBadge(pub);
+          const fullUrl = `${window.location.origin}${pub.published_url}`;
+          return (
+            <div
+              key={pub.id}
+              className="border rounded-lg p-3 flex items-center gap-3 hover:bg-muted/30 transition-colors"
+            >
+              <div className="size-2 rounded-full shrink-0" data-color={badge.color} >
+                <span className={`block size-2 rounded-full ${badge.color}`} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="font-medium text-sm">
+                    {pub.environment === "production" ? "生产环境" : `历史版本 v${pub.published_version}`}
+                  </span>
+                  <Badge variant="outline" className="text-xs">{badge.label}</Badge>
+                  {pub.isLive && runtimeInfo?.mode === "degraded" && (
+                    <Badge variant="outline" className="text-xs border-yellow-500 text-yellow-700">
+                      Docker 不可达
+                    </Badge>
+                  )}
+                </div>
+                <div className="text-xs text-muted-foreground font-mono mt-1 truncate">
+                  {fullUrl}
+                </div>
+                <div className="text-[10px] text-muted-foreground mt-0.5">
+                  发布于 {new Date(pub.created_at).toLocaleString("zh-CN")}
+                  {pub.isLive && runtimeInfo?.port ? ` · 容器端口 ${runtimeInfo.port} → 3000` : null}
+                  {pub.isLive && runtimeInfo?.containerId ? ` · 容器 ${runtimeInfo.containerId.slice(0, 12)}…` : null}
+                </div>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigator.clipboard.writeText(fullUrl)}
+                  title="复制链接"
+                >
+                  <Copy className="size-3" />
+                </Button>
+                <Button
+                  variant="default"
+                  size="sm"
+                  asChild
+                >
+                  <a href={pub.published_url} target="_blank" rel="noopener noreferrer">
+                    <ExternalLink className="size-3 mr-1" />
+                    打开
+                  </a>
+                </Button>
+              </div>
+            </div>
+          );
+        })}
+      </CardContent>
+    </Card>
   );
 }
