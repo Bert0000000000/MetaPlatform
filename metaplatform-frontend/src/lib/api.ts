@@ -167,6 +167,34 @@ export const appsApi = {
       method: "POST",
       body: JSON.stringify({ publicationId }),
     }),
+  getAdminRuntimeSummary: () => request<{
+    docker: "ok" | "degraded";
+    docker_error?: string | null;
+    totals: {
+      total: number;
+      container_running: number;
+      degraded: number;
+      absent: number;
+    };
+    items: Array<{
+      app_id: string;
+      name: string;
+      app_slug: string;
+      alias_slug: string;
+      published_at: string;
+      persisted_port: number | null;
+      persisted_mode: string | null;
+      runtime: {
+        state?: string;
+        running?: boolean;
+        port?: number | null;
+        containerId?: string;
+        startedAt?: string;
+        error?: string;
+      } | null;
+      serving_mode: string;
+    }>;
+  }>(`/admin/runtime/summary`),
 };
 
 // ─── Pages (standalone) ──────────────────────────────────

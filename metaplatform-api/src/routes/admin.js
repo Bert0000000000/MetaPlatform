@@ -411,6 +411,7 @@ router.get("/llm-config/status", async (req, res, next) => {
           },
         });
       }
+
       return res.json({
         success: true,
         data: {
@@ -446,6 +447,65 @@ router.get("/llm-config/status", async (req, res, next) => {
   } catch (err) {
     next(err);
   }
+});
+
+// ════════════════════════════════════════════════════════
+//  Runtime summary — fleet-wide view of all currently-published
+//  apps, their container state, and the platform-wide docker
+//  daemon reachability. Used by the admin dashboard.
+// ════════════════════════════════════════════════════════
+
+// GET /runtime/summary — list every published app's runtime status
+router.get("/runtime/summary", async (_req, res, next) => {
+  try {
+    const published = await db.prepare(
+      `SELECT id, name, app_slug, runtime_container_id, runtime_port,
+              runtime_mode, runtime_alias_slug, published_at
+       FROM applications
+       WHERE status = 'published' AND app_slug IS NOT NULL`
+    ).all();
+
+    const { inspectRuntime, resolveTarget, probe } = await import("../services/runtime-orchestrator.js");
+    const platformProbe = await probe();
+
+    const items = await Promise.all(published.map(async (a) => {
+      let runtime = null;
+      try {
+        runtime = await inspectRuntime(a.app_slug);
+      } catch (err) {
+        runtime = { state: "error", error: err.message };
+      }
+      const target = await resolveTarget(a.app_slug).catch(() => ({ mode: "unknown" }));
+      return {
+        app_id: a.id,
+        name: a.name,
+        app_slug: a.app_slug,
+        alias_slug: a.runtime_alias_slug || a.app_slug,
+        published_at: a.published_at,
+        persisted_port: a.runtime_port,
+        persisted_mode: a.runtime_mode,
+        runtime,
+        serving_mode: target.mode,
+      };
+    }));
+
+    const totals = {
+      total: items.length,
+      container_running: items.filter((i) => i.runtime?.state === "running").length,
+      degraded: items.filter((i) => i.serving_mode === "degraded").length,
+      absent: items.filter((i) => !i.runtime || i.runtime.state === "absent").length,
+    };
+
+    res.json({
+      success: true,
+      data: {
+        docker: platformProbe.ok ? "ok" : "degraded",
+        docker_error: platformProbe.ok ? null : platformProbe.error,
+        totals,
+        items,
+      },
+    });
+  } catch (err) { next(err); }
 });
 
 export default router;
