@@ -151,6 +151,18 @@ export const appsApi = {
     }),
   activity: (appId: string, limit = 10) =>
     request<any[]>(`/apps/${appId}/activity?limit=${limit}`),
+  getRuntimeHealth: () =>
+    request<{
+      docker: "ok" | "degraded";
+      error?: string;
+    }>(`/runtime/health`),
+  restorePublication: (id: string, publicationId: string) =>
+    request<{
+      restored_from: { id: string; slug: string; version: string; created_at: string };
+    }>(`/apps/${id}/restore`, {
+      method: "POST",
+      body: JSON.stringify({ publicationId }),
+    }),
 };
 
 // ─── Pages (standalone) ──────────────────────────────────

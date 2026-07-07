@@ -12,6 +12,8 @@ import {
   spawnRuntime,
   stopRuntime,
   inspectRuntime,
+  resolveTarget,
+  switchAlias,
 } from "../services/runtime-orchestrator.js";
 import { buildPublishSnapshot } from "../services/publish-snapshot.js";
 
@@ -405,6 +407,77 @@ router.post("/:id/publish", async (req, res, next) => {
 });
 
 // ─── POST /:id/unpublish ── unpublish an application ─────
+router.post("/:id/restore", async (req, res, next) => {
+  try {
+    const existing = await db.prepare("SELECT * FROM applications WHERE id = ?").get(req.params.id);
+    if (!existing) return res.status(404).json({ success: false, error: "应用不存在" });
+
+    // Restore = swap the alias to point at an archived publication
+    // whose container is still running. We don't take down the
+    // currently-live container — if it's still healthy it'll remain
+    // reachable via its historical slug.
+    const pubId = req.body?.publicationId || req.body?.publication_id;
+    if (!pubId) return res.status(400).json({ success: false, error: "需要 publicationId" });
+
+    const pub = await db.prepare(
+      "SELECT * FROM app_publications WHERE id = ? AND app_id = ?"
+    ).get(pubId, req.params.id);
+    if (!pub) return res.status(404).json({ success: false, error: "历史版本不存在" });
+
+    // Sanity-check the container is actually reachable before we
+    // commit to the swap. Otherwise the user would publish to a
+    // dangling URL.
+    let runtimeOk = false;
+    let runtimeError = null;
+    try {
+      const target = await resolveTarget(pub.slug);
+      if (target.mode === "container") {
+        runtimeOk = true;
+      } else {
+        runtimeError = target.snapshot
+          ? `Runtime degraded (snapshot-only fallback). Container not running.`
+          : `Container not running and no snapshot on disk.`;
+      }
+    } catch (err) {
+      runtimeError = err.message;
+    }
+    if (!runtimeOk) {
+      return res.status(409).json({ success: false, error: `该历史版本无法恢复: ${runtimeError}` });
+    }
+
+    const now = new Date().toISOString();
+    // Point the live application row at this publication's slug.
+    // The application row's app_slug is the *base* slug, the
+    // historical slug lives in runtime_alias_slug.
+    await db.prepare(
+      `UPDATE applications
+       SET status = 'published',
+           published_at = ?,
+           runtime_alias_slug = ?,
+           updated_at = ?
+       WHERE id = ?`
+    ).run(now, pub.slug, now, req.params.id);
+
+    // The base → historical alias is dynamic; ask the orchestrator
+    // to repoint it. The DB column runtime_alias_slug is the
+    // authoritative source after platform restart.
+    try { switchAlias(existing.app_slug, pub.slug); } catch {/* best-effort */}
+
+    const row = await db.prepare("SELECT * FROM applications WHERE id = ?").get(req.params.id);
+    res.json({
+      success: true,
+      data: {
+        ...row,
+        // The new canonical URL still resolves to /app/<baseSlug>;
+        // /app/<historicalSlug> continues to work for users who
+        // bookmarked the old version.
+        published_url: `/app/${row.app_slug}`,
+        restored_from: { id: pub.id, slug: pub.slug, version: pub.published_version, created_at: pub.created_at },
+      },
+    });
+  } catch (err) { next(err); }
+});
+
 router.post("/:id/unpublish", async (req, res, next) => {
   try {
     const existing = await db.prepare("SELECT * FROM applications WHERE id = ?").get(req.params.id);

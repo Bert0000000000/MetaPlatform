@@ -54,7 +54,7 @@ import { metricsMiddleware } from "./observability/metrics.js";
 import { loggerMiddleware } from "./observability/logger.js";
 import { tracerMiddleware } from "./observability/tracer.js";
 import { runtimeProxy } from "./services/runtime-proxy.js";
-import { reattach } from "./services/runtime-orchestrator.js";
+import { reattach, probe } from "./services/runtime-orchestrator.js";
 import db from "./db.js";
 
 const app = express();
@@ -95,6 +95,21 @@ app.use((req, res, next) => {
 // ─── Routes ──────────────────────────────────────────────
 // Auth routes — PUBLIC for login/register, rate-limited separately
 app.use("/api/auth", authLimiter, authRoutes);
+
+// Runtime health — public, used by the publish tab to show the
+// platform-wide "Docker daemon reachable?" banner. Doesn't expose
+// any internal data, only the orchestrator's connection state.
+app.get("/api/runtime/health", async (_req, res) => {
+  try {
+    const p = await probe();
+    if (!p.ok) {
+      return res.json({ success: true, data: { docker: "degraded", error: p.error } });
+    }
+    return res.json({ success: true, data: { docker: "ok" } });
+  } catch (err) {
+    return res.json({ success: true, data: { docker: "degraded", error: err.message } });
+  }
+});
 
 // Protected API routes — require Bearer token
 app.use("/api/apps", authenticate, cacheMiddleware(30), appsRoutes);

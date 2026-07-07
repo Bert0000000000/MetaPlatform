@@ -149,39 +149,43 @@ export function PageAIAssistant() {
     }
   }
 
-  /* Closed state: just the floating button */
+  /* Floating button + chat panel container.
+   *
+   * The circular button (size-14, primary, with a pulsing green
+   * dot) is the same DOM element in every state — it never gets
+   * re-mounted or visually altered when the panel opens or closes.
+   * The chat panel sits above the button via `flex-col-reverse`,
+   * so when the panel is collapsed the user only sees the button;
+   * when it's open, the panel grows upward from the same anchor.
+   *
+   * `bottom-6 right-6` on the outer div keeps the button anchored
+   * to the same corner regardless of the panel state.
+   */
+  const fab = (
+    <button
+      onClick={() => (isOpen ? setIsMinimized((v) => !v) : setIsOpen(true))}
+      className="size-14 rounded-full bg-primary text-primary-foreground shadow-lg hover:shadow-xl transition-all hover:scale-105 flex items-center justify-center group shrink-0"
+      title="页面 AI 助手"
+    >
+      <MessageCircle className="size-6" />
+      <span className="absolute -top-1 -right-1 size-3 rounded-full bg-green-400 animate-pulse" />
+    </button>
+  );
+
+  /* Closed state: only the floating button */
   if (!isOpen) {
     return (
-      <button
-        onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 z-50 size-14 rounded-full bg-primary text-primary-foreground shadow-lg hover:shadow-xl transition-all hover:scale-105 flex items-center justify-center group"
-        title="页面 AI 助手"
-      >
-        <MessageCircle className="size-6" />
-        <span className="absolute -top-1 -right-1 size-3 rounded-full bg-green-400 animate-pulse" />
-      </button>
-    );
-  }
-
-  /* Minimized state */
-  if (isMinimized) {
-    return (
-      <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 bg-card border rounded-full shadow-lg px-4 py-2">
-        <Bot className="size-4 text-primary" />
-        <span className="text-sm font-medium">{context.title} 助手</span>
-        <Button variant="ghost" size="icon" className="size-6" onClick={() => setIsMinimized(false)}>
-          <Maximize2 className="size-3" />
-        </Button>
-        <Button variant="ghost" size="icon" className="size-6" onClick={() => { setIsOpen(false); setMessages([]); }}>
-          <X className="size-3" />
-        </Button>
+      <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3">
+        {fab}
       </div>
     );
   }
 
-  /* Full chat dialog */
+  /* Open: chat panel grows above the same FAB */
   return (
-    <div className="fixed bottom-6 right-6 z-50 w-[380px] h-[520px] flex flex-col bg-card border rounded-xl shadow-2xl overflow-hidden">
+    <div className="fixed bottom-6 right-6 z-50 flex flex-col-reverse items-end gap-3">
+      {fab}
+      <div className="w-[380px] h-[520px] flex flex-col bg-card border rounded-xl shadow-2xl overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b bg-primary text-primary-foreground shrink-0">
         <div className="flex items-center gap-2">
@@ -189,7 +193,7 @@ export function PageAIAssistant() {
           <span className="font-medium text-sm">{context.title} - AI 助手</span>
         </div>
         <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon" className="size-6 text-primary-foreground hover:text-primary-foreground/80" onClick={() => setIsMinimized(true)}>
+          <Button variant="ghost" size="icon" className="size-6 text-primary-foreground hover:text-primary-foreground/80" onClick={() => setIsOpen(false)}>
             <Minimize2 className="size-3" />
           </Button>
           <Button variant="ghost" size="icon" className="size-6 text-primary-foreground hover:text-primary-foreground/80" onClick={() => { setIsOpen(false); setMessages([]); }}>
@@ -272,6 +276,7 @@ export function PageAIAssistant() {
             {isTyping ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
           </Button>
         </div>
+      </div>
       </div>
     </div>
   );

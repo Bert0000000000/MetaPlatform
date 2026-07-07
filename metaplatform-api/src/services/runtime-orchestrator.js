@@ -82,7 +82,7 @@ async function getDocker() {
   return docker;
 }
 
-async function probe() {
+export async function probe() {
   if (dockerProbe) return dockerProbe;
   try {
     const d = await getDocker();
@@ -247,12 +247,25 @@ export async function spawnRuntime({ slug, app, snapshotFile, baseSlug }) {
   };
 }
 
+/**
+ * Repoint a baseSlug's alias to a different historicalSlug without
+ * touching the underlying containers. Used by the restore endpoint
+ * to roll forward/back across already-deployed snapshots.
+ */
+export function switchAlias(baseSlug, historicalSlug) {
+  if (!baseSlug || !historicalSlug) return { switched: false, reason: "missing arg" };
+  if (baseSlug === historicalSlug) return { switched: false, reason: "same slug" };
+  const reg = REGISTRY.get(historicalSlug);
+  if (!reg) return { switched: false, reason: `historical slug "${historicalSlug}" not registered` };
+  BASE_TO_LATEST.set(baseSlug, historicalSlug);
+  return { switched: true, baseSlug, historicalSlug };
+}
+
 export async function stopRuntime(slug) {
-  // Resolve the alias before stopping so a baseSlug gets the
-  // currently-aliased historical container killed.
   const resolvedSlug = BASE_TO_LATEST.get(slug) || slug;
   const reg = REGISTRY.get(resolvedSlug);
   if (!reg) return { removed: false, reason: "not registered" };
+
   const p = await probe();
   if (!p.ok) {
     REGISTRY.delete(slug);

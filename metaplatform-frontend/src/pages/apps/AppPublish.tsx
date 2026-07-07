@@ -16,6 +16,7 @@ import {
   Package, RotateCcw, Target, Loader2, AlertCircle, Copy, ExternalLink,
   Sliders, Users, Percent, Layers, Gauge, ArrowLeftRight, Scale, GitCompare,
   FastForward, Rewind, Eye, Plus, Save, RefreshCw, ChevronRight, Play,
+  Upload,
 } from "lucide-react";
 
 const environments = [
@@ -366,6 +367,8 @@ export default function AppPublish() {
       )}
 
       {/* Published URL card */}
+      <RuntimeHealthBanner />
+
       {isPublished && publishedUrl && (
         <Card className="border-primary/30 bg-primary/5">
           <CardContent className="p-4">
@@ -955,11 +958,69 @@ function PublishedEnvironments({ appId }: { appId: string }) {
                     打开
                   </a>
                 </Button>
+                {!pub.isLive && pub.environment === "archived" && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={async () => {
+                      if (!appId) return;
+                      if (!window.confirm(`将此版本 v${pub.published_version} 切换为生产环境？当前生产环境会被归档。`)) return;
+                      try {
+                        await appsApi.restorePublication(appId, pub.id);
+                        await refresh();
+                        window.alert("已切换为生产环境");
+                      } catch (err) {
+                        window.alert(`切换失败: ${err instanceof Error ? err.message : String(err)}`);
+                      }
+                    }}
+                    title="将此历史版本切换为生产环境"
+                  >
+                    <History className="size-3 mr-1" />
+                    切换为主版本
+                  </Button>
+                )}
               </div>
             </div>
           );
         })}
       </CardContent>
     </Card>
+  );
+}
+
+/**
+ * RuntimeHealthBanner — platform-wide docker daemon health shown at
+ * the top of the publish tab. Loads GET /api/runtime/health once
+ * when the page mounts; subsequent visits refetch the request.
+ *
+ *  - `docker === "ok"`     -> hidden
+ *  - `docker === "degraded"` -> yellow banner explaining that
+ *    published apps will fall back to the in-process snapshot reader.
+ */
+function RuntimeHealthBanner() {
+  type Health = { docker: "ok" | "degraded"; error?: string };
+  const [health, setHealth] = useState<Health | null>(null);
+  useEffect(() => {
+    let alive = true;
+    appsApi.getRuntimeHealth()
+      .then((h) => { if (alive) setHealth(h as Health); })
+      .catch(() => { if (alive) setHealth({ docker: "degraded", error: "health check failed" }); });
+    return () => { alive = false; };
+  }, []);
+
+  if (!health || health.docker === "ok") return null;
+  return (
+    <div className="rounded-lg border border-yellow-500/40 bg-yellow-50 dark:bg-yellow-900/20 px-4 py-3 flex items-start gap-3">
+      <AlertCircle className="size-5 text-yellow-600 dark:text-yellow-400 shrink-0 mt-0.5" />
+      <div className="flex-1">
+        <p className="text-sm font-medium text-yellow-900 dark:text-yellow-100">
+          运行时未隔离（Docker 不可达）
+        </p>
+        <p className="text-xs text-yellow-800 dark:text-yellow-200 mt-1">
+          {health.error ? `原因: ${health.error}。` : ""}
+          已发布的应用将以 <span className="font-mono">快照降级</span> 模式在平台进程内运行，进程内隔离（每个 app 单独的 sqlite 文件）但不再独立容器。
+        </p>
+      </div>
+    </div>
   );
 }
