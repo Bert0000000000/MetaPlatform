@@ -197,6 +197,22 @@ export const appsApi = {
   }>(`/admin/runtime/summary`),
 };
 
+// ─── Analytics (strategic dashboard) ──────────────────────
+export interface StrategicMetrics {
+  users: { total: number; active: number };
+  apps: { total: number; published: number; draft: number; adoptionRate: number };
+  content: { objects: number; pages: number; flows: number; objects_per_app: number };
+  agents: { total: number; active: number; onlineRate: number };
+  collaboration: { messages: number; unread: number; audit_logs: number };
+  coverage: Record<string, boolean>;
+  as_of: string;
+}
+
+export const analyticsApi = {
+  getStrategicMetrics: () =>
+    request<StrategicMetrics>(`/analytics/strategic`),
+};
+
 // ─── Pages (standalone) ──────────────────────────────────
 export const pagesApi = {
   list: (appId?: string) => {

@@ -5,8 +5,8 @@ import { ROLES, WORKSPACE_BY_ROLE } from "@/config/menu";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { appsApi, messagesApi, agentsApi, adminApi, announcementsApi, todosApi } from "@/lib/api";
-import type { Application, Message, Agent, AuditLog } from "@/lib/api";
+import { appsApi, messagesApi, agentsApi, adminApi, announcementsApi, todosApi, analyticsApi } from "@/lib/api";
+import type { Application, Message, Agent, AuditLog, StrategicMetrics } from "@/lib/api";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
@@ -21,6 +21,7 @@ import {
   Mic, MicOff, Paperclip, FileSpreadsheet, File as FileIcon, Camera,
   Merge, Split, Fingerprint, Target, Layers, Database, ShieldCheck, Columns,
   TrendingUp, Activity, Shield, Globe2, ExternalLink, Briefcase, Package,
+  Building2, MessageSquare, Gauge, AlertTriangle,
 } from "lucide-react";
 import { PageHeader, StatCard } from "@/components/ui/stat";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
@@ -127,6 +128,11 @@ export function DashboardPage() {
   const [installedFromTemplates, setInstalledFromTemplates] = useState<Application[]>([]);
   const [installingKey, setInstallingKey] = useState<string | null>(null);
 
+  // ── F1.1.2 战略指标 (visible for leader/admin only) ──
+  const [strategic, setStrategic] = useState<StrategicMetrics | null>(null);
+  const [strategicError, setStrategicError] = useState<string | null>(null);
+  const showStrategic = role === "leader" || role === "admin";
+
   /* ── Fetch real data ── */
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -175,6 +181,31 @@ export function DashboardPage() {
   }, []);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  // ── Fetch strategic metrics (leader/admin only) ──
+  useEffect(() => {
+    if (!showStrategic) {
+      setStrategic(null);
+      setStrategicError(null);
+      return;
+    }
+    let cancelled = false;
+    analyticsApi.getStrategicMetrics()
+      .then((m) => { if (!cancelled) { setStrategic(m); setStrategicError(null); } })
+      .catch((e: any) => { if (!cancelled) setStrategicError(e?.message ?? "获取失败"); });
+    return () => { cancelled = true; };
+  }, [showStrategic]);
+
+  // Refresh strategic metrics every 60s
+  useEffect(() => {
+    if (!showStrategic) return;
+    const t = setInterval(() => {
+      analyticsApi.getStrategicMetrics()
+        .then((m) => { setStrategic(m); setStrategicError(null); })
+        .catch(() => undefined);
+    }, 60000);
+    return () => clearInterval(t);
+  }, [showStrategic]);
 
   /* ── Install a recommended template ──
      Creates a draft Application record via POST /api/apps and then
@@ -367,6 +398,117 @@ export function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* F1.1.2 领导版：战略指标 (leader/admin only) */}
+      {showStrategic && (
+        <section data-testid="strategic-metrics">
+          <div className="flex items-baseline justify-between mb-2">
+            <h3 className="text-base font-semibold flex items-center gap-2">
+              <Gauge className="size-4 text-amber-500" />
+              战略指标
+              {strategic && (
+                <span className="text-xs text-muted-foreground font-normal">
+                  · 数据快照 {new Date(strategic.as_of).toLocaleTimeString("zh-CN")}
+                </span>
+              )}
+            </h3>
+            {strategicError && (
+              <span className="text-xs text-destructive flex items-center gap-1">
+                <AlertTriangle className="size-3" /> {strategicError}
+              </span>
+            )}
+          </div>
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+            {/* 人 — users */}
+            <Card className="border-l-4 border-l-sky-500">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs text-muted-foreground">人员</span>
+                  <Users className="size-4 text-sky-500" />
+                </div>
+                <div className="text-2xl font-bold">{strategic?.users.total ?? "—"}</div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  活跃 {strategic?.users.active ?? "—"} ·{" "}
+                  {strategic && strategic.users.total > 0
+                    ? Math.round((strategic.users.active / strategic.users.total) * 100)
+                    : "—"}%
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* 应用 — apps */}
+            <Card className="border-l-4 border-l-emerald-500">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs text-muted-foreground">应用</span>
+                  <Building2 className="size-4 text-emerald-500" />
+                </div>
+                <div className="text-2xl font-bold">{strategic?.apps.total ?? "—"}</div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  发布 {strategic?.apps.published ?? "—"} · 草稿 {strategic?.apps.draft ?? "—"} ·{" "}
+                  {strategic?.apps.adoptionRate ?? "—"}% 采用
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* 内容 — content */}
+            <Card className="border-l-4 border-l-violet-500">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs text-muted-foreground">内容</span>
+                  <Database className="size-4 text-violet-500" />
+                </div>
+                <div className="text-2xl font-bold">{strategic?.content.objects ?? "—"}</div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  页面 {strategic?.content.pages ?? "—"} · 流程 {strategic?.content.flows ?? "—"} ·{" "}
+                  平均 {strategic?.content.objects_per_app ?? "—"}/应用
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* 数字员工 — agents */}
+            <Card className="border-l-4 border-l-blue-500">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs text-muted-foreground">数字员工</span>
+                  <Bot className="size-4 text-blue-500" />
+                </div>
+                <div className="text-2xl font-bold">{strategic?.agents.total ?? "—"}</div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  在线 {strategic?.agents.active ?? "—"} · {strategic?.agents.onlineRate ?? "—"}%
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* 协作 — collaboration */}
+            <Card className="border-l-4 border-l-orange-500">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs text-muted-foreground">协作</span>
+                  <MessageSquare className="size-4 text-orange-500" />
+                </div>
+                <div className="text-2xl font-bold">{strategic?.collaboration.messages ?? "—"}</div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  未读 {strategic?.collaboration.unread ?? "—"} · 审计 {strategic?.collaboration.audit_logs ?? "—"}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* 表覆盖提示：有缺失表时展示，便于运维排查 */}
+          {strategic && Object.values(strategic.coverage).some((v) => v === false) && (
+            <div className="mt-2 text-xs text-muted-foreground flex flex-wrap gap-x-3 gap-y-1">
+              <AlertTriangle className="size-3 text-amber-500 inline" />
+              <span>缺失表：</span>
+              {Object.entries(strategic.coverage)
+                .filter(([, ok]) => !ok)
+                .map(([t]) => (
+                  <Badge key={t} variant="outline" className="text-[10px]">{t}</Badge>
+                ))}
+            </div>
+          )}
+        </section>
+      )}
 
       {/* F1.1.4 领导版：数字员工概览 (visible for leader/manager roles) */}
       {(role === "leader" || role === "admin" || role === "manager") && (

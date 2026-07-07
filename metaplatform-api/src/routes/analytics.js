@@ -28,6 +28,7 @@
  *   POST   /api/analytics/simulate            — Monte Carlo discrete-event sim
  */
 import { Router } from "express";
+import db from "../db.js";
 import * as clickhouse from "../integrations/clickhouse.js";
 import * as nl2sql from "../ai/nl2sql.js";
 import * as quality from "../ai/quality.js";
@@ -169,6 +170,80 @@ router.post("/simulate", async (req, res, next) => {
   try {
     const data = await simulator.simulate(req.body || {});
     res.json({ success: true, data });
+  } catch (err) { next(err); }
+});
+
+// ─── GET /strategic ── F1.1.2 strategic dashboard metrics ──────
+//
+// Aggregates fleet-wide health so the leader dashboard can show
+// real numbers instead of placeholder cards. Falls back to zeros
+// if any aggregation table is missing — these are best-effort.
+router.get("/strategic", async (_req, res, next) => {
+  try {
+    // Synchronous count helper — better-sqlite3 is sync, so wrapping with
+    // `await` returned a non-Promise and caused try/catch to swallow errors
+    // silently, leaving us with all-zero metrics even when tables had rows.
+    const safeCount = (sql, params = []) => {
+      try { return db.prepare(sql).get(...params)?.c ?? 0; }
+      catch { return 0; }
+    };
+
+    // ── Known tables (introspect at runtime) ──
+    const knownTables = new Set(
+      db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all().map(r => r.name)
+    );
+
+    const countFrom = (table, where = "") =>
+      knownTables.has(table) ? safeCount(`SELECT COUNT(*) AS c FROM ${table}${where ? " WHERE " + where : ""}`) : 0;
+
+    const totalUsers    = countFrom("users");
+    const activeUsers   = countFrom("users", "status = 'active'");
+    const totalApps     = countFrom("applications");
+    const publishedApps = countFrom("applications", "status = 'published'");
+    const draftApps     = countFrom("applications", "status = 'draft'");
+    const totalObjects  = countFrom("ontology_objects");
+    const totalPages    = countFrom("app_pages");
+    const totalFlows    = countFrom("process_definitions");
+    const totalAgents   = countFrom("agents");
+    const activeAgents  = countFrom("agents", "status = 'active'");
+    const totalMessages = countFrom("messages");
+    const unreadMessages = countFrom("messages", "read_at IS NULL");
+    const totalLogs     = countFrom("operation_logs");
+
+    // Adoption = published apps / total apps (skip division if 0)
+    const adoptionRate    = totalApps   > 0 ? Math.round((publishedApps / totalApps)   * 100) : 0;
+    const agentOnlineRate = totalAgents > 0 ? Math.round((activeAgents  / totalAgents) * 100) : 0;
+
+    res.json({
+      success: true,
+      data: {
+        // 人 — users
+        users: { total: totalUsers, active: activeUsers },
+        // 应用 — apps
+        apps: { total: totalApps, published: publishedApps, draft: draftApps, adoptionRate },
+        // 内容 — ontology / pages / flows
+        content: {
+          objects: totalObjects, pages: totalPages, flows: totalFlows,
+          objects_per_app: totalApps > 0 ? Math.round(totalObjects / totalApps) : 0,
+        },
+        // 数字员工 — agents
+        agents: { total: totalAgents, active: activeAgents, onlineRate: agentOnlineRate },
+        // 协作 — messages + audit
+        collaboration: { messages: totalMessages, unread: unreadMessages, audit_logs: totalLogs },
+        // 表覆盖（前端可提示"缺哪张表"）
+        coverage: {
+          users: knownTables.has("users"),
+          applications: knownTables.has("applications"),
+          ontology_objects: knownTables.has("ontology_objects"),
+          app_pages: knownTables.has("app_pages"),
+          process_definitions: knownTables.has("process_definitions"),
+          agents: knownTables.has("agents"),
+          messages: knownTables.has("messages"),
+          operation_logs: knownTables.has("operation_logs"),
+        },
+        as_of: new Date().toISOString(),
+      },
+    });
   } catch (err) { next(err); }
 });
 
