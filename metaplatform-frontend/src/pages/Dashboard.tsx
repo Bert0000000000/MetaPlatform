@@ -24,6 +24,7 @@ import {
   Building2, MessageSquare, Gauge, AlertTriangle,
 } from "lucide-react";
 import { PageHeader, StatCard } from "@/components/ui/stat";
+import { RuntimeHealthChip } from "@/components/RuntimeHealthChip";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 
@@ -311,6 +312,9 @@ export function DashboardPage() {
           {toast}
         </div>
       )}
+
+      {/* Runtime health chip — shared design with AppPublish banner. Hidden when docker is healthy. */}
+      <RuntimeHealthChip />
 
       <div className="flex items-center justify-between">
         <div>

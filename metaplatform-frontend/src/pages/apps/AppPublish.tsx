@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader, StatCard } from "@/components/ui/stat";
+import { RuntimeHealthChip } from "@/components/RuntimeHealthChip";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -367,7 +368,7 @@ export default function AppPublish() {
       )}
 
       {/* Published URL card */}
-      <RuntimeHealthBanner />
+      <RuntimeHealthChip />
 
       {isPublished && publishedUrl && (
         <Card className="border-primary/30 bg-primary/5">
@@ -985,42 +986,5 @@ function PublishedEnvironments({ appId }: { appId: string }) {
         })}
       </CardContent>
     </Card>
-  );
-}
-
-/**
- * RuntimeHealthBanner — platform-wide docker daemon health shown at
- * the top of the publish tab. Loads GET /api/runtime/health once
- * when the page mounts; subsequent visits refetch the request.
- *
- *  - `docker === "ok"`     -> hidden
- *  - `docker === "degraded"` -> yellow banner explaining that
- *    published apps will fall back to the in-process snapshot reader.
- */
-function RuntimeHealthBanner() {
-  type Health = { docker: "ok" | "degraded"; error?: string };
-  const [health, setHealth] = useState<Health | null>(null);
-  useEffect(() => {
-    let alive = true;
-    appsApi.getRuntimeHealth()
-      .then((h) => { if (alive) setHealth(h as Health); })
-      .catch(() => { if (alive) setHealth({ docker: "degraded", error: "health check failed" }); });
-    return () => { alive = false; };
-  }, []);
-
-  if (!health || health.docker === "ok") return null;
-  return (
-    <div className="rounded-lg border border-yellow-500/40 bg-yellow-50 dark:bg-yellow-900/20 px-4 py-3 flex items-start gap-3">
-      <AlertCircle className="size-5 text-yellow-600 dark:text-yellow-400 shrink-0 mt-0.5" />
-      <div className="flex-1">
-        <p className="text-sm font-medium text-yellow-900 dark:text-yellow-100">
-          运行时未隔离（Docker 不可达）
-        </p>
-        <p className="text-xs text-yellow-800 dark:text-yellow-200 mt-1">
-          {health.error ? `原因: ${health.error}。` : ""}
-          已发布的应用将以 <span className="font-mono">快照降级</span> 模式在平台进程内运行，进程内隔离（每个 app 单独的 sqlite 文件）但不再独立容器。
-        </p>
-      </div>
-    </div>
   );
 }
