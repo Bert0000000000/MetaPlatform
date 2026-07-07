@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import {
   Box, Activity, AlertTriangle, CheckCircle2, Container, RefreshCw,
-  Server, ExternalLink, Layers,
+  Server, ExternalLink, Layers, Trash2,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
