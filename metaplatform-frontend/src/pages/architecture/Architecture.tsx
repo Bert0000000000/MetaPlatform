@@ -54,6 +54,75 @@ function LegendChip({ color, label }: { color: ArchLayer; label: string }) {
   );
 }
 
+/**
+ * Inline-edit text field. Click-to-edit, blur or Enter to commit.
+ * Used in design mode so architecture rows don't need a separate
+ * "Edit" dialog just to change a name.
+ */
+function EditableText({
+  value,
+  onChange,
+  className = "",
+  multiline = false,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  className?: string;
+  multiline?: boolean;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value);
+
+  // Keep draft in sync if the parent value changes (e.g. from server reload).
+  useEffect(() => { if (!editing) setDraft(value); }, [value, editing]);
+
+  function commit() {
+    setEditing(false);
+    if (draft !== value) onChange(draft);
+  }
+
+  if (editing) {
+    if (multiline) {
+      return (
+        <textarea
+          autoFocus
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={commit}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); commit(); }
+            if (e.key === "Escape") { setDraft(value); setEditing(false); }
+          }}
+          rows={2}
+          className={`w-full rounded border border-primary/40 bg-background px-1 py-0.5 outline-none focus:ring-1 focus:ring-primary/40 ${className}`}
+        />
+      );
+    }
+    return (
+      <input
+        autoFocus
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") { e.preventDefault(); commit(); }
+          if (e.key === "Escape") { setDraft(value); setEditing(false); }
+        }}
+        className={`w-full rounded border border-primary/40 bg-background px-1 py-0.5 outline-none focus:ring-1 focus:ring-primary/40 ${className}`}
+      />
+    );
+  }
+  return (
+    <div
+      onClick={() => setEditing(true)}
+      className={`rounded px-1 py-0.5 -mx-1 -my-0.5 cursor-text hover:bg-muted/60 ${className}`}
+      title="点击编辑"
+    >
+      {value || <span className="text-muted-foreground/60">（点击编辑）</span>}
+    </div>
+  );
+}
+
 /* ═══════════════════════ Toast helper ═══════════════════════ */
 function useToast() {
   const [toast, setToast] = useState<string | null>(null);
@@ -448,6 +517,27 @@ export function BusinessArchitecture() {
     architectureApi.updateSection("ba", { layers: updated.map(({ icon: _i, color: _c, ...rest }) => rest) }).catch(() => {});
   }
 
+  /* Inline-edit layer name / description (design mode only) */
+  function updateLayerName(level: string, v: string) {
+    const updated = baLayers.map((l) => (l.level === level ? { ...l, name: v } : l));
+    setBALayers(updated);
+    architectureApi.updateSection("ba", { layers: updated.map(({ icon: _i, color: _c, ...rest }) => rest) }).catch(() => {});
+  }
+  function updateLayerDesc(level: string, v: string) {
+    const updated = baLayers.map((l) => (l.level === level ? { ...l, desc: v } : l));
+    setBALayers(updated);
+    architectureApi.updateSection("ba", { layers: updated.map(({ icon: _i, color: _c, ...rest }) => rest) }).catch(() => {});
+  }
+  function handleDeleteLayer(level: string) {
+    const target = baLayers.find((l) => l.level === level);
+    if (!target) return;
+    if (!window.confirm(`确认删除 ${target.level} ${target.name}？`)) return;
+    const updated = baLayers.filter((l) => l.level !== level);
+    setBALayers(updated);
+    architectureApi.updateSection("ba", { layers: updated.map(({ icon: _i, color: _c, ...rest }) => rest) }).catch(() => {});
+    setToast(`已删除层级：${target.level}`);
+  }
+
   /* Row click */
   function handleRowClick(layer: BALayer) {
     setSelectedLayer(layer);
@@ -548,32 +638,118 @@ export function BusinessArchitecture() {
         </TabsList>
         <TabsContent value="layers" className="mt-4">
           <Card>
-            <CardHeader>
-              <CardTitle className="text-base">业务架构分层模型</CardTitle>
-              <CardDescription>从价值链到业务对象，逐层分解。点击行查看详情。</CardDescription>
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-base">业务架构分层模型</CardTitle>
+                  <CardDescription className="text-xs">
+                    {designMode
+                      ? "设计态：可拖拽重排，点击名称 / 描述可重命名。"
+                      : "运行态：点击行查看详情。"}
+                  </CardDescription>
+                </div>
+                <span className="text-[11px] text-muted-foreground tabular-nums">{filteredLayers.length} 层</span>
+              </div>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {filteredLayers.map((l, i) => (
-                  <div key={l.level} className="flex items-center gap-3">
-                    <div className={`size-12 rounded-lg ${l.color} text-white flex items-center justify-center font-semibold shrink-0`}>
-                      {l.level}
-                    </div>
+            <CardContent className="pt-0">
+              {/* Compaction note: previous version used size-12 (48px) avatar
+                  circles + size-6 (24px) icons + p-3 (12px) row padding,
+                  which made the whole stack feel heavy. Switched to size-8
+                  + size-4 + py-2 for a denser list that fits the same
+                  amount of detail on one screen. */}
+              <div className="space-y-1.5">
+                {filteredLayers.map((l, i) => {
+                  const LayerIcon = l.icon;
+                  const editable = designMode;
+                  return (
                     <div
-                      className="flex-1 flex items-center gap-3 p-3 border rounded hover:border-primary cursor-pointer transition-colors"
-                      onClick={() => handleRowClick(l)}
+                      key={l.level}
+                      draggable={editable}
+                      onDragStart={(e) => { if (editable) { e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", String(i)); } }}
+                      onDragOver={(e) => { if (editable) e.preventDefault(); }}
+                      onDrop={(e) => {
+                        if (!editable) return;
+                        e.preventDefault();
+                        const from = Number(e.dataTransfer.getData("text/plain"));
+                        if (Number.isNaN(from) || from === i) return;
+                        const next = [...filteredLayers];
+                        const [moved] = next.splice(from, 1);
+                        next.splice(i, 0, moved);
+                        setBALayers(next);
+                        architectureApi.updateSection("ba", { layers: next.map(({ icon: _i, color: _c, ...rest }) => rest) }).catch(() => {});
+                        setToast(`已调整层级顺序`);
+                      }}
+                      className={`group flex items-center gap-2 rounded-md border bg-card px-2 py-1.5 transition-colors ${editable ? "cursor-grab active:cursor-grabbing hover:border-primary/40" : "cursor-pointer hover:border-primary/40"}`}
+                      onClick={() => { if (!editable) handleRowClick(l); }}
                     >
-                      <div className="text-2xl"><l.icon className="size-6" /></div>
-                      <div className="flex-1">
-                        <div className="font-medium">{l.name}</div>
-                        <div className="text-xs text-muted-foreground">{l.desc}</div>
+                      {/* Layer badge — 32px instead of 48px */}
+                      <div className={`size-8 rounded ${l.color} text-white flex items-center justify-center font-semibold text-[10px] shrink-0`}>
+                        {l.level}
                       </div>
-                      <Badge variant="secondary">{l.count} 项</Badge>
-                      <Eye className="size-4 text-muted-foreground" />
-                      {i < filteredLayers.length - 1 && <ArrowDown className="size-4 text-muted-foreground ml-2" />}
+
+                      {/* Icon — 16px instead of 24px */}
+                      <LayerIcon className="size-4 text-muted-foreground shrink-0" />
+
+                      {/* Name + desc — inline-editable in design mode */}
+                      <div className="flex-1 min-w-0">
+                        {editable ? (
+                          <EditableText
+                            value={l.name}
+                            onChange={(v) => updateLayerName(l.level, v)}
+                            className="text-sm font-medium leading-5"
+                          />
+                        ) : (
+                          <div className="text-sm font-medium truncate">{l.name}</div>
+                        )}
+                        {editable ? (
+                          <EditableText
+                            value={l.desc}
+                            onChange={(v) => updateLayerDesc(l.level, v)}
+                            className="text-[11px] text-muted-foreground leading-4"
+                            multiline
+                          />
+                        ) : (
+                          <div className="text-[11px] text-muted-foreground truncate">{l.desc}</div>
+                        )}
+                      </div>
+
+                      {/* Count badge */}
+                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0 shrink-0">{l.count}</Badge>
+
+                      {/* Edit affordances in design mode */}
+                      {editable ? (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleDeleteLayer(l.level); }}
+                          className="size-6 rounded inline-flex items-center justify-center text-muted-foreground hover:bg-destructive/10 hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                          title="删除该层级"
+                        >
+                          <X className="size-3" />
+                        </button>
+                      ) : (
+                        <Eye className="size-3.5 text-muted-foreground shrink-0" />
+                      )}
+
+                      {/* Down arrow between rows */}
+                      {i < filteredLayers.length - 1 && <ArrowDown className="size-3 text-muted-foreground shrink-0" />}
                     </div>
+                  );
+                })}
+
+                {/* Inline add row (only in design mode) */}
+                {designMode && (
+                  <div className="flex items-center gap-2 rounded-md border border-dashed px-2 py-1.5 text-muted-foreground hover:border-primary/40 hover:text-primary transition-colors">
+                    <div className="size-8 rounded bg-muted inline-flex items-center justify-center">
+                      <Plus className="size-4" />
+                    </div>
+                    <input
+                      value={newLayerName}
+                      onChange={(e) => setNewLayerName(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter") handleAddLayer(); }}
+                      placeholder={`新增 L${baLayers.length + 1} 层（Enter 确认）`}
+                      className="flex-1 bg-transparent text-sm placeholder:text-muted-foreground/60 focus:outline-none"
+                    />
                   </div>
-                ))}
+                )}
               </div>
               {filteredLayers.length === 0 && (
                 <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
@@ -616,8 +792,14 @@ export function BusinessArchitecture() {
                 /* ── Design Mode: Editable Canvas ── */
                 <div className="px-4 pt-2 pb-4">
                   {/* Canvas area */}
-                  <div className="rounded-lg border-2 border-dashed p-4 min-h-[120px]" style={{ borderColor: "#d6d4d0", background: "#fafaf9" }}>
-                    <div className="flex flex-wrap items-start gap-3">
+                  {/* Compaction note: stage card was 160×~140px with p-3 +
+                      6px icons + "编辑" button at the bottom that did nothing
+                      useful (handleEditVCStage opens the same dialog as the
+                      row click in read mode). Removed that button and shrunk
+                      the card to minWidth 124 + p-2 so 6 stages fit on a
+                      1280-wide screen without horizontal scroll. */}
+                  <div className="rounded-md border border-dashed border-border/60 bg-muted/20 p-2.5 min-h-[80px]">
+                    <div className="flex flex-wrap items-start gap-2">
                       {valueChain.map((v, i) => {
                         const colors = ["#3b82f6", "#f97316", "#eab308", "#22c55e", "#8b5cf6", "#ec4899"];
                         const color = colors[i % colors.length];
@@ -629,56 +811,84 @@ export function BusinessArchitecture() {
                               onDragStart={() => handleDragStart(i)}
                               onDragOver={handleDragOver}
                               onDrop={() => handleDrop(i)}
-                              className="group relative rounded-lg border cursor-grab active:cursor-grabbing transition-all hover:shadow-md"
-                              style={{ borderColor: "#d6d4d0", background: "#f8f7f5", minWidth: 160 }}
+                              onDoubleClick={() => handleEditVCStage(i)}
+                              className="group relative rounded-md border bg-card hover:shadow-sm transition-all"
+                              style={{ borderColor: "#d6d4d0", minWidth: 124 }}
                             >
                               {/* Drag handle */}
-                              <div className="absolute top-1 left-2 text-[10px] cursor-grab" style={{ color: "#94a3b8" }}>⋮⋮</div>
+                              <div className="absolute top-0.5 left-1.5 text-[9px] text-muted-foreground cursor-grab select-none" aria-hidden>⋮⋮</div>
 
                               {/* Delete button */}
                               <button
                                 onClick={() => handleDeleteVCStage(i)}
-                                className="absolute top-1 right-1 size-5 rounded-full bg-red-50 border border-red-200 items-center justify-center hidden group-hover:flex hover:bg-red-100"
+                                className="absolute top-0.5 right-0.5 size-4 rounded-full inline-flex items-center justify-center text-muted-foreground hover:bg-destructive/10 hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                                title="删除该阶段"
                               >
-                                <X className="size-3 text-red-500" />
+                                <X className="size-2.5" />
                               </button>
 
                               {/* Content */}
-                              <div className="p-3 pt-2">
+                              <div className="px-2 pt-2 pb-1.5">
                                 {/* Step number + icon */}
-                                <div className="flex items-center gap-2 mb-2">
-                                  <div className="size-6 rounded-full flex items-center justify-center text-[10px] font-bold" style={{ background: color, color: "#fff" }}>
+                                <div className="flex items-center gap-1.5 mb-1">
+                                  <div className="size-5 rounded-full inline-flex items-center justify-center text-[9px] font-bold text-white shrink-0" style={{ background: color }}>
                                     {i + 1}
                                   </div>
-                                  <div className="size-6 rounded flex items-center justify-center" style={{ background: `${color}15`, border: `1px solid ${color}30` }}>
-                                    <Icon className="size-3.5" style={{ color }} />
+                                  <div className="size-5 rounded inline-flex items-center justify-center shrink-0" style={{ background: `${color}15`, border: `1px solid ${color}30` }}>
+                                    <Icon className="size-3" style={{ color }} />
                                   </div>
                                 </div>
-                                {/* Name */}
-                                <div className="font-medium text-xs mb-0.5">{v.name}</div>
-                                {/* Apps */}
-                                <div className="flex flex-wrap gap-1 mb-2">
+                                {/* Name — inline editable */}
+                                <EditableText
+                                  value={v.name}
+                                  onChange={(val) => {
+                                    const next = [...valueChain];
+                                    next[i] = { ...next[i], name: val };
+                                    setValueChain(next);
+                                    setToast(`已修改阶段 ${i + 1} 名称`);
+                                  }}
+                                  className="text-[11px] font-medium leading-4 mb-0.5"
+                                />
+                                {/* Apps — inline editable tags */}
+                                <div className="flex flex-wrap gap-0.5">
                                   {v.apps.map(app => (
-                                    <code key={app} className="text-[10px] rounded px-1 py-0.5 border font-mono" style={{ borderColor: "#d1d5db", background: "#fff" }}>
+                                    <span key={app} className="inline-flex items-center gap-0.5 rounded border bg-muted/50 px-1 py-px text-[9px] font-mono">
                                       {app}
-                                    </code>
+                                      <button
+                                        onClick={() => {
+                                          const next = [...valueChain];
+                                          next[i] = { ...next[i], apps: next[i].apps.filter((a) => a !== app) };
+                                          setValueChain(next);
+                                          setToast(`已从 ${v.name} 移除：${app}`);
+                                        }}
+                                        className="text-muted-foreground hover:text-destructive"
+                                        title="移除该应用"
+                                      >
+                                        <X className="size-2" />
+                                      </button>
+                                    </span>
                                   ))}
+                                  <input
+                                    placeholder="+ app"
+                                    className="inline-flex w-12 rounded border border-dashed bg-transparent px-1 py-px text-[9px] font-mono text-muted-foreground placeholder:text-muted-foreground/60 focus:border-primary/40 focus:outline-none"
+                                    onKeyDown={(e) => {
+                                      if (e.key === "Enter") {
+                                        const val = (e.currentTarget.value || "").trim();
+                                        if (!val) return;
+                                        const next = [...valueChain];
+                                        next[i] = { ...next[i], apps: [...next[i].apps, val] };
+                                        setValueChain(next);
+                                        e.currentTarget.value = "";
+                                        setToast(`已添加应用：${val}`);
+                                      }
+                                    }}
+                                  />
                                 </div>
-                                {/* Edit button */}
-                                <button
-                                  onClick={() => handleEditVCStage(i)}
-                                  className="w-full text-[10px] py-1 rounded border text-center hover:bg-background transition-colors"
-                                  style={{ borderColor: "#d6d4d0", color: "#94a3b8" }}
-                                >
-                                  <Edit className="size-3 inline mr-1" /> 编辑
-                                </button>
                               </div>
                             </div>
                             {/* Arrow between stages */}
                             {i < valueChain.length - 1 && (
-                              <div className="flex items-center px-1 shrink-0">
-                                <ArrowRight className="size-4" style={{ color: "#94a3b8" }} />
-                              </div>
+                              <ArrowRight className="size-3 text-muted-foreground shrink-0 mx-0.5" />
                             )}
                           </div>
                         );
@@ -686,36 +896,37 @@ export function BusinessArchitecture() {
                       {/* Add button at the end */}
                       <button
                         onClick={handleAddVCStage}
-                        className="rounded-lg border-2 border-dashed flex flex-col items-center justify-center gap-1 hover:border-primary/50 hover:bg-primary/5 transition-colors"
-                        style={{ borderColor: "#d6d4d0", minWidth: 120, minHeight: 120, color: "#94a3b8" }}
+                        className="rounded-md border-2 border-dashed border-border/60 flex flex-col items-center justify-center gap-0.5 hover:border-primary/50 hover:bg-primary/5 hover:text-primary text-muted-foreground transition-colors"
+                        style={{ minWidth: 72, minHeight: 72 }}
                       >
-                        <Plus className="size-4" />
-                        <span className="text-[10px]">添加阶段</span>
+                        <Plus className="size-3.5" />
+                        <span className="text-[9px]">添加阶段</span>
                       </button>
                     </div>
                   </div>
 
                   {/* Supporting systems */}
-                  <div className="mt-3">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Server className="size-3.5" style={{ color: "#94a3b8" }} />
-                      <span className="text-xs font-medium" style={{ color: "#94a3b8" }}>支撑系统</span>
+                  <div className="mt-2.5">
+                    <div className="flex items-center gap-1.5 mb-1.5">
+                      <Server className="size-3 text-muted-foreground" />
+                      <span className="text-[11px] font-medium text-muted-foreground">支撑系统</span>
                     </div>
-                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <div className="flex items-center gap-1 flex-wrap">
                       {valueChain.map((v, i) => {
                         const colors = ["#3b82f6", "#f97316", "#eab308", "#22c55e", "#8b5cf6", "#ec4899"];
                         const color = colors[i % colors.length];
                         return (
                           <div key={`sup-${v.name}-${i}`} className="flex items-center gap-1">
-                            <div className="rounded border px-2 py-1.5" style={{ borderColor: "#d6d4d0", background: "#f8f7f5" }}>
+                            <div className="rounded border border-border/60 bg-muted/30 px-1.5 py-1">
                               <div className="text-[10px] font-medium" style={{ color }}>{v.name}</div>
-                              <div className="flex gap-1 mt-0.5">
-                                {v.apps.map(app => (
-                                  <code key={app} className="text-[10px] rounded px-0.5 border font-mono" style={{ borderColor: "#d1d5db", background: "#fff" }}>{app}</code>
+                              <div className="flex gap-0.5 mt-0.5">
+                                {v.apps.slice(0, 3).map(app => (
+                                  <code key={app} className="text-[9px] rounded px-0.5 border border-border/60 bg-background font-mono">{app}</code>
                                 ))}
+                                {v.apps.length > 3 && <span className="text-[9px] text-muted-foreground">+{v.apps.length - 3}</span>}
                               </div>
                             </div>
-                            {i < valueChain.length - 1 && <ArrowRight className="size-2.5 shrink-0" style={{ color: "#94a3b8" }} />}
+                            {i < valueChain.length - 1 && <ArrowRight className="size-2 text-muted-foreground shrink-0" />}
                           </div>
                         );
                       })}
@@ -1821,26 +2032,98 @@ export function TechArchitecture() {
       </div>
 
       <Card>
-        <CardHeader>
+        <CardHeader className="pb-2">
           <CardTitle className="text-base">技术栈总览</CardTitle>
-          <CardDescription>6 大层级，每层关键技术选型。{designMode ? "设计态 - 可编辑" : "运行态 - 只读"}。点击层级查看详情。</CardDescription>
+          <CardDescription className="text-xs">
+            {designMode
+              ? "设计态：拖拽技术 chip 调整顺序 / 点击 × 删除 / 输入回车新增。点击技术查看详情。"
+              : "运行态：点击层级或技术查看详情。"}
+          </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
+        <CardContent className="pt-0">
+          {/* Compaction note: was p-3 + gap-2 + text-xs chip + mb-2 between
+              header and chip row. Halved to py-2 + gap-1.5 + text-[11px]
+              so all six layers fit on one screen on a 13" laptop. */}
+          <div className="space-y-2">
             {techStack.map((s) => (
               <div
                 key={s.layer}
-                className="rounded-lg border p-3 cursor-pointer hover:border-primary transition-colors"
-                onClick={() => handleStackClick(s)}
+                className="rounded-md border px-2 py-2 hover:border-primary/40 transition-colors"
+                onClick={() => !designMode && handleStackClick(s)}
               >
-                <div className="flex items-center gap-2 mb-2">
-                  <Badge variant="secondary">{s.layer}</Badge>
-                  <span className="text-xs text-muted-foreground">{s.items.length} 项技术</span>
+                <div className="flex items-center gap-2 mb-1.5">
+                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{s.layer}</Badge>
+                  <span className="text-[11px] text-muted-foreground tabular-nums">{s.items.length} 项</span>
+                  {designMode && (
+                    <span className="ml-auto text-[10px] text-muted-foreground/70">设计态可编辑</span>
+                  )}
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  {s.items.map((t) => (
-                    <code key={t} className="text-xs bg-muted px-2 py-1 rounded">{t}</code>
+                <div className="flex flex-wrap gap-1.5">
+                  {s.items.map((t, ti) => (
+                    <span
+                      key={t}
+                      draggable={designMode}
+                      onDragStart={(e) => {
+                        if (!designMode) return;
+                        e.dataTransfer.effectAllowed = "move";
+                        e.dataTransfer.setData("application/x-tech-chip", JSON.stringify({ layer: s.layer, idx: ti }));
+                      }}
+                      onDragOver={(e) => { if (designMode) e.preventDefault(); }}
+                      onDrop={(e) => {
+                        if (!designMode) return;
+                        e.preventDefault();
+                        const raw = e.dataTransfer.getData("application/x-tech-chip");
+                        if (!raw) return;
+                        const data = JSON.parse(raw);
+                        if (data.layer !== s.layer) return; // single-layer reorder only
+                        const items = [...s.items];
+                        const [moved] = items.splice(data.idx, 1);
+                        items.splice(ti, 0, moved);
+                        const updated = techStack.map((row) => row.layer === s.layer ? { ...row, items } : row);
+                        setTechStack(updated);
+                        architectureApi.updateSection("ta", { techStack: updated }).catch(() => {});
+                        setToast(`已调整 ${s.layer} 内的顺序`);
+                      }}
+                      className={`group inline-flex items-center gap-1 rounded border bg-muted/50 px-1.5 py-0.5 text-[11px] font-mono ${designMode ? "cursor-grab active:cursor-grabbing hover:border-primary/40" : "cursor-pointer hover:border-primary/40"}`}
+                      onClick={(e) => { e.stopPropagation(); if (!designMode) handleStackClick(s); }}
+                    >
+                      {t}
+                      {designMode && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const updated = techStack
+                              .map((row) => row.layer === s.layer ? { ...row, items: row.items.filter((_, i) => i !== ti) } : row);
+                            setTechStack(updated);
+                            architectureApi.updateSection("ta", { techStack: updated }).catch(() => {});
+                            setToast(`已从 ${s.layer} 删除：${t}`);
+                          }}
+                          className="text-muted-foreground hover:text-destructive"
+                          title="删除该技术"
+                        >
+                          <X className="size-2.5" />
+                        </button>
+                      )}
+                    </span>
                   ))}
+                  {designMode && (
+                    <input
+                      placeholder="+ 新增技术"
+                      className="inline-flex items-center rounded border border-dashed bg-transparent px-1.5 py-0.5 text-[11px] font-mono text-muted-foreground placeholder:text-muted-foreground/60 focus:border-primary/40 focus:outline-none"
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          const v = (e.currentTarget.value || "").trim();
+                          if (!v) return;
+                          const updated = techStack.map((row) =>
+                            row.layer === s.layer ? { ...row, items: [...row.items, v] } : row);
+                          setTechStack(updated);
+                          architectureApi.updateSection("ta", { techStack: updated }).catch(() => {});
+                          setToast(`已新增到 ${s.layer}：${v}`);
+                          e.currentTarget.value = "";
+                        }
+                      }}
+                    />
+                  )}
                 </div>
               </div>
             ))}
