@@ -99,7 +99,7 @@ services:
 
   # ── Flowable BPMN Engine (process orchestration) ───────────
   flowable-rest:
-    image: flowable/flowable-rest:6.5.0
+    image: flowable/flowable-rest:8.0.0
     container_name: mp-flowable-rest
     environment:
       - SPRING_DATASOURCE_URL=jdbc:h2:mem:flowable;DB_CLOSE_DELAY=-1
