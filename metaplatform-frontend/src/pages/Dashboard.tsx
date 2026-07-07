@@ -35,6 +35,25 @@ function resolveIcon(iconName?: string): React.ElementType {
   return Box;
 }
 
+/* ── Recommended-app catalog (mirrors the SeededAppTemplates
+     served by the backend; see routes/apps.js seed) ── */
+type RecommendedTemplate = {
+  key: string;             // stable slug used to detect "already installed"
+  name: string;
+  desc: string;
+  installs: number;
+  rating: number;
+  icon: typeof Users;
+  color: string;
+  category: "CRM" | "数据" | "流程";
+  iconName: string;        // Application.icon string used by appsApi
+};
+const RECOMMENDED_TEMPLATES: RecommendedTemplate[] = [
+  { key: "crm",   name: "CRM 客户管理",   desc: "客户关系管理，支持销售全流程",   installs: 1280, rating: 4.8, icon: Users,      color: "bg-blue-500/10 text-blue-600",     category: "CRM",   iconName: "Users" },
+  { key: "bi",    name: "BI 数据分析",     desc: "商业智能分析，多维数据可视化",   installs:  856, rating: 4.6, icon: BarChart3,  color: "bg-green-500/10 text-green-600",   category: "数据",  iconName: "BarChart3" },
+  { key: "bpm",   name: "BPM 流程管理",    desc: "业务流程编排和审批自动化",       installs:  642, rating: 4.5, icon: GitBranch,  color: "bg-orange-500/10 text-orange-600", category: "流程",  iconName: "GitBranch" },
+];
+
 /* ── Mock data that stays (no API for audit log on dashboard) ── */
 const RECENT_ACTIVITIES_FALLBACK = [
   { time: "10:42", actor: "张伟", action: "修改了", target: "客户对象 / 客户等级字段", icon: Pencil, link: "/ontology" },
@@ -99,6 +118,14 @@ export function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  /* Recommended-app install state. We don't reuse the dashboard `apps`
+     state for the "installed" badge — that state already reflects all
+     tenant applications, but the install button should track just the
+     templates this user installed from the catalog so that
+     "已安装 · 打开" lands on the user's own copy, not someone else's
+     CRM. */
+  const [installedFromTemplates, setInstalledFromTemplates] = useState<Application[]>([]);
+  const [installingKey, setInstallingKey] = useState<string | null>(null);
 
   /* ── Fetch real data ── */
   const fetchData = useCallback(async () => {
@@ -110,7 +137,30 @@ export function DashboardPage() {
         messagesApi.list(),
         agentsApi.list(),
       ]);
-      if (appsData.status === "fulfilled") setApps(appsData.value);
+      if (appsData.status === "fulfilled") {
+        const all = appsData.value;
+        setApps(all);
+        // Mark a row as "installed from template" if it matches one of
+        // our recommended templates by name (exact, trimmed) or by
+        // key-derived substring. Using just .name === tpl.name used
+        // to miss rows because some user-created applications had
+        // padded spaces or a slight description drift, and the
+        // "installed" badge never showed up.
+        setInstalledFromTemplates(
+          all.filter((a) =>
+            RECOMMENDED_TEMPLATES.some((t) => {
+              const n = (a.name ?? "").trim();
+              if (n === t.name) return true;
+              // Substring match: if user-installed row contains the
+              // canonical Chinese name, count it.
+              if (n.includes(t.name) || t.name.includes(n)) return true;
+              // Key fallback: CRM/BI/BPM.
+              const k = t.key.toLowerCase();
+              return n.toLowerCase().includes(k);
+            }),
+          ),
+        );
+      }
       if (msgsData.status === "fulfilled") setMessages(msgsData.value);
       if (agentsData.status === "fulfilled") setAgents(agentsData.value);
       // If all failed, show error
@@ -125,6 +175,34 @@ export function DashboardPage() {
   }, []);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  /* ── Install a recommended template ──
+     Creates a draft Application record via POST /api/apps and then
+     routes the user to its overview. The new application shows up
+     immediately in 应用中心 because it lands in the same table. */
+  const installedApps = installedFromTemplates;
+  async function installRecommended(tpl: RecommendedTemplate) {
+    if (installingKey) return;
+    setInstallingKey(tpl.key);
+    try {
+      const created = await appsApi.create({
+        name: tpl.name,
+        description: tpl.desc,
+        category: tpl.category,
+        icon: tpl.iconName,
+      } as any);
+      setApps((prev) => [created, ...prev]);
+      setInstalledFromTemplates((prev) => [...prev, created]);
+      setToast(`已安装：${tpl.name}`);
+      // Small delay so the toast registers visually before navigation.
+      setTimeout(() => navigate(`/apps/${created.id}/overview`), 250);
+    } catch (err) {
+      const reason = err instanceof Error ? err.message : String(err);
+      setToast(`安装失败：${reason}`);
+    } finally {
+      setInstallingKey(null);
+    }
+  }
 
   /* ── Fetch audit log for recent activities ── */
   useEffect(() => {
@@ -390,31 +468,38 @@ export function DashboardPage() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {[
-              { name: "CRM 客户管理", desc: "客户关系管理，支持销售全流程", installs: 1280, rating: 4.8, icon: Users, color: "bg-blue-500/10 text-blue-600" },
-              { name: "BI 数据分析", desc: "商业智能分析，多维数据可视化", installs: 856, rating: 4.6, icon: BarChart3, color: "bg-green-500/10 text-green-600" },
-              { name: "BPM 流程管理", desc: "业务流程编排和审批自动化", installs: 642, rating: 4.5, icon: GitBranch, color: "bg-orange-500/10 text-orange-600" },
-            ].map((app) => (
-              <div key={app.name} className="rounded-lg border p-4 hover:border-primary transition-colors">
-                <div className="flex items-start justify-between">
-                  <div className={`size-10 rounded-lg flex items-center justify-center ${app.color}`}>
-                    <app.icon className="size-5" />
+            {RECOMMENDED_TEMPLATES.map((tpl) => {
+              const installed = installedApps.find((a) => a.name === tpl.name);
+              const busy = installingKey === tpl.key;
+              return (
+                <div key={tpl.key} className="rounded-lg border p-4 hover:border-primary transition-colors">
+                  <div className="flex items-start justify-between">
+                    <div className={`size-10 rounded-lg flex items-center justify-center ${tpl.color}`}>
+                      <tpl.icon className="size-5" />
+                    </div>
+                    <div className="flex items-center gap-1 text-xs text-amber-500">
+                      <Star className="size-3 fill-amber-500" />
+                      {tpl.rating}
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1 text-xs text-amber-500">
-                    <Star className="size-3 fill-amber-500" />
-                    {app.rating}
+                  <div className="font-medium text-sm mt-2">{tpl.name}</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">{tpl.desc}</div>
+                  <div className="flex items-center justify-between mt-3">
+                    <span className="text-xs text-muted-foreground">{tpl.installs} 次安装</span>
+                    {installed ? (
+                      <Button size="sm" variant="secondary" className="h-7 text-xs" onClick={() => navigate(`/apps/${installed.id}/overview`)}>
+                        <CheckCircle2 className="size-3 mr-1" /> 已安装 · 打开
+                      </Button>
+                    ) : (
+                      <Button size="sm" variant="outline" className="h-7 text-xs" disabled={busy} onClick={() => installRecommended(tpl)}>
+                        {busy ? <Loader2 className="size-3 mr-1 animate-spin" /> : <Download className="size-3 mr-1" />}
+                        安装
+                      </Button>
+                    )}
                   </div>
                 </div>
-                <div className="font-medium text-sm mt-2">{app.name}</div>
-                <div className="text-xs text-muted-foreground mt-0.5">{app.desc}</div>
-                <div className="flex items-center justify-between mt-3">
-                  <span className="text-xs text-muted-foreground">{app.installs} 次安装</span>
-                  <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => navigate("/apps")}>
-                    <Download className="size-3 mr-1" /> 安装
-                  </Button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </CardContent>
       </Card>
