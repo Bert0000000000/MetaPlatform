@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  Building2, Database, Server, Layers, GitBranch, FileText, Plus, Network, Cpu, Workflow, Box, ArrowRight, ArrowDown, BarChart3, Filter, Download, Link, Lightbulb, RefreshCw, User, Zap, Package, Megaphone, FlaskConical, Truck, Factory, Briefcase, Headphones, Smartphone, ClipboardList, DollarSign, Users, Handshake, X, Eye, Search, ChevronDown, Shield, Upload, Lock, Globe, ToggleLeft, ToggleRight, Loader2, Edit,
+  Building2, Database, Server, Layers, GitBranch, FileText, Plus, Network, Cpu, Workflow, Box, ArrowRight, ArrowDown, BarChart3, Filter, Download, Link, Lightbulb, RefreshCw, User, Zap, Package, Megaphone, FlaskConical, Truck, Factory, Briefcase, Headphones, Smartphone, ClipboardList, DollarSign, Users, Handshake, X, Eye, Search, ChevronDown, Shield, Upload, Lock, Globe, ToggleLeft, ToggleRight, Loader2, Edit, Save, RotateCcw,
 } from "lucide-react";
 import { architectureApi } from "@/lib/api";
 
@@ -44,6 +44,63 @@ function layerColor(layer: ArchLayer) {
  * Small dot+label chip used below each diagram so the color tokens
  * are not arbitrary — every diagram now carries an explicit legend.
  */
+/**
+ * Read-only preview of a Topology used in the dashboard cards.
+ * Renders edges + nodes from the persisted state without any
+ * interaction handlers. Auto-fits the viewBox to the union of
+ * node bounds so adding new nodes never crops off-screen.
+ */
+function TopologyPreview({ topology, ariaLabel }: { topology: Topology; ariaLabel: string }) {
+  if (!topology.nodes.length) {
+    return <div className="text-xs text-muted-foreground italic py-6 text-center border border-dashed rounded">暂无数据</div>;
+  }
+  // Compute viewBox that fits every node (with a small padding so the
+  // last pixel of stroke isn't clipped).
+  const PAD = 16;
+  const xs = topology.nodes.flatMap((n) => [n.x, n.x + n.w]);
+  const ys = topology.nodes.flatMap((n) => [n.y, n.y + n.h]);
+  const minX = Math.min(...xs) - PAD;
+  const minY = Math.min(...ys) - PAD;
+  const w = Math.max(...xs) - minX + PAD;
+  const h = Math.max(...ys) - minY + PAD;
+  return (
+    <svg viewBox={`${minX} ${minY} ${w} ${h}`} className="w-full h-auto" role="img" aria-label={ariaLabel}>
+      {topology.edges.map((edge) => {
+        const fromN = topology.nodes.find((n) => n.id === edge.from);
+        const toN = topology.nodes.find((n) => n.id === edge.to);
+        if (!fromN || !toN) return null;
+        const fc = { x: fromN.x + fromN.w / 2, y: fromN.y + fromN.h / 2 };
+        const tc = { x: toN.x + toN.w / 2, y: toN.y + toN.h / 2 };
+        return (
+          <line key={edge.id} x1={fc.x} y1={fc.y} x2={tc.x} y2={tc.y}
+                stroke="hsl(215 14% 65%)" strokeWidth="1.5" />
+        );
+      })}
+      {topology.nodes.map((n) => {
+        const c = layerColor(n.layer);
+        const isContainer = n.kind === "container";
+        return (
+          <g key={n.id}>
+            {isContainer ? (
+              <rect x={n.x} y={n.y} width={n.w} height={n.h} rx="8"
+                    fill={c.fill} stroke={c.stroke} strokeWidth="1" strokeDasharray="6 4" />
+            ) : (
+              <rect x={n.x} y={n.y} width={n.w} height={n.h} rx="6"
+                    fill={c.fill} stroke={c.stroke} strokeWidth="1.5" />
+            )}
+            <text x={n.x + 8} y={n.y + (isContainer ? 16 : Math.min(20, n.h - 8))}
+                  fontSize={isContainer ? 11 : 10} fontWeight="600" fill={c.text}>{n.name}</text>
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
+/**
+ * Small dot+label chip used below each diagram so the color tokens
+ * are not arbitrary — every diagram now carries an explicit legend.
+ */
 function LegendChip({ color, label }: { color: ArchLayer; label: string }) {
   const c = layerColor(color);
   return (
@@ -55,10 +112,378 @@ function LegendChip({ color, label }: { color: ArchLayer; label: string }) {
 }
 
 /**
- * Inline-edit text field. Click-to-edit, blur or Enter to commit.
- * Used in design mode so architecture rows don't need a separate
- * "Edit" dialog just to change a name.
+ * TopologyCanvas
+ * ──────────────
+ * SVG-based interactive canvas for editing a {nodes, edges} topology.
+ *
+ * Used in two flavors from TechArchitecture:
+ *   - canvasOpen === "deploy" → editor for ta.deployTopology
+ *   - canvasOpen === "deps"   → editor for ta.svcDeps
+ *
+ * Interactions (design-mode only):
+ *   • Drag a node           — reposition; updates node.x / node.y on mouseup
+ *   • Click a node          — selects it; right panel shows editable name + layer
+ *   • Delete key on selected— removes the node (and any edges that reference it)
+ *   • "连线" mode toggle    — clicking source node then target node adds an edge
+ *   • "+ 节点" / "+ 容器"   — appends a new node at a free spot
+ *   • Save                  — persists via architectureApi.updateSection
+ *   • Reset                 — restores the fallback topology
+ *
+ * Outside design-mode the same component renders the layout read-only.
  */
+function TopologyCanvas({
+  topology,
+  onChange,
+  onPersist,
+  title,
+  allowContainers = true,
+}: {
+  topology: Topology;
+  onChange: (t: Topology) => void;
+  onPersist: (t: Topology) => Promise<void> | void;
+  title: string;
+  allowContainers?: boolean;
+}) {
+  const svgRef = useRef<SVGSVGElement | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [linkFrom, setLinkFrom] = useState<string | null>(null);
+  const [dirty, setDirty] = useState(false);
+
+  function nodeCenter(n: TopologyNode) {
+    return { x: n.x + n.w / 2, y: n.y + n.h / 2 };
+  }
+  function portPoint(from: TopologyNode, to: TopologyNode) {
+    // Pick the side of the source node that points most directly at the
+    // target's center, then the matching side of the target. Gives clean
+    // arrows instead of lines crossing the node body.
+    const fc = nodeCenter(from);
+    const tc = nodeCenter(to);
+    const dx = tc.x - fc.x;
+    const dy = tc.y - fc.y;
+    if (Math.abs(dx) > Math.abs(dy)) {
+      const x = dx > 0 ? from.x + from.w : from.x;
+      const y = fc.y + (dy / Math.abs(dx)) * (from.w / 2);
+      return { start: { x, y }, end: { x: dx > 0 ? to.x : to.x + to.w, y: tc.y } };
+    }
+    const y = dy > 0 ? from.y + from.h : from.y;
+    const x = fc.x + (dx / Math.abs(dy)) * (from.h / 2);
+    return { start: { x, y }, end: { x: tc.x, y: dy > 0 ? to.y : to.y + to.h } };
+  }
+
+  /* Drag state */
+  const drag = useRef<{ id: string; offX: number; offY: number } | null>(null);
+  function onNodeMouseDown(e: React.MouseEvent, n: TopologyNode) {
+    if (linkFrom) {
+      // In link-mode, clicks are interpreted as link endpoints, not drags.
+      if (linkFrom !== n.id) {
+        const edge: TopologyEdge = {
+          id: `e-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+          from: linkFrom,
+          to: n.id,
+        };
+        onChange({ ...topology, edges: [...topology.edges, edge] });
+        setToast(`已添加连线：${topology.nodes.find((x) => x.id === linkFrom)?.name} → ${n.name}`);
+        setLinkFrom(null);
+      }
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+    setSelectedId(n.id);
+    const pt = svgPointFromEvent(svgRef.current, e);
+    drag.current = { id: n.id, offX: pt.x - n.x, offY: pt.y - n.y };
+    e.preventDefault();
+  }
+  function onSvgMouseMove(e: React.MouseEvent) {
+    if (!drag.current) return;
+    const pt = svgPointFromEvent(svgRef.current, e);
+    const next = topology.nodes.map((n) =>
+      n.id === drag.current!.id ? { ...n, x: Math.max(0, pt.x - drag.current!.offX), y: Math.max(0, pt.y - drag.current!.offY) } : n
+    );
+    onChange({ ...topology, nodes: next });
+  }
+  function onSvgMouseUp() {
+    if (drag.current) {
+      drag.current = null;
+      setDirty(true);
+    }
+  }
+
+  function svgPointFromEvent(svg: SVGSVGElement | null, e: React.MouseEvent): { x: number; y: number } {
+    if (!svg) return { x: 0, y: 0 };
+    const rect = svg.getBoundingClientRect();
+    const vb = svg.viewBox.baseVal;
+    return {
+      x: ((e.clientX - rect.left) / rect.width) * vb.width,
+      y: ((e.clientY - rect.top) / rect.height) * vb.height,
+    };
+  }
+
+  function addNode(layer: ArchLayer, kind: "service" | "pod" | "container") {
+    const id = `n-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+    const defaults = kind === "container"
+      ? { w: 200, h: 120, name: "新容器" }
+      : { w: 120, h: 48,  name: "新节点" };
+    const newNode: TopologyNode = {
+      id, x: 60 + Math.random() * 200, y: 60 + Math.random() * 200, ...defaults, layer, kind,
+    };
+    onChange({ ...topology, nodes: [...topology.nodes, newNode] });
+    setSelectedId(id);
+    setDirty(true);
+    setToast(`已新增${kind === "container" ? "容器" : "节点"}：${defaults.name}`);
+  }
+
+  function deleteSelected() {
+    if (!selectedId) return;
+    const target = topology.nodes.find((n) => n.id === selectedId);
+    if (!target) return;
+    if (target.kind === "container" && topology.nodes.some((c) => c !== target && c.kind === "container")) {
+      if (!window.confirm("删除容器会保留内部节点（不会被自动删除），确认？")) return;
+    }
+    onChange({
+      nodes: topology.nodes.filter((n) => n.id !== selectedId),
+      edges: topology.edges.filter((e) => e.from !== selectedId && e.to !== selectedId),
+    });
+    setSelectedId(null);
+    setDirty(true);
+    setToast(`已删除：${target.name}`);
+  }
+
+  function updateSelected(patch: Partial<TopologyNode>) {
+    if (!selectedId) return;
+    onChange({
+      ...topology,
+      nodes: topology.nodes.map((n) => (n.id === selectedId ? { ...n, ...patch } : n)),
+    });
+    setDirty(true);
+  }
+
+  function resetToDefault() {
+    if (!window.confirm("重置会丢弃当前画布上的所有节点/连线，确认？")) return;
+    const fresh = title.includes("部署") ? DEPLOY_TOPOLOGY_FALLBACK : SVC_DEPS_FALLBACK;
+    onChange(fresh);
+    setSelectedId(null);
+    setDirty(true);
+    setToast("画布已重置为默认拓扑");
+  }
+
+  async function save() {
+    await onPersist(topology);
+    setDirty(false);
+  }
+
+  /* Keyboard: Delete removes selected */
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (!selectedId) return;
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA")) return;
+      if (e.key === "Delete" || e.key === "Backspace") {
+        e.preventDefault();
+        deleteSelected();
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedId, topology]);
+
+  const selectedNode = topology.nodes.find((n) => n.id === selectedId) || null;
+
+  return (
+    <div className="flex flex-col h-full gap-2">
+      {/* Toolbar */}
+      <div className="flex flex-wrap items-center gap-1.5 px-1 text-xs">
+        <span className="text-muted-foreground mr-1">{title}</span>
+        <Button size="sm" variant="outline" className="h-7" onClick={() => addNode("blue",   "pod")}>
+          <Plus className="size-3 mr-1" />L1 节点
+        </Button>
+        <Button size="sm" variant="outline" className="h-7" onClick={() => addNode("violet", "pod")}>
+          <Plus className="size-3 mr-1" />AI 节点
+        </Button>
+        <Button size="sm" variant="outline" className="h-7" onClick={() => addNode("zinc",   "pod")}>
+          <Plus className="size-3 mr-1" />基建
+        </Button>
+        <Button size="sm" variant="outline" className="h-7" onClick={() => addNode("slate",  "pod")}>
+          <Plus className="size-3 mr-1" />平台底座
+        </Button>
+        {allowContainers && (
+          <Button size="sm" variant="outline" className="h-7" onClick={() => addNode("slate", "container")}>
+            <Plus className="size-3 mr-1" />容器
+          </Button>
+        )}
+        <span className="w-px h-5 bg-border mx-1" />
+        <Button
+          size="sm"
+          variant={linkFrom ? "default" : "outline"}
+          className="h-7"
+          onClick={() => setLinkFrom(linkFrom ? null : (selectedId || topology.nodes[0]?.id || null))}
+          disabled={topology.nodes.length < 2}
+        >
+          <ArrowRight className="size-3 mr-1" />{linkFrom ? "选择目标节点" : "连线"}
+        </Button>
+        <Button size="sm" variant="outline" className="h-7" onClick={deleteSelected} disabled={!selectedId}>
+          <X className="size-3 mr-1" />删除所选
+        </Button>
+        <span className="w-px h-5 bg-border mx-1" />
+        <Button size="sm" variant="ghost" className="h-7" onClick={resetToDefault}>
+          <RotateCcw className="size-3 mr-1" />重置
+        </Button>
+        <span className="ml-auto flex items-center gap-2">
+          <span className="text-[10px] text-muted-foreground">
+            {topology.nodes.length} 节点 · {topology.edges.length} 连线
+            {dirty && <span className="text-amber-500 ml-1">● 未保存</span>}
+          </span>
+          <Button size="sm" className="h-7" onClick={save} disabled={!dirty}>
+            <Save className="size-3 mr-1" />保存
+          </Button>
+        </span>
+      </div>
+
+      {/* Canvas + side panel */}
+      <div className="flex-1 grid grid-cols-[1fr_220px] gap-2 min-h-0">
+        <div className="relative rounded-md border bg-muted/20 overflow-hidden">
+          <svg
+            ref={svgRef}
+            viewBox="0 0 800 600"
+            className="w-full h-full select-none"
+            onMouseMove={onSvgMouseMove}
+            onMouseUp={onSvgMouseUp}
+            onMouseLeave={onSvgMouseUp}
+            onClick={() => { setSelectedId(null); setLinkFrom(null); }}
+          >
+            {/* Edges */}
+            {topology.edges.map((edge) => {
+              const fromN = topology.nodes.find((n) => n.id === edge.from);
+              const toN = topology.nodes.find((n) => n.id === edge.to);
+              if (!fromN || !toN) return null;
+              const { start, end } = portPoint(fromN, toN);
+              const mx = (start.x + end.x) / 2;
+              const my = (start.y + end.y) / 2;
+              return (
+                <g key={edge.id}>
+                  <defs>
+                    <marker id={`arrow-${edge.id}`} markerWidth="6" markerHeight="5" refX="6" refY="2.5" orient="auto">
+                      <polygon points="0 0, 6 2.5, 0 5" fill="hsl(215 14% 55%)" />
+                    </marker>
+                  </defs>
+                  <line x1={start.x} y1={start.y} x2={end.x} y2={end.y}
+                        stroke="hsl(215 14% 55%)" strokeWidth="1.5"
+                        markerEnd={`url(#arrow-${edge.id})`} />
+                  {edge.label && (
+                    <text x={mx} y={my - 4} textAnchor="middle" fontSize="9" fill="hsl(215 14% 45%)">{edge.label}</text>
+                  )}
+                </g>
+              );
+            })}
+
+            {/* Nodes */}
+            {topology.nodes.map((n) => {
+              const c = layerColor(n.layer);
+              const isContainer = n.kind === "container";
+              const isSelected = selectedId === n.id;
+              const isLinkSource = linkFrom === n.id;
+              return (
+                <g key={n.id}
+                   onMouseDown={(e) => onNodeMouseDown(e, n)}
+                   onClick={(e) => { e.stopPropagation(); setSelectedId(n.id); }}
+                   style={{ cursor: isContainer ? "default" : (linkFrom ? "crosshair" : "move") }}>
+                  {isContainer ? (
+                    <rect x={n.x} y={n.y} width={n.w} height={n.h} rx="8"
+                          fill={c.fill} stroke={c.stroke}
+                          strokeWidth={isSelected ? 2 : 1}
+                          strokeDasharray="6 4" />
+                  ) : (
+                    <rect x={n.x} y={n.y} width={n.w} height={n.h} rx="6"
+                          fill={c.fill} stroke={isSelected ? "hsl(var(--primary))" : c.stroke}
+                          strokeWidth={isSelected ? 2 : 1.5} />
+                  )}
+                  <text x={n.x + 10} y={n.y + 18} fontSize={isContainer ? 11 : 10} fontWeight="600" fill={c.text}>
+                    {n.name}
+                  </text>
+                  {isContainer && (
+                    <text x={n.x + n.w - 8} y={n.y + 18} textAnchor="end" fontSize="9" fill="hsl(215 14% 50%)">
+                      容器 · {(topology.nodes.filter((x) => x !== n && x.x > n.x && x.y > n.y && x.x + x.w < n.x + n.w && x.y + x.h < n.y + n.h)).length}
+                    </text>
+                  )}
+                  {isLinkSource && (
+                    <circle cx={n.x + n.w - 8} cy={n.y + 8} r="4" fill="hsl(var(--primary))" />
+                  )}
+                </g>
+              );
+            })}
+          </svg>
+        </div>
+
+        {/* Side panel */}
+        <div className="rounded-md border bg-card p-2 overflow-auto">
+          {selectedNode ? (
+            <div className="space-y-2 text-xs">
+              <div className="text-[11px] text-muted-foreground">选中节点</div>
+              <div>
+                <div className="text-[10px] text-muted-foreground mb-0.5">名称</div>
+                <input
+                  value={selectedNode.name}
+                  onChange={(e) => updateSelected({ name: e.target.value })}
+                  className="w-full rounded border bg-background px-1.5 py-1 text-xs focus:border-primary/40 focus:outline-none"
+                />
+              </div>
+              <div>
+                <div className="text-[10px] text-muted-foreground mb-0.5">尺寸 (宽 × 高)</div>
+                <div className="flex items-center gap-1">
+                  <input type="number" value={selectedNode.w} onChange={(e) => updateSelected({ w: Number(e.target.value) })} className="w-1/2 rounded border bg-background px-1.5 py-1 text-xs" />
+                  <input type="number" value={selectedNode.h} onChange={(e) => updateSelected({ h: Number(e.target.value) })} className="w-1/2 rounded border bg-background px-1.5 py-1 text-xs" />
+                </div>
+              </div>
+              <div>
+                <div className="text-[10px] text-muted-foreground mb-0.5">层级颜色</div>
+                <div className="flex flex-wrap gap-1">
+                  {(["blue","violet","zinc","slate","orange","green","red"] as ArchLayer[]).map((l) => {
+                    const cc = layerColor(l);
+                    return (
+                      <button key={l} onClick={() => updateSelected({ layer: l })}
+                              className={`size-5 rounded ${cc.dot} ${selectedNode.layer === l ? "ring-2 ring-primary ring-offset-1" : "opacity-70 hover:opacity-100"}`}
+                              title={l} />
+                    );
+                  })}
+                </div>
+              </div>
+              <div className="pt-2 border-t">
+                <div className="text-[10px] text-muted-foreground mb-0.5">关联边</div>
+                <div className="space-y-0.5 text-[10px]">
+                  {topology.edges.filter((e) => e.from === selectedNode.id || e.to === selectedNode.id).map((e) => {
+                    const other = topology.nodes.find((n) => n.id === (e.from === selectedNode.id ? e.to : e.from));
+                    return (
+                      <div key={e.id} className="flex items-center justify-between rounded bg-muted/40 px-1.5 py-0.5">
+                        <span>{e.from === selectedNode.id ? "→ " : "← "}{other?.name ?? "?"}</span>
+                        <button onClick={() => {
+                          onChange({ ...topology, edges: topology.edges.filter((x) => x.id !== e.id) });
+                          setDirty(true);
+                        }} className="text-muted-foreground hover:text-destructive">
+                          <X className="size-2.5" />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-2 text-[11px] text-muted-foreground leading-4">
+              <p>提示：</p>
+              <ul className="list-disc list-inside space-y-1">
+                <li>拖拽节点调整位置</li>
+                <li>点击节点选中（右侧面板可改名称 / 尺寸 / 颜色）</li>
+                <li>按 Delete / Backspace 删除选中节点</li>
+                <li>点工具栏「连线」+ 选中源节点，再点目标节点</li>
+              </ul>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
 function EditableText({
   value,
   onChange,
@@ -254,7 +679,92 @@ const TECH_STACK_FALLBACK = [
   { layer: "AI", items: ["LLM Gateway", "LangGraph", "DeepSeek", "Qwen", "BGE-M3"] },
 ];
 
-const DEPLOY_TOPOLOGY_FALLBACK = [
+/* ── Topology data shape ─────────────────────────────────────────────
+   Two artifacts in the ta section share this shape:
+     ta.deployTopology  — 部署拓扑图 (Region → LB → K8s → pods)
+     ta.svcDeps         — 服务依赖图 (microservices + arrows)
+   Each artifact is { nodes, edges }. Nodes have an explicit (x,y) so
+   the canvas can persist layout across reloads. Edges reference nodes
+   by id. layer drives the colour token (see ArchLayer). kind="container"
+   draws a dashed frame around its children — used for Region / K8s
+   cluster in the deployment view. */
+type TopologyNode = {
+  id: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  name: string;
+  layer: ArchLayer;
+  kind?: "container" | "service" | "pod";
+};
+type TopologyEdge = { id: string; from: string; to: string; label?: string };
+type Topology = { nodes: TopologyNode[]; edges: TopologyEdge[] };
+
+const DEPLOY_TOPOLOGY_FALLBACK: Topology = {
+  nodes: [
+    { id: "region",   x: 20,  y: 10,  w: 760, h: 580, name: "Region: China-East-2",  layer: "slate",  kind: "container" },
+    { id: "lb",       x: 320, y: 50,  w: 160, h: 40,  name: "Nginx + Istio",          layer: "slate"  },
+    { id: "k8s",      x: 50,  y: 130, w: 700, h: 440, name: "K8s 1.29 Cluster (3 Nodes)", layer: "slate", kind: "container" },
+    { id: "api-gw",   x: 80,  y: 170, w: 130, h: 60,  name: "API Gateway",   layer: "blue"   },
+    { id: "app-svc",  x: 240, y: 170, w: 130, h: 60,  name: "App Service",   layer: "blue"   },
+    { id: "ai-svc",   x: 400, y: 170, w: 130, h: 60,  name: "AI Service",    layer: "violet" },
+    { id: "flowable", x: 560, y: 170, w: 130, h: 60,  name: "Flowable",      layer: "violet" },
+    { id: "db-pri",   x: 80,  y: 270, w: 130, h: 60,  name: "DB Primary",    layer: "zinc"   },
+    { id: "db-rep",   x: 240, y: 270, w: 130, h: 60,  name: "DB Replica",    layer: "zinc"   },
+    { id: "redis",    x: 400, y: 270, w: 130, h: 60,  name: "Redis Cache",   layer: "zinc"   },
+    { id: "minio",    x: 560, y: 270, w: 130, h: 60,  name: "MinIO S3",      layer: "zinc"   },
+    { id: "pg",       x: 80,  y: 380, w: 130, h: 60,  name: "Postgres",      layer: "zinc"   },
+    { id: "monitor",  x: 240, y: 380, w: 130, h: 60,  name: "Prometheus",    layer: "zinc"   },
+    { id: "loki",     x: 400, y: 380, w: 130, h: 60,  name: "Loki",          layer: "zinc"   },
+    { id: "argo",     x: 560, y: 380, w: 130, h: 60,  name: "ArgoCD",        layer: "blue"   },
+  ],
+  edges: [
+    { id: "e1",  from: "lb",     to: "api-gw" },
+    { id: "e2",  from: "lb",     to: "app-svc" },
+    { id: "e3",  from: "lb",     to: "ai-svc" },
+    { id: "e4",  from: "lb",     to: "flowable" },
+    { id: "e5",  from: "api-gw", to: "app-svc" },
+    { id: "e6",  from: "app-svc", to: "db-pri" },
+    { id: "e7",  from: "db-pri", to: "db-rep" },
+    { id: "e8",  from: "app-svc", to: "redis" },
+    { id: "e9",  from: "ai-svc", to: "redis" },
+    { id: "e10", from: "flowable", to: "pg" },
+    { id: "e11", from: "monitor", to: "loki" },
+    { id: "e12", from: "argo",    to: "k8s", label: "deploys" },
+  ],
+};
+
+const SVC_DEPS_FALLBACK: Topology = {
+  nodes: [
+    { id: "api-gw",   x: 320, y: 30,  w: 140, h: 50, name: "API Gateway",  layer: "slate",  kind: "service" },
+    { id: "user",     x: 70,  y: 130, w: 130, h: 50, name: "User Service", layer: "blue",   kind: "service" },
+    { id: "order",    x: 240, y: 130, w: 130, h: 50, name: "Order Service", layer: "blue",  kind: "service" },
+    { id: "ai",       x: 410, y: 130, w: 130, h: 50, name: "AI Service",   layer: "violet", kind: "service" },
+    { id: "flowable", x: 580, y: 130, w: 140, h: 50, name: "Flowable",     layer: "violet", kind: "service" },
+    { id: "auth",     x: 70,  y: 230, w: 130, h: 50, name: "Auth Service", layer: "slate",  kind: "service" },
+    { id: "db",       x: 240, y: 230, w: 130, h: 50, name: "DB Service",   layer: "zinc",   kind: "service" },
+    { id: "llm-gw",   x: 410, y: 230, w: 130, h: 50, name: "LLM Gateway",  layer: "violet", kind: "service" },
+    { id: "cache",    x: 580, y: 230, w: 140, h: 50, name: "Cache",        layer: "zinc",   kind: "service" },
+  ],
+  edges: [
+    { id: "d1",  from: "api-gw",  to: "user" },
+    { id: "d2",  from: "api-gw",  to: "order" },
+    { id: "d3",  from: "api-gw",  to: "ai" },
+    { id: "d4",  from: "api-gw",  to: "flowable" },
+    { id: "d5",  from: "user",    to: "auth" },
+    { id: "d6",  from: "order",   to: "db" },
+    { id: "d7",  from: "ai",      to: "llm-gw" },
+    { id: "d8",  from: "flowable", to: "db" },
+    { id: "d9",  from: "llm-gw",  to: "cache" },
+    { id: "d10", from: "order",   to: "cache" },
+  ],
+};
+
+/* The original simple {label, value} list shape is kept for the
+   read-only summary card below the diagram. The new editor stores
+   the canvas layout under `ta.deployTopology` and `ta.svcDeps`. */
+const DEPLOY_TOPOLOGY_SUMMARY_FALLBACK = [
   { label: "集群", value: "K8s 1.29 (3 节点)" },
   { label: "负载均衡", value: "Nginx + Istio" },
   { label: "服务网格", value: "Istio 1.20" },
@@ -1959,20 +2469,31 @@ export function DataArchitecture() {
 /* ═══════════════════════ TechArchitecture ═══════════════════════ */
 export function TechArchitecture() {
   const [techStack, setTechStack] = useState(TECH_STACK_FALLBACK);
-  const [deployTopology, setDeployTopology] = useState(DEPLOY_TOPOLOGY_FALLBACK);
+  const [deployTopology, setDeployTopology] = useState<Topology>(DEPLOY_TOPOLOGY_FALLBACK);
+  const [svcDeps, setSvcDeps] = useState<Topology>(SVC_DEPS_FALLBACK);
   const [observability, setObservability] = useState(OBSERVABILITY_FALLBACK);
   const [techSelection, setTechSelection] = useState(TECH_SELECTION_FALLBACK);
   const [loading, setLoading] = useState(true);
   const [showDetailDialog, setShowDetailDialog] = useState(false);
   const [selectedStack, setSelectedStack] = useState<(typeof TECH_STACK_FALLBACK)[number] | null>(null);
   const [designMode, setDesignMode] = useState(true);
+  /* Canvas editor dialogs */
+  const [canvasOpen, setCanvasOpen] = useState<"deploy" | "deps" | null>(null);
   const { toast, setToast } = useToast();
 
   /* Fetch data from API on mount */
   useEffect(() => {
-    architectureApi.getSection("ta").then((sectionData) => {
+    architectureApi.getSection("ta").then((sectionData: any) => {
       if (sectionData?.techStack) setTechStack(sectionData.techStack as typeof TECH_STACK_FALLBACK);
-      if (sectionData?.deploy) setDeployTopology(sectionData.deploy as typeof DEPLOY_TOPOLOGY_FALLBACK);
+      // ta.deploy  legacy: list of {label,value}; new shape: Topology {nodes,edges}
+      if (sectionData?.deploy) {
+        const d = sectionData.deploy;
+        if (Array.isArray(d?.nodes) && Array.isArray(d?.edges)) {
+          setDeployTopology(d as Topology);
+        }
+        // legacy list-shape silently falls back to Topology default
+      }
+      if (sectionData?.svcDeps) setSvcDeps(sectionData.svcDeps as Topology);
       if (sectionData?.observability) setObservability(sectionData.observability as typeof OBSERVABILITY_FALLBACK);
       if (sectionData?.tech_selection) setTechSelection(sectionData.tech_selection as typeof TECH_SELECTION_FALLBACK);
     }).catch(() => { /* use fallback */ }).finally(() => setLoading(false));
@@ -2134,128 +2655,67 @@ export function TechArchitecture() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* F3.4.2 部署拓扑图 */}
         <Card className="overflow-hidden border-border/60">
-          <CardHeader className="pb-3">
+          <CardHeader className="pb-2">
             <div className="flex items-center gap-2">
               <span className="size-2 rounded-full bg-slate-900" aria-hidden />
               <CardTitle className="text-base">部署拓扑图</CardTitle>
+              <span className="ml-auto text-[10px] text-muted-foreground tabular-nums">
+                {deployTopology.nodes.length} 节点 · {deployTopology.edges.length} 连线
+              </span>
+              {designMode && (
+                <Button size="sm" variant="outline" className="h-7" onClick={() => setCanvasOpen("deploy")}>
+                  <Edit className="size-3 mr-1" />进入画布
+                </Button>
+              )}
             </div>
-            <CardDescription className="pl-4">服务器 / 容器 / 区域部署架构（L3-5 部署层）</CardDescription>
+            <CardDescription className="pl-4 text-xs">
+              服务器 / 容器 / 区域部署架构（L3-5 部署层）
+              {designMode ? " · 设计态可点击「进入画布」编辑。" : " · 运行态只读。"}
+            </CardDescription>
           </CardHeader>
           <CardContent className="pt-0">
-            <svg viewBox="0 0 400 300" className="w-full h-auto" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="部署拓扑图">
-              {/* Region — 部署层（黑色） */}
-              <rect x="10" y="10" width="380" height="280" rx="8" fill="hsl(220 14% 96%)" stroke="hsl(220 13% 30%)" strokeWidth="1" strokeDasharray="4 2" />
-              <text x="30" y="30" fontSize="11" fontWeight="600" fill="hsl(220 13% 25%)">Region: China-East-2</text>
+            {/* Read-only preview rendered from ta.deployTopology. The full
+                editable canvas lives behind the dialog opened by the
+                "进入画布" button above (design mode only). */}
+            <TopologyPreview topology={deployTopology} ariaLabel="部署拓扑图" />
 
-              {/* Edge LB — 部署层（黑色/深色） */}
-              <rect x="130" y="45" width="140" height="35" rx="6" fill="hsl(220 13% 92%)" stroke="hsl(220 13% 30%)" strokeWidth="1.5" />
-              <text x="200" y="67" textAnchor="middle" fontSize="11" fontWeight="600" fill="hsl(220 13% 25%)">Nginx + Istio</text>
-
-              {/* K8s Cluster — 平台底座（灰色） */}
-              <rect x="30" y="100" width="340" height="170" rx="6" fill="hsl(215 16% 95%)" stroke="hsl(215 14% 55%)" strokeWidth="1" strokeDasharray="4 2" />
-              <text x="50" y="120" fontSize="10" fontWeight="600" fill="hsl(215 14% 40%)">K8s 1.29 Cluster (3 Nodes)</text>
-
-              {/* Pods — color-coded by architecture layer per design spec §4.1 */}
-              {[
-                { name: "API Gateway",  x: 50,  y: 135, layer: "slate"  }, // L3-3 平台底座
-                { name: "App Service",  x: 155, y: 135, layer: "blue"   }, // L1 用户面微服务
-                { name: "AI Service",   x: 260, y: 135, layer: "violet" }, // L3-1 AI Substrate
-                { name: "DB Primary",   x: 50,  y: 200, layer: "zinc"   }, // L3-4 存储
-                { name: "DB Replica",   x: 155, y: 200, layer: "zinc"   }, // L3-4 存储
-                { name: "Redis Cache",  x: 260, y: 200, layer: "zinc"   }, // L3-4 基础设施
-              ].map((pod) => {
-                const c = layerColor(pod.layer);
-                return (
-                  <g key={pod.name}>
-                    <rect x={pod.x} y={pod.y} width="90" height="50" rx="6"
-                          fill={c.fill} stroke={c.stroke} strokeWidth="1.5" />
-                    <text x={pod.x + 45} y={pod.y + 30} textAnchor="middle"
-                          fontSize="10" fontWeight="500" fill={c.text}>{pod.name}</text>
-                  </g>
-                );
-              })}
-
-              {/* Edges — uniform neutral */}
-              <line x1="170" y1="80" x2="95"  y2="135" stroke="hsl(215 14% 65%)" strokeWidth="1" />
-              <line x1="200" y1="80" x2="200" y2="135" stroke="hsl(215 14% 65%)" strokeWidth="1" />
-              <line x1="230" y1="80" x2="305" y2="135" stroke="hsl(215 14% 65%)" strokeWidth="1" />
-            </svg>
-
-            {/* Legend — explicit token map so the colors are legible */}
-            <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1.5 text-[11px] text-muted-foreground">
+            <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1.5 text-[11px] text-muted-foreground">
               <LegendChip color="slate"  label="L3-3 平台底座" />
               <LegendChip color="blue"   label="L1 用户面" />
               <LegendChip color="violet" label="L3-1 AI Substrate" />
               <LegendChip color="zinc"   label="L3-4 基础设施" />
-            </div>
-            <div className="text-xs text-muted-foreground mt-3">
-              {designMode ? "设计态：可拖拽调整节点位置" : "运行态：实时健康状态监控"}
             </div>
           </CardContent>
         </Card>
 
         {/* F3.4.3 服务依赖图 */}
         <Card className="overflow-hidden border-border/60">
-          <CardHeader className="pb-3">
+          <CardHeader className="pb-2">
             <div className="flex items-center gap-2">
               <span className="size-2 rounded-full bg-blue-500" aria-hidden />
               <CardTitle className="text-base">服务依赖图</CardTitle>
+              <span className="ml-auto text-[10px] text-muted-foreground tabular-nums">
+                {svcDeps.nodes.length} 服务 · {svcDeps.edges.length} 依赖
+              </span>
+              {designMode && (
+                <Button size="sm" variant="outline" className="h-7" onClick={() => setCanvasOpen("deps")}>
+                  <Edit className="size-3 mr-1" />进入画布
+                </Button>
+              )}
             </div>
-            <CardDescription className="pl-4">微服务间通信关系（L1 用户面 + L3 底座）</CardDescription>
+            <CardDescription className="pl-4 text-xs">
+              微服务间通信关系（L1 用户面 + L3 底座）
+              {designMode ? " · 设计态可点击「进入画布」编辑。" : " · 运行态只读。"}
+            </CardDescription>
           </CardHeader>
           <CardContent className="pt-0">
-            <svg viewBox="0 0 400 300" className="w-full h-auto" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="服务依赖图">
-              <defs>
-                <marker id="svc-arrow" markerWidth="6" markerHeight="5" refX="6" refY="2.5" orient="auto">
-                  <polygon points="0 0, 6 2.5, 0 5" fill="hsl(215 14% 55%)" />
-                </marker>
-              </defs>
-              {/* Service nodes — color-coded by architecture layer */}
-              {[
-                { name: "API Gateway", x: 200, y: 40,  layer: "slate"  },
-                { name: "User Service", x: 80,  y: 130, layer: "blue"   },
-                { name: "Order Service", x: 200, y: 130, layer: "blue"   },
-                { name: "AI Service",   x: 320, y: 130, layer: "violet" },
-                { name: "Auth Service", x: 80,  y: 230, layer: "slate"  },
-                { name: "DB Service",   x: 200, y: 230, layer: "zinc"   },
-                { name: "LLM Gateway",  x: 320, y: 230, layer: "violet" },
-              ].map((svc) => {
-                const c = layerColor(svc.layer);
-                return (
-                  <g key={svc.name}>
-                    <circle cx={svc.x} cy={svc.y} r="28"
-                            fill={c.fill} stroke={c.stroke} strokeWidth="2" />
-                    <text x={svc.x} y={svc.y + 4} textAnchor="middle"
-                          fontSize="9" fontWeight="600" fill={c.text}>{svc.name}</text>
-                  </g>
-                );
-              })}
-              {/* Service connections */}
-              {[
-                { from: { x: 200, y: 68 }, to: { x: 80,  y: 102 } },
-                { from: { x: 200, y: 68 }, to: { x: 200, y: 102 } },
-                { from: { x: 200, y: 68 }, to: { x: 320, y: 102 } },
-                { from: { x: 80,  y: 158 }, to: { x: 80,  y: 202 } },
-                { from: { x: 200, y: 158 }, to: { x: 200, y: 202 } },
-                { from: { x: 320, y: 158 }, to: { x: 320, y: 202 } },
-                { from: { x: 108, y: 130 }, to: { x: 172, y: 130 } },
-                { from: { x: 228, y: 130 }, to: { x: 292, y: 130 } },
-              ].map((conn, i) => (
-                <line key={i} x1={conn.from.x} y1={conn.from.y}
-                      x2={conn.to.x} y2={conn.to.y}
-                      stroke="hsl(215 14% 65%)" strokeWidth="1.5"
-                      markerEnd="url(#svc-arrow)" />
-              ))}
-            </svg>
+            <TopologyPreview topology={svcDeps} ariaLabel="服务依赖图" />
 
-            <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1.5 text-[11px] text-muted-foreground">
+            <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1.5 text-[11px] text-muted-foreground">
               <LegendChip color="blue"   label="L1 业务微服务" />
               <LegendChip color="slate"  label="L3-3 平台底座" />
               <LegendChip color="violet" label="L3-1 AI Substrate" />
               <LegendChip color="zinc"   label="L3-4 基础设施" />
-            </div>
-            <div className="text-xs text-muted-foreground mt-3">
-              圆形节点 = 微服务 ｜ 箭头 = 调用方向 ｜ 共 7 个核心服务
             </div>
           </CardContent>
         </Card>
@@ -2330,6 +2790,54 @@ export function TechArchitecture() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Topology Canvas Dialog (design mode only) — full-bleed editor
+          for the deployment / service-dependency diagrams. The dialog
+          stores its own working copy so closing without saving does
+          not mutate the parent's state. */}
+      <Dialog open={canvasOpen !== null} onOpenChange={(o) => !o && setCanvasOpen(null)}>
+        <DialogContent className="max-w-[min(1400px,95vw)] w-[95vw] h-[85vh] p-0 gap-0 flex flex-col">
+          <DialogHeader className="px-4 pt-3 pb-2 border-b">
+            <DialogTitle className="flex items-center gap-2 text-base">
+              {canvasOpen === "deploy" ? <Network className="size-4" /> : <GitBranch className="size-4" />}
+              {canvasOpen === "deploy" ? "部署拓扑 — 画布编辑器" : "服务依赖 — 画布编辑器"}
+            </DialogTitle>
+            <DialogDescription className="text-xs">
+              拖拽节点调整位置 · 点击节点选中可改名称 / 尺寸 / 颜色 · 点「连线」+ 选源 / 目标 · Delete 删除所选 · 点击「保存」持久化
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex-1 min-h-0 p-3">
+            {canvasOpen === "deploy" && (
+              <TopologyCanvas
+                topology={deployTopology}
+                onChange={setDeployTopology}
+                onPersist={async (t) => {
+                  setDeployTopology(t);
+                  await architectureApi.updateSection("ta", { deploy: t });
+                  setToast("部署拓扑已保存");
+                }}
+                title="部署拓扑"
+              />
+            )}
+            {canvasOpen === "deps" && (
+              <TopologyCanvas
+                topology={svcDeps}
+                onChange={setSvcDeps}
+                onPersist={async (t) => {
+                  setSvcDeps(t);
+                  await architectureApi.updateSection("ta", { svcDeps: t });
+                  setToast("服务依赖已保存");
+                }}
+                title="服务依赖"
+                allowContainers={false}
+              />
+            )}
+          </div>
+          <DialogFooter className="px-4 py-2 border-t">
+            <Button variant="outline" onClick={() => setCanvasOpen(null)}>关闭</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Tech Stack Detail Dialog */}
       <Dialog open={showDetailDialog} onOpenChange={setShowDetailDialog}>
