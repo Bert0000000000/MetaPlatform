@@ -181,6 +181,9 @@ export default function AppOverview() {
         )}
       </div>
 
+      {/* F5.2 独立运行环境 — isolated runtime status card + degraded banner */}
+      <RuntimeEnvironment app={app} />
+
       {/* F4.2.4 应用活跃度 + F4.2.3 最近发布 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Activity trend - CSS-based */}
@@ -425,5 +428,128 @@ export default function AppOverview() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+/**
+ * F5.2 Runtime Environment card.
+ *
+ * Shows whether the published app is running in its own docker
+ * container, and surfaces a yellow banner when the platform has to
+ * serve the snapshot out of its own process (docker daemon down).
+ */
+function RuntimeEnvironment({ app }: { app: Application }) {
+  const [runtime, setRuntime] = useState<{
+    state: string;
+    running?: boolean;
+    port?: number | null;
+    containerId?: string | null;
+    startedAt?: string;
+    error?: string;
+  } | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (app.status !== "published" || !app.id) {
+      setRuntime(null);
+      return;
+    }
+    let cancelled = false;
+    setLoading(true);
+    appsApi
+      .getRuntime(app.id)
+      .then((res) => {
+        if (cancelled) return;
+        setRuntime({
+          state: res?.runtime?.state ?? "absent",
+          running: res?.runtime?.running,
+          port: res?.runtime?.port ?? null,
+          containerId: res?.runtime?.containerId ?? app.runtime_container_id ?? null,
+          startedAt: res?.runtime?.startedAt,
+          error: res?.runtime?.error,
+        });
+      })
+      .catch(() => {
+        if (cancelled) return;
+        // Fall back to whatever is persisted on the application row.
+        setRuntime({
+          state: app.runtime_container_id ? "persisted" : "absent",
+          port: app.runtime_port ?? null,
+          containerId: app.runtime_container_id ?? null,
+        });
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [app.id, app.status, app.runtime_container_id, app.runtime_port]);
+
+  if (app.status !== "published") return null;
+
+  const isDegraded = (runtime?.error && !runtime?.running) || app.runtime_mode === "degraded";
+  const isContainer = (runtime?.running || app.runtime_mode === "container") && runtime?.containerId;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base flex items-center gap-2">
+          <Box className="size-4" /> 独立运行环境
+        </CardTitle>
+        <CardDescription>
+          已发布的应用跑在一个独立 Docker 容器里，与主平台互不影响
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {isDegraded && (
+          <div className="rounded-md border border-yellow-300 bg-yellow-50 text-yellow-900 px-3 py-2 text-xs flex items-start gap-2">
+            <AlertCircle className="size-4 shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <div className="font-medium">运行环境未隔离（降级模式）</div>
+              <div className="text-yellow-800/80 mt-0.5">
+                Docker 守护进程不可达，平台正在用自己的进程直接读取该应用的发布快照文件。
+                数据仍然是该应用专属的，但不再跑在独立容器里 — 启动 Docker 后重新发布即可恢复隔离。
+                {runtime?.error ? <span className="block mt-1 opacity-70">({runtime.error})</span> : null}
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
+          <div>
+            <div className="text-muted-foreground text-xs">运行模式</div>
+            <div className="mt-1 flex items-center gap-2">
+              <span
+                className={`inline-block size-2 rounded-full ${
+                  isContainer ? "bg-green-500" : isDegraded ? "bg-yellow-500" : "bg-zinc-400"
+                }`}
+              />
+              <span className="font-medium">
+                {isContainer ? "独立容器" : isDegraded ? "降级 (进程内)" : loading ? "查询中…" : "未启动"}
+              </span>
+            </div>
+          </div>
+          <div>
+            <div className="text-muted-foreground text-xs">容器 / 主机端口</div>
+            <div className="mt-1 font-mono">
+              {runtime?.port ? `${runtime.port} (→ 3000)` : "—"}
+            </div>
+          </div>
+          <div>
+            <div className="text-muted-foreground text-xs">容器 ID</div>
+            <div className="mt-1 font-mono text-xs text-muted-foreground">
+              {runtime?.containerId
+                ? runtime.containerId.slice(0, 12) + "…"
+                : "—"}
+            </div>
+          </div>
+        </div>
+
+        {app.published_url && (
+          <div className="text-xs text-muted-foreground pt-1 border-t">
+            公开访问地址：<span className="font-mono">{window.location.origin}{app.published_url}</span>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }

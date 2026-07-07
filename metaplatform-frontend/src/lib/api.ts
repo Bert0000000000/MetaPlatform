@@ -912,6 +912,9 @@ export interface Application {
   flows_count: number;
   app_slug?: string;
   published_url?: string;
+  runtime_container_id?: string | null;
+  runtime_port?: number | null;
+  runtime_mode?: "container" | "degraded" | null;
   created_at?: string;
   updated_at?: string;
 }
@@ -927,6 +930,24 @@ export interface OntologyObject {
   properties_count: number;
   actions_count: number;
   rules_count: number;
+}
+
+/**
+ * Runtime information returned by POST /apps/:id/publish and
+ * GET /apps/:id/runtime. The platform process owns the registry; the
+ * `container` mode means a dedicated docker container is up and the
+ * reverse-proxy at `/app/:slug/*` forwards to it. The `degraded` mode
+ * means the docker daemon is unreachable and the platform is serving
+ * the published snapshot directly out of its own process — the data
+ * is still isolated per-app, but the runtime is no longer in a
+ * separate container.
+ */
+export interface RuntimeInfo {
+  mode: "container" | "degraded";
+  port: number | null;
+  containerId: string | null;
+  error?: string | null;
+  snapshot?: string | null;
 }
 
 export interface OntologyProperty {

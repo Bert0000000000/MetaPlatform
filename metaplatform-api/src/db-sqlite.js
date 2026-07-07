@@ -49,6 +49,14 @@ db.exec(`
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
 
+  -- Add runtime-isolation columns introduced when we plumbed each
+  -- published app through a dedicated Docker container. Done as
+  -- idempotent ALTERs so a pre-existing db from an older schema picks
+  -- up the new columns without a manual migration. SQLite does not
+  -- support ADD COLUMN IF NOT EXISTS, so we look up pragma_table_info
+  -- once and skip already-added columns.
+  -- The actual ALTER happens below in db.exec helpers.
+
   -- Ontology Objects
   CREATE TABLE IF NOT EXISTS ontology_objects (
     id TEXT PRIMARY KEY,
@@ -1201,5 +1209,32 @@ if (mApiCount === 0) {
     ["天眼查企业信息", "数据服务", 15, "2.0", 34000],
   ]);
 }
+
+/**
+ * Idempotent column adds. Better-sqlite3 throws `duplicate column name`
+ * if you try to add an already-present column, so we probe the
+ * table_info pragma first and only add what's missing. Each new
+ * published-app / isolated-runtime feature that needs a column on
+ * `applications` should add the ALTER here.
+ */
+(function migrateIsolatedRuntimeColumns() {
+  const cols = db.prepare("PRAGMA table_info(applications)").all().map((c) => c.name);
+  const adds = [
+    ["app_slug",            "TEXT"],
+    ["published_url",       "TEXT"],
+    ["published_version",   "TEXT"],
+    ["published_at",        "TEXT"],
+    ["publish_config",      "TEXT"],
+    ["runtime_container_id","TEXT"],
+    ["runtime_port",        "INTEGER"],
+    ["runtime_mode",        "TEXT"],
+  ];
+  for (const [name, decl] of adds) {
+    if (!cols.includes(name)) {
+      // Use a permissive NULL default so existing rows are not rewritten.
+      db.exec(`ALTER TABLE applications ADD COLUMN ${name} ${decl}`);
+    }
+  }
+})();
 
 export default db;

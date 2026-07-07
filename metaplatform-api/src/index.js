@@ -53,6 +53,8 @@ import openapiRoutes from "./openapi.js";
 import { metricsMiddleware } from "./observability/metrics.js";
 import { loggerMiddleware } from "./observability/logger.js";
 import { tracerMiddleware } from "./observability/tracer.js";
+import { runtimeProxy } from "./services/runtime-proxy.js";
+import { reattach } from "./services/runtime-orchestrator.js";
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -134,6 +136,12 @@ app.use("/api/observability", observabilityRoutes);
 app.use("/api/notifications", authenticate, notificationsRoutes);
 app.use("/api/scheduler", authenticate, schedulerRoutes);
 
+// Reverse-proxy: every `/app/:slug/*` request resolves to either a
+// dedicated docker runtime (container mode) or the in-process
+// snapshot reader (degraded mode). Mounted before openapiRoutes so
+// published-app URLs don't accidentally trip the docs path regex.
+app.use(runtimeProxy());
+
 // API documentation (OpenAPI 3 + Swagger UI)
 app.use("/api", openapiRoutes);
 
@@ -180,6 +188,19 @@ async function bootstrap() {
     console.log(`\n  MetaPlatform API server running at:`);
     console.log(`  -> http://localhost:${PORT}`);
     console.log(`  -> Press Ctrl+C to stop\n`);
+
+    // Reattach to any `app-<slug>` containers the docker daemon still
+    // has running from a previous process. This is what makes the
+    // system survive platform restarts without dropping anyone out of
+    // their published app. If the docker daemon is unreachable we
+    // simply skip — runtimeProxy will fall back to the snapshot sqlite.
+    reattach().then((r) => {
+      if (r.degraded) {
+        console.log(`  -> [runtime] degraded: ${r.error || "docker unreachable"}; using snapshot fallback`);
+      } else if (r.reattached.length) {
+        console.log(`  -> [runtime] reattached to ${r.reattached.length} container(s): ${r.reattached.map((x) => x.slug).join(", ")}`);
+      }
+    }).catch((err) => console.warn(`  -> [runtime] reattach failed: ${err.message}`));
 
     if (process.env.CDC_ENABLED !== "false") {
       cdc.start();

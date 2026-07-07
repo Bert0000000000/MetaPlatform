@@ -14,6 +14,11 @@
 metaplatform-api/data/
 metaplatform-api/backups/
 
+# Published-app snapshot files (one sqlite per published app; created
+# at publish time and re-populated on each re-publish. Never commit
+# them — they're test output and runtime artifacts).
+data/published/
+
 # IDE
 .idea/
 *.iml

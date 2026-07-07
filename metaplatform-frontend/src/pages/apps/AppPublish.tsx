@@ -137,6 +137,19 @@ export default function AppPublish() {
     setPublishing(true);
     try {
       const result = await appsApi.publish(appId);
+      // The publish response now carries a `runtime` block describing
+      // whether the platform spawned a dedicated docker container
+      // (mode = "container") or fell back to reading the snapshot
+      // directly because the docker daemon is unreachable
+      // (mode = "degraded"). Surface that to the user immediately so
+      // they know what kind of environment they got.
+      if (result && result.runtime) {
+        if (result.runtime.mode === "container") {
+          setGrayToast(`已部署到独立容器 (端口 ${result.runtime.port})`);
+        } else {
+          setGrayToast("已发布 — 运行环境未隔离（Docker 不可达，降级模式）");
+        }
+      }
       // Refresh app data after publishing
       const refreshed = await appsApi.get(appId);
       setApp(refreshed);

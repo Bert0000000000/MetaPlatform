@@ -8,6 +8,12 @@ import https from "https";
 import db from "../db.js";
 import { tenantGuard } from "../middleware/tenant.js";
 import { buildTemplateSeed, listTemplateKeys } from "../templates/apps.js";
+import {
+  spawnRuntime,
+  stopRuntime,
+  inspectRuntime,
+} from "../services/runtime-orchestrator.js";
+import { buildPublishSnapshot } from "../services/publish-snapshot.js";
 
 const router = Router();
 
@@ -264,6 +270,20 @@ router.delete("/:id", async (req, res, next) => {
 });
 
 // ─── POST /:id/publish ── publish an application ─────────
+//
+// A "publish" has two halves now:
+//
+//   1. Snapshot the application + its ontology/pages/processes into a
+//      stand-alone sqlite file under `<data>/published/<slug>.db`.
+//   2. Ask the runtime orchestrator to spin up an isolated container
+//      bound to that snapshot. The orchestrator returns `{ degraded:
+//      true }` when the docker daemon is unreachable; in that case we
+//      keep the platform record + snapshot and the published URL still
+//      resolves through the reverse-proxy's "degraded" branch.
+//
+// Either half can fail without leaving the platform in a torn state:
+// the application row is updated first, then if the orchestrator
+// succeeds we update again with the runtime id/port.
 router.post("/:id/publish", async (req, res, next) => {
   try {
     const existing = await db.prepare("SELECT * FROM applications WHERE id = ?").get(req.params.id);
@@ -271,12 +291,8 @@ router.post("/:id/publish", async (req, res, next) => {
 
     const now = new Date().toISOString();
     const version = existing.version || "v1.0";
-    let slug = existing.app_slug;
-
-    // Generate slug if not already set
-    if (!slug) {
-      slug = generateSlug(existing.name);
-    }
+    let slug = existing.app_slug || generateSlug(existing.name);
+    if (!slug) slug = `app-${(existing.id || "").replace(/-/g, "").slice(0, 12)}`;
 
     const publishedUrl = `/app/${slug}`;
     const publishConfig = JSON.stringify({
@@ -285,7 +301,8 @@ router.post("/:id/publish", async (req, res, next) => {
       publishedAt: now,
     });
 
-    // Update application record
+    // First mark the application as published so admin views reflect
+    // the intent before we burn the snapshot.
     await db.prepare(
       `UPDATE applications
        SET status = 'published',
@@ -298,7 +315,51 @@ router.post("/:id/publish", async (req, res, next) => {
        WHERE id = ?`
     ).run(slug, publishedUrl, version, now, publishConfig, now, req.params.id);
 
-    // Create publication snapshot record
+    // Build the snapshot. Failure here aborts the publish and rolls
+    // status back to draft.
+    let snapshotFile;
+    try {
+      // Re-read with the updated slug/publish_config so the snapshot
+      // matches what we just wrote.
+      const forSnapshot = await db.prepare("SELECT * FROM applications WHERE id = ?").get(req.params.id);
+      snapshotFile = buildPublishSnapshot(db, forSnapshot);
+    } catch (err) {
+      await db.prepare(
+        `UPDATE applications SET status = 'draft', published_at = NULL, updated_at = ? WHERE id = ?`,
+      ).run(new Date().toISOString(), req.params.id);
+      return res.status(500).json({
+        success: false,
+        error: `Failed to build publish snapshot: ${err.message}`,
+        slug,
+      });
+    }
+
+    // Spawn the isolated runtime. If this fails we still consider the
+    // publish successful (the snapshot is on disk) but the runtime is
+    // "degraded".
+    let runtimeInfo;
+    try {
+      const updated = await db.prepare("SELECT * FROM applications WHERE id = ?").get(req.params.id);
+      runtimeInfo = await spawnRuntime({ slug, app: updated, snapshotFile });
+    } catch (err) {
+      runtimeInfo = { degraded: true, error: err.message, snapshot: snapshotFile };
+    }
+
+    if (!runtimeInfo.degraded && runtimeInfo.containerId) {
+      await db.prepare(
+        `UPDATE applications
+         SET runtime_container_id = ?, runtime_port = ?, runtime_mode = 'container', updated_at = ?
+         WHERE id = ?`,
+      ).run(runtimeInfo.containerId, runtimeInfo.port, now, req.params.id);
+    } else {
+      await db.prepare(
+        `UPDATE applications
+         SET runtime_mode = 'degraded', updated_at = ?
+         WHERE id = ?`,
+      ).run(now, req.params.id);
+    }
+
+    // Create publication snapshot record (for history / re-publish).
     const pubId = uuid();
     await db.prepare(
       `INSERT INTO app_publications (id, app_id, slug, published_url, published_version, config_snapshot, created_at)
@@ -311,6 +372,13 @@ router.post("/:id/publish", async (req, res, next) => {
       data: {
         ...row,
         published_url: publishedUrl,
+        runtime: {
+          mode: runtimeInfo.degraded ? "degraded" : "container",
+          port: runtimeInfo.port ?? null,
+          containerId: runtimeInfo.containerId ?? null,
+          error: runtimeInfo.error ?? null,
+          snapshot: snapshotFile,
+        },
       },
     });
   } catch (err) {
@@ -324,20 +392,64 @@ router.post("/:id/unpublish", async (req, res, next) => {
     const existing = await db.prepare("SELECT * FROM applications WHERE id = ?").get(req.params.id);
     if (!existing) return res.status(404).json({ success: false, error: "应用不存在" });
 
+    let stopReport = null;
+    if (existing.app_slug) {
+      try {
+        stopReport = await stopRuntime(existing.app_slug);
+      } catch (err) {
+        stopReport = { removed: false, error: err.message };
+      }
+    }
+
     const now = new Date().toISOString();
     await db.prepare(
       `UPDATE applications
        SET status = 'draft',
            published_at = NULL,
+           runtime_container_id = NULL,
+           runtime_port = NULL,
+           runtime_mode = NULL,
            updated_at = ?
        WHERE id = ?`
     ).run(now, req.params.id);
 
     const row = await db.prepare("SELECT * FROM applications WHERE id = ?").get(req.params.id);
-    res.json({ success: true, data: row });
+    res.json({
+      success: true,
+      data: row,
+      runtime_stopped: stopReport,
+    });
   } catch (err) {
     next(err);
   }
+});
+
+// ─── GET /:id/runtime ── runtime container status ────────
+router.get("/:id/runtime", async (req, res, next) => {
+  try {
+    const existing = await db.prepare("SELECT * FROM applications WHERE id = ?").get(req.params.id);
+    if (!existing) return res.status(404).json({ success: false, error: "应用不存在" });
+    if (!existing.app_slug) {
+      return res.json({
+        success: true,
+        data: { state: "not-published", port: null, containerId: null },
+      });
+    }
+    const info = await inspectRuntime(existing.app_slug);
+    res.json({
+      success: true,
+      data: {
+        slug: existing.app_slug,
+        persisted: {
+          containerId: existing.runtime_container_id,
+          port: existing.runtime_port,
+          mode: existing.runtime_mode,
+        },
+        runtime: info,
+        published_url: existing.published_url,
+      },
+    });
+  } catch (err) { next(err); }
 });
 
 // ─── GET /:id/stats ── app statistics ───────────────────
