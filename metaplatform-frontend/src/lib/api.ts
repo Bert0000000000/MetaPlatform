@@ -86,10 +86,17 @@ export const appsApi = {
       `/apps/${id}/stats`,
     ),
   publish: (id: string) =>
-    request<Application & { published_url: string; app_slug: string }>(
-      `/apps/${id}/publish`,
-      { method: "POST" },
-    ),
+    request<Application & {
+      published_url: string;
+      app_slug: string;
+      runtime?: {
+        mode: "container" | "degraded";
+        port: number | null;
+        containerId?: string | null;
+        url?: string | null;
+        error?: string | null;
+      };
+    }>(`/apps/${id}/publish`, { method: "POST" }),
   unpublish: (id: string) =>
     request<Application>(`/apps/${id}/unpublish`, { method: "POST" }),
   listPublished: () => request<Application[]>("/apps/published"),

@@ -394,6 +394,10 @@ router.post("/:id/publish", async (req, res, next) => {
           mode: runtimeInfo.degraded ? "degraded" : "container",
           port: runtimeInfo.port ?? null,
           containerId: runtimeInfo.containerId ?? null,
+          // Frontend toast uses this for the "打开已部署应用" shortcut.
+          // In degraded mode the snapshot route still serves via the
+          // in-process router so we send the same path either way.
+          url: publishedUrl,
           error: runtimeInfo.error ?? null,
           snapshot: snapshotFile,
           historical_slug: historicalSlug,

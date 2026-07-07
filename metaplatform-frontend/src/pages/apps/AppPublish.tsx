@@ -66,7 +66,7 @@ export default function AppPublish() {
   const [grayActive, setGrayActive] = useState(false);
   const [grayConfirmOpen, setGrayConfirmOpen] = useState(false);
   const [grayAction, setGrayAction] = useState<"start" | "promote" | "rollback" | null>(null);
-  const [grayToast, setGrayToast] = useState<string | null>(null);
+  const [grayToast, setGrayToast] = useState<{ message: string; link?: string; variant?: "success" | "warning" | "error" } | null>(null);
 
   /* ── Version management state ── */
   const [versions, setVersions] = useState(VERSIONS_FALLBACK);
@@ -76,7 +76,7 @@ export default function AppPublish() {
   /* ── Gray release toast ── */
   useEffect(() => {
     if (!grayToast) return;
-    const t = setTimeout(() => setGrayToast(null), 2500);
+    const t = setTimeout(() => setGrayToast(null), 5000);
     return () => clearTimeout(t);
   }, [grayToast]);
 
@@ -147,9 +147,16 @@ export default function AppPublish() {
       // they know what kind of environment they got.
       if (result && result.runtime) {
         if (result.runtime.mode === "container") {
-          setGrayToast(`已部署到独立容器 (端口 ${result.runtime.port})`);
+          setGrayToast({
+            message: `已部署到独立容器（端口 ${result.runtime.port}）`,
+            link: result.runtime.url ?? undefined,
+            variant: "success",
+          });
         } else {
-          setGrayToast("已发布 — 运行环境未隔离（Docker 不可达，降级模式）");
+          setGrayToast({
+            message: "已发布 — 运行时未隔离（Docker 不可达，降级模式）",
+            variant: "warning",
+          });
         }
       }
       // Refresh app data after publishing
@@ -157,7 +164,7 @@ export default function AppPublish() {
       setApp(refreshed);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "发布失败";
-      setError(message);
+      setGrayToast({ message, variant: "error" });
     } finally {
       setPublishing(false);
     }
@@ -171,9 +178,10 @@ export default function AppPublish() {
       await appsApi.unpublish(appId);
       const refreshed = await appsApi.get(appId);
       setApp(refreshed);
+      setGrayToast({ message: "已取消发布", variant: "success" });
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "取消发布失败";
-      setError(message);
+      setGrayToast({ message, variant: "error" });
     } finally {
       setUnpublishing(false);
     }
@@ -204,14 +212,14 @@ export default function AppPublish() {
       if (appId) {
         appsApi.setGrayConfig(appId, { strategy: grayStrategy, percentage: newPct, tenants: grayTenants }).catch(() => {});
       }
-      setGrayToast("灰度发布已启动，当前流量 10%");
+      setGrayToast({ message: "灰度发布已启动，当前流量 10%", variant: "success" });
     } else if (grayAction === "promote") {
       setGrayPercent(100);
       setGrayActive(false);
       if (appId) {
         appsApi.setGrayConfig(appId, { strategy: grayStrategy, percentage: 100, tenants: grayTenants }).catch(() => {});
       }
-      setGrayToast("已全量发布，灰度结束");
+      setGrayToast({ message: "已全量发布，灰度结束", variant: "success" });
     } else if (grayAction === "rollback") {
       setGrayPercent(0);
       setGrayActive(false);
@@ -225,7 +233,7 @@ export default function AppPublish() {
           appsApi.setGrayConfig(appId, { strategy: grayStrategy, percentage: 0, tenants: [] }).catch(() => {});
         }
       }
-      setGrayToast("灰度已回滚");
+      setGrayToast({ message: "灰度已回滚", variant: "success" });
     }
     setGrayConfirmOpen(false);
     setGrayAction(null);
@@ -261,7 +269,7 @@ export default function AppPublish() {
         status: i === idx ? "primary" : v.status === "primary" ? "running" : v.status,
       }))
     );
-    setGrayToast(`已切换主版本为 ${versions[idx].version}`);
+    setGrayToast({ message: `已切换主版本为 ${versions[idx].version}`, variant: "success" });
   }
 
   function handleTrafficChange(idx: number, val: number) {
@@ -285,11 +293,11 @@ export default function AppPublish() {
         // Refresh app data
         const refreshed = await appsApi.get(appId);
         setApp(refreshed);
-        setGrayToast(`已回滚到版本 ${versionStr}`);
+        setGrayToast({ message: `已回滚到版本 ${versionStr}`, variant: "success" });
       }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "回滚失败";
-      setGrayToast(message);
+      setGrayToast({ message, variant: "error" });
     }
   }
 
@@ -779,8 +787,21 @@ export default function AppPublish() {
 
       {/* Toast */}
       {grayToast && (
-        <div className="fixed top-4 right-4 z-50 rounded-md bg-foreground px-4 py-2 text-sm text-background shadow-lg">
-          {grayToast}
+        <div className={`fixed top-4 right-4 z-50 rounded-md px-4 py-2 text-sm shadow-lg flex items-center gap-2 max-w-md ${
+          grayToast.variant === "error"
+            ? "bg-destructive text-destructive-foreground"
+            : grayToast.variant === "warning"
+              ? "bg-yellow-500 text-yellow-50"
+              : "bg-foreground text-background"
+        }`}>
+          <span className="flex-1">{grayToast.message}</span>
+          {grayToast.link && (
+            <a href={grayToast.link} target="_blank" rel="noreferrer"
+               className="underline text-xs whitespace-nowrap hover:opacity-80">
+              打开 ↗
+            </a>
+          )}
+          <button onClick={() => setGrayToast(null)} className="opacity-60 hover:opacity-100">×</button>
         </div>
       )}
     </div>
@@ -826,13 +847,16 @@ function PublishedEnvironments({ appId }: { appId: string }) {
       const live = rows.find((r) => r.isLive);
       if (live) {
         try {
-          const rt = await appsApi.getRuntime(appId);
+          const rt = await appsApi.getRuntimeHealth();
+          // The /runtime/health endpoint is platform-wide so we just
+          // surface its state — earlier code expected per-app nested
+          // `rt.runtime` shape that doesn't exist on the API contract.
           setRuntimeInfo({
-            running: !!rt?.runtime?.running,
-            port: rt?.runtime?.port ?? rt?.persisted?.port ?? null,
-            containerId: rt?.runtime?.containerId ?? rt?.persisted?.containerId ?? null,
-            mode: rt?.persisted?.mode ?? null,
-            error: rt?.runtime?.error,
+            running: rt.docker === "ok",
+            port: null, // not exposed by the platform-health endpoint
+            containerId: null,
+            mode: rt.docker === "ok" ? "container" : "degraded",
+            error: rt.error,
           });
         } catch {/* keep pubs but no live runtime info */}
       } else {
