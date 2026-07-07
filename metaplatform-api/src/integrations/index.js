@@ -34,12 +34,22 @@ import quality from "./quality.js";
  * Aggregate health check across all storage backends
  */
 export async function healthCheckAll() {
+  // Dynamic import to avoid circular dependency with integrations/clickhouse.js
+  let clickhouseHealth = { status: "error", error: "module_not_loaded" };
+  try {
+    const ch = await import("./clickhouse.js");
+    clickhouseHealth = await ch.healthCheck();
+  } catch (e) {
+    clickhouseHealth = { status: "error", error: e.message };
+  }
+
   const results = await Promise.allSettled([
     neo4jModule.healthCheck(),
     esModule.healthCheck(),
     milvusModule.healthCheck(),
     minioModule.healthCheck(),
     kafkaModule.healthCheck(),
+    Promise.resolve(clickhouseHealth),
   ]);
 
   return {
@@ -48,6 +58,7 @@ export async function healthCheckAll() {
     milvus: results[2].status === "fulfilled" ? results[2].value : { status: "error", error: results[2].reason?.message },
     minio: results[3].status === "fulfilled" ? results[3].value : { status: "error", error: results[3].reason?.message },
     kafka: results[4].status === "fulfilled" ? results[4].value : { status: "error", error: results[4].reason?.message },
+    clickhouse: results[5].status === "fulfilled" ? results[5].value : { status: "error", error: results[5].reason?.message },
     timestamp: new Date().toISOString(),
   };
 }

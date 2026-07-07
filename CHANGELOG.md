@@ -6,6 +6,55 @@
 
 ---
 
+## [v1.5.0] - 2026-07-07
+
+### 新增 (Added)
+- **Phase 5 完成：可观测性**
+  - **Prometheus 指标** (`src/observability/metrics.js`)
+    - 默认 Node.js 指标：CPU / 内存 / GC / 启动时间（`prom-client`）
+    - HTTP 指标：requests_total / request_duration_seconds / requests_in_flight
+    - 业务指标：logins_total / rag_queries_total / agent_runs_total /
+      nl2sql_queries_total / cdc_events_emitted_total / simulator_runs_total /
+      ocr_calls_total / cache_hits_total / cache_misses_total
+    - 后端健康 gauge：8 个后端（postgres / redis / neo4j / es / milvus / minio / kafka / clickhouse）
+    - 端点：`GET /api/observability/metrics` (Prometheus 文本格式，公共)
+  - **结构化 JSON Logger** (`src/observability/logger.js`)
+    - 一行 JSON 一个事件，便于 Loki/ELK 摄取
+    - AsyncLocalStorage 关联 traceId / spanId / userId
+    - 1000 条环形 buffer，`GET /api/observability/logs` 查询
+    - 支持按 traceId 过滤：`GET /api/observability/logs/by-trace/:id`
+  - **链路追踪** (`src/observability/tracer.js`)
+    - 每个请求自动分配 traceId（响应头 `X-Trace-Id`）
+    - `withSpan(name, fn)` API 包装存储调用为 span
+    - 10 分钟内存 retention，500 个 trace 上限
+    - 端点：`GET /api/observability/traces` + `GET /traces/:id`
+  - **审计 Trail** (`src/observability/audit.js`)
+    - 自动建表（PG/SQLite 兼容）：`audit_events(id, ts, user_id, action, resource_*, ip, trace_id, status, metadata)`
+    - 登录成功/失败自动记录（auth.js）
+    - 500 条环形 buffer + DB 持久化
+    - 端点：`GET /api/observability/audit?action=&userId=` + `POST /audit/test`
+  - **统一 Observability 路由** (`src/routes/observability.js`)
+    - `/metrics` (公共) / `/status` / `/logs` / `/logs/by-trace/:id`
+    - `/traces` / `/traces/:id`
+    - `/audit` / `/audit/test`
+  - **集成中间件**：tracerMiddleware + loggerMiddleware + metricsMiddleware
+    - 装在所有路由前，自动给每个请求打标
+- 集成 `healthCheckAll` 自动检查 ClickHouse（之前缺失）
+- `routes/auth.js` 登录成功/失败时记录 audit event + logins metric
+
+### 新增依赖
+- `prom-client` ^15.x
+
+### 验证 (Verified)
+- Phase 5 集成测试 `test-phase5.ps1`：**12/12 通过**
+  - Prometheus 指标端点：200 OK，317 metric lines
+  - 8 个 backend_up gauges（postgres/redis/neo4j/es/milvus/minio/kafka/clickhouse 全部 = 1）
+  - Observability status：40 traces in memory + 81 buffered logs + 9 audit events
+  - Login success/failure 产生 audit 事件
+  - Recent logs 显示 traceId 关联的 request.received / request.completed
+
+---
+
 ## [v1.4.0] - 2026-07-07
 
 ### 新增 (Added)

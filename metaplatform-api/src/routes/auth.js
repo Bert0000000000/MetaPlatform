@@ -112,6 +112,20 @@ router.post("/login", async (req, res, next) => {
       "UPDATE users SET last_login = ?, updated_at = ? WHERE id = ?"
     ).run(now, now, user.id);
 
+    // Audit: successful login
+    const { record: audit } = await import("../observability/audit.js");
+    const { loginsTotal } = await import("../observability/metrics.js");
+    audit({
+      action: "login.success",
+      userId: user.id,
+      userEmail: user.email,
+      ip: req.ip,
+      userAgent: req.headers["user-agent"],
+      traceId: req.traceId,
+      status: "success",
+    });
+    loginsTotal.inc({ role: user.role || "user" });
+
     // Generate JWT — includes tenant_id for multi-tenant support
     const token = generateToken(user);
     const { password_hash, ...safeUser } = user;

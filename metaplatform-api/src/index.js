@@ -46,6 +46,10 @@ import analyticsRoutes from "./routes/analytics.js";
 import { cacheMiddleware, redisHealthCheck } from "./middleware/cache.js";
 import { initAll, healthCheckAll } from "./integrations/index.js";
 import cdc from "./cdc.js";
+import observabilityRoutes from "./routes/observability.js";
+import { metricsMiddleware } from "./observability/metrics.js";
+import { loggerMiddleware } from "./observability/logger.js";
+import { tracerMiddleware } from "./observability/tracer.js";
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -73,6 +77,12 @@ const authLimiter = rateLimit({
 app.use(cors());                          // Allow all origins (dev mode)
 app.use(express.json());                  // Parse JSON bodies
 app.use(generalLimiter);                  // Apply general rate limiting
+app.use(tracerMiddleware);
+app.use(loggerMiddleware);
+app.use(metricsMiddleware);
+app.use(tracerMiddleware);
+app.use(loggerMiddleware);
+app.use(metricsMiddleware);
 
 // ─── Routes ──────────────────────────────────────────────
 // Auth routes — PUBLIC for login/register, rate-limited separately
@@ -112,6 +122,9 @@ app.use("/api/storage", authenticate, storageRoutes);
 // Phase 3: AI substrate endpoints (embeddings / LLM / agent / RAG / OCR)
 app.use("/api/ai", authenticate, aiRoutes);
 app.use("/api/analytics", authenticate, analyticsRoutes);
+
+// Phase 5: Observability — metrics (public scrape), logs/traces/audit (auth)
+app.use("/api/observability", observabilityRoutes);
 
 // ─── Health check (public, optional auth) ────────────────
 app.get("/api/health", optionalAuth, async (_req, res) => {
