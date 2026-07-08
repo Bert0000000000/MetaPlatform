@@ -84,7 +84,7 @@ import Workflows from "@/pages/apps/Workflows";
 import AppConfig from "@/pages/apps/AppConfig";
 import AppPublish from "@/pages/apps/AppPublish";
 import AppExport from "@/pages/apps/AppExport";
-import NewAppWizard from "@/pages/apps/NewAppWizard";
+import { NewAppWizard } from "@/pages/apps/NewAppWizard";
 import VibeCoding from "@/pages/apps/VibeCoding";
 import WebIDE from "@/pages/apps/WebIDE";
 import FormDesigner from "@/pages/apps/FormDesigner";
@@ -126,6 +126,21 @@ import { AdminDashboard, UserList, RoleList, DepartmentList, MenuConfig, Diction
 import { AdminRuntime } from "@/pages/admin/AdminRuntime";
 import { SchedulerPage } from "@/pages/admin/Scheduler";
 import ApiKeysPage from "@/pages/settings/ApiKeys";
+
+function AppsListNewRedirect() {
+  // /apps/new — open the wizard inline, then navigate back to the list
+  // once the wizard closes. Keeping it as a real route so deep-links and
+  // shareable URLs work for power-users.
+  return (
+    <div className="container mx-auto py-12 text-center text-sm text-muted-foreground">
+      正在打开新建应用向导…
+      <NewAppWizard
+        open
+        onOpenChange={(o: boolean) => { if (!o) window.location.href = "/apps"; }}
+      />
+    </div>
+  );
+}
 
 function AppDetailPlaceholder() {
   return (
@@ -198,7 +213,7 @@ export default function App() {
 
               {/* 4. 应用中心 */}
               <Route path="/apps" element={<AppsListPage />} />
-              <Route path="/apps/new" element={<NewAppWizard />} />
+              <Route path="/apps/new" element={<AppsListNewRedirect />} />
               <Route path="/apps/vibe" element={<VibeCoding />} />
               <Route path="/apps/form" element={<FormDesigner />} />
               <Route path="/apps/:appId" element={<AppDetailPlaceholder />} />

@@ -1,486 +1,472 @@
+/**
+ * F4.1.6 / F4.1.7 — New Application 4-step Wizard
+ *
+ *   Step 1: 选择创建方式 (空白模板 / 行业模板 / 复制现有)
+ *   Step 2: 选择具体模板（blank 时跳过；clone 时跳到下拉选现有应用）
+ *   Step 3: 基本信息（名称 / 类别 / 图标 / 描述 / 初始环境）
+ *   Step 4: 确认 → 提交
+ *
+ * The wizard is a controlled Dialog. State is one big object so a user
+ * can navigate backwards without losing input.
+ *
+ * Backend wiring:
+ *   • templates list  → GET  /api/apps/templates/list
+ *   • create blank   → POST /api/apps { createType:'blank', name, … }
+ *   • create template→ POST /api/apps { createType:'template', template:key, … }
+ *   • create clone   → POST /api/apps/clone { sourceAppId, name, … }
+ */
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Check, ChevronLeft, ChevronRight, Sparkles, Database, Wand2, FileEdit, BookOpen, Dna, Bot, Handshake, Package, Building2, Users, ClipboardList, BarChart3, Loader2, Zap, Copy } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
-import { appsApi } from "@/lib/api";
-import type { Application } from "@/lib/api";
+import { Card } from "@/components/ui/card";
+import {
+  ArrowLeft, ArrowRight, Check, Copy, Layers, Plus, Sparkles, Loader2, FileBox, Rocket,
+} from "lucide-react";
+import { appsApi, type Application, type AppTemplate } from "@/lib/api";
 
-type Step = 1 | 2 | 3 | 4;
+type CreateType = "blank" | "template" | "clone";
+type DataSource = "internal" | "external" | "hybrid";
 
-const CREATE_TYPES = [
-  { id: "blank", title: "空白应用", desc: "从零开始，完全自定义数据模型与流程", icon: FileEdit },
-  { id: "template", title: "行业模板", desc: "从行业模板快速构建（CRM/ERP/OA...）", icon: BookOpen },
-  { id: "clone", title: "复制现有应用", desc: "基于已有应用复制，自动带入对象、页面与流程", icon: Copy },
-  { id: "ontology", title: "本体驱动", desc: "先定义业务对象，自动生成页面与流程", icon: Dna },
-  { id: "ai", title: "AI 对话创建", desc: "用自然语言描述需求，AI 自动生成", icon: Bot },
-];
-
-const TEMPLATES = [
-  { id: "crm", name: "客户关系管理", icon: Handshake, category: "销售" },
-  { id: "erp", name: "进销存管理", icon: Package, category: "供应链" },
-  { id: "oa", name: "协同办公", icon: Building2, category: "通用" },
-  { id: "hr", name: "人力资源", icon: Users, category: "人事" },
-  { id: "project", name: "项目管理", icon: ClipboardList, category: "通用" },
-  { id: "bi", name: "业务分析", icon: BarChart3, category: "数据" },
-];
-
-const DATA_SOURCES = [
-  { id: "ds-mysql", name: "MySQL 主库", type: "MySQL", status: "已连接" },
-  { id: "ds-pg", name: "PostgreSQL 分析库", type: "PostgreSQL", status: "已连接" },
-  { id: "ds-api", name: "第三方 API 网关", type: "REST API", status: "已连接" },
-  { id: "new-mysql", name: "新建 MySQL 连接", type: "+", status: "新建" },
-];
-
-interface WizardState {
-  createType: string;
-  template: string;
-  /** F4.1.7 复制现有应用 — 源应用 id (selected from /apps) */
-  sourceAppId: string;
+interface Draft {
+  createType: CreateType;
+  templateKey: string | null;
+  sourceAppId: string | null;
   name: string;
-  icon: string;
   description: string;
   category: string;
-  dataSource: string;
-  deployEnv: string;
+  icon: string;
+  environment: "dev" | "test" | "staging" | "prod";
+  dataSource: DataSource;
 }
 
-const INITIAL: WizardState = {
+const DEFAULT_DRAFT: Draft = {
   createType: "blank",
-  template: "",
-  sourceAppId: "",
+  templateKey: null,
+  sourceAppId: null,
   name: "",
-  icon: "",
   description: "",
-  category: "通用",
-  dataSource: "ds-mysql",
-  deployEnv: "dev",
+  category: "",
+  icon: "Box",
+  environment: "dev",
+  dataSource: "internal",
 };
 
-export default function NewAppWizard() {
+const ICON_OPTIONS = ["Box", "Briefcase", "Layers", "Database", "Users", "BarChart3", "Workflow", "FileBox", "Sparkles"];
+
+const CATEGORY_OPTIONS = [
+  { value: "business",   label: "业务应用" },
+  { value: "hr",         label: "人力资源" },
+  { value: "crm",        label: "客户关系 (CRM)" },
+  { value: "erp",        label: "ERP/进销存" },
+  { value: "oa",         label: "OA/审批" },
+  { value: "ops",        label: "运维" },
+  { value: "ai",         label: "AI/智能体" },
+  { value: "data",       label: "数据" },
+  { value: "template",   label: "模板" },
+];
+
+interface Props {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onCreated?: (app: Application) => void;
+}
+
+export function NewAppWizard({ open, onOpenChange, onCreated }: Props) {
   const navigate = useNavigate();
-  const [step, setStep] = useState<Step>(1);
-  const [state, setState] = useState<WizardState>(INITIAL);
+  const [step, setStep] = useState(0);
+  const [draft, setDraft] = useState<Draft>(DEFAULT_DRAFT);
+  const [templates, setTemplates] = useState<AppTemplate[]>([]);
+  const [existingApps, setExistingApps] = useState<Application[]>([]);
+  const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
-  // F4.4.9.1 NoCode 模式
-  const [noCodeMode, setNoCodeMode] = useState(false);
-  // F4.1.7 复制现有应用 — 用于 Step 1 选源应用
-  const [sourceApps, setSourceApps] = useState<Application[]>([]);
-  const [loadingSources, setLoadingSources] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
+  // Load templates + existing apps list once when dialog opens.
   useEffect(() => {
-    setLoadingSources(true);
-    appsApi.list({ status: "published" })
-      .then((rows) => setSourceApps(Array.isArray(rows) ? rows : []))
-      .catch(() => setSourceApps([]))
-      .finally(() => setLoadingSources(false));
-  }, []);
+    if (!open) return;
+    setStep(0);
+    setDraft(DEFAULT_DRAFT);
+    setError(null);
+    setLoading(true);
+    Promise.all([
+      appsApi.templates().catch(() => []),
+      appsApi.list().catch(() => []),
+    ]).then(([tpl, apps]) => {
+      setTemplates(Array.isArray(tpl) ? tpl : []);
+      setExistingApps(Array.isArray(apps) ? apps : []);
+    }).finally(() => setLoading(false));
+  }, [open]);
 
-  const update = <K extends keyof WizardState>(k: K, v: WizardState[K]) =>
-    setState((s) => ({ ...s, [k]: v }));
-
-  const canNext = () => {
+  const canAdvance = (): boolean => {
+    if (step === 0) return true; // createType is always set
     if (step === 1) {
-      if (!state.createType) return false;
-      if (state.createType === "clone") return !!state.sourceAppId;
-      return true;
+      if (draft.createType === "template") return Boolean(draft.templateKey);
+      if (draft.createType === "clone")    return Boolean(draft.sourceAppId);
+      return true; // blank skips step 1
     }
-    if (step === 2) return !!state.name && state.name.length >= 2;
-    if (step === 3) return !!state.dataSource;
+    if (step === 2) return draft.name.trim().length > 0 && draft.category.trim().length > 0;
     return true;
   };
 
-  const onSubmit = async () => {
-    if (!state.name || state.name.length < 2) {
-      setSubmitError("应用名称至少需要 2 个字符");
-      return;
-    }
+  const submit = async () => {
     setSubmitting(true);
-    setSubmitError(null);
+    setError(null);
     try {
-      // F4.1.7 复制现有应用走专门的 clone endpoint，其它方式走 create
-      const newApp =
-        state.createType === "clone"
-          ? await appsApi.clone({
-              sourceAppId: state.sourceAppId,
-              name: state.name,
-              icon: state.icon || undefined,
-              description: state.description || undefined,
-              category: state.category,
-              environment: state.deployEnv,
-            })
-          : await appsApi.create({
-              name: state.name,
-              description: state.description,
-              category: state.category,
-              icon: state.icon,
-              environment: state.deployEnv,
-            });
-      navigate(`/apps/${newApp.id}/overview`);
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "创建应用失败";
-      setSubmitError(message);
+      let created: Application;
+      if (draft.createType === "clone") {
+        created = await appsApi.clone({
+          sourceAppId: draft.sourceAppId!,
+          name: draft.name.trim(),
+          description: draft.description,
+          category: draft.category,
+          icon: draft.icon,
+          environment: draft.environment,
+        });
+      } else {
+        const body: Record<string, unknown> = {
+          name: draft.name.trim(),
+          description: draft.description,
+          category: draft.category,
+          icon: draft.icon,
+          environment: draft.environment,
+          dataSource: draft.dataSource,
+          template: draft.createType === "template" ? draft.templateKey : undefined,
+        };
+        created = await appsApi.create(body as Partial<Application>);
+      }
+      onCreated?.(created);
+      onOpenChange(false);
+      // Navigate to the newly created app's detail page.
+      navigate(`/apps/${created.id}`);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "创建失败");
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <div className="flex flex-col gap-6 p-6">
-      <div>
-        <h1 className="text-xl font-bold">新建应用</h1>
-        <p className="text-sm text-muted-foreground mt-1">4 步创建应用：选择方式 → 基本信息 → 数据源 → 确认</p>
-      </div>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-3xl">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Sparkles className="size-5 text-violet-500" />
+            新建应用
+          </DialogTitle>
+          <DialogDescription>
+            4 步引导式向导：选择方式 → 选择模板 → 基本信息 → 确认创建
+          </DialogDescription>
+        </DialogHeader>
 
-      {/* Stepper */}
-      <div className="flex items-center gap-2">
-        {([1, 2, 3, 4] as Step[]).map((s) => (
-          <div key={s} className="flex items-center gap-2 flex-1">
-            <div
-              className={`size-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors ${
-                s < step
-                  ? "bg-primary text-primary-foreground"
-                  : s === step
-                  ? "bg-primary text-primary-foreground ring-4 ring-primary/20"
-                  : "bg-muted text-muted-foreground"
-              }`}
-            >
-              {s < step ? <Check className="size-4" /> : s}
-            </div>
-            <div className="flex-1">
-              <div className={`text-xs ${s === step ? "font-medium" : "text-muted-foreground"}`}>
-                {["创建方式", "基本信息", "数据源", "确认创建"][s - 1]}
-              </div>
-            </div>
-            {s < 4 && <div className={`h-px flex-1 ${s < step ? "bg-primary" : "bg-border"}`} />}
+        {/* Step indicator */}
+        <ol className="flex items-center gap-2 text-xs">
+          {[0, 1, 2, 3].map((i) => {
+            const labels = ["方式", "模板", "基本信息", "确认"];
+            const active = i === step;
+            const done = i < step;
+            return (
+              <li key={i} className="flex items-center gap-2 flex-1">
+                <span className={
+                  "flex items-center justify-center size-6 rounded-full text-[10px] font-medium " +
+                  (done ? "bg-green-500 text-white" :
+                   active ? "bg-violet-500 text-white" : "bg-slate-200 text-slate-500")
+                }>
+                  {done ? <Check className="size-3" /> : i + 1}
+                </span>
+                <span className={active ? "font-medium text-slate-900" : "text-slate-500"}>
+                  {labels[i]}
+                </span>
+                {i < 3 && <span className="flex-1 h-px bg-slate-200" />}
+              </li>
+            );
+          })}
+        </ol>
+
+        {error && (
+          <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded px-3 py-2">
+            {error}
           </div>
-        ))}
+        )}
+
+        {loading ? (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground py-12 justify-center">
+            <Loader2 className="size-4 animate-spin" />加载模板中…
+          </div>
+        ) : (
+          <div className="min-h-[300px]">
+            {step === 0 && <StepCreateType draft={draft} setDraft={setDraft} />}
+            {step === 1 && (
+              <StepPickTemplate
+                draft={draft}
+                setDraft={setDraft}
+                templates={templates}
+                existingApps={existingApps}
+              />
+            )}
+            {step === 2 && <StepBasicInfo draft={draft} setDraft={setDraft} />}
+            {step === 3 && <StepConfirm draft={draft} templates={templates} existingApps={existingApps} />}
+          </div>
+        )}
+
+        <DialogFooter className="flex items-center justify-between">
+          <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={submitting}>
+            取消
+          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => setStep((s) => Math.max(0, s - 1))} disabled={step === 0 || submitting}>
+              <ArrowLeft className="size-3 mr-1" />上一步
+            </Button>
+            {step < 3 ? (
+              <Button onClick={() => setStep((s) => s + 1)} disabled={!canAdvance()}>
+                下一步<ArrowRight className="size-3 ml-1" />
+              </Button>
+            ) : (
+              <Button onClick={submit} disabled={submitting}>
+                {submitting ? <Loader2 className="size-3 mr-1 animate-spin" /> : <Rocket className="size-3 mr-1" />}
+                创建应用
+              </Button>
+            )}
+          </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/* ─────────────── Step 0: createType ─────────────────── */
+function StepCreateType({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft) => void }) {
+  const OPTIONS: Array<{ value: CreateType; label: string; description: string; icon: React.ReactNode }> = [
+    {
+      value: "blank", label: "空白应用",
+      description: "从零开始，自己定义对象 / 页面 / 流程",
+      icon: <Plus className="size-5" />,
+    },
+    {
+      value: "template", label: "行业模板",
+      description: "基于 CRM/HR/Ops 等预置模板快速初始化",
+      icon: <Layers className="size-5" />,
+    },
+    {
+      value: "clone", label: "复制现有",
+      description: "复制一个已有应用的全部内容作为起点",
+      icon: <Copy className="size-5" />,
+    },
+  ];
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2">
+      {OPTIONS.map((o) => (
+        <Card
+          key={o.value}
+          onClick={() => setDraft({ ...draft, createType: o.value, templateKey: null, sourceAppId: null })}
+          className={
+            "p-4 cursor-pointer hover:border-violet-400 transition " +
+            (draft.createType === o.value ? "border-violet-500 bg-violet-50" : "")
+          }
+        >
+          <div className="flex items-center gap-2 text-violet-600 mb-2">
+            {o.icon}
+            <span className="font-medium">{o.label}</span>
+          </div>
+          <p className="text-xs text-muted-foreground">{o.description}</p>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+/* ─────────────── Step 1: pick template ─────────────────── */
+function StepPickTemplate({
+  draft, setDraft, templates, existingApps,
+}: {
+  draft: Draft;
+  setDraft: (d: Draft) => void;
+  templates: AppTemplate[];
+  existingApps: Application[];
+}) {
+  if (draft.createType === "blank") {
+    return (
+      <div className="py-12 text-center text-sm text-muted-foreground">
+        <FileBox className="size-8 mx-auto mb-2 text-slate-400" />
+        空白模板无需选择模板，直接点下一步填写基本信息
       </div>
-
-      <Card>
-        <CardContent className="pt-6">
-          {/* Step 1: 创建方式 */}
-          {step === 1 && (
-            <div className="space-y-4">
-              <div>
-                <CardTitle className="text-base">选择创建方式</CardTitle>
-                <CardDescription>不同方式对应不同的初始化策略</CardDescription>
+    );
+  }
+  if (draft.createType === "template") {
+    return (
+      <div>
+        <p className="text-xs text-muted-foreground mb-3">
+          可用模板（{templates.length} 个）
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[280px] overflow-y-auto">
+          {templates.map((t) => (
+            <Card
+              key={t.key}
+              onClick={() => setDraft({ ...draft, templateKey: t.key, category: t.category, icon: t.icon })}
+              className={
+                "p-3 cursor-pointer hover:border-violet-400 transition " +
+                (draft.templateKey === t.key ? "border-violet-500 bg-violet-50" : "")
+              }
+            >
+              <div className="flex items-center gap-2 mb-1">
+                <span className="font-medium text-sm">{t.label}</span>
+                <code className="text-[10px] text-muted-foreground">({t.key})</code>
               </div>
-
-              {/* F4.4.9.1 NoCode 模式 toggle */}
-              <div className="flex items-center justify-between p-3 border rounded-lg bg-muted/30">
-                <div className="flex items-center gap-3">
-                  <Zap className="size-5 text-amber-500" />
-                  <div>
-                    <div className="font-medium text-sm">NoCode 模式</div>
-                    <div className="text-xs text-muted-foreground">
-                      {noCodeMode ? "简化向导，自动生成数据模型和页面" : "完整模式，支持自定义数据源和部署"}
-                    </div>
-                  </div>
-                </div>
-                <Switch checked={noCodeMode} onCheckedChange={setNoCodeMode} />
+              <p className="text-xs text-muted-foreground line-clamp-2">{t.description}</p>
+              <div className="flex gap-1 mt-2 flex-wrap">
+                <span className="text-[10px] px-1.5 py-0.5 bg-slate-100 rounded">
+                  {t.objects.length} 对象
+                </span>
+                <span className="text-[10px] px-1.5 py-0.5 bg-slate-100 rounded">
+                  {t.pages.length} 页面
+                </span>
+                <span className="text-[10px] px-1.5 py-0.5 bg-slate-100 rounded">
+                  {t.flows.length} 流程
+                </span>
               </div>
-
-              <div className={`grid grid-cols-1 md:grid-cols-2 gap-3 ${noCodeMode ? "opacity-50 pointer-events-none" : ""}`}>
-                {CREATE_TYPES.map((t) => (
-                  <button
-                    key={t.id}
-                    type="button"
-                    onClick={() => update("createType", t.id)}
-                    className={`text-left rounded-lg border p-4 transition-all hover:border-primary ${
-                      state.createType === t.id
-                        ? "border-primary bg-primary/5 ring-2 ring-primary/20"
-                        : "border-border"
-                    }`}
-                  >
-                    <div className="flex items-start gap-3">
-                      <t.icon className="size-5" />
-                      <div className="flex-1">
-                        <div className="font-medium flex items-center gap-2">
-                          {t.title}
-                          {t.id === "ai" && <Badge variant="secondary" className="text-xs"><Sparkles className="size-3 mr-1" />AI</Badge>}
-                        </div>
-                        <div className="text-xs text-muted-foreground mt-1">{t.desc}</div>
-                      </div>
-                    </div>
-                  </button>
-                ))}
-              </div>
-
-              {state.createType === "template" && (
-                <div className="border-t pt-4 mt-4">
-                  <Label className="text-sm">选择模板</Label>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-2">
-                    {TEMPLATES.map((t) => (
-                      <button
-                        key={t.id}
-                        type="button"
-                        onClick={() => {
-                          update("template", t.id);
-                          update("name", t.name);
-                          update("category", t.category);
-                        }}
-                        className={`text-left rounded border p-3 transition-all hover:border-primary ${
-                          state.template === t.id ? "border-primary bg-primary/5" : ""
-                        }`}
-                      >
-                        <t.icon className="size-5" />
-                        <div className="font-medium text-sm mt-1">{t.name}</div>
-                        <div className="text-xs text-muted-foreground">{t.category}</div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* F4.1.7 复制现有应用 */}
-              {state.createType === "clone" && (
-                <div className="border-t pt-4 mt-4 space-y-2">
-                  <Label className="text-sm">选择源应用（基于已发布应用复制）</Label>
-                  {loadingSources ? (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Loader2 className="size-4 animate-spin" />加载中…
-                    </div>
-                  ) : sourceApps.length === 0 ? (
-                    <div className="text-sm text-muted-foreground">
-                      暂无可用的已发布应用
-                    </div>
-                  ) : (
-                    <Select
-                      value={state.sourceAppId}
-                      onValueChange={(v) => {
-                        const src = sourceApps.find((a) => a.id === v);
-                        update("sourceAppId", v);
-                        if (src) {
-                          // Pre-fill name with "(副本)" suffix and inherit category
-                          update("name", `${src.name} (副本)`);
-                          update("category", src.category || "通用");
-                          update("description", src.description || "");
-                        }
-                      }}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="选择要复制的应用…" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {sourceApps.map((a) => (
-                          <SelectItem key={a.id} value={a.id}>
-                            {a.name}
-                            {a.app_slug ? ` · /${a.app_slug}` : ""}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                  <p className="text-xs text-muted-foreground">
-                    将自动带入所选应用的对象、页面与流程配置，并在 Step 4 确认时发起复制请求。
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Step 2: 基本信息 */}
-          {step === 2 && (
-            <div className="space-y-4 max-w-xl">
-              <div>
-                <CardTitle className="text-base">应用基本信息</CardTitle>
-                <CardDescription>标识与描述将出现在工作台和应用市场</CardDescription>
-              </div>
-              <div className="space-y-3">
-                <div className="space-y-1.5">
-                  <Label htmlFor="name">应用名称 *</Label>
-                  <Input
-                    id="name"
-                    placeholder="如：客户关系管理系统"
-                    value={state.name}
-                    onChange={(e) => update("name", e.target.value)}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="desc">应用描述</Label>
-                  <Input
-                    id="desc"
-                    placeholder="简要说明应用用途"
-                    value={state.description}
-                    onChange={(e) => update("description", e.target.value)}
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="icon">图标（emoji）</Label>
-                    <Input
-                      id="icon"
-                      value={state.icon}
-                      onChange={(e) => update("icon", e.target.value)}
-                      maxLength={2}
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="cat">分类</Label>
-                    <select
-                      id="cat"
-                      className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm"
-                      value={state.category}
-                      onChange={(e) => update("category", e.target.value)}
-                    >
-                      <option>通用</option>
-                      <option>销售</option>
-                      <option>供应链</option>
-                      <option>人事</option>
-                      <option>数据</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Step 3: 数据源 */}
-          {step === 3 && (
-            <div className="space-y-4">
-              <div>
-                <CardTitle className="text-base">选择数据源</CardTitle>
-                <CardDescription>应用数据将存储在所选数据源中（后续可调整）</CardDescription>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                {DATA_SOURCES.map((d) => (
-                  <button
-                    key={d.id}
-                    type="button"
-                    onClick={() => update("dataSource", d.id)}
-                    className={`text-left rounded-lg border p-3 transition-all hover:border-primary flex items-center gap-3 ${
-                      state.dataSource === d.id ? "border-primary bg-primary/5" : "border-border"
-                    }`}
-                  >
-                    <Database className="size-4 text-muted-foreground" />
-                    <div className="flex-1">
-                      <div className="font-medium text-sm">{d.name}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {d.type} · {d.status}
-                      </div>
-                    </div>
-                  </button>
-                ))}
-              </div>
-              <div className="border-t pt-4">
-                <Label>初始部署环境</Label>
-                <div className="flex gap-2 mt-2">
-                  {[
-                    { id: "dev", name: "开发" },
-                    { id: "test", name: "测试" },
-                    { id: "staging", name: "预发" },
-                    { id: "prod", name: "生产" },
-                  ].map((e) => (
-                    <button
-                      key={e.id}
-                      type="button"
-                      onClick={() => update("deployEnv", e.id)}
-                      className={`px-3 py-1.5 text-sm rounded border transition-colors ${
-                        state.deployEnv === e.id
-                          ? "border-primary bg-primary/5 text-primary"
-                          : "border-border hover:border-primary/50"
-                      }`}
-                    >
-                      {e.name}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Step 4: 确认 */}
-          {step === 4 && (
-            <div className="space-y-4">
-              <div>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Wand2 className="size-4 text-primary" />
-                  确认创建
-                </CardTitle>
-                <CardDescription>检查无误后点击「创建」按钮</CardDescription>
-              </div>
-              <div className="rounded-lg border bg-muted/30 p-4 space-y-2">
-                <Row label="创建方式" value={CREATE_TYPES.find((t) => t.id === state.createType)?.title ?? ""} />
-                {state.template && (
-                  <Row label="使用模板" value={TEMPLATES.find((t) => t.id === state.template)?.name ?? ""} />
-                )}
-                {state.createType === "clone" && state.sourceAppId && (
-                  <Row
-                    label="复制源应用"
-                    value={sourceApps.find((a) => a.id === state.sourceAppId)?.name ?? state.sourceAppId}
-                  />
-                )}
-                <Row label="应用名称" value={`${state.icon} ${state.name}`} />
-                {state.description && <Row label="描述" value={state.description} />}
-                <Row label="分类" value={state.category} />
-                <Row
-                  label="数据源"
-                  value={DATA_SOURCES.find((d) => d.id === state.dataSource)?.name ?? ""}
-                />
-                <Row label="初始环境" value={state.deployEnv.toUpperCase()} />
-              </div>
-              <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-sm flex items-start gap-2">
-                <Sparkles className="size-4 text-primary shrink-0 mt-0.5" />
-                <div>
-                  创建后系统将自动初始化：3 个示例对象 · 2 个示例页面 · 1 个示例工作流，你可以在应用中随时修改或删除。
-                </div>
-              </div>
-              {submitError && (
-                <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
-                  {submitError}
-                </div>
-              )}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      <div className="flex items-center justify-between">
-        <Button variant="ghost" onClick={() => navigate("/apps")}>
-          <ChevronLeft className="size-4 mr-1" />
-          返回应用列表
-        </Button>
-        <div className="flex gap-2">
-          {step > 1 && (
-            <Button variant="outline" onClick={() => setStep((s) => (s - 1) as Step)}>
-              <ChevronLeft className="size-4 mr-1" />
-              上一步
-            </Button>
-          )}
-          {step < 4 ? (
-            <Button onClick={() => setStep((s) => (s + 1) as Step)} disabled={!canNext()}>
-              下一步
-              <ChevronRight className="size-4 ml-1" />
-            </Button>
-          ) : (
-            <Button onClick={onSubmit} disabled={submitting}>
-              {submitting ? (
-                <Loader2 className="size-4 mr-1 animate-spin" />
-              ) : (
-                <Sparkles className="size-4 mr-1" />
-              )}
-              {submitting ? "创建中..." : "创建应用"}
-            </Button>
-          )}
+            </Card>
+          ))}
         </div>
+      </div>
+    );
+  }
+  // clone
+  return (
+    <div>
+      <p className="text-xs text-muted-foreground mb-3">
+        选择要复制的应用（{existingApps.length} 个）
+      </p>
+      <div className="max-h-[320px] overflow-y-auto divide-y border rounded">
+        {existingApps.slice(0, 100).map((a) => (
+          <button
+            key={a.id}
+            onClick={() => setDraft({ ...draft, sourceAppId: a.id, category: a.category, icon: a.icon ?? "Box" })}
+            className={
+              "w-full text-left px-3 py-2 hover:bg-slate-50 flex items-center gap-2 " +
+              (draft.sourceAppId === a.id ? "bg-violet-50" : "")
+            }
+          >
+            <span className="font-medium text-sm flex-1 truncate">{a.name}</span>
+            <code className="text-[10px] text-muted-foreground">{a.id}</code>
+            <span className="text-[10px] px-1.5 py-0.5 bg-slate-100 rounded">{a.status}</span>
+          </button>
+        ))}
       </div>
     </div>
   );
 }
 
-function Row({ label, value }: { label: string; value: string }) {
+/* ─────────────── Step 2: basic info ─────────────────── */
+function StepBasicInfo({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft) => void }) {
   return (
-    <div className="flex items-center justify-between text-sm">
-      <span className="text-muted-foreground">{label}</span>
-      <span className="font-medium">{value}</span>
+    <div className="grid grid-cols-2 gap-4 pt-2">
+      <div className="col-span-2">
+        <Label className="text-sm">应用名称 <span className="text-red-500">*</span></Label>
+        <Input
+          value={draft.name}
+          onChange={(e) => setDraft({ ...draft, name: e.target.value })}
+          placeholder="例如：销售机会管理、合同审批"
+          autoFocus
+        />
+      </div>
+      <div>
+        <Label className="text-sm">分类 <span className="text-red-500">*</span></Label>
+        <select
+          value={draft.category}
+          onChange={(e) => setDraft({ ...draft, category: e.target.value })}
+          className="w-full border rounded px-3 py-2 text-sm bg-white"
+        >
+          <option value="">请选择</option>
+          {CATEGORY_OPTIONS.map((c) => (
+            <option key={c.value} value={c.value}>{c.label}</option>
+          ))}
+        </select>
+      </div>
+      <div>
+        <Label className="text-sm">图标</Label>
+        <select
+          value={draft.icon}
+          onChange={(e) => setDraft({ ...draft, icon: e.target.value })}
+          className="w-full border rounded px-3 py-2 text-sm bg-white"
+        >
+          {ICON_OPTIONS.map((i) => <option key={i} value={i}>{i}</option>)}
+        </select>
+      </div>
+      <div>
+        <Label className="text-sm">初始环境</Label>
+        <select
+          value={draft.environment}
+          onChange={(e) => setDraft({ ...draft, environment: e.target.value as Draft["environment"] })}
+          className="w-full border rounded px-3 py-2 text-sm bg-white"
+        >
+          <option value="dev">开发 (dev)</option>
+          <option value="test">测试 (test)</option>
+          <option value="staging">预发 (staging)</option>
+          <option value="prod">生产 (prod)</option>
+        </select>
+      </div>
+      <div>
+        <Label className="text-sm">数据源</Label>
+        <select
+          value={draft.dataSource}
+          onChange={(e) => setDraft({ ...draft, dataSource: e.target.value as DataSource })}
+          className="w-full border rounded px-3 py-2 text-sm bg-white"
+        >
+          <option value="internal">内置数据库</option>
+          <option value="external">外部数据源</option>
+          <option value="hybrid">混合</option>
+        </select>
+      </div>
+      <div className="col-span-2">
+        <Label className="text-sm">描述</Label>
+        <Input
+          value={draft.description}
+          onChange={(e) => setDraft({ ...draft, description: e.target.value })}
+          placeholder="一句话说明这个应用的用途"
+        />
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────── Step 3: confirm ─────────────────── */
+function StepConfirm({ draft, templates, existingApps }: {
+  draft: Draft;
+  templates: AppTemplate[];
+  existingApps: Application[];
+}) {
+  const tpl = templates.find((t) => t.key === draft.templateKey);
+  const src = existingApps.find((a) => a.id === draft.sourceAppId);
+  return (
+    <div className="space-y-3 pt-2 text-sm">
+      <Row k="创建方式" v={draft.createType === "blank" ? "空白应用"
+        : draft.createType === "template" ? "行业模板"
+        : "复制现有"} />
+      {tpl && <Row k="模板" v={`${tpl.label}（${tpl.objects.length} 对象 / ${tpl.pages.length} 页面 / ${tpl.flows.length} 流程）`} />}
+      {src && <Row k="源应用" v={`${src.name}（${src.id}）`} />}
+      <Row k="名称" v={draft.name} />
+      <Row k="分类" v={CATEGORY_OPTIONS.find((c) => c.value === draft.category)?.label ?? draft.category} />
+      <Row k="图标" v={draft.icon} />
+      <Row k="初始环境" v={draft.environment} />
+      <Row k="数据源" v={draft.dataSource} />
+      {draft.description && <Row k="描述" v={draft.description} />}
+      <div className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded px-3 py-2 mt-3">
+        ⚠️ 创建后状态为 draft，需到应用详情完成业务建模/页面/流程后才能发布。
+      </div>
+    </div>
+  );
+}
+
+function Row({ k, v }: { k: string; v: string }) {
+  return (
+    <div className="grid grid-cols-[120px,1fr] items-baseline">
+      <span className="text-muted-foreground text-xs">{k}</span>
+      <span className="font-medium">{v}</span>
     </div>
   );
 }

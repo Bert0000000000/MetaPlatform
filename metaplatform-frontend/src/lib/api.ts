@@ -114,11 +114,26 @@ export const authApi = {
 };
 
 // ─── Applications ─────────────────────────────────────────
+// F4.1.7 — wizard templates + wizard payload
+export interface AppTemplate {
+  key: string;
+  name: string;
+  label: string;
+  description: string;
+  icon: string;
+  category: string;
+  objects: string[];
+  pages: string[];
+  flows: string[];
+}
+
 export const appsApi = {
   list: (params?: { status?: string }) => {
     const qs = params?.status ? `?status=${params.status}` : "";
     return request<Application[]>(`/apps${qs}`);
   },
+  // F4.1.7 — wizard step 1: load seeded industry templates.
+  templates: () => request<AppTemplate[]>("/apps/templates/list"),
   get: (id: string) => request<Application>(`/apps/${id}`),
   create: (data: Partial<Application> & { environment?: string }) =>
     request<Application>("/apps", {

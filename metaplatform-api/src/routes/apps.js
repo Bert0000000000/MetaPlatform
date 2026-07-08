@@ -7,7 +7,7 @@ import http from "http";
 import https from "https";
 import db from "../db.js";
 import { tenantGuard } from "../middleware/tenant.js";
-import { buildTemplateSeed, listTemplateKeys } from "../templates/apps.js";
+import { buildTemplateSeed, listTemplateKeys, TEMPLATES } from "../templates/apps.js";
 import {
   spawnRuntime,
   stopRuntime,
@@ -46,6 +46,33 @@ router.get("/", async (req, res, next) => {
       rows = await db.prepare("SELECT * FROM applications ORDER BY created_at DESC").all();
     }
     res.json({ success: true, data: rows });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ─── GET /templates/list ── F4.1.7 industry templates ───
+// Drives the "新建应用向导" template step. Returns each seeded
+// template with a derived icon + label so the wizard doesn't have to
+// hardcode the catalogue.
+router.get("/templates/list", async (_req, res, next) => {
+  try {
+    const keys = listTemplateKeys();
+    const out = keys.map((key) => {
+      const tpl = TEMPLATES[key];
+      return {
+        key,
+        name: tpl.name,
+        label: tpl.label,
+        description: tpl.description,
+        icon: tpl.icon,
+        category: tpl.category,
+        objects: tpl.objects?.map((o) => o.name) || [],
+        pages:   tpl.pages?.map((p) => p.name) || [],
+        flows:   tpl.flows?.map((f) => f.name) || [],
+      };
+    });
+    res.json({ success: true, data: out });
   } catch (err) {
     next(err);
   }
