@@ -103,6 +103,16 @@ import Objects from "@/pages/ontology/Objects";
 import { OntologyElement, OntologyProperties, OntologyLinks, OntologyActions, OntologyFunctions, OntologyRules, OntologySecurity, OntologyGovernance } from "@/pages/ontology/OntologyTab";
 import ObjectDetail from "@/pages/ontology/ObjectDetail";
 import OntologyOrchestration from "@/pages/ontology/OntologyOrchestration";
+import { Instances } from "@/pages/ontology/Instances";
+import { ImpactAnalysis } from "@/pages/ontology/ImpactAnalysis";
+import { VersionDiff } from "@/pages/ontology/VersionDiff";
+import { OntologyLint } from "@/pages/ontology/OntologyLint";
+import { EventStream } from "@/pages/ontology/EventStream";
+import { KnowledgeGraph as OntologyGraph } from "@/pages/ontology/KnowledgeGraph";
+import { OntologyReasoning } from "@/pages/ontology/OntologyReasoning";
+import { OntologyTemplates } from "@/pages/ontology/OntologyTemplates";
+import { ReverseEngineer } from "@/pages/ontology/ReverseEngineer";
+import { OntologyIO } from "@/pages/ontology/OntologyIO";
 
 // 数据中心
 import { DataDashboard, DataSourceList, AskData, MetricCenter, DataQuality, ETLTasks, RealTimeMonitor, DecisionPush, DataLakehouse, DataKnowledge, ReportCenter, MasterData } from "@/pages/data/DataCenter";
@@ -272,6 +282,16 @@ export default function App() {
               <Route path="/ontology/orchestration" element={<OntologyOrchestration />} />
               <Route path="/ontology/security" element={<OntologySecurity />} />
               <Route path="/ontology/governance" element={<OntologyGovernance />} />
+              <Route path="/ontology/instances" element={<Instances />} />
+              <Route path="/ontology/impact" element={<ImpactAnalysis />} />
+              <Route path="/ontology/diff" element={<VersionDiff />} />
+              <Route path="/ontology/lint" element={<OntologyLint />} />
+              <Route path="/ontology/events" element={<EventStream />} />
+              <Route path="/ontology/graph" element={<OntologyGraph />} />
+              <Route path="/ontology/reasoning" element={<OntologyReasoning />} />
+              <Route path="/ontology/templates" element={<OntologyTemplates />} />
+              <Route path="/ontology/reverse" element={<ReverseEngineer />} />
+              <Route path="/ontology/io" element={<OntologyIO />} />
               <Route path="/ontology/object/:objectId" element={<ObjectDetail />} />
               <Route path="/ontology/element/:elementKey" element={<OntologyElementWrapper />} />
 
