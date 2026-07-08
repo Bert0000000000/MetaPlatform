@@ -961,6 +961,7 @@ const LOG_PAGE_SIZE = 10;
 
 export function OperationLog() {
   const [logs, setLogs] = useState<AuditLog[]>([]);
+  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(0);
@@ -969,8 +970,15 @@ export function OperationLog() {
     setLoading(true);
     setError(null);
     try {
-      const data = await adminApi.listLogs(LOG_PAGE_SIZE, offset);
-      setLogs(data);
+      // Backend returns { rows, total, limit, offset } — extract the array.
+      const data = await adminApi.listLogs(LOG_PAGE_SIZE, offset) as
+        AuditLog[] | { rows: AuditLog[]; total: number };
+      if (Array.isArray(data)) {
+        setLogs(data);
+      } else {
+        setLogs(data?.rows ?? []);
+        setTotal(data?.total ?? 0);
+      }
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "加载日志失败");
     } finally {
