@@ -288,6 +288,61 @@ function WorkflowCanvas() {
 }
 
 /* ═════════════ 提交新 PR 表单 ═════════════ */
+
+/** 真实业务数据模板 (实数据列表)
+ *  每条都是真实采购场景, 标注预期会触发的规则 (R-001/002/003)
+ *  点「使用此数据」一键填充到表单
+ */
+interface PRTemplate {
+  id: string;
+  title: string;
+  supplierId: string;
+  supplierName: string;
+  amount: number;
+  category: string;
+  willTrigger: string[];   // 预期触发的规则 ID
+}
+
+const PR_TEMPLATES: PRTemplate[] = [
+  {
+    id: "T-01",
+    title: "市场部 8 月办公用品采购",
+    supplierId: "sup-001",        // 上海精密机械 (A 级)
+    supplierName: "上海精密机械 · A",
+    amount: 8_000,
+    category: "办公设备",
+    willTrigger: [],
+  },
+  {
+    id: "T-02",
+    title: "研发中心服务器扩容 (3 台)",
+    supplierId: "sup-002",        // 华耀电子 (A 级)
+    supplierName: "华耀电子 · A",
+    amount: 86_500,
+    category: "IT 硬件",
+    willTrigger: ["R-001"],
+  },
+  {
+    id: "T-03",
+    title: "行政部 7 月装修材料 (大额 + C 级供应商)",
+    supplierId: "sup-005",        // 易达办公用品 (C 级)
+    supplierName: "易达办公 · C",
+    amount: 120_000,
+    category: "日常",
+    willTrigger: ["R-001", "R-002"],
+  },
+  {
+    id: "T-04",
+    title: "市场部 7 月饮用水 (小额, 走快速通道)",
+    supplierId: "sup-001",
+    supplierName: "上海精密机械 · A",
+    amount: 1_280,
+    category: "日常",
+    willTrigger: [],
+  },
+];
+
+
 function SubmitPRForm() {
   const [title, setTitle] = useState("");
   const [supplierId, setSupplierId] = useState(ontologyStore.suppliers[0].id);
@@ -381,14 +436,56 @@ function SubmitPRForm() {
           </div>
         </div>
 
-        <div className="rounded-lg border bg-muted/30 p-3 text-xs space-y-1">
-          <div className="font-medium text-sm">提示 — 试这几个组合看规则触发:</div>
-          <ul className="list-disc list-inside text-muted-foreground space-y-0.5">
-            <li>标题留空 → R-003 触发</li>
-            <li>金额 ≥ 50,000 → R-001 触发 (需总监审批)</li>
-            <li>选"易达办公用品" (等级 C) + 金额 &gt; 10,000 → R-002 触发</li>
-            <li>同时违反 2-3 条 → 多个告警 + 1 个汇总 alert.raised</li>
-          </ul>
+        <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
+          <div className="flex items-center gap-2">
+            <Sparkles className="size-3.5 text-primary" />
+            <div className="font-medium text-sm">实数据模板 — 点击「使用此数据」一键填充</div>
+          </div>
+          <div className="text-[11px] text-muted-foreground">每条都是真实场景, 标注预期会触发的业务规则</div>
+          <div className="space-y-1.5">
+            {PR_TEMPLATES.map((tpl) => (
+              <div
+                key={tpl.id}
+                className="flex items-start gap-2 p-2 rounded-md border bg-card hover:bg-muted/40 transition-colors"
+              >
+                <div className="size-7 rounded-md bg-primary/10 text-primary flex items-center justify-center shrink-0 text-[10px] font-mono font-bold">
+                  {tpl.id}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-xs font-medium truncate">{tpl.title}</div>
+                  <div className="flex items-center gap-1.5 mt-0.5 text-[10px] text-muted-foreground flex-wrap">
+                    <span className="font-mono">{tpl.supplierName}</span>
+                    <span>·</span>
+                    <span className="font-mono tabular-nums">{fmtMoney(tpl.amount)}</span>
+                    {tpl.willTrigger.length > 0 && (
+                      <>
+                        <span>·</span>
+                        <span className="text-amber-600 dark:text-amber-400">
+                          触发 {tpl.willTrigger.join(" + ")}
+                        </span>
+                      </>
+                    )}
+                    {tpl.willTrigger.length === 0 && (
+                      <span className="text-green-600 dark:text-green-400">0 规则违反</span>
+                    )}
+                  </div>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-6 px-2 text-[10px] shrink-0"
+                  onClick={() => {
+                    setTitle(tpl.title);
+                    setSupplierId(tpl.supplierId);
+                    setAmount(tpl.amount);
+                    setCategory(tpl.category);
+                  }}
+                >
+                  使用此数据
+                </Button>
+              </div>
+            ))}
+          </div>
         </div>
 
         <div className="flex gap-2">
