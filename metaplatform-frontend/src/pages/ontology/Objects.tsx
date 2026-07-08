@@ -314,24 +314,42 @@ function ERGraphDialog({
                 const s = positions[rel.source];
                 const t = positions[rel.target];
                 if (!s || !t) return null;
-                // 节点边缘
+                // 矩形边交点: 从中心沿 (t - s) 方向推到矩形边缘
+                // 矩形边 (centerX, centerY, w, h) 沿方向 (dx, dy) 的最近边点
+                const intersectRect = (cx: number, cy: number, dx: number, dy: number, w: number, h: number) => {
+                  const hw = w / 2, hh = h / 2;
+                  if (dx === 0 && dy === 0) return { x: cx, y: cy };
+                  // 归一化方向
+                  const len = Math.hypot(dx, dy) || 1;
+                  const ndx = dx / len, ndy = dy / len;
+                  // 矩形中心到 4 边交点的 t 值: t = min(hw/|ndx|, hh/|ndy|)
+                  const tx = ndx === 0 ? Infinity : hw / Math.abs(ndx);
+                  const ty = ndy === 0 ? Infinity : hh / Math.abs(ndy);
+                  const tMin = Math.min(tx, ty);
+                  return { x: cx + ndx * tMin, y: cy + ndy * tMin };
+                };
                 const dx = t.x - s.x;
                 const dy = t.y - s.y;
                 const dist = Math.hypot(dx, dy) || 1;
-                const ux = dx / dist;
-                const uy = dy / dist;
-                const sx = s.x + ux * (nodeW / 2);
-                const sy = s.y + uy * (nodeH / 2);
-                const tx = t.x - ux * (nodeW / 2 + 6);
-                const ty = t.y - uy * (nodeH / 2 + 6);
+                // 起点: 沿 s→t 推到 s 矩形边缘
+                const startPt = intersectRect(s.x, s.y, dx, dy, nodeW, nodeH);
+                // 终点: 沿 t→s 推到 t 矩形边缘 (反向)
+                const endPt = intersectRect(t.x, t.y, -dx, -dy, nodeW, nodeH);
+                const sx = startPt.x, sy = startPt.y;
+                const tx = endPt.x, ty = endPt.y;
                 const midX = (sx + tx) / 2;
                 const midY = (sy + ty) / 2;
                 const isHighlighted = hoverNodeId === rel.source || hoverNodeId === rel.target;
+                // 控制点: 横向 1/3 偏移 (drawio 风格)
+                const c1x = sx + (midX - sx) * 0.5;
+                const c1y = sy;
+                const c2x = midX;
+                const c2y = ty;
                 return (
                   <g key={i} className="pointer-events-none">
                     {/* 路径 (drawio 风格: 端点圆 + 贝塞尔曲线) */}
                     <path
-                      d={`M ${sx} ${sy} Q ${(sx + tx) / 2} ${sy} ${(sx + tx) / 2} ${(sy + ty) / 2} T ${tx} ${ty}`}
+                      d={`M ${sx} ${sy} C ${c1x} ${c1y}, ${c2x} ${c2y}, ${tx} ${ty}`}
                       fill="none"
                       stroke={isHighlighted ? "#2563eb" : "#94a3b8"}
                       strokeWidth={isHighlighted ? 2 : 1.5}
