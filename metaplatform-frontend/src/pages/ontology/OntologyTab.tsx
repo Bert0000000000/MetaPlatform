@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
-import { Box, Hash, Link2, Zap, Calculator, Shield, Settings, Server, Plus, Sparkles, Link, User, Package, Tag, Users, FileText, Receipt, Eye, Edit, Trash2, Search, ShieldCheck, GitMerge, AlertOctagon, Activity } from "lucide-react";
+import { Box, Hash, Link2, Zap, Calculator, Shield, Settings, Server, Plus, Sparkles, Link, User, Package, Tag, Users, FileText, Receipt, Eye, Edit, Trash2, Search, ShieldCheck, GitMerge, AlertOctagon, Activity, Copy, Check, AlertCircle } from "lucide-react";
 
 const element7of8 = [
   { key: "1-objects", title: "对象（Objects）", icon: Box, desc: "业务对象的定义与建模", tag: "O" },
@@ -1021,6 +1021,30 @@ function findObjectDuplicates(objects: OntologyObject[]): { key: string; reason:
   return groups;
 }
 
+/* 复制按钮 — 复制后短暂显示 ✓ 反馈 */
+function CopyButton({ value, label }: { value: string; label: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <button
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation();
+        navigator.clipboard?.writeText(value);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1200);
+      }}
+      className="size-5 rounded hover:bg-muted flex items-center justify-center shrink-0 transition-colors"
+      title={`复制 ${label}: ${value}`}
+    >
+      {copied ? (
+        <Check className="size-3 text-green-600" />
+      ) : (
+        <Copy className="size-3 text-muted-foreground" />
+      )}
+    </button>
+  );
+}
+
 function ObjectsView({
   objects,
   onRescan,
@@ -1045,6 +1069,25 @@ function ObjectsView({
     groups.forEach((g) => g.members.forEach((m) => s.add(m.id)));
     return s;
   }, [groups]);
+
+  // code 唯一性检查: 同一 code 被多条 ObjectType 使用 → 高亮
+  const codeDupIds = useMemo(() => {
+    const codeCount = new Map<string, number>();
+    objects.forEach((o) => {
+      const c = (o.code || "").trim();
+      if (!c) return;
+      codeCount.set(c, (codeCount.get(c) || 0) + 1);
+    });
+    const dupIds = new Set<string>();
+    const dupCodes: string[] = [];
+    codeCount.forEach((cnt, code) => {
+      if (cnt > 1) dupCodes.push(code);
+    });
+    objects.forEach((o) => {
+      if (o.code && dupCodes.includes(o.code.trim())) dupIds.add(o.id);
+    });
+    return dupIds;
+  }, [objects]);
 
   // 找重复组里"看起来最权威"的当默认 target:
   //   - properties_count 最多的 (有更多字段, 是后续用的那个)
@@ -1099,9 +1142,27 @@ function ObjectsView({
     <div className="space-y-3">
       {/* 顶部工具栏 */}
       <div className="flex items-center justify-between flex-wrap gap-2 p-3 rounded-lg border bg-muted/30">
-        <div className="flex items-center gap-3 text-sm">
+        <div className="flex items-center gap-3 text-sm flex-wrap">
           <span className="text-muted-foreground">对象总数</span>
           <span className="font-mono font-semibold text-lg tabular-nums">{objects.length}</span>
+          {objects.filter((o) => !o.code || !o.code.trim()).length > 0 && (
+            <>
+              <span className="text-muted-foreground">·</span>
+              <span className="text-orange-600 dark:text-orange-400">缺 code</span>
+              <span className="font-mono font-semibold text-lg tabular-nums text-orange-600 dark:text-orange-400">
+                {objects.filter((o) => !o.code || !o.code.trim()).length}
+              </span>
+            </>
+          )}
+          {codeDupIds.size > 0 && (
+            <>
+              <span className="text-muted-foreground">·</span>
+              <span className="text-red-600 dark:text-red-400">code 重复</span>
+              <span className="font-mono font-semibold text-lg tabular-nums text-red-600 dark:text-red-400">
+                {codeDupIds.size}
+              </span>
+            </>
+          )}
           {groups.length > 0 && (
             <>
               <span className="text-muted-foreground">·</span>
@@ -1157,20 +1218,35 @@ function ObjectsView({
         {objects.map((o) => {
           const ObjIcon = iconMap[o.name] || Box;
           const isDup = dupMemberIds.has(o.id);
+          const isCodeDup = codeDupIds.has(o.id);
+          const isNoCode = !o.code || o.code.trim() === "";
+          const shortId = o.id?.slice(0, 8) || "—";
           return (
             <Card
               key={o.id}
-              className={`cursor-pointer hover:border-primary ${
-                isDup ? "border-amber-300 dark:border-amber-800 bg-amber-50/30 dark:bg-amber-950/10" : ""
+              className={`cursor-pointer hover:border-primary transition-colors ${
+                isDup ? "border-amber-300 dark:border-amber-800 bg-amber-50/30 dark:bg-amber-950/10" :
+                isCodeDup ? "border-red-300 dark:border-red-800 bg-red-50/30 dark:bg-red-950/10" :
+                ""
               }`}
             >
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <span className="text-3xl"><ObjIcon className="size-8" /></span>
-                  <div className="flex items-center gap-1">
+                  <div className="flex flex-col items-end gap-1">
                     {isDup && (
                       <Badge variant="secondary" className="bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400 border-0 text-[10px]">
                         重复
+                      </Badge>
+                    )}
+                    {isNoCode && (
+                      <Badge variant="secondary" className="bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-400 border-0 text-[10px]">
+                        缺 code
+                      </Badge>
+                    )}
+                    {isCodeDup && (
+                      <Badge variant="destructive" className="text-[10px]">
+                        code 重复
                       </Badge>
                     )}
                     <Badge variant="secondary">{o.properties_count} 属性</Badge>
@@ -1178,11 +1254,49 @@ function ObjectsView({
                 </div>
                 <CardTitle className="text-base mt-2">{o.label}</CardTitle>
                 <CardDescription className="font-mono">{o.name}</CardDescription>
+
+                {/* 唯一标识 (UUID + code) — 这是用户最关心的 */}
+                <div className="mt-2 space-y-1">
+                  <div className="flex items-center gap-1 text-[10px]">
+                    <Hash className="size-3 text-muted-foreground shrink-0" />
+                    <span className="text-muted-foreground shrink-0">ID</span>
+                    <code
+                      className="font-mono text-foreground/80 truncate flex-1 min-w-0"
+                      title={o.id}
+                    >
+                      {o.id}
+                    </code>
+                    <CopyButton value={o.id} label="ID" />
+                  </div>
+                  <div className="flex items-center gap-1 text-[10px]">
+                    <Tag className="size-3 text-muted-foreground shrink-0" />
+                    <span className="text-muted-foreground shrink-0">Code</span>
+                    {o.code ? (
+                      <>
+                        <code
+                          className={`font-mono truncate flex-1 min-w-0 ${
+                            isCodeDup ? "text-red-600 dark:text-red-400 font-semibold" :
+                            isNoCode ? "text-orange-600" : "text-foreground/80"
+                          }`}
+                          title={o.code}
+                        >
+                          {o.code}
+                        </code>
+                        <CopyButton value={o.code} label="Code" />
+                      </>
+                    ) : (
+                      <span className="text-orange-600 dark:text-orange-400 italic text-[10px]">
+                        缺失 — 后端未返回
+                      </span>
+                    )}
+                  </div>
+                </div>
+
                 {isDup && (
                   <Button
                     size="sm"
                     variant="ghost"
-                    className="h-6 px-2 text-[10px] mt-1 self-start"
+                    className="h-6 px-2 text-[10px] mt-2 self-start"
                     onClick={() => setDedupOpen(true)}
                   >
                     查看重复 →

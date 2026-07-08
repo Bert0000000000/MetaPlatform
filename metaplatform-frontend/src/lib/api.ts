@@ -1152,6 +1152,11 @@ export interface OntologyObject {
   properties_count: number;
   actions_count: number;
   rules_count: number;
+  // 唯一业务编码 (ontology-engine 后端 ObjectType.code), 可选
+  // 旧版 mock 或 metaplatform-api 返回的可能不带
+  code?: string;
+  // 关联的 EntityType ID (ontology-engine)
+  entityTypeId?: string;
 }
 
 /**
