@@ -6,6 +6,67 @@
 
 ---
 
+## [v1.7.1] - 2026-07-08
+
+### 新增 (Added)
+- **F4.6.13 OpenAPI - API Key 认证**（[0b9d3be]）
+  - 后端：`api-keys` 表 + `POST /api/auth/api-keys` 颁发（明文仅展示一次）/ `GET /api/auth/api-keys` 列表 / `DELETE /api/auth/api-keys/:id` 撤销
+  - `apiKeyMiddleware`：`X-API-Key` 头 → 解析 `req.apiKey`，无 key 时 fall-through 到 `authenticate`（JWT 路径仍可用）
+  - `POST /api/auth/api-keys/whoami`：客户端探测当前 key 的 scopes / 限流配额
+  - 前端 `/admin/api-keys` 页面：CRUD + 一次性 key 复制 + scope 多选
+  - 两种用途：外部程序用 `mp_live_` 前缀 → 走 apiKeyMiddleware；内部程序用 `mp_app_` 前缀 → 走 authenticate
+- **F4.6.14 OpenAPI - per-key Rate Limit**（[847fbb0]）
+  - `api_keys` 表加 `rate_limit` 列（NULL=无限；整数=N/分钟）
+  - `middleware/api-rate-limit.js`：内存 token-bucket，按 `req.apiKey.id` 索引，跨重启自动重建
+  - 响应头：`X-RateLimit-Limit / Remaining / Reset`，超限 429 + `Retry-After`
+  - `/admin/api-keys` UI 加 limit chip + 编辑弹窗 + 预设按钮（10/60/600/6000/∞）
+- **F4.6.16 OpenAPI - API 调用统计**（[b38e80a]）
+  - `cron */1 * * * *` 把 in-memory ring buffer flush 进 `api_key_calls` SQLite 表
+  - `GET /api/auth/api-keys/stats`：summary + per_key + top_paths_24h + timeline_24h
+  - 实时合并 in-memory ring 数据（≤ 1 分钟的调用也能看到）
+  - 前端：4 个 metric 卡片 + 24h CSS 条形图 + top paths 列表，每 60s 自动刷新
+- **F4.6.17 OpenAPI - Webhook 配置**（[da72c7c]）
+  - `routes/webhooks.js` (200 行)：`POST /api/webhooks` 注册（返回 secret 一次）/ `GET /:id/deliveries` 日志 / `POST /:id/test` 触发 / `PATCH /:id` 编辑 / `DELETE /:id` 删除
+  - `webhook_endpoints` + `webhook_deliveries` 两张新表
+  - 安全：secret 是 `whsec_<40 hex>`，永不二次返回；公开视图只暴露 `secret_fingerprint` (SHA-256 前 12 位)
+  - 签名：`X-Webhook-Signature: sha256=<hex>`; HMAC_SHA256(secret, "{t}.{nonce}.{body}")，同时携带 `X-Webhook-Timestamp / X-Webhook-Nonce / X-Webhook-Event`
+  - 投递：3 次 attempt（0s / 1s / 3s），失败重试，记录 status / response_body / last_error
+  - 前端 `/admin/webhooks`：端点列表 + 测试 + 日志 + 一次性密钥 reveal
+- **F4.6.22 定时任务管理**（[c2c741a]）
+  - `routes/scheduler.js` HTTP surface：`GET /api/scheduler` / `GET /:name/runs` / `POST /:name/run` / `PATCH /:name` / `DELETE /:name` / `POST /`（注册新任务）
+  - 内置任务受 BUILTIN_HANDLERS 保护，UI 不显示删除按钮，后端强制拒绝 DELETE
+  - 两种新任务类型：log-mode（写一行结构化日志）/ webhook-mode（HTTP POST）
+  - 前端 `/admin/scheduler`：状态卡 + job 列表 + 运行历史 + cron 5 字段预设按钮
+- **F4.1.6+7 新建应用 4 步向导**（[d7973a2]）
+  - 4 步：选择方式（空白/行业模板/复制）→ 选择模板 → 基本信息 → 确认
+  - `GET /api/apps/templates/list` 暴露 seeded 模板目录（crm/bi/bpm）
+  - `POST /api/apps` 已支持 `createType='blank' | 'template' | 'clone'` + `template` key
+  - 行业模板点击后自动带入 category + icon
+  - 路由 `/apps/new` 打开向导，完成后跳转到 `/apps/:id`
+- **F1.1.4 领导版 - 团队数字员工概览**（[7b15ef2]）
+  - `GET /api/agents/team-stats` 服务端聚合：overview + 部门分布 + top performers + 最近活动
+  - JOIN `agents.owner_id → users.department`，未分配则归入 "(未分配)"
+  - 前端 `<TeamDigitalEmployeesPanel />`：5 个 KPI 卡 + 部门分布堆叠条形图（在线/忙碌/离线）+ 数字员工 Top 5（金银铜牌）+ 最近活动 timeline
+  - 替换原 Dashboard 上的单行 4 卡版本
+- **OpenAPI spec 自动同步**：F4.6.13/14/16/17/22 + F1.1.4 的新增 endpoint 全部纳入 `/api/openapi.json` 与 Swagger UI
+
+### 修复 (Fixed)
+- **F1.1.4 / Admin 操作日志**：GET /api/admin/logs 返回 `{ rows, total, ... }`，前端之前直接 `setLogs(data)` 把对象当数组，触发 `logs.map is not a function`（[74f8036]）
+- **AdminRuntime / WebIDE**（顺带之前几个 commit）：`Trash2` / `Loader2` 缺失 import + `activeFile` TDZ 修
+- **scheduler.unregister()** 改返回 boolean，使路由层能区分"未知任务" vs "内置任务受保护"
+
+### 改进 (Changed)
+- **tRPC-style request 包装**：所有 API 调用经统一 `request<T>()` 函数，自动注入 JWT，处理 401 自动登出
+- **tsc 错误数** 67 → 57（-10；其中 F4.6.17/F1.1.4 等改动零新错误）
+
+### 数据 (Stats)
+- 13 commits (F4.6.13/14/16/17/22 + F4.1.6/7 + F1.1.4 + 3 bug fix)
+- Backend: +~1100 行（routes + middleware + scheduler + webhooks）
+- Frontend: +~2200 行（ApiKeysPage / Scheduler / Webhooks / NewAppWizard + TeamDigitalEmployeesPanel）
+- 后端 routes 数量：23 → 28（+ scheduler / webhooks / api-keys / api-stats / team-stats）
+
+---
+
 ## [v1.7.0] - 2026-07-07
 
 ### 新增 (Added)
