@@ -1388,29 +1388,34 @@ export function SuperAIPage() {
       <div className="flex flex-1 overflow-hidden">
         <div className="flex-1 flex flex-col min-w-0">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col flex-1">
+            {/* Tabs strip — outer div supplies the 1px bottom border.
+                TabsList grows to fit, triggers use a 2px box-shadow
+                underline (NOT border-b-2) so the indicator is always
+                fully visible inside the strip, never clipped by the
+                outer border. */}
             <div className="border-b bg-background px-6">
               <TabsList className="h-11 bg-transparent gap-0 p-0 relative">
                 <TabsTrigger
                   value="chat"
-                  className="gap-1.5 rounded-none border-b-2 border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50 data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:bg-transparent data-[state=active]:shadow-none px-3"
+                  className="gap-1.5 rounded-none text-muted-foreground hover:text-foreground hover:bg-muted/50 data-[state=active]:text-foreground data-[state=active]:bg-transparent data-[state=active]:shadow-[inset_0_-2px_0_0_hsl(var(--primary))] px-3"
                 >
                   <MessageSquare className="size-3.5" /> 对话
                 </TabsTrigger>
                 <TabsTrigger
                   value="agent"
-                  className="gap-1.5 rounded-none border-b-2 border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50 data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:bg-transparent data-[state=active]:shadow-none px-3"
+                  className="gap-1.5 rounded-none text-muted-foreground hover:text-foreground hover:bg-muted/50 data-[state=active]:text-foreground data-[state=active]:bg-transparent data-[state=active]:shadow-[inset_0_-2px_0_0_hsl(var(--primary))] px-3"
                 >
                   <Bot className="size-3.5" /> 智能体
                 </TabsTrigger>
                 <TabsTrigger
                   value="tasks"
-                  className="gap-1.5 rounded-none border-b-2 border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50 data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:bg-transparent data-[state=active]:shadow-none px-3"
+                  className="gap-1.5 rounded-none text-muted-foreground hover:text-foreground hover:bg-muted/50 data-[state=active]:text-foreground data-[state=active]:bg-transparent data-[state=active]:shadow-[inset_0_-2px_0_0_hsl(var(--primary))] px-3"
                 >
                   <ListChecks className="size-3.5" /> 任务
                 </TabsTrigger>
                 <TabsTrigger
                   value="knowledge"
-                  className="gap-1.5 rounded-none border-b-2 border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50 data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:bg-transparent data-[state=active]:shadow-none px-3"
+                  className="gap-1.5 rounded-none text-muted-foreground hover:text-foreground hover:bg-muted/50 data-[state=active]:text-foreground data-[state=active]:bg-transparent data-[state=active]:shadow-[inset_0_-2px_0_0_hsl(var(--primary))] px-3"
                 >
                   <BookOpen className="size-3.5" /> 知识中心
                 </TabsTrigger>
