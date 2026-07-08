@@ -374,7 +374,7 @@ function ChatTab({ messages, setMessages, agentPrompt, onAgentPromptConsumed }: 
   return (
     <div className="flex flex-col h-full min-h-0">
       <div className="flex-1 overflow-y-auto min-h-0">
-        <div className="mx-auto flex flex-col gap-6 py-6" style={{ maxWidth: "820px" }}>
+        <div className="flex flex-col gap-6 py-6">
           {messages.length === 1 && messages[0].role === "assistant" && (
             // ── 空状态：居中欢迎 + 6 个建议卡片 ──
             <div className="flex flex-col items-center justify-center min-h-[50vh] py-10 px-4">
@@ -497,7 +497,7 @@ function ChatTab({ messages, setMessages, agentPrompt, onAgentPromptConsumed }: 
       </div>
 
       <div className="border-t bg-background/80 backdrop-blur-md p-4">
-        <div className="mx-auto" style={{ maxWidth: "820px" }}>
+        <div>
           {/* Recording indicator */}
           {isRecording && (
             <div className="mb-3 flex items-center gap-3 px-4 py-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 rounded-xl">
@@ -1387,7 +1387,7 @@ export function SuperAIPage() {
       </div>
       <div className="flex flex-1 overflow-hidden">
         <div className="flex-1 flex flex-col min-w-0">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col flex-1 min-h-0 w-full max-w-4xl self-center">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col flex-1 min-h-0 w-full">
             {/* Tabs strip — outer div supplies the 1px bottom border.
                 TabsList grows to fit, triggers use a 2px box-shadow
                 underline (NOT border-b-2) so the indicator is always
