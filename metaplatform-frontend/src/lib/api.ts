@@ -1375,6 +1375,53 @@ export interface ApiKeyStats {
   timeline_24h: { hour: string; calls: number }[];
 }
 
+// F4.6.17 — webhook endpoints from /api/webhooks.
+export interface WebhookEndpoint {
+  id: string;
+  app_id: string;
+  name: string;
+  url: string;
+  events: string;
+  enabled: boolean;
+  secret_fingerprint?: string;
+  created_at: string;
+  updated_at: string;
+  /** Only present in the create response — secret is one-time. */
+  secret?: string;
+}
+export interface WebhookDelivery {
+  id: number;
+  endpoint_id: string;
+  event_type: string;
+  attempt: number;
+  status: "pending" | "success" | "failed";
+  response_status: number | null;
+  response_body: string | null;
+  last_error: string | null;
+  created_at: string;
+  delivered_at: string | null;
+}
+
+export const webhooksApi = {
+  list: (appId?: string) => {
+    const qs = appId ? `?appId=${encodeURIComponent(appId)}` : "";
+    return request<WebhookEndpoint[]>(`/webhooks${qs}`);
+  },
+  create: (data: { app_id: string; name: string; url: string; events?: string; enabled?: boolean }) =>
+    request<WebhookEndpoint>("/webhooks", { method: "POST", body: JSON.stringify(data) }),
+  update: (id: string, data: Partial<Pick<WebhookEndpoint, "name" | "url" | "events" | "enabled">>) =>
+    request<WebhookEndpoint>(`/webhooks/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
+  delete: (id: string) =>
+    request<{ id: string }>(`/webhooks/${id}`, { method: "DELETE" }),
+  test: (id: string, message?: string) =>
+    request<{ ok: boolean; status: number | null; delivery_id: number }>(
+      `/webhooks/${id}/test`,
+      { method: "POST", body: JSON.stringify({ message: message ?? "" }) },
+    ),
+  deliveries: (id: string, limit = 20) =>
+    request<WebhookDelivery[]>(`/webhooks/${id}/deliveries?limit=${limit}`),
+};
+
 // F4.6.22 — scheduler surface from /api/scheduler.
 export interface SchedulerJob {
   name: string;

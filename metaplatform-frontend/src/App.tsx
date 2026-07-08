@@ -125,6 +125,7 @@ import { BusinessArchitecture, ApplicationArchitecture, DataArchitecture, TechAr
 import { AdminDashboard, UserList, RoleList, DepartmentList, MenuConfig, DictionaryList, OperationLog, SystemSettings, OrgStructure, AdminMonitor, AdminBackup, AdminDeploy, AdminBilling, AdminPlugins } from "@/pages/admin/Admin";
 import { AdminRuntime } from "@/pages/admin/AdminRuntime";
 import { SchedulerPage } from "@/pages/admin/Scheduler";
+import { WebhooksPage } from "@/pages/admin/Webhooks";
 import ApiKeysPage from "@/pages/settings/ApiKeys";
 
 function AppsListNewRedirect() {
@@ -337,6 +338,7 @@ export default function App() {
               <Route path="/admin/runtime" element={<AdminRuntime />} />
               <Route path="/admin/api-keys" element={<ApiKeysPage />} />
               <Route path="/admin/scheduler" element={<SchedulerPage />} />
+              <Route path="/admin/webhooks" element={<WebhooksPage />} />
               <Route path="/admin/departments" element={<DepartmentList />} />
               <Route path="/admin/menus" element={<MenuConfig />} />
               <Route path="/admin/dictionary" element={<DictionaryList />} />

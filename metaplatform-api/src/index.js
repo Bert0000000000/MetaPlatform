@@ -131,6 +131,9 @@ app.use("/api/knowledge", apiKeyMiddleware(), authenticate, apiKeyRateLimit(), c
 app.use("/api/agents", apiKeyMiddleware(), authenticate, apiKeyRateLimit(), cacheMiddleware(30), agentsRoutes);
 app.use("/api/admin", authenticate, cacheMiddleware(30), adminRoutes);
 app.use("/api/messages", authenticate, cacheMiddleware(15), messagesRoutes);
+// F4.6.17 — webhook endpoints (auth-protected; not API-key gated)
+import webhooksRoutes from "./routes/webhooks.js";
+app.use("/api/webhooks", authenticate, cacheMiddleware(10), webhooksRoutes);
 app.use("/api/flowable", authenticate, cacheMiddleware(30), flowableRoutes);
 app.use("/api/pages", authenticate, cacheMiddleware(30), pagesRoutes);
 app.use("/api/export", authenticate, exportRoutes);
