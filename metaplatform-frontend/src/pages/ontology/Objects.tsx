@@ -309,60 +309,85 @@ function ERGraphDialog({
               </marker>
             </defs>
             <g transform={`translate(${pan.x}, ${pan.y}) scale(${zoom})`}>
-              {/* 边 */}
+              {/* 边 (manhattan 折角矩形线) */}
               {relations.map((rel, i) => {
                 const s = positions[rel.source];
                 const t = positions[rel.target];
                 if (!s || !t) return null;
-                // 矩形边交点: 从中心沿 (t - s) 方向推到矩形边缘
-                // 矩形边 (centerX, centerY, w, h) 沿方向 (dx, dy) 的最近边点
+                // ─── Manhattan 折角路由 ───
+                // 1) 矩形边锚点 (用射线交点算法)
                 const intersectRect = (cx: number, cy: number, dx: number, dy: number, w: number, h: number) => {
-                  const hw = w / 2, hh = h / 2;
                   if (dx === 0 && dy === 0) return { x: cx, y: cy };
-                  // 归一化方向
                   const len = Math.hypot(dx, dy) || 1;
                   const ndx = dx / len, ndy = dy / len;
-                  // 矩形中心到 4 边交点的 t 值: t = min(hw/|ndx|, hh/|ndy|)
-                  const tx = ndx === 0 ? Infinity : hw / Math.abs(ndx);
-                  const ty = ndy === 0 ? Infinity : hh / Math.abs(ndy);
+                  const tx = ndx === 0 ? Infinity : (w / 2) / Math.abs(ndx);
+                  const ty = ndy === 0 ? Infinity : (h / 2) / Math.abs(ndy);
                   const tMin = Math.min(tx, ty);
                   return { x: cx + ndx * tMin, y: cy + ndy * tMin };
                 };
+                // 2) 决定从矩形哪条边出: 水平位移大 → 上下边; 垂直位移大 → 左右边
                 const dx = t.x - s.x;
                 const dy = t.y - s.y;
-                const dist = Math.hypot(dx, dy) || 1;
-                // 起点: 沿 s→t 推到 s 矩形边缘
-                const startPt = intersectRect(s.x, s.y, dx, dy, nodeW, nodeH);
-                // 终点: 沿 t→s 推到 t 矩形边缘 (反向)
-                const endPt = intersectRect(t.x, t.y, -dx, -dy, nodeW, nodeH);
-                const sx = startPt.x, sy = startPt.y;
-                const tx = endPt.x, ty = endPt.y;
-                const midX = (sx + tx) / 2;
-                const midY = (sy + ty) / 2;
+                const PAD = 14; // 离开节点边缘后, 先走一段再折角
+                // 起点: 选长边离开
+                const startHorizontal = Math.abs(dy) > Math.abs(dx);
+                let sEdge: { x: number; y: number; dir: "h" | "v"; side: 1 | -1 };
+                let tEdge: { x: number; y: number; dir: "h" | "v"; side: 1 | -1 };
+                if (startHorizontal) {
+                  const side = dy > 0 ? 1 : -1;
+                  sEdge = { x: s.x, y: s.y + side * (nodeH / 2), dir: "v", side };
+                } else {
+                  const side = dx > 0 ? 1 : -1;
+                  sEdge = { x: s.x + side * (nodeW / 2), y: s.y, dir: "h", side };
+                }
+                // 终点: 与起点方向相同 (保持折角对齐)
+                if (startHorizontal) {
+                  const side = dy > 0 ? 1 : -1;
+                  tEdge = { x: t.x, y: t.y - side * (nodeH / 2), dir: "v", side };
+                } else {
+                  const side = dx > 0 ? 1 : -1;
+                  tEdge = { x: t.x - side * (nodeW / 2), y: t.y, dir: "h", side };
+                }
+                const sx = sEdge.x, sy = sEdge.y;
+                const tx = tEdge.x, ty = tEdge.y;
+                // 3) 折角中点 (短边) — 走 3 段: 起点出 → 折角 → 终点进
+                let path: string;
+                if (startHorizontal) {
+                  // 垂直进入, 水平折角
+                  const midX = (sx + tx) / 2;
+                  const sExitY = sy + sEdge.side * PAD;
+                  const tExitY = ty - tEdge.side * PAD;
+                  path = `M ${sx} ${sy} L ${sx} ${sExitY} L ${midX} ${sExitY} L ${midX} ${tExitY} L ${tx} ${tExitY} L ${tx} ${ty}`;
+                } else {
+                  // 水平进入, 垂直折角
+                  const midY = (sy + ty) / 2;
+                  const sExitX = sx + sEdge.side * PAD;
+                  const tExitX = tx - tEdge.side * PAD;
+                  path = `M ${sx} ${sy} L ${sExitX} ${sy} L ${sExitX} ${midY} L ${tExitX} ${midY} L ${tExitX} ${ty} L ${tx} ${ty}`;
+                }
+                // 标签中心: 折角中点
+                const labelX = startHorizontal ? (sx + tx) / 2 : (sx + tx) / 2;
+                const labelY = startHorizontal ? (sy + ty) / 2 : (sy + ty) / 2;
                 const isHighlighted = hoverNodeId === rel.source || hoverNodeId === rel.target;
-                // 控制点: 横向 1/3 偏移 (drawio 风格)
-                const c1x = sx + (midX - sx) * 0.5;
-                const c1y = sy;
-                const c2x = midX;
-                const c2y = ty;
                 return (
                   <g key={i} className="pointer-events-none">
-                    {/* 路径 (drawio 风格: 端点圆 + 贝塞尔曲线) */}
+                    {/* 折角矩形线 */}
                     <path
-                      d={`M ${sx} ${sy} C ${c1x} ${c1y}, ${c2x} ${c2y}, ${tx} ${ty}`}
+                      d={path}
                       fill="none"
                       stroke={isHighlighted ? "#2563eb" : "#94a3b8"}
                       strokeWidth={isHighlighted ? 2 : 1.5}
                       strokeDasharray={isHighlighted ? undefined : "4 2"}
                       opacity={hoverNodeId ? (isHighlighted ? 1 : 0.2) : 0.75}
+                      strokeLinejoin="miter"
                     />
                     {/* 起点圆 */}
                     <circle cx={sx} cy={sy} r={2.5} fill={isHighlighted ? "#2563eb" : "#94a3b8"} />
                     {/* 终点圆 */}
                     <circle cx={tx} cy={ty} r={2.5} fill={isHighlighted ? "#2563eb" : "#94a3b8"} />
 
-                    {/* 关系类型标签 (1/3 处圆角胶囊) */}
-                    <g transform={`translate(${midX}, ${midY})`}>
+                    {/* 关系类型标签 (折角中点 圆角胶囊) */}
+                    <g transform={`translate(${labelX}, ${labelY})`}>
                       <rect
                         x={-rel.type.length * 5 - 6}
                         y={-9}
