@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,7 @@ import {
   Plus, Sparkles, Search, Edit, Trash2, Link2, Loader2, AlertCircle,
   User, Package, Tag, Users, FileText, Receipt, Box, Settings,
   Hash, Copy, Check, ShieldCheck, GitMerge, AlertOctagon, Activity, CopyMinus, RotateCcw,
+  ZoomIn, ZoomOut, Maximize2, Move,
 } from "lucide-react";
 
 /** Map icon string names from the API to Lucide components */
@@ -92,6 +93,364 @@ function CopyButton({ value, label }: { value: string; label: string }) {
   );
 }
 
+/* ═════════════ E-R 关系图对话框 ═════════════
+ *
+ * 自动布局: 把对象按圆形均匀分布, 画 SVG 节点 + 边
+ * 交互: 拖动节点 / 滚轮缩放 / 平移画布 / 点节点跳详情
+ *
+ * 节点 = 矩形 (label/name)
+ * 边   = 关系 (后端 OntologyRelation, 暂时从 relations API 拉)
+ *       没有 relations 时按 name 启发式推断 (e.g. Customer → Order)
+ */
+function ERGraphDialog({
+  open,
+  onOpenChange,
+  objects,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  objects: OntologyObject[];
+}) {
+  const svgRef = useRef<SVGSVGElement | null>(null);
+  const [relations, setRelations] = useState<{ source: string; target: string; type: string }[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [dragNodeId, setDragNodeId] = useState<string | null>(null);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [hoverNodeId, setHoverNodeId] = useState<string | null>(null);
+  const [positions, setPositions] = useState<Record<string, { x: number; y: number }>>({});
+  const [panning, setPanning] = useState(false);
+  const panStartRef = useRef({ x: 0, y: 0, panX: 0, panY: 0 });
+  const navigate = useNavigate();
+
+  // 打开时拉 relations
+  useEffect(() => {
+    if (!open) return;
+    setLoading(true);
+    ontologyApi.listRelations()
+      .then((rels) => {
+        setRelations(rels.map((r) => ({ source: r.source_object_id, target: r.target_object_id, type: r.type || r.label || "关联" })));
+      })
+      .catch(() => {
+        // 失败时用启发式补一些, 至少图能看
+        setRelations(inferHeuristicRelations(objects));
+      })
+      .finally(() => setLoading(false));
+    // 重置视图
+    setZoom(1);
+    setPan({ x: 0, y: 0 });
+  }, [open, objects]);
+
+  // 圆形布局节点
+  useEffect(() => {
+    if (!open || objects.length === 0) return;
+    setPositions((prev) => {
+      const next: Record<string, { x: number; y: number }> = {};
+      const cx = 500;
+      const cy = 360;
+      const r = Math.min(280, 100 + objects.length * 15);
+      objects.forEach((o, i) => {
+        // 保留用户拖动后的位置
+        if (prev[o.id]) {
+          next[o.id] = prev[o.id];
+          return;
+        }
+        const angle = (i / objects.length) * Math.PI * 2 - Math.PI / 2;
+        next[o.id] = {
+          x: cx + Math.cos(angle) * r,
+          y: cy + Math.sin(angle) * r,
+        };
+      });
+      return next;
+    });
+  }, [open, objects]);
+
+  function inferHeuristicRelations(objs: OntologyObject[]): { source: string; target: string; type: string }[] {
+    const r: { source: string; target: string; type: string }[] = [];
+    const findByName = (n: string) => objs.find((o) => o.name.toLowerCase().includes(n.toLowerCase()));
+    // 常见业务关系
+    const pairs: [string, string, string][] = [
+      ["Customer", "Order", "下单"],
+      ["Customer", "Opportunity", "潜客"],
+      ["Order", "Product", "包含"],
+      ["Order", "Invoice", "生成"],
+      ["Opportunity", "Activity", "跟进"],
+      ["Contract", "Customer", "签约"],
+      ["Employee", "Customer", "负责"],
+    ];
+    pairs.forEach(([a, b, type]) => {
+      const oa = findByName(a);
+      const ob = findByName(b);
+      if (oa && ob) r.push({ source: oa.id, target: ob.id, type });
+    });
+    return r;
+  }
+
+  function handleWheel(e: React.WheelEvent) {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? 0.9 : 1.1;
+    setZoom((z) => Math.max(0.3, Math.min(3, z * delta)));
+  }
+
+  function handleCanvasMouseDown(e: React.MouseEvent) {
+    if ((e.target as HTMLElement).closest("[data-node]")) return; // 点在节点上不 pan
+    setPanning(true);
+    panStartRef.current = { x: e.clientX, y: e.clientY, panX: pan.x, panY: pan.y };
+  }
+
+  function handleCanvasMouseMove(e: React.MouseEvent) {
+    if (dragNodeId) {
+      const rect = svgRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      const newX = (e.clientX - rect.left - pan.x) / zoom - dragOffset.x;
+      const newY = (e.clientY - rect.top - pan.y) / zoom - dragOffset.y;
+      setPositions((prev) => ({ ...prev, [dragNodeId]: { x: newX, y: newY } }));
+      return;
+    }
+    if (panning) {
+      setPan({
+        x: panStartRef.current.panX + (e.clientX - panStartRef.current.x),
+        y: panStartRef.current.panY + (e.clientY - panStartRef.current.y),
+      });
+    }
+  }
+
+  function handleCanvasMouseUp() {
+    setDragNodeId(null);
+    setPanning(false);
+  }
+
+  function handleNodeMouseDown(e: React.MouseEvent, id: string) {
+    e.stopPropagation();
+    const rect = svgRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const pos = positions[id];
+    if (!pos) return;
+    setDragNodeId(id);
+    setDragOffset({
+      x: (e.clientX - rect.left - pan.x) / zoom - pos.x,
+      y: (e.clientY - rect.top - pan.y) / zoom - pos.y,
+    });
+  }
+
+  function resetView() {
+    setZoom(1);
+    setPan({ x: 0, y: 0 });
+    setPositions({});
+  }
+
+  const nodeW = 130;
+  const nodeH = 56;
+  const relCount = relations.length;
+  const objCount = objects.length;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-6xl max-h-[92vh] p-0">
+        <DialogHeader className="px-4 py-3 border-b">
+          <div className="flex items-center justify-between">
+            <div>
+              <DialogTitle className="flex items-center gap-2">
+                <Link2 className="size-5" />
+                关系图 (E-R)
+              </DialogTitle>
+              <DialogDescription>
+                {loading ? "加载关系中..." : `${objCount} 个对象, ${relCount} 条关系`}
+                {relCount === 0 && !loading && " (无后端关系, 已用业务启发式推断)"}
+              </DialogDescription>
+            </div>
+            <div className="flex items-center gap-1">
+              <Button size="sm" variant="outline" onClick={() => setZoom((z) => Math.min(3, z * 1.2))} title="放大">
+                <ZoomIn className="size-3.5" />
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => setZoom((z) => Math.max(0.3, z / 1.2))} title="缩小">
+                <ZoomOut className="size-3.5" />
+              </Button>
+              <Button size="sm" variant="outline" onClick={resetView} title="重置">
+                <Maximize2 className="size-3.5" />
+              </Button>
+              <span className="text-[10px] text-muted-foreground ml-2 font-mono tabular-nums">
+                {(zoom * 100).toFixed(0)}%
+              </span>
+            </div>
+          </div>
+        </DialogHeader>
+
+        <div className="bg-gradient-to-br from-muted/30 to-muted/10 relative" style={{ height: "70vh" }}>
+          {loading && (
+            <div className="absolute inset-0 flex items-center justify-center bg-background/50 z-10">
+              <Loader2 className="size-6 animate-spin text-muted-foreground" />
+            </div>
+          )}
+          <svg
+            ref={svgRef}
+            className="w-full h-full select-none"
+            style={{ cursor: panning ? "grabbing" : dragNodeId ? "grabbing" : "grab" }}
+            onWheel={handleWheel}
+            onMouseDown={handleCanvasMouseDown}
+            onMouseMove={handleCanvasMouseMove}
+            onMouseUp={handleCanvasMouseUp}
+            onMouseLeave={handleCanvasMouseUp}
+          >
+            <defs>
+              <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+                <polygon points="0 0, 10 3, 0 6" fill="hsl(var(--muted-foreground))" />
+              </marker>
+              <marker id="arrowhead-hover" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+                <polygon points="0 0, 10 3, 0 6" fill="hsl(var(--primary))" />
+              </marker>
+            </defs>
+            <g transform={`translate(${pan.x}, ${pan.y}) scale(${zoom})`}>
+              {/* 边 */}
+              {relations.map((rel, i) => {
+                const s = positions[rel.source];
+                const t = positions[rel.target];
+                if (!s || !t) return null;
+                // 节点边缘
+                const dx = t.x - s.x;
+                const dy = t.y - s.y;
+                const dist = Math.hypot(dx, dy) || 1;
+                const ux = dx / dist;
+                const uy = dy / dist;
+                const sx = s.x + ux * (nodeW / 2);
+                const sy = s.y + uy * (nodeH / 2);
+                const tx = t.x - ux * (nodeW / 2 + 6);
+                const ty = t.y - uy * (nodeH / 2 + 6);
+                const midX = (sx + tx) / 2;
+                const midY = (sy + ty) / 2;
+                const isHighlighted = hoverNodeId === rel.source || hoverNodeId === rel.target;
+                return (
+                  <g key={i} className="pointer-events-none">
+                    <line
+                      x1={sx} y1={sy} x2={tx} y2={ty}
+                      stroke={isHighlighted ? "hsl(var(--primary))" : "hsl(var(--muted-foreground))"}
+                      strokeWidth={isHighlighted ? 2.5 : 1.5}
+                      markerEnd={isHighlighted ? "url(#arrowhead-hover)" : "url(#arrowhead)"}
+                      opacity={hoverNodeId ? (isHighlighted ? 1 : 0.3) : 0.7}
+                    />
+                    {/* 关系标签 */}
+                    <rect
+                      x={midX - rel.type.length * 4.5}
+                      y={midY - 9}
+                      width={rel.type.length * 9}
+                      height={18}
+                      fill="hsl(var(--background))"
+                      stroke={isHighlighted ? "hsl(var(--primary))" : "hsl(var(--border))"}
+                      strokeWidth={1}
+                      rx={4}
+                    />
+                    <text
+                      x={midX}
+                      y={midY + 4}
+                      textAnchor="middle"
+                      className="text-[10px] fill-foreground pointer-events-none"
+                    >
+                      {rel.type}
+                    </text>
+                  </g>
+                );
+              })}
+
+              {/* 节点 */}
+              {objects.map((o) => {
+                const pos = positions[o.id];
+                if (!pos) return null;
+                const isDup = o.name === o.name.toLowerCase() && o.name === o.name.toLowerCase(); // 简化
+                const isHover = hoverNodeId === o.id;
+                const connectedIds = new Set<string>();
+                relations.forEach((r) => {
+                  if (r.source === o.id) connectedIds.add(r.target);
+                  if (r.target === o.id) connectedIds.add(r.source);
+                });
+                const hasConnections = connectedIds.size > 0;
+                return (
+                  <g
+                    key={o.id}
+                    data-node={o.id}
+                    transform={`translate(${pos.x - nodeW / 2}, ${pos.y - nodeH / 2})`}
+                    onMouseDown={(e) => handleNodeMouseDown(e, o.id)}
+                    onMouseEnter={() => setHoverNodeId(o.id)}
+                    onMouseLeave={() => setHoverNodeId(null)}
+                    onDoubleClick={() => { onOpenChange(false); navigate(`/ontology/object/${o.id}`); }}
+                    className="cursor-pointer"
+                  >
+                    {/* 阴影 */}
+                    <rect
+                      x={1} y={2} width={nodeW} height={nodeH}
+                      fill="hsl(var(--background))"
+                      opacity={0.6}
+                      rx={8}
+                    />
+                    {/* 主体 */}
+                    <rect
+                      x={0} y={0} width={nodeW} height={nodeH}
+                      fill={isHover ? "hsl(var(--primary) / 0.08)" : "hsl(var(--card))"}
+                      stroke={isHover ? "hsl(var(--primary))" : hasConnections ? "hsl(var(--primary) / 0.4)" : "hsl(var(--border))"}
+                      strokeWidth={isHover ? 2 : 1.5}
+                      rx={8}
+                    />
+                    {/* 图标 */}
+                    <foreignObject x={8} y={8} width={20} height={20}>
+                      <DynamicIcon name={o.icon} className="size-5 text-primary" />
+                    </foreignObject>
+                    {/* 标签 */}
+                    <text x={34} y={22} className="text-[12px] font-medium fill-foreground pointer-events-none">
+                      {o.label.length > 8 ? o.label.slice(0, 8) + "…" : o.label}
+                    </text>
+                    <text x={34} y={38} className="text-[10px] fill-muted-foreground pointer-events-none font-mono">
+                      {o.name.length > 10 ? o.name.slice(0, 10) + "…" : o.name}
+                    </text>
+                    <text x={34} y={50} className="text-[9px] fill-muted-foreground pointer-events-none">
+                      {o.properties_count} 字段
+                    </text>
+                    {/* 无关系标记 */}
+                    {!hasConnections && (
+                      <circle cx={nodeW - 8} cy={8} r={3} fill="hsl(var(--orange-500, #f97316))" />
+                    )}
+                  </g>
+                );
+              })}
+            </g>
+          </svg>
+
+          {/* 图例 */}
+          <div className="absolute bottom-2 left-2 bg-background/90 border rounded p-2 text-[10px] space-y-0.5">
+            <div className="font-medium mb-1">图例</div>
+            <div className="flex items-center gap-1.5">
+              <div className="size-3 rounded border border-primary/40 bg-card" />
+              <span>对象 (双击查看)</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="size-0.5 h-2 bg-muted-foreground" />
+              <span>关系</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="size-1.5 rounded-full bg-orange-500" />
+              <span>无关联</span>
+            </div>
+          </div>
+
+          {/* 操作提示 */}
+          <div className="absolute top-2 right-2 bg-background/90 border rounded p-2 text-[10px] space-y-0.5">
+            <div>🖱️ 拖动节点移动</div>
+            <div>🖱️ 拖动空白平移</div>
+            <div>🖱️ 滚轮缩放</div>
+            <div>🖱️ 双击节点查看详情</div>
+          </div>
+        </div>
+
+        <DialogFooter className="px-4 py-2 border-t">
+          <div className="text-xs text-muted-foreground mr-auto">
+            关系来源: {relations.length > 0 ? "后端 ontologyApi.listRelations() + 业务启发式补全" : "全部为业务启发式推断"}
+          </div>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>关闭</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function Objects() {
   const navigate = useNavigate();
   const [objects, setObjects] = useState<OntologyObject[]>([]);
@@ -106,6 +465,8 @@ export default function Objects() {
   const [targetPicks, setTargetPicks] = useState<Record<string, string>>({});
   const [merging, setMerging] = useState(false);
   const [mergeProgress, setMergeProgress] = useState<{ done: number; total: number; current: string } | null>(null);
+  // E-R 图
+  const [erOpen, setErOpen] = useState(false);
 
   const fetchObjects = useCallback(async () => {
     try {
@@ -319,7 +680,7 @@ export default function Objects() {
             className="pl-8"
           />
         </div>
-        <Button variant="outline" size="sm" disabled>
+        <Button variant="outline" size="sm" onClick={() => setErOpen(true)}>
           <Link2 className="size-4 mr-2" /> 关系图(E-R)
         </Button>
       </div>
@@ -490,6 +851,9 @@ export default function Objects() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* E-R 关系图 Dialog */}
+      <ERGraphDialog open={erOpen} onOpenChange={setErOpen} objects={objects} />
 
       {/* 去重 Dialog */}
       <Dialog open={dedupOpen} onOpenChange={setDedupOpen}>
