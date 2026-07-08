@@ -124,6 +124,7 @@ import { BusinessArchitecture, ApplicationArchitecture, DataArchitecture, TechAr
 // 后台管理
 import { AdminDashboard, UserList, RoleList, DepartmentList, MenuConfig, DictionaryList, OperationLog, SystemSettings, OrgStructure, AdminMonitor, AdminBackup, AdminDeploy, AdminBilling, AdminPlugins } from "@/pages/admin/Admin";
 import { AdminRuntime } from "@/pages/admin/AdminRuntime";
+import ApiKeysPage from "@/pages/settings/ApiKeys";
 
 function AppDetailPlaceholder() {
   return (
@@ -318,6 +319,7 @@ export default function App() {
               <Route path="/admin/billing" element={<AdminBilling />} />
               <Route path="/admin/plugins" element={<AdminPlugins />} />
               <Route path="/admin/runtime" element={<AdminRuntime />} />
+              <Route path="/admin/api-keys" element={<ApiKeysPage />} />
               <Route path="/admin/departments" element={<DepartmentList />} />
               <Route path="/admin/menus" element={<MenuConfig />} />
               <Route path="/admin/dictionary" element={<DictionaryList />} />

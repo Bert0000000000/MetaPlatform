@@ -42,6 +42,12 @@ export function generateToken(user) {
 
 // ── Auth middleware (REQUIRED token) ──────────────────────
 export function authenticate(req, res, next) {
+  // F4.6.13 If an upstream API-key middleware has already populated
+  // req.apiKey (and synthesised req.user), accept it as a valid
+  // credential. This lets clients authenticate via either Bearer JWT
+  // OR mp_live_ API key against the same /api/apps router.
+  if (req.apiKey && req.user) return next();
+
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return res

@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Box, Activity, AlertTriangle, CheckCircle2, Container, RefreshCw,
-  Server, ExternalLink, Layers, Trash2,
+  Server, ExternalLink, Layers, Trash2, KeyRound,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -47,6 +48,7 @@ function pillFor(mode: RuntimeItem["serving_mode"]) {
 }
 
 export function AdminRuntime() {
+  const navigate = useNavigate();
   const [data, setData] = useState<Summary | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -103,10 +105,16 @@ export function AdminRuntime() {
             所有已发布应用的容器状态、Docker 守护进程可达性、降级情况
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={refresh} disabled={loading}>
-          <RefreshCw className={cn("size-3 mr-1", loading && "animate-spin")} />
-          刷新
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => navigate("/admin/api-keys")}>
+            <KeyRound className="size-3 mr-1" />
+            API Keys
+          </Button>
+          <Button variant="outline" size="sm" onClick={refresh} disabled={loading}>
+            <RefreshCw className={cn("size-3 mr-1", loading && "animate-spin")} />
+            刷新
+          </Button>
+        </div>
         <Button variant="outline" size="sm" onClick={prune} disabled={pruning}
                 title="清理过期/孤立的发布容器，释放端口 (31001-31499)">
           <Trash2 className={cn("size-3 mr-1", pruning && "animate-pulse")} />

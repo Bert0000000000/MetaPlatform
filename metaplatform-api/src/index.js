@@ -96,6 +96,13 @@ app.use((req, res, next) => {
 // Auth routes — PUBLIC for login/register, rate-limited separately
 app.use("/api/auth", authLimiter, authRoutes);
 
+// F4.6.13 API Key management (key CRUD + whoami). The keys themselves
+// are sent by clients on every request via Authorization: Bearer or
+// X-API-Key, and resolved by apiKeyMiddleware which we export from
+// the same module (see the import above).
+import apiKeyRoutes, { apiKeyMiddleware } from "./routes/api-keys.js";
+app.use("/api/auth/api-keys", apiKeyMiddleware(), apiKeyRoutes);
+
 // Runtime health — public, used by the publish tab to show the
 // platform-wide "Docker daemon reachable?" banner. Doesn't expose
 // any internal data, only the orchestrator's connection state.
@@ -111,8 +118,10 @@ app.get("/api/runtime/health", async (_req, res) => {
   }
 });
 
-// Protected API routes — require Bearer token
-app.use("/api/apps", authenticate, cacheMiddleware(30), appsRoutes);
+// Protected API routes — accept either Bearer JWT OR an API key
+// (apiKeyMiddleware falls through to `next()` when no mp_live_ key is
+// present, so the JWT authenticate middleware picks up the slack).
+app.use("/api/apps", apiKeyMiddleware(), authenticate, cacheMiddleware(30), appsRoutes);
 app.use("/api/ontology", authenticate, cacheMiddleware(30), ontologyRoutes);
 app.use("/api/processes", authenticate, cacheMiddleware(30), processesRoutes);
 app.use("/api/data", authenticate, cacheMiddleware(30), dataRoutes);

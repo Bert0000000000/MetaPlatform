@@ -1248,4 +1248,26 @@ if (mApiCount === 0) {
   }
 })();
 
+// ─── API keys (F4.6.13 API Key authentication) ────────────────────
+db.exec(`
+  CREATE TABLE IF NOT EXISTS api_keys (
+    id           TEXT PRIMARY KEY,
+    tenant_id    TEXT NOT NULL,
+    name         TEXT NOT NULL,
+    -- SHA-256 hash of the secret; raw token only returned once on create.
+    key_hash     TEXT NOT NULL UNIQUE,
+    -- First 12 chars of the token used as a human-readable id (e.g. mp_live_AbCdEf123...)
+    key_prefix   TEXT NOT NULL,
+    scopes       TEXT NOT NULL DEFAULT 'read',  -- CSV of granted scopes
+    app_id       TEXT,                          -- optional restriction
+    created_by   TEXT NOT NULL,
+    last_used_at TEXT,
+    expires_at   TEXT,
+    revoked_at   TEXT,
+    created_at   TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+`);
+db.exec(`CREATE INDEX IF NOT EXISTS idx_api_keys_tenant  ON api_keys(tenant_id)`);
+db.exec(`CREATE INDEX IF NOT EXISTS idx_api_keys_prefix  ON api_keys(key_prefix)`);
+
 export default db;

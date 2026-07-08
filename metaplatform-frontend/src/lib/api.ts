@@ -56,6 +56,30 @@ export const authApi = {
     }),
   me: () => request<AuthUser>("/auth/me"),
 
+  // F4.6.13 API Key authentication — server-side CRUD on api_keys
+  apiKeys: {
+    list: () =>
+      request<ApiKey[]>("/auth/api-keys"),
+    create: (data: {
+      name: string;
+      scopes?: string;
+      appId?: string | null;
+      expiresAt?: string | null;
+    }) =>
+      request<ApiKey & { key: string }>("/auth/api-keys", {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
+    revoke: (id: string) =>
+      request<{ id: string; revokedAt: string }>(`/auth/api-keys/${id}`, {
+        method: "DELETE",
+      }),
+    whoami: () =>
+      request<{ id: string; name: string; scopes: string[]; app_id: string | null; tenant_id: string }>(
+        "/auth/api-keys/whoami",
+      ),
+  },
+
   /**
    * Decode the current JWT payload (cheap; no signature check) — for
    * narrowing UI by user-id without an extra /auth/me round trip.
@@ -1281,4 +1305,20 @@ export interface Orchestration {
   last_run?: string;
   created_at?: string;
   updated_at?: string;
+}
+
+// F4.6.13 API Key (mint key payload, never includes the secret
+// again after creation — only the prefix and meta survive a round-trip).
+export interface ApiKey {
+  id: string;
+  tenant_id: string;
+  name: string;
+  key_prefix: string;
+  scopes: string;            // CSV on the server; split to array on UI
+  app_id: string | null;
+  created_by: string;
+  last_used_at?: string | null;
+  expires_at?: string | null;
+  revoked_at?: string | null;
+  created_at: string;
 }
