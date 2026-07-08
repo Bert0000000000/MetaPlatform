@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { ontologyApi, type OntologyAction, type OntologyFunction, type OntologyRule, type OntologyObject, type OntologyProperty, type OntologyRelation } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
-import { Box, Hash, Link2, Zap, Calculator, Shield, Settings, Server, Plus, Sparkles, Link, User, Package, Tag, Users, FileText, Receipt, Eye, Edit, Trash2, Search, ShieldCheck, GitMerge, AlertOctagon, Activity, Copy, Check, AlertCircle } from "lucide-react";
+import { Box, Hash, Link2, Zap, Calculator, Shield, Settings, Server, Plus, Sparkles, Link, User, Package, Tag, Users, FileText, Receipt, Eye, Edit, Trash2, Search, ShieldCheck, GitMerge, AlertOctagon, Activity, Copy, Check, AlertCircle, Loader2, RotateCcw } from "lucide-react";
 
 const element7of8 = [
   { key: "1-objects", title: "对象（Objects）", icon: Box, desc: "业务对象的定义与建模", tag: "O" },
@@ -334,20 +334,105 @@ export function OntologyProperties() {
 // Relations loaded from ontologyApi.listRelations()
 export function OntologyLinks() {
   const [links, setLinks] = useState<OntologyRelation[]>([]);
+  const [objects, setObjects] = useState<OntologyObject[]>([]);
   const [loading, setLoading] = useState(true);
   const [aiSuggestOpen, setAiSuggestOpen] = useState(false);
+  const [adopting, setAdopting] = useState<Set<string>>(new Set());
+  const [adoptedKeys, setAdoptedKeys] = useState<Set<string>>(new Set());
+  const [failedKeys, setFailedKeys] = useState<Set<string>>(new Set());
 
-  useEffect(() => {
-    ontologyApi.listRelations().then((data) => {
-      setLinks(data);
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [rels, objs] = await Promise.all([
+        ontologyApi.listRelations().catch(() => [] as OntologyRelation[]),
+        ontologyApi.listObjects().catch(() => [] as OntologyObject[]),
+      ]);
+      setLinks(rels);
+      setObjects(objs);
+    } finally {
       setLoading(false);
-    }).catch(() => setLoading(false));
+    }
   }, []);
-  const suggestedRels = [
-    { from: "Customer", to: "Invoice", type: "1:N", confidence: 94, reason: "客户-发票 一对多关系，基于历史数据推断" },
-    { from: "Product", to: "Contract", type: "N:N", confidence: 87, reason: "产品-合同 多对多关系，基于业务模式推断" },
-    { from: "Employee", to: "Contract", type: "1:N", confidence: 91, reason: "员工-合同 一对多关系，基于审批记录推断" },
-  ];
+
+  useEffect(() => { load(); }, [load]);
+
+  // 推断候选: 扫 objects + 业务规则, 排除已存在 + 已采纳
+  const suggestedRels = useMemo(() => {
+    if (!aiSuggestOpen || objects.length === 0) return [];
+    const norm = (s: string) => s.toLowerCase().replace(/^obj[-_]?/, "").replace(/[-_]/g, "");
+    const findByName = (...keys: string[]) =>
+      objects.find((o) => keys.some((k) => norm(o.name).includes(k.toLowerCase())));
+
+    // 已存在的关系 key (source,target)
+    const existingKeys = new Set(
+      links.map((l) => `${l.source_object_id}|${l.target_object_id}`)
+    );
+    // 推断规则 (从硬编码 mock 升级为: 扫真 objects + 12 条业务规则)
+    const rules: { from: string[]; to: string[]; type: string; cardinality: "1:1" | "1:N" | "N:N"; reason: string; confidence: number }[] = [
+      { from: ["customer", "client", "客户"], to: ["order", "订单"], type: "下单", cardinality: "1:N", confidence: 96, reason: "客户在 CRM 中是订单的下单方, 1 个客户可下多个订单" },
+      { from: ["customer", "客户"], to: ["opportunity", "deal", "销售机会"], type: "潜客", cardinality: "1:N", confidence: 92, reason: "客户从销售机会转化, 1 个客户可对应多个机会" },
+      { from: ["order", "订单"], to: ["product", "goods", "产品"], type: "包含", cardinality: "N:N", confidence: 95, reason: "订单与产品多对多 (订单明细表)" },
+      { from: ["order", "订单"], to: ["invoice", "发票"], type: "生成", cardinality: "1:1", confidence: 94, reason: "订单结算后生成发票, 1 个订单对应 1 张发票" },
+      { from: ["opportunity", "销售机会"], to: ["activity", "follow", "跟进"], type: "跟进", cardinality: "1:N", confidence: 90, reason: "销售机会有跟进记录, 1 个机会有多个跟进" },
+      { from: ["contract", "合同"], to: ["customer", "客户"], type: "签约", cardinality: "N:N", confidence: 93, reason: "合同由客户签订, 多个合同可属同一客户" },
+      { from: ["employee", "staff", "员工"], to: ["customer", "客户"], type: "负责", cardinality: "1:N", confidence: 88, reason: "员工 (销售) 负责多个客户" },
+      { from: ["employee", "员工"], to: ["order", "订单"], type: "处理", cardinality: "1:N", confidence: 86, reason: "员工处理订单" },
+      { from: ["kpi"], to: ["employee", "员工"], type: "考核", cardinality: "1:N", confidence: 84, reason: "KPI 考核员工" },
+      { from: ["product", "产品"], to: ["category", "分类"], type: "归类", cardinality: "1:N", confidence: 82, reason: "产品归类" },
+      { from: ["invoice", "发票"], to: ["payment", "付款"], type: "已付", cardinality: "1:1", confidence: 89, reason: "发票对应付款" },
+      { from: ["customer", "客户"], to: ["address", "地址"], type: "拥有", cardinality: "1:N", confidence: 87, reason: "客户可有多个地址" },
+    ];
+    return rules
+      .map((r) => {
+        const fa = findByName(...r.from);
+        const fb = findByName(...r.to);
+        if (!fa || !fb || fa.id === fb.id) return null;
+        const key = `${fa.id}|${fb.id}`;
+        return { ...r, sourceId: fa.id, targetId: fb.id, sourceLabel: fa.label, targetLabel: fb.label, key };
+      })
+      .filter((r): r is NonNullable<typeof r> => r !== null)
+      .filter((r) => !existingKeys.has(r.key))
+      .filter((r) => !adoptedKeys.has(r.key))
+      .sort((a, b) => b.confidence - a.confidence);
+  }, [aiSuggestOpen, objects, links, adoptedKeys]);
+
+  async function handleAdopt(rel: typeof suggestedRels[number]) {
+    setAdopting((s) => new Set(s).add(rel.key));
+    setFailedKeys((s) => { const n = new Set(s); n.delete(rel.key); return n; });
+    try {
+      await ontologyApi.createRelation({
+        source_object_id: rel.sourceId,
+        target_object_id: rel.targetId,
+        type: rel.type,
+        label: `${rel.sourceLabel} --${rel.type}--> ${rel.targetLabel}`,
+        description: `AI 推断 (置信度 ${rel.confidence}%): ${rel.reason}`,
+      });
+      setAdoptedKeys((s) => new Set(s).add(rel.key));
+      // 后端 list 重新拉
+      ontologyApi.listRelations().then((rels) => setLinks(rels)).catch(() => {});
+    } catch (e) {
+      setFailedKeys((s) => new Set(s).add(rel.key));
+    } finally {
+      setAdopting((s) => { const n = new Set(s); n.delete(rel.key); return n; });
+    }
+  }
+
+  async function handleAdoptAll() {
+    for (const rel of suggestedRels) {
+      if (!adoptedKeys.has(rel.key) && !failedKeys.has(rel.key)) {
+        await handleAdopt(rel);
+      }
+    }
+  }
+
+  // 把 id 转成 label
+  const idToLabel = useMemo(() => {
+    const m: Record<string, string> = {};
+    objects.forEach((o) => { m[o.id] = o.label || o.name; });
+    return m;
+  }, [objects]);
+
   return (
     <div className="flex flex-col gap-6 p-6">
       <PageHeader
@@ -355,50 +440,162 @@ export function OntologyLinks() {
         description="定义对象间的关系（1:1 / 1:N / N:N）"
         action={
           <div className="flex gap-2">
-            <Button variant="outline" className="gap-2" onClick={() => setAiSuggestOpen(true)}>
+            <Button
+              variant="outline"
+              className="gap-2"
+              onClick={() => { setAdoptedKeys(new Set()); setFailedKeys(new Set()); setAiSuggestOpen(true); }}
+            >
               <Sparkles className="size-4" /> AI 推断关系
             </Button>
             <Button className="gap-2"><Plus className="size-4" /> 新建关系</Button>
           </div>
         }
       />
-      {/* AI Suggest Dialog */}
+
+      {/* 概览条 */}
+      <div className="flex items-center gap-3 text-sm flex-wrap p-3 rounded-lg border bg-muted/30">
+        <span className="text-muted-foreground">关系总数</span>
+        <span className="font-mono font-semibold text-lg tabular-nums">{links.length}</span>
+        {objects.length > 0 && (
+          <>
+            <span className="text-muted-foreground">·</span>
+            <span className="text-muted-foreground">对象</span>
+            <span className="font-mono font-semibold tabular-nums">{objects.length}</span>
+          </>
+        )}
+        {aiSuggestOpen && suggestedRels.length > 0 && (
+          <>
+            <span className="text-muted-foreground">·</span>
+            <span className="text-primary">可推断</span>
+            <span className="font-mono font-semibold text-primary tabular-nums">{suggestedRels.length}</span>
+          </>
+        )}
+        <div className="ml-auto flex gap-2">
+          <Button size="sm" variant="outline" onClick={load}>
+            <RotateCcw className="size-3.5 mr-1" /> 重新拉取
+          </Button>
+        </div>
+      </div>
+
+      {/* AI 推断 Card */}
       {aiSuggestOpen && (
-        <Card className="border-primary">
+        <Card className="border-primary/50 bg-primary/5">
           <CardHeader className="flex flex-row items-center justify-between space-y-0">
             <div>
               <CardTitle className="text-base flex items-center gap-2">
-                <Sparkles className="size-4 text-primary" /> AI 推断的关系
+                <Sparkles className="size-4 text-primary" />
+                AI 推断的潜在关系
+                {suggestedRels.length > 0 && (
+                  <Badge variant="secondary" className="ml-1 bg-primary/10 text-primary border-0">
+                    {suggestedRels.length} 条
+                  </Badge>
+                )}
               </CardTitle>
-              <CardDescription>基于数据模式和业务规则推断的潜在关系</CardDescription>
+              <CardDescription>
+                基于 {objects.length} 个对象的业务规则推断, 已排除已存在的关系
+                {adoptedKeys.size > 0 && ` · 已采纳 ${adoptedKeys.size} 条`}
+                {failedKeys.size > 0 && <span className="text-red-600"> · 失败 {failedKeys.size} 条</span>}
+              </CardDescription>
             </div>
-            <Button variant="ghost" size="sm" onClick={() => setAiSuggestOpen(false)}>关闭</Button>
+            <div className="flex gap-2">
+              {suggestedRels.length > 0 && (
+                <Button size="sm" onClick={handleAdoptAll} disabled={adopting.size > 0}>
+                  {adopting.size > 0 ? (
+                    <><Activity className="size-3.5 mr-1 animate-pulse" /> 采纳中 {adopting.size}/{suggestedRels.length}</>
+                  ) : (
+                    <><Check className="size-3.5 mr-1" /> 全部采纳</>
+                  )}
+                </Button>
+              )}
+              <Button variant="ghost" size="sm" onClick={() => setAiSuggestOpen(false)}>关闭</Button>
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {suggestedRels.map((r, i) => (
-                <div key={i} className="flex items-center gap-3 p-3 border rounded-lg">
-                  <Sparkles className="size-4 text-primary shrink-0" />
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 text-sm">
-                      <Badge variant="secondary">{r.from}</Badge>
-                      <span className="text-muted-foreground">--{'>'}</span>
-                      <Badge variant="secondary">{r.to}</Badge>
-                      <Badge variant="outline">{r.type}</Badge>
+            {loading ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <Loader2 className="size-5 animate-spin inline mr-2" />加载对象中...
+              </div>
+            ) : suggestedRels.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <Sparkles className="size-8 mx-auto mb-2 opacity-30" />
+                <p className="text-sm">
+                  {objects.length === 0
+                    ? "暂无对象, 无法推断"
+                    : adoptedKeys.size > 0 || links.length > 0
+                      ? "所有业务关系都已建立, 暂无新推断"
+                      : "暂无可推断的关系"}
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {suggestedRels.map((r) => {
+                  const isAdopting = adopting.has(r.key);
+                  const isAdopted = adoptedKeys.has(r.key);
+                  const isFailed = failedKeys.has(r.key);
+                  return (
+                    <div
+                      key={r.key}
+                      className={`flex items-center gap-3 p-3 border rounded-lg transition-colors ${
+                        isAdopted ? "border-green-200 bg-green-50/50 dark:border-green-900 dark:bg-green-950/20" :
+                        isFailed ? "border-red-200 bg-red-50/50 dark:border-red-900 dark:bg-red-950/20" :
+                        "hover:border-primary/30"
+                      }`}
+                    >
+                      <div className="size-8 rounded-md bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center shrink-0">
+                        <Sparkles className="size-4 text-primary" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 text-sm flex-wrap">
+                          <Badge variant="secondary" className="font-medium">{r.sourceLabel}</Badge>
+                          <span className="text-muted-foreground text-xs">--</span>
+                          <span className="text-primary font-medium text-xs">{r.type}</span>
+                          <span className="text-muted-foreground text-xs">{">"}</span>
+                          <Badge variant="secondary" className="font-medium">{r.targetLabel}</Badge>
+                          <Badge variant="outline" className="text-[10px]">{r.cardinality}</Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1 truncate" title={r.reason}>
+                          {r.reason}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <Badge
+                          variant={r.confidence >= 90 ? "default" : r.confidence >= 80 ? "secondary" : "outline"}
+                          className="text-[10px] font-mono"
+                        >
+                          {r.confidence}%
+                        </Badge>
+                        {isAdopting ? (
+                          <Button size="sm" disabled>
+                            <Loader2 className="size-3.5 mr-1 animate-spin" /> 采纳中
+                          </Button>
+                        ) : isAdopted ? (
+                          <Button size="sm" variant="outline" className="text-green-600 border-green-300" disabled>
+                            <Check className="size-3.5 mr-1" /> 已采纳
+                          </Button>
+                        ) : isFailed ? (
+                          <Button size="sm" variant="outline" className="text-red-600 border-red-300" onClick={() => handleAdopt(r)}>
+                            <AlertCircle className="size-3.5 mr-1" /> 重试
+                          </Button>
+                        ) : (
+                          <Button size="sm" onClick={() => handleAdopt(r)}>
+                            <Plus className="size-3.5 mr-1" /> 采纳
+                          </Button>
+                        )}
+                      </div>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-1">{r.reason}</p>
-                  </div>
-                  <Badge variant="outline" className="text-xs shrink-0">置信度 {r.confidence}%</Badge>
-                  <Button size="sm">采纳</Button>
-                </div>
-              ))}
-            </div>
+                  );
+                })}
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
+
       <Card>
         <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2"><Link2 className="size-4" /> 关系列表</CardTitle>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Link2 className="size-4" /> 关系列表
+          </CardTitle>
           <CardDescription>{links.length} 条关系定义</CardDescription>
         </CardHeader>
         <CardContent className="p-0">
@@ -415,18 +612,26 @@ export function OntologyLinks() {
             </TableHeader>
             <TableBody>
               {loading && (
-                <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">加载中...</TableCell></TableRow>
+                <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                  <Loader2 className="size-4 animate-spin inline mr-1" />加载中...
+                </TableCell></TableRow>
               )}
               {!loading && links.length === 0 && (
-                <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">暂无关系数据</TableCell></TableRow>
+                <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">暂无关系数据 — 点「AI 推断关系」可自动生成</TableCell></TableRow>
               )}
               {!loading && links.map((l) => (
                 <TableRow key={l.id}>
                   <TableCell className="font-medium">{l.label || l.type}</TableCell>
-                  <TableCell><Badge variant="secondary">{l.source_object_id}</Badge></TableCell>
+                  <TableCell>
+                    <Badge variant="secondary">{idToLabel[l.source_object_id] || l.source_object_id.slice(0, 8) + "…"}</Badge>
+                  </TableCell>
                   <TableCell><Badge variant="outline">{l.type}</Badge></TableCell>
-                  <TableCell><Badge variant="secondary">{l.target_object_id}</Badge></TableCell>
-                  <TableCell className="text-xs text-muted-foreground">{l.description || "-"}</TableCell>
+                  <TableCell>
+                    <Badge variant="secondary">{idToLabel[l.target_object_id] || l.target_object_id.slice(0, 8) + "…"}</Badge>
+                  </TableCell>
+                  <TableCell className="text-xs text-muted-foreground max-w-[280px] truncate" title={l.description || ""}>
+                    {l.description || "-"}
+                  </TableCell>
                   <TableCell className="text-right">
                     <Button variant="ghost" size="icon" className="size-8"><Eye className="size-4" /></Button>
                     <Button variant="ghost" size="icon" className="size-8"><Edit className="size-4" /></Button>
