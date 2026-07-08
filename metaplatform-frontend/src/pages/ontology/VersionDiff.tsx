@@ -6,6 +6,7 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { GitCompare, Plus, Minus, Edit3, Box, Hash, GitBranch, Zap, Calculator, Settings, Save, Trash2 } from "lucide-react";
+import { ontologyApi } from "@/lib/api";
 
 /* ════════════════════════════════════════════════════════════════════
  * VersionDiff: 本体版本对比
@@ -13,19 +14,17 @@ import { GitCompare, Plus, Minus, Edit3, Box, Hash, GitBranch, Zap, Calculator, 
  * 选两个版本 (from → to) → 显示 diff
  *   - 8 要素分类: 对象 / 属性 / 关系 / 动作 / 函数 / 规则
  *   - 增/删/改 标注
- *   - JSON 导出
  *
- * 版本快照存 localStorage (mp_ontology_snapshots)
+ * 快照存后端 ontology_snapshots 表 (自动抓取 8 要素)
  * ════════════════════════════════════════════════════════════════════ */
-
-const STORAGE_KEY = "mp_ontology_snapshots";
 
 interface Snapshot {
   id: string;
   label: string;
-  createdAt: string;
   description?: string;
-  data: {
+  created_at: string;
+  created_by?: string;
+  payload?: {
     objects: any[];
     properties: any[];
     relations: any[];
@@ -36,18 +35,6 @@ interface Snapshot {
 }
 
 type DiffOp = "added" | "removed" | "changed" | "unchanged";
-
-function loadSnapshots(): Snapshot[] {
-  try {
-    const s = localStorage.getItem(STORAGE_KEY);
-    if (s) return JSON.parse(s);
-  } catch { /* ignore */ }
-  return [];
-}
-
-function saveSnapshots(arr: Snapshot[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(arr));
-}
 
 function diff<T extends { id: string }>(a: T[], b: T[]): { op: DiffOp; from?: T; to?: T }[] {
   const aMap = new Map(a.map((x) => [x.id, x]));
@@ -76,28 +63,58 @@ export function VersionDiff() {
   const [fromId, setFromId] = useState("");
   const [toId, setToId] = useState("");
 
-  useEffect(() => {
-    const list = loadSnapshots();
-    if (list.length === 0) {
-      // 初始化一个空快照避免报错
-    } else {
+  // 真 API: 拉快照列表
+  const loadSnapshots = async () => {
+    try {
+      const list: Snapshot[] = await ontologyApi.listSnapshots();
       setSnapshots(list);
-      setFromId(list[0].id);
-      setToId(list[list.length - 1].id);
+      if (list.length >= 2) {
+        setFromId(list[1].id); // 旧
+        setToId(list[0].id);   // 新
+      } else if (list.length === 1) {
+        setFromId(list[0].id);
+        setToId(list[0].id);
+      }
+    } catch {
+      setSnapshots([]);
     }
-  }, []);
+  };
 
-  const from = snapshots.find((s) => s.id === fromId);
-  const to = snapshots.find((s) => s.id === toId);
+  useEffect(() => { loadSnapshots(); }, []);
+
+  // 真 API: 创建快照
+  const createSnapshot = async () => {
+    const label = prompt("快照名称 (e.g. v0.2.0)", `v0.${snapshots.length + 1}.0`);
+    if (!label) return;
+    try {
+      await ontologyApi.createSnapshot(label);
+      await loadSnapshots();
+    } catch (e: unknown) {
+      alert("创建快照失败: " + (e instanceof Error ? e.message : String(e)));
+    }
+  };
+
+  // 真 API: 拉两个快照的 payload
+  const [fromPayload, setFromPayload] = useState<any>(null);
+  const [toPayload, setToPayload] = useState<any>(null);
+
+  useEffect(() => {
+    if (!fromId) return;
+    ontologyApi.getSnapshot(fromId).then((s) => setFromPayload(s.payload)).catch(() => setFromPayload(null));
+  }, [fromId]);
+  useEffect(() => {
+    if (!toId) return;
+    ontologyApi.getSnapshot(toId).then((s) => setToPayload(s.payload)).catch(() => setToPayload(null));
+  }, [toId]);
 
   const summary = useMemo(() => {
-    if (!from || !to) return null;
-    const objectDiff = diff(from.data.objects, to.data.objects);
-    const propertyDiff = diff(from.data.properties, to.data.properties);
-    const relationDiff = diff(from.data.relations, to.data.relations);
-    const actionDiff = diff(from.data.actions, to.data.actions);
-    const functionDiff = diff(from.data.functions, to.data.functions);
-    const ruleDiff = diff(from.data.rules, to.data.rules);
+    if (!fromPayload || !toPayload) return null;
+    const objectDiff = diff(fromPayload.objects || [], toPayload.objects || []);
+    const propertyDiff = diff(fromPayload.properties || [], toPayload.properties || []);
+    const relationDiff = diff(fromPayload.relations || [], toPayload.relations || []);
+    const actionDiff = diff(fromPayload.actions || [], toPayload.actions || []);
+    const functionDiff = diff(fromPayload.functions || [], toPayload.functions || []);
+    const ruleDiff = diff(fromPayload.rules || [], toPayload.rules || []);
     const count = (d: { op: DiffOp }[]) => ({
       added: d.filter((x) => x.op === "added").length,
       removed: d.filter((x) => x.op === "removed").length,
@@ -113,26 +130,7 @@ export function VersionDiff() {
       functionCount: count(functionDiff),
       ruleCount: count(ruleDiff),
     };
-  }, [from, to]);
-
-  const createSnapshot = () => {
-    const label = prompt("快照名称 (e.g. v0.2.0)", `v0.${snapshots.length}.0`);
-    if (!label) return;
-    // 当前数据从 ontology 存储 mock
-    const newSnap: Snapshot = {
-      id: "snap_" + Date.now(),
-      label,
-      createdAt: new Date().toISOString(),
-      data: {
-        objects: [], properties: [], relations: [],
-        actions: [], functions: [], rules: [],
-      },
-    };
-    const next = [...snapshots, newSnap];
-    setSnapshots(next);
-    saveSnapshots(next);
-    if (!toId) setToId(newSnap.id);
-  };
+  }, [fromPayload, toPayload]);
 
   return (
     <div className="flex flex-col gap-4 p-6">
@@ -191,7 +189,7 @@ export function VersionDiff() {
                 </Select>
               </div>
               <div className="text-xs text-muted-foreground ml-auto">
-                {from?.createdAt?.slice(0, 10)} → {to?.createdAt?.slice(0, 10)}
+                {snapshots.find((s) => s.id === fromId)?.created_at?.slice(0, 10)} → {snapshots.find((s) => s.id === toId)?.created_at?.slice(0, 10)}
               </div>
             </div>
           )}

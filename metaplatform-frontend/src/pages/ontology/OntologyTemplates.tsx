@@ -6,6 +6,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
 import { Box, Briefcase, ShoppingCart, Users, FileText, Layers, Plus, Download, Star, Package, Heart, Building2 } from "lucide-react";
+import { ontologyApi } from "@/lib/api";
 
 /* ════════════════════════════════════════════════════════════════════
  * OntologyTemplates: 本体模板库
@@ -214,15 +215,68 @@ export function OntologyTemplates() {
   const [selected, setSelected] = useState<Template | null>(null);
   const [applying, setApplying] = useState(false);
 
-  const applyTemplate = () => {
+  // 真 API: 一键应用模板 (创建 N 对象 + M 关系)
+  const applyTemplate = async () => {
     if (!selected) return;
     setApplying(true);
-    setTimeout(() => {
-      // 模拟应用
-      alert(`✅ 模板「${selected.name}」已应用!\n\n创建了 ${selected.objects.length} 个对象, ${selected.relations.length} 条关系\n\n(实际功能: 调用 ontologyApi.createObject × N, createRelation × M)`);
-      setApplying(false);
+    let okCount = 0;
+    let failCount = 0;
+    try {
+      // 1. 先查现有对象, 避免重名
+      const existing = await ontologyApi.listObjects().catch(() => [] as any[]);
+      const existingNames = new Set(existing.map((o: any) => o.name));
+      // 2. 逐个创建对象 (跳过已存在)
+      const nameToId: Record<string, string> = {};
+      for (const obj of selected.objects) {
+        if (existingNames.has(obj.name)) {
+          const ex = existing.find((o: any) => o.name === obj.name);
+          if (ex) nameToId[obj.name] = ex.id;
+          continue;
+        }
+        try {
+          const created = await ontologyApi.createObject({
+            name: obj.name,
+            label: obj.label,
+            description: obj.description,
+            icon: obj.icon,
+            status: "active",
+          });
+          nameToId[obj.name] = (created as any).id;
+          // 创建属性
+          for (const p of obj.properties) {
+            await ontologyApi.createProperty((created as any).id, {
+              name: p.name,
+              label: p.label,
+              type: p.type,
+              required: p.required ? 1 : 0,
+            }).catch(() => {});
+          }
+          okCount++;
+        } catch {
+          failCount++;
+        }
+      }
+      // 3. 创建关系
+      for (const rel of selected.relations) {
+        const srcId = nameToId[rel.source];
+        const tgtId = nameToId[rel.target];
+        if (!srcId || !tgtId) continue;
+        try {
+          await ontologyApi.createRelation({
+            source_object_id: srcId,
+            target_object_id: tgtId,
+            type: rel.type,
+            label: rel.label,
+          });
+        } catch { failCount++; }
+      }
+      alert(`✅ 模板「${selected.name}」已应用!\n\n创建对象: ${okCount} 成功, ${failCount} 失败\n共 ${selected.relations.length} 条关系`);
       setSelected(null);
-    }, 800);
+    } catch (e: unknown) {
+      alert("应用失败: " + (e instanceof Error ? e.message : String(e)));
+    } finally {
+      setApplying(false);
+    }
   };
 
   return (

@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Database, Wand2, ArrowRight, CheckCircle2, FileCode, Table2, Hash, Type, Calendar, ToggleLeft, ListChecks } from "lucide-react";
+import { ontologyApi } from "@/lib/api";
 
 /* ════════════════════════════════════════════════════════════════════
  * ReverseEngineer: 数据库反向工程
@@ -153,9 +154,57 @@ export function ReverseEngineer() {
     setInferred(true);
   };
 
-  const handleImport = () => {
-    if (!confirm(`将创建 ${tables.length} 个对象和 ${tables.reduce((s, t) => s + t.foreignKeys.length, 0)} 条关系到本体引擎, 确认?`)) return;
-    alert(`✅ 已导入 ${tables.length} 个对象到本体引擎 (mock)\n\n(实际: 调用 ontologyApi.createObject × ${tables.length}, createRelation × ${tables.reduce((s, t) => s + t.foreignKeys.length, 0)})`);
+  // 真 API: 创建 N 对象 + M 关系
+  const [importing, setImporting] = useState(false);
+  const handleImport = async () => {
+    const totalRel = tables.reduce((s, t) => s + t.foreignKeys.length, 0);
+    if (!confirm(`将创建 ${tables.length} 个对象和 ${totalRel} 条关系到本体引擎, 确认?`)) return;
+    setImporting(true);
+    let okObj = 0, okRel = 0, fail = 0;
+    try {
+      const nameToId: Record<string, string> = {};
+      for (const t of tables) {
+        try {
+          const obj = await ontologyApi.createObject({
+            name: t.tableName,
+            label: t.objectLabel,
+            description: `从 SQL DDL 导入 (${t.fields.length} 字段)`,
+            status: "active",
+          });
+          nameToId[t.tableName] = (obj as any).id;
+          for (const f of t.fields) {
+            await ontologyApi.createProperty((obj as any).id, {
+              name: f.column,
+              label: f.column,
+              type: f.ontologyType,
+              required: f.isPrimaryKey || !f.nullable ? 1 : 0,
+            }).catch(() => { fail++; });
+          }
+          okObj++;
+        } catch { fail++; }
+      }
+      for (const t of tables) {
+        for (const fk of t.foreignKeys) {
+          const srcId = nameToId[t.tableName];
+          const tgtId = nameToId[fk.refTable];
+          if (!srcId || !tgtId) continue;
+          try {
+            await ontologyApi.createRelation({
+              source_object_id: srcId,
+              target_object_id: tgtId,
+              type: "reference",
+              label: `${fk.column} → ${fk.refTable}`,
+            });
+            okRel++;
+          } catch { fail++; }
+        }
+      }
+      alert(`✅ 导入完成!\n\n对象: ${okObj} 成功\n关系: ${okRel} 成功\n失败: ${fail}`);
+    } catch (e: unknown) {
+      alert("导入失败: " + (e instanceof Error ? e.message : String(e)));
+    } finally {
+      setImporting(false);
+    }
   };
 
   return (
@@ -204,8 +253,8 @@ export function ReverseEngineer() {
                   {tables.reduce((s, t) => s + t.foreignKeys.length, 0)} 个外键
                 </CardDescription>
               </div>
-              <Button size="sm" onClick={handleImport} disabled={tables.length === 0}>
-                <ArrowRight className="size-3.5 mr-1" /> 导入到本体引擎
+              <Button size="sm" onClick={handleImport} disabled={tables.length === 0 || importing}>
+                <ArrowRight className="size-3.5 mr-1" /> {importing ? "导入中..." : "导入到本体引擎"}
               </Button>
             </div>
           </CardHeader>

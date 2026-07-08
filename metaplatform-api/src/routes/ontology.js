@@ -589,9 +589,215 @@ router.get("/", async (req, res) => {
     const objects = await db.prepare("SELECT COUNT(*) AS cnt FROM ontology_objects").get().cnt;
     const relations = await db.prepare("SELECT COUNT(*) AS cnt FROM ontology_relations").get().cnt;
     const actions = await db.prepare("SELECT COUNT(*) AS cnt FROM ontology_actions").get().cnt;
-    res.json({ success: true, data: { objects, relations, actions } });
+    const instances = await db.prepare("SELECT COUNT(*) AS cnt FROM ontology_instances").get().cnt;
+    const events = await db.prepare("SELECT COUNT(*) AS cnt FROM ontology_events").get().cnt;
+    res.json({ success: true, data: { objects, relations, actions, instances, events } });
   } catch (err) {
-    res.json({ success: true, data: { objects: 0, relations: 0, actions: 0 } });
+    res.json({ success: true, data: { objects: 0, relations: 0, actions: 0, instances: 0, events: 0 } });
+  }
+});
+
+// ════════════════════════════════════════════════════════
+//  Instances (P0-1) — 业务实例 CRUD
+// ════════════════════════════════════════════════════════
+
+// GET /objects/:id/instances — 列出对象下所有实例
+router.get("/objects/:id/instances", async (req, res, next) => {
+  try {
+    const rows = await db.prepare(
+      "SELECT * FROM ontology_instances WHERE object_id = ? ORDER BY created_at DESC"
+    ).all(req.params.id);
+    const data = rows.map((r) => ({ ...r, data: JSON.parse(r.data || "{}") }));
+    res.json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /objects/:id/instances — 新建实例
+router.post("/objects/:id/instances", async (req, res, next) => {
+  try {
+    const id = uuid();
+    const { data = {} } = req.body;
+    await db.prepare(
+      "INSERT INTO ontology_instances (id, object_id, data) VALUES (?, ?, ?)"
+    ).run(id, req.params.id, JSON.stringify(data));
+    // 触发事件
+    const traceId = `trace_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+    await db.prepare(
+      "INSERT INTO ontology_events (id, type, source, target, payload, trace_id) VALUES (?, ?, ?, ?, ?, ?)"
+    ).run(uuid(), "EntityInstanceCreated", req.params.id, id, JSON.stringify(data), traceId);
+    res.json({ success: true, data: { id, object_id: req.params.id, data, trace_id: traceId } });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /instances/:id — 详情
+router.get("/instances/:id", async (req, res, next) => {
+  try {
+    const row = await db.prepare("SELECT * FROM ontology_instances WHERE id = ?").get(req.params.id);
+    if (!row) return res.status(404).json({ success: false, error: "实例不存在" });
+    res.json({ success: true, data: { ...row, data: JSON.parse(row.data || "{}") } });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PUT /instances/:id — 更新
+router.put("/instances/:id", async (req, res, next) => {
+  try {
+    const existing = await db.prepare("SELECT * FROM ontology_instances WHERE id = ?").get(req.params.id);
+    if (!existing) return res.status(404).json({ success: false, error: "实例不存在" });
+    const { data = {} } = req.body;
+    await db.prepare(
+      "UPDATE ontology_instances SET data = ?, updated_at = datetime('now') WHERE id = ?"
+    ).run(JSON.stringify(data), req.params.id);
+    // 触发事件
+    const traceId = `trace_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+    await db.prepare(
+      "INSERT INTO ontology_events (id, type, source, target, payload, trace_id) VALUES (?, ?, ?, ?, ?, ?)"
+    ).run(uuid(), "EntityInstanceUpdated", existing.object_id, req.params.id, JSON.stringify(data), traceId);
+    res.json({ success: true, data: { id: req.params.id, data } });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// DELETE /instances/:id — 删除
+router.delete("/instances/:id", async (req, res, next) => {
+  try {
+    const existing = await db.prepare("SELECT * FROM ontology_instances WHERE id = ?").get(req.params.id);
+    if (!existing) return res.status(404).json({ success: false, error: "实例不存在" });
+    await db.prepare("DELETE FROM ontology_instances WHERE id = ?").run(req.params.id);
+    const traceId = `trace_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+    await db.prepare(
+      "INSERT INTO ontology_events (id, type, source, target, payload, trace_id) VALUES (?, ?, ?, ?, ?, ?)"
+    ).run(uuid(), "EntityInstanceDeleted", existing.object_id, req.params.id, "{}", traceId);
+    res.json({ success: true, data: { id: req.params.id } });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ════════════════════════════════════════════════════════
+//  Snapshots (P0-3) — 本体版本快照
+// ════════════════════════════════════════════════════════
+
+// GET /snapshots — 列表
+router.get("/snapshots", async (req, res, next) => {
+  try {
+    const rows = await db.prepare(
+      "SELECT id, label, description, created_at, created_by FROM ontology_snapshots ORDER BY created_at DESC"
+    ).all();
+    res.json({ success: true, data: rows });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /snapshots — 创建快照 (自动捕获当前 8 要素状态)
+router.post("/snapshots", async (req, res, next) => {
+  try {
+    const id = uuid();
+    const { label, description } = req.body;
+    if (!label) return res.status(400).json({ success: false, error: "快照名称必填" });
+    // 抓取 8 要素
+    const objects = await db.prepare("SELECT * FROM ontology_objects").all();
+    const properties = await db.prepare("SELECT * FROM ontology_properties").all();
+    const relations = await db.prepare("SELECT * FROM ontology_relations").all();
+    const actions = await db.prepare("SELECT * FROM ontology_actions").all();
+    const functions = await db.prepare("SELECT * FROM ontology_functions").all();
+    const rules = await db.prepare("SELECT * FROM ontology_rules").all();
+    const payload = { objects, properties, relations, actions, functions, rules, snapshotAt: new Date().toISOString() };
+    await db.prepare(
+      "INSERT INTO ontology_snapshots (id, label, description, payload) VALUES (?, ?, ?, ?)"
+    ).run(id, label, description || null, JSON.stringify(payload));
+    const traceId = `trace_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+    await db.prepare(
+      "INSERT INTO ontology_events (id, type, source, target, payload, trace_id) VALUES (?, ?, ?, ?, ?, ?)"
+    ).run(uuid(), "SnapshotCreated", label, id, "{}", traceId);
+    res.json({ success: true, data: { id, label, count: { objects: objects.length, properties: properties.length, relations: relations.length } } });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /snapshots/:id — 详情
+router.get("/snapshots/:id", async (req, res, next) => {
+  try {
+    const row = await db.prepare("SELECT * FROM ontology_snapshots WHERE id = ?").get(req.params.id);
+    if (!row) return res.status(404).json({ success: false, error: "快照不存在" });
+    res.json({ success: true, data: { ...row, payload: JSON.parse(row.payload) } });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /snapshots/:from/diff/:to — 两个快照 diff
+router.get("/snapshots/:from/diff/:to", async (req, res, next) => {
+  try {
+    const a = await db.prepare("SELECT payload FROM ontology_snapshots WHERE id = ?").get(req.params.from);
+    const b = await db.prepare("SELECT payload FROM ontology_snapshots WHERE id = ?").get(req.params.to);
+    if (!a || !b) return res.status(404).json({ success: false, error: "快照不存在" });
+    const pa = JSON.parse(a.payload);
+    const pb = JSON.parse(b.payload);
+    // 简单 diff: 比较每类数组长度
+    const diff = {};
+    ["objects", "properties", "relations", "actions", "functions", "rules"].forEach((k) => {
+      diff[k] = { from: (pa[k] || []).length, to: (pb[k] || []).length, delta: (pb[k] || []).length - (pa[k] || []).length };
+    });
+    res.json({ success: true, data: diff });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// DELETE /snapshots/:id
+router.delete("/snapshots/:id", async (req, res, next) => {
+  try {
+    await db.prepare("DELETE FROM ontology_snapshots WHERE id = ?").run(req.params.id);
+    res.json({ success: true, data: { id: req.params.id } });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ════════════════════════════════════════════════════════
+//  Events (P1-5) — 事件流
+// ════════════════════════════════════════════════════════
+
+// GET /events — 列表 (支持 type 过滤 + since 时间戳)
+router.get("/events", async (req, res, next) => {
+  try {
+    const { type, trace_id, since, limit = 100 } = req.query;
+    let sql = "SELECT * FROM ontology_events WHERE 1=1";
+    const params = [];
+    if (type) { sql += " AND type = ?"; params.push(type); }
+    if (trace_id) { sql += " AND trace_id = ?"; params.push(trace_id); }
+    if (since) { sql += " AND timestamp > ?"; params.push(since); }
+    sql += " ORDER BY timestamp DESC LIMIT ?";
+    params.push(Number(limit));
+    const rows = await db.prepare(sql).all(...params);
+    const data = rows.map((r) => ({ ...r, payload: r.payload ? JSON.parse(r.payload) : null }));
+    res.json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /events — 手动发事件 (兼容旧版, 也用于测试)
+router.post("/events", async (req, res, next) => {
+  try {
+    const id = uuid();
+    const { type, source, target, payload, trace_id } = req.body;
+    if (!type) return res.status(400).json({ success: false, error: "type 必填" });
+    await db.prepare(
+      "INSERT INTO ontology_events (id, type, source, target, payload, trace_id) VALUES (?, ?, ?, ?, ?, ?)"
+    ).run(id, type, source || null, target || null, payload ? JSON.stringify(payload) : null, trace_id || null);
+    res.json({ success: true, data: { id, type, source, target, trace_id } });
+  } catch (err) {
+    next(err);
   }
 });
 

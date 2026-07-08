@@ -31,7 +31,6 @@ import { PageHeader } from "@/components/ui/stat";
  * 这是 P0-1: schema 类型 → 数据实例的桥梁, 完成 L2-2 本体论闭环
  * ════════════════════════════════════════════════════════════════════ */
 
-const STORAGE_PREFIX = "mp_instances_";
 const FIELD_TYPES = {
   text: { label: "短文本", icon: Type, input: "text" },
   longtext: { label: "长文本", icon: Type, input: "textarea" },
@@ -56,22 +55,6 @@ const FIELD_TYPES = {
 
 type FieldType = keyof typeof FIELD_TYPES;
 
-function loadInstances(objectId: string): Record<string, unknown>[] {
-  try {
-    const s = localStorage.getItem(STORAGE_PREFIX + objectId);
-    if (s) return JSON.parse(s);
-  } catch { /* ignore */ }
-  return [];
-}
-
-function saveInstances(objectId: string, list: Record<string, unknown>[]) {
-  localStorage.setItem(STORAGE_PREFIX + objectId, JSON.stringify(list));
-}
-
-function uid() {
-  return "i_" + Math.random().toString(36).slice(2, 11);
-}
-
 export function Instances() {
   const [objects, setObjects] = useState<OntologyObject[]>([]);
   const [selectedObject, setSelectedObject] = useState<OntologyObject | null>(null);
@@ -93,25 +76,25 @@ export function Instances() {
       .catch(() => setObjects([]));
   }, []);
 
-  // 选中对象时: 加载 schema + 数据
-  useEffect(() => {
+  // 选中对象时: 加载 schema + 真 API 拉数据
+  const loadData = useCallback(async () => {
     if (!selectedObject) return;
-    ontologyApi.listProperties(selectedObject.id)
-      .then((props) => {
-        setProperties(props);
-        setInstances(loadInstances(selectedObject.id));
-        setPage(1);
-      })
-      .catch(() => {
-        setProperties([]);
-        setInstances(loadInstances(selectedObject.id));
-      });
+    try {
+      const [props, insts] = await Promise.all([
+        ontologyApi.listProperties(selectedObject.id).catch(() => []),
+        ontologyApi.listInstances(selectedObject.id).catch(() => []),
+      ]);
+      setProperties(props);
+      // 后端返回的 data 是 JSON 字符串 parse 后, 加上 __id (后端 id) 给前端用
+      setInstances(insts.map((i: any) => ({ __id: i.id, ...i.data, __createdAt: i.created_at })));
+      setPage(1);
+    } catch {
+      setProperties([]);
+      setInstances([]);
+    }
   }, [selectedObject]);
 
-  // 持久化
-  useEffect(() => {
-    if (selectedObject) saveInstances(selectedObject.id, instances);
-  }, [instances, selectedObject]);
+  useEffect(() => { loadData(); }, [loadData]);
 
   // 过滤
   const filtered = useMemo(() => {
@@ -125,19 +108,33 @@ export function Instances() {
   const paged = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
 
-  const handleSave = (data: Record<string, unknown>) => {
+  // 真 API: 保存 (新增或更新)
+  const handleSave = async (data: Record<string, unknown>) => {
     if (!selectedObject) return;
-    if (data.__id) {
-      setInstances((arr) => arr.map((it) => (it.__id === data.__id ? { ...data } : it)));
-    } else {
-      setInstances((arr) => [...arr, { ...data, __id: uid(), __createdAt: new Date().toISOString() }]);
+    try {
+      if (data.__id) {
+        // 更新
+        await ontologyApi.updateInstance(data.__id as string, data);
+      } else {
+        // 新建
+        await ontologyApi.createInstance(selectedObject.id, data);
+      }
+      setEditing(null);
+      await loadData(); // 重新拉
+    } catch (e: unknown) {
+      alert("保存失败: " + (e instanceof Error ? e.message : String(e)));
     }
-    setEditing(null);
   };
 
-  const handleDelete = (id: string) => {
+  // 真 API: 删除
+  const handleDelete = async (id: string) => {
     if (!confirm("确定删除该数据实例？")) return;
-    setInstances((arr) => arr.filter((it) => it.__id !== id));
+    try {
+      await ontologyApi.deleteInstance(id);
+      await loadData();
+    } catch (e: unknown) {
+      alert("删除失败: " + (e instanceof Error ? e.message : String(e)));
+    }
   };
 
   const handleExport = () => {

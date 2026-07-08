@@ -443,6 +443,50 @@ export const ontologyApi = {
   // Auto Numbers
   listAutoNumbers: () => request<any[]>("/ontology/auto-numbers"),
   createAutoNumber: (data: any) => request("/ontology/auto-numbers", { method: "POST", body: JSON.stringify(data) }),
+
+  // ═══ P0-1 业务实例 (EntityInstance) ═══
+  listInstances: (objectId: string) =>
+    request<any[]>(`/ontology/objects/${objectId}/instances`),
+  createInstance: (objectId: string, data: Record<string, unknown>) =>
+    request<any>(`/ontology/objects/${objectId}/instances`, {
+      method: "POST",
+      body: JSON.stringify({ data }),
+    }),
+  updateInstance: (id: string, data: Record<string, unknown>) =>
+    request<any>(`/ontology/instances/${id}`, {
+      method: "PUT",
+      body: JSON.stringify({ data }),
+    }),
+  deleteInstance: (id: string) =>
+    request<any>(`/ontology/instances/${id}`, { method: "DELETE" }),
+
+  // ═══ P0-3 本体快照 ═══
+  listSnapshots: () =>
+    request<any[]>("/ontology/snapshots"),
+  createSnapshot: (label: string, description?: string) =>
+    request<any>("/ontology/snapshots", {
+      method: "POST",
+      body: JSON.stringify({ label, description }),
+    }),
+  getSnapshot: (id: string) =>
+    request<any>(`/ontology/snapshots/${id}`),
+  diffSnapshots: (fromId: string, toId: string) =>
+    request<any>(`/ontology/snapshots/${fromId}/diff/${toId}`),
+  deleteSnapshot: (id: string) =>
+    request<any>(`/ontology/snapshots/${id}`, { method: "DELETE" }),
+
+  // ═══ P1-5 事件流 ═══
+  listEvents: (params?: { type?: string; trace_id?: string; since?: string; limit?: number }) => {
+    const qs = new URLSearchParams();
+    if (params?.type) qs.set("type", params.type);
+    if (params?.trace_id) qs.set("trace_id", params.trace_id);
+    if (params?.since) qs.set("since", params.since);
+    if (params?.limit) qs.set("limit", String(params.limit));
+    const q = qs.toString();
+    return request<any[]>(`/ontology/events${q ? `?${q}` : ""}`);
+  },
+  createEvent: (data: { type: string; source?: string; target?: string; payload?: unknown; trace_id?: string }) =>
+    request<any>("/ontology/events", { method: "POST", body: JSON.stringify(data) }),
 };
 
 // ─── Processes ────────────────────────────────────────────

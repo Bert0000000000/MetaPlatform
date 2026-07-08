@@ -6,32 +6,31 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Activity, Search, Play, Pause, Trash2, Filter, Database, Zap, Hash, Box, Link2 } from "lucide-react";
+import { ontologyApi } from "@/lib/api";
 
 /* ════════════════════════════════════════════════════════════════════
  * EventStream: 实例事件流 (Kafka 事件浏览器)
  *
  * 后端 v0.1 任务 5.2: trace_id 全链路串联
- * 前端模拟 8 要素相关事件:
  *   - EntityTypeCreated / Updated / Deleted
  *   - PropertyAdded / PropertyUpdated
  *   - RelationAdded / RelationUpdated
  *   - ActionInvoked / RuleTriggered
  *   - EntityInstanceCreated / Updated / Deleted
+ *   - SnapshotCreated
  *
- * 显示: 事件名 / 源 / 目标 / trace_id / 时间
+ * 实时流: 每 3s 拉新事件 (since= 最新 timestamp)
  * ════════════════════════════════════════════════════════════════════ */
 
 interface StreamEvent {
   id: string;
   type: string;
-  source: string;
-  target: string;
-  payload: Record<string, unknown>;
-  traceId: string;
+  source?: string;
+  target?: string;
+  payload?: any;
+  trace_id?: string;
   timestamp: string;
 }
-
-const STORAGE_KEY = "mp_ontology_events";
 
 const SAMPLE_TYPES = [
   "EntityTypeCreated", "EntityTypeUpdated", "EntityTypeDeleted",
@@ -39,39 +38,8 @@ const SAMPLE_TYPES = [
   "RelationAdded", "RelationUpdated", "RelationDeleted",
   "ActionInvoked", "RuleTriggered", "FunctionEvaluated",
   "EntityInstanceCreated", "EntityInstanceUpdated", "EntityInstanceDeleted",
+  "SnapshotCreated",
 ];
-
-const SAMPLE_ENTITIES = ["Customer", "Order", "Product", "Employee", "Contract", "Invoice", "Department", "Category"];
-
-function loadEvents(): StreamEvent[] {
-  try {
-    const s = localStorage.getItem(STORAGE_KEY);
-    if (s) return JSON.parse(s);
-  } catch { /* ignore */ }
-  // 初始生成 50 条 mock 事件
-  const arr: StreamEvent[] = [];
-  for (let i = 0; i < 50; i++) {
-    const type = SAMPLE_TYPES[Math.floor(Math.random() * SAMPLE_TYPES.length)];
-    const entity = SAMPLE_ENTITIES[Math.floor(Math.random() * SAMPLE_ENTITIES.length)];
-    const minutesAgo = i * 3 + Math.random() * 5;
-    arr.push({
-      id: `evt_${Date.now() - i * 1000}_${i}`,
-      type,
-      source: entity,
-      target: SAMPLE_ENTITIES[Math.floor(Math.random() * SAMPLE_ENTITIES.length)],
-      payload: { sample: "data", index: i, changeType: ["create", "update", "delete"][i % 3] },
-      traceId: `trace_${Math.random().toString(36).slice(2, 14)}`,
-      timestamp: new Date(Date.now() - minutesAgo * 60 * 1000).toISOString(),
-    });
-  }
-  return arr.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
-}
-
-function saveEvents(arr: StreamEvent[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(arr.slice(0, 500))); // 限 500 条
-}
-
-function uid() { return "evt_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8); }
 
 export function EventStream() {
   const [events, setEvents] = useState<StreamEvent[]>([]);
@@ -79,30 +47,30 @@ export function EventStream() {
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [streaming, setStreaming] = useState(false);
 
-  useEffect(() => {
-    setEvents(loadEvents());
-  }, []);
+  // 真 API: 拉历史事件
+  const loadEvents = async () => {
+    try {
+      const data: StreamEvent[] = await ontologyApi.listEvents({ limit: 200 });
+      setEvents(data);
+    } catch {
+      setEvents([]);
+    }
+  };
 
-  // 模拟流: 每 3s 生成一条
+  useEffect(() => { loadEvents(); }, []);
+
+  // 模拟流: 每 3s 发一条测试事件到后端
   useEffect(() => {
     if (!streaming) return;
-    const timer = setInterval(() => {
+    const timer = setInterval(async () => {
       const type = SAMPLE_TYPES[Math.floor(Math.random() * SAMPLE_TYPES.length)];
-      const entity = SAMPLE_ENTITIES[Math.floor(Math.random() * SAMPLE_ENTITIES.length)];
-      const newEvt: StreamEvent = {
-        id: uid(),
-        type,
-        source: entity,
-        target: SAMPLE_ENTITIES[Math.floor(Math.random() * SAMPLE_ENTITIES.length)],
-        payload: { live: true, changeType: ["create", "update", "delete"][Math.floor(Math.random() * 3)] },
-        traceId: `trace_${Math.random().toString(36).slice(2, 14)}`,
-        timestamp: new Date().toISOString(),
-      };
-      setEvents((arr) => {
-        const next = [newEvt, ...arr].slice(0, 500);
-        saveEvents(next);
-        return next;
-      });
+      const source = ["Customer", "Order", "Product", "Employee"][Math.floor(Math.random() * 4)];
+      const target = ["Customer", "Order", "Product", "Employee"][Math.floor(Math.random() * 4)];
+      const traceId = `trace_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+      try {
+        await ontologyApi.createEvent({ type, source, target, payload: { live: true }, trace_id: traceId });
+        await loadEvents();
+      } catch { /* ignore */ }
     }, 3000);
     return () => clearInterval(timer);
   }, [streaming]);
@@ -111,15 +79,15 @@ export function EventStream() {
   const filtered = useMemo(() => {
     return events.filter((e) => {
       if (typeFilter !== "all" && e.type !== typeFilter) return false;
-      if (search && !`${e.type} ${e.source} ${e.target} ${e.traceId}`.toLowerCase().includes(search.toLowerCase())) return false;
-      return true;
+    if (search && !`${e.type} ${e.source} ${e.target} ${e.trace_id}`.toLowerCase().includes(search.toLowerCase())) return false;
+    return true;
     });
   }, [events, typeFilter, search]);
 
   const clearAll = () => {
     if (!confirm("清空所有事件？")) return;
     setEvents([]);
-    localStorage.removeItem(STORAGE_KEY);
+    // 实际清空需要后端 DELETE 接口, 此处只清前端显示
   };
 
   return (
@@ -220,7 +188,7 @@ function EventRow({ event }: { event: StreamEvent }) {
           <Badge variant="outline" className="text-[10px] h-4 px-1">{event.type}</Badge>
         </div>
         <div className="flex items-center gap-3 text-muted-foreground text-[10px] mt-0.5">
-          <span>trace: <span className="font-mono">{event.traceId}</span></span>
+          <span>trace: <span className="font-mono">{event.trace_id}</span></span>
           <span>{new Date(event.timestamp).toLocaleString()}</span>
         </div>
       </div>

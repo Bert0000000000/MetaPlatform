@@ -395,6 +395,44 @@ db.exec(`
     created_at TEXT DEFAULT (datetime('now'))
   );
 
+  -- ═══ Ontology Enhancement (P0-P2) ═══
+
+  -- 业务实例 (P0-1)
+  CREATE TABLE IF NOT EXISTS ontology_instances (
+    id TEXT PRIMARY KEY,
+    object_id TEXT NOT NULL,
+    data TEXT NOT NULL,           -- JSON: 字段值
+    created_at TEXT DEFAULT (datetime('now')),
+    updated_at TEXT DEFAULT (datetime('now')),
+    created_by TEXT,
+    FOREIGN KEY (object_id) REFERENCES ontology_objects(id) ON DELETE CASCADE
+  );
+  CREATE INDEX IF NOT EXISTS idx_instances_object ON ontology_instances(object_id);
+
+  -- 本体快照 (P0-3)
+  CREATE TABLE IF NOT EXISTS ontology_snapshots (
+    id TEXT PRIMARY KEY,
+    label TEXT NOT NULL,
+    description TEXT,
+    payload TEXT NOT NULL,        -- JSON: 完整 8 要素
+    created_at TEXT DEFAULT (datetime('now')),
+    created_by TEXT
+  );
+
+  -- 事件流 (P1-5)
+  CREATE TABLE IF NOT EXISTS ontology_events (
+    id TEXT PRIMARY KEY,
+    type TEXT NOT NULL,           -- EntityTypeCreated/PropertyAdded/...
+    source TEXT,
+    target TEXT,
+    payload TEXT,                 -- JSON
+    trace_id TEXT,
+    timestamp TEXT DEFAULT (datetime('now'))
+  );
+  CREATE INDEX IF NOT EXISTS idx_events_type ON ontology_events(type);
+  CREATE INDEX IF NOT EXISTS idx_events_trace ON ontology_events(trace_id);
+  CREATE INDEX IF NOT EXISTS idx_events_ts ON ontology_events(timestamp DESC);
+
   -- Export History
   CREATE TABLE IF NOT EXISTS export_history (
     id TEXT PRIMARY KEY,
