@@ -552,8 +552,60 @@ export const knowledgeApi = {
 };
 
 // ─── Agents ───────────────────────────────────────────────
+// F1.1.4 — leader dashboard "team digital employee" panel data
+export interface AgentTeamOverview {
+  totalAgents: number;
+  totalActive: number;
+  totalBusy: number;
+  totalOffline: number;
+  totalError: number;
+  totalTasks: number;
+  totalDone: number;
+  completionRate: number;
+}
+export interface AgentTeamRow {
+  department: string;
+  agentCount: number;
+  activeCount: number;
+  busyCount: number;
+  offlineCount: number;
+  errorCount: number;
+  taskCount: number;
+  doneCount: number;
+}
+export interface AgentTopPerformer {
+  id: string;
+  name: string;
+  ownerName: string;
+  department: string;
+  status: string;
+  tasksDone: number;
+  tasksTotal: number;
+  successRate: number;
+}
+export interface AgentRecentActivity {
+  task_id: string;
+  agent_id: string;
+  agent_name: string;
+  status: string;
+  at: string;
+}
+export interface AgentTeamStats {
+  overview: AgentTeamOverview;
+  teams: AgentTeamRow[];
+  topPerformers: AgentTopPerformer[];
+  recentActivity: AgentRecentActivity[];
+}
+
 export const agentsApi = {
   list: () => request<Agent[]>("/agents"),
+  teamStats: (params?: { limitTop?: number; limitAct?: number }) => {
+    const qs = new URLSearchParams();
+    if (params?.limitTop) qs.set("limitTop", String(params.limitTop));
+    if (params?.limitAct) qs.set("limitAct", String(params.limitAct));
+    const s = qs.toString();
+    return request<AgentTeamStats>(`/agents/team-stats${s ? `?${s}` : ""}`);
+  },
   // F1.3.1 我创建的数字员工 — server-side filter by owner_id
   listOwnedBy: (ownerId: string) =>
     request<Agent[]>(`/agents?owner=${encodeURIComponent(ownerId)}`),

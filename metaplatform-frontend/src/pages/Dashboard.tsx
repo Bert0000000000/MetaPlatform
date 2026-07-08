@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { appsApi, messagesApi, agentsApi, adminApi, announcementsApi, todosApi, analyticsApi, authApi } from "@/lib/api";
-import type { Application, Message, Agent, AuditLog, StrategicMetrics } from "@/lib/api";
+import type { Application, Message, Agent, AuditLog, StrategicMetrics, AgentTeamStats } from "@/lib/api";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
@@ -604,65 +604,10 @@ export function DashboardPage() {
         )}
       </section>
 
-      {/* F1.1.4 领导版：数字员工概览 (visible for leader/manager roles) */}
-      {(role === "leader" || role === "admin" || role === "manager") && (
-        <Card className="border-l-4 border-l-blue-500">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <div>
-              <CardTitle className="text-base flex items-center gap-2">
-                <Bot className="size-4 text-blue-500" /> 数字员工概览
-              </CardTitle>
-              <CardDescription>团队数字员工运行状态和任务完成率</CardDescription>
-            </div>
-            <Button variant="ghost" size="sm" onClick={() => navigate("/agents")}>
-              管理中心 <ChevronRight className="size-3 ml-1" />
-            </Button>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="flex items-center justify-center py-6 text-muted-foreground">
-                <Loader2 className="size-5 animate-spin mr-2" /> 加载中...
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30">
-                    <div className="text-xs text-muted-foreground">智能体总数</div>
-                    <div className="text-2xl font-bold text-blue-600 mt-1">{agents.length}</div>
-                  </div>
-                  <div className="p-3 rounded-lg bg-green-50 dark:bg-green-950/30">
-                    <div className="text-xs text-muted-foreground">在线运行</div>
-                    <div className="text-2xl font-bold text-green-600 mt-1">{agents.filter((a) => a.status === "active" || a.status === "online").length}</div>
-                  </div>
-                  <div className="p-3 rounded-lg bg-orange-50 dark:bg-orange-950/30">
-                    <div className="text-xs text-muted-foreground">忙碌中</div>
-                    <div className="text-2xl font-bold text-orange-600 mt-1">{agents.filter((a) => a.status === "busy").length}</div>
-                  </div>
-                  <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-950/30">
-                    <div className="text-xs text-muted-foreground">离线/故障</div>
-                    <div className="text-2xl font-bold text-gray-500 mt-1">{agents.filter((a) => a.status === "offline" || a.status === "error").length}</div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-4 p-3 rounded-lg border bg-muted/30">
-                  <div className="flex items-center gap-2">
-                    <TrendingUp className="size-4 text-green-500" />
-                    <span className="text-sm">本月任务完成率</span>
-                  </div>
-                  <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-green-500 rounded-full"
-                      style={{ width: `${agents.length > 0 ? Math.round((activeAgents.length / agents.length) * 100) : 0}%` }}
-                    />
-                  </div>
-                  <span className="text-sm font-bold text-green-600">
-                    {agents.length > 0 ? `${Math.round((activeAgents.length / agents.length) * 100)}%` : "--"}
-                  </span>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
+      {/* F1.1.4 领导版：团队数字员工概览 (visible for leader/manager roles)
+          Data: GET /api/agents/team-stats
+          Server-side aggregation: by department / by completion / by activity */}
+      {(role === "leader" || role === "admin" || role === "manager") && <TeamDigitalEmployeesPanel />}
 
       {/* F1.1.11 FDE 工作台快捷入口 (developer view) */}
       {(role === "developer" || role === "admin") && (
@@ -2316,4 +2261,276 @@ function PreviewComponent({ comp }: { comp: PageComponent }) {
     default:
       return <div className="text-xs text-muted-foreground">未知组件: {comp.type}</div>;
   }
+}
+
+/* ─────────────────────────────────────────────────────────────
+ * F1.1.4 领导版：团队数字员工概览
+ * ─────────────────────────────────────────────────────────────
+ *
+ *   三段布局：
+ *     ① 4 个 KPI 卡片（总智能体 / 在线 / 离线 / 任务完成率）
+ *     ② 部门分布条形图（按 agentCount 排序，前 6 个部门）
+ *     ③ 任务量 / 完成率 双排行 + 最近活动 timeline
+ *
+ *   数据源：GET /api/agents/team-stats（服务端聚合）
+ */
+function TeamDigitalEmployeesPanel() {
+  const navigate = useNavigate();
+  const [data, setData] = useState<AgentTeamStats | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const r = await agentsApi.teamStats({ limitTop: 5, limitAct: 6 });
+      setData(r);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "加载团队数字员工概览失败");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  if (loading) {
+    return (
+      <Card className="border-l-4 border-l-blue-500">
+        <CardContent className="flex items-center justify-center py-10 text-muted-foreground">
+          <Loader2 className="size-5 animate-spin mr-2" /> 加载中...
+        </CardContent>
+      </Card>
+    );
+  }
+  if (error || !data) {
+    return (
+      <Card className="border-l-4 border-l-red-300">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base flex items-center gap-2">
+            <AlertTriangle className="size-4 text-red-500" /> 团队数字员工概览
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="text-sm text-red-600">{error ?? "无数据"}</CardContent>
+      </Card>
+    );
+  }
+
+  const o = data.overview;
+  const teams = data.teams.slice(0, 6);
+  const maxTeamAgents = Math.max(1, ...teams.map((t) => t.agentCount));
+
+  return (
+    <Card className="border-l-4 border-l-blue-500">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <div>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Bot className="size-4 text-blue-500" /> 团队数字员工概览
+          </CardTitle>
+          <CardDescription>按部门聚合的数字员工分布 + 任务完成情况</CardDescription>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="ghost" size="sm" onClick={load} title="刷新">
+            <RefreshCw className="size-3 mr-1" />刷新
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => navigate("/agents")}>
+            管理中心 <ChevronRight className="size-3 ml-1" />
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          {/* ── Row 1: KPI cards ── */}
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+            <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30">
+              <div className="text-xs text-muted-foreground">智能体总数</div>
+              <div className="text-2xl font-bold text-blue-600 mt-1 tabular-nums">{o.totalAgents}</div>
+            </div>
+            <div className="p-3 rounded-lg bg-green-50 dark:bg-green-950/30">
+              <div className="text-xs text-muted-foreground">在线运行</div>
+              <div className="text-2xl font-bold text-green-600 mt-1 tabular-nums">{o.totalActive}</div>
+            </div>
+            <div className="p-3 rounded-lg bg-orange-50 dark:bg-orange-950/30">
+              <div className="text-xs text-muted-foreground">忙碌中</div>
+              <div className="text-2xl font-bold text-orange-600 mt-1 tabular-nums">{o.totalBusy}</div>
+            </div>
+            <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-950/30">
+              <div className="text-xs text-muted-foreground">离线 / 故障</div>
+              <div className="text-2xl font-bold text-gray-500 mt-1 tabular-nums">
+                {o.totalOffline + o.totalError}
+              </div>
+            </div>
+            <div className="p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/30">
+              <div className="text-xs text-muted-foreground flex items-center gap-1">
+                <TrendingUp className="size-3" /> 任务完成率
+              </div>
+              <div className="text-2xl font-bold text-emerald-600 mt-1 tabular-nums">
+                {o.completionRate}<span className="text-sm font-normal">%</span>
+              </div>
+              <div className="text-[10px] text-muted-foreground mt-0.5">
+                {o.totalDone} / {o.totalTasks}
+              </div>
+            </div>
+          </div>
+
+          {/* ── Row 2: department distribution ── */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <div className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                <Building2 className="size-3" /> 部门分布（按智能体数）
+              </div>
+              {teams.length === 0 ? (
+                <div className="text-xs text-muted-foreground py-4 text-center border-2 border-dashed rounded">
+                  暂无部门数据
+                </div>
+              ) : (
+                <div className="space-y-1.5">
+                  {teams.map((t) => (
+                    <div key={t.department} className="flex items-center gap-2 text-xs">
+                      <span className="w-20 truncate text-muted-foreground">{t.department}</span>
+                      <div className="flex-1 h-4 bg-muted rounded overflow-hidden flex">
+                        {t.activeCount > 0 && (
+                          <div
+                            className="bg-green-500 h-full"
+                            style={{ width: `${(t.activeCount / t.agentCount) * 100}%` }}
+                            title={`在线 ${t.activeCount}`}
+                          />
+                        )}
+                        {t.busyCount > 0 && (
+                          <div
+                            className="bg-orange-500 h-full"
+                            style={{ width: `${(t.busyCount / t.agentCount) * 100}%` }}
+                            title={`忙碌 ${t.busyCount}`}
+                          />
+                        )}
+                        {t.offlineCount + t.errorCount > 0 && (
+                          <div
+                            className="bg-gray-400 h-full"
+                            style={{ width: `${((t.offlineCount + t.errorCount) / t.agentCount) * 100}%` }}
+                            title={`离线/故障 ${t.offlineCount + t.errorCount}`}
+                          />
+                        )}
+                      </div>
+                      <span className="tabular-nums w-10 text-right font-medium">{t.agentCount}</span>
+                    </div>
+                  ))}
+                  <div className="flex gap-3 text-[10px] text-muted-foreground pt-1">
+                    <span className="flex items-center gap-1">
+                      <span className="size-2 rounded-sm bg-green-500" />在线
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <span className="size-2 rounded-sm bg-orange-500" />忙碌
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <span className="size-2 rounded-sm bg-gray-400" />离线/故障
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* ── Top performers ── */}
+            <div className="space-y-2">
+              <div className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                <Target className="size-3" /> 数字员工 Top 5（按完成任务数）
+              </div>
+              {data.topPerformers.length === 0 ? (
+                <div className="text-xs text-muted-foreground py-4 text-center border-2 border-dashed rounded">
+                  暂无任务数据
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  {data.topPerformers.map((p, idx) => (
+                    <div key={p.id} className="flex items-center gap-2 text-xs">
+                      <span
+                        className={
+                          "w-5 h-5 flex items-center justify-center rounded-full text-[10px] font-bold " +
+                          (idx === 0 ? "bg-yellow-200 text-yellow-800" :
+                           idx === 1 ? "bg-slate-200 text-slate-700" :
+                           idx === 2 ? "bg-orange-200 text-orange-800" : "bg-muted text-muted-foreground")
+                        }
+                      >
+                        {idx + 1}
+                      </span>
+                      <span className="font-medium truncate flex-1">{p.name}</span>
+                      <span className="text-muted-foreground text-[10px]">{p.department}</span>
+                      <span className="tabular-nums w-14 text-right">{p.tasksDone}/{p.tasksTotal}</span>
+                      <span
+                        className={
+                          "tabular-nums w-10 text-right font-medium " +
+                          (p.successRate >= 80 ? "text-green-600" :
+                           p.successRate >= 50 ? "text-amber-600" : "text-red-600")
+                        }
+                      >
+                        {p.successRate}%
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* ── Row 3: recent activity timeline ── */}
+          {data.recentActivity.length > 0 && (
+            <div>
+              <div className="text-xs font-medium text-muted-foreground flex items-center gap-1 mb-2">
+                <Activity className="size-3" /> 最近活动
+              </div>
+              <div className="space-y-1.5 text-xs">
+                {data.recentActivity.map((r) => {
+                  const statusColor =
+                    r.status === "completed" || r.status === "done" ? "text-green-600" :
+                    r.status === "running" ? "text-blue-600" :
+                    r.status === "error" || r.status === "failed" ? "text-red-600" :
+                    "text-muted-foreground";
+                  return (
+                    <div key={r.task_id} className="flex items-center gap-2">
+                      <Clock className="size-3 text-muted-foreground" />
+                      <span className="text-muted-foreground tabular-nums w-16 shrink-0">
+                        {fmtTime(r.at)}
+                      </span>
+                      <span className={`shrink-0 ${statusColor}`}>
+                        {statusLabel(r.status)}
+                      </span>
+                      <span className="font-medium truncate flex-1">
+                        {r.agent_name ?? "(已删除)"}
+                      </span>
+                      <code className="text-[10px] text-muted-foreground">{r.task_id}</code>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function statusLabel(s: string): string {
+  switch (s) {
+    case "completed": case "done": return "✓ 完成";
+    case "running": return "▶ 运行中";
+    case "pending": return "… 等待";
+    case "error": case "failed": return "✗ 失败";
+    case "cancelled": return "⊘ 取消";
+    default: return s;
+  }
+}
+
+function fmtTime(iso: string | undefined): string {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return iso;
+  const now = Date.now();
+  const diff = Math.floor((now - d.getTime()) / 1000);
+  if (diff < 0) return d.toLocaleString();
+  if (diff < 60) return `${diff}s 前`;
+  if (diff < 3600) return `${Math.floor(diff / 60)}m 前`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h 前`;
+  if (diff < 604800) return `${Math.floor(diff / 86400)}d 前`;
+  return d.toLocaleDateString();
 }

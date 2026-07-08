@@ -11,6 +11,128 @@ const router = Router();
 //  Agents
 // ════════════════════════════════════════════════════════
 
+// GET /team-stats — F1.1.4 领导版：团队数字员工概览
+// Aggregates by department (joining agents.owner_id → users.department).
+// Falls back to "(未分配)" when the owner has no department on file.
+//   ?limitTop=5   — number of top-performer rows to return (default 5)
+//   ?limitAct=10  — number of recent-activity rows (default 10)
+//
+// IMPORTANT: declared BEFORE the /:id route to avoid being matched as
+// id="team-stats" — Express matches in registration order.
+router.get("/team-stats", async (req, res, next) => {
+  try {
+    const limitTop = Math.min(50, Math.max(1, Number(req.query.limitTop) || 5));
+    const limitAct = Math.min(50, Math.max(1, Number(req.query.limitAct) || 10));
+
+    // ── agents — left join users so we can group by department
+    const agents = await db.prepare(`
+      SELECT a.id, a.name, a.status, a.owner_id,
+             COALESCE(u.department, '(未分配)') AS department,
+             COALESCE(u.name, '(匿名)')         AS owner_name
+      FROM agents a
+      LEFT JOIN users u ON u.id = a.owner_id
+    `).all();
+
+    // ── agent_tasks — used for task volume + completion stats
+    const tasks = await db.prepare(`
+      SELECT agent_id, status FROM agent_tasks
+    `).all();
+    const tasksByAgent = new Map();
+    for (const t of tasks) {
+      const m = tasksByAgent.get(t.agent_id) ?? { total: 0, done: 0, error: 0, running: 0 };
+      m.total++;
+      if (t.status === "completed" || t.status === "done") m.done++;
+      else if (t.status === "error" || t.status === "failed") m.error++;
+      else if (t.status === "running") m.running++;
+      tasksByAgent.set(t.agent_id, m);
+    }
+
+    // ── team rollup ──
+    const teamMap = new Map();
+    for (const a of agents) {
+      const t = teamMap.get(a.department) ?? {
+        department: a.department,
+        agentCount: 0, activeCount: 0, busyCount: 0,
+        offlineCount: 0, errorCount: 0,
+        taskCount: 0, doneCount: 0,
+      };
+      t.agentCount++;
+      if (a.status === "active" || a.status === "online") t.activeCount++;
+      else if (a.status === "busy") t.busyCount++;
+      else if (a.status === "offline") t.offlineCount++;
+      else if (a.status === "error") t.errorCount++;
+      const m = tasksByAgent.get(a.id);
+      if (m) {
+        t.taskCount += m.total;
+        t.doneCount += m.done;
+      }
+      teamMap.set(a.department, t);
+    }
+    const teams = Array.from(teamMap.values()).sort(
+      (a, b) => b.agentCount - a.agentCount,
+    );
+
+    // ── overview ──
+    const overview = {
+      totalAgents: agents.length,
+      totalActive: teams.reduce((s, t) => s + t.activeCount, 0),
+      totalBusy:   teams.reduce((s, t) => s + t.busyCount, 0),
+      totalOffline: teams.reduce((s, t) => s + t.offlineCount, 0),
+      totalError:  teams.reduce((s, t) => s + t.errorCount, 0),
+      totalTasks:  tasks.length,
+      totalDone:   tasks.filter((t) => t.status === "completed" || t.status === "done").length,
+    };
+    overview.completionRate = overview.totalTasks > 0
+      ? Math.round((overview.totalDone / overview.totalTasks) * 1000) / 10
+      : 0;
+
+    // ── top performers (by done tasks) ──
+    const topPerformers = agents
+      .map((a) => {
+        const m = tasksByAgent.get(a.id) ?? { total: 0, done: 0 };
+        return {
+          id: a.id,
+          name: a.name,
+          ownerName: a.owner_name,
+          department: a.department,
+          status: a.status,
+          tasksDone: m.done,
+          tasksTotal: m.total,
+          successRate: m.total > 0
+            ? Math.round((m.done / m.total) * 1000) / 10
+            : 0,
+        };
+      })
+      .filter((r) => r.tasksTotal > 0)
+      .sort((a, b) => b.tasksDone - a.tasksDone)
+      .slice(0, limitTop);
+
+    // ── recent activity (latest tasks) ──
+    const recent = await db.prepare(`
+      SELECT t.id, t.agent_id, a.name AS agent_name, t.status,
+             t.started_at, t.ended_at, t.created_at
+      FROM agent_tasks t
+      LEFT JOIN agents a ON a.id = t.agent_id
+      ORDER BY COALESCE(t.ended_at, t.started_at, t.created_at) DESC
+      LIMIT ?
+    `).all(limitAct);
+    const recentActivity = recent.map((r) => ({
+      task_id: r.id,
+      agent_id: r.agent_id,
+      agent_name: r.agent_name,
+      status: r.status,
+      at: r.ended_at ?? r.started_at ?? r.created_at,
+    }));
+
+    res.json({
+      success: true,
+      data: { overview, teams, topPerformers, recentActivity },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // GET / — list agents
 // Filters:
 //   owner=<userId>   → only agents owned by <userId>  (F1.3.1 我创建的)
