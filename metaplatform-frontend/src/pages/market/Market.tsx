@@ -395,14 +395,14 @@ function DeveloperRank() {
         <CardTitle className="text-base flex items-center gap-2">
           <Users className="size-4" /> 开发者排行榜
         </CardTitle>
-        <CardDescription>本月云市场最活跃的开发者</CardDescription>
+        <CardDescription>本月云市场最活跃的开发者 (按下载量排序)</CardDescription>
       </CardHeader>
       <CardContent className="p-0">
         {loading && <div className="text-center py-4 text-muted-foreground">加载中...</div>}
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>排名</TableHead>
+              <TableHead className="w-[64px]">排名</TableHead>
               <TableHead>开发者</TableHead>
               <TableHead className="text-right">应用数</TableHead>
               <TableHead className="text-right">下载量</TableHead>
@@ -410,18 +410,47 @@ function DeveloperRank() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {developers.map((d) => (
-              <TableRow key={d.rank}>
-                <TableCell>
-                  <d.badge className="size-5 inline" />
-                  <span className="ml-2 font-mono">#{d.rank}</span>
-                </TableCell>
-                <TableCell className="font-medium">{d.name}</TableCell>
-                <TableCell className="text-right">{d.apps}</TableCell>
-                <TableCell className="text-right">{d.downloads.toLocaleString()}</TableCell>
-                <TableCell className="text-right font-mono text-sm">{d.revenue}</TableCell>
-              </TableRow>
-            ))}
+            {developers.map((d) => {
+              // 1/2/3 给奖牌样式 (gold/silver/bronze), 其余给数字
+              const isTop3 = d.rank <= 3;
+              const medal = ["🥇", "🥈", "🥉"][d.rank - 1];
+              const maxDownloads = Math.max(...developers.map((x) => x.downloads));
+              const pct = Math.round((d.downloads / maxDownloads) * 100);
+              return (
+                <TableRow key={d.rank}>
+                  <TableCell>
+                    <div className="flex items-center justify-center">
+                      {isTop3 ? (
+                        <span className="text-lg leading-none">{medal}</span>
+                      ) : (
+                        <span className="size-6 rounded-full bg-muted text-muted-foreground text-[10px] font-mono font-semibold flex items-center justify-center tabular-nums">
+                          {d.rank}
+                        </span>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2.5">
+                      <div className="size-7 rounded-full bg-gradient-to-br from-primary to-primary/60 text-primary-foreground flex items-center justify-center text-[11px] font-semibold shrink-0">
+                        {d.name[0]}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="font-medium text-sm">{d.name}</div>
+                        <div className="w-24 h-1 bg-muted rounded-full mt-0.5 overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-primary to-primary/60 rounded-full"
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums">{d.apps}</TableCell>
+                  <TableCell className="text-right tabular-nums">{d.downloads.toLocaleString()}</TableCell>
+                  <TableCell className="text-right font-mono text-sm">{d.revenue}</TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </CardContent>
