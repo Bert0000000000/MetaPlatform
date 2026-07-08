@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { ontologyApi, type OntologyAction, type OntologyFunction, type OntologyRule, type OntologyObject, type OntologyProperty, type OntologyRelation } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
-import { Box, Hash, Link2, Zap, Calculator, Shield, Settings, Server, Plus, Sparkles, Link, User, Package, Tag, Users, FileText, Receipt, Eye, Edit, Trash2, Search } from "lucide-react";
+import { Box, Hash, Link2, Zap, Calculator, Shield, Settings, Server, Plus, Sparkles, Link, User, Package, Tag, Users, FileText, Receipt, Eye, Edit, Trash2, Search, ShieldCheck, GitMerge, AlertOctagon, Activity } from "lucide-react";
 
 const element7of8 = [
   { key: "1-objects", title: "对象（Objects）", icon: Box, desc: "业务对象的定义与建模", tag: "O" },
@@ -79,26 +79,10 @@ export function OntologyElement({ elementKey }: { elementKey: string }) {
       />
 
       {elementKey === "1-objects" && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {objects.length === 0 && (
-            <div className="col-span-full text-center py-8 text-muted-foreground">加载中...</div>
-          )}
-          {objects.map((o) => {
-            const ObjIcon = iconMap[o.name] || Box;
-            return (
-              <Card key={o.id} className="cursor-pointer hover:border-primary">
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <span className="text-3xl"><ObjIcon className="size-8" /></span>
-                    <Badge variant="secondary">{o.properties_count} 属性</Badge>
-                  </div>
-                  <CardTitle className="text-base mt-2">{o.label}</CardTitle>
-                  <CardDescription className="font-mono">{o.name}</CardDescription>
-                </CardHeader>
-              </Card>
-            );
-          })}
-        </div>
+        <ObjectsView
+          objects={objects}
+          onRescan={() => ontologyApi.listObjects().then(setObjects).catch(() => {})}
+        />
       )}
 
       {elementKey === "2-properties" && (
@@ -961,6 +945,358 @@ export function OntologyGovernance() {
           </CardContent>
         </Card>
       </div>
+    </div>
+  );
+}
+
+/* ═════════════ Objects 去重视图 (ObjectType) ═════════════
+ *
+ * 后端 /api/ontology/objects 经常返回 100+ 个 ObjectType, 里面
+ * 客户/销售机会等业务对象因多次建模/NL 建模产生大量重复。
+ *
+ * 业务策略:
+ *   1. 实时扫描, 自动给重复 ObjectType 加红框 + "重复" 徽章
+ *   2. 顶部工具栏: 总数 / 重复数 / 去重按钮
+ *   3. 点「去重校验」打开 Dialog: 列出全部重复组, 用户选 target
+ *   4. 合并时调后端 deleteObjectType 删从记录, 调 listObjects 重新拉
+ *
+ * 去重算法 (3 个信号, 任一命中即归并):
+ *   1. name 归一化精确相同 (强, code-like 标识符)
+ *   2. label 归一化后双向包含 (中, 中文 UI 标签)
+ *   3. name 一个是另一个前缀 (弱, e.g. Customer ⊂ CustomerVip)
+ */
+function normalizeNameDedup(s: string): string {
+  return s
+    .replace(/[_-]/g, "")                // 下划线/连字符
+    .replace(/\s+/g, "")                  // 空格
+    .replace(/[()（）【】\[\]·,，.。]/g, "")  // 标点
+    .toLowerCase();
+}
+
+function findObjectDuplicates(objects: OntologyObject[]): { key: string; reason: string; members: OntologyObject[] }[] {
+  const groups: { key: string; reason: string; members: OntologyObject[] }[] = [];
+  const used = new Set<string>();
+
+  objects.forEach((a, i) => {
+    if (used.has(a.id)) return;
+    const group: OntologyObject[] = [a];
+    const reasons = new Set<string>();
+    const na = normalizeNameDedup(a.name || "");
+    const la = normalizeNameDedup(a.label || "");
+
+    objects.forEach((b, j) => {
+      if (j <= i || used.has(b.id)) return;
+      const nb = normalizeNameDedup(b.name || "");
+      const lb = normalizeNameDedup(b.label || "");
+
+      // 信号 1: name 精确相同
+      if (na && nb && na === nb) {
+        group.push(b);
+        reasons.add(`name 相同: "${a.name}" = "${b.name}"`);
+        return;
+      }
+      // 信号 2: label 双向包含
+      if (la && lb && (la.includes(lb) || lb.includes(la))) {
+        group.push(b);
+        reasons.add(`label 相似: "${a.label}" ≈ "${b.label}"`);
+        return;
+      }
+      // 信号 3: name 前缀包含 (排除完全相同)
+      if (na && nb && na !== nb && (na.includes(nb) || nb.includes(na)) && Math.min(na.length, nb.length) >= 4) {
+        group.push(b);
+        reasons.add(`name 包含: "${a.name}" ⊃ "${b.name}"`);
+      }
+    });
+
+    if (group.length > 1) {
+      group.forEach((g) => used.add(g.id));
+      groups.push({
+        key: `obj-grp-${a.id}`,
+        reason: [...reasons].join(" / "),
+        members: group,
+      });
+    }
+  });
+
+  return groups;
+}
+
+function ObjectsView({
+  objects,
+  onRescan,
+}: {
+  objects: OntologyObject[];
+  onRescan: () => void;
+}) {
+  const [dedupOpen, setDedupOpen] = useState(false);
+  const [targetPicks, setTargetPicks] = useState<Record<string, string>>({});
+  const [merging, setMerging] = useState(false);
+  const [mergeProgress, setMergeProgress] = useState<{ done: number; total: number; current: string } | null>(null);
+
+  // 本地 icon map (与 OntologyElement 内一致)
+  const iconMap: Record<string, React.ElementType> = {
+    Customer: User, Order: Package, Product: Tag, Employee: Users,
+    Contract: FileText, Invoice: Receipt,
+  };
+
+  const groups = useMemo(() => findObjectDuplicates(objects), [objects]);
+  const dupMemberIds = useMemo(() => {
+    const s = new Set<string>();
+    groups.forEach((g) => g.members.forEach((m) => s.add(m.id)));
+    return s;
+  }, [groups]);
+
+  // 找重复组里"看起来最权威"的当默认 target:
+  //   - properties_count 最多的 (有更多字段, 是后续用的那个)
+  //   - 多个并列: 取 status 为 active 的
+  function pickDefaultTarget(members: OntologyObject[]): string {
+    const sorted = [...members].sort((a, b) => {
+      if (a.status === "active" && b.status !== "active") return -1;
+      if (b.status === "active" && a.status !== "active") return 1;
+      return (b.properties_count || 0) - (a.properties_count || 0);
+    });
+    return sorted[0].id;
+  }
+
+  async function doMergeOne(group: { key: string; members: OntologyObject[] }): Promise<{ merged: number; failed: string[] }> {
+    const target = targetPicks[group.key] || pickDefaultTarget(group.members);
+    const toDelete = group.members.filter((m) => m.id !== target);
+    const failed: string[] = [];
+    for (const m of toDelete) {
+      try {
+        await ontologyApi.deleteObject(m.id);
+      } catch (e) {
+        failed.push(`${m.label || m.name} (${m.id}): ${(e as Error).message || "未知错误"}`);
+      }
+    }
+    return { merged: toDelete.length - failed.length, failed };
+  }
+
+  async function doMergeAll() {
+    if (merging) return;
+    setMerging(true);
+    const allFailed: string[] = [];
+    let totalMerged = 0;
+    for (let i = 0; i < groups.length; i++) {
+      const g = groups[i];
+      setMergeProgress({ done: i, total: groups.length, current: g.members.map((m) => m.label || m.name).join(" / ") });
+      const r = await doMergeOne(g);
+      totalMerged += r.merged;
+      allFailed.push(...r.failed);
+    }
+    setMergeProgress({ done: groups.length, total: groups.length, current: "" });
+    setMerging(false);
+    setTimeout(() => setMergeProgress(null), 1500);
+    onRescan();
+    if (allFailed.length > 0) {
+      alert(`合并完成: 成功 ${totalMerged} 条, 失败 ${allFailed.length} 条\n\n${allFailed.join("\n")}`);
+    } else {
+      alert(`✓ 合并完成: ${totalMerged} 条重复已删除`);
+    }
+  }
+
+  return (
+    <div className="space-y-3">
+      {/* 顶部工具栏 */}
+      <div className="flex items-center justify-between flex-wrap gap-2 p-3 rounded-lg border bg-muted/30">
+        <div className="flex items-center gap-3 text-sm">
+          <span className="text-muted-foreground">对象总数</span>
+          <span className="font-mono font-semibold text-lg tabular-nums">{objects.length}</span>
+          {groups.length > 0 && (
+            <>
+              <span className="text-muted-foreground">·</span>
+              <span className="text-amber-600 dark:text-amber-400">重复组</span>
+              <span className="font-mono font-semibold text-lg tabular-nums text-amber-600 dark:text-amber-400">{groups.length}</span>
+              <span className="text-amber-600 dark:text-amber-400 text-xs">({dupMemberIds.size} 条记录)</span>
+            </>
+          )}
+        </div>
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" onClick={onRescan}>
+            <Search className="size-3.5 mr-1" /> 重新拉取
+          </Button>
+          <Button
+            size="sm"
+            variant={groups.length > 0 ? "default" : "outline"}
+            onClick={() => setDedupOpen(true)}
+            disabled={groups.length === 0}
+          >
+            <ShieldCheck className="size-3.5 mr-1" />
+            去重校验 {groups.length > 0 && `(${groups.length})`}
+          </Button>
+        </div>
+      </div>
+
+      {/* 合并进度条 */}
+      {mergeProgress && (
+        <div className="p-3 rounded-lg border border-primary bg-primary/5 text-sm">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="font-medium">
+              {mergeProgress.done < mergeProgress.total
+                ? `正在合并: ${mergeProgress.current}`
+                : "✓ 合并完成"}
+            </span>
+            <span className="font-mono text-xs tabular-nums">
+              {mergeProgress.done} / {mergeProgress.total}
+            </span>
+          </div>
+          <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden">
+            <div
+              className="bg-primary h-1.5 rounded-full transition-all"
+              style={{ width: `${(mergeProgress.done / mergeProgress.total) * 100}%` }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* 对象网格 (重复的加红框) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {objects.length === 0 && (
+          <div className="col-span-full text-center py-8 text-muted-foreground">加载中...</div>
+        )}
+        {objects.map((o) => {
+          const ObjIcon = iconMap[o.name] || Box;
+          const isDup = dupMemberIds.has(o.id);
+          return (
+            <Card
+              key={o.id}
+              className={`cursor-pointer hover:border-primary ${
+                isDup ? "border-amber-300 dark:border-amber-800 bg-amber-50/30 dark:bg-amber-950/10" : ""
+              }`}
+            >
+              <CardHeader>
+                <div className="flex items-start justify-between">
+                  <span className="text-3xl"><ObjIcon className="size-8" /></span>
+                  <div className="flex items-center gap-1">
+                    {isDup && (
+                      <Badge variant="secondary" className="bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400 border-0 text-[10px]">
+                        重复
+                      </Badge>
+                    )}
+                    <Badge variant="secondary">{o.properties_count} 属性</Badge>
+                  </div>
+                </div>
+                <CardTitle className="text-base mt-2">{o.label}</CardTitle>
+                <CardDescription className="font-mono">{o.name}</CardDescription>
+                {isDup && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-6 px-2 text-[10px] mt-1 self-start"
+                    onClick={() => setDedupOpen(true)}
+                  >
+                    查看重复 →
+                  </Button>
+                )}
+              </CardHeader>
+            </Card>
+          );
+        })}
+      </div>
+
+      {/* 去重 Dialog */}
+      <Dialog open={dedupOpen} onOpenChange={setDedupOpen}>
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ShieldCheck className="size-5" />
+              对象去重校验
+            </DialogTitle>
+            <DialogDescription>
+              检测到 <span className="font-semibold text-amber-600">{groups.length}</span> 组重复,
+              涉及 <span className="font-semibold">{dupMemberIds.size}</span> 条 ObjectType。
+              选 target (主记录) 后, 其他会被后端删除 (后端: <code className="text-[10px] bg-muted px-1 rounded">DELETE /api/object-types/:id</code>)。
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3 my-2">
+            {groups.map((g) => {
+              const targetId = targetPicks[g.key] || pickDefaultTarget(g.members);
+              const target = g.members.find((m) => m.id === targetId)!;
+              const toDelete = g.members.filter((m) => m.id !== targetId);
+              return (
+                <div key={g.key} className="p-3 rounded-lg border bg-card">
+                  <div className="flex items-center gap-2 mb-2">
+                    <AlertOctagon className="size-4 text-amber-500" />
+                    <span className="text-sm font-semibold">重复组 ({g.members.length} 条)</span>
+                    <Badge variant="outline" className="text-[10px]">主记录: {target.label}</Badge>
+                  </div>
+                  <div className="text-[11px] text-muted-foreground mb-2 px-1">
+                    重复信号: {g.reason}
+                  </div>
+                  <div className="space-y-1.5">
+                    {g.members.map((m) => {
+                      const isTarget = targetId === m.id;
+                      return (
+                        <label
+                          key={m.id}
+                          className={`flex items-center gap-3 p-2 rounded-md border cursor-pointer transition-colors ${
+                            isTarget ? "border-primary bg-primary/5" : "bg-muted/20 hover:bg-muted/40"
+                          }`}
+                        >
+                          <input
+                            type="radio"
+                            name={`target-${g.key}`}
+                            checked={isTarget}
+                            onChange={() => setTargetPicks((prev) => ({ ...prev, [g.key]: m.id }))}
+                            className="size-3.5 accent-primary shrink-0"
+                          />
+                          <div className="size-7 rounded-md bg-gradient-to-br from-primary to-primary/60 text-primary-foreground flex items-center justify-center text-[10px] font-mono shrink-0">
+                            {m.name?.[0]?.toUpperCase() || "?"}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm font-medium truncate">{m.label}</div>
+                            <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground flex-wrap">
+                              <code className="font-mono">{m.name}</code>
+                              <span>·</span>
+                              <span>{m.properties_count} 属性</span>
+                              <span>·</span>
+                              <span>{m.actions_count} 动作</span>
+                              <span>·</span>
+                              <span>{m.rules_count} 规则</span>
+                              <Badge
+                                variant={m.status === "active" ? "default" : "outline"}
+                                className="text-[9px] h-3.5 px-1"
+                              >
+                                {m.status}
+                              </Badge>
+                            </div>
+                          </div>
+                          {isTarget && (
+                            <Badge variant="default" className="text-[9px] h-4 px-1 shrink-0">主记录</Badge>
+                          )}
+                          {!isTarget && (
+                            <Trash2 className="size-3.5 text-red-500 shrink-0" />
+                          )}
+                        </label>
+                      );
+                    })}
+                  </div>
+                  <div className="mt-2 text-[10px] text-muted-foreground px-1">
+                    将删除: <span className="font-mono text-red-600 dark:text-red-400">{toDelete.length} 条</span>
+                    {toDelete.length > 0 && (
+                      <> ({toDelete.map((d) => d.label).join(" / ")})</>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setDedupOpen(false)} disabled={merging}>
+              取消
+            </Button>
+            <Button onClick={doMergeAll} disabled={merging || groups.length === 0}>
+              {merging ? (
+                <><Activity className="size-3.5 mr-1 animate-pulse" /> 合并中...</>
+              ) : (
+                <><GitMerge className="size-3.5 mr-1" /> 一键合并 {groups.length} 组</>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
