@@ -37,20 +37,35 @@ function formatTime() {
   return `${d.getHours().toString().padStart(2, "0")}:${d.getMinutes().toString().padStart(2, "0")}`;
 }
 
-/** 数字员工圆头像 (24/32/40px) */
+/** 数字员工头像 (两端半圆矩形 pill shape, 24/28/32/44/56px)
+ *  - 不是纯圆, 是长方形两端半圆
+ *  - 头像 emoji 居中, 在线点放右上
+ *  - 宽 = 高 * 1.15, 圆角 = 高 / 2 (半圆)
+ */
 export function EmployeeAvatar({ avatar, size = 32, online = true, empId }: { avatar: string; size?: number; online?: boolean; empId?: string }) {
-  const px = `${size}px`;
+  const h = size;
+  const w = Math.round(size * 1.15);
   return (
     <div
-      className="relative rounded-full bg-gradient-to-br from-primary/20 to-primary/5 border-2 border-white dark:border-slate-800 shadow-sm flex items-center justify-center shrink-0"
-      style={{ width: px, height: px, fontSize: size * 0.5 }}
+      className="relative bg-gradient-to-br from-primary/20 to-primary/5 border-2 border-white dark:border-slate-800 shadow-sm flex items-center justify-center shrink-0"
+      style={{
+        width: `${w}px`,
+        height: `${h}px`,
+        borderRadius: `${h / 2}px`, // 两端半圆
+        fontSize: Math.round(size * 0.5),
+      }}
       title={empId ? `工号 ${empId}` : undefined}
     >
       <span style={{ lineHeight: 1 }}>{avatar}</span>
       {online && (
         <span
-          className="absolute -bottom-0 -right-0 rounded-full bg-green-500 border-2 border-white dark:border-slate-800 animate-pulse"
-          style={{ width: Math.max(6, size * 0.28), height: Math.max(6, size * 0.28) }}
+          className="absolute rounded-full bg-green-500 border-2 border-white dark:border-slate-800 animate-pulse"
+          style={{
+            width: Math.max(6, size * 0.28),
+            height: Math.max(6, size * 0.28),
+            top: -1,
+            right: -1,
+          }}
         />
       )}
     </div>
@@ -174,7 +189,7 @@ export function DigitalEmployee() {
     return null;
   }
 
-  // 关闭态: 右下角圆头像 + 在线点 + 名字
+  // 关闭态: 右下角两端半圆矩形头像 + 名字标签
   if (!isOpen) {
     return (
       <div className="fixed bottom-6 right-6 z-50 flex items-end gap-3 group">
@@ -184,16 +199,20 @@ export function DigitalEmployee() {
           <span className="font-medium">{employee.name}</span>
           <span className="text-muted-foreground text-[10px]">工号 {employee.empId}</span>
         </div>
-        {/* 数字员工圆头像 */}
+        {/* 数字员工半圆矩形头像按钮 */}
         <button
           onClick={() => setIsOpen(true)}
-          className="relative group/btn"
+          className="relative group/btn flex items-center gap-2 bg-white/95 dark:bg-slate-900/95 border-2 border-primary/20 hover:border-primary/50 shadow-lg hover:shadow-xl pl-1.5 pr-3 py-1.5 transition-all hover:scale-105"
+          style={{
+            borderRadius: "9999px", // pill
+            height: "56px",
+          }}
           title={`呼叫 ${employee.name}`}
         >
-          <EmployeeAvatar avatar={employee.avatar} size={56} empId={employee.empId} />
-          {/* 拨出角标 */}
-          <div className="absolute -bottom-1 -right-1 size-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-md group-hover/btn:scale-110 transition-transform">
-            <MessageCircle className="size-3" />
+          <EmployeeAvatar avatar={employee.avatar} size={40} empId={employee.empId} />
+          <div className="flex flex-col items-start min-w-0">
+            <span className="text-xs font-semibold leading-tight whitespace-nowrap">{employee.name}</span>
+            <span className="text-[10px] text-muted-foreground leading-tight whitespace-nowrap">{employee.empId} · {employee.role}</span>
           </div>
         </button>
       </div>
