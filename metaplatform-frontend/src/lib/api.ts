@@ -377,6 +377,8 @@ export const ontologyApi = {
       method: "POST",
       body: JSON.stringify(data),
     }),
+  deleteRelation: (id: string) =>
+    request<{ deleted: string }>(`/ontology/relations/${id}`, { method: "DELETE" }),
 
   // Actions
   listActions: (objectId?: string) => {

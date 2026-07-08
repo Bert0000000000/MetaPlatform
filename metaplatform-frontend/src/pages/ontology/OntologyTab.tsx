@@ -343,6 +343,10 @@ export function OntologyLinks() {
   const [inferring, setInferring] = useState(false);
   const [inferred, setInferred] = useState<InferredRel[]>([]);
   const [inferLog, setInferLog] = useState<string[]>([]);
+  // 去重 (按 source|target 同对去重)
+  const [dedupOpen, setDedupOpen] = useState(false);
+  const [dedupPicks, setDedupPicks] = useState<Record<string, string>>({});
+  const [dedupProgress, setDedupProgress] = useState<{ done: number; total: number; current: string } | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -545,12 +549,93 @@ export function OntologyLinks() {
     }
   }
 
+  // ════════════════════════════════════════════════════════════════════
+  // 去重: 同 (source_object_id, target_object_id) 多条关系视为重复
+  // 默认保留 type 描述最丰富 (description 最长) 或 id 最前
+  // ════════════════════════════════════════════════════════════════════
+  const dedupGroups = useMemo(() => {
+    const map = new Map<string, OntologyRelation[]>();
+    links.forEach((l) => {
+      const k = `${l.source_object_id}|${l.target_object_id}`;
+      if (!map.has(k)) map.set(k, []);
+      map.get(k)!.push(l);
+    });
+    const groups: { key: string; reason: string; members: OntologyRelation[] }[] = [];
+    map.forEach((members, key) => {
+      if (members.length > 1) {
+        groups.push({
+          key,
+          reason: `源 → 目标 相同, 共 ${members.length} 条 (id 唯一, 业务重复)`,
+          members,
+        });
+      }
+    });
+    return groups.sort((a, b) => b.members.length - a.members.length);
+  }, [links]);
+
+  const dedupMemberIds = useMemo(() => {
+    const s = new Set<string>();
+    dedupGroups.forEach((g) => g.members.forEach((m) => s.add(m.id)));
+    return s;
+  }, [dedupGroups]);
+
+  // 去重时默认保留 (description 长 / id 早)
+  function pickDefaultKeeper(members: OntologyRelation[]): string {
+    return [...members].sort((a, b) => {
+      const da = (a.description || "").length;
+      const db = (b.description || "").length;
+      if (db !== da) return db - da;
+      return a.id.localeCompare(b.id);
+    })[0].id;
+  }
+
+  async function handleDedupOne(group: { key: string; members: OntologyRelation[] }): Promise<{ removed: number; failed: string[] }> {
+    const keep = dedupPicks[group.key] || pickDefaultKeeper(group.members);
+    const toDelete = group.members.filter((m) => m.id !== keep);
+    const failed: string[] = [];
+    for (const m of toDelete) {
+      try {
+        await ontologyApi.deleteRelation(m.id);
+      } catch (e) {
+        failed.push(`${idToLabelForRel(m)} (${m.id.slice(0, 8)}): ${(e as Error).message || "未知错误"}`);
+      }
+    }
+    return { removed: toDelete.length - failed.length, failed };
+  }
+
+  async function handleDedupAll() {
+    if (dedupProgress) return;
+    const allFailed: string[] = [];
+    let total = 0;
+    for (let i = 0; i < dedupGroups.length; i++) {
+      const g = dedupGroups[i];
+      setDedupProgress({
+        done: i,
+        total: dedupGroups.length,
+        current: g.members.map((m) => idToLabelForRel(m)).join(" / "),
+      });
+      const r = await handleDedupOne(g);
+      total += r.removed;
+      allFailed.push(...r.failed);
+    }
+    setDedupProgress({ done: dedupGroups.length, total: dedupGroups.length, current: "" });
+    setTimeout(() => setDedupProgress(null), 1500);
+    await load();
+    if (allFailed.length > 0) {
+      alert(`去重完成: 删除 ${total} 条, 失败 ${allFailed.length} 条\n\n${allFailed.join("\n")}`);
+    }
+  }
+
   // 把 id 转成 label
   const idToLabel = useMemo(() => {
     const m: Record<string, string> = {};
     objects.forEach((o) => { m[o.id] = o.label || o.name; });
     return m;
   }, [objects]);
+
+  function idToLabelForRel(l: OntologyRelation) {
+    return `${idToLabel[l.source_object_id] || l.source_object_id.slice(0, 8)}→${idToLabel[l.target_object_id] || l.target_object_id.slice(0, 8)}`;
+  }
 
   return (
     <div className="flex flex-col gap-6 p-6">
@@ -587,6 +672,14 @@ export function OntologyLinks() {
             <span className="font-mono font-semibold tabular-nums">{objects.length}</span>
           </>
         )}
+        {dedupGroups.length > 0 && (
+          <>
+            <span className="text-muted-foreground">·</span>
+            <span className="text-amber-600 dark:text-amber-400">重复组</span>
+            <span className="font-mono font-semibold text-amber-600 dark:text-amber-400 tabular-nums">{dedupGroups.length}</span>
+            <span className="text-amber-600 dark:text-amber-400 text-xs">({dedupMemberIds.size} 条)</span>
+          </>
+        )}
         {inferred.length > 0 && (
           <>
             <span className="text-muted-foreground">·</span>
@@ -595,11 +688,38 @@ export function OntologyLinks() {
           </>
         )}
         <div className="ml-auto flex gap-2">
+          {dedupGroups.length > 0 && (
+            <Button size="sm" variant="destructive" onClick={() => setDedupOpen(true)}>
+              <ShieldCheck className="size-3.5 mr-1" /> 去重 ({dedupGroups.length})
+            </Button>
+          )}
           <Button size="sm" variant="outline" onClick={load}>
             <RotateCcw className="size-3.5 mr-1" /> 重新拉取
           </Button>
         </div>
       </div>
+
+      {/* 去重进度条 */}
+      {dedupProgress && (
+        <div className="p-3 rounded-lg border border-amber-500 bg-amber-50/30 dark:bg-amber-950/10 text-sm">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="font-medium">
+              {dedupProgress.done < dedupProgress.total
+                ? `正在去重: ${dedupProgress.current}`
+                : "✓ 去重完成"}
+            </span>
+            <span className="font-mono text-xs tabular-nums">
+              {dedupProgress.done} / {dedupProgress.total}
+            </span>
+          </div>
+          <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden">
+            <div
+              className="bg-amber-500 h-1.5 rounded-full transition-all"
+              style={{ width: `${(dedupProgress.done / dedupProgress.total) * 100}%` }}
+            />
+          </div>
+        </div>
+      )}
 
       {/* AI 推断 Card */}
       {aiSuggestOpen && (
@@ -745,13 +865,23 @@ export function OntologyLinks() {
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
             <Link2 className="size-4" /> 关系列表
+            {dedupGroups.length > 0 && (
+              <Badge variant="secondary" className="bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400 border-0 text-[10px]">
+                {dedupGroups.length} 组重复
+              </Badge>
+            )}
           </CardTitle>
-          <CardDescription>{links.length} 条关系定义</CardDescription>
+          <CardDescription>
+            {links.length} 条关系定义
+            {dedupGroups.length > 0 && ` · ${dedupGroups.length} 组 source→target 重复`}
+          </CardDescription>
         </CardHeader>
         <CardContent className="p-0">
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>唯一 ID</TableHead>
+                <TableHead>Code</TableHead>
                 <TableHead>关系名</TableHead>
                 <TableHead>源对象</TableHead>
                 <TableHead>类型</TableHead>
@@ -762,36 +892,192 @@ export function OntologyLinks() {
             </TableHeader>
             <TableBody>
               {loading && (
-                <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                   <Loader2 className="size-4 animate-spin inline mr-1" />加载中...
                 </TableCell></TableRow>
               )}
               {!loading && links.length === 0 && (
-                <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">暂无关系数据 — 点「AI 推断关系」可自动生成</TableCell></TableRow>
+                <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">暂无关系数据 — 点「AI 推断关系」可自动生成</TableCell></TableRow>
               )}
-              {!loading && links.map((l) => (
-                <TableRow key={l.id}>
-                  <TableCell className="font-medium">{l.label || l.type}</TableCell>
-                  <TableCell>
-                    <Badge variant="secondary">{idToLabel[l.source_object_id] || l.source_object_id.slice(0, 8) + "…"}</Badge>
-                  </TableCell>
-                  <TableCell><Badge variant="outline">{l.type}</Badge></TableCell>
-                  <TableCell>
-                    <Badge variant="secondary">{idToLabel[l.target_object_id] || l.target_object_id.slice(0, 8) + "…"}</Badge>
-                  </TableCell>
-                  <TableCell className="text-xs text-muted-foreground max-w-[280px] truncate" title={l.description || ""}>
-                    {l.description || "-"}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button variant="ghost" size="icon" className="size-8"><Eye className="size-4" /></Button>
-                    <Button variant="ghost" size="icon" className="size-8"><Edit className="size-4" /></Button>
-                  </TableCell>
-                </TableRow>
-              ))}
+              {!loading && links.map((l) => {
+                const isDup = dedupMemberIds.has(l.id);
+                return (
+                  <TableRow
+                    key={l.id}
+                    className={isDup ? "bg-amber-50/40 dark:bg-amber-950/10 hover:bg-amber-50/60" : ""}
+                  >
+                    <TableCell className="font-mono text-[10px] max-w-[180px]">
+                      <div className="flex items-center gap-1">
+                        <Hash className="size-3 text-muted-foreground shrink-0" />
+                        <span className="truncate" title={l.id}>{l.id}</span>
+                        <button
+                          type="button"
+                          onClick={() => navigator.clipboard?.writeText(l.id)}
+                          className="size-5 rounded hover:bg-muted flex items-center justify-center shrink-0"
+                          title={`复制 ID: ${l.id}`}
+                        >
+                          <Copy className="size-3 text-muted-foreground" />
+                        </button>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {l.type ? (
+                        <div className="flex items-center gap-1">
+                          <code
+                            className="font-mono text-xs px-1.5 py-0.5 rounded bg-muted text-foreground/80"
+                            title={l.type}
+                          >
+                            {l.type.length > 8 ? l.type.slice(0, 8) + "…" : l.type}
+                          </code>
+                          <button
+                            type="button"
+                            onClick={() => navigator.clipboard?.writeText(l.type)}
+                            className="size-5 rounded hover:bg-muted flex items-center justify-center shrink-0"
+                            title={`复制 Code: ${l.type}`}
+                          >
+                            <Copy className="size-3 text-muted-foreground" />
+                          </button>
+                          {isDup && (
+                            <Badge variant="destructive" className="text-[9px] h-4 px-1">重复</Badge>
+                          )}
+                        </div>
+                      ) : "-"}
+                    </TableCell>
+                    <TableCell className="font-medium">{l.label || l.type}</TableCell>
+                    <TableCell>
+                      <Badge variant="secondary">{idToLabel[l.source_object_id] || l.source_object_id.slice(0, 8) + "…"}</Badge>
+                    </TableCell>
+                    <TableCell><Badge variant="outline">{l.type}</Badge></TableCell>
+                    <TableCell>
+                      <Badge variant="secondary">{idToLabel[l.target_object_id] || l.target_object_id.slice(0, 8) + "…"}</Badge>
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground max-w-[200px] truncate" title={l.description || ""}>
+                      {l.description || "-"}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button variant="ghost" size="icon" className="size-8" title="查看"><Eye className="size-4" /></Button>
+                      <Button variant="ghost" size="icon" className="size-8" title="编辑"><Edit className="size-4" /></Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-8 text-red-500 hover:text-red-600"
+                        title="删除"
+                        onClick={async () => {
+                          if (confirm(`确定删除关系「${l.label || l.type}」?`)) {
+                            try {
+                              await ontologyApi.deleteRelation(l.id);
+                              await load();
+                            } catch (e) {
+                              alert("删除失败: " + ((e as Error).message || "未知"));
+                            }
+                          }
+                        }}
+                      >
+                        <Trash2 className="size-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </CardContent>
       </Card>
+
+      {/* 去重 Dialog */}
+      <Dialog open={dedupOpen} onOpenChange={setDedupOpen}>
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ShieldCheck className="size-5" />
+              关系去重
+            </DialogTitle>
+            <DialogDescription>
+              检测到 <span className="font-semibold text-amber-600">{dedupGroups.length}</span> 组重复
+              (源→目标 相同的多条关系, 唯一 ID 不同),
+              涉及 <span className="font-semibold">{dedupMemberIds.size}</span> 条 Relation。
+              选 keep (主记录) 后, 其他会被后端删除
+              (<code className="text-[10px] bg-muted px-1 rounded">DELETE /api/ontology/relations/:id</code>)。
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3 my-2">
+            {dedupGroups.map((g) => {
+              const keepId = dedupPicks[g.key] || pickDefaultKeeper(g.members);
+              const keep = g.members.find((m) => m.id === keepId)!;
+              const toDelete = g.members.filter((m) => m.id !== keepId);
+              return (
+                <div key={g.key} className="p-3 rounded-lg border bg-card">
+                  <div className="flex items-center gap-2 mb-2">
+                    <AlertOctagon className="size-4 text-amber-500" />
+                    <span className="text-sm font-semibold">重复组 ({g.members.length} 条)</span>
+                    <Badge variant="outline" className="text-[10px]">
+                      主记录: {idToLabel[keep.source_object_id] || "?"} → {idToLabel[keep.target_object_id] || "?"}
+                    </Badge>
+                  </div>
+                  <div className="text-[11px] text-muted-foreground mb-2 px-1">
+                    {g.reason}
+                  </div>
+                  <div className="space-y-1.5">
+                    {g.members.map((m) => {
+                      const isKeep = keepId === m.id;
+                      return (
+                        <label
+                          key={m.id}
+                          className={`flex items-center gap-3 p-2 rounded-md border cursor-pointer transition-colors ${
+                            isKeep ? "border-primary bg-primary/5" : "bg-muted/20 hover:bg-muted/40"
+                          }`}
+                        >
+                          <input
+                            type="radio"
+                            name={`dedup-${g.key}`}
+                            checked={isKeep}
+                            onChange={() => setDedupPicks((prev) => ({ ...prev, [g.key]: m.id }))}
+                            className="size-3.5 accent-primary shrink-0"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <code className="font-mono text-[10px] text-muted-foreground truncate" title={m.id}>
+                                {m.id.slice(0, 8)}…
+                              </code>
+                              <Badge variant="secondary" className="text-[10px] h-4 px-1">{m.type}</Badge>
+                              {m.label && <span className="text-xs">{m.label}</span>}
+                            </div>
+                            {m.description && (
+                              <p className="text-[10px] text-muted-foreground mt-0.5 truncate" title={m.description}>
+                                {m.description}
+                              </p>
+                            )}
+                          </div>
+                          {isKeep ? (
+                            <Badge variant="default" className="text-[9px] h-4 px-1 shrink-0">主记录</Badge>
+                          ) : (
+                            <Trash2 className="size-3.5 text-red-500 shrink-0" />
+                          )}
+                        </label>
+                      );
+                    })}
+                  </div>
+                  <div className="mt-2 text-[10px] text-muted-foreground px-1">
+                    将删除: <span className="font-mono text-red-600 dark:text-red-400">{toDelete.length} 条</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setDedupOpen(false)} disabled={!!dedupProgress}>取消</Button>
+            <Button variant="destructive" onClick={handleDedupAll} disabled={!!dedupProgress || dedupGroups.length === 0}>
+              {dedupProgress ? (
+                <><Activity className="size-3.5 mr-1 animate-pulse" /> 去重中...</>
+              ) : (
+                <><GitMerge className="size-3.5 mr-1" /> 一键去重 {dedupGroups.length} 组</>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
