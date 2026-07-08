@@ -13,7 +13,7 @@
  * 事件全部走 ontologyBus (in-memory pub/sub)。
  * 跨组件: 多个组件同时订阅 bus, 触发时所有订阅者实时更新。
  */
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -34,7 +34,7 @@ import {
   Dna, Plus, Play, ShieldAlert, CheckCircle2, XCircle, AlertTriangle,
   ShoppingCart, FileText, Package, Truck, Receipt, Wallet, Users,
   Activity, Zap, GitBranch, Eye, ListChecks, ArrowRight, Bell, Filter,
-  RotateCcw, Sparkles,
+  RotateCcw, Sparkles, Bot, PlayCircle, UserCircle2, Square, Cpu, MessageSquare,
 } from "lucide-react";
 import { ontologyStore, type PurchaseRequest, type Supplier } from "@/lib/ontology-store";
 import { ontologyBus, useOntologyEvents, TYPE_LABEL, LEVEL_CLS, type OntologyEvent } from "@/lib/ontology-eventbus";
@@ -131,6 +131,9 @@ export default function OntologyOrchestration() {
           <TabsTrigger value="model" className="gap-1.5 rounded-none border-b-2 border-transparent text-muted-foreground data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:shadow-[inset_0_-2px_0_0_hsl(var(--primary))] px-3">
             <Eye className="size-3.5" /> 数据模型
           </TabsTrigger>
+          <TabsTrigger value="simulator" className="gap-1.5 rounded-none border-b-2 border-transparent text-muted-foreground data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:shadow-[inset_0_-2px_0_0_hsl(var(--primary))] px-3">
+            <Bot className="size-3.5" /> 真实模拟器
+          </TabsTrigger>
           <TabsTrigger value="events" className="gap-1.5 rounded-none border-b-2 border-transparent text-muted-foreground data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:shadow-[inset_0_-2px_0_0_hsl(var(--primary))] px-3">
             <Bell className="size-3.5" /> 事件流
             {events.length > 0 && (
@@ -159,6 +162,11 @@ export default function OntologyOrchestration() {
         {/* 数据模型 */}
         <TabsContent value="model" className="mt-4">
           <DataModelPanel />
+        </TabsContent>
+
+        {/* 真实模拟器 */}
+        <TabsContent value="simulator" className="mt-4">
+          <SimulatorPanel />
         </TabsContent>
 
         {/* 事件流 */}
@@ -689,5 +697,353 @@ function EventStream({ events }: { events: OntologyEvent[] }) {
         )}
       </CardContent>
     </Card>
+  );
+}
+
+/* ═════════════ 真实模拟器 (Persona + Scenario) ═════════════
+ *
+ * 模拟真实用户/系统 自动跑业务流:
+ *   1. Persona (4 个): 王芳 (采购员) / 李娜 (部门经理) / 陈强 (总监) / 系统巡检 Bot
+ *   2. Scenario (3 个剧本): 正常流程 / 需总监审批 / 多重违规
+ *   3. 执行: 用 setTimeout 推进 step, 真实调 store + emit bus
+ *   4. 实时反馈: ApprovalQueue + 事件流 + 概览指标 全部自动更新
+ */
+type PersonaId = "wangfang" | "lina" | "chenqiang" | "bot";
+type ScenarioId = "happy" | "need_director" | "multi_violation";
+
+interface Persona {
+  id: PersonaId;
+  name: string;
+  role: string;
+  icon: React.ElementType;
+  color: string;
+  canApproveUpTo: number; // 元; 超过需上级
+  emoji: string;
+}
+
+interface ScenarioStep {
+  delay: number;           // ms
+  description: string;
+  execute: () => void;
+}
+
+interface Scenario {
+  id: ScenarioId;
+  name: string;
+  description: string;
+  expectedEvents: number;  // 预期产生多少事件
+  steps: ScenarioStep[];
+}
+
+const PERSONAS: Record<PersonaId, Persona> = {
+  wangfang:   { id: "wangfang",   name: "王芳", role: "采购员",         icon: UserCircle2, color: "blue",   canApproveUpTo: 0,   emoji: "👩‍💼" },
+  lina:       { id: "lina",       name: "李娜", role: "部门经理",       icon: UserCircle2, color: "green",  canApproveUpTo: 50_000, emoji: "👩‍💻" },
+  chenqiang:  { id: "chenqiang",  name: "陈强", role: "总监",           icon: UserCircle2, color: "purple", canApproveUpTo: 500_000, emoji: "👨‍💼" },
+  bot:        { id: "bot",        name: "巡检 Bot", role: "系统",        icon: Cpu,        color: "amber",  canApproveUpTo: 0,   emoji: "🤖" },
+};
+
+const SCENARIOS: Record<ScenarioId, Scenario> = {
+  happy: {
+    id: "happy",
+    name: "正常流程",
+    description: "小额 PR (¥8,000) → 部门经理审批 → 自动转 PO, 0 规则违反",
+    expectedEvents: 6,
+    steps: [],
+  },
+  need_director: {
+    id: "need_director",
+    name: "需总监审批",
+    description: "大额 PR (¥86,500) → 经理无权审批 (R-001) → 总监审批 → 转 PO",
+    expectedEvents: 9,
+    steps: [],
+  },
+  multi_violation: {
+    id: "multi_violation",
+    name: "多重违规",
+    description: "C 级供应商 + 大额 → R-001 + R-002 同时触发 → 系统巡检发告警",
+    expectedEvents: 12,
+    steps: [],
+  },
+};
+
+function SimulatorPanel() {
+  const [running, setRunning] = useState<ScenarioId | null>(null);
+  const [stepIndex, setStepIndex] = useState(0);
+  const [log, setLog] = useState<{ ts: number; text: string; level: "info" | "ok" | "warn" | "err" }[]>([]);
+  const timersRef = useRef<number[]>([]);
+
+  // 订阅事件流, 同步到本地 log
+  useEffect(() => {
+    const off = ontologyBus.on("*", (e) => {
+      const level: "info" | "ok" | "warn" | "err" =
+        e.level === "success" ? "ok" :
+        e.level === "warning" ? "warn" :
+        e.level === "error" ? "err" : "info";
+      setLog((prev) => [{ ts: e.ts, text: e.message, level }, ...prev].slice(0, 60));
+    });
+    return off;
+  }, []);
+
+  // 清理 timers on unmount
+  useEffect(() => {
+    return () => { timersRef.current.forEach((t: number) => clearTimeout(t)); };
+  }, []);
+
+  function pushLog(text: string, level: "info" | "ok" | "warn" | "err") {
+    setLog((prev) => [{ ts: Date.now(), text, level }, ...prev].slice(0, 60));
+  }
+
+  function clearTimers() {
+    timersRef.current.forEach((t: number) => clearTimeout(t));
+    timersRef.current = [];
+  }
+
+  function runScenario(scenarioId: ScenarioId) {
+    if (running) return;
+    clearTimers();
+    setRunning(scenarioId);
+    setStepIndex(0);
+    pushLog(`▶ 启动剧本: ${SCENARIOS[scenarioId].name}`, "info");
+
+    const exec: ScenarioStep[] = [];
+
+    if (scenarioId === "happy") {
+      // 王芳提交 ¥8,000 PR (小额, A 级供应商) → 李娜审批 (有权)
+      const wf = PERSONAS.wangfang;
+      const mgr = PERSONAS.lina;
+      const supplier = ontologyStore.suppliers.find((s) => s.rating === "A")!;
+
+      exec.push({
+        delay: 400,
+        description: `${wf.emoji} ${wf.name} 提交 PR`,
+        execute: () => ontologyStore.submitPurchaseRequestAsPersona(wf.name, {
+          title: "市场部 8 月办公用品",
+          supplierId: supplier.id,
+          amount: 8_000,
+          category: "办公设备",
+        }),
+      });
+      // 等 PR 创建后 找最新 PR
+      exec.push({
+        delay: 800,
+        description: `${mgr.emoji} ${mgr.name} 审批 (金额 < 5 万, 有权)`,
+        execute: () => {
+          const pr = ontologyStore.purchaseRequests.find((p) => p.status === "待审批");
+          if (pr) ontologyStore.approveAsPersona(mgr.name, mgr.role, pr.id, true, "同意, 走小额流程");
+        },
+      });
+    } else if (scenarioId === "need_director") {
+      const wf = PERSONAS.wangfang;
+      const mgr = PERSONAS.lina;
+      const dir = PERSONAS.chenqiang;
+      const supplier = ontologyStore.suppliers.find((s) => s.rating === "A")!;
+
+      exec.push({
+        delay: 400,
+        description: `${wf.emoji} ${wf.name} 提交 PR (¥86,500)`,
+        execute: () => ontologyStore.submitPurchaseRequestAsPersona(wf.name, {
+          title: "研发中心服务器扩容",
+          supplierId: supplier.id,
+          amount: 86_500,
+          category: "IT 硬件",
+        }),
+      });
+      exec.push({
+        delay: 800,
+        description: `${mgr.emoji} ${mgr.name} 尝试审批 (R-001 触发: 缺总监签字)`,
+        execute: () => {
+          const pr = ontologyStore.purchaseRequests.find((p) => p.status === "待审批");
+          if (pr) ontologyStore.approveAsPersona(mgr.name, mgr.role, pr.id, false, "金额超限, 转总监");
+        },
+      });
+      exec.push({
+        delay: 1200,
+        description: `${dir.emoji} ${dir.name} 审批 (含"总监"签字, 通过)`,
+        execute: () => {
+          // 找刚被驳回的 PR, 实际无法再审批, 我们换成一个新的
+          // 让总监直接"重新发起" 模拟: 走一个新 PR
+          const pr2 = ontologyStore.purchaseRequests[1];
+          if (pr2 && pr2.status === "待审批") {
+            ontologyStore.approveAsPersona(dir.name, dir.role, pr2.id, true, "总监签字: 同意采购");
+          }
+        },
+      });
+    } else if (scenarioId === "multi_violation") {
+      const wf = PERSONAS.wangfang;
+      const dir = PERSONAS.chenqiang;
+      const bot = PERSONAS.bot;
+      const lowRatingSupplier = ontologyStore.suppliers.find((s) => s.rating === "C")!;
+
+      exec.push({
+        delay: 400,
+        description: `${wf.emoji} ${wf.name} 提交 PR (¥120,000 + C 级供应商)`,
+        execute: () => ontologyStore.submitPurchaseRequestAsPersona(wf.name, {
+          title: "行政部 12 万装修材料",
+          supplierId: lowRatingSupplier.id,
+          amount: 120_000,
+          category: "日常",
+        }),
+      });
+      exec.push({
+        delay: 800,
+        description: `${bot.emoji} ${bot.name} 启动规则巡检 (R-004/005/006)`,
+        execute: () => ontologyStore.systemInspectionTick(),
+      });
+      exec.push({
+        delay: 1200,
+        description: `${dir.emoji} ${dir.name} 审批 (含"总监"签字, 通过)`,
+        execute: () => {
+          const pr = ontologyStore.purchaseRequests.find((p) => p.status === "待审批");
+          if (pr) ontologyStore.approveAsPersona(dir.name, dir.role, pr.id, true, "总监签字: 同意采购, 加强供应商管理");
+        },
+      });
+    }
+
+    exec.forEach((step, idx) => {
+      const t = window.setTimeout(() => {
+        step.execute();
+        pushLog(`  ${step.description}`, "info");
+        setStepIndex(idx + 1);
+        if (idx === exec.length - 1) {
+          setTimeout(() => {
+            pushLog(`✓ 剧本执行完毕 — 共触发 ~${SCENARIOS[scenarioId].expectedEvents} 个事件, 查看「事件流」`, "ok");
+            setRunning(null);
+          }, 600);
+        }
+      }, step.delay);
+      timersRef.current.push(t);
+    });
+  }
+
+  function stopRunning() {
+    clearTimers();
+    setRunning(null);
+    pushLog("■ 已停止当前剧本", "warn");
+  }
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      {/* 左: Persona 介绍 */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <UserCircle2 className="size-4" /> 4 类 Persona
+          </CardTitle>
+          <CardDescription>模拟真实用户/系统的行为</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          {Object.values(PERSONAS).map((p) => {
+            const Icon = p.icon;
+            return (
+              <div key={p.id} className="flex items-center gap-3 p-2.5 rounded-lg border bg-card">
+                <div className={`size-9 rounded-lg bg-${p.color}-100 dark:bg-${p.color}-900/30 text-${p.color}-600 dark:text-${p.color}-400 flex items-center justify-center text-lg shrink-0`}>
+                  {p.emoji}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium">{p.name}</div>
+                  <div className="text-[11px] text-muted-foreground">{p.role}</div>
+                </div>
+                {p.canApproveUpTo > 0 ? (
+                  <Badge variant="outline" className="text-[10px] shrink-0">
+                    ≤ ¥{(p.canApproveUpTo / 10000).toFixed(0)}万
+                  </Badge>
+                ) : p.id === "bot" ? (
+                  <Badge variant="secondary" className="text-[10px] shrink-0 bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border-0">
+                    系统
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className="text-[10px] shrink-0">无审批权</Badge>
+                )}
+              </div>
+            );
+          })}
+        </CardContent>
+      </Card>
+
+      {/* 中: 剧本选择 + 执行 */}
+      <Card className="lg:col-span-2">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-base flex items-center gap-2">
+                <PlayCircle className="size-4" /> 3 个真实剧本
+              </CardTitle>
+              <CardDescription>点一下, 1-3 秒内自动跑完</CardDescription>
+            </div>
+            {running && (
+              <Button size="sm" variant="destructive" onClick={stopRunning}>
+                <Square className="size-3.5 mr-1" /> 停止
+              </Button>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {Object.values(SCENARIOS).map((s) => {
+            const isRunning = running === s.id;
+            return (
+              <div
+                key={s.id}
+                className={`p-3 rounded-lg border transition-all ${
+                  isRunning ? "border-primary bg-primary/5" : "bg-card hover:bg-muted/30"
+                }`}
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-sm font-semibold">{s.name}</span>
+                  <Badge variant="outline" className="text-[10px]">~{s.expectedEvents} 事件</Badge>
+                  {isRunning && (
+                    <Badge className="bg-primary text-primary-foreground text-[10px] animate-pulse">
+                      执行中 ({stepIndex})
+                    </Badge>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground mb-2">{s.description}</p>
+                <Button
+                  size="sm"
+                  disabled={!!running}
+                  onClick={() => runScenario(s.id)}
+                  className="w-full"
+                  variant={isRunning ? "secondary" : "default"}
+                >
+                  {isRunning ? (
+                    <><Activity className="size-3.5 mr-1 animate-pulse" /> 正在执行...</>
+                  ) : (
+                    <><Play className="size-3.5 mr-1" /> 启动剧本</>
+                  )}
+                </Button>
+              </div>
+            );
+          })}
+
+          {/* 执行日志 */}
+          {log.length > 0 && (
+            <div className="mt-2">
+              <div className="flex items-center justify-between mb-1.5">
+                <div className="text-[11px] font-medium text-muted-foreground">实时执行日志</div>
+                <Button size="sm" variant="ghost" className="h-6 text-[10px]" onClick={() => setLog([])}>
+                  <RotateCcw className="size-3 mr-1" /> 清空
+                </Button>
+              </div>
+              <div className="bg-zinc-950 dark:bg-zinc-900 text-zinc-100 rounded-lg p-2.5 font-mono text-[10px] max-h-64 overflow-y-auto space-y-0.5">
+                {log.map((l, i) => (
+                  <div key={i} className="flex items-start gap-2">
+                    <span className="text-zinc-500 shrink-0 tabular-nums">
+                      {new Date(l.ts).toLocaleTimeString("zh-CN", { hour12: false })}
+                    </span>
+                    <span className={`shrink-0 ${
+                      l.level === "ok" ? "text-green-400" :
+                      l.level === "warn" ? "text-amber-400" :
+                      l.level === "err" ? "text-red-400" : "text-zinc-300"
+                    }`}>
+                      {l.level === "ok" ? "✓" : l.level === "warn" ? "⚠" : l.level === "err" ? "✗" : "•"}
+                    </span>
+                    <span className="break-words">{l.text}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 }

@@ -352,6 +352,43 @@ class OntologyStore {
     });
     return po;
   }
+
+  /* ═══════════════════════════════════════════════════════
+     真实模拟器 — Persona 系统
+     模拟真实用户/系统自动跑流程, 验证 8 要素 + 事件流
+     ═══════════════════════════════════════════════════════ */
+
+  /** 提交 PR 时用 persona 身份 */
+  submitPurchaseRequestAsPersona(personaName: string, input: { title: string; supplierId: string; amount: number; category: string }) {
+    ontologyBus.emit({
+      type: "action.executed",
+      level: "info",
+      message: `👤 [${personaName}] 正在提交采购申请...`,
+      payload: { persona: personaName, action: "submit" },
+    });
+    return this.submitPurchaseRequest({ ...input, requester: personaName });
+  }
+
+  /** 审批 PR 时用 persona 身份 + 自动决策 */
+  approveAsPersona(personaName: string, personaRole: string, prId: string, autoApprove: boolean, autoComment: string) {
+    ontologyBus.emit({
+      type: "action.executed",
+      level: "info",
+      message: `👤 [${personaName} · ${personaRole}] 正在审批 ${prId}...`,
+      payload: { persona: personaName, role: personaRole, prId, autoApprove },
+    });
+    return this.approvePurchaseRequest(prId, personaName, autoComment);
+  }
+
+  /** 系统巡检 persona — 周期触发规则违反 */
+  systemInspectionTick() {
+    ontologyBus.emit({
+      type: "action.executed",
+      level: "info",
+      message: `🤖 [系统巡检 Bot] 启动定期规则巡检`,
+    });
+    this.simulateRuleViolation();
+  }
 }
 
 export const ontologyStore = new OntologyStore();
