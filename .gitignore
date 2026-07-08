@@ -9,6 +9,7 @@
 **/node_modules/
 **/package-lock.json
 **/.vite/
+**/*.tsbuildinfo
 
 # Backend runtime
 metaplatform-api/data/
