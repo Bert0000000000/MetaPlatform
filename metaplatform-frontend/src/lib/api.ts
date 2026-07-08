@@ -1359,3 +1359,52 @@ export interface ApiKeyStats {
   top_paths_24h: { path: string; calls: number }[];
   timeline_24h: { hour: string; calls: number }[];
 }
+
+// F4.6.22 — scheduler surface from /api/scheduler.
+export interface SchedulerJob {
+  name: string;
+  cron: string;
+  enabled: boolean;
+  nextRun?: string;
+}
+export interface SchedulerStatus {
+  running: boolean;
+  lastTickAt: string | null;
+  jobCount: number;
+  jobs: SchedulerJob[];
+}
+export interface SchedulerRun {
+  id: number;
+  job_name: string;
+  started_at: string;
+  finished_at: string | null;
+  status: "ok" | "error" | "running";
+  duration_ms: number | null;
+  error: string | null;
+}
+
+// ─── Scheduler (F4.6.22) ──────────────────────────────────
+export const schedulerApi = {
+  list: () => request<SchedulerStatus>("/scheduler"),
+  runs: (name: string, limit = 20) =>
+    request<SchedulerRun[]>(`/scheduler/${encodeURIComponent(name)}/runs?limit=${limit}`),
+  trigger: (name: string) =>
+    request<{ job: string; startedAt: string; durationMs: number; error: string | null }>(
+      `/scheduler/${encodeURIComponent(name)}/run`,
+      { method: "POST" },
+    ),
+  setEnabled: (name: string, enabled: boolean) =>
+    request<{ name: string; enabled: boolean }>(`/scheduler/${encodeURIComponent(name)}`, {
+      method: "PATCH",
+      body: JSON.stringify({ enabled }),
+    }),
+  delete: (name: string) =>
+    request<{ name: string }>(`/scheduler/${encodeURIComponent(name)}`, {
+      method: "DELETE",
+    }),
+  create: (data: { name: string; cron: string; handlerKind?: "log" | "webhook"; payload?: unknown }) =>
+    request<{ name: string; cron: string; handlerKind: string; enabled: boolean }>("/scheduler", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+};

@@ -171,10 +171,15 @@ export function register(name, cron, handler, opts = {}) {
 }
 
 export function unregister(name) {
+  // Built-in jobs are protected — registering them via registerBuiltin
+  // populates BUILTIN_HANDLERS so we can recognise them here.
+  if (BUILTIN_HANDLERS[name]) return false;
+  const existed = jobs.has(name);
   jobs.delete(name);
   try {
     db.prepare("DELETE FROM scheduler_jobs WHERE name = ?").run(name);
   } catch {}
+  return existed;
 }
 
 export function enable(name, enabled = true) {
