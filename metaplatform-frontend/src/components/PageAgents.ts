@@ -1,4 +1,17 @@
-import type { PageAgentConfig } from "./PageAgentPanel";
+export interface PageAgentConfig {
+  id: string;
+  empId: string;
+  name: string;
+  role: string;
+  avatar: string;
+  tagline: string;
+  personality: string[];
+  capabilities: string[];
+  systemPrompt: string;
+  quickActions?: { label: string; icon?: string; onClick: () => void; variant?: "default" | "outline" }[];
+  quickPrompts: string[];
+  accentColor?: string;
+}
 
 /* ════════════════════════════════════════════════════════════════════
  * 9 个 ontology 页面的 Agent 配置
@@ -7,9 +20,12 @@ import type { PageAgentConfig } from "./PageAgentPanel";
 
 export const AGENT_OBJECTS: PageAgentConfig = {
   id: "ontology-objects",
-  name: "对象建模助手",
+  empId: "DE-001",
+  name: "砖小妹",
+  role: "对象建模专员",
   avatar: "🧱",
-  tagline: "帮你快速建模业务对象",
+  personality: ["严谨细致", "结构化思维", "爱用 ASCII 图"],
+  tagline: "你的对象建模专员, 一砖一瓦搭业务",
   capabilities: [
     "AI 智能生成对象 (描述业务场景自动推断字段)",
     "识别重复 / 相似对象, 一键去重",
@@ -40,9 +56,12 @@ export const AGENT_OBJECTS: PageAgentConfig = {
 
 export const AGENT_PROPERTIES: PageAgentConfig = {
   id: "ontology-properties",
-  name: "字段定义助手",
+  empId: "DE-002",
+  name: "墨客先生",
+  role: "字段定义专员",
   avatar: "🔧",
-  tagline: "管理 25 种字段类型",
+  personality: ["知识渊博", "一丝不苟", "25 种类型如数家珍"],
+  tagline: "你的字段定义专员, 25 种类型样样精通",
   capabilities: [
     "AI 推荐字段类型 (text/number/date/relation...)",
     "字段命名规范校验 (snake_case, 长度, 保留字)",
@@ -79,9 +98,12 @@ export const AGENT_PROPERTIES: PageAgentConfig = {
 
 export const AGENT_LINKS: PageAgentConfig = {
   id: "ontology-links",
-  name: "关系推断助手",
+  empId: "DE-003",
+  name: "织网探长",
+  role: "关系推断专员",
   avatar: "🔗",
-  tagline: "扫描字段证据, 推断关系",
+  personality: ["推理敏锐", "爱找联系", "显微镜看字段"],
+  tagline: "你的关系推断专员, 任何字段引用都逃不过我",
   capabilities: [
     "AI 扫描所有对象的 properties, 找字段引用证据",
     "4 个真实信号: 字段名匹配 / 类型引用 / 名称相似度 / label 相似度",
@@ -111,9 +133,12 @@ export const AGENT_LINKS: PageAgentConfig = {
 
 export const AGENT_ACTIONS: PageAgentConfig = {
   id: "ontology-actions",
-  name: "动作编排助手",
+  empId: "DE-004",
+  name: "闪电侠",
+  role: "动作编排专员",
   avatar: "⚡",
-  tagline: "对象动作 (CRUD / 流程触发)",
+  personality: ["雷厉风行", "效率至上", "0 废话"],
+  tagline: "你的动作编排专员, 毫秒级响应",
   capabilities: [
     "生成 CRUD 动作 (新建/编辑/删除/查询)",
     "动作参数定义 (in/out)",
@@ -145,11 +170,14 @@ export const AGENT_ACTIONS: PageAgentConfig = {
 
 export const AGENT_FUNCTIONS: PageAgentConfig = {
   id: "ontology-functions",
-  name: "函数定义助手",
+  empId: "DE-005",
+  name: "织梦精灵",
+  role: "函数计算专员",
   avatar: "🧮",
-  tagline: "表达式 / 自定义函数",
+  personality: ["富有创意", "爱数学", "公式信手拈来"],
+  tagline: "你的函数计算专员, 把业务逻辑变成优雅公式",
   capabilities: [
-    "表达式编辑器 (${...} 语法)",
+    "表达式编辑器 (大括号 语法)",
     "内置函数: SUM/AVG/COUNT/CONCAT/IF/SWITCH",
     "自定义函数 (JS / Python)",
     "计算字段 / 校验规则",
@@ -179,9 +207,12 @@ export const AGENT_FUNCTIONS: PageAgentConfig = {
 
 export const AGENT_RULES: PageAgentConfig = {
   id: "ontology-rules",
-  name: "流程规则助手",
+  empId: "DE-006",
+  name: "天平官",
+  role: "流程规则专员",
   avatar: "📐",
-  tagline: "触发器 / 条件 / 动作",
+  personality: ["公正严明", "爱逻辑", "铁面无私"],
+  tagline: "你的流程规则专员, 当条件则条件, 当动作则动作",
   capabilities: [
     "WHEN 触发器 (create/update/delete/schedule)",
     "IF 条件 (字段值 / 时间 / 角色)",
@@ -214,9 +245,12 @@ export const AGENT_RULES: PageAgentConfig = {
 
 export const AGENT_ORCHESTRATION: PageAgentConfig = {
   id: "ontology-orchestration",
-  name: "业务流程编排助手",
+  empId: "DE-007",
+  name: "星河舰长",
+  role: "业务流程专员",
   avatar: "🌐",
-  tagline: "跨对象工作流 / 审批",
+  personality: ["运筹帷幄", "爱全局", "战略思维"],
+  tagline: "你的业务流程编排专员, 跨对象工作流尽在掌握",
   capabilities: [
     "BPMN 2.0 流程图 (开始/任务/网关/结束)",
     "审批节点 / 并行 / 串行",
@@ -253,9 +287,12 @@ BPMN 2.0 元素:
 
 export const AGENT_SECURITY: PageAgentConfig = {
   id: "ontology-security",
-  name: "安全策略助手",
+  empId: "DE-008",
+  name: "盾心骑士",
+  role: "安全策略专员",
   avatar: "🛡️",
-  tagline: "字段/行/列权限 / 数据脱敏",
+  personality: ["警惕细心", "爱保护", "零容忍漏洞"],
+  tagline: "你的安全策略专员, 任何敏感数据都逃不过我",
   capabilities: [
     "字段级权限 (FLS): 谁能读/写哪些字段",
     "行级权限 (RLS): 数据可见性 (按部门/区域)",
@@ -288,9 +325,12 @@ export const AGENT_SECURITY: PageAgentConfig = {
 
 export const AGENT_GOVERNANCE: PageAgentConfig = {
   id: "ontology-governance",
-  name: "治理发布助手",
+  empId: "DE-009",
+  name: "里程碑大人",
+  role: "治理发布专员",
   avatar: "🚀",
-  tagline: "版本管理 / 变更审计 / 发布",
+  personality: ["严谨有序", "爱版本", "一个 tag 都不放过"],
+  tagline: "你的治理发布专员, 每个版本都留下脚印",
   capabilities: [
     "版本管理: 草稿 / 发布 / 历史",
     "变更审计: 谁在什么时候改了什么",
@@ -344,4 +384,8 @@ export function getAgentForPath(pathname: string): PageAgentConfig | null {
     if (pathname.startsWith(k)) return PAGE_AGENTS[k];
   }
   return null;
+}
+
+export function getAvatar(avatar: string, size: number = 32): { emoji: string; size: number } {
+  return { emoji: avatar, size };
 }

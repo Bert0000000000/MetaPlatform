@@ -5,6 +5,7 @@ import { MenuTabsBar } from "@/components/MenuTabsBar";
 import { AppDetailTabs } from "@/components/AppDetailTabs";
 import { CommandPalette } from "@/components/CommandPalette";
 import { PageAIAssistant } from "@/components/PageAIAssistant";
+import { DigitalEmployee } from "@/components/DigitalEmployee";
 
 export function Layout() {
   const location = useLocation();
@@ -45,6 +46,7 @@ export function Layout() {
       </div>
       <CommandPalette />
       <PageAIAssistant />
+      <DigitalEmployee />
     </div>
   );
 }

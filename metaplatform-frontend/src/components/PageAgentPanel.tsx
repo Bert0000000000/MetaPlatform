@@ -26,26 +26,8 @@ import {
  * 设计: 右侧浮出 panel, 不覆盖主内容, 可收起为右侧气泡按钮
  * ════════════════════════════════════════════════════════════════════ */
 
-export interface PageAgentConfig {
-  /** Agent 唯一 key, e.g. "ontology-objects" */
-  id: string;
-  /** 显示名, e.g. "对象建模助手" */
-  name: string;
-  /** emoji 头像 */
-  avatar: string;
-  /** 一句话能力描述, e.g. "帮你快速建模业务对象" */
-  tagline: string;
-  /** 详细能力列表, 显示在欢迎语里 */
-  capabilities: string[];
-  /** LLM 系统提示词 */
-  systemPrompt: string;
-  /** 快捷操作 — 显示为按钮, 点击后回调 */
-  quickActions?: { label: string; icon?: string; onClick: () => void; variant?: "default" | "outline" }[];
-  /** 快捷指令 — 显示为 chip, 点击发问 */
-  quickPrompts: string[];
-  /** 暖场色 (背景) */
-  accentColor?: string;
-}
+import type { PageAgentConfig } from "./PageAgents";
+export type { PageAgentConfig } from "./PageAgents";
 
 export interface PageAgentPanelProps {
   config: PageAgentConfig;

@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { PageAgentPanel } from "@/components/PageAgentPanel";
 import { AGENT_OBJECTS } from "@/components/PageAgents";
+// PageAgentPanel 暂时保留给 Objects 页面作为 quick action 入口
 
 /** Map icon string names from the API to Lucide components */
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
