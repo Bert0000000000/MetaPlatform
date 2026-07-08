@@ -370,7 +370,7 @@ export const MENU_TABS: Record<MenuKey, TabConfig[]> = {
     { key: "knowledge", label: "知识库", path: "/knowledge" },
   ],
   ontology: [
-    { key: "objects", label: "对象", path: "/objects" },
+    { key: "objects", label: "对象", path: "/ontology/objects" },
     { key: "properties", label: "属性", path: "/properties" },
     { key: "links", label: "关系", path: "/links" },
     { key: "actions", label: "动作", path: "/actions" },
