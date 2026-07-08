@@ -65,6 +65,7 @@ export const authApi = {
       scopes?: string;
       appId?: string | null;
       expiresAt?: string | null;
+      rateLimit?: number | null;
     }) =>
       request<ApiKey & { key: string }>("/auth/api-keys", {
         method: "POST",
@@ -74,8 +75,14 @@ export const authApi = {
       request<{ id: string; revokedAt: string }>(`/auth/api-keys/${id}`, {
         method: "DELETE",
       }),
+    // F4.6.14 — adjust rate_limit / rename without rotating the secret.
+    update: (id: string, data: { rateLimit?: number | null; name?: string }) =>
+      request<ApiKey>(`/auth/api-keys/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify(data),
+      }),
     whoami: () =>
-      request<{ id: string; name: string; scopes: string[]; app_id: string | null; tenant_id: string }>(
+      request<{ id: string; name: string; scopes: string[]; app_id: string | null; tenant_id: string; rate_limit: number | null }>(
         "/auth/api-keys/whoami",
       ),
   },
@@ -1320,5 +1327,7 @@ export interface ApiKey {
   last_used_at?: string | null;
   expires_at?: string | null;
   revoked_at?: string | null;
+  /** F4.6.14 — requests per minute. null = unlimited. */
+  rate_limit?: number | null;
   created_at: string;
 }

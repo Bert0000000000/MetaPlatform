@@ -1264,10 +1264,21 @@ db.exec(`
     last_used_at TEXT,
     expires_at   TEXT,
     revoked_at   TEXT,
+    -- F4.6.14 per-key rate-limit: requests per minute. NULL = unlimited.
+    -- Stored on the row so an admin can tune without redeploy.
+    rate_limit   INTEGER,
     created_at   TEXT NOT NULL DEFAULT (datetime('now'))
   );
 `);
 db.exec(`CREATE INDEX IF NOT EXISTS idx_api_keys_tenant  ON api_keys(tenant_id)`);
 db.exec(`CREATE INDEX IF NOT EXISTS idx_api_keys_prefix  ON api_keys(key_prefix)`);
+
+// Idempotent column add for older databases that pre-date F4.6.14.
+(function migrateApiKeyRateLimit() {
+  const cols = db.prepare("PRAGMA table_info(api_keys)").all().map((c) => c.name);
+  if (!cols.includes("rate_limit")) {
+    db.exec("ALTER TABLE api_keys ADD COLUMN rate_limit INTEGER");
+  }
+})();
 
 export default db;

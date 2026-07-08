@@ -121,12 +121,14 @@ app.get("/api/runtime/health", async (_req, res) => {
 // Protected API routes — accept either Bearer JWT OR an API key
 // (apiKeyMiddleware falls through to `next()` when no mp_live_ key is
 // present, so the JWT authenticate middleware picks up the slack).
-app.use("/api/apps", apiKeyMiddleware(), authenticate, cacheMiddleware(30), appsRoutes);
-app.use("/api/ontology", authenticate, cacheMiddleware(30), ontologyRoutes);
-app.use("/api/processes", authenticate, cacheMiddleware(30), processesRoutes);
-app.use("/api/data", authenticate, cacheMiddleware(30), dataRoutes);
-app.use("/api/knowledge", authenticate, cacheMiddleware(30), knowledgeRoutes);
-app.use("/api/agents", authenticate, cacheMiddleware(30), agentsRoutes);
+// apiKeyRateLimit sits AFTER authenticate so JWT users are not affected.
+import { apiKeyRateLimit } from "./middleware/api-rate-limit.js";
+app.use("/api/apps", apiKeyMiddleware(), authenticate, apiKeyRateLimit(), cacheMiddleware(30), appsRoutes);
+app.use("/api/ontology", apiKeyMiddleware(), authenticate, apiKeyRateLimit(), cacheMiddleware(30), ontologyRoutes);
+app.use("/api/processes", apiKeyMiddleware(), authenticate, apiKeyRateLimit(), cacheMiddleware(30), processesRoutes);
+app.use("/api/data", apiKeyMiddleware(), authenticate, apiKeyRateLimit(), cacheMiddleware(30), dataRoutes);
+app.use("/api/knowledge", apiKeyMiddleware(), authenticate, apiKeyRateLimit(), cacheMiddleware(30), knowledgeRoutes);
+app.use("/api/agents", apiKeyMiddleware(), authenticate, apiKeyRateLimit(), cacheMiddleware(30), agentsRoutes);
 app.use("/api/admin", authenticate, cacheMiddleware(30), adminRoutes);
 app.use("/api/messages", authenticate, cacheMiddleware(15), messagesRoutes);
 app.use("/api/flowable", authenticate, cacheMiddleware(30), flowableRoutes);

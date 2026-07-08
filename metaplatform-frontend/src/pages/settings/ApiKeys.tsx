@@ -43,6 +43,14 @@ export default function ApiKeysPage() {
   const [revealedName, setRevealedName] = useState<string>("");
   const [copied, setCopied] = useState(false);
 
+  // ── F4.6.14 create-time rate-limit input ─────────────────
+  const [createRateLimit, setCreateRateLimit] = useState<string>(""); // empty = unlimited
+
+  // ── F4.6.14 per-key rate-limit edit dialog ────────────────
+  const [editLimitKey, setEditLimitKey] = useState<ApiKey | null>(null);
+  const [editLimitValue, setEditLimitValue] = useState<string>("");
+  const [savingLimit, setSavingLimit] = useState(false);
+
   const load = async () => {
     setLoading(true);
     setError(null);
@@ -62,9 +70,17 @@ export default function ApiKeysPage() {
     if (!createName.trim()) return;
     setCreating(true);
     try {
+      const trimmedRate = createRateLimit.trim();
+      const rateLimit = trimmedRate === "" ? null : Number(trimmedRate);
+      if (trimmedRate !== "" && (!Number.isInteger(rateLimit) || (rateLimit ?? 0) < 0)) {
+        setError("速率限制必须是非负整数，留空表示无限制");
+        setCreating(false);
+        return;
+      }
       const minted = await authApi.apiKeys.create({
         name: createName.trim(),
         scopes: createScopes.trim() || "read",
+        rateLimit: rateLimit && rateLimit > 0 ? rateLimit : null,
       });
       // reveal plaintext key exactly once
       setRevealedKey(minted.key);
@@ -72,12 +88,46 @@ export default function ApiKeysPage() {
       setShowCreate(false);
       setCreateName("");
       setCreateScopes("read");
+      setCreateRateLimit("");
       // refresh list (the new key shows up without the secret)
       load();
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "创建失败");
     } finally {
       setCreating(false);
+    }
+  };
+
+  const openEditLimit = (k: ApiKey) => {
+    setEditLimitKey(k);
+    setEditLimitValue(k.rate_limit == null ? "" : String(k.rate_limit));
+  };
+  const handleSaveLimit = async () => {
+    if (!editLimitKey) return;
+    const trimmed = editLimitValue.trim();
+    let parsed: number | null;
+    if (trimmed === "") {
+      parsed = null;
+    } else {
+      parsed = Number(trimmed);
+      if (!Number.isInteger(parsed) || parsed < 0) {
+        setError("速率限制必须是非负整数，留空表示无限制");
+        return;
+      }
+      if (parsed > 100000) {
+        setError("速率限制不能超过 100000 req/min");
+        return;
+      }
+    }
+    setSavingLimit(true);
+    try {
+      await authApi.apiKeys.update(editLimitKey.id, { rateLimit: parsed });
+      setEditLimitKey(null);
+      load();
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "保存失败");
+    } finally {
+      setSavingLimit(false);
     }
   };
 
@@ -159,7 +209,7 @@ export default function ApiKeysPage() {
               {keys.map((k) => (
                 <div key={k.id} className="flex items-center gap-3 py-3">
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-medium truncate">{k.name}</span>
                       <code className="text-xs px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200">
                         {k.key_prefix}…
@@ -167,6 +217,19 @@ export default function ApiKeysPage() {
                       {k.scopes.split(",").map((s) => (
                         <Badge key={s} variant="secondary" className="text-[10px]">{s}</Badge>
                       ))}
+                      {/* F4.6.14 rate-limit chip — click to edit */}
+                      <button
+                        type="button"
+                        onClick={() => openEditLimit(k)}
+                        className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded border hover:bg-slate-100 transition"
+                        title="点击修改速率限制"
+                      >
+                        {k.rate_limit == null ? (
+                          <span className="text-slate-500">∞ 无限制</span>
+                        ) : (
+                          <span className="text-blue-700">{k.rate_limit} req/min</span>
+                        )}
+                      </button>
                     </div>
                     <div className="text-xs text-muted-foreground mt-1">
                       创建于 {new Date(k.created_at).toLocaleString()} · 最近使用：{k.last_used_at ? new Date(k.last_used_at).toLocaleString() : "从未使用"}
@@ -213,6 +276,20 @@ export default function ApiKeysPage() {
                 常用 scopes：<code>read</code>、<code>write</code>、<code>admin</code>、<code>publish</code>
               </p>
             </div>
+            {/* F4.6.14 — per-key rate-limit. Empty = unlimited. */}
+            <div>
+              <Label className="text-sm">速率限制（req/min）</Label>
+              <Input
+                value={createRateLimit}
+                onChange={(e) => setCreateRateLimit(e.target.value)}
+                placeholder="留空 = 无限制；例如 60"
+                type="number"
+                min={0}
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                超出后该 Key 的请求会被拒绝（HTTP 429 + Retry-After 头）。可在创建后点击 chip 调整。
+              </p>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setShowCreate(false)} disabled={creating}>取消</Button>
@@ -255,6 +332,51 @@ export default function ApiKeysPage() {
           </div>
           <DialogFooter>
             <Button onClick={() => setRevealedKey(null)}>我已保存</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── F4.6.14 Edit rate-limit dialog ─────────────────── */}
+      <Dialog open={!!editLimitKey} onOpenChange={(open) => !open && setEditLimitKey(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>修改速率限制</DialogTitle>
+            <DialogDescription>
+              对 <code>{editLimitKey?.name}</code> ({editLimitKey?.key_prefix}…) 调整每分钟允许的最大请求数。
+              留空表示无限制。修改立即生效，无须轮换密钥。
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label className="text-sm">req/min</Label>
+              <Input
+                value={editLimitValue}
+                onChange={(e) => setEditLimitValue(e.target.value)}
+                placeholder="留空 = 无限制；例如 60"
+                type="number"
+                min={0}
+                autoFocus
+              />
+              <div className="flex gap-1 mt-2 flex-wrap">
+                {[10, 60, 600, 6000].map((preset) => (
+                  <Button key={preset} type="button" variant="outline" size="sm"
+                          onClick={() => setEditLimitValue(String(preset))}>
+                    {preset}
+                  </Button>
+                ))}
+                <Button type="button" variant="ghost" size="sm"
+                        onClick={() => setEditLimitValue("")}>
+                  ∞ 无限制
+                </Button>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setEditLimitKey(null)} disabled={savingLimit}>取消</Button>
+            <Button onClick={handleSaveLimit} disabled={savingLimit}>
+              {savingLimit && <Loader2 className="size-3.5 mr-1 animate-spin" />}
+              保存
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

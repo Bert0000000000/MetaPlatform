@@ -341,5 +341,24 @@ registerBuiltin(
   { enabled: true }
 );
 
+// F4.6.14/16 — flush the in-memory API-key call ring into SQLite every
+// minute. Keeps the dashboard query cheap without blocking request
+// handlers. If api-rate-limit module isn't loaded yet, import safely
+// via dynamic import so we don't create a circular dep.
+registerBuiltin(
+  "apikeys.flush_call_log",
+  "*/1 * * * *",
+  async () => {
+    try {
+      const { flushCallLogToDb } = await import("./middleware/api-rate-limit.js");
+      const n = flushCallLogToDb();
+      if (n > 0) logger.debug("apikeys.flush_call_log", { flushed: n });
+    } catch (err) {
+      logger.warn("apikeys.flush_call_log_failed", { error: String(err?.message ?? err) });
+    }
+  },
+  { enabled: true }
+);
+
 export { nextRunAt };
 export default { register, registerBuiltin, unregister, enable, listJobs, start, stop, getStatus, runNow, recentRuns, nextRunAt };
