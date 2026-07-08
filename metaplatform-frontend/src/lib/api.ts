@@ -81,6 +81,8 @@ export const authApi = {
         method: "PATCH",
         body: JSON.stringify(data),
       }),
+    // F4.6.16 — last-24h aggregate dashboard data.
+    stats: () => request<ApiKeyStats>("/auth/api-keys/stats"),
     whoami: () =>
       request<{ id: string; name: string; scopes: string[]; app_id: string | null; tenant_id: string; rate_limit: number | null }>(
         "/auth/api-keys/whoami",
@@ -1330,4 +1332,30 @@ export interface ApiKey {
   /** F4.6.14 — requests per minute. null = unlimited. */
   rate_limit?: number | null;
   created_at: string;
+}
+
+// F4.6.16 — per-key call aggregates from /api/auth/api-keys/stats.
+export interface ApiKeyStatsSummary {
+  window_hours: number;
+  calls: number;
+  errors: number;
+  rate_limited: number;
+  error_rate: number;
+  active_keys: number;
+}
+export interface ApiKeyStatsRow {
+  key_id: string;
+  name: string;
+  key_prefix: string | null;
+  rate_limit: number | null;
+  calls: number;
+  errors: number;
+  rate_limited: number;
+  error_rate: number;
+}
+export interface ApiKeyStats {
+  summary: ApiKeyStatsSummary;
+  per_key: ApiKeyStatsRow[];
+  top_paths_24h: { path: string; calls: number }[];
+  timeline_24h: { hour: string; calls: number }[];
 }

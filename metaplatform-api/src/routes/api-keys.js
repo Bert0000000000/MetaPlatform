@@ -180,6 +180,146 @@ router.delete("/:id", async (req, res, next) => {
   }
 });
 
+// ─── GET /stats — aggregate call counts per key ────────────
+// F4.6.16 dashboard endpoint. Returns:
+//   summary        — last_24h totals (calls, errors, rate_limited, error_rate)
+//   per_key        — rows for each existing key (incl. zero-call rows)
+//   top_paths_24h  — top 5 paths in last 24h by call count
+//   timeline_24h   — 24 hourly buckets with call counts
+//
+// Reads from the api_key_calls table populated by the cron-flushed ring
+// buffer (see middleware/api-rate-limit.js + scheduler.js). We always
+// merge in any not-yet-flushed entries from the in-memory ring so the
+// dashboard is real-time even between cron ticks.
+router.get("/stats", async (req, res, next) => {
+  try {
+    const tenantId = req.tenantId || "default";
+    const now = Date.now();
+    const HOUR = 60 * 60 * 1000;
+    const since24 = now - 24 * HOUR;
+
+    // Make sure table exists (scheduler may not have run yet)
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS api_key_calls (
+        id        INTEGER PRIMARY KEY AUTOINCREMENT,
+        key_id    TEXT NOT NULL,
+        ts        INTEGER NOT NULL,
+        path      TEXT NOT NULL,
+        method    TEXT NOT NULL,
+        status    INTEGER NOT NULL
+      );
+    `);
+
+    // ── in-memory ring merge (real-time) ──
+    const { getRecentCallStats } = await import("../middleware/api-rate-limit.js");
+    const live = getRecentCallStats({ since: since24 });
+
+    // Build a per-key map of {calls, errors, rate_limited} from DB rows
+    // (a row counts as "error" when status >= 400).
+    const dbRows = db.prepare(
+      `SELECT key_id, status FROM api_key_calls WHERE ts >= ?`,
+    ).all(since24);
+    const merged = new Map(); // key_id -> {calls, errors, rate_limited}
+    const tenantKeyIds = new Set(
+      db.prepare("SELECT id FROM api_keys WHERE tenant_id = ?").all(tenantId).map((r) => r.id),
+    );
+    const acc = (row) => {
+      const cur = merged.get(row.key_id) || { calls: 0, errors: 0, rate_limited: 0 };
+      cur.calls += 1;
+      if (row.status >= 400) cur.errors += 1;
+      if (row.status === 429) cur.rate_limited += 1;
+      merged.set(row.key_id, cur);
+    };
+    for (const r of dbRows) if (tenantKeyIds.has(r.key_id)) acc(r);
+    for (const r of live)       if (tenantKeyIds.has(r.key_id)) acc(r);
+
+    // Make sure each tenant key appears with a 0-row even if it never
+    // made a call (so the UI table is complete).
+    for (const id of tenantKeyIds) {
+      if (!merged.has(id)) merged.set(id, { calls: 0, errors: 0, rate_limited: 0 });
+    }
+
+    // Map key_id → meta (name, prefix, rate_limit) for the response
+    const meta = new Map(
+      db.prepare(
+        `SELECT id, name, key_prefix, rate_limit FROM api_keys
+         WHERE tenant_id = ?`,
+      ).all(tenantId).map((r) => [r.id, r]),
+    );
+
+    const per_key = [...merged.entries()].map(([key_id, s]) => {
+      const m = meta.get(key_id);
+      return {
+        key_id,
+        name: m?.name || key_id,
+        key_prefix: m?.key_prefix || null,
+        rate_limit: m?.rate_limit ?? null,
+        calls: s.calls,
+        errors: s.errors,
+        rate_limited: s.rate_limited,
+        error_rate: s.calls > 0 ? +(s.errors / s.calls).toFixed(4) : 0,
+      };
+    }).sort((a, b) => b.calls - a.calls);
+
+    // ── top paths in last 24h ──
+    const pathAgg = new Map(); // path -> count
+    const accPath = (path) => pathAgg.set(path, (pathAgg.get(path) || 0) + 1);
+    for (const r of db.prepare(
+      `SELECT path FROM api_key_calls WHERE ts >= ?`,
+    ).all(since24)) accPath(r.path);
+    for (const r of live) accPath(r.path);
+    const top_paths_24h = [...pathAgg.entries()]
+      .map(([path, calls]) => ({ path, calls }))
+      .sort((a, b) => b.calls - a.calls)
+      .slice(0, 5);
+
+    // ── 24h hourly timeline ──
+    const buckets = new Array(24).fill(0);
+    const put = (ts) => {
+      const idx = 23 - Math.floor((now - ts) / HOUR);
+      if (idx >= 0 && idx < 24) buckets[idx] += 1;
+    };
+    for (const r of db.prepare(
+      `SELECT ts FROM api_key_calls WHERE ts >= ?`,
+    ).all(since24)) put(r.ts);
+    for (const r of live) put(r.ts);
+    const timeline_24h = buckets.map((calls, i) => {
+      const t = new Date(now - (23 - i) * HOUR);
+      return {
+        hour: t.toISOString().slice(0, 13) + ":00",
+        calls,
+      };
+    });
+
+    const totals = per_key.reduce(
+      (acc, k) => {
+        acc.calls += k.calls;
+        acc.errors += k.errors;
+        acc.rate_limited += k.rate_limited;
+        return acc;
+      },
+      { calls: 0, errors: 0, rate_limited: 0 },
+    );
+
+    res.json({
+      success: true,
+      data: {
+        summary: {
+          window_hours: 24,
+          ...totals,
+          error_rate: totals.calls > 0 ? +(totals.errors / totals.calls).toFixed(4) : 0,
+          active_keys: per_key.filter((k) => k.calls > 0).length,
+        },
+        per_key,
+        top_paths_24h,
+        timeline_24h,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // ─── GET /whoami — introspect calling key ─────────────────
 router.get("/whoami", async (req, res, next) => {
   try {

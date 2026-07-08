@@ -23,14 +23,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { AlertTriangle, CheckCircle2, Clipboard, ClipboardCheck, KeyRound, Loader2, Plus, RefreshCw, Trash2 } from "lucide-react";
-import { authApi, type ApiKey } from "@/lib/api";
+import { AlertTriangle, BarChart3, CheckCircle2, Clipboard, ClipboardCheck, KeyRound, Loader2, Plus, RefreshCw, Trash2 } from "lucide-react";
+import { authApi, type ApiKey, type ApiKeyStats } from "@/lib/api";
 
 export default function ApiKeysPage() {
   const navigate = useNavigate();
   const [keys, setKeys] = useState<ApiKey[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // F4.6.16 — last-24h dashboard aggregates (calls, errors, top paths).
+  const [stats, setStats] = useState<ApiKeyStats | null>(null);
+  const [statsLoading, setStatsLoading] = useState(false);
 
   // ── Create-dialog state ─────────────────────────────────
   const [showCreate, setShowCreate] = useState(false);
@@ -64,7 +68,27 @@ export default function ApiKeysPage() {
     }
   };
 
-  useEffect(() => { load(); }, []);
+  const loadStats = async () => {
+    setStatsLoading(true);
+    try {
+      const s = await authApi.apiKeys.stats();
+      setStats(s);
+    } catch {
+      // Stats are non-critical; the keys list still works without them.
+      setStats(null);
+    } finally {
+      setStatsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    load();
+    loadStats();
+    // refresh stats every 60s so the dashboard stays near-realtime
+    // without needing a manual reload after a burst of calls
+    const t = setInterval(loadStats, 60_000);
+    return () => clearInterval(t);
+  }, []);
 
   const handleCreate = async () => {
     if (!createName.trim()) return;
@@ -180,6 +204,77 @@ export default function ApiKeysPage() {
           {error}
         </div>
       )}
+
+      {/* F4.6.16 — last-24h call statistics */}
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base flex items-center gap-2">
+              <BarChart3 className="size-4" />
+              调用统计 (近 24 小时)
+            </CardTitle>
+            {statsLoading && <Loader2 className="size-3.5 animate-spin text-muted-foreground" />}
+          </div>
+          <CardDescription>
+            来自 ring-buffer 实时数据 + 每分钟落库的历史数据合并计算。
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {stats ? (
+            <>
+              {/* Top 4 metrics */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                <Metric label="总调用" value={stats.summary.calls} accent="text-blue-600" />
+                <Metric label="错误数" value={stats.summary.errors} accent="text-amber-600" />
+                <Metric label="限流命中" value={stats.summary.rate_limited} accent="text-red-600" />
+                <Metric label="活跃 Key" value={stats.summary.active_keys} accent="text-emerald-600" />
+              </div>
+
+              {/* 24h hourly timeline (CSS bars, no chart lib) */}
+              <div className="mt-3">
+                <div className="text-xs font-medium text-muted-foreground mb-1">每小时调用量</div>
+                <div className="flex items-end gap-1 h-20">
+                  {stats.timeline_24h.map((b) => {
+                    const max = Math.max(1, ...stats.timeline_24h.map((x) => x.calls));
+                    const h = Math.max(2, Math.round((b.calls / max) * 76));
+                    return (
+                      <div key={b.hour} className="flex-1 group relative">
+                        <div
+                          className="bg-blue-500/70 hover:bg-blue-500 rounded-t transition"
+                          style={{ height: `${h}px` }}
+                          title={`${b.hour} · ${b.calls} 次`}
+                        />
+                        <span className="text-[9px] text-muted-foreground absolute -bottom-4 left-1/2 -translate-x-1/2 hidden group-hover:block whitespace-nowrap bg-slate-800 text-white px-1 py-0.5 rounded z-10">
+                          {b.calls}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Top paths */}
+              {stats.top_paths_24h.length > 0 && (
+                <div className="mt-8">
+                  <div className="text-xs font-medium text-muted-foreground mb-2">最热路径</div>
+                  <div className="space-y-1">
+                    {stats.top_paths_24h.map((p) => (
+                      <div key={p.path} className="flex items-center gap-2 text-sm">
+                        <code className="text-xs bg-slate-100 px-2 py-0.5 rounded flex-1 truncate">{p.path}</code>
+                        <span className="text-muted-foreground text-xs tabular-nums">{p.calls} 次</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="text-sm text-muted-foreground py-6 text-center">
+              暂无统计数据（首次刷新需要 ~1 分钟让 scheduler 把 ring 缓冲落库）
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
@@ -380,6 +475,18 @@ export default function ApiKeysPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+// Small inline metric card used in the F4.6.16 stats dashboard above.
+function Metric({ label, value, accent }: { label: string; value: number | string; accent?: string }) {
+  return (
+    <div className="border rounded-lg px-3 py-2 bg-white">
+      <div className="text-xs text-muted-foreground">{label}</div>
+      <div className={"text-2xl font-semibold tabular-nums " + (accent ?? "text-slate-800")}>
+        {value}
+      </div>
     </div>
   );
 }

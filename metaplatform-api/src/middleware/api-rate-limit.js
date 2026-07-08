@@ -104,7 +104,10 @@ export function apiKeyRateLimit() {
     if (!decision.allowed) {
       res.setHeader("Retry-After", String(decision.resetSec));
       // Record the rejected call too — it's still a call
-      pushCallLog({ key_id: key.id, ts: now, path: req.path, method: req.method, status: 429 });
+      const url = req.originalUrl || req.url || "";
+      const qIdx = url.indexOf("?");
+      const fullPath = qIdx === -1 ? url : url.slice(0, qIdx);
+      pushCallLog({ key_id: key.id, ts: now, path: fullPath, method: req.method, status: 429 });
       return res.status(429).json({
         success: false,
         error: `API key ${key.name} (${key.key_prefix}) rate limit exceeded (${limit}/min)`,
@@ -114,7 +117,14 @@ export function apiKeyRateLimit() {
 
     // Defer the success log to res.finish so we capture the actual status
     res.on("finish", () => {
-      pushCallLog({ key_id: key.id, ts: now, path: req.path, method: req.method, status: res.statusCode });
+      // req.originalUrl preserves the full mount path (e.g. /api/apps?…),
+      // while req.path gives only the router-internal path. Use originalUrl
+      // without the query string so the api_key_calls dashboard aggregates
+      // by endpoint instead of by every unique query string.
+      const url = req.originalUrl || req.url || "";
+      const qIdx = url.indexOf("?");
+      const fullPath = qIdx === -1 ? url : url.slice(0, qIdx);
+      pushCallLog({ key_id: key.id, ts: now, path: fullPath, method: req.method, status: res.statusCode });
     });
     next();
   };
