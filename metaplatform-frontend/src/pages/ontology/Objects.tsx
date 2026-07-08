@@ -15,6 +15,8 @@ import {
   Hash, Copy, Check, ShieldCheck, GitMerge, AlertOctagon, Activity, CopyMinus, RotateCcw,
   ZoomIn, ZoomOut, Maximize2, Move,
 } from "lucide-react";
+import { PageAgentPanel } from "@/components/PageAgentPanel";
+import { AGENT_OBJECTS } from "@/components/PageAgents";
 
 /** Map icon string names from the API to Lucide components */
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -908,9 +910,33 @@ export default function Objects() {
         description="本体 8 要素之第 1 要素: 业务对象建模"
         action={
           <div className="flex gap-2">
-            <Button variant="outline" className="gap-2" disabled>
-              <Sparkles className="size-4" /> AI 对象生成
-            </Button>
+            <PageAgentPanel
+              config={{
+                ...AGENT_OBJECTS,
+                quickActions: [
+                  { label: "AI 对象生成", icon: "✨", onClick: () => setDialogOpen(true), variant: "outline" },
+                  { label: "打开去重校验", icon: "🔍", onClick: () => setDedupOpen(true), variant: "outline" },
+                  { label: "关系图 (E-R)", icon: "📊", onClick: () => setErOpen(true), variant: "outline" },
+                ],
+              }}
+              context={{
+                objectsCount: objects.length,
+                propertiesTotal: objects.reduce((a, o) => a + o.properties_count, 0),
+                duplicates: (() => {
+                  const seen = new Set<string>();
+                  const dupNames = new Set<string>();
+                  objects.forEach((o) => {
+                    const k = o.name.toLowerCase().replace(/[-_]/g, "");
+                    if (seen.has(k)) dupNames.add(k);
+                    seen.add(k);
+                  });
+                  return dupNames.size;
+                })(),
+                sampleObjects: objects.slice(0, 5).map((o) => ({
+                  name: o.name, label: o.label, properties: o.properties_count,
+                })),
+              }}
+            />
             <Button className="gap-2" onClick={() => setDialogOpen(true)}>
               <Plus className="size-4" /> 新建对象
             </Button>

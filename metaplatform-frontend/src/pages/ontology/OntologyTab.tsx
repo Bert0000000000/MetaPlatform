@@ -11,6 +11,11 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Box, Hash, Link2, Zap, Calculator, Shield, Settings, Server, Plus, Sparkles, Link, User, Package, Tag, Users, FileText, Receipt, Eye, Edit, Trash2, Search, ShieldCheck, GitMerge, AlertOctagon, Activity, Copy, Check, AlertCircle, Loader2, RotateCcw } from "lucide-react";
+import { PageAgentPanel } from "@/components/PageAgentPanel";
+import {
+  AGENT_PROPERTIES, AGENT_ACTIONS, AGENT_FUNCTIONS, AGENT_RULES,
+  AGENT_ORCHESTRATION, AGENT_SECURITY, AGENT_GOVERNANCE, AGENT_LINKS,
+} from "@/components/PageAgents";
 
 const element7of8 = [
   { key: "1-objects", title: "对象（Objects）", icon: Box, desc: "业务对象的定义与建模", tag: "O" },
@@ -281,7 +286,20 @@ export function OntologyProperties() {
         <PageHeader
           title="属性管理"
           description="管理所有对象的属性定义（25 种字段类型）"
-          action={<Button className="gap-2"><Plus className="size-4" /> 新建属性</Button>}
+          action={
+            <div className="flex gap-2">
+              <PageAgentPanel
+                config={AGENT_PROPERTIES}
+                context={{
+                  propertiesCount: properties.length,
+                  uniqueObjects: new Set(properties.map((p) => p.object_id)).size,
+                  types: [...new Set(properties.map((p) => p.type))],
+                  sample: properties.slice(0, 5).map((p) => ({ name: p.name, type: p.type, required: p.required })),
+                }}
+              />
+              <Button className="gap-2"><Plus className="size-4" /> 新建属性</Button>
+            </div>
+          }
         />
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0">
@@ -644,6 +662,15 @@ export function OntologyLinks() {
         description="定义对象间的关系（1:1 / 1:N / N:N）"
         action={
           <div className="flex gap-2">
+            <PageAgentPanel
+              config={AGENT_LINKS}
+              context={{
+                linksCount: links.length,
+                objectsCount: objects.length,
+                duplicates: dedupGroups.length,
+                inferredPending: inferred.length,
+              }}
+            />
             <Button
               variant="outline"
               className="gap-2"
@@ -1118,7 +1145,12 @@ export function OntologyActions() {
       <PageHeader
         title="动作管理"
         description="CRUD 动作 + 自定义动作配置"
-        action={<Button className="gap-2"><Plus className="size-4" /> 新建动作</Button>}
+        action={
+          <div className="flex gap-2">
+            <PageAgentPanel config={AGENT_ACTIONS} context={{ actionsCount: actions.length }} />
+            <Button className="gap-2"><Plus className="size-4" /> 新建动作</Button>
+          </div>
+        }
       />
       <Card>
         <CardHeader>
@@ -1183,7 +1215,12 @@ export function OntologyFunctions() {
       <PageHeader
         title="函数管理"
         description="业务函数 + AI 规则函数 + 服务编排"
-        action={<Button className="gap-2"><Plus className="size-4" /> 新建函数</Button>}
+        action={
+          <div className="flex gap-2">
+            <PageAgentPanel config={AGENT_FUNCTIONS} context={{ functionsCount: functions.length }} />
+            <Button className="gap-2"><Plus className="size-4" /> 新建函数</Button>
+          </div>
+        }
       />
       <Card>
         <CardHeader>
@@ -1243,7 +1280,12 @@ export function OntologyRules() {
       <PageHeader
         title="流程规则"
         description="条件触发 + 服务编排 + DMN 决策表"
-        action={<Button className="gap-2"><Plus className="size-4" /> 新建规则</Button>}
+        action={
+          <div className="flex gap-2">
+            <PageAgentPanel config={AGENT_RULES} context={{ rulesCount: rules.length }} />
+            <Button className="gap-2"><Plus className="size-4" /> 新建规则</Button>
+          </div>
+        }
       />
       <Card>
         <CardHeader>
@@ -1320,6 +1362,7 @@ export function OntologySecurity() {
         description="数据/字段/动作级权限 + ABAC 策略"
         action={
           <div className="flex gap-2">
+            <PageAgentPanel config={AGENT_SECURITY} context={{ securityRulesCount: securityRules.length }} />
             <Button variant="outline" className="gap-2" onClick={() => setSensitiveDialogOpen(true)}>
               <Shield className="size-4" /> 敏感数据识别
             </Button>
@@ -1532,6 +1575,7 @@ export function OntologyGovernance() {
         description="本体地图、导入导出、多环境发布与版本管理"
         action={
           <div className="flex gap-2">
+            <PageAgentPanel config={AGENT_GOVERNANCE} context={{ currentVersion: "v3.2", envs: ["dev", "test", "staging", "prod"] }} />
             <Button variant="outline" className="gap-2"><FileText className="size-4" /> 导出</Button>
             <Button className="gap-2"><Plus className="size-4" /> 发布版本</Button>
           </div>
