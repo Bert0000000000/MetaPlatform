@@ -123,6 +123,7 @@ function ERGraphDialog({
   const [panning, setPanning] = useState(false);
   const panStartRef = useRef({ x: 0, y: 0, panX: 0, panY: 0 });
   const navigate = useNavigate();
+  const [layoutMode, setLayoutMode] = useState<"circular" | "grid" | "hierarchical">("circular");
 
   // 打开时拉 relations
   useEffect(() => {
@@ -142,28 +143,11 @@ function ERGraphDialog({
     setPan({ x: 0, y: 0 });
   }, [open, objects]);
 
-  // 圆形布局节点
+  // 初始 / 打开时按当前 layoutMode 排
   useEffect(() => {
     if (!open || objects.length === 0) return;
-    setPositions((prev) => {
-      const next: Record<string, { x: number; y: number }> = {};
-      const cx = 500;
-      const cy = 360;
-      const r = Math.min(320, 150 + objects.length * 18);
-      objects.forEach((o, i) => {
-        // 保留用户拖动后的位置
-        if (prev[o.id]) {
-          next[o.id] = prev[o.id];
-          return;
-        }
-        const angle = (i / objects.length) * Math.PI * 2 - Math.PI / 2;
-        next[o.id] = {
-          x: cx + Math.cos(angle) * r,
-          y: cy + Math.sin(angle) * r,
-        };
-      });
-      return next;
-    });
+    applyLayout(layoutMode);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, objects]);
 
   function inferHeuristicRelations(objs: OntologyObject[]): { source: string; target: string; type: string }[] {
@@ -244,11 +228,175 @@ function ERGraphDialog({
   function resetView() {
     setZoom(1);
     setPan({ x: 0, y: 0 });
-    setPositions({});
+    applyLayout(layoutMode);
+  }
+
+  // 布局变化时实时重排
+  function changeLayout(mode: "circular" | "grid" | "hierarchical") {
+    setLayoutMode(mode);
+    applyLayout(mode);
   }
 
   const nodeW = 150;
   const nodeH = 68;
+
+  /* ════════════════════════════════════════════════════════════════════
+   * 3 种布局算法: 圆形 / 网格 / 分层 (Sugiyama-like, 减边交叉)
+   * ════════════════════════════════════════════════════════════════════ */
+
+  // 1. 圆形布局 (默认)
+  function layoutCircular(objs: OntologyObject[], prev: Record<string, { x: number; y: number }>): Record<string, { x: number; y: number }> {
+    const cx = 500, cy = 360;
+    const r = Math.min(320, 150 + objs.length * 18);
+    const next: Record<string, { x: number; y: number }> = {};
+    objs.forEach((o, i) => {
+      if (prev[o.id]) { next[o.id] = prev[o.id]; return; }
+      const angle = (i / objs.length) * Math.PI * 2 - Math.PI / 2;
+      next[o.id] = { x: cx + Math.cos(angle) * r, y: cy + Math.sin(angle) * r };
+    });
+    return next;
+  }
+
+  // 2. 网格布局
+  function layoutGrid(objs: OntologyObject[], prev: Record<string, { x: number; y: number }>): Record<string, { x: number; y: number }> {
+    const cols = Math.ceil(Math.sqrt(objs.length * 1.5));
+    const gapX = 220, gapY = 160;
+    const totalW = cols * gapX;
+    const startX = 500 - totalW / 2 + gapX / 2;
+    const startY = 200;
+    const next: Record<string, { x: number; y: number }> = {};
+    objs.forEach((o, i) => {
+      if (prev[o.id]) { next[o.id] = prev[o.id]; return; }
+      const c = i % cols, row = Math.floor(i / cols);
+      next[o.id] = { x: startX + c * gapX, y: startY + row * gapY };
+    });
+    return next;
+  }
+
+  // 3. 分层布局 (Sugiyama-like 减交叉)
+  function layoutHierarchical(
+    objs: OntologyObject[],
+    rels: { source: string; target: string }[],
+    prev: Record<string, { x: number; y: number }>,
+  ): Record<string, { x: number; y: number }> {
+    if (objs.length === 0) return {};
+    const idSet = new Set(objs.map((o) => o.id));
+    // 3.1 邻接表 + 入度
+    const outAdj: Record<string, string[]> = {};
+    const inAdj: Record<string, string[]> = {};
+    const inDeg: Record<string, number> = {};
+    objs.forEach((o) => { outAdj[o.id] = []; inAdj[o.id] = []; inDeg[o.id] = 0; });
+    rels.forEach((r) => {
+      if (idSet.has(r.source) && idSet.has(r.target) && r.source !== r.target) {
+        outAdj[r.source].push(r.target);
+        inAdj[r.target].push(r.source);
+        inDeg[r.target]++;
+      }
+    });
+    // 3.2 BFS 分层 (源点选 inDeg = 0)
+    const layer: Record<string, number> = {};
+    const queue: string[] = [];
+    objs.forEach((o) => {
+      if (inDeg[o.id] === 0) { layer[o.id] = 0; queue.push(o.id); }
+    });
+    // 入度非 0 的: 先给个 fallback = inf
+    objs.forEach((o) => { if (!(o.id in layer)) layer[o.id] = 0; });
+    let head = 0;
+    while (head < queue.length) {
+      const u = queue[head++];
+      outAdj[u].forEach((v) => {
+        if (layer[v] < layer[u] + 1) layer[v] = layer[u] + 1;
+        inDeg[v]--;
+        if (inDeg[v] === 0) queue.push(v);
+      });
+    }
+    // 3.3 按层分组
+    const layers: string[][] = [];
+    objs.forEach((o) => {
+      const l = layer[o.id];
+      if (!layers[l]) layers[l] = [];
+      layers[l].push(o.id);
+    });
+    // 3.4 Barycenter 排序 (多次扫描减交叉)
+    const ORDER_ITER = 12;
+    for (let iter = 0; iter < ORDER_ITER; iter++) {
+      for (let l = 1; l < layers.length; l++) {
+        layers[l].forEach((id, i) => {
+          const parents = inAdj[id];
+          if (parents.length === 0) return;
+          // 找父层 index
+          const parentLayer = layers[l - 1];
+          if (!parentLayer) return;
+          (layers[l] as any).__bary = (layers[l] as any).__bary || {};
+          let sum = 0, cnt = 0;
+          parents.forEach((p) => {
+            const idx = parentLayer.indexOf(p);
+            if (idx >= 0) { sum += idx; cnt++; }
+          });
+          (layers[l] as any).__bary[id] = cnt > 0 ? sum / cnt : i;
+        });
+        // 重新排序
+        layers[l].sort((a, b) => {
+          const ba = (layers[l] as any).__bary?.[a] ?? 999;
+          const bb = (layers[l] as any).__bary?.[b] ?? 999;
+          return ba - bb;
+        });
+      }
+      // 反向
+      for (let l = layers.length - 2; l >= 0; l--) {
+        layers[l].forEach((id, i) => {
+          const children = outAdj[id];
+          if (children.length === 0) return;
+          const childLayer = layers[l + 1];
+          if (!childLayer) return;
+          (layers[l] as any).__bary = (layers[l] as any).__bary || {};
+          let sum = 0, cnt = 0;
+          children.forEach((c) => {
+            const idx = childLayer.indexOf(c);
+            if (idx >= 0) { sum += idx; cnt++; }
+          });
+          (layers[l] as any).__bary[id] = cnt > 0 ? sum / cnt : i;
+        });
+        layers[l].sort((a, b) => {
+          const ba = (layers[l] as any).__bary?.[a] ?? 999;
+          const bb = (layers[l] as any).__bary?.[b] ?? 999;
+          return ba - bb;
+        });
+      }
+    }
+    // 3.5 计算坐标
+    const colW = 200, rowH = 120;
+    const totalW = Math.max(...layers.map((ly) => ly.length)) * colW;
+    const startX = 500 - totalW / 2 + colW / 2;
+    const startY = 180;
+    const next: Record<string, { x: number; y: number }> = {};
+    layers.forEach((ly, li) => {
+      ly.forEach((id, i) => {
+        const layerWidth = ly.length * colW;
+        const offsetX = (totalW - layerWidth) / 2;
+        next[id] = {
+          x: startX + offsetX + i * colW,
+          y: startY + li * rowH,
+        };
+      });
+    });
+    return next;
+  }
+
+  // 应用布局
+  function applyLayout(mode: "circular" | "grid" | "hierarchical") {
+    if (objects.length === 0) return;
+    let newPos: Record<string, { x: number; y: number }>;
+    if (mode === "grid") {
+      newPos = layoutGrid(objects, {});
+    } else if (mode === "hierarchical") {
+      newPos = layoutHierarchical(objects, relations, {});
+    } else {
+      newPos = layoutCircular(objects, {});
+    }
+    setPositions(newPos);
+  }
+
   const relCount = relations.length;
   const objCount = objects.length;
 
@@ -268,13 +416,45 @@ function ERGraphDialog({
               </DialogDescription>
             </div>
             <div className="flex items-center gap-1">
+              <div className="flex items-center gap-0.5 bg-muted/40 rounded p-0.5 mr-2">
+                <button
+                  type="button"
+                  className={`px-2 py-1 rounded text-[11px] font-medium transition-colors ${
+                    layoutMode === "circular" ? "bg-white shadow text-foreground" : "text-muted-foreground hover:text-foreground"
+                  }`}
+                  onClick={() => changeLayout("circular")}
+                  title="圆形布局"
+                >
+                  圆形
+                </button>
+                <button
+                  type="button"
+                  className={`px-2 py-1 rounded text-[11px] font-medium transition-colors ${
+                    layoutMode === "grid" ? "bg-white shadow text-foreground" : "text-muted-foreground hover:text-foreground"
+                  }`}
+                  onClick={() => changeLayout("grid")}
+                  title="网格布局"
+                >
+                  网格
+                </button>
+                <button
+                  type="button"
+                  className={`px-2 py-1 rounded text-[11px] font-medium transition-colors ${
+                    layoutMode === "hierarchical" ? "bg-white shadow text-foreground" : "text-muted-foreground hover:text-foreground"
+                  }`}
+                  onClick={() => changeLayout("hierarchical")}
+                  title="分层布局 (减边交叉)"
+                >
+                  分层
+                </button>
+              </div>
               <Button size="sm" variant="outline" onClick={() => setZoom((z) => Math.min(3, z * 1.2))} title="放大">
                 <ZoomIn className="size-3.5" />
               </Button>
               <Button size="sm" variant="outline" onClick={() => setZoom((z) => Math.max(0.3, z / 1.2))} title="缩小">
                 <ZoomOut className="size-3.5" />
               </Button>
-              <Button size="sm" variant="outline" onClick={resetView} title="重置">
+              <Button size="sm" variant="outline" onClick={resetView} title="重置视图">
                 <Maximize2 className="size-3.5" />
               </Button>
               <span className="text-[10px] text-muted-foreground ml-2 font-mono tabular-nums">
