@@ -403,68 +403,66 @@ function ERGraphDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-6xl max-h-[92vh] p-0">
-        <DialogHeader className="px-4 py-3 border-b">
-          <div className="flex items-center justify-between">
-            <div>
-              <DialogTitle className="flex items-center gap-2">
-                <Link2 className="size-5" />
-                关系图 (E-R)
-              </DialogTitle>
-              <DialogDescription>
-                {loading ? "加载关系中..." : `${objCount} 个对象, ${relCount} 条关系`}
-                {relCount === 0 && !loading && " (无后端关系, 已用业务启发式推断)"}
-              </DialogDescription>
-            </div>
-            <div className="flex items-center gap-1">
-              <div className="flex items-center gap-0.5 bg-muted/40 rounded p-0.5 mr-2">
-                <button
-                  type="button"
-                  className={`px-2 py-1 rounded text-[11px] font-medium transition-colors ${
-                    layoutMode === "circular" ? "bg-white shadow text-foreground" : "text-muted-foreground hover:text-foreground"
-                  }`}
-                  onClick={() => changeLayout("circular")}
-                  title="圆形布局"
-                >
-                  圆形
-                </button>
-                <button
-                  type="button"
-                  className={`px-2 py-1 rounded text-[11px] font-medium transition-colors ${
-                    layoutMode === "grid" ? "bg-white shadow text-foreground" : "text-muted-foreground hover:text-foreground"
-                  }`}
-                  onClick={() => changeLayout("grid")}
-                  title="网格布局"
-                >
-                  网格
-                </button>
-                <button
-                  type="button"
-                  className={`px-2 py-1 rounded text-[11px] font-medium transition-colors ${
-                    layoutMode === "hierarchical" ? "bg-white shadow text-foreground" : "text-muted-foreground hover:text-foreground"
-                  }`}
-                  onClick={() => changeLayout("hierarchical")}
-                  title="分层布局 (减边交叉)"
-                >
-                  分层
-                </button>
-              </div>
-              <Button size="sm" variant="outline" onClick={() => setZoom((z) => Math.min(3, z * 1.2))} title="放大">
-                <ZoomIn className="size-3.5" />
-              </Button>
-              <Button size="sm" variant="outline" onClick={() => setZoom((z) => Math.max(0.3, z / 1.2))} title="缩小">
-                <ZoomOut className="size-3.5" />
-              </Button>
-              <Button size="sm" variant="outline" onClick={resetView} title="重置视图">
-                <Maximize2 className="size-3.5" />
-              </Button>
-              <span className="text-[10px] text-muted-foreground ml-2 font-mono tabular-nums">
-                {(zoom * 100).toFixed(0)}%
-              </span>
-            </div>
-          </div>
+        <DialogHeader className="px-4 py-3 border-b pr-12">
+          <DialogTitle className="flex items-center gap-2">
+            <Link2 className="size-5" />
+            关系图 (E-R)
+          </DialogTitle>
+          <DialogDescription>
+            {loading ? "加载关系中..." : `${objCount} 个对象, ${relCount} 条关系`}
+            {relCount === 0 && !loading && " (无后端关系, 已用业务启发式推断)"}
+          </DialogDescription>
         </DialogHeader>
 
         <div className="relative" style={{ height: "70vh", backgroundColor: "#fafbfc", backgroundImage: "radial-gradient(circle, #cbd5e1 1px, transparent 1px)", backgroundSize: "20px 20px" }}>
+          {/* 浮动工具栏 — 顶部居中 (避开右上 Close X 按钮) */}
+          <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1 bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-700 shadow-md rounded-lg p-1 backdrop-blur">
+            <div className="flex items-center gap-0.5 bg-muted/40 rounded p-0.5">
+              <button
+                type="button"
+                className={`px-2 py-1 rounded text-[11px] font-medium transition-colors ${
+                  layoutMode === "circular" ? "bg-white shadow text-foreground" : "text-muted-foreground hover:text-foreground"
+                }`}
+                onClick={() => changeLayout("circular")}
+                title="圆形布局"
+              >
+                圆形
+              </button>
+              <button
+                type="button"
+                className={`px-2 py-1 rounded text-[11px] font-medium transition-colors ${
+                  layoutMode === "grid" ? "bg-white shadow text-foreground" : "text-muted-foreground hover:text-foreground"
+                }`}
+                onClick={() => changeLayout("grid")}
+                title="网格布局"
+              >
+                网格
+              </button>
+              <button
+                type="button"
+                className={`px-2 py-1 rounded text-[11px] font-medium transition-colors ${
+                  layoutMode === "hierarchical" ? "bg-white shadow text-foreground" : "text-muted-foreground hover:text-foreground"
+                }`}
+                onClick={() => changeLayout("hierarchical")}
+                title="分层布局 (减边交叉)"
+              >
+                分层
+              </button>
+            </div>
+            <div className="w-px h-5 bg-border mx-1" />
+            <Button size="icon" variant="ghost" className="size-7" onClick={() => setZoom((z) => Math.min(3, z * 1.2))} title="放大">
+              <ZoomIn className="size-3.5" />
+            </Button>
+            <Button size="icon" variant="ghost" className="size-7" onClick={() => setZoom((z) => Math.max(0.3, z / 1.2))} title="缩小">
+              <ZoomOut className="size-3.5" />
+            </Button>
+            <Button size="icon" variant="ghost" className="size-7" onClick={resetView} title="重置视图">
+              <Maximize2 className="size-3.5" />
+            </Button>
+            <span className="text-[10px] text-muted-foreground px-1.5 font-mono tabular-nums min-w-[34px] text-right">
+              {(zoom * 100).toFixed(0)}%
+            </span>
+          </div>
           {loading && (
             <div className="absolute inset-0 flex items-center justify-center bg-background/50 z-10">
               <Loader2 className="size-6 animate-spin text-muted-foreground" />
