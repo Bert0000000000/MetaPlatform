@@ -1387,7 +1387,7 @@ export function SuperAIPage() {
       </div>
       <div className="flex flex-1 overflow-hidden">
         <div className="flex-1 flex flex-col min-w-0">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col flex-1 min-h-0">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col flex-1 min-h-0 w-full max-w-4xl self-center">
             {/* Tabs strip — outer div supplies the 1px bottom border.
                 TabsList grows to fit, triggers use a 2px box-shadow
                 underline (NOT border-b-2) so the indicator is always
