@@ -10,6 +10,7 @@ interface StatCardProps {
   trend?: number;
   icon?: React.ElementType | React.ReactNode;
   className?: string;
+  sub?: string;            // 副标题/补充说明 (e.g. "3 条待审批")
 }
 
 export function StatCard({
@@ -19,6 +20,7 @@ export function StatCard({
   trend,
   icon,
   className,
+  sub,
 }: StatCardProps) {
   const isPositive = trend !== undefined && trend >= 0;
   // Support both React.ElementType (Lucide component) and React.ReactNode (JSX)
@@ -39,6 +41,9 @@ export function StatCard({
               </span>
               {unit && <span className="text-xs text-muted-foreground">{unit}</span>}
             </div>
+            {sub && (
+              <p className="text-[11px] text-muted-foreground/80 mt-0.5">{sub}</p>
+            )}
             {trend !== undefined && (
               <div
                 className={cn(

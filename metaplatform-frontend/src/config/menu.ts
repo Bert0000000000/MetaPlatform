@@ -376,6 +376,7 @@ export const MENU_TABS: Record<MenuKey, TabConfig[]> = {
     { key: "actions", label: "动作", path: "/actions" },
     { key: "functions", label: "函数", path: "/functions" },
     { key: "rules", label: "流程规则", path: "/rules" },
+    { key: "orchestration", label: "业务流程编排", path: "/orchestration" },
     { key: "security", label: "安全", path: "/security" },
     { key: "governance", label: "治理与发布", path: "/governance" },
   ],

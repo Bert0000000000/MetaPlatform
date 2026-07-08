@@ -102,6 +102,7 @@ import ProcessDesignerV2Page from "@/pages/process/ProcessDesignerV2Page";
 import Objects from "@/pages/ontology/Objects";
 import { OntologyElement, OntologyProperties, OntologyLinks, OntologyActions, OntologyFunctions, OntologyRules, OntologySecurity, OntologyGovernance } from "@/pages/ontology/OntologyTab";
 import ObjectDetail from "@/pages/ontology/ObjectDetail";
+import OntologyOrchestration from "@/pages/ontology/OntologyOrchestration";
 
 // 数据中心
 import { DataDashboard, DataSourceList, AskData, MetricCenter, DataQuality, ETLTasks, RealTimeMonitor, DecisionPush, DataLakehouse, DataKnowledge, ReportCenter, MasterData } from "@/pages/data/DataCenter";
@@ -268,6 +269,7 @@ export default function App() {
               <Route path="/ontology/actions" element={<OntologyActions />} />
               <Route path="/ontology/functions" element={<OntologyFunctions />} />
               <Route path="/ontology/rules" element={<OntologyRules />} />
+              <Route path="/ontology/orchestration" element={<OntologyOrchestration />} />
               <Route path="/ontology/security" element={<OntologySecurity />} />
               <Route path="/ontology/governance" element={<OntologyGovernance />} />
               <Route path="/ontology/object/:objectId" element={<ObjectDetail />} />
