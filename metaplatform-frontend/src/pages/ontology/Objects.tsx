@@ -168,21 +168,28 @@ function ERGraphDialog({
 
   function inferHeuristicRelations(objs: OntologyObject[]): { source: string; target: string; type: string }[] {
     const r: { source: string; target: string; type: string }[] = [];
-    const findByName = (n: string) => objs.find((o) => o.name.toLowerCase().includes(n.toLowerCase()));
+    // 用更宽松的匹配: name 中包含 (不区分大小写) / 移除 obj- 前缀
+    const findByName = (...keywords: string[]) =>
+      objs.find((o) => {
+        const n = o.name.toLowerCase().replace(/^obj[-_]?/, "").replace(/[-_]/g, "");
+        return keywords.some((k) => n.includes(k.toLowerCase()));
+      });
     // 常见业务关系
-    const pairs: [string, string, string][] = [
-      ["Customer", "Order", "下单"],
-      ["Customer", "Opportunity", "潜客"],
-      ["Order", "Product", "包含"],
-      ["Order", "Invoice", "生成"],
-      ["Opportunity", "Activity", "跟进"],
-      ["Contract", "Customer", "签约"],
-      ["Employee", "Customer", "负责"],
+    const pairs: [string[], string[], string][] = [
+      [["customer", "client", "客户"], ["order", "订单"], "下单"],
+      [["customer", "客户"], ["opportunity", "deal", "销售机会"], "潜客"],
+      [["order", "订单"], ["product", "goods", "产品"], "包含"],
+      [["order", "订单"], ["invoice", "发票"], "生成"],
+      [["opportunity", "销售机会"], ["activity", "follow", "活动", "跟进"], "跟进"],
+      [["contract", "合同"], ["customer", "客户"], "签约"],
+      [["employee", "staff", "员工"], ["customer", "客户"], "负责"],
+      [["employee", "员工"], ["order", "订单"], "处理"],
+      [["kpi"], ["employee", "员工"], "考核"],
     ];
-    pairs.forEach(([a, b, type]) => {
-      const oa = findByName(a);
-      const ob = findByName(b);
-      if (oa && ob) r.push({ source: oa.id, target: ob.id, type });
+    pairs.forEach(([aKeys, bKeys, type]) => {
+      const oa = findByName(...aKeys);
+      const ob = findByName(...bKeys);
+      if (oa && ob && oa.id !== ob.id) r.push({ source: oa.id, target: ob.id, type });
     });
     return r;
   }
@@ -295,10 +302,10 @@ function ERGraphDialog({
           >
             <defs>
               <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
-                <polygon points="0 0, 10 3, 0 6" fill="hsl(var(--muted-foreground))" />
+                <polygon points="0 0, 10 3, 0 6" fill="#94a3b8" />
               </marker>
               <marker id="arrowhead-hover" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
-                <polygon points="0 0, 10 3, 0 6" fill="hsl(var(--primary))" />
+                <polygon points="0 0, 10 3, 0 6" fill="#2563eb" />
               </marker>
             </defs>
             <g transform={`translate(${pan.x}, ${pan.y}) scale(${zoom})`}>
@@ -324,19 +331,19 @@ function ERGraphDialog({
                   <g key={i} className="pointer-events-none">
                     <line
                       x1={sx} y1={sy} x2={tx} y2={ty}
-                      stroke={isHighlighted ? "hsl(var(--primary))" : "hsl(var(--muted-foreground))"}
+                      stroke={isHighlighted ? "#2563eb" : "#94a3b8"}
                       strokeWidth={isHighlighted ? 2.5 : 1.5}
                       markerEnd={isHighlighted ? "url(#arrowhead-hover)" : "url(#arrowhead)"}
-                      opacity={hoverNodeId ? (isHighlighted ? 1 : 0.3) : 0.7}
+                      opacity={hoverNodeId ? (isHighlighted ? 1 : 0.25) : 0.85}
                     />
                     {/* 关系标签 */}
                     <rect
-                      x={midX - rel.type.length * 4.5}
-                      y={midY - 9}
-                      width={rel.type.length * 9}
-                      height={18}
-                      fill="hsl(var(--background))"
-                      stroke={isHighlighted ? "hsl(var(--primary))" : "hsl(var(--border))"}
+                      x={midX - rel.type.length * 5}
+                      y={midY - 10}
+                      width={rel.type.length * 10}
+                      height={20}
+                      fill="#ffffff"
+                      stroke={isHighlighted ? "#2563eb" : "#cbd5e1"}
                       strokeWidth={1}
                       rx={4}
                     />
@@ -344,7 +351,7 @@ function ERGraphDialog({
                       x={midX}
                       y={midY + 4}
                       textAnchor="middle"
-                      className="text-[10px] fill-foreground pointer-events-none"
+                      style={{ fontSize: 10, fontWeight: 500, fill: isHighlighted ? "#2563eb" : "#475569", pointerEvents: "none" }}
                     >
                       {rel.type}
                     </text>
@@ -356,7 +363,6 @@ function ERGraphDialog({
               {objects.map((o) => {
                 const pos = positions[o.id];
                 if (!pos) return null;
-                const isDup = o.name === o.name.toLowerCase() && o.name === o.name.toLowerCase(); // 简化
                 const isHover = hoverNodeId === o.id;
                 const connectedIds = new Set<string>();
                 relations.forEach((r) => {
@@ -364,6 +370,10 @@ function ERGraphDialog({
                   if (r.target === o.id) connectedIds.add(r.source);
                 });
                 const hasConnections = connectedIds.size > 0;
+                // icon 颜色 hash (按 name 生成稳定 hue)
+                const hue = Array.from(o.name).reduce((a, c) => a + c.charCodeAt(0), 0) % 360;
+                const iconBg = `hsl(${hue} 80% 92%)`;
+                const iconColor = `hsl(${hue} 70% 38%)`;
                 return (
                   <g
                     key={o.id}
@@ -373,40 +383,85 @@ function ERGraphDialog({
                     onMouseEnter={() => setHoverNodeId(o.id)}
                     onMouseLeave={() => setHoverNodeId(null)}
                     onDoubleClick={() => { onOpenChange(false); navigate(`/ontology/object/${o.id}`); }}
-                    className="cursor-pointer"
+                    style={{ cursor: "grab" }}
                   >
                     {/* 阴影 */}
                     <rect
-                      x={1} y={2} width={nodeW} height={nodeH}
-                      fill="hsl(var(--background))"
-                      opacity={0.6}
-                      rx={8}
+                      x={1} y={3} width={nodeW} height={nodeH}
+                      fill="#000"
+                      opacity={0.08}
+                      rx={10}
                     />
                     {/* 主体 */}
                     <rect
                       x={0} y={0} width={nodeW} height={nodeH}
-                      fill={isHover ? "hsl(var(--primary) / 0.08)" : "hsl(var(--card))"}
-                      stroke={isHover ? "hsl(var(--primary))" : hasConnections ? "hsl(var(--primary) / 0.4)" : "hsl(var(--border))"}
-                      strokeWidth={isHover ? 2 : 1.5}
+                      fill={isHover ? "#eff6ff" : "#ffffff"}
+                      stroke={isHover ? "#2563eb" : hasConnections ? "#3b82f6" : "#cbd5e1"}
+                      strokeWidth={isHover ? 2.5 : 1.5}
+                      rx={10}
+                    />
+                    {/* icon 色块 */}
+                    <rect
+                      x={10} y={10} width={36} height={36}
+                      fill={iconBg}
                       rx={8}
                     />
-                    {/* 图标 */}
-                    <foreignObject x={8} y={8} width={20} height={20}>
-                      <DynamicIcon name={o.icon} className="size-5 text-primary" />
-                    </foreignObject>
-                    {/* 标签 */}
-                    <text x={34} y={22} className="text-[12px] font-medium fill-foreground pointer-events-none">
-                      {o.label.length > 8 ? o.label.slice(0, 8) + "…" : o.label}
+                    <text
+                      x={28}
+                      y={34}
+                      textAnchor="middle"
+                      style={{ fontSize: 18, fontWeight: 700, fill: iconColor, pointerEvents: "none" }}
+                    >
+                      {o.label?.[0] || o.name[0]?.toUpperCase() || "?"}
                     </text>
-                    <text x={34} y={38} className="text-[10px] fill-muted-foreground pointer-events-none font-mono">
-                      {o.name.length > 10 ? o.name.slice(0, 10) + "…" : o.name}
+                    {/* label */}
+                    <text
+                      x={54}
+                      y={22}
+                      style={{ fontSize: 13, fontWeight: 600, fill: "#0f172a", pointerEvents: "none" }}
+                    >
+                      {o.label.length > 7 ? o.label.slice(0, 7) + "…" : o.label}
                     </text>
-                    <text x={34} y={50} className="text-[9px] fill-muted-foreground pointer-events-none">
+                    {/* name (英文) */}
+                    <text
+                      x={54}
+                      y={37}
+                      style={{ fontSize: 10, fill: "#64748b", fontFamily: "ui-monospace, monospace", pointerEvents: "none" }}
+                    >
+                      {o.name.length > 9 ? o.name.slice(0, 9) + "…" : o.name}
+                    </text>
+                    {/* 字段数徽章 */}
+                    <rect
+                      x={54}
+                      y={42}
+                      width={56}
+                      height={14}
+                      fill="#f1f5f9"
+                      rx={3}
+                    />
+                    <text
+                      x={82}
+                      y={52}
+                      textAnchor="middle"
+                      style={{ fontSize: 9, fill: "#475569", pointerEvents: "none" }}
+                    >
                       {o.properties_count} 字段
                     </text>
                     {/* 无关系标记 */}
                     {!hasConnections && (
-                      <circle cx={nodeW - 8} cy={8} r={3} fill="hsl(var(--orange-500, #f97316))" />
+                      <circle cx={nodeW - 10} cy={10} r={4} fill="#f97316" stroke="#fff" strokeWidth={1.5} />
+                    )}
+                    {/* hover 选中 描边光晕 */}
+                    {isHover && (
+                      <rect
+                        x={-3} y={-3} width={nodeW + 6} height={nodeH + 6}
+                        fill="none"
+                        stroke="#3b82f6"
+                        strokeWidth={1}
+                        strokeDasharray="3 3"
+                        opacity={0.5}
+                        rx={12}
+                      />
                     )}
                   </g>
                 );
@@ -415,28 +470,37 @@ function ERGraphDialog({
           </svg>
 
           {/* 图例 */}
-          <div className="absolute bottom-2 left-2 bg-background/90 border rounded p-2 text-[10px] space-y-0.5">
-            <div className="font-medium mb-1">图例</div>
-            <div className="flex items-center gap-1.5">
-              <div className="size-3 rounded border border-primary/40 bg-card" />
-              <span>对象 (双击查看)</span>
+          <div className="absolute bottom-3 left-3 bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-700 shadow-md rounded-lg p-2.5 text-[11px] space-y-1.5 backdrop-blur">
+            <div className="font-semibold text-slate-900 dark:text-slate-100 text-xs">图例</div>
+            <div className="flex items-center gap-2">
+              <div className="size-4 rounded border-2 border-blue-500 bg-white" />
+              <span className="text-slate-700 dark:text-slate-300">对象 (双击查看)</span>
             </div>
-            <div className="flex items-center gap-1.5">
-              <div className="size-0.5 h-2 bg-muted-foreground" />
-              <span>关系</span>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-0.5 bg-slate-400" />
+              <span className="text-slate-700 dark:text-slate-300">关系</span>
             </div>
-            <div className="flex items-center gap-1.5">
-              <div className="size-1.5 rounded-full bg-orange-500" />
-              <span>无关联</span>
+            <div className="flex items-center gap-2">
+              <div className="size-2 rounded-full bg-orange-500 ring-2 ring-white" />
+              <span className="text-slate-700 dark:text-slate-300">无关联</span>
             </div>
           </div>
 
           {/* 操作提示 */}
-          <div className="absolute top-2 right-2 bg-background/90 border rounded p-2 text-[10px] space-y-0.5">
-            <div>🖱️ 拖动节点移动</div>
-            <div>🖱️ 拖动空白平移</div>
-            <div>🖱️ 滚轮缩放</div>
-            <div>🖱️ 双击节点查看详情</div>
+          <div className="absolute bottom-3 right-3 bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-700 shadow-md rounded-lg p-2.5 text-[11px] space-y-1 backdrop-blur">
+            <div className="font-semibold text-slate-900 dark:text-slate-100 text-xs mb-1">操作</div>
+            <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
+              <span>🖱️</span><span>拖动节点移动</span>
+            </div>
+            <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
+              <span>🖱️</span><span>拖动空白平移</span>
+            </div>
+            <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
+              <span>🖱️</span><span>滚轮缩放</span>
+            </div>
+            <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
+              <span>🖱️</span><span>双击节点查看详情</span>
+            </div>
           </div>
         </div>
 
