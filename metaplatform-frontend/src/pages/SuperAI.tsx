@@ -1170,97 +1170,88 @@ function HistorySidebar({ conversations, currentId, onSelect, onDelete, onClose 
   }
 
   return (
-    <>
-      {/* Backdrop */}
-      <div
-        className="fixed inset-0 bg-background/60 backdrop-blur-sm z-40 animate-in fade-in"
-        onClick={onClose}
-        aria-label="关闭历史"
-      />
-      {/* Drawer — left side, 320px wide */}
-      <aside
-        className="fixed left-0 top-0 bottom-0 w-80 bg-background border-r z-50 flex flex-col shadow-2xl animate-in slide-in-from-left duration-200"
-        role="dialog"
-        aria-label="对话历史"
-      >
-        <div className="flex items-center justify-between p-4 border-b">
-          <div className="flex items-center gap-2">
-            <Clock className="size-4 text-muted-foreground" />
-            <h2 className="font-semibold text-sm">对话历史</h2>
-            {conversations.length > 0 && (
-              <Badge variant="secondary" className="h-4 px-1.5 text-[10px]">
-                {conversations.length}
-              </Badge>
-            )}
-          </div>
-          <Button variant="ghost" size="icon" onClick={onClose} className="size-7">
-            <X className="size-4" />
-          </Button>
-        </div>
-        <div className="flex-1 overflow-y-auto">
-          {conversations.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
-              <div className="size-12 rounded-full bg-muted flex items-center justify-center mb-3">
-                <MessageSquare className="size-6" />
-              </div>
-              <p className="text-sm font-medium">暂无历史对话</p>
-              <p className="text-xs text-muted-foreground/80 mt-1">开始一段新对话试试</p>
-            </div>
-          ) : (
-            <div className="py-2">
-              {(["今天", "昨天", "本周", "更早"] as const).map((g) =>
-                groups[g].length === 0 ? null : (
-                  <div key={g} className="mb-2">
-                    <div className="px-4 py-1.5 text-[10px] font-medium text-muted-foreground/80 uppercase tracking-wider">
-                      {g}
-                    </div>
-                    {groups[g].map((conv) => {
-                      const active = conv.id === currentId;
-                      return (
-                        <div
-                          key={conv.id}
-                          className={`group flex items-start gap-2 mx-2 px-2 py-2 rounded-lg cursor-pointer transition-colors ${
-                            active
-                              ? "bg-primary/10 ring-1 ring-primary/20"
-                              : "hover:bg-muted"
-                          }`}
-                          onClick={() => onSelect(conv)}
-                        >
-                          <MessageSquare className="size-4 mt-0.5 shrink-0 text-muted-foreground" />
-                          <div className="flex-1 min-w-0">
-                            <div className="text-sm font-medium truncate">{conv.title}</div>
-                            <div className="text-[11px] text-muted-foreground mt-0.5 flex items-center gap-1.5">
-                              <span>{conv.messages.length} 条</span>
-                              <span>·</span>
-                              <span>{conv.createdAt}</span>
-                            </div>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="size-6 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onDelete(conv.id);
-                            }}
-                            title="删除"
-                          >
-                            <Trash2 className="size-3" />
-                          </Button>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )
-              )}
-            </div>
+    <aside
+      className="w-80 shrink-0 border-l bg-background/60 backdrop-blur-sm flex flex-col"
+      role="complementary"
+      aria-label="对话历史"
+    >
+      <div className="flex items-center justify-between p-4 border-b bg-background/80 sticky top-0 z-10">
+        <div className="flex items-center gap-2">
+          <Clock className="size-4 text-muted-foreground" />
+          <h2 className="font-semibold text-sm">对话历史</h2>
+          {conversations.length > 0 && (
+            <Badge variant="secondary" className="h-4 px-1.5 text-[10px]">
+              {conversations.length}
+            </Badge>
           )}
         </div>
-        <div className="p-3 border-t text-[10px] text-muted-foreground/70 text-center">
-          ⌘N 新对话 · Esc 关闭
-        </div>
-      </aside>
-    </>
+        <Button variant="ghost" size="icon" onClick={onClose} className="size-7" title="关闭 (Esc)">
+          <X className="size-4" />
+        </Button>
+      </div>
+      <div className="flex-1 overflow-y-auto">
+        {conversations.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+            <div className="size-12 rounded-full bg-muted flex items-center justify-center mb-3">
+              <MessageSquare className="size-6" />
+            </div>
+            <p className="text-sm font-medium">暂无历史对话</p>
+            <p className="text-xs text-muted-foreground/80 mt-1">开始一段新对话试试</p>
+          </div>
+        ) : (
+          <div className="py-2">
+            {(["今天", "昨天", "本周", "更早"] as const).map((g) =>
+              groups[g].length === 0 ? null : (
+                <div key={g} className="mb-2">
+                  <div className="px-4 py-1.5 text-[10px] font-medium text-muted-foreground/80 uppercase tracking-wider">
+                    {g}
+                  </div>
+                  {groups[g].map((conv) => {
+                    const active = conv.id === currentId;
+                    return (
+                      <div
+                        key={conv.id}
+                        className={`group flex items-start gap-2 mx-2 px-2 py-2 rounded-lg cursor-pointer transition-colors ${
+                          active
+                            ? "bg-primary/10 ring-1 ring-primary/20"
+                            : "hover:bg-muted"
+                        }`}
+                        onClick={() => onSelect(conv)}
+                      >
+                        <MessageSquare className="size-4 mt-0.5 shrink-0 text-muted-foreground" />
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-medium truncate">{conv.title}</div>
+                          <div className="text-[11px] text-muted-foreground mt-0.5 flex items-center gap-1.5">
+                            <span>{conv.messages.length} 条</span>
+                            <span>·</span>
+                            <span>{conv.createdAt}</span>
+                          </div>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="size-6 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onDelete(conv.id);
+                          }}
+                          title="删除"
+                        >
+                          <Trash2 className="size-3" />
+                        </Button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )
+            )}
+          </div>
+        )}
+      </div>
+      <div className="p-3 border-t text-[10px] text-muted-foreground/70 text-center bg-background/80">
+        ⌘N 新对话 · Esc 关闭
+      </div>
+    </aside>
   );
 }
 
@@ -1395,7 +1386,7 @@ export function SuperAIPage() {
         </div>
       </div>
       <div className="flex flex-1 overflow-hidden">
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col min-w-0">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col flex-1">
             <div className="border-b bg-background/40 backdrop-blur-sm px-6">
               <TabsList className="h-11 bg-transparent gap-0 p-0 relative">
@@ -1445,7 +1436,8 @@ export function SuperAIPage() {
           </Tabs>
         </div>
 
-        {/* History sidebar */}
+        {/* History panel — embedded in page layout (not a drawer)
+            320px column, resizes the chat area instead of overlapping it. */}
         {showHistory && (
           <HistorySidebar
             conversations={conversations}
