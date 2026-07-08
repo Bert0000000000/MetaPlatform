@@ -14,14 +14,18 @@ import express from "express";
 import cors from "cors";
 import routes from "./routes.js";
 import { RUNTIME_META } from "./runtime-db.js";
+import { accessLog } from "./access-log.js";
 
 const PORT = Number(process.env.PORT || 3000);
 const HOST = process.env.HOST || "0.0.0.0";
 
 const app = express();
 app.disable("x-powered-by");
-app.use(cors());
-app.use(express.json({ limit: "1mb" }));
+app.disable("etag");
+app.set("trust proxy", true);            // honour X-Forwarded-For for ip logging
+app.use(accessLog);                      // FIRST — log everything
+app.use(cors({ exposedHeaders: ["x-request-id"] }));
+app.use(express.json({ limit: "256kb" })); // runtime never takes large bodies
 app.use("/", routes);
 
 app.get("/", (_req, res) => {

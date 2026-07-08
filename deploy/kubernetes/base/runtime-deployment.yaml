@@ -1,0 +1,201 @@
+# ──────────────────────────────────────────────────────────
+# Runtime Deployment
+# ──────────────────────────────────────────────────────────
+# Runs ONE published MetaPlatform application in a fully-isolated
+# sandbox. The orchestrator stamps out one Deployment per published
+# app_slug (see `metaplatform-runtime/README.md`).
+#
+# Security guarantees (defence in depth):
+#   • readOnlyRootFilesystem       — rootfs is read-only at runtime
+#   • runAsNonRoot / uid 10001     — non-root user baked into image
+#   • allowPrivilegeEscalation     — false (no setuid escalation)
+#   • capabilities.drop ALL        — no Linux capabilities
+#   • seccompProfile RuntimeDefault — K8s default syscall filter
+#   • /data RO mount               — published sqlite is immutable
+#   • /tmp tmpfs                   — WAL/SHM siblings go to RAM
+#   • NetworkPolicy (separate)     — only platform proxy can reach us
+#   • /health requires admin token — never leaks app meta publicly
+#
+# The container reads the published snapshot at:
+#   /data/app.db     — RO bind-mount from the platform's per-app dir
+# and stages a writable copy to /tmp/runtime/app.db (tmpfs).
+# ──────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: metaplatform-runtime
+  namespace: metaplatform
+  labels:
+    app: metaplatform-runtime
+    tier: runtime
+    app.kubernetes.io/component: published-app-runtime
+    app.kubernetes.io/part-of: metaplatform
+  annotations:
+    description: "Per-app isolated runtime. One Deployment per app_slug."
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  strategy:
+    type: Recreate   # must Recreate — the published DB is mounted RO
+  selector:
+    matchLabels:
+      app: metaplatform-runtime
+  template:
+    metadata:
+      labels:
+        app: metaplatform-runtime
+        tier: runtime
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "3000"
+        prometheus.io/path: "/metrics"
+    spec:
+      automountServiceAccountToken: false   # Pod never talks to K8s API
+      enableServiceLinks: false            # don't leak cluster service env
+      hostNetwork: false
+      hostPID: false
+      hostIPC: false
+      dnsPolicy: ClusterFirst
+      # ── Pod-level security context ───────────────────────
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+        supplementalGroups: []
+        sysctls: []
+      # ── Sidecar-less; the runtime is intentionally tiny ──
+      containers:
+        - name: runtime
+          image: metaplatform/runtime:0.1.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 3000
+              protocol: TCP
+          # ── Per-container env ────────────────────────────
+          env:
+            - name: NODE_ENV
+              value: production
+            - name: PORT
+              value: "3000"
+            - name: HOST
+              value: "0.0.0.0"
+            - name: RUNTIME_DB_PATH
+              value: /data/app.db
+            - name: APP_ID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.labels['app.metaplatform/app-id']
+            - name: APP_SLUG
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.labels['app.metaplatform/app-slug']
+            - name: RUNTIME_ADMIN_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: metaplatform-runtime-admin
+                  key: token
+                  optional: false
+            - name: POD_NAME
+              valueFrom: { fieldRef: { fieldPath: metadata.name } }
+            - name: POD_NAMESPACE
+              valueFrom: { fieldRef: { fieldPath: metadata.namespace } }
+          # ── Resource limits (per-app budget) ─────────────
+          resources:
+            requests:
+              cpu: 50m
+              memory: 96Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          # ── Probes ──────────────────────────────────────
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 15
+            timeoutSeconds: 3
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 3
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 3
+          startupProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 2
+            periodSeconds: 3
+            failureThreshold: 30
+          # ── Per-container security context ───────────────
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 10001
+            capabilities:
+              drop: ["ALL"]
+            seccompProfile:
+              type: RuntimeDefault
+          # ── Volumes ──────────────────────────────────────
+          volumeMounts:
+            - name: published-snapshot
+              mountPath: /data
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+            - name: runtime-staging
+              mountPath: /tmp/runtime
+      volumes:
+        - name: published-snapshot
+          # In real deployments this is a per-app PVC or a
+          # `hostPath` projected from the platform's publish
+          # directory by the orchestrator. Leaving as a PVC
+          # reference keeps the manifest portable.
+          persistentVolumeClaim:
+            claimName: metaplatform-runtime-snapshot
+        - name: tmp
+          emptyDir:
+            medium: Memory   # tmpfs — sensitive data never hits disk
+            sizeLimit: 64Mi
+        - name: runtime-staging
+          emptyDir:
+            medium: Memory
+            sizeLimit: 64Mi
+      # ── Scheduling — keep runtimes on worker nodes only ──
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              preference:
+                matchExpressions:
+                  - key: node-role.kubernetes.io/worker
+                    operator: Exists
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app: metaplatform-runtime
+              topologyKey: kubernetes.io/hostname
+      # Spread replicas across zones (only meaningful if replicas > 1)
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app: metaplatform-runtime
+      # Tolerate worker taints that may exist in dev
+      tolerations:
+        - key: node-role.kubernetes.io/worker
+          operator: Exists
+          effect: NoSchedule

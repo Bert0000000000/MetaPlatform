@@ -60,5 +60,42 @@ patches:
         path: /spec/tls/0/hosts/0
         value: app.metaplatform.com
 
+  # Runtime: in prod we run the runtime with 2 replicas + tighter
+  # resource limits + a custom seccomp profile (requires the
+  # `metaplatform-runtime` SeccompProfile CR to be present).
+  - target:
+      kind: Deployment
+      name: metaplatform-runtime
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 2
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/cpu
+        value: 250m
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/memory
+        value: 192Mi
+      - op: replace
+        path: /spec/template/spec/securityContext/seccompProfile/type
+        value: Localhost
+      - op: replace
+        path: /spec/template/spec/securityContext/seccompProfile/localhostProfile
+        value: metaplatform/runtime-hardened.json
+      - op: replace
+        path: /spec/template/spec/containers/0/securityContext/seccompProfile/type
+        value: Localhost
+      - op: replace
+        path: /spec/template/spec/containers/0/securityContext/seccompProfile/localhostProfile
+        value: metaplatform/runtime-hardened.json
+
+  - target:
+      kind: PodDisruptionBudget
+      name: metaplatform-runtime
+    patch: |-
+      - op: replace
+        path: /spec/minAvailable
+        value: 1
+
 commonLabels:
   env: prod

@@ -15,6 +15,13 @@ resources:
   - ingress.yaml
   - hpa.yaml
   - servicemonitor.yaml
+  # Per-app isolated runtime (one Deployment per app_slug)
+  - runtime-deployment.yaml
+  - runtime-service.yaml
+  - runtime-networkpolicy.yaml
+  - runtime-pdb.yaml
+  - runtime-servicemonitor.yaml
+  - runtime-secret.yaml
 
 commonLabels:
   app.kubernetes.io/name: metaplatform

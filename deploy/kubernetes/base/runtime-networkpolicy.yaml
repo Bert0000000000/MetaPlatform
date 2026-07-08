@@ -1,0 +1,86 @@
+# ──────────────────────────────────────────────────────────
+# Runtime NetworkPolicy
+# ──────────────────────────────────────────────────────────
+# Default-deny: pods not selected by `app: metaplatform-runtime`
+# can never reach the runtime. The platform's reverse-proxy is
+# the only allowed ingress source; egress is restricted to DNS
+# (for cluster resolution) and nothing else — the runtime is a
+# pure read-only data plane.
+# ──────────────────────────────────────────────────────────
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: metaplatform-runtime-default-deny
+  namespace: metaplatform
+  labels:
+    app: metaplatform-runtime
+spec:
+  podSelector:
+    matchLabels:
+      app: metaplatform-runtime
+  policyTypes: [Ingress, Egress]
+  # No ingress / egress rules — blanket deny. The two policies
+  # below add the narrow allow-list.
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: metaplatform-runtime-allow-from-platform-proxy
+  namespace: metaplatform
+  labels:
+    app: metaplatform-runtime
+spec:
+  podSelector:
+    matchLabels:
+      app: metaplatform-runtime
+  policyTypes: [Ingress]
+  ingress:
+    # ONLY the platform's reverse-proxy / api can reach the runtime
+    - from:
+        - podSelector:
+            matchLabels:
+              app: metaplatform-api
+        - podSelector:
+            matchLabels:
+              app: metaplatform-frontend
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx
+      ports:
+        - port: 3000
+          protocol: TCP
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: metaplatform-runtime-allow-dns
+  namespace: metaplatform
+  labels:
+    app: metaplatform-runtime
+spec:
+  podSelector:
+    matchLabels:
+      app: metaplatform-runtime
+  policyTypes: [Egress]
+  egress:
+    # Cluster DNS only (kube-dns / CoreDNS) — runtime is read-only
+    # and must never call home.
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: coredns
+      ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP

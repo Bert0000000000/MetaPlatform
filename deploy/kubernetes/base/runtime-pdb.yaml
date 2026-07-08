@@ -1,0 +1,16 @@
+# ──────────────────────────────────────────────────────────
+# PodDisruptionBudget — keep at least one runtime pod running
+# during voluntary disruptions (drains, node upgrades).
+# ──────────────────────────────────────────────────────────
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: metaplatform-runtime
+  namespace: metaplatform
+  labels:
+    app: metaplatform-runtime
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: metaplatform-runtime

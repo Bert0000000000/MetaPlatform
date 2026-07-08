@@ -12,8 +12,30 @@ import db, { RUNTIME_META } from "./runtime-db.js";
 
 const router = express.Router();
 
-/* ── Health ─────────────────────────────────────────────── */
-router.get("/health", (_req, res) => {
+/* ── Health (k8s probe — public, no app metadata) ──────── *
+ * Liveness / readiness probes hit this endpoint. We deliberately
+ * return ONLY { status: "ok" } so the probe URL itself cannot be
+ * used to fingerprint a running app. Detailed runtime metadata
+ * is available at /health/detail with the admin token.          */
+router.get("/healthz", (_req, res) => {
+  res.json({ status: "ok" });
+});
+
+/* ── Health (detailed — admin token required) ──────────── *
+ * Requires `Authorization: Bearer <RUNTIME_ADMIN_TOKEN>`.
+ * The token is injected via Secret (see runtime-deployment.yaml).
+ * Without the token the response is intentionally 404 so the
+ * endpoint cannot be discovered.                              */
+router.get("/health", (req, res) => {
+  const expected = process.env.RUNTIME_ADMIN_TOKEN;
+  if (!expected) {
+    return res.status(404).json({ success: false, error: "not found" });
+  }
+  const auth = req.headers.authorization || "";
+  const token = auth.startsWith("Bearer ") ? auth.slice(7) : auth;
+  if (token !== expected) {
+    return res.status(404).json({ success: false, error: "not found" });
+  }
   const counts = {
     objects: db.prepare("SELECT COUNT(*) AS c FROM ontology_objects").get().c,
     pages: db.prepare("SELECT COUNT(*) AS c FROM app_pages").get().c,
