@@ -6,10 +6,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
-import { Separator } from "@/components/ui/separator";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { EmployeeAvatar } from "@/components/DigitalEmployee";
 import {
   PAGE_AGENTS,
   AGENT_OBJECTS, AGENT_PROPERTIES, AGENT_LINKS, AGENT_ACTIONS,
@@ -18,20 +14,24 @@ import {
 } from "@/components/PageAgents";
 import type { PageAgentConfig } from "@/components/PageAgents";
 import {
-  Bot, Edit3, Save, RotateCcw, Sparkles, Power, CheckCircle2,
-  MessageCircle, Calendar, Phone, PhoneOff, Settings2, Activity,
-  BookOpen, CircleDot, X, Plus,
+  Bot, Edit3, Save, RotateCcw, Power, CircleDot,
+  MessageSquare, Settings, Trash2, Plus, CheckCircle2,
+  Circle, Activity, Settings2,
 } from "lucide-react";
 
 /* ════════════════════════════════════════════════════════════════════
  * PageAgentsTab: 数字员工中心 - 页面员工 Tab
  *
- * 显示 9 个内置数字员工 (DE-001 ~ DE-009), 每个:
- *   - 卡片: 半圆矩形头像 + 名字 + 工号 + 角色 + 性格 + 能力 + 状态
- *   - 操作: 配置 (打开 Dialog 编辑) / 启用停用 / 重置默认 / 立即呼叫
- *   - 配置 Dialog: 编辑 emoji 头像/名字/角色/性格/能力/系统提示词
+ * 设计风格与「自定义员工」Tab (AgentList) 一致:
+ *   - 4 个统计卡: 总数 / 在线 / 忙碌 / 离线
+ *   - 大 Card 容器: Header + 标题 + 描述 + 「新建」按钮 (此处用「重置全部」)
+ *   - 内部 grid-cols-3 卡片
+ *   - 每张卡: Bot icon (size-8, primary) + 状态点 + 名字 + 描述
+ *            + 模型/empId + type Badge
+ *            + [对话/呼叫] [配置] [删除/停用]
+ *   - 配置 Dialog: 编辑字段
  *
- * 数据保存: localStorage (key: mp_page_agents_overrides)
+ * 数据保存: localStorage
  * ════════════════════════════════════════════════════════════════════ */
 
 const STORAGE_KEY = "mp_page_agents_overrides";
@@ -66,14 +66,19 @@ function applyOverrides(base: PageAgentConfig, override: AgentOverride | undefin
   return { ...base, ...override };
 }
 
+// 状态映射 (与自定义员工 statusConfig 一致)
+const statusConfig = {
+  online:   { color: "bg-green-500",  label: "在线" },
+  busy:     { color: "bg-yellow-500", label: "忙碌" },
+  offline:  { color: "bg-gray-400",   label: "离线" },
+} as const;
+
 export function PageAgentsTab() {
   const [overrides, setOverrides] = useState<Record<string, AgentOverride>>(loadOverrides);
   const [disabled, setDisabled] = useState<Set<string>>(loadDisabled);
   const [editing, setEditing] = useState<PageAgentConfig | null>(null);
   const [editForm, setEditForm] = useState<AgentOverride>({});
-  const [filter, setFilter] = useState<"all" | "enabled" | "disabled">("all");
 
-  // 持久化
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(overrides));
   }, [overrides]);
@@ -81,22 +86,12 @@ export function PageAgentsTab() {
     localStorage.setItem(DISABLED_KEY, JSON.stringify(Array.from(disabled)));
   }, [disabled]);
 
-  // 通话: 路由跳转 + 打开数字员工
   const callEmployee = useCallback((empId: string) => {
     const a = ALL_PAGE_AGENTS.find((a) => a.empId === empId);
     if (!a) return;
     const path = a.id.replace("ontology-", "/ontology/");
-    window.location.hash = `#${path}`;
     window.location.href = path;
   }, []);
-
-  const toggleDisabled = (id: string) => {
-    setDisabled((s) => {
-      const next = new Set(s);
-      if (next.has(id)) next.delete(id); else next.add(id);
-      return next;
-    });
-  };
 
   const openEdit = (agent: PageAgentConfig) => {
     setEditing(agent);
@@ -104,12 +99,8 @@ export function PageAgentsTab() {
     setEditForm({
       name: agent.name,
       role: agent.role,
-      avatar: agent.avatar,
       tagline: agent.tagline,
-      personality: agent.personality,
-      capabilities: agent.capabilities,
       systemPrompt: agent.systemPrompt,
-      accentColor: agent.accentColor,
       ...ov,
     });
   };
@@ -121,7 +112,7 @@ export function PageAgentsTab() {
   };
 
   const resetOne = (id: string) => {
-    if (!confirm("确定恢复默认配置？所有自定义修改将丢失。")) return;
+    if (!confirm("确定恢复默认配置？")) return;
     setOverrides((o) => {
       const next = { ...o };
       delete next[id];
@@ -134,286 +125,187 @@ export function PageAgentsTab() {
     setOverrides({});
   };
 
-  // 过滤
-  const filtered = ALL_PAGE_AGENTS.filter((a) => {
-    if (filter === "enabled") return !disabled.has(a.id);
-    if (filter === "disabled") return disabled.has(a.id);
-    return true;
-  });
-
-  // 统计
-  const enabledCount = ALL_PAGE_AGENTS.length - disabled.size;
-  const disabledCount = disabled.size;
-  const customizedCount = Object.keys(overrides).length;
+  // 计算状态 (已停用 = 离线, 启用 = 在线)
+  const stats = {
+    total: ALL_PAGE_AGENTS.length,
+    online: ALL_PAGE_AGENTS.length - disabled.size,
+    busy: 0,
+    offline: disabled.size,
+  };
 
   return (
     <div className="space-y-4">
-      {/* 顶部统计 */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-        <Card>
-          <CardContent className="pt-4 pb-3 px-4">
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Users className="size-3.5" />
-              <span>总员工数</span>
-            </div>
-            <div className="text-2xl font-bold mt-1 font-mono tabular-nums">{ALL_PAGE_AGENTS.length}</div>
-            <div className="text-[10px] text-muted-foreground mt-0.5">DE-001 ~ DE-009</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4 pb-3 px-4">
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <CheckCircle2 className="size-3.5 text-green-500" />
-              <span>已启用</span>
-            </div>
-            <div className="text-2xl font-bold mt-1 text-green-600 font-mono tabular-nums">{enabledCount}</div>
-            <div className="text-[10px] text-muted-foreground mt-0.5">出现在页面右下角</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4 pb-3 px-4">
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Power className="size-3.5 text-gray-400" />
-              <span>已停用</span>
-            </div>
-            <div className="text-2xl font-bold mt-1 text-gray-500 font-mono tabular-nums">{disabledCount}</div>
-            <div className="text-[10px] text-muted-foreground mt-0.5">不出现</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4 pb-3 px-4">
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Edit3 className="size-3.5 text-primary" />
-              <span>已定制</span>
-            </div>
-            <div className="text-2xl font-bold mt-1 text-primary font-mono tabular-nums">{customizedCount}</div>
-            <div className="text-[10px] text-muted-foreground mt-0.5">修改过默认配置</div>
-          </CardContent>
-        </Card>
+      {/* 4 个统计卡 (与自定义员工一致) */}
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+        <StatCard label="数字员工总数" value={stats.total} icon={Users} />
+        <StatCard label="在线" value={stats.online} icon={Circle} />
+        <StatCard label="忙碌" value={stats.busy} icon={Activity} />
+        <StatCard label="离线" value={stats.offline} icon={Power} />
       </div>
 
-      {/* 工具栏 */}
-      <div className="flex items-center gap-2 flex-wrap p-3 rounded-lg border bg-muted/30">
-        <Tabs value={filter} onValueChange={(v) => setFilter(v as "all" | "enabled" | "disabled")}>
-          <TabsList>
-            <TabsTrigger value="all">全部 ({ALL_PAGE_AGENTS.length})</TabsTrigger>
-            <TabsTrigger value="enabled">已启用 ({enabledCount})</TabsTrigger>
-            <TabsTrigger value="disabled">已停用 ({disabledCount})</TabsTrigger>
-          </TabsList>
-        </Tabs>
-        <div className="ml-auto flex gap-2">
-          {customizedCount > 0 && (
-            <Button size="sm" variant="outline" onClick={resetAll}>
-              <RotateCcw className="size-3.5 mr-1" /> 全部重置默认
-            </Button>
+      {/* 大 Card 容器: 标题 + 重置按钮 */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0">
+          <div>
+            <CardTitle className="text-base">页面级数字员工</CardTitle>
+            <CardDescription>每个本体引擎页面的专属 AI 助手 (DE-001 ~ DE-009)</CardDescription>
+          </div>
+          <Button size="sm" variant="outline" onClick={resetAll}>
+            <RotateCcw className="size-3 mr-1" />
+            重置全部默认
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {ALL_PAGE_AGENTS.length === 0 && (
+            <div className="text-center py-8 text-muted-foreground">暂无数字员工</div>
           )}
-        </div>
-      </div>
-
-      {/* 员工卡片网格 - 紧凑 5 列, 统一颜色 */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-        {filtered.map((base) => {
-          const agent = applyOverrides(base, overrides[base.id]);
-          const isDisabled = disabled.has(base.id);
-          const isCustomized = !!overrides[base.id];
-          return (
-            <Card
-              key={base.id}
-              className={`relative transition-all ${
-                isDisabled ? "opacity-50 grayscale" : "hover:border-primary/50"
-              }`}
-            >
-              <CardContent className="p-3 space-y-2">
-                {/* 头部: 头像 + 名字 + 工号 + 状态 */}
-                <div className="flex items-start gap-2">
-                  <EmployeeAvatar avatar={agent.avatar} size={40} online={!isDisabled} empId={agent.empId} />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1">
-                      <span className="font-medium text-sm leading-tight truncate">{agent.name}</span>
-                      <span className="text-[10px] text-muted-foreground font-mono shrink-0">{agent.empId}</span>
+          {/* grid-cols-3 (与自定义员工一致) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {ALL_PAGE_AGENTS.map((base) => {
+              const agent = applyOverrides(base, overrides[base.id]);
+              const isDisabled = disabled.has(base.id);
+              const isCustomized = !!overrides[base.id];
+              // 状态: 停用 = 离线, 启用 = 在线
+              const status: "online" | "busy" | "offline" = isDisabled ? "offline" : "online";
+              const s = statusConfig[status];
+              return (
+                <Card
+                  key={base.id}
+                  className={`cursor-pointer hover:border-primary ${
+                    isDisabled ? "opacity-60" : ""
+                  }`}
+                >
+                  <CardHeader>
+                    <div className="flex items-start justify-between">
+                      <Bot className="size-8 text-primary" />
+                      <div className="flex items-center gap-1">
+                        {isCustomized && (
+                          <Badge variant="secondary" className="text-[10px] h-4 px-1 bg-primary/10 text-primary border-0">
+                            已定制
+                          </Badge>
+                        )}
+                        <div className={`size-2 rounded-full ${s.color}`} />
+                        <span className="text-xs text-muted-foreground">{s.label}</span>
+                      </div>
                     </div>
-                    <div className="text-[11px] text-muted-foreground truncate">{agent.role}</div>
-                  </div>
-                </div>
-
-                {/* 状态行 (紧凑) */}
-                <div className="flex items-center gap-1 text-[10px]">
-                  {isCustomized && (
-                    <Badge variant="secondary" className="text-[9px] h-4 px-1 bg-primary/10 text-primary border-0">已定制</Badge>
-                  )}
-                  {isDisabled ? (
-                    <Badge variant="secondary" className="text-[9px] h-4 px-1 bg-gray-200 text-gray-500 border-0">
-                      <Power className="size-2 mr-0.5" />停用
-                    </Badge>
-                  ) : (
-                    <Badge variant="secondary" className="text-[9px] h-4 px-1 bg-green-100 text-green-700 border-0">
-                      <CircleDot className="size-2 mr-0.5 animate-pulse" />在线
-                    </Badge>
-                  )}
-                  <span className="text-muted-foreground ml-auto">{agent.capabilities.length} 能力</span>
-                </div>
-
-                {/* 操作 (极简) */}
-                <div className="flex items-center gap-1">
-                  <Button
-                    size="sm"
-                    variant="default"
-                    className="h-6 text-[11px] gap-0.5 px-1.5 flex-1"
-                    onClick={() => callEmployee(agent.empId)}
-                    disabled={isDisabled}
-                  >
-                    <Phone className="size-3" /> 呼叫
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-6 w-6 p-0"
-                    onClick={() => openEdit(agent)}
-                    title="配置"
-                  >
-                    <Settings2 className="size-3" />
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-6 w-6 p-0"
-                    onClick={() => toggleDisabled(base.id)}
-                    title={isDisabled ? "启用" : "停用"}
-                  >
-                    <Power className="size-3" />
-                  </Button>
-                  {isCustomized && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-6 w-6 p-0"
-                      onClick={() => resetOne(base.id)}
-                      title="重置默认"
-                    >
-                      <RotateCcw className="size-3" />
-                    </Button>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
+                    <CardTitle className="text-base mt-2">
+                      {agent.name} <span className="text-xs text-muted-foreground font-mono font-normal">{agent.empId}</span>
+                    </CardTitle>
+                    <CardDescription>{agent.role}</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                      <span className="flex items-center gap-1">
+                        <Bot className="size-3" />
+                        {agent.avatar} · {agent.capabilities.length} 项能力
+                      </span>
+                      <Badge variant="outline" className="text-xs">{agent.empId}</Badge>
+                    </div>
+                    <div className="mt-3 flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="flex-1"
+                        onClick={() => callEmployee(agent.empId)}
+                        disabled={isDisabled}
+                      >
+                        <MessageSquare className="size-3 mr-1" />
+                        对话
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="flex-1"
+                        onClick={() => openEdit(agent)}
+                      >
+                        <Settings className="size-3 mr-1" />
+                        配置
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-destructive"
+                        onClick={() => {
+                          if (isDisabled) {
+                            setDisabled((s) => {
+                              const n = new Set(s); n.delete(base.id); return n;
+                            });
+                          } else {
+                            if (!confirm(`确定停用 ${agent.name}?`)) return;
+                            setDisabled((s) => new Set(s).add(base.id));
+                          }
+                        }}
+                        title={isDisabled ? "启用" : "停用"}
+                      >
+                        {isDisabled ? <CheckCircle2 className="size-3" /> : <Trash2 className="size-3" />}
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* 配置 Dialog */}
       <Dialog open={!!editing} onOpenChange={(o) => { if (!o) setEditing(null); }}>
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+        <DialogContent>
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Settings2 className="size-5" />
-              配置数字员工
-            </DialogTitle>
+            <DialogTitle>配置数字员工</DialogTitle>
             <DialogDescription>
-              自定义 {editing?.name} ({editing?.empId}) 的形象、性格、能力与系统提示词
+              自定义 {editing?.name} ({editing?.empId}) 的信息
             </DialogDescription>
           </DialogHeader>
-
           {editing && (
             <div className="space-y-4 py-2">
-              {/* 头像预览 */}
-              <div className="flex items-center gap-3 p-3 rounded-lg border bg-muted/30">
-                <EmployeeAvatar avatar={editForm.avatar || editing.avatar} size={56} empId={editing.empId} />
-                <div className="flex-1 min-w-0">
-                  <div className="font-semibold text-sm">{editForm.name || editing.name}</div>
-                  <div className="text-xs text-muted-foreground">{editForm.role || editing.role}</div>
-                  <div className="text-[10px] text-muted-foreground font-mono mt-0.5">{editing.empId}</div>
-                </div>
-              </div>
-
-              {/* 基本信息 */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label className="text-xs">头像 Emoji</Label>
-                  <Input
-                    value={editForm.avatar || ""}
-                    onChange={(e) => setEditForm((f) => ({ ...f, avatar: e.target.value }))}
-                    className="h-8 text-sm"
-                    placeholder="🧱"
-                    maxLength={4}
-                  />
-                </div>
-                <div>
-                  <Label className="text-xs">名字</Label>
-                  <Input
-                    value={editForm.name || ""}
-                    onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))}
-                    className="h-8 text-sm"
-                    placeholder="砖小妹"
-                  />
-                </div>
-                <div className="col-span-2">
-                  <Label className="text-xs">角色 / 职位</Label>
-                  <Input
-                    value={editForm.role || ""}
-                    onChange={(e) => setEditForm((f) => ({ ...f, role: e.target.value }))}
-                    className="h-8 text-sm"
-                    placeholder="对象建模专员"
-                  />
-                </div>
-                <div className="col-span-2">
-                  <Label className="text-xs">一句话标语</Label>
-                  <Input
-                    value={editForm.tagline || ""}
-                    onChange={(e) => setEditForm((f) => ({ ...f, tagline: e.target.value }))}
-                    className="h-8 text-sm"
-                    placeholder="你的对象建模专员, 一砖一瓦搭业务"
-                  />
-                </div>
-              </div>
-
-              {/* 性格 */}
-              <div>
-                <Label className="text-xs">性格 (逗号分隔)</Label>
+              <div className="space-y-2">
+                <Label>名字</Label>
                 <Input
-                  value={(editForm.personality || []).join(", ")}
-                  onChange={(e) => setEditForm((f) => ({
-                    ...f,
-                    personality: e.target.value.split(",").map((s) => s.trim()).filter(Boolean),
-                  }))}
-                  className="h-8 text-sm"
-                  placeholder="严谨细致, 结构化思维, 爱用 ASCII 图"
+                  value={editForm.name || ""}
+                  onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))}
                 />
               </div>
-
-              {/* 能力 */}
-              <div>
-                <Label className="text-xs">能力 (每行一条)</Label>
-                <Textarea
-                  value={(editForm.capabilities || []).join("\n")}
-                  onChange={(e) => setEditForm((f) => ({
-                    ...f,
-                    capabilities: e.target.value.split("\n").map((s) => s.trim()).filter(Boolean),
-                  }))}
-                  className="text-sm min-h-[100px] font-mono"
-                  rows={5}
+              <div className="space-y-2">
+                <Label>角色</Label>
+                <Input
+                  value={editForm.role || ""}
+                  onChange={(e) => setEditForm((f) => ({ ...f, role: e.target.value }))}
                 />
               </div>
-
-              {/* 系统提示词 */}
-              <div>
-                <Label className="text-xs">系统提示词 (LLM prompt)</Label>
+              <div className="space-y-2">
+                <Label>标语</Label>
+                <Input
+                  value={editForm.tagline || ""}
+                  onChange={(e) => setEditForm((f) => ({ ...f, tagline: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>系统提示词</Label>
                 <Textarea
                   value={editForm.systemPrompt || ""}
                   onChange={(e) => setEditForm((f) => ({ ...f, systemPrompt: e.target.value }))}
-                  className="text-xs min-h-[150px] font-mono"
+                  className="min-h-[150px] font-mono text-xs"
                   rows={8}
                 />
-                <p className="text-[10px] text-muted-foreground mt-1">
-                  此 prompt 会在用户向 {editing.name} 提问时发送给 LLM
-                </p>
               </div>
+              {overrides[editing.id] && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => resetOne(editing.id)}
+                >
+                  <RotateCcw className="size-3 mr-1" />
+                  重置该项默认
+                </Button>
+              )}
             </div>
           )}
-
-          <DialogFooter className="gap-2">
+          <DialogFooter>
             <Button variant="outline" onClick={() => setEditing(null)}>取消</Button>
             <Button onClick={saveEdit}>
-              <Save className="size-3.5 mr-1" /> 保存配置
+              <Save className="size-3 mr-1" />
+              保存
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -422,5 +314,20 @@ export function PageAgentsTab() {
   );
 }
 
-// 注入 Users 图标 (从 lucide-react)
+// 统计卡 (跟 AgentList 的 StatCard 保持一致风格)
+function StatCard({ label, value, icon: Icon }: { label: string; value: number; icon: React.ComponentType<{ className?: string }> }) {
+  return (
+    <Card>
+      <CardContent className="pt-4 pb-3 px-4">
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <Icon className="size-3.5" />
+          <span>{label}</span>
+        </div>
+        <div className="text-2xl font-bold mt-1 font-mono tabular-nums">{value}</div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// 注入 Users 图标
 import { Users } from "lucide-react";
