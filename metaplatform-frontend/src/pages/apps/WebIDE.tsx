@@ -14,7 +14,7 @@ import {
   FileCode, Folder, FolderOpen, Play, Terminal as TerminalIcon, Settings,
   ChevronRight, ChevronDown, Save, Wand2, X, Plus, Square,
   FileJson, FileText, File, Braces, Search, GitBranch, Maximize2, Minimize2,
-  Copy, Download, RefreshCw, Trash2,
+  Copy, Download, RefreshCw, Trash2, Loader2,
 } from "lucide-react";
 
 /* ── File tree types ── */
@@ -547,6 +547,12 @@ export default function WebIDE() {
     setOpenFiles((prev) => prev.map((f) => f.name === name ? { ...f, content, modified: true } : f));
   }, []);
 
+  // Derived: currently-open file (lifted out of the useCallback below so
+  // handleSaveFile can read it before its original declaration site — that
+  // ordering would otherwise trip tsc's 'used before declaration' check
+  // and, worse, a TDZ ReferenceError at first save).
+  const activeFile = openFiles.find((f) => f.name === activeTab);
+
   /* ── Save file to backend ── */
   const handleSaveFile = useCallback(async () => {
     if (!activeFile) {
@@ -609,8 +615,6 @@ export default function WebIDE() {
       setToast("删除文件失败");
     }
   }, [fetchFileTree]);
-
-  const activeFile = openFiles.find((f) => f.name === activeTab);
 
   function handleRun() {
     setTerminalLogs((prev) => [
