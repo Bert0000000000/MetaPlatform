@@ -373,95 +373,137 @@ function ChatTab({ messages, setMessages, agentPrompt, onAgentPromptConsumed }: 
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex-1 overflow-y-auto px-6 py-6">
-        <div className="mx-auto flex flex-col gap-4" style={{ maxWidth: "900px" }}>
+      <div className="flex-1 overflow-y-auto">
+        <div className="mx-auto flex flex-col gap-6 py-6" style={{ maxWidth: "820px" }}>
+          {messages.length === 1 && messages[0].role === "assistant" && (
+            // ── 空状态：居中欢迎 + 6 个建议卡片 ──
+            <div className="flex flex-col items-center justify-center min-h-[50vh] py-10 px-4">
+              <div className="size-16 rounded-2xl bg-gradient-to-br from-primary to-primary/60 text-primary-foreground flex items-center justify-center shadow-lg mb-4">
+                <Sparkles className="size-8" />
+              </div>
+              <h2 className="text-xl font-semibold mb-1">有什么可以帮你的？</h2>
+              <p className="text-sm text-muted-foreground mb-8">SuperAI 可以建应用、查数据、分析流程、调度智能体</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full max-w-2xl">
+                {SUGGESTIONS.map((s, i) => {
+                  const Icon = s.icon;
+                  return (
+                    <button
+                      key={i}
+                      onClick={() => send(s.text)}
+                      disabled={isTyping}
+                      className="group flex items-start gap-3 text-left p-3 rounded-xl border border-border/60 bg-card hover:border-primary/40 hover:bg-primary/5 hover:shadow-sm transition-all disabled:opacity-50"
+                    >
+                      <div className="size-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0 group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                        <Icon className="size-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-sm font-medium">{s.text}</div>
+                        <div className="text-[11px] text-muted-foreground mt-0.5">{s.category}</div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
           {messages.map((m, i) => (
             <div
               key={i}
-              className={`flex gap-3 ${m.role === "user" ? "justify-end" : "justify-start"}`}
+              className={`flex gap-3 px-4 sm:px-6 ${m.role === "user" ? "justify-end" : "justify-start"}`}
             >
               {m.role === "assistant" && (
-                <div className="size-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center shrink-0">
-                  <Bot className="size-4" />
+                <div className="size-7 rounded-lg bg-gradient-to-br from-primary to-primary/60 text-primary-foreground flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
+                  <Bot className="size-3.5" />
                 </div>
               )}
-              <div className={`max-w-[70%] flex flex-col ${m.role === "user" ? "items-end" : "items-start"}`}>
+              <div className={`max-w-[80%] sm:max-w-[70%] flex flex-col ${m.role === "user" ? "items-end" : "items-start"}`}>
                 {/* Attachments display */}
                 {m.attachments && m.attachments.length > 0 && (
-                  <div className="mb-1 space-y-1">
+                  <div className="mb-1.5 space-y-1">
                     {m.attachments.map((att) => (
                       <AttachmentPreview key={att.id} attachment={att} isOwn={m.role === "user"} />
                     ))}
                   </div>
                 )}
-                <Card className={m.role === "user" ? "bg-primary text-primary-foreground" : "bg-card"}>
-                  <CardContent className="p-3">
-                    <p className="text-sm whitespace-pre-wrap">{m.content}</p>
-                    {m.dispatchLinks && m.dispatchLinks.length > 0 && (
-                      <div className="flex flex-wrap gap-2 mt-2 pt-2 border-t border-border/50">
-                        {m.dispatchLinks.map((link, i) => (
-                          <Button
-                            key={i}
-                            variant="outline"
-                            size="sm"
-                            className="h-7 text-xs gap-1.5"
-                            onClick={() => navigate(link.path)}
-                          >
-                            <ArrowRight className="size-3" />
-                            {link.label}
-                          </Button>
-                        ))}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-                {m.ts && <span className="text-xs text-muted-foreground mt-1">{m.ts}</span>}
+                {/* Bubble — flat (no Card chrome) */}
+                <div
+                  className={
+                    m.role === "user"
+                      ? "rounded-2xl rounded-tr-sm bg-primary text-primary-foreground px-4 py-2.5 shadow-sm"
+                      : "rounded-2xl rounded-tl-sm bg-muted/70 px-4 py-2.5"
+                  }
+                >
+                  <p className="text-sm whitespace-pre-wrap leading-relaxed">{m.content}</p>
+                  {m.dispatchLinks && m.dispatchLinks.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mt-2.5 pt-2.5 border-t border-border/40">
+                      {m.dispatchLinks.map((link, i) => (
+                        <Button
+                          key={i}
+                          variant="outline"
+                          size="sm"
+                          className="h-7 text-xs gap-1.5 rounded-full"
+                          onClick={() => navigate(link.path)}
+                        >
+                          <ArrowRight className="size-3" />
+                          {link.label}
+                        </Button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                {m.ts && (
+                  <span className="text-[10px] text-muted-foreground/70 mt-1 px-1 tabular-nums">
+                    {m.ts}
+                  </span>
+                )}
               </div>
               {m.role === "user" && (
-                <div className="size-8 rounded-full bg-muted flex items-center justify-center shrink-0">
-                  <User className="size-4" />
+                <div className="size-7 rounded-lg bg-gradient-to-br from-blue-500 to-purple-500 text-white flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
+                  <User className="size-3.5" />
                 </div>
               )}
             </div>
           ))}
           {isTyping && (
-            <div className="flex gap-3 justify-start">
-              <div className="size-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center shrink-0">
-                <Bot className="size-4" />
+            <div className="flex gap-3 justify-start px-4 sm:px-6">
+              <div className="size-7 rounded-lg bg-gradient-to-br from-primary to-primary/60 text-primary-foreground flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
+                <Bot className="size-3.5" />
               </div>
-              <Card className="bg-card">
-                <CardContent className="p-3">
-                  <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                    <Loader2 className="size-3 animate-spin" />
-                    <span>SuperAI 正在思考...</span>
+              <div className="rounded-2xl rounded-tl-sm bg-muted/70 px-4 py-3 flex flex-col gap-2 min-w-[180px]">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <div className="flex gap-1">
+                    <span className="size-1.5 rounded-full bg-muted-foreground/60 animate-bounce" style={{ animationDelay: "0ms" }} />
+                    <span className="size-1.5 rounded-full bg-muted-foreground/60 animate-bounce" style={{ animationDelay: "150ms" }} />
+                    <span className="size-1.5 rounded-full bg-muted-foreground/60 animate-bounce" style={{ animationDelay: "300ms" }} />
                   </div>
-                  {dispatchingAgents.length > 0 && (
-                    <div className="flex items-center gap-2 mt-2 pt-2 border-t border-border/50">
-                      <span className="text-xs text-muted-foreground">调度中：</span>
-                      {dispatchingAgents.map((name, i) => (
-                        <Badge key={i} variant="secondary" className="text-xs gap-1">
-                          <Loader2 className="size-2.5 animate-spin" />
-                          {name}
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+                  <span>SuperAI 正在思考</span>
+                </div>
+                {dispatchingAgents.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-1.5 pt-1.5 border-t border-border/40">
+                    <span className="text-[11px] text-muted-foreground">调度中：</span>
+                    {dispatchingAgents.map((name, i) => (
+                      <Badge key={i} variant="secondary" className="text-[10px] h-5 px-1.5 gap-1 font-normal">
+                        <Loader2 className="size-2.5 animate-spin" />
+                        {name}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           )}
           <div ref={messagesEndRef} />
         </div>
       </div>
 
-      <div className="border-t p-4 bg-background">
-        <div className="mx-auto" style={{ maxWidth: "900px" }}>
+      <div className="border-t bg-background/80 backdrop-blur-md p-4">
+        <div className="mx-auto" style={{ maxWidth: "820px" }}>
           {/* Recording indicator */}
           {isRecording && (
-            <div className="mb-2 flex items-center gap-3 px-4 py-2 bg-red-50 border border-red-200 rounded-lg">
+            <div className="mb-3 flex items-center gap-3 px-4 py-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 rounded-xl">
               <div className="size-3 rounded-full bg-red-500 animate-pulse" />
-              <span className="text-sm font-medium text-red-600">语音输入中...</span>
-              <span className="text-sm text-red-500 font-mono">{formatRecordingTime(recordingTime)}</span>
+              <span className="text-sm font-medium text-red-600 dark:text-red-400">语音输入中</span>
+              <span className="text-sm text-red-500 dark:text-red-300 font-mono tabular-nums">{formatRecordingTime(recordingTime)}</span>
               <div className="flex gap-[2px] items-end h-5 flex-1">
                 {Array.from({ length: 40 }).map((_, i) => (
                   <div
@@ -475,7 +517,7 @@ function ChatTab({ messages, setMessages, agentPrompt, onAgentPromptConsumed }: 
                   />
                 ))}
               </div>
-              <Button size="sm" variant="destructive" onClick={toggleRecording}>
+              <Button size="sm" variant="destructive" onClick={toggleRecording} className="h-7">
                 <MicOff className="size-3 mr-1" /> 停止
               </Button>
             </div>
@@ -483,26 +525,26 @@ function ChatTab({ messages, setMessages, agentPrompt, onAgentPromptConsumed }: 
 
           {/* Pending attachments preview */}
           {pendingAttachments.length > 0 && (
-            <div className="mb-2 flex gap-2 flex-wrap">
+            <div className="mb-3 flex gap-2 flex-wrap">
               {pendingAttachments.map((att) => (
                 <div key={att.id} className="relative group">
                   {att.type === "image" && att.url ? (
-                    <div className="w-16 h-16 rounded border overflow-hidden">
+                    <div className="w-16 h-16 rounded-lg border overflow-hidden">
                       <img src={att.url} alt={att.name} className="w-full h-full object-cover" />
                     </div>
                   ) : att.type === "voice" ? (
-                    <div className="flex items-center gap-1 px-2 py-1 bg-muted rounded border text-xs">
+                    <div className="flex items-center gap-1 px-2.5 py-1.5 bg-muted rounded-lg border text-xs">
                       <Mic className="size-3 text-primary" />
                       <span>{att.duration}</span>
                     </div>
                   ) : (
-                    <div className="flex items-center gap-1 px-2 py-1 bg-muted rounded border text-xs max-w-[140px]">
+                    <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-muted rounded-lg border text-xs max-w-[160px]">
                       {(() => { const DocIcon = getDocIcon(att.name); return <DocIcon className="size-3 text-blue-500 shrink-0" />; })()}
                       <span className="truncate">{att.name}</span>
                     </div>
                   )}
                   <button
-                    className="absolute -top-1.5 -right-1.5 size-5 rounded-full bg-destructive text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="absolute -top-1.5 -right-1.5 size-5 rounded-full bg-destructive text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-sm"
                     onClick={() => removeAttachment(att.id)}
                   >
                     <X className="size-3" />
@@ -512,113 +554,104 @@ function ChatTab({ messages, setMessages, agentPrompt, onAgentPromptConsumed }: 
             </div>
           )}
 
-          <Card className="rounded-2xl border-border/60 shadow-sm overflow-hidden bg-card/80 backdrop-blur-sm">
-            <CardContent className="p-0">
-              {/* Hidden file inputs — kept at the top so any layout change
-                  can't accidentally hide them behind other content. */}
-              <input ref={imageInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleImageUpload} />
-              <input ref={docInputRef} type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.ppt,.pptx" multiple className="hidden" onChange={handleDocUpload} />
+          {/* Composer card — soft shadow + ring on focus-within */}
+          <div className="rounded-2xl border border-border/60 bg-card shadow-sm focus-within:border-primary/40 focus-within:shadow-md transition-shadow">
+            {/* Hidden file inputs */}
+            <input ref={imageInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleImageUpload} />
+            <input ref={docInputRef} type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.ppt,.pptx" multiple className="hidden" onChange={handleDocUpload} />
 
-              {/* ── Composer: toolbar | textarea | send ───────────── */}
-              <div className="flex items-end gap-1 px-3 pt-3 pb-2">
-                {/* Toolbar — icon buttons grouped in a pill container
-                    so they read as one affordance, not three floating
-                    dots. Hover: tinted background; recording: red. */}
-                <div className="flex items-center gap-0.5 rounded-full bg-muted/60 p-0.5 shrink-0">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="size-8 rounded-full text-muted-foreground hover:bg-background hover:text-primary"
-                    title="上传图片"
-                    onClick={() => imageInputRef.current?.click()}
-                    disabled={isTyping}
-                  >
-                    <ImageIcon className="size-4" />
-                  </Button>
-                  <Button
-                    variant={isRecording ? "destructive" : "ghost"}
-                    size="icon"
-                    className={
-                      isRecording
-                        ? "size-8 rounded-full"
-                        : "size-8 rounded-full text-muted-foreground hover:bg-background hover:text-primary"
-                    }
-                    title={isRecording ? "停止录音" : "语音输入"}
-                    onClick={toggleRecording}
-                    disabled={isTyping}
-                  >
-                    {isRecording ? <MicOff className="size-4" /> : <Mic className="size-4" />}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="size-8 rounded-full text-muted-foreground hover:bg-background hover:text-primary"
-                    title="上传文档 (PDF/Word/Excel)"
-                    onClick={() => docInputRef.current?.click()}
-                    disabled={isTyping}
-                  >
-                    <Paperclip className="size-4" />
-                  </Button>
-                </div>
-
-                {/* Textarea — fills the middle, auto-grows up to 6 rows.
-                    Internal padding keeps cursor away from the rounded
-                    corners; focus state is a soft ring, not an outline. */}
-                <textarea
-                  className="flex-1 resize-none border-0 bg-transparent px-2 py-2 text-sm leading-6 focus:outline-none placeholder:text-muted-foreground/80 disabled:opacity-60"
-                  placeholder="问我任何问题…（Enter 发送 · Shift+Enter 换行）"
-                  rows={1}
-                  value={input}
-                  onChange={(e) => {
-                    setInput(e.target.value);
-                    const ta = e.currentTarget;
-                    ta.style.height = "auto";
-                    ta.style.height = Math.min(ta.scrollHeight, 144) + "px";
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                      e.preventDefault();
-                      send();
-                    }
-                  }}
-                  disabled={isTyping || isRecording}
-                />
-
-                {/* Send — circular primary, disabled state preserved.
-                    Slightly bigger than toolbar icons so it reads as
-                    the primary action. */}
+            {/* ── Composer: toolbar | textarea | send ───────────── */}
+            <div className="flex items-end gap-1 px-2 pt-2 pb-1.5">
+              {/* Toolbar — grouped icon buttons */}
+              <div className="flex items-center gap-0.5 shrink-0">
                 <Button
-                  onClick={() => send()}
+                  variant="ghost"
                   size="icon"
-                  aria-label="发送"
-                  disabled={isTyping || isRecording || !input.trim()}
-                  className="size-10 rounded-full shadow-sm transition-transform hover:scale-[1.03] active:scale-95"
+                  className="size-8 rounded-lg text-muted-foreground hover:text-primary"
+                  title="上传图片"
+                  onClick={() => imageInputRef.current?.click()}
+                  disabled={isTyping}
                 >
-                  {isTyping ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
+                  <ImageIcon className="size-4" />
+                </Button>
+                <Button
+                  variant={isRecording ? "destructive" : "ghost"}
+                  size="icon"
+                  className={
+                    isRecording
+                      ? "size-8 rounded-lg"
+                      : "size-8 rounded-lg text-muted-foreground hover:text-primary"
+                  }
+                  title={isRecording ? "停止录音" : "语音输入"}
+                  onClick={toggleRecording}
+                  disabled={isTyping}
+                >
+                  {isRecording ? <MicOff className="size-4" /> : <Mic className="size-4" />}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-8 rounded-lg text-muted-foreground hover:text-primary"
+                  title="上传文档 (PDF/Word/Excel)"
+                  onClick={() => docInputRef.current?.click()}
+                  disabled={isTyping}
+                >
+                  <Paperclip className="size-4" />
                 </Button>
               </div>
 
-              {/* ── Suggestion chips ───────────────────────────────── */}
-              <div className="flex items-center gap-1.5 px-3 py-2 border-t border-border/40 bg-muted/20 overflow-x-auto">
-                <Sparkles className="size-3.5 text-primary shrink-0" />
-                <span className="text-xs text-muted-foreground shrink-0 mr-0.5">试试</span>
-                {SUGGESTIONS.slice(0, 3).map((s, i) => (
-                  <button
-                    key={i}
-                    onClick={() => send(s.text)}
-                    disabled={isTyping}
-                    className="group inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-background px-2.5 py-1 text-xs text-foreground/80 hover:border-primary/40 hover:bg-primary/5 hover:text-primary disabled:opacity-50 transition-colors shrink-0"
-                  >
-                    <s.icon className="size-3 text-muted-foreground group-hover:text-primary transition-colors" />
-                    {s.text}
-                  </button>
-                ))}
-                <span className="ml-auto text-[11px] text-muted-foreground/70 shrink-0 pl-2 tabular-nums">
-                  {input.length} / 4000
-                </span>
-              </div>
-            </CardContent>
-          </Card>
+              {/* Textarea — auto-grows up to ~6 rows */}
+              <textarea
+                className="flex-1 resize-none border-0 bg-transparent px-2 py-2 text-sm leading-6 focus:outline-none placeholder:text-muted-foreground/80 disabled:opacity-60"
+                placeholder="问我任何问题…"
+                rows={1}
+                value={input}
+                onChange={(e) => {
+                  setInput(e.target.value);
+                  const ta = e.currentTarget;
+                  ta.style.height = "auto";
+                  ta.style.height = Math.min(ta.scrollHeight, 144) + "px";
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    send();
+                  }
+                }}
+                disabled={isTyping || isRecording}
+              />
+
+              {/* Send — primary, slightly larger */}
+              <Button
+                onClick={() => send()}
+                size="icon"
+                aria-label="发送"
+                disabled={isTyping || isRecording || !input.trim()}
+                className="size-9 rounded-xl shadow-sm transition-transform hover:scale-[1.03] active:scale-95"
+              >
+                {isTyping ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
+              </Button>
+            </div>
+
+            {/* ── Suggestion chips (horizontally scrollable, all 6) ─ */}
+            <div className="flex items-center gap-1.5 px-3 py-2 border-t border-border/40 bg-muted/20 overflow-x-auto">
+              <Sparkles className="size-3.5 text-primary shrink-0" />
+              {SUGGESTIONS.map((s, i) => (
+                <button
+                  key={i}
+                  onClick={() => send(s.text)}
+                  disabled={isTyping}
+                  className="group inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-background px-2.5 py-1 text-xs text-foreground/80 hover:border-primary/40 hover:bg-primary/5 hover:text-primary disabled:opacity-50 transition-colors shrink-0"
+                >
+                  <s.icon className="size-3 text-muted-foreground group-hover:text-primary transition-colors" />
+                  {s.text}
+                </button>
+              ))}
+              <span className="ml-auto text-[10px] text-muted-foreground/70 shrink-0 pl-2 tabular-nums">
+                {input.length}/4000 · Enter 发送
+              </span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -679,7 +712,7 @@ function AgentTab({ onActivateAgent }: AgentTabProps) {
     return () => { cancelled = true; };
   }, []);
   return (
-      <div className="p-4 flex flex-col gap-3">
+      <div className="p-6 w-full flex flex-col gap-4">
         <div>
           <h1 className="text-xl font-semibold">智能体广场</h1>
           <p className="text-xs text-muted-foreground">SuperAI 内置 6 类业务智能体，可一键唤起</p>
@@ -723,13 +756,24 @@ function AgentTab({ onActivateAgent }: AgentTabProps) {
 }
 
 /* ─────────────────── TasksTab ─────────────────── */
+interface TaskRow {
+  id: string | number;
+  title: string;
+  agent: string;
+  status: string;
+  result: string;
+  time: string;
+  output?: string;        // raw LLM output if available
+  agent_id?: string;
+}
+
 function TasksTab() {
   const [newTaskDialogOpen, setNewTaskDialogOpen] = useState(false);
   const [newTaskName, setNewTaskName] = useState("");
   const [newTaskAgent, setNewTaskAgent] = useState("");
   const [newTaskAgentId, setNewTaskAgentId] = useState<string>("");
   const [agentsList, setAgentsList] = useState<{ id: string; name: string }[]>([]);
-  const [tasks, setTasks] = useState(RECENT_TASKS_FALLBACK);
+  const [tasks, setTasks] = useState<TaskRow[]>(RECENT_TASKS_FALLBACK);
   const [tasksLoading, setTasksLoading] = useState(true);
 
   useEffect(() => {
@@ -767,7 +811,7 @@ function TasksTab() {
   }, []);
 
   return (
-    <div className="p-4 flex flex-col gap-4">
+    <div className="p-6 w-full flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-semibold">智能体任务</h1>
@@ -882,12 +926,21 @@ const DOC_TYPE_ICONS: Record<string, React.ElementType> = {
   向量库: ScrollText,
 };
 
+interface DocRow {
+  title: string;
+  type: string;
+  size: string;
+  updated: string;
+  category: string;
+  icon: React.ElementType;
+}
+
 function KnowledgeTab() {
   const [vectorDialogOpen, setVectorDialogOpen] = useState(false);
   const [uploadDocDialogOpen, setUploadDocDialogOpen] = useState(false);
   const [vectorDbType, setVectorDbType] = useState("");
   const [docUploadFile, setDocUploadFile] = useState<File | null>(null);
-  const [documents, setDocuments] = useState(KNOWLEDGE_DOCS_FALLBACK);
+  const [documents, setDocuments] = useState<DocRow[]>(KNOWLEDGE_DOCS_FALLBACK);
   const [docsLoading, setDocsLoading] = useState(true);
 
   useEffect(() => {
@@ -921,7 +974,7 @@ function KnowledgeTab() {
   const docTypes = [...new Set(documents.map((d) => d.type))];
 
   return (
-    <div className="p-4 flex flex-col gap-4">
+    <div className="p-6 w-full flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-semibold">知识中心</h1>
@@ -1094,54 +1147,120 @@ interface HistorySidebarProps {
 }
 
 function HistorySidebar({ conversations, currentId, onSelect, onDelete, onClose }: HistorySidebarProps) {
+  // 时间分组：今天 / 昨天 / 本周 / 更早
+  const groups: Record<string, Conversation[]> = {
+    今天: [], 昨天: [], 本周: [], 更早: [],
+  };
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const yesterday = today - 86400_000;
+  const weekAgo = today - 7 * 86400_000;
+  for (const c of conversations) {
+    // createdAt 形如 "7/8 04:30" — 解析为当年 (假定当年)
+    const m = c.createdAt.match(/^(\d+)\/(\d+)\s+(\d+):(\d+)$/);
+    let bucket: keyof typeof groups = "更早";
+    if (m) {
+      const [, mo, d, hh, mm] = m;
+      const ts = new Date(now.getFullYear(), Number(mo) - 1, Number(d), Number(hh), Number(mm)).getTime();
+      if (ts >= today) bucket = "今天";
+      else if (ts >= yesterday) bucket = "昨天";
+      else if (ts >= weekAgo) bucket = "本周";
+    }
+    groups[bucket].push(c);
+  }
+
   return (
-    <div className="fixed right-0 top-0 bottom-0 w-80 bg-background border-l z-40 flex flex-col shadow-lg">
-      <div className="flex items-center justify-between p-4 border-b">
-        <h2 className="font-semibold text-sm">对话历史</h2>
-        <Button variant="ghost" size="icon" onClick={onClose}>
-          <X className="size-4" />
-        </Button>
-      </div>
-      <div className="flex-1 overflow-y-auto">
-        {conversations.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-            <Clock className="size-8 mb-2" />
-            <p className="text-sm">暂无历史对话</p>
+    <>
+      {/* Backdrop */}
+      <div
+        className="fixed inset-0 bg-background/60 backdrop-blur-sm z-40 animate-in fade-in"
+        onClick={onClose}
+        aria-label="关闭历史"
+      />
+      {/* Drawer — left side, 320px wide */}
+      <aside
+        className="fixed left-0 top-0 bottom-0 w-80 bg-background border-r z-50 flex flex-col shadow-2xl animate-in slide-in-from-left duration-200"
+        role="dialog"
+        aria-label="对话历史"
+      >
+        <div className="flex items-center justify-between p-4 border-b">
+          <div className="flex items-center gap-2">
+            <Clock className="size-4 text-muted-foreground" />
+            <h2 className="font-semibold text-sm">对话历史</h2>
+            {conversations.length > 0 && (
+              <Badge variant="secondary" className="h-4 px-1.5 text-[10px]">
+                {conversations.length}
+              </Badge>
+            )}
           </div>
-        ) : (
-          <div className="p-2 space-y-1">
-            {conversations.map((conv) => (
-              <div
-                key={conv.id}
-                className={`flex items-start gap-2 p-3 rounded-lg cursor-pointer hover:bg-muted transition-colors ${
-                  conv.id === currentId ? "bg-muted border" : ""
-                }`}
-                onClick={() => onSelect(conv)}
-              >
-                <MessageSquare className="size-4 mt-0.5 shrink-0 text-muted-foreground" />
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium truncate">{conv.title}</div>
-                  <div className="text-xs text-muted-foreground mt-0.5">
-                    {conv.messages.length} 条消息 · {conv.createdAt}
-                  </div>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="size-6 shrink-0"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDelete(conv.id);
-                  }}
-                >
-                  <Trash2 className="size-3" />
-                </Button>
+          <Button variant="ghost" size="icon" onClick={onClose} className="size-7">
+            <X className="size-4" />
+          </Button>
+        </div>
+        <div className="flex-1 overflow-y-auto">
+          {conversations.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+              <div className="size-12 rounded-full bg-muted flex items-center justify-center mb-3">
+                <MessageSquare className="size-6" />
               </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
+              <p className="text-sm font-medium">暂无历史对话</p>
+              <p className="text-xs text-muted-foreground/80 mt-1">开始一段新对话试试</p>
+            </div>
+          ) : (
+            <div className="py-2">
+              {(["今天", "昨天", "本周", "更早"] as const).map((g) =>
+                groups[g].length === 0 ? null : (
+                  <div key={g} className="mb-2">
+                    <div className="px-4 py-1.5 text-[10px] font-medium text-muted-foreground/80 uppercase tracking-wider">
+                      {g}
+                    </div>
+                    {groups[g].map((conv) => {
+                      const active = conv.id === currentId;
+                      return (
+                        <div
+                          key={conv.id}
+                          className={`group flex items-start gap-2 mx-2 px-2 py-2 rounded-lg cursor-pointer transition-colors ${
+                            active
+                              ? "bg-primary/10 ring-1 ring-primary/20"
+                              : "hover:bg-muted"
+                          }`}
+                          onClick={() => onSelect(conv)}
+                        >
+                          <MessageSquare className="size-4 mt-0.5 shrink-0 text-muted-foreground" />
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm font-medium truncate">{conv.title}</div>
+                            <div className="text-[11px] text-muted-foreground mt-0.5 flex items-center gap-1.5">
+                              <span>{conv.messages.length} 条</span>
+                              <span>·</span>
+                              <span>{conv.createdAt}</span>
+                            </div>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="size-6 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onDelete(conv.id);
+                            }}
+                            title="删除"
+                          >
+                            <Trash2 className="size-3" />
+                          </Button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )
+              )}
+            </div>
+          )}
+        </div>
+        <div className="p-3 border-t text-[10px] text-muted-foreground/70 text-center">
+          ⌘N 新对话 · Esc 关闭
+        </div>
+      </aside>
+    </>
   );
 }
 
@@ -1222,45 +1341,86 @@ export function SuperAIPage() {
     setAgentPrompt(null);
   }, []);
 
+  /* Global keyboard shortcuts:
+       ⌘/Ctrl + N → new conversation
+       Esc        → close history drawer
+     We deliberately do NOT bind ⌘K — that is the global CommandPalette
+     (see /components/CommandPalette.tsx) and is handled there. */
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      const mod = e.metaKey || e.ctrlKey;
+      if (mod && (e.key === "n" || e.key === "N")) {
+        e.preventDefault();
+        handleNewConversation();
+      } else if (e.key === "Escape" && showHistory) {
+        setShowHistory(false);
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showHistory, handleNewConversation]);
+
   return (
-    <div className="flex flex-col h-full">
-      <div className="border-b bg-background px-6 py-3 flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold tracking-tight flex items-center gap-2">
-            <Sparkles className="size-5 text-primary" />
-            SuperAI
-          </h1>
-          <p className="text-xs text-muted-foreground mt-0.5">AI 对话入口 · Cmd+K 全局唤起</p>
+    <div className="flex flex-col h-full bg-gradient-to-b from-background to-muted/20">
+      {/* ── Topbar ────────────────────────────────────────────────
+          简洁：左侧 logo + 状态、右侧历史 / 新对话 / 主题预留
+          sticky 在顶部，border-bottom 渐入 / 渐出。                      */}
+      <div className="sticky top-0 z-30 border-b bg-background/80 backdrop-blur-md px-6 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center justify-center size-9 rounded-xl bg-gradient-to-br from-primary to-primary/60 text-primary-foreground shadow-sm">
+            <Sparkles className="size-5" />
+          </div>
+          <div>
+            <h1 className="text-base font-semibold tracking-tight flex items-center gap-2">
+              SuperAI
+              <Badge variant="secondary" className="text-[10px] h-4 px-1.5 font-normal">Beta</Badge>
+            </h1>
+            <p className="text-[11px] text-muted-foreground">AI 对话入口 · ⌘K 全局唤起 · ⌘N 新对话</p>
+          </div>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => setShowHistory(!showHistory)}>
-            <Clock className="size-3 mr-1" />
+          <Button variant="ghost" size="sm" onClick={() => setShowHistory(!showHistory)} className="gap-1.5">
+            <Clock className="size-3.5" />
             历史
             {conversations.length > 0 && (
-              <Badge variant="secondary" className="ml-1 text-xs">{conversations.length}</Badge>
+              <Badge variant="secondary" className="ml-0.5 h-4 px-1.5 text-[10px]">{conversations.length}</Badge>
             )}
           </Button>
-          <Button variant="outline" size="sm" onClick={handleNewConversation}>
-            <Plus className="size-3 mr-1" />
+          <Button size="sm" onClick={handleNewConversation} className="gap-1.5">
+            <Plus className="size-3.5" />
             新对话
+            <kbd className="hidden sm:inline-block ml-1 text-[10px] opacity-60 font-mono">⌘N</kbd>
           </Button>
         </div>
       </div>
       <div className="flex flex-1 overflow-hidden">
         <div className="flex-1 flex flex-col">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col flex-1">
-            <div className="border-b bg-background px-6">
-              <TabsList className="h-11 bg-transparent">
-                <TabsTrigger value="chat" className="gap-1.5 data-[state=active]:bg-primary/10">
+            <div className="border-b bg-background/40 backdrop-blur-sm px-6">
+              <TabsList className="h-11 bg-transparent gap-0 p-0 relative">
+                <TabsTrigger
+                  value="chat"
+                  className="gap-1.5 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-3"
+                >
                   <MessageSquare className="size-3.5" /> 对话
                 </TabsTrigger>
-                <TabsTrigger value="agent" className="gap-1.5 data-[state=active]:bg-primary/10">
+                <TabsTrigger
+                  value="agent"
+                  className="gap-1.5 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-3"
+                >
                   <Bot className="size-3.5" /> 智能体
                 </TabsTrigger>
-                <TabsTrigger value="tasks" className="gap-1.5 data-[state=active]:bg-primary/10">
+                <TabsTrigger
+                  value="tasks"
+                  className="gap-1.5 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-3"
+                >
                   <ListChecks className="size-3.5" /> 任务
                 </TabsTrigger>
-                <TabsTrigger value="knowledge" className="gap-1.5 data-[state=active]:bg-primary/10">
+                <TabsTrigger
+                  value="knowledge"
+                  className="gap-1.5 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-3"
+                >
                   <BookOpen className="size-3.5" /> 知识中心
                 </TabsTrigger>
               </TabsList>
