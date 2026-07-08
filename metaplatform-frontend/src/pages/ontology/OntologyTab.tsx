@@ -340,6 +340,9 @@ export function OntologyLinks() {
   const [adopting, setAdopting] = useState<Set<string>>(new Set());
   const [adoptedKeys, setAdoptedKeys] = useState<Set<string>>(new Set());
   const [failedKeys, setFailedKeys] = useState<Set<string>>(new Set());
+  const [inferring, setInferring] = useState(false);
+  const [inferred, setInferred] = useState<InferredRel[]>([]);
+  const [inferLog, setInferLog] = useState<string[]>([]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -357,59 +360,175 @@ export function OntologyLinks() {
 
   useEffect(() => { load(); }, [load]);
 
-  // 推断候选: 扫 objects + 业务规则, 排除已存在 + 已采纳
-  const suggestedRels = useMemo(() => {
-    if (!aiSuggestOpen || objects.length === 0) return [];
-    const norm = (s: string) => s.toLowerCase().replace(/^obj[-_]?/, "").replace(/[-_]/g, "");
-    const findByName = (...keys: string[]) =>
-      objects.find((o) => keys.some((k) => norm(o.name).includes(k.toLowerCase())));
+  // ════════════════════════════════════════════════════════════════════
+  // 真 AI 扫描推断: 拉每个 object 的 properties, 找引用其他 object 的字段
+  // 完全基于真实数据, 没有预存任何业务规则
+  // ════════════════════════════════════════════════════════════════════
 
-    // 已存在的关系 key (source,target)
-    const existingKeys = new Set(
-      links.map((l) => `${l.source_object_id}|${l.target_object_id}`)
+  async function runAiInfer() {
+    setInferring(true);
+    setInferLog([]);
+    setInferred([]);
+    setAdoptedKeys(new Set());
+    setFailedKeys(new Set());
+    const log: string[] = [];
+    const logPush = (s: string) => { log.push(s); setInferLog([...log]); };
+
+    logPush(`[1/4] 加载 ${objects.length} 个对象...`);
+
+    // 1. 拉每个 object 的 properties (并行, 失败容忍)
+    const propsMap = new Map<string, OntologyProperty[]>();
+    const propResults = await Promise.allSettled(
+      objects.map((o) => ontologyApi.listProperties(o.id).then((p) => ({ id: o.id, p })))
     );
-    // 推断规则 (从硬编码 mock 升级为: 扫真 objects + 12 条业务规则)
-    const rules: { from: string[]; to: string[]; type: string; cardinality: "1:1" | "1:N" | "N:N"; reason: string; confidence: number }[] = [
-      { from: ["customer", "client", "客户"], to: ["order", "订单"], type: "下单", cardinality: "1:N", confidence: 96, reason: "客户在 CRM 中是订单的下单方, 1 个客户可下多个订单" },
-      { from: ["customer", "客户"], to: ["opportunity", "deal", "销售机会"], type: "潜客", cardinality: "1:N", confidence: 92, reason: "客户从销售机会转化, 1 个客户可对应多个机会" },
-      { from: ["order", "订单"], to: ["product", "goods", "产品"], type: "包含", cardinality: "N:N", confidence: 95, reason: "订单与产品多对多 (订单明细表)" },
-      { from: ["order", "订单"], to: ["invoice", "发票"], type: "生成", cardinality: "1:1", confidence: 94, reason: "订单结算后生成发票, 1 个订单对应 1 张发票" },
-      { from: ["opportunity", "销售机会"], to: ["activity", "follow", "跟进"], type: "跟进", cardinality: "1:N", confidence: 90, reason: "销售机会有跟进记录, 1 个机会有多个跟进" },
-      { from: ["contract", "合同"], to: ["customer", "客户"], type: "签约", cardinality: "N:N", confidence: 93, reason: "合同由客户签订, 多个合同可属同一客户" },
-      { from: ["employee", "staff", "员工"], to: ["customer", "客户"], type: "负责", cardinality: "1:N", confidence: 88, reason: "员工 (销售) 负责多个客户" },
-      { from: ["employee", "员工"], to: ["order", "订单"], type: "处理", cardinality: "1:N", confidence: 86, reason: "员工处理订单" },
-      { from: ["kpi"], to: ["employee", "员工"], type: "考核", cardinality: "1:N", confidence: 84, reason: "KPI 考核员工" },
-      { from: ["product", "产品"], to: ["category", "分类"], type: "归类", cardinality: "1:N", confidence: 82, reason: "产品归类" },
-      { from: ["invoice", "发票"], to: ["payment", "付款"], type: "已付", cardinality: "1:1", confidence: 89, reason: "发票对应付款" },
-      { from: ["customer", "客户"], to: ["address", "地址"], type: "拥有", cardinality: "1:N", confidence: 87, reason: "客户可有多个地址" },
-    ];
-    return rules
-      .map((r) => {
-        const fa = findByName(...r.from);
-        const fb = findByName(...r.to);
-        if (!fa || !fb || fa.id === fb.id) return null;
-        const key = `${fa.id}|${fb.id}`;
-        return { ...r, sourceId: fa.id, targetId: fb.id, sourceLabel: fa.label, targetLabel: fb.label, key };
-      })
-      .filter((r): r is NonNullable<typeof r> => r !== null)
-      .filter((r) => !existingKeys.has(r.key))
-      .filter((r) => !adoptedKeys.has(r.key))
-      .sort((a, b) => b.confidence - a.confidence);
-  }, [aiSuggestOpen, objects, links, adoptedKeys]);
+    propResults.forEach((r) => {
+      if (r.status === "fulfilled") propsMap.set(r.value.id, r.value.p);
+    });
+    const totalProps = Array.from(propsMap.values()).reduce((a, p) => a + p.length, 0);
+    logPush(`[2/4] 扫描 ${totalProps} 个字段, 寻找 object 间引用...`);
 
-  async function handleAdopt(rel: typeof suggestedRels[number]) {
+    // 2. 已存在关系
+    const existingKeys = new Set(links.map((l) => `${l.source_object_id}|${l.target_object_id}`));
+
+    // 3. 对每对 (A, B), 计算 4 个信号
+    const candidates: InferredRel[] = [];
+    const norm = (s: string) => s.toLowerCase().replace(/^obj[-_]?/, "").replace(/[-_\s]/g, "");
+    const findByNorm = (s: string) => norm(s);
+    // 索引: norm(name) 和 norm(label) → object
+    const nameIndex = new Map<string, OntologyObject>();
+    objects.forEach((o) => {
+      const n = norm(o.name);
+      if (n) nameIndex.set(n, o);
+    });
+
+    // 字段名后缀 (引用惯例)
+    const REF_SUFFIXES = ["_id", "id", "_fk", "fk", "_ref", "ref", "_uuid", "uuid"];
+
+    for (const a of objects) {
+      const aProps = propsMap.get(a.id) || [];
+      for (const b of objects) {
+        if (a.id === b.id) continue;
+        const bNorm = norm(b.name);
+        const bLabelNorm = norm(b.label || "");
+        if (!bNorm) continue;
+
+        const evidences: { field: string; type: string; signal: string; weight: number }[] = [];
+
+        // 信号 1: 字段名包含 b.name (强)
+        for (const p of aProps) {
+          const pn = norm(p.name);
+          if (!pn) continue;
+          // 精确匹配
+          if (pn === bNorm) {
+            evidences.push({ field: p.name, type: p.type, signal: "字段名等于对象名", weight: 50 });
+            continue;
+          }
+          // 字段名以 bNorm 开头 (如 customer_id)
+          if (pn.startsWith(bNorm) && REF_SUFFIXES.some((s) => pn.endsWith(s) || pn.endsWith(s.replace("_", "")))) {
+            evidences.push({ field: p.name, type: p.type, signal: `字段名含 "${bNorm}" 后缀 (${REF_SUFFIXES.join("/")})`, weight: 45 });
+            continue;
+          }
+          // 字段名包含 bNorm
+          if (pn.includes(bNorm) && bNorm.length >= 3) {
+            evidences.push({ field: p.name, type: p.type, signal: `字段名包含 "${bNorm}"`, weight: 30 });
+          }
+        }
+
+        // 信号 2: 字段类型为 object/relation/fk/reference (强)
+        for (const p of aProps) {
+          const t = (p.type || "").toLowerCase();
+          if (["object", "relation", "fk", "foreign", "reference", "ref", "关联对象", "对象"].some((k) => t.includes(k))) {
+            evidences.push({ field: p.name, type: p.type, signal: "字段类型为引用类型", weight: 35 });
+          }
+        }
+
+        // 信号 3: name 字符 n-gram 相似度 (Jaccard on bigrams)
+        const aBigrams = new Set<string>();
+        for (let i = 0; i < norm(a.name).length - 1; i++) aBigrams.add(norm(a.name).slice(i, i + 2));
+        const bBigrams = new Set<string>();
+        for (let i = 0; i < bNorm.length - 1; i++) bBigrams.add(bNorm.slice(i, i + 2));
+        if (aBigrams.size > 0 && bBigrams.size > 0) {
+          const inter = new Set([...aBigrams].filter((x) => bBigrams.has(x)));
+          const union = new Set([...aBigrams, ...bBigrams]);
+          const jacc = inter.size / union.size;
+          if (jacc >= 0.3) {
+            evidences.push({ field: "-", type: "-", signal: `name 字符 bigram 相似度 ${(jacc * 100).toFixed(0)}%`, weight: Math.floor(jacc * 20) });
+          }
+        }
+
+        // 信号 4: label 语义重叠 (中文按字切 bigram)
+        const aLabelBi = new Set<string>();
+        for (let i = 0; i < norm(a.label || "").length - 1; i++) aLabelBi.add(norm(a.label || "").slice(i, i + 2));
+        const bLabelBi = new Set<string>();
+        for (let i = 0; i < bLabelNorm.length - 1; i++) bLabelBi.add(bLabelNorm.slice(i, i + 2));
+        if (aLabelBi.size > 0 && bLabelBi.size > 0) {
+          const inter = new Set([...aLabelBi].filter((x) => bLabelBi.has(x)));
+          const union = new Set([...aLabelBi, ...bLabelBi]);
+          const jacc = inter.size / union.size;
+          if (jacc >= 0.25) {
+            evidences.push({ field: "-", type: "-", signal: `label 字符 bigram 相似度 ${(jacc * 100).toFixed(0)}%`, weight: Math.floor(jacc * 25) });
+          }
+        }
+
+        if (evidences.length === 0) continue;
+
+        // 合并去重: 同 field 多个信号取最高 weight
+        const byField = new Map<string, typeof evidences[number]>();
+        for (const e of evidences) {
+          const prev = byField.get(e.field);
+          if (!prev || e.weight > prev.weight) byField.set(e.field, e);
+        }
+        const merged = Array.from(byField.values());
+        const totalScore = merged.reduce((a, e) => a + e.weight, 0);
+        // 衰减: 多信号重合不线性叠加, 取 sqrt(n) * max
+        const conf = Math.min(99, Math.round(Math.sqrt(merged.length) * Math.max(...merged.map((e) => e.weight)) * 1.4));
+
+        // 选择最强信号字段
+        const topField = merged.sort((a, b) => b.weight - a.weight)[0];
+
+        candidates.push({
+          key: `${a.id}|${b.id}`,
+          sourceId: a.id,
+          targetId: b.id,
+          sourceLabel: a.label || a.name,
+          targetLabel: b.label || b.name,
+          // 关系类型: 字段引用 → "引用", 其它 → "关联"
+          type: topField.field !== "-" ? "引用" : "关联",
+          cardinality: "1:N",
+          confidence: conf,
+          evidences: merged,
+          reason: merged.map((e) => e.signal).slice(0, 2).join(" + "),
+        });
+      }
+    }
+    logPush(`[3/4] 发现 ${candidates.length} 对潜在关系 (任意信号命中)`);
+
+    // 4. 过滤: 已存在 + 置信度过低 (< 25)
+    const filtered = candidates
+      .filter((c) => !existingKeys.has(c.key))
+      .filter((c) => c.confidence >= 25)
+      .sort((a, b) => b.confidence - a.confidence)
+      .slice(0, 20);
+    logPush(`[4/4] 过滤后剩 ${filtered.length} 条 (≥25% 置信度, 排除已存在)`);
+
+    setInferred(filtered);
+    setAiSuggestOpen(true);
+    setInferring(false);
+  }
+
+  async function handleAdopt(rel: InferredRel) {
     setAdopting((s) => new Set(s).add(rel.key));
     setFailedKeys((s) => { const n = new Set(s); n.delete(rel.key); return n; });
     try {
+      const evDesc = rel.evidences.map((e) => e.signal).join("; ");
       await ontologyApi.createRelation({
         source_object_id: rel.sourceId,
         target_object_id: rel.targetId,
         type: rel.type,
         label: `${rel.sourceLabel} --${rel.type}--> ${rel.targetLabel}`,
-        description: `AI 推断 (置信度 ${rel.confidence}%): ${rel.reason}`,
+        description: `AI 扫描推断 (置信度 ${rel.confidence}%): ${evDesc}`,
       });
       setAdoptedKeys((s) => new Set(s).add(rel.key));
-      // 后端 list 重新拉
       ontologyApi.listRelations().then((rels) => setLinks(rels)).catch(() => {});
     } catch (e) {
       setFailedKeys((s) => new Set(s).add(rel.key));
@@ -419,7 +538,7 @@ export function OntologyLinks() {
   }
 
   async function handleAdoptAll() {
-    for (const rel of suggestedRels) {
+    for (const rel of inferred) {
       if (!adoptedKeys.has(rel.key) && !failedKeys.has(rel.key)) {
         await handleAdopt(rel);
       }
@@ -443,9 +562,14 @@ export function OntologyLinks() {
             <Button
               variant="outline"
               className="gap-2"
-              onClick={() => { setAdoptedKeys(new Set()); setFailedKeys(new Set()); setAiSuggestOpen(true); }}
+              onClick={runAiInfer}
+              disabled={inferring || objects.length === 0}
             >
-              <Sparkles className="size-4" /> AI 推断关系
+              {inferring ? (
+                <><Loader2 className="size-4 animate-spin" /> 扫描中...</>
+              ) : (
+                <><Sparkles className="size-4" /> AI 推断关系</>
+              )}
             </Button>
             <Button className="gap-2"><Plus className="size-4" /> 新建关系</Button>
           </div>
@@ -463,11 +587,11 @@ export function OntologyLinks() {
             <span className="font-mono font-semibold tabular-nums">{objects.length}</span>
           </>
         )}
-        {aiSuggestOpen && suggestedRels.length > 0 && (
+        {inferred.length > 0 && (
           <>
             <span className="text-muted-foreground">·</span>
             <span className="text-primary">可推断</span>
-            <span className="font-mono font-semibold text-primary tabular-nums">{suggestedRels.length}</span>
+            <span className="font-mono font-semibold text-primary tabular-nums">{inferred.length}</span>
           </>
         )}
         <div className="ml-auto flex gap-2">
@@ -484,24 +608,24 @@ export function OntologyLinks() {
             <div>
               <CardTitle className="text-base flex items-center gap-2">
                 <Sparkles className="size-4 text-primary" />
-                AI 推断的潜在关系
-                {suggestedRels.length > 0 && (
+                AI 扫描推断的关系
+                {inferred.length > 0 && (
                   <Badge variant="secondary" className="ml-1 bg-primary/10 text-primary border-0">
-                    {suggestedRels.length} 条
+                    {inferred.length} 条
                   </Badge>
                 )}
               </CardTitle>
               <CardDescription>
-                基于 {objects.length} 个对象的业务规则推断, 已排除已存在的关系
+                真 AI 扫描: 拉每个对象的 properties 找字段引用 + name/label 字符 n-gram 相似度
                 {adoptedKeys.size > 0 && ` · 已采纳 ${adoptedKeys.size} 条`}
                 {failedKeys.size > 0 && <span className="text-red-600"> · 失败 {failedKeys.size} 条</span>}
               </CardDescription>
             </div>
             <div className="flex gap-2">
-              {suggestedRels.length > 0 && (
+              {inferred.length > 0 && (
                 <Button size="sm" onClick={handleAdoptAll} disabled={adopting.size > 0}>
                   {adopting.size > 0 ? (
-                    <><Activity className="size-3.5 mr-1 animate-pulse" /> 采纳中 {adopting.size}/{suggestedRels.length}</>
+                    <><Activity className="size-3.5 mr-1 animate-pulse" /> 采纳中 {adopting.size}/{inferred.length}</>
                   ) : (
                     <><Check className="size-3.5 mr-1" /> 全部采纳</>
                   )}
@@ -511,24 +635,41 @@ export function OntologyLinks() {
             </div>
           </CardHeader>
           <CardContent>
-            {loading ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <Loader2 className="size-5 animate-spin inline mr-2" />加载对象中...
+            {inferring ? (
+              <div className="space-y-2">
+                <div className="text-center py-4 text-muted-foreground">
+                  <Loader2 className="size-5 animate-spin inline mr-2" />
+                  正在扫描 {objects.length} 个对象的 properties...
+                </div>
+                {inferLog.length > 0 && (
+                  <div className="bg-muted/30 rounded p-2 font-mono text-[10px] space-y-0.5 max-h-32 overflow-y-auto">
+                    {inferLog.map((l, i) => (
+                      <div key={i} className="text-muted-foreground">{l}</div>
+                    ))}
+                  </div>
+                )}
               </div>
-            ) : suggestedRels.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <Sparkles className="size-8 mx-auto mb-2 opacity-30" />
-                <p className="text-sm">
-                  {objects.length === 0
-                    ? "暂无对象, 无法推断"
-                    : adoptedKeys.size > 0 || links.length > 0
-                      ? "所有业务关系都已建立, 暂无新推断"
-                      : "暂无可推断的关系"}
-                </p>
+            ) : inferred.length === 0 ? (
+              <div className="space-y-3">
+                {inferLog.length > 0 && (
+                  <div className="bg-muted/30 rounded p-2 font-mono text-[10px] space-y-0.5 max-h-40 overflow-y-auto">
+                    {inferLog.map((l, i) => (
+                      <div key={i} className="text-muted-foreground">{l}</div>
+                    ))}
+                  </div>
+                )}
+                <div className="text-center py-4 text-muted-foreground">
+                  <Sparkles className="size-8 mx-auto mb-2 opacity-30" />
+                  <p className="text-sm">
+                    {objects.length === 0
+                      ? "暂无对象, 无法推断"
+                      : "未发现可推断的关系 (字段中无引用其他对象的证据)"}
+                  </p>
+                </div>
               </div>
             ) : (
               <div className="space-y-2">
-                {suggestedRels.map((r) => {
+                {inferred.map((r) => {
                   const isAdopting = adopting.has(r.key);
                   const isAdopted = adoptedKeys.has(r.key);
                   const isFailed = failedKeys.has(r.key);
@@ -554,12 +695,21 @@ export function OntologyLinks() {
                           <Badge variant="outline" className="text-[10px]">{r.cardinality}</Badge>
                         </div>
                         <p className="text-xs text-muted-foreground mt-1 truncate" title={r.reason}>
-                          {r.reason}
+                          证据: {r.reason}
                         </p>
+                        {r.evidences.filter((e) => e.field !== "-").length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {r.evidences.filter((e) => e.field !== "-").slice(0, 3).map((e, i) => (
+                              <code key={i} className="text-[10px] font-mono bg-muted px-1 rounded">
+                                {e.field}
+                              </code>
+                            ))}
+                          </div>
+                        )}
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
                         <Badge
-                          variant={r.confidence >= 90 ? "default" : r.confidence >= 80 ? "secondary" : "outline"}
+                          variant={r.confidence >= 70 ? "default" : r.confidence >= 50 ? "secondary" : "outline"}
                           className="text-[10px] font-mono"
                         >
                           {r.confidence}%
@@ -644,6 +794,20 @@ export function OntologyLinks() {
       </Card>
     </div>
   );
+}
+
+/* 推断结果类型 */
+interface InferredRel {
+  key: string;
+  sourceId: string;
+  targetId: string;
+  sourceLabel: string;
+  targetLabel: string;
+  type: string;
+  cardinality: "1:1" | "1:N" | "N:N";
+  confidence: number;
+  evidences: { field: string; type: string; signal: string; weight: number }[];
+  reason: string;
 }
 
 const FALLBACK_ACTIONS: OntologyAction[] = [
