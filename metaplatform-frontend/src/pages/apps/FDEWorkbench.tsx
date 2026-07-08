@@ -125,7 +125,7 @@ export default function CustomerDashboard() {
   }, []);
 
   return (
-    <div className="flex flex-col gap-4 p-4">
+    <div className="flex flex-col gap-4 p-6 w-full">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">客户管理仪表盘</h1>
         <Button>+ 新建客户</Button>

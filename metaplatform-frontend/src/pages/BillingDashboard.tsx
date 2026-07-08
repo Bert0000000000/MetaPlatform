@@ -94,7 +94,7 @@ const BillingDashboard: React.FC = () => {
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
+    <div className="p-6 w-full space-y-6">
       <div>
         <h1 className="text-xl font-semibold tracking-tight">计费中心</h1>
         <p className="text-sm text-muted-foreground mt-1">管理订阅套餐、查看使用量统计</p>

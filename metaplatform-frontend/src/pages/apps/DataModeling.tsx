@@ -254,7 +254,7 @@ export default function DataModeling() {
   }
 
   return (
-    <div className="flex flex-col gap-6 p-6">
+    <div className="flex flex-col gap-6 p-6 w-full">
       <PageHeader
         title="业务数据建模"
         description="基于本体引擎的对象建模（应用内的数据模型）"

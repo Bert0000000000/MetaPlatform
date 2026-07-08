@@ -252,7 +252,7 @@ export default function SignaturePad({ onSave, onApply, initialTemplate = "perso
   };
 
   return (
-    <div className="space-y-4">
+    <div className="p-6 w-full space-y-4">
       {/* Seal Template Selection */}
       <Card>
         <CardHeader className="pb-3">

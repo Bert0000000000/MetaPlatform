@@ -66,7 +66,7 @@ const PageView: React.FC = () => {
 
   if (error) {
     return (
-      <div className="p-6 max-w-7xl mx-auto space-y-4">
+      <div className="p-6 w-full space-y-4">
         <div className="rounded-md border border-destructive/50 bg-destructive/10 p-4">
           <h2 className="text-lg font-semibold mb-2">加载失败</h2>
           <p className="text-sm text-destructive">{error}</p>
@@ -87,7 +87,7 @@ const PageView: React.FC = () => {
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-4">
+    <div className="p-6 w-full space-y-4">
       <div className="flex items-center justify-between">
         <Button variant="outline" size="sm" onClick={() => navigate("/")}>
           &larr; 返回

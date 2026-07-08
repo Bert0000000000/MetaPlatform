@@ -448,7 +448,7 @@ export default function FormDesigner() {
   const selectedField = selectedFieldIndex !== null ? formFields[selectedFieldIndex] : null;
 
   return (
-    <div className="flex flex-col gap-4 h-[calc(100vh-180px)]">
+    <div className="flex flex-col gap-4 p-6 w-full h-[calc(100vh-180px)]">
       <PageHeader
         title="表单设计器"
         description="LowCode 拖拽式表单设计 · 客户管理表单"

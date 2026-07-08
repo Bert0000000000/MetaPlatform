@@ -34,7 +34,7 @@ export default function PageEditor() {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-100px)]">
+    <div className="flex flex-col p-6 w-full h-[calc(100vh-100px)]">
       <EditorShell
         pageName={editor.pageName}
         onPageNameChange={(name) => { editor.setPageName(name); editor.markDirty(); }}

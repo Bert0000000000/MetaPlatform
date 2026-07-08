@@ -320,7 +320,7 @@ export function DashboardPage() {
   const totalFlows = apps.reduce((sum, a) => sum + (a.flows_count || 0), 0);
 
   return (
-    <div className="flex flex-col gap-4 p-6 max-w-7xl mx-auto">
+    <div className="flex flex-col gap-4 p-6 w-full">
       {/* Toast */}
       {toast && (
         <div className="fixed top-4 right-4 z-50 rounded-md bg-foreground px-4 py-2 text-sm text-background shadow-lg">

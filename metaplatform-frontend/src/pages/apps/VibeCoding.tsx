@@ -40,7 +40,7 @@ export default function SalesDashboard() {
   }, []);
 
   return (
-    <div className="p-6 grid grid-cols-3 gap-4">
+    <div className="p-6 w-full grid grid-cols-3 gap-4">
       <Card>
         <CardHeader><CardTitle>本月销售额</CardTitle></CardHeader>
         <CardContent>
