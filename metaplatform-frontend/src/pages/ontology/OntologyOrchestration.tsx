@@ -35,6 +35,7 @@ import {
   ShoppingCart, FileText, Package, Truck, Receipt, Wallet, Users,
   Activity, Zap, GitBranch, Eye, ListChecks, ArrowRight, Bell, Filter,
   RotateCcw, Sparkles, Bot, PlayCircle, UserCircle2, Square, Cpu, MessageSquare,
+  CopyMinus, GitMerge, Trash2, ShieldCheck, AlertOctagon,
 } from "lucide-react";
 import { ontologyStore, type PurchaseRequest, type Supplier } from "@/lib/ontology-store";
 import { ontologyBus, useOntologyEvents, TYPE_LABEL, LEVEL_CLS, type OntologyEvent } from "@/lib/ontology-eventbus";
@@ -131,6 +132,9 @@ export default function OntologyOrchestration() {
           <TabsTrigger value="model" className="gap-1.5 rounded-none border-b-2 border-transparent text-muted-foreground data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:shadow-[inset_0_-2px_0_0_hsl(var(--primary))] px-3">
             <Eye className="size-3.5" /> 数据模型
           </TabsTrigger>
+          <TabsTrigger value="dedup" className="gap-1.5 rounded-none border-b-2 border-transparent text-muted-foreground data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:shadow-[inset_0_-2px_0_0_hsl(var(--primary))] px-3">
+            <CopyMinus className="size-3.5" /> 去重校验
+          </TabsTrigger>
           <TabsTrigger value="simulator" className="gap-1.5 rounded-none border-b-2 border-transparent text-muted-foreground data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:shadow-[inset_0_-2px_0_0_hsl(var(--primary))] px-3">
             <Bot className="size-3.5" /> 真实模拟器
           </TabsTrigger>
@@ -162,6 +166,11 @@ export default function OntologyOrchestration() {
         {/* 数据模型 */}
         <TabsContent value="model" className="mt-4">
           <DataModelPanel />
+        </TabsContent>
+
+        {/* 去重校验 */}
+        <TabsContent value="dedup" className="mt-4">
+          <DedupPanel />
         </TabsContent>
 
         {/* 真实模拟器 */}
@@ -1139,6 +1148,268 @@ function SimulatorPanel() {
               </div>
             </div>
           )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+/* ═════════════ 本体对象去重校验面板 ═════════════
+ *
+ * 业务场景: 主数据 (供应商/客户/物料) 因多渠道录入产生重复
+ *   - "上海精密机械"  vs  "上海精密机械有限公司"
+ *   - 同一公司不同 code (S001 vs S001-OLD)
+ *
+ * 功能:
+ *   1. 自动扫描: 用 store.findDuplicateSuppliers() 找出重复组
+ *   2. 可视化: 每组显示 重复信号 (code/名称) + 成员对比
+ *   3. 一键合并: 选主记录 (target) → 删除其他 → 迁移关联引用
+ *   4. 实时事件: 合并后 emit object.deleted/updated, 事件流可看
+ */
+function DedupPanel() {
+  const [tick, setTick] = useState(0);
+  const [targetPicks, setTargetPicks] = useState<Record<string, string>>({}); // groupKey -> targetId
+  const [mergedGroups, setMergedGroups] = useState<Set<string>>(new Set());
+
+  // 订阅 store 变化 (object.deleted 后重新扫描)
+  useEffect(() => {
+    const off = ontologyBus.on("object.deleted", () => setTick((n) => n + 1));
+    const off2 = ontologyBus.on("object.created", () => setTick((n) => n + 1));
+    return () => { off(); off2(); };
+  }, []);
+
+  const groups = ontologyStore.findDuplicateSuppliers();
+  const totalSuppliers = ontologyStore.suppliers.length;
+  const dupMembers = groups.reduce((sum, g) => sum + g.members.length, 0);
+  const cleanSuppliers = totalSuppliers - dupMembers + groups.length; // 合并后预计条数
+
+  function pickTarget(groupKey: string, targetId: string) {
+    setTargetPicks((prev) => ({ ...prev, [groupKey]: targetId }));
+  }
+
+  function doMerge(group: { key: string; members: Supplier[]; reason: string }) {
+    const target = targetPicks[group.key] || group.members[0].id;
+    const result = ontologyStore.mergeSupplierDuplicates(group, target);
+    if (result.merged > 0) {
+      setMergedGroups((prev) => new Set([...prev, group.key]));
+      ontologyBus.emit({
+        type: "alert.raised",
+        level: "success",
+        message: `✓ 合并完成: ${result.merged} 条重复 → 1 条主记录, 迁移 ${result.updated} 条关联引用`,
+        payload: { result },
+      });
+    }
+  }
+
+  function mergeAll() {
+    groups.forEach((g) => {
+      if (mergedGroups.has(g.key)) return;
+      const target = targetPicks[g.key] || g.members[0].id;
+      ontologyStore.mergeSupplierDuplicates(g, target);
+    });
+    setMergedGroups(new Set(groups.map((g) => g.key)));
+    ontologyBus.emit({
+      type: "alert.raised",
+      level: "success",
+      message: `✓ 一键全量合并: ${groups.length} 组重复, 全部清理`,
+    });
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* 概览 */}
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+        <StatCard
+          label="供应商总数"
+          value={String(totalSuppliers)}
+          icon={Users}
+        />
+        <StatCard
+          label="重复组数"
+          value={String(groups.length)}
+          icon={CopyMinus}
+          sub={`共 ${dupMembers} 条记录`}
+        />
+        <StatCard
+          label="合并后预计"
+          value={String(cleanSuppliers)}
+          icon={ShieldCheck}
+          sub="去重后条数"
+        />
+        <StatCard
+          label="已合并"
+          value={String(mergedGroups.size)}
+          icon={GitMerge}
+          sub={`/ ${groups.length} 组`}
+        />
+      </div>
+
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div>
+              <CardTitle className="text-base flex items-center gap-2">
+                <CopyMinus className="size-4" /> 供应商重复检测
+              </CardTitle>
+              <CardDescription>
+                用 2 个信号判断: <code className="text-[10px] bg-muted px-1 rounded">code 精确相同</code> + <code className="text-[10px] bg-muted px-1 rounded">名称归一化后包含</code>
+              </CardDescription>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setTick((n) => n + 1)}
+              >
+                <RotateCcw className="size-3.5 mr-1" /> 重新扫描
+              </Button>
+              {groups.length > 0 && (
+                <Button
+                  size="sm"
+                  onClick={mergeAll}
+                  disabled={mergedGroups.size === groups.length}
+                >
+                  <GitMerge className="size-3.5 mr-1" /> 一键全量合并
+                </Button>
+              )}
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {groups.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              <ShieldCheck className="size-10 mx-auto mb-3 text-green-500" />
+              <p className="text-sm font-medium">✓ 主数据干净, 无重复</p>
+              <p className="text-xs mt-1">所有供应商记录都通过去重校验</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {groups.map((g) => {
+                const isMerged = mergedGroups.has(g.key);
+                const targetId = targetPicks[g.key] || g.members[0].id;
+                return (
+                  <div
+                    key={g.key}
+                    className={`p-3 rounded-lg border transition-all ${
+                      isMerged ? "border-green-300 dark:border-green-800 bg-green-50/30 dark:bg-green-950/20 opacity-60" : "bg-card"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <AlertOctagon className="size-4 text-amber-500 shrink-0" />
+                        <span className="text-sm font-semibold">重复组</span>
+                        <Badge variant="secondary" className="text-[10px]">{g.members.length} 条</Badge>
+                        {isMerged && (
+                          <Badge className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border-0 text-[10px]">
+                            ✓ 已合并
+                          </Badge>
+                        )}
+                      </div>
+                      {!isMerged && (
+                        <Button
+                          size="sm"
+                          variant="default"
+                          onClick={() => doMerge(g)}
+                        >
+                          <GitMerge className="size-3.5 mr-1" /> 合并到选中主记录
+                        </Button>
+                      )}
+                    </div>
+                    <div className="text-[11px] text-muted-foreground mb-2 px-1">
+                      重复信号: {g.reason}
+                    </div>
+                    <div className="space-y-1.5">
+                      {g.members.map((m) => {
+                        const isTarget = targetId === m.id;
+                        return (
+                          <label
+                            key={m.id}
+                            className={`flex items-center gap-3 p-2.5 rounded-md border cursor-pointer transition-colors ${
+                              isTarget
+                                ? "border-primary bg-primary/5"
+                                : "bg-muted/20 hover:bg-muted/40"
+                            } ${isMerged && !isTarget ? "opacity-50 line-through" : ""}`}
+                          >
+                            <input
+                              type="radio"
+                              name={`target-${g.key}`}
+                              checked={isTarget}
+                              onChange={() => pickTarget(g.key, m.id)}
+                              disabled={isMerged}
+                              className="size-3.5 accent-primary"
+                            />
+                            <div className="size-8 rounded-lg bg-gradient-to-br from-primary to-primary/60 text-primary-foreground flex items-center justify-center text-[10px] font-mono shrink-0">
+                              {m.code || "—"}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm font-medium truncate">{m.name}</div>
+                              <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground flex-wrap">
+                                <span>等级 {m.rating}</span>
+                                <span>·</span>
+                                <span>{m.region}</span>
+                                <span>·</span>
+                                <span className="font-mono">{m.paymentTerms}</span>
+                                <span>·</span>
+                                <span className="tabular-nums">{m.onTimeRate}% 准时</span>
+                                {isTarget && (
+                                  <Badge variant="default" className="text-[9px] h-3.5 px-1">主记录</Badge>
+                                )}
+                              </div>
+                            </div>
+                            <code className="text-[10px] text-muted-foreground font-mono shrink-0">{m.id}</code>
+                            {isMerged && !isTarget && (
+                              <Trash2 className="size-3.5 text-red-500 shrink-0" />
+                            )}
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* 去重规则说明 */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <ShieldCheck className="size-4" /> 去重算法说明
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+            <div className="p-3 rounded-lg border bg-muted/30">
+              <div className="font-semibold mb-1.5">信号 1: code 精确相同 (强)</div>
+              <p className="text-muted-foreground leading-relaxed">
+                同一物料编码在多个记录里重复出现, 一定是主数据同步失败导致。
+                例: <code className="bg-background px-1 rounded">S003</code> 同时出现在 "北辰建材集团" 和 "北辰建材股份"。
+              </p>
+            </div>
+            <div className="p-3 rounded-lg border bg-muted/30">
+              <div className="font-semibold mb-1.5">信号 2: 名称归一化 (中)</div>
+              <p className="text-muted-foreground leading-relaxed">
+                把名称做归一化 (去 "有限公司/集团/股份" 等后缀, 去括号/标点) 后双向包含。
+                例: "上海精密机械" ⊂ "上海精密机械有限公司"。
+              </p>
+            </div>
+            <div className="p-3 rounded-lg border bg-muted/30">
+              <div className="font-semibold mb-1.5">合并策略: 保留主记录, 删除从记录</div>
+              <p className="text-muted-foreground leading-relaxed">
+                选中的 targetId 保留, 其他成员删除。
+                删除前自动迁移所有引用 (PR/PO 里的 supplierId) 指向新 ID。
+              </p>
+            </div>
+            <div className="p-3 rounded-lg border bg-muted/30">
+              <div className="font-semibold mb-1.5">事件可观测</div>
+              <p className="text-muted-foreground leading-relaxed">
+                每次合并都 emit 3+ 个事件: action.executed + N × object.deleted + object.updated,
+                切到「事件流」tab 实时查看。
+              </p>
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>

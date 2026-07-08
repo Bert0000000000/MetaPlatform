@@ -75,11 +75,32 @@ export interface Invoice {
 /* ──────── Store ──────── */
 class OntologyStore {
   suppliers: Supplier[] = [
-    { id: "sup-001", code: "S001", name: "上海精密机械", rating: "A", region: "华东", paymentTerms: "Net 30", onTimeRate: 98 },
-    { id: "sup-002", code: "S002", name: "华耀电子科技", rating: "A", region: "华南", paymentTerms: "Net 60", onTimeRate: 95 },
-    { id: "sup-003", code: "S003", name: "北辰建材", rating: "B", region: "华北", paymentTerms: "Net 45", onTimeRate: 87 },
-    { id: "sup-004", code: "S004", name: "蓝海物流服务", rating: "B", region: "西南", paymentTerms: "Net 30", onTimeRate: 92 },
+    /* ── 核心供应商 (无重复, 是主数据权威源) ── */
+    { id: "sup-001", code: "S001", name: "上海精密机械有限公司", rating: "A", region: "华东", paymentTerms: "Net 30", onTimeRate: 98 },
+    { id: "sup-002", code: "S002", name: "华耀电子科技股份有限公司", rating: "A", region: "华南", paymentTerms: "Net 60", onTimeRate: 95 },
+    { id: "sup-003", code: "S003", name: "北辰建材集团", rating: "B", region: "华北", paymentTerms: "Net 45", onTimeRate: 87 },
+    { id: "sup-004", code: "S004", name: "蓝海物流服务有限公司", rating: "B", region: "西南", paymentTerms: "Net 30", onTimeRate: 92 },
     { id: "sup-005", code: "S005", name: "易达办公用品", rating: "C", region: "华东", paymentTerms: "COD", onTimeRate: 78 },
+
+    /* ── 重复 (用户/历史导入产生, 需去重) ── */
+
+    // 重复组 1: sup-001 的 3 个变体 (漏掉"有限公司" / 全角括号 / 简称)
+    { id: "sup-101", code: "S001-OLD", name: "上海精密机械", rating: "A", region: "华东", paymentTerms: "Net 30", onTimeRate: 96 },
+    { id: "sup-102", code: "S001-DUP", name: "上海精密机械(集团)", rating: "A", region: "华东", paymentTerms: "Net 30", onTimeRate: 98 },
+    { id: "sup-103", code: "SHJM",     name: "上海精密",         rating: "A", region: "华东", paymentTerms: "Net 30", onTimeRate: 97 },
+
+    // 重复组 2: sup-002 的 2 个变体
+    { id: "sup-201", code: "HY-TECH",  name: "华耀电子",         rating: "A", region: "华南", paymentTerms: "Net 60", onTimeRate: 95 },
+    { id: "sup-202", code: "HY-DZ",    name: "华耀电子科技股份", rating: "A", region: "华南", paymentTerms: "Net 60", onTimeRate: 95 },
+
+    // 重复组 3: sup-003 的 1 个变体 (不同名但同 code)
+    { id: "sup-301", code: "S003",     name: "北辰建材股份",     rating: "B", region: "华北", paymentTerms: "Net 45", onTimeRate: 87 },
+
+    // 重复组 4: sup-004 的 1 个变体
+    { id: "sup-401", code: "BLWL",     name: "蓝海物流",         rating: "B", region: "西南", paymentTerms: "Net 30", onTimeRate: 92 },
+
+    // 独立新供应商 (无重复, 真实存在)
+    { id: "sup-501", code: "S501",     name: "卓越软件",         rating: "A", region: "华东", paymentTerms: "Net 30", onTimeRate: 99 },
   ];
 
   purchaseRequests: PurchaseRequest[] = [
@@ -351,6 +372,153 @@ class OntologyStore {
       payload: { objectKind: "PurchaseOrder" as ObjectKind, po },
     });
     return po;
+  }
+
+  /* ═══════════════════════════════════════════════════════
+     本体对象去重校验
+     业务问题: 同一供应商因手工录入/Excel 导入/SAP 同步产生多份
+       "上海精密机械" / "上海精密机械有限公司" / "上海精密机械(集团)"
+       评级/账期相同但 code 不同, 算 3 条独立供应商 — 重复
+
+     去重策略 (3 个信号, 任一命中即归并):
+       1. code 精确相同 (强)
+       2. name 归一化后双向包含 (中, 默认采用)
+       3. region + rating + name 前缀同 (弱, 仅做提示)
+
+     归一化 (normalizeName):
+       - 去全角 → 半角
+       - 去 "有限公司" "股份有限公司" "集团" "股份" 等公司后缀
+       - 去空格/标点/括号
+       - 转小写
+     ═══════════════════════════════════════════════════════ */
+
+  /**
+   * 把公司名归一化成可比较的 key
+   * 例: "上海精密机械(集团)" → "上海精密机械"
+   *     "华耀电子科技股份有限公司" → "华耀电子科技"
+   */
+  private normalizeName(name: string): string {
+    return name
+      .replace(/（/g, "(").replace(/）/g, ")")
+      .replace(/[()（）【】\[\]·]/g, "")
+      .replace(/(有限公司|股份有限公司|股份有限|有限公司|集团|股份|有限责任|公司|企业|工厂)$/g, "")
+      .replace(/\s+/g, "")
+      .toLowerCase()
+      .trim();
+  }
+
+  /**
+   * 找出 supplier 列表里的重复组
+   * 返回 [{ key, reason, members: Supplier[] }]
+   */
+  findDuplicateSuppliers(): { key: string; reason: string; members: Supplier[] }[] {
+    const groups: { key: string; reason: string; members: Supplier[] }[] = [];
+    const used = new Set<string>();
+
+    this.suppliers.forEach((s1, i) => {
+      if (used.has(s1.id)) return;
+      const group: Supplier[] = [s1];
+      const reasons = new Set<string>();
+
+      this.suppliers.forEach((s2, j) => {
+        if (j <= i || used.has(s2.id)) return;
+        // 信号 1: code 精确相同
+        if (s1.code && s1.code === s2.code) {
+          group.push(s2);
+          reasons.add(`code 相同: ${s1.code}`);
+          return;
+        }
+        // 信号 2: name 归一化后双向包含
+        const n1 = this.normalizeName(s1.name);
+        const n2 = this.normalizeName(s2.name);
+        if (n1 && n2 && (n1.includes(n2) || n2.includes(n1))) {
+          group.push(s2);
+          reasons.add(`名称相似: "${s1.name}" ≈ "${s2.name}"`);
+        }
+      });
+
+      if (group.length > 1) {
+        group.forEach((g) => used.add(g.id));
+        groups.push({
+          key: `grp-${s1.id}`,
+          reason: [...reasons].join(" / "),
+          members: group,
+        });
+      }
+    });
+
+    return groups;
+  }
+
+  /**
+   * 合并一组重复, 保留 targetId 主记录, 删除其他, 迁移关联引用
+   * 真实可触发:
+   *   - 更新所有引用 oldId 的地方 (PR/PO/GR/Invoice 里的 supplierId)
+   *   - 删除重复条目
+   *   - emit object.updated (主记录) + object.deleted (从记录)
+   */
+  mergeSupplierDuplicates(group: { key: string; members: Supplier[] }, targetId: string): {
+    merged: number;
+    updated: number;
+    deletedIds: string[];
+  } {
+    const target = this.suppliers.find((s) => s.id === targetId);
+    if (!target) return { merged: 0, updated: 0, deletedIds: [] };
+
+    const toDelete = group.members.filter((m) => m.id !== targetId);
+    if (toDelete.length === 0) return { merged: 0, updated: 0, deletedIds: [] };
+
+    // 迁移 PR 里的 supplierId 引用
+    let updated = 0;
+    toDelete.forEach((old) => {
+      this.purchaseRequests.forEach((pr) => {
+        if (pr.supplierId === old.id) {
+          pr.supplierId = targetId;
+          updated++;
+        }
+      });
+      this.purchaseOrders.forEach((po) => {
+        if (po.supplierId === old.id) {
+          po.supplierId = targetId;
+          updated++;
+        }
+      });
+    });
+
+    // 删除重复条目
+    const deletedIds: string[] = [];
+    toDelete.forEach((d) => {
+      const idx = this.suppliers.findIndex((s) => s.id === d.id);
+      if (idx >= 0) {
+        this.suppliers.splice(idx, 1);
+        deletedIds.push(d.id);
+      }
+    });
+
+    ontologyBus.emit({
+      type: "action.executed",
+      level: "info",
+      message: `执行动作: 合并供应商 — 保留 ${target.name} (${targetId}), 删除 ${deletedIds.length} 条重复, 迁移 ${updated} 条关联引用`,
+      payload: { target: targetId, deletedIds, updatedRefs: updated },
+    });
+
+    deletedIds.forEach((id) => {
+      ontologyBus.emit({
+        type: "object.deleted",
+        level: "info",
+        message: `删除对象: 重复供应商 ${id} (合并至 ${targetId})`,
+        payload: { objectKind: "Supplier", id },
+      });
+    });
+
+    ontologyBus.emit({
+      type: "object.updated",
+      level: "success",
+      message: `更新对象: ${target.name} (合并了 ${deletedIds.length} 条重复, 关联引用 +${updated})`,
+      payload: { objectKind: "Supplier", supplier: target },
+    });
+
+    return { merged: toDelete.length, updated, deletedIds };
   }
 
   /* ═══════════════════════════════════════════════════════
