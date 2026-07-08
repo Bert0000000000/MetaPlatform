@@ -149,7 +149,7 @@ function ERGraphDialog({
       const next: Record<string, { x: number; y: number }> = {};
       const cx = 500;
       const cy = 360;
-      const r = Math.min(280, 100 + objects.length * 15);
+      const r = Math.min(320, 150 + objects.length * 18);
       objects.forEach((o, i) => {
         // 保留用户拖动后的位置
         if (prev[o.id]) {
@@ -247,8 +247,8 @@ function ERGraphDialog({
     setPositions({});
   }
 
-  const nodeW = 130;
-  const nodeH = 56;
+  const nodeW = 150;
+  const nodeH = 68;
   const relCount = relations.length;
   const objCount = objects.length;
 
@@ -284,7 +284,7 @@ function ERGraphDialog({
           </div>
         </DialogHeader>
 
-        <div className="bg-gradient-to-br from-muted/30 to-muted/10 relative" style={{ height: "70vh" }}>
+        <div className="relative" style={{ height: "70vh", backgroundColor: "#fafbfc", backgroundImage: "radial-gradient(circle, #cbd5e1 1px, transparent 1px)", backgroundSize: "20px 20px" }}>
           {loading && (
             <div className="absolute inset-0 flex items-center justify-center bg-background/50 z-10">
               <Loader2 className="size-6 animate-spin text-muted-foreground" />
@@ -329,37 +329,45 @@ function ERGraphDialog({
                 const isHighlighted = hoverNodeId === rel.source || hoverNodeId === rel.target;
                 return (
                   <g key={i} className="pointer-events-none">
-                    <line
-                      x1={sx} y1={sy} x2={tx} y2={ty}
+                    {/* 路径 (drawio 风格: 端点圆 + 贝塞尔曲线) */}
+                    <path
+                      d={`M ${sx} ${sy} Q ${(sx + tx) / 2} ${sy} ${(sx + tx) / 2} ${(sy + ty) / 2} T ${tx} ${ty}`}
+                      fill="none"
                       stroke={isHighlighted ? "#2563eb" : "#94a3b8"}
-                      strokeWidth={isHighlighted ? 2.5 : 1.5}
-                      markerEnd={isHighlighted ? "url(#arrowhead-hover)" : "url(#arrowhead)"}
-                      opacity={hoverNodeId ? (isHighlighted ? 1 : 0.25) : 0.85}
+                      strokeWidth={isHighlighted ? 2 : 1.5}
+                      strokeDasharray={isHighlighted ? undefined : "4 2"}
+                      opacity={hoverNodeId ? (isHighlighted ? 1 : 0.2) : 0.75}
                     />
-                    {/* 关系标签 */}
-                    <rect
-                      x={midX - rel.type.length * 5}
-                      y={midY - 10}
-                      width={rel.type.length * 10}
-                      height={20}
-                      fill="#ffffff"
-                      stroke={isHighlighted ? "#2563eb" : "#cbd5e1"}
-                      strokeWidth={1}
-                      rx={4}
-                    />
-                    <text
-                      x={midX}
-                      y={midY + 4}
-                      textAnchor="middle"
-                      style={{ fontSize: 10, fontWeight: 500, fill: isHighlighted ? "#2563eb" : "#475569", pointerEvents: "none" }}
-                    >
-                      {rel.type}
-                    </text>
+                    {/* 起点圆 */}
+                    <circle cx={sx} cy={sy} r={2.5} fill={isHighlighted ? "#2563eb" : "#94a3b8"} />
+                    {/* 终点圆 */}
+                    <circle cx={tx} cy={ty} r={2.5} fill={isHighlighted ? "#2563eb" : "#94a3b8"} />
+
+                    {/* 关系类型标签 (1/3 处圆角胶囊) */}
+                    <g transform={`translate(${midX}, ${midY})`}>
+                      <rect
+                        x={-rel.type.length * 5 - 6}
+                        y={-9}
+                        width={rel.type.length * 10 + 12}
+                        height={18}
+                        rx={9}
+                        fill="#ffffff"
+                        stroke={isHighlighted ? "#2563eb" : "#cbd5e1"}
+                        strokeWidth={1}
+                      />
+                      <text
+                        x={0} y={4}
+                        textAnchor="middle"
+                        style={{ fontSize: 10, fontWeight: 500, fill: isHighlighted ? "#2563eb" : "#475569", pointerEvents: "none" }}
+                      >
+                        {rel.type}
+                      </text>
+                    </g>
                   </g>
                 );
               })}
 
-              {/* 节点 */}
+              {/* 节点 — 按现代 UI 规范: 顶部状态条 + 简洁 2 行内容 */}
               {objects.map((o) => {
                 const pos = positions[o.id];
                 if (!pos) return null;
@@ -370,10 +378,12 @@ function ERGraphDialog({
                   if (r.target === o.id) connectedIds.add(r.source);
                 });
                 const hasConnections = connectedIds.size > 0;
-                // icon 颜色 hash (按 name 生成稳定 hue)
+                const relCountForNode = connectedIds.size;
+                // icon 颜色 hash
                 const hue = Array.from(o.name).reduce((a, c) => a + c.charCodeAt(0), 0) % 360;
                 const iconBg = `hsl(${hue} 80% 92%)`;
                 const iconColor = `hsl(${hue} 70% 38%)`;
+                const isActive = o.status === "active";
                 return (
                   <g
                     key={o.id}
@@ -386,81 +396,86 @@ function ERGraphDialog({
                     style={{ cursor: "grab" }}
                   >
                     {/* 阴影 */}
-                    <rect
-                      x={1} y={3} width={nodeW} height={nodeH}
-                      fill="#000"
-                      opacity={0.08}
-                      rx={10}
-                    />
+                    <rect x={2} y={4} width={nodeW} height={nodeH} fill="#0f172a" opacity={0.08} rx={8} />
                     {/* 主体 */}
                     <rect
                       x={0} y={0} width={nodeW} height={nodeH}
-                      fill={isHover ? "#eff6ff" : "#ffffff"}
-                      stroke={isHover ? "#2563eb" : hasConnections ? "#3b82f6" : "#cbd5e1"}
-                      strokeWidth={isHover ? 2.5 : 1.5}
-                      rx={10}
-                    />
-                    {/* icon 色块 */}
-                    <rect
-                      x={10} y={10} width={36} height={36}
-                      fill={iconBg}
+                      fill="#ffffff"
+                      stroke={isHover ? "#2563eb" : "#e2e8f0"}
+                      strokeWidth={isHover ? 2 : 1}
                       rx={8}
                     />
+                    {/* 顶部状态条 (4px) */}
+                    <rect
+                      x={0} y={0} width={nodeW} height={4}
+                      fill={isActive ? "#3b82f6" : "#cbd5e1"}
+                      rx={8}
+                    />
+                    <rect
+                      x={0} y={2} width={nodeW} height={2}
+                      fill={isActive ? "#3b82f6" : "#cbd5e1"}
+                    />
+
+                    {/* 左侧 icon (28×28) */}
+                    <rect x={12} y={16} width={28} height={28} fill={iconBg} rx={6} />
                     <text
-                      x={28}
-                      y={34}
+                      x={26} y={36}
                       textAnchor="middle"
-                      style={{ fontSize: 18, fontWeight: 700, fill: iconColor, pointerEvents: "none" }}
+                      style={{ fontSize: 14, fontWeight: 700, fill: iconColor, pointerEvents: "none", fontFamily: "ui-sans-serif, system-ui" }}
                     >
                       {o.label?.[0] || o.name[0]?.toUpperCase() || "?"}
                     </text>
-                    {/* label */}
+
+                    {/* 主标题: label */}
                     <text
-                      x={54}
-                      y={22}
+                      x={48} y={26}
                       style={{ fontSize: 13, fontWeight: 600, fill: "#0f172a", pointerEvents: "none" }}
                     >
-                      {o.label.length > 7 ? o.label.slice(0, 7) + "…" : o.label}
+                      {o.label.length > 8 ? o.label.slice(0, 8) + "…" : o.label}
                     </text>
-                    {/* name (英文) */}
+                    {/* 副标题: name (英文) */}
                     <text
-                      x={54}
-                      y={37}
-                      style={{ fontSize: 10, fill: "#64748b", fontFamily: "ui-monospace, monospace", pointerEvents: "none" }}
+                      x={48} y={40}
+                      style={{ fontSize: 10, fill: "#94a3b8", fontFamily: "ui-monospace, monospace", pointerEvents: "none" }}
                     >
-                      {o.name.length > 9 ? o.name.slice(0, 9) + "…" : o.name}
+                      {o.name}
                     </text>
-                    {/* 字段数徽章 */}
-                    <rect
-                      x={54}
-                      y={42}
-                      width={56}
-                      height={14}
-                      fill="#f1f5f9"
-                      rx={3}
-                    />
+
+                    {/* 底部 meta 行: 字段数 + 关系数 */}
                     <text
-                      x={82}
-                      y={52}
-                      textAnchor="middle"
-                      style={{ fontSize: 9, fill: "#475569", pointerEvents: "none" }}
+                      x={48} y={56}
+                      style={{ fontSize: 9, fill: "#64748b", pointerEvents: "none" }}
                     >
                       {o.properties_count} 字段
                     </text>
-                    {/* 无关系标记 */}
-                    {!hasConnections && (
-                      <circle cx={nodeW - 10} cy={10} r={4} fill="#f97316" stroke="#fff" strokeWidth={1.5} />
+                    {relCountForNode > 0 && (
+                      <g>
+                        <circle cx={nodeW - 38} cy={54} r={3} fill="#3b82f6" />
+                        <text
+                          x={nodeW - 32} y={57}
+                          style={{ fontSize: 9, fill: "#3b82f6", fontWeight: 500, pointerEvents: "none" }}
+                        >
+                          {relCountForNode}
+                        </text>
+                      </g>
                     )}
-                    {/* hover 选中 描边光晕 */}
+                    {!hasConnections && (
+                      <g>
+                        <circle cx={nodeW - 12} cy={56} r={3.5} fill="#f97316" />
+                        <title>无关联</title>
+                      </g>
+                    )}
+
+                    {/* hover 虚线光晕 */}
                     {isHover && (
                       <rect
                         x={-3} y={-3} width={nodeW + 6} height={nodeH + 6}
                         fill="none"
                         stroke="#3b82f6"
                         strokeWidth={1}
-                        strokeDasharray="3 3"
-                        opacity={0.5}
-                        rx={12}
+                        strokeDasharray="4 3"
+                        opacity={0.6}
+                        rx={11}
                       />
                     )}
                   </g>
@@ -504,10 +519,18 @@ function ERGraphDialog({
           </div>
         </div>
 
-        <DialogFooter className="px-4 py-2 border-t">
-          <div className="text-xs text-muted-foreground mr-auto">
-            关系来源: {relations.length > 0 ? "后端 ontologyApi.listRelations() + 业务启发式补全" : "全部为业务启发式推断"}
+        <DialogFooter className="px-4 py-2 border-t flex items-center gap-3">
+          <div className="text-xs text-muted-foreground mr-auto flex items-center gap-2 flex-wrap">
+            <span>关系来源:</span>
+            <Badge variant="outline" className="text-[10px] font-normal">
+              {relations.length > 0 ? "后端 ontologyApi.listRelations() + 业务启发式补全" : "全部为业务启发式推断"}
+            </Badge>
+            <span className="text-muted-foreground/60">|</span>
+            <span className="font-mono tabular-nums">{objCount} 对象 / {relCount} 关系</span>
           </div>
+          <Button variant="outline" size="sm" onClick={resetView}>
+            <Maximize2 className="size-3.5 mr-1" /> 重置视图
+          </Button>
           <Button variant="outline" onClick={() => onOpenChange(false)}>关闭</Button>
         </DialogFooter>
       </DialogContent>
