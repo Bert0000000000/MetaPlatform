@@ -372,8 +372,8 @@ function ChatTab({ messages, setMessages, agentPrompt, onAgentPromptConsumed }: 
   }
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex-1 overflow-y-auto">
+    <div className="flex flex-col h-full min-h-0">
+      <div className="flex-1 overflow-y-auto min-h-0">
         <div className="mx-auto flex flex-col gap-6 py-6" style={{ maxWidth: "820px" }}>
           {messages.length === 1 && messages[0].role === "assistant" && (
             // ── 空状态：居中欢迎 + 6 个建议卡片 ──
@@ -712,7 +712,7 @@ function AgentTab({ onActivateAgent }: AgentTabProps) {
     return () => { cancelled = true; };
   }, []);
   return (
-      <div className="p-6 w-full flex flex-col gap-4">
+      <div className="p-6 w-full h-full overflow-y-auto flex flex-col gap-4">
         <div>
           <h1 className="text-xl font-semibold">智能体广场</h1>
           <p className="text-xs text-muted-foreground">SuperAI 内置 6 类业务智能体，可一键唤起</p>
@@ -811,7 +811,7 @@ function TasksTab() {
   }, []);
 
   return (
-    <div className="p-6 w-full flex flex-col gap-4">
+    <div className="p-6 w-full h-full overflow-y-auto flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-semibold">智能体任务</h1>
@@ -974,7 +974,7 @@ function KnowledgeTab() {
   const docTypes = [...new Set(documents.map((d) => d.type))];
 
   return (
-    <div className="p-6 w-full flex flex-col gap-4">
+    <div className="p-6 w-full h-full overflow-y-auto flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-semibold">知识中心</h1>
@@ -1353,7 +1353,7 @@ export function SuperAIPage() {
   }, [showHistory, handleNewConversation]);
 
   return (
-    <div className="flex flex-col h-full bg-gradient-to-b from-background to-muted/20">
+    <div className="flex flex-col h-full min-h-0 bg-gradient-to-b from-background to-muted/20">
       {/* ── Topbar ────────────────────────────────────────────────
           简洁：左侧 logo + 状态、右侧历史 / 新对话 / 主题预留
           sticky 在顶部，border-bottom 渐入 / 渐出。                      */}
@@ -1387,7 +1387,7 @@ export function SuperAIPage() {
       </div>
       <div className="flex flex-1 overflow-hidden">
         <div className="flex-1 flex flex-col min-w-0">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col flex-1">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col flex-1 min-h-0">
             {/* Tabs strip — outer div supplies the 1px bottom border.
                 TabsList grows to fit, triggers use a 2px box-shadow
                 underline (NOT border-b-2) so the indicator is always
@@ -1421,7 +1421,7 @@ export function SuperAIPage() {
                 </TabsTrigger>
               </TabsList>
             </div>
-            <TabsContent value="chat" className="flex-1 m-0 overflow-hidden">
+            <TabsContent value="chat" className="flex-1 m-0 overflow-hidden min-h-0">
               <ChatTab
                 messages={messages}
                 setMessages={setMessages}
@@ -1429,13 +1429,13 @@ export function SuperAIPage() {
                 onAgentPromptConsumed={handleAgentPromptConsumed}
               />
             </TabsContent>
-            <TabsContent value="agent" className="flex-1 m-0 overflow-y-auto">
+            <TabsContent value="agent" className="flex-1 m-0 overflow-y-auto min-h-0">
               <AgentTab onActivateAgent={handleActivateAgent} />
             </TabsContent>
-            <TabsContent value="tasks" className="flex-1 m-0 overflow-y-auto">
+            <TabsContent value="tasks" className="flex-1 m-0 overflow-y-auto min-h-0">
               <TasksTab />
             </TabsContent>
-            <TabsContent value="knowledge" className="flex-1 m-0 overflow-y-auto">
+            <TabsContent value="knowledge" className="flex-1 m-0 overflow-y-auto min-h-0">
               <KnowledgeTab />
             </TabsContent>
           </Tabs>
