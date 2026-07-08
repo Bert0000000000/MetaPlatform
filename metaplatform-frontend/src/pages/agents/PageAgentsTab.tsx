@@ -210,8 +210,8 @@ export function PageAgentsTab() {
         </div>
       </div>
 
-      {/* 员工卡片网格 */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {/* 员工卡片网格 - 紧凑 5 列, 统一颜色 */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
         {filtered.map((base) => {
           const agent = applyOverrides(base, overrides[base.id]);
           const isDisabled = disabled.has(base.id);
@@ -219,88 +219,46 @@ export function PageAgentsTab() {
           return (
             <Card
               key={base.id}
-              className={`relative overflow-hidden transition-all ${
-                isDisabled ? "opacity-50 grayscale" : "hover:shadow-md"
+              className={`relative transition-all ${
+                isDisabled ? "opacity-50 grayscale" : "hover:border-primary/50"
               }`}
             >
-              {/* 渐变顶条 */}
-              <div
-                className="h-1.5 w-full"
-                style={{ background: agent.accentColor || "linear-gradient(90deg, #2563eb, #7c3aed)" }}
-              />
-              <CardHeader className="pb-2">
-                <div className="flex items-start gap-3">
-                  <EmployeeAvatar avatar={agent.avatar} size={56} online={!isDisabled} empId={agent.empId} />
+              <CardContent className="p-3 space-y-2">
+                {/* 头部: 头像 + 名字 + 工号 + 状态 */}
+                <div className="flex items-start gap-2">
+                  <EmployeeAvatar avatar={agent.avatar} size={40} online={!isDisabled} empId={agent.empId} />
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5">
-                      <span className="font-semibold text-base">{agent.name}</span>
-                      <span className="text-[10px] text-muted-foreground font-mono">{agent.empId}</span>
+                    <div className="flex items-center gap-1">
+                      <span className="font-medium text-sm leading-tight truncate">{agent.name}</span>
+                      <span className="text-[10px] text-muted-foreground font-mono shrink-0">{agent.empId}</span>
                     </div>
-                    <div className="text-xs text-muted-foreground mt-0.5">{agent.role}</div>
-                    <div className="flex items-center gap-1 mt-1">
-                      {isCustomized && (
-                        <Badge variant="secondary" className="text-[9px] h-4 px-1 bg-primary/10 text-primary border-0">
-                          已定制
-                        </Badge>
-                      )}
-                      {isDisabled ? (
-                        <Badge variant="secondary" className="text-[9px] h-4 px-1 bg-gray-200 text-gray-500 border-0">
-                          <Power className="size-2 mr-0.5" /> 已停用
-                        </Badge>
-                      ) : (
-                        <Badge variant="secondary" className="text-[9px] h-4 px-1 bg-green-100 text-green-700 border-0">
-                          <CircleDot className="size-2 mr-0.5 animate-pulse" /> 在线
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </CardHeader>
-
-              <CardContent className="pt-2 pb-4 space-y-3">
-                {/* 标语 */}
-                <p className="text-xs text-muted-foreground italic">{agent.tagline}</p>
-
-                {/* 性格标签 */}
-                <div>
-                  <div className="text-[10px] text-muted-foreground font-medium mb-1 flex items-center gap-1">
-                    <Activity className="size-2.5" /> 性格
-                  </div>
-                  <div className="flex flex-wrap gap-1">
-                    {agent.personality.map((p, i) => (
-                      <Badge key={i} variant="outline" className="text-[10px] h-5 px-1.5">
-                        {p}
-                      </Badge>
-                    ))}
+                    <div className="text-[11px] text-muted-foreground truncate">{agent.role}</div>
                   </div>
                 </div>
 
-                {/* 能力列表 */}
-                <div>
-                  <div className="text-[10px] text-muted-foreground font-medium mb-1 flex items-center gap-1">
-                    <BookOpen className="size-2.5" /> 能力 ({agent.capabilities.length})
-                  </div>
-                  <ul className="text-[11px] space-y-0.5 max-h-16 overflow-hidden text-ellipsis">
-                    {agent.capabilities.slice(0, 3).map((c, i) => (
-                      <li key={i} className="flex items-start gap-1">
-                        <span className="text-primary mt-0.5">•</span>
-                        <span className="line-clamp-1">{c}</span>
-                      </li>
-                    ))}
-                    {agent.capabilities.length > 3 && (
-                      <li className="text-[10px] text-muted-foreground">+{agent.capabilities.length - 3} 项更多</li>
-                    )}
-                  </ul>
+                {/* 状态行 (紧凑) */}
+                <div className="flex items-center gap-1 text-[10px]">
+                  {isCustomized && (
+                    <Badge variant="secondary" className="text-[9px] h-4 px-1 bg-primary/10 text-primary border-0">已定制</Badge>
+                  )}
+                  {isDisabled ? (
+                    <Badge variant="secondary" className="text-[9px] h-4 px-1 bg-gray-200 text-gray-500 border-0">
+                      <Power className="size-2 mr-0.5" />停用
+                    </Badge>
+                  ) : (
+                    <Badge variant="secondary" className="text-[9px] h-4 px-1 bg-green-100 text-green-700 border-0">
+                      <CircleDot className="size-2 mr-0.5 animate-pulse" />在线
+                    </Badge>
+                  )}
+                  <span className="text-muted-foreground ml-auto">{agent.capabilities.length} 能力</span>
                 </div>
 
-                <Separator />
-
-                {/* 操作 */}
-                <div className="flex items-center gap-1.5 flex-wrap">
+                {/* 操作 (极简) */}
+                <div className="flex items-center gap-1">
                   <Button
                     size="sm"
                     variant="default"
-                    className="h-7 text-xs gap-1"
+                    className="h-6 text-[11px] gap-0.5 px-1.5 flex-1"
                     onClick={() => callEmployee(agent.empId)}
                     disabled={isDisabled}
                   >
@@ -308,27 +266,29 @@ export function PageAgentsTab() {
                   </Button>
                   <Button
                     size="sm"
-                    variant="outline"
-                    className="h-7 text-xs gap-1"
+                    variant="ghost"
+                    className="h-6 w-6 p-0"
                     onClick={() => openEdit(agent)}
+                    title="配置"
                   >
-                    <Settings2 className="size-3" /> 配置
+                    <Settings2 className="size-3" />
                   </Button>
                   <Button
                     size="sm"
-                    variant={isDisabled ? "default" : "ghost"}
-                    className="h-7 text-xs gap-1"
+                    variant="ghost"
+                    className="h-6 w-6 p-0"
                     onClick={() => toggleDisabled(base.id)}
+                    title={isDisabled ? "启用" : "停用"}
                   >
-                    <Power className="size-3" /> {isDisabled ? "启用" : "停用"}
+                    <Power className="size-3" />
                   </Button>
                   {isCustomized && (
                     <Button
                       size="sm"
                       variant="ghost"
-                      className="h-7 text-xs gap-1"
+                      className="h-6 w-6 p-0"
                       onClick={() => resetOne(base.id)}
-                      title="恢复默认"
+                      title="重置默认"
                     >
                       <RotateCcw className="size-3" />
                     </Button>

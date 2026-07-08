@@ -51,7 +51,7 @@ export const AGENT_OBJECTS: PageAgentConfig = {
     "如何给对象加 25 种字段？",
     "对象跟属性/关系有什么关系？",
   ],
-  accentColor: "linear-gradient(135deg, #2563eb, #3b82f6)",
+  accentColor: "#3b82f6",
 };
 
 export const AGENT_PROPERTIES: PageAgentConfig = {
@@ -93,7 +93,7 @@ export const AGENT_PROPERTIES: PageAgentConfig = {
     "relation 和 relation_n 区别",
     "select 字段怎么配枚举值？",
   ],
-  accentColor: "linear-gradient(135deg, #0891b2, #06b6d4)",
+  accentColor: "#3b82f6",
 };
 
 export const AGENT_LINKS: PageAgentConfig = {
@@ -128,7 +128,7 @@ export const AGENT_LINKS: PageAgentConfig = {
     "1:1 / 1:N / N:N 啥区别？",
     "置信度怎么算的？",
   ],
-  accentColor: "linear-gradient(135deg, #7c3aed, #a855f7)",
+  accentColor: "#3b82f6",
 };
 
 export const AGENT_ACTIONS: PageAgentConfig = {
@@ -165,7 +165,7 @@ export const AGENT_ACTIONS: PageAgentConfig = {
     "动作权限怎么设？",
     "动作链怎么编排？",
   ],
-  accentColor: "linear-gradient(135deg, #ea580c, #f97316)",
+  accentColor: "#3b82f6",
 };
 
 export const AGENT_FUNCTIONS: PageAgentConfig = {
@@ -202,7 +202,7 @@ export const AGENT_FUNCTIONS: PageAgentConfig = {
     "自定义函数怎么上传？",
     "计算字段 vs 触发器",
   ],
-  accentColor: "linear-gradient(135deg, #059669, #10b981)",
+  accentColor: "#3b82f6",
 };
 
 export const AGENT_RULES: PageAgentConfig = {
@@ -240,7 +240,7 @@ export const AGENT_RULES: PageAgentConfig = {
     "规则冲突怎么办？",
     "如何调试规则？",
   ],
-  accentColor: "linear-gradient(135deg, #db2777, #ec4899)",
+  accentColor: "#3b82f6",
 };
 
 export const AGENT_ORCHESTRATION: PageAgentConfig = {
@@ -282,7 +282,7 @@ BPMN 2.0 元素:
     "并行/串行/包容网关",
     "SLA 怎么监控？",
   ],
-  accentColor: "linear-gradient(135deg, #0284c7, #0ea5e9)",
+  accentColor: "#3b82f6",
 };
 
 export const AGENT_SECURITY: PageAgentConfig = {
@@ -320,7 +320,7 @@ export const AGENT_SECURITY: PageAgentConfig = {
     "如何查审计日志？",
     "推荐默认安全策略",
   ],
-  accentColor: "linear-gradient(135deg, #be123c, #e11d48)",
+  accentColor: "#3b82f6",
 };
 
 export const AGENT_GOVERNANCE: PageAgentConfig = {
@@ -359,7 +359,7 @@ export const AGENT_GOVERNANCE: PageAgentConfig = {
     "回滚怎么做？",
     "审批流怎么配？",
   ],
-  accentColor: "linear-gradient(135deg, #4f46e5, #6366f1)",
+  accentColor: "#3b82f6",
 };
 
 /* 全部 Agent 索引 (按页面路由) */
