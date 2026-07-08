@@ -276,6 +276,29 @@ export const MENU_BY_ROLE: Record<Role, MenuKey[]> = {
     "agents",
     "admin",
   ],
+  // leader/manager 是 executive 的 alias, 共用同一份菜单配置
+  leader: [
+    "dashboard",
+    "superai",
+    "apps",
+    "process",
+    "data",
+    "knowledge",
+    "market",
+    "agents",
+    "admin",
+  ],
+  manager: [
+    "dashboard",
+    "superai",
+    "apps",
+    "process",
+    "data",
+    "knowledge",
+    "market",
+    "agents",
+    "admin",
+  ],
 };
 
 /**
@@ -399,6 +422,20 @@ export const MENU_TABS: Record<MenuKey, TabConfig[]> = {
 };
 
 /**
+ * 超级管理员独享 tab（在标准 admin tabs 之上额外展示）
+ * 与 MENU_TABS['admin'] 合并渲染：先列 admin 共用 tab，再追加
+ * 这里的独有 tab 并用 Badge '仅超管' 标识。
+ */
+export const SUPER_ADMIN_EXTRA_TABS: TabConfig[] = [
+  { key: "tenants", label: "全部租户", path: "/tenants" },
+  { key: "clusters", label: "集群管理", path: "/clusters" },
+  { key: "audit", label: "审计日志", path: "/audit" },
+  { key: "license", label: "License", path: "/license" },
+  { key: "runtimes", label: "运行时清单", path: "/runtimes" },
+  { key: "flags", label: "平台开关", path: "/flags" },
+];
+
+/**
  * 工作台 4 类角色首页内容
  */
 export interface DashboardCard {
@@ -409,6 +446,92 @@ export interface DashboardCard {
 }
 
 export const WORKSPACE_BY_ROLE: Record<Role, DashboardCard[]> = {
+  super_admin: [
+    {
+      title: "平台健康",
+      description: "跨 namespace 资源 / 错误率 / 延迟",
+      icon: HeartPulse,
+      link: "/admin/monitor",
+    },
+    {
+      title: "全部租户",
+      description: "所有 workspace / 配额 / 计费",
+      icon: Users,
+      link: "/admin/users",
+    },
+    {
+      title: "集群 / 部署",
+      description: "K8s 集群 / Helm release / 灰度",
+      icon: Hammer,
+      link: "/admin/deploy",
+    },
+    {
+      title: "审计日志",
+      description: "全平台操作审计 / 数据导出",
+      icon: FileText,
+      link: "/admin/monitor",
+    },
+    {
+      title: "全平台告警",
+      description: "Critical / Warning 告警实时",
+      icon: AlertTriangle,
+    },
+    {
+      title: "License & 计费",
+      description: "License 用量 / 续费 / 发票",
+      icon: TrendingUp,
+      link: "/admin/billing",
+    },
+    {
+      title: "运行时清单",
+      description: "所有 PublishedApp 运行时实例",
+      icon: Cloud,
+    },
+    {
+      title: "平台配置",
+      description: "全局开关 / 黑白名单 / 灰度",
+      icon: Settings2,
+      link: "/admin",
+    },
+  ],
+  admin: [
+    {
+      title: "系统监控",
+      description: "服务运行状态 / 错误率",
+      icon: HeartPulse,
+      link: "/admin/monitor",
+    },
+    {
+      title: "用户管理",
+      description: "用户 / 组织 / 邀请",
+      icon: Users,
+      link: "/admin/users",
+    },
+    {
+      title: "权限配置",
+      description: "角色 / 菜单 / 数据权限",
+      icon: ClipboardList,
+      link: "/admin/roles",
+    },
+    {
+      title: "备份恢复",
+      description: "数据库快照 / 恢复演练",
+      icon: Hammer,
+      link: "/admin/backup",
+    },
+    {
+      title: "插件管理",
+      description: "已安装 / 启用 / 升级",
+      icon: Wrench,
+      link: "/admin/plugins",
+    },
+    {
+      title: "资源使用",
+      description: "CPU / 内存 / 存储",
+      icon: TrendingUp,
+      link: "/admin/monitor",
+    },
+  ],
   executive: [
     {
       title: "AI 看板",
@@ -533,4 +656,7 @@ export const WORKSPACE_BY_ROLE: Record<Role, DashboardCard[]> = {
       link: "/admin",
     },
   ],
+  // leader/manager 是 executive 的 alias, 共用同一份 dashboard cards
+  leader: [],
+  manager: [],
 };
