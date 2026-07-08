@@ -122,7 +122,7 @@ import { AgentList, AgentCollaboration, AgentSkills, AgentMonitor, AgentCenter, 
 import { BusinessArchitecture, ApplicationArchitecture, DataArchitecture, TechArchitecture } from "@/pages/architecture/Architecture";
 
 // 后台管理
-import { AdminDashboard, UserList, RoleList, DepartmentList, MenuConfig, DictionaryList, OperationLog, SystemSettings, OrgStructure, AdminMonitor, AdminBackup, AdminDeploy, AdminBilling, AdminPlugins } from "@/pages/admin/Admin";
+import { AdminDashboard, UserList, RoleList, DepartmentList, MenuConfig, DictionaryList, OperationLog, SystemSettings, OrgStructure, AdminMonitor, AdminBackup, AdminDeploy, AdminBilling, AdminPlugins, AdminTenants, AdminClusters, AdminAudit, AdminLicense, AdminRuntimes, AdminFlags } from "@/pages/admin/Admin";
 import { AdminRuntime } from "@/pages/admin/AdminRuntime";
 import { SchedulerPage } from "@/pages/admin/Scheduler";
 import { WebhooksPage } from "@/pages/admin/Webhooks";
@@ -344,6 +344,12 @@ export default function App() {
               <Route path="/admin/dictionary" element={<DictionaryList />} />
               <Route path="/admin/logs" element={<OperationLog />} />
               <Route path="/admin/settings" element={<SystemSettings />} />
+              <Route path="/admin/tenants" element={<AdminTenants />} />
+              <Route path="/admin/clusters" element={<AdminClusters />} />
+              <Route path="/admin/audit" element={<AdminAudit />} />
+              <Route path="/admin/license" element={<AdminLicense />} />
+              <Route path="/admin/runtimes" element={<AdminRuntimes />} />
+              <Route path="/admin/flags" element={<AdminFlags />} />
               <Route path="/admin/*" element={<AdminDashboard />} />
 
               {/* 设置快捷路由 → 后台管理设置页 */}

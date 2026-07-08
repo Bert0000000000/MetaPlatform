@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+﻿import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -1710,6 +1710,550 @@ export function AdminDeploy() {
               <div className="flex gap-2 mt-3">
                 <Button variant="outline" size="sm" className="flex-1">部署</Button>
                 <Button variant="outline" size="sm" className="flex-1">回滚</Button>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   超级管理员独享页面 (super_admin only)
+   - 仅 super_admin 角色可见
+   - 通过 admin 菜单的 6 个仅超管 tab 进入
+   - 命名规范: Admin<TabName>Super
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ─────────────────── AdminTenants — 全部租户 ─────────────────── */
+interface TenantRow {
+  id: string;
+  name: string;
+  plan: "企业版" | "专业版" | "团队版" | "免费版";
+  status: "活跃" | "试用" | "停用";
+  users: number;
+  apps: number;
+  region: string;
+  createdAt: string;
+  monthlyCost: string;
+  expiresAt: string;
+}
+
+const TENANTS: TenantRow[] = [
+  { id: "t-001", name: "ACME 集团", plan: "企业版", status: "活跃", users: 1280, apps: 142, region: "华东-上海", createdAt: "2024-03-12", monthlyCost: "¥48,200", expiresAt: "2026-12-31" },
+  { id: "t-002", name: "华耀科技", plan: "企业版", status: "活跃", users: 856, apps: 78, region: "华北-北京", createdAt: "2024-05-08", monthlyCost: "¥32,800", expiresAt: "2026-08-15" },
+  { id: "t-003", name: "金桥金融", plan: "专业版", status: "活跃", users: 312, apps: 45, region: "华南-深圳", createdAt: "2024-08-21", monthlyCost: "¥12,400", expiresAt: "2026-04-30" },
+  { id: "t-004", name: "瑞明制造", plan: "企业版", status: "试用", users: 89, apps: 12, region: "华东-苏州", createdAt: "2025-12-01", monthlyCost: "—", expiresAt: "2026-03-01" },
+  { id: "t-005", name: "蓝海教育", plan: "团队版", status: "活跃", users: 64, apps: 8, region: "西南-成都", createdAt: "2025-02-14", monthlyCost: "¥3,800", expiresAt: "2026-02-14" },
+  { id: "t-006", name: "易达物流", plan: "专业版", status: "停用", users: 0, apps: 0, region: "华东-杭州", createdAt: "2023-11-04", monthlyCost: "—", expiresAt: "2025-06-30" },
+];
+
+const PLAN_BADGE: Record<TenantRow["plan"], string> = {
+  企业版: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
+  专业版: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+  团队版: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+  免费版: "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400",
+};
+
+export function AdminTenants() {
+  const [search, setSearch] = useState("");
+  const filtered = TENANTS.filter((t) => !search || t.name.includes(search) || t.id.includes(search));
+
+  return (
+    <div className="flex flex-col gap-6 p-6">
+      <PageHeader
+        title="全部租户"
+        description="跨所有 workspace 的租户清单、套餐、计费、有效期"
+        action={
+          <Badge variant="secondary" className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border-0">
+            仅超管
+          </Badge>
+        }
+      />
+
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+        <StatCard label="租户总数" value={String(TENANTS.length)} icon={Building2} />
+        <StatCard label="活跃租户" value={String(TENANTS.filter((t) => t.status === "活跃").length)} icon={CheckCircle2} />
+        <StatCard label="试用中" value={String(TENANTS.filter((t) => t.status === "试用").length)} icon={Clock} />
+        <StatCard label="月总营收" value="¥97,200" icon={DollarSign} />
+      </div>
+
+      <div className="flex items-center gap-2">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
+          <Input
+            placeholder="搜索租户名 / ID"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+        <Button variant="outline" size="sm"><Filter className="size-3.5 mr-1" /> 筛选</Button>
+        <Button size="sm"><Plus className="size-3.5 mr-1" /> 新建租户</Button>
+      </div>
+
+      <Card>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>租户</TableHead>
+                <TableHead>套餐</TableHead>
+                <TableHead>状态</TableHead>
+                <TableHead className="text-right">用户数</TableHead>
+                <TableHead className="text-right">应用数</TableHead>
+                <TableHead>区域</TableHead>
+                <TableHead>月费</TableHead>
+                <TableHead>到期日</TableHead>
+                <TableHead></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filtered.map((t) => (
+                <TableRow key={t.id}>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <div className="size-8 rounded-lg bg-gradient-to-br from-primary to-primary/60 text-primary-foreground flex items-center justify-center text-xs font-semibold shrink-0">
+                        {t.name[0]}
+                      </div>
+                      <div>
+                        <div className="font-medium">{t.name}</div>
+                        <div className="text-xs text-muted-foreground font-mono">{t.id}</div>
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="secondary" className={`border-0 ${PLAN_BADGE[t.plan]}`}>{t.plan}</Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={t.status === "活跃" ? "default" : t.status === "试用" ? "secondary" : "outline"}>
+                      {t.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums">{t.users.toLocaleString()}</TableCell>
+                  <TableCell className="text-right tabular-nums">{t.apps}</TableCell>
+                  <TableCell className="text-xs text-muted-foreground">{t.region}</TableCell>
+                  <TableCell className="tabular-nums">{t.monthlyCost}</TableCell>
+                  <TableCell className="text-xs">{t.expiresAt}</TableCell>
+                  <TableCell>
+                    <Button variant="ghost" size="icon" className="size-7"><MoreHorizontal className="size-3.5" /></Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+/* ─────────────────── AdminClusters — 集群管理 ─────────────────── */
+interface ClusterRow {
+  name: string;
+  region: string;
+  k8sVersion: string;
+  nodes: number;
+  cpuUsed: number;
+  memUsed: number;
+  status: "healthy" | "degraded" | "down";
+  helmReleases: number;
+}
+
+const CLUSTERS: ClusterRow[] = [
+  { name: "prod-shanghai-01", region: "华东-上海", k8sVersion: "v1.29.4", nodes: 12, cpuUsed: 62, memUsed: 71, status: "healthy", helmReleases: 24 },
+  { name: "prod-beijing-01", region: "华北-北京", k8sVersion: "v1.29.4", nodes: 8, cpuUsed: 45, memUsed: 58, status: "healthy", helmReleases: 18 },
+  { name: "staging-shanghai-01", region: "华东-上海", k8sVersion: "v1.28.9", nodes: 4, cpuUsed: 28, memUsed: 35, status: "healthy", helmReleases: 12 },
+  { name: "dev-cluster", region: "华东-杭州", k8sVersion: "v1.28.6", nodes: 3, cpuUsed: 78, memUsed: 84, status: "degraded", helmReleases: 6 },
+  { name: "dr-shenzhen-01", region: "华南-深圳", k8sVersion: "v1.29.4", nodes: 6, cpuUsed: 0, memUsed: 0, status: "down", helmReleases: 0 },
+];
+
+const STATUS_BADGE = {
+  healthy: <Badge className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border-0">健康</Badge>,
+  degraded: <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border-0">降级</Badge>,
+  down: <Badge variant="destructive">宕机</Badge>,
+};
+
+export function AdminClusters() {
+  return (
+    <div className="flex flex-col gap-6 p-6">
+      <PageHeader
+        title="集群管理"
+        description="K8s 集群节点 / 资源使用 / Helm release / 灰度"
+        action={
+          <Badge variant="secondary" className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border-0">
+            仅超管
+          </Badge>
+        }
+      />
+
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+        <StatCard label="集群总数" value={String(CLUSTERS.length)} icon={Server} />
+        <StatCard label="健康" value={String(CLUSTERS.filter((c) => c.status === "healthy").length)} icon={CheckCircle2} />
+        <StatCard label="节点总数" value={String(CLUSTERS.reduce((a, c) => a + c.nodes, 0))} icon={Cpu} />
+        <StatCard label="Helm Release" value={String(CLUSTERS.reduce((a, c) => a + c.helmReleases, 0))} icon={Package} />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {CLUSTERS.map((c) => (
+          <Card key={c.name}>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Server className="size-4 text-primary" />
+                  {c.name}
+                </CardTitle>
+                {STATUS_BADGE[c.status]}
+              </div>
+              <CardDescription className="text-xs">{c.region} · K8s {c.k8sVersion} · {c.nodes} 节点</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div>
+                <div className="flex justify-between text-xs mb-1">
+                  <span>CPU</span>
+                  <span className="tabular-nums">{c.cpuUsed}%</span>
+                </div>
+                <div className="w-full bg-muted rounded-full h-1.5">
+                  <div className={`h-1.5 rounded-full transition-all ${c.cpuUsed > 80 ? "bg-red-500" : c.cpuUsed > 60 ? "bg-amber-500" : "bg-primary"}`} style={{ width: `${c.cpuUsed}%` }} />
+                </div>
+              </div>
+              <div>
+                <div className="flex justify-between text-xs mb-1">
+                  <span>内存</span>
+                  <span className="tabular-nums">{c.memUsed}%</span>
+                </div>
+                <div className="w-full bg-muted rounded-full h-1.5">
+                  <div className={`h-1.5 rounded-full transition-all ${c.memUsed > 80 ? "bg-red-500" : c.memUsed > 60 ? "bg-amber-500" : "bg-primary"}`} style={{ width: `${c.memUsed}%` }} />
+                </div>
+              </div>
+              <div className="flex gap-2 pt-1">
+                <Button variant="outline" size="sm" className="flex-1">查看节点</Button>
+                <Button variant="outline" size="sm" className="flex-1">Helm Release ({c.helmReleases})</Button>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────── AdminAudit — 审计日志 ─────────────────── */
+interface AuditEntry {
+  id: string;
+  ts: string;
+  tenant: string;
+  user: string;
+  action: string;
+  resource: string;
+  result: "success" | "failure";
+  ip: string;
+}
+
+const AUDIT: AuditEntry[] = [
+  { id: "a-9821", ts: "2026-07-08 14:23:12", tenant: "ACME 集团", user: "zhang.w@example.com", action: "删除应用", resource: "app/请假审批 v3.2", result: "success", ip: "10.0.4.18" },
+  { id: "a-9820", ts: "2026-07-08 14:18:55", tenant: "华耀科技", user: "li.q@example.com", action: "导出数据", resource: "datamodel/订单 (CSV, 1.2GB)", result: "success", ip: "10.0.6.42" },
+  { id: "a-9819", ts: "2026-07-08 14:15:01", tenant: "金桥金融", user: "wang.f@example.com", action: "登录失败", resource: "/admin/login", result: "failure", ip: "203.0.113.42" },
+  { id: "a-9818", ts: "2026-07-08 14:09:33", tenant: "ACME 集团", user: "admin@acme", action: "修改权限", resource: "role/财务经理 → 包含 LLM 配额", result: "success", ip: "10.0.4.5" },
+  { id: "a-9817", ts: "2026-07-08 14:02:18", tenant: "蓝海教育", user: "system", action: "自动备份", resource: "snapshot/pg-prod-20260708", result: "success", ip: "—" },
+  { id: "a-9816", ts: "2026-07-08 13:58:44", tenant: "瑞明制造", user: "test@ruiming", action: "租户过期", resource: "t-004 (试用)", result: "failure", ip: "—" },
+];
+
+export function AdminAudit() {
+  return (
+    <div className="flex flex-col gap-6 p-6">
+      <PageHeader
+        title="审计日志"
+        description="全平台操作审计 / 数据导出 / 登录失败 / 自动任务"
+        action={
+          <Badge variant="secondary" className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border-0">
+            仅超管
+          </Badge>
+        }
+      />
+
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+        <StatCard label="今日事件" value="1,248" icon={FileText} />
+        <StatCard label="失败操作" value="23" icon={AlertTriangle} />
+        <StatCard label="数据导出" value="14" icon={Download} />
+        <StatCard label="登录失败" value="47" icon={Lock} />
+      </div>
+
+      <Card>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[160px]">时间</TableHead>
+                <TableHead>租户</TableHead>
+                <TableHead>操作者</TableHead>
+                <TableHead>操作</TableHead>
+                <TableHead>资源</TableHead>
+                <TableHead>结果</TableHead>
+                <TableHead>IP</TableHead>
+                <TableHead></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {AUDIT.map((a) => (
+                <TableRow key={a.id}>
+                  <TableCell className="text-xs font-mono text-muted-foreground">{a.ts}</TableCell>
+                  <TableCell className="text-sm">{a.tenant}</TableCell>
+                  <TableCell className="text-xs text-muted-foreground">{a.user}</TableCell>
+                  <TableCell className="text-sm font-medium">{a.action}</TableCell>
+                  <TableCell className="text-xs font-mono">{a.resource}</TableCell>
+                  <TableCell>
+                    {a.result === "success" ? (
+                      <Badge className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border-0">成功</Badge>
+                    ) : (
+                      <Badge variant="destructive">失败</Badge>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-xs font-mono text-muted-foreground">{a.ip}</TableCell>
+                  <TableCell>
+                    <Button variant="ghost" size="sm" className="h-7">详情</Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+/* ─────────────────── AdminLicense — License ─────────────────── */
+export function AdminLicense() {
+  return (
+    <div className="flex flex-col gap-6 p-6">
+      <PageHeader
+        title="License & 订阅"
+        description="全局 License 状态 / 配额 / 续费"
+        action={
+          <Badge variant="secondary" className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border-0">
+            仅超管
+          </Badge>
+        }
+      />
+
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+        <StatCard label="租户许可" value="12 / 50" icon={KeyRound} />
+        <StatCard label="Token 配额" value="12.4M / 100M" icon={Zap} />
+        <StatCard label="存储配额" value="2.4TB / 10TB" icon={HardDrive} />
+        <StatCard label="License 到期" value="2027-03-15" icon={Calendar} />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2"><KeyRound className="size-4" /> License 状态</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm">
+            <div className="flex justify-between"><span className="text-muted-foreground">License ID</span><span className="font-mono">ENT-2026-ACME-MASTER</span></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">授权方</span><span>MetaPlatform Inc.</span></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">License 类型</span><Badge>Enterprise</Badge></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">生效日期</span><span>2026-03-15</span></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">到期日期</span><span>2027-03-15</span></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">剩余天数</span><span className="text-primary font-medium">250 天</span></div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2"><Activity className="size-4" /> 用量趋势</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {[
+              { name: "LLM Token (本月)", used: 12.4, limit: 100, unit: "M" },
+              { name: "存储空间", used: 2.4, limit: 10, unit: "TB" },
+              { name: "并发会话", used: 124, limit: 500, unit: "" },
+            ].map((m) => (
+              <div key={m.name} className="space-y-1">
+                <div className="flex justify-between text-sm">
+                  <span>{m.name}</span>
+                  <span className="tabular-nums text-muted-foreground">{m.used}{m.unit} / {m.limit}{m.unit}</span>
+                </div>
+                <div className="w-full bg-muted rounded-full h-1.5">
+                  <div className="bg-primary h-1.5 rounded-full" style={{ width: `${(m.used / m.limit) * 100}%` }} />
+                </div>
+              </div>
+            ))}
+            <Button className="w-full mt-2" variant="outline">续费 / 升级 License</Button>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────── AdminRuntimes — 运行时清单 ─────────────────── */
+interface RuntimeRow {
+  id: string;
+  app: string;
+  tenant: string;
+  version: string;
+  replicas: number;
+  cpu: number;
+  mem: number;
+  status: "running" | "scaling" | "crashed";
+  uptime: string;
+}
+
+const RUNTIMES: RuntimeRow[] = [
+  { id: "rt-001", app: "请假审批", tenant: "ACME 集团", version: "v3.2.1", replicas: 3, cpu: 22, mem: 38, status: "running", uptime: "12d 4h" },
+  { id: "rt-002", app: "采购订单", tenant: "华耀科技", version: "v2.0.7", replicas: 5, cpu: 67, mem: 72, status: "scaling", uptime: "8d 11h" },
+  { id: "rt-003", app: "客户 CRM", tenant: "金桥金融", version: "v1.8.0", replicas: 2, cpu: 0, mem: 0, status: "crashed", uptime: "—" },
+  { id: "rt-004", app: "巡检助手", tenant: "瑞明制造", version: "v0.9.2-beta", replicas: 1, cpu: 8, mem: 14, status: "running", uptime: "2d 6h" },
+  { id: "rt-005", app: "报销流程", tenant: "ACME 集团", version: "v4.1.0", replicas: 4, cpu: 31, mem: 45, status: "running", uptime: "31d 2h" },
+];
+
+export function AdminRuntimes() {
+  return (
+    <div className="flex flex-col gap-6 p-6">
+      <PageHeader
+        title="运行时清单"
+        description="全平台已发布应用的运行时实例、副本数、资源使用"
+        action={
+          <Badge variant="secondary" className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border-0">
+            仅超管
+          </Badge>
+        }
+      />
+
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+        <StatCard label="运行时总数" value={String(RUNTIMES.length)} icon={Cloud} />
+        <StatCard label="运行中" value={String(RUNTIMES.filter((r) => r.status === "running").length)} icon={CheckCircle2} />
+        <StatCard label="副本总数" value={String(RUNTIMES.reduce((a, r) => a + r.replicas, 0))} icon={Layers} />
+        <StatCard label="异常实例" value={String(RUNTIMES.filter((r) => r.status === "crashed").length)} icon={AlertTriangle} />
+      </div>
+
+      <Card>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>应用</TableHead>
+                <TableHead>租户</TableHead>
+                <TableHead>版本</TableHead>
+                <TableHead className="text-right">副本</TableHead>
+                <TableHead>CPU</TableHead>
+                <TableHead>内存</TableHead>
+                <TableHead>状态</TableHead>
+                <TableHead>运行时长</TableHead>
+                <TableHead></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {RUNTIMES.map((r) => (
+                <TableRow key={r.id}>
+                  <TableCell className="font-medium">{r.app}</TableCell>
+                  <TableCell className="text-sm">{r.tenant}</TableCell>
+                  <TableCell className="text-xs font-mono">{r.version}</TableCell>
+                  <TableCell className="text-right tabular-nums">{r.replicas}</TableCell>
+                  <TableCell className="text-xs tabular-nums">{r.cpu}%</TableCell>
+                  <TableCell className="text-xs tabular-nums">{r.mem}%</TableCell>
+                  <TableCell>
+                    {r.status === "running" && <Badge className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border-0">运行中</Badge>}
+                    {r.status === "scaling" && <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border-0">弹性伸缩</Badge>}
+                    {r.status === "crashed" && <Badge variant="destructive">已崩溃</Badge>}
+                  </TableCell>
+                  <TableCell className="text-xs text-muted-foreground">{r.uptime}</TableCell>
+                  <TableCell>
+                    <Button variant="ghost" size="sm" className="h-7">详情</Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+/* ─────────────────── AdminFlags — 平台开关 ─────────────────── */
+interface FlagRow {
+  key: string;
+  name: string;
+  category: "功能" | "灰度" | "限流" | "实验";
+  enabled: boolean;
+  rollout: number;       // 灰度百分比
+  description: string;
+  updatedAt: string;
+}
+
+const FLAGS: FlagRow[] = [
+  { key: "ff_superai_v2", name: "SuperAI v2 入口", category: "功能", enabled: true, rollout: 100, description: "新版 SuperAI 对话界面，对所有用户开放", updatedAt: "2026-07-01" },
+  { key: "ff_ontology_8", name: "本体 8 要素", category: "功能", enabled: true, rollout: 100, description: "启用本体 8 要素完整流程", updatedAt: "2026-06-12" },
+  { key: "ff_gray_vibecoding", name: "VibeCoding 灰度", category: "灰度", enabled: true, rollout: 25, description: "VibeCoding AI 生成代码，按租户灰度发布", updatedAt: "2026-07-05" },
+  { key: "ff_gray_graphrag", name: "GraphRAG 灰度", category: "灰度", enabled: false, rollout: 0, description: "图增强 RAG，仅内部租户白名单", updatedAt: "2026-07-03" },
+  { key: "ff_rate_llm", name: "LLM 限流", category: "限流", enabled: true, rollout: 100, description: "每用户 60 req/min，超限降级到缓存", updatedAt: "2026-05-20" },
+  { key: "ff_rate_export", name: "导出限流", category: "限流", enabled: true, rollout: 100, description: "单租户 10 次/小时，> 1GB 数据走审批", updatedAt: "2026-04-18" },
+  { key: "ff_exp_new_dashboard", name: "新工作台实验", category: "实验", enabled: true, rollout: 10, description: "新工作台 UI，随机 10% 用户启用", updatedAt: "2026-07-06" },
+];
+
+const CATEGORY_COLORS: Record<FlagRow["category"], string> = {
+  功能: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+  灰度: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
+  限流: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+  实验: "bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400",
+};
+
+export function AdminFlags() {
+  const [flags, setFlags] = useState(FLAGS);
+  function toggle(key: string) {
+    setFlags((prev) => prev.map((f) => f.key === key ? { ...f, enabled: !f.enabled } : f));
+  }
+  return (
+    <div className="flex flex-col gap-6 p-6">
+      <PageHeader
+        title="平台开关 / Feature Flags"
+        description="全局功能开关 / 灰度发布 / 限流 / 实验"
+        action={
+          <Badge variant="secondary" className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border-0">
+            仅超管
+          </Badge>
+        }
+      />
+
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+        <StatCard label="开关总数" value={String(flags.length)} icon={Settings2} />
+        <StatCard label="已启用" value={String(flags.filter((f) => f.enabled).length)} icon={CheckCircle2} />
+        <StatCard label="灰度中" value={String(flags.filter((f) => f.enabled && f.rollout < 100).length)} icon={Zap} />
+        <StatCard label="已禁用" value={String(flags.filter((f) => !f.enabled).length)} icon={Lock} />
+      </div>
+
+      <div className="space-y-2">
+        {flags.map((f) => (
+          <Card key={f.key}>
+            <CardContent className="p-4">
+              <div className="flex items-start gap-3">
+                <button
+                  onClick={() => toggle(f.key)}
+                  className={`relative shrink-0 w-10 h-6 rounded-full transition-colors mt-0.5 ${f.enabled ? "bg-primary" : "bg-muted"}`}
+                  aria-label={`切换 ${f.name}`}
+                >
+                  <span className={`absolute top-0.5 size-5 rounded-full bg-white shadow transition-transform ${f.enabled ? "translate-x-[20px]" : "translate-x-0.5"}`} />
+                </button>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-medium">{f.name}</span>
+                    <Badge variant="secondary" className={`border-0 text-[10px] h-4 px-1.5 ${CATEGORY_COLORS[f.category]}`}>{f.category}</Badge>
+                    <code className="text-[10px] text-muted-foreground font-mono">{f.key}</code>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-0.5">{f.description}</p>
+                  {f.enabled && f.rollout < 100 && (
+                    <div className="mt-2 flex items-center gap-2">
+                      <div className="w-32 h-1.5 bg-muted rounded-full overflow-hidden">
+                        <div className="h-full bg-gradient-to-r from-purple-500 to-primary rounded-full" style={{ width: `${f.rollout}%` }} />
+                      </div>
+                      <span className="text-[11px] tabular-nums text-muted-foreground">灰度 {f.rollout}%</span>
+                    </div>
+                  )}
+                </div>
+                <span className="text-[10px] text-muted-foreground shrink-0 tabular-nums">{f.updatedAt}</span>
               </div>
             </CardContent>
           </Card>
