@@ -186,3 +186,26 @@
   stroke: #94a3b8 !important;
   stroke-width: 1 !important;
 }
+
+/* ── 隐藏整页右侧滚动条 (保留滚动能力) ── */
+html, body {
+  scrollbar-width: none;        /* Firefox */
+  -ms-overflow-style: none;     /* IE/Edge */
+}
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+/* 内部 main 滚动区也隐藏 (但保留滚动) */
+main::-webkit-scrollbar,
+.flex-1.overflow-y-auto::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+main, .flex-1.overflow-y-auto {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}

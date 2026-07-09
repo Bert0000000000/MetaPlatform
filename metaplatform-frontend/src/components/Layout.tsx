@@ -28,9 +28,9 @@ export function Layout() {
     pathname.startsWith("/admin");
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-background text-foreground">
+    <div className="flex min-h-screen w-screen bg-background text-foreground">
       <Sidebar />
-      <div className="flex flex-1 flex-col overflow-hidden">
+      <div className="flex flex-1 flex-col">
         <Topbar />
         {isAppDetail ? (
           <AppDetailTabs />
@@ -39,7 +39,7 @@ export function Layout() {
         ) : (
           <div className="h-px" />
         )}
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1">
           <Outlet />
         </main>
       </div>

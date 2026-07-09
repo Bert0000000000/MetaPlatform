@@ -11,7 +11,7 @@ export function Sidebar() {
   const location = useLocation();
 
   return (
-    <aside className="hidden md:flex shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground" style={{ width: "220px" }}>
+    <aside className="hidden md:flex shrink-0 sticky top-0 h-screen flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground" style={{ width: "220px" }}>
       <div className="flex h-14 items-center px-3 border-b border-sidebar-border">
         <span className="text-lg font-semibold tracking-tight text-sidebar-accent-foreground">MetaPlatform</span>
       </div>
