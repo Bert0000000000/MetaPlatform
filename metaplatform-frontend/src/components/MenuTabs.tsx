@@ -16,7 +16,7 @@ export function MenuTabs({
 }) {
   return (
     <div className="border-b bg-background px-6">
-      <nav className="flex h-12 items-center gap-0 overflow-x-auto">
+      <nav className="flex flex-wrap items-center gap-x-0 overflow-x-hidden">
         {tabs.map((t) => {
           const fullPath = `${basePath}${t.path}`;
           const isActive = activeKey === t.key;
@@ -25,7 +25,7 @@ export function MenuTabs({
               key={t.key}
               to={fullPath}
               className={cn(
-                "inline-flex h-12 items-center px-4 text-sm font-medium whitespace-nowrap transition-colors border-b-2",
+                "inline-flex h-10 items-center px-3 text-sm font-medium whitespace-nowrap transition-colors border-b-2",
                 isActive
                   ? "border-primary text-foreground"
                   : "border-transparent text-muted-foreground hover:text-foreground",
