@@ -1,32 +1,13 @@
-# Build artifacts
-dist/
-coverage/
-*.tsbuildinfo
-
-# Dependencies
-node_modules/
-
-# Local env
+target/
+*.class
+*.jar
+*.war
+.idea/
+*.iml
+.vscode/
+.DS_Store
 .env
 .env.local
-.env.*.local
-
-# Logs
-logs/
 *.log
-npm-debug.log*
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Local DB (Sprint 0 暂未创建，由主线程 T0-2 任务落地)
-app.db
-app.db-shm
-app.db-wal
+data/
+node_modules/
