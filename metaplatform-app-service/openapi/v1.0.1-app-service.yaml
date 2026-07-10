@@ -1,0 +1,776 @@
+openapi: 3.0.3
+info:
+  title: metaplatform-app-service
+  version: 1.0.1-sprint0
+  description: |
+    MetaPlatform App Center microservice contract.
+    Sprint 0 初稿（仅 schema 与路由，T0-3 任务产物）。
+    配套文档：
+      - docs/v1.0.x/v1.0.1/05-app-service-architecture.md
+      - docs/v1.0.x/v1.0.1/02-sprint-plan.md
+  contact:
+    name: MetaPlatform Backend Team
+servers:
+  - url: http://localhost:3002
+    description: Local dev
+  - url: http://localhost:3001/api/apps
+    description: 通过 metaplatform-api 网关转发（生产期）
+
+tags:
+  - name: health
+  - name: apps
+  - name: objects
+  - name: forms
+  - name: submit-list
+  - name: workflow
+  - name: approval
+  - name: todos
+
+# ───────────────────────────────────────────────────────────────────────
+# Paths
+# ───────────────────────────────────────────────────────────────────────
+paths:
+  /health:
+    get:
+      tags: [health]
+      summary: 健康检查
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Health"
+
+  # ─── 应用 ────────────────────────────────────────────────
+  /api/apps:
+    get:
+      tags: [apps]
+      summary: 应用列表
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Envelope_AppList"
+    post:
+      tags: [apps]
+      summary: 新建应用
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AppCreate"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Envelope_App"
+
+  /api/apps/{id}:
+    parameters:
+      - $ref: "#/components/parameters/PathAppId"
+    get:
+      tags: [apps]
+      summary: 应用详情
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Envelope_App"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    put:
+      tags: [apps]
+      summary: 更新应用
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AppUpdate"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Envelope_App"
+    delete:
+      tags: [apps]
+      summary: 删除应用（软删）
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Envelope_Generic"
+
+  # ─── 对象 ────────────────────────────────────────────────
+  /api/apps/{id}/objects:
+    parameters:
+      - $ref: "#/components/parameters/PathAppId"
+    get:
+      tags: [objects]
+      summary: 对象列表
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Envelope_ObjectList"
+    post:
+      tags: [objects]
+      summary: 新建对象（含批量字段）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ObjectCreate"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Envelope_Object"
+
+  /api/apps/{id}/objects/{oid}:
+    parameters:
+      - $ref: "#/components/parameters/PathAppId"
+      - $ref: "#/components/parameters/PathObjectId"
+    get:
+      tags: [objects]
+      summary: 对象详情
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Envelope_Object"
+    put:
+      tags: [objects]
+      summary: 更新对象（仅非结构性字段）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ObjectUpdate"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Envelope_Object"
+    delete:
+      tags: [objects]
+      summary: 删除对象
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Envelope_Generic"
+
+  # ─── 表单 ────────────────────────────────────────────────
+  /api/apps/{id}/forms:
+    parameters:
+      - $ref: "#/components/parameters/PathAppId"
+    get:
+      tags: [forms]
+      summary: 表单列表
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Envelope_FormList"
+    post:
+      tags: [forms]
+      summary: 新建表单
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FormCreate"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Envelope_Form"
+
+  /api/apps/{id}/forms/{fid}:
+    parameters:
+      - $ref: "#/components/parameters/PathAppId"
+      - $ref: "#/components/parameters/PathFormId"
+    get:
+      tags: [forms]
+      summary: 表单详情
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Envelope_Form"
+    put:
+      tags: [forms]
+      summary: 更新表单
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FormUpdate"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Envelope_Form"
+
+  /api/apps/{id}/forms/{fid}/publish:
+    parameters:
+      - $ref: "#/components/parameters/PathAppId"
+      - $ref: "#/components/parameters/PathFormId"
+    post:
+      tags: [forms]
+      summary: 发布表单
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Envelope_Form"
+
+  # ─── 提交 / 列表 / CSV ────────────────────────────────
+  /api/apps/{id}/forms/{fid}/submit:
+    parameters:
+      - $ref: "#/components/parameters/PathAppId"
+      - $ref: "#/components/parameters/PathFormId"
+    post:
+      tags: [submit-list]
+      summary: 提交表单
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubmitRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Envelope_FormData"
+
+  /api/apps/{id}/forms/{fid}/list:
+    parameters:
+      - $ref: "#/components/parameters/PathAppId"
+      - $ref: "#/components/parameters/PathFormId"
+      - in: query
+        name: page
+        schema: { type: integer, minimum: 1, default: 1 }
+      - in: query
+        name: pageSize
+        schema: { type: integer, minimum: 1, maximum: 200, default: 20 }
+      - in: query
+        name: sort
+        schema: { type: string, example: "-created_at" }
+      - in: query
+        name: filter
+        schema: { type: string, description: "JSON 字符串" }
+    get:
+      tags: [submit-list]
+      summary: 列表查询（分页+排序+过滤）
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Envelope_FormDataList"
+
+  /api/apps/{id}/forms/{fid}/csv:
+    parameters:
+      - $ref: "#/components/parameters/PathAppId"
+      - $ref: "#/components/parameters/PathFormId"
+    get:
+      tags: [submit-list]
+      summary: CSV 导出
+      responses:
+        "200":
+          description: text/csv
+          content:
+            text/csv:
+              schema:
+                type: string
+
+  # ─── 流程 ────────────────────────────────────────────────
+  /api/apps/{id}/forms/{fid}/workflow:
+    parameters:
+      - $ref: "#/components/parameters/PathAppId"
+      - $ref: "#/components/parameters/PathFormId"
+    post:
+      tags: [workflow]
+      summary: 创建 / 更新流程
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WorkflowCreate"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Envelope_Workflow"
+    get:
+      tags: [workflow]
+      summary: 流程详情
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Envelope_Workflow"
+
+  # ─── 审批 ────────────────────────────────────────────────
+  /api/workflow/instances/{id}/approve:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema: { type: integer, minimum: 1 }
+    post:
+      tags: [approval]
+      summary: 审批通过
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                comment: { type: string }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Envelope_ApprovalResult"
+
+  /api/workflow/instances/{id}/reject:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema: { type: integer, minimum: 1 }
+    post:
+      tags: [approval]
+      summary: 审批驳回
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [comment]
+              properties:
+                comment: { type: string }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Envelope_ApprovalResult"
+        "400": { $ref: "#/components/responses/BadRequest" }
+
+  # ─── 待办 ────────────────────────────────────────────────
+  /api/todos:
+    get:
+      tags: [todos]
+      summary: 当前用户待办列表
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Envelope_TodoList"
+
+# ───────────────────────────────────────────────────────────────────────
+# Components
+# ───────────────────────────────────────────────────────────────────────
+components:
+  parameters:
+    PathAppId:
+      in: path
+      name: id
+      required: true
+      schema: { type: integer, minimum: 1 }
+    PathObjectId:
+      in: path
+      name: oid
+      required: true
+      schema: { type: integer, minimum: 1 }
+    PathFormId:
+      in: path
+      name: fid
+      required: true
+      schema: { type: integer, minimum: 1 }
+
+  responses:
+    BadRequest:
+      description: 参数错误
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotFound:
+      description: 资源不存在
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+
+  schemas:
+    Health:
+      type: object
+      required: [status, version]
+      properties:
+        status: { type: string, enum: [ok, degraded, down] }
+        version: { type: string, example: v1.0.1-sprint0 }
+
+    App:
+      type: object
+      properties:
+        id: { type: integer }
+        code: { type: string }
+        name: { type: string }
+        icon: { type: string, nullable: true }
+        description: { type: string, nullable: true }
+        version: { type: integer }
+        status: { type: string, enum: [active, archived] }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    AppCreate:
+      type: object
+      required: [code, name]
+      properties:
+        code: { type: string }
+        name: { type: string }
+        icon: { type: string }
+        description: { type: string }
+    AppUpdate:
+      type: object
+      properties:
+        name: { type: string }
+        icon: { type: string }
+        description: { type: string }
+        status: { type: string, enum: [active, archived] }
+
+    Field:
+      type: object
+      required: [code, name, type]
+      properties:
+        code: { type: string }
+        name: { type: string }
+        type:
+          type: string
+          enum: [string, number, boolean, date, enum, ref]
+        required: { type: boolean }
+        options:
+          type: array
+          items:
+            type: object
+            properties:
+              value: { type: string }
+              label: { type: string }
+        refObjectTypeCode: { type: string, nullable: true }
+
+    AppObject:
+      type: object
+      properties:
+        id: { type: integer }
+        appId: { type: integer }
+        code: { type: string }
+        name: { type: string }
+        description: { type: string, nullable: true }
+        fields:
+          type: array
+          items: { $ref: "#/components/schemas/Field" }
+        ontologyObjectId: { type: integer, nullable: true }
+        dataTableName: { type: string }
+        version: { type: integer }
+    ObjectCreate:
+      type: object
+      required: [code, name, fields]
+      properties:
+        code: { type: string }
+        name: { type: string }
+        description: { type: string }
+        fields:
+          type: array
+          items: { $ref: "#/components/schemas/Field" }
+    ObjectUpdate:
+      type: object
+      properties:
+        name: { type: string }
+        description: { type: string }
+        fields:
+          type: array
+          items: { $ref: "#/components/schemas/Field" }
+
+    FormSchema:
+      type: object
+      required: [version, widgets]
+      properties:
+        version: { type: integer }
+        widgets:
+          type: array
+          items: { type: object, additionalProperties: true }
+        layout: { type: object, additionalProperties: true }
+
+    AppForm:
+      type: object
+      properties:
+        id: { type: integer }
+        appId: { type: integer }
+        objectId: { type: integer }
+        code: { type: string }
+        name: { type: string }
+        schema: { $ref: "#/components/schemas/FormSchema" }
+        status: { type: string, enum: [draft, published, archived] }
+        version: { type: integer }
+    FormCreate:
+      type: object
+      required: [objectId, code, name, schema]
+      properties:
+        objectId: { type: integer }
+        code: { type: string }
+        name: { type: string }
+        schema: { $ref: "#/components/schemas/FormSchema" }
+    FormUpdate:
+      type: object
+      properties:
+        name: { type: string }
+        schema: { $ref: "#/components/schemas/FormSchema" }
+
+    SubmitRequest:
+      type: object
+      required: [data]
+      properties:
+        data: { type: object, additionalProperties: true }
+    FormData:
+      type: object
+      properties:
+        id: { type: integer }
+        appId: { type: integer }
+        formId: { type: integer }
+        data: { type: object, additionalProperties: true }
+        submittedAt: { type: string, format: date-time }
+
+    WorkflowNode:
+      type: object
+      required: [id, type]
+      properties:
+        id: { type: string }
+        type: { type: string, enum: [start, userTask, systemTask, end, gateway] }
+        name: { type: string }
+        assignee: { type: string, description: "用户 id 或角色 code" }
+    WorkflowEdge:
+      type: object
+      required: [from, to]
+      properties:
+        from: { type: string }
+        to: { type: string }
+        condition: { type: string, nullable: true }
+    Workflow:
+      type: object
+      properties:
+        id: { type: integer }
+        appId: { type: integer }
+        formId: { type: integer }
+        code: { type: string }
+        name: { type: string }
+        nodes:
+          type: array
+          items: { $ref: "#/components/schemas/WorkflowNode" }
+        edges:
+          type: array
+          items: { $ref: "#/components/schemas/WorkflowEdge" }
+        status: { type: string, enum: [draft, published, archived] }
+        version: { type: integer }
+    WorkflowCreate:
+      type: object
+      required: [code, name, nodes, edges]
+      properties:
+        code: { type: string }
+        name: { type: string }
+        nodes:
+          type: array
+          items: { $ref: "#/components/schemas/WorkflowNode" }
+        edges:
+          type: array
+          items: { $ref: "#/components/schemas/WorkflowEdge" }
+
+    ApprovalResult:
+      type: object
+      properties:
+        instanceId: { type: integer }
+        action: { type: string, enum: [approve, reject] }
+        comment: { type: string }
+        approvedAt: { type: string, format: date-time }
+        rejectedAt: { type: string, format: date-time }
+
+    Todo:
+      type: object
+      properties:
+        id: { type: integer }
+        workflowInstanceId: { type: integer }
+        nodeId: { type: string }
+        assigneeId: { type: string }
+        status: { type: string, enum: [pending, done, cancelled] }
+        title: { type: string }
+        createdAt: { type: string, format: date-time }
+        doneAt: { type: string, format: date-time, nullable: true }
+
+    Envelope_Generic:
+      type: object
+      required: [code, traceId]
+      properties:
+        code: { type: integer, example: 0 }
+        data: {}
+        traceId: { type: string }
+    Envelope_App:
+      allOf:
+        - $ref: "#/components/schemas/Envelope_Generic"
+        - type: object
+          properties:
+            data: { $ref: "#/components/schemas/App" }
+    Envelope_AppList:
+      allOf:
+        - $ref: "#/components/schemas/Envelope_Generic"
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                items:
+                  type: array
+                  items: { $ref: "#/components/schemas/App" }
+                total: { type: integer }
+    Envelope_Object:
+      allOf:
+        - $ref: "#/components/schemas/Envelope_Generic"
+        - type: object
+          properties:
+            data: { $ref: "#/components/schemas/AppObject" }
+    Envelope_ObjectList:
+      allOf:
+        - $ref: "#/components/schemas/Envelope_Generic"
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                items:
+                  type: array
+                  items: { $ref: "#/components/schemas/AppObject" }
+                total: { type: integer }
+    Envelope_Form:
+      allOf:
+        - $ref: "#/components/schemas/Envelope_Generic"
+        - type: object
+          properties:
+            data: { $ref: "#/components/schemas/AppForm" }
+    Envelope_FormList:
+      allOf:
+        - $ref: "#/components/schemas/Envelope_Generic"
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                items:
+                  type: array
+                  items: { $ref: "#/components/schemas/AppForm" }
+                total: { type: integer }
+    Envelope_FormData:
+      allOf:
+        - $ref: "#/components/schemas/Envelope_Generic"
+        - type: object
+          properties:
+            data: { $ref: "#/components/schemas/FormData" }
+    Envelope_FormDataList:
+      allOf:
+        - $ref: "#/components/schemas/Envelope_Generic"
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                items:
+                  type: array
+                  items: { $ref: "#/components/schemas/FormData" }
+                total: { type: integer }
+                page: { type: integer }
+                pageSize: { type: integer }
+    Envelope_Workflow:
+      allOf:
+        - $ref: "#/components/schemas/Envelope_Generic"
+        - type: object
+          properties:
+            data: { $ref: "#/components/schemas/Workflow" }
+    Envelope_ApprovalResult:
+      allOf:
+        - $ref: "#/components/schemas/Envelope_Generic"
+        - type: object
+          properties:
+            data: { $ref: "#/components/schemas/ApprovalResult" }
+    Envelope_TodoList:
+      allOf:
+        - $ref: "#/components/schemas/Envelope_Generic"
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                items:
+                  type: array
+                  items: { $ref: "#/components/schemas/Todo" }
+                total: { type: integer }
+
+    Error:
+      type: object
+      required: [code, message, traceId]
+      properties:
+        code: { type: integer, example: 400 }
+        message: { type: string }
+        traceId: { type: string }

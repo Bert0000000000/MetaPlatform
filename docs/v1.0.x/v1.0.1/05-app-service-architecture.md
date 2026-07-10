@@ -327,12 +327,41 @@ CREATE TABLE app_audit_logs (
 
 ## 三、与现有服务的对接
 
-### 3.1 与 ontology-engine 的关系
+### 3.1 与 ontology-engine 的关系（**Sprint 0 已修正**）
 
-- **调用方式**：REST（HTTP 客户端）
-- **调用点**：创建/修改对象时，app-service 调用 ontology-engine 的 `POST /api/v1/object-types` + `POST /api/v1/object-instances` 让 ontology-engine 物理建表
+- **调用方式**：REST（HTTP 客户端，详见 `src/clients/ontology.client.ts`）
+- **调用点**：创建/修改对象时，app-service 调用 ontology-engine 的 `POST /api/v1/object-types` 让 ontology-engine 创建**领域类型定义**
 - **耦合度**：单向耦合（app-service → ontology-engine）
 - **失败处理**：如果 ontology-engine 调用失败，事务回滚，app-service 表回滚（在同一 SQLite 事务内）
+
+#### ⚠️ 重要：动态数据表的所有权已从 ontology-engine 调整到 app-service
+
+**原设计**（[v0 规划](https://www.example.com/roadmap-v0)）：让 ontology-engine 物理建数据表
+**Sprint 0 实际调研**：ontology-engine 是 Java 抽象实体层（`ObjectTypeController.java` / `ObjectInstanceController.java`），它管理"领域类型 + 字段语义 + 生命周期"，**不直接发 DDL**
+
+**修正后的设计**（[Sprint 0 已落地](docs/v1.0.x/v1.0.1/05-app-service-architecture.md)）：
+
+| 能力 | 归属 | 文件 |
+|------|------|------|
+| **领域类型定义 + 字段语义** | ontology-engine | `ObjectTypeController.java` + `FieldDefinition` |
+| **物理数据表 DDL + 数据入库** | app-service | `src/db/connection.ts::createDataTable` |
+| **字段运行时校验** | app-service 本地优先，ontology 提供权威校验 | `src/clients/ontology.client.ts::validateFieldValue` |
+| **对象实例生命周期** | ontology-engine | `ObjectInstanceController.java`（v1.0.1 暂未使用） |
+
+这样调整的好处：
+1. **更可靠**：DDL 与应用层在同一 SQLite 事务，原子性可保证
+2. **更灵活**：字段类型变更时能立即生效，不必等 ontology-engine 发版
+3. **更简单**：少了一层 RPC 跳跃，调试方便
+
+#### 表命名规范（Sprint 0 定稿）
+
+```
+data_<appCode>_<objectCode>_<8位hash>
+
+例：data_travel_reimbursement_a1b2c3d4
+```
+
+由 `createDataTable()` 自动生成，删除对象时 `dropDataTable()` 级联删除。
 
 ### 3.2 与 page-generator 的关系
 
