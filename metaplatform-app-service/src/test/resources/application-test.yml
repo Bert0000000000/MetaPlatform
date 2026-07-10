@@ -1,0 +1,29 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:app_service_test;MODE=PostgreSQL;NON_KEYWORDS=USER
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    database-platform: org.hibernate.dialect.H2Dialect
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+metaplatform:
+  default-tenant: test-tenant
+  auth:
+    mode: dev
+  ontology-engine:
+    url: http://localhost:0
+  page-generator:
+    url: http://localhost:0
+  trace-id-header: X-Trace-Id
+
+logging:
+  level:
+    org.hibernate.SQL: WARN
+    org.flywaydb: WARN

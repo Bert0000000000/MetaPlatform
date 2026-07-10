@@ -114,8 +114,13 @@ export default defineConfig({
         target: "http://localhost:3001",
         changeOrigin: true,
       },
+      // v1.0.1 应用中心 → 优先走 Java 微服务 metaplatform-app-service :8092
       "/api/apps": {
-        target: "http://localhost:3001",
+        target: "http://localhost:8092",
+        changeOrigin: true,
+      },
+      "/api/workflow": {
+        target: "http://localhost:8092",
         changeOrigin: true,
       },
       "/api/ontology": {

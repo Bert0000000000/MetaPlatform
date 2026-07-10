@@ -1,0 +1,1278 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MetaPlatform 商业计划书 - 演示版</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #05070a;
+            --bg-secondary: #0a0f17;
+            --bg-card: #0d1320;
+            --accent-cyan: #00f0ff;
+            --accent-blue: #0066ff;
+            --accent-purple: #7c3aed;
+            --text-primary: #f0f4f8;
+            --text-secondary: #94a3b8;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            overflow-x: hidden;
+        }
+        .font-display { font-family: 'Space Grotesk', 'Noto Sans SC', sans-serif; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg-primary); }
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, var(--accent-cyan), var(--accent-blue));
+            border-radius: 4px;
+        }
+        .gradient-orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(120px);
+            opacity: 0.4;
+            pointer-events: none;
+        }
+        .grid-pattern {
+            background-image:
+                linear-gradient(rgba(0, 240, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 240, 255, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            position: absolute; inset: 0; pointer-events: none;
+        }
+        .gradient-text {
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue), var(--accent-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            background-size: 200% 200%;
+            animation: gradient-shift 6s ease infinite;
+        }
+        @keyframes gradient-shift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
+        @keyframes pulse-glow { 0%, 100% { opacity: 0.4; } 50% { opacity: 0.8; } }
+        @keyframes scanline { 0% { transform: translateY(-100%); } 100% { transform: translateY(100vh); } }
+        .animate-float { animation: float 6s ease-in-out infinite; }
+        .animate-pulse-glow { animation: pulse-glow 3s ease-in-out infinite; }
+        .section {
+            min-height: 100vh;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 80px 24px;
+        }
+        .section-content { max-width: 1400px; width: 100%; position: relative; z-index: 10; }
+        .glass-card {
+            background: rgba(13, 19, 32, 0.7);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(0, 240, 255, 0.15);
+            border-radius: 16px;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .glass-card:hover {
+            border-color: rgba(0, 240, 255, 0.4);
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), 0 0 40px rgba(0, 240, 255, 0.1);
+        }
+        .stat-number { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 3rem; line-height: 1; }
+        .layer-node {
+            background: linear-gradient(135deg, rgba(0, 240, 255, 0.1), rgba(0, 102, 255, 0.1));
+            border: 1px solid rgba(0, 240, 255, 0.3);
+            border-radius: 8px;
+            padding: 12px 16px;
+            text-align: center;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        .layer-node:hover {
+            background: linear-gradient(135deg, rgba(0, 240, 255, 0.2), rgba(0, 102, 255, 0.2));
+            box-shadow: 0 0 20px rgba(0, 240, 255, 0.3);
+            transform: scale(1.02);
+        }
+        .matrix-bg {
+            background: repeating-linear-gradient(90deg, transparent, transparent 40px, rgba(0, 240, 255, 0.05) 40px, rgba(0, 240, 255, 0.05) 41px);
+        }
+        .nav-dot {
+            width: 10px; height: 10px; border-radius: 50%;
+            background: rgba(148, 163, 184, 0.3);
+            transition: all 0.3s ease; cursor: pointer;
+        }
+        .nav-dot.active {
+            background: var(--accent-cyan);
+            box-shadow: 0 0 15px var(--accent-cyan);
+            transform: scale(1.3);
+        }
+        .progress-bar {
+            position: fixed; top: 0; left: 0; height: 3px;
+            background: linear-gradient(90deg, var(--accent-cyan), var(--accent-blue));
+            z-index: 1000; transition: width 0.1s ease;
+        }
+        .scanline {
+            position: fixed; top: 0; left: 0; right: 0; height: 4px;
+            background: linear-gradient(180deg, transparent, rgba(0, 240, 255, 0.1), transparent);
+            animation: scanline 8s linear infinite;
+            pointer-events: none; z-index: 999;
+        }
+        .custom-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 0.85rem; }
+        .custom-table th {
+            background: rgba(0, 240, 255, 0.1);
+            padding: 12px; text-align: left; font-weight: 600;
+            border-bottom: 1px solid rgba(0, 240, 255, 0.15);
+        }
+        .custom-table td { padding: 12px; border-bottom: 1px solid rgba(0, 240, 255, 0.08); }
+        .custom-table tr:hover td { background: rgba(0, 240, 255, 0.03); }
+        .industry-card {
+            background: linear-gradient(145deg, rgba(13, 19, 32, 0.9), rgba(8, 12, 22, 0.95));
+            border: 1px solid rgba(0, 240, 255, 0.15);
+            border-radius: 20px; padding: 32px;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative; overflow: hidden;
+        }
+        .industry-card::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+            background: linear-gradient(90deg, transparent, var(--accent-cyan), transparent);
+            opacity: 0.5;
+        }
+        .industry-card:hover {
+            transform: translateY(-8px) scale(1.01);
+            border-color: rgba(0, 240, 255, 0.4);
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5), 0 0 60px rgba(0, 240, 255, 0.12);
+        }
+        .industry-icon {
+            width: 64px; height: 64px; border-radius: 16px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 28px; margin-bottom: 20px;
+        }
+        .badge {
+            display: inline-flex; align-items: center; padding: 4px 12px;
+            border-radius: 20px; font-size: 0.75rem; font-weight: 600;
+        }
+        @media (max-width: 768px) {
+            .stat-number { font-size: 2rem; }
+            .section { padding: 60px 16px; }
+        }
+        .timeline-line {
+            position: absolute; left: 4px; top: 0; bottom: 0;
+            width: 2px; background: linear-gradient(180deg, #00f0ff 0%, #0066ff 50%, #7c3aed 100%);
+        }
+        .timeline-dot {
+            width: 16px; height: 16px; border-radius: 50%;
+            background: #00f0ff; box-shadow: 0 0 20px rgba(0, 240, 255, 0.8);
+            position: absolute; left: -3px;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script>
+// MetaPlatform 演示版 - 纯 JS 实现，无需构建工具
+// React 18 + Tailwind CSS via CDN
+
+const { useState, useEffect, useRef } = React;
+const h = React.createElement;
+
+// Intersection Observer Hook
+const useInView = () => {
+  const ref = useRef(null);
+  const [isInView, setIsInView] = useState(false);
+  useEffect(() => {
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        setIsInView(true);
+        observer.disconnect();
+      }
+    }, { threshold: 0.15 });
+    if (ref.current) observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, []);
+  return [ref, isInView];
+};
+
+// Icon component (using emojis to avoid Lucide dependency)
+const Icon = ({ name, size = 24, className = "" }) => {
+  const icons = {
+    brain: "🧠", network: "🌐", bot: "🤖", code: "💻", layers: "📚",
+    shield: "🛡️", database: "💾", zap: "⚡", sparkles: "✨",
+    trending: "📈", check: "✓", arrow: "→", chevron: "⌄",
+    landmark: "🏛️", building: "🏢", factory: "🏭", heart: "💗",
+    cart: "🛒", chart: "📊", target: "🎯", rocket: "🚀",
+    crown: "👑", gem: "💎", trophy: "🏆", briefcase: "💼",
+    users: "👥", user: "👤", briefcase_alt: "💼", money: "💰",
+    tools: "🔧", package: "📦", cpu: "⚙️", megaphone: "📢",
+    palette: "🎨", pencil: "✏️", beaker: "🧪"
+  };
+  return h('span', { className, style: { fontSize: `${size}px`, lineHeight: 1 } }, icons[name] || '◆');
+};
+
+// Sections config
+const sections = [
+  { id: 'cover', title: '封面' },
+  { id: 'overview', title: '项目概览' },
+  { id: 'market', title: '市场机会' },
+  { id: 'competition', title: '竞争格局' },
+  { id: 'product', title: '产品定位' },
+  { id: 'industry', title: '行业解决方案' },
+  { id: 'business', title: '商业模式' },
+  { id: 'roadmap', title: '发展规划' },
+  { id: 'funding', title: '融资规划' },
+  { id: 'closing', title: '结语' }
+];
+
+// Section Title Component
+const SectionTitle = ({ number, title, subtitle }) => {
+  const [ref, isInView] = useInView();
+  return h('div', { ref, className: `mb-16 transition-all duration-700 ${isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}` },
+    h('div', { className: 'flex items-center gap-4 mb-4' },
+      h('span', { className: 'font-display text-5xl font-bold text-cyan-400/30' }, number),
+      h('div', { className: 'h-px flex-1 bg-gradient-to-r from-cyan-400/50 to-transparent' })
+    ),
+    h('h2', { className: 'font-display text-4xl md:text-5xl font-bold mb-4 gradient-text' }, title),
+    subtitle && h('p', { className: 'text-xl text-slate-400 max-w-3xl' }, subtitle)
+  );
+};
+
+// Cover Section
+const CoverSection = () => {
+  const [ref, isInView] = useInView();
+  const stats = [
+    { label: '已完成模块', value: '12' },
+    { label: 'API 端点', value: '64' },
+    { label: '数据表', value: '54' },
+    { label: '九层架构', value: 'L1-L3' }
+  ];
+  return h('section', { id: 'cover', className: 'section overflow-hidden', ref },
+    h('div', { className: 'gradient-orb w-96 h-96 bg-cyan-500 -top-48 -left-48 animate-pulse-glow' }),
+    h('div', { className: 'gradient-orb w-[600px] h-[600px] bg-blue-600 top-1/2 right-0 -translate-y-1/2' }),
+    h('div', { className: 'gradient-orb w-80 h-80 bg-purple-600 bottom-0 left-1/4' }),
+    h('div', { className: 'grid-pattern' }),
+    h('div', { className: 'section-content text-center relative z-10' },
+      h('div', { className: `transition-all duration-1000 ${isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}` },
+        h('div', { className: 'inline-flex items-center gap-2 px-4 py-2 rounded-full border border-cyan-400/30 bg-cyan-400/5 mb-8' },
+          h('span', { className: 'w-2 h-2 rounded-full bg-cyan-400 animate-pulse' }),
+          h('span', { className: 'text-sm text-cyan-300 tracking-wider' }, '商业计划书 · 演示版')
+        ),
+        h('h1', { className: 'font-display text-6xl md:text-8xl font-bold mb-6 leading-tight' },
+          h('span', { className: 'block text-white' }, 'MetaPlatform'),
+          h('span', { className: 'block text-3xl md:text-5xl mt-4 text-slate-400 font-medium' }, '基于本体论引擎的企业级 AI 中台')
+        ),
+        h('p', { className: 'text-xl md:text-2xl text-slate-400 max-w-4xl mx-auto mb-12 leading-relaxed' },
+          '融合知识图谱、低代码开发与 AI 原生能力，构建下一代企业智能基础设施'
+        ),
+        h('div', { className: 'flex flex-wrap justify-center gap-6 mb-16' },
+          stats.map((s, i) => h('div', { key: i, className: 'glass-card px-8 py-5 min-w-[140px]' },
+            h('div', { className: 'stat-number gradient-text' }, s.value),
+            h('div', { className: 'text-sm text-slate-400 mt-2' }, s.label)
+          ))
+        ),
+        h('button', {
+          onClick: () => document.getElementById('overview').scrollIntoView({ behavior: 'smooth' }),
+          className: 'group inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-full text-white font-semibold hover:shadow-[0_0_40px_rgba(0,240,255,0.4)] transition-all'
+        },
+          '开始演示 ',
+          h('span', { className: 'inline-block transition-transform group-hover:translate-y-1' }, '↓')
+        )
+      )
+    ),
+    h('div', { className: 'absolute bottom-8 left-1/2 -translate-x-1/2 text-slate-500 text-sm' }, '2026-07-09 · v1.0')
+  );
+};
+
+// Overview Section
+const OverviewSection = () => {
+  const [ref, isInView] = useInView();
+  const highlights = [
+    { icon: 'brain', title: '本体引擎驱动', desc: 'EntityType/RelationType/实例 + 推理引擎 + 版本管理，为元数据注入语义能力' },
+    { icon: 'network', title: '知识图谱增强', desc: 'Neo4j 5 属性图 + GraphRAG 融合，复杂推理成本从 $33,000 降至 $33' },
+    { icon: 'bot', title: 'AI 原生中台', desc: 'AI Substrate 渗透九层架构，数字员工引擎 + 多智能体协作' },
+    { icon: 'code', title: '低代码生成', desc: 'Schema 驱动页面/表单/流程自动生成，VibeCoding 自然语言开发' }
+  ];
+  const markets = [
+    { label: '中国知识图谱核心产品市场（2026E）', value: '296 亿元', width: '90%' },
+    { label: '金融领域 KG 市场（2026E）', value: '68 亿元', width: '65%' },
+    { label: '中国低代码市场（2026E）', value: '159.6 亿元', width: '75%' },
+    { label: '图数据库市场 CAGR', value: '23.4%', width: '55%' }
+  ];
+
+  return h('section', { id: 'overview', className: 'section bg-[#080c14]' },
+    h('div', { className: 'gradient-orb w-[500px] h-[500px] bg-blue-600/30 -right-40 top-1/4' }),
+    h('div', { className: 'grid-pattern opacity-50' }),
+    h('div', { className: 'section-content' },
+      h(SectionTitle, { number: '01', title: '项目概览', subtitle: '以开源技术栈实现 Palantir 级本体驱动架构，适配中国企业信创与预算约束' }),
+      h('div', { ref, className: `grid md:grid-cols-2 gap-8 transition-all duration-700 ${isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}` },
+        h('div', { className: 'space-y-6' },
+          h('div', { className: 'glass-card p-8' },
+            h('h3', { className: 'font-display text-2xl font-bold mb-4 text-cyan-400' }, '核心定位'),
+            h('p', { className: 'text-slate-300 leading-relaxed text-lg' },
+              'MetaPlatform 是一款以', h('strong', { className: 'text-white' }, '本体论引擎'), '为核心的企业级 AI 中台产品，采用九层架构设计，将业务建模、知识图谱、数据治理、流程自动化与 AI 能力统一在一个平台中。'
+            )
+          ),
+          h('div', { className: 'grid grid-cols-2 gap-4' },
+            highlights.map((item, i) => h('div', { key: i, className: 'glass-card p-5 hover:border-cyan-400/40' },
+              h('div', { className: 'text-cyan-400 mb-3' }, h(Icon, { name: item.icon, size: 28 })),
+              h('h4', { className: 'font-bold text-white mb-2' }, item.title),
+              h('p', { className: 'text-sm text-slate-400 leading-relaxed' }, item.desc)
+            ))
+          )
+        ),
+        h('div', { className: 'glass-card p-8 relative overflow-hidden' },
+          h('div', { className: 'absolute top-0 right-0 w-32 h-32 bg-cyan-500/10 rounded-full blur-3xl' }),
+          h('h3', { className: 'font-display text-2xl font-bold mb-6 text-white' }, '市场机会窗口'),
+          h('div', { className: 'space-y-5' },
+            markets.map((item, i) => h('div', { key: i },
+              h('div', { className: 'flex justify-between text-sm mb-2' },
+                h('span', { className: 'text-slate-300' }, item.label),
+                h('span', { className: 'text-cyan-400 font-bold' }, item.value)
+              ),
+              h('div', { className: 'h-3 bg-slate-800 rounded-full overflow-hidden' },
+                h('div', {
+                  className: 'h-full rounded-full bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-500',
+                  style: { width: isInView ? item.width : '0%', transition: `width 1s ease ${i * 0.15}s` }
+                })
+              )
+            ))
+          ),
+          h('div', { className: 'mt-8 p-4 rounded-lg bg-cyan-400/5 border border-cyan-400/20' },
+            h('p', { className: 'text-sm text-slate-300' },
+              h('span', { className: 'text-cyan-400 font-bold' }, '首期目标：'),
+              '金融行业大型机构（银行、保险、证券），客单价 300-2000 万元'
+            )
+          )
+        )
+      )
+    )
+  );
+};
+
+// Market Section
+const MarketSection = () => {
+  const [ref, isInView] = useInView();
+  const tamData = [
+    { level: 'TAM 全球总可触达市场', value: '$50-250B', desc: '企业软件 + 数据智能 + AI 中台' },
+    { level: 'SAM 中国可触达市场', value: '¥500-2000亿', desc: '知识图谱 + 低代码 + 数据治理' },
+    { level: 'SOM 3 年目标市场', value: '¥1.2-4.5亿', desc: '金融 + 政务 + 制造头部客户' }
+  ];
+  return h('section', { id: 'market', className: 'section' },
+    h('div', { className: 'gradient-orb w-[600px] h-[600px] bg-cyan-500/20 -left-60 top-0' }),
+    h('div', { className: 'grid-pattern' }),
+    h('div', { className: 'section-content' },
+      h(SectionTitle, { number: '02', title: '市场机会', subtitle: '知识图谱、低代码、AI 应用三大市场交汇，中国企业数字化转型需求强劲' }),
+      h('div', { ref, className: `transition-all duration-700 ${isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}` },
+        h('div', { className: 'grid lg:grid-cols-3 gap-6 mb-12' },
+          tamData.map((item, i) => h('div', { key: i, className: 'glass-card p-8 text-center relative overflow-hidden' },
+            h('div', { className: 'absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-500' }),
+            h('div', { className: 'text-sm text-slate-400 mb-3' }, item.level),
+            h('div', { className: 'font-display text-3xl md:text-4xl font-bold text-white mb-3' }, item.value),
+            h('div', { className: 'text-sm text-slate-500' }, item.desc)
+          ))
+        ),
+        h('div', { className: 'grid lg:grid-cols-2 gap-8' },
+          h('div', { className: 'glass-card p-8' },
+            h('h3', { className: 'font-display text-2xl font-bold mb-6 text-white' }, '全球知识图谱软件市场'),
+            h('div', { className: 'space-y-4' },
+              h('div', { className: 'flex items-center justify-between p-4 rounded-lg bg-slate-900/50 border border-slate-800' },
+                h('div', null,
+                  h('div', { className: 'text-slate-400 text-sm' }, '2023 年市场规模'),
+                  h('div', { className: 'text-2xl font-bold text-white' }, '13 亿美元')
+                ),
+                h('div', { className: 'text-right' },
+                  h('div', { className: 'text-slate-400 text-sm' }, '2030 年预测'),
+                  h('div', { className: 'text-2xl font-bold text-cyan-400' }, '32 亿美元')
+                )
+              ),
+              h('div', { className: 'p-4 rounded-lg bg-cyan-400/5 border border-cyan-400/20' },
+                h('div', { className: 'flex items-center gap-3' },
+                  h('span', { className: 'text-3xl' }, '📈'),
+                  h('div', null,
+                    h('div', { className: 'font-bold text-white' }, 'CAGR 13.7%'),
+                    h('div', { className: 'text-sm text-slate-400' }, '智信中科研究网预测（2024-2030）')
+                  )
+                )
+              )
+            )
+          ),
+          h('div', { className: 'glass-card p-8' },
+            h('h3', { className: 'font-display text-2xl font-bold mb-6 text-white' }, '中国市场增长预测'),
+            h('div', { className: 'space-y-4' },
+              [
+                { year: '2021', value: '107 亿元', label: '知识图谱核心产品' },
+                { year: '2024E', value: '200+ 亿元', label: '核心产品突破' },
+                { year: '2026E', value: '296 亿元', label: '核心产品预测' },
+                { year: '2023', value: '484.1 亿元', label: '行业市场（含服务）' }
+              ].map((item, i) => h('div', { key: i, className: 'flex items-center gap-4' },
+                h('div', { className: 'w-20 text-cyan-400 font-bold font-display' }, item.year),
+                h('div', { className: 'flex-1 h-10 bg-slate-900/50 rounded-lg flex items-center px-4 border border-slate-800' },
+                  h('span', { className: 'font-bold text-white' }, item.value),
+                  h('span', { className: 'ml-auto text-sm text-slate-500' }, item.label)
+                )
+              ))
+            )
+          )
+        ),
+        h('div', { className: 'mt-8 glass-card p-8' },
+          h('h3', { className: 'font-display text-2xl font-bold mb-6 text-white' }, '核心增长驱动'),
+          h('div', { className: 'grid md:grid-cols-3 gap-6' },
+            [
+              { icon: 'brain', title: 'GraphRAG 技术成熟', desc: '知识图谱 + 大模型融合，构建成本从 $33,000 骤降至 $33' },
+              { icon: 'shield', title: '信创替代浪潮', desc: '政府/国企/金融加速国产化替代，国际平台难以进入' },
+              { icon: 'database', title: '数据要素政策', desc: '数据交易流通需要语义建模、血缘追踪等本体论能力支撑' }
+            ].map((item, i) => h('div', { key: i, className: 'flex gap-4' },
+              h('div', { className: 'w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-400/20 to-blue-500/20 flex items-center justify-center text-cyan-400 shrink-0' },
+                h(Icon, { name: item.icon, size: 24 })
+              ),
+              h('div', null,
+                h('h4', { className: 'font-bold text-white mb-2' }, item.title),
+                h('p', { className: 'text-sm text-slate-400' }, item.desc)
+              )
+            ))
+          )
+        )
+      )
+    )
+  );
+};
+
+// Competition Section
+const CompetitionSection = () => {
+  const [ref, isInView] = useInView();
+  const competitors = [
+    { name: 'Palantir', type: '数据操作系统', ontology: 'yes', lowcode: 'no', ai: 'yes', xinchuang: 'no', price: '千万美元级' },
+    { name: 'OutSystems', type: '国际低代码', ontology: 'no', lowcode: 'yes', ai: 'no', xinchuang: 'no', price: '$2K-10K/人/年' },
+    { name: 'Power Apps', type: '生态低代码', ontology: 'no', lowcode: 'yes', ai: 'partial', xinchuang: 'no', price: '$60-240/人/年' },
+    { name: '钉钉宜搭', type: '生态零代码', ontology: 'no', lowcode: 'yes', ai: 'partial', xinchuang: 'yes', price: '按需' },
+    { name: '简道云', type: '表单零代码', ontology: 'no', lowcode: 'yes', ai: 'partial', xinchuang: 'partial', price: '¥168/人/年' },
+    { name: '百特搭', type: 'AI 低代码', ontology: 'no', lowcode: 'yes', ai: 'yes', xinchuang: 'yes', price: '¥6.9K-14.9K/年' },
+    { name: '金蝶苍穹', type: 'ERP 低代码', ontology: 'no', lowcode: 'yes', ai: 'partial', xinchuang: 'yes', price: '百万级' },
+    { name: 'Dify', type: 'AI 应用开发', ontology: 'no', lowcode: 'partial', ai: 'yes', xinchuang: 'opensource', price: '开源免费' },
+    { name: '海致星图', type: '金融 KG', ontology: 'partial', lowcode: 'no', ai: 'partial', xinchuang: 'yes', price: '百万-千万级' },
+    { name: 'MetaPlatform', type: '本体 AI 中台', ontology: 'yes', lowcode: 'yes', ai: 'yes', xinchuang: 'yes', price: '渐进式', highlight: true }
+  ];
+
+  const renderCell = (val, highlight) => {
+    if (val === 'yes') return h('span', { className: highlight ? 'text-cyan-400 font-bold' : 'text-green-400' }, '● 支持');
+    if (val === 'no') return h('span', { className: 'text-slate-600' }, '○ 无');
+    if (val === 'partial') return h('span', { className: 'text-yellow-400' }, '◐ 部分');
+    if (val === 'opensource') return h('span', { className: 'text-cyan-400' }, '◆ 开源');
+    return h('span', { className: highlight ? 'text-cyan-300' : 'text-slate-300' }, val);
+  };
+
+  return h('section', { id: 'competition', className: 'section bg-[#080c14]' },
+    h('div', { className: 'gradient-orb w-[500px] h-[500px] bg-purple-600/20 right-0 top-1/3' }),
+    h('div', { className: 'grid-pattern opacity-50' }),
+    h('div', { className: 'section-content' },
+      h(SectionTitle, { number: '03', title: '竞争格局', subtitle: '四大类竞品横向对比：国际低代码、中国低代码、AI 应用平台、知识图谱平台' }),
+      h('div', { ref, className: `transition-all duration-700 ${isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}` },
+        h('div', { className: 'glass-card p-6 mb-8 overflow-x-auto' },
+          h('table', { className: 'custom-table min-w-[900px]' },
+            h('thead', null,
+              h('tr', null,
+                ['平台', '定位', '本体/语义', '低代码', 'AI 能力', '信创', '价格水平'].map((t, i) => h('th', { key: i, className: i === 0 ? 'text-cyan-400' : '' }, t))
+              )
+            ),
+            h('tbody', null,
+              competitors.map((c, i) => h('tr', { key: i, className: c.highlight ? 'bg-cyan-400/5' : '' },
+                h('td', { className: `font-bold ${c.highlight ? 'text-cyan-400' : 'text-white'}` }, c.name),
+                ['type', 'ontology', 'lowcode', 'ai', 'xinchuang', 'price'].map((k, j) => h('td', { key: j }, renderCell(c[k], c.highlight)))
+              ))
+            )
+          )
+        ),
+        h('div', { className: 'grid md:grid-cols-3 gap-6' },
+          [
+            { title: 'Palantir 级本体架构', desc: '唯一以本体论为核心的企业级 AI 中台，知识图谱 + 低代码 + AI 三位一体', icon: 'layers' },
+            { title: '全栈信创壁垒', desc: '国际平台（OutSystems/Mendix/Power Apps）均无信创适配，MetaPlatform 全栈国产化', icon: 'shield' },
+            { title: 'AI 代差优势', desc: 'GraphRAG + 数字员工引擎 + 多智能体协作，低代码平台与 AI 平台均不具备', icon: 'zap' }
+          ].map((item, i) => h('div', { key: i, className: 'glass-card p-6 border-l-4 border-l-cyan-400' },
+            h('div', { className: 'text-cyan-400 mb-4' }, h(Icon, { name: item.icon, size: 28 })),
+            h('h4', { className: 'font-bold text-white text-lg mb-2' }, item.title),
+            h('p', { className: 'text-slate-400 text-sm' }, item.desc)
+          ))
+        )
+      )
+    )
+  );
+};
+
+// Product Section
+const ProductSection = () => {
+  const [ref, isInView] = useInView();
+  const [activeLayer, setActiveLayer] = useState(null);
+
+  const layers = [
+    { id: 'L3-5', name: '部署交付层' },
+    { id: 'L3-4', name: '运维底座层' },
+    { id: 'L3-3', name: '数据存储层' },
+    { id: 'L3-2', name: '数据集成层' },
+    { id: 'L3-1', name: 'AI 基质层' },
+    { id: 'L2-4', name: '本体引擎层' },
+    { id: 'L2-3', name: '对象模型层' },
+    { id: 'L2-2', name: '流程引擎层' },
+    { id: 'L2-1', name: '页面渲染层' },
+    { id: 'L1-3', name: '应用中心' },
+    { id: 'L1-2', name: '数字员工层' },
+    { id: 'L1-1', name: '用户对话层' }
+  ];
+
+  const advantages = [
+    '本体论驱动', '九层架构+AI基质', '知识图谱Neo4j', 'GraphRAG',
+    'AI 原生应用', '数字员工引擎', '多智能体协作', '7大存储适配',
+    'VibeCoding', 'AI 决策引擎'
+  ];
+
+  const techStack = [
+    'Java 21', 'Spring Boot 3', 'Neo4j 5', 'PostgreSQL 16',
+    'React 19', 'LangChain 0.3', 'Milvus 2.4', 'Kafka 3.6',
+    'MinIO', 'Doris', 'Hudi', 'Flowable 7'
+  ];
+
+  return h('section', { id: 'product', className: 'section' },
+    h('div', { className: 'gradient-orb w-[600px] h-[600px] bg-cyan-500/15 right-1/4 top-0' }),
+    h('div', { className: 'grid-pattern' }),
+    h('div', { className: 'section-content' },
+      h(SectionTitle, { number: '04', title: '产品定位', subtitle: '九层架构 + AI 基质渗透 + 十大差异化优势' }),
+      h('div', { ref, className: `transition-all duration-700 ${isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}` },
+        h('div', { className: 'grid lg:grid-cols-2 gap-12 items-center mb-16' },
+          h('div', { className: 'glass-card p-8 relative' },
+            h('div', { className: 'absolute inset-0 matrix-bg opacity-30 rounded-2xl' }),
+            h('h3', { className: 'font-display text-2xl font-bold mb-6 text-white relative z-10' }, '九层架构设计'),
+            h('div', { className: 'space-y-2 relative z-10' },
+              layers.map((l, i) => h('div', {
+                key: i,
+                className: `layer-node text-left flex justify-between items-center ${activeLayer === i ? 'bg-cyan-400/20 border-cyan-400' : ''}`,
+                onMouseEnter: () => setActiveLayer(i),
+                onMouseLeave: () => setActiveLayer(null)
+              },
+                h('span', { className: 'font-display text-cyan-300' }, l.id),
+                h('span', { className: 'flex-1 text-center' }, l.name)
+              ))
+            ),
+            h('div', { className: 'mt-4 text-center text-sm text-slate-500 relative z-10' }, 'AI Substrate 作为"基质"渗透各层')
+          ),
+          h('div', null,
+            h('h3', { className: 'font-display text-3xl font-bold mb-8 text-white' }, '十大差异化优势'),
+            h('div', { className: 'grid grid-cols-2 gap-4' },
+              advantages.map((adv, i) => h('div', { key: i, className: 'glass-card p-4 flex items-center gap-3 group' },
+                h('div', { className: 'w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center text-white font-bold text-sm group-hover:scale-110 transition-transform' }, i + 1),
+                h('span', { className: 'text-slate-200 font-medium text-sm' }, adv)
+              ))
+            )
+          )
+        ),
+        h('div', { className: 'glass-card p-8' },
+          h('h3', { className: 'font-display text-2xl font-bold mb-6 text-white' }, '技术栈选型'),
+          h('div', { className: 'grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4' },
+            techStack.map((t, i) => h('div', { key: i, className: 'text-center p-3 rounded-lg bg-slate-900/50 border border-slate-800 hover:border-cyan-400/40 transition-colors' },
+              h('div', { className: 'text-white font-semibold text-sm' }, t)
+            ))
+          )
+        )
+      )
+    )
+  );
+};
+
+// Industry Section - 核心独立演示篇章（用户视角）
+const IndustrySection = () => {
+  const [ref, isInView] = useInView();
+  const [activeCase, setActiveCase] = useState(0);
+
+  // 用户视角：我是谁 → 遇到什么问题 → 怎么解决 → 能做什么 → 对我有什么用
+  // 每个案例都体现 Ontology 的具体能力（EntityType / RelationType / 推理 / 知识图谱 / GraphRAG）
+  const industries = [
+    {
+      icon: 'users', title: '人力领域', subtitle: '我是集团 HRD',
+      color: 'cyan',
+      role: '万人集团 人力资源总监 Sarah',
+      task: '既要管招聘、培养、绩效，又要给老板战略决策提供数据支撑',
+      pain: [
+        '业务部门催着要人，简历库 10 万份却挑不出合适的，招聘周期平均 45 天',
+        '员工晋升评估要翻 5 个系统（招聘、绩效、培训、考勤、薪酬），HRBP 一个月才能出报告',
+        '老板问"我们技术中心的人才密度和行业相比如何"，HR 部门 2 周才能拼出数据'
+      ],
+      // ===== Ontology 能力展示（体现真正的本体论价值） =====
+      ontology: {
+        semantic: '定义"员工 = 在组织内具备任职关系且能贡献价值的主体"，全公司 8 个 HR 系统统一此定义，不再有"宽口径员工 vs 窄口径员工"的分歧',
+        model: '员工(EntityType) / 岗位(EntityType) / 技能(EntityType) / 绩效评估(EventType) / 培训记录(EventType)  共 12 类本体',
+        relations: '员工—任职—岗位 · 员工—掌握—技能 · 岗位—要求—技能 · 培训—提升—技能 · 员工—参与—项目 共 8 类关系',
+        rule: '业务规则（DSL 定义，自动执行）：当员工新掌握某项技能 → 自动匹配岗位要求 → 若匹配度 >80% 则推送给 HRBP；若员工绩效连续 2 期 A → 自动加入高潜池；若岗位空缺 ≥30 天 → 自动触发招聘流程',
+        cascade: '级联推理示例：员工"张三"获得高级架构师认证 → 自动推理匹配"高级架构师"岗位（匹配度 92%）→ 自动推理更新其继任候选池 → 自动推理计算所在团队的项目承载能力变化',
+        action: '系统自动执行（无需人工查询）：每日 02:00 自动运行 12 条业务规则，自动完成 50% 的常规人事决策，HRBP 只处理需要判断的 50%'
+      },
+      before: [
+        '简历筛选靠关键词匹配，漏看 70% 隐性技能',
+        '人才盘点：5 个系统人工 JOIN，HRBP 忙 4-6 周',
+        '高管问"我们 AI 人才密度"，HR 2 周拼数据'
+      ],
+      after: [
+        '系统基于本体推理"张三掌握技能 A、B、C，且与目标岗位 P 的技能重合度 85%"',
+        '点开员工卡片，看到完整的关系图谱（任职、绩效、培养、同事、项目）',
+        '问 GraphRAG："研发中心的 P7 继任梯队是否健康？"10 分钟拿到答案'
+      ],
+      actions: [
+        '问 GraphRAG：研发序列的人才密度如何？',
+        '点开员工卡，看完整知识图谱',
+        '系统推理：高潜员工 + 培养路径'
+      ],
+      value: [
+        { label: '招聘周期', value: '-50%' },
+        { label: '盘点效率', value: '+3x' },
+        { label: '推理准确率', value: '90%+' }
+      ],
+      quote: '以前问"谁适合转 P7"，HRBP 要翻 5 个系统拼数据。现在 GraphRAG 一句话告诉我"研发序列有 12 人具备潜力，其中 3 人绩效 + 技能 + 培养轨迹全部匹配，建议重点关注"。'
+    },
+    {
+      icon: 'chart', title: '财务领域', subtitle: '我是集团 CFO',
+      color: 'blue',
+      role: '上市集团 财务总监 李总',
+      task: '管 200+ 子公司账目，每月关账、做预算、出报表、对接审计',
+      pain: [
+        '关账时 50 个财务人员通宵 5 天对账，光是核对"差旅费报销跨期"就要花 2 天',
+        '预算编制靠 Excel 一层层收集，3 个月还没收齐，最后靠"拍脑袋"调整',
+        '审计问"这笔关联交易为什么异常"，财务要查 10 个系统的数据，回复要 1 周'
+      ],
+      ontology: {
+        semantic: '定义"关联交易 = 发生在同一最终控制方下属主体之间的交易"，全集团 200+ 子公司统一此定义，自动识别 3 层股权穿透关系，不再依赖财务人员人工判断',
+        model: '科目(EntityType) / 凭证(EventType) / 交易(EventType) / 主体(EntityType) / 合同(EntityType) / 控制关系(RelationType)  共 15 类本体',
+        relations: '凭证—记录—交易 · 交易—涉及—科目 · 主体—控制—主体 · 合同—对应—交易 · 科目—汇总—报表  共 10 类关系',
+        rule: '业务规则（DSL 定义）：当交易涉及多个主体 → 自动进行控制链路追溯 → 若存在 3 层以内共同控制 → 自动标记"关联交易"并生成披露底稿；月末自动核对"科目-凭证-报表"三方一致性，差异自动定位到具体凭证',
+        cascade: '级联推理示例：录入"子公司 A 付款 100 万给公司 X" → 自动推理 X 的股权结构 → 发现 X 与子公司 A 共同受控于母公司 → 自动将此交易标记为关联交易 → 自动生成披露字段 → 自动影响合并报表',
+        action: '系统自动执行（无需人工查询）：月结时自动运行 18 条核对规则，自动生成 95% 的常规凭证和披露报表，财务人员只处理需要职业判断的 5%'
+      },
+      before: [
+        '月结：50 人通宵 5 天人工对账',
+        '预算：Excel 层层汇总 3 个月',
+        '审计问询：查 10 个系统，回复 1 周'
+      ],
+      after: [
+        '系统基于本体推理"科目 X 的余额异常，原因是关联交易 Z（涉及主体 A、B、C 循环交易）"',
+        '问 GraphRAG："本月有哪些异常科目？"系统自动关联凭证链、合同、对手方',
+        '审计问询一键生成证据链（凭证→科目→报表），10 分钟回复'
+      ],
+      actions: [
+        '问 GraphRAG：本月异常科目及其底层凭证？',
+        'AI 推理关联交易和循环交易',
+        '一键生成审计问询回复（带证据链）'
+      ],
+      value: [
+        { label: '月结时间', value: '-70%' },
+        { label: '预算编制', value: '-50%' },
+        { label: '审计响应', value: '-80%' }
+      ],
+      quote: '审计问"这笔关联交易为什么异常"，以前查 10 个系统要 1 周。现在 GraphRAG 直接给我完整的凭证链和关联主体图谱，10 分钟就能回复，且每条结论都能追溯到底层凭证。'
+    },
+    {
+      icon: 'factory', title: '制造领域', subtitle: '我是工厂生产总监',
+      color: 'purple',
+      role: '汽车零部件工厂 生产总监 王总',
+      task: '管 5 个车间、800 名工人，保交付、保质量、保成本',
+      pain: [
+        '客户突然加单 30%，排产计划要重新做，但物料、设备、人员都不清楚能不能接',
+        '一条冲压线突然停机，损失 50 万/小时，但故障根因要 4-8 小时才能定位',
+        '新人进车间要师傅带 3 个月，每个工种的 SOP 都散落在不同文档里'
+      ],
+      ontology: {
+        semantic: '定义"工艺 = 在特定设备上按特定顺序执行特定动作并产生特定产出的过程模板"，全工厂 5 个车间 800+ 工艺统一此定义，新人通过本体即可理解"做什么、怎么做、用什么设备、需要什么技能"',
+        model: '设备(EntityType) / 工艺(EntityType) / 工位(EntityType) / 物料(EntityType) / 工人(EntityType) / 订单(EntityType) / 故障(EventType)  共 18 类本体',
+        relations: '设备—执行—工艺 · 工艺—消耗—物料 · 工位—需要—技能 · 订单—依赖—工艺 · 故障—引起—停机 · 工人—胜任—工位  共 12 类关系',
+        rule: '业务规则（DSL 定义）：当订单下达 → 自动推理工艺路线 → 自动计算所需设备、物料、工人 → 自动检测冲突（设备能力 / 物料库存 / 工人排班）→ 自动生成 3 套排产方案；设备振动异常 → 自动推理故障类型 → 自动派单',
+        cascade: '级联推理示例：客户加单 30% → 自动推理新增订单对每台设备的负载 → 发现 3 号机床已超载 → 自动推理寻找替代工艺（外协/调班）→ 自动评估替代方案对交期和质量的影响 → 自动推送方案给生产经理决策',
+        action: '系统自动执行（无需人工查询）：每日 03:00 自动运行 24 条排产/预警规则，自动完成 70% 的生产调度决策，工人只接收系统生成的标准化指令'
+      },
+      before: [
+        '排产：计划员凭经验排，约束靠记忆',
+        '故障：坏了再修，停机 6 小时/次',
+        '新人：师傅带 3 个月'
+      ],
+      after: [
+        '系统基于本体推理"3 号机床排产已饱和，加单 30% 会导致工艺冲突 X"，自动给出 3 套方案',
+        '基于"故障-设备-传感器"关系图谱，提前 14 天预测轴承磨损',
+        '新人用对话查询"这个工位需要注意什么"，系统从本体推理出关键步骤和风险点'
+      ],
+      actions: [
+        '问 GraphRAG：能否接加单？瓶颈在哪？',
+        '基于本体推理设备故障和根因',
+        '新人对话式查询 SOP（含风险点）'
+      ],
+      value: [
+        { label: '排产效率', value: '+60%' },
+        { label: '非计划停机', value: '-40%' },
+        { label: '新人上手', value: '1 周' }
+      ],
+      quote: '客户加单 30%，以前要花半天算物料和产能。现在 GraphRAG 一句话告诉我"瓶颈是 3 号机床，未来 3 天有轴承磨损风险，建议外协 30% 并提前检修"，决策从 4 小时缩短到 10 分钟。'
+    },
+    {
+      icon: 'briefcase', title: '产品研发领域', subtitle: '我是互联网产品总监',
+      color: 'green',
+      role: '互联网公司 产品总监 David',
+      task: '管 6 条产品线、50 名产品经理，既要跟需求、做规划、写文档，又要管进度',
+      pain: [
+        '用户反馈每天 500 条，散落在 App Store、客服群、问卷、社交媒体，要 3 个 PM 整理一周',
+        '一个 PRD 写 2 周，改 5 轮；研发说"看不懂需求"，测试说"场景遗漏"',
+        '老板问"我们的核心功能用户使用率"，要拉 3 个数据团队，1 周才有答案'
+      ],
+      ontology: {
+        semantic: '定义"用户反馈 = 来自任何渠道的、表达用户对产品任何功能/体验感受的原始信号"，全公司统一此定义后，App Store 评论、客服记录、问卷数据不再分散为 7 个孤岛，可以被本体自动聚类和关联',
+        model: '用户(EntityType) / 功能(EntityType) / 反馈(EventType) / 工单(EventType) / 任务(EntityType) / 缺陷(EventType) / 版本(EntityType)  共 14 类本体',
+        relations: '反馈—关联—功能 · 反馈—来自—用户 · 工单—解决—缺陷 · 任务—实现—功能 · 版本—包含—功能 · 用户—使用—功能  共 11 类关系',
+        rule: '业务规则（DSL 定义）：当同一功能的负面反馈超过阈值 → 自动创建工单 → 自动分配给对应功能 Owner；当缺陷影响核心功能 → 自动评估其关联的 50+ 任务的影响范围 → 自动同步相关 PM',
+        cascade: '级联推理示例：客服收到"购物车支付失败"反馈 → 自动聚类发现该反馈占同类 35% → 自动关联到功能 F-203 → 自动推理此功能关联的 12 个用户场景、20 个任务、3 个版本 → 自动评估影响范围 → 自动推送优先级建议',
+        action: '系统自动执行（无需人工查询）：每日 04:00 自动运行 16 条业务规则，自动处理 60% 的反馈归类和初步响应，PM 只处理需要决策的复杂问题'
+      },
+      before: [
+        '需求整理：3 个 PM 翻 5 个渠道 1 周',
+        'PRD 写 2 周，改 5 轮',
+        '数据查询：拉 3 个数据团队 1 周'
+      ],
+      after: [
+        '系统基于本体推理"500 条反馈聚类为 8 类痛点，其中购物车流程痛点占比 35%，涉及 12 万用户"',
+        'PRD 自动从本体中提取"功能描述、用户场景、依赖关系、影响范围"',
+        '问 GraphRAG："购物车转化率下降的原因是什么？"系统自动关联功能、用户行为、缺陷'
+      ],
+      actions: [
+        '问 GraphRAG：用户最痛的功能是什么？',
+        'AI 推理需求影响范围和优先级',
+        'AI 辅助 PRD 编写（自动填充功能本体）'
+      ],
+      value: [
+        { label: '需求响应速度', value: '+5x' },
+        { label: 'PRD 编写时间', value: '-75%' },
+        { label: '需求覆盖率', value: '+40%' }
+      ],
+      quote: '以前每周要花 1 周整理用户反馈。现在 GraphRAG 直接告诉我"上周购物车流程痛点占 35%，涉及 12 万用户，已自动关联到功能 F-203 和缺陷 D-1025"，我直接安排 PM 跟进。'
+    },
+    {
+      icon: 'rocket', title: '市场营销领域', subtitle: '我是品牌市场 CMO',
+      color: 'orange',
+      role: '消费品集团 市场营销副总裁 Linda',
+      task: '管品牌、活动、内容、KOL投放，预算紧又要出效果',
+      pain: [
+        '新品上市前要做消费者洞察，传统调研 3 个月，预算 50 万，结果数据还没出来市场已变',
+        '广告投放在 10 个渠道（抖音/小红书/微信/视频号等），每周拉数据要 2 个专员花 3 天',
+        'KOL 投放 100 个，事后分析 ROI 要 2 周，等结果出来已经续约下一波了'
+      ],
+      ontology: {
+        semantic: '定义"客户 = 通过任何渠道被任何内容触达并产生任何互动行为的主体"，全集团 10+ 渠道统一此定义，自动识别同一客户在不同渠道的身份（手机号/微信/抖音 ID 等的关联）',
+        model: '客户(EntityType) / 渠道(EntityType) / 活动(Campaign) / KOL(EntityType) / 内容(EntityType) / 转化(EventType) / 舆情(EventType)  共 16 类本体',
+        relations: '客户—参与—活动 · KOL—发布—内容 · 活动—投放—渠道 · 内容—触达—客户 · 活动—产生—转化 · 舆情—关联—竞品  共 13 类关系',
+        rule: '业务规则（DSL 定义）：当 KOL 的转化率连续 3 天低于阈值 → 自动标记"低效 KOL"并暂停续约；当活动 ROI 低于目标 → 自动推理原因（渠道/内容/KOL/时段）→ 自动推荐调整方案',
+        cascade: '级联推理示例：KOL"美妆博主 A"发布新品测评 → 自动推理触达的 50 万客户 → 自动追踪 24h 内的转化行为 → 自动归因 ROI → 自动对比其他 KOL → 自动调整后续投放预算分配',
+        action: '系统自动执行（无需人工查询）：实时运行 22 条业务规则，自动完成 65% 的渠道/内容/KOL 决策，市场人员只处理需要创意判断的工作'
+      },
+      before: [
+        '消费者洞察：传统调研 3 个月',
+        '多渠道数据：2 个专员花 3 天汇总',
+        'ROI 分析：2 周/次，等结果出来已续约'
+      ],
+      after: [
+        '系统基于本体推理"Z 世代女性讨论关键词 X，竞品 Y 提及率 +200%，我们投放薄弱"',
+        '问 GraphRAG："哪个 KOL 的转化路径最高效？"系统自动关联内容-触达-转化图谱',
+        '实时监控 ROI，自动识别低效 KOL 和高潜 KOL'
+      ],
+      actions: [
+        '问 GraphRAG：目标用户最近在讨论什么？',
+        'AI 推理 KOL ROI 和转化归因',
+        '实时识别低效投放并预警'
+      ],
+      value: [
+        { label: '市场响应速度', value: '+10x' },
+        { label: '投放 ROI', value: '+35%' },
+        { label: '运营人效', value: '+3x' }
+      ],
+      quote: '以前新品上市要看 3 个月前的调研报告。现在 GraphRAG 当天就告诉我"Z 世代女性最近在小红书讨论 XX，提到竞品的频率 +200%，我们触达薄弱"，市场动作真正跟得上趋势了。'
+    }
+  ];
+
+  const current = industries[activeCase];
+  const colorMap = {
+    cyan: 'from-cyan-400 to-blue-500',
+    blue: 'from-blue-400 to-purple-500',
+    purple: 'from-purple-400 to-pink-500',
+    green: 'from-green-400 to-cyan-500',
+    orange: 'from-orange-400 to-red-500'
+  };
+
+  return h('section', { id: 'industry', className: 'section bg-[#060913]' },
+    h('div', { className: 'gradient-orb w-[700px] h-[700px] bg-cyan-500/10 -left-60 top-1/2 -translate-y-1/2' }),
+    h('div', { className: 'gradient-orb w-[500px] h-[500px] bg-purple-500/10 -right-40 bottom-0' }),
+    h('div', { className: 'grid-pattern opacity-30' }),
+    h('div', { className: 'section-content' },
+      h(SectionTitle, { number: '05', title: '行业解决方案', subtitle: '站在用户视角：5 个真实的"我"，在 MetaPlatform 上每天的工作方式' }),
+      h('div', { ref, className: `transition-all duration-700 ${isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}` },
+        h('div', { className: 'flex flex-wrap justify-center gap-3 mb-10' },
+          industries.map((ind, i) => h('button', {
+            key: i,
+            onClick: () => setActiveCase(i),
+            className: `flex items-center gap-2 px-5 py-3 rounded-full border transition-all ${
+              activeCase === i ? `bg-gradient-to-r ${colorMap[ind.color]} border-transparent text-white shadow-lg` : 'bg-slate-900/50 border-slate-700 text-slate-400 hover:border-cyan-400/40 hover:text-white'
+            }`
+          },
+            h(Icon, { name: ind.icon, size: 18 }),
+            h('span', { className: 'font-medium' }, ind.title)
+          ))
+        ),
+        h('div', { className: 'industry-card' },
+          // 顶部：用户身份 + 任务
+          h('div', { className: 'pb-6 mb-6 border-b border-slate-800' },
+            h('div', { className: 'flex items-start gap-6' },
+              h('div', { className: `industry-icon bg-gradient-to-br ${colorMap[current.color]} text-white shrink-0` },
+                h(Icon, { name: current.icon, size: 32 })
+              ),
+              h('div', { className: 'flex-1' },
+                h('div', { className: 'text-xs text-slate-500 uppercase tracking-wider mb-1' }, '👤 我是谁'),
+                h('h3', { className: 'text-2xl font-bold text-white mb-2' }, current.role),
+                h('div', { className: 'text-xs text-slate-500 uppercase tracking-wider mb-1' }, '📋 我的任务'),
+                h('p', { className: 'text-cyan-400 text-lg' }, current.task)
+              )
+            )
+          ),
+          // ===== Ontology 能力展示区（核心：体现真正本体论价值）=====
+          h('div', { className: 'mb-6 glass-card p-6 bg-gradient-to-br from-purple-900/10 via-cyan-900/10 to-blue-900/10 border-purple-400/20' },
+            h('div', { className: 'flex items-center justify-between mb-4' },
+              h('div', { className: 'text-xs text-purple-300 uppercase tracking-wider flex items-center gap-2' },
+                h('span', null, '🧬'),
+                h('span', null, 'MetaPlatform 本体论（Ontology）核心能力')
+              ),
+              h('div', { className: 'text-xs text-slate-500' }, '不仅是查询，更是业务自动化')
+            ),
+            // 语义定义（全宽）
+            h('div', { className: 'mb-4 p-4 rounded-xl bg-gradient-to-r from-purple-900/30 to-pink-900/20 border border-purple-400/30' },
+              h('div', { className: 'flex items-center gap-2 mb-2' },
+                h('div', { className: 'w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white text-xs font-bold' }, '01'),
+                h('span', { className: 'text-sm font-bold text-purple-300' }, '语义定义（Semantic）— 全公司统一一个概念'),
+                h('span', { className: 'text-xs px-2 py-0.5 rounded bg-purple-500/20 text-purple-300' }, '基础')
+              ),
+              h('p', { className: 'text-xs text-slate-200 leading-relaxed' }, current.ontology.semantic)
+            ),
+            // 模型 + 关系（两列）
+            h('div', { className: 'grid md:grid-cols-2 gap-4 mb-4' },
+              h('div', { className: 'p-4 rounded-xl bg-slate-900/50 border border-blue-400/20' },
+                h('div', { className: 'flex items-center gap-2 mb-2' },
+                  h('div', { className: 'w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white text-xs font-bold' }, '02'),
+                  h('span', { className: 'text-sm font-bold text-blue-300' }, '本体建模 (EntityType)')
+                ),
+                h('p', { className: 'text-xs text-slate-300 leading-relaxed' }, current.ontology.model)
+              ),
+              h('div', { className: 'p-4 rounded-xl bg-slate-900/50 border border-cyan-400/20' },
+                h('div', { className: 'flex items-center gap-2 mb-2' },
+                  h('div', { className: 'w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center text-white text-xs font-bold' }, '03'),
+                  h('span', { className: 'text-sm font-bold text-cyan-300' }, '关系建模 (RelationType)')
+                ),
+                h('p', { className: 'text-xs text-slate-300 leading-relaxed' }, current.ontology.relations)
+              )
+            ),
+            // 业务规则（全宽，核心）
+            h('div', { className: 'mb-4 p-4 rounded-xl bg-gradient-to-r from-cyan-900/30 to-blue-900/20 border border-cyan-400/30' },
+              h('div', { className: 'flex items-center gap-2 mb-2' },
+                h('div', { className: 'w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center text-white text-xs font-bold' }, '04'),
+                h('span', { className: 'text-sm font-bold text-cyan-300' }, '业务规则 (Rule Engine) — DSL 定义，自动执行'),
+                h('span', { className: 'text-xs px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300' }, '核心')
+              ),
+              h('p', { className: 'text-xs text-slate-200 leading-relaxed font-mono' }, current.ontology.rule)
+            ),
+            // 级联推理 + 自动执行（两列）
+            h('div', { className: 'grid md:grid-cols-2 gap-4' },
+              h('div', { className: 'p-4 rounded-xl bg-slate-900/50 border border-orange-400/20' },
+                h('div', { className: 'flex items-center gap-2 mb-2' },
+                  h('div', { className: 'w-8 h-8 rounded-lg bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center text-white text-xs font-bold' }, '05'),
+                  h('span', { className: 'text-sm font-bold text-orange-300' }, '级联推理 (Cascade)')
+                ),
+                h('p', { className: 'text-xs text-slate-300 leading-relaxed' }, current.ontology.cascade)
+              ),
+              h('div', { className: 'p-4 rounded-xl bg-gradient-to-br from-green-900/30 to-cyan-900/20 border border-green-400/30' },
+                h('div', { className: 'flex items-center gap-2 mb-2' },
+                  h('div', { className: 'w-8 h-8 rounded-lg bg-gradient-to-br from-green-500 to-cyan-500 flex items-center justify-center text-white text-xs font-bold' }, '06'),
+                  h('span', { className: 'text-sm font-bold text-green-300' }, '自动执行 (Auto-Execute)')
+                ),
+                h('p', { className: 'text-xs text-slate-200 leading-relaxed' }, current.ontology.action)
+              )
+            )
+          ),
+          // 中部：痛点 + Before/After 对比
+          h('div', { className: 'grid lg:grid-cols-2 gap-6 mb-6' },
+            h('div', { className: 'glass-card p-6 bg-red-900/10 border-red-400/20' },
+              h('div', { className: 'text-xs text-red-400 uppercase tracking-wider mb-3 flex items-center gap-2' },
+                h('span', null, '😣'),
+                h('span', null, '我遇到的问题')
+              ),
+              h('ul', { className: 'space-y-2' },
+                current.pain.map((p, i) => h('li', { key: i, className: 'flex gap-2 text-sm text-slate-300' },
+                  h('span', { className: 'text-red-400 shrink-0' }, '•'),
+                  h('span', null, p)
+                ))
+              )
+            ),
+            h('div', { className: 'glass-card p-6 bg-cyan-900/10 border-cyan-400/20' },
+              h('div', { className: 'text-xs text-cyan-400 uppercase tracking-wider mb-3 flex items-center gap-2' },
+                h('span', null, '💡 使用 MetaPlatform 后的变化')
+              ),
+              h('div', { className: 'space-y-3' },
+                current.before.map((b, i) => h('div', { key: i, className: 'flex items-start gap-2 text-sm' },
+                  h('div', { className: 'flex-1 flex gap-2 items-center text-slate-400' },
+                    h('span', { className: 'text-slate-500 line-through shrink-0' }, '以前：'),
+                    h('span', { className: 'text-slate-500 line-through' }, b)
+                  )
+                )),
+                current.after.map((a, i) => h('div', { key: i, className: 'flex items-start gap-2 text-sm' },
+                  h('div', { className: 'flex-1 flex gap-2 items-center text-slate-200' },
+                    h('span', { className: 'text-cyan-400 shrink-0' }, '现在：'),
+                    h('span', null, a)
+                  )
+                ))
+              )
+            )
+          ),
+          // 用户日常操作
+          h('div', { className: 'glass-card p-6 mb-6' },
+            h('div', { className: 'text-xs text-slate-500 uppercase tracking-wider mb-3 flex items-center gap-2' },
+              h('span', null, '⚡'),
+              h('span', null, '我现在每天的工作方式')
+            ),
+            h('div', { className: 'grid md:grid-cols-3 gap-3' },
+              current.actions.map((a, i) => h('div', { key: i, className: 'p-4 rounded-xl bg-slate-900/50 border border-slate-800' },
+                h('div', { className: 'flex items-center gap-3' },
+                  h('div', { className: `w-8 h-8 rounded-lg bg-gradient-to-br ${colorMap[current.color]} flex items-center justify-center text-white font-bold text-sm` }, i + 1),
+                  h('span', { className: 'text-sm text-slate-200' }, a)
+                )
+              ))
+            )
+          ),
+          // 价值 + 引言
+          h('div', { className: 'grid lg:grid-cols-2 gap-6' },
+            h('div', null,
+              h('div', { className: 'text-xs text-slate-500 uppercase tracking-wider mb-4' }, '📈 对我的价值'),
+              h('div', { className: 'space-y-3' },
+                current.value.map((v, i) => h('div', { key: i, className: 'p-4 rounded-2xl bg-slate-900/50 border border-slate-800 flex items-center justify-between' },
+                  h('span', { className: 'text-sm text-slate-400' }, v.label),
+                  h('span', { className: `text-3xl font-display font-bold bg-gradient-to-r ${colorMap[current.color]} bg-clip-text text-transparent` }, v.value)
+                ))
+              )
+            ),
+            h('div', { className: 'glass-card p-6 relative' },
+              h('div', { className: `absolute top-0 left-0 w-1 h-full bg-gradient-to-b ${colorMap[current.color]}` }),
+              h('div', { className: 'text-xs text-slate-500 uppercase tracking-wider mb-3' }, '💬 用户原话'),
+              h('blockquote', { className: 'text-slate-200 italic leading-relaxed text-sm' },
+                '「', current.quote, '」'
+              )
+            )
+          )
+        ),
+        // 底部切换卡片
+        h('div', { className: 'grid grid-cols-5 gap-4 mt-8' },
+          industries.map((ind, i) => h('div', {
+            key: i,
+            onClick: () => setActiveCase(i),
+            className: `glass-card p-4 text-center cursor-pointer transition-all ${activeCase === i ? 'border-cyan-400/50 bg-cyan-400/5' : ''}`
+          },
+            h('div', { className: `w-10 h-10 mx-auto rounded-lg bg-gradient-to-br ${colorMap[ind.color]} flex items-center justify-center text-white mb-3` },
+              h(Icon, { name: ind.icon, size: 20 })
+            ),
+            h('div', { className: 'text-sm font-medium text-slate-200' }, ind.title)
+          ))
+        )
+      )
+    )
+  );
+};
+
+// Business Section
+const BusinessSection = () => {
+  const [ref, isInView] = useInView();
+
+  const revenueMix = [
+    { name: '私有化部署许可', desc: '大型企业项目制，300-2000 万/项目', percent: '50%' },
+    { name: 'SaaS 订阅', desc: '中小型企业年费 ¥9,800-79,800', percent: '25%' },
+    { name: 'AI 增值模块', desc: 'GraphRAG/数字员工/决策引擎单独计费', percent: '15%' },
+    { name: '实施与运维服务', desc: '行业模板、定制开发、年度运维', percent: '10%' }
+  ];
+
+  const plans = [
+    { name: '基础版', price: '¥9,800/年', users: '99 人', features: '低代码 + 基础流程 + 基础 BI' },
+    { name: '专业版', price: '¥19,800/年', users: '199 人', features: '+ OCR/电子签章/高级 BI/数据源' },
+    { name: '旗舰版', price: '¥39,800/年', users: '499 人', features: '+ 全部能力 + GraphRAG/KG 基础' },
+    { name: 'AI 增值版', price: '¥79,800/年', users: '不限', features: '+ 数字员工/决策引擎/VibeCoding' }
+  ];
+
+  const forecast = [
+    { year: '2026', revenue: '200-600 万', note: '首个 POC + 天使轮融资' },
+    { year: '2027', revenue: '800-2000 万', note: '3 家标杆 + 信创认证' },
+    { year: '2028', revenue: '2500-6000 万', note: 'SaaS 启动 + 应用市场' },
+    { year: '2029', revenue: '6000 万-1.5 亿', note: '规模化扩张 + B 轮' },
+    { year: '2030', revenue: '1.0-2.8 亿', note: '行业深耕 + 市场领先' }
+  ];
+
+  return h('section', { id: 'business', className: 'section bg-[#080c14]' },
+    h('div', { className: 'gradient-orb w-[500px] h-[500px] bg-blue-600/20 left-0 top-1/3' }),
+    h('div', { className: 'grid-pattern opacity-50' }),
+    h('div', { className: 'section-content' },
+      h(SectionTitle, { number: '06', title: '商业模式', subtitle: '双轨定价 + AI 能力溢价，渐进式市场渗透' }),
+      h('div', { ref, className: `transition-all duration-700 ${isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}` },
+        h('div', { className: 'grid lg:grid-cols-2 gap-8 mb-8' },
+          h('div', { className: 'glass-card p-8' },
+            h('h3', { className: 'font-display text-2xl font-bold mb-6 text-white' }, '收入模式'),
+            h('div', { className: 'space-y-4' },
+              revenueMix.map((item, i) => h('div', { key: i, className: 'flex items-center gap-4 p-4 rounded-lg bg-slate-900/50 border border-slate-800' },
+                h('div', { className: 'w-16 text-right' }, h('span', { className: 'text-cyan-400 font-bold font-display' }, item.percent)),
+                h('div', { className: 'flex-1' },
+                  h('div', { className: 'font-bold text-white' }, item.name),
+                  h('div', { className: 'text-sm text-slate-400' }, item.desc)
+                )
+              ))
+            )
+          ),
+          h('div', { className: 'glass-card p-8' },
+            h('h3', { className: 'font-display text-2xl font-bold mb-6 text-white' }, 'SaaS 分级定价'),
+            h('div', { className: 'space-y-3' },
+              plans.map((p, i) => h('div', { key: i, className: 'p-4 rounded-xl bg-slate-900/50 border border-slate-800 hover:border-cyan-400/40 transition-colors' },
+                h('div', { className: 'flex justify-between items-center mb-2' },
+                  h('span', { className: 'font-bold text-white' }, p.name),
+                  h('span', { className: 'text-cyan-400 font-bold font-display' }, p.price)
+                ),
+                h('div', { className: 'text-sm text-slate-400 mb-1' }, p.features),
+                h('div', { className: 'text-xs text-slate-500' }, p.users)
+              ))
+            )
+          )
+        ),
+        h('div', { className: 'glass-card p-8' },
+          h('h3', { className: 'font-display text-2xl font-bold mb-6 text-white' }, '5 年营收预测'),
+          h('div', { className: 'grid md:grid-cols-5 gap-4' },
+            forecast.map((item, i) => h('div', { key: i, className: 'text-center p-5 rounded-xl bg-slate-900/50 border border-slate-800' },
+              h('div', { className: 'text-slate-400 text-sm mb-2' }, item.year),
+              h('div', { className: 'text-xl font-bold text-white mb-2 font-display' }, item.revenue),
+              h('div', { className: 'text-xs text-slate-500' }, item.note)
+            ))
+          )
+        )
+      )
+    )
+  );
+};
+
+// Roadmap Section
+const RoadmapSection = () => {
+  const [ref, isInView] = useInView();
+  const milestones = [
+    { time: '2026 Q3', title: 'v1.0 生产就绪', effect: '12 模块+64 API+本体引擎 v0.6 上线' },
+    { time: '2026 Q4', title: '首个 POC', effect: '1 家金融客户完成风控场景验证' },
+    { time: '2027 Q1', title: '首个付费客户', effect: '签约 A 级客户，合同 300 万+' },
+    { time: '2027 Q2', title: '工程化补齐', effect: '达到行业竞品 P0 能力对标' },
+    { time: '2027 Q4', title: '信创 + SaaS', effect: '等保/CMMI/ISO 认证 + 计费上线' },
+    { time: '2028', title: '100% 对标', effect: '95 项功能补齐，综合完成度 100%' },
+    { time: '2030', title: '年营收破亿', effect: '累计客户 20+，行业领先地位' }
+  ];
+
+  return h('section', { id: 'roadmap', className: 'section' },
+    h('div', { className: 'gradient-orb w-[500px] h-[500px] bg-cyan-500/15 -right-40 top-1/3' }),
+    h('div', { className: 'grid-pattern' }),
+    h('div', { className: 'section-content' },
+      h(SectionTitle, { number: '07', title: '发展规划', subtitle: '从生产就绪到行业领先，清晰的里程碑路径' }),
+      h('div', { ref, className: `transition-all duration-700 ${isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}` },
+        h('div', { className: 'max-w-3xl mx-auto pl-8 relative' },
+          h('div', { className: 'timeline-line' }),
+          milestones.map((m, i) => h('div', { key: i, className: 'relative mb-12 last:mb-0' },
+            h('div', { className: 'timeline-dot', style: { top: '0' } }),
+            h('div', { className: 'glass-card p-6 ml-8' },
+              h('div', { className: 'font-display text-cyan-400 font-bold mb-1' }, m.time),
+              h('h4', { className: 'text-xl font-bold text-white mb-2' }, m.title),
+              h('p', { className: 'text-slate-400 text-sm' }, m.effect)
+            )
+          ))
+        )
+      )
+    )
+  );
+};
+
+// Funding Section
+const FundingSection = () => {
+  const [ref, isInView] = useInView();
+  const rounds = [
+    { round: '天使轮', time: '2026 Q4', amount: '500-1000 万', valuation: '3000-5000 万', share: '10%-20%', use: '金融模板 + POC + 团队' },
+    { round: 'Pre-A 轮', time: '2027 Q3', amount: '2000-3000 万', valuation: '1-1.5 亿', share: '15%-25%', use: '标杆客户 + 信创 + 销售' },
+    { round: 'A 轮', time: '2028 Q3', amount: '5000 万-1 亿', valuation: '3-5 亿', share: '15%-25%', use: '模板矩阵 + 应用市场 + SaaS' },
+    { round: 'B 轮', time: '2029', amount: '2-3 亿', valuation: '10-15 亿', share: '15%-25%', use: '规模化扩张 + 国际化' }
+  ];
+
+  return h('section', { id: 'funding', className: 'section bg-[#080c14]' },
+    h('div', { className: 'gradient-orb w-[500px] h-[500px] bg-purple-600/20 left-1/4 bottom-0' }),
+    h('div', { className: 'grid-pattern opacity-50' }),
+    h('div', { className: 'section-content' },
+      h(SectionTitle, { number: '08', title: '融资规划', subtitle: '4 轮融资路径，创始人团队 B 轮后保留 40%-50% 控股权' }),
+      h('div', { ref, className: `transition-all duration-700 ${isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}` },
+        h('div', { className: 'glass-card p-8 mb-8 overflow-x-auto' },
+          h('table', { className: 'custom-table min-w-[800px]' },
+            h('thead', null,
+              h('tr', null,
+                ['轮次', '时间', '融资金额', '估值', '股份占比', '用途'].map((t, i) => h('th', { key: i, className: i === 0 ? 'text-cyan-400' : '' }, t))
+              )
+            ),
+            h('tbody', null,
+              rounds.map((r, i) => h('tr', { key: i },
+                h('td', { className: 'font-bold text-white' }, r.round),
+                h('td', null, r.time),
+                h('td', { className: 'text-cyan-300 font-semibold' }, r.amount),
+                h('td', null, r.valuation),
+                h('td', null, h('span', { className: 'badge bg-cyan-400/10 text-cyan-400 border border-cyan-400/30' }, r.share)),
+                h('td', null, r.use)
+              ))
+            )
+          )
+        ),
+        h('div', { className: 'grid md:grid-cols-2 gap-8' },
+          h('div', { className: 'glass-card p-8' },
+            h('h3', { className: 'font-display text-xl font-bold mb-4 text-white' }, '估值逻辑'),
+            h('div', { className: 'space-y-3' },
+              [
+                { round: '天使轮', logic: '团队 + 技术 + 市场', metric: '核心平台 v1.0、团队背景' },
+                { round: 'Pre-A 轮', logic: '产品 + 客户验证', metric: '首个付费客户、3 家标杆' },
+                { round: 'A 轮', logic: '营收 + 增长 + 模式', metric: '年营收破千万、SaaS 启动' },
+                { round: 'B 轮', logic: '规模化 + 市场地位', metric: '年营收破亿、可复制性' }
+              ].map((item, i) => h('div', { key: i, className: 'p-3 rounded-lg bg-slate-900/50 border border-slate-800' },
+                h('div', { className: 'flex justify-between mb-1' },
+                  h('span', { className: 'font-bold text-white' }, item.round),
+                  h('span', { className: 'text-cyan-400 text-sm' }, item.logic)
+                ),
+                h('div', { className: 'text-sm text-slate-500' }, item.metric)
+              ))
+            )
+          ),
+          h('div', { className: 'glass-card p-8' },
+            h('h3', { className: 'font-display text-xl font-bold mb-4 text-white' }, '行业融资参考'),
+            h('div', { className: 'space-y-4' },
+              h('div', { className: 'p-4 rounded-xl bg-gradient-to-r from-cyan-400/10 to-blue-500/10 border border-cyan-400/20' },
+                h('div', { className: 'font-bold text-white' }, '达观数据'),
+                h('div', { className: 'text-cyan-400 font-display text-2xl font-bold' }, 'C 轮 5.8 亿元'),
+                h('div', { className: 'text-sm text-slate-400' }, '文本智能 + 知识图谱')
+              ),
+              h('div', { className: 'p-4 rounded-xl bg-gradient-to-r from-blue-400/10 to-purple-500/10 border border-blue-400/20' },
+                h('div', { className: 'font-bold text-white' }, '明略科技'),
+                h('div', { className: 'text-blue-400 font-display text-2xl font-bold' }, '累计 6.27 亿美元'),
+                h('div', { className: 'text-sm text-slate-400' }, '数据智能应用软件商 · 2025 港股上市')
+              )
+            )
+          )
+        )
+      )
+    )
+  );
+};
+
+// Closing Section
+const ClosingSection = () => {
+  return h('section', { id: 'closing', className: 'section relative overflow-hidden' },
+    h('div', { className: 'gradient-orb w-[800px] h-[800px] bg-cyan-500/20 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2' }),
+    h('div', { className: 'grid-pattern' }),
+    h('div', { className: 'section-content text-center relative z-10' },
+      h('div', { className: 'mb-8' },
+        h('div', { className: 'inline-flex items-center gap-3 px-6 py-3 rounded-full border border-cyan-400/30 bg-cyan-400/5 mb-8' },
+          h('span', { className: 'text-2xl' }, '✨'),
+          h('span', { className: 'text-cyan-300 tracking-wider' }, '开启企业智能新纪元')
+        )
+      ),
+      h('h2', { className: 'font-display text-5xl md:text-7xl font-bold mb-8' },
+        h('span', { className: 'gradient-text' }, 'MetaPlatform')
+      ),
+      h('p', { className: 'text-xl md:text-2xl text-slate-400 max-w-3xl mx-auto mb-12 leading-relaxed' },
+        '以本体论为基石，以 AI 为引擎，构建下一代企业级智能基础设施。',
+        h('br'),
+        '我们期待与您共同开启这一旅程。'
+      ),
+      h('div', { className: 'flex flex-wrap justify-center gap-6' },
+        h('div', { className: 'glass-card px-8 py-5 text-left' },
+          h('div', { className: 'text-sm text-slate-500 mb-1' }, '联系邮箱'),
+          h('div', { className: 'text-white font-medium' }, 'contact@metaplatform.ai')
+        ),
+        h('div', { className: 'glass-card px-8 py-5 text-left' },
+          h('div', { className: 'text-sm text-slate-500 mb-1' }, '项目地址'),
+          h('div', { className: 'text-white font-medium' }, 'github.com/MetaPlatform')
+        )
+      )
+    )
+  );
+};
+
+// Navigation
+const Navigation = ({ activeSection }) => {
+  return h('nav', { className: 'fixed top-0 left-0 right-0 z-50 px-6 py-4 bg-gradient-to-b from-[#05070a]/90 to-transparent backdrop-blur-sm' },
+    h('div', { className: 'max-w-7xl mx-auto flex items-center justify-between' },
+      h('div', { className: 'flex items-center gap-3' },
+        h('div', { className: 'w-10 h-10 rounded-lg bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center' },
+          h('span', { className: 'font-display font-bold text-white text-lg' }, 'M')
+        ),
+        h('span', { className: 'font-display font-bold text-xl tracking-tight' }, 'MetaPlatform')
+      ),
+      h('div', { className: 'hidden md:flex items-center gap-8' },
+        sections.slice(1, -1).map((s, i) => h('button', {
+          key: i,
+          onClick: () => document.getElementById(s.id).scrollIntoView({ behavior: 'smooth' }),
+          className: `text-sm transition-colors ${activeSection === s.id ? 'text-cyan-400' : 'text-slate-400 hover:text-white'}`
+        }, s.title))
+      )
+    )
+  );
+};
+
+// Main App
+const App = () => {
+  const [activeSection, setActiveSection] = useState('cover');
+  const [progress, setProgress] = useState(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const totalHeight = document.documentElement.scrollHeight - window.innerHeight;
+      const currentProgress = (window.scrollY / totalHeight) * 100;
+      setProgress(currentProgress);
+
+      sections.forEach(section => {
+        const element = document.getElementById(section.id);
+        if (element) {
+          const rect = element.getBoundingClientRect();
+          if (rect.top <= window.innerHeight / 2 && rect.bottom >= window.innerHeight / 2) {
+            setActiveSection(section.id);
+          }
+        }
+      });
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  return h('div', { className: 'relative' },
+    h('div', { className: 'progress-bar', style: { width: `${progress}%` } }),
+    h('div', { className: 'scanline' }),
+    h(Navigation, { activeSection }),
+    h(CoverSection),
+    h(OverviewSection),
+    h(MarketSection),
+    h(CompetitionSection),
+    h(ProductSection),
+    h(IndustrySection),
+    h(BusinessSection),
+    h(RoadmapSection),
+    h(FundingSection),
+    h(ClosingSection),
+    h('footer', { className: 'py-8 text-center text-slate-600 text-sm border-t border-slate-800/50' },
+      '© 2026 MetaPlatform. 商业计划书 · 演示版'
+    )
+  );
+};
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(h(App));
+
+    </script>
+</body>
+</html>
