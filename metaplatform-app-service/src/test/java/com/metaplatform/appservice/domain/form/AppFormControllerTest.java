@@ -5,6 +5,7 @@ import com.metaplatform.appservice.domain.app.AppEntity;
 import com.metaplatform.appservice.domain.app.AppRepository;
 import com.metaplatform.appservice.domain.object.AppObjectEntity;
 import com.metaplatform.appservice.domain.object.AppObjectRepository;
+import com.metaplatform.appservice.security.TenantContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,9 +34,12 @@ class AppFormControllerTest {
 
     @BeforeEach
     void setup() {
+        TenantContext.set("test-tenant");
+        String randApp = "travel_" + java.util.UUID.randomUUID().toString().substring(0, 8);
+        String randObj = "reimbursement_" + java.util.UUID.randomUUID().toString().substring(0, 8);
         AppEntity app = new AppEntity();
         app.setTenantId("test-tenant");
-        app.setCode("travel");
+        app.setCode(randApp);
         app.setName("差旅");
         app.setCreatedBy("dev-user");
         app = appRepository.save(app);
@@ -43,7 +47,7 @@ class AppFormControllerTest {
 
         AppObjectEntity object = new AppObjectEntity();
         object.setAppId(appId);
-        object.setCode("reimbursement");
+        object.setCode(randObj);
         object.setName("报销单");
         object.setSchemaJson("[]");
         object.setDataTableName("data_demo_dummy");
@@ -55,6 +59,7 @@ class AppFormControllerTest {
 
     @AfterEach
     void tearDown() {
+        TenantContext.clear();
         appRepository.deleteAll();
         objectRepository.deleteAll();
         formRepository.deleteAll();

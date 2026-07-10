@@ -24,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class AppControllerTest {
 
     @LocalServerPort int port;
-    @Autowired AppRepository repository;
+    @Autowired AppRepository appRepository;
 
     @BeforeEach
     void setup() {
@@ -34,7 +34,7 @@ class AppControllerTest {
     @AfterEach
     void tearDown() {
         TenantContext.clear();
-        repository.deleteAll();
+        appRepository.deleteAll();
     }
 
     @Test
@@ -132,16 +132,17 @@ class AppControllerTest {
     @Test
     void shouldRejectDuplicateCode() {
         RestClient client = RestClient.create("http://localhost:" + port);
+        String code = "demo_" + java.util.UUID.randomUUID().toString().substring(0, 8);
 
         client.post().uri("/api/apps")
             .header("X-Tenant-Id", "test-tenant")
-            .body(Map.of("code", "demo", "name", "Demo 1"))
+            .body(Map.of("code", code, "name", "Demo 1"))
             .retrieve().body(ApiResponse.class);
 
         try {
             client.post().uri("/api/apps")
                 .header("X-Tenant-Id", "test-tenant")
-                .body(Map.of("code", "demo", "name", "Demo 2"))
+                .body(Map.of("code", code, "name", "Demo 2"))
                 .retrieve().toBodilessEntity();
             fail("应该 409");
         } catch (Exception e) {

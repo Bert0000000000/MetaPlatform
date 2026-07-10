@@ -3,6 +3,7 @@ package com.metaplatform.appservice.domain.object;
 import com.metaplatform.appservice.api.error.ApiResponse;
 import com.metaplatform.appservice.domain.app.AppRepository;
 import com.metaplatform.appservice.domain.app.AppEntity;
+import com.metaplatform.appservice.security.TenantContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -26,12 +27,16 @@ class AppObjectControllerTest {
     @Autowired AppObjectRepository objectRepository;
 
     Long appId;
+    String code;
 
     @BeforeEach
     void setup() {
+        TenantContext.set("test-tenant");
+        // 用唯一 code 避免测试之间冲突
+        code = "travel_" + java.util.UUID.randomUUID().toString().substring(0, 8);
         AppEntity app = new AppEntity();
         app.setTenantId("test-tenant");
-        app.setCode("travel");
+        app.setCode(code);
         app.setName("差旅");
         app.setCreatedBy("dev-user");
         app.setIcon("airplane");
@@ -41,6 +46,7 @@ class AppObjectControllerTest {
 
     @AfterEach
     void tearDown() {
+        TenantContext.clear();
         appRepository.deleteAll();
         objectRepository.deleteAll();
     }
