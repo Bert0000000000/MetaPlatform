@@ -11,6 +11,7 @@ import { ontologyApi, type OntologyObject } from "@/lib/api";
 import {
   Plus, Edit, Trash2, Link2,
   Loader2, AlertCircle, Inbox, Box, Database, Save, Hash, Type, Globe, Bot, Wand2,
+  ListTree,
 } from "lucide-react";
 import {
   Dialog,
@@ -22,6 +23,7 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 import { RelationshipDiagram } from "@/components/ontology/RelationshipDiagram";
+import { ObjectFieldPanel } from "./ObjectFieldPanel";
 
 export default function DataModeling() {
   const { appId } = useParams();
@@ -55,6 +57,10 @@ export default function DataModeling() {
   // Virtual Model dialog
   const [showVirtualModel, setShowVirtualModel] = useState(false);
   const [virtualModelTarget, setVirtualModelTarget] = useState<string | null>(null);
+
+  // Field panel
+  const [fieldPanelOpen, setFieldPanelOpen] = useState(false);
+  const [fieldPanelObject, setFieldPanelObject] = useState<OntologyObject | null>(null);
 
   // Fetch objects
   const fetchObjects = useCallback(() => {
@@ -107,6 +113,7 @@ export default function DataModeling() {
         app_id: appId,
         name: newObjectName.trim(),
         label: newObjectLabel.trim(),
+        icon: "Box",
         description: newObjectDescription.trim() || undefined,
       });
       setNewObjectName("");
@@ -318,20 +325,30 @@ export default function DataModeling() {
                         </TableCell>
                         <TableCell className="text-right">
                           <Button
-                            variant="ghost" size="icon" className="size-8"
-                            title="让 AI 帮我加字段"
-                            onClick={() => openAiAddFields(obj)}
-                          >
-                            <Wand2 className="size-4 text-violet-500" />
-                          </Button>
-                          <Button
-                            variant="ghost" size="icon" className="size-8"
-                            title="虚拟模型"
-                            onClick={() => { setVirtualModelTarget(obj.name); setShowVirtualModel(true); }}
-                          >
-                            <Globe className="size-4 text-cyan-500" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="size-8" title="编辑对象" onClick={() => handleEditClick(obj)}>
+                          variant="ghost" size="icon" className="size-8"
+                          title="字段"
+                          onClick={() => {
+                            setFieldPanelObject(obj);
+                            setFieldPanelOpen(true);
+                          }}
+                        >
+                          <ListTree className="size-4 text-emerald-500" />
+                        </Button>
+                        <Button
+                          variant="ghost" size="icon" className="size-8"
+                          title="让 AI 帮我加字段"
+                          onClick={() => openAiAddFields(obj)}
+                        >
+                          <Wand2 className="size-4 text-violet-500" />
+                        </Button>
+                        <Button
+                          variant="ghost" size="icon" className="size-8"
+                          title="虚拟模型"
+                          onClick={() => { setVirtualModelTarget(obj.name); setShowVirtualModel(true); }}
+                        >
+                          <Globe className="size-4 text-cyan-500" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="size-8" title="编辑对象" onClick={() => handleEditClick(obj)}>
                             <Edit className="size-4" />
                           </Button>
                           <Button
@@ -519,6 +536,20 @@ export default function DataModeling() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {fieldPanelObject && (
+        <ObjectFieldPanel
+          objectId={fieldPanelObject.id}
+          objectName={fieldPanelObject.label || fieldPanelObject.name}
+          open={fieldPanelOpen}
+          onOpenChange={(open) => {
+            setFieldPanelOpen(open);
+            if (!open) {
+              fetchObjects();
+            }
+          }}
+        />
+      )}
     </div>
   );
 }

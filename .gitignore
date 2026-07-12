@@ -35,5 +35,11 @@ Thumbs.db
 *.log
 logs/
 
+# Local Node runtime (portable binaries)
+tools/node-v22/
+
+# Verification screenshots
+verify-*.png
+
 # Maven wrapper
 !.mvn/wrapper/maven-wrapper.jar
