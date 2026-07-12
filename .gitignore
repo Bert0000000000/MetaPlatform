@@ -38,8 +38,12 @@ logs/
 # Local Node runtime (portable binaries)
 tools/node-v22/
 
-# Verification screenshots
+# Verification screenshots / logs
 verify-*.png
+docs/artifacts/verification/screenshots/
+docs/artifacts/verification/logs/
+*.err
+*.out
 
 # Maven wrapper
 !.mvn/wrapper/maven-wrapper.jar
