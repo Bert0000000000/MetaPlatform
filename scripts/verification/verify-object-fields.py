@@ -4,10 +4,11 @@ import time
 from playwright.sync_api import sync_playwright
 
 BASE = "http://localhost:3001"
+APP_SERVICE_BASE = "http://localhost:8092/api"
 
 
 def main():
-    # 登录
+    # 登录（复用 Node 平台的认证）
     r = requests.post(
         f"{BASE}/api/auth/login",
         json={"email": "admin@metaplatform.com", "password": "admin123"},
@@ -15,27 +16,30 @@ def main():
     ).json()
     token = r["data"]["token"]
     user = r["data"]["user"]
-
     headers = {"Authorization": f"Bearer {token}"}
+
+    # 从 Node 平台取第一个应用（slug）
     apps = requests.get(f"{BASE}/api/apps", headers=headers, timeout=5).json()["data"]
     app_id = apps[0]["id"]
+    app_slug = apps[0].get("app_slug") or apps[0].get("slug") or app_id
 
-    # 通过 API 创建对象（避免 UI 表单对 icon 的依赖）
-    obj_name = f"PlanObject_{int(time.time())}"
+    # 通过 Java app-service API 创建对象（避免 UI 表单依赖）
+    obj_name = f"plan_object_{int(time.time())}"
     obj_resp = requests.post(
-        f"{BASE}/api/ontology/objects",
-        headers=headers,
+        f"{APP_SERVICE_BASE}/apps/{app_slug}/objects",
+        headers={**headers, "Content-Type": "application/json"},
         json={
-            "app_id": app_id,
-            "name": obj_name,
-            "label": "计划对象",
-            "icon": "Box",
+            "code": obj_name,
+            "name": "PlanObject",
             "description": "测试对象字段管理",
         },
         timeout=5,
     ).json()
+    print("obj_resp:", obj_resp)
+    if not obj_resp.get("success"):
+        raise RuntimeError(f"创建对象失败: {obj_resp}")
     object_id = obj_resp["data"]["id"]
-    print(f"created object: {object_id} / {obj_name}")
+    print(f"created object: {object_id} / {obj_name} under app {app_slug}")
 
     with sync_playwright() as p:
         browser = p.chromium.launch(channel="msedge", headless=True)
@@ -45,7 +49,7 @@ def main():
             f"() => {{ localStorage.setItem('metaplatform_token', '{token}'); "
             f"localStorage.setItem('metaplatform_user', '{json.dumps(user)}'); }}"
         )
-        page.goto(f"http://localhost:5173/apps/{app_id}/datamodeling")
+        page.goto(f"http://localhost:5173/apps/{app_slug}/datamodeling")
         page.wait_for_timeout(1500)
 
         # 打开刚创建对象的字段面板

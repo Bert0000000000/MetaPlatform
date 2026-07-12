@@ -15,7 +15,11 @@ import java.util.regex.Pattern;
 @Service
 public class AppService {
 
-    private static final Pattern CODE_PATTERN = Pattern.compile("^[a-z][a-z0-9_]{1,63}$");
+    /**
+     * 应用 code 规则：2-64 位，小写字母/数字/下划线/连字符，首字符必须是字母。
+     * 允许连字符是为了兼容旧版 Node 后端生成的 slug（如 app-crm），过渡期后可视情况收紧。
+     */
+    private static final Pattern CODE_PATTERN = Pattern.compile("^[a-z][a-z0-9_-]{1,63}$");
     private final AppRepository repository;
 
     public AppService(AppRepository repository) {
@@ -31,6 +35,48 @@ public class AppService {
     public AppEntity get(Long id) {
         return repository.findByIdAndTenantId(id, TenantContext.required())
                 .orElseThrow(() -> ApiException.notFound("应用 " + id + " 不存在或无权访问"));
+    }
+
+    @Transactional(readOnly = true)
+    public AppEntity getByCode(String code) {
+        return repository.findByTenantIdAndCode(TenantContext.required(), code)
+                .orElseThrow(() -> ApiException.notFound("应用 " + code + " 不存在或无权访问"));
+    }
+
+    /**
+     * 按数字 ID 或 code（字符串 slug）解析应用。用于前端 URL 中的 appId 兼容旧版 Node ID。
+     */
+    @Transactional(readOnly = true)
+    public AppEntity resolveByIdOrCode(String ref) {
+        if (ref == null || ref.isBlank()) {
+            throw ApiException.badRequest("应用标识不能为空");
+        }
+        try {
+            return get(Long.valueOf(ref));
+        } catch (NumberFormatException ignored) {
+            return getByCode(ref);
+        }
+    }
+
+    /**
+     * 按 code 获取应用；不存在时自动创建一个占位应用（迁移过渡期兜底）。
+     */
+    @Transactional
+    public AppEntity ensureByCode(String code) {
+        if (code == null || code.isBlank()) {
+            throw ApiException.badRequest("应用 code 不能为空");
+        }
+        return repository.findByTenantIdAndCode(TenantContext.required(), code)
+                .orElseGet(() -> {
+                    AppEntity app = new AppEntity();
+                    app.setTenantId(TenantContext.required());
+                    app.setCode(code);
+                    app.setName(code);
+                    app.setStatus("active");
+                    app.setVersion(1);
+                    app.setCreatedBy("migration");
+                    return repository.save(app);
+                });
     }
 
     @Transactional

@@ -27,35 +27,37 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ontologyApi, OntologyProperty } from "@/lib/api";
+import { appServiceApi, AppServiceObjectField } from "@/lib/api";
 import { Loader2, Trash2, Edit3, Save, X } from "lucide-react";
 import { FIELD_TYPES, DEFAULT_FIELD_FORM, FieldFormData } from "./object-field-config";
 
 interface ObjectFieldPanelProps {
-  objectId: string;
+  appId: string | number;
+  objectId: number;
   objectName: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
 export function ObjectFieldPanel({
+  appId,
   objectId,
   objectName,
   open,
   onOpenChange,
 }: ObjectFieldPanelProps) {
-  const [properties, setProperties] = useState<OntologyProperty[]>([]);
+  const [properties, setProperties] = useState<AppServiceObjectField[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState<FieldFormData>(DEFAULT_FIELD_FORM);
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingCode, setEditingCode] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const load = async () => {
     if (!objectId) return;
     setLoading(true);
     try {
-      const data = await ontologyApi.listProperties(objectId);
+      const data = await appServiceApi.listFields(appId, objectId);
       setProperties(Array.isArray(data) ? data : []);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "加载字段失败");
@@ -68,22 +70,22 @@ export function ObjectFieldPanel({
     if (open) {
       load();
       setForm(DEFAULT_FIELD_FORM);
-      setEditingId(null);
+      setEditingCode(null);
       setError(null);
     }
-  }, [open, objectId]);
+  }, [open, objectId, appId]);
 
   const validate = (data: FieldFormData) => {
     if (!data.name.trim() || !data.label.trim()) {
       return "字段名和显示名均为必填";
     }
-    if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(data.name.trim())) {
-      return "字段名只能包含英文、数字和下划线，且不能以数字开头";
+    if (!/^[a-z][a-z0-9_]*$/.test(data.name.trim())) {
+      return "字段名只能包含小写英文、数字和下划线，且不能以数字开头";
     }
     const exists = properties.some(
       (p) =>
-        p.name === data.name.trim() &&
-        (!editingId || p.id !== editingId)
+        p.code === data.name.trim() &&
+        (!editingCode || p.code !== editingCode)
     );
     if (exists) {
       return "字段名在当前对象下已存在";
@@ -92,14 +94,15 @@ export function ObjectFieldPanel({
   };
 
   const handleSave = async () => {
-    const data = {
-      ...form,
-      name: form.name.trim(),
-      label: form.label.trim(),
+    const data: AppServiceObjectField = {
+      code: form.name.trim(),
+      name: form.label.trim(),
+      type: form.type,
+      required: form.required,
       description: form.description.trim() || undefined,
-      default_value: form.default_value.trim() || undefined,
+      defaultValue: form.default_value.trim() || undefined,
     };
-    const msg = validate(data);
+    const msg = validate(form);
     if (msg) {
       setError(msg);
       return;
@@ -107,14 +110,14 @@ export function ObjectFieldPanel({
     setSaving(true);
     setError(null);
     try {
-      if (editingId) {
-        await ontologyApi.updateProperty(editingId, data);
+      if (editingCode) {
+        await appServiceApi.updateField(appId, objectId, editingCode, data);
       } else {
-        await ontologyApi.createProperty(objectId, data);
+        await appServiceApi.addField(appId, objectId, data);
       }
       await load();
       setForm(DEFAULT_FIELD_FORM);
-      setEditingId(null);
+      setEditingCode(null);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "保存失败");
     } finally {
@@ -122,27 +125,27 @@ export function ObjectFieldPanel({
     }
   };
 
-  const handleEdit = (p: OntologyProperty) => {
-    setEditingId(p.id);
+  const handleEdit = (p: AppServiceObjectField) => {
+    setEditingCode(p.code);
     setForm({
-      name: p.name,
-      label: p.label,
+      name: p.code,
+      label: p.name,
       type: (p.type as FieldFormData["type"]) || "text",
       required: !!p.required,
-      unique_field: !!p.unique_field,
-      default_value: p.default_value || "",
+      unique_field: false,
+      default_value: p.defaultValue || "",
       description: p.description || "",
     });
     setError(null);
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (code: string) => {
     if (!confirm("确定删除该字段吗？")) return;
     try {
-      await ontologyApi.deleteProperty(id);
+      await appServiceApi.deleteField(appId, objectId, code);
       await load();
-      if (editingId === id) {
-        setEditingId(null);
+      if (editingCode === code) {
+        setEditingCode(null);
         setForm(DEFAULT_FIELD_FORM);
       }
     } catch (err: unknown) {
@@ -178,7 +181,7 @@ export function ObjectFieldPanel({
                 id="field-name"
                 placeholder="name"
                 value={form.name}
-                disabled={!!editingId}
+                disabled={!!editingCode}
                 onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
               />
             </div>
@@ -260,14 +263,14 @@ export function ObjectFieldPanel({
                 ) : (
                   <Save className="size-4 mr-1" />
                 )}
-                {editingId ? "更新字段" : "添加字段"}
+                {editingCode ? "更新字段" : "添加字段"}
               </Button>
-              {editingId && (
+              {editingCode && (
                 <Button
                   size="sm"
                   variant="outline"
                   onClick={() => {
-                    setEditingId(null);
+                    setEditingCode(null);
                     setForm(DEFAULT_FIELD_FORM);
                     setError(null);
                   }}
@@ -302,16 +305,16 @@ export function ObjectFieldPanel({
               </TableHeader>
               <TableBody>
                 {properties.map((p) => (
-                  <TableRow key={p.id}>
-                    <TableCell className="font-mono">{p.name}</TableCell>
-                    <TableCell>{p.label}</TableCell>
+                  <TableRow key={p.code}>
+                    <TableCell className="font-mono">{p.code}</TableCell>
+                    <TableCell>{p.name}</TableCell>
                     <TableCell>
                       <Badge variant="outline">{typeLabel(p.type)}</Badge>
                     </TableCell>
                     <TableCell>{p.required ? "是" : "否"}</TableCell>
-                    <TableCell>{p.unique_field ? "是" : "否"}</TableCell>
+                    <TableCell>否</TableCell>
                     <TableCell className="text-muted-foreground">
-                      {p.default_value || "-"}
+                      {p.defaultValue || "-"}
                     </TableCell>
                     <TableCell className="text-right">
                       <Button
@@ -326,7 +329,7 @@ export function ObjectFieldPanel({
                         variant="ghost"
                         size="icon"
                         className="size-8"
-                        onClick={() => handleDelete(p.id)}
+                        onClick={() => handleDelete(p.code)}
                       >
                         <Trash2 className="size-4 text-destructive" />
                       </Button>

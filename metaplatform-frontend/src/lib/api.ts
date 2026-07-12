@@ -1904,3 +1904,100 @@ export const schedulerApi = {
       body: JSON.stringify(data),
     }),
 };
+
+// ─── App Service (Java backend) ─────────────────────────────
+// 直接访问 metaplatform-app-service (:8092)，逐步替代 Node 端的应用中心逻辑。
+// 生产环境应通过 APISIX 统一网关路由。
+const APP_SERVICE_BASE = import.meta.env.VITE_APP_SERVICE_URL || "http://localhost:8092/api";
+
+async function appServiceRequest<T>(
+  path: string,
+  options: RequestInit = {},
+): Promise<T> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...(options.headers as Record<string, string>),
+  };
+  const token = getToken();
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
+  const res = await fetch(`${APP_SERVICE_BASE}${path}`, { ...options, headers });
+
+  if (res.status === 401) {
+    logout();
+    throw new Error("Unauthorized — redirecting to login");
+  }
+
+  const json: ApiResponse<T> = await res.json();
+
+  if (!json.success) {
+    throw new Error(json.error || `API error: ${res.status}`);
+  }
+  return json.data as T;
+}
+
+export interface AppServiceApp {
+  id: number;
+  code: string;
+  name: string;
+  icon?: string;
+  description?: string;
+  status: string;
+  version: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AppServiceObject {
+  id: number;
+  appId: number;
+  code: string;
+  name: string;
+  description?: string;
+  schemaJson: string;
+  dataTableName?: string;
+  ontologyObjectId?: string;
+  version: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AppServiceObjectField {
+  code: string;
+  name: string;
+  type: string;
+  required?: boolean;
+  description?: string;
+  defaultValue?: string;
+}
+
+export const appServiceApi = {
+  // Apps
+  listApps: () => appServiceRequest<AppServiceApp[]>("/apps"),
+  getApp: (id: number | string) => appServiceRequest<AppServiceApp>(`/apps/${id}`),
+  createApp: (data: { code: string; name: string; icon?: string; description?: string }) =>
+    appServiceRequest<AppServiceApp>("/apps", { method: "POST", body: JSON.stringify(data) }),
+  updateApp: (id: number | string, data: { version: number; name?: string; icon?: string; description?: string }) =>
+    appServiceRequest<AppServiceApp>(`/apps/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+  deleteApp: (id: number | string) => appServiceRequest<void>(`/apps/${id}`, { method: "DELETE" }),
+
+  // Objects
+  listObjects: (appId: number | string) => appServiceRequest<AppServiceObject[]>(`/apps/${appId}/objects`),
+  getObject: (appId: number | string, oid: number) => appServiceRequest<AppServiceObject>(`/apps/${appId}/objects/${oid}`),
+  createObject: (appId: number | string, data: { code: string; name: string; description?: string; fields?: AppServiceObjectField[] }) =>
+    appServiceRequest<AppServiceObject>(`/apps/${appId}/objects`, { method: "POST", body: JSON.stringify(data) }),
+  updateObject: (appId: number | string, oid: number, data: { name?: string; description?: string }) =>
+    appServiceRequest<AppServiceObject>(`/apps/${appId}/objects/${oid}`, { method: "PUT", body: JSON.stringify(data) }),
+  deleteObject: (appId: number | string, oid: number) => appServiceRequest<{ deleted: boolean }>(`/apps/${appId}/objects/${oid}`, { method: "DELETE" }),
+
+  // Object fields
+  listFields: (appId: number | string, oid: number) => appServiceRequest<AppServiceObjectField[]>(`/apps/${appId}/objects/${oid}/fields`),
+  addField: (appId: number | string, oid: number, data: AppServiceObjectField) =>
+    appServiceRequest<AppServiceObjectField[]>(`/apps/${appId}/objects/${oid}/fields`, { method: "POST", body: JSON.stringify(data) }),
+  updateField: (appId: number | string, oid: number, code: string, data: Partial<AppServiceObjectField>) =>
+    appServiceRequest<AppServiceObjectField[]>(`/apps/${appId}/objects/${oid}/fields/${code}`, { method: "PUT", body: JSON.stringify(data) }),
+  deleteField: (appId: number | string, oid: number, code: string) =>
+    appServiceRequest<AppServiceObjectField[]>(`/apps/${appId}/objects/${oid}/fields/${code}`, { method: "DELETE" }),
+};

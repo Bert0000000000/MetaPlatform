@@ -7,10 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { PageHeader } from "@/components/ui/stat";
-import { ontologyApi, type OntologyObject } from "@/lib/api";
+import { appServiceApi, type AppServiceObject } from "@/lib/api";
 import {
   Plus, Edit, Trash2, Link2,
-  Loader2, AlertCircle, Inbox, Box, Database, Save, Hash, Type, Globe, Bot, Wand2,
+  Loader2, AlertCircle, Inbox, Box, Database, Save, Globe, Bot, Wand2,
   ListTree,
 } from "lucide-react";
 import {
@@ -25,9 +25,19 @@ import {
 import { RelationshipDiagram } from "@/components/ontology/RelationshipDiagram";
 import { ObjectFieldPanel } from "./ObjectFieldPanel";
 
+function fieldCountFromSchema(obj: AppServiceObject): number {
+  try {
+    if (!obj.schemaJson) return 0;
+    const parsed = JSON.parse(obj.schemaJson);
+    return Array.isArray(parsed) ? parsed.length : 0;
+  } catch {
+    return 0;
+  }
+}
+
 export default function DataModeling() {
   const { appId } = useParams();
-  const [objects, setObjects] = useState<OntologyObject[]>([]);
+  const [objects, setObjects] = useState<AppServiceObject[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
@@ -40,14 +50,13 @@ export default function DataModeling() {
   const [newObjectName, setNewObjectName] = useState("");
   const [newObjectLabel, setNewObjectLabel] = useState("");
   const [newObjectDescription, setNewObjectDescription] = useState("");
-  const [newFieldType, setNewFieldType] = useState<string>("text");
 
   // Delete state
-  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
 
   // Edit dialog state
   const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [editingObject, setEditingObject] = useState<OntologyObject | null>(null);
+  const [editingObject, setEditingObject] = useState<AppServiceObject | null>(null);
   const [editObjectName, setEditObjectName] = useState("");
   const [editObjectLabel, setEditObjectLabel] = useState("");
   const [editObjectDescription, setEditObjectDescription] = useState("");
@@ -60,14 +69,14 @@ export default function DataModeling() {
 
   // Field panel
   const [fieldPanelOpen, setFieldPanelOpen] = useState(false);
-  const [fieldPanelObject, setFieldPanelObject] = useState<OntologyObject | null>(null);
+  const [fieldPanelObject, setFieldPanelObject] = useState<AppServiceObject | null>(null);
 
   // Fetch objects
   const fetchObjects = useCallback(() => {
     if (!appId) return;
     setLoading(true);
     setError(null);
-    ontologyApi
+    appServiceApi
       .listObjects(appId)
       .then((data) => setObjects(data ?? []))
       .catch((err: Error) => setError(err.message || "加载对象列表失败"))
@@ -96,31 +105,38 @@ export default function DataModeling() {
   // Search filter
   const filtered = objects.filter(
     (o) =>
-      o.name.toLowerCase().includes(search.toLowerCase()) ||
-      o.label.includes(search),
+      o.code.toLowerCase().includes(search.toLowerCase()) ||
+      o.name.includes(search),
   );
 
   // Create object
   const handleCreate = async () => {
-    if (!newObjectName.trim() || !newObjectLabel.trim()) {
+    if (!appId) {
+      setCreateError("应用 ID 无效");
+      return;
+    }
+    const code = newObjectName.trim();
+    const name = newObjectLabel.trim();
+    if (!code || !name) {
       setCreateError("对象名和中文名均为必填");
+      return;
+    }
+    if (!/^[a-z][a-z0-9_]*$/.test(code)) {
+      setCreateError("对象名只能包含小写英文、数字和下划线，且不能以数字开头");
       return;
     }
     setCreating(true);
     setCreateError(null);
     try {
-      await ontologyApi.createObject({
-        app_id: appId,
-        name: newObjectName.trim(),
-        label: newObjectLabel.trim(),
-        icon: "Box",
+      await appServiceApi.createObject(appId, {
+        code,
+        name,
         description: newObjectDescription.trim() || undefined,
       });
       setNewObjectName("");
       setNewObjectLabel("");
       setNewObjectDescription("");
       setShowCreateDialog(false);
-      // 立刻拉一次 (自己创建后, 也可以用 mp:ontology-changed 通知关系图)
       await fetchObjects();
       window.dispatchEvent(new CustomEvent("mp:ontology-changed", { detail: { kind: "create_object", appId } }));
     } catch (err: unknown) {
@@ -130,11 +146,15 @@ export default function DataModeling() {
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: number) => {
+    if (!appId) {
+      setError("应用 ID 无效");
+      return;
+    }
     if (!confirm("确定要删除该对象吗？此操作不可恢复。")) return;
     setDeletingId(id);
     try {
-      await ontologyApi.deleteObject(id);
+      await appServiceApi.deleteObject(appId, id);
       setObjects((prev) => prev.filter((o) => o.id !== id));
       window.dispatchEvent(new CustomEvent("mp:ontology-changed", { detail: { kind: "delete_object", appId } }));
     } catch (err: unknown) {
@@ -144,10 +164,10 @@ export default function DataModeling() {
     }
   };
 
-  const handleEditClick = (obj: OntologyObject) => {
+  const handleEditClick = (obj: AppServiceObject) => {
     setEditingObject(obj);
-    setEditObjectName(obj.name);
-    setEditObjectLabel(obj.label || "");
+    setEditObjectName(obj.code);
+    setEditObjectLabel(obj.name || "");
     setEditObjectDescription(obj.description || "");
     setEditError(null);
     setEditDialogOpen(true);
@@ -155,16 +175,19 @@ export default function DataModeling() {
 
   const handleSaveEdit = async () => {
     if (!editingObject) return;
-    if (!editObjectName.trim() || !editObjectLabel.trim()) {
-      setEditError("对象名和中文名均为必填");
+    if (!appId) {
+      setEditError("应用 ID 无效");
+      return;
+    }
+    if (!editObjectLabel.trim()) {
+      setEditError("中文名不能为空");
       return;
     }
     setEditing(true);
     setEditError(null);
     try {
-      await ontologyApi.updateObject(editingObject.id, {
-        name: editObjectName.trim(),
-        label: editObjectLabel.trim(),
+      await appServiceApi.updateObject(appId, editingObject.id, {
+        name: editObjectLabel.trim(),
         description: editObjectDescription.trim() || undefined,
       });
       fetchObjects();
@@ -190,8 +213,8 @@ export default function DataModeling() {
   };
 
   /** 让数字员工为指定对象加字段 (走统一面板, 提示词已预填) */
-  const openAiAddFields = (obj: OntologyObject) => {
-    const prompt = `为对象「${obj.label || obj.name}」推荐并加上 5~8 个核心字段.`;
+  const openAiAddFields = (obj: AppServiceObject) => {
+    const prompt = `为对象「${obj.name || obj.code}」推荐并加上 5~8 个核心字段.`;
     window.dispatchEvent(new CustomEvent("mp:open-ai-workforce", { detail: { prompt } }));
   };
 
@@ -313,14 +336,14 @@ export default function DataModeling() {
                         <TableCell>
                           <Box className="size-5 text-muted-foreground" />
                         </TableCell>
-                        <TableCell className="font-mono">{obj.name}</TableCell>
-                        <TableCell>{obj.label}</TableCell>
-                        <TableCell className="text-right">{obj.properties_count ?? 0}</TableCell>
-                        <TableCell className="text-right">{obj.actions_count ?? 0}</TableCell>
-                        <TableCell className="text-right">{obj.rules_count ?? 0}</TableCell>
+                        <TableCell className="font-mono">{obj.code}</TableCell>
+                        <TableCell>{obj.name}</TableCell>
+                        <TableCell className="text-right">{fieldCountFromSchema(obj)}</TableCell>
+                        <TableCell className="text-right">0</TableCell>
+                        <TableCell className="text-right">0</TableCell>
                         <TableCell>
-                          <Badge variant={obj.status === "active" ? "default" : "secondary"}>
-                            {obj.status === "active" ? "已激活" : obj.status}
+                          <Badge variant={obj.dataTableName ? "default" : "secondary"}>
+                            {obj.dataTableName ? "已激活" : "未建表"}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right">
@@ -344,7 +367,7 @@ export default function DataModeling() {
                         <Button
                           variant="ghost" size="icon" className="size-8"
                           title="虚拟模型"
-                          onClick={() => { setVirtualModelTarget(obj.name); setShowVirtualModel(true); }}
+                          onClick={() => { setVirtualModelTarget(obj.code); setShowVirtualModel(true); }}
                         >
                           <Globe className="size-4 text-cyan-500" />
                         </Button>
@@ -386,7 +409,7 @@ export default function DataModeling() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <RelationshipDiagram appId={appId} />
+            <RelationshipDiagram appId={appId} objects={objects} />
           </CardContent>
         </Card>
       )}
@@ -411,36 +434,6 @@ export default function DataModeling() {
               <Label htmlFor="obj-desc">描述</Label>
               <Input id="obj-desc" placeholder="简要说明该对象的用途" value={newObjectDescription} onChange={(e) => setNewObjectDescription(e.target.value)} />
             </div>
-            <div className="space-y-1.5">
-              <Label>编号字段类型</Label>
-              <div className="grid grid-cols-2 gap-2">
-                {[
-                  { value: "text", label: "普通文本", icon: Type },
-                  { value: "auto-number", label: "自动编号", icon: Hash },
-                ].map((opt) => (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    onClick={() => setNewFieldType(opt.value)}
-                    className={`flex items-center gap-2 p-2 rounded border text-sm transition-colors ${
-                      newFieldType === opt.value
-                        ? "border-primary bg-primary/5"
-                        : "border-border hover:border-primary/50"
-                    }`}
-                  >
-                    <opt.icon className="size-4" />
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-              {newFieldType === "auto-number" && (
-                <div className="flex items-center gap-2 mt-2 p-2 bg-muted rounded text-xs">
-                  <Hash className="size-3 text-muted-foreground" />
-                  <span className="text-muted-foreground">格式预览: </span>
-                  <span className="font-mono">ORD-00001, ORD-00002, ORD-00003...</span>
-                </div>
-              )}
-            </div>
             {createError && (
               <div className="text-sm text-destructive bg-destructive/10 border border-destructive/30 rounded p-2">
                 {createError}
@@ -464,12 +457,12 @@ export default function DataModeling() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>编辑对象</DialogTitle>
-            <DialogDescription>修改对象「{editingObject?.name}」的基本信息</DialogDescription>
+            <DialogDescription>修改对象「{editingObject?.code}」的基本信息</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-1.5">
-              <Label htmlFor="edit-obj-name">对象名 (英文标识) *</Label>
-              <Input id="edit-obj-name" placeholder="如: Customer、Order" value={editObjectName} onChange={(e) => setEditObjectName(e.target.value)} />
+              <Label htmlFor="edit-obj-name">对象名 (英文标识)</Label>
+              <Input id="edit-obj-name" placeholder="如: Customer、Order" value={editObjectName} disabled />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="edit-obj-label">中文名 *</Label>
@@ -518,8 +511,8 @@ export default function DataModeling() {
                   { method: "DELETE", path: `/api/v1/${virtualModelTarget}/:id`, desc: "删除记录" },
                 ]
               : objects.flatMap((obj) => [
-                  { method: "GET", path: `/api/v1/${obj.name}`, desc: `${obj.label} 列表` },
-                  { method: "POST", path: `/api/v1/${obj.name}`, desc: `${obj.label} 创建` },
+                  { method: "GET", path: `/api/v1/${obj.code}`, desc: `${obj.name} 列表` },
+                  { method: "POST", path: `/api/v1/${obj.code}`, desc: `${obj.name} 创建` },
                 ])
             ).map((ep, i) => (
               <div key={i} className="flex items-center gap-3 p-2 border rounded text-xs">
@@ -539,8 +532,9 @@ export default function DataModeling() {
 
       {fieldPanelObject && (
         <ObjectFieldPanel
+          appId={appId}
           objectId={fieldPanelObject.id}
-          objectName={fieldPanelObject.label || fieldPanelObject.name}
+          objectName={fieldPanelObject.name || fieldPanelObject.code}
           open={fieldPanelOpen}
           onOpenChange={(open) => {
             setFieldPanelOpen(open);

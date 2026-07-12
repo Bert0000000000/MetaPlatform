@@ -5,9 +5,9 @@ spring:
     web-application-type: servlet
     banner-mode: "off"
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/app_service}
-    username: ${SPRING_DATASOURCE_USERNAME:meta}
-    password: ${SPRING_DATASOURCE_PASSWORD:metaplatform}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/metaplatform}
+    username: ${SPRING_DATASOURCE_USERNAME:mp}
+    password: ${SPRING_DATASOURCE_PASSWORD:mp_secret_2026}
   jpa:
     hibernate:
       ddl-auto: validate
@@ -16,6 +16,9 @@ spring:
         format_sql: false
         jdbc.time_zone: UTC
     open-in-view: false
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
 
 server:
   port: ${SERVER_PORT:8092}

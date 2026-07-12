@@ -19,7 +19,15 @@ import {
   MarkerType,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { ontologyApi, type OntologyObject, type OntologyRelation, type OntologyProperty } from "@/lib/api";
+import {
+  ontologyApi,
+  appServiceApi,
+  type OntologyObject,
+  type OntologyRelation,
+  type OntologyProperty,
+  type AppServiceObject,
+  type AppServiceObjectField,
+} from "@/lib/api";
 import {
   Loader2, Link2, AlertCircle, Maximize2, RefreshCw, Database,
   Settings2, FileCode2, ChevronRight,
@@ -36,7 +44,7 @@ interface ObjectNodeData extends Record<string, unknown> {
   relationsCount: number;
   idShort: string;
   status: string;
-  properties: Array<{ id: string; name: string; label: string; type: string; required?: boolean }>;
+  properties: FieldView[];
   onOpenDetail?: () => void;
 }
 
@@ -62,6 +70,24 @@ const TYPE_COLOR: Record<string, string> = {
 function propTypeChip(type?: string) {
   const t = (type ?? "text").toLowerCase();
   return TYPE_COLOR[t] ?? TYPE_COLOR.text;
+}
+
+interface FieldView {
+  id: string;
+  name: string;
+  label: string;
+  type: string;
+  required?: boolean;
+}
+
+interface DiagramObject {
+  id: string;
+  code: string;
+  name: string;
+  label: string;
+  status: string;
+  properties_count?: number;
+  original?: AppServiceObject;
 }
 
 function ObjectNode({ data, selected }: NodeProps) {
@@ -178,7 +204,7 @@ const PADDING_X = 40;
 const PADDING_Y = 40;
 const ESTIMATED_NODE_H = 220;
 
-function calcLayout(objects: OntologyObject[], relations: OntologyRelation[]) {
+function calcLayout(objects: DiagramObject[], relations: OntologyRelation[]) {
   const adj = new Map<string, Set<string>>();
   objects.forEach(o => adj.set(o.id, new Set()));
   relations.forEach(r => {
@@ -269,10 +295,10 @@ function buildEdgeStyle(r: OntologyRelation): Partial<Edge> {
    DiagramInner
    ──────────────────────────────────────────────────────────────── */
 interface DiagramInnerProps {
-  objects: OntologyObject[];
+  objects: DiagramObject[];
   relations: OntologyRelation[];
-  fieldsByObject: Record<string, OntologyProperty[]>;
-  onNodeClick?: (obj: OntologyObject) => void;
+  fieldsByObject: Record<string, FieldView[]>;
+  onNodeClick?: (obj: DiagramObject) => void;
 }
 function DiagramInner({ objects, relations, fieldsByObject, onNodeClick }: DiagramInnerProps) {
   const rf = useReactFlow();
@@ -490,48 +516,92 @@ function LegendManyMany() {
    ──────────────────────────────────────────────────────────────── */
 interface Props {
   appId: string;
-  onNodeClick?: (obj: OntologyObject) => void;
+  objects?: AppServiceObject[];
+  onNodeClick?: (obj: AppServiceObject) => void;
 }
-export function RelationshipDiagram({ appId, onNodeClick }: Props) {
-  const [objects, setObjects] = useState<OntologyObject[] | null>(null);
+export function RelationshipDiagram({ appId, objects: providedObjects, onNodeClick }: Props) {
+  const [nodeObjects, setNodeObjects] = useState<DiagramObject[] | null>(providedObjects ? null : null);
   const [relations, setRelations] = useState<OntologyRelation[]>([]);
-  const [fieldsByObject, setFieldsByObject] = useState<Record<string, OntologyProperty[]>>({});
+  const [fieldsByObject, setFieldsByObject] = useState<Record<string, FieldView[]>>({});
   const [error, setError] = useState<string | null>(null);
 
   const loadAll = useCallback(async () => {
     if (!appId) return;
     try {
-      const [objs, rels] = await Promise.all([
-        ontologyApi.listObjects(appId),
-        ontologyApi.listRelations(),
-      ]);
-      const data = objs ?? [];
-      setObjects(data);
-      const appIds = new Set(data.map(o => o.id));
-      setRelations((rels ?? []).filter(r => appIds.has(r.source_object_id) && appIds.has(r.target_object_id)));
+      if (providedObjects) {
+        setNodeObjects(providedObjects.map(o => ({
+          id: String(o.id),
+          code: o.code,
+          name: o.code,
+          label: o.name,
+          status: "active",
+          properties_count: 0,
+          original: o,
+        })));
+        setRelations([]);
+      } else {
+        const [objs, rels] = await Promise.all([
+          ontologyApi.listObjects(appId),
+          ontologyApi.listRelations(),
+        ]);
+        const data = objs ?? [];
+        setNodeObjects(data.map(o => ({
+          id: o.id,
+          code: o.code ?? o.name,
+          name: o.name,
+          label: o.label || o.name,
+          status: o.status ?? "draft",
+          properties_count: o.properties_count ?? 0,
+        })));
+        const appIds = new Set(data.map(o => o.id));
+        setRelations((rels ?? []).filter(r => appIds.has(r.source_object_id) && appIds.has(r.target_object_id)));
+      }
       setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : "加载失败");
     }
-  }, [appId]);
+  }, [appId, providedObjects]);
 
   useEffect(() => { loadAll(); }, [loadAll]);
 
   useEffect(() => {
     let cancelled = false;
-    if (!objects) return;
+    if (!nodeObjects) return;
     (async () => {
-      const map: Record<string, OntologyProperty[]> = {};
-      await Promise.all(objects.map(async o => {
-        try {
-          const ps = await ontologyApi.listProperties(o.id);
-          map[o.id] = ps ?? [];
-        } catch { map[o.id] = []; }
-      }));
-      if (!cancelled) setFieldsByObject(map);
+      if (providedObjects) {
+        const map: Record<string, FieldView[]> = {};
+        await Promise.all(nodeObjects.map(async o => {
+          try {
+            const fields = await appServiceApi.listFields(appId, Number(o.id));
+            map[o.id] = (fields ?? []).map((f: AppServiceObjectField) => ({
+              id: f.code,
+              name: f.code,
+              label: f.name,
+              type: f.type,
+              required: f.required,
+            }));
+          } catch { map[o.id] = []; }
+        }));
+        if (!cancelled) setFieldsByObject(map);
+      } else {
+        const map: Record<string, FieldView[]> = {};
+        await Promise.all(nodeObjects.map(async o => {
+          try {
+            const ps = await ontologyApi.listProperties(o.id);
+            map[o.id] = (ps ?? []).map((p: OntologyProperty) => ({
+              id: p.id,
+              name: p.name,
+              label: p.label,
+              type: p.type,
+              required: !!p.required,
+            }));
+          } catch { map[o.id] = []; }
+        }));
+        if (!cancelled) setFieldsByObject(map);
+      }
     })();
     return () => { cancelled = true; };
-  }, [objects]);
+  }, [nodeObjects, providedObjects, appId]);
 
   useEffect(() => {
     const onChange = (e: Event) => {
@@ -543,17 +613,23 @@ export function RelationshipDiagram({ appId, onNodeClick }: Props) {
     return () => window.removeEventListener("mp:ontology-changed", onChange as EventListener);
   }, [appId, loadAll]);
 
+  const handleNodeClick = useCallback((dObj: DiagramObject) => {
+    if (providedObjects && dObj.original) {
+      onNodeClick?.(dObj.original);
+    }
+  }, [providedObjects, onNodeClick]);
+
   if (error) return (
     <div className="text-destructive text-sm flex items-center gap-2 p-4 border rounded">
       <AlertCircle className="size-4" /> 关系图加载失败: {error}
     </div>
   );
-  if (objects === null) return (
+  if (nodeObjects === null) return (
     <div className="flex items-center justify-center py-10 gap-2 text-muted-foreground">
       <Loader2 className="size-4 animate-spin" /> 加载中...
     </div>
   );
-  if (objects.length === 0) return (
+  if (nodeObjects.length === 0) return (
     <div className="flex flex-col items-center justify-center py-12 gap-2 text-muted-foreground text-sm">
       <Link2 className="size-10 opacity-30" />
       <p>暂无业务对象, 关系图无法绘制</p>
@@ -564,10 +640,10 @@ export function RelationshipDiagram({ appId, onNodeClick }: Props) {
   return (
     <ReactFlowProvider>
       <DiagramInner
-        objects={objects}
+        objects={nodeObjects}
         relations={relations}
         fieldsByObject={fieldsByObject}
-        onNodeClick={onNodeClick}
+        onNodeClick={handleNodeClick}
       />
     </ReactFlowProvider>
   );

@@ -34,7 +34,7 @@ public class AppObjectEntity {
     @Column(name = "schema_json", nullable = false, columnDefinition = "TEXT")
     private String schemaJson;
 
-    @Column(name = "data_table_name", nullable = false, length = 128)
+    @Column(name = "data_table_name", length = 128)
     private String dataTableName;
 
     @Column(name = "ontology_object_id", length = 128)

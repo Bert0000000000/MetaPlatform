@@ -31,4 +31,7 @@ public class ApiException extends RuntimeException {
     public static ApiException forbidden(String message) {
         return new ApiException(HttpStatus.FORBIDDEN, 403, message);
     }
+    public static ApiException internalError(String message) {
+        return new ApiException(HttpStatus.INTERNAL_SERVER_ERROR, 500, message);
+    }
 }

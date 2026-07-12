@@ -22,12 +22,13 @@ import java.util.regex.Pattern;
 public class DynamicTableService {
 
     private static final Pattern IDENT_PATTERN = Pattern.compile("^[a-z][a-z0-9_]{0,62}$");
+    private static final Pattern TABLE_NAME_PATTERN = Pattern.compile("^data_[a-z][a-z0-9_]+$");
 
     @PersistenceContext
     private EntityManager em;
 
     /**
-     * 给新建对象创建物理数据表。
+     * 给新建对象创建物理数据表。允许空字段列表，仅创建基础元数据列。
      * @return 物理表名（格式 data_{code}_{hash}）
      */
     @Transactional(propagation = Propagation.MANDATORY)
@@ -46,20 +47,9 @@ public class DynamicTableService {
         sql.append("created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, ");
         sql.append("updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP");
 
-        for (var f : fields) {
-            if (!IDENT_PATTERN.matcher(f.code()).matches()) {
-                throw ApiException.badRequest("非法字段 code: " + f.code());
-            }
-            sql.append(", ").append(f.code()).append(" ");
-            switch (f.type()) {
-                case "number" -> sql.append("DOUBLE PRECISION");
-                case "boolean" -> sql.append("BOOLEAN");
-                case "date" -> sql.append("DATE");
-                case "datetime" -> sql.append("TIMESTAMP");
-                default -> sql.append("TEXT");
-            }
-            if (Boolean.TRUE.equals(f.required())) {
-                sql.append(" NOT NULL");
+        if (fields != null) {
+            for (var f : fields) {
+                appendColumn(sql, f);
             }
         }
         sql.append(")");
@@ -70,12 +60,48 @@ public class DynamicTableService {
         return tableName;
     }
 
+    /**
+     * 向已有物理表追加一列。
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void addColumn(String tableName, AppObjectService.FieldDef field) {
+        if (!TABLE_NAME_PATTERN.matcher(tableName).matches()) {
+            throw ApiException.badRequest("非法表名: " + tableName);
+        }
+        if (!IDENT_PATTERN.matcher(field.code()).matches()) {
+            throw ApiException.badRequest("非法字段 code: " + field.code());
+        }
+        StringBuilder sql = new StringBuilder();
+        sql.append("ALTER TABLE ").append(tableName).append(" ADD COLUMN ");
+        appendColumnDef(sql, field);
+        em.createNativeQuery(sql.toString()).executeUpdate();
+    }
+
     @Transactional(propagation = Propagation.MANDATORY)
     public void dropTable(String tableName) {
-        if (!tableName.matches("^data_[a-z][a-z0-9_]+$")) {
+        if (!TABLE_NAME_PATTERN.matcher(tableName).matches()) {
             throw ApiException.badRequest("非法表名");
         }
         em.createNativeQuery("DROP TABLE IF EXISTS " + tableName).executeUpdate();
+    }
+
+    private void appendColumn(StringBuilder sql, AppObjectService.FieldDef f) {
+        sql.append(", ");
+        appendColumnDef(sql, f);
+    }
+
+    private void appendColumnDef(StringBuilder sql, AppObjectService.FieldDef f) {
+        sql.append(f.code()).append(" ");
+        switch (f.type()) {
+            case "number" -> sql.append("DOUBLE PRECISION");
+            case "boolean" -> sql.append("BOOLEAN");
+            case "date" -> sql.append("DATE");
+            case "datetime" -> sql.append("TIMESTAMP");
+            default -> sql.append("TEXT");
+        }
+        if (Boolean.TRUE.equals(f.required())) {
+            sql.append(" NOT NULL");
+        }
     }
 
     private static String shortHash(String input) {

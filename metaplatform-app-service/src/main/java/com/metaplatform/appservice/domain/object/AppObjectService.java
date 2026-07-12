@@ -1,7 +1,9 @@
 package com.metaplatform.appservice.domain.object;
 
 import com.metaplatform.appservice.api.error.ApiException;
+import com.metaplatform.appservice.domain.app.AppEntity;
 import com.metaplatform.appservice.domain.app.AppRepository;
+import com.metaplatform.appservice.domain.app.AppService;
 import com.metaplatform.appservice.domain.dynamic.DynamicTableService;
 import com.metaplatform.appservice.domain.ontology.OntologyClient;
 import com.metaplatform.appservice.domain.ontology.OntologyFieldSpec;
@@ -21,6 +23,8 @@ import java.util.regex.Pattern;
  *
  * <p>职责链：参数校验 → ontology-engine 注册 → app-service 动态建表 → 元数据落库。
  * 任一步失败回滚。
+ *
+ * <p>v1.0.2：appId 参数同时支持数字 ID 与字符串 code（slug），以兼容前端 URL 中的 Node 应用 ID。
  */
 @Service
 public class AppObjectService {
@@ -34,44 +38,46 @@ public class AppObjectService {
     private final AppObjectRepository repository;
     private final OntologyClient ontologyClient;
     private final DynamicTableService dynamicTableService;
+    private final AppService appService;
 
     public AppObjectService(AppRepository appRepository,
                             AppObjectRepository repository,
                             OntologyClient ontologyClient,
-                            DynamicTableService dynamicTableService) {
+                            DynamicTableService dynamicTableService,
+                            AppService appService) {
         this.appRepository = appRepository;
         this.repository = repository;
         this.ontologyClient = ontologyClient;
         this.dynamicTableService = dynamicTableService;
+        this.appService = appService;
     }
 
     @Transactional(readOnly = true)
-    public List<AppObjectEntity> list(Long appId) {
-        ensureAppOwnsTenant(appId);
+    public List<AppObjectEntity> list(String appRef) {
+        Long appId = resolveAppId(appRef);
         return repository.findByAppIdOrderById(appId);
     }
 
     @Transactional(readOnly = true)
-    public AppObjectEntity get(Long appId, Long oid) {
-        ensureAppOwnsTenant(appId);
+    public AppObjectEntity get(String appRef, Long oid) {
+        Long appId = resolveAppId(appRef);
         return repository.findByIdAndAppId(oid, appId)
                 .orElseThrow(() -> ApiException.notFound("对象 " + oid + " 不存在"));
     }
 
     @Transactional
-    public AppObjectEntity create(Long appId, AppObjectCreateRequest req) {
-        ensureAppOwnsTenant(appId);
+    public AppObjectEntity create(String appRef, AppObjectCreateRequest req) {
+        Long appId = ensureAppId(appRef);
         // 1. 参数校验
         validateCode(req.code());
         validateName(req.name());
-        if (req.fields() == null || req.fields().isEmpty()) {
-            throw ApiException.badRequest("fields 不能为空");
-        }
-        if (req.fields().size() > MAX_FIELDS) {
+        if (req.fields() != null && req.fields().size() > MAX_FIELDS) {
             throw ApiException.badRequest("字段数不能超过 " + MAX_FIELDS);
         }
+
         List<FieldDef> fieldDefs = new ArrayList<>();
-        for (var f : req.fields()) {
+        List<FieldSpec> inputFields = req.fields() == null ? List.of() : req.fields();
+        for (var f : inputFields) {
             if (!ALLOWED_TYPES.contains(f.type())) {
                 throw ApiException.badRequest("非法字段类型: " + f.type() + "，可选: " + ALLOWED_TYPES);
             }
@@ -83,18 +89,19 @@ public class AppObjectService {
         }
         String schemaJson = writeSchemaJson(fieldDefs);
 
-        String ontologyObjectId;
-        String tableName;
-        try {
-            // 2. ontology-engine 注册
-            var ontologyReq = req;
-            ontologyObjectId = ontologyClient.createObjectType(ontologyReq.code(), ontologyReq.name(),
-                    fieldDefs.stream().map(f ->
-                            new OntologyFieldSpec(f.code(), f.name(), toOntologyType(f.type()), f.required())).toList());
-            // 3. 动态建表
-            tableName = dynamicTableService.createTable(ontologyReq.code(), fieldDefs);
-        } catch (Exception e) {
-            throw ApiException.badRequest("注册对象失败: " + e.getMessage());
+        String ontologyObjectId = null;
+        String tableName = null;
+        if (!fieldDefs.isEmpty()) {
+            try {
+                // 2. ontology-engine 注册
+                ontologyObjectId = ontologyClient.createObjectType(req.code(), req.name(),
+                        fieldDefs.stream().map(f ->
+                                new OntologyFieldSpec(f.code(), f.name(), toOntologyType(f.type()), f.required())).toList());
+                // 3. 动态建表
+                tableName = dynamicTableService.createTable(req.code(), fieldDefs);
+            } catch (Exception e) {
+                throw ApiException.badRequest("注册对象失败: " + e.getMessage());
+            }
         }
 
         // 4. 落 app_objects 表
@@ -122,8 +129,8 @@ public class AppObjectService {
     }
 
     @Transactional
-    public AppObjectEntity update(Long appId, Long oid, AppObjectUpdateRequest req) {
-        var entity = get(appId, oid);
+    public AppObjectEntity update(String appRef, Long oid, AppObjectUpdateRequest req) {
+        var entity = get(appRef, oid);
         if (req.fields() != null && !req.fields().isEmpty()) {
             throw ApiException.badRequest("本版本不支持修改 fields；请删除重建");
         }
@@ -135,16 +142,29 @@ public class AppObjectService {
     }
 
     @Transactional
-    public void delete(Long appId, Long oid) {
-        var entity = get(appId, oid);
+    public void delete(String appRef, Long oid) {
+        var entity = get(appRef, oid);
         safeDrop(entity.getDataTableName());
         // ontology drop 在 Sprint 5 集成时联动
         repository.delete(entity);
     }
 
-    private void ensureAppOwnsTenant(Long appId) {
-        appRepository.findByIdAndTenantId(appId, TenantContext.required())
-                .orElseThrow(() -> ApiException.notFound("应用 " + appId + " 不存在或无权访问"));
+    /**
+     * 解析 appRef：数字 ID 必须已存在；字符串 code 按 getByCode 解析。
+     */
+    private Long resolveAppId(String appRef) {
+        return appService.resolveByIdOrCode(appRef).getId();
+    }
+
+    /**
+     * 确保应用存在：数字 ID 必须已存在；字符串 code 不存在时自动创建占位应用。
+     */
+    private Long ensureAppId(String appRef) {
+        try {
+            return appService.get(Long.valueOf(appRef)).getId();
+        } catch (NumberFormatException ignored) {
+            return appService.ensureByCode(appRef).getId();
+        }
     }
 
     private void validateCode(String code) {

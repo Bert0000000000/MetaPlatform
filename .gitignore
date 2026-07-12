@@ -38,6 +38,9 @@ logs/
 # Local Node runtime (portable binaries)
 tools/node-v22/
 
+# Local Maven runtime (portable binaries)
+tools/maven/
+
 # Verification screenshots / logs
 verify-*.png
 docs/artifacts/verification/screenshots/
