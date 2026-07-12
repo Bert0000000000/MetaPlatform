@@ -173,7 +173,7 @@ export function BIEditor({ components, setComponents, setDirty }: BaseEditorProp
           <h4 className="text-xs font-semibold flex items-center gap-1.5">
             <BarChart3 className="size-3.5" /> 数据看板
           </h4>
-          <Badge variant="outline" className="text-[10px]">实时数据</Badge>
+          <Badge variant="outline" className="text-xs">实时数据</Badge>
         </div>
         <div className="grid grid-cols-3 gap-3">
           {metrics.map((m) => {
@@ -181,14 +181,14 @@ export function BIEditor({ components, setComponents, setDirty }: BaseEditorProp
             return (
               <div key={m.id} className="border rounded-lg p-3 hover:shadow-sm transition-shadow">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-[10px] text-muted-foreground">{m.name}</span>
+                  <span className="text-xs text-muted-foreground">{m.name}</span>
                   <Icon className="size-3.5 text-muted-foreground" />
                 </div>
                 <div className="flex items-baseline gap-1">
                   <span className="text-lg font-bold">{m.value}</span>
-                  <span className="text-[10px] text-muted-foreground">{m.unit}</span>
+                  <span className="text-xs text-muted-foreground">{m.unit}</span>
                 </div>
-                <div className={`text-[10px] mt-1 ${
+                <div className={`text-xs mt-1 ${
                   m.trend === "up" ? "text-green-600" : m.trend === "down" ? "text-red-500" : "text-muted-foreground"
                 }`}>
                   {m.trend === "up" ? "↑ 上升" : m.trend === "down" ? "↓ 下降" : "-- 持平"}
@@ -205,7 +205,7 @@ export function BIEditor({ components, setComponents, setDirty }: BaseEditorProp
           <h4 className="text-xs font-semibold flex items-center gap-1.5">
             <Bot className="size-3.5" /> 数字员工 / Agent
           </h4>
-          <Button size="sm" className="h-6 text-[10px] gap-0.5" onClick={addAgent}>
+          <Button size="sm" className="h-6 text-xs gap-0.5" onClick={addAgent}>
             <Plus className="size-2.5" /> 创建
           </Button>
         </div>
@@ -222,11 +222,11 @@ export function BIEditor({ components, setComponents, setDirty }: BaseEditorProp
                     <div>
                       <div className="flex items-center gap-1.5">
                         <span className="text-xs font-medium">{agent.name}</span>
-                        <Badge variant={statusCfg.variant} className="text-[10px] py-0">
+                        <Badge variant={statusCfg.variant} className="text-xs py-0">
                           {statusCfg.label}
                         </Badge>
                       </div>
-                      <p className="text-[10px] text-muted-foreground mt-0.5">
+                      <p className="text-xs text-muted-foreground mt-0.5">
                         {agent.description || "暂无描述"} | 模型: {agent.model}
                       </p>
                     </div>
@@ -269,7 +269,7 @@ export function BIEditor({ components, setComponents, setDirty }: BaseEditorProp
           <h4 className="text-xs font-semibold flex items-center gap-1.5">
             <Clock className="size-3.5" /> 定期训练任务
           </h4>
-          <Button size="sm" className="h-6 text-[10px] gap-0.5" onClick={addTask}>
+          <Button size="sm" className="h-6 text-xs gap-0.5" onClick={addTask}>
             <Plus className="size-2.5" /> 创建
           </Button>
         </div>
@@ -289,16 +289,16 @@ export function BIEditor({ components, setComponents, setDirty }: BaseEditorProp
                   <div>
                     <div className="flex items-center gap-1.5">
                       <span className="text-xs font-medium">{task.name}</span>
-                      <Badge variant={statusCfg.variant} className="text-[10px] py-0">
+                      <Badge variant={statusCfg.variant} className="text-xs py-0">
                         {statusCfg.label}
                       </Badge>
                     </div>
                     <div className="flex items-center gap-2 mt-0.5">
-                      <span className="text-[10px] text-muted-foreground">
+                      <span className="text-xs text-muted-foreground">
                         计划: {task.schedule}
                       </span>
                       {task.lastRun && (
-                        <span className="text-[10px] text-muted-foreground/60">
+                        <span className="text-xs text-muted-foreground/60">
                           上次运行: {task.lastRun}
                         </span>
                       )}
@@ -342,11 +342,11 @@ export function BIEditor({ components, setComponents, setDirty }: BaseEditorProp
           <h4 className="text-xs font-semibold flex items-center gap-1.5">
             <Database className="size-3.5" /> 数据源配置
           </h4>
-          <Badge variant="outline" className="text-[10px]">系统设置</Badge>
+          <Badge variant="outline" className="text-xs">系统设置</Badge>
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <Label className="text-[10px] text-muted-foreground">数据刷新频率</Label>
+            <Label className="text-xs text-muted-foreground">数据刷新频率</Label>
             <select className="w-full h-7 text-xs border rounded px-2 mt-0.5">
               <option>实时</option>
               <option>每 5 分钟</option>
@@ -356,7 +356,7 @@ export function BIEditor({ components, setComponents, setDirty }: BaseEditorProp
             </select>
           </div>
           <div>
-            <Label className="text-[10px] text-muted-foreground">数据保留周期</Label>
+            <Label className="text-xs text-muted-foreground">数据保留周期</Label>
             <select className="w-full h-7 text-xs border rounded px-2 mt-0.5">
               <option>7 天</option>
               <option>30 天</option>
@@ -366,11 +366,11 @@ export function BIEditor({ components, setComponents, setDirty }: BaseEditorProp
             </select>
           </div>
           <div>
-            <Label className="text-[10px] text-muted-foreground">API 限流 (次/分钟)</Label>
+            <Label className="text-xs text-muted-foreground">API 限流 (次/分钟)</Label>
             <Input defaultValue="1000" className="h-7 text-xs mt-0.5" />
           </div>
           <div>
-            <Label className="text-[10px] text-muted-foreground">并发任务数</Label>
+            <Label className="text-xs text-muted-foreground">并发任务数</Label>
             <Input defaultValue="5" className="h-7 text-xs mt-0.5" />
           </div>
         </div>

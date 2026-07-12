@@ -298,7 +298,7 @@ export default function AppExport() {
       />
 
       {!appId && (
-        <Card className="border-amber-200 bg-amber-50">
+        <Card className="border-amber-200 bg-primary">
           <CardContent className="p-4">
             <p className="text-sm text-amber-800">
               请通过 URL 参数 <code>appId</code> 指定要导出的应用。例如: <code>/apps/export?appId=your-app-id</code>
@@ -593,7 +593,7 @@ export default function AppExport() {
                           )}
                           {getFileIcon(file.type)}
                           <span className="flex-1 font-mono text-xs truncate">{file.name}</span>
-                          <Badge variant="outline" className="text-[10px] shrink-0">{file.type}</Badge>
+                          <Badge variant="outline" className="text-xs shrink-0">{file.type}</Badge>
                           <Button
                             variant="ghost"
                             size="sm"
@@ -616,7 +616,7 @@ export default function AppExport() {
                         {/* File content (expandable) */}
                         {expandedFiles.has(file.name) && (
                           <div className="border-t bg-muted/30">
-                            <pre className="p-3 text-xs font-mono overflow-x-auto whitespace-pre-wrap break-all max-h-[300px] overflow-y-auto">
+                            <pre className="p-3 text-xs font-mono overflow-x-auto whitespace-pre-wrap break-all max-h-[300px] overflow-y-auto scrollbar-none">
                               {file.content}
                             </pre>
                           </div>

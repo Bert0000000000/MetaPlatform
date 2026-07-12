@@ -49,16 +49,18 @@ export default function PublishedApp() {
     setLoading(true);
     setError(null);
 
-    fetch(`/api/apps/slug/${slug}`)
+    fetch(`/api/public/apps/${slug}`)
       .then((r) => r.json())
       .then((json) => {
         if (json.success && json.data) {
-          setApp(json.data);
-          // Default to first page if no pageId specified
-          const pages = json.data.pages;
-          if (!pageId && pages && pages.length > 0) {
-            setActivePageId(pages[0].id);
-          }
+          const data = json.data;
+          // 把 forms / dashboards / reports 映射成 pages 数组
+          const pages: AppPage[] = [];
+          (data.dashboards ?? []).forEach((d: any) => pages.push({ id: `dash:${d.id}`, name: `📈 ${d.name}`, icon: "📈", path: "dashboard", schema: d }));
+          (data.forms ?? []).forEach((f: any) => pages.push({ id: `form:${f.id}`, name: `📝 ${f.name}`, icon: "📝", path: "form", schema: f }));
+          (data.reports ?? []).forEach((r: any) => pages.push({ id: `report:${r.id}`, name: `📊 ${r.name}`, icon: "📊", path: "report", schema: r }));
+          setApp({ ...data, pages } as any);
+          if (!pageId && pages.length > 0) setActivePageId(pages[0].id);
         } else {
           setError(json.error || "应用未找到");
         }

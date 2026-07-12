@@ -45,7 +45,7 @@ import { bpmnNodeTypeRegistry } from "./BpmnNodes";
 
 // ==================== Field Definition Types ====================
 
-type FieldKind = "text" | "textarea" | "select" | "readonly";
+type FieldKind = "text" | "textarea" | "select" | "pageSelect" | "readonly";
 
 interface FieldDef {
   key: string;
@@ -69,30 +69,30 @@ const NODE_FIELDS: Record<string, FieldSection[]> = {
   startEvent: [
     {
       fields: [
-        { key: "label", label: "Name", kind: "text", placeholder: "Start Event" },
+        { key: "label", label: "名称", kind: "text", placeholder: "开始事件" },
       ],
     },
     {
-      title: "Event Definition",
+      title: "事件定义",
       fields: [
-        { key: "timerDefinition", label: "Timer Definition", kind: "text", placeholder: "P5D, ${dueDate}, 2025-12-31" },
-        { key: "messageRef", label: "Message Reference", kind: "text", placeholder: "Message_ID" },
+        { key: "timerDefinition", label: "定时器定义", kind: "text", placeholder: "P5D, ${dueDate}, 2025-12-31" },
+        { key: "messageRef", label: "消息引用", kind: "text", placeholder: "Message_ID" },
       ],
     },
   ],
   endEvent: [
     {
       fields: [
-        { key: "label", label: "Name", kind: "text", placeholder: "End Event" },
+        { key: "label", label: "名称", kind: "text", placeholder: "结束事件" },
       ],
     },
     {
-      title: "Event Definition",
+      title: "事件定义",
       fields: [
-        { key: "errorCode", label: "Error Code", kind: "text", placeholder: "ERROR_CODE" },
-        { key: "terminate", label: "Terminate", kind: "select", options: [
-          { value: "false", label: "No" },
-          { value: "true", label: "Yes — terminate all instances" },
+        { key: "errorCode", label: "错误码", kind: "text", placeholder: "ERROR_CODE" },
+        { key: "terminate", label: "终止", kind: "select", options: [
+          { value: "false", label: "否" },
+          { value: "true", label: "是 — 终止所有实例" },
         ]},
       ],
     },
@@ -100,31 +100,31 @@ const NODE_FIELDS: Record<string, FieldSection[]> = {
   timerEvent: [
     {
       fields: [
-        { key: "label", label: "Name", kind: "text", placeholder: "Timer" },
+        { key: "label", label: "名称", kind: "text", placeholder: "定时器" },
       ],
     },
     {
-      title: "Timer Definition",
+      title: "定时器定义",
       fields: [
-        { key: "timerType", label: "Timer Type", kind: "select", options: [
-          { value: "date", label: "Date — specific point in time" },
-          { value: "duration", label: "Duration — time period" },
-          { value: "cycle", label: "Cycle — repeating interval" },
+        { key: "timerType", label: "定时器类型", kind: "select", options: [
+          { value: "date", label: "日期 — 具体时间点" },
+          { value: "duration", label: "持续时间 — 时段" },
+          { value: "cycle", label: "周期 — 重复间隔" },
         ]},
-        { key: "timerValue", label: "Timer Value", kind: "text", placeholder: "P3D, PT4H, R/PT1H", mono: true },
+        { key: "timerValue", label: "定时器值", kind: "text", placeholder: "P3D, PT4H, R/PT1H", mono: true },
       ],
     },
   ],
   messageEvent: [
     {
       fields: [
-        { key: "label", label: "Name", kind: "text", placeholder: "Message" },
+        { key: "label", label: "名称", kind: "text", placeholder: "消息" },
       ],
     },
     {
-      title: "Message Definition",
+      title: "消息定义",
       fields: [
-        { key: "messageRef", label: "Message Reference", kind: "text", placeholder: "Message_ID" },
+        { key: "messageRef", label: "消息引用", kind: "text", placeholder: "Message_ID" },
       ],
     },
   ],
@@ -133,90 +133,90 @@ const NODE_FIELDS: Record<string, FieldSection[]> = {
   userTask: [
     {
       fields: [
-        { key: "label", label: "Name", kind: "text", placeholder: "User Task" },
+        { key: "label", label: "名称", kind: "text", placeholder: "用户任务" },
       ],
     },
     {
-      title: "Assignment",
+      title: "分配",
       fields: [
-        { key: "assignee", label: "Assignee", kind: "text", placeholder: "user001 or ${initiator}" },
-        { key: "candidateUsers", label: "Candidate Users", kind: "text", placeholder: "user001,user002" },
-        { key: "candidateGroups", label: "Candidate Groups", kind: "text", placeholder: "managers,finance" },
+        { key: "assignee", label: "办理人", kind: "text", placeholder: "user001 或 ${initiator}" },
+        { key: "candidateUsers", label: "候选人", kind: "text", placeholder: "user001,user002" },
+        { key: "candidateGroups", label: "候选组", kind: "text", placeholder: "managers,finance" },
       ],
     },
     {
-      title: "Task Config",
+      title: "任务配置",
       fields: [
-        { key: "formKey", label: "Form Key", kind: "text", placeholder: "forms/apply.html" },
-        { key: "dueDate", label: "Due Date", kind: "text", placeholder: "P3D or ${dueDate}" },
-        { key: "priority", label: "Priority", kind: "text", placeholder: "50" },
-        { key: "description", label: "Description", kind: "textarea", placeholder: "Task description…" },
+        { key: "formKey", label: "表单键", kind: "pageSelect" },
+        { key: "dueDate", label: "到期日", kind: "text", placeholder: "P3D 或 ${dueDate}" },
+        { key: "priority", label: "优先级", kind: "text", placeholder: "50" },
+        { key: "description", label: "描述", kind: "textarea", placeholder: "任务描述…" },
       ],
     },
   ],
   serviceTask: [
     {
       fields: [
-        { key: "label", label: "Name", kind: "text", placeholder: "Service Task" },
+        { key: "label", label: "名称", kind: "text", placeholder: "服务任务" },
       ],
     },
     {
-      title: "Implementation",
+      title: "实现",
       fields: [
-        { key: "serviceType", label: "Service Type", kind: "select", options: [
-          { value: "delegate", label: "Delegate Expression" },
-          { value: "class", label: "Java Class" },
-          { value: "connector", label: "External Connector" },
+        { key: "serviceType", label: "服务类型", kind: "select", options: [
+          { value: "delegate", label: "委托表达式" },
+          { value: "class", label: "Java 类" },
+          { value: "connector", label: "外部连接器" },
         ]},
-        { key: "delegateExpression", label: "Delegate Expression", kind: "text", placeholder: "${myDelegate}", mono: true },
-        { key: "resultVariable", label: "Result Variable", kind: "text", placeholder: "resultVar" },
-        { key: "description", label: "Description", kind: "textarea", placeholder: "Service description…" },
+        { key: "delegateExpression", label: "委托表达式", kind: "text", placeholder: "${myDelegate}", mono: true },
+        { key: "resultVariable", label: "结果变量", kind: "text", placeholder: "resultVar" },
+        { key: "description", label: "描述", kind: "textarea", placeholder: "服务描述…" },
       ],
     },
   ],
   scriptTask: [
     {
       fields: [
-        { key: "label", label: "Name", kind: "text", placeholder: "Script Task" },
+        { key: "label", label: "名称", kind: "text", placeholder: "脚本任务" },
       ],
     },
     {
-      title: "Script",
+      title: "脚本",
       fields: [
-        { key: "scriptFormat", label: "Script Format", kind: "select", options: [
+        { key: "scriptFormat", label: "脚本格式", kind: "select", options: [
           { value: "groovy", label: "Groovy" },
           { value: "javascript", label: "JavaScript" },
           { value: "python", label: "Python" },
           { value: "java", label: "Java" },
         ]},
-        { key: "script", label: "Script Body", kind: "textarea", placeholder: "execution.setVariable('result', 'ok')", mono: true, rows: 6 },
+        { key: "script", label: "脚本内容", kind: "textarea", placeholder: "execution.setVariable('result', 'ok')", mono: true, rows: 6 },
       ],
     },
   ],
   businessRuleTask: [
     {
       fields: [
-        { key: "label", label: "Name", kind: "text", placeholder: "Business Rule" },
+        { key: "label", label: "名称", kind: "text", placeholder: "业务规则" },
       ],
     },
     {
-      title: "Rule Configuration",
+      title: "规则配置",
       fields: [
-        { key: "ruleLanguage", label: "Rule Language", kind: "select", options: [
+        { key: "ruleLanguage", label: "规则语言", kind: "select", options: [
           { value: "drl", label: "DRL (Drools)" },
-          { value: "dmn", label: "DMN (Decision Model)" },
+          { value: "dmn", label: "DMN（决策模型）" },
           { value: "mvel", label: "MVEL" },
         ]},
-        { key: "ruleVariable", label: "Rule Variable", kind: "text", placeholder: "rules" },
-        { key: "inputVariable", label: "Input Variable", kind: "text", placeholder: "input" },
-        { key: "description", label: "Description", kind: "textarea", placeholder: "Business rule description…" },
+        { key: "ruleVariable", label: "规则变量", kind: "text", placeholder: "rules" },
+        { key: "inputVariable", label: "输入变量", kind: "text", placeholder: "input" },
+        { key: "description", label: "描述", kind: "textarea", placeholder: "业务规则描述…" },
       ],
     },
   ],
   approvalTask: [
     {
       fields: [
-        { key: "label", label: "Name", kind: "text", placeholder: "Approval" },
+        { key: "label", label: "名称", kind: "text", placeholder: "审批" },
       ],
     },
     {
@@ -249,7 +249,7 @@ const NODE_FIELDS: Record<string, FieldSection[]> = {
     {
       title: "审批表单",
       fields: [
-        { key: "formKey", label: "表单模板", kind: "text", placeholder: "approval/standard.html" },
+        { key: "formKey", label: "表单模板", kind: "pageSelect" },
         { key: "hideButtons", label: "隐藏按钮", kind: "select", options: [
           { value: "", label: "不隐藏" },
           { value: "reject", label: "隐藏驳回" },
@@ -271,36 +271,36 @@ const NODE_FIELDS: Record<string, FieldSection[]> = {
   aiDecision: [
     {
       fields: [
-        { key: "label", label: "Name", kind: "text", placeholder: "AI Decision" },
+        { key: "label", label: "名称", kind: "text", placeholder: "AI 决策" },
       ],
     },
     {
-      title: "AI Configuration",
+      title: "AI 配置",
       fields: [
-        { key: "aiModel", label: "AI Model", kind: "select", options: [
+        { key: "aiModel", label: "AI 模型", kind: "select", options: [
           { value: "gpt-4o", label: "GPT-4o" },
           { value: "claude-3", label: "Claude 3" },
           { value: "deepseek", label: "DeepSeek" },
           { value: "qwen", label: "Qwen" },
-          { value: "local", label: "Local Model" },
+          { value: "local", label: "本地模型" },
         ]},
-        { key: "promptTemplate", label: "Prompt Template", kind: "textarea", placeholder: "You are a helpful assistant that…", rows: 4 },
-        { key: "inputVariables", label: "Input Variables", kind: "text", placeholder: "var1,var2,var3" },
-        { key: "outputVariable", label: "Output Variable", kind: "text", placeholder: "aiResult" },
-        { key: "description", label: "Description", kind: "textarea", placeholder: "AI decision description…" },
+        { key: "promptTemplate", label: "提示词模板", kind: "textarea", placeholder: "你是一个有帮助的助手，…", rows: 4 },
+        { key: "inputVariables", label: "输入变量", kind: "text", placeholder: "var1,var2,var3" },
+        { key: "outputVariable", label: "输出变量", kind: "text", placeholder: "aiResult" },
+        { key: "description", label: "描述", kind: "textarea", placeholder: "AI 决策描述…" },
       ],
     },
   ],
   callActivity: [
     {
       fields: [
-        { key: "label", label: "Name", kind: "text", placeholder: "Call Activity" },
+        { key: "label", label: "名称", kind: "text", placeholder: "调用活动" },
       ],
     },
     {
-      title: "Callee",
+      title: "被调用方",
       fields: [
-        { key: "calledElement", label: "Called Element", kind: "text", placeholder: "processId_to_call", mono: true },
+        { key: "calledElement", label: "被调用元素", kind: "text", placeholder: "processId_to_call", mono: true },
       ],
     },
   ],
@@ -309,40 +309,40 @@ const NODE_FIELDS: Record<string, FieldSection[]> = {
   exclusiveGateway: [
     {
       fields: [
-        { key: "label", label: "Name", kind: "text", placeholder: "XOR" },
+        { key: "label", label: "名称", kind: "text", placeholder: "互斥" },
       ],
     },
     {
-      title: "Routing",
+      title: "路由",
       fields: [
-        { key: "defaultFlow", label: "Default Flow", kind: "text", placeholder: "SequenceFlow_ID" },
+        { key: "defaultFlow", label: "默认流", kind: "text", placeholder: "SequenceFlow_ID" },
       ],
     },
   ],
   parallelGateway: [
     {
       fields: [
-        { key: "label", label: "Name", kind: "text", placeholder: "AND" },
+        { key: "label", label: "名称", kind: "text", placeholder: "并行" },
       ],
     },
   ],
   inclusiveGateway: [
     {
       fields: [
-        { key: "label", label: "Name", kind: "text", placeholder: "OR" },
+        { key: "label", label: "名称", kind: "text", placeholder: "包容" },
       ],
     },
     {
-      title: "Routing",
+      title: "路由",
       fields: [
-        { key: "defaultFlow", label: "Default Flow", kind: "text", placeholder: "SequenceFlow_ID" },
+        { key: "defaultFlow", label: "默认流", kind: "text", placeholder: "SequenceFlow_ID" },
       ],
     },
   ],
   eventGateway: [
     {
       fields: [
-        { key: "label", label: "Name", kind: "text", placeholder: "Event" },
+        { key: "label", label: "名称", kind: "text", placeholder: "事件" },
       ],
     },
   ],
@@ -351,31 +351,31 @@ const NODE_FIELDS: Record<string, FieldSection[]> = {
   subprocess: [
     {
       fields: [
-        { key: "label", label: "Name", kind: "text", placeholder: "Subprocess" },
+        { key: "label", label: "名称", kind: "text", placeholder: "子流程" },
       ],
     },
   ],
   group: [
     {
       fields: [
-        { key: "label", label: "Name", kind: "text", placeholder: "Group" },
+        { key: "label", label: "名称", kind: "text", placeholder: "分组" },
       ],
     },
   ],
   eventSubprocess: [
     {
       fields: [
-        { key: "label", label: "Name", kind: "text", placeholder: "Event Subprocess" },
+        { key: "label", label: "名称", kind: "text", placeholder: "事件子流程" },
       ],
     },
     {
-      title: "Trigger",
+      title: "触发器",
       fields: [
-        { key: "triggerType", label: "Trigger Type", kind: "select", options: [
-          { value: "start", label: "Start" },
-          { value: "end", label: "End" },
+        { key: "triggerType", label: "触发器类型", kind: "select", options: [
+          { value: "start", label: "开始" },
+          { value: "end", label: "结束" },
         ]},
-        { key: "triggerRef", label: "Trigger Reference", kind: "text", placeholder: "Message_ID, Error_Code" },
+        { key: "triggerRef", label: "触发器引用", kind: "text", placeholder: "Message_ID, Error_Code" },
       ],
     },
   ],
@@ -384,7 +384,7 @@ const NODE_FIELDS: Record<string, FieldSection[]> = {
   textAnnotation: [
     {
       fields: [
-        { key: "annotationText", label: "Text", kind: "textarea", placeholder: "Annotation text…" },
+        { key: "annotationText", label: "文本", kind: "textarea", placeholder: "批注文本…" },
       ],
     },
   ],
@@ -393,15 +393,15 @@ const NODE_FIELDS: Record<string, FieldSection[]> = {
 const EDGE_FIELDS: FieldSection[] = [
   {
     fields: [
-      { key: "label", label: "Name", kind: "text", placeholder: "Flow label" },
+      { key: "label", label: "名称", kind: "text", placeholder: "连线标签" },
     ],
   },
   {
-    title: "Condition",
+    title: "条件",
     fields: [
       {
         key: "conditionExpression",
-        label: "Condition Expression",
+        label: "条件表达式",
         kind: "textarea",
         placeholder: "${amount > 10000}",
         mono: true,
@@ -423,6 +423,8 @@ interface PropertiesPanelProps {
   onDeselect: () => void;
   processConfig: { id: string; name: string };
   onUpdateProcess: (config: { id: string; name: string }) => void;
+  /** 可选：当前工作流所属模块下的相关页面，供 Form Key / 表单模板 选择 */
+  formPageOptions?: { value: string; label: string }[];
 }
 
 export function PropertiesPanel({
@@ -435,6 +437,7 @@ export function PropertiesPanel({
   onDeselect,
   processConfig,
   onUpdateProcess,
+  formPageOptions = [],
 }: PropertiesPanelProps) {
   const [formData, setFormData] = useState<Record<string, string>>({});
 
@@ -578,9 +581,9 @@ export function PropertiesPanel({
           {EDGE_FIELDS.map((sec, si) => (
             <div key={si} className="space-y-2">
               {sec.title && (
-                <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">{sec.title}</p>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{sec.title}</p>
               )}
-              {sec.fields.map((f) => renderField(f, formData, handleFieldChange))}
+              {sec.fields.map((f) => renderField(f, formData, handleFieldChange, formPageOptions))}
             </div>
           ))}
           <Button size="sm" className="w-full" onClick={handleSave}>应用</Button>
@@ -630,23 +633,23 @@ export function PropertiesPanel({
         {sections?.map((sec, si) => (
           <div key={si} className="space-y-2">
             {sec.title && (
-              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 {sec.title}
               </p>
             )}
-            {sec.fields.map((f) => renderField(f, formData, handleFieldChange))}
+            {sec.fields.map((f) => renderField(f, formData, handleFieldChange, formPageOptions))}
           </div>
         ))}
 
         {/* Fallback for unknown types */}
         {!sections && (
           <div className="space-y-1.5">
-            <Label className="text-xs">Name</Label>
+            <Label className="text-xs">名称</Label>
             <Input
               value={formData.label || ""}
               onChange={(e) => handleFieldChange("label", e.target.value)}
               className="h-8 text-xs"
-              placeholder="Element name"
+              placeholder="元素名称"
             />
           </div>
         )}
@@ -663,6 +666,7 @@ function renderField(
   f: FieldDef,
   formData: Record<string, string>,
   onChange: (field: string, value: string) => void,
+  pageOptions: { value: string; label: string }[] = [],
 ) {
   if (f.kind === "readonly") {
     return (
@@ -686,6 +690,27 @@ function renderField(
           <SelectContent>
             {f.options.map((opt) => (
               <SelectItem key={opt.value} value={opt.value}>
+                {opt.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+    );
+  }
+
+  if (f.kind === "pageSelect") {
+    const options = pageOptions.length > 0 ? pageOptions : [{ value: "", label: "暂无可用页面" }];
+    return (
+      <div key={f.key} className="space-y-1.5">
+        <Label className="text-xs">{f.label}</Label>
+        <Select value={formData[f.key] || ""} onValueChange={(val) => onChange(f.key, val)}>
+          <SelectTrigger className="h-8 text-xs">
+            <SelectValue placeholder="选择模块内页面…" />
+          </SelectTrigger>
+          <SelectContent>
+            {options.map((opt) => (
+              <SelectItem key={opt.value || "__empty__"} value={opt.value} disabled={!opt.value}>
                 {opt.label}
               </SelectItem>
             ))}

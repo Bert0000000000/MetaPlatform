@@ -94,6 +94,69 @@ router.post("/forms/:formId/submit", async (req, res) => {
   } catch (err) { res.status(500).json({ success: false, error: String(err?.message ?? err) }); }
 });
 
+// ─── GET /forms/:formId/submissions — 公开提交记录（只读）─────
+router.get("/forms/:formId/submissions", async (req, res) => {
+  try {
+    const form = await findPublishedForm(req.params.formId);
+    if (!form) return res.status(404).json({ success: false, error: "表单不存在" });
+    if (form.status !== "published") {
+      return res.status(403).json({ success: false, error: "表单未发布" });
+    }
+
+    const allowedSortFields = ["id", "submitter_email", "submitter_name", "status", "submitted_at"];
+    const page = Math.max(Number(req.query.page) || 1, 1);
+    const pageSize = Math.min(Math.max(Number(req.query.pageSize) || 20, 1), 200);
+    const sortField = allowedSortFields.includes(req.query.sortField) ? req.query.sortField : "submitted_at";
+    const sortOrder = req.query.sortOrder === "asc" ? "ASC" : "DESC";
+    const q = typeof req.query.q === "string" ? req.query.q.trim() : "";
+
+    const where = ["form_id = ?", "app_id = ?"];
+    const params = [form.id, form.app_id];
+    if (q) {
+      where.push("(submitter_email LIKE ? OR submitter_name LIKE ? OR values_json LIKE ?)");
+      const like = `%${q}%`;
+      params.push(like, like, like);
+    }
+    if (req.query.status) {
+      where.push("status = ?");
+      params.push(req.query.status);
+    }
+
+    const whereSql = where.join(" AND ");
+    const { total } = await db.prepare(
+      `SELECT COUNT(*) AS total FROM form_submissions WHERE ${whereSql}`
+    ).get(...params);
+    const offset = (page - 1) * pageSize;
+    const rows = await db.prepare(
+      `SELECT id, app_id, form_id, version, submitter_email, submitter_name,
+              values_json, metadata_json, status, submitted_at
+       FROM form_submissions WHERE ${whereSql} ORDER BY ${sortField} ${sortOrder} LIMIT ? OFFSET ?`
+    ).all(...params, pageSize, offset);
+
+    res.json({
+      success: true,
+      data: {
+        rows: rows.map((r) => ({
+          id: r.id,
+          appId: r.app_id,
+          formId: r.form_id,
+          version: r.version,
+          submitterEmail: r.submitter_email,
+          submitterName: r.submitter_name,
+          values: safeJSON(r.values_json, {}),
+          metadata: safeJSON(r.metadata_json, {}),
+          status: r.status,
+          submittedAt: r.submitted_at,
+        })),
+        total,
+        page,
+        pageSize,
+        totalPages: Math.ceil(total / pageSize),
+      },
+    });
+  } catch (err) { res.status(500).json({ success: false, error: String(err?.message ?? err) }); }
+});
+
 // ─── GET /dashboards/:dashId — 公开只读仪表盘配置 ────────────
 router.get("/dashboards/:dashId", async (req, res) => {
   try {

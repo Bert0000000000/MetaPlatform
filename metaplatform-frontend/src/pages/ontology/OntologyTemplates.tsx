@@ -301,7 +301,7 @@ export function OntologyTemplates() {
                     <Icon className={`size-5 text-${t.color}-600`} />
                   </div>
                   {t.popular && (
-                    <Badge variant="default" className="text-[10px]">
+                    <Badge variant="default" className="text-xs">
                       <Star className="size-2.5 mr-0.5" /> 热门
                     </Badge>
                   )}
@@ -310,7 +310,7 @@ export function OntologyTemplates() {
                 <CardDescription className="text-xs">{t.description}</CardDescription>
               </CardHeader>
               <CardContent className="pt-0">
-                <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+                <div className="flex items-center gap-3 text-xs text-muted-foreground">
                   <span>📦 {t.objects.length} 对象</span>
                   <span>🔗 {t.relations.length} 关系</span>
                   <span>🏷️ {t.industry}</span>
@@ -340,14 +340,14 @@ export function OntologyTemplates() {
                         <div className="flex items-center gap-2">
                           <Box className="size-3 text-primary" />
                           <span className="font-mono font-medium">{o.label}</span>
-                          <span className="text-muted-foreground text-[10px]">({o.name})</span>
+                          <span className="text-muted-foreground text-xs">({o.name})</span>
                         </div>
-                        <div className="ml-5 mt-1 text-muted-foreground text-[10px]">
+                        <div className="ml-5 mt-1 text-muted-foreground text-xs">
                           {o.description}
                         </div>
                         <div className="ml-5 mt-1 flex gap-1 flex-wrap">
                           {o.properties.map((p) => (
-                            <Badge key={p.name} variant="outline" className="text-[10px] h-4 px-1">
+                            <Badge key={p.name} variant="outline" className="text-xs h-4 px-1">
                               {p.label} <span className="text-muted-foreground">({p.type})</span>
                               {p.required && <span className="text-destructive">*</span>}
                             </Badge>
@@ -366,7 +366,7 @@ export function OntologyTemplates() {
                         <span className="text-muted-foreground">{r.type}</span>
                         <span className="text-muted-foreground">→</span>
                         <span className="font-mono">{r.target}</span>
-                        <Badge variant="secondary" className="text-[10px] h-4 px-1 ml-1">{r.label}</Badge>
+                        <Badge variant="secondary" className="text-xs h-4 px-1 ml-1">{r.label}</Badge>
                       </div>
                     ))}
                   </div>

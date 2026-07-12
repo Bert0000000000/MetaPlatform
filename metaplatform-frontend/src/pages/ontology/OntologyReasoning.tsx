@@ -193,11 +193,11 @@ export function OntologyReasoning() {
                       <span className="font-mono font-medium">{inf.source}</span>
                       <ArrowRight className="size-3 text-muted-foreground" />
                       <span className="font-mono font-medium">{inf.target}</span>
-                      <Badge variant="outline" className="text-[10px] h-4 px-1 ml-1">{inf.type}</Badge>
+                      <Badge variant="outline" className="text-xs h-4 px-1 ml-1">{inf.type}</Badge>
                     </div>
-                    <div className="text-muted-foreground mt-1 text-[10px]">{inf.reason}</div>
+                    <div className="text-muted-foreground mt-1 text-xs">{inf.reason}</div>
                     {inf.via.length > 0 && (
-                      <div className="flex items-center gap-1 mt-1 text-[10px] text-muted-foreground">
+                      <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
                         <Layers className="size-2.5" />
                         <span>路径: {inf.via.join(" → ")}</span>
                       </div>

@@ -188,7 +188,7 @@ function TableWidget({ props }: { props: Record<string, unknown> }) {
   }
 
   return (
-    <div className="overflow-x-auto mb-4">
+    <div className="overflow-x-auto mb-4 scrollbar-none">
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-gray-200 bg-gray-50">

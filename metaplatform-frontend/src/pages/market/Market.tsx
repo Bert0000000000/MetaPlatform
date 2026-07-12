@@ -75,9 +75,9 @@ const CATEGORY_ICON_MAP: Record<string, { icon: typeof Boxes; color: string }> =
   "本体模板": { icon: Boxes, color: "bg-blue-500" },
   "Skill": { icon: Sparkles, color: "bg-purple-500" },
   "Agent": { icon: Workflow, color: "bg-green-500" },
-  "工作流": { icon: Package, color: "bg-yellow-500" },
+  "工作流": { icon: Package, color: "bg-primary" },
   "知识包": { icon: BookOpen, color: "bg-red-500" },
-  "API": { icon: Code, color: "bg-indigo-500" },
+  "API": { icon: Code, color: "bg-primary" },
 };
 const DEFAULT_CATEGORY_STYLE = { icon: Boxes, color: "bg-gray-500" };
 
@@ -250,7 +250,7 @@ function AgentMarket({ installedAgents, onInstall }: AgentMarketProps) {
               <div key={a.id} className="rounded-lg border p-4 hover:border-primary transition-colors">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="size-12 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 text-white flex items-center justify-center">
+                    <div className="size-12 rounded-lg bg-primary text-white flex items-center justify-center">
                       <Bot className="size-6" />
                     </div>
                     <div>
@@ -423,7 +423,7 @@ function DeveloperRank() {
                       {isTop3 ? (
                         <span className="text-lg leading-none">{medal}</span>
                       ) : (
-                        <span className="size-6 rounded-full bg-muted text-muted-foreground text-[10px] font-mono font-semibold flex items-center justify-center tabular-nums">
+                        <span className="size-6 rounded-full bg-muted text-muted-foreground text-xs font-mono font-semibold flex items-center justify-center tabular-nums">
                           {d.rank}
                         </span>
                       )}
@@ -431,14 +431,14 @@ function DeveloperRank() {
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2.5">
-                      <div className="size-7 rounded-full bg-gradient-to-br from-primary to-primary/60 text-primary-foreground flex items-center justify-center text-[11px] font-semibold shrink-0">
+                      <div className="size-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-semibold shrink-0">
                         {d.name[0]}
                       </div>
                       <div className="min-w-0">
                         <div className="font-medium text-sm">{d.name}</div>
                         <div className="w-24 h-1 bg-muted rounded-full mt-0.5 overflow-hidden">
                           <div
-                            className="h-full bg-gradient-to-r from-primary to-primary/60 rounded-full"
+                            className="h-full bg-primary rounded-full"
                             style={{ width: `${pct}%` }}
                           />
                         </div>
@@ -793,7 +793,7 @@ export function SkillMarketPage() {
           <Card key={s.id} className="hover:border-primary transition-colors">
             <CardHeader>
               <div className="flex items-start justify-between">
-                <div className="size-10 rounded-lg bg-gradient-to-br from-blue-500 to-purple-500 text-white flex items-center justify-center"><Sparkles className="size-5" /></div>
+                <div className="size-10 rounded-lg bg-primary text-white flex items-center justify-center"><Sparkles className="size-5" /></div>
                 <Badge variant={s.price === "免费" ? "default" : "secondary"}>{s.price}</Badge>
               </div>
               <CardTitle className="text-base mt-2">{s.name}</CardTitle>
@@ -908,7 +908,7 @@ export function KnowledgePackagesPage() {
           <Card key={k.id} className="hover:border-primary transition-colors">
             <CardHeader>
               <div className="flex items-start justify-between">
-                <div className="size-10 rounded-lg bg-gradient-to-br from-green-500 to-teal-500 text-white flex items-center justify-center"><BookOpen className="size-5" /></div>
+                <div className="size-10 rounded-lg bg-primary text-white flex items-center justify-center"><BookOpen className="size-5" /></div>
                 <Badge variant="secondary">{k.category}</Badge>
               </div>
               <CardTitle className="text-base mt-2">{k.name}</CardTitle>

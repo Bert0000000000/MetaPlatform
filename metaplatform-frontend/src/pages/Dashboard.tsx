@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+﻿import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useRole } from "@/contexts/RoleContext";
 import { ROLES, WORKSPACE_BY_ROLE } from "@/config/menu";
@@ -53,7 +53,7 @@ type RecommendedTemplate = {
 const RECOMMENDED_TEMPLATES: RecommendedTemplate[] = [
   { key: "crm",   name: "CRM 客户管理",   desc: "客户关系管理，支持销售全流程",   installs: 1280, rating: 4.8, icon: Users,      color: "bg-blue-500/10 text-blue-600",     category: "CRM",   iconName: "Users" },
   { key: "bi",    name: "BI 数据分析",     desc: "商业智能分析，多维数据可视化",   installs:  856, rating: 4.6, icon: BarChart3,  color: "bg-green-500/10 text-green-600",   category: "数据",  iconName: "BarChart3" },
-  { key: "bpm",   name: "BPM 流程管理",    desc: "业务流程编排和审批自动化",       installs:  642, rating: 4.5, icon: GitBranch,  color: "bg-orange-500/10 text-orange-600", category: "流程",  iconName: "GitBranch" },
+  { key: "bpm",   name: "BPM 流程管理",    desc: "业务流程编排和审批自动化",       installs:  642, rating: 4.5, icon: GitBranch,  color: "bg-primary/10 text-orange-600", category: "流程",  iconName: "GitBranch" },
 ];
 
 /* ── Mock data that stays (no API for audit log on dashboard) ── */
@@ -323,7 +323,7 @@ export function DashboardPage() {
     <div className="flex flex-col gap-4 p-6 w-full">
       {/* Toast */}
       {toast && (
-        <div className="fixed top-4 right-4 z-50 rounded-md bg-foreground px-4 py-2 text-sm text-background shadow-lg">
+        <div className="fixed top-4 right-4 z-50 rounded-md bg-foreground px-4 py-2 text-sm text-background shadow-md">
           {toast}
         </div>
       )}
@@ -539,7 +539,7 @@ export function DashboardPage() {
               {Object.entries(strategic.coverage)
                 .filter(([, ok]) => !ok)
                 .map(([t]) => (
-                  <Badge key={t} variant="outline" className="text-[10px]">{t}</Badge>
+                  <Badge key={t} variant="outline" className="text-xs">{t}</Badge>
                 ))}
             </div>
           )}
@@ -588,7 +588,7 @@ export function DashboardPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <span className="font-medium truncate">{a.name}</span>
-                        <Badge variant={a.status === "active" ? "default" : "secondary"} className="text-[10px] px-1.5 py-0">
+                        <Badge variant={a.status === "active" ? "default" : "secondary"} className="text-xs px-1.5 py-0">
                           {a.status}
                         </Badge>
                       </div>
@@ -1077,7 +1077,7 @@ function AgentCard({ agent }: { agent: Agent }) {
             <Badge variant={isOnline ? "default" : "secondary"} className="text-xs">
               {isOnline ? "在线" : agent.status === "busy" ? "忙碌" : "离线"}
             </Badge>
-            <div className={`size-2 rounded-full ${isOnline ? "bg-green-500" : agent.status === "busy" ? "bg-orange-500" : "bg-gray-400"}`} />
+            <div className={`size-2 rounded-full ${isOnline ? "bg-green-500" : agent.status === "busy" ? "bg-primary" : "bg-gray-400"}`} />
           </div>
         </div>
         <CardTitle className="text-base mt-2">{agent.name}</CardTitle>
@@ -1143,7 +1143,7 @@ export function DashboardMessages() {
                 className="flex items-start gap-3 p-3 border rounded-lg hover:bg-muted/30 cursor-pointer transition-colors"
                 onClick={() => navigate("/agents")}
               >
-                <div className={`size-8 rounded-full flex items-center justify-center shrink-0 ${push.urgency === "high" ? "bg-red-100 text-red-600" : push.urgency === "medium" ? "bg-orange-100 text-orange-600" : "bg-blue-100 text-blue-600"}`}>
+                <div className={`size-8 rounded-full flex items-center justify-center shrink-0 ${push.urgency === "high" ? "bg-red-100 text-red-600" : push.urgency === "medium" ? "bg-primary text-orange-600" : "bg-blue-100 text-blue-600"}`}>
                   <Bot className="size-4" />
                 </div>
                 <div className="flex-1 min-w-0">
@@ -1196,9 +1196,9 @@ const PORTAL_CATEGORIES = [
   { name: "业务系统", color: "bg-blue-500", icon: Briefcase },
   { name: "数据工具", color: "bg-green-500", icon: PieChart },
   { name: "协作办公", color: "bg-purple-500", icon: Users },
-  { name: "流程引擎", color: "bg-orange-500", icon: Workflow },
-  { name: "AI 应用", color: "bg-pink-500", icon: Sparkles },
-  { name: "开发工具", color: "bg-cyan-500", icon: Settings },
+  { name: "流程引擎", color: "bg-primary", icon: Workflow },
+  { name: "AI 应用", color: "bg-primary", icon: Sparkles },
+  { name: "开发工具", color: "bg-primary", icon: Settings },
 ];
 
 // TODO: Replace with real API when backend ready (no portal apps listing API endpoint exists)
@@ -1208,9 +1208,9 @@ const PORTAL_APPS = [
   { id: "hr", name: "HR 人力资源", category: "业务系统", icon: User, color: "bg-blue-500/10 text-blue-600", desc: "人力资源管理", pages: 18, version: "3.1", lastUsed: "1 小时前" },
   { id: "bi", name: "BI 数据分析", category: "数据工具", icon: BarChart3, color: "bg-green-500/10 text-green-600", desc: "商业智能分析", pages: 8, version: "1.5", lastUsed: "2 小时前" },
   { id: "oa", name: "OA 协同办公", category: "协作办公", icon: FileText, color: "bg-purple-500/10 text-purple-600", desc: "日常办公协同", pages: 15, version: "4.0", lastUsed: "3 小时前" },
-  { id: "bpm", name: "BPM 流程管理", category: "流程引擎", icon: GitBranch, color: "bg-orange-500/10 text-orange-600", desc: "业务流程管理", pages: 6, version: "2.0", lastUsed: "昨天" },
-  { id: "ai-assist", name: "AI 智能助手", category: "AI 应用", icon: Bot, color: "bg-pink-500/10 text-pink-600", desc: "AI 辅助决策", pages: 4, version: "1.2", lastUsed: "昨天" },
-  { id: "devops", name: "DevOps 研发", category: "开发工具", icon: Settings, color: "bg-cyan-500/10 text-cyan-600", desc: "研发运维管理", pages: 10, version: "1.0", lastUsed: "2 天前" },
+  { id: "bpm", name: "BPM 流程管理", category: "流程引擎", icon: GitBranch, color: "bg-primary/10 text-orange-600", desc: "业务流程管理", pages: 6, version: "2.0", lastUsed: "昨天" },
+  { id: "ai-assist", name: "AI 智能助手", category: "AI 应用", icon: Bot, color: "bg-primary/10 text-pink-600", desc: "AI 辅助决策", pages: 4, version: "1.2", lastUsed: "昨天" },
+  { id: "devops", name: "DevOps 研发", category: "开发工具", icon: Settings, color: "bg-primary/10 text-cyan-600", desc: "研发运维管理", pages: 10, version: "1.0", lastUsed: "2 天前" },
   { id: "scm", name: "SCM 供应链", category: "业务系统", icon: Box, color: "bg-blue-500/10 text-blue-600", desc: "供应链管理", pages: 16, version: "1.6", lastUsed: "3 天前" },
   { id: "finance", name: "财务管理系统", category: "数据工具", icon: CreditCard, color: "bg-green-500/10 text-green-600", desc: "财务核算管理", pages: 20, version: "2.5", lastUsed: "本周" },
 ];
@@ -1227,9 +1227,9 @@ const QUICK_ACTIONS = [
   { name: "发起审批", icon: GitBranch, color: "text-blue-600 bg-blue-50", link: "/process/approval" },
   { name: "创建任务", icon: ClipboardList, color: "text-green-600 bg-green-50", link: "/dashboard/messages" },
   { name: "新建应用", icon: Plus, color: "text-purple-600 bg-purple-50", link: "/apps/new" },
-  { name: "数据查询", icon: Search, color: "text-orange-600 bg-orange-50", link: "/data/ask" },
-  { name: "AI 助手", icon: Sparkles, color: "text-pink-600 bg-pink-50", link: "/superai" },
-  { name: "知识库", icon: FileText, color: "text-cyan-600 bg-cyan-50", link: "/knowledge" },
+  { name: "数据查询", icon: Search, color: "text-orange-600 bg-primary", link: "/data/ask" },
+  { name: "AI 助手", icon: Sparkles, color: "text-pink-600 bg-primary", link: "/superai" },
+  { name: "知识库", icon: FileText, color: "text-cyan-600 bg-primary", link: "/knowledge" },
 ];
 
 // Fallback portal todos (used if API fails)
@@ -1298,7 +1298,7 @@ export function Portal() {
       if (data && data.length > 0) {
         const categoryColorMap: Record<string, string> = {
           traditional: "bg-blue-500/10 text-blue-600",
-          ai: "bg-pink-500/10 text-pink-600",
+          ai: "bg-primary/10 text-pink-600",
         };
         const categoryNameMap: Record<string, string> = {
           traditional: "业务系统",
@@ -1460,7 +1460,7 @@ export function Portal() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className={effectiveMode === "mobile" ? "flex gap-3 overflow-x-auto pb-2 snap-x" : "grid grid-cols-5 gap-3"}>
+            <div className={effectiveMode === "mobile" ? "flex gap-3 overflow-x-auto pb-2 snap-x scrollbar-none-x" : "grid grid-cols-5 gap-3"}>
               {favoriteApps.map((app) => {
                 const Icon = app.icon;
                 return (
@@ -1501,7 +1501,7 @@ export function Portal() {
           </Button>
         </CardHeader>
         <CardContent>
-          <div className={effectiveMode === "mobile" ? "flex gap-3 overflow-x-auto pb-2 snap-x" : "grid grid-cols-5 gap-3"}>
+          <div className={effectiveMode === "mobile" ? "flex gap-3 overflow-x-auto pb-2 snap-x scrollbar-none-x" : "grid grid-cols-5 gap-3"}>
             {recentApps.map((app) => {
               const Icon = app.icon;
               const isFav = favorites.includes(app.id);
@@ -1821,7 +1821,7 @@ export function FreePage() {
   if (activeView === "templates") {
     return (
       <div className="flex flex-col gap-4 p-4">
-        {toast && <div className="fixed top-4 right-4 z-50 rounded-md bg-foreground px-4 py-2 text-sm text-background shadow-lg">{toast}</div>}
+        {toast && <div className="fixed top-4 right-4 z-50 rounded-md bg-foreground px-4 py-2 text-sm text-background shadow-md">{toast}</div>}
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="sm" onClick={() => setActiveView("list")}>
             <ArrowRight className="size-3 rotate-180 mr-1" /> 返回
@@ -1850,7 +1850,7 @@ export function FreePage() {
   if (activeView === "builder" && editingPage) {
     return (
       <div className="flex flex-col h-full">
-        {toast && <div className="fixed top-4 right-4 z-50 rounded-md bg-foreground px-4 py-2 text-sm text-background shadow-lg">{toast}</div>}
+        {toast && <div className="fixed top-4 right-4 z-50 rounded-md bg-foreground px-4 py-2 text-sm text-background shadow-md">{toast}</div>}
         {/* Builder toolbar */}
         <div className="flex items-center justify-between border-b px-4 py-2 bg-background shrink-0">
           <div className="flex items-center gap-2">
@@ -2057,7 +2057,7 @@ export function FreePage() {
   /* ── List view (default) ── */
   return (
     <div className="flex flex-col gap-4 p-4">
-      {toast && <div className="fixed top-4 right-4 z-50 rounded-md bg-foreground px-4 py-2 text-sm text-background shadow-lg">{toast}</div>}
+      {toast && <div className="fixed top-4 right-4 z-50 rounded-md bg-foreground px-4 py-2 text-sm text-background shadow-md">{toast}</div>}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-semibold tracking-tight flex items-center gap-2">
@@ -2351,7 +2351,7 @@ function TeamDigitalEmployeesPanel() {
               <div className="text-xs text-muted-foreground">在线运行</div>
               <div className="text-2xl font-bold text-green-600 mt-1 tabular-nums">{o.totalActive}</div>
             </div>
-            <div className="p-3 rounded-lg bg-orange-50 dark:bg-orange-950/30">
+            <div className="p-3 rounded-lg bg-primary dark:bg-primary/30">
               <div className="text-xs text-muted-foreground">忙碌中</div>
               <div className="text-2xl font-bold text-orange-600 mt-1 tabular-nums">{o.totalBusy}</div>
             </div>
@@ -2368,7 +2368,7 @@ function TeamDigitalEmployeesPanel() {
               <div className="text-2xl font-bold text-emerald-600 mt-1 tabular-nums">
                 {o.completionRate}<span className="text-sm font-normal">%</span>
               </div>
-              <div className="text-[10px] text-muted-foreground mt-0.5">
+              <div className="text-xs text-muted-foreground mt-0.5">
                 {o.totalDone} / {o.totalTasks}
               </div>
             </div>
@@ -2399,7 +2399,7 @@ function TeamDigitalEmployeesPanel() {
                         )}
                         {t.busyCount > 0 && (
                           <div
-                            className="bg-orange-500 h-full"
+                            className="bg-primary h-full"
                             style={{ width: `${(t.busyCount / t.agentCount) * 100}%` }}
                             title={`忙碌 ${t.busyCount}`}
                           />
@@ -2415,12 +2415,12 @@ function TeamDigitalEmployeesPanel() {
                       <span className="tabular-nums w-10 text-right font-medium">{t.agentCount}</span>
                     </div>
                   ))}
-                  <div className="flex gap-3 text-[10px] text-muted-foreground pt-1">
+                  <div className="flex gap-3 text-xs text-muted-foreground pt-1">
                     <span className="flex items-center gap-1">
                       <span className="size-2 rounded-sm bg-green-500" />在线
                     </span>
                     <span className="flex items-center gap-1">
-                      <span className="size-2 rounded-sm bg-orange-500" />忙碌
+                      <span className="size-2 rounded-sm bg-primary" />忙碌
                     </span>
                     <span className="flex items-center gap-1">
                       <span className="size-2 rounded-sm bg-gray-400" />离线/故障
@@ -2445,16 +2445,16 @@ function TeamDigitalEmployeesPanel() {
                     <div key={p.id} className="flex items-center gap-2 text-xs">
                       <span
                         className={
-                          "w-5 h-5 flex items-center justify-center rounded-full text-[10px] font-bold " +
-                          (idx === 0 ? "bg-yellow-200 text-yellow-800" :
+                          "w-5 h-5 flex items-center justify-center rounded-full text-xs font-bold " +
+                          (idx === 0 ? "bg-primary text-yellow-800" :
                            idx === 1 ? "bg-slate-200 text-slate-700" :
-                           idx === 2 ? "bg-orange-200 text-orange-800" : "bg-muted text-muted-foreground")
+                           idx === 2 ? "bg-primary text-orange-800" : "bg-muted text-muted-foreground")
                         }
                       >
                         {idx + 1}
                       </span>
                       <span className="font-medium truncate flex-1">{p.name}</span>
-                      <span className="text-muted-foreground text-[10px]">{p.department}</span>
+                      <span className="text-muted-foreground text-xs">{p.department}</span>
                       <span className="tabular-nums w-14 text-right">{p.tasksDone}/{p.tasksTotal}</span>
                       <span
                         className={
@@ -2497,7 +2497,7 @@ function TeamDigitalEmployeesPanel() {
                       <span className="font-medium truncate flex-1">
                         {r.agent_name ?? "(已删除)"}
                       </span>
-                      <code className="text-[10px] text-muted-foreground">{r.task_id}</code>
+                      <code className="text-xs text-muted-foreground">{r.task_id}</code>
                     </div>
                   );
                 })}

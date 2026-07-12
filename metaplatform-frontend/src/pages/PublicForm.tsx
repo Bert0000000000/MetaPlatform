@@ -150,6 +150,9 @@ export default function PublicForm() {
             >
               再提交一份
             </Button>
+            <Button variant="outline" onClick={() => navigate(`/public/forms/${formId}/submissions`)}>
+              查看提交记录
+            </Button>
             <Button onClick={() => navigate("/apps")}>
               返回应用中心
             </Button>

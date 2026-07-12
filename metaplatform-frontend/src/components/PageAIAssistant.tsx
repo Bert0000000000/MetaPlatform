@@ -242,7 +242,7 @@ export function PageAIAssistant() {
 
       {/* Quick suggestions */}
       {messages.length <= 1 && (
-        <div className="px-3 py-2 border-t bg-background flex gap-2 overflow-x-auto shrink-0">
+        <div className="px-3 py-2 border-t bg-background flex gap-2 overflow-x-auto shrink-0 scrollbar-none-x">
           {["这个页面有什么功能？", "怎么使用？", "遇到问题怎么办"].map((s) => (
             <button
               key={s}

@@ -34,7 +34,7 @@ export function RuntimeHealthChip() {
   return (
     <a
       href="/admin/runtime"
-      className="block rounded-lg border border-yellow-500/40 bg-yellow-50 dark:bg-yellow-900/20 px-4 py-3 hover:bg-yellow-100 dark:hover:bg-yellow-900/30 transition-colors"
+      className="block rounded-lg border border-yellow-500/40 bg-primary dark:bg-primary/20 px-4 py-3 hover:bg-yellow-100 dark:hover:bg-yellow-900/30 transition-colors"
       title="运行时监控"
     >
       <div className="flex items-start gap-3">

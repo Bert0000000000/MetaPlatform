@@ -6,6 +6,121 @@ import { Router } from "express";
 import db from "../db.js";
 import { v4 as uuid } from "uuid";
 
+/**
+ * 标准模块模板 (工作类别) — 创建应用时自动初始化
+ *
+ * 核心理念: 应用按"工作类别"分模块, 不是每个页面一个模块.
+ * 每个应用初始化时创建 7 个模块, 页面创建时按 type 附加到对应模块.
+ *
+ * 类别: 业务模型 | 表单页面 | 列表页面 | Vue 页面 | 业务流程 | 报表页面 | 商业智能
+ */
+const STANDARD_MODULES = [
+  { key: "model",     label: "业务模型", icon: "Database",      color: "text-red-500",     bgColor: "bg-red-50",    typeFilter: [] },
+  { key: "form",      label: "表单页面", icon: "FileEdit",      color: "text-blue-500",    bgColor: "bg-blue-50",   typeFilter: ["form", "lowcode"] },
+  { key: "list",      label: "列表页面", icon: "LayoutDashboard", color: "text-green-500", bgColor: "bg-green-50",  typeFilter: ["list"] },
+  { key: "vue",       label: "Vue 页面", icon: "FileJson",      color: "text-emerald-500", bgColor: "bg-emerald-50", typeFilter: ["vue", "procode"] },
+  { key: "workflow",  label: "业务流程", icon: "GitBranch",     color: "text-amber-500",   bgColor: "bg-amber-50",  typeFilter: ["workflow"] },
+  { key: "report",    label: "报表页面", icon: "BarChart3",     color: "text-indigo-500",  bgColor: "bg-indigo-50", typeFilter: ["report", "dashboard"] },
+  { key: "bi",        label: "商业智能", icon: "Layers",        color: "text-violet-500",  bgColor: "bg-violet-50", typeFilter: ["bi", "analytics"] },
+];
+
+/**
+ * 检测意图对应的工作类别 (从用户输入中识别)
+ *
+ * 关键词分组 — 越靠前越优先匹配:
+ *   - 表单: "表单", "申请单", "录入", "提交"
+ *   - 列表: "列表", "查询", "管理", "所有"
+ *   - 流程: "流程", "审批", "工作流"
+ *   - 报表: "报表", "看板", "统计"
+ *   - BI:   "BI", "分析", "指标"
+ *   - 模型: "模型", "对象", "实体"  ← 兜底
+ */
+function detectWorkCategory(text) {
+  const lower = text.toLowerCase();
+  // 业务模型
+  if (/(业务模型|本体|实体|对象模型|ontology)/i.test(text)) return "model";
+  // 业务流程
+  if (/(流程|审批流|工作流|bpmn|workflow|审批)/i.test(text)) return "workflow";
+  // 报表
+  if (/(报表|看板|dashboard|统计|汇总)/i.test(text)) return "report";
+  // 商业智能
+  if (/(商业智能|\bbi\b|智能分析|指标)/i.test(text)) return "bi";
+  // Vue 页面
+  if (/(vue\s*页面|procode|自定义页面)/i.test(text)) return "vue";
+  // 表单 (在列表前面: "请假单" 是表单, 不是列表)
+  if (/(表单|申请单|录入|提交|填写|新建表单|创建表单)/i.test(text)) return "form";
+  // 列表
+  if (/(列表|查询|管理|所有|清单)/i.test(text)) return "list";
+  // 兜底
+  return "form";
+}
+
+/**
+ * 创建应用时初始化 7 个标准模块
+ */
+async function initStandardModules(appId) {
+  const now = new Date().toISOString();
+  const created = [];
+  for (let i = 0; i < STANDARD_MODULES.length; i++) {
+    const m = STANDARD_MODULES[i];
+    const id = uuid();
+    await db.prepare(
+      `INSERT INTO app_modules (id, app_id, label, icon, color, bg_color, type_filter, sort_order, config, page_ids, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    ).run(
+      id, appId, m.label, m.icon, m.color, m.bgColor,
+      JSON.stringify(m.typeFilter), i, JSON.stringify({ isStandard: true }),
+      JSON.stringify([]), now, now,
+    );
+    created.push({ id, label: m.label, typeFilter: m.typeFilter });
+  }
+  return created;
+}
+
+/**
+ * 在指定应用下创建页面, 并自动附加到对应模块
+ *
+ * @param {string} appId
+ * @param {string} pageName
+ * @param {string} categoryKey - STANDARD_MODULES.key 之一
+ * @param {object} extras - { type, icon, config }
+ */
+async function createPageInModule(appId, pageName, categoryKey, extras = {}) {
+  // 1. 找模块
+  const allModules = await db.prepare(
+    "SELECT * FROM app_modules WHERE app_id = ?"
+  ).all(appId);
+  const moduleRow = allModules.find((m) => m.label === STANDARD_MODULES.find((s) => s.key === categoryKey)?.label);
+  if (!moduleRow) throw new Error(`找不到 ${categoryKey} 模块`);
+
+  // 2. 创建页面
+  const pageId = uuid();
+  const now = new Date().toISOString();
+  const pageType = extras.type || (STANDARD_MODULES.find((s) => s.key === categoryKey)?.typeFilter?.[0]) || "list";
+  const maxRow = await db.prepare(
+    "SELECT MAX(sort_order) AS max_order FROM app_pages WHERE app_id = ?"
+  ).get(appId);
+  const order = (maxRow?.max_order ?? -1) + 1;
+
+  await db.prepare(
+    `INSERT INTO app_pages (id, app_id, name, type, icon, status, config, sort_order, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+  ).run(
+    pageId, appId, pageName, pageType, extras.icon || null,
+    "draft", extras.config ? JSON.stringify(extras.config) : null,
+    order, now, now,
+  );
+
+  // 3. 附加到模块的 page_ids
+  const pageIds = moduleRow.page_ids ? JSON.parse(moduleRow.page_ids) : [];
+  if (!pageIds.includes(pageId)) pageIds.push(pageId);
+  await db.prepare(
+    "UPDATE app_modules SET page_ids = ?, updated_at = ? WHERE id = ?"
+  ).run(JSON.stringify(pageIds), now, moduleRow.id);
+
+  return { pageId, pageName, moduleLabel: moduleRow.label };
+}
+
 const router = Router();
 
 // ─── Agent Registry ───────────────────────────────────────
@@ -87,16 +202,26 @@ const AGENTS = [
 // ─── Intent Detection ─────────────────────────────────────
 function detectIntent(message) {
   const lower = message.toLowerCase();
-  
+
   // Detect which agent(s) to dispatch to
   const matched = [];
   for (const agent of AGENTS) {
-    const score = agent.keywords.filter((kw) => lower.includes(kw)).length;
+    let score = agent.keywords.filter((kw) => lower.includes(kw)).length;
+
+    // 优先级提升: 当用户说"建/创建/新建" + 应用相关词, app-builder 应该是首选
+    if (agent.id === "app-architect" && /建|创建|新建/.test(lower) && /(应用|系统|平台|管理|表单|列表|报表|流程)/.test(lower)) {
+      score += 5;
+    }
+    // 用户说"建/创建" + 报表/看板 → app-builder 而不是 data-analyst
+    if (agent.id === "data-analyst" && /建|创建|新建/.test(lower) && /报表|看板/.test(lower)) {
+      score -= 3;
+    }
+
     if (score > 0) {
       matched.push({ agent, score });
     }
   }
-  
+
   // Sort by score descending
   matched.sort((a, b) => b.score - a.score);
   
@@ -119,7 +244,20 @@ function detectIntent(message) {
   }
   
   // Extract entity name if present
-  const nameMatch = message.match(/(?:叫|名为|叫做|名称[是为]?|叫做?)\s*["""']?([^"""',，。\.]+)["""']?/);
+  // 优先匹配显式命名 (叫/名为/叫做/名称), 兜底匹配 "建一个X应用" / "建X应用"
+  let nameMatch = message.match(/(?:叫|名为|叫做|名称[是为]?|叫做?)\s*["""']?([^"""',，。\.]+?)["""']?(?:的)?(?:应用|系统|平台|管理)?/);
+  if (!nameMatch) {
+    // 兜底 1: "建一个[名字]应用" / "创建[名字]系统"
+    nameMatch = message.match(/(?:建|创建|新建)(?:一个|个)?\s*["""']?([^"""',，。\.]+?)["""']?(?:应用|系统|平台|管理)/);
+  }
+  if (!nameMatch) {
+    // 兜底 2: "建一个X" / "创建X" (不带后缀, 但有动词前缀)
+    nameMatch = message.match(/(?:建|创建|新建)(?:一个|个)?\s*["""']?([^"""',，。\.\s]{2,})["""']?/);
+  }
+  if (!nameMatch) {
+    // 兜底 3: "X应用" / "X系统" / "X管理" (任何 X+后缀 模式)
+    nameMatch = message.match(/["""']?([^"""',，。\.\s]{2,})["""']?(?:应用|系统|平台|管理|表单|列表|报表|流程)/);
+  }
   if (nameMatch) {
     params.name = nameMatch[1].trim();
   }
@@ -144,7 +282,63 @@ async function executeAgent(agent, action, params, user) {
           const id = uuid();
           await db.prepare(`INSERT INTO applications (id, name, description, category, status, icon) VALUES (?, ?, ?, ?, ?, ?)`)
             .run(id, params.name, `由 SuperAI 创建`, "traditional", "draft", "Smartphone");
-          results.push({ type: "created", module: "apps", id, name: params.name, link: `/apps/${id}/overview` });
+
+          // 🚀 自动初始化 7 个标准模块 (按工作类别分模块)
+          const modules = await initStandardModules(id);
+
+          // 🎯 检测用户意图中的工作类别, 自动创建对应页面
+          // params.text 是原始用户输入, params.name 是应用名
+          const userText = params.text || params.name || "";
+          const category = detectWorkCategory(userText);
+
+          // 创建应用根页面 (例如: "请假审批应用" → "请假单" 表单 + "请假列表" + "审批流程")
+          const rootPageName = params.name.replace(/应用|系统|平台|管理$/, "").trim() || params.name;
+          const rootPage = await createPageInModule(id, rootPageName, category, {
+            icon: "FileText",
+          });
+
+          // 同时创建常见配套页面 (按类别)
+          let extraPages = [];
+          if (category === "form") {
+            // 表单应用 → 自动添加列表 + 流程
+            extraPages.push(
+              await createPageInModule(id, `${rootPageName}列表`, "list", { icon: "LayoutDashboard" }),
+            );
+            extraPages.push(
+              await createPageInModule(id, `${rootPageName}审批流程`, "workflow", { icon: "GitBranch" }),
+            );
+          } else if (category === "list") {
+            // 列表应用 → 自动添加表单 (新增入口)
+            extraPages.push(
+              await createPageInModule(id, `新建${rootPageName}`, "form", { icon: "FileEdit" }),
+            );
+          } else if (category === "workflow") {
+            // 流程应用 → 自动添加表单 + 列表
+            extraPages.push(
+              await createPageInModule(id, `${rootPageName}申请单`, "form", { icon: "FileEdit" }),
+            );
+            extraPages.push(
+              await createPageInModule(id, `${rootPageName}查询`, "list", { icon: "LayoutDashboard" }),
+            );
+          } else if (category === "report" || category === "bi") {
+            extraPages.push(
+              await createPageInModule(id, `${rootPageName}明细数据`, "list", { icon: "LayoutDashboard" }),
+            );
+          }
+
+          results.push({
+            type: "created",
+            module: "apps",
+            id,
+            name: params.name,
+            link: `/apps/${id}/overview`,
+            layout: "module-by-category",
+            modulesCount: modules.length,
+            modules: modules.map((m) => m.label),
+            primaryCategory: category,
+            primaryPage: rootPage,
+            extraPages,
+          });
         } else {
           const apps = await db.prepare(`SELECT * FROM applications ORDER BY updated_at DESC LIMIT 10`).all();
           results.push({ type: "list", module: "apps", data: apps, count: apps.length });
@@ -242,7 +436,20 @@ function generateResponse(intent, results) {
   for (const result of results) {
     switch (result.type) {
       case "created":
-        parts.push(`已在**${getModuleName(result.module)}**中创建「${result.name}」。[点击查看](${result.link})`);
+        // 新格式: 含 layout/modulesCount/primaryPage/extraPages (按工作类别分模块)
+        if (result.layout === "module-by-category") {
+          const moduleList = result.modules?.join(" / ") || "";
+          const primaryPageName = result.primaryPage?.pageName || result.name;
+          const extras = result.extraPages?.map((p) => p.pageName).join("、") || "";
+          parts.push(
+            `已为您创建**${result.name}**, 自动初始化 ${result.modulesCount} 个标准模块 (${moduleList}).\n\n` +
+            `主页面「${primaryPageName}」已放入**${result.primaryPage?.moduleLabel || ""}**` +
+            (extras ? `, 同时创建配套页面: ${extras}` : "") + ".\n\n" +
+            `[点击查看应用](${result.link})`,
+          );
+        } else {
+          parts.push(`已在**${getModuleName(result.module)}**中创建「${result.name}」。[点击查看](${result.link})`);
+        }
         break;
       case "list":
         parts.push(`在**${getModuleName(result.module)}**中找到 ${result.count} 条记录。`);
@@ -332,7 +539,9 @@ router.post("/dispatch", async (req, res) => {
     const dispatchedAgents = [];
     
     for (const agent of intent.agents) {
-      const results = await executeAgent(agent, intent.action, intent.params, req.user);
+      // 把原始用户输入放进 params.text, 让 agent 可以做更精确的工作类别识别
+      const agentParams = { ...intent.params, text: intent.raw };
+      const results = await executeAgent(agent, intent.action, agentParams, req.user);
       allResults.push(...results);
       dispatchedAgents.push({
         id: agent.id,

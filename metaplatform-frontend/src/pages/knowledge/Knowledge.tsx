@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +12,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { knowledgeApi, knowledgeQaApi, knowledgeGraphApi, type KnowledgeDocument } from "@/lib/api";
 import { FileText, Upload, Search, Eye, FolderTree, Sparkles, Send, Network, Clock, BookMarked, Tag, GitCommit, Brain, MessageSquare, BookOpen, Ruler, Briefcase, ScrollText, NotebookPen, Scale, Puzzle, Hash, Trash2, Bell, Plus, CheckCircle2, RefreshCw, Download, Activity, XCircle, Edit } from "lucide-react";
 import { StatCard, PageHeader } from "@/components/ui/stat";
+import { LineageCanvas, type LineageNodeDatum, type LineageEdgeDatum } from "@/components/lineage/LineageCanvas";
+import { KnowledgeEntityNode, ENTITY_COLORS } from "@/components/knowledge/KnowledgeEntityNode";
 
 // TODO: Replace with real API when backend ready (knowledgeApi.search() exists but no Q&A history endpoint)
 const QA_HISTORY = [
@@ -199,6 +201,7 @@ export function KnowledgeGraph() {
   const [nodes, setNodes] = useState<any[]>([]);
   const [edges, setEdges] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
 
   useEffect(() => {
     Promise.all([knowledgeGraphApi.listNodes(), knowledgeGraphApi.listEdges()])
@@ -210,15 +213,56 @@ export function KnowledgeGraph() {
       .finally(() => setLoading(false));
   }, []);
 
-  // Layout nodes in a circular pattern
-  const layoutNodes = nodes.map((n, i) => {
-    const angle = (2 * Math.PI * i) / nodes.length;
-    const cx = 160 + 80 * Math.cos(angle);
-    const cy = 100 + 60 * Math.sin(angle);
-    return { ...n, x: cx, y: cy };
-  });
+  // 圆形布局 -- 复用 lib/layout/position 的算法思路，内联在此 (卡片尺寸不同)
+  const positions = useMemo(() => {
+    const cx = 500;
+    const cy = 300;
+    const r = 180;
+    const out: Record<string, { x: number; y: number }> = {};
+    nodes.forEach((n, i) => {
+      const angle = (2 * Math.PI * i) / Math.max(nodes.length, 1) - Math.PI / 2;
+      out[n.id] = { x: cx + Math.cos(angle) * r, y: cy + Math.sin(angle) * r };
+    });
+    return out;
+  }, [nodes]);
 
-  const nodeMap = new Map(layoutNodes.map((n) => [n.id, n]));
+  // 转 LineageCanvas 契约
+  const lineageNodes: LineageNodeDatum[] = useMemo(
+    () =>
+      nodes.map((n) => ({
+        id: n.id,
+        name: n.name,
+        type: n.type,
+        description: "",
+        status: "active" as const,
+      })),
+    [nodes],
+  );
+  const lineageEdges: LineageEdgeDatum[] = useMemo(
+    () => edges.map((e) => ({ from: e.source_id, to: e.target_id })),
+    [edges],
+  );
+  const edgeLabels = useMemo(() => {
+    const m: Record<string, string> = {};
+    edges.forEach((e) => {
+      m[`${e.source_id}->${e.target_id}`] = e.relation_type;
+    });
+    return m;
+  }, [edges]);
+
+  const visibleIds = useMemo(() => new Set(nodes.map((n) => n.id)), [nodes]);
+
+  const handleSelect = useCallback((node: LineageNodeDatum | null) => {
+    setSelectedNodeId(node?.id ?? null);
+  }, []);
+
+  const nodeTypes = useMemo(
+    () => ({ "kg-entity": KnowledgeEntityNode }),
+    [],
+  );
+
+  // 图例
+  const legendItems = Object.entries(ENTITY_COLORS);
 
   return (
     <Card>
@@ -232,51 +276,36 @@ export function KnowledgeGraph() {
         {loading && <div className="text-center py-8 text-muted-foreground">加载中...</div>}
         {!loading && (
           <>
-            <div className="relative h-[400px] bg-muted/30 rounded-lg overflow-hidden">
-              <svg className="w-full h-full" viewBox="0 0 320 200" preserveAspectRatio="xMidYMid meet">
-                {/* 连线 */}
-                {edges.map((e) => {
-                  const source = nodeMap.get(e.source_id);
-                  const target = nodeMap.get(e.target_id);
-                  if (!source || !target) return null;
-                  return (
-                    <line key={e.id} x1={source.x} y1={source.y} x2={target.x} y2={target.y} stroke="#94a3b8" strokeWidth="1" />
-                  );
-                })}
-
-                {/* 节点 */}
-                {layoutNodes.map((n) => {
-                  const colors: Record<string, string> = {
-                    entity: "#3b82f6",
-                    concept: "#8b5cf6",
-                    relation: "#ec4899",
-                  };
-                  return (
-                    <g key={n.id}>
-                      <circle cx={n.x} cy={n.y} r={18} fill={colors[n.type] || "#6b7280"} />
-                      <text x={n.x} y={n.y + 4} textAnchor="middle" fill="white" fontSize="9">{n.name}</text>
-                    </g>
-                  );
-                })}
-
-                {/* 关系标签 */}
-                {edges.map((e) => {
-                  const source = nodeMap.get(e.source_id);
-                  const target = nodeMap.get(e.target_id);
-                  if (!source || !target) return null;
-                  const mx = (source.x + target.x) / 2;
-                  const my = (source.y + target.y) / 2 - 4;
-                  return (
-                    <text key={`label-${e.id}`} x={mx} y={my} fontSize="7" fill="#64748b" textAnchor="middle">{e.relation_type}</text>
-                  );
-                })}
-              </svg>
+            <div className="rounded-lg overflow-hidden border bg-background">
+              <LineageCanvas
+                nodes={lineageNodes}
+                edges={lineageEdges}
+                edgeLabels={edgeLabels}
+                visibleNodeIds={visibleIds}
+                selectedNodeId={selectedNodeId}
+                onNodeSelect={handleSelect}
+                precomputedPositions={positions}
+                nodeType="kg-entity"
+                nodeTypes={nodeTypes}
+                nodesDraggable={false}
+                enableMiniMap={false}
+                enableControls={false}
+                edgeType="bezier"
+                height={400}
+                className="border-0 rounded-none"
+              />
             </div>
 
-            <div className="mt-3 flex flex-wrap gap-2 text-xs">
+            {/* 图例 */}
+            <div className="mt-3 flex flex-wrap items-center gap-3 text-xs">
+              {legendItems.map(([key, c]) => (
+                <span key={key} className="inline-flex items-center gap-1.5">
+                  <span className={`size-3 rounded-full ${c.bg}`} />
+                  <span className="text-muted-foreground">{c.label}</span>
+                </span>
+              ))}
               <Badge variant="outline">{nodes.length} 个实体</Badge>
               <Badge variant="outline">{edges.length} 条关系</Badge>
-              <Badge variant="outline">自动抽取</Badge>
               <Badge variant="outline">置信度 ≥ 0.8</Badge>
             </div>
           </>
@@ -419,8 +448,8 @@ export function Categories() {
     "产品手册": "bg-blue-500",
     "技术规范": "bg-purple-500",
     "业务文档": "bg-green-500",
-    "合同协议": "bg-orange-500",
-    "会议纪要": "bg-pink-500",
+    "合同协议": "bg-primary",
+    "会议纪要": "bg-primary",
     "政策法规": "bg-red-500",
   };
 

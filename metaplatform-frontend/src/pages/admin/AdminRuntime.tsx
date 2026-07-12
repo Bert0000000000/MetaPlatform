@@ -43,7 +43,7 @@ type Summary = {
 
 function pillFor(mode: RuntimeItem["serving_mode"]) {
   if (mode === "container") return { label: "独立容器", color: "bg-green-500/15 text-green-700 border-green-500/30" };
-  if (mode === "degraded") return { label: "降级（进程内）", color: "bg-yellow-500/15 text-yellow-700 border-yellow-500/30" };
+  if (mode === "degraded") return { label: "降级（进程内）", color: "bg-primary/15 text-yellow-700 border-yellow-500/30" };
   return { label: "已停止", color: "bg-zinc-400/15 text-zinc-600 border-zinc-400/30" };
 }
 

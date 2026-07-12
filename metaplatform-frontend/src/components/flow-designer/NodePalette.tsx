@@ -20,11 +20,11 @@ function groupByCategory(items: BpmnNodeTypeMeta[]): Map<string, BpmnNodeTypeMet
 
 // Category display names
 const CATEGORY_LABELS: Record<string, string> = {
-  Events: "Events",
-  Tasks: "Tasks",
-  Gateways: "Gateways",
-  Subprocess: "Subprocesses",
-  Artifacts: "Artifacts",
+  Events: "事件",
+  Tasks: "任务",
+  Gateways: "网关",
+  Subprocess: "子流程",
+  Artifacts: "工件",
 };
 
 export function NodePalette() {
@@ -53,9 +53,9 @@ export function NodePalette() {
   return (
     <div className="flex flex-col h-full">
       <div className="px-3 py-2 border-b">
-        <h3 className="text-sm font-semibold text-foreground">Node Palette</h3>
-        <p className="text-[10px] text-muted-foreground mt-0.5">
-          Drag elements to the canvas
+        <h3 className="text-sm font-semibold text-foreground">节点面板</h3>
+        <p className="text-xs text-muted-foreground mt-0.5">
+          将元素拖放到画布
         </p>
       </div>
       <div className="flex-1 overflow-y-auto px-2 py-2 space-y-1">

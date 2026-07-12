@@ -1,6 +1,7 @@
 import { NavLink, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { OverflowTabs, type OverflowTabItem } from "@/components/OverflowTabs";
 import { MENU_TABS, MENU_ITEMS, SUPER_ADMIN_EXTRA_TABS, type MenuKey } from "@/config/menu";
 import { useRole } from "@/contexts/RoleContext";
 
@@ -77,37 +78,36 @@ export function MenuTabsBar() {
 
   const activeMenuDef = MENU_ITEMS.find((m) => m.key === activeMenu);
 
+  // 构造成 OverflowTabs 需要的格式，保留"仅超管"Badge
+  const overflowTabs: OverflowTabItem[] = tabs.map((t) => {
+    const fullPath = `${activeBasePath}${t.path}`;
+    const isActive = activeKey === t.key;
+    const isSuperOnly = superAdminExtraKeys.has(t.key);
+    return {
+      key: t.key,
+      to: fullPath,
+      active: isActive,
+      label: (
+        <span className="inline-flex items-center gap-1.5">
+          {t.label}
+          {isSuperOnly && (
+            <Badge variant="secondary" className="h-4 px-1 text-xs font-normal bg-primary text-amber-700 dark:bg-primary/30 dark:text-amber-400 border-0">
+              仅超管
+            </Badge>
+          )}
+        </span>
+      ),
+    };
+  });
+
   return (
     <div className="border-b bg-background px-4 sticky top-14 z-20" role="navigation" aria-label="菜单 Tab">
-      <div className="flex h-11 items-center gap-0 overflow-x-auto">
-        <span className="text-xs text-muted-foreground mr-2.5 shrink-0 flex items-center gap-1.5">
+      <div className="flex flex-wrap items-center">
+        <span className="text-xs text-muted-foreground mr-2.5 shrink-0 flex items-center gap-1.5 self-center">
           {activeMenuDef && <activeMenuDef.icon className="size-3.5" />}
           {activeMenuDef?.label}
         </span>
-        {tabs.map((t) => {
-          const fullPath = `${activeBasePath}${t.path}`;
-          const isActive = activeKey === t.key;
-          const isSuperOnly = superAdminExtraKeys.has(t.key);
-          return (
-            <NavLink
-              key={t.key}
-              to={fullPath}
-              className={cn(
-                "inline-flex h-11 items-center gap-1.5 px-3 text-sm font-medium whitespace-nowrap transition-colors border-b-2 -mb-px",
-                isActive
-                  ? "border-primary text-foreground"
-                  : "border-transparent text-muted-foreground hover:text-foreground",
-              )}
-            >
-              {t.label}
-              {isSuperOnly && (
-                <Badge variant="secondary" className="h-4 px-1 text-[9px] font-normal bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border-0">
-                  仅超管
-                </Badge>
-              )}
-            </NavLink>
-          );
-        })}
+        <OverflowTabs tabs={overflowTabs} overflowThreshold={8} />
       </div>
     </div>
   );

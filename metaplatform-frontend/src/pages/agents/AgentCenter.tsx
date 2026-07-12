@@ -13,11 +13,12 @@ import { agentsApi, type Agent, type AgentTask } from "@/lib/api";
 import { Bot, Plus, MessageSquare, Brain, Sparkles, Users, FileText, Wrench, Activity, GitBranch, Mail, Calendar, BarChart3, Zap, Clock, CheckCircle2, Search, NotebookPen, Code, ScrollText, DollarSign, Handshake, Truck, Circle, User, Trash2, Settings, Shield, Database, Key, MemoryStick, Cpu, Eye, X } from "lucide-react";
 import { PageHeader } from "@/components/ui/stat";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
+import { AppWorkforceManager } from "@/components/AppWorkforceManager";
 import { PageAgentsTab } from "./PageAgentsTab";
 
 const statusConfig = {
   online: { label: "在线", color: "bg-green-500" },
-  busy: { label: "忙碌", color: "bg-yellow-500" },
+  busy: { label: "忙碌", color: "bg-primary" },
   offline: { label: "离线", color: "bg-gray-400" },
 };
 
@@ -645,12 +646,16 @@ export function AgentCenter() {
         <TabsList>
           <TabsTrigger value="page-agents">页面员工</TabsTrigger>
           <TabsTrigger value="list">自定义员工</TabsTrigger>
+          <TabsTrigger value="app-workforce">应用数字员工</TabsTrigger>
           <TabsTrigger value="skills">技能广场</TabsTrigger>
           <TabsTrigger value="collab">多智能体协作</TabsTrigger>
           <TabsTrigger value="monitor">运行监控</TabsTrigger>
         </TabsList>
         <TabsContent value="page-agents" className="mt-4">
           <PageAgentsTab />
+        </TabsContent>
+        <TabsContent value="app-workforce" className="mt-4">
+          <AppWorkforceManager />
         </TabsContent>
         <TabsContent value="list" className="mt-4">
           <AgentList />

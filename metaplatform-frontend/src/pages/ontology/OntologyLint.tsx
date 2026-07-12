@@ -304,7 +304,7 @@ function IssueList({ issues }: { issues: LintIssue[] }) {
           key={i.id}
           className={`flex items-start gap-2 px-3 py-2 border rounded text-xs ${
             i.severity === "error" ? "border-red-300 bg-red-50" :
-            i.severity === "warning" ? "border-yellow-300 bg-yellow-50" :
+            i.severity === "warning" ? "border-yellow-300 bg-primary" :
             "border-blue-300 bg-blue-50"
           }`}
         >
@@ -314,7 +314,7 @@ function IssueList({ issues }: { issues: LintIssue[] }) {
           <div className="flex-1">
             <div className="flex items-center gap-2">
               <span className="font-mono font-medium">{i.target}</span>
-              <Badge variant="outline" className="text-[10px] h-4 px-1">{i.rule}</Badge>
+              <Badge variant="outline" className="text-xs h-4 px-1">{i.rule}</Badge>
             </div>
             <div className="text-muted-foreground mt-0.5">{i.message}</div>
             {i.fix && <div className="text-primary mt-0.5">💡 {i.fix}</div>}

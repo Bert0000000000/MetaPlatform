@@ -67,6 +67,8 @@ class ErrorBoundary extends Component<
 
 // Published app (public, no platform layout)
 import PublishedApp from "@/pages/PublishedApp";
+import PublicForm from "@/pages/PublicForm";
+import PublicFormSubmissions from "@/pages/PublicFormSubmissions";
 
 // Login (public, no platform layout)
 import Login from "@/pages/Login";
@@ -125,6 +127,7 @@ import { KnowledgeDashboard, DocumentList, Categories, KnowledgeGraph, SmartQA, 
 
 // 云市场
 import { MarketDashboard, OntologyTemplatesPage, AgentMarketPage, MySubscriptionsPage, DeveloperRankPage, SkillMarketPage, WorkflowTemplatesPage, KnowledgePackagesPage, APILibraryPage } from "@/pages/market/Market";
+import PublishedMarket from "@/pages/market/PublishedMarket";
 
 // 数字员工
 import { AgentList, AgentCollaboration, AgentSkills, AgentMonitor, AgentCenter, AgentIdentity, AgentWorkspace, AgentPermissions, AgentModel } from "@/pages/agents/AgentCenter";
@@ -196,6 +199,10 @@ export default function App() {
             {/* Published apps (outside Layout — no sidebar/topbar) */}
             <Route path="/app/:slug" element={<PublishedApp />} />
             <Route path="/app/:slug/page/:pageId" element={<PublishedApp />} />
+
+            {/* Public forms (outside Layout) */}
+            <Route path="/public/form/:appId" element={<PublicForm />} />
+            <Route path="/public/forms/:formId/submissions" element={<PublicFormSubmissions />} />
 
             {/* Platform routes (with Layout sidebar/topbar) */}
             <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
@@ -328,6 +335,7 @@ export default function App() {
               <Route path="/market/workflows" element={<WorkflowTemplatesPage />} />
               <Route path="/market/knowledge" element={<KnowledgePackagesPage />} />
               <Route path="/market/api" element={<APILibraryPage />} />
+              <Route path="/market/public" element={<PublishedMarket />} />
               <Route path="/market/subscriptions" element={<MySubscriptionsPage />} />
               <Route path="/market/rank" element={<DeveloperRankPage />} />
               <Route path="/market/*" element={<MarketDashboard />} />

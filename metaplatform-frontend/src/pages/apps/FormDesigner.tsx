@@ -115,20 +115,20 @@ const FIELD_LIBRARY: FieldDef[] = [
   { id: "single-text", type: "单行文本", label: "单行文本", required: false, icon: Type, color: "bg-blue-500" },
   { id: "multi-text", type: "多行文本", label: "多行文本", required: false, icon: FileEdit, color: "bg-green-500" },
   { id: "number", type: "数字", label: "数字", required: false, icon: Hash, color: "bg-purple-500" },
-  { id: "date", type: "日期", label: "日期", required: false, icon: Calendar, color: "bg-orange-500" },
-  { id: "datetime", type: "日期时间", label: "日期时间", required: false, icon: Clock, color: "bg-amber-500" },
-  { id: "email", type: "邮箱", label: "邮箱", required: false, icon: Mail, color: "bg-cyan-500" },
-  { id: "phone", type: "手机号", label: "手机号", required: false, icon: Smartphone, color: "bg-pink-500" },
-  { id: "select", type: "下拉选择", label: "下拉选择", required: false, icon: ClipboardList, color: "bg-indigo-500" },
+  { id: "date", type: "日期", label: "日期", required: false, icon: Calendar, color: "bg-primary" },
+  { id: "datetime", type: "日期时间", label: "日期时间", required: false, icon: Clock, color: "bg-primary" },
+  { id: "email", type: "邮箱", label: "邮箱", required: false, icon: Mail, color: "bg-primary" },
+  { id: "phone", type: "手机号", label: "手机号", required: false, icon: Smartphone, color: "bg-primary" },
+  { id: "select", type: "下拉选择", label: "下拉选择", required: false, icon: ClipboardList, color: "bg-primary" },
   { id: "radio", type: "单选", label: "单选", required: false, icon: Circle, color: "bg-red-500" },
   { id: "checkbox", type: "多选", label: "多选", required: false, icon: CheckSquare, color: "bg-emerald-500" },
-  { id: "switch", type: "开关", label: "开关", required: false, icon: ToggleLeft, color: "bg-yellow-500" },
-  { id: "slider", type: "滑块", label: "滑块", required: false, icon: Sliders, color: "bg-violet-500" },
-  { id: "rating", type: "评分", label: "评分", required: false, icon: Star, color: "bg-rose-500" },
+  { id: "switch", type: "开关", label: "开关", required: false, icon: ToggleLeft, color: "bg-primary" },
+  { id: "slider", type: "滑块", label: "滑块", required: false, icon: Sliders, color: "bg-primary" },
+  { id: "rating", type: "评分", label: "评分", required: false, icon: Star, color: "bg-primary" },
   { id: "file", type: "文件上传", label: "文件上传", required: false, icon: Paperclip, color: "bg-slate-500" },
-  { id: "image", type: "图片上传", label: "图片上传", required: false, icon: Image, color: "bg-teal-500" },
-  { id: "richtext", type: "富文本", label: "富文本", required: false, icon: PenTool, color: "bg-fuchsia-500" },
-  { id: "address", type: "地址", label: "地址", required: false, icon: MapPin, color: "bg-sky-500" },
+  { id: "image", type: "图片上传", label: "图片上传", required: false, icon: Image, color: "bg-primary" },
+  { id: "richtext", type: "富文本", label: "富文本", required: false, icon: PenTool, color: "bg-primary" },
+  { id: "address", type: "地址", label: "地址", required: false, icon: MapPin, color: "bg-primary" },
   { id: "cascader", type: "级联选择", label: "级联选择", required: false, icon: TreeDeciduous, color: "bg-lime-500" },
   // F4.4.2.20 自动编号
   { id: "auto-number", type: "自动编号", label: "自动编号", required: false, icon: Hash, color: "bg-stone-500" },
@@ -567,7 +567,7 @@ export default function FormDesigner() {
                       <Label className="flex items-center gap-1">
                         <Icon className="size-4" />
                         <span>{f.label}</span>
-                        {f.required && <Badge variant="destructive" className="text-[10px] ml-1">必填</Badge>}
+                        {f.required && <Badge variant="destructive" className="text-xs ml-1">必填</Badge>}
                       </Label>
                       {renderFieldInput(f)}
                       {selectedFieldIndex === idx && (

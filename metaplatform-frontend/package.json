@@ -6,7 +6,12 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "lint:design": "node scripts/lint-design.mjs",
+    "lint:design:fix": "node scripts/lint-design.mjs --fix",
+    "lint:design:strict": "node scripts/lint-design.mjs --strict",
+    "lint:design:quiet": "node scripts/lint-design.mjs --quiet"
   },
   "dependencies": {
     "@monaco-editor/react": "^4.7.0",

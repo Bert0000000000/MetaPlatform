@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { appsApi, versionsApi, type Application } from "@/lib/api";
+import { appsApi, versionsApi, tenantsApi, type Application, type Tenant } from "@/lib/api";
 import {
   Box, GitBranch, CheckCircle2, ArrowRight, Rocket, History,
   Package, RotateCcw, Target, Loader2, AlertCircle, Copy, ExternalLink,
@@ -22,23 +22,18 @@ import {
 
 const environments = [
   { name: "开发环境", color: "bg-blue-500", status: "running" },
-  { name: "测试环境", color: "bg-yellow-500", status: "running" },
+  { name: "测试环境", color: "bg-primary", status: "running" },
   { name: "预览环境", color: "bg-purple-500", status: "running" },
   { name: "生产环境", color: "bg-green-500", status: "running" },
 ];
 
-/* ── Mock tenants for grayscale ── */
-// TODO: Replace with real API when backend ready (appsApi does not have tenants listing endpoint)
-const MOCK_TENANTS = [
-  { id: "t1", name: "阿里云", plan: "企业版" },
-  { id: "t2", name: "腾讯云", plan: "企业版" },
-  { id: "t3", name: "华为云", plan: "标准版" },
-  { id: "t4", name: "字节跳动", plan: "企业版" },
-  { id: "t5", name: "美团", plan: "标准版" },
-  { id: "t6", name: "京东", plan: "企业版" },
-  { id: "t7", name: "拼多多", plan: "标准版" },
-  { id: "t8", name: "网易", plan: "标准版" },
-];
+/* ── 租户列表 — 从后端拉取 (灰度发布白名单) ── */
+// 来源: /api/tenants — 启动时即 fetch, 失败回退到空
+
+/** 广播 app 变更事件 (AppsList / AppOverview 等会订阅并重读) */
+function notifyAppChanged(appId: string, kind: string) {
+  window.dispatchEvent(new CustomEvent("mp:apps-changed", { detail: { appId, kind } }));
+}
 
 /* ── Fallback version history (API 失败时使用) ── */
 const VERSIONS_FALLBACK = [
@@ -73,12 +68,29 @@ export default function AppPublish() {
   const [compareOpen, setCompareOpen] = useState(false);
   const [compareVersions, setCompareVersions] = useState<[string, string]>(["1.3.0", "1.2.0"]);
 
+  /* ── 租户列表 (后端持久化, 灰度发布白名单) ── */
+  const [tenants, setTenants] = useState<Tenant[]>([]);
+
   /* ── Gray release toast ── */
   useEffect(() => {
     if (!grayToast) return;
     const t = setTimeout(() => setGrayToast(null), 5000);
     return () => clearTimeout(t);
   }, [grayToast]);
+
+  // 拉取所有租户
+  useEffect(() => {
+    let cancelled = false;
+    tenantsApi
+      .list()
+      .then((data) => {
+        if (!cancelled) setTenants(Array.isArray(data) ? data : []);
+      })
+      .catch(() => {
+        if (!cancelled) setTenants([]);
+      });
+    return () => { cancelled = true; };
+  }, []);
 
   // Fetch app data
   useEffect(() => {
@@ -162,6 +174,7 @@ export default function AppPublish() {
       // Refresh app data after publishing
       const refreshed = await appsApi.get(appId);
       setApp(refreshed);
+      notifyAppChanged(appId, "publish");
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "发布失败";
       setGrayToast({ message, variant: "error" });
@@ -179,6 +192,7 @@ export default function AppPublish() {
       const refreshed = await appsApi.get(appId);
       setApp(refreshed);
       setGrayToast({ message: "已取消发布", variant: "success" });
+      notifyAppChanged(appId, "unpublish");
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "取消发布失败";
       setGrayToast({ message, variant: "error" });
@@ -505,7 +519,7 @@ export default function AppPublish() {
             <div className="space-y-3 p-4 border rounded-lg">
               <Label className="text-sm">选择灰度租户</Label>
               <div className="grid grid-cols-2 gap-2">
-                {MOCK_TENANTS.map((t) => (
+                {(tenants.length ? tenants : []).map((t) => (
                   <label key={t.id} className="flex items-center gap-2 p-2 border rounded cursor-pointer hover:bg-muted/50">
                     <Checkbox
                       checked={grayTenants.includes(t.id)}
@@ -791,7 +805,7 @@ export default function AppPublish() {
           grayToast.variant === "error"
             ? "bg-destructive text-destructive-foreground"
             : grayToast.variant === "warning"
-              ? "bg-yellow-500 text-yellow-50"
+              ? "bg-primary text-yellow-50"
               : "bg-foreground text-background"
         }`}>
           <span className="flex-1">{grayToast.message}</span>
@@ -888,7 +902,7 @@ function PublishedEnvironments({ appId }: { appId: string }) {
   const liveBadge = (pub: Pub) => {
     if (pub.isLive) {
       if (runtimeInfo?.running) return { label: "运行中", color: "bg-green-500" };
-      if (runtimeInfo?.mode === "degraded") return { label: "降级模式", color: "bg-yellow-500" };
+      if (runtimeInfo?.mode === "degraded") return { label: "降级模式", color: "bg-primary" };
       return { label: "已停止", color: "bg-zinc-400" };
     }
     return { label: "已归档", color: "bg-zinc-400" };
@@ -958,7 +972,7 @@ function PublishedEnvironments({ appId }: { appId: string }) {
                 <div className="text-xs text-muted-foreground font-mono mt-1 truncate">
                   {fullUrl}
                 </div>
-                <div className="text-[10px] text-muted-foreground mt-0.5">
+                <div className="text-xs text-muted-foreground mt-0.5">
                   发布于 {new Date(pub.created_at).toLocaleString("zh-CN")}
                   {pub.isLive && runtimeInfo?.port ? ` · 容器端口 ${runtimeInfo.port} → 3000` : null}
                   {pub.isLive && runtimeInfo?.containerId ? ` · 容器 ${runtimeInfo.containerId.slice(0, 12)}…` : null}

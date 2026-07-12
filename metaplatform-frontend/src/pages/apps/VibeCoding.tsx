@@ -391,7 +391,7 @@ export default function VibeCoding() {
                 )}
                 <div className={`max-w-[85%] rounded-lg p-2 ${m.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
                   <div className="text-xs whitespace-pre-wrap">{m.content}</div>
-                  <div className={`text-[10px] mt-1 ${m.role === "user" ? "text-primary-foreground/70" : "text-muted-foreground"}`}>{m.ts}</div>
+                  <div className={`text-xs mt-1 ${m.role === "user" ? "text-primary-foreground/70" : "text-muted-foreground"}`}>{m.ts}</div>
                 </div>
               </div>
             ))}
@@ -422,7 +422,7 @@ export default function VibeCoding() {
                 <button
                   key={s}
                   onClick={() => { setInput(s); }}
-                  className="text-[10px] border rounded-full px-2 py-0.5 hover:border-primary"
+                  className="text-xs border rounded-full px-2 py-0.5 hover:border-primary"
                 >
                   {s}
                 </button>
@@ -467,7 +467,7 @@ export default function VibeCoding() {
                       >
                         <File className="size-3" />
                         <span className="flex-1 font-mono">{f.name}</span>
-                        <Badge variant={f.status === "created" ? "default" : "outline"} className="text-[10px]">
+                        <Badge variant={f.status === "created" ? "default" : "outline"} className="text-xs">
                           {f.status === "created" ? <Plus className="size-2" /> : <Code2 className="size-2" />}
                           <span className="ml-0.5">{f.status === "created" ? "新建" : "修改"}</span>
                         </Badge>
@@ -485,7 +485,7 @@ export default function VibeCoding() {
                 {generated && files.length > 0 ? (
                   <>
                     {/* File tabs */}
-                    <div className="flex border-b bg-muted/30 overflow-x-auto shrink-0">
+                    <div className="flex border-b bg-muted/30 overflow-x-auto shrink-0 scrollbar-none-x">
                       {files.map((f) => (
                         <button
                           key={f.name}
@@ -496,7 +496,7 @@ export default function VibeCoding() {
                         >
                           <File className="size-3" />
                           {f.name.split('/').pop()}
-                          {f.status === "modified" && <span className="size-1.5 rounded-full bg-orange-500" />}
+                          {f.status === "modified" && <span className="size-1.5 rounded-full bg-primary" />}
                         </button>
                       ))}
                     </div>
@@ -569,7 +569,7 @@ $ curl http://localhost:3000
                   <div className="flex items-center gap-2 p-2 border rounded">
                     <GitBranch className="size-3" />
                     <span className="font-mono">main</span>
-                    <Badge variant="secondary" className="text-[10px]">{generated ? "ahead 5" : "up to date"}</Badge>
+                    <Badge variant="secondary" className="text-xs">{generated ? "ahead 5" : "up to date"}</Badge>
                   </div>
                   {generated && (
                     <div className="space-y-1 pl-4 border-l-2 ml-3">
@@ -614,7 +614,7 @@ $ curl http://localhost:3000
               />
             ) : (
               <div className="bg-muted/30 p-3 h-full overflow-auto">
-                <div className="bg-white rounded p-2 text-center text-[10px] text-muted-foreground mb-2">
+                <div className="bg-white rounded p-2 text-center text-xs text-muted-foreground mb-2">
                   http://localhost:3000
                 </div>
                 <div className="flex items-center justify-center h-full text-muted-foreground text-sm">

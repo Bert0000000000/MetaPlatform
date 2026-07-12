@@ -269,8 +269,8 @@ export function ReverseEngineer() {
                       <Table2 className="size-4 text-primary" />
                       <span className="font-medium text-sm">{t.objectLabel}</span>
                       <span className="text-xs text-muted-foreground font-mono">({t.tableName})</span>
-                      <Badge variant="secondary" className="text-[10px]">{t.fields.length} 字段</Badge>
-                      {t.foreignKeys.length > 0 && <Badge variant="default" className="text-[10px]">{t.foreignKeys.length} 关系</Badge>}
+                      <Badge variant="secondary" className="text-xs">{t.fields.length} 字段</Badge>
+                      {t.foreignKeys.length > 0 && <Badge variant="default" className="text-xs">{t.foreignKeys.length} 关系</Badge>}
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-1">
                       {t.fields.map((f) => {
@@ -284,9 +284,9 @@ export function ReverseEngineer() {
                           <div key={f.column} className="flex items-center gap-2 px-2 py-1 bg-muted/30 rounded text-xs">
                             <Icon className="size-3 text-muted-foreground" />
                             <span className="font-mono font-medium">{f.column}</span>
-                            {f.isPrimaryKey && <Badge variant="default" className="text-[9px] h-3 px-1">PK</Badge>}
-                            {f.isForeignKey && <Badge variant="secondary" className="text-[9px] h-3 px-1">FK → {f.refTable}</Badge>}
-                            <span className="text-muted-foreground text-[10px] ml-auto">
+                            {f.isPrimaryKey && <Badge variant="default" className="text-xs h-3 px-1">PK</Badge>}
+                            {f.isForeignKey && <Badge variant="secondary" className="text-xs h-3 px-1">FK → {f.refTable}</Badge>}
+                            <span className="text-muted-foreground text-xs ml-auto">
                               {f.ontologyType}
                             </span>
                           </div>

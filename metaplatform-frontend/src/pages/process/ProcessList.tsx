@@ -241,13 +241,13 @@ export default function ProcessList() {
                   </div>
                   <div className="flex gap-1">
                     {["全部", "业务流程", "审批流程", "已激活"].map((chip) => (
-                      <button key={chip} className="px-2 py-1 text-[10px] rounded-full border hover:border-primary hover:text-primary transition-colors">
+                      <button key={chip} className="px-2 py-1 text-xs rounded-full border hover:border-primary hover:text-primary transition-colors">
                         {chip}
                       </button>
                     ))}
                   </div>
                   {/* F4.4.3.14 虚拟滚动 indicator */}
-                  <Badge variant="secondary" className="text-[10px] gap-1">
+                  <Badge variant="secondary" className="text-xs gap-1">
                     <Waves className="size-2.5" /> 虚拟滚动
                   </Badge>
                 </div>
@@ -368,7 +368,7 @@ export default function ProcessList() {
                     <Bookmark className="size-4 text-muted-foreground" />
                     <div className="flex-1">
                       <div className="text-sm font-medium">{view.name}</div>
-                      <div className="text-[10px] text-muted-foreground font-mono">{view.filter}</div>
+                      <div className="text-xs text-muted-foreground font-mono">{view.filter}</div>
                     </div>
                     <Badge variant="secondary" className="text-xs">{view.count}</Badge>
                   </div>
@@ -576,7 +576,7 @@ export default function ProcessList() {
                   </Badge>
                 )}
               </div>
-              <div className="flex items-center gap-1 overflow-x-auto pb-2">
+              <div className="flex items-center gap-1 overflow-x-auto pb-2 scrollbar-none-x">
                 {simNodes.map((node, idx) => (
                   <div key={node.id} className="flex items-center">
                     <div
@@ -621,7 +621,7 @@ export default function ProcessList() {
                   </div>
                   <div className="flex justify-between p-2 bg-muted/30 rounded">
                     <span className="text-muted-foreground">决策结果</span>
-                    <Badge variant="default" className="text-[10px]">走 VP 审批</Badge>
+                    <Badge variant="default" className="text-xs">走 VP 审批</Badge>
                   </div>
                 </div>
               </div>

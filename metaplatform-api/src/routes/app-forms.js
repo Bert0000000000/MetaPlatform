@@ -225,27 +225,106 @@ router.post("/:formId/submit", async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+function formatSubmissionRow(r) {
+  return {
+    id: r.id,
+    appId: r.app_id,
+    formId: r.form_id,
+    version: r.version,
+    submitterEmail: r.submitter_email,
+    submitterName: r.submitter_name,
+    values: safeJSON(r.values_json, {}),
+    metadata: safeJSON(r.metadata_json, {}),
+    status: r.status,
+    submittedAt: r.submitted_at,
+  };
+}
+
+function buildSubmissionListSql(formId, appId, query) {
+  const allowedSortFields = ["id", "submitter_email", "submitter_name", "status", "submitted_at"];
+  const page = Math.max(Number(query.page) || 1, 1);
+  const pageSize = Math.min(Math.max(Number(query.pageSize) || 20, 1), 200);
+  const sortField = allowedSortFields.includes(query.sortField) ? query.sortField : "submitted_at";
+  const sortOrder = query.sortOrder === "asc" ? "ASC" : "DESC";
+  const q = typeof query.q === "string" ? query.q.trim() : "";
+
+  const where = ["form_id = ?", "app_id = ?"];
+  const params = [formId, appId];
+
+  if (q) {
+    where.push("(submitter_email LIKE ? OR submitter_name LIKE ? OR values_json LIKE ?)");
+    const like = `%${q}%`;
+    params.push(like, like, like);
+  }
+  if (query.status) {
+    where.push("status = ?");
+    params.push(query.status);
+  }
+
+  const whereSql = where.join(" AND ");
+  const countSql = `SELECT COUNT(*) AS total FROM form_submissions WHERE ${whereSql}`;
+  const listSql = `SELECT * FROM form_submissions WHERE ${whereSql} ORDER BY ${sortField} ${sortOrder} LIMIT ? OFFSET ?`;
+  return { countSql, listSql, params, page, pageSize };
+}
+
 // ─── GET /:formId/submissions — list submissions ──────────
 router.get("/:formId/submissions", async (req, res, next) => {
   try {
     const form = await db.prepare(
-      "SELECT id FROM app_forms WHERE id = ? AND app_id = ?"
+      "SELECT id, name FROM app_forms WHERE id = ? AND app_id = ?"
     ).get(req.params.formId, req.params.id);
     if (!form) return res.status(404).json({ success: false, error: "表单不存在" });
-    const limit = Math.min(Math.max(Number(req.query.limit || 50), 1), 200);
-    const rows = await db.prepare(
-      "SELECT * FROM form_submissions WHERE form_id = ? AND app_id = ? ORDER BY submitted_at DESC LIMIT ?"
-    ).all(form.id, req.params.id, limit);
-    res.json({
-      success: true,
-      data: rows.map((r) => ({
-        ...r,
-        values: safeJSON(r.values_json, {}),
-        metadata: safeJSON(r.metadata_json, {}),
-      })),
-    });
+
+    const { countSql, listSql, params, page, pageSize } = buildSubmissionListSql(form.id, req.params.id, req.query);
+    const { total } = await db.prepare(countSql).get(...params);
+    const offset = (page - 1) * pageSize;
+    const rows = await db.prepare(listSql).all(...params, pageSize, offset);
+
+    const data = {
+      rows: rows.map(formatSubmissionRow),
+      total,
+      page,
+      pageSize,
+      totalPages: Math.ceil(total / pageSize),
+    };
+
+    if (req.query.format === "csv") {
+      const csv = submissionsToCsv(data.rows, form.name);
+      res.setHeader("Content-Type", "text/csv; charset=utf-8");
+      res.setHeader("Content-Disposition", `attachment; filename="${encodeURIComponent(form.name)}_submissions.csv"`);
+      return res.send(csv);
+    }
+
+    res.json({ success: true, data });
   } catch (err) { next(err); }
 });
+
+function escapeCsvCell(value) {
+  const str = value == null ? "" : String(value);
+  if (/[",\n\r]/.test(str)) return `"${str.replace(/"/g, '""')}"`;
+  return str;
+}
+
+function submissionsToCsv(rows, formName) {
+  const valueKeys = new Set();
+  for (const r of rows) {
+    const values = r.values || {};
+    for (const k of Object.keys(values)) valueKeys.add(k);
+  }
+  const sortedValueKeys = Array.from(valueKeys);
+  const headers = ["id", "submitted_at", "status", "submitter_email", "submitter_name", ...sortedValueKeys];
+  const lines = [headers.map(escapeCsvCell).join(",")];
+  for (const r of rows) {
+    const values = r.values || {};
+    const line = [
+      r.id, r.submitted_at, r.status, r.submitter_email, r.submitter_name,
+      ...sortedValueKeys.map((k) => values[k]),
+    ];
+    lines.push(line.map(escapeCsvCell).join(","));
+  }
+  // UTF-8 BOM for Excel
+  return "\uFEFF" + lines.join("\n");
+}
 
 // ─── DELETE /:formId — delete form ────────────────────────
 router.delete("/:formId", async (req, res, next) => {

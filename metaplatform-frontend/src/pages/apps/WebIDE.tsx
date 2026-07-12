@@ -170,7 +170,7 @@ export function Home() {
       <div className="grid grid-cols-2 gap-4">
         <div className="rounded-lg border bg-white p-4">
           <h3 className="font-semibold mb-2">Activity</h3>
-          <div className="h-40 bg-gradient-to-r from-blue-100 to-purple-100 rounded flex items-center justify-center text-gray-400">
+          <div className="h-40 bg-primary rounded flex items-center justify-center text-gray-400">
             Chart Placeholder
           </div>
         </div>
@@ -447,7 +447,7 @@ function FileTree({ nodes, onOpen, onDelete, depth = 0 }: { nodes: FileNode[]; o
 /* ── Terminal component ── */
 function TerminalPanel({ logs }: { logs: string[] }) {
   return (
-    <div className="h-full font-mono text-xs bg-[#1e1e1e] text-green-400 p-3 overflow-auto">
+    <div className="h-full font-mono text-xs bg-card text-green-400 p-3 overflow-auto">
       {logs.map((line, i) => (
         <div key={i} className="whitespace-pre">{line}</div>
       ))}
@@ -680,8 +680,8 @@ export default function WebIDE() {
           </Button>
         </div>
         <div className="flex items-center gap-1">
-          <Badge variant="secondary" className="text-[10px]">TypeScript</Badge>
-          <Badge variant="secondary" className="text-[10px]">Vite 7.0</Badge>
+          <Badge variant="secondary" className="text-xs">TypeScript</Badge>
+          <Badge variant="secondary" className="text-xs">Vite 7.0</Badge>
           <Button variant="ghost" size="icon" className="size-7">
             <Settings className="size-3" />
           </Button>
@@ -718,7 +718,7 @@ export default function WebIDE() {
         {/* Editor + Terminal */}
         <div className="flex-1 flex flex-col min-w-0">
           {/* Tabs */}
-          <div className="flex items-center border-b bg-muted/30 overflow-x-auto">
+          <div className="flex items-center border-b bg-muted/30 overflow-x-auto scrollbar-none-x">
             {sidebarCollapsed && (
               <Button variant="ghost" size="icon" className="size-7 shrink-0 ml-1" onClick={() => setSidebarCollapsed(false)}>
                 <Maximize2 className="size-3" />
@@ -734,7 +734,7 @@ export default function WebIDE() {
               >
                 {getFileIcon(f.name)}
                 <span>{f.name}</span>
-                {f.modified && <span className="size-1.5 rounded-full bg-orange-500" />}
+                {f.modified && <span className="size-1.5 rounded-full bg-primary" />}
                 <Button
                   variant="ghost"
                   size="icon"

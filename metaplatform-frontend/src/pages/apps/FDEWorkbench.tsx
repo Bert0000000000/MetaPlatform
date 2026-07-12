@@ -537,8 +537,8 @@ ${visualComponents.map((c) => `      {/* ${c.label} */}`).join("\n")}
                         <div key={f.name} className="flex items-center justify-between py-0.5">
                           <span className="font-mono text-muted-foreground">{f.name}</span>
                           <span className="flex items-center gap-1">
-                            <Badge variant="outline" className="text-[10px] px-1 py-0">{f.type}</Badge>
-                            {f.required && <span className="text-red-500 text-[10px]">*</span>}
+                            <Badge variant="outline" className="text-xs px-1 py-0">{f.type}</Badge>
+                            {f.required && <span className="text-red-500 text-xs">*</span>}
                           </span>
                         </div>
                       ))}
@@ -566,7 +566,7 @@ ${visualComponents.map((c) => `      {/* ${c.label} */}`).join("\n")}
                   >
                     <GripVertical className="size-3 text-muted-foreground" />
                     <span className="flex-1 truncate">{comp.label}</span>
-                    <Badge variant="outline" className="text-[10px] px-1 py-0">{comp.type}</Badge>
+                    <Badge variant="outline" className="text-xs px-1 py-0">{comp.type}</Badge>
                     <button
                       className="opacity-0 group-hover:opacity-100 text-destructive"
                       onClick={(e) => { e.stopPropagation(); removeComponent(comp.id); }}

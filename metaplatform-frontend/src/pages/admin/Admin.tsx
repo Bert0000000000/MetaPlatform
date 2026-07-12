@@ -1766,7 +1766,7 @@ export function AdminTenants() {
         title="全部租户"
         description="跨所有 workspace 的租户清单、套餐、计费、有效期"
         action={
-          <Badge variant="secondary" className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border-0">
+          <Badge variant="secondary" className="bg-primary text-amber-700 dark:bg-primary/30 dark:text-amber-400 border-0">
             仅超管
           </Badge>
         }
@@ -1814,7 +1814,7 @@ export function AdminTenants() {
                 <TableRow key={t.id}>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      <div className="size-8 rounded-lg bg-gradient-to-br from-primary to-primary/60 text-primary-foreground flex items-center justify-center text-xs font-semibold shrink-0">
+                      <div className="size-8 rounded-lg bg-primary text-primary-foreground flex items-center justify-center text-xs font-semibold shrink-0">
                         {t.name[0]}
                       </div>
                       <div>
@@ -1871,7 +1871,7 @@ const CLUSTERS: ClusterRow[] = [
 
 const STATUS_BADGE = {
   healthy: <Badge className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border-0">健康</Badge>,
-  degraded: <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border-0">降级</Badge>,
+  degraded: <Badge className="bg-primary text-amber-700 dark:bg-primary/30 dark:text-amber-400 border-0">降级</Badge>,
   down: <Badge variant="destructive">宕机</Badge>,
 };
 
@@ -1882,7 +1882,7 @@ export function AdminClusters() {
         title="集群管理"
         description="K8s 集群节点 / 资源使用 / Helm release / 灰度"
         action={
-          <Badge variant="secondary" className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border-0">
+          <Badge variant="secondary" className="bg-primary text-amber-700 dark:bg-primary/30 dark:text-amber-400 border-0">
             仅超管
           </Badge>
         }
@@ -1915,7 +1915,7 @@ export function AdminClusters() {
                   <span className="tabular-nums">{c.cpuUsed}%</span>
                 </div>
                 <div className="w-full bg-muted rounded-full h-1.5">
-                  <div className={`h-1.5 rounded-full transition-all ${c.cpuUsed > 80 ? "bg-red-500" : c.cpuUsed > 60 ? "bg-amber-500" : "bg-primary"}`} style={{ width: `${c.cpuUsed}%` }} />
+                  <div className={`h-1.5 rounded-full transition-all ${c.cpuUsed > 80 ? "bg-red-500" : c.cpuUsed > 60 ? "bg-primary" : "bg-primary"}`} style={{ width: `${c.cpuUsed}%` }} />
                 </div>
               </div>
               <div>
@@ -1924,7 +1924,7 @@ export function AdminClusters() {
                   <span className="tabular-nums">{c.memUsed}%</span>
                 </div>
                 <div className="w-full bg-muted rounded-full h-1.5">
-                  <div className={`h-1.5 rounded-full transition-all ${c.memUsed > 80 ? "bg-red-500" : c.memUsed > 60 ? "bg-amber-500" : "bg-primary"}`} style={{ width: `${c.memUsed}%` }} />
+                  <div className={`h-1.5 rounded-full transition-all ${c.memUsed > 80 ? "bg-red-500" : c.memUsed > 60 ? "bg-primary" : "bg-primary"}`} style={{ width: `${c.memUsed}%` }} />
                 </div>
               </div>
               <div className="flex gap-2 pt-1">
@@ -1967,7 +1967,7 @@ export function AdminAudit() {
         title="审计日志"
         description="全平台操作审计 / 数据导出 / 登录失败 / 自动任务"
         action={
-          <Badge variant="secondary" className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border-0">
+          <Badge variant="secondary" className="bg-primary text-amber-700 dark:bg-primary/30 dark:text-amber-400 border-0">
             仅超管
           </Badge>
         }
@@ -2032,7 +2032,7 @@ export function AdminLicense() {
         title="License & 订阅"
         description="全局 License 状态 / 配额 / 续费"
         action={
-          <Badge variant="secondary" className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border-0">
+          <Badge variant="secondary" className="bg-primary text-amber-700 dark:bg-primary/30 dark:text-amber-400 border-0">
             仅超管
           </Badge>
         }
@@ -2116,7 +2116,7 @@ export function AdminRuntimes() {
         title="运行时清单"
         description="全平台已发布应用的运行时实例、副本数、资源使用"
         action={
-          <Badge variant="secondary" className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border-0">
+          <Badge variant="secondary" className="bg-primary text-amber-700 dark:bg-primary/30 dark:text-amber-400 border-0">
             仅超管
           </Badge>
         }
@@ -2197,8 +2197,8 @@ const FLAGS: FlagRow[] = [
 const CATEGORY_COLORS: Record<FlagRow["category"], string> = {
   功能: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
   灰度: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
-  限流: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
-  实验: "bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400",
+  限流: "bg-primary text-amber-700 dark:bg-primary/30 dark:text-amber-400",
+  实验: "bg-primary text-pink-700 dark:bg-primary/30 dark:text-pink-400",
 };
 
 export function AdminFlags() {
@@ -2212,7 +2212,7 @@ export function AdminFlags() {
         title="平台开关 / Feature Flags"
         description="全局功能开关 / 灰度发布 / 限流 / 实验"
         action={
-          <Badge variant="secondary" className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border-0">
+          <Badge variant="secondary" className="bg-primary text-amber-700 dark:bg-primary/30 dark:text-amber-400 border-0">
             仅超管
           </Badge>
         }
@@ -2240,20 +2240,20 @@ export function AdminFlags() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-medium">{f.name}</span>
-                    <Badge variant="secondary" className={`border-0 text-[10px] h-4 px-1.5 ${CATEGORY_COLORS[f.category]}`}>{f.category}</Badge>
-                    <code className="text-[10px] text-muted-foreground font-mono">{f.key}</code>
+                    <Badge variant="secondary" className={`border-0 text-xs h-4 px-1.5 ${CATEGORY_COLORS[f.category]}`}>{f.category}</Badge>
+                    <code className="text-xs text-muted-foreground font-mono">{f.key}</code>
                   </div>
                   <p className="text-xs text-muted-foreground mt-0.5">{f.description}</p>
                   {f.enabled && f.rollout < 100 && (
                     <div className="mt-2 flex items-center gap-2">
                       <div className="w-32 h-1.5 bg-muted rounded-full overflow-hidden">
-                        <div className="h-full bg-gradient-to-r from-purple-500 to-primary rounded-full" style={{ width: `${f.rollout}%` }} />
+                        <div className="h-full bg-primary rounded-full" style={{ width: `${f.rollout}%` }} />
                       </div>
-                      <span className="text-[11px] tabular-nums text-muted-foreground">灰度 {f.rollout}%</span>
+                      <span className="text-xs tabular-nums text-muted-foreground">灰度 {f.rollout}%</span>
                     </div>
                   )}
                 </div>
-                <span className="text-[10px] text-muted-foreground shrink-0 tabular-nums">{f.updatedAt}</span>
+                <span className="text-xs text-muted-foreground shrink-0 tabular-nums">{f.updatedAt}</span>
               </div>
             </CardContent>
           </Card>
@@ -2393,7 +2393,7 @@ export function AdminPlugins() {
           <Card key={p.id} className="hover:border-primary">
             <CardHeader>
               <div className="flex items-start justify-between">
-                <div className="size-10 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-500 text-white flex items-center justify-center"><Puzzle className="size-5" /></div>
+                <div className="size-10 rounded-lg bg-primary text-white flex items-center justify-center"><Puzzle className="size-5" /></div>
                 <Badge variant={p.status === "installed" ? "default" : "secondary"}>{p.status === "installed" ? "已安装" : "可安装"}</Badge>
               </div>
               <CardTitle className="text-base mt-2">{p.name}</CardTitle>

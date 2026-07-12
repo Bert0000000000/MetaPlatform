@@ -49,7 +49,7 @@ export default function PageEditor() {
         onToggleAI={() => editor.setShowAI(!editor.showAI)}
         saving={editor.saving}
         onSave={editor.savePage}
-        onBack={() => navigate(-1)}
+        onBack={() => navigate(`/apps/${appId}/overview`)}
       >
         {renderEditorByType(pageType)}
       </EditorShell>
@@ -59,17 +59,17 @@ export default function PageEditor() {
   function renderEditorByType(type: string) {
     switch (type) {
       case "form": case "lowcode":
-        return <FormLowCodeEditor {...commonProps} selectedCompId={editor.selectedCompId} setSelectedCompId={editor.setSelectedCompId} />;
+        return <FormLowCodeEditor {...commonProps} appId={appId} pageName={editor.pageName} selectedCompId={editor.selectedCompId} setSelectedCompId={editor.setSelectedCompId} />;
       case "list":
         return <ListPageEditor {...commonProps} />;
       case "dashboard": case "report":
-        return <ReportEditor {...commonProps} />;
+        return <ReportEditor {...commonProps} appId={appId} />;
       case "workflow":
         return <ProcessDesignerV2 className="flex-1" />;
       case "bi":
         return <BIEditor {...commonProps} />;
       default:
-        return <FormLowCodeEditor {...commonProps} selectedCompId={editor.selectedCompId} setSelectedCompId={editor.setSelectedCompId} />;
+        return <FormLowCodeEditor {...commonProps} appId={appId} pageName={editor.pageName} selectedCompId={editor.selectedCompId} setSelectedCompId={editor.setSelectedCompId} />;
     }
   }
 }

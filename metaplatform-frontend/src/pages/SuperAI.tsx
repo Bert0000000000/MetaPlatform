@@ -337,7 +337,7 @@ function ChatTab({ messages, setMessages, agentPrompt, onAgentPromptConsumed }: 
       return (
         <div className="rounded-lg overflow-hidden border max-w-[200px] mb-1">
           <img src={attachment.url} alt={attachment.name} className="w-full h-auto max-h-[150px] object-cover" />
-          <div className={`px-2 py-1 text-[10px] ${isOwn ? "bg-primary/20" : "bg-muted"}`}>
+          <div className={`px-2 py-1 text-xs ${isOwn ? "bg-primary/20" : "bg-muted"}`}>
             {attachment.name} ({attachment.size})
           </div>
         </div>
@@ -352,7 +352,7 @@ function ChatTab({ messages, setMessages, agentPrompt, onAgentPromptConsumed }: 
               <div key={i} className="w-[3px] bg-primary/60 rounded-full" style={{ height: `${4 + Math.random() * 12}px` }} />
             ))}
           </div>
-          <span className="text-[10px] text-muted-foreground ml-1">{attachment.duration}</span>
+          <span className="text-xs text-muted-foreground ml-1">{attachment.duration}</span>
         </div>
       );
     }
@@ -363,7 +363,7 @@ function ChatTab({ messages, setMessages, agentPrompt, onAgentPromptConsumed }: 
           <DocIcon className="size-5 text-blue-500 shrink-0" />
           <div className="min-w-0">
             <div className="text-xs font-medium truncate">{attachment.name}</div>
-            <div className="text-[10px] text-muted-foreground">{attachment.size}</div>
+            <div className="text-xs text-muted-foreground">{attachment.size}</div>
           </div>
         </div>
       );
@@ -378,7 +378,7 @@ function ChatTab({ messages, setMessages, agentPrompt, onAgentPromptConsumed }: 
           {messages.length === 1 && messages[0].role === "assistant" && (
             // ── 空状态：居中欢迎 + 6 个建议卡片 ──
             <div className="flex flex-col items-center justify-center min-h-[50vh] py-10 px-4">
-              <div className="size-16 rounded-2xl bg-gradient-to-br from-primary to-primary/60 text-primary-foreground flex items-center justify-center shadow-lg mb-4">
+              <div className="size-16 rounded-2xl bg-primary text-primary-foreground flex items-center justify-center shadow-lg mb-4">
                 <Sparkles className="size-8" />
               </div>
               <h2 className="text-xl font-semibold mb-1">有什么可以帮你的？</h2>
@@ -398,7 +398,7 @@ function ChatTab({ messages, setMessages, agentPrompt, onAgentPromptConsumed }: 
                       </div>
                       <div className="min-w-0">
                         <div className="text-sm font-medium">{s.text}</div>
-                        <div className="text-[11px] text-muted-foreground mt-0.5">{s.category}</div>
+                        <div className="text-xs text-muted-foreground mt-0.5">{s.category}</div>
                       </div>
                     </button>
                   );
@@ -412,7 +412,7 @@ function ChatTab({ messages, setMessages, agentPrompt, onAgentPromptConsumed }: 
               className={`flex gap-3 px-4 sm:px-6 ${m.role === "user" ? "justify-end" : "justify-start"}`}
             >
               {m.role === "assistant" && (
-                <div className="size-7 rounded-lg bg-gradient-to-br from-primary to-primary/60 text-primary-foreground flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
+                <div className="size-7 rounded-lg bg-primary text-primary-foreground flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
                   <Bot className="size-3.5" />
                 </div>
               )}
@@ -452,13 +452,13 @@ function ChatTab({ messages, setMessages, agentPrompt, onAgentPromptConsumed }: 
                   )}
                 </div>
                 {m.ts && (
-                  <span className="text-[10px] text-muted-foreground/70 mt-1 px-1 tabular-nums">
+                  <span className="text-xs text-muted-foreground/70 mt-1 px-1 tabular-nums">
                     {m.ts}
                   </span>
                 )}
               </div>
               {m.role === "user" && (
-                <div className="size-7 rounded-lg bg-gradient-to-br from-blue-500 to-purple-500 text-white flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
+                <div className="size-7 rounded-lg bg-primary text-white flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
                   <User className="size-3.5" />
                 </div>
               )}
@@ -466,7 +466,7 @@ function ChatTab({ messages, setMessages, agentPrompt, onAgentPromptConsumed }: 
           ))}
           {isTyping && (
             <div className="flex gap-3 justify-start px-4 sm:px-6">
-              <div className="size-7 rounded-lg bg-gradient-to-br from-primary to-primary/60 text-primary-foreground flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
+              <div className="size-7 rounded-lg bg-primary text-primary-foreground flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
                 <Bot className="size-3.5" />
               </div>
               <div className="rounded-2xl rounded-tl-sm bg-muted/70 px-4 py-3 flex flex-col gap-2 min-w-[180px]">
@@ -480,9 +480,9 @@ function ChatTab({ messages, setMessages, agentPrompt, onAgentPromptConsumed }: 
                 </div>
                 {dispatchingAgents.length > 0 && (
                   <div className="flex flex-wrap items-center gap-1.5 pt-1.5 border-t border-border/40">
-                    <span className="text-[11px] text-muted-foreground">调度中：</span>
+                    <span className="text-xs text-muted-foreground">调度中：</span>
                     {dispatchingAgents.map((name, i) => (
-                      <Badge key={i} variant="secondary" className="text-[10px] h-5 px-1.5 gap-1 font-normal">
+                      <Badge key={i} variant="secondary" className="text-xs h-5 px-1.5 gap-1 font-normal">
                         <Loader2 className="size-2.5 animate-spin" />
                         {name}
                       </Badge>
@@ -634,7 +634,7 @@ function ChatTab({ messages, setMessages, agentPrompt, onAgentPromptConsumed }: 
             </div>
 
             {/* ── Suggestion chips (horizontally scrollable, all 6) ─ */}
-            <div className="flex items-center gap-1.5 px-3 py-2 border-t border-border/40 bg-muted/20 overflow-x-auto">
+            <div className="flex items-center gap-1.5 px-3 py-2 border-t border-border/40 bg-muted/20 overflow-x-auto scrollbar-none-x">
               <Sparkles className="size-3.5 text-primary shrink-0" />
               {SUGGESTIONS.map((s, i) => (
                 <button
@@ -647,7 +647,7 @@ function ChatTab({ messages, setMessages, agentPrompt, onAgentPromptConsumed }: 
                   {s.text}
                 </button>
               ))}
-              <span className="ml-auto text-[10px] text-muted-foreground/70 shrink-0 pl-2 tabular-nums">
+              <span className="ml-auto text-xs text-muted-foreground/70 shrink-0 pl-2 tabular-nums">
                 {input.length}/4000 · Enter 发送
               </span>
             </div>
@@ -1175,12 +1175,12 @@ function HistorySidebar({ conversations, currentId, onSelect, onDelete, onClose 
       role="complementary"
       aria-label="对话历史"
     >
-      <div className="flex items-center justify-between p-4 border-b bg-background/80 sticky top-0 z-10">
+      <div className="flex items-center justify-between p-4 border-b bg-background sticky top-0 z-10 backdrop-blur-sm">
         <div className="flex items-center gap-2">
           <Clock className="size-4 text-muted-foreground" />
           <h2 className="font-semibold text-sm">对话历史</h2>
           {conversations.length > 0 && (
-            <Badge variant="secondary" className="h-4 px-1.5 text-[10px]">
+            <Badge variant="secondary" className="h-4 px-1.5 text-xs">
               {conversations.length}
             </Badge>
           )}
@@ -1203,7 +1203,7 @@ function HistorySidebar({ conversations, currentId, onSelect, onDelete, onClose 
             {(["今天", "昨天", "本周", "更早"] as const).map((g) =>
               groups[g].length === 0 ? null : (
                 <div key={g} className="mb-2">
-                  <div className="px-4 py-1.5 text-[10px] font-medium text-muted-foreground/80 uppercase tracking-wider">
+                  <div className="px-4 py-1.5 text-xs font-medium text-muted-foreground/80 uppercase tracking-wider">
                     {g}
                   </div>
                   {groups[g].map((conv) => {
@@ -1221,7 +1221,7 @@ function HistorySidebar({ conversations, currentId, onSelect, onDelete, onClose 
                         <MessageSquare className="size-4 mt-0.5 shrink-0 text-muted-foreground" />
                         <div className="flex-1 min-w-0">
                           <div className="text-sm font-medium truncate">{conv.title}</div>
-                          <div className="text-[11px] text-muted-foreground mt-0.5 flex items-center gap-1.5">
+                          <div className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1.5">
                             <span>{conv.messages.length} 条</span>
                             <span>·</span>
                             <span>{conv.createdAt}</span>
@@ -1248,7 +1248,7 @@ function HistorySidebar({ conversations, currentId, onSelect, onDelete, onClose 
           </div>
         )}
       </div>
-      <div className="p-3 border-t text-[10px] text-muted-foreground/70 text-center bg-background/80">
+      <div className="p-3 border-t text-xs text-muted-foreground/70 text-center bg-background/80">
         ⌘N 新对话 · Esc 关闭
       </div>
     </aside>
@@ -1353,21 +1353,21 @@ export function SuperAIPage() {
   }, [showHistory, handleNewConversation]);
 
   return (
-    <div className="flex flex-col h-full min-h-0 bg-gradient-to-b from-background to-muted/20">
+    <div className="flex flex-col h-full min-h-0 bg-background">
       {/* ── Topbar ────────────────────────────────────────────────
           简洁：左侧 logo + 状态、右侧历史 / 新对话 / 主题预留
           sticky 在顶部，border-bottom 渐入 / 渐出。                      */}
-      <div className="sticky top-0 z-30 border-b bg-background/80 backdrop-blur-md px-6 py-3 flex items-center justify-between">
+      <div className="sticky top-0 z-30 border-b bg-background backdrop-blur-md px-6 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center size-9 rounded-xl bg-gradient-to-br from-primary to-primary/60 text-primary-foreground shadow-sm">
+          <div className="flex items-center justify-center size-9 rounded-xl bg-primary text-primary-foreground shadow-sm">
             <Sparkles className="size-5" />
           </div>
           <div>
             <h1 className="text-base font-semibold tracking-tight flex items-center gap-2">
               SuperAI
-              <Badge variant="secondary" className="text-[10px] h-4 px-1.5 font-normal">Beta</Badge>
+              <Badge variant="secondary" className="text-xs h-4 px-1.5 font-normal">Beta</Badge>
             </h1>
-            <p className="text-[11px] text-muted-foreground">AI 对话入口 · ⌘K 全局唤起 · ⌘N 新对话</p>
+            <p className="text-xs text-muted-foreground">AI 对话入口 · ⌘K 全局唤起 · ⌘N 新对话</p>
           </div>
         </div>
         <div className="flex gap-2">
@@ -1375,13 +1375,13 @@ export function SuperAIPage() {
             <Clock className="size-3.5" />
             历史
             {conversations.length > 0 && (
-              <Badge variant="secondary" className="ml-0.5 h-4 px-1.5 text-[10px]">{conversations.length}</Badge>
+              <Badge variant="secondary" className="ml-0.5 h-4 px-1.5 text-xs">{conversations.length}</Badge>
             )}
           </Button>
           <Button size="sm" onClick={handleNewConversation} className="gap-1.5">
             <Plus className="size-3.5" />
             新对话
-            <kbd className="hidden sm:inline-block ml-1 text-[10px] opacity-60 font-mono">⌘N</kbd>
+            <kbd className="hidden sm:inline-block ml-1 text-xs opacity-60 font-mono">⌘N</kbd>
           </Button>
         </div>
       </div>

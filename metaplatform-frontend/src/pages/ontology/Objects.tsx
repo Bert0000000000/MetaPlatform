@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,10 +13,18 @@ import {
   Plus, Sparkles, Search, Edit, Trash2, Link2, Loader2, AlertCircle,
   User, Package, Tag, Users, FileText, Receipt, Box, Settings,
   Hash, Copy, Check, ShieldCheck, GitMerge, AlertOctagon, Activity, CopyMinus, RotateCcw,
-  ZoomIn, ZoomOut, Maximize2, Move,
+  ZoomIn, ZoomOut, Maximize2,
 } from "lucide-react";
 import { PageAgentPanel } from "@/components/PageAgentPanel";
 import { AGENT_OBJECTS } from "@/components/PageAgents";
+import { LineageCanvas } from "@/components/lineage/LineageCanvas";
+import { OntologyObjectNode } from "@/components/ontology/OntologyObjectNode";
+import {
+  layoutCircular,
+  layoutGrid,
+  layoutHierarchical,
+  type LayoutMode,
+} from "@/lib/layout/position";
 // PageAgentPanel 暂时保留给 Objects 页面作为 quick action 入口
 
 /** Map icon string names from the API to Lucide components */
@@ -98,12 +106,14 @@ function CopyButton({ value, label }: { value: string; label: string }) {
 
 /* ═════════════ E-R 关系图对话框 ═════════════
  *
- * 自动布局: 把对象按圆形均匀分布, 画 SVG 节点 + 边
- * 交互: 拖动节点 / 滚轮缩放 / 平移画布 / 点节点跳详情
+ * 由原 660 行自绘 SVG 重构为 React Flow 包装版 (与 DataLineage 同款画布)。
  *
- * 节点 = 矩形 (label/name)
- * 边   = 关系 (后端 OntologyRelation, 暂时从 relations API 拉)
- *       没有 relations 时按 name 启发式推断 (e.g. Customer → Order)
+ * 改造要点：
+ *   - 节点拖拽 / 缩放 / 平移 由 React Flow 自动接管
+ *   - 节点形状抽到 OntologyObjectNode
+ *   - 3 种布局算法搬至 src/lib/layout/position.ts 复用
+ *   - 关系类型标签通过 React Flow Edge.label 直接渲染
+ *   - 详情跳转通过节点 hover 「打开详情」按钮 (保留双击触发)
  */
 function ERGraphDialog({
   open,
@@ -114,54 +124,59 @@ function ERGraphDialog({
   onOpenChange: (v: boolean) => void;
   objects: OntologyObject[];
 }) {
-  const svgRef = useRef<SVGSVGElement | null>(null);
+  const navigate = useNavigate();
   const [relations, setRelations] = useState<{ source: string; target: string; type: string }[]>([]);
   const [loading, setLoading] = useState(false);
-  const [zoom, setZoom] = useState(1);
-  const [pan, setPan] = useState({ x: 0, y: 0 });
-  const [dragNodeId, setDragNodeId] = useState<string | null>(null);
-  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
-  const [hoverNodeId, setHoverNodeId] = useState<string | null>(null);
+  const [layoutMode, setLayoutMode] = useState<LayoutMode>("circular");
   const [positions, setPositions] = useState<Record<string, { x: number; y: number }>>({});
-  const [panning, setPanning] = useState(false);
-  const panStartRef = useRef({ x: 0, y: 0, panX: 0, panY: 0 });
-  const navigate = useNavigate();
-  const [layoutMode, setLayoutMode] = useState<"circular" | "grid" | "hierarchical">("circular");
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
 
-  // 打开时拉 relations
+  // 加载 relations (失败 fallback 到启发式)
   useEffect(() => {
     if (!open) return;
     setLoading(true);
     ontologyApi.listRelations()
       .then((rels) => {
-        setRelations(rels.map((r) => ({ source: r.source_object_id, target: r.target_object_id, type: r.type || r.label || "关联" })));
+        setRelations(
+          rels.map((r) => ({
+            source: r.source_object_id,
+            target: r.target_object_id,
+            type: r.type || r.label || "关联",
+          })),
+        );
       })
       .catch(() => {
-        // 失败时用启发式补一些, 至少图能看
         setRelations(inferHeuristicRelations(objects));
       })
       .finally(() => setLoading(false));
-    // 重置视图
-    setZoom(1);
-    setPan({ x: 0, y: 0 });
   }, [open, objects]);
 
-  // 初始 / 打开时按当前 layoutMode 排
+  // 切换布局时重算
+  const applyLayout = React.useCallback(
+    (mode: LayoutMode) => {
+      if (objects.length === 0) return;
+      const ids = objects.map((o) => o.id);
+      let next: Record<string, { x: number; y: number }>;
+      if (mode === "circular") next = layoutCircular({ ids });
+      else if (mode === "grid") next = layoutGrid({ ids });
+      else next = layoutHierarchical({ ids, relations });
+      setPositions(next);
+    },
+    [objects, relations],
+  );
+
   useEffect(() => {
     if (!open || objects.length === 0) return;
     applyLayout(layoutMode);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, objects]);
+  }, [open, objects, layoutMode, applyLayout]);
 
   function inferHeuristicRelations(objs: OntologyObject[]): { source: string; target: string; type: string }[] {
     const r: { source: string; target: string; type: string }[] = [];
-    // 用更宽松的匹配: name 中包含 (不区分大小写) / 移除 obj- 前缀
     const findByName = (...keywords: string[]) =>
       objs.find((o) => {
         const n = o.name.toLowerCase().replace(/^obj[-_]?/, "").replace(/[-_]/g, "");
         return keywords.some((k) => n.includes(k.toLowerCase()));
       });
-    // 常见业务关系
     const pairs: [string[], string[], string][] = [
       [["customer", "client", "客户"], ["order", "订单"], "下单"],
       [["customer", "客户"], ["opportunity", "deal", "销售机会"], "潜客"],
@@ -181,224 +196,65 @@ function ERGraphDialog({
     return r;
   }
 
-  function handleWheel(e: React.WheelEvent) {
-    e.preventDefault();
-    const delta = e.deltaY > 0 ? 0.9 : 1.1;
-    setZoom((z) => Math.max(0.3, Math.min(3, z * delta)));
-  }
-
-  function handleCanvasMouseDown(e: React.MouseEvent) {
-    if ((e.target as HTMLElement).closest("[data-node]")) return; // 点在节点上不 pan
-    setPanning(true);
-    panStartRef.current = { x: e.clientX, y: e.clientY, panX: pan.x, panY: pan.y };
-  }
-
-  function handleCanvasMouseMove(e: React.MouseEvent) {
-    if (dragNodeId) {
-      const rect = svgRef.current?.getBoundingClientRect();
-      if (!rect) return;
-      const newX = (e.clientX - rect.left - pan.x) / zoom - dragOffset.x;
-      const newY = (e.clientY - rect.top - pan.y) / zoom - dragOffset.y;
-      setPositions((prev) => ({ ...prev, [dragNodeId]: { x: newX, y: newY } }));
-      return;
-    }
-    if (panning) {
-      setPan({
-        x: panStartRef.current.panX + (e.clientX - panStartRef.current.x),
-        y: panStartRef.current.panY + (e.clientY - panStartRef.current.y),
-      });
-    }
-  }
-
-  function handleCanvasMouseUp() {
-    setDragNodeId(null);
-    setPanning(false);
-  }
-
-  function handleNodeMouseDown(e: React.MouseEvent, id: string) {
-    e.stopPropagation();
-    const rect = svgRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    const pos = positions[id];
-    if (!pos) return;
-    setDragNodeId(id);
-    setDragOffset({
-      x: (e.clientX - rect.left - pan.x) / zoom - pos.x,
-      y: (e.clientY - rect.top - pan.y) / zoom - pos.y,
+  // 转 React Flow 的契约
+  const lineageNodes: import("@/components/lineage/LineageCanvas").LineageNodeDatum[] = React.useMemo(
+    () =>
+      objects.map((o) => ({
+        id: o.id,
+        name: o.label || o.name,
+        type: "ontology-object",
+        description: o.description ?? "",
+        status: (o.status as "active" | "inactive" | "error") ?? "active",
+      })),
+    [objects],
+  );
+  const lineageEdges: import("@/components/lineage/LineageCanvas").LineageEdgeDatum[] = React.useMemo(
+    () => relations.map((r) => ({ from: r.source, to: r.target })),
+    [relations],
+  );
+  const edgeLabels = React.useMemo(() => {
+    const m: Record<string, string> = {};
+    relations.forEach((r) => {
+      m[`${r.source}->${r.target}`] = r.type;
     });
-  }
-
-  function resetView() {
-    setZoom(1);
-    setPan({ x: 0, y: 0 });
-    applyLayout(layoutMode);
-  }
-
-  // 布局变化时实时重排
-  function changeLayout(mode: "circular" | "grid" | "hierarchical") {
-    setLayoutMode(mode);
-    applyLayout(mode);
-  }
-
-  const nodeW = 150;
-  const nodeH = 68;
-
-  /* ════════════════════════════════════════════════════════════════════
-   * 3 种布局算法: 圆形 / 网格 / 分层 (Sugiyama-like, 减边交叉)
-   * ════════════════════════════════════════════════════════════════════ */
-
-  // 1. 圆形布局 (默认)
-  function layoutCircular(objs: OntologyObject[], prev: Record<string, { x: number; y: number }>): Record<string, { x: number; y: number }> {
-    const cx = 500, cy = 360;
-    const r = Math.min(320, 150 + objs.length * 18);
-    const next: Record<string, { x: number; y: number }> = {};
-    objs.forEach((o, i) => {
-      if (prev[o.id]) { next[o.id] = prev[o.id]; return; }
-      const angle = (i / objs.length) * Math.PI * 2 - Math.PI / 2;
-      next[o.id] = { x: cx + Math.cos(angle) * r, y: cy + Math.sin(angle) * r };
+    return m;
+  }, [relations]);
+  const edgeDashed = React.useMemo(() => {
+    const m: Record<string, boolean> = {};
+    relations.forEach((r) => {
+      m[`${r.source}->${r.target}`] = true;
     });
-    return next;
-  }
+    return m;
+  }, [relations]);
 
-  // 2. 网格布局
-  function layoutGrid(objs: OntologyObject[], prev: Record<string, { x: number; y: number }>): Record<string, { x: number; y: number }> {
-    const cols = Math.ceil(Math.sqrt(objs.length * 1.5));
-    const gapX = 220, gapY = 160;
-    const totalW = cols * gapX;
-    const startX = 500 - totalW / 2 + gapX / 2;
-    const startY = 200;
-    const next: Record<string, { x: number; y: number }> = {};
-    objs.forEach((o, i) => {
-      if (prev[o.id]) { next[o.id] = prev[o.id]; return; }
-      const c = i % cols, row = Math.floor(i / cols);
-      next[o.id] = { x: startX + c * gapX, y: startY + row * gapY };
-    });
-    return next;
-  }
+  // 选中态：lineage 自身 dim 没传入 selectedLabel — 在 OntologyObjectNode 内部处理
+  const visibleIds = useMemo(() => new Set(objects.map((o) => o.id)), [objects]);
 
-  // 3. 分层布局 (Sugiyama-like 减交叉)
-  function layoutHierarchical(
-    objs: OntologyObject[],
-    rels: { source: string; target: string }[],
-    prev: Record<string, { x: number; y: number }>,
-  ): Record<string, { x: number; y: number }> {
-    if (objs.length === 0) return {};
-    const idSet = new Set(objs.map((o) => o.id));
-    // 3.1 邻接表 + 入度
-    const outAdj: Record<string, string[]> = {};
-    const inAdj: Record<string, string[]> = {};
-    const inDeg: Record<string, number> = {};
-    objs.forEach((o) => { outAdj[o.id] = []; inAdj[o.id] = []; inDeg[o.id] = 0; });
-    rels.forEach((r) => {
-      if (idSet.has(r.source) && idSet.has(r.target) && r.source !== r.target) {
-        outAdj[r.source].push(r.target);
-        inAdj[r.target].push(r.source);
-        inDeg[r.target]++;
-      }
-    });
-    // 3.2 BFS 分层 (源点选 inDeg = 0)
-    const layer: Record<string, number> = {};
-    const queue: string[] = [];
-    objs.forEach((o) => {
-      if (inDeg[o.id] === 0) { layer[o.id] = 0; queue.push(o.id); }
-    });
-    // 入度非 0 的: 先给个 fallback = inf
-    objs.forEach((o) => { if (!(o.id in layer)) layer[o.id] = 0; });
-    let head = 0;
-    while (head < queue.length) {
-      const u = queue[head++];
-      outAdj[u].forEach((v) => {
-        if (layer[v] < layer[u] + 1) layer[v] = layer[u] + 1;
-        inDeg[v]--;
-        if (inDeg[v] === 0) queue.push(v);
-      });
-    }
-    // 3.3 按层分组
-    const layers: string[][] = [];
-    objs.forEach((o) => {
-      const l = layer[o.id];
-      if (!layers[l]) layers[l] = [];
-      layers[l].push(o.id);
-    });
-    // 3.4 Barycenter 排序 (多次扫描减交叉)
-    const ORDER_ITER = 12;
-    for (let iter = 0; iter < ORDER_ITER; iter++) {
-      for (let l = 1; l < layers.length; l++) {
-        layers[l].forEach((id, i) => {
-          const parents = inAdj[id];
-          if (parents.length === 0) return;
-          // 找父层 index
-          const parentLayer = layers[l - 1];
-          if (!parentLayer) return;
-          (layers[l] as any).__bary = (layers[l] as any).__bary || {};
-          let sum = 0, cnt = 0;
-          parents.forEach((p) => {
-            const idx = parentLayer.indexOf(p);
-            if (idx >= 0) { sum += idx; cnt++; }
-          });
-          (layers[l] as any).__bary[id] = cnt > 0 ? sum / cnt : i;
-        });
-        // 重新排序
-        layers[l].sort((a, b) => {
-          const ba = (layers[l] as any).__bary?.[a] ?? 999;
-          const bb = (layers[l] as any).__bary?.[b] ?? 999;
-          return ba - bb;
-        });
-      }
-      // 反向
-      for (let l = layers.length - 2; l >= 0; l--) {
-        layers[l].forEach((id, i) => {
-          const children = outAdj[id];
-          if (children.length === 0) return;
-          const childLayer = layers[l + 1];
-          if (!childLayer) return;
-          (layers[l] as any).__bary = (layers[l] as any).__bary || {};
-          let sum = 0, cnt = 0;
-          children.forEach((c) => {
-            const idx = childLayer.indexOf(c);
-            if (idx >= 0) { sum += idx; cnt++; }
-          });
-          (layers[l] as any).__bary[id] = cnt > 0 ? sum / cnt : i;
-        });
-        layers[l].sort((a, b) => {
-          const ba = (layers[l] as any).__bary?.[a] ?? 999;
-          const bb = (layers[l] as any).__bary?.[b] ?? 999;
-          return ba - bb;
-        });
-      }
-    }
-    // 3.5 计算坐标
-    const colW = 200, rowH = 120;
-    const totalW = Math.max(...layers.map((ly) => ly.length)) * colW;
-    const startX = 500 - totalW / 2 + colW / 2;
-    const startY = 180;
-    const next: Record<string, { x: number; y: number }> = {};
-    layers.forEach((ly, li) => {
-      ly.forEach((id, i) => {
-        const layerWidth = ly.length * colW;
-        const offsetX = (totalW - layerWidth) / 2;
-        next[id] = {
-          x: startX + offsetX + i * colW,
-          y: startY + li * rowH,
-        };
-      });
-    });
-    return next;
-  }
+  const onObjectSelect = React.useCallback((id: string | null) => setSelectedNodeId(id), []);
+  const onOpenDetail = React.useCallback(
+    (id: string) => {
+      onOpenChange(false);
+      navigate(`/ontology/object/${id}`);
+    },
+    [onOpenChange, navigate],
+  );
 
-  // 应用布局
-  function applyLayout(mode: "circular" | "grid" | "hierarchical") {
-    if (objects.length === 0) return;
-    let newPos: Record<string, { x: number; y: number }>;
-    if (mode === "grid") {
-      newPos = layoutGrid(objects, {});
-    } else if (mode === "hierarchical") {
-      newPos = layoutHierarchical(objects, relations, {});
-    } else {
-      newPos = layoutCircular(objects, {});
-    }
-    setPositions(newPos);
-  }
+  /**
+   * 让 OntologyObjectNode 接收 onOpenDetail 闭包
+   * 用 React.useMemo 锁住引用 + useCallback 锁住依赖，避免拖拽时反复重建导致节点闪烁
+   */
+  const ontologyObjectNodeType = React.useMemo(
+    () => (props: import("@xyflow/react").NodeProps) => (
+      <OntologyObjectNode
+        {...props}
+        data={{
+          ...(props.data as Record<string, unknown>),
+          onOpenDetail,
+        }}
+      />
+    ),
+    [onOpenDetail],
+  );
 
   const relCount = relations.length;
   const objCount = objects.length;
@@ -412,321 +268,80 @@ function ERGraphDialog({
             关系图 (E-R)
           </DialogTitle>
           <DialogDescription>
-            {loading ? "加载关系中..." : `${objCount} 个对象, ${relCount} 条关系`}
+            {loading
+              ? "加载关系中..."
+              : `${objCount} 个对象, ${relCount} 条关系`}
             {relCount === 0 && !loading && " (无后端关系, 已用业务启发式推断)"}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="relative" style={{ height: "70vh", backgroundColor: "#fafbfc", backgroundImage: "radial-gradient(circle, #cbd5e1 1px, transparent 1px)", backgroundSize: "20px 20px" }}>
-          {/* 浮动工具栏 — 顶部居中 (避开右上 Close X 按钮) */}
+        <div className="relative" style={{ height: "70vh" }}>
+          {/* 顶部居中工具栏 - 仅留布局切换 (缩放/重置 React Flow 自带) */}
           <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1 bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-700 shadow-md rounded-lg p-1 backdrop-blur">
             <div className="flex items-center gap-0.5 bg-muted/40 rounded p-0.5">
-              <button
-                type="button"
-                className={`px-2 py-1 rounded text-[11px] font-medium transition-colors ${
-                  layoutMode === "circular" ? "bg-white shadow text-foreground" : "text-muted-foreground hover:text-foreground"
-                }`}
-                onClick={() => changeLayout("circular")}
-                title="圆形布局"
-              >
-                圆形
-              </button>
-              <button
-                type="button"
-                className={`px-2 py-1 rounded text-[11px] font-medium transition-colors ${
-                  layoutMode === "grid" ? "bg-white shadow text-foreground" : "text-muted-foreground hover:text-foreground"
-                }`}
-                onClick={() => changeLayout("grid")}
-                title="网格布局"
-              >
-                网格
-              </button>
-              <button
-                type="button"
-                className={`px-2 py-1 rounded text-[11px] font-medium transition-colors ${
-                  layoutMode === "hierarchical" ? "bg-white shadow text-foreground" : "text-muted-foreground hover:text-foreground"
-                }`}
-                onClick={() => changeLayout("hierarchical")}
-                title="分层布局 (减边交叉)"
-              >
-                分层
-              </button>
+              {(
+                [
+                  { key: "circular", title: "圆形布局", text: "圆形" },
+                  { key: "grid", title: "网格布局", text: "网格" },
+                  { key: "hierarchical", title: "分层布局 (减边交叉)", text: "分层" },
+                ] as { key: LayoutMode; title: string; text: string }[]
+              ).map((opt) => (
+                <button
+                  key={opt.key}
+                  type="button"
+                  className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
+                    layoutMode === opt.key
+                      ? "bg-white shadow text-foreground"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                  onClick={() => setLayoutMode(opt.key)}
+                  title={opt.title}
+                >
+                  {opt.text}
+                </button>
+              ))}
             </div>
-            <div className="w-px h-5 bg-border mx-1" />
-            <Button size="icon" variant="ghost" className="size-7" onClick={() => setZoom((z) => Math.min(3, z * 1.2))} title="放大">
-              <ZoomIn className="size-3.5" />
-            </Button>
-            <Button size="icon" variant="ghost" className="size-7" onClick={() => setZoom((z) => Math.max(0.3, z / 1.2))} title="缩小">
-              <ZoomOut className="size-3.5" />
-            </Button>
-            <Button size="icon" variant="ghost" className="size-7" onClick={resetView} title="重置视图">
-              <Maximize2 className="size-3.5" />
-            </Button>
-            <span className="text-[10px] text-muted-foreground px-1.5 font-mono tabular-nums min-w-[34px] text-right">
-              {(zoom * 100).toFixed(0)}%
-            </span>
           </div>
           {loading && (
             <div className="absolute inset-0 flex items-center justify-center bg-background/50 z-10">
               <Loader2 className="size-6 animate-spin text-muted-foreground" />
             </div>
           )}
-          <svg
-            ref={svgRef}
-            className="w-full h-full select-none"
-            style={{ cursor: panning ? "grabbing" : dragNodeId ? "grabbing" : "grab" }}
-            onWheel={handleWheel}
-            onMouseDown={handleCanvasMouseDown}
-            onMouseMove={handleCanvasMouseMove}
-            onMouseUp={handleCanvasMouseUp}
-            onMouseLeave={handleCanvasMouseUp}
-          >
-            <defs>
-              <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
-                <polygon points="0 0, 10 3, 0 6" fill="#94a3b8" />
-              </marker>
-              <marker id="arrowhead-hover" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
-                <polygon points="0 0, 10 3, 0 6" fill="#2563eb" />
-              </marker>
-            </defs>
-            <g transform={`translate(${pan.x}, ${pan.y}) scale(${zoom})`}>
-              {/* 边 (manhattan 折角矩形线) */}
-              {relations.map((rel, i) => {
-                const s = positions[rel.source];
-                const t = positions[rel.target];
-                if (!s || !t) return null;
-                // ─── Manhattan 折角路由 ───
-                // 1) 矩形边锚点 (用射线交点算法)
-                const intersectRect = (cx: number, cy: number, dx: number, dy: number, w: number, h: number) => {
-                  if (dx === 0 && dy === 0) return { x: cx, y: cy };
-                  const len = Math.hypot(dx, dy) || 1;
-                  const ndx = dx / len, ndy = dy / len;
-                  const tx = ndx === 0 ? Infinity : (w / 2) / Math.abs(ndx);
-                  const ty = ndy === 0 ? Infinity : (h / 2) / Math.abs(ndy);
-                  const tMin = Math.min(tx, ty);
-                  return { x: cx + ndx * tMin, y: cy + ndy * tMin };
-                };
-                // 2) 决定从矩形哪条边出: 水平位移大 → 上下边; 垂直位移大 → 左右边
-                const dx = t.x - s.x;
-                const dy = t.y - s.y;
-                const PAD = 14; // 离开节点边缘后, 先走一段再折角
-                // 起点: 选长边离开
-                const startHorizontal = Math.abs(dy) > Math.abs(dx);
-                let sEdge: { x: number; y: number; dir: "h" | "v"; side: 1 | -1 };
-                let tEdge: { x: number; y: number; dir: "h" | "v"; side: 1 | -1 };
-                if (startHorizontal) {
-                  const side = dy > 0 ? 1 : -1;
-                  sEdge = { x: s.x, y: s.y + side * (nodeH / 2), dir: "v", side };
-                } else {
-                  const side = dx > 0 ? 1 : -1;
-                  sEdge = { x: s.x + side * (nodeW / 2), y: s.y, dir: "h", side };
-                }
-                // 终点: 与起点方向相同 (保持折角对齐)
-                if (startHorizontal) {
-                  const side = dy > 0 ? 1 : -1;
-                  tEdge = { x: t.x, y: t.y - side * (nodeH / 2), dir: "v", side };
-                } else {
-                  const side = dx > 0 ? 1 : -1;
-                  tEdge = { x: t.x - side * (nodeW / 2), y: t.y, dir: "h", side };
-                }
-                const sx = sEdge.x, sy = sEdge.y;
-                const tx = tEdge.x, ty = tEdge.y;
-                // 3) 折角中点 (短边) — 走 3 段: 起点出 → 折角 → 终点进
-                let path: string;
-                if (startHorizontal) {
-                  // 垂直进入, 水平折角
-                  const midX = (sx + tx) / 2;
-                  const sExitY = sy + sEdge.side * PAD;
-                  const tExitY = ty - tEdge.side * PAD;
-                  path = `M ${sx} ${sy} L ${sx} ${sExitY} L ${midX} ${sExitY} L ${midX} ${tExitY} L ${tx} ${tExitY} L ${tx} ${ty}`;
-                } else {
-                  // 水平进入, 垂直折角
-                  const midY = (sy + ty) / 2;
-                  const sExitX = sx + sEdge.side * PAD;
-                  const tExitX = tx - tEdge.side * PAD;
-                  path = `M ${sx} ${sy} L ${sExitX} ${sy} L ${sExitX} ${midY} L ${tExitX} ${midY} L ${tExitX} ${ty} L ${tx} ${ty}`;
-                }
-                // 标签中心: 折角中点
-                const labelX = startHorizontal ? (sx + tx) / 2 : (sx + tx) / 2;
-                const labelY = startHorizontal ? (sy + ty) / 2 : (sy + ty) / 2;
-                const isHighlighted = hoverNodeId === rel.source || hoverNodeId === rel.target;
-                return (
-                  <g key={i} className="pointer-events-none">
-                    {/* 折角矩形线 */}
-                    <path
-                      d={path}
-                      fill="none"
-                      stroke={isHighlighted ? "#2563eb" : "#94a3b8"}
-                      strokeWidth={isHighlighted ? 2 : 1.5}
-                      strokeDasharray={isHighlighted ? undefined : "4 2"}
-                      opacity={hoverNodeId ? (isHighlighted ? 1 : 0.2) : 0.75}
-                      strokeLinejoin="miter"
-                    />
-                    {/* 起点圆 */}
-                    <circle cx={sx} cy={sy} r={2.5} fill={isHighlighted ? "#2563eb" : "#94a3b8"} />
-                    {/* 终点圆 */}
-                    <circle cx={tx} cy={ty} r={2.5} fill={isHighlighted ? "#2563eb" : "#94a3b8"} />
 
-                    {/* 关系类型标签 (折角中点 圆角胶囊) */}
-                    <g transform={`translate(${labelX}, ${labelY})`}>
-                      <rect
-                        x={-rel.type.length * 5 - 6}
-                        y={-9}
-                        width={rel.type.length * 10 + 12}
-                        height={18}
-                        rx={9}
-                        fill="#ffffff"
-                        stroke={isHighlighted ? "#2563eb" : "#cbd5e1"}
-                        strokeWidth={1}
-                      />
-                      <text
-                        x={0} y={4}
-                        textAnchor="middle"
-                        style={{ fontSize: 10, fontWeight: 500, fill: isHighlighted ? "#2563eb" : "#475569", pointerEvents: "none" }}
-                      >
-                        {rel.type}
-                      </text>
-                    </g>
-                  </g>
-                );
-              })}
-
-              {/* 节点 — 按现代 UI 规范: 顶部状态条 + 简洁 2 行内容 */}
-              {objects.map((o) => {
-                const pos = positions[o.id];
-                if (!pos) return null;
-                const isHover = hoverNodeId === o.id;
-                const connectedIds = new Set<string>();
-                relations.forEach((r) => {
-                  if (r.source === o.id) connectedIds.add(r.target);
-                  if (r.target === o.id) connectedIds.add(r.source);
-                });
-                const hasConnections = connectedIds.size > 0;
-                const relCountForNode = connectedIds.size;
-                // icon 颜色 hash
-                const hue = Array.from(o.name).reduce((a, c) => a + c.charCodeAt(0), 0) % 360;
-                const iconBg = `hsl(${hue} 80% 92%)`;
-                const iconColor = `hsl(${hue} 70% 38%)`;
-                const isActive = o.status === "active";
-                return (
-                  <g
-                    key={o.id}
-                    data-node={o.id}
-                    transform={`translate(${pos.x - nodeW / 2}, ${pos.y - nodeH / 2})`}
-                    onMouseDown={(e) => handleNodeMouseDown(e, o.id)}
-                    onMouseEnter={() => setHoverNodeId(o.id)}
-                    onMouseLeave={() => setHoverNodeId(null)}
-                    onDoubleClick={() => { onOpenChange(false); navigate(`/ontology/object/${o.id}`); }}
-                    style={{ cursor: "grab" }}
-                  >
-                    {/* 阴影 */}
-                    <rect x={2} y={4} width={nodeW} height={nodeH} fill="#0f172a" opacity={0.08} rx={8} />
-                    {/* 主体 */}
-                    <rect
-                      x={0} y={0} width={nodeW} height={nodeH}
-                      fill="#ffffff"
-                      stroke={isHover ? "#2563eb" : "#e2e8f0"}
-                      strokeWidth={isHover ? 2 : 1}
-                      rx={8}
-                    />
-                    {/* 顶部状态条 (4px) */}
-                    <rect
-                      x={0} y={0} width={nodeW} height={4}
-                      fill={isActive ? "#3b82f6" : "#cbd5e1"}
-                      rx={8}
-                    />
-                    <rect
-                      x={0} y={2} width={nodeW} height={2}
-                      fill={isActive ? "#3b82f6" : "#cbd5e1"}
-                    />
-
-                    {/* 左侧 icon (28×28) */}
-                    <rect x={12} y={16} width={28} height={28} fill={iconBg} rx={6} />
-                    <text
-                      x={26} y={36}
-                      textAnchor="middle"
-                      style={{ fontSize: 14, fontWeight: 700, fill: iconColor, pointerEvents: "none", fontFamily: "ui-sans-serif, system-ui" }}
-                    >
-                      {o.label?.[0] || o.name[0]?.toUpperCase() || "?"}
-                    </text>
-
-                    {/* 主标题: label */}
-                    <text
-                      x={48} y={26}
-                      style={{ fontSize: 13, fontWeight: 600, fill: "#0f172a", pointerEvents: "none" }}
-                    >
-                      {o.label.length > 8 ? o.label.slice(0, 8) + "…" : o.label}
-                    </text>
-                    {/* 副标题: name (英文) */}
-                    <text
-                      x={48} y={40}
-                      style={{ fontSize: 10, fill: "#94a3b8", fontFamily: "ui-monospace, monospace", pointerEvents: "none" }}
-                    >
-                      {o.name}
-                    </text>
-
-                    {/* 底部 meta 行: 字段数 + 关系数 */}
-                    <text
-                      x={48} y={56}
-                      style={{ fontSize: 9, fill: "#64748b", pointerEvents: "none" }}
-                    >
-                      {o.properties_count} 字段
-                    </text>
-                    {relCountForNode > 0 && (
-                      <g>
-                        <circle cx={nodeW - 38} cy={54} r={3} fill="#3b82f6" />
-                        <text
-                          x={nodeW - 32} y={57}
-                          style={{ fontSize: 9, fill: "#3b82f6", fontWeight: 500, pointerEvents: "none" }}
-                        >
-                          {relCountForNode}
-                        </text>
-                      </g>
-                    )}
-                    {!hasConnections && (
-                      <g>
-                        <circle cx={nodeW - 12} cy={56} r={3.5} fill="#f97316" />
-                        <title>无关联</title>
-                      </g>
-                    )}
-
-                    {/* hover 虚线光晕 */}
-                    {isHover && (
-                      <rect
-                        x={-3} y={-3} width={nodeW + 6} height={nodeH + 6}
-                        fill="none"
-                        stroke="#3b82f6"
-                        strokeWidth={1}
-                        strokeDasharray="4 3"
-                        opacity={0.6}
-                        rx={11}
-                      />
-                    )}
-                  </g>
-                );
-              })}
-            </g>
-          </svg>
+          {/* ── 主画布 ── */}
+          <LineageCanvas
+            nodes={lineageNodes}
+            edges={lineageEdges}
+            edgeLabels={edgeLabels}
+            edgeDashed={edgeDashed}
+            visibleNodeIds={visibleIds}
+            selectedNodeId={selectedNodeId}
+            onNodeSelect={(n) => onObjectSelect(n?.id ?? null)}
+            precomputedPositions={positions}
+            nodeType="ontology-object"
+            nodeTypes={{ "ontology-object": ontologyObjectNodeType }}
+            nodesDraggable
+            positions={positions}
+            onNodesPositionsChange={setPositions}
+            resetOnDataChange={false}
+            height="100%"
+            className="border-0 rounded-none bg-background"
+          />
 
           {/* 图例 */}
-          <div className="absolute bottom-3 left-3 bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-700 shadow-md rounded-lg p-2.5 text-[11px] space-y-1.5 backdrop-blur">
+          <div className="absolute bottom-3 left-3 bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-700 shadow-md rounded-lg p-2.5 text-xs space-y-1.5 backdrop-blur">
             <div className="font-semibold text-slate-900 dark:text-slate-100 text-xs">图例</div>
             <div className="flex items-center gap-2">
               <div className="size-4 rounded border-2 border-blue-500 bg-white" />
-              <span className="text-slate-700 dark:text-slate-300">对象 (双击查看)</span>
+              <span className="text-slate-700 dark:text-slate-300">对象 (拖动 / 点打开按钮)</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-4 h-0.5 bg-slate-400" />
+              <div className="w-4 h-0.px border-t-2 border-dashed border-slate-400" style={{ borderTopStyle: "dashed" }} />
               <span className="text-slate-700 dark:text-slate-300">关系</span>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="size-2 rounded-full bg-orange-500 ring-2 ring-white" />
-              <span className="text-slate-700 dark:text-slate-300">无关联</span>
-            </div>
           </div>
-
           {/* 操作提示 */}
-          <div className="absolute bottom-3 right-3 bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-700 shadow-md rounded-lg p-2.5 text-[11px] space-y-1 backdrop-blur">
+          <div className="absolute bottom-3 right-3 bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-700 shadow-md rounded-lg p-2.5 text-xs space-y-1 backdrop-blur">
             <div className="font-semibold text-slate-900 dark:text-slate-100 text-xs mb-1">操作</div>
             <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
               <span>🖱️</span><span>拖动节点移动</span>
@@ -738,7 +353,7 @@ function ERGraphDialog({
               <span>🖱️</span><span>滚轮缩放</span>
             </div>
             <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
-              <span>🖱️</span><span>双击节点查看详情</span>
+              <span>🖱️</span><span>点击节点右上角打开</span>
             </div>
           </div>
         </div>
@@ -746,16 +361,20 @@ function ERGraphDialog({
         <DialogFooter className="px-4 py-2 border-t flex items-center gap-3">
           <div className="text-xs text-muted-foreground mr-auto flex items-center gap-2 flex-wrap">
             <span>关系来源:</span>
-            <Badge variant="outline" className="text-[10px] font-normal">
-              {relations.length > 0 ? "后端 ontologyApi.listRelations() + 业务启发式补全" : "全部为业务启发式推断"}
+            <Badge variant="outline" className="text-xs font-normal">
+              {relations.length > 0
+                ? "后端 ontologyApi.listRelations() + 业务启发式补全"
+                : "全部为业务启发式推断"}
             </Badge>
             <span className="text-muted-foreground/60">|</span>
             <span className="font-mono tabular-nums">{objCount} 对象 / {relCount} 关系</span>
           </div>
-          <Button variant="outline" size="sm" onClick={resetView}>
-            <Maximize2 className="size-3.5 mr-1" /> 重置视图
+          <Button variant="outline" size="sm" onClick={() => applyLayout(layoutMode)}>
+            <Maximize2 className="size-3.5 mr-1" /> 重排
           </Button>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>关闭</Button>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            关闭
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -1071,11 +690,11 @@ export default function Objects() {
                       key={obj.id}
                       className={`cursor-pointer ${
                         isCodeDup ? "bg-red-50/40 dark:bg-red-950/10 hover:bg-red-50/60" :
-                        isDup ? "bg-amber-50/40 dark:bg-amber-950/10 hover:bg-amber-50/60" : ""
+                        isDup ? "bg-primary/40 dark:bg-primary/10 hover:bg-primary/60" : ""
                       }`}
                       onClick={() => navigate(`/ontology/object/${obj.id}`)}
                     >
-                      <TableCell className="font-mono text-[10px] max-w-[180px]">
+                      <TableCell className="font-mono text-xs max-w-[180px]">
                         <div className="flex items-center gap-1">
                           <Hash className="size-3 text-muted-foreground shrink-0" />
                           <span className="truncate" title={obj.id}>{obj.id}</span>
@@ -1097,13 +716,13 @@ export default function Objects() {
                             </code>
                             <CopyButton value={obj.code} label="Code" />
                             {isCodeDup && (
-                              <Badge variant="destructive" className="text-[9px] h-4 px-1">重复</Badge>
+                              <Badge variant="destructive" className="text-xs h-4 px-1">重复</Badge>
                             )}
                           </div>
                         ) : (
                           <div className="flex items-center gap-1">
-                            <span className="text-orange-600 dark:text-orange-400 italic text-[10px]">缺失</span>
-                            <Badge variant="secondary" className="bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-400 border-0 text-[9px] h-4 px-1">缺 code</Badge>
+                            <span className="text-orange-600 dark:text-orange-400 italic text-xs">缺失</span>
+                            <Badge variant="secondary" className="bg-primary text-orange-700 dark:bg-primary/40 dark:text-orange-400 border-0 text-xs h-4 px-1">缺 code</Badge>
                           </div>
                         )}
                       </TableCell>
@@ -1111,7 +730,7 @@ export default function Objects() {
                         <div className="flex items-center gap-2">
                           <DynamicIcon name={obj.icon} className="size-5" />
                           {isDup && (
-                            <Badge variant="secondary" className="bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400 border-0 text-[9px] h-4 px-1">重名</Badge>
+                            <Badge variant="secondary" className="bg-primary text-amber-700 dark:bg-primary/40 dark:text-amber-400 border-0 text-xs h-4 px-1">重名</Badge>
                           )}
                         </div>
                       </TableCell>
@@ -1202,7 +821,7 @@ export default function Objects() {
               检测到 <span className="font-semibold text-amber-600">{groups.length}</span> 组重复,
               涉及 <span className="font-semibold">{dupMemberIds.size}</span> 条 ObjectType。
               选 target (主记录) 后, 其他会被后端删除
-              (<code className="text-[10px] bg-muted px-1 rounded">DELETE /api/ontology/objects/:id</code>)。
+              (<code className="text-xs bg-muted px-1 rounded">DELETE /api/ontology/objects/:id</code>)。
             </DialogDescription>
           </DialogHeader>
 
@@ -1216,9 +835,9 @@ export default function Objects() {
                   <div className="flex items-center gap-2 mb-2">
                     <AlertOctagon className="size-4 text-amber-500" />
                     <span className="text-sm font-semibold">重复组 ({g.members.length} 条)</span>
-                    <Badge variant="outline" className="text-[10px]">主记录: {target.label}</Badge>
+                    <Badge variant="outline" className="text-xs">主记录: {target.label}</Badge>
                   </div>
-                  <div className="text-[11px] text-muted-foreground mb-2 px-1">
+                  <div className="text-xs text-muted-foreground mb-2 px-1">
                     重复信号: {g.reason}
                   </div>
                   <div className="space-y-1.5">
@@ -1238,27 +857,27 @@ export default function Objects() {
                             onChange={() => setTargetPicks((prev) => ({ ...prev, [g.key]: m.id }))}
                             className="size-3.5 accent-primary shrink-0"
                           />
-                          <div className="size-7 rounded-md bg-gradient-to-br from-primary to-primary/60 text-primary-foreground flex items-center justify-center text-[10px] font-mono shrink-0">
+                          <div className="size-7 rounded-md bg-primary text-primary-foreground flex items-center justify-center text-xs font-mono shrink-0">
                             {m.name?.[0]?.toUpperCase() || "?"}
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="text-sm font-medium truncate">{m.label}</div>
-                            <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground flex-wrap">
+                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground flex-wrap">
                               <code className="font-mono">{m.name}</code>
-                              {m.code && <Badge variant="outline" className="text-[9px] h-3.5 px-1 font-mono">{m.code}</Badge>}
+                              {m.code && <Badge variant="outline" className="text-xs h-3.5 px-1 font-mono">{m.code}</Badge>}
                               <span>·</span>
                               <span>{m.properties_count} 属性</span>
                               <span>·</span>
                               <span>{m.actions_count} 动作</span>
                               <span>·</span>
                               <span>{m.rules_count} 规则</span>
-                              <Badge variant={m.status === "active" ? "default" : "outline"} className="text-[9px] h-3.5 px-1">
+                              <Badge variant={m.status === "active" ? "default" : "outline"} className="text-xs h-3.5 px-1">
                                 {m.status}
                               </Badge>
                             </div>
                           </div>
                           {isTarget ? (
-                            <Badge variant="default" className="text-[9px] h-4 px-1 shrink-0">主记录</Badge>
+                            <Badge variant="default" className="text-xs h-4 px-1 shrink-0">主记录</Badge>
                           ) : (
                             <Trash2 className="size-3.5 text-red-500 shrink-0" />
                           )}
@@ -1266,7 +885,7 @@ export default function Objects() {
                       );
                     })}
                   </div>
-                  <div className="mt-2 text-[10px] text-muted-foreground px-1">
+                  <div className="mt-2 text-xs text-muted-foreground px-1">
                     将删除: <span className="font-mono text-red-600 dark:text-red-400">{toDelete.length} 条</span>
                     {toDelete.length > 0 && (<> ({toDelete.map((d) => d.label).join(" / ")})</>)}
                   </div>

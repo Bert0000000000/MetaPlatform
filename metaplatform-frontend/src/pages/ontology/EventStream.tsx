@@ -185,14 +185,14 @@ function EventRow({ event }: { event: StreamEvent }) {
           <span className="font-mono font-medium">{event.source}</span>
           <span className="text-muted-foreground">→</span>
           <span className="font-mono">{event.target}</span>
-          <Badge variant="outline" className="text-[10px] h-4 px-1">{event.type}</Badge>
+          <Badge variant="outline" className="text-xs h-4 px-1">{event.type}</Badge>
         </div>
-        <div className="flex items-center gap-3 text-muted-foreground text-[10px] mt-0.5">
+        <div className="flex items-center gap-3 text-muted-foreground text-xs mt-0.5">
           <span>trace: <span className="font-mono">{event.trace_id}</span></span>
           <span>{new Date(event.timestamp).toLocaleString()}</span>
         </div>
       </div>
-      <Button size="sm" variant="ghost" className="h-6 text-[10px]" onClick={() => alert(JSON.stringify(event.payload, null, 2))}>
+      <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={() => alert(JSON.stringify(event.payload, null, 2))}>
         详情
       </Button>
     </div>

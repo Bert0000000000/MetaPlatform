@@ -186,7 +186,7 @@ function ExportCard({ icon: Icon, name, desc, onClick, color }: { icon: any; nam
     <div className="border rounded p-4 hover:border-primary cursor-pointer text-center" onClick={onClick}>
       <Icon className={`size-8 mx-auto text-${color}-500`} />
       <div className="font-medium text-sm mt-2">{name}</div>
-      <div className="text-[10px] text-muted-foreground">{desc}</div>
+      <div className="text-xs text-muted-foreground">{desc}</div>
       <Button size="sm" variant="outline" className="mt-2 w-full">
         <Download className="size-3 mr-1" /> 下载
       </Button>

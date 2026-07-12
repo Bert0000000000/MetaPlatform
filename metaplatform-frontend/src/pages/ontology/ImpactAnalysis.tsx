@@ -199,7 +199,7 @@ export function ImpactAnalysis() {
                     {impact.level === "high" ? (
                       <Badge variant="destructive" className="ml-1">🔴 高风险</Badge>
                     ) : impact.level === "medium" ? (
-                      <Badge className="ml-1 bg-yellow-500">🟡 中风险</Badge>
+                      <Badge className="ml-1 bg-primary">🟡 中风险</Badge>
                     ) : (
                       <Badge className="ml-1 bg-green-500">🟢 低风险</Badge>
                     )}
@@ -272,13 +272,13 @@ function ImpactRow({ item }: { item: ImpactItem }) {
       <Icon className="size-3.5 text-muted-foreground shrink-0" />
       <span className="font-mono flex-1 truncate">{item.name}</span>
       {item.via && (
-        <span className="text-muted-foreground text-[10px] flex items-center gap-0.5 shrink-0">
+        <span className="text-muted-foreground text-xs flex items-center gap-0.5 shrink-0">
           via <ArrowRight className="size-2.5" /> {item.via}
         </span>
       )}
       <Badge
         variant={item.severity === "high" ? "destructive" : item.severity === "medium" ? "secondary" : "outline"}
-        className="text-[10px] h-4 px-1"
+        className="text-xs h-4 px-1"
       >
         {item.severity}
       </Badge>
@@ -290,7 +290,7 @@ function Stat({ label, value }: { label: string; value: number }) {
   return (
     <div>
       <div className="text-2xl font-bold font-mono">{value}</div>
-      <div className="text-[10px] text-muted-foreground">{label}</div>
+      <div className="text-xs text-muted-foreground">{label}</div>
     </div>
   );
 }

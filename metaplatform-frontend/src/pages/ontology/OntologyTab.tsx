@@ -728,7 +728,7 @@ export function OntologyLinks() {
 
       {/* 去重进度条 */}
       {dedupProgress && (
-        <div className="p-3 rounded-lg border border-amber-500 bg-amber-50/30 dark:bg-amber-950/10 text-sm">
+        <div className="p-3 rounded-lg border border-amber-500 bg-primary/30 dark:bg-primary/10 text-sm">
           <div className="flex items-center justify-between mb-1.5">
             <span className="font-medium">
               {dedupProgress.done < dedupProgress.total
@@ -741,7 +741,7 @@ export function OntologyLinks() {
           </div>
           <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden">
             <div
-              className="bg-amber-500 h-1.5 rounded-full transition-all"
+              className="bg-primary h-1.5 rounded-full transition-all"
               style={{ width: `${(dedupProgress.done / dedupProgress.total) * 100}%` }}
             />
           </div>
@@ -789,7 +789,7 @@ export function OntologyLinks() {
                   正在扫描 {objects.length} 个对象的 properties...
                 </div>
                 {inferLog.length > 0 && (
-                  <div className="bg-muted/30 rounded p-2 font-mono text-[10px] space-y-0.5 max-h-32 overflow-y-auto">
+                  <div className="bg-muted/30 rounded p-2 font-mono text-xs space-y-0.5 max-h-32 overflow-y-auto">
                     {inferLog.map((l, i) => (
                       <div key={i} className="text-muted-foreground">{l}</div>
                     ))}
@@ -799,7 +799,7 @@ export function OntologyLinks() {
             ) : inferred.length === 0 ? (
               <div className="space-y-3">
                 {inferLog.length > 0 && (
-                  <div className="bg-muted/30 rounded p-2 font-mono text-[10px] space-y-0.5 max-h-40 overflow-y-auto">
+                  <div className="bg-muted/30 rounded p-2 font-mono text-xs space-y-0.5 max-h-40 overflow-y-auto">
                     {inferLog.map((l, i) => (
                       <div key={i} className="text-muted-foreground">{l}</div>
                     ))}
@@ -829,7 +829,7 @@ export function OntologyLinks() {
                         "hover:border-primary/30"
                       }`}
                     >
-                      <div className="size-8 rounded-md bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center shrink-0">
+                      <div className="size-8 rounded-md bg-primary flex items-center justify-center shrink-0">
                         <Sparkles className="size-4 text-primary" />
                       </div>
                       <div className="flex-1 min-w-0">
@@ -839,7 +839,7 @@ export function OntologyLinks() {
                           <span className="text-primary font-medium text-xs">{r.type}</span>
                           <span className="text-muted-foreground text-xs">{">"}</span>
                           <Badge variant="secondary" className="font-medium">{r.targetLabel}</Badge>
-                          <Badge variant="outline" className="text-[10px]">{r.cardinality}</Badge>
+                          <Badge variant="outline" className="text-xs">{r.cardinality}</Badge>
                         </div>
                         <p className="text-xs text-muted-foreground mt-1 truncate" title={r.reason}>
                           证据: {r.reason}
@@ -847,7 +847,7 @@ export function OntologyLinks() {
                         {r.evidences.filter((e) => e.field !== "-").length > 0 && (
                           <div className="flex flex-wrap gap-1 mt-1">
                             {r.evidences.filter((e) => e.field !== "-").slice(0, 3).map((e, i) => (
-                              <code key={i} className="text-[10px] font-mono bg-muted px-1 rounded">
+                              <code key={i} className="text-xs font-mono bg-muted px-1 rounded">
                                 {e.field}
                               </code>
                             ))}
@@ -857,7 +857,7 @@ export function OntologyLinks() {
                       <div className="flex items-center gap-2 shrink-0">
                         <Badge
                           variant={r.confidence >= 70 ? "default" : r.confidence >= 50 ? "secondary" : "outline"}
-                          className="text-[10px] font-mono"
+                          className="text-xs font-mono"
                         >
                           {r.confidence}%
                         </Badge>
@@ -893,7 +893,7 @@ export function OntologyLinks() {
           <CardTitle className="text-base flex items-center gap-2">
             <Link2 className="size-4" /> 关系列表
             {dedupGroups.length > 0 && (
-              <Badge variant="secondary" className="bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400 border-0 text-[10px]">
+              <Badge variant="secondary" className="bg-primary text-amber-700 dark:bg-primary/40 dark:text-amber-400 border-0 text-xs">
                 {dedupGroups.length} 组重复
               </Badge>
             )}
@@ -931,9 +931,9 @@ export function OntologyLinks() {
                 return (
                   <TableRow
                     key={l.id}
-                    className={isDup ? "bg-amber-50/40 dark:bg-amber-950/10 hover:bg-amber-50/60" : ""}
+                    className={isDup ? "bg-primary/40 dark:bg-primary/10 hover:bg-primary/60" : ""}
                   >
-                    <TableCell className="font-mono text-[10px] max-w-[180px]">
+                    <TableCell className="font-mono text-xs max-w-[180px]">
                       <div className="flex items-center gap-1">
                         <Hash className="size-3 text-muted-foreground shrink-0" />
                         <span className="truncate" title={l.id}>{l.id}</span>
@@ -965,7 +965,7 @@ export function OntologyLinks() {
                             <Copy className="size-3 text-muted-foreground" />
                           </button>
                           {isDup && (
-                            <Badge variant="destructive" className="text-[9px] h-4 px-1">重复</Badge>
+                            <Badge variant="destructive" className="text-xs h-4 px-1">重复</Badge>
                           )}
                         </div>
                       ) : "-"}
@@ -1024,7 +1024,7 @@ export function OntologyLinks() {
               (源→目标 相同的多条关系, 唯一 ID 不同),
               涉及 <span className="font-semibold">{dedupMemberIds.size}</span> 条 Relation。
               选 keep (主记录) 后, 其他会被后端删除
-              (<code className="text-[10px] bg-muted px-1 rounded">DELETE /api/ontology/relations/:id</code>)。
+              (<code className="text-xs bg-muted px-1 rounded">DELETE /api/ontology/relations/:id</code>)。
             </DialogDescription>
           </DialogHeader>
 
@@ -1038,11 +1038,11 @@ export function OntologyLinks() {
                   <div className="flex items-center gap-2 mb-2">
                     <AlertOctagon className="size-4 text-amber-500" />
                     <span className="text-sm font-semibold">重复组 ({g.members.length} 条)</span>
-                    <Badge variant="outline" className="text-[10px]">
+                    <Badge variant="outline" className="text-xs">
                       主记录: {idToLabel[keep.source_object_id] || "?"} → {idToLabel[keep.target_object_id] || "?"}
                     </Badge>
                   </div>
-                  <div className="text-[11px] text-muted-foreground mb-2 px-1">
+                  <div className="text-xs text-muted-foreground mb-2 px-1">
                     {g.reason}
                   </div>
                   <div className="space-y-1.5">
@@ -1064,20 +1064,20 @@ export function OntologyLinks() {
                           />
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-1.5 flex-wrap">
-                              <code className="font-mono text-[10px] text-muted-foreground truncate" title={m.id}>
+                              <code className="font-mono text-xs text-muted-foreground truncate" title={m.id}>
                                 {m.id.slice(0, 8)}…
                               </code>
-                              <Badge variant="secondary" className="text-[10px] h-4 px-1">{m.type}</Badge>
+                              <Badge variant="secondary" className="text-xs h-4 px-1">{m.type}</Badge>
                               {m.label && <span className="text-xs">{m.label}</span>}
                             </div>
                             {m.description && (
-                              <p className="text-[10px] text-muted-foreground mt-0.5 truncate" title={m.description}>
+                              <p className="text-xs text-muted-foreground mt-0.5 truncate" title={m.description}>
                                 {m.description}
                               </p>
                             )}
                           </div>
                           {isKeep ? (
-                            <Badge variant="default" className="text-[9px] h-4 px-1 shrink-0">主记录</Badge>
+                            <Badge variant="default" className="text-xs h-4 px-1 shrink-0">主记录</Badge>
                           ) : (
                             <Trash2 className="size-3.5 text-red-500 shrink-0" />
                           )}
@@ -1085,7 +1085,7 @@ export function OntologyLinks() {
                       );
                     })}
                   </div>
-                  <div className="mt-2 text-[10px] text-muted-foreground px-1">
+                  <div className="mt-2 text-xs text-muted-foreground px-1">
                     将删除: <span className="font-mono text-red-600 dark:text-red-400">{toDelete.length} 条</span>
                   </div>
                 </div>
@@ -1924,7 +1924,7 @@ function ObjectsView({
             <Card
               key={o.id}
               className={`cursor-pointer hover:border-primary transition-colors ${
-                isDup ? "border-amber-300 dark:border-amber-800 bg-amber-50/30 dark:bg-amber-950/10" :
+                isDup ? "border-amber-300 dark:border-amber-800 bg-primary/30 dark:bg-primary/10" :
                 isCodeDup ? "border-red-300 dark:border-red-800 bg-red-50/30 dark:bg-red-950/10" :
                 ""
               }`}
@@ -1934,17 +1934,17 @@ function ObjectsView({
                   <span className="text-3xl"><ObjIcon className="size-8" /></span>
                   <div className="flex flex-col items-end gap-1">
                     {isDup && (
-                      <Badge variant="secondary" className="bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400 border-0 text-[10px]">
+                      <Badge variant="secondary" className="bg-primary text-amber-700 dark:bg-primary/40 dark:text-amber-400 border-0 text-xs">
                         重复
                       </Badge>
                     )}
                     {isNoCode && (
-                      <Badge variant="secondary" className="bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-400 border-0 text-[10px]">
+                      <Badge variant="secondary" className="bg-primary text-orange-700 dark:bg-primary/40 dark:text-orange-400 border-0 text-xs">
                         缺 code
                       </Badge>
                     )}
                     {isCodeDup && (
-                      <Badge variant="destructive" className="text-[10px]">
+                      <Badge variant="destructive" className="text-xs">
                         code 重复
                       </Badge>
                     )}
@@ -1956,7 +1956,7 @@ function ObjectsView({
 
                 {/* 唯一标识 (UUID + code) — 这是用户最关心的 */}
                 <div className="mt-2 space-y-1">
-                  <div className="flex items-center gap-1 text-[10px]">
+                  <div className="flex items-center gap-1 text-xs">
                     <Hash className="size-3 text-muted-foreground shrink-0" />
                     <span className="text-muted-foreground shrink-0">ID</span>
                     <code
@@ -1967,7 +1967,7 @@ function ObjectsView({
                     </code>
                     <CopyButton value={o.id} label="ID" />
                   </div>
-                  <div className="flex items-center gap-1 text-[10px]">
+                  <div className="flex items-center gap-1 text-xs">
                     <Tag className="size-3 text-muted-foreground shrink-0" />
                     <span className="text-muted-foreground shrink-0">Code</span>
                     {o.code ? (
@@ -1984,7 +1984,7 @@ function ObjectsView({
                         <CopyButton value={o.code} label="Code" />
                       </>
                     ) : (
-                      <span className="text-orange-600 dark:text-orange-400 italic text-[10px]">
+                      <span className="text-orange-600 dark:text-orange-400 italic text-xs">
                         缺失 — 后端未返回
                       </span>
                     )}
@@ -1995,7 +1995,7 @@ function ObjectsView({
                   <Button
                     size="sm"
                     variant="ghost"
-                    className="h-6 px-2 text-[10px] mt-2 self-start"
+                    className="h-6 px-2 text-xs mt-2 self-start"
                     onClick={() => setDedupOpen(true)}
                   >
                     查看重复 →
@@ -2018,7 +2018,7 @@ function ObjectsView({
             <DialogDescription>
               检测到 <span className="font-semibold text-amber-600">{groups.length}</span> 组重复,
               涉及 <span className="font-semibold">{dupMemberIds.size}</span> 条 ObjectType。
-              选 target (主记录) 后, 其他会被后端删除 (后端: <code className="text-[10px] bg-muted px-1 rounded">DELETE /api/object-types/:id</code>)。
+              选 target (主记录) 后, 其他会被后端删除 (后端: <code className="text-xs bg-muted px-1 rounded">DELETE /api/object-types/:id</code>)。
             </DialogDescription>
           </DialogHeader>
 
@@ -2032,9 +2032,9 @@ function ObjectsView({
                   <div className="flex items-center gap-2 mb-2">
                     <AlertOctagon className="size-4 text-amber-500" />
                     <span className="text-sm font-semibold">重复组 ({g.members.length} 条)</span>
-                    <Badge variant="outline" className="text-[10px]">主记录: {target.label}</Badge>
+                    <Badge variant="outline" className="text-xs">主记录: {target.label}</Badge>
                   </div>
-                  <div className="text-[11px] text-muted-foreground mb-2 px-1">
+                  <div className="text-xs text-muted-foreground mb-2 px-1">
                     重复信号: {g.reason}
                   </div>
                   <div className="space-y-1.5">
@@ -2054,12 +2054,12 @@ function ObjectsView({
                             onChange={() => setTargetPicks((prev) => ({ ...prev, [g.key]: m.id }))}
                             className="size-3.5 accent-primary shrink-0"
                           />
-                          <div className="size-7 rounded-md bg-gradient-to-br from-primary to-primary/60 text-primary-foreground flex items-center justify-center text-[10px] font-mono shrink-0">
+                          <div className="size-7 rounded-md bg-primary text-primary-foreground flex items-center justify-center text-xs font-mono shrink-0">
                             {m.name?.[0]?.toUpperCase() || "?"}
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="text-sm font-medium truncate">{m.label}</div>
-                            <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground flex-wrap">
+                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground flex-wrap">
                               <code className="font-mono">{m.name}</code>
                               <span>·</span>
                               <span>{m.properties_count} 属性</span>
@@ -2069,14 +2069,14 @@ function ObjectsView({
                               <span>{m.rules_count} 规则</span>
                               <Badge
                                 variant={m.status === "active" ? "default" : "outline"}
-                                className="text-[9px] h-3.5 px-1"
+                                className="text-xs h-3.5 px-1"
                               >
                                 {m.status}
                               </Badge>
                             </div>
                           </div>
                           {isTarget && (
-                            <Badge variant="default" className="text-[9px] h-4 px-1 shrink-0">主记录</Badge>
+                            <Badge variant="default" className="text-xs h-4 px-1 shrink-0">主记录</Badge>
                           )}
                           {!isTarget && (
                             <Trash2 className="size-3.5 text-red-500 shrink-0" />
@@ -2085,7 +2085,7 @@ function ObjectsView({
                       );
                     })}
                   </div>
-                  <div className="mt-2 text-[10px] text-muted-foreground px-1">
+                  <div className="mt-2 text-xs text-muted-foreground px-1">
                     将删除: <span className="font-mono text-red-600 dark:text-red-400">{toDelete.length} 条</span>
                     {toDelete.length > 0 && (
                       <> ({toDelete.map((d) => d.label).join(" / ")})</>

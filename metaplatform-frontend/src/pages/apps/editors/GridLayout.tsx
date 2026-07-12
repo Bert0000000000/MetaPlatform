@@ -103,13 +103,13 @@ function GridCell({
           >
             →
           </button>
-          <span className="text-[10px] text-muted-foreground px-1">
+          <span className="text-xs text-muted-foreground px-1">
             {item.span === 12 ? "全行" : item.span === 6 ? "1/2" : item.span === 4 ? "1/3" : "1/4"}
           </span>
           <select
             value={item.span}
             onChange={(e) => onSpanChange?.(item.id, Number(e.target.value) as GridSpan)}
-            className="text-[10px] bg-transparent border-none cursor-pointer"
+            className="text-xs bg-transparent border-none cursor-pointer"
           >
             <option value={12}>全行</option>
             <option value={6}>1/2</option>
@@ -144,10 +144,10 @@ export function SpanSelector({ onSelect }: { onSelect: (span: GridSpan) => void 
         <button
           key={o.span}
           onClick={() => onSelect(o.span)}
-          className="flex flex-col items-center gap-0.5 px-2 py-1 border border-[#d6d4d0] rounded text-[10px] hover:border-[#94a3b8] hover:bg-[#f8f7f5] transition-colors"
+          className="flex flex-col items-center gap-0.5 px-2 py-1 border border-border rounded text-xs hover:border-border hover:bg-card transition-colors"
         >
-          <div className={`${o.width} h-1.5 bg-[#94a3b8]/30 rounded`} />
-          <span className="text-[#64748b]">{o.label}</span>
+          <div className={`${o.width} h-1.5 bg-card/30 rounded`} />
+          <span className="text-foreground">{o.label}</span>
         </button>
       ))}
     </div>

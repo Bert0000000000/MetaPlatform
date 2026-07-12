@@ -365,5 +365,77 @@ registerBuiltin(
   { enabled: true }
 );
 
+// P2-2: 应用过期 TTL — 每天 01:00 扫一次.
+// 规则:
+//   1. status='draft' 且 created_at 距今 > 30天  →  自动改为 'archived'
+//   2. status='published' 且 expires_at 距今已过  →  自动改为 'archived'
+//   3. 全部操作写 audit_logs (module='app', action='auto_archive')
+const ARCHIVE_AFTER_DAYS = Number(process.env.APP_ARCHIVE_AFTER_DAYS || 30);
+registerBuiltin(
+  "applications.archive_expired",
+  "0 1 * * *", // 每天 01:00
+  async () => {
+    try {
+      const cutoff = new Date(Date.now() - ARCHIVE_AFTER_DAYS * 86400_000).toISOString();
+      // 1. draft 过期
+      let stale = [];
+      try {
+        stale = db.prepare(
+          `SELECT id, name FROM applications WHERE status = 'draft' AND created_at < ?`
+        ).all(cutoff);
+      } catch (e) {
+        if (!/no such/i.test(String(e?.message))) throw e;
+      }
+      // 2. published 且 expires_at 过期
+      let expiredPublished = [];
+      try {
+        expiredPublished = db.prepare(
+          `SELECT id, name FROM applications WHERE status = 'published' AND expires_at IS NOT NULL AND expires_at < ?`
+        ).all(new Date().toISOString());
+      } catch (e) {
+        if (!/no such column/i.test(String(e?.message))) {
+          // 其他错误 throw
+          if (stale.length === 0) {
+            // 列不存在的另一种安全路径: 只处理 draft 的情况
+            logger.warn("applications.archive_expired_skipped", { reason: String(e?.message) });
+            return;
+          }
+        }
+      }
+      const all = [...stale, ...expiredPublished];
+      if (all.length === 0) return;
+      const nowIso = new Date().toISOString();
+      for (const app of all) {
+        try {
+          db.prepare("UPDATE applications SET status = 'archived', updated_at = ? WHERE id = ?")
+            .run(nowIso, app.id);
+        } catch (e) {
+          logger.warn("applications.archive_failed", { id: app.id, error: String(e?.message) });
+          continue;
+        }
+        try {
+          db.prepare(
+            `INSERT INTO audit_logs (id, user_id, user_name, action, module, target, detail, ip, result, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'success', ?)`
+          ).run(
+            require("uuid").v4(),
+            null, 'system',
+            'auto_archive', 'app', app.id,
+            JSON.stringify({ name: app.name, reason: stale.find((s) => s.id === app.id) ? 'draft_aged' : 'published_expired', cutoff }),
+            '127.0.0.1', nowIso,
+          );
+        } catch (e) {
+          // audit_logs 写失败不影响主路径
+          logger.warn("applications.auto_archive_audit_failed", { error: String(e?.message) });
+        }
+      }
+      logger.info("applications.archived_expired", { count: all.length });
+    } catch (err) {
+      logger.error("applications.archive_expired_failed", { error: String(err?.message ?? err) });
+    }
+  },
+  { enabled: true }
+);
+
 export { nextRunAt };
 export default { register, registerBuiltin, unregister, enable, listJobs, start, stop, getStatus, runNow, recentRuns, nextRunAt };

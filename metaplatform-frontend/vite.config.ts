@@ -13,6 +13,8 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
+      // ⚠️ Vite proxy 是 first-match (按定义顺序匹配), 所以更具体的 /api/v1/* 必须放在 /api 前面
+      // 否则 /api 会先 catch → 转到 3001 → 404
       // Ontology Engine: entity-types, object-types, object-instances, nl-modeling, ai
       "/api/v1/entity-types": {
         target: "http://localhost:8090",
@@ -114,9 +116,18 @@ export default defineConfig({
         target: "http://localhost:3001",
         changeOrigin: true,
       },
-      // v1.0.1 应用中心 → 优先走 Java 微服务 metaplatform-app-service :8092
+      // 公开应用别名与已发布应用（必须放在 /api/apps 之前，否则被 /api/apps 捕获）
+      "/api/apps/slug": {
+        target: "http://localhost:3001",
+        changeOrigin: true,
+      },
+      "/api/apps/published": {
+        target: "http://localhost:3001",
+        changeOrigin: true,
+      },
+      // v1.0.1 应用中心走 Node API（应用、表单、列表等完整能力在 metaplatform-api）
       "/api/apps": {
-        target: "http://localhost:8092",
+        target: "http://localhost:3001",
         changeOrigin: true,
       },
       "/api/workflow": {
@@ -173,15 +184,6 @@ export default defineConfig({
         target: "http://localhost:3001",
         changeOrigin: true,
       },
-      // Published apps (public, no auth)
-      "/api/apps/slug": {
-        target: "http://localhost:3001",
-        changeOrigin: true,
-      },
-      "/api/apps/published": {
-        target: "http://localhost:3001",
-        changeOrigin: true,
-      },
       // Versions
       "/api/versions": {
         target: "http://localhost:3001",
@@ -212,6 +214,11 @@ export default defineConfig({
         target: "http://localhost:3001",
         changeOrigin: true,
       },
+      // Public market (no auth)
+      "/api/public": {
+        target: "http://localhost:3001",
+        changeOrigin: true,
+      },
       // Market
       "/api/market": {
         target: "http://localhost:3001",
@@ -229,6 +236,12 @@ export default defineConfig({
       },
       // Pages (legacy)
       "/api/pages": {
+        target: "http://localhost:3001",
+        changeOrigin: true,
+      },
+      // ⚠️ 兜底 /api/* — 所有上面没有 specific 匹配的 /api/* 请求都转到主后端 3001
+      // 这条必须放最后, 这样 /api/v1/* 等具体规则先匹配, 没命中再走兜底
+      "/api": {
         target: "http://localhost:3001",
         changeOrigin: true,
       },

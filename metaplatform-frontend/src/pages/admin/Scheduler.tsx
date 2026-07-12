@@ -219,14 +219,14 @@ export function SchedulerPage() {
                     key={j.name}
                     onClick={() => setSelectedName(j.name)}
                     className={`w-full text-left px-3 py-2 hover:bg-slate-50 flex items-center gap-2 ${
-                      selectedName === j.name ? "bg-violet-50" : ""
+                      selectedName === j.name ? "bg-primary" : ""
                     }`}
                   >
                     <span className={`size-2 rounded-full ${j.enabled ? "bg-green-500" : "bg-slate-300"}`} />
                     <code className="text-xs font-medium flex-1 truncate">{j.name}</code>
-                    <code className="text-[10px] text-muted-foreground tabular-nums">{j.cron}</code>
-                    {isBuiltin(j.name) && <Badge variant="outline" className="text-[9px]">built-in</Badge>}
-                    {!j.enabled && <Badge variant="secondary" className="text-[9px]">disabled</Badge>}
+                    <code className="text-xs text-muted-foreground tabular-nums">{j.cron}</code>
+                    {isBuiltin(j.name) && <Badge variant="outline" className="text-xs">built-in</Badge>}
+                    {!j.enabled && <Badge variant="secondary" className="text-xs">disabled</Badge>}
                     <Button
                       type="button" variant="ghost" size="icon"
                       className="size-7"

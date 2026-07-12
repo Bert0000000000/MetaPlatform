@@ -97,7 +97,7 @@ export const StartEventNode = memo(({ data, selected }: NodeProps) => {
       </div>
       {d.label && (
         <div
-          className="absolute left-1/2 text-[11px] font-medium text-foreground whitespace-nowrap pointer-events-none"
+          className="absolute left-1/2 text-xs font-medium text-foreground whitespace-nowrap pointer-events-none"
           style={{ top: 46, transform: "translateX(-50%)" }}
         >
           {d.label}
@@ -138,7 +138,7 @@ export const EndEventNode = memo(({ data, selected }: NodeProps) => {
       </div>
       {d.label && (
         <div
-          className="absolute left-1/2 text-[11px] font-medium text-foreground whitespace-nowrap pointer-events-none"
+          className="absolute left-1/2 text-xs font-medium text-foreground whitespace-nowrap pointer-events-none"
           style={{ top: 46, transform: "translateX(-50%)" }}
         >
           {d.label}
@@ -171,7 +171,7 @@ export const TimerEventNode = memo(({ data, selected }: NodeProps) => {
       </div>
       {d.label && (
         <div
-          className="absolute left-1/2 text-[11px] font-medium text-foreground whitespace-nowrap pointer-events-none"
+          className="absolute left-1/2 text-xs font-medium text-foreground whitespace-nowrap pointer-events-none"
           style={{ top: 46, transform: "translateX(-50%)" }}
         >
           {d.label}
@@ -204,7 +204,7 @@ export const MessageEventNode = memo(({ data, selected }: NodeProps) => {
       </div>
       {d.label && (
         <div
-          className="absolute left-1/2 text-[11px] font-medium text-foreground whitespace-nowrap pointer-events-none"
+          className="absolute left-1/2 text-xs font-medium text-foreground whitespace-nowrap pointer-events-none"
           style={{ top: 46, transform: "translateX(-50%)" }}
         >
           {d.label}
@@ -262,15 +262,15 @@ function TaskNodeBase({
       </div>
       <div className="flex flex-col min-w-0">
         <span className="text-xs font-medium text-foreground truncate">
-          {data.label || "Task"}
+          {data.label || "任务"}
         </span>
         {data.assignee && (
-          <span className="text-[10px] text-muted-foreground truncate">
+          <span className="text-xs text-muted-foreground truncate">
             {String(data.assignee)}
           </span>
         )}
         {data.delegateExpression && (
-          <span className="text-[10px] text-muted-foreground truncate">
+          <span className="text-xs text-muted-foreground truncate">
             {String(data.delegateExpression)}
           </span>
         )}
@@ -352,7 +352,7 @@ function GatewayNodeBase({
       </div>
       {data.label && (
         <div
-          className="absolute left-1/2 text-[11px] font-medium text-foreground whitespace-nowrap pointer-events-none"
+          className="absolute left-1/2 text-xs font-medium text-foreground whitespace-nowrap pointer-events-none"
           style={{ top: 54, transform: "translateX(-50%)" }}
         >
           {data.label}
@@ -413,11 +413,11 @@ export const SubProcessNode = memo(({ data, selected }: NodeProps) => {
       <div className="flex items-center gap-2 mb-2">
         <Layers className="size-4" style={{ color: C.icon }} />
         <span className="text-xs font-medium text-foreground">
-          {d.label || "Subprocess"}
+          {d.label || "子流程"}
         </span>
       </div>
-      <div className="flex-1 flex items-center justify-center text-muted-foreground text-[10px]">
-        Drop elements here
+      <div className="flex-1 flex items-center justify-center text-muted-foreground text-xs">
+        将元素拖放到此处
       </div>
       <Handle type="target" position={Position.Left} style={targetHandleStyle} />
       <Handle type="source" position={Position.Right} style={sourceHandleStyle} />
@@ -443,11 +443,11 @@ export const GroupNode = memo(({ data, selected }: NodeProps) => {
       <div className="flex items-center gap-2 mb-1">
         <Group className="size-4" style={{ color: C.icon }} />
         <span className="text-xs font-medium text-foreground">
-          {d.label || "Group"}
+          {d.label || "分组"}
         </span>
       </div>
-      <div className="flex-1 flex items-center justify-center text-muted-foreground text-[10px]">
-        Group elements
+      <div className="flex-1 flex items-center justify-center text-muted-foreground text-xs">
+        分组元素
       </div>
       <Handle type="target" position={Position.Left} style={targetHandleStyle} />
       <Handle type="source" position={Position.Right} style={sourceHandleStyle} />
@@ -473,11 +473,11 @@ export const EventSubprocessNode = memo(({ data, selected }: NodeProps) => {
       <div className="flex items-center gap-2 mb-1">
         <Zap className="size-4" style={{ color: C.icon }} />
         <span className="text-xs font-medium text-foreground">
-          {d.label || "Event Subprocess"}
+          {d.label || "事件子流程"}
         </span>
       </div>
-      <div className="flex-1 flex items-center justify-center text-muted-foreground text-[10px]">
-        Event-driven subprocess
+      <div className="flex-1 flex items-center justify-center text-muted-foreground text-xs">
+        事件驱动子流程
       </div>
       <Handle type="target" position={Position.Left} style={targetHandleStyle} />
       <Handle type="source" position={Position.Right} style={sourceHandleStyle} />
@@ -505,7 +505,7 @@ export const TextAnnotationNode = memo(({ data, selected }: NodeProps) => {
       <div className="flex items-center gap-2">
         <MessageSquareText className="size-3.5 shrink-0" style={{ color: C.icon }} />
         <span className="text-xs text-foreground">
-          {d.label || "Text Annotation"}
+          {d.label || "文本批注"}
         </span>
       </div>
     </div>
@@ -551,10 +551,10 @@ export const ApprovalNode = memo(({ data, selected }: NodeProps) => {
       </div>
       <div className="flex flex-col min-w-0">
         <span className="text-xs font-medium text-foreground truncate">
-          {d.label || "Approval"}
+          {d.label || "审批"}
         </span>
         {d.approvalType && (
-          <span className="text-[10px] text-muted-foreground truncate">
+          <span className="text-xs text-muted-foreground truncate">
             {String(d.approvalType)}
           </span>
         )}
@@ -605,27 +605,27 @@ export interface BpmnNodeTypeMeta {
 
 export const bpmnNodeTypeRegistry: BpmnNodeTypeMeta[] = [
   // Events
-  { type: "startEvent", label: "Start Event", category: "Events", color: C.start, bgColor: C.white, borderColor: C.start, Icon: Play, defaultData: { label: "Start" } },
-  { type: "endEvent", label: "End Event", category: "Events", color: C.end, bgColor: C.white, borderColor: C.end, Icon: Octagon, defaultData: { label: "End" } },
-  { type: "timerEvent", label: "Timer Event", category: "Events", color: C.icon, bgColor: C.white, borderColor: C.border, Icon: Clock, defaultData: { label: "Timer" } },
-  { type: "messageEvent", label: "Message Event", category: "Events", color: C.icon, bgColor: C.white, borderColor: C.border, Icon: Mail, defaultData: { label: "Message" } },
+  { type: "startEvent", label: "开始事件", category: "Events", color: C.start, bgColor: C.white, borderColor: C.start, Icon: Play, defaultData: { label: "开始" } },
+  { type: "endEvent", label: "结束事件", category: "Events", color: C.end, bgColor: C.white, borderColor: C.end, Icon: Octagon, defaultData: { label: "结束" } },
+  { type: "timerEvent", label: "定时器事件", category: "Events", color: C.icon, bgColor: C.white, borderColor: C.border, Icon: Clock, defaultData: { label: "定时器" } },
+  { type: "messageEvent", label: "消息事件", category: "Events", color: C.icon, bgColor: C.white, borderColor: C.border, Icon: Mail, defaultData: { label: "消息" } },
   // Tasks — all neutral
-  { type: "userTask", label: "User Task", category: "Tasks", color: C.icon, bgColor: C.node, borderColor: C.border, Icon: User, defaultData: { label: "User Task", assignee: "" } },
-  { type: "serviceTask", label: "Service Task", category: "Tasks", color: C.icon, bgColor: C.node, borderColor: C.border, Icon: Cog, defaultData: { label: "Service Task", delegateExpression: "" } },
-  { type: "scriptTask", label: "Script Task", category: "Tasks", color: C.icon, bgColor: C.node, borderColor: C.border, Icon: Code, defaultData: { label: "Script Task", scriptFormat: "groovy", script: "" } },
-  { type: "businessRuleTask", label: "Business Rule", category: "Tasks", color: C.icon, bgColor: C.node, borderColor: C.border, Icon: Layers, defaultData: { label: "Business Rule" } },
-  { type: "approvalTask", label: "Approval", category: "Tasks", color: C.icon, bgColor: C.node, borderColor: C.border, Icon: Layers, defaultData: { label: "Approval", approvalType: "or" } },
-  { type: "aiDecision", label: "AI Decision", category: "Tasks", color: C.icon, bgColor: C.node, borderColor: C.border, Icon: Sparkles, defaultData: { label: "AI Decision" } },
+  { type: "userTask", label: "用户任务", category: "Tasks", color: C.icon, bgColor: C.node, borderColor: C.border, Icon: User, defaultData: { label: "用户任务", assignee: "" } },
+  { type: "serviceTask", label: "服务任务", category: "Tasks", color: C.icon, bgColor: C.node, borderColor: C.border, Icon: Cog, defaultData: { label: "服务任务", delegateExpression: "" } },
+  { type: "scriptTask", label: "脚本任务", category: "Tasks", color: C.icon, bgColor: C.node, borderColor: C.border, Icon: Code, defaultData: { label: "脚本任务", scriptFormat: "groovy", script: "" } },
+  { type: "businessRuleTask", label: "业务规则", category: "Tasks", color: C.icon, bgColor: C.node, borderColor: C.border, Icon: Layers, defaultData: { label: "业务规则" } },
+  { type: "approvalTask", label: "审批", category: "Tasks", color: C.icon, bgColor: C.node, borderColor: C.border, Icon: Layers, defaultData: { label: "审批", approvalType: "or" } },
+  { type: "aiDecision", label: "AI 决策", category: "Tasks", color: C.icon, bgColor: C.node, borderColor: C.border, Icon: Sparkles, defaultData: { label: "AI 决策" } },
   // Gateways — all neutral
-  { type: "exclusiveGateway", label: "Exclusive", category: "Gateways", color: C.icon, bgColor: C.gateway, borderColor: C.border, Icon: GitBranch, defaultData: { label: "XOR" } },
-  { type: "parallelGateway", label: "Parallel", category: "Gateways", color: C.icon, bgColor: C.gateway, borderColor: C.border, Icon: Plus, defaultData: { label: "AND" } },
-  { type: "inclusiveGateway", label: "Inclusive", category: "Gateways", color: C.icon, bgColor: C.gateway, borderColor: C.border, Icon: Circle, defaultData: { label: "OR" } },
-  { type: "eventGateway", label: "Event Gateway", category: "Gateways", color: C.icon, bgColor: C.gateway, borderColor: C.border, Icon: Zap, defaultData: { label: "Event" } },
+  { type: "exclusiveGateway", label: "互斥网关", category: "Gateways", color: C.icon, bgColor: C.gateway, borderColor: C.border, Icon: GitBranch, defaultData: { label: "互斥" } },
+  { type: "parallelGateway", label: "并行网关", category: "Gateways", color: C.icon, bgColor: C.gateway, borderColor: C.border, Icon: Plus, defaultData: { label: "并行" } },
+  { type: "inclusiveGateway", label: "包容网关", category: "Gateways", color: C.icon, bgColor: C.gateway, borderColor: C.border, Icon: Circle, defaultData: { label: "包容" } },
+  { type: "eventGateway", label: "事件网关", category: "Gateways", color: C.icon, bgColor: C.gateway, borderColor: C.border, Icon: Zap, defaultData: { label: "事件" } },
   // Subprocess
-  { type: "subprocess", label: "Subprocess", category: "Subprocess", color: C.icon, bgColor: C.white, borderColor: C.dashedBorder, Icon: Layers, defaultData: { label: "Subprocess" } },
-  { type: "callActivity", label: "Call Activity", category: "Subprocess", color: C.icon, bgColor: C.node, borderColor: C.border, Icon: Phone, defaultData: { label: "Call Activity" } },
-  { type: "eventSubprocess", label: "Event Subprocess", category: "Subprocess", color: C.icon, bgColor: C.white, borderColor: C.dashedBorder, Icon: Zap, defaultData: { label: "Event Subprocess" } },
+  { type: "subprocess", label: "子流程", category: "Subprocess", color: C.icon, bgColor: C.white, borderColor: C.dashedBorder, Icon: Layers, defaultData: { label: "子流程" } },
+  { type: "callActivity", label: "调用活动", category: "Subprocess", color: C.icon, bgColor: C.node, borderColor: C.border, Icon: Phone, defaultData: { label: "调用活动" } },
+  { type: "eventSubprocess", label: "事件子流程", category: "Subprocess", color: C.icon, bgColor: C.white, borderColor: C.dashedBorder, Icon: Zap, defaultData: { label: "事件子流程" } },
   // Artifacts
-  { type: "group", label: "Group", category: "Artifacts", color: C.icon, bgColor: C.white, borderColor: C.dashedBorder, Icon: Group, defaultData: { label: "Group" } },
-  { type: "textAnnotation", label: "Text Annotation", category: "Artifacts", color: C.icon, bgColor: C.annotationBg, borderColor: C.icon, Icon: MessageSquareText, defaultData: { label: "Annotation" } },
+  { type: "group", label: "分组", category: "Artifacts", color: C.icon, bgColor: C.white, borderColor: C.dashedBorder, Icon: Group, defaultData: { label: "分组" } },
+  { type: "textAnnotation", label: "文本批注", category: "Artifacts", color: C.icon, bgColor: C.annotationBg, borderColor: C.icon, Icon: MessageSquareText, defaultData: { label: "批注" } },
 ];

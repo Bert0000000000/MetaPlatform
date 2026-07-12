@@ -8,12 +8,28 @@ export type WidgetType =
   | "textarea"
   | "number"
   | "select"
-  | "datepicker"
+  | "radio"
+  | "checkbox"
   | "switch"
+  | "datepicker"
+  | "datetime"
   | "email"
   | "phone"
   | "url"
-  | "rate";
+  | "rate"
+  | "richtext"
+  | "file"
+  | "image"
+  | "signature"
+  | "location"
+  | "color"
+  | "slider"
+  | "currency"
+  | "percent"
+  | "reference"
+  | "formula"
+  | "divider"
+  | "heading";
 
 // ---- Layout ----
 export interface PageLayout {
@@ -23,7 +39,8 @@ export interface PageLayout {
 
 // ---- Field (FORM section) ----
 export interface FieldSchema {
-  field: string;
+  field?: string;
+  key?: string; // alias for field - used by the low-code designer
   widget: WidgetType;
   label: string;
   required?: boolean;
@@ -32,7 +49,21 @@ export interface FieldSchema {
   placeholder?: string;
   order?: number;
   colSpan?: number;
+  width?: "full" | "half" | "third" | "quarter";
   options?: Array<{ label: string; value: string | number }>;
+  // extended properties for low-code designer
+  defaultValue?: unknown;
+  min?: number;
+  max?: number;
+  pattern?: string;
+  precision?: number;
+  multiple?: boolean;
+  accept?: string;
+  maxFileSize?: number;
+  rows?: number;
+  text?: string; // for divider / heading
+  boundObject?: string;
+  boundProperty?: string;
 }
 
 // ---- TABLE column ----
@@ -87,7 +118,9 @@ export interface PageRender {
   name: string;
   displayName?: string;
   pageType: string;
+  version?: number;
   objectCode?: string;
+  objectId?: string; // ontology object id for data binding
   layout?: PageLayout;
   sections: SectionSchema[];
   viewConfig?: Record<string, unknown>;

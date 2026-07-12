@@ -60,28 +60,28 @@ function generateId(prefix: string): string {
 
 const defaultNodes: Node[] = [
   // Start Event
-  { id: "start_1", type: "startEvent", position: { x: 80, y: 220 }, data: { label: "Start" } },
+  { id: "start_1", type: "startEvent", position: { x: 80, y: 220 }, data: { label: "开始" } },
 
   // User Task
-  { id: "user_task_1", type: "userTask", position: { x: 220, y: 210 }, data: { label: "User Task" } },
+  { id: "user_task_1", type: "userTask", position: { x: 220, y: 210 }, data: { label: "用户任务" } },
 
   // XOR Gateway (exclusive)
-  { id: "gateway_xor", type: "exclusiveGateway", position: { x: 430, y: 224 }, data: { label: "XOR" } },
+  { id: "gateway_xor", type: "exclusiveGateway", position: { x: 430, y: 224 }, data: { label: "互斥" } },
 
   // Service Task (upper branch)
-  { id: "service_task_1", type: "serviceTask", position: { x: 580, y: 110 }, data: { label: "Service Task" } },
+  { id: "service_task_1", type: "serviceTask", position: { x: 580, y: 110 }, data: { label: "服务任务" } },
 
   // Script Task (lower branch)
-  { id: "script_task_1", type: "scriptTask", position: { x: 580, y: 310 }, data: { label: "Script Task" } },
+  { id: "script_task_1", type: "scriptTask", position: { x: 580, y: 310 }, data: { label: "脚本任务" } },
 
   // AND Gateway (parallel)
-  { id: "gateway_and", type: "parallelGateway", position: { x: 790, y: 224 }, data: { label: "AND" } },
+  { id: "gateway_and", type: "parallelGateway", position: { x: 790, y: 224 }, data: { label: "并行" } },
 
   // Approval Task
-  { id: "user_task_2", type: "userTask", position: { x: 940, y: 210 }, data: { label: "Approval" } },
+  { id: "user_task_2", type: "userTask", position: { x: 940, y: 210 }, data: { label: "审批" } },
 
   // End Event
-  { id: "end_1", type: "endEvent", position: { x: 1140, y: 220 }, data: { label: "End" } },
+  { id: "end_1", type: "endEvent", position: { x: 1140, y: 220 }, data: { label: "结束" } },
 ];
 
 const defaultEdges: Edge[] = [
@@ -110,6 +110,8 @@ interface ProcessDesignerV2Props {
   definitionId?: string;
   onDeploy?: (xml: string) => void;
   className?: string;
+  /** 可选：当前工作流所属模块下的相关页面，供节点 Form Key 选择 */
+  formPageOptions?: { value: string; label: string }[];
 }
 
 export function ProcessDesignerV2({
@@ -117,6 +119,7 @@ export function ProcessDesignerV2({
   definitionId,
   onDeploy,
   className,
+  formPageOptions,
 }: ProcessDesignerV2Props) {
   // ---- React Flow state ----
   const [nodes, setNodes, onNodesChange] = useNodesState(defaultNodes);
@@ -133,7 +136,7 @@ export function ProcessDesignerV2({
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
   // ---- Process config ----
-  const [processConfig, setProcessConfig] = useState({ id: "myProcess", name: "My Process" });
+  const [processConfig, setProcessConfig] = useState({ id: "myProcess", name: "我的流程" });
 
   // ---- Undo/Redo ----
   const historyRef = useRef<{ nodes: Node[]; edges: Edge[] }[]>([]);
@@ -391,14 +394,14 @@ export function ProcessDesignerV2({
     a.download = `${processConfig.id}.bpmn20.xml`;
     a.click();
     URL.revokeObjectURL(url);
-    setStatusMessage("BPMN XML exported");
+    setStatusMessage("BPMN XML 已导出");
     setTimeout(() => setStatusMessage(null), 3000);
   }, [getBpmnXml, processConfig.id]);
 
   const handleCopyXml = useCallback(() => {
     const xml = getBpmnXml();
     navigator.clipboard.writeText(xml).then(() => {
-      setStatusMessage("BPMN XML copied to clipboard");
+      setStatusMessage("BPMN XML 已复制到剪贴板");
       setTimeout(() => setStatusMessage(null), 3000);
     });
   }, [getBpmnXml]);
@@ -432,9 +435,9 @@ export function ProcessDesignerV2({
           }));
           setNodes(rfNodes);
           setEdges(rfEdges);
-          setStatusMessage("BPMN XML imported successfully");
+          setStatusMessage("BPMN XML 导入成功");
         } else {
-          setStatusMessage("Failed to parse BPMN XML");
+          setStatusMessage("BPMN XML 解析失败");
         }
         setTimeout(() => setStatusMessage(null), 3000);
       };
@@ -446,7 +449,7 @@ export function ProcessDesignerV2({
   // ---- Deploy to Flowable ----
   const handleDeploy = useCallback(async () => {
     setIsDeploying(true);
-    setStatusMessage("Deploying...");
+    setStatusMessage("部署中…");
     try {
       const xml = getBpmnXml();
       if (onDeploy) {
@@ -456,10 +459,10 @@ export function ProcessDesignerV2({
           name: processConfig.name,
           bpmnXml: xml,
         });
-        setStatusMessage("Deployed to Flowable successfully!");
+        setStatusMessage("部署到 Flowable 成功！");
       }
     } catch (err) {
-      setStatusMessage(`Deploy failed: ${err instanceof Error ? err.message : String(err)}`);
+      setStatusMessage(`部署失败：${err instanceof Error ? err.message : String(err)}`);
     } finally {
       setIsDeploying(false);
       setTimeout(() => setStatusMessage(null), 5000);
@@ -507,24 +510,24 @@ export function ProcessDesignerV2({
       {/* Toolbar */}
       <div className="flex items-center justify-between px-3 py-1.5 border-b bg-card shrink-0">
         <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon" className="size-8" onClick={() => setShowLeftPanel((v) => !v)} title="Toggle Palette">
+          <Button variant="ghost" size="icon" className="size-8" onClick={() => setShowLeftPanel((v) => !v)} title="切换面板">
             {showLeftPanel ? <PanelLeftClose className="size-4" /> : <PanelLeftOpen className="size-4" />}
           </Button>
           <div className="w-px h-5 bg-border mx-1" />
-          <Button variant="ghost" size="icon" className="size-8" onClick={undo} title="Undo (Ctrl+Z)">
+          <Button variant="ghost" size="icon" className="size-8" onClick={undo} title="撤销 (Ctrl+Z)">
             <Undo2 className="size-4" />
           </Button>
-          <Button variant="ghost" size="icon" className="size-8" onClick={redo} title="Redo (Ctrl+Shift+Z)">
+          <Button variant="ghost" size="icon" className="size-8" onClick={redo} title="重做 (Ctrl+Shift+Z)">
             <Redo2 className="size-4" />
           </Button>
           <div className="w-px h-5 bg-border mx-1" />
-          <Button variant="ghost" size="icon" className="size-8" onClick={zoomIn} title="Zoom In">
+          <Button variant="ghost" size="icon" className="size-8" onClick={zoomIn} title="放大">
             <ZoomIn className="size-4" />
           </Button>
-          <Button variant="ghost" size="icon" className="size-8" onClick={zoomOut} title="Zoom Out">
+          <Button variant="ghost" size="icon" className="size-8" onClick={zoomOut} title="缩小">
             <ZoomOut className="size-4" />
           </Button>
-          <Button variant="ghost" size="icon" className="size-8" onClick={fitView} title="Fit View">
+          <Button variant="ghost" size="icon" className="size-8" onClick={fitView} title="适应视图">
             <Maximize className="size-4" />
           </Button>
           <Button
@@ -532,28 +535,28 @@ export function ProcessDesignerV2({
             size="icon"
             className="size-8"
             onClick={() => setShowGrid((v) => !v)}
-            title="Toggle Grid"
+            title="切换网格"
           >
             <Grid3X3 className="size-4" />
           </Button>
         </div>
         <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon" className="size-8" onClick={handleImport} title="Import BPMN XML">
+          <Button variant="ghost" size="icon" className="size-8" onClick={handleImport} title="导入 BPMN XML">
             <Upload className="size-4" />
           </Button>
-          <Button variant="ghost" size="icon" className="size-8" onClick={handleExport} title="Export BPMN XML (Ctrl+S)">
+          <Button variant="ghost" size="icon" className="size-8" onClick={handleExport} title="导出 BPMN XML (Ctrl+S)">
             <Download className="size-4" />
           </Button>
-          <Button variant="ghost" size="icon" className="size-8" onClick={handleCopyXml} title="Copy BPMN XML">
+          <Button variant="ghost" size="icon" className="size-8" onClick={handleCopyXml} title="复制 BPMN XML">
             <Copy className="size-4" />
           </Button>
           <div className="w-px h-5 bg-border mx-1" />
-          <Button variant="ghost" size="icon" className="size-8" onClick={() => setShowRightPanel((v) => !v)} title="Toggle Properties">
+          <Button variant="ghost" size="icon" className="size-8" onClick={() => setShowRightPanel((v) => !v)} title="切换属性面板">
             {showRightPanel ? <PanelRightClose className="size-4" /> : <PanelRightOpen className="size-4" />}
           </Button>
           <Button size="sm" onClick={handleDeploy} disabled={isDeploying} className="ml-1">
             <Rocket className="size-3.5 mr-1" />
-            {isDeploying ? "Deploying..." : "Deploy"}
+            {isDeploying ? "部署中…" : "部署"}
           </Button>
         </div>
       </div>
@@ -609,8 +612,8 @@ export function ProcessDesignerV2({
               <div className="text-xs text-muted-foreground bg-card/80 backdrop-blur px-2 py-1 rounded border">
                 {processConfig.name}
                 {definitionId && (
-                  <span className="ml-2 text-[10px] text-muted-foreground">
-                    (editing: {definitionId})
+                  <span className="ml-2 text-xs text-muted-foreground">
+                    （正在编辑：{definitionId}）
                   </span>
                 )}
               </div>
@@ -631,17 +634,18 @@ export function ProcessDesignerV2({
               onDeselect={deselect}
               processConfig={processConfig}
               onUpdateProcess={setProcessConfig}
+              formPageOptions={formPageOptions}
             />
           </div>
         )}
       </div>
 
       {/* Status Bar */}
-      <div className="flex items-center justify-between px-3 py-1 border-t bg-card text-[11px] text-muted-foreground shrink-0">
+      <div className="flex items-center justify-between px-3 py-1 border-t bg-card text-xs text-muted-foreground shrink-0">
         <div className="flex items-center gap-4">
-          <span>Nodes: {nodeCount}</span>
-          <span>Edges: {edgeCount}</span>
-          <span>Process: {processConfig.id}</span>
+          <span>节点: {nodeCount}</span>
+          <span>连线: {edgeCount}</span>
+          <span>流程: {processConfig.id}</span>
         </div>
         <div className="flex items-center gap-3">
           {statusMessage && (

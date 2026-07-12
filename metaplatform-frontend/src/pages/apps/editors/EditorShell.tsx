@@ -2,7 +2,7 @@ import { useState, ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Save, Loader2, Monitor, Tablet, Smartphone, Bot, Hash, Clock, X } from "lucide-react";
+import { ArrowLeft, Save, Loader2, Monitor, Tablet, Smartphone, Bot, Hash, Clock, X, Pencil } from "lucide-react";
 import { TYPE_META, type PageVersion } from "./types";
 import { AICoPilot } from "./AICoPilot";
 
@@ -35,19 +35,27 @@ export function EditorShell({
     <div className="flex flex-col h-full">
       {/* Top Toolbar */}
       <div className="flex items-center justify-between border-b px-4 py-2 bg-background shrink-0">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 min-w-0 flex-1">
           {onBack && (
             <Button variant="ghost" size="icon" className="size-8" onClick={onBack}>
               <ArrowLeft className="size-4" />
             </Button>
           )}
-          <Input value={pageName} onChange={(e) => onPageNameChange(e.target.value)}
-            className="h-7 w-48 text-sm font-semibold border-none shadow-none focus-visible:ring-0 px-0" />
-          <Badge variant="outline" className={`text-[10px] ${typeMeta.color}`}>
+          {/* 类型徽标放在左侧, 后跟可编辑的页面名称输入框 */}
+          <Badge variant="outline" className={`text-xs shrink-0 ${typeMeta.color}`}>
             {typeMeta.label}
           </Badge>
-          {dirty && <Badge variant="secondary" className="text-[10px] gap-1">
-            <span className="size-1.5 rounded-full bg-orange-400 inline-block" />未保存
+          <div className="group flex items-center gap-1 min-w-0 max-w-[320px]">
+            <Input
+              value={pageName}
+              onChange={(e) => onPageNameChange(e.target.value)}
+              placeholder="请输入页面名称"
+              className="h-7 w-full text-sm font-semibold border-transparent shadow-none focus-visible:ring-1 focus-visible:ring-primary/30 px-1.5 bg-transparent hover:bg-muted/40 focus-visible:bg-background"
+            />
+            <Pencil className="size-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+          </div>
+          {dirty && <Badge variant="secondary" className="text-xs gap-1 shrink-0">
+            <span className="size-1.5 rounded-full bg-primary inline-block" />未保存
           </Badge>}
         </div>
         <div className="flex items-center gap-2">
@@ -93,9 +101,9 @@ export function EditorShell({
                     {ver.timestamp ? new Date(ver.timestamp).toLocaleString("zh-CN", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "--"}
                   </span>
                 </div>
-                {ver.version === currentVersion && <Badge variant="default" className="text-[10px] py-0">当前</Badge>}
+                {ver.version === currentVersion && <Badge variant="default" className="text-xs py-0">当前</Badge>}
                 {ver.version !== currentVersion && (
-                  <Button variant="ghost" size="sm" className="h-5 text-[10px] px-1.5"
+                  <Button variant="ghost" size="sm" className="h-5 text-xs px-1.5"
                     onClick={() => onRestoreVersion(ver)}>恢复</Button>
                 )}
               </div>

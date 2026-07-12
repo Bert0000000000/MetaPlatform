@@ -1,6 +1,7 @@
 package com.metaplatform.appservice.security;
 
 import com.metaplatform.appservice.config.AppServiceProperties;
+import com.metaplatform.appservice.security.TenantContext;
 import com.metaplatform.appservice.domain.audit.AuditLog;
 import com.metaplatform.appservice.domain.audit.AuditLogRepository;
 import jakarta.servlet.FilterChain;

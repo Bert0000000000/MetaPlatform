@@ -71,18 +71,31 @@ export default function Workflows() {
   }
 
   async function confirmCreate() {
+    if (!appId) {
+      console.error("appId 缺失, 无法创建流程");
+      return;
+    }
     setCreateDialogOpen(false);
-    // Create a temporary local process for design mode
-    const temp: ProcessDefinition = {
-      id: `local_${Date.now()}`,
-      name: newProcessName || "新流程",
-      key: newProcessKey,
-      version: 1,
-      status: "draft",
-      type: "business",
-      description: "",
-    };
-    setDesigningProcess(temp);
+    try {
+      // 1. 先在数据库创建空白流程
+      const created = await processesApi.create({
+        app_id: appId,
+        name: newProcessName || "新流程",
+        type: "business",
+        description: "",
+      });
+      const realProcess = (created as any)?.data ?? created;
+      // 2. 同步本地列表, 广播事件
+      setProcesses((prev) => {
+        if (prev.find((p) => p.id === realProcess.id)) return prev;
+        return [...prev, realProcess as ProcessDefinition];
+      });
+      window.dispatchEvent(new CustomEvent("mp:flows-changed", { detail: { appId, kind: "create", processId: realProcess.id } }));
+      // 3. 进入设计器
+      setDesigningProcess(realProcess as ProcessDefinition);
+    } catch (e) {
+      console.error("创建流程失败:", e);
+    }
   }
 
   /* ── Design handler ── */
@@ -107,6 +120,7 @@ export default function Workflows() {
     try {
       await processesApi.delete(deleteTarget.id);
       setProcesses((prev) => prev.filter((p) => p.id !== deleteTarget.id));
+      window.dispatchEvent(new CustomEvent("mp:flows-changed", { detail: { appId, kind: "delete", processId: deleteTarget.id } }));
       setImportToast("流程已删除");
     } catch {
       setError("删除流程失败");
@@ -122,15 +136,34 @@ export default function Workflows() {
     bpmnInputRef.current?.click();
   }
 
-  function handleBpmnFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleBpmnFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      setImportToast(`BPMN 文件 "${file.name}" 导入成功`);
-    };
-    reader.readAsText(file);
     e.target.value = "";
+    if (!file) return;
+    if (!appId) {
+      setError("appId 缺失, 无法导入 BPMN");
+      return;
+    }
+    try {
+      const xml = await file.text();
+      // 用默认名 "导入-BPMN-时间戳" 作为流程名, 直接 POST 到 process_definitions (persist)
+      const baseName = (file.name || "imported.bpmn").replace(/\.bpmn\w*$/i, "");
+      const created = await processesApi.create({
+        app_id: appId,
+        name: `${baseName}（导入 ${new Date().toLocaleDateString()}）`,
+        type: "business",
+        bpmn_xml: xml,
+      });
+      const real = (created as any)?.data ?? created;
+      setProcesses((prev) => {
+        if (prev.find((p) => p.id === real.id)) return prev;
+        return [...prev, real as ProcessDefinition];
+      });
+      window.dispatchEvent(new CustomEvent("mp:flows-changed", { detail: { appId, kind: "import", processId: real.id } }));
+      setImportToast(`已导入 "${file.name}" → 新流程 "${(real as any).name || baseName}"`);
+    } catch (err) {
+      setError("BPMN 导入失败: " + (err instanceof Error ? err.message : String(err)));
+    }
   }
 
   /* ── If designing, show full-height designer ── */

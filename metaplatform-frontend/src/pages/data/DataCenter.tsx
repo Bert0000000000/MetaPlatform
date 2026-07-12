@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { dataApi, type DataSource, type DataMetric } from "@/lib/api";
+import { LineageCanvas, type LineageNodeDatum } from "@/components/lineage/LineageCanvas";
 import { Database, Plus, Sparkles, MessageSquare, Activity, AlertTriangle, Terminal, BarChart3, GitMerge, ShieldCheck, Clock, Send, FileBarChart, Leaf, Zap, Rocket, Mail, Globe, FileSpreadsheet, Users, Package, Megaphone, HardDrive, RefreshCw, Circle, Handshake, Trash2, Plug, Bell, CheckCircle2, Warehouse, Layers, Search, BookOpen, Ruler, Briefcase, ScrollText, Download, Server, Eye, Star, Bookmark, History, ChevronRight, ChevronDown, PieChart, TrendingUp, Table as TableIcon, Filter, Copy, MoreHorizontal, ArrowRight, Printer, Columns, Split, Merge, Fingerprint, Target, ArrowRightLeft, Lock, GripVertical, Loader2, Share2, Link2, Code2, GitBranch } from "lucide-react";
 import { PageHeader } from "@/components/ui/stat";
 
@@ -464,10 +465,10 @@ export function AskData() {
                 fill={colors[i % colors.length]}
                 rx={4}
               />
-              <text x={x + barWidth / 2} y={chartHeight + 15} textAnchor="middle" className="text-[10px] fill-muted-foreground">
+              <text x={x + barWidth / 2} y={chartHeight + 15} textAnchor="middle" className="text-xs fill-muted-foreground">
                 {item.label}
               </text>
-              <text x={x + barWidth / 2} y={chartHeight - barHeight - 5} textAnchor="middle" className="text-[9px] fill-foreground font-medium">
+              <text x={x + barWidth / 2} y={chartHeight - barHeight - 5} textAnchor="middle" className="text-xs fill-foreground font-medium">
                 {(item.value / 10000).toFixed(1)}万
               </text>
             </g>
@@ -508,7 +509,7 @@ export function AskData() {
           return (
             <g key={ratio}>
               <line x1={padding} y1={y} x2={chartWidth - padding} y2={y} stroke="currentColor" strokeOpacity={0.1} />
-              <text x={padding - 5} y={y + 4} textAnchor="end" className="text-[9px] fill-muted-foreground">
+              <text x={padding - 5} y={y + 4} textAnchor="end" className="text-xs fill-muted-foreground">
                 {((minVal + ratio * (maxVal - minVal)) / 10000).toFixed(0)}万
               </text>
             </g>
@@ -522,7 +523,7 @@ export function AskData() {
         {points.map((p, i) => (
           <g key={i}>
             <circle cx={p.x} cy={p.y} r="4" fill="#3b82f6" stroke="white" strokeWidth="2" />
-            <text x={p.x} y={chartHeight - padding + 15} textAnchor="middle" className="text-[9px] fill-muted-foreground">
+            <text x={p.x} y={chartHeight - padding + 15} textAnchor="middle" className="text-xs fill-muted-foreground">
               {p.label}
             </text>
           </g>
@@ -566,7 +567,7 @@ export function AskData() {
         {slices.map((slice, i) => (
           <g key={i}>
             <path d={slice.path} fill={slice.color} stroke="white" strokeWidth="2" />
-            <text x={slice.labelX} y={slice.labelY} textAnchor="middle" dominantBaseline="middle" className="text-[10px] fill-white font-medium">
+            <text x={slice.labelX} y={slice.labelY} textAnchor="middle" dominantBaseline="middle" className="text-xs fill-white font-medium">
               {slice.percent}%
             </text>
           </g>
@@ -575,7 +576,7 @@ export function AskData() {
         {data.map((item, i) => (
           <g key={i} transform={`translate(230, ${20 + i * 24})`}>
             <rect width="12" height="12" fill={colors[i % colors.length]} rx="2" />
-            <text x="16" y="10" className="text-[10px] fill-foreground">{item.label}</text>
+            <text x="16" y="10" className="text-xs fill-foreground">{item.label}</text>
           </g>
         ))}
       </svg>
@@ -724,7 +725,7 @@ export function AskData() {
                       <Terminal className="size-3" />
                     </div>
                     <div className="flex-1">
-                      <pre className="text-xs font-mono bg-background border rounded p-2 overflow-x-auto">
+                      <pre className="text-xs font-mono bg-background border rounded p-2 overflow-x-auto scrollbar-none">
                         {h.sql}
                       </pre>
                     </div>
@@ -1947,8 +1948,8 @@ export function ChartGallery() {
           return (
             <g key={i}>
               <rect x={x} y={260 - barHeight} width={barWidth} height={barHeight} fill={colors[i]} rx="4" />
-              <text x={x + barWidth / 2} y={275} textAnchor="middle" className="text-[10px] fill-muted-foreground">{item.label}</text>
-              <text x={x + barWidth / 2} y={255 - barHeight} textAnchor="middle" className="text-[9px] fill-foreground font-medium">{(item.value / 10000).toFixed(0)}万</text>
+              <text x={x + barWidth / 2} y={275} textAnchor="middle" className="text-xs fill-muted-foreground">{item.label}</text>
+              <text x={x + barWidth / 2} y={255 - barHeight} textAnchor="middle" className="text-xs fill-foreground font-medium">{(item.value / 10000).toFixed(0)}万</text>
             </g>
           );
         })}
@@ -1975,8 +1976,8 @@ export function ChartGallery() {
         {points.map((p, i) => (
           <g key={i}>
             <circle cx={p.x} cy={p.y} r="5" fill="#3b82f6" stroke="white" strokeWidth="2" />
-            <text x={p.x} y={260} textAnchor="middle" className="text-[10px] fill-muted-foreground">{p.label}</text>
-            <text x={p.x} y={p.y - 10} textAnchor="middle" className="text-[9px] fill-foreground">{p.value}万</text>
+            <text x={p.x} y={260} textAnchor="middle" className="text-xs fill-muted-foreground">{p.label}</text>
+            <text x={p.x} y={p.y - 10} textAnchor="middle" className="text-xs fill-foreground">{p.value}万</text>
           </g>
         ))}
       </svg>
@@ -2009,14 +2010,14 @@ export function ChartGallery() {
           return (
             <g key={i}>
               <path d={path} fill={colors[i]} stroke="white" strokeWidth="2" />
-              <text x={lx} y={ly} textAnchor="middle" dominantBaseline="middle" className="text-[11px] fill-white font-medium">{item.value}%</text>
+              <text x={lx} y={ly} textAnchor="middle" dominantBaseline="middle" className="text-xs fill-white font-medium">{item.value}%</text>
             </g>
           );
         })}
         {data.map((item, i) => (
           <g key={i} transform={`translate(320, ${40 + i * 28})`}>
             <rect width="14" height="14" fill={colors[i]} rx="3" />
-            <text x="20" y="12" className="text-[11px] fill-foreground">{item.label}</text>
+            <text x="20" y="12" className="text-xs fill-foreground">{item.label}</text>
           </g>
         ))}
       </svg>
@@ -2042,7 +2043,7 @@ export function ChartGallery() {
         {angles.map((a, i) => (
           <g key={i}>
             <line x1={cx} y1={cy} x2={cx + r * Math.cos(a)} y2={cy + r * Math.sin(a)} stroke="#e5e7eb" strokeWidth="0.5" />
-            <text x={cx + (r + 15) * Math.cos(a)} y={cy + (r + 15) * Math.sin(a)} textAnchor="middle" className="text-[11px] fill-foreground">{categories[i]}</text>
+            <text x={cx + (r + 15) * Math.cos(a)} y={cy + (r + 15) * Math.sin(a)} textAnchor="middle" className="text-xs fill-foreground">{categories[i]}</text>
           </g>
         ))}
         <polygon
@@ -2082,8 +2083,8 @@ export function ChartGallery() {
           strokeWidth="20"
           strokeLinecap="round"
         />
-        <text x={cx} y={cy + 20} textAnchor="middle" className="text-[36px] font-bold fill-foreground">{value}%</text>
-        <text x={cx} y={cy + 45} textAnchor="middle" className="text-[14px] fill-muted-foreground">完成率</text>
+        <text x={cx} y={cy + 20} textAnchor="middle" className="text-3xl font-bold fill-foreground">{value}%</text>
+        <text x={cx} y={cy + 45} textAnchor="middle" className="text-sm fill-muted-foreground">完成率</text>
       </svg>
     );
   }
@@ -2144,7 +2145,7 @@ export function ChartGallery() {
                     <span className="font-medium text-sm">{chart.name}</span>
                   </div>
                   <div className="text-xs text-muted-foreground mt-1 line-clamp-2">{chart.description}</div>
-                  <Badge variant="outline" className="mt-2 text-[10px]">{chart.category}</Badge>
+                  <Badge variant="outline" className="mt-2 text-xs">{chart.category}</Badge>
                 </button>
               );
             })}
@@ -2247,15 +2248,36 @@ const LINEAGE_EDGES: LineageEdge[] = [
 
 const NODE_COLORS: Record<LineageNodeType, { bg: string; border: string; text: string; icon: typeof Database }> = {
   source: { bg: "bg-blue-50", border: "border-blue-300", text: "text-blue-700", icon: Database },
-  etl: { bg: "bg-orange-50", border: "border-orange-300", text: "text-orange-700", icon: GitMerge },
+  etl: { bg: "bg-primary", border: "border-orange-300", text: "text-orange-700", icon: GitMerge },
   table: { bg: "bg-green-50", border: "border-green-300", text: "text-green-700", icon: TableIcon },
   metric: { bg: "bg-purple-50", border: "border-purple-300", text: "text-purple-700", icon: BarChart3 },
   dashboard: { bg: "bg-red-50", border: "border-red-300", text: "text-red-700", icon: Eye },
 };
+// Legend 文本表
+const NODE_TYPE_LABELS: Record<LineageNodeType, string> = {
+  source: "数据源",
+  etl: "ETL 任务",
+  table: "数据表",
+  metric: "指标",
+  dashboard: "看板",
+};
+/** 节点 => 类型中文  (供节点详情面板复用) */
+function nodeTypeLabel(t: LineageNodeType) {
+  return NODE_TYPE_LABELS[t];
+}
 
 export function DataLineage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedNode, setSelectedNode] = useState<LineageNode | null>(null);
+  const handleLineageSelect = React.useCallback((node: LineageNodeDatum | null) => {
+    // 转回本地 LineageNode 类型
+    if (!node) {
+      setSelectedNode(null);
+      return;
+    }
+    const found = LINEAGE_NODES.find((n) => n.id === node.id) ?? null;
+    setSelectedNode(found as LineageNode | null);
+  }, []);
   const [filterType, setFilterType] = useState<LineageNodeType | "all">("all");
 
   const filteredNodes = LINEAGE_NODES.filter((node) => {
@@ -2264,23 +2286,11 @@ export function DataLineage() {
     return matchesSearch && matchesType;
   });
 
-  const filteredNodeIds = new Set(filteredNodes.map((n) => n.id));
-
-  // Calculate node positions for SVG layout
-  const getNodePosition = (node: LineageNode, index: number) => {
-    const typeOrder: LineageNodeType[] = ["source", "etl", "table", "metric", "dashboard"];
-    const col = typeOrder.indexOf(node.type);
-    const nodesOfType = LINEAGE_NODES.filter((n) => n.type === node.type);
-    const row = nodesOfType.findIndex((n) => n.id === node.id);
-    const totalRows = nodesOfType.length;
-
-    const x = 80 + col * 160;
-    const y = 80 + (row - (totalRows - 1) / 2) * 80 + 200;
-
-    return { x, y };
-  };
-
-  const nodePositions = new Map(LINEAGE_NODES.map((node, i) => [node.id, getNodePosition(node, i)]));
+  // visibleIdSet 用 useMemo 锁住 (filteredNodes 内容变化才重算)，让 LineageCanvas Memo 不失效
+  const visibleIdSet = React.useMemo(
+    () => new Set(filteredNodes.map((n) => n.id)),
+    [filteredNodes],
+  );
 
   return (
     <div className="space-y-4">
@@ -2321,91 +2331,28 @@ export function DataLineage() {
         </CardHeader>
         <CardContent>
           <div className="flex gap-4">
-            {/* SVG Graph */}
-            <div className="flex-1 border rounded-lg bg-gray-50 overflow-auto" style={{ minHeight: "500px" }}>
-              <svg width="100%" height="500" viewBox="0 0 900 500">
-                <defs>
-                  <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
-                    <polygon points="0 0, 10 3.5, 0 7" fill="#94a3b8" />
-                  </marker>
-                </defs>
-
-                {/* Edges */}
-                {LINEAGE_EDGES.map((edge, i) => {
-                  const fromPos = nodePositions.get(edge.from);
-                  const toPos = nodePositions.get(edge.to);
-                  if (!fromPos || !toPos) return null;
-
-                  const fromNode = LINEAGE_NODES.find((n) => n.id === edge.from);
-                  const toNode = LINEAGE_NODES.find((n) => n.id === edge.to);
-                  const isFiltered = filteredNodeIds.has(edge.from) && filteredNodeIds.has(edge.to);
-
-                  return (
-                    <g key={i} opacity={isFiltered ? 1 : 0.2}>
-                      <path
-                        d={`M ${fromPos.x + 60} ${fromPos.y + 20} C ${fromPos.x + 110} ${fromPos.y + 20}, ${toPos.x - 50} ${toPos.y + 20}, ${toPos.x} ${toPos.y + 20}`}
-                        fill="none"
-                        stroke="#94a3b8"
-                        strokeWidth="1.5"
-                        markerEnd="url(#arrowhead)"
-                      />
-                    </g>
-                  );
-                })}
-
-                {/* Nodes */}
-                {LINEAGE_NODES.map((node) => {
-                  const pos = nodePositions.get(node.id);
-                  if (!pos) return null;
-                  const colors = NODE_COLORS[node.type];
-                  const Icon = colors.icon;
-                  const isFiltered = filteredNodeIds.has(node.id);
-                  const isSelected = selectedNode?.id === node.id;
-
-                  return (
-                    <g
-                      key={node.id}
-                      transform={`translate(${pos.x}, ${pos.y})`}
-                      onClick={() => setSelectedNode(node)}
-                      className="cursor-pointer"
-                      opacity={isFiltered ? 1 : 0.3}
-                    >
-                      <rect
-                        width="120"
-                        height="40"
-                        rx="6"
-                        fill={isSelected ? "#dbeafe" : "white"}
-                        stroke={isSelected ? "#3b82f6" : "#d1d5db"}
-                        strokeWidth={isSelected ? "2" : "1"}
-                      />
-                      <foreignObject x="8" y="8" width="24" height="24">
-                        <Icon className={`size-6 ${colors.text}`} />
-                      </foreignObject>
-                      <text x="36" y="16" className="text-[11px] font-medium fill-foreground" dominantBaseline="middle">
-                        {node.name.length > 10 ? node.name.substring(0, 10) + "..." : node.name}
-                      </text>
-                      <text x="36" y="30" className="text-[9px] fill-muted-foreground" dominantBaseline="middle">
-                        {node.type === "source" ? "数据源" : node.type === "etl" ? "ETL" : node.type === "table" ? "数据表" : node.type === "metric" ? "指标" : "看板"}
-                      </text>
-                      {node.status === "error" && (
-                        <circle cx="112" cy="8" r="4" fill="#ef4444" />
-                      )}
-                    </g>
-                  );
-                })}
-
-                {/* Legend */}
-                <g transform="translate(20, 460)">
-                  {Object.entries(NODE_COLORS).map(([type, colors], i) => (
-                    <g key={type} transform={`translate(${i * 120}, 0)`}>
-                      <rect width="12" height="12" rx="2" fill={colors.bg} stroke={colors.border} />
-                      <text x="16" y="10" className="text-[10px] fill-foreground">
-                        {type === "source" ? "数据源" : type === "etl" ? "ETL 任务" : type === "table" ? "数据表" : type === "metric" ? "指标" : "看板"}
-                      </text>
-                    </g>
-                  ))}
-                </g>
-              </svg>
+            {/* React Flow Graph (替换原内联 SVG，自适应缩放/平移/小地图) */}
+            <div className="flex-1 min-w-0" style={{ minHeight: "560px" }}>
+              <LineageCanvas
+                nodes={LINEAGE_NODES}
+                edges={LINEAGE_EDGES}
+                visibleNodeIds={visibleIdSet}
+                selectedNodeId={selectedNode?.id ?? null}
+                onNodeSelect={handleLineageSelect}
+                height={560}
+              />
+              {/* Legend (放在画布外，应用规范的 chip list) */}
+              <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                {(Object.keys(NODE_COLORS) as LineageNodeType[]).map((t) => (
+                  <span
+                    key={t}
+                    className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-md border ${NODE_COLORS[t].bg} ${NODE_COLORS[t].border}`}
+                  >
+                    <span className={`size-2 rounded-sm ${NODE_COLORS[t].bg} ring-1 ${NODE_COLORS[t].border}`} />
+                    <span className={NODE_COLORS[t].text}>{NODE_TYPE_LABELS[t]}</span>
+                  </span>
+                ))}
+              </div>
             </div>
 
             {/* Node Detail Panel */}
@@ -2431,7 +2378,7 @@ export function DataLineage() {
                     <Label className="text-xs text-muted-foreground">类型</Label>
                     <div>
                       <Badge variant="outline" className={NODE_COLORS[selectedNode.type].text}>
-                        {selectedNode.type === "source" ? "数据源" : selectedNode.type === "etl" ? "ETL 任务" : selectedNode.type === "table" ? "数据表" : selectedNode.type === "metric" ? "指标" : "看板"}
+                        {nodeTypeLabel(selectedNode.type)}
                       </Badge>
                     </div>
                   </div>
@@ -2930,7 +2877,7 @@ export function MasterData() {
 
   function getConfidenceColor(c: number) {
     if (c >= 95) return "text-green-600 bg-green-50";
-    if (c >= 85) return "text-orange-600 bg-orange-50";
+    if (c >= 85) return "text-orange-600 bg-primary";
     return "text-red-600 bg-red-50";
   }
 
@@ -3056,7 +3003,7 @@ export function MasterData() {
                     </span>
                   </TableCell>
                   <TableCell>
-                    {r.status === "golden" && <Badge className="bg-yellow-500"><Star className="size-3 mr-1 fill-white" /> 黄金</Badge>}
+                    {r.status === "golden" && <Badge className="bg-primary"><Star className="size-3 mr-1 fill-white" /> 黄金</Badge>}
                     {r.status === "candidate" && <Badge variant="secondary"><Target className="size-3 mr-1" /> 候选</Badge>}
                     {r.status === "duplicate" && <Badge variant="outline"><Copy className="size-3 mr-1" /> 重复</Badge>}
                   </TableCell>

@@ -235,7 +235,7 @@ export function ListPageEditor({ components, setComponents, setDirty }: BaseEdit
             }
             className="h-7 px-2 text-xs border rounded w-28"
           />
-          <span className="text-[10px] text-muted-foreground">~</span>
+          <span className="text-xs text-muted-foreground">~</span>
           <input
             type="date"
             value={dateRange.end}
@@ -265,7 +265,7 @@ export function ListPageEditor({ components, setComponents, setDirty }: BaseEdit
                   >
                     {col.name}
                     {col.sortable && (
-                      <span className="ml-1 text-[10px]">↕</span>
+                      <span className="ml-1 text-xs">↕</span>
                     )}
                   </th>
                 ))}
@@ -343,10 +343,10 @@ export function ListPageEditor({ components, setComponents, setDirty }: BaseEdit
           {/* Columns management */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <p className="text-[11px] font-medium">列配置</p>
+              <p className="text-xs font-medium">列配置</p>
               <button
                 onClick={addColumn}
-                className="flex items-center gap-0.5 text-[10px] text-primary hover:underline"
+                className="flex items-center gap-0.5 text-xs text-primary hover:underline"
               >
                 <Plus className="size-2.5" /> 添加列
               </button>
@@ -355,7 +355,7 @@ export function ListPageEditor({ components, setComponents, setDirty }: BaseEdit
               {columns.map((col, i) => (
                 <div
                   key={i}
-                  className="flex items-center gap-1 px-2 py-1 border rounded text-[10px]"
+                  className="flex items-center gap-1 px-2 py-1 border rounded text-xs"
                 >
                   <input
                     value={col.name}
@@ -375,7 +375,7 @@ export function ListPageEditor({ components, setComponents, setDirty }: BaseEdit
 
           {/* Settings */}
           <div>
-            <p className="text-[11px] font-medium mb-2">设置</p>
+            <p className="text-xs font-medium mb-2">设置</p>
             <label className="flex items-center justify-between text-xs mb-2 cursor-pointer">
               <span>支持搜索</span>
               <div
@@ -414,7 +414,7 @@ export function ListPageEditor({ components, setComponents, setDirty }: BaseEdit
 
           {/* Selectable levels */}
           <div>
-            <p className="text-[11px] font-medium mb-2">可选层级</p>
+            <p className="text-xs font-medium mb-2">可选层级</p>
             <div className="space-y-1.5">
               {(
                 [
@@ -437,7 +437,7 @@ export function ListPageEditor({ components, setComponents, setDirty }: BaseEdit
                   <span>{opt.label}</span>
                   {opt.value === "children" &&
                     config.selectLevel === "children" && (
-                      <span className="text-[10px] text-muted-foreground border rounded px-1 py-0.5">
+                      <span className="text-xs text-muted-foreground border rounded px-1 py-0.5">
                         级以下节点
                       </span>
                     )}
@@ -448,7 +448,7 @@ export function ListPageEditor({ components, setComponents, setDirty }: BaseEdit
 
           {/* Default expand */}
           <div>
-            <p className="text-[11px] font-medium mb-2">默认展开状态</p>
+            <p className="text-xs font-medium mb-2">默认展开状态</p>
             <div className="space-y-1.5">
               {(
                 [
@@ -471,7 +471,7 @@ export function ListPageEditor({ components, setComponents, setDirty }: BaseEdit
                   <span>{opt.label}</span>
                   {opt.extra && config.defaultExpand === "level1" && (
                     <div className="flex items-center gap-1">
-                      <span className="text-[10px] text-muted-foreground">
+                      <span className="text-xs text-muted-foreground">
                         级
                       </span>
                       <input
@@ -484,7 +484,7 @@ export function ListPageEditor({ components, setComponents, setDirty }: BaseEdit
                             expandLevel: Number(e.target.value),
                           })
                         }
-                        className="w-8 h-5 text-center text-[10px] border rounded"
+                        className="w-8 h-5 text-center text-xs border rounded"
                       />
                     </div>
                   )}
@@ -495,7 +495,7 @@ export function ListPageEditor({ components, setComponents, setDirty }: BaseEdit
 
           {/* Data settings */}
           <div>
-            <p className="text-[11px] font-medium mb-2">数据设置</p>
+            <p className="text-xs font-medium mb-2">数据设置</p>
             <button className="text-xs text-primary hover:underline">
               设置
             </button>

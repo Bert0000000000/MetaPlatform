@@ -14,6 +14,7 @@ export function asyncHandler(fn) {
   return (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
 }
 import authRoutes from "./routes/auth.js";
+import appPublicRoutes from "./routes/app-public.js";
 import appsRoutes from "./routes/apps.js";
 import ontologyRoutes from "./routes/ontology.js";
 import processesRoutes from "./routes/processes.js";
@@ -95,6 +96,9 @@ app.use((req, res, next) => {
 // ─── Routes ──────────────────────────────────────────────
 // Auth routes — PUBLIC for login/register, rate-limited separately
 app.use("/api/auth", authLimiter, authRoutes);
+
+// Public app market endpoints — no auth
+app.use("/api/public", appPublicRoutes);
 
 // F4.6.13 API Key management (key CRUD + whoami). The keys themselves
 // are sent by clients on every request via Authorization: Bearer or

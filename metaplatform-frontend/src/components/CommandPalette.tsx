@@ -161,7 +161,7 @@ export function CommandPalette() {
             className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0 h-11 text-sm"
             autoFocus
           />
-          <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
+          <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-xs font-medium text-muted-foreground">
             ESC
           </kbd>
         </div>
@@ -246,13 +246,13 @@ export function CommandPalette() {
         <div className="flex items-center justify-between px-3 py-2 border-t text-xs text-muted-foreground bg-muted/30">
           <div className="flex items-center gap-3">
             <span>
-              <kbd className="inline-flex h-4 select-none items-center rounded border bg-muted px-1 font-mono text-[10px]">
+              <kbd className="inline-flex h-4 select-none items-center rounded border bg-muted px-1 font-mono text-xs">
                 ↑↓
               </kbd>{" "}
               导航
             </span>
             <span>
-              <kbd className="inline-flex h-4 select-none items-center rounded border bg-muted px-1 font-mono text-[10px]">
+              <kbd className="inline-flex h-4 select-none items-center rounded border bg-muted px-1 font-mono text-xs">
                 ↵
               </kbd>{" "}
               选择

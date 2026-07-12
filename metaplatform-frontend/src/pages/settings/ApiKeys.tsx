@@ -244,7 +244,7 @@ export default function ApiKeysPage() {
                           style={{ height: `${h}px` }}
                           title={`${b.hour} · ${b.calls} 次`}
                         />
-                        <span className="text-[9px] text-muted-foreground absolute -bottom-4 left-1/2 -translate-x-1/2 hidden group-hover:block whitespace-nowrap bg-slate-800 text-white px-1 py-0.5 rounded z-10">
+                        <span className="text-xs text-muted-foreground absolute -bottom-4 left-1/2 -translate-x-1/2 hidden group-hover:block whitespace-nowrap bg-slate-800 text-white px-1 py-0.5 rounded z-10">
                           {b.calls}
                         </span>
                       </div>
@@ -306,17 +306,17 @@ export default function ApiKeysPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-medium truncate">{k.name}</span>
-                      <code className="text-xs px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200">
+                      <code className="text-xs px-1.5 py-0.5 rounded bg-primary text-amber-700 border border-amber-200">
                         {k.key_prefix}…
                       </code>
                       {k.scopes.split(",").map((s) => (
-                        <Badge key={s} variant="secondary" className="text-[10px]">{s}</Badge>
+                        <Badge key={s} variant="secondary" className="text-xs">{s}</Badge>
                       ))}
                       {/* F4.6.14 rate-limit chip — click to edit */}
                       <button
                         type="button"
                         onClick={() => openEditLimit(k)}
-                        className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded border hover:bg-slate-100 transition"
+                        className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded border hover:bg-slate-100 transition"
                         title="点击修改速率限制"
                       >
                         {k.rate_limit == null ? (

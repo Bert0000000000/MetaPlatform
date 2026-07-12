@@ -30,10 +30,10 @@ type ArchLayer = "blue" | "orange" | "green" | "red" | "violet" | "slate" | "zin
 function layerColor(layer: ArchLayer) {
   const map: Record<ArchLayer, { fill: string; stroke: string; text: string; dot: string }> = {
     blue:   { fill: "hsl(217 91% 96%)", stroke: "hsl(217 91% 60%)",  text: "hsl(217 91% 30%)", dot: "bg-blue-500"    },
-    orange: { fill: "hsl(25 95% 96%)",  stroke: "hsl(25 95% 53%)",   text: "hsl(25 95% 28%)",  dot: "bg-orange-500"  },
+    orange: { fill: "hsl(25 95% 96%)",  stroke: "hsl(25 95% 53%)",   text: "hsl(25 95% 28%)",  dot: "bg-primary"  },
     green:  { fill: "hsl(142 71% 95%)", stroke: "hsl(142 71% 45%)",  text: "hsl(142 71% 25%)", dot: "bg-green-500"   },
     red:    { fill: "hsl(0 86% 96%)",   stroke: "hsl(0 86% 60%)",   text: "hsl(0 86% 30%)",   dot: "bg-red-500"     },
-    violet: { fill: "hsl(258 90% 96%)", stroke: "hsl(258 90% 60%)",  text: "hsl(258 90% 30%)", dot: "bg-violet-500"  },
+    violet: { fill: "hsl(258 90% 96%)", stroke: "hsl(258 90% 60%)",  text: "hsl(258 90% 30%)", dot: "bg-primary"  },
     slate:  { fill: "hsl(215 16% 95%)", stroke: "hsl(215 16% 47%)",  text: "hsl(215 25% 27%)", dot: "bg-slate-500"   },
     zinc:   { fill: "hsl(220 14% 96%)", stroke: "hsl(220 9% 46%)",   text: "hsl(220 13% 25%)", dot: "bg-zinc-500"    },
   };
@@ -330,7 +330,7 @@ function TopologyCanvas({
           <RotateCcw className="size-3 mr-1" />重置
         </Button>
         <span className="ml-auto flex items-center gap-2">
-          <span className="text-[10px] text-muted-foreground">
+          <span className="text-xs text-muted-foreground">
             {topology.nodes.length} 节点 · {topology.edges.length} 连线
             {dirty && <span className="text-amber-500 ml-1">● 未保存</span>}
           </span>
@@ -419,9 +419,9 @@ function TopologyCanvas({
         <div className="rounded-md border bg-card p-2 overflow-auto">
           {selectedNode ? (
             <div className="space-y-2 text-xs">
-              <div className="text-[11px] text-muted-foreground">选中节点</div>
+              <div className="text-xs text-muted-foreground">选中节点</div>
               <div>
-                <div className="text-[10px] text-muted-foreground mb-0.5">名称</div>
+                <div className="text-xs text-muted-foreground mb-0.5">名称</div>
                 <input
                   value={selectedNode.name}
                   onChange={(e) => updateSelected({ name: e.target.value })}
@@ -429,14 +429,14 @@ function TopologyCanvas({
                 />
               </div>
               <div>
-                <div className="text-[10px] text-muted-foreground mb-0.5">尺寸 (宽 × 高)</div>
+                <div className="text-xs text-muted-foreground mb-0.5">尺寸 (宽 × 高)</div>
                 <div className="flex items-center gap-1">
                   <input type="number" value={selectedNode.w} onChange={(e) => updateSelected({ w: Number(e.target.value) })} className="w-1/2 rounded border bg-background px-1.5 py-1 text-xs" />
                   <input type="number" value={selectedNode.h} onChange={(e) => updateSelected({ h: Number(e.target.value) })} className="w-1/2 rounded border bg-background px-1.5 py-1 text-xs" />
                 </div>
               </div>
               <div>
-                <div className="text-[10px] text-muted-foreground mb-0.5">层级颜色</div>
+                <div className="text-xs text-muted-foreground mb-0.5">层级颜色</div>
                 <div className="flex flex-wrap gap-1">
                   {(["blue","violet","zinc","slate","orange","green","red"] as ArchLayer[]).map((l) => {
                     const cc = layerColor(l);
@@ -449,8 +449,8 @@ function TopologyCanvas({
                 </div>
               </div>
               <div className="pt-2 border-t">
-                <div className="text-[10px] text-muted-foreground mb-0.5">关联边</div>
-                <div className="space-y-0.5 text-[10px]">
+                <div className="text-xs text-muted-foreground mb-0.5">关联边</div>
+                <div className="space-y-0.5 text-xs">
                   {topology.edges.filter((e) => e.from === selectedNode.id || e.to === selectedNode.id).map((e) => {
                     const other = topology.nodes.find((n) => n.id === (e.from === selectedNode.id ? e.to : e.from));
                     return (
@@ -469,7 +469,7 @@ function TopologyCanvas({
               </div>
             </div>
           ) : (
-            <div className="space-y-2 text-[11px] text-muted-foreground leading-4">
+            <div className="space-y-2 text-xs text-muted-foreground leading-4">
               <p>提示：</p>
               <ul className="list-disc list-inside space-y-1">
                 <li>拖拽节点调整位置</li>
@@ -598,8 +598,8 @@ interface BALayer {
 /* Icon/color lookup maps for API data (frontend-only properties) */
 const BA_LEVEL_META: Record<string, { icon: React.ElementType; color: string }> = {
   L1: { icon: Link, color: "bg-red-500" },
-  L2: { icon: Lightbulb, color: "bg-orange-500" },
-  L3: { icon: RefreshCw, color: "bg-amber-500" },
+  L2: { icon: Lightbulb, color: "bg-primary" },
+  L3: { icon: RefreshCw, color: "bg-primary" },
   L4: { icon: User, color: "bg-green-500" },
   L5: { icon: Zap, color: "bg-blue-500" },
   L6: { icon: Package, color: "bg-purple-500" },
@@ -616,8 +616,8 @@ const VALUE_CHAIN_ICON_MAP: Record<string, React.ElementType> = {
 
 const INITIAL_BA_LAYERS_FALLBACK: BALayer[] = [
   { level: "L1", name: "价值链", desc: "端到端价值流", count: 5, icon: Link, color: "bg-red-500" },
-  { level: "L2", name: "业务能力", desc: "可独立提供价值的业务能力", count: 28, icon: Lightbulb, color: "bg-orange-500" },
-  { level: "L3", name: "业务流程", desc: "端到端业务流程图", count: 64, icon: RefreshCw, color: "bg-amber-500" },
+  { level: "L2", name: "业务能力", desc: "可独立提供价值的业务能力", count: 28, icon: Lightbulb, color: "bg-primary" },
+  { level: "L3", name: "业务流程", desc: "端到端业务流程图", count: 64, icon: RefreshCw, color: "bg-primary" },
   { level: "L4", name: "业务角色", desc: "执行流程的角色", count: 18, icon: User, color: "bg-green-500" },
   { level: "L5", name: "业务事件", desc: "业务事件触发", count: 42, icon: Zap, color: "bg-blue-500" },
   { level: "L6", name: "业务对象", desc: "业务层面的核心对象", count: 56, icon: Package, color: "bg-purple-500" },
@@ -654,19 +654,19 @@ const APP_FLOW_MATRIX_FALLBACK = [
 const DATA_DOMAIN_ICON_MAP: Record<string, { icon: React.ElementType; color: string }> = {
   "客户域": { icon: Handshake, color: "bg-blue-500" },
   "订单域": { icon: ClipboardList, color: "bg-green-500" },
-  "产品域": { icon: Package, color: "bg-orange-500" },
-  "财务域": { icon: DollarSign, color: "bg-yellow-500" },
+  "产品域": { icon: Package, color: "bg-primary" },
+  "财务域": { icon: DollarSign, color: "bg-primary" },
   "人事域": { icon: Users, color: "bg-purple-500" },
-  "运营域": { icon: BarChart3, color: "bg-pink-500" },
+  "运营域": { icon: BarChart3, color: "bg-primary" },
 };
 
 const DATA_DOMAINS_FALLBACK = [
   { name: "客户域", objects: 8, apps: ["CRM", "销售看板"], icon: Handshake, color: "bg-blue-500" },
   { name: "订单域", objects: 12, apps: ["CRM", "ERP"], icon: ClipboardList, color: "bg-green-500" },
-  { name: "产品域", objects: 6, apps: ["PLM", "电商"], icon: Package, color: "bg-orange-500" },
-  { name: "财务域", objects: 10, apps: ["ERP", "报销"], icon: DollarSign, color: "bg-yellow-500" },
+  { name: "产品域", objects: 6, apps: ["PLM", "电商"], icon: Package, color: "bg-primary" },
+  { name: "财务域", objects: 10, apps: ["ERP", "报销"], icon: DollarSign, color: "bg-primary" },
   { name: "人事域", objects: 7, apps: ["HR"], icon: Users, color: "bg-purple-500" },
-  { name: "运营域", objects: 13, apps: ["BI"], icon: BarChart3, color: "bg-pink-500" },
+  { name: "运营域", objects: 13, apps: ["BI"], icon: BarChart3, color: "bg-primary" },
 ];
 
 /* ═══════════════════════ Tech Architecture Data ═══════════════════════ */
@@ -1158,7 +1158,7 @@ export function BusinessArchitecture() {
                       : "运行态：点击行查看详情。"}
                   </CardDescription>
                 </div>
-                <span className="text-[11px] text-muted-foreground tabular-nums">{filteredLayers.length} 层</span>
+                <span className="text-xs text-muted-foreground tabular-nums">{filteredLayers.length} 层</span>
               </div>
             </CardHeader>
             <CardContent className="pt-0">
@@ -1193,7 +1193,7 @@ export function BusinessArchitecture() {
                       onClick={() => { if (!editable) handleRowClick(l); }}
                     >
                       {/* Layer badge — 32px instead of 48px */}
-                      <div className={`size-8 rounded ${l.color} text-white flex items-center justify-center font-semibold text-[10px] shrink-0`}>
+                      <div className={`size-8 rounded ${l.color} text-white flex items-center justify-center font-semibold text-xs shrink-0`}>
                         {l.level}
                       </div>
 
@@ -1215,16 +1215,16 @@ export function BusinessArchitecture() {
                           <EditableText
                             value={l.desc}
                             onChange={(v) => updateLayerDesc(l.level, v)}
-                            className="text-[11px] text-muted-foreground leading-4"
+                            className="text-xs text-muted-foreground leading-4"
                             multiline
                           />
                         ) : (
-                          <div className="text-[11px] text-muted-foreground truncate">{l.desc}</div>
+                          <div className="text-xs text-muted-foreground truncate">{l.desc}</div>
                         )}
                       </div>
 
                       {/* Count badge */}
-                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0 shrink-0">{l.count}</Badge>
+                      <Badge variant="secondary" className="text-xs px-1.5 py-0 shrink-0">{l.count}</Badge>
 
                       {/* Edit affordances in design mode */}
                       {editable ? (
@@ -1326,7 +1326,7 @@ export function BusinessArchitecture() {
                               style={{ borderColor: "#d6d4d0", minWidth: 124 }}
                             >
                               {/* Drag handle */}
-                              <div className="absolute top-0.5 left-1.5 text-[9px] text-muted-foreground cursor-grab select-none" aria-hidden>⋮⋮</div>
+                              <div className="absolute top-0.5 left-1.5 text-xs text-muted-foreground cursor-grab select-none" aria-hidden>⋮⋮</div>
 
                               {/* Delete button */}
                               <button
@@ -1341,7 +1341,7 @@ export function BusinessArchitecture() {
                               <div className="px-2 pt-2 pb-1.5">
                                 {/* Step number + icon */}
                                 <div className="flex items-center gap-1.5 mb-1">
-                                  <div className="size-5 rounded-full inline-flex items-center justify-center text-[9px] font-bold text-white shrink-0" style={{ background: color }}>
+                                  <div className="size-5 rounded-full inline-flex items-center justify-center text-xs font-bold text-white shrink-0" style={{ background: color }}>
                                     {i + 1}
                                   </div>
                                   <div className="size-5 rounded inline-flex items-center justify-center shrink-0" style={{ background: `${color}15`, border: `1px solid ${color}30` }}>
@@ -1357,12 +1357,12 @@ export function BusinessArchitecture() {
                                     setValueChain(next);
                                     setToast(`已修改阶段 ${i + 1} 名称`);
                                   }}
-                                  className="text-[11px] font-medium leading-4 mb-0.5"
+                                  className="text-xs font-medium leading-4 mb-0.5"
                                 />
                                 {/* Apps — inline editable tags */}
                                 <div className="flex flex-wrap gap-0.5">
                                   {v.apps.map(app => (
-                                    <span key={app} className="inline-flex items-center gap-0.5 rounded border bg-muted/50 px-1 py-px text-[9px] font-mono">
+                                    <span key={app} className="inline-flex items-center gap-0.5 rounded border bg-muted/50 px-1 py-px text-xs font-mono">
                                       {app}
                                       <button
                                         onClick={() => {
@@ -1380,7 +1380,7 @@ export function BusinessArchitecture() {
                                   ))}
                                   <input
                                     placeholder="+ app"
-                                    className="inline-flex w-12 rounded border border-dashed bg-transparent px-1 py-px text-[9px] font-mono text-muted-foreground placeholder:text-muted-foreground/60 focus:border-primary/40 focus:outline-none"
+                                    className="inline-flex w-12 rounded border border-dashed bg-transparent px-1 py-px text-xs font-mono text-muted-foreground placeholder:text-muted-foreground/60 focus:border-primary/40 focus:outline-none"
                                     onKeyDown={(e) => {
                                       if (e.key === "Enter") {
                                         const val = (e.currentTarget.value || "").trim();
@@ -1410,7 +1410,7 @@ export function BusinessArchitecture() {
                         style={{ minWidth: 72, minHeight: 72 }}
                       >
                         <Plus className="size-3.5" />
-                        <span className="text-[9px]">添加阶段</span>
+                        <span className="text-xs">添加阶段</span>
                       </button>
                     </div>
                   </div>
@@ -1419,7 +1419,7 @@ export function BusinessArchitecture() {
                   <div className="mt-2.5">
                     <div className="flex items-center gap-1.5 mb-1.5">
                       <Server className="size-3 text-muted-foreground" />
-                      <span className="text-[11px] font-medium text-muted-foreground">支撑系统</span>
+                      <span className="text-xs font-medium text-muted-foreground">支撑系统</span>
                     </div>
                     <div className="flex items-center gap-1 flex-wrap">
                       {valueChain.map((v, i) => {
@@ -1428,12 +1428,12 @@ export function BusinessArchitecture() {
                         return (
                           <div key={`sup-${v.name}-${i}`} className="flex items-center gap-1">
                             <div className="rounded border border-border/60 bg-muted/30 px-1.5 py-1">
-                              <div className="text-[10px] font-medium" style={{ color }}>{v.name}</div>
+                              <div className="text-xs font-medium" style={{ color }}>{v.name}</div>
                               <div className="flex gap-0.5 mt-0.5">
                                 {v.apps.slice(0, 3).map(app => (
-                                  <code key={app} className="text-[9px] rounded px-0.5 border border-border/60 bg-background font-mono">{app}</code>
+                                  <code key={app} className="text-xs rounded px-0.5 border border-border/60 bg-background font-mono">{app}</code>
                                 ))}
-                                {v.apps.length > 3 && <span className="text-[9px] text-muted-foreground">+{v.apps.length - 3}</span>}
+                                {v.apps.length > 3 && <span className="text-xs text-muted-foreground">+{v.apps.length - 3}</span>}
                               </div>
                             </div>
                             {i < valueChain.length - 1 && <ArrowRight className="size-2 text-muted-foreground shrink-0" />}
@@ -1507,10 +1507,10 @@ export function BusinessArchitecture() {
                         return (
                           <div key={v.name} className="flex items-center gap-2">
                             <div className="rounded-lg border px-3 py-2" style={{ borderColor: "#d6d4d0", background: "#f8f7f5" }}>
-                              <div className="text-[10px] font-medium" style={{ color }}>{v.name}</div>
+                              <div className="text-xs font-medium" style={{ color }}>{v.name}</div>
                               <div className="flex gap-1 mt-1">
                                 {v.apps.map((app) => (
-                                  <code key={app} className="text-[10px] rounded px-1 py-0.5 border font-mono" style={{ borderColor: "#d1d5db", background: "#fff" }}>
+                                  <code key={app} className="text-xs rounded px-1 py-0.5 border font-mono" style={{ borderColor: "#d1d5db", background: "#fff" }}>
                                     {app}
                                   </code>
                                 ))}
@@ -1529,15 +1529,15 @@ export function BusinessArchitecture() {
                   <div className="px-4 py-3 border-t flex flex-wrap items-center gap-4">
                     <div className="flex items-center gap-1.5">
                       <div className="w-4 h-3 rounded" style={{ border: "2px solid #3b82f6", background: "rgba(59,130,246,0.15)" }} />
-                      <span className="text-[10px]" style={{ color: "#666" }}>价值流阶段节点</span>
+                      <span className="text-xs" style={{ color: "#666" }}>价值流阶段节点</span>
                     </div>
                     <div className="flex items-center gap-1.5">
                       <div className="w-6 h-px" style={{ background: "#94a3b8", borderTop: "1.5px dashed #94a3b8" }} />
-                      <span className="text-[10px]" style={{ color: "#666" }}>价值流转方向</span>
+                      <span className="text-xs" style={{ color: "#666" }}>价值流转方向</span>
                     </div>
                     <div className="flex items-center gap-1.5">
                       <div className="w-4 h-3 rounded" style={{ border: "0.8px solid #d6d4d0", background: "#f8f7f5" }} />
-                      <span className="text-[10px]" style={{ color: "#666" }}>应用系统</span>
+                      <span className="text-xs" style={{ color: "#666" }}>应用系统</span>
                     </div>
                   </div>
                 </div>
@@ -2405,7 +2405,7 @@ export function DataArchitecture() {
               </div>
               <div className="space-y-2">
                 {dataDistribution.realtime.map((item) => (
-                  <div key={item.name} className="flex items-center justify-between p-2 rounded bg-orange-50/50 dark:bg-orange-950/20 text-sm">
+                  <div key={item.name} className="flex items-center justify-between p-2 rounded bg-primary/50 dark:bg-primary/20 text-sm">
                     <span>{item.name}</span>
                     <div className="flex items-center gap-3 text-xs text-muted-foreground">
                       <span>{item.tables} Topic</span>
@@ -2591,7 +2591,7 @@ export function TechArchitecture() {
         </CardHeader>
         <CardContent className="pt-0">
           {/* Compaction note: was p-3 + gap-2 + text-xs chip + mb-2 between
-              header and chip row. Halved to py-2 + gap-1.5 + text-[11px]
+              header and chip row. Halved to py-2 + gap-1.5 + text-xs
               so all six layers fit on one screen on a 13" laptop. */}
           <div className="space-y-2">
             {techStack.map((s) => (
@@ -2601,10 +2601,10 @@ export function TechArchitecture() {
                 onClick={() => !designMode && handleStackClick(s)}
               >
                 <div className="flex items-center gap-2 mb-1.5">
-                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{s.layer}</Badge>
-                  <span className="text-[11px] text-muted-foreground tabular-nums">{s.items.length} 项</span>
+                  <Badge variant="secondary" className="text-xs px-1.5 py-0">{s.layer}</Badge>
+                  <span className="text-xs text-muted-foreground tabular-nums">{s.items.length} 项</span>
                   {designMode && (
-                    <span className="ml-auto text-[10px] text-muted-foreground/70">设计态可编辑</span>
+                    <span className="ml-auto text-xs text-muted-foreground/70">设计态可编辑</span>
                   )}
                 </div>
                 <div className="flex flex-wrap gap-1.5">
@@ -2633,7 +2633,7 @@ export function TechArchitecture() {
                         architectureApi.updateSection("ta", { techStack: updated }).catch(() => {});
                         setToast(`已调整 ${s.layer} 内的顺序`);
                       }}
-                      className={`group inline-flex items-center gap-1 rounded border bg-muted/50 px-1.5 py-0.5 text-[11px] font-mono ${designMode ? "cursor-grab active:cursor-grabbing hover:border-primary/40" : "cursor-pointer hover:border-primary/40"}`}
+                      className={`group inline-flex items-center gap-1 rounded border bg-muted/50 px-1.5 py-0.5 text-xs font-mono ${designMode ? "cursor-grab active:cursor-grabbing hover:border-primary/40" : "cursor-pointer hover:border-primary/40"}`}
                       onClick={(e) => { e.stopPropagation(); if (!designMode) handleStackClick(s); }}
                     >
                       {t}
@@ -2658,7 +2658,7 @@ export function TechArchitecture() {
                   {designMode && (
                     <input
                       placeholder="+ 新增技术"
-                      className="inline-flex items-center rounded border border-dashed bg-transparent px-1.5 py-0.5 text-[11px] font-mono text-muted-foreground placeholder:text-muted-foreground/60 focus:border-primary/40 focus:outline-none"
+                      className="inline-flex items-center rounded border border-dashed bg-transparent px-1.5 py-0.5 text-xs font-mono text-muted-foreground placeholder:text-muted-foreground/60 focus:border-primary/40 focus:outline-none"
                       onKeyDown={(e) => {
                         if (e.key === "Enter") {
                           const v = (e.currentTarget.value || "").trim();
@@ -2687,7 +2687,7 @@ export function TechArchitecture() {
             <div className="flex items-center gap-2">
               <span className="size-2 rounded-full bg-slate-900" aria-hidden />
               <CardTitle className="text-base">部署拓扑图</CardTitle>
-              <span className="ml-auto text-[10px] text-muted-foreground tabular-nums">
+              <span className="ml-auto text-xs text-muted-foreground tabular-nums">
                 {deployTopology.nodes.length} 节点 · {deployTopology.edges.length} 连线
               </span>
               {designMode && (
@@ -2707,7 +2707,7 @@ export function TechArchitecture() {
                 "进入画布" button above (design mode only). */}
             <TopologyPreview topology={deployTopology} ariaLabel="部署拓扑图" />
 
-            <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1.5 text-[11px] text-muted-foreground">
+            <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1.5 text-xs text-muted-foreground">
               <LegendChip color="slate"  label="L3-3 平台底座" />
               <LegendChip color="blue"   label="L1 用户面" />
               <LegendChip color="violet" label="L3-1 AI Substrate" />
@@ -2722,7 +2722,7 @@ export function TechArchitecture() {
             <div className="flex items-center gap-2">
               <span className="size-2 rounded-full bg-blue-500" aria-hidden />
               <CardTitle className="text-base">服务依赖图</CardTitle>
-              <span className="ml-auto text-[10px] text-muted-foreground tabular-nums">
+              <span className="ml-auto text-xs text-muted-foreground tabular-nums">
                 {svcDeps.nodes.length} 服务 · {svcDeps.edges.length} 依赖
               </span>
               {designMode && (
@@ -2739,7 +2739,7 @@ export function TechArchitecture() {
           <CardContent className="pt-0">
             <TopologyPreview topology={svcDeps} ariaLabel="服务依赖图" />
 
-            <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1.5 text-[11px] text-muted-foreground">
+            <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1.5 text-xs text-muted-foreground">
               <LegendChip color="blue"   label="L1 业务微服务" />
               <LegendChip color="slate"  label="L3-3 平台底座" />
               <LegendChip color="violet" label="L3-1 AI Substrate" />

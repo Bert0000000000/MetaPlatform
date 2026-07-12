@@ -411,6 +411,7 @@ export const MENU_TABS: Record<MenuKey, TabConfig[]> = {
     { key: "workflows", label: "工作流模板", path: "/workflows" },
     { key: "knowledge", label: "知识包资源库", path: "/knowledge" },
     { key: "api", label: "API 动作库", path: "/api" },
+    { key: "public", label: "公开应用市场", path: "/public" },
   ],
   agents: [
     { key: "mine", label: "我的数字员工", path: "/mine" },

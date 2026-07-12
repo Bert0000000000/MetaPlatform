@@ -196,18 +196,18 @@ export function WebhooksPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-medium truncate">{e.name}</span>
-                      <code className="text-[10px] text-muted-foreground">{e.app_id}</code>
+                      <code className="text-xs text-muted-foreground">{e.app_id}</code>
                       <code className="text-xs truncate max-w-[260px]">{e.url}</code>
                       {e.enabled ? (
-                        <Badge variant="outline" className="text-[10px] border-emerald-300 text-emerald-700">enabled</Badge>
+                        <Badge variant="outline" className="text-xs border-emerald-300 text-emerald-700">enabled</Badge>
                       ) : (
-                        <Badge variant="secondary" className="text-[10px]">disabled</Badge>
+                        <Badge variant="secondary" className="text-xs">disabled</Badge>
                       )}
                     </div>
                     <div className="text-xs text-muted-foreground mt-1 flex items-center gap-2">
-                      events: <code className="text-[10px]">{e.events}</code>
+                      events: <code className="text-xs">{e.events}</code>
                       <span>·</span>
-                      <code className="text-[10px] bg-slate-100 px-1 rounded">{e.secret_fingerprint || "—"}</code>
+                      <code className="text-xs bg-slate-100 px-1 rounded">{e.secret_fingerprint || "—"}</code>
                     </div>
                   </div>
                   <Button variant="outline" size="sm" onClick={() => trigger(e)} title="立即测试触发">
@@ -302,7 +302,7 @@ export function WebhooksPage() {
             </div>
             <div className="text-xs text-muted-foreground leading-relaxed mt-2">
               接收方在 header 里会收到：
-              <ul className="list-disc pl-5 mt-1 font-mono text-[10px]">
+              <ul className="list-disc pl-5 mt-1 font-mono text-xs">
                 <li>X-Webhook-Signature: sha256=&lt;hex&gt;</li>
                 <li>X-Webhook-Timestamp: &lt;unix&gt;</li>
                 <li>X-Webhook-Nonce: &lt;hex&gt;</li>
@@ -342,12 +342,12 @@ export function WebhooksPage() {
                     ) : (
                       <Loader2 className="size-3.5 animate-spin text-slate-400" />
                     )}
-                    <code className="text-[10px] text-muted-foreground">#{d.id}</code>
+                    <code className="text-xs text-muted-foreground">#{d.id}</code>
                     <span>
-                      <code className="text-[10px]">{d.event_type}</code>
+                      <code className="text-xs">{d.event_type}</code>
                       {d.last_error && <span className="text-red-600 ml-2">{d.last_error}</span>}
                       {d.response_body && (
-                        <pre className="mt-1 bg-slate-50 px-2 py-1 rounded text-[10px] overflow-x-auto">
+                        <pre className="mt-1 bg-slate-50 px-2 py-1 rounded text-xs overflow-x-auto scrollbar-none">
                           {d.response_body.slice(0, 200)}
                         </pre>
                       )}

@@ -8,11 +8,9 @@ import { Label } from "@/components/ui/label";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { PageHeader } from "@/components/ui/stat";
 import { ontologyApi, type OntologyObject } from "@/lib/api";
-import { llmApi } from "@/lib/llm-api";
 import {
-  Plus, Search, Sparkles, Edit, Trash2, Link2,
-  Loader2, AlertCircle, Inbox, Box, Database, X, Save,
-  Brain, GitBranch, Hash, Globe, ArrowRight, Type,
+  Plus, Edit, Trash2, Link2,
+  Loader2, AlertCircle, Inbox, Box, Database, Save, Hash, Type, Globe, Bot, Wand2,
 } from "lucide-react";
 import {
   Dialog,
@@ -23,6 +21,7 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog";
+import { RelationshipDiagram } from "@/components/ontology/RelationshipDiagram";
 
 export default function DataModeling() {
   const { appId } = useParams();
@@ -30,6 +29,7 @@ export default function DataModeling() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [view, setView] = useState<"list" | "diagram">("list");
 
   // Create dialog state
   const [showCreateDialog, setShowCreateDialog] = useState(false);
@@ -38,6 +38,7 @@ export default function DataModeling() {
   const [newObjectName, setNewObjectName] = useState("");
   const [newObjectLabel, setNewObjectLabel] = useState("");
   const [newObjectDescription, setNewObjectDescription] = useState("");
+  const [newFieldType, setNewFieldType] = useState<string>("text");
 
   // Delete state
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -51,44 +52,40 @@ export default function DataModeling() {
   const [editing, setEditing] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
 
-  // F4.3.6 AI Field Recommendation dialog
-  const [showAIRecommend, setShowAIRecommend] = useState(false);
-  const [aiTargetObject, setAiTargetObject] = useState<string | null>(null);
-  const [aiRecommending, setAiRecommending] = useState(false);
-  const [aiFields, setAiFields] = useState<{ name: string; type: string; reason: string }[]>([]);
-
-  // F4.3.7 E-R Diagram dialog
-  const [showERDiagram, setShowERDiagram] = useState(false);
-
-  // F4.3.10 Virtual Model dialog
+  // Virtual Model dialog
   const [showVirtualModel, setShowVirtualModel] = useState(false);
   const [virtualModelTarget, setVirtualModelTarget] = useState<string | null>(null);
-
-  // F4.3.11 Auto-number in create dialog
-  const [newFieldType, setNewFieldType] = useState<string>("text");
 
   // Fetch objects
   const fetchObjects = useCallback(() => {
     if (!appId) return;
     setLoading(true);
     setError(null);
-
     ontologyApi
       .listObjects(appId)
-      .then((data) => {
-        setObjects(data ?? []);
-      })
-      .catch((err: Error) => {
-        setError(err.message || "加载对象列表失败");
-      })
-      .finally(() => {
-        setLoading(false);
-      });
+      .then((data) => setObjects(data ?? []))
+      .catch((err: Error) => setError(err.message || "加载对象列表失败"))
+      .finally(() => setLoading(false));
   }, [appId]);
 
+  useEffect(() => { fetchObjects(); }, [fetchObjects]);
+
+  // 监听"全局本体变更"事件 (数字员工 / 其他页面 创建/更新/删除对象/字段),
+  // 自动重新拉对象列表, 不要用户手动刷页.
   useEffect(() => {
-    fetchObjects();
-  }, [fetchObjects]);
+    const onChange = (e: Event) => {
+      const detail = (e as CustomEvent)?.detail;
+      // 只刷新本应用 (其它 app 改动则忽略)
+      if (detail && typeof detail === "object" && "appId" in detail && detail.appId && detail.appId !== appId) return;
+      fetchObjects();
+    };
+    window.addEventListener("mp:ontology-changed", onChange as EventListener);
+    window.addEventListener("mp:app-changed", onChange as EventListener);
+    return () => {
+      window.removeEventListener("mp:ontology-changed", onChange as EventListener);
+      window.removeEventListener("mp:app-changed", onChange as EventListener);
+    };
+  }, [appId, fetchObjects]);
 
   // Search filter
   const filtered = objects.filter(
@@ -112,36 +109,34 @@ export default function DataModeling() {
         label: newObjectLabel.trim(),
         description: newObjectDescription.trim() || undefined,
       });
-      // Reset form and refresh
       setNewObjectName("");
       setNewObjectLabel("");
       setNewObjectDescription("");
       setShowCreateDialog(false);
-      fetchObjects();
+      // 立刻拉一次 (自己创建后, 也可以用 mp:ontology-changed 通知关系图)
+      await fetchObjects();
+      window.dispatchEvent(new CustomEvent("mp:ontology-changed", { detail: { kind: "create_object", appId } }));
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "创建对象失败";
-      setCreateError(message);
+      setCreateError(err instanceof Error ? err.message : "创建对象失败");
     } finally {
       setCreating(false);
     }
   };
 
-  // Delete object
   const handleDelete = async (id: string) => {
     if (!confirm("确定要删除该对象吗？此操作不可恢复。")) return;
     setDeletingId(id);
     try {
       await ontologyApi.deleteObject(id);
       setObjects((prev) => prev.filter((o) => o.id !== id));
+      window.dispatchEvent(new CustomEvent("mp:ontology-changed", { detail: { kind: "delete_object", appId } }));
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "删除失败";
-      setError(message);
+      setError(err instanceof Error ? err.message : "删除失败");
     } finally {
       setDeletingId(null);
     }
   };
 
-  // Edit object
   const handleEditClick = (obj: OntologyObject) => {
     setEditingObject(obj);
     setEditObjectName(obj.name);
@@ -165,85 +160,34 @@ export default function DataModeling() {
         label: editObjectLabel.trim(),
         description: editObjectDescription.trim() || undefined,
       });
-      // Refresh the object list
       fetchObjects();
       setEditDialogOpen(false);
       setEditingObject(null);
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "更新对象失败";
-      setEditError(message);
+      setEditError(err instanceof Error ? err.message : "更新对象失败");
     } finally {
       setEditing(false);
     }
   };
 
-  // F4.3.6 AI Field Recommendation
-  const handleAIRecommend = async (objectName: string) => {
-    setAiTargetObject(objectName);
-    setShowAIRecommend(true);
-    setAiRecommending(true);
-    setAiFields([]);
-
-    try {
-      const response = await llmApi.chat(
-        [
-          {
-            role: "system",
-            content: "You are a database schema expert. When given an entity name, suggest appropriate database fields. Return ONLY a JSON array of objects with fields: name (snake_case), type (text/number/datetime/boolean/enum/reference/array), and reason (brief Chinese explanation). Suggest 5-8 fields that are commonly needed. Do not include id field. Return only the JSON array, no other text.",
-          },
-          {
-            role: "user",
-            content: `Generate database fields for a "${objectName}" entity. Return as JSON array.`,
-          },
-        ],
-        { temperature: 0.7, maxTokens: 1024 }
-      );
-
-      // Parse the LLM response
-      let parsed: { name: string; type: string; reason: string }[] = [];
-      try {
-        // Try to extract JSON from the response (may be wrapped in markdown code block)
-        let text = response.content.trim();
-        if (text.startsWith("```")) {
-          text = text.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "");
-        }
-        parsed = JSON.parse(text);
-        if (!Array.isArray(parsed)) {
-          throw new Error("Response is not an array");
-        }
-      } catch {
-        // If parsing fails, try to extract fields from free text
-        parsed = [];
-      }
-
-      if (parsed.length > 0) {
-        setAiFields(parsed);
-      } else {
-        // Fallback to mock data if LLM response cannot be parsed
-        setAiFields([
-          { name: "created_at", type: "datetime", reason: "记录创建时间，便于审计" },
-          { name: "updated_at", type: "datetime", reason: "记录最后更新时间" },
-          { name: "status", type: "enum", reason: "状态管理，支持工作流" },
-          { name: "owner_id", type: "reference", reason: "关联用户，支持权限控制" },
-          { name: "tags", type: "array", reason: "标签字段，便于分类搜索" },
-        ]);
-      }
-    } catch (err) {
-      console.error("AI 字段推荐失败:", err);
-      // Fallback to mock data on error
-      setAiFields([
-        { name: "created_at", type: "datetime", reason: "记录创建时间，便于审计" },
-        { name: "updated_at", type: "datetime", reason: "记录最后更新时间" },
-        { name: "status", type: "enum", reason: "状态管理，支持工作流" },
-        { name: "owner_id", type: "reference", reason: "关联用户，支持权限控制" },
-        { name: "tags", type: "array", reason: "标签字段，便于分类搜索" },
-      ]);
-    } finally {
-      setAiRecommending(false);
-    }
+  /**
+   * 触发嵌入式数字员工面板 (业务数据建模的"AI 智能建模"入口):
+   * 把详细的"帮我建一个应用的数据模型"提示词通过 CustomEvent 推送给 AppDetailLayout,
+   * 它就会打开统一的面板 + 把 prompt 预填到输入框. 用户只需按回车即可让模型开干.
+   */
+  const openAiModeling = (extra?: string) => {
+    const base = "为这个应用搭建/梳理一个完整的数据模型";
+    const hint = extra ? `\n\n${extra}` : "\n\n依据下面我给的对象提示, 先创建 3~6 个核心业务对象, 每个对象 5~8 个常用字段. 然后在关系图里告诉我建模思路.";
+    const prompt = `${base}.${hint}`;
+    window.dispatchEvent(new CustomEvent("mp:open-ai-workforce", { detail: { prompt } }));
   };
 
-  // Loading state
+  /** 让数字员工为指定对象加字段 (走统一面板, 提示词已预填) */
+  const openAiAddFields = (obj: OntologyObject) => {
+    const prompt = `为对象「${obj.label || obj.name}」推荐并加上 5~8 个核心字段.`;
+    window.dispatchEvent(new CustomEvent("mp:open-ai-workforce", { detail: { prompt } }));
+  };
+
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-20 gap-3">
@@ -257,11 +201,17 @@ export default function DataModeling() {
     <div className="flex flex-col gap-6 p-6 w-full">
       <PageHeader
         title="业务数据建模"
-        description="基于本体引擎的对象建模（应用内的数据模型）"
+        description={`基于本体引擎的对象建模 (应用内 ${objects.length} 个对象)`}
         action={
           <div className="flex gap-2">
-            <Button variant="outline" className="gap-2">
-              <Sparkles className="size-4" /> AI 智能建模
+            <Button
+              variant="outline"
+              className="gap-2 bg-primary hover:from-violet-100 hover:to-fuchsia-100 border-violet-300"
+              onClick={() => openAiModeling()}
+              title="让数字员工帮你自动建模"
+            >
+              <Wand2 className="size-4 text-violet-600" /> AI 智能建模
+              <Bot className="size-3.5 text-violet-500" />
             </Button>
             <Button className="gap-2" onClick={() => setShowCreateDialog(true)}>
               <Plus className="size-4" /> 新建对象
@@ -275,110 +225,151 @@ export default function DataModeling() {
         <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive flex items-center gap-2">
           <AlertCircle className="size-4" />
           {error}
-          <Button variant="ghost" size="sm" onClick={() => setError(null)} className="ml-auto">
-            关闭
-          </Button>
+          <Button variant="ghost" size="sm" onClick={() => setError(null)} className="ml-auto">关闭</Button>
         </div>
       )}
 
-      <div className="flex items-center gap-2">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-2 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-          <Input
-            placeholder="搜索对象..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-8"
-          />
+      {/* View switcher */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <div className="inline-flex rounded-lg border p-0.5 bg-muted/40">
+          <button
+            type="button"
+            onClick={() => setView("list")}
+            className={`px-3 h-7 text-xs rounded-md transition-colors ${view === "list" ? "bg-background shadow text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+          >
+            <Database className="inline size-3 mr-1" />对象列表
+          </button>
+          <button
+            type="button"
+            onClick={() => setView("diagram")}
+            className={`px-3 h-7 text-xs rounded-md transition-colors ${view === "diagram" ? "bg-background shadow text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+          >
+            <Link2 className="inline size-3 mr-1" />对象关系图
+          </button>
         </div>
-        <Button variant="outline" size="sm" onClick={() => setShowERDiagram(true)}>
-          <Link2 className="size-4 mr-2" /> 关系图
-        </Button>
-        <Button variant="outline" size="sm" onClick={() => setShowVirtualModel(true)}>
-          <Globe className="size-4 mr-2" /> 虚拟模型
+        <Input
+          placeholder="搜索对象..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="max-w-xs h-8"
+        />
+        <Button variant="outline" size="sm" onClick={() => setShowVirtualModel(true)} className="ml-auto">
+          <Globe className="size-4 mr-1" /> 虚拟模型
         </Button>
       </div>
 
-      {/* Empty state */}
-      {filtered.length === 0 && !error && (
-        <div className="flex flex-col items-center justify-center py-16 gap-3">
-          <Inbox className="size-10 text-muted-foreground" />
-          <p className="text-sm text-muted-foreground">
-            {search ? "没有匹配的对象" : "暂无对象，请新建"}
-          </p>
-          {!search && (
-            <Button variant="outline" size="sm" onClick={() => setShowCreateDialog(true)}>
-              <Plus className="size-4 mr-1" /> 新建对象
-            </Button>
+      {/* LIST VIEW */}
+      {view === "list" && (
+        <>
+          {filtered.length === 0 && !error && (
+            <div className="flex flex-col items-center justify-center py-16 gap-3">
+              <Inbox className="size-10 text-muted-foreground" />
+              <p className="text-sm text-muted-foreground">
+                {search ? "没有匹配的对象" : "暂无对象, 请新建"}
+              </p>
+              {!search && (
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={() => setShowCreateDialog(true)}>
+                    <Plus className="size-4 mr-1" /> 新建对象
+                  </Button>
+                  <Button size="sm" onClick={() => openAiModeling("我没有任何数据建模经验, 请从行业最佳实践起步")}>
+                    <Wand2 className="size-4 mr-1" /> 让 AI 帮我建
+                  </Button>
+                </div>
+              )}
+            </div>
           )}
-        </div>
+
+          {filtered.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">本应用的对象 ({filtered.length})</CardTitle>
+                <CardDescription>所有对象归属于本应用</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>图标</TableHead>
+                      <TableHead>对象名</TableHead>
+                      <TableHead>中文名</TableHead>
+                      <TableHead className="text-right">属性</TableHead>
+                      <TableHead className="text-right">动作</TableHead>
+                      <TableHead className="text-right">规则</TableHead>
+                      <TableHead>状态</TableHead>
+                      <TableHead className="text-right">操作</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filtered.map((obj) => (
+                      <TableRow key={obj.id}>
+                        <TableCell>
+                          <Box className="size-5 text-muted-foreground" />
+                        </TableCell>
+                        <TableCell className="font-mono">{obj.name}</TableCell>
+                        <TableCell>{obj.label}</TableCell>
+                        <TableCell className="text-right">{obj.properties_count ?? 0}</TableCell>
+                        <TableCell className="text-right">{obj.actions_count ?? 0}</TableCell>
+                        <TableCell className="text-right">{obj.rules_count ?? 0}</TableCell>
+                        <TableCell>
+                          <Badge variant={obj.status === "active" ? "default" : "secondary"}>
+                            {obj.status === "active" ? "已激活" : obj.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            variant="ghost" size="icon" className="size-8"
+                            title="让 AI 帮我加字段"
+                            onClick={() => openAiAddFields(obj)}
+                          >
+                            <Wand2 className="size-4 text-violet-500" />
+                          </Button>
+                          <Button
+                            variant="ghost" size="icon" className="size-8"
+                            title="虚拟模型"
+                            onClick={() => { setVirtualModelTarget(obj.name); setShowVirtualModel(true); }}
+                          >
+                            <Globe className="size-4 text-cyan-500" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="size-8" title="编辑对象" onClick={() => handleEditClick(obj)}>
+                            <Edit className="size-4" />
+                          </Button>
+                          <Button
+                            variant="ghost" size="icon" className="size-8"
+                            onClick={() => handleDelete(obj.id)}
+                            disabled={deletingId === obj.id}
+                          >
+                            {deletingId === obj.id ? (
+                              <Loader2 className="size-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="size-4" />
+                            )}
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          )}
+        </>
       )}
 
-      {/* Objects table */}
-      {filtered.length > 0 && (
+      {/* DIAGRAM VIEW - 规范化关系图 */}
+      {view === "diagram" && appId && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">本应用的对象（{filtered.length}）</CardTitle>
-            <CardDescription>所有对象归属于本应用</CardDescription>
+            <CardTitle className="text-base flex items-center gap-1.5">
+              <Link2 className="size-4 text-primary" /> 对象关系图
+            </CardTitle>
+            <CardDescription>
+              基于本体真实数据: 节点 = 对象, 边 = 关系. 可拖拽节点 / 滚轮缩放.
+              如果觉得模型应该加什么关系, 让数字员工帮你联线.
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>图标</TableHead>
-                  <TableHead>对象名</TableHead>
-                  <TableHead>中文名</TableHead>
-                  <TableHead className="text-right">属性</TableHead>
-                  <TableHead className="text-right">动作</TableHead>
-                  <TableHead className="text-right">规则</TableHead>
-                  <TableHead>状态</TableHead>
-                  <TableHead className="text-right">操作</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filtered.map((obj) => (
-                  <TableRow key={obj.id}>
-                    <TableCell>
-                      <Box className="size-5 text-muted-foreground" />
-                    </TableCell>
-                    <TableCell className="font-mono">{obj.name}</TableCell>
-                    <TableCell>{obj.label}</TableCell>
-                    <TableCell className="text-right">{obj.properties_count ?? 0}</TableCell>
-                    <TableCell className="text-right">{obj.actions_count ?? 0}</TableCell>
-                    <TableCell className="text-right">{obj.rules_count ?? 0}</TableCell>
-                    <TableCell>
-                      <Badge variant={obj.status === "active" ? "default" : "secondary"}>
-                        {obj.status === "active" ? "已激活" : obj.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="ghost" size="icon" className="size-8" title="AI 推荐字段" onClick={() => handleAIRecommend(obj.name)}>
-                        <Brain className="size-4 text-violet-500" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="size-8" title="虚拟模型" onClick={() => { setVirtualModelTarget(obj.name); setShowVirtualModel(true); }}>
-                        <Globe className="size-4 text-cyan-500" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="size-8" title="编辑对象" onClick={() => handleEditClick(obj)}>
-                        <Edit className="size-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="size-8"
-                        onClick={() => handleDelete(obj.id)}
-                        disabled={deletingId === obj.id}
-                      >
-                        {deletingId === obj.id ? (
-                          <Loader2 className="size-4 animate-spin" />
-                        ) : (
-                          <Trash2 className="size-4" />
-                        )}
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            <RelationshipDiagram appId={appId} />
           </CardContent>
         </Card>
       )}
@@ -388,38 +379,21 @@ export default function DataModeling() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>新建对象</DialogTitle>
-            <DialogDescription>创建一个新的业务对象（数据模型）</DialogDescription>
+            <DialogDescription>创建一个新的业务对象 (数据模型)</DialogDescription>
           </DialogHeader>
-
           <div className="space-y-4 py-2">
             <div className="space-y-1.5">
-              <Label htmlFor="obj-name">对象名（英文标识） *</Label>
-              <Input
-                id="obj-name"
-                placeholder="如：Customer、Order"
-                value={newObjectName}
-                onChange={(e) => setNewObjectName(e.target.value)}
-              />
+              <Label htmlFor="obj-name">对象名 (英文标识) *</Label>
+              <Input id="obj-name" placeholder="如: Customer、Order" value={newObjectName} onChange={(e) => setNewObjectName(e.target.value)} />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="obj-label">中文名 *</Label>
-              <Input
-                id="obj-label"
-                placeholder="如：客户、订单"
-                value={newObjectLabel}
-                onChange={(e) => setNewObjectLabel(e.target.value)}
-              />
+              <Input id="obj-label" placeholder="如: 客户、订单" value={newObjectLabel} onChange={(e) => setNewObjectLabel(e.target.value)} />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="obj-desc">描述</Label>
-              <Input
-                id="obj-desc"
-                placeholder="简要说明该对象的用途"
-                value={newObjectDescription}
-                onChange={(e) => setNewObjectDescription(e.target.value)}
-              />
+              <Input id="obj-desc" placeholder="简要说明该对象的用途" value={newObjectDescription} onChange={(e) => setNewObjectDescription(e.target.value)} />
             </div>
-            {/* F4.3.11 自动编号字段 */}
             <div className="space-y-1.5">
               <Label>编号字段类型</Label>
               <div className="grid grid-cols-2 gap-2">
@@ -450,24 +424,18 @@ export default function DataModeling() {
                 </div>
               )}
             </div>
-
             {createError && (
               <div className="text-sm text-destructive bg-destructive/10 border border-destructive/30 rounded p-2">
                 {createError}
               </div>
             )}
           </div>
-
           <DialogFooter>
             <DialogClose asChild>
               <Button variant="outline">取消</Button>
             </DialogClose>
             <Button onClick={handleCreate} disabled={creating}>
-              {creating ? (
-                <Loader2 className="size-4 mr-1 animate-spin" />
-              ) : (
-                <Plus className="size-4 mr-1" />
-              )}
+              {creating ? <Loader2 className="size-4 mr-1 animate-spin" /> : <Plus className="size-4 mr-1" />}
               {creating ? "创建中..." : "创建"}
             </Button>
           </DialogFooter>
@@ -481,156 +449,38 @@ export default function DataModeling() {
             <DialogTitle>编辑对象</DialogTitle>
             <DialogDescription>修改对象「{editingObject?.name}」的基本信息</DialogDescription>
           </DialogHeader>
-
           <div className="space-y-4 py-2">
             <div className="space-y-1.5">
-              <Label htmlFor="edit-obj-name">对象名（英文标识） *</Label>
-              <Input
-                id="edit-obj-name"
-                placeholder="如：Customer、Order"
-                value={editObjectName}
-                onChange={(e) => setEditObjectName(e.target.value)}
-              />
+              <Label htmlFor="edit-obj-name">对象名 (英文标识) *</Label>
+              <Input id="edit-obj-name" placeholder="如: Customer、Order" value={editObjectName} onChange={(e) => setEditObjectName(e.target.value)} />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="edit-obj-label">中文名 *</Label>
-              <Input
-                id="edit-obj-label"
-                placeholder="如：客户、订单"
-                value={editObjectLabel}
-                onChange={(e) => setEditObjectLabel(e.target.value)}
-              />
+              <Input id="edit-obj-label" placeholder="如: 客户、订单" value={editObjectLabel} onChange={(e) => setEditObjectLabel(e.target.value)} />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="edit-obj-desc">描述</Label>
-              <Input
-                id="edit-obj-desc"
-                placeholder="简要说明该对象的用途"
-                value={editObjectDescription}
-                onChange={(e) => setEditObjectDescription(e.target.value)}
-              />
+              <Input id="edit-obj-desc" placeholder="简要说明该对象的用途" value={editObjectDescription} onChange={(e) => setEditObjectDescription(e.target.value)} />
             </div>
-
             {editError && (
               <div className="text-sm text-destructive bg-destructive/10 border border-destructive/30 rounded p-2">
                 {editError}
               </div>
             )}
           </div>
-
           <DialogFooter>
             <DialogClose asChild>
               <Button variant="outline" disabled={editing}>取消</Button>
             </DialogClose>
             <Button onClick={handleSaveEdit} disabled={editing}>
-              {editing ? (
-                <Loader2 className="size-4 mr-1 animate-spin" />
-              ) : (
-                <Save className="size-4 mr-1" />
-              )}
+              {editing ? <Loader2 className="size-4 mr-1 animate-spin" /> : <Save className="size-4 mr-1" />}
               {editing ? "保存中..." : "保存"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* F4.3.6 AI Field Recommendation Dialog */}
-      <Dialog open={showAIRecommend} onOpenChange={setShowAIRecommend}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Brain className="size-5 text-violet-500" /> AI 字段推荐
-            </DialogTitle>
-            <DialogDescription>
-              为「{aiTargetObject}」推荐常用字段
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-3">
-            {aiRecommending ? (
-              <div className="flex items-center justify-center py-8 gap-2">
-                <Loader2 className="size-5 animate-spin text-violet-500" />
-                <span className="text-sm text-muted-foreground">AI 正在分析推荐字段...</span>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {aiFields.map((f, i) => (
-                  <div key={i} className="flex items-start gap-3 p-3 border rounded-lg">
-                    <Hash className="size-4 text-violet-500 mt-0.5 shrink-0" />
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-sm font-medium">{f.name}</span>
-                        <Badge variant="secondary" className="text-[10px]">{f.type}</Badge>
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-1">{f.reason}</p>
-                    </div>
-                    <Button variant="ghost" size="sm" className="shrink-0">
-                      <Plus className="size-3" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowAIRecommend(false)}>关闭</Button>
-            {!aiRecommending && aiFields.length > 0 && (
-              <Button onClick={() => setShowAIRecommend(false)}>
-                <Sparkles className="size-3 mr-1" /> 全部添加
-              </Button>
-            )}
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* F4.3.7 E-R Diagram Dialog */}
-      <Dialog open={showERDiagram} onOpenChange={setShowERDiagram}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <GitBranch className="size-5" /> 对象关系图
-            </DialogTitle>
-            <DialogDescription>本体对象间的 E-R 关系</DialogDescription>
-          </DialogHeader>
-          <div className="border rounded-lg p-4 bg-muted/30">
-            <svg viewBox="0 0 600 320" className="w-full h-auto">
-              {/* Entity boxes */}
-              {[
-                { x: 50, y: 30, w: 140, h: 80, label: "Customer", fields: "id, name, email" },
-                { x: 250, y: 30, w: 140, h: 80, label: "Order", fields: "id, amount, date" },
-                { x: 450, y: 30, w: 140, h: 80, label: "Product", fields: "id, name, price" },
-                { x: 150, y: 200, w: 140, h: 80, label: "Contact", fields: "id, phone, type" },
-                { x: 350, y: 200, w: 140, h: 80, label: "Invoice", fields: "id, total, status" },
-              ].map((entity, i) => (
-                <g key={i}>
-                  <rect x={entity.x} y={entity.y} width={entity.w} height={entity.h} rx="6" fill="hsl(var(--primary) / 0.1)" stroke="hsl(var(--primary))" strokeWidth="1.5" />
-                  <text x={entity.x + entity.w / 2} y={entity.y + 20} textAnchor="middle" className="text-[11px] font-semibold" fill="hsl(var(--foreground))">{entity.label}</text>
-                  <line x1={entity.x + 8} y1={entity.y + 28} x2={entity.x + entity.w - 8} y2={entity.y + 28} stroke="hsl(var(--border))" strokeWidth="0.5" />
-                  <text x={entity.x + 10} y={entity.y + 45} className="text-[9px]" fill="hsl(var(--muted-foreground))">{entity.fields}</text>
-                </g>
-              ))}
-              {/* Relationship lines */}
-              <defs>
-                <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-                  <path d="M 0 0 L 10 5 L 0 10 z" fill="hsl(var(--primary))" />
-                </marker>
-              </defs>
-              <line x1={190} y1={70} x2={250} y2={70} stroke="hsl(var(--primary))" strokeWidth="1.5" markerEnd="url(#arrow)" />
-              <text x={220} y={62} textAnchor="middle" className="text-[8px]" fill="hsl(var(--muted-foreground))">1:N</text>
-              <line x1={390} y1={70} x2={450} y2={70} stroke="hsl(var(--primary))" strokeWidth="1.5" markerEnd="url(#arrow)" />
-              <text x={420} y={62} textAnchor="middle" className="text-[8px]" fill="hsl(var(--muted-foreground))">N:M</text>
-              <line x1={120} y1={110} x2={170} y2={200} stroke="hsl(var(--primary))" strokeWidth="1.5" markerEnd="url(#arrow)" />
-              <text x={130} y={160} textAnchor="middle" className="text-[8px]" fill="hsl(var(--muted-foreground))">1:N</text>
-              <line x1={320} y1={110} x2={380} y2={200} stroke="hsl(var(--primary))" strokeWidth="1.5" markerEnd="url(#arrow)" />
-              <text x={365} y={160} textAnchor="middle" className="text-[8px]" fill="hsl(var(--muted-foreground))">N:1</text>
-            </svg>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowERDiagram(false)}>关闭</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* F4.3.10 Virtual Model Dialog */}
+      {/* Virtual Model Dialog */}
       <Dialog open={showVirtualModel} onOpenChange={setShowVirtualModel}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
@@ -656,10 +506,7 @@ export default function DataModeling() {
                 ])
             ).map((ep, i) => (
               <div key={i} className="flex items-center gap-3 p-2 border rounded text-xs">
-                <Badge
-                  variant={ep.method === "GET" ? "secondary" : ep.method === "POST" ? "default" : ep.method === "DELETE" ? "destructive" : "outline"}
-                  className="font-mono text-[10px] w-16 justify-center"
-                >
+                <Badge variant={ep.method === "GET" ? "secondary" : ep.method === "POST" ? "default" : ep.method === "DELETE" ? "destructive" : "outline"} className="font-mono text-xs w-16 justify-center">
                   {ep.method}
                 </Badge>
                 <span className="font-mono flex-1">{ep.path}</span>

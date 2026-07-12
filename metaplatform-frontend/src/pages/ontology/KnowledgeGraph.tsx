@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -6,6 +6,8 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@
 import { Label } from "@/components/ui/label";
 import { Box, GitBranch, ArrowRight, Network, Search } from "lucide-react";
 import { ontologyApi, type OntologyObject, type OntologyRelation } from "@/lib/api";
+import { LineageCanvas, type LineageNodeDatum, type LineageEdgeDatum } from "@/components/lineage/LineageCanvas";
+import { KnowledgeEntityNode } from "@/components/knowledge/KnowledgeEntityNode";
 
 /* ════════════════════════════════════════════════════════════════════
  * KnowledgeGraph: 知识图谱视图
@@ -164,7 +166,7 @@ export function KnowledgeGraph() {
                   <span className="font-mono text-muted-foreground w-4">#{i + 1}</span>
                   <Box className="size-3 text-primary" />
                   <span className="flex-1 font-mono">{n.label}</span>
-                  <Badge variant="secondary" className="text-[10px]">度 {n.degree}</Badge>
+                  <Badge variant="secondary" className="text-xs">度 {n.degree}</Badge>
                 </div>
               ))}
             </div>
@@ -205,7 +207,7 @@ export function KnowledgeGraph() {
                       const obj = objects.find((o) => o.id === id);
                       return (
                         <span key={i} className="flex items-center gap-1">
-                          <Badge variant="default" className="text-[10px]">{obj?.label || obj?.name}</Badge>
+                          <Badge variant="default" className="text-xs">{obj?.label || obj?.name}</Badge>
                           {i < foundPath.length - 1 && <ArrowRight className="size-3 text-muted-foreground" />}
                         </span>
                       );
@@ -269,79 +271,84 @@ function GraphView({ nodes, edges, highlight, pathHighlight, onSelectNode }: {
   pathHighlight: string[] | null;
   onSelectNode: (id: string) => void;
 }) {
-  // 圆形布局
-  const W = 800, H = 500;
-  const cx = W / 2, cy = H / 2;
-  const r = Math.min(W, H) / 2 - 60;
-  const positioned = nodes.map((n, i) => {
-    const angle = (i / nodes.length) * Math.PI * 2 - Math.PI / 2;
-    return { ...n, x: cx + r * Math.cos(angle), y: cy + r * Math.sin(angle) };
-  });
-  const posMap = new Map(positioned.map((p) => [p.id, p]));
+  // 圆形布局 -- 复用 React Flow 坐标系 (画布中心 500,300)
+  const positions = useMemo(() => {
+    const cx = 500, cy = 300, r = 220;
+    const out: Record<string, { x: number; y: number }> = {};
+    nodes.forEach((n, i) => {
+      const angle = (i / Math.max(nodes.length, 1)) * Math.PI * 2 - Math.PI / 2;
+      out[n.id] = { x: cx + Math.cos(angle) * r, y: cy + Math.sin(angle) * r };
+    });
+    return out;
+  }, [nodes]);
 
-  const pathSet = new Set(pathHighlight || []);
+  // 转 LineageCanvas 契约
+  const lineageNodes: (LineageNodeDatum & { degree?: number })[] = useMemo(
+    () =>
+      nodes.map((n) => ({
+        id: n.id,
+        name: n.label,
+        type: "entity",
+        description: "",
+        status: "active" as const,
+        degree: n.degree,
+      })),
+    [nodes],
+  );
+  const lineageEdges: LineageEdgeDatum[] = useMemo(
+    () => edges.map((e) => ({ from: e.source, to: e.target })),
+    [edges],
+  );
+  const edgeLabels = useMemo(() => {
+    const m: Record<string, string> = {};
+    edges.forEach((e) => {
+      m[`${e.source}->${e.target}`] = e.label || e.type;
+    });
+    return m;
+  }, [edges]);
+
+  // 高亮集合：邻居 + 路径节点的并集
+  const highlightSet = useMemo(() => {
+    if (pathHighlight && pathHighlight.length > 0) {
+      return new Set([...highlight, ...pathHighlight]);
+    }
+    return highlight;
+  }, [highlight, pathHighlight]);
+
+  const allIds = useMemo(() => new Set(nodes.map((n) => n.id)), [nodes]);
+
+  const handleSelect = useCallback(
+    (node: LineageNodeDatum | null) => {
+      onSelectNode(node?.id ?? "");
+    },
+    [onSelectNode],
+  );
+
+  const nodeTypes = useMemo(() => ({ "kg-entity": KnowledgeEntityNode }), []);
+
+  // 选中节点：取 highlight 中第一个 (即 selectedNode)
+  const selectedId = highlight.size > 0 ? [...highlight][0] : null;
 
   return (
-    <div className="overflow-auto">
-      <svg width={W} height={H} className="border rounded">
-        {/* 边 */}
-        {edges.map((e, i) => {
-          const s = posMap.get(e.source);
-          const t = posMap.get(e.target);
-          if (!s || !t) return null;
-          const inHighlight = highlight.has(e.source) && highlight.has(e.target);
-          const inPath = pathSet.has(e.source) && pathSet.has(e.target);
-          const stroke = inPath ? "#3b82f6" : inHighlight ? "#94a3b8" : "#e2e8f0";
-          const width = inPath ? 2.5 : inHighlight ? 1.5 : 0.8;
-          return (
-            <g key={i}>
-              <line x1={s.x} y1={s.y} x2={t.x} y2={t.y} stroke={stroke} strokeWidth={width} />
-              {inHighlight && (
-                <text
-                  x={(s.x + t.x) / 2}
-                  y={(s.y + t.y) / 2 - 4}
-                  fontSize="9"
-                  textAnchor="middle"
-                  fill="#64748b"
-                >
-                  {e.label}
-                </text>
-              )}
-            </g>
-          );
-        })}
-        {/* 节点 */}
-        {positioned.map((n) => {
-          const inHighlight = highlight.has(n.id);
-          const inPath = pathSet.has(n.id);
-          const radius = inPath ? 22 : inHighlight ? 18 : 12;
-          const fill = inPath ? "#3b82f6" : inHighlight ? "#60a5fa" : "#cbd5e1";
-          return (
-            <g key={n.id} onClick={() => onSelectNode(n.id)} style={{ cursor: "pointer" }}>
-              <circle cx={n.x} cy={n.y} r={radius} fill={fill} stroke="#fff" strokeWidth={2} />
-              <text
-                x={n.x}
-                y={n.y + radius + 12}
-                fontSize="10"
-                textAnchor="middle"
-                fill="#0f172a"
-              >
-                {n.label}
-              </text>
-              <text
-                x={n.x}
-                y={n.y + 3}
-                fontSize="10"
-                textAnchor="middle"
-                fill="#fff"
-                fontWeight="bold"
-              >
-                {n.degree}
-              </text>
-            </g>
-          );
-        })}
-      </svg>
+    <div className="overflow-hidden rounded-lg border bg-background">
+      <LineageCanvas
+        nodes={lineageNodes}
+        edges={lineageEdges}
+        edgeLabels={edgeLabels}
+        visibleNodeIds={allIds}
+        highlightNodeIds={highlightSet}
+        selectedNodeId={selectedId}
+        onNodeSelect={handleSelect}
+        precomputedPositions={positions}
+        nodeType="kg-entity"
+        nodeTypes={nodeTypes}
+        nodesDraggable={false}
+        enableMiniMap
+        enableControls
+        edgeType="bezier"
+        height={500}
+        className="border-0 rounded-none"
+      />
     </div>
   );
 }

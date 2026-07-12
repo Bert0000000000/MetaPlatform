@@ -29,6 +29,7 @@ import {
   ArrowLeft, ArrowRight, Check, Copy, Layers, Plus, Sparkles, Loader2, FileBox, Rocket,
 } from "lucide-react";
 import { appsApi, type Application, type AppTemplate } from "@/lib/api";
+import { toast } from "@/lib/toast";
 
 type CreateType = "blank" | "template" | "clone";
 type DataSource = "internal" | "external" | "hybrid";
@@ -141,9 +142,19 @@ export function NewAppWizard({ open, onOpenChange, onCreated }: Props) {
         created = await appsApi.create(body as Partial<Application>);
       }
       onCreated?.(created);
-      onOpenChange(false);
-      // Navigate to the newly created app's detail page.
-      navigate(`/apps/${created.id}`);
+      // P0: 创建成功 — 派事件 + 关闭对话框 + 跳到概览详情页
+      const raw = created as Application & { _deduped?: boolean; _originalName?: string };
+      const kind = raw._deduped ? "create-deduped" : "create";
+      window.dispatchEvent(new CustomEvent("mp:apps-changed", {
+        detail: { kind, app: created, originalName: raw._originalName ?? null },
+      }));
+      if (onOpenChange) onOpenChange(false);
+      if (created?.id) {
+        const suffix = raw._deduped ? `(已重命名为 ${created.name})` : "";
+        toast.success(`应用创建成功${suffix ? ' ' + suffix : ''}`);
+        // 跳转到详情页 (与已有的 "新建应用" 按钮保持一致)
+        navigate(`/apps/${created.id}/overview`);
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "创建失败");
     } finally {
@@ -173,9 +184,9 @@ export function NewAppWizard({ open, onOpenChange, onCreated }: Props) {
             return (
               <li key={i} className="flex items-center gap-2 flex-1">
                 <span className={
-                  "flex items-center justify-center size-6 rounded-full text-[10px] font-medium " +
+                  "flex items-center justify-center size-6 rounded-full text-xs font-medium " +
                   (done ? "bg-green-500 text-white" :
-                   active ? "bg-violet-500 text-white" : "bg-slate-200 text-slate-500")
+                   active ? "bg-primary text-white" : "bg-slate-200 text-slate-500")
                 }>
                   {done ? <Check className="size-3" /> : i + 1}
                 </span>
@@ -266,7 +277,7 @@ function StepCreateType({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft
           onClick={() => setDraft({ ...draft, createType: o.value, templateKey: null, sourceAppId: null })}
           className={
             "p-4 cursor-pointer hover:border-violet-400 transition " +
-            (draft.createType === o.value ? "border-violet-500 bg-violet-50" : "")
+            (draft.createType === o.value ? "border-violet-500 bg-primary" : "")
           }
         >
           <div className="flex items-center gap-2 text-violet-600 mb-2">
@@ -310,22 +321,22 @@ function StepPickTemplate({
               onClick={() => setDraft({ ...draft, templateKey: t.key, category: t.category, icon: t.icon })}
               className={
                 "p-3 cursor-pointer hover:border-violet-400 transition " +
-                (draft.templateKey === t.key ? "border-violet-500 bg-violet-50" : "")
+                (draft.templateKey === t.key ? "border-violet-500 bg-primary" : "")
               }
             >
               <div className="flex items-center gap-2 mb-1">
                 <span className="font-medium text-sm">{t.label}</span>
-                <code className="text-[10px] text-muted-foreground">({t.key})</code>
+                <code className="text-xs text-muted-foreground">({t.key})</code>
               </div>
               <p className="text-xs text-muted-foreground line-clamp-2">{t.description}</p>
               <div className="flex gap-1 mt-2 flex-wrap">
-                <span className="text-[10px] px-1.5 py-0.5 bg-slate-100 rounded">
+                <span className="text-xs px-1.5 py-0.5 bg-slate-100 rounded">
                   {t.objects.length} 对象
                 </span>
-                <span className="text-[10px] px-1.5 py-0.5 bg-slate-100 rounded">
+                <span className="text-xs px-1.5 py-0.5 bg-slate-100 rounded">
                   {t.pages.length} 页面
                 </span>
-                <span className="text-[10px] px-1.5 py-0.5 bg-slate-100 rounded">
+                <span className="text-xs px-1.5 py-0.5 bg-slate-100 rounded">
                   {t.flows.length} 流程
                 </span>
               </div>
@@ -348,12 +359,12 @@ function StepPickTemplate({
             onClick={() => setDraft({ ...draft, sourceAppId: a.id, category: a.category, icon: a.icon ?? "Box" })}
             className={
               "w-full text-left px-3 py-2 hover:bg-slate-50 flex items-center gap-2 " +
-              (draft.sourceAppId === a.id ? "bg-violet-50" : "")
+              (draft.sourceAppId === a.id ? "bg-primary" : "")
             }
           >
             <span className="font-medium text-sm flex-1 truncate">{a.name}</span>
-            <code className="text-[10px] text-muted-foreground">{a.id}</code>
-            <span className="text-[10px] px-1.5 py-0.5 bg-slate-100 rounded">{a.status}</span>
+            <code className="text-xs text-muted-foreground">{a.id}</code>
+            <span className="text-xs px-1.5 py-0.5 bg-slate-100 rounded">{a.status}</span>
           </button>
         ))}
       </div>
@@ -455,7 +466,7 @@ function StepConfirm({ draft, templates, existingApps }: {
       <Row k="初始环境" v={draft.environment} />
       <Row k="数据源" v={draft.dataSource} />
       {draft.description && <Row k="描述" v={draft.description} />}
-      <div className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded px-3 py-2 mt-3">
+      <div className="text-xs text-amber-600 bg-primary border border-amber-200 rounded px-3 py-2 mt-3">
         ⚠️ 创建后状态为 draft，需到应用详情完成业务建模/页面/流程后才能发布。
       </div>
     </div>

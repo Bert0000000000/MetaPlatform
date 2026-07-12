@@ -8,6 +8,14 @@ import https from "https";
 import db from "../db.js";
 import { tenantGuard } from "../middleware/tenant.js";
 import { buildTemplateSeed, listTemplateKeys, TEMPLATES } from "../templates/apps.js";
+import appApiKeysRoutes from "./app-api-keys.js";
+import appIntegrationsRoutes from "./app-integrations.js";
+import appFormsRoutes from "./app-forms.js";
+import appReportsRoutes from "./app-reports.js";
+import appDashboardsRoutes from "./app-dashboards.js";
+import appDatasetsRoutes from "./app-datasets.js";
+import appPageComponentsRoutes from "./app-page-components.js";
+import appCollaboratorsRoutes from "./app-collaborators.js";
 import {
   spawnRuntime,
   stopRuntime,
@@ -38,14 +46,28 @@ function generateSlug(name) {
 // ─── GET / ── list all applications ─────────────────────
 router.get("/", async (req, res, next) => {
   try {
-    const { status } = req.query;
-    let rows;
-    if (status) {
-      rows = await db.prepare("SELECT * FROM applications WHERE status = ? ORDER BY created_at DESC").all(status);
-    } else {
-      rows = await db.prepare("SELECT * FROM applications ORDER BY created_at DESC").all();
-    }
-    res.json({ success: true, data: rows });
+    const { status, environment, owner_id, q, sort, order } = req.query;
+    const conds = [];
+    const params = [];
+    if (status) { conds.push("status = ?"); params.push(String(status)); }
+    if (environment) { conds.push("environment = ?"); params.push(String(environment)); }
+    if (owner_id) { conds.push("owner_id = ?"); params.push(String(owner_id)); }
+    if (q) { conds.push("(name LIKE ? OR description LIKE ?)"); params.push(`%${q}%`, `%${q}%`); }
+    const where = conds.length ? "WHERE " + conds.join(" AND ") : "";
+    const allowedSort = new Set(["name", "created_at", "updated_at", "version", "sort_order"]);
+    const sortCol = allowedSort.has(String(sort || "")) ? String(sort) : "created_at";
+    const sortDir = String(order || "desc").toLowerCase() === "asc" ? "ASC" : "DESC";
+    const rows = await db.prepare(
+      `SELECT * FROM applications ${where} ORDER BY ${sortCol} ${sortDir} LIMIT 500`
+    ).all(...params);
+    // P0-3: 解析 tags_json → tags; owner_name/owner_email → ownerName/ownerEmail
+    const data = rows.map((row) => ({
+      ...row,
+      tags: row.tags_json ? safeParseJSON(row.tags_json, []) : [],
+      ownerName: row.owner_name || null,
+      ownerEmail: row.owner_email || null,
+    }));
+    res.json({ success: true, data });
   } catch (err) {
     next(err);
   }
@@ -175,11 +197,194 @@ router.post("/clone", async (req, res, next) => {
       if (!/no such table/i.test(String(err?.message))) throw err;
     }
 
+    // ── 5. Copy app_modules (使用新 uuid, 复用同源 content) ──
+    try {
+      const moduleRows = await db.prepare("SELECT * FROM app_modules WHERE app_id = ?").all(sourceAppId);
+      for (const m of moduleRows) {
+        await db.prepare(
+          `INSERT INTO app_modules
+             (id, app_id, label, icon, color, bg_color, type_filter, sort_order, config, page_ids, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        ).run(
+          uuid(), newId,
+          m.label, m.icon, m.color, m.bg_color,
+          m.type_filter, m.sort_order ?? 0, m.config, m.page_ids,
+          now, now,
+        );
+      }
+    } catch (err) {
+      if (!/no such table/i.test(String(err?.message))) throw err;
+    }
+
+    // ── 6. Copy app_forms ──
+    try {
+      const formRows = await db.prepare("SELECT * FROM app_forms WHERE app_id = ?").all(sourceAppId);
+      for (const f of formRows) {
+        await db.prepare(
+          `INSERT INTO app_forms
+             (id, app_id, name, schema_json, version, status, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+        ).run(
+          uuid(), newId,
+          f.name, f.schema_json,
+          Number.isFinite(+(f.version)) ? +(f.version) : 1,
+          f.status ?? "draft",
+          now, now,
+        );
+      }
+    } catch (err) {
+      if (!/no such table/i.test(String(err?.message))) throw err;
+    }
+
+    // ── 7. Copy app_reports ──
+    try {
+      const reportRows = await db.prepare("SELECT * FROM app_reports WHERE app_id = ?").all(sourceAppId);
+      for (const r of reportRows) {
+        await db.prepare(
+          `INSERT INTO app_reports
+             (id, app_id, name, dataset_id, layout_json, schedule_json, status, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        ).run(
+          uuid(), newId,
+          r.name, r.dataset_id, r.layout_json, r.schedule_json,
+          r.status ?? "draft",
+          now, now,
+        );
+      }
+    } catch (err) {
+      if (!/no such table/i.test(String(err?.message))) throw err;
+    }
+
+    // ── 8. Copy app_dashboards ──
+    try {
+      const dashRows = await db.prepare("SELECT * FROM app_dashboards WHERE app_id = ?").all(sourceAppId);
+      for (const d of dashRows) {
+        await db.prepare(
+          `INSERT INTO app_dashboards
+             (id, app_id, name, layout_json, widgets_json, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?)`
+        ).run(
+          uuid(), newId,
+          d.name, d.layout_json, d.widgets_json,
+          now, now,
+        );
+      }
+    } catch (err) {
+      if (!/no such table/i.test(String(err?.message))) throw err;
+    }
+
+    // ── 9. Copy app_integrations (注: 不复制 secret 类字段, 新行 disabled) ──
+    try {
+      const intRows = await db.prepare("SELECT * FROM app_integrations WHERE app_id = ?").all(sourceAppId);
+      for (const i of intRows) {
+        // strip possible secret-looking fields from config_json so cloned
+        // integrations don't inherit credentials; new row stays disabled.
+        let safeConfig = i.config_json;
+        try {
+          const parsed = JSON.parse(i.config_json || "{}");
+          for (const k of Object.keys(parsed)) {
+            if (/secret|password|token|apikey|api_key|private/i.test(k)) parsed[k] = null;
+          }
+          safeConfig = JSON.stringify(parsed);
+        } catch {
+          safeConfig = i.config_json;
+        }
+        await db.prepare(
+          `INSERT INTO app_integrations
+             (id, app_id, type, platform, name, config_json, status, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, 'disabled', ?, ?)`
+        ).run(
+          uuid(), newId,
+          i.type, i.platform, i.name,
+          safeConfig,
+          now, now,
+        );
+      }
+    } catch (err) {
+      if (!/no such table/i.test(String(err?.message))) throw err;
+    }
+
+    // ── 10. Copy app_page_components ──
+    try {
+      const compRows = await db.prepare("SELECT * FROM app_page_components WHERE app_id = ?").all(sourceAppId);
+      for (const c of compRows) {
+        await db.prepare(
+          `INSERT INTO app_page_components
+             (id, app_id, page_id, component_key, props_json, x, y, w, h, sort_order, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        ).run(
+          uuid(), newId,
+          c.page_id, c.component_key, c.props_json,
+          c.x ?? 0, c.y ?? 0, c.w ?? 0, c.h ?? 0,
+          c.sort_order ?? 0,
+          now, now,
+        );
+      }
+    } catch (err) {
+      if (!/no such table/i.test(String(err?.message))) throw err;
+    }
+
     const fresh = await db.prepare("SELECT * FROM applications WHERE id = ?").get(newId);
-    res.json({ success: true, data: fresh });
+
+    // P1: 写 audit_logs (clone + 创建 v0.1 版本)
+    try {
+      await db.prepare(
+        `INSERT INTO audit_logs (id, user_id, user_name, action, module, target, detail, ip, result, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'success', ?)`
+      ).run(
+        uuid(),
+        req.user?.id || null,
+        req.user?.email || req.user?.name || null,
+        'clone',
+        'app',
+        newId,
+        JSON.stringify({ sourceAppId, name }),
+        req.ip || '127.0.0.1',
+        now,
+      );
+    } catch (e) {
+      console.warn("[apps clone] audit_logs:", e?.message);
+    }
+    // 同时初始化新克隆应用的 v0.1
+    try {
+      await db.prepare(
+        `INSERT INTO app_versions (id, app_id, version, description, commit_message, status, created_by, created_at)
+         VALUES (?, ?, 'v0.1', '从源应用克隆', ?, 'active', ?, ?)`
+      ).run(uuid(), newId, `cloned from ${sourceAppId}`, req.user?.id || null, now);
+    } catch (e) { if (!/no such table/i.test(String(e?.message))) console.warn("[apps clone] init v0.1:", e?.message); }
+
+    res.json({
+      success: true,
+      data: {
+        ...fresh,
+        tags: fresh.tags_json ? safeParseJSON(fresh.tags_json, []) : [],
+        ownerName: fresh.owner_name || null,
+        ownerEmail: fresh.owner_email || null,
+      },
+    });
   } catch (err) {
     next(err);
   }
+});
+
+// ─── PUT /sort — 重新排序应用卡片 (P2-4) ───
+router.put("/sort", async (req, res, next) => {
+  try {
+    const { order } = req.body || {};
+    if (!Array.isArray(order)) {
+      return res.status(400).json({ success: false, error: "order 必须是应用 id 数组" });
+    }
+    const now = new Date().toISOString();
+    for (let i = 0; i < order.length; i++) {
+      try {
+        await db.prepare("UPDATE applications SET sort_order = ?, updated_at = ? WHERE id = ?")
+          .run(i, now, order[i]);
+      } catch (e) {
+        if (!/no such column/i.test(String(e?.message))) throw e;
+      }
+    }
+    res.json({ success: true, data: { count: order.length } });
+  } catch (err) { next(err); }
 });
 
 // ─── GET /published ── list all published apps (public) ───
@@ -226,7 +431,16 @@ router.get("/:id", async (req, res, next) => {
   try {
     const row = await db.prepare("SELECT * FROM applications WHERE id = ?").get(req.params.id);
     if (!row) return res.status(404).json({ success: false, error: "应用不存在" });
-    res.json({ success: true, data: row });
+    res.json({
+      success: true,
+      data: {
+        ...row,
+        // P2: tags_json → tags 数组
+        tags: row.tags_json ? safeParseJSON(row.tags_json, []) : [],
+        ownerName: row.owner_name || null,
+        ownerEmail: row.owner_email || null,
+      },
+    });
   } catch (err) {
     next(err);
   }
@@ -240,12 +454,24 @@ router.get("/:id", async (req, res, next) => {
 // definitions so the user lands on a usable application instead of an
 // empty shell. Unknown template values fall back to the empty install
 // for forward-compatibility.
+// 允许的应用 category 白名单 — 与 NewAppWizard 前端保持一致
+const ALLOWED_CATEGORIES = new Set([
+  "traditional", "business", "lowcode", "dashboard", "workflow", "custom",
+  "bi", "bpm", "crm", "hr", "ops", "kb", "form", "report",
+]);
+
 router.post("/", tenantGuard, async (req, res, next) => {
   try {
-    const { name, description, category, icon, template, environment } = req.body;
+    const { name, description, category, icon, template, environment, tags } = req.body;
     if (!name || !category || !icon) {
       return res.status(400).json({ success: false, error: "name, category, icon 为必填项" });
     }
+    // P1: category 白名单校验 (任意传值都能持久化 → 拼写错误污染)
+    if (!ALLOWED_CATEGORIES.has(String(category))) {
+      return res.status(400).json({ success: false, error: `category 必须是 ${[...ALLOWED_CATEGORIES].join(' / ')} 之一` });
+    }
+    // tags 校验: 必须是字符串数组
+    const safeTags = Array.isArray(tags) ? tags.filter((t) => typeof t === "string" && t.trim().length > 0).slice(0, 20) : [];
     const id = uuid();
     const now = NOW();
     const seed = template ? buildTemplateSeed(template) : null;
@@ -255,16 +481,26 @@ router.post("/", tenantGuard, async (req, res, next) => {
     // Sanitise environment to the four known rings
     const env = ["dev", "test", "staging", "prod"].includes(environment) ? environment : "dev";
 
+    // ── 重名去重 (P0): 同一 owner 下重名时自动加 " (n)" 后缀 ──
+    const deduped = await dedupeAppName(req.user?.id || null, name);
+    const finalName = deduped.name;
+
     await db.prepare(
       `INSERT INTO applications (id, name, description, category, icon, status, version,
                                   owner_id, objects_count, pages_count, flows_count,
-                                  environment, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, 'draft', 'v0.1', ?, ?, ?, ?, ?, ?, ?)`
+                                  owner_name, owner_email, tags_json,
+                                  environment, tenant_id, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, 'draft', 'v0.1', ?, ?, ?, ?,
+               ?, ?, ?, ?, ?, ?, ?)`
     ).run(
-      id, name, description || "", category, icon,
+      id, finalName, description || "", category, icon,
       req.user?.id || null,
       objectsCount, pagesCount, flowsCount,
+      req.user?.name || null,
+      req.user?.email || null,
+      JSON.stringify(safeTags),
       env,
+      req.body?.tenant_id || req.headers["x-tenant-id"] || req.user?.tenant_id || "default",
       now, now,
     );
 
@@ -272,6 +508,36 @@ router.post("/", tenantGuard, async (req, res, next) => {
     let seeded = null;
     if (seed) {
       seeded = await applyTemplateSeed(id, seed, now);
+    }
+
+    // ── 初始化 app_versions v0.1 行 (P0): rollback 列表立即可用 ──
+    try {
+      await db.prepare(
+        `INSERT INTO app_versions (id, app_id, version, description, commit_message, status, created_by, created_at)
+         VALUES (?, ?, 'v0.1', '初始版本', 'app created', 'active', ?, ?)`
+      ).run(uuid(), id, req.user?.id || null, now);
+    } catch (e) {
+      if (!/no such table/i.test(String(e?.message))) console.warn("[apps POST] app_versions init:", e?.message);
+    }
+
+    // ── 写 audit_logs (P0): 最近活动立即可见 ──
+    try {
+      await db.prepare(
+        `INSERT INTO audit_logs (id, user_id, user_name, action, module, target, detail, ip, result, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'success', ?)`
+      ).run(
+        uuid(),
+        req.user?.id || null,
+        req.user?.email || req.user?.name || null,
+        'create',
+        'app',
+        id,
+        JSON.stringify({ name: finalName, category, template: template || null, environment: env }),
+        req.ip || '127.0.0.1',
+        now,
+      );
+    } catch (e) {
+      console.warn("[apps POST] audit_logs insert:", e?.message);
     }
 
     const row = await db.prepare("SELECT * FROM applications WHERE id = ?").get(id);
@@ -284,9 +550,36 @@ router.post("/", tenantGuard, async (req, res, next) => {
       seeded: seeded || undefined,
       template: template || null,
       availableTemplates: listTemplateKeys(),
+      _deduped: deduped.deduped,
+      _originalName: deduped.deduped ? name : null,
     });
   } catch (err) { next(err); }
 });
+
+/**
+ * 重名去重 — 同一 owner 下若已存在同名应用,
+ * 自动在末尾追加 " (n)", 返回 { deduped: true, name: 'Foo (2)' }.
+ * 仅作用于 LOG IN 用户的 owner_id; 系统级创建不应用去重.
+ */
+async function dedupeAppName(ownerId, baseName) {
+  if (!ownerId) return { deduped: false, name: baseName };
+  const trimmed = (baseName || "").trim();
+  if (!trimmed) return { deduped: false, name: baseName };
+  const existing = await db.prepare(
+    "SELECT COUNT(*) AS c FROM applications WHERE owner_id = ? AND name = ?"
+  ).get(ownerId, trimmed);
+  if (!existing || existing.c === 0) return { deduped: false, name: trimmed };
+  let n = 2;
+  while (n < 1000) {
+    const candidate = `${trimmed} (${n})`;
+    const dup = await db.prepare(
+      "SELECT COUNT(*) AS c FROM applications WHERE owner_id = ? AND name = ?"
+    ).get(ownerId, candidate);
+    if (!dup || dup.c === 0) return { deduped: true, name: candidate };
+    n += 1;
+  }
+  return { deduped: true, name: `${trimmed} (${Date.now() % 100000})` };
+}
 
 /* ── helpers (scoped to this route module) ── */
 function NOW() { return new Date().toISOString(); }
@@ -364,17 +657,97 @@ async function applyTemplateSeed(appId, seed, now) {
   };
 }
 
+/* ────────────────────────────────────────────────────────────
+   App API Keys (P0.3)
+   ──────────────────────────────────────────────────────────── */
+router.use("/:id/api-keys", appApiKeysRoutes);
+
+// ─── Nested routes: integrations / forms / reports / dashboards / page-components ─
+router.use("/:id/integrations",     appIntegrationsRoutes);
+router.use("/:id/forms",            appFormsRoutes);
+router.use("/:id/reports",          appReportsRoutes);
+router.use("/:id/dashboards", appDashboardsRoutes);
+router.use("/:id/datasets",   appDatasetsRoutes);
+
+// ─── P2-3: /:id/aliases — 应用公开访问别名 (受 auth) ──
+router.post("/:id/aliases", async (req, res, next) => {
+  try {
+    const app = await db.prepare("SELECT id FROM applications WHERE id = ?").get(req.params.id);
+    if (!app) return res.status(404).json({ success: false, error: "应用不存在" });
+    const { slug, kind, target_id } = req.body || {};
+    if (!slug || typeof slug !== "string") return res.status(400).json({ success: false, error: "slug 必填" });
+    const safeSlug = slug.trim().toLowerCase().replace(/[^a-z0-9_\-]/g, "").slice(0, 64);
+    if (!safeSlug) return res.status(400).json({ success: false, error: "slug 至少需要 1 个合法字符" });
+    if (!["form", "dashboard"].includes(String(kind))) return res.status(400).json({ success: false, error: "kind 必须是 form / dashboard" });
+    if (!target_id) return res.status(400).json({ success: false, error: "target_id 必填" });
+    const now = new Date().toISOString();
+    try {
+      await db.prepare(
+        `INSERT INTO app_public_aliases (slug, app_id, kind, target_id, status, created_at)
+         VALUES (?, ?, ?, ?, 'active', ?)`
+      ).run(safeSlug, req.params.id, kind, target_id, now);
+    } catch (e) {
+      if (/UNIQUE|duplicate/i.test(String(e?.message))) {
+        // upsert
+        await db.prepare(
+          `UPDATE app_public_aliases SET app_id = ?, kind = ?, target_id = ?, status = 'active' WHERE slug = ?`
+        ).run(req.params.id, kind, target_id, safeSlug);
+      } else throw e;
+    }
+    const row = await db.prepare("SELECT * FROM app_public_aliases WHERE slug = ?").get(safeSlug);
+    res.status(201).json({ success: true, data: row });
+  } catch (err) { next(err); }
+});
+
+router.get("/:id/aliases", async (req, res, next) => {
+  try {
+    const rows = await db.prepare(
+      "SELECT slug, app_id, kind, target_id, status, created_at, hit_count, last_hit_at FROM app_public_aliases WHERE app_id = ? ORDER BY created_at DESC"
+    ).all(req.params.id);
+    res.json({ success: true, data: rows });
+  } catch (err) { next(err); }
+});
+
+router.delete("/:id/aliases/:slug", async (req, res, next) => {
+  try {
+    const result = await db.prepare(
+      "DELETE FROM app_public_aliases WHERE slug = ? AND app_id = ?"
+    ).run(req.params.slug, req.params.id);
+    if (result.changes === 0) return res.status(404).json({ success: false, error: "alias 不存在" });
+    res.json({ success: true, data: { slug: req.params.slug } });
+  } catch (err) { next(err); }
+});
+router.use("/:id/page-components",  appPageComponentsRoutes);
+router.use("/:id/collaborators",    appCollaboratorsRoutes);
+
 // ─── PUT /:id ── update application ─────────────────────
 router.put("/:id", async (req, res, next) => {
   try {
     const existing = await db.prepare("SELECT * FROM applications WHERE id = ?").get(req.params.id);
     if (!existing) return res.status(404).json({ success: false, error: "应用不存在" });
 
-    const { name, description, category, icon, status, version } = req.body;
+    const { name, description, category, icon, status, version, tags } = req.body;
     const now = new Date().toISOString();
+    // category 白名单 (PUT 时同样强校验)
+    if (category != null && !ALLOWED_CATEGORIES.has(String(category))) {
+      return res.status(400).json({ success: false, error: `category 必须是 ${[...ALLOWED_CATEGORIES].join(' / ')} 之一` });
+    }
+    // status 状态机白名单 (配合 AppOverview StatusTransitionControls)
+    const ALLOWED_STATUS = new Set([
+      "draft", "testing", "ready_to_publish", "published", "archived",
+    ]);
+    if (status != null && !ALLOWED_STATUS.has(String(status))) {
+      return res.status(400).json({ success: false, error: `status 必须是 ${[...ALLOWED_STATUS].join(' / ')} 之一` });
+    }
+    // tags 校验
+    let tagsJson = existing.tags_json ?? "[]";
+    if (tags != null) {
+      const safeTags = Array.isArray(tags) ? tags.filter((t) => typeof t === "string" && t.trim().length > 0).slice(0, 20) : [];
+      tagsJson = JSON.stringify(safeTags);
+    }
     await db.prepare(
       `UPDATE applications
-       SET name = ?, description = ?, category = ?, icon = ?, status = ?, version = ?, updated_at = ?
+       SET name = ?, description = ?, category = ?, icon = ?, status = ?, version = ?, tags_json = ?, updated_at = ?
        WHERE id = ?`
     ).run(
       name ?? existing.name,
@@ -383,9 +756,32 @@ router.put("/:id", async (req, res, next) => {
       icon ?? existing.icon,
       status ?? existing.status,
       version ?? existing.version,
+      tagsJson,
       now,
       req.params.id
     );
+
+    // P1: 写 audit_logs (update)
+    try {
+      await db.prepare(
+        `INSERT INTO audit_logs (id, user_id, user_name, action, module, target, detail, ip, result, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'success', ?)`
+      ).run(
+        uuid(),
+        req.user?.id || null,
+        req.user?.email || req.user?.name || null,
+        'update',
+        'app',
+        req.params.id,
+        JSON.stringify({
+          patched: Object.keys({ name, description, category, icon, status, version, tags }).filter((k) => req.body?.[k] != null),
+        }),
+        req.ip || '127.0.0.1',
+        now,
+      );
+    } catch (e) {
+      console.warn("[apps PUT] audit_logs:", e?.message);
+    }
     const row = await db.prepare("SELECT * FROM applications WHERE id = ?").get(req.params.id);
     res.json({ success: true, data: row });
   } catch (err) {
@@ -394,10 +790,59 @@ router.put("/:id", async (req, res, next) => {
 });
 
 // ─── DELETE /:id ── delete application ──────────────────
+// 删应用前手动级联删所有子表 (历史 db schema 没有 ON DELETE CASCADE 关联).
+// 表不存在时静默忽略, 保证在旧 db 上也能跑通.
 router.delete("/:id", async (req, res, next) => {
   try {
     const existing = await db.prepare("SELECT * FROM applications WHERE id = ?").get(req.params.id);
     if (!existing) return res.status(404).json({ success: false, error: "应用不存在" });
+
+    // P1: 写 audit_logs (delete) — 必须先写, 然后才能删
+    const nowDel = new Date().toISOString();
+    try {
+      await db.prepare(
+        `INSERT INTO audit_logs (id, user_id, user_name, action, module, target, detail, ip, result, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'success', ?)`
+      ).run(
+        uuid(),
+        req.user?.id || null,
+        req.user?.email || req.user?.name || null,
+        'delete',
+        'app',
+        req.params.id,
+        JSON.stringify({ name: existing.name, category: existing.category }),
+        req.ip || '127.0.0.1',
+        nowDel,
+      );
+    } catch (e) {
+      console.warn("[apps DELETE] audit_logs:", e?.message);
+    }
+
+    const childTables = [
+      "app_pages",
+      "app_modules",
+      "app_configs",
+      "app_api_keys",
+      "app_integrations",
+      "app_forms",
+      "app_reports",
+      "app_dashboards",
+      "app_page_components",
+      "app_collaborators",
+      "app_datasets",
+      "form_submissions",
+      "report_runs",
+      "app_publications",
+      "app_versions",
+    ];
+    for (const t of childTables) {
+      try {
+        await db.prepare(`DELETE FROM ${t} WHERE app_id = ?`).run(req.params.id);
+      } catch (err) {
+        if (!/no such table/i.test(String(err?.message))) throw err;
+      }
+    }
+
     await db.prepare("DELETE FROM applications WHERE id = ?").run(req.params.id);
     res.json({ success: true, data: { id: req.params.id } });
   } catch (err) {
@@ -734,17 +1179,67 @@ router.get("/:id/stats", async (req, res, next) => {
     const app = await db.prepare("SELECT * FROM applications WHERE id = ?").get(req.params.id);
     if (!app) return res.status(404).json({ success: false, error: "应用不存在" });
 
-    const objects_count = await db.prepare("SELECT COUNT(*) AS cnt FROM ontology_objects WHERE app_id = ?").get(req.params.id).cnt;
-    const pages_count = await db.prepare("SELECT COUNT(*) AS cnt FROM app_pages WHERE app_id = ?").get(req.params.id).cnt;
-    const flows_count = await db.prepare("SELECT COUNT(*) AS cnt FROM process_definitions WHERE app_id = ?").get(req.params.id).cnt;
+    // ── 集中计数 — 每个子表占一行, 表不存在时回退 0 ──
+    async function safeCount(table) {
+      try {
+        const row = await db.prepare(`SELECT COUNT(*) AS cnt FROM ${table} WHERE app_id = ?`).get(req.params.id);
+        return row?.cnt ?? 0;
+      } catch (e) {
+        if (/no such table/i.test(String(e?.message))) return 0;
+        throw e;
+      }
+    }
+    const objects_count = await safeCount("ontology_objects");
+    const pages_count = await safeCount("app_pages");
+    const flows_count = await safeCount("process_definitions");
+    const modules_count = await safeCount("app_modules");
+    const forms_count = await safeCount("app_forms");
+    const reports_count = await safeCount("app_reports");
+    const dashboards_count = await safeCount("app_dashboards");
+    const components_count = await safeCount("app_page_components");
+    const integrations_count = await safeCount("app_integrations");
+    const api_keys_count = await safeCount("app_api_keys");
+    const configs_count = await safeCount("app_configs");
 
-    // Also update the application's pages_count for consistency
-    await db.prepare("UPDATE applications SET pages_count = ?, updated_at = ? WHERE id = ?")
-      .run(pages_count, new Date().toISOString(), req.params.id);
+    // 同步 applications 表里的几个常用计数, 便于应用列表查询避免扫子表
+    const now = new Date().toISOString();
+    try {
+      await db.prepare(
+        `UPDATE applications
+            SET pages_count = ?, modules_count = ?, forms_count = ?,
+                reports_count = ?, dashboards_count = ?, integrations_count = ?,
+                objects_count = ?, flows_count = ?, updated_at = ?
+          WHERE id = ?`
+      ).run(
+        pages_count, modules_count, forms_count,
+        reports_count, dashboards_count, integrations_count,
+        objects_count, flows_count, now,
+        req.params.id,
+      );
+    } catch (e) {
+      // 如果 applications 上没有这些列 (旧 DB schema), 退化为只更新 pages_count
+      if (!/no such column/i.test(String(e?.message))) console.warn("[stats] partial update:", e?.message);
+      try {
+        await db.prepare("UPDATE applications SET pages_count = ?, updated_at = ? WHERE id = ?")
+          .run(pages_count, now, req.params.id);
+      } catch { /* ignore */ }
+    }
 
     res.json({
       success: true,
-      data: { objects_count, pages_count, flows_count },
+      data: {
+        objects_count,
+        pages_count,
+        flows_count,
+        modules_count,
+        forms_count,
+        reports_count,
+        dashboards_count,
+        components_count,
+        integrations_count,
+        api_keys_count,
+        configs_count,
+      },
     });
   } catch (err) {
     next(err);
@@ -764,7 +1259,39 @@ router.get("/:id/pages", async (req, res, next) => {
     const rows = await db.prepare(
       "SELECT * FROM app_pages WHERE app_id = ? ORDER BY sort_order ASC, created_at ASC"
     ).all(req.params.id);
-    res.json({ success: true, data: rows });
+
+    // P2-3: 一并返回每条 page 的 moduleIds, 避免前端多打一次 listModules
+    let modules = [];
+    try {
+      modules = await db.prepare("SELECT id, label, page_ids FROM app_modules WHERE app_id = ? ORDER BY sort_order ASC").all(req.params.id);
+    } catch (e) {
+      if (!/no such/i.test(String(e?.message))) throw e;
+    }
+
+    // 构建 pageId -> [module ids] 索引
+    const pageModuleMap = {};
+    const moduleSummaries = [];
+    for (const m of modules) {
+      const pids = (() => { try { return JSON.parse(m.page_ids || "[]"); } catch { return []; } })();
+      moduleSummaries.push({ id: m.id, label: m.label, pageCount: Array.isArray(pids) ? pids.length : 0 });
+      if (Array.isArray(pids)) {
+        for (const pid of pids) {
+          if (!pageModuleMap[pid]) pageModuleMap[pid] = [];
+          pageModuleMap[pid].push(m.id);
+        }
+      }
+    }
+
+    const data = rows.map((p) => ({
+      ...p,
+      moduleIds: pageModuleMap[p.id] || [],
+    }));
+
+    res.json({
+      success: true,
+      data,
+      modules: moduleSummaries,
+    });
   } catch (err) {
     next(err);
   }
@@ -776,7 +1303,7 @@ router.post("/:id/pages", async (req, res, next) => {
     const app = await db.prepare("SELECT id FROM applications WHERE id = ?").get(req.params.id);
     if (!app) return res.status(404).json({ success: false, error: "应用不存在" });
 
-    const { name, type, icon, config, status, sort_order } = req.body;
+    const { name, type, icon, config, status, sort_order, form_id, report_id, dashboard_id } = req.body;
     if (!name) {
       return res.status(400).json({ success: false, error: "name 为必填项" });
     }
@@ -794,9 +1321,15 @@ router.post("/:id/pages", async (req, res, next) => {
     }
 
     await db.prepare(
-      `INSERT INTO app_pages (id, app_id, name, type, icon, status, config, sort_order, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-    ).run(id, req.params.id, name, type || "list", icon || null, status || "draft", configStr, order, now, now);
+      `INSERT INTO app_pages (id, app_id, name, type, icon, status, config, sort_order,
+                               form_id, report_id, dashboard_id, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    ).run(
+      id, req.params.id, name, type || "list", icon || null,
+      status || "draft", configStr, order,
+      form_id || null, report_id || null, dashboard_id || null,
+      now, now,
+    );
 
     const row = await db.prepare("SELECT * FROM app_pages WHERE id = ?").get(id);
     res.status(201).json({ success: true, data: row });
@@ -816,13 +1349,14 @@ router.put("/:id/pages/:pageId", async (req, res, next) => {
     ).get(req.params.pageId, req.params.id);
     if (!existing) return res.status(404).json({ success: false, error: "页面不存在" });
 
-    const { name, type, icon, status, config, sort_order } = req.body;
+    const { name, type, icon, status, config, sort_order, form_id, report_id, dashboard_id } = req.body;
     const now = new Date().toISOString();
     const configStr = typeof config === "object" ? JSON.stringify(config) : config ?? existing.config;
 
     await db.prepare(
       `UPDATE app_pages
-       SET name = ?, type = ?, icon = ?, status = ?, config = ?, sort_order = ?, updated_at = ?
+       SET name = ?, type = ?, icon = ?, status = ?, config = ?, sort_order = ?,
+           form_id = ?, report_id = ?, dashboard_id = ?, updated_at = ?
        WHERE id = ? AND app_id = ?`
     ).run(
       name ?? existing.name,
@@ -831,6 +1365,9 @@ router.put("/:id/pages/:pageId", async (req, res, next) => {
       status ?? existing.status,
       configStr,
       sort_order ?? existing.sort_order,
+      form_id !== undefined ? form_id || null : existing.form_id,
+      report_id !== undefined ? report_id || null : existing.report_id,
+      dashboard_id !== undefined ? dashboard_id || null : existing.dashboard_id,
       now,
       req.params.pageId,
       req.params.id
@@ -878,6 +1415,114 @@ router.get("/:id/config", async (req, res, next) => {
   } catch (err) {
     next(err);
   }
+});
+
+/* ───────────────────────────────────────────────────────────────
+   App Modules — 用户在 Pages 页创建的"模块"
+   ─────────────────────────────────────────────────────────────── */
+function safeParseJSON(s, fallback) {
+  if (s == null) return fallback;
+  try { return JSON.parse(s); } catch { return fallback; }
+}
+
+async function modulesByApp(appId) {
+  const rows = await db.prepare(
+    "SELECT * FROM app_modules WHERE app_id = ? ORDER BY sort_order ASC, created_at ASC"
+  ).all(appId);
+  return rows.map(r => ({
+    id: r.id,
+    label: r.label,
+    icon: r.icon,
+    color: r.color,
+    bgColor: r.bg_color,
+    typeFilter: r.type_filter ? safeParseJSON(r.type_filter, []) : [],
+    config: r.config ? safeParseJSON(r.config, {}) : {},
+    pageIds: r.page_ids ? safeParseJSON(r.page_ids, []) : [],
+    sortOrder: r.sort_order,
+    createdAt: r.created_at,
+    updatedAt: r.updated_at,
+  }));
+}
+
+router.get("/:id/modules", async (req, res, next) => {
+  try {
+    const app = await db.prepare("SELECT id FROM applications WHERE id = ?").get(req.params.id);
+    if (!app) return res.status(404).json({ success: false, error: "应用不存在" });
+    res.json({ success: true, data: await modulesByApp(req.params.id) });
+  } catch (err) { next(err); }
+});
+
+router.post("/:id/modules", async (req, res, next) => {
+  try {
+    const { label, icon, color, bgColor, typeFilter, config, sortOrder, pageIds } = req.body || {};
+    if (!label || typeof label !== "string" || !label.trim()) {
+      return res.status(400).json({ success: false, error: "label 为必填项" });
+    }
+    const app = await db.prepare("SELECT id FROM applications WHERE id = ?").get(req.params.id);
+    if (!app) return res.status(404).json({ success: false, error: "应用不存在" });
+    const id = uuid();
+    const now = new Date().toISOString();
+    await db.prepare(
+      `INSERT INTO app_modules (id, app_id, label, icon, color, bg_color, type_filter, sort_order, config, page_ids, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    ).run(
+      id, req.params.id, label.trim(),
+      icon || null, color || null, bgColor || null,
+      JSON.stringify(Array.isArray(typeFilter) ? typeFilter : []),
+      Number.isFinite(+sortOrder) ? +sortOrder : 0,
+      JSON.stringify(config || {}),
+      JSON.stringify(Array.isArray(pageIds) ? pageIds : []),
+      now, now,
+    );
+    const rows = await modulesByApp(req.params.id);
+    res.status(201).json({ success: true, data: rows[rows.length - 1], list: rows });
+  } catch (err) { next(err); }
+});
+
+router.put("/:id/modules/:moduleId", async (req, res, next) => {
+  try {
+    const { label, icon, color, bgColor, typeFilter, config, sortOrder, pageIds } = req.body || {};
+    const now = new Date().toISOString();
+    const result = await db.prepare(
+      `UPDATE app_modules SET
+        label = COALESCE(?, label),
+        icon = COALESCE(?, icon),
+        color = COALESCE(?, color),
+        bg_color = COALESCE(?, bg_color),
+        type_filter = COALESCE(?, type_filter),
+        sort_order = COALESCE(?, sort_order),
+        config = COALESCE(?, config),
+        page_ids = COALESCE(?, page_ids),
+        updated_at = ?
+       WHERE id = ? AND app_id = ?`
+    ).run(
+      label != null ? label : null,
+      icon != null ? icon : null,
+      color != null ? color : null,
+      bgColor != null ? bgColor : null,
+      typeFilter != null ? JSON.stringify(typeFilter) : null,
+      Number.isFinite(+sortOrder) ? +sortOrder : null,
+      config != null ? JSON.stringify(config) : null,
+      pageIds != null ? JSON.stringify(pageIds) : null,
+      now,
+      req.params.moduleId,
+      req.params.id,
+    );
+    if (result.changes === 0) return res.status(404).json({ success: false, error: "模块不存在" });
+    const rows = await modulesByApp(req.params.id);
+    res.json({ success: true, data: rows });
+  } catch (err) { next(err); }
+});
+
+router.delete("/:id/modules/:moduleId", async (req, res, next) => {
+  try {
+    const result = await db.prepare(
+      "DELETE FROM app_modules WHERE id = ? AND app_id = ?"
+    ).run(req.params.moduleId, req.params.id);
+    if (result.changes === 0) return res.status(404).json({ success: false, error: "模块不存在" });
+    const rows = await modulesByApp(req.params.id);
+    res.json({ success: true, data: rows });
+  } catch (err) { next(err); }
 });
 
 // ─── POST /:id/config ── create a config entry ──────────
@@ -1377,8 +2022,291 @@ router.post("/:id/rollback", async (req, res, next) => {
 router.get("/:id/activity", async (req, res, next) => {
   try {
     const { limit = 10 } = req.query;
-    const logs = await db.prepare("SELECT * FROM audit_logs WHERE entity_id = ? ORDER BY created_at DESC LIMIT ?").all(req.params.id, Number(limit));
+    // P0: audit_logs 表无 entity_id 列, 必须用 module='app' AND target=id.
+    // 同时回退到 module='app' 单维查询, 兼容 detail 字段含 app id 的情况.
+    const lim = Math.min(Math.max(Number(limit) || 10, 1), 200);
+    let logs;
+    try {
+      logs = await db.prepare(
+        "SELECT * FROM audit_logs WHERE module = 'app' AND target = ? ORDER BY created_at DESC LIMIT ?"
+      ).all(req.params.id, lim);
+    } catch (e) {
+      // 旧 schema: 仅 module
+      logs = await db.prepare(
+        "SELECT * FROM audit_logs WHERE module = 'app' AND (target = ? OR target LIKE ?) ORDER BY created_at DESC LIMIT ?"
+      ).all(req.params.id, `%${req.params.id}%`, lim);
+    }
     res.json({ success: true, data: logs });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/* ── POST /:id/import — 从 GET /:id/export 产生的 manifest 重建应用 ── */
+router.post("/:id/import", async (req, res, next) => {
+  try {
+    // body 包含整套 manifest, 也支持 multipart 此处简化为 JSON body.
+    const manifest = req.body || {};
+    if (manifest.kind !== "metaplatform-application-bundle") {
+      return res.status(400).json({ success: false, error: "manifest 不是有效 metaplatform-application-bundle" });
+    }
+    const src = manifest.application || {};
+    if (!src.name) return res.status(400).json({ success: false, error: "manifest 缺少 application.name" });
+    const now = NOW();
+    const newId = uuid();
+    const newName = src.name + (req.query?.clone ? "" : " 导入版");
+
+    // 重建主表行; 不复制 id
+    await db.prepare(
+      `INSERT INTO applications (id, name, description, category, icon, status, version,
+                                  owner_id, objects_count, pages_count, flows_count,
+                                  modules_count, forms_count, reports_count, dashboards_count, integrations_count,
+                                  owner_name, owner_email, tags_json,
+                                  environment, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, 'draft', COALESCE(?, 'v0.1'), ?, ?, ?, ?, ?, ?, ?, ?, ?,
+               ?, ?, ?, ?, ?, ?)`
+    ).run(
+      newId,
+      newName,
+      src.description || "",
+      src.category || "custom",
+      src.icon || "📦",
+      (manifest.application?.version ?? "v0.1"),
+      req.user?.id || null,
+      manifest.counts?.ontologyObjects ?? 0,
+      manifest.counts?.pages ?? 0,
+      manifest.counts?.flows ?? 0,
+      manifest.counts?.modules ?? 0,
+      manifest.counts?.forms ?? 0,
+      manifest.counts?.reports ?? 0,
+      manifest.counts?.dashboards ?? 0,
+      manifest.counts?.integrations ?? 0,
+      req.user?.name || null,
+      req.user?.email || null,
+      JSON.stringify(Array.isArray(src.tags) ? src.tags : []),
+      src.environment || "dev",
+      now, now,
+    );
+
+    // 复制子表 (id 重新生成)
+    async function importRows(table, rows, builder, ignoredCols = []) {
+      if (!Array.isArray(rows) || rows.length === 0) return;
+      for (const r of rows) {
+        try {
+          await db.prepare(builder)(...builderArgs(r, newId, ignoredCols));
+        } catch (e) {
+          if (!/no such table/i.test(String(e?.message))) throw e;
+        }
+      }
+    }
+    // helper: copy row except app_id (并且排除某些列)
+    function builderArgs(row, appId, ignoredCols = []) {
+      const cols = Object.keys(row).filter((k) => !ignoredCols.includes(k) && k !== "id" && k !== "app_id");
+      const vals = cols.map((k) => row[k]);
+      return [uuid(), appId, ...vals, /* created/updated */];
+    }
+    // 用明确的 INSERT 列, 不靠反射简化, 最稳:
+
+    // app_pages
+    for (const p of manifest.pages || []) {
+      try {
+        await db.prepare(
+          `INSERT INTO app_pages (id, app_id, name, type, config, sort_order, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+        ).run(uuid(), newId, p.name ?? "(未命名)", p.type ?? "page", p.config ?? "{}", p.sort_order ?? 0, now, now);
+      } catch (e) {
+        if (!/no such table/i.test(String(e?.message))) throw e;
+      }
+    }
+
+    // app_modules
+    for (const m of manifest.modules || []) {
+      try {
+        await db.prepare(
+          `INSERT INTO app_modules (id, app_id, label, icon, sort_order, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?)`
+        ).run(uuid(), newId, m.label ?? "(未命名)", m.icon ?? "📁", m.sort_order ?? 0, now, now);
+      } catch (e) { if (!/no such table/i.test(String(e?.message))) throw e; }
+    }
+
+    // app_configs
+    for (const c of manifest.configs || []) {
+      try {
+        await db.prepare(
+          `INSERT INTO app_configs (id, app_id, key, value, description, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?)`
+        ).run(uuid(), newId, c.key ?? "untitled", c.value ?? "", c.description ?? null, now, now);
+      } catch (e) { if (!/no such table/i.test(String(e?.message))) throw e; }
+    }
+
+    // app_forms / reports / dashboards / integrations
+    for (const f of manifest.forms || []) {
+      try {
+        await db.prepare(
+          `INSERT INTO app_forms (id, app_id, name, schema_json, version, status, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+        ).run(uuid(), newId, f.name ?? "(未命名)", f.schema_json ?? "{}",
+              f.version ?? 1, f.status ?? "draft", now, now);
+      } catch (e) { if (!/no such table/i.test(String(e?.message))) throw e; }
+    }
+    for (const r of manifest.reports || []) {
+      try {
+        await db.prepare(
+          `INSERT INTO app_reports (id, app_id, name, dataset_id, layout_json, schedule_json, status, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        ).run(uuid(), newId, r.name ?? "(未命名)", r.dataset_id ?? null,
+              r.layout_json ?? "{}", r.schedule_json ?? "{}", r.status ?? "draft", now, now);
+      } catch (e) { if (!/no such table/i.test(String(e?.message))) throw e; }
+    }
+    for (const d of manifest.dashboards || []) {
+      try {
+        await db.prepare(
+          `INSERT INTO app_dashboards (id, app_id, name, layout_json, widgets_json, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?)`
+        ).run(uuid(), newId, d.name ?? "(未命名)", d.layout_json ?? "{}", d.widgets_json ?? "[]", now, now);
+      } catch (e) { if (!/no such table/i.test(String(e?.message))) throw e; }
+    }
+    for (const i of manifest.integrations || []) {
+      try {
+        await db.prepare(
+          `INSERT INTO app_integrations (id, app_id, type, platform, name, config_json, status, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        ).run(uuid(), newId, i.type ?? "webhook", i.platform ?? null, i.name ?? null,
+              i.config_json ?? "{}", i.status ?? "disabled", now, now);
+      } catch (e) { if (!/no such table/i.test(String(e?.message))) throw e; }
+    }
+
+    // 写 audit + 初始化版本行
+    try {
+      await db.prepare(
+        `INSERT INTO audit_logs (id, user_id, user_name, action, module, target, detail, ip, result, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'success', ?)`
+      ).run(uuid(), req.user?.id || null, req.user?.email || null,
+            'create', 'app', newId,
+            JSON.stringify({ source: "import", name: newName }),
+            req.ip || '127.0.0.1', now);
+    } catch (e) { console.warn("[import] audit:", e?.message); }
+    try {
+      await db.prepare(
+        `INSERT INTO app_versions (id, app_id, version, description, commit_message, status, created_by, created_at)
+         VALUES (?, ?, 'v0.1', '从 manifest 导入', ?, 'active', ?, ?)`
+      ).run(uuid(), newId, `cloned from import, source=${manifest.application?.id ?? ''}`,
+            req.user?.id || null, now);
+    } catch (e) { if (!/no such table/i.test(String(e?.message))) console.warn("[import] version:", e?.message); }
+
+    const fresh = await db.prepare("SELECT * FROM applications WHERE id = ?").get(newId);
+    res.status(201).json({
+      success: true,
+      data: {
+        ...fresh,
+        tags: fresh.tags_json ? safeParseJSON(fresh.tags_json, []) : [],
+        ownerName: fresh.owner_name || null,
+        ownerEmail: fresh.owner_email || null,
+      },
+      message: `已从 manifest 导入：${newName}`,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/* ── GET /:id/export — 导出一个完整应用包 ── */
+router.get("/:id/export", async (req, res, next) => {
+  try {
+    const app = await db.prepare("SELECT * FROM applications WHERE id = ?").get(req.params.id);
+    if (!app) return res.status(404).json({ success: false, error: "应用不存在" });
+
+    // 收集所有子表数据
+    const pages = await db.prepare("SELECT * FROM app_pages WHERE app_id = ?").all(req.params.id);
+    const modules = await db.prepare("SELECT id, app_id, label, icon, sort_order FROM app_modules WHERE app_id = ?").all(req.params.id);
+    const configs = await db.prepare("SELECT key, value, description FROM app_configs WHERE app_id = ?").all(req.params.id);
+    const forms = await db.prepare("SELECT id, name, schema_json, version, status FROM app_forms WHERE app_id = ?").all(req.params.id);
+    const reports = await db.prepare("SELECT id, name, dataset_id, layout_json, schedule_json, status FROM app_reports WHERE app_id = ?").all(req.params.id);
+    const dashboards = await db.prepare("SELECT id, name, layout_json, widgets_json FROM app_dashboards WHERE app_id = ?").all(req.params.id);
+    const integrationsRaw = await db.prepare(
+      "SELECT id, type, platform, name, config_json, status FROM app_integrations WHERE app_id = ?"
+    ).all(req.params.id);
+    const ontologyObjects = await db.prepare(
+      "SELECT id, name, label, description, icon FROM ontology_objects WHERE app_id = ?"
+    ).all(req.params.id);
+    const flows = await db.prepare(
+      "SELECT id, name, version, status, type FROM process_definitions WHERE app_id = ?"
+    ).all(req.params.id);
+
+    // 集成 secrets 清空
+    const sanitizedIntegrations = integrationsRaw.map((i) => {
+      const cfg = (() => {
+        try { return JSON.parse(i.config_json || "{}"); } catch { return {}; }
+      })();
+      for (const k of Object.keys(cfg)) {
+        if (/secret|password|token|api_key|webhook_url|private/i.test(k)) cfg[k] = null;
+      }
+      return {
+        id: i.id,
+        type: i.type,
+        platform: i.platform,
+        name: i.name,
+        status: i.status,
+        config_json: JSON.stringify(cfg),
+      };
+    });
+
+    const manifest = {
+      schemaVersion: "1.0",
+      kind: "metaplatform-application-bundle",
+      exportedAt: new Date().toISOString(),
+      application: {
+        id: app.id,
+        name: app.name,
+        description: app.description,
+        category: app.category,
+        icon: app.icon,
+        status: app.status,
+        version: app.version,
+        environment: app.environment,
+        tags: app.tags_json ? safeParseJSON(app.tags_json, []) : [],
+      },
+      counts: {
+        pages: pages.length,
+        modules: modules.length,
+        configs: configs.length,
+        forms: forms.length,
+        reports: reports.length,
+        dashboards: dashboards.length,
+        integrations: integrationsRaw.length,
+        ontologyObjects: ontologyObjects.length,
+        flows: flows.length,
+      },
+      pages, modules, configs, forms, reports, dashboards,
+      integrations: sanitizedIntegrations,
+      ontologyObjects, flows,
+      notes: [
+        "API keys / secrets / tokens / passwords / webhook URLs have been redacted to null.",
+        "Re-importing this manifest preserves structure; secrets must be re-entered manually.",
+      ],
+    };
+
+    // 尝试用 archiver 包装 zip; 失败回退 JSON 附件
+    let archiverLib;
+    try {
+      const mod = await import("archiver");
+      archiverLib = mod.default ?? mod;
+    } catch (e) {
+      archiverLib = null;
+    }
+    if (!archiverLib || typeof archiverLib.create !== "function") {
+      const fileName = `${(app.name || "app").replace(/\s+/g, "_")}-manifest.json`;
+      res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
+      res.setHeader("Content-Type", "application/json; charset=utf-8");
+      res.send(JSON.stringify(manifest, null, 2));
+      return;
+    }
+    res.setHeader("Content-Type", "application/zip");
+    res.setHeader("Content-Disposition", `attachment; filename="${(app.name || "app").replace(/\s+/g, "_")}.zip"`);
+    const archive = archiverLib("zip", { zlib: { level: 9 } });
+    archive.pipe(res);
+    archive.append(JSON.stringify(manifest, null, 2), "manifest.json");
+    await archive.finalize();
   } catch (err) {
     next(err);
   }

@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Loader2, AlertCircle } from "lucide-react";
+import { Loader2, AlertCircle, Store, ExternalLink } from "lucide-react";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -34,7 +34,7 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-950">
+    <div className="min-h-screen flex items-center justify-center bg-primary dark:from-slate-900 dark:to-slate-950">
       <Card className="w-full max-w-md shadow-lg">
         <CardHeader className="space-y-1 text-center">
           <CardTitle className="text-2xl font-bold tracking-tight">
@@ -95,6 +95,18 @@ export default function Login() {
               Demo: admin@metaplatform.com / admin123
             </p>
           </form>
+
+          {/* P17: 公开应用市场 — 无需登录即可访问 */}
+          <div className="mt-4 pt-4 border-t border-border">
+            <a
+              href="/marketplace"
+              className="flex items-center justify-center gap-2 text-sm text-primary hover:text-primary-hover hover:underline rounded-md py-2 px-3 transition-colors font-medium"
+            >
+              <Store className="size-4" />
+              <span>无需登录 · 浏览公开应用市场</span>
+              <ExternalLink className="size-3" />
+            </a>
+          </div>
         </CardContent>
       </Card>
     </div>

@@ -8,7 +8,7 @@ import { PageHeader } from "@/components/ui/stat";
 import { appsApi, ontologyApi, type AppPage, type OntologyObject, type OntologyProperty, type OntologyRelation } from "@/lib/api";
 import {
   Plus, Search, FileText, Loader2, Trash2, Edit, Wand2,
-  Monitor, Smartphone, Tablet, FolderOpen, ChevronRight, ChevronDown, Copy,
+  Monitor, Smartphone, Tablet, FolderOpen, ChevronRight, ChevronDown, ChevronUp, Copy,
   FileCode, FileEdit, LayoutDashboard, Palette, Sparkles,
   Save, RotateCcw, Clock, Hash, X,
   Type, Image, Square, List, Table2, CreditCard, Minus,
@@ -40,9 +40,57 @@ interface TreeCategory {
   bgColor: string;     // background color for icon
   typeFilter: string[]; // which page types belong here
   expanded: boolean;
+  /** 自定义模块 (用户创建) 才会用到的字段 */
+  isCustom?: boolean;
+  pageIds?: string[];  // 属于该自定义模块的页面 id 列表
+  objectIds?: string[]; // 业务模型分类下的 ontology 对象 id 列表
+  config?: Record<string, unknown>; // 透传后端模块配置（用于业务模型对象归属）
+  /** 该分类归属于哪个自定义模块 (未设置 = 顶级分类, 挂在应用搭建根节点下) */
+  parentModuleId?: string;
+  /** 自定义模块下默认克隆出来的子分类 (业务模型/表单页面/...等) */
+  subCategories?: TreeCategory[];
 }
 
-/** 分类配置 */
+/** 分类配置 — 顶级分类的模板, 新建模块时会按此模板克隆 */
+const TREE_CATEGORY_TEMPLATES: Omit<TreeCategory, "parentModuleId" | "id">[] = [
+  {
+    label: "业务模型", icon: <Database className="size-3.5" />,
+    color: "text-red-500", bgColor: "bg-red-50", typeFilter: [],
+    expanded: true,
+  },
+  {
+    label: "表单页面", icon: <FileEdit className="size-3.5" />,
+    color: "text-blue-500", bgColor: "bg-blue-50", typeFilter: ["form", "lowcode"],
+    expanded: false,
+  },
+  {
+    label: "列表页面", icon: <LayoutDashboard className="size-3.5" />,
+    color: "text-green-500", bgColor: "bg-green-50", typeFilter: ["list"],
+    expanded: false,
+  },
+  {
+    label: "Vue 页面", icon: <FileJson className="size-3.5" />,
+    color: "text-emerald-500", bgColor: "bg-emerald-50", typeFilter: ["vue", "procode"],
+    expanded: false,
+  },
+  {
+    label: "业务流程", icon: <GitBranch className="size-3.5" />,
+    color: "text-amber-500", bgColor: "bg-primary", typeFilter: ["workflow"],
+    expanded: false,
+  },
+  {
+    label: "报表页面", icon: <BarChart3 className="size-3.5" />,
+    color: "text-indigo-500", bgColor: "bg-primary", typeFilter: ["report", "dashboard"],
+    expanded: false,
+  },
+  {
+    label: "商业智能", icon: <Layers className="size-3.5" />,
+    color: "text-violet-500", bgColor: "bg-primary", typeFilter: ["bi", "analytics"],
+    expanded: false,
+  },
+];
+
+/** 顶级分类 (应用搭建根节点下显示) */
 const TREE_CATEGORIES: TreeCategory[] = [
   {
     id: "business-model", label: "业务模型", icon: <Database className="size-3.5" />,
@@ -66,19 +114,27 @@ const TREE_CATEGORIES: TreeCategory[] = [
   },
   {
     id: "workflows", label: "业务流程", icon: <GitBranch className="size-3.5" />,
-    color: "text-amber-500", bgColor: "bg-amber-50", typeFilter: ["workflow"],
+    color: "text-amber-500", bgColor: "bg-primary", typeFilter: ["workflow"],
     expanded: false,
   },
   {
     id: "reports", label: "报表页面", icon: <BarChart3 className="size-3.5" />,
-    color: "text-indigo-500", bgColor: "bg-indigo-50", typeFilter: ["report", "dashboard"],
+    color: "text-indigo-500", bgColor: "bg-primary", typeFilter: ["report", "dashboard"],
     expanded: false,
   },
   {
     id: "bi", label: "商业智能", icon: <Layers className="size-3.5" />,
-    color: "text-violet-500", bgColor: "bg-violet-50", typeFilter: ["bi", "analytics"],
+    color: "text-violet-500", bgColor: "bg-primary", typeFilter: ["bi", "analytics"],
     expanded: false,
   },
+];
+
+/** 业务对象字段类型选项 */
+const PROPERTY_TYPES = [
+  "短文本", "长文本", "数字", "整数", "小数", "百分比",
+  "金额", "日期", "日期时间", "时间", "枚举", "布尔",
+  "邮箱", "手机号", "电话", "地址", "URL", "自动编号",
+  "人员", "部门", "附件", "评分", "颜色", "JSON",
 ];
 
 /* ── State ── */
@@ -650,10 +706,27 @@ export default function Pages() {
   const [newPageDialogOpen, setNewPageDialogOpen] = useState(false);
   const [newPageName, setNewPageName] = useState("");
   const [newPageType, setNewPageType] = useState("lowcode");
+  const [newPageModuleId, setNewPageModuleId] = useState<string | null>(null); // 关联到哪个自定义模块
+  const [newPageAllowedTypes, setNewPageAllowedTypes] = useState<string[] | null>(null); // 分类固定类型
   const [creating, setCreating] = useState(false);
+  // 业务模型（ontology 对象）新建弹窗
+  const [newObjectDialogOpen, setNewObjectDialogOpen] = useState(false);
+  const [newObjectModuleId, setNewObjectModuleId] = useState<string | null>(null);
+  const [newObjectName, setNewObjectName] = useState("");
+  const [newObjectLabel, setNewObjectLabel] = useState("");
+  const [newObjectDesc, setNewObjectDesc] = useState("");
+  const [creatingObject, setCreatingObject] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deletingPage, setDeletingPage] = useState<AppPage | null>(null);
   const [deleting, setDeleting] = useState(false);
+
+  /* ── Custom modules (用户自定义模块) ── */
+  const [customModules, setCustomModules] = useState<TreeCategory[]>([]);
+  const [newModuleDialogOpen, setNewModuleDialogOpen] = useState(false);
+  const [newModuleName, setNewModuleName] = useState("");
+  const [creatingModule, setCreatingModule] = useState(false);
+  const [deleteModuleDialogOpen, setDeleteModuleDialogOpen] = useState(false);
+  const [deletingModule, setDeletingModule] = useState<TreeCategory | null>(null);
 
   /* ── Ontology state ── */
   const [ontologyObjects, setOntologyObjects] = useState<OntologyObject[]>([]);
@@ -663,6 +736,12 @@ export default function Pages() {
   const [entityDetailLoading, setEntityDetailLoading] = useState(false);
   const [entityPropertiesMap, setEntityPropertiesMap] = useState<Record<string, OntologyProperty[]>>({});
   const [activeDetailTab, setActiveDetailTab] = useState<"fields" | "er">("fields");
+  // 业务对象字段新增
+  const [newPropName, setNewPropName] = useState("");
+  const [newPropLabel, setNewPropLabel] = useState("");
+  const [newPropType, setNewPropType] = useState("短文本");
+  const [newPropRequired, setNewPropRequired] = useState(false);
+  const [addingProp, setAddingProp] = useState(false);
 
   /* ── Load page list ── */
   const loadPages = useCallback(async () => {
@@ -672,7 +751,34 @@ export default function Pages() {
       const data = await appsApi.listPages(appId);
       setPages(data || []);
       const app = await appsApi.get(appId);
-      setAppName(app?.name || "应用");
+      const realAppName = app?.name || "应用";
+      setAppName(realAppName);
+
+      // ── 加载页面上自定义模块 (持久化到后端) ──
+      try {
+        const remote = await appsApi.listModules(appId);
+        if (Array.isArray(remote) && remote.length > 0) {
+          setCustomModules(remote.map(moduleToTreeCategory));
+        } else {
+          // 首次进入应用 → 自动初始化一个默认模块 (持久化到后端)
+          const initFlagKey = `metaplatform:${appId}:modules-initialized`;
+          const initialized = localStorage.getItem(initFlagKey);
+          if (!initialized) {
+            const defaultLabel = realAppName && realAppName !== "应用" ? realAppName : "默认模块";
+            // P5-BUGFIX: 创建默认模块时 立即把所有已有 pages attach 进去,
+            // 避免新建模块下为空 → 用户看到的不是"空空如也"模块.
+            const newMod = await appsApi.createModule(appId, {
+              label: defaultLabel,
+              pageIds: (pages || []).map(p => p.id),
+            });
+            setCustomModules([moduleToTreeCategory(newMod)]);
+            localStorage.setItem(initFlagKey, "1");
+          }
+        }
+      } catch (e) {
+        console.error("加载页模块失败:", e);
+      }
+
       // Load ontology data
       try {
         const [objects, relations] = await Promise.all([
@@ -692,6 +798,39 @@ export default function Pages() {
   }, [appId]);
 
   useEffect(() => { loadPages(); }, [loadPages]);
+
+  // 监听全局"模块变更"事件 → 重拉 (其它 tab / dialog 操作时同步本地)
+  useEffect(() => {
+    if (!appId) return;
+    const reload = async () => {
+      try {
+        const remote = await appsApi.listModules(appId);
+        if (!Array.isArray(remote)) return;
+        setCustomModules(prev => {
+          // 简单策略: 使用远端为准 (但要保留 subCategories / expanded / pageIds 本地交互态)
+          // 这里只增加 / 减少 / label 修改, 不重置 subCategories 本地
+          const byId = new Map(prev.map(p => [p.id, p]));
+          return remote.map(m => {
+            const local = byId.get(m.id);
+            return {
+              ...moduleToTreeCategory(m),
+              ...(local
+                ? {
+                    expanded: local.expanded,
+                    subCategories: local.subCategories,
+                    pageIds: local.pageIds,
+                  }
+                : {}),
+            };
+          });
+        });
+      } catch { /* ignore */ }
+    };
+    const onMods = () => reload();
+    window.addEventListener("mp:modules-changed", onMods);
+    return () => window.removeEventListener("mp:modules-changed", onMods);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [appId]);
 
   /** 选中数据实体 — 加载属性详情 + 关联实体属性（供 ER 图展示） */
   const handleSelectEntity = useCallback(async (obj: OntologyObject) => {
@@ -737,6 +876,30 @@ export default function Pages() {
     setEntityProperties([]);
   }, []);
 
+  /** 为当前业务对象添加字段 */
+  const handleAddProperty = useCallback(async () => {
+    if (!selectedEntity || !newPropName.trim() || !newPropLabel.trim()) return;
+    setAddingProp(true);
+    try {
+      await ontologyApi.createProperty(selectedEntity.id, {
+        name: newPropName.trim(),
+        label: newPropLabel.trim(),
+        type: newPropType,
+        required: newPropRequired ? 1 : 0,
+      });
+      setNewPropName("");
+      setNewPropLabel("");
+      setNewPropType("短文本");
+      setNewPropRequired(false);
+      // 刷新当前实体详情
+      await handleSelectEntity(selectedEntity);
+    } catch (e) {
+      console.error("添加字段失败:", e);
+    } finally {
+      setAddingProp(false);
+    }
+  }, [selectedEntity, newPropName, newPropLabel, newPropType, newPropRequired, handleSelectEntity]);
+
   /** 获取实体名称映射 */
   const entityNameMap = useCallback((id: string) => {
     const obj = ontologyObjects.find(o => o.id === id);
@@ -763,18 +926,21 @@ export default function Pages() {
     setCategories(prev => prev.map(c => c.id === catId ? { ...c, expanded: !c.expanded } : c));
   };
 
-  /** 按分类分组页面 — 每个页面只归入第一个匹配的分类 */
+  /** 已被某个自定义模块引用的页面 id 集合, 这些页面应只在自定义模块下显示 */
+  const modulePageIdSet = new Set(customModules.flatMap(m => m.pageIds || []));
+
+  /** 按分类分组页面 — 每个页面只归入第一个匹配的分类 (排除已被自定义模块引用的) */
   const groupedByCategory = categories.map(cat => ({
     ...cat,
     pages: pages.filter(p => {
+      if (modulePageIdSet.has(p.id)) return false; // 已在自定义模块下, 不重复显示
       const pageType = p.type || "lowcode";
       return cat.typeFilter.includes(pageType);
     }),
   }));
 
-  /** 未分类的页面 — 不属于任何分类的页面 */
-  const categorizedTypeSet = new Set(categories.flatMap(c => c.typeFilter));
-  const uncategorizedPages = pages.filter(p => !categorizedTypeSet.has(p.type || "lowcode"));
+  /** 未分类的页面 — 未被任何自定义模块引用的页面 (内置分类已隐藏, 以模块归属为准) */
+  const uncategorizedPages = pages.filter(p => !modulePageIdSet.has(p.id));
 
   /* ── Component operations ── */
   const addComponent = (type: string) => {
@@ -809,12 +975,242 @@ export default function Pages() {
 
   const selectedComp = editor.components.find(c => c.id === editor.selectedCompId) || null;
 
+  /** 打开新建页面 dialog, 并预选页面类型 (来自分类点击) */
+  const openNewPageDialogWithType = (type: string, moduleId: string | null = null, allowedTypes?: string[]) => {
+    const allowed = allowedTypes && allowedTypes.length > 0 ? allowedTypes : null;
+    setNewPageAllowedTypes(allowed);
+    setNewPageType(allowed ? allowed[0] : type);
+    setNewPageName("");
+    setNewPageModuleId(moduleId);
+    setNewPageDialogOpen(true);
+  };
+
+  /** 打开新建业务模型对象 dialog */
+  const openNewObjectDialog = (moduleId: string) => {
+    setNewObjectModuleId(moduleId);
+    setNewObjectName("");
+    setNewObjectLabel("");
+    setNewObjectDesc("");
+    setNewObjectDialogOpen(true);
+  };
+
+  /** 创建 ontology 业务对象 */
+  const handleCreateObject = async () => {
+    if (!appId || !newObjectName.trim() || !newObjectLabel.trim()) return;
+    setCreatingObject(true);
+    try {
+      const created = await ontologyApi.createObject({
+        app_id: appId,
+        name: newObjectName.trim(),
+        label: newObjectLabel.trim(),
+        description: newObjectDesc.trim() || undefined,
+        status: "draft",
+        icon: "Box",
+      });
+      // 把新对象归属到点击的模块下（业务模型分类）
+      if (created && newObjectModuleId) {
+        const mod = customModules.find(m => m.id === newObjectModuleId);
+        if (mod) {
+          const currentIds = (mod.subCategories || [])
+            .find(s => s.typeFilter.length === 0)?.objectIds || [];
+          const nextIds = [...currentIds, created.id];
+          const nextConfig = { ...(mod.config || {}), businessModelObjectIds: nextIds };
+          await appsApi.updateModule(appId, newObjectModuleId, { config: nextConfig });
+          setCustomModules(prev => prev.map(m => {
+            if (m.id !== newObjectModuleId) return m;
+            return {
+              ...m,
+              config: nextConfig,
+              subCategories: (m.subCategories || []).map(s =>
+                s.typeFilter.length === 0 ? { ...s, objectIds: nextIds } : s
+              ),
+            };
+          }));
+        }
+      }
+      // 刷新对象列表
+      const refreshed = await ontologyApi.listObjects(appId);
+      setOntologyObjects(refreshed || []);
+      setNewObjectDialogOpen(false);
+      if (created) {
+        handleSelectEntity(created);
+      }
+      window.dispatchEvent(new CustomEvent("mp:ontology-changed", { detail: { kind: "create_object", appId } }));
+    } catch (e) {
+      console.error("创建业务对象失败:", e);
+    } finally {
+      setCreatingObject(false);
+    }
+  };
+
+  /** 打开新建模块 (自定义分类) dialog */
+  const openNewModuleDialog = () => {
+    setNewModuleName("");
+    setNewModuleDialogOpen(true);
+  };
+
+  /** 共用工厂: 创建一个新模块, 并自动带出 7 个默认子分类 (业务模型/表单页面/...等) */
+  const buildDefaultModule = (label: string, realId?: string): TreeCategory => {
+    const moduleId = realId ?? `module_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+    const subCategories: TreeCategory[] = TREE_CATEGORY_TEMPLATES.map((tpl, idx) => ({
+      ...tpl,
+      id: `${moduleId}_sub_${idx}`,
+      parentModuleId: moduleId,
+      isCustom: true,
+      pageIds: [],
+      objectIds: [],
+    }));
+    return {
+      id: moduleId,
+      label,
+      icon: <FolderOpen className="size-3.5" />,
+      color: "text-amber-500",
+      bgColor: "bg-primary",
+      typeFilter: [],
+      expanded: true,
+      isCustom: true,
+      pageIds: [],
+      objectIds: [],
+      subCategories,
+    };
+  };
+
+  /** 把后端 app_modules 行转回 TreeCategory (DB 行 → UI 形状) */
+  const moduleToTreeCategory = (m: AppModule): TreeCategory => {
+    // 用后端给的 id 构建默认结构
+    const c = buildDefaultModule(m.label, m.id);
+    const objectIds = (m.config?.businessModelObjectIds as string[] | undefined) || [];
+    // 应用自定义颜色 / icon / typeFilter / pageIds / 业务模型对象 (UI 可识别的)
+    return {
+      ...c,
+      typeFilter: m.typeFilter ?? c.typeFilter,
+      pageIds: m.pageIds ?? c.pageIds,
+      config: m.config,
+      subCategories: (c.subCategories || []).map(sub =>
+        sub.typeFilter.length === 0
+          ? { ...sub, objectIds }
+          : sub
+      ),
+    };
+  };
+
+  /** 创建自定义模块 — 自动带出 7 个默认子分类, 同时持久化到后端 */
+  const handleCreateModule = async () => {
+    if (!appId || !newModuleName.trim()) return;
+    setCreatingModule(true);
+    const tempId = `module_temp_${Date.now()}`;
+    try {
+      // 乐观更新 — 立即在 UI 上看到新模块
+      const tempCat = buildDefaultModule(newModuleName.trim(), tempId);
+      setCustomModules(prev => [...prev, tempCat]);
+      // 真实写库 - 使用后端返回的真实 id 替换临时 id
+      const result = await appsApi.createModule(appId, {
+        label: newModuleName.trim(),
+        icon: "FolderOpen",
+        color: "text-amber-500",
+        bgColor: "bg-primary",
+      });
+      // 把新模块的临时 id 替换为后端的真实 id
+      const realId = result.id;
+      setCustomModules(prev => prev.map(m => {
+        if (m.id !== tempId) return m;
+        // 重写 module.id 和 subCategories.id
+        return {
+          ...m,
+          id: realId,
+          subCategories: (m.subCategories || []).map((s, idx) => ({
+            ...s,
+            id: `${realId}_sub_${idx}`,
+            parentModuleId: realId,
+          })),
+        };
+      }));
+      window.dispatchEvent(new CustomEvent("mp:modules-changed", { detail: { appId, kind: "create", moduleId: realId } }));
+      setNewModuleDialogOpen(false);
+      setNewModuleName("");
+    } catch (e: any) {
+      // 回滚乐观更新
+      setCustomModules(prev => prev.filter(m => m.id !== tempId));
+      const msg = e?.message || (typeof e === 'string' ? e : "未知错误");
+      console.error("创建模块失败:", msg);
+      window.alert(`创建模块失败: ${msg}`);
+    } finally {
+      setCreatingModule(false);
+    }
+  };
+
+  /** 删除自定义模块 (释放下所属页面 + 持久化) */
+  const handleConfirmDeleteModule = async () => {
+    if (!appId || !deletingModule) return;
+    const moduleId = deletingModule.id;
+    // 乐观更新
+    setCustomModules(prev => prev.filter(m => m.id !== moduleId));
+    setDeleteModuleDialogOpen(false);
+    setDeletingModule(null);
+    try {
+      await appsApi.deleteModule(appId, moduleId);
+      window.dispatchEvent(new CustomEvent("mp:modules-changed", { detail: { appId, kind: "delete" } }));
+    } catch (e) {
+      console.error("删除模块失败:", e);
+    }
+  };
+
+  /** 把一个页面 id 关联到某个自定义模块 — 持久化到后端 */
+  const attachPageToModule = async (pageId: string, moduleId: string | null) => {
+    if (!moduleId || !appId) return;
+    // 找到目标模块当前的 pageIds
+    const target = customModules.find(m => m.id === moduleId);
+    const nextPageIds = Array.from(new Set([...(target?.pageIds ?? []), pageId]));
+    setCustomModules(prev => prev.map(m =>
+      m.id === moduleId ? { ...m, pageIds: nextPageIds } : m
+    ));
+    try {
+      await appsApi.updateModule(appId, moduleId, { pageIds: nextPageIds });
+      window.dispatchEvent(new CustomEvent("mp:modules-changed", { detail: { appId, kind: "attach", pageId, moduleId } }));
+    } catch (e) {
+      // 回滚
+      const prev = target?.pageIds ?? [];
+      setCustomModules(prevModules => prevModules.map(m =>
+        m.id === moduleId ? { ...m, pageIds: prev } : m
+      ));
+      console.error("attachPageToModule 失败:", e);
+    }
+  };
+
   /* ── Page CRUD ── */
   const handleCreatePage = async () => {
     if (!appId || !newPageName.trim()) return;
     setCreating(true);
     try {
-      // Create a local page since backend API may not exist
+      // 调用后端真实 API 创建页面, 拿到服务端返回的 page (含真实 id)
+      const created = await appsApi.createPage(appId, {
+        name: newPageName.trim(),
+        type: newPageType as string,
+        config: {},
+      });
+      // 用后端数据刷新列表, 避免本地插入在重新加载时被覆盖
+      const freshList = await appsApi.listPages(appId);
+      setPages(freshList || []);
+      setNewPageDialogOpen(false);
+      setNewPageName("");
+      setNewPageType("lowcode");
+      window.dispatchEvent(new CustomEvent("mp:pages-changed", { detail: { appId, kind: "create", pageId: created?.id } }));
+      // 选中后端返回的页面, 进入编辑器
+      const realPage: AppPage = created || {
+        id: `local_${Date.now()}`,
+        name: newPageName.trim(),
+        type: newPageType as string,
+        config: {},
+        created_at: new Date().toISOString(),
+      };
+      // 如果是从自定义模块触发的, 把页面 id 挂到该模块下
+      if (newPageModuleId) attachPageToModule(realPage.id, newPageModuleId);
+      setSelectedPage(realPage);
+      setEditingPageId(realPage.id);
+      setNewPageModuleId(null);
+    } catch (e) {
+      console.error("创建页面失败:", e);
+      // 即使后端失败也回退到本地保存, 不丢失用户输入
       const localPage: AppPage = {
         id: `local_${Date.now()}`,
         name: newPageName.trim(),
@@ -826,11 +1222,24 @@ export default function Pages() {
       setNewPageDialogOpen(false);
       setNewPageName("");
       setNewPageType("lowcode");
-      // Navigate to the new page
+      if (newPageModuleId) attachPageToModule(localPage.id, newPageModuleId);
       setSelectedPage(localPage);
       setEditingPageId(localPage.id);
-    } catch (e) { console.error("创建页面失败:", e); }
-    finally { setCreating(false); }
+      setNewPageModuleId(null);
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  /** 同步编辑器中的页面名称到左侧列表, 并在保存时把最新名称一并持久化 */
+  const handleEditorPageNameChange = (name: string) => {
+    editor.setPageName(name);
+    editor.markDirty();
+    if (selectedPage) {
+      const updated: AppPage = { ...selectedPage, name };
+      setSelectedPage(updated);
+      setPages(prev => prev.map(p => p.id === updated.id ? updated : p));
+    }
   };
 
   const handleDuplicatePage = async (page: AppPage) => {
@@ -838,6 +1247,7 @@ export default function Pages() {
     try {
       await appsApi.createPage(appId, { name: `${page.name} (副本)`, type: page.type, config: page.config });
       await loadPages();
+      window.dispatchEvent(new CustomEvent("mp:pages-changed", { detail: { appId, kind: "duplicate", pageId: page.id } }));
     } catch (e) { console.error("复制页面失败:", e); }
   };
 
@@ -857,6 +1267,7 @@ export default function Pages() {
         setEditingPageId(null);
       }
       await loadPages();
+      window.dispatchEvent(new CustomEvent("mp:pages-changed", { detail: { appId, kind: "delete", pageId: deletingPage.id } }));
     } catch (e) { console.error("删除页面失败:", e); }
     finally { setDeleting(false); setDeleteDialogOpen(false); setDeletingPage(null); }
   };
@@ -889,7 +1300,7 @@ export default function Pages() {
           <div className="flex items-center gap-2">
             <GripVertical className="size-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
             <span className="text-xs font-medium text-muted-foreground">{comp.label}</span>
-            <span className="text-[10px] text-muted-foreground/50 font-mono">{comp.id.slice(-6)}</span>
+            <span className="text-xs text-muted-foreground/50 font-mono">{comp.id.slice(-6)}</span>
           </div>
           <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
             {idx > 0 && (
@@ -926,8 +1337,9 @@ export default function Pages() {
   return (
     <div className="flex flex-col gap-0 p-6 h-[calc(100vh-100px)]">
       <PageHeader
-        title="页面"
-        description="管理应用页面结构"
+        title={appName}
+        description="页面"
+        onBack={() => navigate(`/apps/${appId}/overview`)}
         action={
           <Button className="gap-2" onClick={() => setNewPageDialogOpen(true)}>
             <Plus className="size-4" /> 新建页面
@@ -955,11 +1367,11 @@ export default function Pages() {
             </div>
           </div>
 
-          {/* Module Section Header: 模块 + add button */}
+          {/* Module Section Header: 模块 + 新建模块按钮 (创建分组, 不创建具体页面) */}
           <div className="flex items-center justify-between px-4 py-1.5">
             <span className="text-xs font-semibold text-muted-foreground">模块</span>
             <button className="p-0.5 rounded hover:bg-muted text-muted-foreground" title="新建模块"
-              onClick={() => setNewPageDialogOpen(true)}>
+              onClick={openNewModuleDialog}>
               <Plus className="size-3.5" />
             </button>
           </div>
@@ -970,7 +1382,7 @@ export default function Pages() {
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="size-5 animate-spin text-muted-foreground" />
               </div>
-            ) : pages.length === 0 ? (
+            ) : pages.length === 0 && customModules.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
                 <FolderOpen className="size-8 mb-2 opacity-30" />
                 <p className="text-xs">暂无页面</p>
@@ -980,140 +1392,319 @@ export default function Pages() {
               </div>
             ) : (
               <div className="space-y-0.5">
-                {/* Root module node */}
-                <div className="flex items-center gap-1.5 px-2 py-1 text-xs font-semibold text-muted-foreground">
-                  <ChevronDown className="size-3" />
-                  <FolderOpen className="size-3.5 text-amber-500" />
-                  <span>{appName}</span>
-                </div>
-
-                {/* Category groups */}
-                {groupedByCategory
-                  .filter(cat => cat.pages.length > 0 || cat.id === "business-model" || !search)
-                  .map(cat => {
-                    const catPages = search
-                      ? cat.pages.filter(p => p.name.includes(search))
-                      : cat.pages;
-                    const isBusinessModel = cat.id === "business-model";
-                    const filteredEntities = isBusinessModel
-                      ? ontologyObjects.filter(o => !search || o.label.includes(search) || o.name.includes(search))
-                      : [];
-                    const itemCount = isBusinessModel ? filteredEntities.length : catPages.length;
-
-                    return (
-                      <div key={cat.id}>
-                        {/* Category header (expandable) */}
-                        <div
-                          onClick={() => toggleCategory(cat.id)}
-                          className="flex items-center gap-2 pl-6 pr-2 py-1.5 rounded cursor-pointer text-sm hover:bg-muted/50 transition-colors"
+                {/* ── 自定义模块 (用户在"模块"行 + 创建的分组) — 与内置分类同级展示 ── */}
+                {customModules.length > 0 && customModules.map(mod => {
+                  const isOpen = mod.expanded;
+                  // 模块根节点只显示未被任何子分类“认领”的页面，避免分类下已显示的页面重复出现在模块尾部
+                  const subTypeFilters = new Set((mod.subCategories || []).flatMap(s => s.typeFilter || []));
+                  const modPages = pages.filter(p => {
+                    if (!mod.pageIds?.includes(p.id)) return false;
+                    return !subTypeFilters.has(p.type || "lowcode");
+                  });
+                  return (
+                    <div key={mod.id}>
+                      {/* 模块行 header (与内置分类同缩进 pl-6, 同一层级) */}
+                      <div
+                        onClick={() => {
+                          setCustomModules(prev => prev.map(m => m.id === mod.id ? { ...m, expanded: !m.expanded } : m));
+                        }}
+                        className="group flex items-center gap-2 pl-6 pr-2 py-1.5 rounded cursor-pointer text-sm hover:bg-muted/50 transition-colors"
+                      >
+                        {isOpen ? (
+                          <ChevronDown className="size-3 text-muted-foreground shrink-0" />
+                        ) : (
+                          <ChevronRight className="size-3 text-muted-foreground shrink-0" />
+                        )}
+                        <span className={`${mod.color} shrink-0`}>{mod.icon}</span>
+                        <span className="flex-1 text-sm font-medium truncate">{mod.label}</span>
+                        {modPages.length > 0 && (
+                          <span className="text-xs text-muted-foreground mr-1">{modPages.length}</span>
+                        )}
+                        {/* 模块下的 + 按钮: 在该模块下增加具体页面 (固定 custom 类型, 避免被自动归类到子分类) */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openNewPageDialogWithType("custom", mod.id, ["custom"]);
+                          }}
+                          className="p-0.5 rounded text-muted-foreground hover:bg-primary/10 hover:text-primary opacity-0 group-hover:opacity-100 transition-opacity"
+                          title={`在「${mod.label}」下新建页面`}
                         >
-                          {cat.expanded ? (
-                            <ChevronDown className="size-3 text-muted-foreground shrink-0" />
-                          ) : (
-                            <ChevronRight className="size-3 text-muted-foreground shrink-0" />
-                          )}
-                          <span className={`${cat.color} shrink-0`}>{cat.icon}</span>
-                          <span className="flex-1 text-[13px] font-medium">{cat.label}</span>
-                          {itemCount > 0 && (
-                            <span className="text-[10px] text-muted-foreground">{itemCount}</span>
-                          )}
-                        </div>
-
-                        {/* Business Model: show ontology objects */}
-                        {isBusinessModel && cat.expanded && filteredEntities.length > 0 && (
-                          <div className="space-y-0.5">
-                            {filteredEntities.map(obj => {
-                              const isSelected = selectedEntity?.id === obj.id;
-                              return (
-                                <div key={obj.id}
-                                  onClick={() => handleSelectEntity(obj)}
-                                  className={`group flex items-center gap-2 pl-14 pr-2 py-1 rounded cursor-pointer text-[13px] transition-colors ${
-                                    isSelected
-                                      ? "bg-primary/10 text-primary font-medium"
-                                      : "hover:bg-muted/50 text-foreground"
-                                  }`}
-                                >
-                                  <span className={`shrink-0 ${isSelected ? "text-primary" : "text-red-500"}`}>
-                                    <Box className="size-3.5" />
-                                  </span>
-                                  <span className="flex-1 truncate">{obj.label || obj.name}</span>
-                                  <span className="text-[10px] text-muted-foreground bg-muted rounded px-1.5 py-0.5 shrink-0">
-                                    {obj.properties_count} 字段
-                                  </span>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        )}
-
-                        {/* Other categories: show pages (as before) */}
-                        {!isBusinessModel && cat.expanded && catPages.length > 0 && (
-                          <div className="space-y-0.5">
-                            {catPages.map(page => {
-                              const meta = getPageMeta(page.type);
-                              const isSelected = selectedPage?.id === page.id;
-                              return (
-                                <div key={page.id}
-                                  onClick={() => { setSelectedPage(page); setEditingPageId(page.id); }}
-                                  className={`group flex items-center gap-2 pl-14 pr-2 py-1 rounded cursor-pointer text-[13px] transition-colors ${
-                                    isSelected
-                                      ? "bg-primary/10 text-primary font-medium"
-                                      : "hover:bg-muted/50 text-foreground"
-                                  }`}
-                                >
-                                  <span className={`shrink-0 ${isSelected ? "text-primary" : meta.color}`}>
-                                    {renderPageIcon(page.type)}
-                                  </span>
-                                  <span className="flex-1 truncate">{page.name}</span>
-                                  {/* Hover actions */}
-                                  <div className={`flex gap-0.5 ${isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100"} transition-opacity`}>
-                                    <button
-                                      onClick={(e) => { e.stopPropagation(); setSelectedPage(page); setEditingPageId(page.id); }}
-                                      className="p-0.5 rounded hover:bg-muted" title="编辑">
-                                      <Edit className="size-3" />
-                                    </button>
-                                    <button
-                                      onClick={(e) => handleDeleteClick(page, e)}
-                                      className="p-0.5 rounded hover:bg-destructive/20 text-destructive" title="删除">
-                                      <Trash2 className="size-3" />
-                                    </button>
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        )}
+                          <Plus className="size-3.5" />
+                        </button>
+                        {/* 删除模块 */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDeletingModule(mod);
+                            setDeleteModuleDialogOpen(true);
+                          }}
+                          className="p-0.5 rounded text-muted-foreground hover:bg-destructive/20 hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                          title="删除模块"
+                        >
+                          <Trash2 className="size-3.5" />
+                        </button>
                       </div>
-                    );
-                  })}
 
-                {/* Uncategorized pages (shown in default category) */}
-                {uncategorizedPages.length > 0 && (
-                  <div>
-                    <div
-                      onClick={() => toggleCategory("uncategorized")}
-                      className="flex items-center gap-2 pl-6 pr-2 py-1.5 rounded cursor-pointer text-sm hover:bg-muted/50 transition-colors"
-                    >
-                      <ChevronRight className="size-3 text-muted-foreground shrink-0" />
-                      <span className="text-gray-400 shrink-0"><FileText className="size-3.5" /></span>
-                      <span className="flex-1 text-[13px] font-medium">其他页面</span>
-                      <span className="text-[10px] text-muted-foreground">{uncategorizedPages.length}</span>
+                      {/* 模块下的子分类 (业务模型/表单页面/...等 7 个默认子分类) */}
+                      {isOpen && (mod.subCategories || []).map(sub => {
+                        // 业务模型是特殊对象分类：展示 ontology 对象，而不是页面
+                        const isObjectCategory = sub.typeFilter.length === 0;
+                        const subPages = isObjectCategory ? [] : pages.filter(p => {
+                          if (!mod.pageIds?.includes(p.id)) return false;
+                          return sub.typeFilter.includes(p.type || "lowcode");
+                        });
+                        const subObjects = isObjectCategory
+                          ? ontologyObjects.filter(o => (sub.objectIds || []).includes(o.id))
+                          : [];
+                        const subItemCount = isObjectCategory ? subObjects.length : subPages.length;
+                        const subOpen = sub.expanded;
+                        return (
+                          <div key={sub.id}>
+                            {/* 子分类行 header */}
+                            <div
+                              onClick={() => {
+                                setCustomModules(prev => prev.map(m => {
+                                  if (m.id !== mod.id) return m;
+                                  return {
+                                    ...m,
+                                    subCategories: (m.subCategories || []).map(sc =>
+                                      sc.id === sub.id ? { ...sc, expanded: !sc.expanded } : sc
+                                    ),
+                                  };
+                                }));
+                              }}
+                              className="group flex items-center gap-2 pl-10 pr-2 py-1 rounded cursor-pointer text-sm hover:bg-muted/50 transition-colors"
+                            >
+                              {subOpen ? (
+                                <ChevronDown className="size-3 text-muted-foreground shrink-0" />
+                              ) : (
+                                <ChevronRight className="size-3 text-muted-foreground shrink-0" />
+                              )}
+                              <span className={`${sub.color} shrink-0`}>{sub.icon}</span>
+                              <span className="flex-1 truncate">{sub.label}</span>
+                              {subItemCount > 0 && (
+                                <span className="text-xs text-muted-foreground mr-1">{subItemCount}</span>
+                              )}
+                              {/* 子分类的 + 按钮: 页面分类固定页面类型，业务模型分类创建 ontology 对象 */}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (isObjectCategory) {
+                                    openNewObjectDialog(mod.id);
+                                  } else {
+                                    openNewPageDialogWithType(sub.typeFilter[0], mod.id, sub.typeFilter);
+                                  }
+                                }}
+                                className="p-0.5 rounded text-muted-foreground hover:bg-primary/10 hover:text-primary opacity-0 group-hover:opacity-100 transition-opacity"
+                                title={isObjectCategory ? `在「${sub.label}」下新建对象` : `在「${sub.label}」下新建页面`}
+                              >
+                                <Plus className="size-3.5" />
+                              </button>
+                            </div>
+                            {/* 子分类下的页面列表 */}
+                            {subOpen && subPages.length > 0 && (
+                              <div className="space-y-0.5">
+                                {subPages.map(page => {
+                                  const meta = getPageMeta(page.type);
+                                  const isSelected = selectedPage?.id === page.id;
+                                  return (
+                                    <div key={page.id}
+                                      onClick={() => { setSelectedPage(page); setEditingPageId(page.id); }}
+                                      className={`group flex items-center gap-2 pl-16 pr-2 py-1 rounded cursor-pointer text-sm transition-colors ${
+                                        isSelected ? "bg-primary/10 text-primary font-medium" : "hover:bg-muted/50 text-foreground"
+                                      }`}
+                                    >
+                                      <span className={`shrink-0 ${isSelected ? "text-primary" : meta.color}`}>{renderPageIcon(page.type)}</span>
+                                      <span className="flex-1 truncate">{page.name}</span>
+                                      <div className={`flex gap-0.5 ${isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100"} transition-opacity`}>
+                                        <button
+                                          onClick={(e) => { e.stopPropagation(); setSelectedPage(page); setEditingPageId(page.id); }}
+                                          className="p-0.5 rounded hover:bg-muted" title="编辑">
+                                          <Edit className="size-3" />
+                                        </button>
+                                        <button
+                                          onClick={(e) => handleDeleteClick(page, e)}
+                                          className="p-0.5 rounded hover:bg-destructive/20 text-destructive" title="删除">
+                                          <Trash2 className="size-3" />
+                                        </button>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                            {/* 业务模型：对象列表 */}
+                            {subOpen && isObjectCategory && subObjects.length > 0 && (
+                              <div className="space-y-0.5">
+                                {subObjects.map(obj => {
+                                  const isSelected = selectedEntity?.id === obj.id;
+                                  return (
+                                    <div key={obj.id}
+                                      onClick={() => handleSelectEntity(obj)}
+                                      className={`group flex items-center gap-2 pl-16 pr-2 py-1 rounded cursor-pointer text-sm transition-colors ${
+                                        isSelected ? "bg-primary/10 text-primary font-medium" : "hover:bg-muted/50 text-foreground"
+                                      }`}
+                                    >
+                                      <Box className={`shrink-0 size-3.5 ${isSelected ? "text-primary" : "text-red-500"}`} />
+                                      <span className="flex-1 truncate">{obj.label || obj.name}</span>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+
+                      {/* 模块下的页面列表 (与内置分类下的页面同缩进 pl-14) */}
+                      {isOpen && modPages.length > 0 && (
+                        <div className="space-y-0.5">
+                          {modPages.map((page, pageIdx) => {
+                            const meta = getPageMeta(page.type);
+                            const isSelected = selectedPage?.id === page.id;
+                            return (
+                              <div key={page.id}
+                                onClick={() => { setSelectedPage(page); setEditingPageId(page.id); }}
+                                className={`group flex items-center gap-2 pl-14 pr-2 py-1 rounded cursor-pointer text-sm transition-colors ${
+                                  isSelected ? "bg-primary/10 text-primary font-medium" : "hover:bg-muted/50 text-foreground"
+                                }`}
+                              >
+                                <span className={`shrink-0 ${isSelected ? "text-primary" : meta.color}`}>{renderPageIcon(page.type)}</span>
+                                <span className="flex-1 truncate">{page.name}</span>
+                                <div className={`flex gap-0.5 ${isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100"} transition-opacity`}>
+                                  {/* P2-5: 上移 / 下移 / 复制 */}
+                                  <button
+                                    onClick={async (e) => {
+                                      e.stopPropagation();
+                                      if (!appId) return;
+                                      const target = modPages[pageIdx - 1];
+                                      if (!target) return;
+                                      try {
+                                        await appsApi.updatePage(appId, page.id, { sort_order: target.sort_order });
+                                        await appsApi.updatePage(appId, target.id, { sort_order: page.sort_order });
+                                        await loadPages();
+                                      } catch (err) { console.error("上移失败:", err); }
+                                    }}
+                                    className="p-0.5 rounded hover:bg-muted" title="上移"
+                                    disabled={pageIdx === 0}
+                                  >
+                                    <ChevronUp className="size-3" />
+                                  </button>
+                                  <button
+                                    onClick={async (e) => {
+                                      e.stopPropagation();
+                                      if (!appId) return;
+                                      const target = modPages[pageIdx + 1];
+                                      if (!target) return;
+                                      try {
+                                        await appsApi.updatePage(appId, page.id, { sort_order: target.sort_order });
+                                        await appsApi.updatePage(appId, target.id, { sort_order: page.sort_order });
+                                        await loadPages();
+                                      } catch (err) { console.error("下移失败:", err); }
+                                    }}
+                                    className="p-0.5 rounded hover:bg-muted" title="下移"
+                                    disabled={pageIdx === modPages.length - 1}
+                                  >
+                                    <ChevronDown className="size-3" />
+                                  </button>
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); handleDuplicatePage(page); }}
+                                    className="p-0.5 rounded hover:bg-muted" title="复制">
+                                    <Copy className="size-3" />
+                                  </button>
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); setSelectedPage(page); setEditingPageId(page.id); }}
+                                    className="p-0.5 rounded hover:bg-muted" title="编辑">
+                                    <Edit className="size-3" />
+                                  </button>
+                                  <button
+                                    onClick={(e) => handleDeleteClick(page, e)}
+                                    className="p-0.5 rounded hover:bg-destructive/20 text-destructive" title="删除">
+                                    <Trash2 className="size-3" />
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                      {isOpen && modPages.length === 0 && (mod.subCategories || []).length === 0 && (
+                        <div className="pl-14 pr-2 py-1 text-xs text-muted-foreground/70 italic">
+                          暂无页面, 点击右侧 + 新建
+                        </div>
+                      )}
                     </div>
-                    {search && uncategorizedPages.map(page => {
-                      const meta = getPageMeta(page.type);
-                      const isSelected = selectedPage?.id === page.id;
-                      return (
-                        <div key={page.id}
-                          onClick={() => { setSelectedPage(page); setEditingPageId(page.id); }}
-                          className={`group flex items-center gap-2 pl-14 pr-2 py-1 rounded cursor-pointer text-[13px] transition-colors ${
-                            isSelected ? "bg-primary/10 text-primary font-medium" : "hover:bg-muted/50 text-foreground"
-                          }`}
+                  );
+                })}
+
+                {/* 内置顶级分类 (业务模型/表单页面/...) 已隐藏 — 统一通过 customModules → subCategories 展示 */}
+
+                {/* P5-BUGFIX: 未分类页面 (mirror 自动建 / 创建未选 module) 单独组显示 */}
+                {uncategorizedPages.length > 0 && (
+                  <div className="mt-1">
+                    <div
+                      className="group flex items-center gap-2 pl-6 pr-2 py-1.5 rounded cursor-pointer text-sm hover:bg-muted/50"
+                      onClick={() => setCustomModules(prev => {
+                        const flag = !prev.find(m => m.id === "__uncategorized__")?.expanded;
+                        if (prev.find(m => m.id === "__uncategorized__")) {
+                          return prev.map(m => m.id === "__uncategorized__" ? { ...m, expanded: flag } : m);
+                        }
+                        return [...prev, { id: "__uncategorized__", label: "未分类", icon: "📦", color: "text-slate-500", bgColor: "bg-slate-50", pageIds: [], expanded: true }];
+                      })}
+                    >
+                      {(() => {
+                        const u = customModules.find(m => m.id === "__uncategorized__");
+                        const expanded = u?.expanded ?? true;
+                        return expanded ? <ChevronDown className="size-3 text-muted-foreground shrink-0" /> : <ChevronRight className="size-3 text-muted-foreground shrink-0" />;
+                      })()}
+                      <span className="text-slate-500 shrink-0">📦</span>
+                      <span className="flex-1 text-sm font-medium truncate">未分类</span>
+                      <span className="text-xs text-muted-foreground mr-1">{uncategorizedPages.length}</span>
+                      {/* 一键迁移到第一个 module */}
+                      {customModules.some(m => m.id !== "__uncategorized__") && (
+                        <button
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            const firstMod = customModules.find(m => m.id !== "__uncategorized__");
+                            if (!firstMod) return;
+                            const targetIds = [...(firstMod.pageIds || []), ...uncategorizedPages.map(p => p.id)];
+                            // 去重
+                            const unique = [...new Set(targetIds)];
+                            try {
+                              await appsApi.updateModule(appId, firstMod.id, { pageIds: unique });
+                              setCustomModules(prev => prev.map(m => m.id === firstMod.id ? { ...m, pageIds: unique } : m));
+                            } catch (err) {
+                              console.error("迁移未分类页面失败:", err);
+                            }
+                          }}
+                          className="p-0.5 rounded text-muted-foreground hover:bg-primary/10 hover:text-primary opacity-0 group-hover:opacity-100 transition-opacity"
+                          title="一键迁移到第一个模块"
                         >
-                          <span className={`shrink-0 ${isSelected ? "text-primary" : meta.color}`}>{renderPageIcon(page.type)}</span>
-                          <span className="flex-1 truncate">{page.name}</span>
+                          <ChevronRight className="size-3.5" />
+                        </button>
+                      )}
+                    </div>
+                    {(() => {
+                      const u = customModules.find(m => m.id === "__uncategorized__");
+                      const expanded = u?.expanded ?? true;
+                      if (!expanded) return null;
+                      return (
+                        <div className="space-y-0.5">
+                          {uncategorizedPages.map((p) => (
+                            <div
+                              key={p.id}
+                              onClick={() => { setSelectedPage(p); setEditingPageId(p.id); }}
+                              className={`group flex items-center gap-2 pl-10 pr-2 py-1 rounded cursor-pointer text-sm ${selectedPage?.id === p.id ? "bg-primary/10 text-primary" : "hover:bg-muted/50"}`}
+                              title={`${p.name} (${p.type || "lowcode"})`}
+                            >
+                              <span className="text-sm w-4 text-center shrink-0">{p.icon || "📄"}</span>
+                              <span className="flex-1 truncate">{p.name}</span>
+                              <span className="text-xs text-muted-foreground shrink-0">{p.type || "lowcode"}</span>
+                            </div>
+                          ))}
                         </div>
                       );
-                    })}
+                    })()}
                   </div>
                 )}
               </div>
@@ -1126,7 +1717,7 @@ export default function Pages() {
           {selectedPage ? (
             <EditorShell
               pageName={editor.pageName}
-              onPageNameChange={(name) => { editor.setPageName(name); editor.markDirty(); }}
+              onPageNameChange={handleEditorPageNameChange}
               pageType={selectedPage.type}
               dirty={editor.dirty}
               currentVersion={editor.currentVersion}
@@ -1144,12 +1735,20 @@ export default function Pages() {
               ) : selectedPage.type === "dashboard" || selectedPage.type === "report" ? (
                 <ReportEditor components={editor.components} setComponents={editor.setComponents} setDirty={editor.setDirty} />
               ) : selectedPage.type === "workflow" ? (
-                <ProcessDesignerV2 className="flex-1" />
+                (() => {
+                  const mod = customModules.find(m => m.pageIds?.includes(selectedPage.id));
+                  const opts = mod
+                    ? pages
+                        .filter(p => p.id !== selectedPage.id && mod.pageIds?.includes(p.id))
+                        .map(p => ({ value: p.name, label: p.name }))
+                    : [];
+                  return <ProcessDesignerV2 className="flex-1" formPageOptions={opts} />;
+                })()
               ) : selectedPage.type === "bi" ? (
                 <BIEditor components={editor.components} setComponents={editor.setComponents} setDirty={editor.setDirty} />
               ) : (
                 /* Default: form/lowcode */
-                <FormLowCodeEditor components={editor.components} setComponents={editor.setComponents} setDirty={editor.setDirty} selectedCompId={editor.selectedCompId} setSelectedCompId={editor.setSelectedCompId} />
+                <FormLowCodeEditor components={editor.components} setComponents={editor.setComponents} setDirty={editor.setDirty} appId={appId} pageName={editor.pageName} selectedCompId={editor.selectedCompId} setSelectedCompId={editor.setSelectedCompId} />
               )}
             </EditorShell>
           ) : selectedEntity ? (
@@ -1171,14 +1770,14 @@ export default function Pages() {
                   </div>
                 </div>
                 <div className="ml-auto flex items-center gap-2">
-                  <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
                     selectedEntity.status === "active" || selectedEntity.status === "published"
                       ? "bg-green-50 text-green-600"
                       : "bg-muted text-muted-foreground"
                   }`}>
                     {selectedEntity.status === "active" || selectedEntity.status === "published" ? "已发布" : selectedEntity.status}
                   </span>
-                  <span className="text-[11px] text-muted-foreground">
+                  <span className="text-xs text-muted-foreground">
                     {entityProperties.length} 个字段
                   </span>
                 </div>
@@ -1234,7 +1833,7 @@ export default function Pages() {
                         >
                           <Table2 className="size-3.5" />
                           字段列表
-                          <span className="text-[10px] bg-muted rounded px-1.5 py-0.5">{entityProperties.length}</span>
+                          <span className="text-xs bg-muted rounded px-1.5 py-0.5">{entityProperties.length}</span>
                         </button>
                         <button
                           onClick={() => setActiveDetailTab("er")}
@@ -1251,6 +1850,7 @@ export default function Pages() {
 
                       {/* Tab content */}
                       {activeDetailTab === "fields" ? (
+                        <>
                         <table className="w-full text-sm">
                           <thead>
                             <tr className="border-b bg-muted/30">
@@ -1296,9 +1896,62 @@ export default function Pages() {
                             )}
                           </tbody>
                         </table>
+                        {/* ── 添加字段 ── */}
+                        <div className="border-t bg-muted/30 p-3">
+                          <div className="flex items-end gap-2">
+                            <div className="flex-1 min-w-0">
+                              <Label className="text-xs text-muted-foreground">字段名 *</Label>
+                              <Input
+                                value={newPropName}
+                                onChange={(e) => setNewPropName(e.target.value)}
+                                placeholder="如：phone"
+                                className="h-8 text-xs"
+                              />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <Label className="text-xs text-muted-foreground">显示名 *</Label>
+                              <Input
+                                value={newPropLabel}
+                                onChange={(e) => setNewPropLabel(e.target.value)}
+                                placeholder="如：手机号"
+                                className="h-8 text-xs"
+                              />
+                            </div>
+                            <div className="w-28">
+                              <Label className="text-xs text-muted-foreground">类型</Label>
+                              <select
+                                value={newPropType}
+                                onChange={(e) => setNewPropType(e.target.value)}
+                                className="h-8 w-full rounded-md border border-input bg-background px-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+                              >
+                                {PROPERTY_TYPES.map((t) => (
+                                  <option key={t} value={t}>{t}</option>
+                                ))}
+                              </select>
+                            </div>
+                            <label className="flex items-center gap-1 text-xs text-muted-foreground pb-1.5">
+                              <input
+                                type="checkbox"
+                                checked={newPropRequired}
+                                onChange={(e) => setNewPropRequired(e.target.checked)}
+                                className="rounded border-gray-300"
+                              />
+                              必填
+                            </label>
+                            <Button
+                              size="sm"
+                              onClick={handleAddProperty}
+                              disabled={addingProp || !newPropName.trim() || !newPropLabel.trim()}
+                            >
+                              {addingProp ? <Loader2 className="size-3 animate-spin" /> : <Plus className="size-3" />}
+                              添加
+                            </Button>
+                          </div>
+                        </div>
+                        </>
                       ) : (
                         <div className="p-4">
-                          <p className="text-[10px] text-muted-foreground mb-2">拖拽实体卡片可自由调整布局</p>
+                          <p className="text-xs text-muted-foreground mb-2">拖拽实体卡片可自由调整布局</p>
                           <ERDiagram
                             allObjects={ontologyObjects}
                             relations={ontologyRelations}
@@ -1338,13 +1991,20 @@ export default function Pages() {
                 placeholder="如：客户详情页、订单列表" autoFocus />
             </div>
             <div className="space-y-1.5">
-              <Label>页面类型</Label>
+              <Label>页面类型{newPageAllowedTypes ? "（已固定）" : ""}</Label>
               <div className="grid grid-cols-3 gap-2">
-                {PAGE_TYPE_OPTIONS.map((t) => (
-                  <button key={t.value} type="button" onClick={() => setNewPageType(t.value)}
+                {(newPageAllowedTypes
+                  ? PAGE_TYPE_OPTIONS.filter(t => newPageAllowedTypes.includes(t.value))
+                  : PAGE_TYPE_OPTIONS
+                ).map((t) => (
+                  <button
+                    key={t.value}
+                    type="button"
+                    onClick={() => setNewPageType(t.value)}
+                    disabled={!!newPageAllowedTypes}
                     className={`flex flex-col items-center gap-1.5 p-3 border rounded-lg transition-all ${
                       newPageType === t.value ? "border-primary bg-primary/5" : "hover:border-primary/50"
-                    }`}>
+                    } ${newPageAllowedTypes ? "cursor-default opacity-80" : ""}`}>
                     <div className={newPageType === t.value ? "text-primary" : "text-muted-foreground"}>{t.icon}</div>
                     <span className="text-xs font-medium">{t.label}</span>
                   </button>
@@ -1362,6 +2022,40 @@ export default function Pages() {
         </DialogContent>
       </Dialog>
 
+      {/* ── New Object Dialog (业务模型) ── */}
+      <Dialog open={newObjectDialogOpen} onOpenChange={setNewObjectDialogOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>新建业务对象</DialogTitle>
+            <DialogDescription>创建一个数据模型对象，之后可在字段列表中定义属性</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="new-object-name">对象标识 *</Label>
+              <Input id="new-object-name" value={newObjectName} onChange={(e) => setNewObjectName(e.target.value)}
+                placeholder="如：customer、order" autoFocus />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="new-object-label">对象名称 *</Label>
+              <Input id="new-object-label" value={newObjectLabel} onChange={(e) => setNewObjectLabel(e.target.value)}
+                placeholder="如：客户、订单" />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="new-object-desc">描述</Label>
+              <Input id="new-object-desc" value={newObjectDesc} onChange={(e) => setNewObjectDesc(e.target.value)}
+                placeholder="简要描述该业务对象" />
+            </div>
+          </div>
+          <DialogFooter>
+            <DialogClose asChild><Button variant="outline" disabled={creatingObject}>取消</Button></DialogClose>
+            <Button onClick={handleCreateObject} disabled={creatingObject || !newObjectName.trim() || !newObjectLabel.trim()}>
+              {creatingObject ? <Loader2 className="size-4 mr-1 animate-spin" /> : <Plus className="size-4 mr-1" />}
+              {creatingObject ? "创建中..." : "创建"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* ── Delete Dialog ── */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent>
@@ -1374,6 +2068,49 @@ export default function Pages() {
             <Button variant="destructive" onClick={handleConfirmDelete} disabled={deleting}>
               {deleting ? <Loader2 className="size-4 mr-1 animate-spin" /> : <Trash2 className="size-4 mr-1" />}
               {deleting ? "删除中..." : "确认删除"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── New Module Dialog (模块行 + 触发的对话框) ── */}
+      <Dialog open={newModuleDialogOpen} onOpenChange={setNewModuleDialogOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>新建模块</DialogTitle>
+            <DialogDescription>创建一个新的模块分组, 之后可在该模块下添加具体页面</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="new-module-name">模块名称 *</Label>
+              <Input id="new-module-name" value={newModuleName}
+                onChange={(e) => setNewModuleName(e.target.value)}
+                placeholder="如: 客户管理、订单中心" autoFocus
+                onKeyDown={(e) => { if (e.key === "Enter") handleCreateModule(); }} />
+            </div>
+          </div>
+          <DialogFooter>
+            <DialogClose asChild><Button variant="outline" disabled={creatingModule}>取消</Button></DialogClose>
+            <Button onClick={handleCreateModule} disabled={creatingModule || !newModuleName.trim()}>
+              {creatingModule ? <Loader2 className="size-4 mr-1 animate-spin" /> : <Plus className="size-4 mr-1" />}
+              {creatingModule ? "创建中..." : "创建"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Delete Module Dialog ── */}
+      <Dialog open={deleteModuleDialogOpen} onOpenChange={setDeleteModuleDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>删除模块</DialogTitle>
+            <DialogDescription>确定要删除模块「{deletingModule?.label}」吗？模块下的页面不会被删除, 它们会回到未分组状态。</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <DialogClose asChild><Button variant="outline">取消</Button></DialogClose>
+            <Button variant="destructive" onClick={handleConfirmDeleteModule}>
+              <Trash2 className="size-4 mr-1" />
+              确认删除
             </Button>
           </DialogFooter>
         </DialogContent>

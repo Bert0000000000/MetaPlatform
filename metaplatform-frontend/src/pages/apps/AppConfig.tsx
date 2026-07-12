@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { appsApi } from "@/lib/api";
+import { appsApi, apiKeysApi, type ApiKey } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/ui/stat";
@@ -42,7 +42,7 @@ const API_ENDPOINTS = [
 const METHOD_COLORS: Record<string, string> = {
   GET: "bg-green-100 text-green-700",
   POST: "bg-blue-100 text-blue-700",
-  PUT: "bg-orange-100 text-orange-700",
+  PUT: "bg-primary text-orange-700",
   DELETE: "bg-red-100 text-red-700",
   PATCH: "bg-purple-100 text-purple-700",
 };
@@ -107,6 +107,23 @@ export default function AppConfig() {
   const [config, setConfig] = useState<AppConfigState>(INITIAL_CONFIG);
   const [saving, setSaving] = useState(false);
   const [regeneratingKey, setRegeneratingKey] = useState(false);
+  const [currentKeyId, setCurrentKeyId] = useState<string | null>(null);
+  const [apiKeysList, setApiKeysList] = useState<ApiKey[]>([]);
+
+  const loadApiKeys = async (aid: string) => {
+    try {
+      const list = await apiKeysApi.list(aid);
+      setApiKeysList(Array.isArray(list) ? list : []);
+      // 默认选定最近一个未被撤销的 key
+      const firstActive = list?.find((k) => !k.revokedAt);
+      if (firstActive) setCurrentKeyId(firstActive.id);
+    } catch { setApiKeysList([]); }
+  };
+
+  const notifyConfigChanged = (kind: string, payload?: unknown) => {
+    if (!appId) return;
+    window.dispatchEvent(new CustomEvent("mp:configs-changed", { detail: { appId, kind, ...(payload ?? {}) } }));
+  };
   const [webhookDialogOpen, setWebhookDialogOpen] = useState(false);
   const [newWebhookUrl, setNewWebhookUrl] = useState("");
   const [newWebhookEvents, setNewWebhookEvents] = useState<string[]>(["instance.created"]);
@@ -116,6 +133,8 @@ export default function AppConfig() {
   useEffect(() => {
     if (!appId) return;
     let cancelled = false;
+    // 同步拉 API Key 列表 (用于创建/轮换按钮)
+    loadApiKeys(appId);
     appsApi
       .listConfig(appId)
       .then((items) => {
@@ -220,19 +239,39 @@ export default function AppConfig() {
 
   async function handleRegenerateKey() {
     setRegeneratingKey(true);
-    await new Promise((r) => setTimeout(r, 1000));
-    const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
-    let newKey = "mp_sk_live_";
-    for (let i = 0; i < 40; i++) newKey += chars[Math.floor(Math.random() * chars.length)];
-    setConfig((c) => ({ ...c, apiKey: newKey }));
     try {
-      if (appId) {
-        await appsApi.updateConfig(appId, 'apiKey', { value: newKey });
+      if (!appId) {
+        setToast("应用 ID 缺失");
+        return;
       }
-      setToast("API Key 已重新生成并保存");
+      // 真接后端: 使用 apiKeysApi.rotate 轮换当前 Key
+      let targetKeyId = currentKeyId;
+      // 若尚无 key, 先创建一个
+      if (!targetKeyId) {
+        const created = await apiKeysApi.create(appId, { label: "默认 API Key", scopes: ["read", "write"] });
+        targetKeyId = created.id;
+        setCurrentKeyId(created.id);
+        if (created.secret) {
+          setConfig((c) => ({ ...c, apiKey: created.secret! }));
+        }
+        await loadApiKeys(appId); // 刷新列表
+        window.dispatchEvent(new CustomEvent("mp:configs-changed", { detail: { appId, kind: "key-create", keyId: targetKeyId } }));
+        setToast("API Key 已生成");
+        return;
+      }
+      // 否则走 rotate
+      const res = await apiKeysApi.rotate(appId, targetKeyId);
+      targetKeyId = res.id;
+      setCurrentKeyId(targetKeyId);
+      if (res.secret) {
+        setConfig((c) => ({ ...c, apiKey: res.secret }));
+      }
+      await loadApiKeys(appId);
+      window.dispatchEvent(new CustomEvent("mp:configs-changed", { detail: { appId, kind: "key-rotate", keyId: targetKeyId } }));
+      setToast("API Key 已轮换并保存");
     } catch (e) {
-      console.error("保存 API Key 失败:", e);
-      setToast("API Key 已重新生成（后端同步失败）");
+      console.error("生成/轮换 Key 失败:", e);
+      setToast("生成 API Key 失败");
     } finally {
       setRegeneratingKey(false);
     }
@@ -593,7 +632,7 @@ export default function AppConfig() {
                       <button
                         key={preset.name}
                         type="button"
-                        className={`h-24 rounded-lg bg-gradient-to-r ${preset.color} flex items-end p-2 hover:ring-2 ring-primary transition-all`}
+                        className={`h-24 rounded-lg bg-primary ${preset.color} flex items-end p-2 hover:ring-2 ring-primary transition-all`}
                       >
                         <span className="text-xs font-medium text-white drop-shadow">{preset.name}</span>
                       </button>
@@ -772,16 +811,16 @@ export default function AppConfig() {
                   <div className="space-y-1">
                     {API_ENDPOINTS.map((ep, i) => (
                       <div key={i} className="flex items-center gap-3 p-2 hover:bg-muted rounded cursor-pointer group">
-                        <Badge className={`${METHOD_COLORS[ep.method]} font-mono text-[10px] w-16 justify-center`}>
+                        <Badge className={`${METHOD_COLORS[ep.method]} font-mono text-xs w-16 justify-center`}>
                           {ep.method}
                         </Badge>
                         <span className="font-mono text-xs flex-1">{ep.path}</span>
                         <span className="text-xs text-muted-foreground">{ep.desc}</span>
-                        <Badge variant={ep.auth === "公开" ? "outline" : "secondary"} className="text-[10px]">
+                        <Badge variant={ep.auth === "公开" ? "outline" : "secondary"} className="text-xs">
                           {ep.auth}
                         </Badge>
                         {ep.tags.map((t) => (
-                          <Badge key={t} variant="secondary" className="text-[10px]">{t}</Badge>
+                          <Badge key={t} variant="secondary" className="text-xs">{t}</Badge>
                         ))}
                       </div>
                     ))}
@@ -812,7 +851,7 @@ export default function AppConfig() {
                         </div>
                         <div className="flex gap-1 flex-wrap">
                           {wh.events.map((ev) => (
-                            <Badge key={ev} variant="secondary" className="text-[10px]">{ev}</Badge>
+                            <Badge key={ev} variant="secondary" className="text-xs">{ev}</Badge>
                           ))}
                         </div>
                       </div>
@@ -897,7 +936,7 @@ export default function AppConfig() {
                           <Copy className="size-3 mr-1" /> 复制
                         </Button>
                       </div>
-                      <pre className="p-3 text-xs font-mono bg-[#1e1e1e] text-green-400 overflow-auto max-h-48">
+                      <pre className="p-3 text-xs font-mono bg-card text-green-400 overflow-auto max-h-48">
                         {testResult.body || "(Empty Response)"}
                       </pre>
                     </div>
@@ -948,7 +987,7 @@ export default function AppConfig() {
                           <div className="flex items-center gap-2 pt-1 border-t">
                             <span className="text-xs text-muted-foreground">通知规则:</span>
                             {rules.map((rule) => (
-                              <Badge key={rule} variant="secondary" className="text-[10px]">{rule}</Badge>
+                              <Badge key={rule} variant="secondary" className="text-xs">{rule}</Badge>
                             ))}
                           </div>
                         )}
@@ -990,7 +1029,7 @@ export default function AppConfig() {
                         <span className="font-medium text-foreground">Provider:</span> {ssoProvider === "saml" ? "SAML 2.0" : ssoProvider === "oauth" ? "OAuth 2.0" : ssoProvider === "oidc" ? "OIDC" : "LDAP"}
                       </div>
                       <div className="text-xs text-muted-foreground">
-                        <span className="font-medium text-foreground">状态:</span> <Badge variant="default" className="text-[10px]">已连接</Badge>
+                        <span className="font-medium text-foreground">状态:</span> <Badge variant="default" className="text-xs">已连接</Badge>
                       </div>
                     </div>
                   )}
@@ -1335,15 +1374,18 @@ function EnvVarsTab({ appId }: { appId: string }) {
     await appsApi.createConfig(appId, { key: newKey.trim(), value: newValue, description: newDesc });
     setNewKey(""); setNewValue(""); setNewDesc("");
     await refresh();
+    notifyConfigChanged("create", { key: newKey.trim() });
   };
   const handleUpdate = async (row: Row, value: string) => {
     await appsApi.updateConfig(appId, row.key, { value });
     await refresh();
+    notifyConfigChanged("update", { key: row.key });
   };
   const handleDelete = async (row: Row) => {
     if (!window.confirm(`确定删除环境变量 "${row.key}"？`)) return;
     await appsApi.deleteConfig(appId, row.key);
     await refresh();
+    notifyConfigChanged("delete", { key: row.key });
   };
 
   return (

@@ -8,7 +8,8 @@ import { fileURLToPath } from "url";
 import path from "path";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DB_PATH = path.join(__dirname, "..", "metaplatform.db");
+const DATA_ROOT = process.env.METAPLATFORM_DATA_ROOT || path.join(__dirname, "..");
+const DB_PATH = path.join(DATA_ROOT, "metaplatform.db");
 
 const db = new Database(DB_PATH);
 
@@ -19,6 +20,18 @@ db.pragma("foreign_keys = ON");
 // ─── Schema ───────────────────────────────────────────────
 db.exec(`
   -- Users
+  -- ─────── 租户 (P0.2) — 灰度发布与多租户运维的最小表 ───────
+  CREATE TABLE IF NOT EXISTS tenants (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    code TEXT UNIQUE NOT NULL,
+    plan TEXT NOT NULL DEFAULT 'free',
+    status TEXT NOT NULL DEFAULT 'active',
+    description TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
   CREATE TABLE IF NOT EXISTS users (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
@@ -45,6 +58,11 @@ db.exec(`
     objects_count INTEGER DEFAULT 0,
     pages_count INTEGER DEFAULT 0,
     flows_count INTEGER DEFAULT 0,
+    modules_count INTEGER DEFAULT 0,        -- 持久化的页面模块数
+    forms_count INTEGER DEFAULT 0,         -- 表单设计数 (app_forms)
+    reports_count INTEGER DEFAULT 0,       -- 报表数 (app_reports)
+    dashboards_count INTEGER DEFAULT 0,     -- 仪表盘数 (app_dashboards)
+    integrations_count INTEGER DEFAULT 0,  -- 集成数 (app_integrations)
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
@@ -236,7 +254,182 @@ db.exec(`
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
 
+  -- App Page Modules (用户自建的页面树模块, Pages.tsx customModules)
+  CREATE TABLE IF NOT EXISTS app_modules (
+    id TEXT PRIMARY KEY,
+    app_id TEXT NOT NULL,
+    label TEXT NOT NULL,
+    icon TEXT,
+    color TEXT,
+    bg_color TEXT,
+    type_filter TEXT,
+    sort_order INTEGER DEFAULT 0,
+    config TEXT,
+    page_ids TEXT,                          -- JSON array of page ids attached to this module
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
+  -- App Integrations (webhook / SSO / IM)
+  CREATE TABLE IF NOT EXISTS app_integrations (
+    id TEXT PRIMARY KEY,
+    app_id TEXT NOT NULL,
+    type TEXT NOT NULL,                     -- 'webhook' | 'sso' | 'im'
+    platform TEXT,
+    name TEXT NOT NULL,
+    config_json TEXT,
+    status TEXT NOT NULL DEFAULT 'active',  -- 'active' | 'disabled'
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+  CREATE INDEX IF NOT EXISTS idx_app_integrations_app ON app_integrations(app_id);
+
+  -- App Forms (form designer persistence)
+  CREATE TABLE IF NOT EXISTS app_forms (
+    id TEXT PRIMARY KEY,
+    app_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    schema_json TEXT,
+    version INTEGER DEFAULT 1,
+    status TEXT NOT NULL DEFAULT 'draft',   -- 'draft' | 'published'
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+  CREATE INDEX IF NOT EXISTS idx_app_forms_app ON app_forms(app_id);
+
+  -- App Form Submissions (公开提交 / 内部收集两条路径共用)
+  CREATE TABLE IF NOT EXISTS form_submissions (
+    id TEXT PRIMARY KEY,
+    app_id TEXT NOT NULL,
+    form_id TEXT NOT NULL,
+    version INTEGER DEFAULT 1,
+    submitter_email TEXT,
+    submitter_name TEXT,
+    submitter_user_id TEXT,
+    values_json TEXT,             -- 原始 payload
+    metadata_json TEXT,           -- ip / ua / status / notes
+    status TEXT DEFAULT 'pending',  -- 'pending' | 'approved' | 'rejected'
+    submitted_at TEXT NOT NULL DEFAULT (datetime('now')),
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+  CREATE INDEX IF NOT EXISTS idx_form_submissions_app ON form_submissions(app_id);
+  CREATE INDEX IF NOT EXISTS idx_form_submissions_form ON form_submissions(form_id);
+
+  -- App Datasets (报表 + dashboard widgets 共享数据源)
+  CREATE TABLE IF NOT EXISTS app_datasets (
+    id TEXT PRIMARY KEY,
+    app_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    description TEXT,
+    source_type TEXT NOT NULL DEFAULT 'ontology_object',  -- 'ontology_object' | 'view' | 'sql' | 'form'
+    ontology_object_id TEXT,
+    sql_text TEXT,
+    form_id TEXT,
+    fields_json TEXT,             -- 字段映射: [{name, label, type}]
+    cache_ttl_seconds INTEGER DEFAULT 0,
+    created_by TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+  CREATE INDEX IF NOT EXISTS idx_app_datasets_app ON app_datasets(app_id);
+
+  -- Report runs (报表 / 仪表盘部件执行记录)
+  CREATE TABLE IF NOT EXISTS report_runs (
+    id TEXT PRIMARY KEY,
+    app_id TEXT NOT NULL,
+    report_id TEXT,
+    dashboard_id TEXT,
+    widget_id TEXT,
+    dataset_id TEXT,
+    status TEXT NOT NULL DEFAULT 'pending',  -- 'pending' | 'success' | 'failed'
+    error TEXT,
+    row_count INTEGER,
+    rows_json TEXT,             -- 最近一次执行的预览快照 (限 200 行)
+    started_at TEXT NOT NULL DEFAULT (datetime('now')),
+    finished_at TEXT
+  );
+  CREATE INDEX IF NOT EXISTS idx_report_runs_app ON report_runs(app_id);
+  CREATE INDEX IF NOT EXISTS idx_report_runs_report ON report_runs(report_id);
+  CREATE INDEX IF NOT EXISTS idx_report_runs_dashboard ON report_runs(dashboard_id);
+  CREATE TABLE IF NOT EXISTS app_reports (
+    id TEXT PRIMARY KEY,
+    app_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    dataset_id TEXT,
+    layout_json TEXT,
+    schedule_json TEXT,
+    status TEXT NOT NULL DEFAULT 'draft',
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+  CREATE INDEX IF NOT EXISTS idx_app_reports_app ON app_reports(app_id);
+
+  -- App Dashboards (dashboard persistence)
+  CREATE TABLE IF NOT EXISTS app_dashboards (
+    id TEXT PRIMARY KEY,
+    app_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    layout_json TEXT,
+    widgets_json TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+  CREATE INDEX IF NOT EXISTS idx_app_dashboards_app ON app_dashboards(app_id);
+
+  -- App Page Components (page editor component persistence)
+  CREATE TABLE IF NOT EXISTS app_page_components (
+    id TEXT PRIMARY KEY,
+    app_id TEXT NOT NULL,
+    page_id TEXT,
+    component_key TEXT NOT NULL,
+    props_json TEXT,
+    x INTEGER DEFAULT 0,
+    y INTEGER DEFAULT 0,
+    w INTEGER DEFAULT 0,
+    h INTEGER DEFAULT 0,
+    sort_order INTEGER DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+  CREATE INDEX IF NOT EXISTS idx_app_page_components_app ON app_page_components(app_id);
+
+  -- P2-1: 多用户协作
+  CREATE TABLE IF NOT EXISTS app_collaborators (
+    id TEXT PRIMARY KEY,
+    app_id TEXT NOT NULL,
+    user_id TEXT,
+    user_email TEXT,
+    user_name TEXT,
+    role TEXT NOT NULL DEFAULT 'editor',    -- owner / editor / viewer
+    invited_by TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+  CREATE INDEX IF NOT EXISTS idx_app_collaborators_app ON app_collaborators(app_id);
+  CREATE INDEX IF NOT EXISTS idx_app_collaborators_user ON app_collaborators(user_id);
+  CREATE INDEX IF NOT EXISTS idx_app_page_components_page ON app_page_components(page_id);
+
+  -- 兼容老的 app_modules (没有 page_ids 列): 热更新时一次性 ALTER 添加
+  -- 因 SQLite ALTER 不支持 ADD COLUMN IF NOT EXISTS, 用 pragma 探测后再执行
+
   -- App Configs
+  -- ─────── 应用级 API Key (P0.3 — AppConfig 重置 Key) ───────
+  CREATE TABLE IF NOT EXISTS app_api_keys (
+    id TEXT PRIMARY KEY,
+    app_id TEXT NOT NULL,
+    label TEXT NOT NULL,
+    secret_prefix TEXT NOT NULL,    -- 前 8 位 (明文) 用于回显
+    secret_hash TEXT NOT NULL,      -- bcrypt-like hash: SHA-256 + salt
+    secret_last4 TEXT NOT NULL,     -- 后 4 位
+    scopes TEXT,                    -- JSON array, e.g. ["read","write"]
+    last_used_at TEXT,
+    expires_at TEXT,
+    revoked_at TEXT,
+    rotated_from TEXT,              -- 上一个 key id (rotate 关系)
+    created_by TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
   CREATE TABLE IF NOT EXISTS app_configs (
     id TEXT PRIMARY KEY,
     app_id TEXT NOT NULL,
@@ -1310,6 +1503,125 @@ db.exec(`
 `);
 db.exec(`CREATE INDEX IF NOT EXISTS idx_api_keys_tenant  ON api_keys(tenant_id)`);
 db.exec(`CREATE INDEX IF NOT EXISTS idx_api_keys_prefix  ON api_keys(key_prefix)`);
+
+/* ────────────────────────────────────────────────────────────
+   Schema migrations (idempotent — only adds missing columns)
+   ──────────────────────────────────────────────────────────── */
+function columnsOf(table) {
+  return db.prepare(`PRAGMA table_info(${table})`).all().map(r => r.name);
+}
+function addColumnIfMissing(table, column, decl) {
+  if (!columnsOf(table).includes(column)) {
+    try {
+      db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${decl}`);
+      console.log(`[db-sqlite] ALTER TABLE ${table} ADD COLUMN ${column}`);
+    } catch (e) {
+      console.warn(`[db-sqlite] ALTER failed for ${table}.${column}:`, e.message);
+    }
+  }
+}
+addColumnIfMissing("app_modules", "page_ids", "TEXT");
+addColumnIfMissing("app_modules", "type_filter", "TEXT");
+addColumnIfMissing("app_public_aliases", "hit_count", "INTEGER DEFAULT 0");
+addColumnIfMissing("app_public_aliases", "last_hit_at", "TEXT");
+// dashboards 默认带 status 列
+addColumnIfMissing("app_dashboards", "status", "TEXT DEFAULT 'draft'");
+addColumnIfMissing("app_dashboards", "created_by", "TEXT");
+
+// applications 计数列幂等迁移 (旧 schema 上没有这些列)
+addColumnIfMissing("applications", "modules_count", "INTEGER DEFAULT 0");
+addColumnIfMissing("applications", "forms_count", "INTEGER DEFAULT 0");
+addColumnIfMissing("applications", "reports_count", "INTEGER DEFAULT 0");
+addColumnIfMissing("applications", "dashboards_count", "INTEGER DEFAULT 0");
+addColumnIfMissing("applications", "integrations_count", "INTEGER DEFAULT 0");
+addColumnIfMissing("app_versions", "created_by", "TEXT");
+addColumnIfMissing("app_versions", "updated_at", "TEXT DEFAULT (datetime('now'))");
+addColumnIfMissing("app_versions", "commit_message", "TEXT");
+addColumnIfMissing("app_versions", "snapshot_json", "TEXT");
+
+// P2: applications 标签与 owner 信息
+addColumnIfMissing("applications", "tags_json", "TEXT");
+addColumnIfMissing("applications", "owner_name", "TEXT");
+addColumnIfMissing("applications", "owner_email", "TEXT");
+addColumnIfMissing("applications", "expires_at", "TEXT");
+addColumnIfMissing("applications", "sort_order", "INTEGER DEFAULT 0");
+addColumnIfMissing("applications", "tenant_id", "TEXT");
+
+// P2-1: 多用户协作表 (兼容旧 schema 上表缺失的情况)
+addColumnIfMissing("app_collaborators", "id", "TEXT");
+addColumnIfMissing("app_collaborators", "user_id", "TEXT");
+addColumnIfMissing("app_collaborators", "user_email", "TEXT");
+addColumnIfMissing("app_collaborators", "user_name", "TEXT");
+addColumnIfMissing("app_collaborators", "role", "TEXT DEFAULT 'editor'");
+addColumnIfMissing("app_collaborators", "invited_by", "TEXT");
+addColumnIfMissing("app_collaborators", "created_at", "TEXT");
+
+// P1-10: 三个子表全部加 owner / created_by / status 列.
+addColumnIfMissing("app_forms", "created_by", "TEXT");
+addColumnIfMissing("app_forms", "updated_by", "TEXT");
+addColumnIfMissing("app_reports", "created_by", "TEXT");
+addColumnIfMissing("app_reports", "updated_by", "TEXT");
+addColumnIfMissing("app_dashboards", "created_by", "TEXT");
+addColumnIfMissing("app_dashboards", "updated_by", "TEXT");
+addColumnIfMissing("app_dashboards", "status", "TEXT DEFAULT 'draft'");
+
+// P2: 互相关联 (page.type === 'form'/'report'/'dashboard')
+addColumnIfMissing("app_pages", "form_id", "TEXT");
+addColumnIfMissing("app_pages", "report_id", "TEXT");
+addColumnIfMissing("app_pages", "dashboard_id", "TEXT");
+
+// P2-3: 应用公开访问别名 (slug → form/dashboard)
+try {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS app_public_aliases (
+      slug TEXT PRIMARY KEY,
+      app_id TEXT NOT NULL,
+      kind TEXT NOT NULL DEFAULT 'dashboard',
+      target_id TEXT NOT NULL,
+      status TEXT DEFAULT 'active',
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_app_public_aliases_app ON app_public_aliases(app_id);
+  `);
+} catch (e) {
+  console.warn('[db-sqlite] app_public_aliases table failed:', e?.message);
+}
+
+// app_integrations / app_forms / app_reports / app_dashboards / app_page_components
+// 表已经通过 CREATE TABLE IF NOT EXISTS 创建, 这里只兜底旧 db 上缺失的列
+addColumnIfMissing("app_integrations", "config_json", "TEXT");
+addColumnIfMissing("app_forms",        "schema_json", "TEXT");
+addColumnIfMissing("app_forms",        "version",     "INTEGER DEFAULT 1");
+addColumnIfMissing("app_reports",      "dataset_id",  "TEXT");
+addColumnIfMissing("app_reports",      "layout_json", "TEXT");
+addColumnIfMissing("app_reports",      "schedule_json","TEXT");
+addColumnIfMissing("app_dashboards",   "layout_json", "TEXT");
+addColumnIfMissing("app_dashboards",   "widgets_json","TEXT");
+addColumnIfMissing("app_page_components", "page_id",      "TEXT");
+addColumnIfMissing("app_page_components", "props_json",   "TEXT");
+addColumnIfMissing("app_page_components", "x",            "INTEGER DEFAULT 0");
+addColumnIfMissing("app_page_components", "y",            "INTEGER DEFAULT 0");
+addColumnIfMissing("app_page_components", "w",            "INTEGER DEFAULT 0");
+addColumnIfMissing("app_page_components", "h",            "INTEGER DEFAULT 0");
+addColumnIfMissing("app_page_components", "sort_order",   "INTEGER DEFAULT 0");
+
+// tenants seed: 为避免前端永远看到空租户, 在 db 启动时若无数据则插入 4 个示例
+(function seedTenants() {
+  const existing = db.prepare("SELECT COUNT(*) AS c FROM tenants").get();
+  if (existing.c > 0) return;
+  const now = new Date().toISOString();
+  const inserts = [
+    ["t-default", "默认租户",     "default",  "enterprise", "active", "平台默认租户"],
+    ["t-acme",    "Acme Corp",   "acme",     "enterprise", "active", "示例企业租户 1"],
+    ["t-globex",  "Globex",      "globex",   "pro",        "active", "示例企业租户 2"],
+    ["t-soylent", "Soylent Inc", "soylent",  "free",       "active", "示例企业租户 3"],
+  ];
+  const stmt = db.prepare(
+    `INSERT INTO tenants (id, name, code, plan, status, description, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+  );
+  for (const row of inserts) stmt.run(...row, now, now);
+})();
 
 // Idempotent column add for older databases that pre-date F4.6.14.
 (function migrateApiKeyRateLimit() {

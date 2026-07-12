@@ -91,7 +91,7 @@ export function AICoPilot({ pageType, pageName, onApplySuggestion, onClose }: AI
         <div className="flex items-center gap-1.5">
           <Bot className="size-4 text-primary" />
           <span className="text-xs font-semibold">AI 助手</span>
-          <Badge variant="secondary" className="text-[10px] py-0">
+          <Badge variant="secondary" className="text-xs py-0">
             Beta
           </Badge>
         </div>
@@ -103,14 +103,14 @@ export function AICoPilot({ pageType, pageName, onApplySuggestion, onClose }: AI
       </div>
 
       {/* Quick actions */}
-      <div className="flex gap-1 px-3 py-2 border-b overflow-x-auto">
+      <div className="flex gap-1 px-3 py-2 border-b overflow-x-auto scrollbar-none-x">
         {["生成页面框架", "添加搜索栏", "添加数据表格", "添加图表"].map((q) => (
           <button
             key={q}
             onClick={() => {
               setInput(q);
             }}
-            className="shrink-0 px-2 py-1 text-[10px] border rounded-full hover:bg-primary/5 hover:border-primary/30 transition-colors"
+            className="shrink-0 px-2 py-1 text-xs border rounded-full hover:bg-primary/5 hover:border-primary/30 transition-colors"
           >
             <Wand2 className="size-2.5 inline mr-0.5" />
             {q}

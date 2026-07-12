@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@import "@xyflow/react/dist/style.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -208,4 +209,142 @@ main::-webkit-scrollbar,
 main, .flex-1.overflow-y-auto {
   scrollbar-width: none;
   -ms-overflow-style: none;
+}
+
+/* ── 通用滚动条隐藏工具类 (任何带 overflow-auto/scroll 的元素都可以加) ── */
+.scrollbar-none {
+  scrollbar-width: none;            /* Firefox */
+  -ms-overflow-style: none;         /* IE/Edge legacy */
+}
+.scrollbar-none::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+/* 对横向滚动条更细致一点：保留纵向、隐藏横向 */
+.scrollbar-none-x {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scrollbar-none-x::-webkit-scrollbar {
+  height: 0;
+  display: none;
+}
+.scrollbar-none-x::-webkit-scrollbar:vertical {
+  width: 8px;                       /* 纵滚动条保留 */
+}
+
+/* ── React Flow 品牌化覆盖 (Lineage 画布) ────────────────────────────── */
+.react-flow {
+  --xy-background-color-default: var(--color-background, #fafbfc);
+  --xy-node-color-default: var(--color-foreground, #0f172a);
+  --xy-edge-stroke-default: var(--color-muted-foreground, #94a3b8);
+  --xy-edge-stroke-selected-default: var(--color-primary, #2563eb);
+  --xy-handle-background-color-default: var(--color-primary, #2563eb);
+  --xy-handle-border-color-default: var(--color-background, #ffffff);
+  --xy-selection-background-color-default: rgba(37, 99, 235, 0.08);
+  --xy-selection-border-default: 1px dashed var(--color-primary, #2563eb);
+}
+.react-flow .react-flow__panel {
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: 6px;
+  background: var(--color-background, #ffffff);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+.react-flow .react-flow__controls button {
+  background: transparent;
+  border-bottom: 1px solid var(--color-border, #e2e8f0);
+  color: var(--color-foreground, #0f172a);
+}
+.react-flow .react-flow__controls button:last-child { border-bottom: none; }
+.react-flow .react-flow__controls button:hover {
+  background: var(--color-muted, #f1f5f9);
+}
+.react-flow .react-flow__minimap {
+  border: 1px solid hsl(var(--border));
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 1px 4px hsl(var(--background) / 0.05);
+}
+.react-flow .react-flow__minimap-mask {
+  fill: hsl(var(--background) / 0.55);
+}
+.react-flow .react-flow__minimap-node {
+  fill: hsl(var(--muted-foreground) / 0.55);
+}
+.react-flow .react-flow__minimap-node.active {
+  fill: hsl(var(--primary));
+}
+.react-flow .react-flow__edge-path {
+  stroke-width: 1.5;
+}
+.react-flow .react-flow__edge.selected .react-flow__edge-path,
+.react-flow .react-flow__edge:focus .react-flow__edge-path {
+  stroke-width: 2;
+}
+
+/* LineageNode 自定义节点风格 —— 性能优化版
+ *   - hover 改用 box-shadow + ring 渐变，避免 transform 触发 layout
+ *   - dim 用 opacity + will-change: opacity 提升到 GPU 合成层
+ *   - drag 状态禁用 transition，节点随指针实时跟手不抖动
+ */
+.lineage-node {
+  font-size: 12px;
+  line-height: 1.3;
+  border-radius: var(--radius-md, 6px);
+  transition: box-shadow 120ms ease;
+  will-change: opacity, box-shadow;
+  contain: layout style paint;
+}
+.lineage-node:hover {
+  transform: none;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+}
+.lineage-node.selected {
+  outline: 2px solid var(--color-primary, #2563eb);
+  outline-offset: 2px;
+}
+.lineage-node.dim {
+  opacity: 0.25;
+  transition: opacity 200ms ease;
+}
+.lineage-node.active {
+  border-color: var(--color-primary, #2563eb);
+}
+/* 拖拽时禁用 transition，避免节点被鼠标跟随时抖动 */
+.react-flow__node.dragging .lineage-node {
+  transition: none;
+  cursor: grabbing;
+}
+.react-flow__node.dragging .lineage-node:hover {
+  transform: none;
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.18);
+}
+/* React Flow 画布的 transform 提示 - 启用 GPU 合成层让背景 dots 拖拽时只走 transform */
+.react-flow__viewport {
+  transform: translate3d(0, 0, 0);
+  will-change: transform;
+}
+/* Background dots 也升到 GPU 合成层 */
+.react-flow__background {
+  will-change: transform;
+  pointer-events: none;
+}
+.react-flow__minimap {
+  will-change: transform;
+  contain: paint;
+}
+.react-flow__controls {
+  contain: paint;
+}
+.lineage-node.error::after {
+  content: "";
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-destructive, #ef4444);
+  box-shadow: 0 0 0 2px var(--color-background, #ffffff);
 }

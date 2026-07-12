@@ -69,7 +69,7 @@ function applyOverrides(base: PageAgentConfig, override: AgentOverride | undefin
 // 状态映射 (与自定义员工 statusConfig 一致)
 const statusConfig = {
   online:   { color: "bg-green-500",  label: "在线" },
-  busy:     { color: "bg-yellow-500", label: "忙碌" },
+  busy:     { color: "bg-primary", label: "忙碌" },
   offline:  { color: "bg-gray-400",   label: "离线" },
 } as const;
 
@@ -180,7 +180,7 @@ export function PageAgentsTab() {
                       <Bot className="size-8 text-primary" />
                       <div className="flex items-center gap-1">
                         {isCustomized && (
-                          <Badge variant="secondary" className="text-[10px] h-4 px-1 bg-primary/10 text-primary border-0">
+                          <Badge variant="secondary" className="text-xs h-4 px-1 bg-primary/10 text-primary border-0">
                             已定制
                           </Badge>
                         )}

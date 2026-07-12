@@ -170,7 +170,7 @@ const PlatformConfig: React.FC = () => {
                     <TableCell>
                       <code className="text-xs font-mono">{config.key}</code>
                       {isFeatureFlag(config.key) && (
-                        <Badge variant="outline" className="ml-1.5 text-[10px]">功能开关</Badge>
+                        <Badge variant="outline" className="ml-1.5 text-xs">功能开关</Badge>
                       )}
                     </TableCell>
                     <TableCell className="text-sm">{config.configType || "string"}</TableCell>

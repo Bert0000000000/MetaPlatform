@@ -127,6 +127,21 @@ export interface AppTemplate {
   flows: string[];
 }
 
+export interface AppModule {
+  id: string;
+  appId: string;
+  label: string;
+  icon?: string;
+  color?: string;
+  bgColor?: string;
+  typeFilter?: string[];
+  pageIds?: string[];
+  sortOrder?: number;
+  config?: Record<string, unknown>;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export const appsApi = {
   list: (params?: { status?: string }) => {
     const qs = params?.status ? `?status=${params.status}` : "";
@@ -221,6 +236,23 @@ export const appsApi = {
     }),
   deleteConfig: (appId: string, key: string) =>
     request<{ deleted: string }>(`/apps/${appId}/config/${key}`, {
+      method: "DELETE",
+    }),
+
+  // App Modules
+  listModules: (appId: string) => request<AppModule[]>(`/apps/${appId}/modules`),
+  createModule: (appId: string, data: Partial<AppModule>) =>
+    request<AppModule>(`/apps/${appId}/modules`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  updateModule: (appId: string, moduleId: string, data: Partial<AppModule>) =>
+    request<AppModule[]>(`/apps/${appId}/modules/${moduleId}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+  deleteModule: (appId: string, moduleId: string) =>
+    request<AppModule[]>(`/apps/${appId}/modules/${moduleId}`, {
       method: "DELETE",
     }),
 
@@ -1091,6 +1123,171 @@ export const marketApi = {
   },
 };
 
+// ─── Public Market ─────────────────────────────────────
+export const publicApi = {
+  listPublishedApps: async () => {
+    const res = await request<ApplicationLite[]>("/public/published-apps");
+    return res;
+  },
+  listFormSubmissions: (formId: string, params?: { page?: number; pageSize?: number; sortField?: string; sortOrder?: "asc" | "desc"; q?: string; status?: string }) =>
+    request<PaginatedSubmissions>(`/public/forms/${formId}/submissions?${submissionQueryString(params)}`),
+};
+
+// ─── App Collaborators ─────────────────────────────────
+export const appCollaboratorsApi = {
+  list: (appId: string) => request<AppCollaborator[]>(`/apps/${appId}/collaborators`),
+  create: (appId: string, data: { userEmail: string; userName?: string; role?: string }) =>
+    request<AppCollaborator>(`/apps/${appId}/collaborators`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  update: (appId: string, id: string, data: { role: string }) =>
+    request<AppCollaborator>(`/apps/${appId}/collaborators/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+  remove: (appId: string, id: string) =>
+    request<{ id: string }>(`/apps/${appId}/collaborators/${id}`, { method: "DELETE" }),
+};
+
+// ─── App Forms ─────────────────────────────────────────
+function submissionQueryString(params?: { page?: number; pageSize?: number; sortField?: string; sortOrder?: "asc" | "desc"; q?: string; status?: string }) {
+  const qs = new URLSearchParams();
+  if (params?.page) qs.set("page", String(params.page));
+  if (params?.pageSize) qs.set("pageSize", String(params.pageSize));
+  if (params?.sortField) qs.set("sortField", params.sortField);
+  if (params?.sortOrder) qs.set("sortOrder", params.sortOrder);
+  if (params?.q) qs.set("q", params.q);
+  if (params?.status) qs.set("status", params.status);
+  return qs.toString();
+}
+
+export const appFormsApi = {
+  list: (appId: string) => request<AppForm[]>(`/apps/${appId}/forms`),
+  get: (appId: string, formId: string) => request<AppForm>(`/apps/${appId}/forms/${formId}`),
+  create: (appId: string, data: Partial<AppForm>) =>
+    request<AppForm>(`/apps/${appId}/forms`, { method: "POST", body: JSON.stringify(data) }),
+  update: (appId: string, formId: string, data: Partial<AppForm>) =>
+    request<AppForm>(`/apps/${appId}/forms/${formId}`, { method: "PUT", body: JSON.stringify(data) }),
+  remove: (appId: string, formId: string) =>
+    request<{ id: string }>(`/apps/${appId}/forms/${formId}`, { method: "DELETE" }),
+  submissions: (appId: string, formId: string, limit = 50) =>
+    request<FormSubmission[]>(`/apps/${appId}/forms/${formId}/submissions?limit=${limit}`),
+  listSubmissions: (appId: string, formId: string, params?: { page?: number; pageSize?: number; sortField?: string; sortOrder?: "asc" | "desc"; q?: string; status?: string }) =>
+    request<PaginatedSubmissions>(`/apps/${appId}/forms/${formId}/submissions?${submissionQueryString(params)}`),
+};
+
+// ─── App Reports ───────────────────────────────────────
+export const appReportsApi = {
+  list: (appId: string) => request<AppReport[]>(`/apps/${appId}/reports`),
+  get: (appId: string, reportId: string) => request<AppReport>(`/apps/${appId}/reports/${reportId}`),
+  create: (appId: string, data: Partial<AppReport>) =>
+    request<AppReport>(`/apps/${appId}/reports`, { method: "POST", body: JSON.stringify(data) }),
+  update: (appId: string, reportId: string, data: Partial<AppReport>) =>
+    request<AppReport>(`/apps/${appId}/reports/${reportId}`, { method: "PUT", body: JSON.stringify(data) }),
+  remove: (appId: string, reportId: string) =>
+    request<{ id: string }>(`/apps/${appId}/reports/${reportId}`, { method: "DELETE" }),
+  run: (appId: string, reportId: string, params?: { limit?: number }) =>
+    request<{ rows: any[]; rowCount: number; took: number }>(`/apps/${appId}/reports/${reportId}/run`, {
+      method: "POST",
+      body: JSON.stringify(params || {}),
+    }),
+};
+
+// ─── App Dashboards ────────────────────────────────────
+export const appDashboardsApi = {
+  list: (appId: string) => request<AppDashboard[]>(`/apps/${appId}/dashboards`),
+  get: (appId: string, dashboardId: string) => request<AppDashboard>(`/apps/${appId}/dashboards/${dashboardId}`),
+  create: (appId: string, data: Partial<AppDashboard>) =>
+    request<AppDashboard>(`/apps/${appId}/dashboards`, { method: "POST", body: JSON.stringify(data) }),
+  update: (appId: string, dashboardId: string, data: Partial<AppDashboard>) =>
+    request<AppDashboard>(`/apps/${appId}/dashboards/${dashboardId}`, { method: "PUT", body: JSON.stringify(data) }),
+  remove: (appId: string, dashboardId: string) =>
+    request<{ id: string }>(`/apps/${appId}/dashboards/${dashboardId}`, { method: "DELETE" }),
+  widgetData: (appId: string, dashboardId: string, widgets?: any[]) =>
+    request<{ widgets: any[] }>(`/apps/${appId}/dashboards/${dashboardId}/widgets/data`, {
+      method: "POST",
+      body: JSON.stringify({ widgets }),
+    }),
+};
+
+// ─── App Datasets ──────────────────────────────────────
+export const appDatasetsApi = {
+  list: (appId: string) => request<AppDataset[]>(`/apps/${appId}/datasets`),
+  get: (appId: string, datasetId: string) => request<AppDataset>(`/apps/${appId}/datasets/${datasetId}`),
+  create: (appId: string, data: Partial<AppDataset>) =>
+    request<AppDataset>(`/apps/${appId}/datasets`, { method: "POST", body: JSON.stringify(data) }),
+  update: (appId: string, datasetId: string, data: Partial<AppDataset>) =>
+    request<AppDataset>(`/apps/${appId}/datasets/${datasetId}`, { method: "PUT", body: JSON.stringify(data) }),
+  remove: (appId: string, datasetId: string) =>
+    request<{ id: string }>(`/apps/${appId}/datasets/${datasetId}`, { method: "DELETE" }),
+  preview: (appId: string, datasetId: string, limit = 200) =>
+    request<{ rows: any[]; rowCount: number; took: number }>(`/apps/${appId}/datasets/${datasetId}/preview`, {
+      method: "POST",
+      body: JSON.stringify({ limit }),
+    }),
+};
+
+// ─── App Page Components ───────────────────────────────
+export const appPageComponentsApi = {
+  list: (appId: string, pageId?: string) =>
+    request<AppPageComponent[]>(`/apps/${appId}/page-components${pageId ? `?pageId=${pageId}` : ""}`),
+  create: (appId: string, data: Partial<AppPageComponent>) =>
+    request<AppPageComponent>(`/apps/${appId}/page-components`, { method: "POST", body: JSON.stringify(data) }),
+  update: (appId: string, componentId: string, data: Partial<AppPageComponent>) =>
+    request<AppPageComponent>(`/apps/${appId}/page-components/${componentId}`, { method: "PUT", body: JSON.stringify(data) }),
+  remove: (appId: string, componentId: string) =>
+    request<{ id: string }>(`/apps/${appId}/page-components/${componentId}`, { method: "DELETE" }),
+};
+
+// ─── Tenants ───────────────────────────────────────────
+export const tenantsApi = {
+  list: () => request<Tenant[]>("/tenants"),
+  create: (data: Partial<Tenant>) =>
+    request<Tenant>("/tenants", { method: "POST", body: JSON.stringify(data) }),
+  update: (id: string, data: Partial<Tenant>) =>
+    request<Tenant>(`/tenants/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+  remove: (id: string) => request(`/tenants/${id}`, { method: "DELETE" }),
+};
+
+// ─── App API Keys ──────────────────────────────────────
+export const apiKeysApi = {
+  list: (appId: string) => request<ApiKey[]>(`/apps/${appId}/api-keys`),
+  create: (appId: string, data: { label: string; scopes?: string[]; expiresAt?: string | null }) =>
+    request<ApiKey & { secret: string; salt: string }>(`/apps/${appId}/api-keys`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  rotate: (appId: string, keyId: string) =>
+    request<ApiKey & { secret: string; salt: string }>(`/apps/${appId}/api-keys/${keyId}/rotate`, { method: "POST" }),
+  revoke: (appId: string, keyId: string) =>
+    request(`/apps/${appId}/api-keys/${keyId}`, { method: "DELETE" }),
+};
+
+// ─── LLM Gateway ───────────────────────────────────────
+export const llmApi = {
+  chat: (
+    messages: { role: string; content: string }[],
+    options?: { model?: string; temperature?: number; maxTokens?: number; stream?: boolean },
+  ) =>
+    request<{ content: string; usage: { promptTokens: number; completionTokens: number; totalTokens: number } }>("/llm/chat", {
+      method: "POST",
+      body: JSON.stringify({ messages, ...options }),
+    }),
+  completion: (prompt: string, options?: { model?: string; temperature?: number; maxTokens?: number }) =>
+    request<{ text: string; usage: any }>("/llm/completion", {
+      method: "POST",
+      body: JSON.stringify({ prompt, ...options }),
+    }),
+  embedding: (input: string | string[], options?: { model?: string }) =>
+    request<{ embeddings: { index: number; embedding: number[] }[]; usage: any }>("/llm/embedding", {
+      method: "POST",
+      body: JSON.stringify({ input, ...options }),
+    }),
+  models: () => request<{ id: string; provider: string; type: string }[]>("/llm/models"),
+  usage: (days = 30) => request<any>(`/llm/usage?days=${days}`),
+};
+
 // ─── Filesystem (WebIDE) ──────────────────────────────
 export const filesystemApi = {
   listFiles: async (params: { app_id?: string; parent_id?: string }) => {
@@ -1185,6 +1382,140 @@ export interface Application {
   environment?: "dev" | "test" | "staging" | "prod";
   created_at?: string;
   updated_at?: string;
+}
+
+/** 公开应用市场中的已发布应用摘要（无需 auth） */
+export interface ApplicationLite {
+  id: string;
+  name: string;
+  description?: string;
+  category?: string;
+  icon?: string;
+  app_slug: string;
+  published_url?: string;
+  published_version?: string;
+  published_at?: string;
+}
+
+/** 应用协作者 */
+export interface AppCollaborator {
+  id: string;
+  appId?: string;
+  userEmail?: string;
+  userName?: string;
+  role: "owner" | "editor" | "viewer";
+  invitedBy?: string | null;
+  createdAt?: string;
+}
+
+/** 应用表单 */
+export interface AppForm {
+  id: string;
+  appId?: string;
+  name: string;
+  schema?: any;
+  version?: number;
+  status?: "draft" | "published";
+  createdBy?: string | null;
+  updatedBy?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+/** 表单提交记录 */
+export interface FormSubmission {
+  id: string;
+  appId?: string;
+  formId?: string;
+  version?: number;
+  submitterEmail?: string;
+  submitterName?: string;
+  values?: Record<string, unknown>;
+  metadata?: Record<string, unknown>;
+  status?: string;
+  submittedAt?: string;
+}
+
+/** 分页的表单提交记录 */
+export interface PaginatedSubmissions {
+  rows: FormSubmission[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
+/** 应用报表 */
+export interface AppReport {
+  id: string;
+  appId?: string;
+  name: string;
+  datasetId?: string | null;
+  layout?: any;
+  widgets?: any[];
+  schedule?: any;
+  status?: "draft" | "published" | "archived";
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+/** 应用仪表盘 */
+export interface AppDashboard {
+  id: string;
+  appId?: string;
+  name: string;
+  layout?: any;
+  widgets?: any[];
+  status?: "draft" | "published" | "archived";
+  createdBy?: string | null;
+  updatedBy?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+/** 应用数据集 */
+export interface AppDataset {
+  id: string;
+  appId?: string;
+  name: string;
+  description?: string;
+  sourceType: "ontology_object" | "view" | "form" | "sql";
+  ontologyObjectId?: string | null;
+  sqlText?: string | null;
+  formId?: string | null;
+  fields?: any[];
+  cacheTtlSeconds?: number;
+  createdBy?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+/** 页面组件 */
+export interface AppPageComponent {
+  id: string;
+  appId?: string;
+  pageId?: string | null;
+  componentKey: string;
+  props?: Record<string, unknown>;
+  x?: number;
+  y?: number;
+  w?: number;
+  h?: number;
+  sortOrder?: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+/** 租户 */
+export interface Tenant {
+  id: string;
+  name: string;
+  code: string;
+  plan?: string;
+  status?: string;
+  description?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface OntologyObject {

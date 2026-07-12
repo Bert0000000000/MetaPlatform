@@ -199,7 +199,7 @@ export function FlowEditor({ components, setComponents, setDirty }: BaseEditorPr
     <div className="flex gap-0 h-[calc(100vh-200px)] min-h-[400px]">
       {/* Left: Node Palette */}
       <div className="w-36 border-r pr-3 shrink-0 overflow-y-auto">
-        <h4 className="text-[10px] font-semibold text-muted-foreground uppercase mb-2">
+        <h4 className="text-xs font-semibold text-muted-foreground uppercase mb-2">
           节点库
         </h4>
         <div className="space-y-1">
@@ -223,7 +223,7 @@ export function FlowEditor({ components, setComponents, setDirty }: BaseEditorPr
             );
           })}
         </div>
-        <div className="mt-4 pt-2 border-t text-[10px] text-muted-foreground space-y-1">
+        <div className="mt-4 pt-2 border-t text-xs text-muted-foreground space-y-1">
           <div>{nodes.length} 个节点</div>
           <div>{connections.length} 条连线</div>
         </div>
@@ -289,7 +289,7 @@ export function FlowEditor({ components, setComponents, setDirty }: BaseEditorPr
                     x={midX}
                     y={midY - 6}
                     textAnchor="middle"
-                    className="text-[10px] fill-muted-foreground pointer-events-none"
+                    className="text-xs fill-muted-foreground pointer-events-none"
                   >
                     {conn.label}
                   </text>
@@ -353,14 +353,14 @@ export function FlowEditor({ components, setComponents, setDirty }: BaseEditorPr
 
       {/* Right: Node Properties */}
       <div className="w-52 border-l pl-3 shrink-0 overflow-y-auto">
-        <h4 className="text-[10px] font-semibold text-muted-foreground uppercase mb-2 flex items-center gap-1">
+        <h4 className="text-xs font-semibold text-muted-foreground uppercase mb-2 flex items-center gap-1">
           <Settings className="size-3" /> 节点属性
         </h4>
         {selectedNodeData ? (
           <div className="space-y-3">
             <Badge
               variant="outline"
-              className="text-[10px]"
+              className="text-xs"
               style={{
                 color: NODE_COLORS[selectedNodeData.type].text,
                 borderColor: NODE_COLORS[selectedNodeData.type].stroke,
@@ -369,7 +369,7 @@ export function FlowEditor({ components, setComponents, setDirty }: BaseEditorPr
               {selectedNodeData.type}
             </Badge>
             <div>
-              <Label className="text-[10px] text-muted-foreground">
+              <Label className="text-xs text-muted-foreground">
                 节点名称
               </Label>
               <Input
@@ -381,7 +381,7 @@ export function FlowEditor({ components, setComponents, setDirty }: BaseEditorPr
               />
             </div>
             <div>
-              <Label className="text-[10px] text-muted-foreground">
+              <Label className="text-xs text-muted-foreground">
                 节点类型
               </Label>
               <select
@@ -395,7 +395,7 @@ export function FlowEditor({ components, setComponents, setDirty }: BaseEditorPr
                 <option value="end">结束</option>
               </select>
             </div>
-            <div className="text-[10px] text-muted-foreground">
+            <div className="text-xs text-muted-foreground">
               <span>坐标: ({Math.round(selectedNodeData.x)}, {Math.round(selectedNodeData.y)})</span>
             </div>
             <button
@@ -407,11 +407,11 @@ export function FlowEditor({ components, setComponents, setDirty }: BaseEditorPr
           </div>
         ) : (
           <div className="space-y-3">
-            <p className="text-[10px] text-muted-foreground py-4 text-center">
+            <p className="text-xs text-muted-foreground py-4 text-center">
               点击节点查看属性
             </p>
             <div>
-              <p className="text-[11px] font-medium mb-2">快速添加</p>
+              <p className="text-xs font-medium mb-2">快速添加</p>
               <div className="grid grid-cols-2 gap-1">
                 {NODE_PALETTE.map((n) => {
                   const Icon = n.icon;
@@ -420,7 +420,7 @@ export function FlowEditor({ components, setComponents, setDirty }: BaseEditorPr
                     <button
                       key={n.type}
                       onClick={() => addNode(n.type)}
-                      className="flex items-center gap-1 px-2 py-1.5 text-[10px] border rounded hover:opacity-80 transition text-left"
+                      className="flex items-center gap-1 px-2 py-1.5 text-xs border rounded hover:opacity-80 transition text-left"
                       style={{
                         backgroundColor: colors.bg,
                         color: colors.text,

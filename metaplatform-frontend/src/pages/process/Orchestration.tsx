@@ -32,9 +32,9 @@ const ADAPTER_TYPES = [
   { id: "sql", name: "SQL 适配器", icon: Database, desc: "编写 SQL 语句操作数据", color: "bg-blue-500" },
   { id: "http", name: "HTTP 适配器", icon: Globe, desc: "将外部 HTTP 接口包装为服务", color: "bg-green-500" },
   { id: "groovy", name: "Groovy 适配器", icon: Code2, desc: "Groovy 脚本编写业务逻辑", color: "bg-purple-500" },
-  { id: "js", name: "JS 表达式适配器", icon: FileCode, desc: "前后端通用 JS 脚本", color: "bg-yellow-500" },
+  { id: "js", name: "JS 表达式适配器", icon: FileCode, desc: "前后端通用 JS 脚本", color: "bg-primary" },
   { id: "java", name: "Java 适配器", icon: Code2, desc: "Java 代码实现业务逻辑", color: "bg-red-500" },
-  { id: "connector", name: "连接器服务", icon: Workflow, desc: "企微/邮箱/钉钉/飞书连接器", color: "bg-indigo-500" },
+  { id: "connector", name: "连接器服务", icon: Workflow, desc: "企微/邮箱/钉钉/飞书连接器", color: "bg-primary" },
 ];
 
 const TRIGGER_TYPES = [

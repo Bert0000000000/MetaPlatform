@@ -49,7 +49,7 @@ const fmtTime = (ts: number) => {
 
 const STATUS_CLS: Record<PurchaseRequest["status"], string> = {
   草稿: "bg-gray-100 text-gray-700 dark:bg-gray-900/40 dark:text-gray-400",
-  待审批: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+  待审批: "bg-primary text-amber-700 dark:bg-primary/30 dark:text-amber-400",
   已批准: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
   已驳回: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
 };
@@ -141,7 +141,7 @@ export default function OntologyOrchestration() {
           <TabsTrigger value="events" className="gap-1.5 rounded-none border-b-2 border-transparent text-muted-foreground data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:shadow-[inset_0_-2px_0_0_hsl(var(--primary))] px-3">
             <Bell className="size-3.5" /> 事件流
             {events.length > 0 && (
-              <Badge variant="secondary" className="ml-1 h-4 px-1.5 text-[10px]">
+              <Badge variant="secondary" className="ml-1 h-4 px-1.5 text-xs">
                 {events.length}
               </Badge>
             )}
@@ -211,7 +211,7 @@ function WorkflowCanvas() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex items-stretch gap-2 overflow-x-auto pb-2">
+          <div className="flex items-stretch gap-2 overflow-x-auto pb-2 scrollbar-none-x">
             {steps.map((s, i) => {
               const Icon = s.icon;
               return (
@@ -221,7 +221,7 @@ function WorkflowCanvas() {
                       <Icon className="size-5" />
                     </div>
                     <div className="text-xs font-semibold text-center">{s.label}</div>
-                    <div className="text-[10px] text-muted-foreground text-center mt-1 px-1">
+                    <div className="text-xs text-muted-foreground text-center mt-1 px-1">
                       {s.desc}
                     </div>
                   </div>
@@ -250,14 +250,14 @@ function WorkflowCanvas() {
               { id: "R-003", name: "标题非空", cond: "title.trim().length > 0", action: "拒绝提交", severity: "低" },
             ].map((r) => (
               <div key={r.id} className="flex items-start gap-3 p-2.5 rounded-lg border bg-card hover:bg-muted/30 transition-colors">
-                <code className="text-[10px] font-mono font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded shrink-0">
+                <code className="text-xs font-mono font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded shrink-0">
                   {r.id}
                 </code>
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-medium">{r.name}</div>
-                  <div className="text-[11px] text-muted-foreground font-mono mt-0.5">{r.cond}</div>
+                  <div className="text-xs text-muted-foreground font-mono mt-0.5">{r.cond}</div>
                 </div>
-                <Badge variant="outline" className="shrink-0 text-[10px]">{r.action}</Badge>
+                <Badge variant="outline" className="shrink-0 text-xs">{r.action}</Badge>
               </div>
             ))}
           </CardContent>
@@ -273,19 +273,19 @@ function WorkflowCanvas() {
           <CardContent>
             <div className="space-y-2 text-sm">
               <div className="flex items-center gap-2 p-2 rounded bg-blue-50 dark:bg-blue-950/20">
-                <span className="size-5 rounded-full bg-blue-500 text-white text-[10px] flex items-center justify-center font-bold">1</span>
+                <span className="size-5 rounded-full bg-blue-500 text-white text-xs flex items-center justify-center font-bold">1</span>
                 <span>校验业务规则 (R-001/002/003)</span>
               </div>
-              <div className="flex items-center gap-2 p-2 rounded bg-amber-50 dark:bg-amber-950/20">
-                <span className="size-5 rounded-full bg-amber-500 text-white text-[10px] flex items-center justify-center font-bold">2</span>
+              <div className="flex items-center gap-2 p-2 rounded bg-primary dark:bg-primary/20">
+                <span className="size-5 rounded-full bg-primary text-white text-xs flex items-center justify-center font-bold">2</span>
                 <span>变更状态 待审批 → 已批准</span>
               </div>
               <div className="flex items-center gap-2 p-2 rounded bg-green-50 dark:bg-green-950/20">
-                <span className="size-5 rounded-full bg-green-500 text-white text-[10px] flex items-center justify-center font-bold">3</span>
+                <span className="size-5 rounded-full bg-green-500 text-white text-xs flex items-center justify-center font-bold">3</span>
                 <span>自动转采购订单 (PO)</span>
               </div>
               <div className="flex items-center gap-2 p-2 rounded bg-purple-50 dark:bg-purple-950/20">
-                <span className="size-5 rounded-full bg-purple-500 text-white text-[10px] flex items-center justify-center font-bold">4</span>
+                <span className="size-5 rounded-full bg-purple-500 text-white text-xs flex items-center justify-center font-bold">4</span>
                 <span>触发供应商协同通知 (mock)</span>
               </div>
             </div>
@@ -450,19 +450,19 @@ function SubmitPRForm() {
             <Sparkles className="size-3.5 text-primary" />
             <div className="font-medium text-sm">实数据模板 — 点击「使用此数据」一键填充</div>
           </div>
-          <div className="text-[11px] text-muted-foreground">每条都是真实场景, 标注预期会触发的业务规则</div>
+          <div className="text-xs text-muted-foreground">每条都是真实场景, 标注预期会触发的业务规则</div>
           <div className="space-y-1.5">
             {PR_TEMPLATES.map((tpl) => (
               <div
                 key={tpl.id}
                 className="flex items-start gap-2 p-2 rounded-md border bg-card hover:bg-muted/40 transition-colors"
               >
-                <div className="size-7 rounded-md bg-primary/10 text-primary flex items-center justify-center shrink-0 text-[10px] font-mono font-bold">
+                <div className="size-7 rounded-md bg-primary/10 text-primary flex items-center justify-center shrink-0 text-xs font-mono font-bold">
                   {tpl.id}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="text-xs font-medium truncate">{tpl.title}</div>
-                  <div className="flex items-center gap-1.5 mt-0.5 text-[10px] text-muted-foreground flex-wrap">
+                  <div className="flex items-center gap-1.5 mt-0.5 text-xs text-muted-foreground flex-wrap">
                     <span className="font-mono">{tpl.supplierName}</span>
                     <span>·</span>
                     <span className="font-mono tabular-nums">{fmtMoney(tpl.amount)}</span>
@@ -482,7 +482,7 @@ function SubmitPRForm() {
                 <Button
                   size="sm"
                   variant="outline"
-                  className="h-6 px-2 text-[10px] shrink-0"
+                  className="h-6 px-2 text-xs shrink-0"
                   onClick={() => {
                     setTitle(tpl.title);
                     setSupplierId(tpl.supplierId);
@@ -614,7 +614,7 @@ function ApproveButton({ pr, onApprove }: { pr: PurchaseRequest; onApprove: () =
               />
             </div>
             {pr.amount >= 50000 && (
-              <div className="rounded-lg border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-950/20 p-2.5 text-xs text-amber-700 dark:text-amber-400">
+              <div className="rounded-lg border border-amber-200 dark:border-amber-900/50 bg-primary dark:bg-primary/20 p-2.5 text-xs text-amber-700 dark:text-amber-400">
                 ⚠️ 规则 R-001 提示: 此 PR 需总监审批
               </div>
             )}
@@ -694,23 +694,23 @@ function EntityCard({
             </div>
             <div>
               <CardTitle className="text-sm">{title}</CardTitle>
-              <CardDescription className="text-[11px]">{subtitle}</CardDescription>
+              <CardDescription className="text-xs">{subtitle}</CardDescription>
             </div>
           </div>
-          {count > 0 && <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">{count}</Badge>}
+          {count > 0 && <Badge variant="secondary" className="h-5 px-1.5 text-xs">{count}</Badge>}
         </div>
       </CardHeader>
       <CardContent>
-        <div className="text-[11px] font-medium text-muted-foreground mb-1.5">属性 / Properties</div>
+        <div className="text-xs font-medium text-muted-foreground mb-1.5">属性 / Properties</div>
         <div className="space-y-0.5 mb-2">
           {fields.map((f) => (
-            <div key={f} className="text-[11px] font-mono text-foreground/80">• {f}</div>
+            <div key={f} className="text-xs font-mono text-foreground/80">• {f}</div>
           ))}
         </div>
         {Boolean(sample) && (
           <>
-            <div className="text-[11px] font-medium text-muted-foreground mb-1">实例 / Instance</div>
-            <pre className="text-[10px] bg-muted/40 rounded p-1.5 overflow-x-auto max-h-20 font-mono leading-tight">
+            <div className="text-xs font-medium text-muted-foreground mb-1">实例 / Instance</div>
+            <pre className="text-xs bg-muted/40 rounded p-1.5 overflow-x-auto max-h-20 font-mono leading-tight scrollbar-none">
               {JSON.stringify(sample, null, 0).slice(0, 200)}
             </pre>
           </>
@@ -783,15 +783,15 @@ function EventStream({ events }: { events: OntologyEvent[] }) {
               >
                 <span className={`shrink-0 size-2 rounded-full mt-1.5 ${
                   e.level === "success" ? "bg-green-500" :
-                  e.level === "warning" ? "bg-amber-500" :
+                  e.level === "warning" ? "bg-primary" :
                   e.level === "error" ? "bg-red-500" : "bg-blue-500"
                 }`} />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    <Badge variant="secondary" className={`text-[10px] h-4 px-1 border-0 ${LEVEL_CLS[e.level]}`}>
+                    <Badge variant="secondary" className={`text-xs h-4 px-1 border-0 ${LEVEL_CLS[e.level]}`}>
                       {TYPE_LABEL[e.type]}
                     </Badge>
-                    <span className="text-[10px] text-muted-foreground font-mono tabular-nums">
+                    <span className="text-xs text-muted-foreground font-mono tabular-nums">
                       {fmtTime(e.ts)}
                     </span>
                   </div>
@@ -1047,18 +1047,18 @@ function SimulatorPanel() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-medium">{p.name}</div>
-                  <div className="text-[11px] text-muted-foreground">{p.role}</div>
+                  <div className="text-xs text-muted-foreground">{p.role}</div>
                 </div>
                 {p.canApproveUpTo > 0 ? (
-                  <Badge variant="outline" className="text-[10px] shrink-0">
+                  <Badge variant="outline" className="text-xs shrink-0">
                     ≤ ¥{(p.canApproveUpTo / 10000).toFixed(0)}万
                   </Badge>
                 ) : p.id === "bot" ? (
-                  <Badge variant="secondary" className="text-[10px] shrink-0 bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border-0">
+                  <Badge variant="secondary" className="text-xs shrink-0 bg-primary text-amber-700 dark:bg-primary/30 dark:text-amber-400 border-0">
                     系统
                   </Badge>
                 ) : (
-                  <Badge variant="outline" className="text-[10px] shrink-0">无审批权</Badge>
+                  <Badge variant="outline" className="text-xs shrink-0">无审批权</Badge>
                 )}
               </div>
             );
@@ -1095,9 +1095,9 @@ function SimulatorPanel() {
               >
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-sm font-semibold">{s.name}</span>
-                  <Badge variant="outline" className="text-[10px]">~{s.expectedEvents} 事件</Badge>
+                  <Badge variant="outline" className="text-xs">~{s.expectedEvents} 事件</Badge>
                   {isRunning && (
-                    <Badge className="bg-primary text-primary-foreground text-[10px] animate-pulse">
+                    <Badge className="bg-primary text-primary-foreground text-xs animate-pulse">
                       执行中 ({stepIndex})
                     </Badge>
                   )}
@@ -1124,12 +1124,12 @@ function SimulatorPanel() {
           {log.length > 0 && (
             <div className="mt-2">
               <div className="flex items-center justify-between mb-1.5">
-                <div className="text-[11px] font-medium text-muted-foreground">实时执行日志</div>
-                <Button size="sm" variant="ghost" className="h-6 text-[10px]" onClick={() => setLog([])}>
+                <div className="text-xs font-medium text-muted-foreground">实时执行日志</div>
+                <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={() => setLog([])}>
                   <RotateCcw className="size-3 mr-1" /> 清空
                 </Button>
               </div>
-              <div className="bg-zinc-950 dark:bg-zinc-900 text-zinc-100 rounded-lg p-2.5 font-mono text-[10px] max-h-64 overflow-y-auto space-y-0.5">
+              <div className="bg-zinc-950 dark:bg-zinc-900 text-zinc-100 rounded-lg p-2.5 font-mono text-xs max-h-64 overflow-y-auto space-y-0.5">
                 {log.map((l, i) => (
                   <div key={i} className="flex items-start gap-2">
                     <span className="text-zinc-500 shrink-0 tabular-nums">
@@ -1252,7 +1252,7 @@ function DedupPanel() {
                 <CopyMinus className="size-4" /> 供应商重复检测
               </CardTitle>
               <CardDescription>
-                用 2 个信号判断: <code className="text-[10px] bg-muted px-1 rounded">code 精确相同</code> + <code className="text-[10px] bg-muted px-1 rounded">名称归一化后包含</code>
+                用 2 个信号判断: <code className="text-xs bg-muted px-1 rounded">code 精确相同</code> + <code className="text-xs bg-muted px-1 rounded">名称归一化后包含</code>
               </CardDescription>
             </div>
             <div className="flex gap-2">
@@ -1298,9 +1298,9 @@ function DedupPanel() {
                       <div className="flex items-center gap-2 flex-wrap">
                         <AlertOctagon className="size-4 text-amber-500 shrink-0" />
                         <span className="text-sm font-semibold">重复组</span>
-                        <Badge variant="secondary" className="text-[10px]">{g.members.length} 条</Badge>
+                        <Badge variant="secondary" className="text-xs">{g.members.length} 条</Badge>
                         {isMerged && (
-                          <Badge className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border-0 text-[10px]">
+                          <Badge className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border-0 text-xs">
                             ✓ 已合并
                           </Badge>
                         )}
@@ -1315,7 +1315,7 @@ function DedupPanel() {
                         </Button>
                       )}
                     </div>
-                    <div className="text-[11px] text-muted-foreground mb-2 px-1">
+                    <div className="text-xs text-muted-foreground mb-2 px-1">
                       重复信号: {g.reason}
                     </div>
                     <div className="space-y-1.5">
@@ -1338,12 +1338,12 @@ function DedupPanel() {
                               disabled={isMerged}
                               className="size-3.5 accent-primary"
                             />
-                            <div className="size-8 rounded-lg bg-gradient-to-br from-primary to-primary/60 text-primary-foreground flex items-center justify-center text-[10px] font-mono shrink-0">
+                            <div className="size-8 rounded-lg bg-primary text-primary-foreground flex items-center justify-center text-xs font-mono shrink-0">
                               {m.code || "—"}
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className="text-sm font-medium truncate">{m.name}</div>
-                              <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground flex-wrap">
+                              <div className="flex items-center gap-1.5 text-xs text-muted-foreground flex-wrap">
                                 <span>等级 {m.rating}</span>
                                 <span>·</span>
                                 <span>{m.region}</span>
@@ -1352,11 +1352,11 @@ function DedupPanel() {
                                 <span>·</span>
                                 <span className="tabular-nums">{m.onTimeRate}% 准时</span>
                                 {isTarget && (
-                                  <Badge variant="default" className="text-[9px] h-3.5 px-1">主记录</Badge>
+                                  <Badge variant="default" className="text-xs h-3.5 px-1">主记录</Badge>
                                 )}
                               </div>
                             </div>
-                            <code className="text-[10px] text-muted-foreground font-mono shrink-0">{m.id}</code>
+                            <code className="text-xs text-muted-foreground font-mono shrink-0">{m.id}</code>
                             {isMerged && !isTarget && (
                               <Trash2 className="size-3.5 text-red-500 shrink-0" />
                             )}

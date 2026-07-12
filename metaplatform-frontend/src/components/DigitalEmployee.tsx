@@ -47,7 +47,7 @@ export function EmployeeAvatar({ avatar, size = 32, online = true, empId }: { av
   const w = Math.round(size * 1.15);
   return (
     <div
-      className="relative bg-gradient-to-br from-primary/20 to-primary/5 border-2 border-white dark:border-slate-800 shadow-sm flex items-center justify-center shrink-0"
+      className="relative bg-primary border-2 border-white dark:border-slate-800 shadow-sm flex items-center justify-center shrink-0"
       style={{
         width: `${w}px`,
         height: `${h}px`,
@@ -197,7 +197,7 @@ export function DigitalEmployee() {
         <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-card border rounded-full shadow-lg px-3 py-1.5 text-xs flex items-center gap-2 mb-1">
           <CircleDot className="size-2.5 text-green-500 animate-pulse" />
           <span className="font-medium">{employee.name}</span>
-          <span className="text-muted-foreground text-[10px]">工号 {employee.empId}</span>
+          <span className="text-muted-foreground text-xs">工号 {employee.empId}</span>
         </div>
         {/* 数字员工半圆矩形头像按钮 */}
         <button
@@ -212,7 +212,7 @@ export function DigitalEmployee() {
           <EmployeeAvatar avatar={employee.avatar} size={40} empId={employee.empId} />
           <div className="flex flex-col items-start min-w-0">
             <span className="text-xs font-semibold leading-tight whitespace-nowrap">{employee.name}</span>
-            <span className="text-[10px] text-muted-foreground leading-tight whitespace-nowrap">{employee.empId} · {employee.role}</span>
+            <span className="text-xs text-muted-foreground leading-tight whitespace-nowrap">{employee.empId} · {employee.role}</span>
           </div>
         </button>
       </div>
@@ -238,9 +238,9 @@ export function DigitalEmployee() {
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5">
               <span className="font-bold text-sm truncate">{employee.name}</span>
-              <span className="text-[10px] opacity-70 font-mono shrink-0">{employee.empId}</span>
+              <span className="text-xs opacity-70 font-mono shrink-0">{employee.empId}</span>
             </div>
-            <div className="text-[10px] opacity-90 flex items-center gap-1 mt-0.5">
+            <div className="text-xs opacity-90 flex items-center gap-1 mt-0.5">
               <CircleDot className="size-2 animate-pulse" />
               <span className="truncate">{employee.role} · 在线</span>
             </div>
@@ -275,17 +275,17 @@ export function DigitalEmployee() {
             {/* 性格标签条 */}
             <div className="px-3 py-2 border-b bg-muted/30 shrink-0 flex flex-wrap gap-1">
               {employee.personality.map((p, i) => (
-                <Badge key={i} variant="secondary" className="text-[10px] h-5 px-1.5 bg-background/60">
+                <Badge key={i} variant="secondary" className="text-xs h-5 px-1.5 bg-background/60">
                   {p}
                 </Badge>
               ))}
-              <Badge variant="outline" className="text-[10px] h-5 px-1.5 ml-auto">
+              <Badge variant="outline" className="text-xs h-5 px-1.5 ml-auto">
                 {employee.empId}
               </Badge>
             </div>
 
             {/* 消息区 */}
-            <div className="flex-1 overflow-y-auto p-3 space-y-3 bg-gradient-to-b from-muted/10 to-muted/30">
+            <div className="flex-1 overflow-y-auto p-3 space-y-3 bg-background">
               {messages.map((msg) => (
                 <div
                   key={msg.id}
@@ -336,16 +336,16 @@ export function DigitalEmployee() {
             {/* 快捷指令 chips */}
             {messages.length <= 1 && employee.quickPrompts.length > 0 && (
               <div className="px-3 py-2 border-t bg-background shrink-0">
-                <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground font-medium mb-1.5">
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium mb-1.5">
                   <BookOpen className="size-3" />
                   <span>快捷提问</span>
                 </div>
-                <div className="flex gap-1.5 overflow-x-auto pb-1">
+                <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none-x">
                   {employee.quickPrompts.map((p, i) => (
                     <button
                       key={i}
                       onClick={() => sendMessage(p)}
-                      className="text-[11px] px-2.5 py-1 rounded-full border bg-muted/30 hover:bg-muted hover:border-primary/30 whitespace-nowrap transition-colors shrink-0"
+                      className="text-xs px-2.5 py-1 rounded-full border bg-muted/30 hover:bg-muted hover:border-primary/30 whitespace-nowrap transition-colors shrink-0"
                     >
                       {p}
                     </button>
@@ -375,7 +375,7 @@ export function DigitalEmployee() {
                   {isTyping ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
                 </Button>
               </div>
-              <div className="flex items-center justify-between mt-1.5 text-[10px] text-muted-foreground">
+              <div className="flex items-center justify-between mt-1.5 text-xs text-muted-foreground">
                 <span>💬 {messages.length - 1} 条对话</span>
                 <span>🔒 仅本机</span>
               </div>

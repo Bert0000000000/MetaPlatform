@@ -139,7 +139,7 @@ export function PageAgentPanel({ config, context }: PageAgentPanelProps) {
         onClick={() => setIsOpen(true)}
         variant="outline"
         size="sm"
-        className="gap-2 bg-gradient-to-r from-primary/5 to-primary/10 border-primary/30 hover:border-primary/50 hover:from-primary/10 hover:to-primary/20"
+        className="gap-2 bg-primary border-primary/30 hover:border-primary/50 hover:from-primary/10 hover:to-primary/20"
       >
         <span className="text-base leading-none">{config.avatar}</span>
         <Bot className="size-3.5" />
@@ -167,7 +167,7 @@ export function PageAgentPanel({ config, context }: PageAgentPanelProps) {
           <div className="min-w-0">
             <div className="font-semibold text-sm truncate">{config.name}</div>
             {!isMinimized && (
-              <div className="text-[10px] opacity-80 flex items-center gap-1">
+              <div className="text-xs opacity-80 flex items-center gap-1">
                 <span className="size-1.5 rounded-full bg-green-300 animate-pulse" />
                 <span>在线 · {config.tagline}</span>
               </div>
@@ -199,7 +199,7 @@ export function PageAgentPanel({ config, context }: PageAgentPanelProps) {
           {/* 能力标签 + 快捷操作 */}
           {messages.length <= 1 && (
             <div className="px-3 py-2.5 border-b bg-muted/30 shrink-0 space-y-2">
-              <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground font-medium">
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
                 <Zap className="size-3" />
                 <span>快捷操作</span>
               </div>
@@ -229,7 +229,7 @@ export function PageAgentPanel({ config, context }: PageAgentPanelProps) {
           )}
 
           {/* 消息区 */}
-          <div className="flex-1 overflow-y-auto p-3 space-y-3 bg-gradient-to-b from-muted/20 to-muted/40">
+          <div className="flex-1 overflow-y-auto p-3 space-y-3 bg-background">
             {messages.map((msg) => (
               <div
                 key={msg.id}
@@ -261,7 +261,7 @@ export function PageAgentPanel({ config, context }: PageAgentPanelProps) {
                           key={i}
                           size="sm"
                           variant="outline"
-                          className="h-6 text-[10px]"
+                          className="h-6 text-xs"
                           onClick={act.onClick}
                         >
                           {act.label}
@@ -298,16 +298,16 @@ export function PageAgentPanel({ config, context }: PageAgentPanelProps) {
           {/* 快捷指令 chips */}
           {messages.length <= 1 && config.quickPrompts.length > 0 && (
             <div className="px-3 py-2 border-t bg-background shrink-0">
-              <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground font-medium mb-1.5">
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium mb-1.5">
                 <BookOpen className="size-3" />
                 <span>快捷提问</span>
               </div>
-              <div className="flex gap-1.5 overflow-x-auto pb-1">
+              <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none-x">
                 {config.quickPrompts.map((p, i) => (
                   <button
                     key={i}
                     onClick={() => sendMessage(p)}
-                    className="text-[11px] px-2.5 py-1 rounded-full border bg-muted/30 hover:bg-muted hover:border-primary/30 whitespace-nowrap transition-colors shrink-0"
+                    className="text-xs px-2.5 py-1 rounded-full border bg-muted/30 hover:bg-muted hover:border-primary/30 whitespace-nowrap transition-colors shrink-0"
                   >
                     {p}
                   </button>

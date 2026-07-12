@@ -259,7 +259,7 @@ function DiffCategoryCard({ icon: Icon, name, count }: { icon: React.ComponentTy
     <div className="border rounded p-2 text-center">
       <Icon className="size-4 mx-auto text-muted-foreground" />
       <div className="text-xs font-medium mt-1">{name}</div>
-      <div className="flex justify-center gap-1 mt-1 text-[10px] font-mono">
+      <div className="flex justify-center gap-1 mt-1 text-xs font-mono">
         <span className="text-green-600">+{count.added}</span>
         <span className="text-red-600">-{count.removed}</span>
         <span className="text-yellow-600">~{count.changed}</span>
@@ -278,7 +278,7 @@ function DiffList({ diffs, nameKey }: { diffs: { op: DiffOp; from?: any; to?: an
           <div key={i} className={`flex items-center gap-2 px-2 py-1.5 border rounded text-xs ${
             d.op === "added" ? "border-green-300 bg-green-50" :
             d.op === "removed" ? "border-red-300 bg-red-50" :
-            d.op === "changed" ? "border-yellow-300 bg-yellow-50" :
+            d.op === "changed" ? "border-yellow-300 bg-primary" :
             ""
           }`}>
             {d.op === "added" && <Plus className="size-3 text-green-600" />}
@@ -286,11 +286,11 @@ function DiffList({ diffs, nameKey }: { diffs: { op: DiffOp; from?: any; to?: an
             {d.op === "changed" && <Edit3 className="size-3 text-yellow-600" />}
             {d.op === "unchanged" && <div className="size-3" />}
             <span className="font-mono flex-1 truncate">{name}</span>
-            <Badge variant="outline" className="text-[10px] h-4 px-1">{d.op}</Badge>
+            <Badge variant="outline" className="text-xs h-4 px-1">{d.op}</Badge>
             {d.op === "changed" && (
-              <details className="text-[10px] text-muted-foreground">
+              <details className="text-xs text-muted-foreground">
                 <summary className="cursor-pointer">查看 diff</summary>
-                <div className="mt-1 font-mono text-[10px] p-1 bg-white rounded">
+                <div className="mt-1 font-mono text-xs p-1 bg-white rounded">
                   <div className="text-red-600">- {JSON.stringify(d.from)}</div>
                   <div className="text-green-600">+ {JSON.stringify(d.to)}</div>
                 </div>

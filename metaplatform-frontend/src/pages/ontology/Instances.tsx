@@ -197,7 +197,7 @@ export function Instances() {
                 <SelectContent>
                   {objects.map((o) => (
                     <SelectItem key={o.id} value={o.id}>
-                      {o.label || o.name} <span className="text-muted-foreground text-[10px]">({o.name})</span>
+                      {o.label || o.name} <span className="text-muted-foreground text-xs">({o.name})</span>
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -247,14 +247,14 @@ export function Instances() {
               暂无数据。点击「新建实例」开始。
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto scrollbar-none">
               <Table>
                 <TableHeader>
                   <TableRow>
                     {properties.slice(0, 5).map((p) => (
                       <TableHead key={p.id} className="text-xs">
                         {p.label || p.name}
-                        <span className="ml-1 text-[10px] text-muted-foreground">({FIELD_TYPES[p.type as FieldType]?.label || p.type})</span>
+                        <span className="ml-1 text-xs text-muted-foreground">({FIELD_TYPES[p.type as FieldType]?.label || p.type})</span>
                       </TableHead>
                     ))}
                     <TableHead className="text-right text-xs">操作</TableHead>
@@ -366,15 +366,15 @@ function renderCell(value: unknown, type: FieldType): React.ReactNode {
     return <span className="text-muted-foreground">—</span>;
   }
   if (type === "boolean") {
-    return <Badge variant={value ? "default" : "secondary"} className="text-[10px]">
+    return <Badge variant={value ? "default" : "secondary"} className="text-xs">
       {value ? "是" : "否"}
     </Badge>;
   }
   if (type === "datetime" || type === "date") {
-    return <span className="font-mono text-[11px]">{String(value).slice(0, 19).replace("T", " ")}</span>;
+    return <span className="font-mono text-xs">{String(value).slice(0, 19).replace("T", " ")}</span>;
   }
   if (type === "json") {
-    return <span className="font-mono text-[10px] text-muted-foreground">{JSON.stringify(value).slice(0, 30)}</span>;
+    return <span className="font-mono text-xs text-muted-foreground">{JSON.stringify(value).slice(0, 30)}</span>;
   }
   const str = String(value);
   if (str.length > 50) return <span title={str}>{str.slice(0, 50)}…</span>;

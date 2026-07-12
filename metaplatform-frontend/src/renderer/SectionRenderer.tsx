@@ -15,10 +15,15 @@ interface SectionRendererProps {
 
 /**
  * Renders a single section based on its type.
- * - FORM: grid of FieldWidgets
+ * - FORM: grid of FieldWidgets (12-column grid, width-aware)
  * - TABLE: TableRenderer
  * - KANBAN: KanbanRenderer
- * - CARD: simple card container (shows title + children info)
+ * - CARD: simple card container
+ *
+ * Style follows MetaPlatform compact design system:
+ * - border-only card, 6px radius, 12px padding
+ * - section title: 12px semibold uppercase secondary text with 0.05em tracking
+ * - fields stacked in a compact 12-col grid
  */
 const SectionRenderer: React.FC<SectionRendererProps> = ({
   section,
@@ -27,52 +32,53 @@ const SectionRenderer: React.FC<SectionRendererProps> = ({
   kanbanData = [],
   onFieldChange,
 }) => {
-  const columns = section.columns ?? 2;
-
   return (
-    <div className="space-y-3">
-      <h3 className="text-base font-semibold">{section.title}</h3>
+    <Card className="border border-border bg-card">
+      <CardHeader className="border-b px-4 py-2.5">
+        <CardTitle className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+          {section.title}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="p-4">
+        {(section.type === "FORM" || section.type === "FIELD_GROUP") &&
+          section.fields && (
+            <div
+              className="grid gap-x-4 gap-y-4"
+              style={{ gridTemplateColumns: "repeat(12, 1fr)" }}
+            >
+              {section.fields
+                .slice()
+                .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+                .map((f, idx) => {
+                  const fieldKey = f.key || f.field || f.label;
 
-      {(section.type === "FORM" || section.type === "FIELD_GROUP") && section.fields && (
-        <div
-          className="grid gap-3"
-          style={{
-            gridTemplateColumns: `repeat(${columns}, 1fr)`,
-          }}
-        >
-          {section.fields
-            .slice()
-            .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
-            .map((f) => (
-              <FieldWidget
-                key={f.field}
-                field={f}
-                value={formData[f.field]}
-                onChange={(field, value) => onFieldChange?.(field, value)}
-              />
-            ))}
-        </div>
-      )}
+                  return (
+                    <FieldWidget
+                      key={fieldKey || idx}
+                      field={f}
+                      value={formData[fieldKey]}
+                      onChange={(field, value) => onFieldChange?.(field, value)}
+                    />
+                  );
+                })}
+            </div>
+          )}
 
-      {section.type === "TABLE" && section.table && (
-        <TableRenderer config={section.table} data={tableData} />
-      )}
+        {section.type === "TABLE" && section.table && (
+          <TableRenderer config={section.table} data={tableData} />
+        )}
 
-      {section.type === "KANBAN" && section.kanban && (
-        <KanbanRenderer config={section.kanban} data={kanbanData} />
-      )}
+        {section.type === "KANBAN" && section.kanban && (
+          <KanbanRenderer config={section.kanban} data={kanbanData} />
+        )}
 
-      {section.type === "CARD" && (
-        <Card>
-          <CardHeader className="py-3">
-            <CardTitle className="text-sm">{section.title}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">Card section: {section.title}</p>
-          </CardContent>
-        </Card>
-      )}
-    </div>
+        {section.type === "CARD" && (
+          <p className="text-sm text-muted-foreground">
+            Card section: {section.title}
+          </p>
+        )}
+      </CardContent>
+    </Card>
   );
 };
 
