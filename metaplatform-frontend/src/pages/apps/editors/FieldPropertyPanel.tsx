@@ -26,6 +26,7 @@ import {
   WIDTH_OPTIONS,
   type PropertyGroup,
 } from "./fieldLibrary";
+import type { AppServiceObjectField } from "@/lib/api";
 
 // ─── Section wrapper ───────────────────────────────────────
 
@@ -146,8 +147,8 @@ export interface FieldPropertyPanelProps {
   onDelete: () => void;
   /** Ontology objects for data binding (optional) */
   ontologyObjects?: { id: string; label: string; properties?: { id: string; label: string }[] }[];
-  /** Properties of the bound object */
-  boundProperties?: { id: string; label: string }[];
+  /** Properties of the bound object (Java backend fields) */
+  boundProperties?: AppServiceObjectField[];
 }
 
 export function FieldPropertyPanel({
@@ -451,15 +452,26 @@ export function FieldPropertyPanel({
               <FullRow label="关联属性">
                 <Select
                   value={field.boundProperty ?? ""}
-                  onValueChange={(v) => handle("boundProperty", v)}
+                  onValueChange={(v) => {
+                    const prop = boundProperties.find((p) => p.code === v);
+                    const patch: Partial<DesignerField> = { boundProperty: v };
+                    if (!field.fieldKey || field.fieldKey === field.boundProperty) {
+                      patch.fieldKey = v;
+                    }
+                    const currentName = boundProperties.find((p) => p.code === field.boundProperty)?.name;
+                    if (!field.label || field.label === currentName) {
+                      patch.label = prop?.name ?? v;
+                    }
+                    onChange(patch);
+                  }}
                 >
                   <SelectTrigger className="h-8 text-xs">
                     <SelectValue placeholder="选择字段属性" />
                   </SelectTrigger>
                   <SelectContent>
                     {boundProperties.map((prop) => (
-                      <SelectItem key={prop.id} value={prop.id}>
-                        {prop.label}
+                      <SelectItem key={prop.code} value={prop.code}>
+                        {prop.name}
                       </SelectItem>
                     ))}
                   </SelectContent>

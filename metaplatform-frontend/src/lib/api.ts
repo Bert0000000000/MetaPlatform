@@ -1971,6 +1971,27 @@ export interface AppServiceObjectField {
   required?: boolean;
   description?: string;
   defaultValue?: string;
+  unique?: boolean;
+}
+
+export interface AppServiceForm {
+  id: number;
+  appId: number;
+  objectId: number;
+  code: string;
+  name: string;
+  schemaJson?: string;
+  status?: "draft" | "published";
+  version?: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface PublicFormSchema {
+  id: number;
+  name: string;
+  boundObjectId: string;
+  sections?: any[];
 }
 
 export const appServiceApi = {
@@ -2000,4 +2021,27 @@ export const appServiceApi = {
     appServiceRequest<AppServiceObjectField[]>(`/apps/${appId}/objects/${oid}/fields/${code}`, { method: "PUT", body: JSON.stringify(data) }),
   deleteField: (appId: number | string, oid: number, code: string) =>
     appServiceRequest<AppServiceObjectField[]>(`/apps/${appId}/objects/${oid}/fields/${code}`, { method: "DELETE" }),
+
+  // Forms
+  forms: {
+    list: (appId: number | string) => appServiceRequest<AppServiceForm[]>(`/apps/${appId}/forms`),
+    get: (appId: number | string, formId: number | string) =>
+      appServiceRequest<AppServiceForm>(`/apps/${appId}/forms/${formId}`),
+    create: (appId: number | string, data: { objectId: number; code: string; name: string; schema: unknown }) =>
+      appServiceRequest<AppServiceForm>(`/apps/${appId}/forms`, { method: "POST", body: JSON.stringify(data) }),
+    update: (appId: number | string, formId: number | string, data: { name?: string; schema?: unknown }) =>
+      appServiceRequest<AppServiceForm>(`/apps/${appId}/forms/${formId}`, { method: "PUT", body: JSON.stringify(data) }),
+    publish: (appId: number | string, formId: number | string) =>
+      appServiceRequest<AppServiceForm>(`/apps/${appId}/forms/${formId}/publish`, { method: "POST" }),
+  },
+
+  // Public forms (no auth)
+  public: {
+    getFormSchema: (formId: number | string) => appServiceRequest<PublicFormSchema>(`/public/forms/${formId}`),
+    submitForm: (formId: number | string, values: Record<string, unknown>, submitterEmail?: string, submitterName?: string) =>
+      appServiceRequest<{ id: number }>(`/public/forms/${formId}/submit`, {
+        method: "POST",
+        body: JSON.stringify({ values, submitterEmail, submitterName }),
+      }),
+  },
 };

@@ -4,12 +4,20 @@ import com.metaplatform.appservice.api.error.ApiException;
 import com.metaplatform.appservice.domain.object.AppObjectService;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.support.GeneratedKeyHolder;
+import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.security.MessageDigest;
+import java.sql.PreparedStatement;
+import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.regex.Pattern;
 
 /**
@@ -26,6 +34,12 @@ public class DynamicTableService {
 
     @PersistenceContext
     private EntityManager em;
+
+    private final JdbcTemplate jdbcTemplate;
+
+    public DynamicTableService(JdbcTemplate jdbcTemplate) {
+        this.jdbcTemplate = jdbcTemplate;
+    }
 
     /**
      * 给新建对象创建物理数据表。允许空字段列表，仅创建基础元数据列。
@@ -83,6 +97,65 @@ public class DynamicTableService {
             throw ApiException.badRequest("非法表名");
         }
         em.createNativeQuery("DROP TABLE IF EXISTS " + tableName).executeUpdate();
+    }
+
+    /**
+     * 向动态业务表插入一行记录，返回自增 id。
+     *
+     * <p>row 中的 key 必须已作为列存在；未在 row 中出现的列留空。
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public Long insertRow(String tableName, Map<String, Object> row, String tenantId, String createdBy) {
+        if (!TABLE_NAME_PATTERN.matcher(tableName).matches()) {
+            throw ApiException.badRequest("非法表名: " + tableName);
+        }
+        if (tenantId == null || tenantId.isBlank()) {
+            throw ApiException.badRequest("tenantId 不能为空");
+        }
+
+        List<String> columns = new ArrayList<>(List.of("tenant_id", "created_by"));
+        List<Object> values = new ArrayList<>(List.of(tenantId, createdBy));
+        for (var entry : row.entrySet()) {
+            String col = entry.getKey();
+            if (!IDENT_PATTERN.matcher(col).matches()) {
+                throw ApiException.badRequest("非法字段名: " + col);
+            }
+            columns.add(col);
+            values.add(entry.getValue());
+        }
+
+        String colSql = String.join(", ", columns);
+        String placeholders = String.join(", ", columns.stream().map(c -> "?").toList());
+        String sql = "INSERT INTO " + tableName + " (" + colSql + ") VALUES (" + placeholders + ")";
+
+        KeyHolder keyHolder = new GeneratedKeyHolder();
+        jdbcTemplate.update(connection -> {
+            PreparedStatement ps = connection.prepareStatement(sql, new String[]{"id"});
+            for (int i = 0; i < values.size(); i++) {
+                ps.setObject(i + 1, values.get(i));
+            }
+            return ps;
+        }, keyHolder);
+
+        Optional<Number> key = Optional.ofNullable(keyHolder.getKey());
+        return key.map(Number::longValue)
+                .orElseThrow(() -> ApiException.internalError("插入后未能获取自增主键"));
+    }
+
+    /**
+     * 校验指定列值在当前租户下是否已存在（唯一性校验）。
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public boolean exists(String tableName, String column, Object value, String tenantId) {
+        if (!TABLE_NAME_PATTERN.matcher(tableName).matches()) {
+            throw ApiException.badRequest("非法表名: " + tableName);
+        }
+        if (!IDENT_PATTERN.matcher(column).matches()) {
+            throw ApiException.badRequest("非法字段名: " + column);
+        }
+        String sql = "SELECT COUNT(*) FROM " + tableName + " WHERE tenant_id = ? AND " + column + " = ?";
+        Integer count = jdbcTemplate.queryForObject(sql, Integer.class, tenantId, value);
+        return count != null && count > 0;
     }
 
     private void appendColumn(StringBuilder sql, AppObjectService.FieldDef f) {

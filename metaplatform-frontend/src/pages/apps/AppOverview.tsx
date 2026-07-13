@@ -1494,7 +1494,7 @@ function PublicAliasesCard({ appId }: { appId: string }) {
                   <div className="text-xs text-muted-foreground">{a.kind} → {a.target_id?.slice(0, 12)} · {a.status}</div>
                 </div>
                 <Button size="sm" variant="outline" onClick={() => {
-                  const path = a.kind === "form" ? `/apps/${appId}/public/form?formId=${encodeURIComponent(a.target_id)}` : `/apps/${appId}/public/dashboard?dashboardId=${encodeURIComponent(a.target_id)}`;
+                  const path = a.kind === "form" ? `/public/form/${appId}?formId=${encodeURIComponent(a.target_id)}` : `/apps/${appId}/public/dashboard?dashboardId=${encodeURIComponent(a.target_id)}`;
                   window.open(path, "_blank");
                 }}>打开</Button>
                 <Button size="sm" variant="ghost" onClick={async () => {

@@ -56,7 +56,7 @@ import {
 import { FieldPropertyPanel } from "./FieldPropertyPanel";
 import { SchemaPreview } from "./SchemaPreview";
 import { getIcon } from "./icons";
-import { ontologyApi, type OntologyObject } from "@/lib/api";
+import { appServiceApi, type AppServiceObject, type AppServiceObjectField } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
 // ─── Constants ─────────────────────────────────────────────
@@ -70,6 +70,36 @@ const WIDTH_SPAN: Record<DesignerField["width"], number> = {
 };
 
 // ─── Designer State ↔ Components sync ──────────────────────
+
+function mapObjectTypeToWidget(type: string): string {
+  switch (type) {
+    case "longtext": return "textarea";
+    case "number": return "number";
+    case "boolean": return "switch";
+    case "date": return "datepicker";
+    case "datetime": return "datetime";
+    case "select": return "select";
+    case "multiselect": return "select";
+    case "email": return "email";
+    case "phone": return "phone";
+    default: return "input";
+  }
+}
+
+function mapObjectTypeToIcon(type: string): string {
+  switch (type) {
+    case "longtext": return "AlignLeft";
+    case "number": return "Hash";
+    case "boolean": return "ToggleLeft";
+    case "date":
+    case "datetime": return "Calendar";
+    case "select":
+    case "multiselect": return "List";
+    case "email": return "Mail";
+    case "phone": return "Phone";
+    default: return "Type";
+  }
+}
 
 function stateToComponents(state: DesignerState): PageComponent[] {
   return [
@@ -118,8 +148,12 @@ function createEmptyState(name: string): DesignerState {
 
 function FieldPalette({
   onAddField,
+  objectFields,
+  onAddObjectField,
 }: {
   onAddField: (type: string) => void;
+  objectFields: AppServiceObjectField[];
+  onAddObjectField: (field: AppServiceObjectField) => void;
 }) {
   return (
     <div className="flex h-full flex-col">
@@ -162,6 +196,40 @@ function FieldPalette({
             </div>
           );
         })}
+
+        {objectFields.length > 0 && (
+          <div className="mt-2 border-t pt-2">
+            <div className="mb-1.5 px-1 text-xs font-medium text-gray-400">
+              对象字段
+            </div>
+            <div className="grid grid-cols-2 gap-1.5">
+              {objectFields.map((field) => {
+                const Icon = getIcon(mapObjectTypeToIcon(field.type));
+                return (
+                  <button
+                    key={field.code}
+                    draggable
+                    onDragStart={(e) => {
+                      e.dataTransfer.setData("object-field-code", field.code);
+                      e.dataTransfer.setData("object-field-name", field.name);
+                      e.dataTransfer.setData("object-field-type", field.type);
+                      e.dataTransfer.setData("object-field-required", String(field.required));
+                      e.dataTransfer.effectAllowed = "copy";
+                    }}
+                    onClick={() => onAddObjectField(field)}
+                    className="group flex flex-col items-center gap-1 rounded-md border border-gray-100 bg-white px-2 py-2.5 text-center transition-all hover:border-blue-300 hover:bg-blue-50/50 hover:shadow-sm active:scale-95"
+                    title={field.description || field.name}
+                  >
+                    <Icon className="h-4 w-4 text-gray-500 transition-colors group-hover:text-blue-500" />
+                    <span className="text-xs text-gray-600 group-hover:text-blue-600 truncate w-full">
+                      {field.name}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -517,13 +585,15 @@ function DesignerCanvas({
   onUpdate,
   appId,
   ontologyObjects,
+  boundProperties,
 }: {
   state: DesignerState;
   selectedFieldId: string | null;
   onSelectField: (id: string | null) => void;
   onUpdate: (updater: (prev: DesignerState) => DesignerState) => void;
   appId?: string;
-  ontologyObjects: OntologyObject[];
+  ontologyObjects: AppServiceObject[];
+  boundProperties: AppServiceObjectField[];
 }) {
   const [dragData, setDragData] = useState<{
     sectionId: string;
@@ -571,6 +641,28 @@ function DesignerCanvas({
 
   const addField = (sectionId: string, type: string) => {
     const field = createField(type);
+    onUpdate((prev) => ({
+      ...prev,
+      sections: prev.sections.map((s) =>
+        s.id === sectionId
+          ? { ...s, fields: [...s.fields, field] }
+          : s,
+      ),
+    }));
+    onSelectField(field.id);
+  };
+
+  const addObjectField = (sectionId: string, objField: AppServiceObjectField) => {
+    const type = mapObjectTypeToWidget(objField.type);
+    const field = createField(type) as DesignerField;
+    field.label = objField.name;
+    field.fieldKey = objField.code;
+    field.required = objField.required ?? false;
+    field.boundObject = state.boundObjectId;
+    field.boundProperty = objField.code;
+    if (type === "select" && objField.type === "multiselect") {
+      field.multiple = true;
+    }
     onUpdate((prev) => ({
       ...prev,
       sections: prev.sections.map((s) =>
@@ -666,6 +758,17 @@ function DesignerCanvas({
       return;
     }
 
+    // Check if this is an object-field drag
+    const objectFieldCode = e.dataTransfer.getData("object-field-code");
+    if (objectFieldCode) {
+      const objField = boundProperties.find((f) => f.code === objectFieldCode);
+      if (objField) {
+        addObjectField(targetSectionId, objField);
+      }
+      setDragData(null);
+      return;
+    }
+
     // Otherwise it's a field reorder
     if (!dragData) return;
 
@@ -708,6 +811,14 @@ function DesignerCanvas({
     const fieldType = e.dataTransfer.getData("field-type");
     if (fieldType) {
       addField(sectionId, fieldType);
+      return;
+    }
+    const objectFieldCode = e.dataTransfer.getData("object-field-code");
+    if (objectFieldCode) {
+      const objField = boundProperties.find((f) => f.code === objectFieldCode);
+      if (objField) {
+        addObjectField(sectionId, objField);
+      }
     }
   };
 
@@ -738,15 +849,15 @@ function DesignerCanvas({
               </SelectTrigger>
               <SelectContent>
                 {ontologyObjects.map((obj) => (
-                  <SelectItem key={obj.id} value={obj.id}>
-                    {obj.label || obj.name}
+                  <SelectItem key={obj.id} value={String(obj.id)}>
+                    {obj.name}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
             {state.boundObjectId && (
               <span className="text-xs text-green-600">
-                ✓ 已绑定 {ontologyObjects.find((o) => o.id === state.boundObjectId)?.label}
+                ✓ 已绑定 {ontologyObjects.find((o) => String(o.id) === state.boundObjectId)?.name}
               </span>
             )}
           </div>
@@ -868,10 +979,8 @@ export function FormLowCodeEditor({
     const existing = componentsToState(components, pageName ?? "未命名表单");
     return existing ?? createEmptyState(pageName ?? "未命名表单");
   });
-  const [ontologyObjects, setOntologyObjects] = useState<OntologyObject[]>([]);
-  const [boundProperties, setBoundProperties] = useState<
-    { id: string; label: string }[]
-  >([]);
+  const [ontologyObjects, setOntologyObjects] = useState<AppServiceObject[]>([]);
+  const [boundProperties, setBoundProperties] = useState<AppServiceObjectField[]>([]);
   const stateRef = useRef(state);
   stateRef.current = state;
 
@@ -910,33 +1019,33 @@ export function FormLowCodeEditor({
     [syncToParent],
   );
 
-  // Load ontology objects for data binding
+  // Load app objects for data binding (Java backend)
   useEffect(() => {
     if (!appId) return;
-    ontologyApi
+    appServiceApi
       .listObjects(appId)
       .then((objs) => setOntologyObjects(objs))
       .catch(() => {});
   }, [appId]);
 
-  // Load properties when bound object changes
+  // Load object fields when bound object changes
   useEffect(() => {
     if (!state.boundObjectId) {
       setBoundProperties([]);
       return;
     }
-    ontologyApi
-      .getObject(state.boundObjectId)
-      .then((obj) => {
-        setBoundProperties(
-          (obj.properties ?? []).map((p) => ({
-            id: p.id,
-            label: p.label || p.name,
-          })),
-        );
-      })
-      .catch(() => setBoundProperties([]));
-  }, [state.boundObjectId]);
+    const obj = ontologyObjects.find((o) => String(o.id) === state.boundObjectId);
+    if (!obj || !obj.schemaJson) {
+      setBoundProperties([]);
+      return;
+    }
+    try {
+      const fields = JSON.parse(obj.schemaJson) as AppServiceObjectField[];
+      setBoundProperties(Array.isArray(fields) ? fields : []);
+    } catch {
+      setBoundProperties([]);
+    }
+  }, [state.boundObjectId, ontologyObjects]);
 
   // ── Selected field lookup ──
 
@@ -995,8 +1104,8 @@ export function FormLowCodeEditor({
   const ontologyObjectsForPanel = useMemo(
     () =>
       ontologyObjects.map((o) => ({
-        id: o.id,
-        label: o.label || o.name,
+        id: String(o.id),
+        label: o.name,
       })),
     [ontologyObjects],
   );
@@ -1023,6 +1132,30 @@ export function FormLowCodeEditor({
                 }));
                 setSelectedCompId(field.id);
               }
+            }}
+            objectFields={boundProperties}
+            onAddObjectField={(objField) => {
+              const targetSection = state.sections[0]?.id ?? null;
+              if (!targetSection) return;
+              const type = mapObjectTypeToWidget(objField.type);
+              const field = createField(type) as DesignerField;
+              field.label = objField.name;
+              field.fieldKey = objField.code;
+              field.required = objField.required ?? false;
+              field.boundObject = state.boundObjectId;
+              field.boundProperty = objField.code;
+              if (type === "select" && objField.type === "multiselect") {
+                field.multiple = true;
+              }
+              handleUpdate((prev) => ({
+                ...prev,
+                sections: prev.sections.map((s) =>
+                  s.id === targetSection
+                    ? { ...s, fields: [...s.fields, field] }
+                    : s,
+                ),
+              }));
+              setSelectedCompId(field.id);
             }}
           />
         </div>
@@ -1075,6 +1208,7 @@ export function FormLowCodeEditor({
             onUpdate={handleUpdate}
             appId={appId}
             ontologyObjects={ontologyObjects}
+            boundProperties={boundProperties}
           />
         )}
 

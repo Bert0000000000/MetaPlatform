@@ -12,30 +12,35 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { appServiceApi } from "@/lib/api";
 import {
   Loader2, Check, AlertCircle, ArrowLeft, Send, Sparkles, Globe,
   ShieldCheck, User, Mail, Calendar,
 } from "lucide-react";
 
-const PUBLIC_BASE = (import.meta.env?.VITE_API_BASE || "/api").replace(/\/$/, "");
+function getFieldKey(f: any): string {
+  return f?.fieldKey || f?.key || f?.name || f?.field || "";
+}
 
-async function fetchPublic<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${PUBLIC_BASE}${path}`, {
-    credentials: "omit",
-    ...init,
-    headers: { "Content-Type": "application/json", ...(init?.headers || {}) },
-  });
-  const json = await res.json();
-  if (!json.success) throw new Error(json.error || `HTTP ${res.status}`);
-  return json.data;
+function getFieldType(f: any): string {
+  return f?.widget || f?.type || "input";
+}
+
+function pickFields(schema: any): any[] {
+  const target = schema?.schema ?? schema;
+  if (Array.isArray(target?.sections)) {
+    return target.sections.flatMap((s: any) => s.fields || []);
+  }
+  if (Array.isArray(target?.fields)) return target.fields;
+  return [];
 }
 
 function pickInitialValues(schema: any) {
-  const fields: any[] = Array.isArray(schema?.fields) ? schema.fields
-    : (Array.isArray(schema?.sections) ? schema.sections.flatMap((s: any) => s.fields || []) : []);
+  const fields = pickFields(schema);
   const init: Record<string, string> = {};
   for (const f of fields) {
-    if (f?.name) init[f.name] = "";
+    const key = getFieldKey(f);
+    if (key) init[key] = "";
   }
   return init;
 }
@@ -56,33 +61,23 @@ export default function PublicForm() {
     if (!appId || !formId) { setError("Missing formId"); setLoading(false); return; }
     (async () => {
       try {
-        const data = await fetchPublic<any>(`/public/forms/${encodeURIComponent(formId)}`);
+        const data = await appServiceApi.public.getFormSchema(formId);
         setSchema(data);
-        setValues(pickInitialValues(data.schema || data));
+        setValues(pickInitialValues(data));
       } catch (e) {
         setError((e as Error).message);
       } finally { setLoading(false); }
     })();
   }, [appId, formId]);
 
-  const fields: any[] = Array.isArray(schema?.schema?.fields) ? schema.schema.fields
-    : (Array.isArray(schema?.schema?.sections) ? schema.schema.sections.flatMap((s: any) => s.fields || [])
-    : (Array.isArray(schema?.fields) ? schema.fields
-    : (Array.isArray(schema?.sections) ? schema.sections.flatMap((s: any) => s.fields || []) : [])));
+  const fields: any[] = useMemo(() => pickFields(schema), [schema]);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formId) return;
     setSubmitting(true);
     try {
-      await fetchPublic<{ id: string }>(`/public/forms/${encodeURIComponent(formId)}/submit`, {
-        method: "POST",
-        body: JSON.stringify({
-          values,
-          submitterEmail: values._email || undefined,
-          submitterName: values._name || undefined,
-        }),
-      });
+      await appServiceApi.public.submitForm(formId, values, values._email, values._name);
       setSubmitted(true);
     } catch (e) {
       setError((e as Error).message);
@@ -144,7 +139,7 @@ export default function PublicForm() {
             <Button
               onClick={() => {
                 setSubmitted(false);
-                setValues(pickInitialValues(schema.schema || schema));
+                setValues(pickInitialValues(schema));
               }}
               variant="outline"
             >
@@ -166,7 +161,7 @@ export default function PublicForm() {
   const formDescription = schema?.description || "请填写以下表单，提交后系统会自动记录。";
 
   const requiredCount = fields.filter((f: any) => f.required).length;
-  const fieldTypes = Array.from(new Set<string>(fields.map((f: any) => f.type).filter(Boolean)));
+  const fieldTypes = Array.from(new Set<string>(fields.map((f: any) => getFieldType(f)).filter(Boolean)));
 
   const fieldIcon = (type: string) => {
     if (type === "email") return <Mail className="size-3.5" />;
@@ -220,85 +215,99 @@ export default function PublicForm() {
           </CardHeader>
           <CardContent className="space-y-4 pt-6">
             {fields.length === 0 ? (
-              <div className="text-sm text-muted-foreground py-6 text-center">此表单暂未配置字段。</div>
-            ) : fields.map((f, idx) => (
-              <div key={f.name || f.id} className="group">
-                <label className="text-sm font-medium mb-1.5 flex items-center gap-1.5 text-slate-700">
-                  <span className="size-5 rounded bg-slate-100 text-slate-500 text-xs flex items-center justify-center font-mono shrink-0">
-                    {idx + 1}
-                  </span>
-                  {fieldIcon(f.type)}
-                  <span>{f.label || f.name}</span>
-                  {f.required && <span className="text-rose-500">*</span>}
-                </label>
-                {f.type === "textarea" ? (
-                  <textarea
-                    value={values[f.name] ?? ""}
-                    onChange={(e) => setValues({ ...values, [f.name]: e.target.value })}
-                    placeholder={f.placeholder || ""}
-                    required={f.required}
-                    className="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:border-violet-400 focus:ring-2 focus:ring-violet-100 outline-none transition w-full resize-none"
-                    rows={4}
-                  />
-                ) : f.type === "number" ? (
-                  <Input
-                    type="number"
-                    value={values[f.name] ?? ""}
-                    onChange={(e) => setValues({ ...values, [f.name]: e.target.value })}
-                    placeholder={f.placeholder || ""}
-                    required={f.required}
-                    className="border-slate-200 focus:border-violet-400 focus:ring-violet-100"
-                  />
-                ) : f.type === "select" ? (
-                  <select
-                    value={values[f.name] ?? ""}
-                    onChange={(e) => setValues({ ...values, [f.name]: e.target.value })}
-                    required={f.required}
-                    className="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:border-violet-400 focus:ring-2 focus:ring-violet-100 outline-none transition w-full"
-                  >
-                    <option value="">— 请选择 —</option>
-                    {Array.isArray(f.options) ? f.options.map((opt: any) => {
-                      const v = typeof opt === 'string' ? opt : opt.value;
-                      const l = typeof opt === 'string' ? opt : opt.label;
-                      return <option key={v} value={v}>{l}</option>;
-                    }) : null}
-                  </select>
-                ) : f.type === "checkbox" ? (
-                  <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer select-none p-2 rounded hover:bg-slate-50">
-                    <input
-                      type="checkbox"
-                      checked={!!values[f.name]}
-                      onChange={(e) => setValues({ ...values, [f.name]: e.target.checked })}
-                      className="size-4 accent-violet-600"
-                    />
-                    {f.placeholder || "同意"}
-                  </label>
-                ) : f.type === "date" ? (
-                  <Input
-                    type="date"
-                    value={values[f.name] ?? ""}
-                    onChange={(e) => setValues({ ...values, [f.name]: e.target.value })}
-                    required={f.required}
-                    className="border-slate-200 focus:border-violet-400 focus:ring-violet-100"
-                  />
-                ) : (
-                  <Input
-                    type={f.type === "email" ? "email" : "text"}
-                    value={values[f.name] ?? ""}
-                    onChange={(e) => setValues({ ...values, [f.name]: e.target.value })}
-                    placeholder={f.placeholder || ""}
-                    required={f.required}
-                    className="border-slate-200 focus:border-violet-400 focus:ring-violet-100"
-                  />
-                )}
-                {f.description && (
-                  <p className="mt-1 text-xs text-muted-foreground flex items-start gap-1">
-                    <span className="shrink-0">💡</span>
-                    <span>{f.description}</span>
-                  </p>
-                )}
-              </div>
-            ))}
+                  <div className="text-sm text-muted-foreground py-6 text-center">此表单暂未配置字段。</div>
+                ) : fields.map((f, idx) => {
+                  const key = getFieldKey(f);
+                  const type = getFieldType(f);
+                  return (
+                    <div key={key || f.id || idx} className="group">
+                      <label className="text-sm font-medium mb-1.5 flex items-center gap-1.5 text-slate-700">
+                        <span className="size-5 rounded bg-slate-100 text-slate-500 text-xs flex items-center justify-center font-mono shrink-0">
+                          {idx + 1}
+                        </span>
+                        {fieldIcon(type)}
+                        <span>{f.label || f.name}</span>
+                        {f.required && <span className="text-rose-500">*</span>}
+                      </label>
+                      <div className="space-y-2">
+                        {type === "textarea" || type === "richtext" ? (
+                          <textarea
+                            value={values[key] ?? ""}
+                            onChange={(e) => setValues({ ...values, [key]: e.target.value })}
+                            placeholder={f.placeholder || ""}
+                            required={f.required}
+                            className="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:border-violet-400 focus:ring-2 focus:ring-violet-100 outline-none transition w-full resize-none"
+                            rows={4}
+                          />
+                        ) : type === "number" || type === "currency" || type === "percent" || type === "slider" ? (
+                          <Input
+                            type="number"
+                            value={values[key] ?? ""}
+                            onChange={(e) => setValues({ ...values, [key]: e.target.value })}
+                            placeholder={f.placeholder || ""}
+                            required={f.required}
+                            className="border-slate-200 focus:border-violet-400 focus:ring-violet-100"
+                          />
+                        ) : type === "select" || type === "radio" ? (
+                          <select
+                            value={values[key] ?? ""}
+                            onChange={(e) => setValues({ ...values, [key]: e.target.value })}
+                            required={f.required}
+                            className="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:border-violet-400 focus:ring-2 focus:ring-violet-100 outline-none transition w-full"
+                          >
+                            <option value="">— 请选择 —</option>
+                            {Array.isArray(f.options) ? f.options.map((opt: any) => {
+                              const v = typeof opt === 'string' ? opt : opt.value;
+                              const l = typeof opt === 'string' ? opt : opt.label;
+                              return <option key={v} value={v}>{l}</option>;
+                            }) : null}
+                          </select>
+                        ) : type === "checkbox" || type === "switch" ? (
+                          <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer select-none p-2 rounded hover:bg-slate-50">
+                            <input
+                              type="checkbox"
+                              checked={!!values[key]}
+                              onChange={(e) => setValues({ ...values, [key]: e.target.checked })}
+                              className="size-4 accent-violet-600"
+                            />
+                            {f.placeholder || "是"}
+                          </label>
+                        ) : type === "datepicker" ? (
+                          <Input
+                            type="date"
+                            value={values[key] ?? ""}
+                            onChange={(e) => setValues({ ...values, [key]: e.target.value })}
+                            required={f.required}
+                            className="border-slate-200 focus:border-violet-400 focus:ring-violet-100"
+                          />
+                        ) : type === "datetime" ? (
+                          <Input
+                            type="datetime-local"
+                            value={values[key] ?? ""}
+                            onChange={(e) => setValues({ ...values, [key]: e.target.value })}
+                            required={f.required}
+                            className="border-slate-200 focus:border-violet-400 focus:ring-violet-100"
+                          />
+                        ) : (
+                          <Input
+                            type={type === "email" ? "email" : "text"}
+                            value={values[key] ?? ""}
+                            onChange={(e) => setValues({ ...values, [key]: e.target.value })}
+                            placeholder={f.placeholder || ""}
+                            required={f.required}
+                            className="border-slate-200 focus:border-violet-400 focus:ring-violet-100"
+                          />
+                        )}
+                        {f.description && (
+                          <p className="text-xs text-muted-foreground flex items-start gap-1">
+                            <span className="shrink-0">💡</span>
+                            <span>{f.description}</span>
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
 
             <div className="border-t border-slate-200 pt-4 mt-4">
               <div className="text-xs font-medium text-slate-600 mb-2 flex items-center gap-1">

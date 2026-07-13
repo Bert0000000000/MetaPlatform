@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { appsApi, filesystemApi, appPageComponentsApi, appFormsApi, appReportsApi, appDashboardsApi } from "@/lib/api";
+import { appsApi, filesystemApi, appPageComponentsApi, appServiceApi, appReportsApi, appDashboardsApi } from "@/lib/api";
 import type { AppPageComponent } from "@/lib/api";
 import type { PageComponent, PageVersion } from "./types";
 import { getMockComponents } from "./mockData";
@@ -8,6 +8,21 @@ import { getMockComponents } from "./mockData";
  * P3-2: 把已发布的 form schema 投到一个 PageComponent, FormLowCodeEditor 即时识别.
  * 该函数幂等: 没有 fields/sections 时返回空数组, caller fallback 到 mock.
  */
+function extractDesignerState(pageDef: any): any {
+  if (!pageDef) return null;
+  if (pageDef.designerState) return pageDef.designerState;
+  const sentinel = pageDef.components?.find((c: any) => c.type === "__designer_state__");
+  if (sentinel?.props?.state) return sentinel.props.state;
+  return null;
+}
+
+function sanitizeFormCode(raw: string): string {
+  let code = raw.toLowerCase().replace(/[^a-z0-9_]/g, "_").replace(/_{2,}/g, "_");
+  if (!/^[a-z]/.test(code)) code = "f" + code;
+  if (code.length > 64) code = code.slice(0, 64);
+  return code;
+}
+
 function schemaToComponents(schema: any, fallbackName?: string): PageComponent[] {
   if (!schema || typeof schema !== "object") return [];
   const fields = Array.isArray(schema.fields) ? schema.fields
@@ -58,27 +73,37 @@ async function mirrorToBusinessTable(
   try {
     if (pageType === "form") {
       // schema_json = DesignerState 协议化的结构 — 完整 pageDef 也可作为 fallback
-      const schemaToStore = (pageDef && (pageDef.designerState ?? pageDef)) || pageDef;
+      const designerState = extractDesignerState(pageDef);
+      const schemaToStore = designerState ?? pageDef;
+      const objectId = designerState?.boundObjectId ? Number(designerState.boundObjectId) : undefined;
+      const code = sanitizeFormCode(`form_page_${pageId}`);
       let fid = linkedIds.form_id;
       if (!fid) {
-        const r = await appFormsApi.create(appId, {
-          name: pageName,
-          schema: schemaToStore,
-        });
-        fid = r.id;
-        // 回写到 app_pages
-        try {
-          await appsApi.updatePage(appId, pageId, { form_id: fid } as any);
-        } catch (we) { console.warn("[mirrorToBusinessTable] updatePage(form_id) failed:", we); }
-        setLinkedIds({ ...linkedIds, form_id: fid });
+        if (!objectId) {
+          console.warn("[mirrorToBusinessTable] form page has no boundObjectId; skip creating app_form");
+        } else {
+          try {
+            const r = await appServiceApi.forms.create(appId, {
+              objectId,
+              code,
+              name: pageName,
+              schema: schemaToStore,
+            });
+            fid = String(r.id);
+            // 回写到 app_pages
+            try {
+              await appsApi.updatePage(appId, pageId, { form_id: fid } as any);
+            } catch (we) { console.warn("[mirrorToBusinessTable] updatePage(form_id) failed:", we); }
+            setLinkedIds({ ...linkedIds, form_id: fid });
+          } catch (ce) { console.warn("[mirrorToBusinessTable] appServiceApi.forms.create failed:", ce); }
+        }
       } else {
         try {
-          await appFormsApi.update(appId, fid, {
+          await appServiceApi.forms.update(appId, fid, {
             name: pageName,
             schema: schemaToStore,
-            version: (pageDef?.version ?? 1),
           });
-        } catch (ue) { console.warn("[mirrorToBusinessTable] appFormsApi.update failed:", ue); }
+        } catch (ue) { console.warn("[mirrorToBusinessTable] appServiceApi.forms.update failed:", ue); }
       }
     } else if (pageType === "report") {
       // 报表: layout_json + widgets_json (从 components 拆出 widget 列表)
@@ -279,8 +304,8 @@ export function usePageEditor(appId: string | undefined, pageId: string | null):
         // No saved content — try link to backend form / report / dashboard; fallback to mock data.
         if (page.type === "form" && page.form_id) {
           try {
-            const formDef = await appFormsApi.get(appId, page.form_id);
-            const schema = formDef.schema || {};
+            const formDef = await appServiceApi.forms.get(appId, page.form_id);
+            const schema = formDef.schemaJson ? JSON.parse(formDef.schemaJson) : {};
             const mockComps = schemaToComponents(schema, formDef.name || page.name);
             if (mockComps.length > 0) {
               setComponents(mockComps);

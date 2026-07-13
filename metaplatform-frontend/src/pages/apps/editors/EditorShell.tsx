@@ -2,7 +2,7 @@ import { useState, ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Save, Loader2, Monitor, Tablet, Smartphone, Bot, Hash, Clock, X, Pencil } from "lucide-react";
+import { ArrowLeft, Save, Loader2, Monitor, Tablet, Smartphone, Bot, Hash, Clock, X, Pencil, Globe } from "lucide-react";
 import { TYPE_META, type PageVersion } from "./types";
 import { AICoPilot } from "./AICoPilot";
 
@@ -20,6 +20,8 @@ interface EditorShellProps {
   onToggleAI: () => void;
   saving: boolean;
   onSave: () => void;
+  onPublish?: () => void;
+  canPublish?: boolean;
   onBack?: () => void;
   children: ReactNode;
 }

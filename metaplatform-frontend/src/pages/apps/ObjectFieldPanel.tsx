@@ -99,6 +99,7 @@ export function ObjectFieldPanel({
       name: form.label.trim(),
       type: form.type,
       required: form.required,
+      unique: form.unique_field,
       description: form.description.trim() || undefined,
       defaultValue: form.default_value.trim() || undefined,
     };
@@ -132,7 +133,7 @@ export function ObjectFieldPanel({
       label: p.name,
       type: (p.type as FieldFormData["type"]) || "text",
       required: !!p.required,
-      unique_field: false,
+      unique_field: !!p.unique,
       default_value: p.defaultValue || "",
       description: p.description || "",
     });

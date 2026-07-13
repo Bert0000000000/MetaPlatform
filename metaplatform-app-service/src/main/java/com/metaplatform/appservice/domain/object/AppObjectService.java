@@ -31,7 +31,8 @@ public class AppObjectService {
 
     private static final Pattern CODE_PATTERN = Pattern.compile("^[a-z][a-z0-9_]{1,63}$");
     private static final Set<String> ALLOWED_TYPES =
-            Set.of("string", "longtext", "number", "boolean", "date", "datetime", "enum");
+            Set.of("string", "longtext", "number", "boolean", "date", "datetime", "enum",
+                    "text", "select", "multiselect", "email", "phone");
     public static final int MAX_FIELDS = 50;
 
     private final AppRepository appRepository;
@@ -85,7 +86,8 @@ public class AppObjectService {
                 throw ApiException.badRequest("非法字段 code: " + f.code());
             }
             boolean required = Boolean.TRUE.equals(f.required());
-            fieldDefs.add(new FieldDef(f.code(), f.name(), f.type(), required));
+            boolean unique = Boolean.TRUE.equals(f.unique());
+            fieldDefs.add(new FieldDef(f.code(), f.name(), f.type(), required, unique));
         }
         String schemaJson = writeSchemaJson(fieldDefs);
 
@@ -180,10 +182,11 @@ public class AppObjectService {
 
     private static String toOntologyType(String t) {
         return switch (t) {
-            case "string", "longtext", "enum" -> "String";
+            case "string", "longtext", "text", "email", "phone" -> "String";
             case "number" -> "Number";
             case "boolean" -> "Boolean";
             case "date", "datetime" -> "Date";
+            case "select", "multiselect", "enum" -> "Enum";
             default -> "String";
         };
     }
@@ -197,6 +200,7 @@ public class AppObjectService {
                 o.put("name", d.name());
                 o.put("type", d.type());
                 o.put("required", d.required());
+                o.put("unique", Boolean.TRUE.equals(d.unique()));
             }
             return arr.toString();
         } catch (Exception e) {
@@ -211,8 +215,8 @@ public class AppObjectService {
         try { ontologyClient.dropObjectType(id); } catch (Exception ignored) {}
     }
 
-    public record FieldDef(String code, String name, String type, Boolean required) {}
-    public record FieldSpec(String code, String name, String type, Boolean required) {}
+    public record FieldDef(String code, String name, String type, Boolean required, Boolean unique) {}
+    public record FieldSpec(String code, String name, String type, Boolean required, Boolean unique) {}
     public record AppObjectCreateRequest(String code, String name, String description, List<FieldSpec> fields) {}
     public record AppObjectUpdateRequest(String name, String description, List<FieldSpec> fields) {}
 }

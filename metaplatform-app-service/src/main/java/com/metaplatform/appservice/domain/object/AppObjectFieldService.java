@@ -71,7 +71,8 @@ public class AppObjectFieldService {
         FieldView newField = new FieldView(
                 req.code(), req.name(), req.type(),
                 Boolean.TRUE.equals(req.required()),
-                req.description(), req.defaultValue()
+                req.description(), req.defaultValue(),
+                Boolean.TRUE.equals(req.unique())
         );
         fields.add(newField);
 
@@ -97,7 +98,8 @@ public class AppObjectFieldService {
                 old.type(),
                 req.required() != null ? req.required() : old.required(),
                 req.description() != null ? req.description() : old.description(),
-                req.defaultValue() != null ? req.defaultValue() : old.defaultValue()
+                req.defaultValue() != null ? req.defaultValue() : old.defaultValue(),
+                req.unique() != null ? req.unique() : old.unique()
         );
         fields.set(idx, updated);
 
@@ -140,7 +142,7 @@ public class AppObjectFieldService {
 
     private void ensureDataTableColumn(AppObjectEntity entity, FieldView field) {
         var def = new AppObjectService.FieldDef(
-                field.code(), field.name(), toBackendType(field.type()), field.required()
+                field.code(), field.name(), toBackendType(field.type()), field.required(), field.unique()
         );
         if (entity.getDataTableName() == null || entity.getDataTableName().isBlank()) {
             String tableName = dynamicTableService.createTable(entity.getCode(), List.of(def));
@@ -190,7 +192,8 @@ public class AppObjectFieldService {
             String type,
             Boolean required,
             String description,
-            String defaultValue
+            String defaultValue,
+            Boolean unique
     ) {}
 
     public record FieldRequest(
@@ -199,6 +202,7 @@ public class AppObjectFieldService {
             @NotBlank String type,
             Boolean required,
             @Size(max = 500) String description,
-            @Size(max = 500) String defaultValue
+            @Size(max = 500) String defaultValue,
+            Boolean unique
     ) {}
 }

@@ -1,5 +1,7 @@
 package com.metaplatform.appservice.domain.form;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.metaplatform.appservice.api.error.ApiException;
 import com.metaplatform.appservice.domain.app.AppRepository;
 import com.metaplatform.appservice.domain.object.AppObjectRepository;
@@ -15,6 +17,7 @@ import java.util.regex.Pattern;
 public class AppFormService {
 
     private static final Pattern CODE_PATTERN = Pattern.compile("^[a-z][a-z0-9_]{1,63}$");
+    private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private final AppRepository appRepository;
     private final AppObjectRepository objectRepository;
@@ -60,7 +63,7 @@ public class AppFormService {
         form.setObjectId(obj.getId());
         form.setCode(req.code());
         form.setName(req.name());
-        form.setSchemaJson(req.schema());
+        form.setSchemaJson(normalizeSchema(req.schema()));
         form.setStatus("draft");
         form.setCreatedBy("dev-user");
         try {
@@ -77,7 +80,7 @@ public class AppFormService {
             throw ApiException.badRequest("已发布的表单不可编辑；请新建版本");
         }
         if (req.name() != null) form.setName(req.name());
-        if (req.schema() != null) form.setSchemaJson(req.schema());
+        if (req.schema() != null) form.setSchemaJson(normalizeSchema(req.schema()));
         form.setVersion(form.getVersion() + 1);
         return repository.save(form);
     }
@@ -101,6 +104,23 @@ public class AppFormService {
         }
     }
 
-    public record AppFormCreateRequest(Long objectId, String code, String name, String schema) {}
-    public record AppFormUpdateRequest(String name, String schema) {}
+    /**
+     * 允许前端直接传 JSON 对象或 JSON 字符串；统一序列化为字符串后落库。
+     */
+    private static String normalizeSchema(Object schema) {
+        if (schema == null) {
+            throw ApiException.badRequest("schema 必填");
+        }
+        if (schema instanceof String s) {
+            return s;
+        }
+        try {
+            return MAPPER.writeValueAsString(schema);
+        } catch (JsonProcessingException e) {
+            throw ApiException.badRequest("schema 序列化失败: " + e.getMessage());
+        }
+    }
+
+    public record AppFormCreateRequest(Long objectId, String code, String name, Object schema) {}
+    public record AppFormUpdateRequest(String name, Object schema) {}
 }
