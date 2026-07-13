@@ -36,6 +36,9 @@ import {
   ArrowUp,
   ArrowDown,
   Database,
+  Undo2,
+  Redo2,
+  Frame,
 } from "lucide-react";
 import type { FormEditorProps } from "./types";
 import type { PageComponent } from "./types";
@@ -55,9 +58,25 @@ import {
 } from "./schemaConverter";
 import { FieldPropertyPanel } from "./FieldPropertyPanel";
 import { SchemaPreview } from "./SchemaPreview";
+import { IframePreview } from "./IframePreview";
 import { getIcon } from "./icons";
-import { appServiceApi, type AppServiceObject, type AppServiceObjectField } from "@/lib/api";
+import { useUndoRedo } from "./useUndoRedo";
+import { appsApi, appServiceApi, type AppServiceObject, type AppServiceObjectField } from "@/lib/api";
 import { cn } from "@/lib/utils";
+
+/** AC-201.6 撤销/重做 coalesceKey 命名空间. */
+const COALESCE_KEYS = {
+  fieldProps: (id: string) => `field:${id}:props`,
+  fieldAdd: "field:add",
+  fieldDelete: (id: string) => `field:${id}:delete`,
+  fieldDuplicate: (id: string) => `field:${id}:duplicate`,
+  fieldMove: (id: string) => `field:${id}:move`,
+  fieldDrop: "field:drop",
+  sectionAdd: "section:add",
+  sectionDelete: (id: string) => `section:${id}:delete`,
+  sectionProps: (id: string) => `section:${id}:props`,
+  bindingObject: "binding:object",
+};
 
 // ─── Constants ─────────────────────────────────────────────
 
@@ -563,6 +582,26 @@ function FieldPreview({ field }: { field: DesignerField }) {
     );
   }
 
+  // v1.0.2 Sprint 2 F1.3: lookup 字段占位预览
+  if (field.type === "lookup") {
+    const obj = ontologyObjects.find((o) => String(o.id) === field.boundObject);
+    const displayField = field.boundProperty;
+    if (!obj) {
+      return (
+        <div className="flex h-7 items-center justify-between rounded border border-amber-200 bg-amber-50 px-2 text-xs text-amber-700" data-testid="lookup-empty-preview">
+          <span>请在右侧选择目标对象</span>
+          <span className="rounded border border-amber-300 px-1">选择</span>
+        </div>
+      );
+    }
+    return (
+      <div className="flex h-7 items-center justify-between rounded border border-blue-200 bg-blue-50 px-2 text-xs text-blue-700" data-testid="lookup-preview">
+        <span>{obj.name}{displayField ? ` / ${displayField}` : " / (待选字段)"}</span>
+        <span className="rounded border border-blue-300 px-1">{displayField ? "已配" : "待配"}</span>
+      </div>
+    );
+  }
+
   if (field.type === "formula") {
     return (
       <div className="flex h-7 items-center rounded border border-gray-200 bg-gray-50 px-2 text-xs text-gray-400">
@@ -590,7 +629,7 @@ function DesignerCanvas({
   state: DesignerState;
   selectedFieldId: string | null;
   onSelectField: (id: string | null) => void;
-  onUpdate: (updater: (prev: DesignerState) => DesignerState) => void;
+  onUpdate: (updater: (prev: DesignerState) => DesignerState, coalesceKey?: string) => void;
   appId?: string;
   ontologyObjects: AppServiceObject[];
   boundProperties: AppServiceObjectField[];
@@ -615,14 +654,14 @@ function DesignerCanvas({
           fields: [],
         },
       ],
-    }));
+    }), COALESCE_KEYS.sectionAdd);
   };
 
   const deleteSection = (sectionId: string) => {
     onUpdate((prev) => ({
       ...prev,
       sections: prev.sections.filter((s) => s.id !== sectionId),
-    }));
+    }), COALESCE_KEYS.sectionDelete(sectionId));
   };
 
   const updateSection = (
@@ -634,7 +673,7 @@ function DesignerCanvas({
       sections: prev.sections.map((s) =>
         s.id === sectionId ? { ...s, ...patch } : s,
       ),
-    }));
+    }), COALESCE_KEYS.sectionProps(sectionId));
   };
 
   // ── Field operations ──
@@ -648,7 +687,7 @@ function DesignerCanvas({
           ? { ...s, fields: [...s.fields, field] }
           : s,
       ),
-    }));
+    }), COALESCE_KEYS.fieldAdd);
     onSelectField(field.id);
   };
 
@@ -670,7 +709,7 @@ function DesignerCanvas({
           ? { ...s, fields: [...s.fields, field] }
           : s,
       ),
-    }));
+    }), COALESCE_KEYS.fieldAdd);
     onSelectField(field.id);
   };
 
@@ -682,7 +721,7 @@ function DesignerCanvas({
           ? { ...s, fields: s.fields.filter((f) => f.id !== fieldId) }
           : s,
       ),
-    }));
+    }), COALESCE_KEYS.fieldDelete(fieldId));
     if (selectedFieldId === fieldId) onSelectField(null);
   };
 
@@ -703,7 +742,7 @@ function DesignerCanvas({
         fields.splice(idx + 1, 0, copy);
         return { ...s, fields };
       }),
-    }));
+    }), COALESCE_KEYS.fieldDuplicate(fieldId));
   };
 
   const moveField = (
@@ -723,7 +762,7 @@ function DesignerCanvas({
         [fields[idx], fields[targetIdx]] = [fields[targetIdx], fields[idx]];
         return { ...s, fields };
       }),
-    }));
+    }), COALESCE_KEYS.fieldMove(fieldId));
   };
 
   // ── Drag and drop ──
@@ -799,7 +838,7 @@ function DesignerCanvas({
       }
 
       return { ...prev, sections: newSections };
-    });
+    }, COALESCE_KEYS.fieldDrop);
 
     setDragData(null);
   };
@@ -841,7 +880,7 @@ function DesignerCanvas({
                 onUpdate((prev) => ({
                   ...prev,
                   boundObjectId: v || undefined,
-                }))
+                }), COALESCE_KEYS.bindingObject)
               }
             >
               <SelectTrigger className="h-7 w-[200px] text-xs">
@@ -963,6 +1002,7 @@ function DesignerCanvas({
 export interface EnhancedFormEditorProps extends FormEditorProps {
   appId?: string;
   pageName?: string;
+  device?: "desktop" | "tablet" | "mobile";
 }
 
 export function FormLowCodeEditor({
@@ -973,14 +1013,25 @@ export function FormLowCodeEditor({
   setSelectedCompId,
   appId,
   pageName,
+  device,
 }: EnhancedFormEditorProps) {
-  const [mode, setMode] = useState<"design" | "preview" | "json">("design");
-  const [state, setState] = useState<DesignerState>(() => {
+  const [mode, setMode] = useState<"design" | "preview" | "iframe" | "json">("design");
+  const initialState = useMemo<DesignerState>(() => {
     const existing = componentsToState(components, pageName ?? "未命名表单");
     return existing ?? createEmptyState(pageName ?? "未命名表单");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // 仅在初次挂载时计算初始 state
+  // AC-201.6: 用 history 包裹 state, commit() 自动入栈
+  const history = useUndoRedo<DesignerState>(initialState, {
+    capacity: 20, // AC-201.6 要求 ≥5
+    mergeWindowMs: 600,
   });
+  const state = history.state;
+
   const [ontologyObjects, setOntologyObjects] = useState<AppServiceObject[]>([]);
   const [boundProperties, setBoundProperties] = useState<AppServiceObjectField[]>([]);
+  const [appSlug, setAppSlug] = useState<string | null>(null);
+  const resolvedAppId = appSlug ?? appId;
   const stateRef = useRef(state);
   stateRef.current = state;
 
@@ -996,37 +1047,73 @@ export function FormLowCodeEditor({
         components,
         pageName ?? "未命名表单",
       );
-      if (restored) setState(restored);
+      if (restored) history.reset(restored);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [components, pageName]);
 
-  // Sync internal state → external components
-  const syncToParent = useCallback(
-    (newState: DesignerState) => {
-      setState(newState);
-      setComponents(stateToComponents(newState));
-      setDirty(true);
-    },
-    [setComponents, setDirty],
-  );
+  // Sync internal state → external components (when state changes, push to parent)
+  useEffect(() => {
+    setComponents(stateToComponents(state));
+    setDirty(true);
+  }, [state, setComponents, setDirty]);
 
   const handleUpdate = useCallback(
-    (updater: (prev: DesignerState) => DesignerState) => {
+    (updater: (prev: DesignerState) => DesignerState, coalesceKey?: string) => {
       const prev = stateRef.current;
       const next = updater(prev);
-      syncToParent(next);
+      history.commit(next, coalesceKey);
     },
-    [syncToParent],
+    [history],
   );
+
+  // AC-201.6 键盘快捷键: Ctrl/Cmd+Z 撤销, Ctrl/Cmd+Shift+Z 重做
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      const mod = e.ctrlKey || e.metaKey;
+      if (!mod) return;
+      // 焦点在文本输入控件时不拦截, 让原生 undo 继续生效
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+      if (e.shiftKey && e.key.toLowerCase() === "z") {
+        e.preventDefault();
+        history.redo();
+      } else if (!e.shiftKey && e.key.toLowerCase() === "z") {
+        e.preventDefault();
+        history.undo();
+      } else if (!e.shiftKey && e.key.toLowerCase() === "y") {
+        e.preventDefault();
+        history.redo();
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [history]);
+
+  // 解析 Node 应用 UUID → Java app-service 所需的 slug
+  useEffect(() => {
+    if (!appId) return;
+    appsApi
+      .get(appId)
+      .then((a) => setAppSlug(a.app_slug || appId))
+      .catch(() => setAppSlug(appId));
+  }, [appId]);
 
   // Load app objects for data binding (Java backend)
   useEffect(() => {
-    if (!appId) return;
+    if (!resolvedAppId) return;
     appServiceApi
-      .listObjects(appId)
+      .listObjects(resolvedAppId)
       .then((objs) => setOntologyObjects(objs))
       .catch(() => {});
-  }, [appId]);
+  }, [resolvedAppId]);
 
   // Load object fields when bound object changes
   useEffect(() => {
@@ -1081,7 +1168,7 @@ export function FormLowCodeEditor({
               }
             : s,
         ),
-      }));
+      }), COALESCE_KEYS.fieldProps(selectedCompId));
     },
     [selectedFieldSectionId, selectedCompId, handleUpdate],
   );
@@ -1095,7 +1182,7 @@ export function FormLowCodeEditor({
           ? { ...s, fields: s.fields.filter((f) => f.id !== selectedCompId) }
           : s,
       ),
-    }));
+    }), COALESCE_KEYS.fieldDelete(selectedCompId));
     setSelectedCompId(null);
   }, [selectedFieldSectionId, selectedCompId, handleUpdate, setSelectedCompId]);
 
@@ -1109,6 +1196,44 @@ export function FormLowCodeEditor({
       })),
     [ontologyObjects],
   );
+
+  // v1.0.2 Sprint 2 F1.3: 当选中字段是 lookup 时, 按 field.boundObject 加载目标对象的字段列表
+  // 用于在 FieldPropertyPanel 的 "关联属性" Select 中显示
+  const [lookupTargetFields, setLookupTargetFields] = useState<AppServiceObjectField[]>([]);
+  useEffect(() => {
+    if (!selectedField || selectedField.type !== "lookup" || !selectedField.boundObject) {
+      setLookupTargetFields([]);
+      return;
+    }
+    const obj = ontologyObjects.find((o) => String(o.id) === selectedField.boundObject);
+    if (!obj) {
+      setLookupTargetFields([]);
+      return;
+    }
+    if (obj.schemaJson) {
+      try {
+        const fields = JSON.parse(obj.schemaJson) as AppServiceObjectField[];
+        setLookupTargetFields(Array.isArray(fields) ? fields : []);
+        return;
+      } catch {
+        setLookupTargetFields([]);
+        return;
+      }
+    }
+    // 无 schemaJson 时调用 listFields API
+    if (resolvedAppId) {
+      appServiceApi
+        .listFields(resolvedAppId, Number(obj.id))
+        .then((fields) => setLookupTargetFields(Array.isArray(fields) ? fields : []))
+        .catch(() => setLookupTargetFields([]));
+    }
+  }, [selectedField, ontologyObjects, resolvedAppId]);
+
+  // 决定 FieldPropertyPanel 用哪个 fields 列表
+  const propertiesForPanel: AppServiceObjectField[] = useMemo(() => {
+    if (selectedField?.type === "lookup") return lookupTargetFields;
+    return boundProperties;
+  }, [selectedField, lookupTargetFields, boundProperties]);
 
   return (
     <div className="flex h-full overflow-hidden bg-white">
@@ -1129,7 +1254,7 @@ export function FormLowCodeEditor({
                       ? { ...s, fields: [...s.fields, field] }
                       : s,
                   ),
-                }));
+                }), COALESCE_KEYS.fieldAdd);
                 setSelectedCompId(field.id);
               }
             }}
@@ -1154,7 +1279,7 @@ export function FormLowCodeEditor({
                     ? { ...s, fields: [...s.fields, field] }
                     : s,
                 ),
-              }));
+              }), COALESCE_KEYS.fieldAdd);
               setSelectedCompId(field.id);
             }}
           />
@@ -1165,6 +1290,33 @@ export function FormLowCodeEditor({
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Mode switcher */}
         <div className="flex items-center gap-1 border-b bg-gray-50/50 px-3 py-1.5">
+          {/* AC-201.6 撤销/重做按钮 (放在最左侧, 工具显眼位置) */}
+          <div className="flex items-center gap-0.5 border-r pr-2 mr-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 px-2 text-xs gap-1"
+              onClick={history.undo}
+              disabled={!history.canUndo}
+              title="撤销 (Ctrl+Z)"
+              data-testid="undo-button"
+            >
+              <Undo2 className="h-3.5 w-3.5" />
+              <span className="text-xs">{history.canUndo ? `撤销 (${history.pastDepth})` : "撤销"}</span>
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 px-2 text-xs gap-1"
+              onClick={history.redo}
+              disabled={!history.canRedo}
+              title="重做 (Ctrl+Shift+Z)"
+              data-testid="redo-button"
+            >
+              <Redo2 className="h-3.5 w-3.5" />
+              <span className="text-xs">{history.canRedo ? `重做 (${history.futureDepth})` : "重做"}</span>
+            </Button>
+          </div>
           <button
             onClick={() => setMode("design")}
             className={cn(
@@ -1187,6 +1339,20 @@ export function FormLowCodeEditor({
           >
             <Eye className="h-3.5 w-3.5" /> 预览
           </button>
+          {/* AC-201.7: 在 iframe 内预览渲染效果, 与父页面样式完全隔离 */}
+          <button
+            onClick={() => setMode("iframe")}
+            className={cn(
+              "flex items-center gap-1 rounded px-2.5 py-1 text-xs font-medium transition-colors",
+              mode === "iframe"
+                ? "bg-white text-blue-600 shadow-sm"
+                : "text-gray-500 hover:text-gray-700",
+            )}
+            data-testid="iframe-preview-button"
+            title="在隔离的 iframe 环境中预览表单 (AC-201.7)"
+          >
+            <Frame className="h-3.5 w-3.5" /> iframe 预览
+          </button>
           <button
             onClick={() => setMode("json")}
             className={cn(
@@ -1206,13 +1372,21 @@ export function FormLowCodeEditor({
             selectedFieldId={selectedCompId}
             onSelectField={setSelectedCompId}
             onUpdate={handleUpdate}
-            appId={appId}
+            appId={resolvedAppId}
             ontologyObjects={ontologyObjects}
             boundProperties={boundProperties}
           />
         )}
 
         {mode === "preview" && <SchemaPreview state={state} />}
+
+        {mode === "iframe" && (
+          <IframePreview
+            state={state}
+            deviceWidth={(device ?? "desktop") === "mobile" ? 390 : (device ?? "desktop") === "tablet" ? 768 : 1024}
+            deviceHeight={(device ?? "desktop") === "mobile" ? 720 : (device ?? "desktop") === "tablet" ? 900 : 720}
+          />
+        )}
 
         {mode === "json" && (
           <div className="flex-1 overflow-auto p-4">
@@ -1231,7 +1405,7 @@ export function FormLowCodeEditor({
             onChange={handleFieldChange}
             onDelete={handleFieldDelete}
             ontologyObjects={ontologyObjectsForPanel}
-            boundProperties={boundProperties}
+            boundProperties={propertiesForPanel}
           />
         </div>
       )}

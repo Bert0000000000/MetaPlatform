@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { PageHeader } from "@/components/ui/stat";
-import { appServiceApi, type AppServiceObject } from "@/lib/api";
+import { appsApi, appServiceApi, type AppServiceObject } from "@/lib/api";
 import {
   Plus, Edit, Trash2, Link2,
   Loader2, AlertCircle, Inbox, Box, Database, Save, Globe, Bot, Wand2,
@@ -71,19 +71,33 @@ export default function DataModeling() {
   const [fieldPanelOpen, setFieldPanelOpen] = useState(false);
   const [fieldPanelObject, setFieldPanelObject] = useState<AppServiceObject | null>(null);
 
+  // Java app-service 使用应用 slug 作为应用标识
+  const [appSlug, setAppSlug] = useState<string | null>(null);
+
   // Fetch objects
+  const resolvedAppId = appSlug ?? appId;
+
   const fetchObjects = useCallback(() => {
-    if (!appId) return;
+    if (!resolvedAppId) return;
     setLoading(true);
     setError(null);
     appServiceApi
-      .listObjects(appId)
+      .listObjects(resolvedAppId)
       .then((data) => setObjects(data ?? []))
       .catch((err: Error) => setError(err.message || "加载对象列表失败"))
       .finally(() => setLoading(false));
-  }, [appId]);
+  }, [resolvedAppId]);
 
   useEffect(() => { fetchObjects(); }, [fetchObjects]);
+
+  // 解析 Node 应用 UUID → Java app-service 所需的 slug
+  useEffect(() => {
+    if (!appId) return;
+    appsApi
+      .get(appId)
+      .then((a) => setAppSlug(a.app_slug || appId))
+      .catch(() => setAppSlug(appId));
+  }, [appId]);
 
   // 监听"全局本体变更"事件 (数字员工 / 其他页面 创建/更新/删除对象/字段),
   // 自动重新拉对象列表, 不要用户手动刷页.
@@ -111,7 +125,7 @@ export default function DataModeling() {
 
   // Create object
   const handleCreate = async () => {
-    if (!appId) {
+    if (!resolvedAppId) {
       setCreateError("应用 ID 无效");
       return;
     }
@@ -128,7 +142,7 @@ export default function DataModeling() {
     setCreating(true);
     setCreateError(null);
     try {
-      await appServiceApi.createObject(appId, {
+      await appServiceApi.createObject(resolvedAppId, {
         code,
         name,
         description: newObjectDescription.trim() || undefined,
@@ -147,14 +161,14 @@ export default function DataModeling() {
   };
 
   const handleDelete = async (id: number) => {
-    if (!appId) {
+    if (!resolvedAppId) {
       setError("应用 ID 无效");
       return;
     }
     if (!confirm("确定要删除该对象吗？此操作不可恢复。")) return;
     setDeletingId(id);
     try {
-      await appServiceApi.deleteObject(appId, id);
+      await appServiceApi.deleteObject(resolvedAppId, id);
       setObjects((prev) => prev.filter((o) => o.id !== id));
       window.dispatchEvent(new CustomEvent("mp:ontology-changed", { detail: { kind: "delete_object", appId } }));
     } catch (err: unknown) {
@@ -175,7 +189,7 @@ export default function DataModeling() {
 
   const handleSaveEdit = async () => {
     if (!editingObject) return;
-    if (!appId) {
+    if (!resolvedAppId) {
       setEditError("应用 ID 无效");
       return;
     }
@@ -186,7 +200,7 @@ export default function DataModeling() {
     setEditing(true);
     setEditError(null);
     try {
-      await appServiceApi.updateObject(appId, editingObject.id, {
+      await appServiceApi.updateObject(resolvedAppId, editingObject.id, {
         name: editObjectLabel.trim(),
         description: editObjectDescription.trim() || undefined,
       });
@@ -532,7 +546,7 @@ export default function DataModeling() {
 
       {fieldPanelObject && (
         <ObjectFieldPanel
-          appId={appId}
+          appId={resolvedAppId}
           objectId={fieldPanelObject.id}
           objectName={fieldPanelObject.name || fieldPanelObject.code}
           open={fieldPanelOpen}

@@ -1,0 +1,1 @@
+Get-NetTCPConnection -State Listen | Where-Object { $_.LocalPort -in 3001,5173,8080,8081,8090,8092 } | Select-Object LocalPort, OwningProcess | Format-Table -AutoSize

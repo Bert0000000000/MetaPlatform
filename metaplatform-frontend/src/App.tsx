@@ -1,5 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes, useParams } from "react-router-dom";
 import { Component, type ReactNode } from "react";
+import { Toaster } from "sonner";
 import { RoleProvider } from "@/contexts/RoleContext";
 import { Layout } from "@/components/Layout";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -92,6 +93,9 @@ import WebIDE from "@/pages/apps/WebIDE";
 import FormDesigner from "@/pages/apps/FormDesigner";
 import FDEWorkbench from "@/pages/apps/FDEWorkbench";
 import PageEditor from "@/pages/apps/PageEditor";
+import WorkflowDesignerPage from "@/pages/apps/WorkflowDesignerPage";
+import TodoCenterPage from "@/pages/apps/TodoCenterPage";
+import ProcessInstanceDetailPage from "@/pages/apps/ProcessInstanceDetailPage";
 
 // 流程中心
 import ProcessList, { ProcessInstances, ProcessApprovals, ProcessTriggers, ProcessAnalysis, ProcessPlatform, ProcessExport } from "@/pages/process/ProcessList";
@@ -191,6 +195,7 @@ export default function App() {
     <BrowserRouter>
       <RoleProvider>
         <TooltipProvider>
+          <Toaster position="top-right" />
           <ErrorBoundary>
           <Routes>
             {/* Login (public) */}
@@ -246,6 +251,9 @@ export default function App() {
               <Route path="/apps/:appId/ide" element={<WebIDE />} />
               <Route path="/apps/:appId/fde" element={<FDEWorkbench />} />
               <Route path="/apps/:appId/page-editor" element={<PageEditor />} />
+              <Route path="/apps/:appId/workflow-designer" element={<WorkflowDesignerPage />} />
+              <Route path="/apps/:appId/todos" element={<TodoCenterPage />} />
+              <Route path="/apps/:appId/process-instances/:processInstanceId" element={<ProcessInstanceDetailPage />} />
 
               {/* 5. 流程中心 */}
               <Route path="/process" element={<ProcessList />} />

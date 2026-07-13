@@ -503,6 +503,25 @@ export const FIELD_LIBRARY: FieldTypeDef[] = [
       width: "full",
     }),
   },
+  // ── v1.0.2 Sprint 2 F1.3: 关联 (lookup) 字段 ──
+  // 与 reference 类似, 但强绑定到 AppObjectService.LookupSpec
+  // (objectId + displayField). 拖入后用户必须选目标对象 + 显示字段.
+  {
+    type: "lookup",
+    label: "关联字段",
+    category: "business",
+    icon: "Link2",
+    widget: "lookup",
+    description: "关联到另一对象的 lookup 字段 (FK + displayField)",
+    props: ["basic", "binding", "validation", "layout"],
+    defaultField: () => ({
+      type: "lookup",
+      label: "关联字段",
+      fieldKey: "",
+      required: false,
+      width: "full",
+    }),
+  },
   {
     type: "formula",
     label: "公式",

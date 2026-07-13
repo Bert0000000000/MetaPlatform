@@ -1,6 +1,8 @@
 package com.metaplatform.appservice.domain.dynamic;
 
 import com.metaplatform.appservice.api.error.ApiException;
+import com.metaplatform.appservice.domain.form.FormDataPageResult;
+import com.metaplatform.appservice.domain.form.FormDataQueryRequest;
 import com.metaplatform.appservice.domain.object.AppObjectService;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -15,10 +17,13 @@ import java.security.MessageDigest;
 import java.sql.PreparedStatement;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * 动态业务数据表 —— 在该服务里管理运行时创建的物理表（data_{app}_{obj}_{hash}）。
@@ -39,6 +44,11 @@ public class DynamicTableService {
 
     public DynamicTableService(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
+    }
+
+    /** v1.0.2 Sprint 2 F1.4: 暴露给需要自己执行 SQL 的代码 (如 lookup-options 公开接口) */
+    public JdbcTemplate getJdbcTemplate() {
+        return jdbcTemplate;
     }
 
     /**
@@ -71,6 +81,11 @@ public class DynamicTableService {
         em.createNativeQuery(sql.toString()).executeUpdate();
         em.createNativeQuery("CREATE INDEX idx_" + tableName + "_tenant ON " + tableName + "(tenant_id)")
                 .executeUpdate();
+
+        // v1.0.2 B1.3: 为 lookup 字段批量创建 FK 索引 (提升 B1.5 连表查询性能)
+        for (String ddl : LookupDdlBuilder.buildLookupIndexDdls(tableName, fields)) {
+            em.createNativeQuery(ddl).executeUpdate();
+        }
         return tableName;
     }
 
@@ -89,6 +104,12 @@ public class DynamicTableService {
         sql.append("ALTER TABLE ").append(tableName).append(" ADD COLUMN ");
         appendColumnDef(sql, field);
         em.createNativeQuery(sql.toString()).executeUpdate();
+
+        // v1.0.2 B1.3: lookup 字段加列后立即加 FK 索引
+        if (LookupDdlBuilder.isLookupField(field)) {
+            String indexDdl = LookupDdlBuilder.buildLookupIndexDdl(tableName, field.code());
+            em.createNativeQuery(indexDdl).executeUpdate();
+        }
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
@@ -164,6 +185,11 @@ public class DynamicTableService {
     }
 
     private void appendColumnDef(StringBuilder sql, AppObjectService.FieldDef f) {
+        // v1.0.2 B1.3: lookup 类型走 LookupDdlBuilder 统一生成 BIGINT + NOT NULL 逻辑
+        if (LookupDdlBuilder.isLookupField(f)) {
+            sql.append(LookupDdlBuilder.buildLookupColumnDef(f));
+            return;
+        }
         sql.append(f.code()).append(" ");
         switch (f.type()) {
             case "number" -> sql.append("DOUBLE PRECISION");
@@ -176,6 +202,139 @@ public class DynamicTableService {
             sql.append(" NOT NULL");
         }
     }
+
+    // ════════════════════════════════════════════════════════════════
+    // 列表查询（分页 / 排序 / 过滤 / CSV）
+    // ════════════════════════════════════════════════════════════════
+
+    /**
+     * 按租户分页查询动态业务表。
+     *
+     * @param tableName 物理表名
+     * @param req       查询参数
+     * @param tenantId  当前租户
+     * @return 分页结果（不含 tenant_id / created_by 等敏感系统列）
+     */
+    @Transactional(readOnly = true)
+    public FormDataPageResult queryRows(String tableName, FormDataQueryRequest req, String tenantId) {
+        validateTableName(tableName);
+        if (tenantId == null || tenantId.isBlank()) {
+            throw ApiException.badRequest("tenantId 不能为空");
+        }
+
+        SqlAndArgs countSa = buildSql(tableName, req, tenantId, true);
+        Long total = jdbcTemplate.queryForObject(countSa.sql(), Long.class, countSa.args().toArray());
+        if (total == null) total = 0L;
+
+        SqlAndArgs dataSa = buildSql(tableName, req, tenantId, false);
+        List<Map<String, Object>> rows = jdbcTemplate.queryForList(dataSa.sql(), dataSa.args().toArray());
+        rows = rows.stream().map(this::maskSystemColumns).toList();
+
+        return new FormDataPageResult(rows, total, req.getPage(), req.getSize(), req.getSort(), req.getFilters());
+    }
+
+    /**
+     * 查询全部匹配行（用于 CSV 导出，不分页）。
+     */
+    @Transactional(readOnly = true)
+    public List<Map<String, Object>> queryRowsForCsv(String tableName, FormDataQueryRequest req, String tenantId) {
+        validateTableName(tableName);
+        if (tenantId == null || tenantId.isBlank()) {
+            throw ApiException.badRequest("tenantId 不能为空");
+        }
+        SqlAndArgs sa = buildSql(tableName, req, tenantId, false, false);
+        List<Map<String, Object>> rows = jdbcTemplate.queryForList(sa.sql(), sa.args().toArray());
+        return rows.stream().map(this::maskSystemColumns).toList();
+    }
+
+    // ════════════════════════════════════════════════════════════════
+    // SQL 构建
+    // ════════════════════════════════════════════════════════════════
+
+    private SqlAndArgs buildSql(String tableName, FormDataQueryRequest req, String tenantId, boolean countOnly) {
+        return buildSql(tableName, req, tenantId, countOnly, true);
+    }
+
+    private SqlAndArgs buildSql(String tableName, FormDataQueryRequest req, String tenantId, boolean countOnly, boolean paged) {
+        StringBuilder sql = new StringBuilder();
+        List<Object> args = new ArrayList<>();
+
+        if (countOnly) {
+            sql.append("SELECT COUNT(*) FROM ").append(tableName);
+        } else {
+            List<String> columns = req.getColumns();
+            if (columns == null || columns.isEmpty()) {
+                sql.append("SELECT * FROM ").append(tableName);
+            } else {
+                for (String col : columns) {
+                    if (!IDENT_PATTERN.matcher(col).matches()) {
+                        throw ApiException.badRequest("非法查询列: " + col);
+                    }
+                }
+                sql.append("SELECT ").append(String.join(", ", columns)).append(" FROM ").append(tableName);
+            }
+        }
+
+        sql.append(" WHERE tenant_id = ?");
+        args.add(tenantId);
+
+        if (req.getFilters() != null) {
+            for (var entry : req.getFilters().entrySet()) {
+                FilterParser.FilterClause clause = parseFilter(entry.getKey(), entry.getValue());
+                if (clause == null) continue;
+                sql.append(" AND ").append(clause.sql());
+                args.addAll(clause.args());
+            }
+        }
+
+        if (!countOnly && req.getSort() != null && !req.getSort().isEmpty()) {
+            String orderBy = req.getSort().stream()
+                    .map(this::parseSort)
+                    .filter(s -> s != null && !s.isBlank())
+                    .collect(Collectors.joining(", "));
+            if (!orderBy.isBlank()) {
+                sql.append(" ORDER BY ").append(orderBy);
+            }
+        }
+
+        if (!countOnly && paged) {
+            sql.append(" LIMIT ? OFFSET ?");
+            args.add(req.getSize());
+            args.add(req.getOffset());
+        }
+
+        return new SqlAndArgs(sql.toString(), args);
+    }
+
+    private FilterParser.FilterClause parseFilter(String column, String expression) {
+        // v1.0.2 B1.4: 委托给 FilterParser 纯函数 (支持 != 和 in 操作符)
+        return FilterParser.parse(column, expression);
+    }
+
+    private String parseSort(String sortExpr) {
+        // v1.0.2 B1.4: 委托给 FilterParser 纯函数
+        return FilterParser.parseSort(sortExpr);
+    }
+
+    private Map<String, Object> maskSystemColumns(Map<String, Object> row) {
+        Map<String, Object> masked = new java.util.LinkedHashMap<>(row);
+        masked.remove("tenant_id");
+        masked.remove("created_by");
+        return masked;
+    }
+
+    private void validateTableName(String tableName) {
+        if (!TABLE_NAME_PATTERN.matcher(tableName).matches()) {
+            throw ApiException.badRequest("非法表名: " + tableName);
+        }
+    }
+
+    // ════════════════════════════════════════════════════════════════
+    // 内部辅助
+    // ════════════════════════════════════════════════════════════════
+
+    private record SqlAndArgs(String sql, List<Object> args) {}
+    // v1.0.2 B1.4: FilterClause 移到 FilterParser.FilterClause (public static record)
 
     private static String shortHash(String input) {
         try {

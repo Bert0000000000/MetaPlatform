@@ -45,7 +45,12 @@ import { bpmnNodeTypeRegistry } from "./BpmnNodes";
 
 // ==================== Field Definition Types ====================
 
-type FieldKind = "text" | "textarea" | "select" | "pageSelect" | "readonly";
+type FieldKind = "text" | "textarea" | "select" | "pageSelect" | "readonly" | "fieldPermissions";
+
+export interface FieldPermissionItem {
+  key: string;
+  permission: "visible" | "editable" | "hidden" | "readonly";
+}
 
 interface FieldDef {
   key: string;
@@ -152,6 +157,10 @@ const NODE_FIELDS: Record<string, FieldSection[]> = {
         { key: "priority", label: "优先级", kind: "text", placeholder: "50" },
         { key: "description", label: "描述", kind: "textarea", placeholder: "任务描述…" },
       ],
+    },
+    {
+      title: "字段权限",
+      fields: [{ key: "fieldPermissions", label: "字段权限", kind: "fieldPermissions" }],
     },
   ],
   serviceTask: [
@@ -266,6 +275,10 @@ const NODE_FIELDS: Record<string, FieldSection[]> = {
         ]},
         { key: "description", label: "描述", kind: "textarea", placeholder: "审批说明…" },
       ],
+    },
+    {
+      title: "字段权限",
+      fields: [{ key: "fieldPermissions", label: "字段权限", kind: "fieldPermissions" }],
     },
   ],
   aiDecision: [
@@ -425,6 +438,8 @@ interface PropertiesPanelProps {
   onUpdateProcess: (config: { id: string; name: string }) => void;
   /** 可选：当前工作流所属模块下的相关页面，供 Form Key / 表单模板 选择 */
   formPageOptions?: { value: string; label: string }[];
+  /** 可选：当前表单字段列表，供字段权限配置使用 */
+  formFields?: { key: string; label?: string }[];
 }
 
 export function PropertiesPanel({
@@ -438,6 +453,7 @@ export function PropertiesPanel({
   processConfig,
   onUpdateProcess,
   formPageOptions = [],
+  formFields = [],
 }: PropertiesPanelProps) {
   const [formData, setFormData] = useState<Record<string, string>>({});
 
@@ -457,6 +473,9 @@ export function PropertiesPanel({
             form[f.key] = String(data.label || "");
           } else if (f.key === "annotationText") {
             form[f.key] = String(data.label || data.text || "");
+          } else if (f.key === "fieldPermissions") {
+            const fp = data.fieldPermissions;
+            form[f.key] = Array.isArray(fp) ? JSON.stringify(fp) : "";
           } else {
             form[f.key] = String(data[f.key] ?? "");
           }
@@ -497,7 +516,15 @@ export function PropertiesPanel({
         for (const sec of sections) {
           for (const f of sec.fields) {
             if (f.key === "label" || f.key === "annotationText") continue;
-            if (formData[f.key] !== undefined && formData[f.key] !== "") {
+            if (formData[f.key] === undefined || formData[f.key] === "") continue;
+            if (f.key === "fieldPermissions") {
+              try {
+                const parsed = JSON.parse(formData[f.key]);
+                if (Array.isArray(parsed) && parsed.length > 0) data[f.key] = parsed;
+              } catch {
+                // ignore malformed JSON
+              }
+            } else {
               data[f.key] = formData[f.key];
             }
           }
@@ -583,7 +610,7 @@ export function PropertiesPanel({
               {sec.title && (
                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{sec.title}</p>
               )}
-              {sec.fields.map((f) => renderField(f, formData, handleFieldChange, formPageOptions))}
+              {sec.fields.map((f) => renderField(f, formData, handleFieldChange, formPageOptions, formFields))}
             </div>
           ))}
           <Button size="sm" className="w-full" onClick={handleSave}>应用</Button>
@@ -637,7 +664,7 @@ export function PropertiesPanel({
                 {sec.title}
               </p>
             )}
-            {sec.fields.map((f) => renderField(f, formData, handleFieldChange, formPageOptions))}
+            {sec.fields.map((f) => renderField(f, formData, handleFieldChange, formPageOptions, formFields))}
           </div>
         ))}
 
@@ -667,6 +694,7 @@ function renderField(
   formData: Record<string, string>,
   onChange: (field: string, value: string) => void,
   pageOptions: { value: string; label: string }[] = [],
+  formFields: { key: string; label?: string }[] = [],
 ) {
   if (f.kind === "readonly") {
     return (
@@ -716,6 +744,72 @@ function renderField(
             ))}
           </SelectContent>
         </Select>
+      </div>
+    );
+  }
+
+  if (f.kind === "fieldPermissions") {
+    const permissions: FieldPermissionItem[] = (() => {
+      try {
+        const parsed = JSON.parse(formData[f.key] || "[]");
+        return Array.isArray(parsed) ? parsed : [];
+      } catch {
+        return [];
+      }
+    })();
+    const update = (next: FieldPermissionItem[]) => {
+      onChange(f.key, JSON.stringify(next));
+    };
+    const toggleField = (key: string, permission: FieldPermissionItem["permission"]) => {
+      const filtered = permissions.filter((p) => p.key !== key);
+      filtered.push({ key, permission });
+      update(filtered);
+    };
+    const removeField = (key: string) => {
+      update(permissions.filter((p) => p.key !== key));
+    };
+    const permissionOptions = [
+      { value: "editable", label: "可编辑" },
+      { value: "readonly", label: "只读" },
+      { value: "visible", label: "可见" },
+      { value: "hidden", label: "隐藏" },
+    ];
+    return (
+      <div key={f.key} className="space-y-2">
+        {formFields.length === 0 ? (
+          <p className="text-xs text-muted-foreground">暂无可用表单字段，请先选择表单或配置表单字段。</p>
+        ) : (
+          formFields.map((field) => {
+            const existing = permissions.find((p) => p.key === field.key);
+            return (
+              <div key={field.key} className="flex items-center gap-2">
+                <div className="flex-1 min-w-0 text-xs truncate" title={field.key}>
+                  {field.label || field.key}
+                </div>
+                <Select
+                  value={existing?.permission || "editable"}
+                  onValueChange={(val) => toggleField(field.key, val as FieldPermissionItem["permission"])}
+                >
+                  <SelectTrigger className="h-7 text-xs w-24">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {permissionOptions.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {existing && (
+                  <Button variant="ghost" size="icon" className="size-6 shrink-0" onClick={() => removeField(field.key)}>
+                    <X className="size-3" />
+                  </Button>
+                )}
+              </div>
+            );
+          })
+        )}
       </div>
     );
   }

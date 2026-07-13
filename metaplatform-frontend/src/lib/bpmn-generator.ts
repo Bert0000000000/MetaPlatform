@@ -160,6 +160,16 @@ export function generateBpmnXml(process: BpmnProcess): string {
       }
     }
 
+    // Field permissions extension for user tasks
+    if (tag === "bpmn:userTask") {
+      const fp = data.fieldPermissions;
+      if (Array.isArray(fp) && fp.length > 0) {
+        body += `\n        <bpmn:extensionElements>`;
+        body += `\n          <mp:fieldPermissions>${esc(JSON.stringify(fp))}</mp:fieldPermissions>`;
+        body += `\n        </bpmn:extensionElements>`;
+      }
+    }
+
     // Incoming / outgoing references
     for (const ref of incoming) {
       body += `\n        <bpmn:incoming>${ref}</bpmn:incoming>`;
@@ -245,6 +255,7 @@ export function generateBpmnXml(process: BpmnProcess): string {
   xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
   xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
   xmlns:flowable="http://flowable.org/bpmn"
+  xmlns:mp="http://metaplatform.org/bpmn"
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   id="Definitions_1"
   targetNamespace="http://bpmn.io/schema/bpmn"
@@ -343,6 +354,20 @@ export function parseBpmnXml(xmlString: string): ParsedBpmnProcess | null {
         if (scriptEl) data.script = scriptEl.textContent || "";
         const scriptFormat = el.getAttribute("scriptFormat");
         if (scriptFormat) data.scriptFormat = scriptFormat;
+
+        // Field permissions extension
+        const extEl = el.querySelector("extensionElements");
+        if (extEl) {
+          const fpEl = extEl.querySelector("fieldPermissions");
+          if (fpEl?.textContent) {
+            try {
+              const parsed = JSON.parse(fpEl.textContent.trim());
+              if (Array.isArray(parsed)) data.fieldPermissions = parsed;
+            } catch {
+              // ignore malformed field permissions
+            }
+          }
+        }
 
         // Timer/Message event detection
         let nodeType = type;

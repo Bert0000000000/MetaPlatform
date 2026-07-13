@@ -273,6 +273,10 @@ export function usePageEditor(appId: string | undefined, pageId: string | null):
     dashboard_id: string | null;
   }>({ form_id: null, report_id: null, dashboard_id: null });
 
+  // Java app-service 使用应用 slug 作为应用标识
+  const [appSlug, setAppSlug] = useState<string | null>(null);
+  const resolvedAppId = appSlug ?? appId;
+
   // 记录上一次加载的 pageId, 仅在 pageId 真正变化时才重置 pageName / components,
   // 避免同名 pageId 重新加载时把用户未保存的编辑覆盖掉。
   const lastLoadedPageIdRef = useRef<string | null>(null);
@@ -307,7 +311,7 @@ export function usePageEditor(appId: string | undefined, pageId: string | null):
         // No saved content — try link to backend form / report / dashboard; fallback to mock data.
         if (page.type === "form" && page.form_id) {
           try {
-            const formDef = await appServiceApi.forms.get(appId, page.form_id);
+            const formDef = await appServiceApi.forms.get(resolvedAppId, page.form_id);
             const schema = formDef.schemaJson ? JSON.parse(formDef.schemaJson) : {};
             const mockComps = schemaToComponents(schema, formDef.name || page.name);
             if (mockComps.length > 0) {
@@ -376,9 +380,24 @@ export function usePageEditor(appId: string | undefined, pageId: string | null):
       lastLoadedPageIdRef.current = pageId;
     } catch (e) { console.error("Failed to load page:", e); }
     setLoading(false);
-  }, [appId, pageId]);
+  }, [appId, pageId, resolvedAppId]);
 
   useEffect(() => { loadPage(); }, [loadPage]);
+
+  // 解析 Node 应用 UUID → Java app-service 所需的 slug
+  useEffect(() => {
+    if (!appId) return;
+    appsApi
+      .get(appId)
+      .then((a) => {
+        console.log("[usePageEditor] resolved app slug:", a.app_slug, "for appId:", appId);
+        setAppSlug(a.app_slug || appId);
+      })
+      .catch((err) => {
+        console.warn("[usePageEditor] failed to resolve app slug:", err);
+        setAppSlug(appId);
+      });
+  }, [appId]);
 
   const savePage = useCallback(async () => {
     if (!appId || !pageId) return;
@@ -423,7 +442,7 @@ export function usePageEditor(appId: string | undefined, pageId: string | null):
       // Without this the user-visible Tabs in AppOverview would stay empty.
       if (pageData?.type && ["form", "report", "dashboard"].includes(pageData.type)) {
         await mirrorToBusinessTable(
-          appId,
+          resolvedAppId,
           pageId,
           pageData.type,
           pageName,
@@ -438,22 +457,22 @@ export function usePageEditor(appId: string | undefined, pageId: string | null):
       setDirty(false);
     } catch (e) { console.error("Save failed:", e); }
     setSaving(false);
-  }, [appId, pageId, currentVersion, components, pageName, versions, pageData?.type, linkedIds]);
+  }, [appId, resolvedAppId, pageId, currentVersion, components, pageName, versions, pageData?.type, linkedIds]);
 
   const publishForm = useCallback(async () => {
-    if (!appId) return;
+    if (!resolvedAppId) return;
     const fid = linkedIds.form_id;
     if (!fid) {
       toast.warning("请先保存页面以创建表单，再执行发布");
       return;
     }
     try {
-      await appServiceApi.forms.publish(appId, fid);
+      await appServiceApi.forms.publish(resolvedAppId, fid);
       toast.success("表单已发布，外部用户可通过公开链接访问");
     } catch (e) {
       toast.error("发布失败: " + (e instanceof Error ? e.message : String(e)));
     }
-  }, [appId, linkedIds.form_id]);
+  }, [resolvedAppId, linkedIds.form_id]);
 
   const restoreVersion = useCallback((ver: PageVersion) => {
     setComponents(ver.components);

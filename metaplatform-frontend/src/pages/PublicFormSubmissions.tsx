@@ -7,27 +7,19 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Loader2, AlertCircle, ArrowLeft, Download, Search, ChevronLeft, ChevronRight, RefreshCw } from "lucide-react";
-import { publicApi, type FormSubmission, type PaginatedSubmissions } from "@/lib/api";
-
-const PUBLIC_BASE = (import.meta.env?.VITE_API_BASE || "/api").replace(/\/$/, "");
-
-async function fetchPublic<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${PUBLIC_BASE}${path}`, {
-    credentials: "omit",
-    ...init,
-    headers: { "Content-Type": "application/json", ...(init?.headers || {}) },
-  });
-  const json = await res.json();
-  if (!json.success) throw new Error(json.error || `HTTP ${res.status}`);
-  return json.data;
-}
+import {
+  Loader2, AlertCircle, ArrowLeft, Download, Search,
+  ChevronLeft, ChevronRight, RefreshCw,
+} from "lucide-react";
+import { appServiceApi, type FormDataPageResult, type PublicFormSchema } from "@/lib/api";
+import { toast } from "@/lib/toast";
 
 function formatDate(iso?: string) {
   if (!iso) return "-";
   try {
-    return new Date(iso).toLocaleString("zh-CN", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
+    return new Date(iso).toLocaleString("zh-CN", {
+      month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit",
+    });
   } catch {
     return iso;
   }
@@ -39,62 +31,56 @@ function escapeCsvCell(value: unknown) {
   return str;
 }
 
-function buildCsv(rows: FormSubmission[], valueKeys: string[]) {
-  const headers = ["提交时间", "状态", "提交人邮箱", "提交人姓名", ...valueKeys];
-  const lines = [headers.map(escapeCsvCell).join(",")];
-  for (const r of rows) {
-    const values = r.values || {};
-    const line = [
-      formatDate(r.submittedAt),
-      r.status,
-      r.submitterEmail,
-      r.submitterName,
-      ...valueKeys.map((k) => values[k]),
-    ];
-    lines.push(line.map(escapeCsvCell).join(","));
-  }
-  return "\uFEFF" + lines.join("\n");
-}
-
 export default function PublicFormSubmissions() {
   const { formId } = useParams<{ formId: string }>();
   const navigate = useNavigate();
 
   const [formName, setFormName] = useState<string>("");
+  const [schema, setSchema] = useState<PublicFormSchema | null>(null);
   const [formLoading, setFormLoading] = useState(true);
-  const [result, setResult] = useState<PaginatedSubmissions | null>(null);
+  const [result, setResult] = useState<FormDataPageResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  const [q, setQ] = useState("");
-  const [status, setStatus] = useState("");
-  const [sortField, setSortField] = useState("submitted_at");
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [sort, setSort] = useState<string | undefined>(undefined);
+  const [filters, setFilters] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (!formId) return;
     setFormLoading(true);
-    fetchPublic<{ name: string }>(`/public/forms/${encodeURIComponent(formId)}`)
-      .then((data) => setFormName(data.name))
+    appServiceApi.public.getFormSchema(formId)
+      .then((data) => {
+        setFormName(data.name);
+        setSchema(data);
+      })
       .catch((e) => setError((e as Error).message))
       .finally(() => setFormLoading(false));
   }, [formId]);
+
+  const fieldKeys = useMemo(() => {
+    const keys: string[] = [];
+    if (!schema) return keys;
+    const sections = schema.sections || [];
+    sections.forEach((s: any) => {
+      (s.fields || []).forEach((f: any) => {
+        const key = f.fieldKey || f.key || f.code;
+        if (key) keys.push(key);
+      });
+    });
+    return keys;
+  }, [schema]);
 
   const load = async (targetPage = page) => {
     if (!formId) return;
     setLoading(true);
     setError(null);
     try {
-      const data = await publicApi.listFormSubmissions(formId, {
-        page: targetPage,
-        pageSize,
-        sortField,
-        sortOrder,
-        q: q || undefined,
-        status: status || undefined,
-      });
+      const params: Record<string, string | number> = { page: targetPage, size: pageSize };
+      if (sort) params.sort = sort;
+      Object.entries(filters).forEach(([k, v]) => { if (v) params[k] = v; });
+      const data = await appServiceApi.public.getSubmissions(formId, params);
       setResult(data);
       setPage(data.page);
     } catch (e) {
@@ -108,37 +94,34 @@ export default function PublicFormSubmissions() {
     if (!formId) return;
     load(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [formId, pageSize, sortField, sortOrder]);
-
-  useEffect(() => {
-    const t = setTimeout(() => {
-      if (!formId) return;
-      load(1);
-    }, 300);
-    return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [q, status]);
-
-  const valueKeys = useMemo(() => {
-    const keys = new Set<string>();
-    for (const r of result?.rows || []) {
-      for (const k of Object.keys(r.values || {})) keys.add(k);
-    }
-    return Array.from(keys);
-  }, [result]);
+  }, [formId, pageSize, sort]);
 
   const handleSort = (field: string) => {
-    if (sortField === field) {
-      setSortOrder((o) => (o === "asc" ? "desc" : "asc"));
+    if (!sort) {
+      setSort(field);
+    } else if (sort === field) {
+      setSort(`-${field}`);
+    } else if (sort === `-${field}`) {
+      setSort(undefined);
     } else {
-      setSortField(field);
-      setSortOrder("desc");
+      setSort(field);
     }
   };
 
   const exportCsv = () => {
     if (!result?.rows.length) return;
-    const csv = buildCsv(result.rows, valueKeys);
+    const header = ["ID", "创建时间", "更新时间", ...fieldKeys];
+    const lines = [header.map(escapeCsvCell).join(",")];
+    for (const row of result.rows) {
+      const line = [
+        row.id ?? "",
+        row.created_at ?? "",
+        row.updated_at ?? "",
+        ...fieldKeys.map((k) => row[k]),
+      ];
+      lines.push(line.map(escapeCsvCell).join(","));
+    }
+    const csv = "\uFEFF" + lines.join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -146,6 +129,7 @@ export default function PublicFormSubmissions() {
     a.download = `${formName || "submissions"}.csv`;
     a.click();
     URL.revokeObjectURL(url);
+    toast.success("CSV 导出成功");
   };
 
   if (formLoading) {
@@ -178,7 +162,7 @@ export default function PublicFormSubmissions() {
 
   const rows = result?.rows || [];
   const total = result?.total || 0;
-  const totalPages = result?.totalPages || 1;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   return (
     <div className="min-h-screen bg-background py-10 px-4">
@@ -207,22 +191,11 @@ export default function PublicFormSubmissions() {
               <div className="relative flex-1">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
                 <Input
-                  placeholder="搜索提交人、邮箱或内容…"
-                  value={q}
-                  onChange={(e) => setQ(e.target.value)}
+                  placeholder="全局搜索（v1.0.1 暂未启用）"
+                  disabled
                   className="pl-9"
                 />
               </div>
-              <select
-                value={status}
-                onChange={(e) => setStatus(e.target.value)}
-                className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-              >
-                <option value="">全部状态</option>
-                <option value="pending">待处理</option>
-                <option value="approved">已通过</option>
-                <option value="rejected">已驳回</option>
-              </select>
               <select
                 value={pageSize}
                 onChange={(e) => setPageSize(Number(e.target.value))}
@@ -241,36 +214,42 @@ export default function PublicFormSubmissions() {
             <table className="w-full text-sm">
               <thead className="bg-muted/50">
                 <tr>
-                  <SortableHeader label="提交时间" field="submitted_at" current={sortField} order={sortOrder} onSort={handleSort} />
-                  <SortableHeader label="状态" field="status" current={sortField} order={sortOrder} onSort={handleSort} />
-                  <SortableHeader label="提交人" field="submitter_name" current={sortField} order={sortOrder} onSort={handleSort} />
-                  <SortableHeader label="邮箱" field="submitter_email" current={sortField} order={sortOrder} onSort={handleSort} />
-                  {valueKeys.map((k) => (
-                    <th key={k} className="text-left px-4 py-3 font-medium text-muted-foreground whitespace-nowrap">
-                      {k}
-                    </th>
+                  <SortableHeader label="ID" field="id" current={sort} onSort={handleSort} />
+                  <SortableHeader label="创建时间" field="created_at" current={sort} onSort={handleSort} />
+                  <SortableHeader label="更新时间" field="updated_at" current={sort} onSort={handleSort} />
+                  <SortableHeader label="审批状态" field="workflow_status" current={sort} onSort={handleSort} />
+                  <SortableHeader label="当前任务" field="current_task_name" current={sort} onSort={handleSort} />
+                  {fieldKeys.map((k) => (
+                    <SortableHeader key={k} label={k} field={k} current={sort} onSort={handleSort} />
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {rows.length === 0 ? (
+                {loading ? (
                   <tr>
-                    <td colSpan={4 + valueKeys.length} className="text-center py-12 text-muted-foreground">
+                    <td colSpan={5 + fieldKeys.length} className="text-center py-12 text-muted-foreground">
+                      <Loader2 className="size-5 animate-spin inline mr-2" /> 加载中...
+                    </td>
+                  </tr>
+                ) : rows.length === 0 ? (
+                  <tr>
+                    <td colSpan={5 + fieldKeys.length} className="text-center py-12 text-muted-foreground">
                       暂无提交记录
                     </td>
                   </tr>
                 ) : (
-                  rows.map((row) => (
-                    <tr key={row.id} className="border-b last:border-0 hover:bg-muted/30">
-                      <td className="px-4 py-3 whitespace-nowrap">{formatDate(row.submittedAt)}</td>
-                      <td className="px-4 py-3">
-                        <StatusBadge status={row.status} />
+                  rows.map((row, idx) => (
+                    <tr key={idx} className="border-b last:border-0 hover:bg-muted/30">
+                      <td className="px-4 py-3 whitespace-nowrap">{row.id ?? "-"}</td>
+                      <td className="px-4 py-3 whitespace-nowrap">{formatDate(String(row.created_at || ""))}</td>
+                      <td className="px-4 py-3 whitespace-nowrap">{formatDate(String(row.updated_at || ""))}</td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <StatusBadge status={String(row.workflow_status || "")} />
                       </td>
-                      <td className="px-4 py-3">{row.submitterName || "-"}</td>
-                      <td className="px-4 py-3">{row.submitterEmail || "-"}</td>
-                      {valueKeys.map((k) => (
+                      <td className="px-4 py-3 whitespace-nowrap">{row.current_task_name ?? "-"}</td>
+                      {fieldKeys.map((k) => (
                         <td key={k} className="px-4 py-3 max-w-xs truncate">
-                          {String((row.values || {})[k] ?? "")}
+                          {row[k] == null ? "-" : String(row[k])}
                         </td>
                       ))}
                     </tr>
@@ -299,37 +278,50 @@ export default function PublicFormSubmissions() {
   );
 }
 
+function StatusBadge({ status }: { status: string }) {
+  const label = status || "none";
+  const color =
+    label === "completed" || label === "approved"
+      ? "bg-green-100 text-green-700"
+      : label === "rejected"
+      ? "bg-red-100 text-red-700"
+      : label === "running"
+      ? "bg-blue-100 text-blue-700"
+      : label === "error"
+      ? "bg-orange-100 text-orange-700"
+      : "bg-gray-100 text-gray-700";
+  const text =
+    label === "completed" || label === "approved"
+      ? "已通过"
+      : label === "rejected"
+      ? "已驳回"
+      : label === "running"
+      ? "审批中"
+      : label === "error"
+      ? "流程异常"
+      : "未启动";
+  return <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${color}`}>{text}</span>;
+}
+
 function SortableHeader({
   label,
   field,
   current,
-  order,
   onSort,
 }: {
   label: string;
   field: string;
-  current: string;
-  order: "asc" | "desc";
+  current?: string;
   onSort: (f: string) => void;
 }) {
-  const active = current === field;
+  const activeAsc = current === field;
+  const activeDesc = current === `-${field}`;
   return (
     <th
       onClick={() => onSort(field)}
       className="text-left px-4 py-3 font-medium text-muted-foreground whitespace-nowrap cursor-pointer select-none hover:text-foreground"
     >
-      {label} {active ? (order === "asc" ? "↑" : "↓") : "↕"}
+      {label} {activeAsc ? "↑" : activeDesc ? "↓" : "↕"}
     </th>
   );
-}
-
-function StatusBadge({ status }: { status?: string }) {
-  switch (status) {
-    case "approved":
-      return <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100">已通过</Badge>;
-    case "rejected":
-      return <Badge className="bg-rose-100 text-rose-700 hover:bg-rose-100">已驳回</Badge>;
-    default:
-      return <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100">待处理</Badge>;
-  }
 }

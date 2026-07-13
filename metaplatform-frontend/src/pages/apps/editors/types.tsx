@@ -29,6 +29,9 @@ export interface BaseEditorProps {
   components: PageComponent[];
   setComponents: React.Dispatch<React.SetStateAction<PageComponent[]>>;
   setDirty: (dirty: boolean) => void;
+  appId?: string;
+  pageData?: any;
+  formId?: string | null;
 }
 
 /** 带选中组件的编辑器 props */

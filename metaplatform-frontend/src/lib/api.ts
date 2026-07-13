@@ -27,14 +27,39 @@ async function request<T>(
     headers["Authorization"] = `Bearer ${token}`;
   }
 
-  const res = await fetch(`${BASE_URL}${path}`, { ...options, headers });
+  let res: Response;
+  try {
+    res = await fetch(`${BASE_URL}${path}`, { ...options, headers });
+  } catch (err) {
+    // 网络层失败（vite proxy 504、后端宕机等），给用户一个可读的提示
+    throw new Error(
+      `网络请求失败: ${path} (${err instanceof Error ? err.message : String(err)})`,
+    );
+  }
 
+  // 401: 立刻清登录态并跳转，不读 body
   if (res.status === 401) {
     logout();
     throw new Error("Unauthorized — redirecting to login");
   }
 
-  const json: ApiResponse<T> = await res.json();
+  // 非 2xx 但有 JSON body 的业务错误
+  const ctype = res.headers.get("content-type") ?? "";
+  if (!ctype.includes("application/json")) {
+    const text = await res.text().catch(() => "");
+    throw new Error(
+      `后端返回非 JSON 响应 (status=${res.status}, path=${path}): ${text.slice(0, 120)}`,
+    );
+  }
+
+  let json: ApiResponse<T>;
+  try {
+    json = (await res.json()) as ApiResponse<T>;
+  } catch (err) {
+    throw new Error(
+      `响应 JSON 解析失败 (status=${res.status}, path=${path}): ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
 
   if (!json.success) {
     throw new Error(json.error || `API error: ${res.status}`);
@@ -273,6 +298,24 @@ export const appsApi = {
     }),
   activity: (appId: string, limit = 10) =>
     request<any[]>(`/apps/${appId}/activity?limit=${limit}`),
+  getRuntime: (id: string) =>
+    request<{
+      slug: string;
+      persisted: {
+        containerId: string | null;
+        port: number | null;
+        mode: string | null;
+      };
+      runtime: {
+        state: string;
+        running?: boolean;
+        port?: number | null;
+        containerId?: string | null;
+        startedAt?: string;
+        error?: string;
+      };
+      published_url: string;
+    }>(`/apps/${id}/runtime`),
   getRuntimeHealth: () =>
     request<{
       docker: "ok" | "degraded";
@@ -1972,6 +2015,8 @@ export interface AppServiceObjectField {
   description?: string;
   defaultValue?: string;
   unique?: boolean;
+  // v1.0.2 Sprint 2 F1.1: lookup 子配置 (type=lookup 时存在)
+  lookup?: { objectId: number; displayField: string };
 }
 
 export interface AppServiceForm {
@@ -1992,6 +2037,88 @@ export interface PublicFormSchema {
   name: string;
   boundObjectId: string;
   sections?: any[];
+}
+
+export interface FormDataPageResult {
+  rows: Record<string, unknown>[];
+  total: number;
+  page: number;
+  size: number;
+  sort: string[];
+  filters: Record<string, string>;
+}
+
+export interface FormDataQueryParams {
+  page?: number;
+  size?: number;
+  sort?: string;
+  columns?: string;
+  [column: string]: string | number | undefined;
+}
+
+export interface AppWorkflowDefinition {
+  id: number;
+  appId: number;
+  formId?: number;
+  name: string;
+  code: string;
+  processKey?: string;
+  deploymentId?: string;
+  processDefinitionId?: string;
+  processDefinitionKey?: string;
+  bpmnXml?: string;
+  status?: "draft" | "published" | "suspended";
+  fieldPermissions?: string;
+  version?: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface AppFormWorkflow {
+  id: number;
+  appId: number;
+  formId: number;
+  workflowDefinitionId: number;
+  enabled: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface TodoTask {
+  id: string;
+  name: string;
+  taskDefinitionKey: string;
+  createTime: string;
+  processInstanceId: string;
+  processDefinitionId: string;
+  assignee?: string;
+  submissionId?: number;
+  formId?: number;
+  appId?: number;
+  submitterId?: string;
+}
+
+export interface TodoTaskDetail {
+  task: TodoTask;
+  submission: {
+    id: number;
+    formId: number;
+    rowId: number;
+    valuesJson: string;
+    workflowStatus: string;
+    submitterId?: string;
+    createdAt: string;
+  };
+  fieldPermissions: Record<string, unknown>;
+}
+
+function buildQueryString(params: Record<string, string | number | undefined>): string {
+  const sp = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value === undefined || value === null || value === "") continue;
+    sp.set(key, String(value));
+  }
+  return sp.toString();
 }
 
 export const appServiceApi = {
@@ -2033,6 +2160,14 @@ export const appServiceApi = {
       appServiceRequest<AppServiceForm>(`/apps/${appId}/forms/${formId}`, { method: "PUT", body: JSON.stringify(data) }),
     publish: (appId: number | string, formId: number | string) =>
       appServiceRequest<AppServiceForm>(`/apps/${appId}/forms/${formId}/publish`, { method: "POST" }),
+    listData: (appId: number | string, formId: number | string, params: FormDataQueryParams = {}) =>
+      appServiceRequest<FormDataPageResult>(
+        `/apps/${appId}/forms/${formId}/data?${buildQueryString(params)}`,
+      ),
+    exportCsv: (appId: number | string, formId: number | string, params: FormDataQueryParams = {}) =>
+      fetch(`${APP_SERVICE_BASE}/apps/${appId}/forms/${formId}/data.csv?${buildQueryString(params)}`, {
+        headers: { Authorization: `Bearer ${getToken() || ""}` },
+      }),
   },
 
   // Public forms (no auth)
@@ -2042,6 +2177,75 @@ export const appServiceApi = {
       appServiceRequest<{ id: number }>(`/public/forms/${formId}/submit`, {
         method: "POST",
         body: JSON.stringify({ values, submitterEmail, submitterName }),
+      }),
+    getFormData: (formId: number | string, params: FormDataQueryParams = {}) =>
+      appServiceRequest<FormDataPageResult>(`/public/forms/${formId}/data?${buildQueryString(params)}`),
+    /**
+     * v1.0.2 Sprint 2 F1.4: 加载表单中所有 lookup 字段的下拉选项.
+     * @returns [{field, options:[{id,label}, ...]}, ...]
+     */
+    getLookupOptions: (formId: number | string) =>
+      appServiceRequest<Array<{ field: string; options: Array<{ id: number; label: string }> }>>(
+        `/public/forms/${formId}/lookup-options`,
+      ),
+    getSubmissions: (formId: number | string, params: FormDataQueryParams = {}) =>
+      appServiceRequest<FormDataPageResult>(`/public/forms/${formId}/submissions?${buildQueryString(params)}`),
+  },
+
+  // Workflows
+  workflows: {
+    list: (appId: number | string) => appServiceRequest<AppWorkflowDefinition[]>(`/apps/${appId}/workflows`),
+    get: (appId: number | string, id: number | string) => appServiceRequest<AppWorkflowDefinition>(`/apps/${appId}/workflows/${id}`),
+    create: (appId: number | string, data: { name: string; code: string; formId?: number; bpmnXml: string }) =>
+      appServiceRequest<AppWorkflowDefinition>(`/apps/${appId}/workflows`, { method: "POST", body: JSON.stringify(data) }),
+    update: (appId: number | string, id: number | string, data: { name: string; formId?: number; bpmnXml: string }) =>
+      appServiceRequest<AppWorkflowDefinition>(`/apps/${appId}/workflows/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+    publish: (appId: number | string, id: number | string) =>
+      appServiceRequest<AppWorkflowDefinition>(`/apps/${appId}/workflows/${id}/publish`, { method: "POST" }),
+    suspend: (appId: number | string, id: number | string) =>
+      appServiceRequest<AppWorkflowDefinition>(`/apps/${appId}/workflows/${id}/suspend`, { method: "POST" }),
+    delete: (appId: number | string, id: number | string) =>
+      appServiceRequest<{ deleted: string }>(`/apps/${appId}/workflows/${id}`, { method: "DELETE" }),
+  },
+
+  // Form workflow binding
+  formWorkflow: {
+    get: (appId: number | string, formId: number | string) =>
+      appServiceRequest<AppFormWorkflow | null>(`/apps/${appId}/forms/${formId}/workflow`),
+    bind: (appId: number | string, formId: number | string, workflowDefinitionId: number | string) =>
+      appServiceRequest<AppFormWorkflow>(`/apps/${appId}/forms/${formId}/workflow`, {
+        method: "POST",
+        body: JSON.stringify({ workflowDefinitionId }),
+      }),
+    unbind: (appId: number | string, formId: number | string) =>
+      appServiceRequest<{ unbound: string }>(`/apps/${appId}/forms/${formId}/workflow`, { method: "DELETE" }),
+  },
+
+  // Process instances
+  processInstances: {
+    get: (appId: number | string, processInstanceId: string) =>
+      appServiceRequest<{
+        instance: Record<string, unknown>;
+        bpmnXml: string;
+        historicActivities: Record<string, unknown>[];
+        currentTasks: Record<string, unknown>[];
+        workflowDefinition: Record<string, unknown>;
+      }>(`/apps/${appId}/process-instances/${processInstanceId}`),
+  },
+
+  // Todos
+  todos: {
+    list: (appId: number | string) => appServiceRequest<TodoTask[]>(`/apps/${appId}/todos`),
+    get: (appId: number | string, taskId: string) => appServiceRequest<TodoTaskDetail>(`/apps/${appId}/todos/${taskId}`),
+    complete: (appId: number | string, taskId: string, comment?: string) =>
+      appServiceRequest<{ status: string }>(`/apps/${appId}/todos/${taskId}/complete`, {
+        method: "POST",
+        body: JSON.stringify({ comment }),
+      }),
+    reject: (appId: number | string, taskId: string, comment: string) =>
+      appServiceRequest<{ status: string }>(`/apps/${appId}/todos/${taskId}/reject`, {
+        method: "POST",
+        body: JSON.stringify({ comment }),
       }),
   },
 };

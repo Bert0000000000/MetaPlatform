@@ -3,7 +3,7 @@
  * Combines NodePalette (left), ReactFlow canvas (center), PropertiesPanel (right),
  * with a toolbar and status bar.
  */
-import { useCallback, useRef, useState, useMemo, type DragEvent, useEffect } from "react";
+import { useCallback, useRef, useState, useMemo, type DragEvent, useEffect, forwardRef, useImperativeHandle } from "react";
 import {
   ReactFlow,
   addEdge,
@@ -112,15 +112,25 @@ interface ProcessDesignerV2Props {
   className?: string;
   /** 可选：当前工作流所属模块下的相关页面，供节点 Form Key 选择 */
   formPageOptions?: { value: string; label: string }[];
+  /** 可选：当前表单字段列表，供字段权限配置使用 */
+  formFields?: { key: string; label?: string }[];
 }
 
-export function ProcessDesignerV2({
-  initialBpmnXml,
-  definitionId,
-  onDeploy,
-  className,
-  formPageOptions,
-}: ProcessDesignerV2Props) {
+export interface ProcessDesignerV2Ref {
+  getBpmnXml: () => string;
+}
+
+export const ProcessDesignerV2 = forwardRef<ProcessDesignerV2Ref, ProcessDesignerV2Props>(function ProcessDesignerV2(
+  {
+    initialBpmnXml,
+    definitionId,
+    onDeploy,
+    className,
+    formPageOptions,
+    formFields,
+  }: ProcessDesignerV2Props,
+  ref,
+) {
   // ---- React Flow state ----
   const [nodes, setNodes, onNodesChange] = useNodesState(defaultNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(defaultEdges);
@@ -385,6 +395,8 @@ export function ProcessDesignerV2({
     });
   }, [nodes, edges, processConfig]);
 
+  useImperativeHandle(ref, () => ({ getBpmnXml }), [getBpmnXml]);
+
   const handleExport = useCallback(() => {
     const xml = getBpmnXml();
     const blob = new Blob([xml], { type: "application/xml" });
@@ -635,6 +647,7 @@ export function ProcessDesignerV2({
               processConfig={processConfig}
               onUpdateProcess={setProcessConfig}
               formPageOptions={formPageOptions}
+              formFields={formFields}
             />
           </div>
         )}
@@ -656,4 +669,4 @@ export function ProcessDesignerV2({
       </div>
     </div>
   );
-}
+});

@@ -150,9 +150,10 @@ export default function AppOverview() {
   };
   const [logsLoading, setLogsLoading] = useState(false);
 
-  // Delete app state
+  // Delete app state — AC-104.4: 二次确认 (Dialog + 输入应用名)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [deleteConfirmInput, setDeleteConfirmInput] = useState("");
 
   useEffect(() => {
     if (!appId) return;
@@ -331,7 +332,15 @@ export default function AppOverview() {
             >
               <Pencil className="size-3.5 mr-1" /> 进入设计器
             </Button>
-            <Button variant="destructive" size="sm" onClick={() => setDeleteDialogOpen(true)}>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => {
+                setDeleteConfirmInput("");
+                setDeleteDialogOpen(true);
+              }}
+              data-testid="delete-trigger"
+            >
               <Trash2 className="size-3.5 mr-1" /> 删除应用
             </Button>
           </div>
@@ -355,7 +364,7 @@ export default function AppOverview() {
         <Button variant="outline" className="gap-2 h-auto py-3" onClick={() => navigate(`/apps/${appId}/pages`)}>
           <Plus className="size-4" /> 新建页面
         </Button>
-        <Button variant="outline" className="gap-2 h-auto py-3" onClick={() => navigate(`/apps/${appId}/data-modeling`)}>
+        <Button variant="outline" className="gap-2 h-auto py-3" onClick={() => navigate(`/apps/${appId}/datamodeling`)}>
           <Dna className="size-4" /> 新建对象
         </Button>
         <Button variant="outline" className="gap-2 h-auto py-3" onClick={() => navigate(`/apps/${appId}/workflows`)}>
@@ -740,23 +749,67 @@ export default function AppOverview() {
         </DialogContent>
       </Dialog>
 
-      {/* Delete App Confirmation Dialog */}
-      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+      {/* Delete App Confirmation Dialog — AC-104.4: 二次确认 (弹窗 + 输入应用名) */}
+      <Dialog open={deleteDialogOpen} onOpenChange={(open) => {
+        // 关闭时重置输入框和 loading 状态
+        if (!open) {
+          setDeleteConfirmInput("");
+          if (!deleting) setDeleteDialogOpen(false);
+        } else {
+          setDeleteDialogOpen(true);
+        }
+      }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Trash2 className="size-5 text-destructive" /> 删除应用
             </DialogTitle>
             <DialogDescription>
-              确定要删除应用「{app.name}」吗？此操作将删除应用及其所有页面、对象和流程数据，且不可恢复。
+              确定要删除应用「<span className="font-semibold text-foreground">{app.name}</span>」吗？
+              此操作将删除应用及其所有页面、对象和流程数据，且不可恢复。
             </DialogDescription>
           </DialogHeader>
           <div className="p-3 bg-destructive/10 border border-destructive/30 rounded-lg text-xs text-destructive">
             警告: 此操作不可逆。应用的所有数据将被永久删除。
           </div>
+          <div className="space-y-2">
+            <label htmlFor="delete-confirm-input" className="text-xs text-muted-foreground block">
+              AC-104.4: 请输入应用名 <span className="font-mono font-semibold text-foreground">{app.name}</span> 以确认删除：
+            </label>
+            <Input
+              id="delete-confirm-input"
+              data-testid="delete-confirm-input"
+              placeholder={app.name}
+              value={deleteConfirmInput}
+              onChange={(e) => setDeleteConfirmInput(e.target.value)}
+              disabled={deleting}
+              autoComplete="off"
+              autoFocus
+            />
+            {deleteConfirmInput && deleteConfirmInput !== app.name && (
+              <p className="text-xs text-amber-600 dark:text-amber-400">
+                应用名不匹配, 仍需完全匹配才能删除
+              </p>
+            )}
+          </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)} disabled={deleting}>取消</Button>
-            <Button variant="destructive" onClick={handleDeleteApp} disabled={deleting}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setDeleteConfirmInput("");
+                setDeleteDialogOpen(false);
+              }}
+              disabled={deleting}
+              data-testid="delete-cancel"
+            >
+              取消
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteApp}
+              disabled={deleting || deleteConfirmInput !== app.name}
+              data-testid="delete-confirm"
+            >
               {deleting ? (
                 <Loader2 className="size-4 mr-1 animate-spin" />
               ) : (

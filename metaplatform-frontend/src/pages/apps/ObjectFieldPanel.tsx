@@ -27,9 +27,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { appServiceApi, AppServiceObjectField } from "@/lib/api";
+import { appServiceApi, AppServiceObject, AppServiceObjectField } from "@/lib/api";
 import { Loader2, Trash2, Edit3, Save, X } from "lucide-react";
-import { FIELD_TYPES, DEFAULT_FIELD_FORM, FieldFormData } from "./object-field-config";
+import {
+  FIELD_TYPES,
+  DEFAULT_FIELD_FORM,
+  FieldFormData,
+  validateFieldForm,
+  shouldShowFieldTypeHelper,
+  shouldShowLookupWarning,
+  LOOKUP_EDIT_WARNING,
+} from "./object-field-config";
 
 interface ObjectFieldPanelProps {
   appId: string | number;
@@ -53,6 +61,11 @@ export function ObjectFieldPanel({
   const [editingCode, setEditingCode] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // v1.0.2 Sprint 2 F1.1: 当前 app 下所有对象 (供 lookup 类型选目标对象)
+  const [targetObjects, setTargetObjects] = useState<AppServiceObject[]>([]);
+  const [targetFields, setTargetFields] = useState<AppServiceObjectField[]>([]);
+  const [loadingTargetFields, setLoadingTargetFields] = useState(false);
+
   const load = async () => {
     if (!objectId) return;
     setLoading(true);
@@ -66,34 +79,60 @@ export function ObjectFieldPanel({
     }
   };
 
+  // 加载当前 app 下的所有对象 (除自身)
+  const loadTargetObjects = async () => {
+    try {
+      const data = await appServiceApi.listObjects(appId);
+      setTargetObjects(Array.isArray(data) ? data.filter((o) => o.id !== objectId) : []);
+    } catch (err) {
+      console.warn("加载目标对象失败", err);
+      setTargetObjects([]);
+    }
+  };
+
+  // 加载目标对象的字段列表 (供 displayField 选择)
+  const loadTargetFields = async (targetObjId: number) => {
+    setLoadingTargetFields(true);
+    try {
+      const data = await appServiceApi.listFields(appId, targetObjId);
+      // displayField 通常是字符串型字段
+      const list = Array.isArray(data) ? data : [];
+      setTargetFields(list.filter((f) => f.type === "text" || f.type === "longtext" || f.type === "number"));
+    } catch (err) {
+      console.warn("加载目标对象字段失败", err);
+      setTargetFields([]);
+    } finally {
+      setLoadingTargetFields(false);
+    }
+  };
+
   useEffect(() => {
     if (open) {
       load();
+      loadTargetObjects();
       setForm(DEFAULT_FIELD_FORM);
       setEditingCode(null);
       setError(null);
+      setTargetFields([]);
     }
   }, [open, objectId, appId]);
 
-  const validate = (data: FieldFormData) => {
-    if (!data.name.trim() || !data.label.trim()) {
-      return "字段名和显示名均为必填";
+  // 当 lookup 类型选中目标对象变化时, 重新加载 displayField 选项
+  useEffect(() => {
+    if (form.type === "lookup" && form.lookup.objectId) {
+      loadTargetFields(form.lookup.objectId);
+    } else {
+      setTargetFields([]);
     }
-    if (!/^[a-z][a-z0-9_]*$/.test(data.name.trim())) {
-      return "字段名只能包含小写英文、数字和下划线，且不能以数字开头";
-    }
-    const exists = properties.some(
-      (p) =>
-        p.code === data.name.trim() &&
-        (!editingCode || p.code !== editingCode)
-    );
-    if (exists) {
-      return "字段名在当前对象下已存在";
-    }
-    return null;
-  };
+  }, [form.type, form.lookup.objectId]);
 
   const handleSave = async () => {
+    const msg = validateFieldForm(form, properties, editingCode);
+    if (msg) {
+      setError(msg);
+      return;
+    }
+
     const data: AppServiceObjectField = {
       code: form.name.trim(),
       name: form.label.trim(),
@@ -103,11 +142,15 @@ export function ObjectFieldPanel({
       description: form.description.trim() || undefined,
       defaultValue: form.default_value.trim() || undefined,
     };
-    const msg = validate(form);
-    if (msg) {
-      setError(msg);
-      return;
+
+    // v1.0.2 Sprint 2 F1.1: lookup 类型附 lookup 子配置
+    if (form.type === "lookup" && form.lookup.objectId) {
+      data.lookup = {
+        objectId: form.lookup.objectId,
+        displayField: form.lookup.displayField,
+      };
     }
+
     setSaving(true);
     setError(null);
     try {
@@ -136,6 +179,9 @@ export function ObjectFieldPanel({
       unique_field: !!p.unique,
       default_value: p.defaultValue || "",
       description: p.description || "",
+      lookup: p.lookup
+        ? { objectId: p.lookup.objectId, displayField: p.lookup.displayField }
+        : { objectId: null, displayField: "" },
     });
     setError(null);
   };
@@ -158,6 +204,34 @@ export function ObjectFieldPanel({
     const map = new Map(FIELD_TYPES.map((t) => [t.value, t.label]));
     return (v: string) => map.get(v) || v;
   }, []);
+
+  // lookup 子配置: 目标对象选项
+  const targetObjectOptions = useMemo(
+    () =>
+      targetObjects.map((o) => ({
+        value: String(o.id),
+        label: `${o.name} (${o.code})`,
+      })),
+    [targetObjects],
+  );
+
+  // 当前 lookup 字段的 displayField 选项
+  const displayFieldOptions = useMemo(
+    () =>
+      targetFields.map((f) => ({
+        value: f.code,
+        label: `${f.name} (${f.code})`,
+      })),
+    [targetFields],
+  );
+
+  // 表格中 lookup 列的描述
+  const lookupDescription = (p: AppServiceObjectField) => {
+    if (p.type !== "lookup" || !p.lookup) return "-";
+    const obj = targetObjects.find((o) => o.id === p.lookup!.objectId);
+    const objName = obj ? obj.name : `对象 #${p.lookup.objectId}`;
+    return `${objName} / ${p.lookup.displayField}`;
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -196,14 +270,22 @@ export function ObjectFieldPanel({
               />
             </div>
             <div className="space-y-1.5">
-              <Label>字段类型</Label>
+              <Label className="flex items-center gap-2">
+                字段类型
+                {editingCode && (
+                  <Badge variant="outline" className="text-[10px] px-1.5 py-0" data-testid="field-type-locked-badge">
+                    不可修改
+                  </Badge>
+                )}
+              </Label>
               <Select
                 value={form.type}
+                disabled={!!editingCode}
                 onValueChange={(v) =>
                   setForm((f) => ({ ...f, type: v as FieldFormData["type"] }))
                 }
               >
-                <SelectTrigger>
+                <SelectTrigger data-testid="field-type-trigger">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -214,6 +296,11 @@ export function ObjectFieldPanel({
                   ))}
                 </SelectContent>
               </Select>
+              {shouldShowFieldTypeHelper(editingCode, form.type) && (
+                <p className="text-xs text-amber-600 dark:text-amber-400" data-testid="field-type-helper">
+                  AC-103.5: 字段类型不可修改。如需变更, 请先删除该字段再重建。
+                </p>
+              )}
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="field-default">默认值</Label>
@@ -226,6 +313,94 @@ export function ObjectFieldPanel({
                 }
               />
             </div>
+
+            {/* v1.0.2 Sprint 2 F1.1: lookup 子配置区 */}
+            {form.type === "lookup" && (
+              <>
+                <div className="space-y-1.5">
+                  <Label htmlFor="field-lookup-target">
+                    目标对象 <span className="text-destructive">*</span>
+                  </Label>
+                  <Select
+                    value={form.lookup.objectId ? String(form.lookup.objectId) : ""}
+                    disabled={!!editingCode}
+                    onValueChange={(v) =>
+                      setForm((f) => ({
+                        ...f,
+                        lookup: { objectId: Number(v), displayField: "" },
+                      }))
+                    }
+                  >
+                    <SelectTrigger id="field-lookup-target" data-testid="field-lookup-target-trigger">
+                      <SelectValue placeholder="选择关联对象..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {targetObjectOptions.length === 0 ? (
+                        <div className="p-2 text-xs text-muted-foreground">
+                          {loadingTargetFields ? "加载中..." : "当前应用下暂无其它对象"}
+                        </div>
+                      ) : (
+                        targetObjectOptions.map((o) => (
+                          <SelectItem key={o.value} value={o.value}>
+                            {o.label}
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="field-lookup-display">
+                    显示字段 <span className="text-destructive">*</span>
+                  </Label>
+                  <Select
+                    value={form.lookup.displayField}
+                    disabled={!!editingCode || !form.lookup.objectId}
+                    onValueChange={(v) =>
+                      setForm((f) => ({
+                        ...f,
+                        lookup: { ...f.lookup, displayField: v },
+                      }))
+                    }
+                  >
+                    <SelectTrigger id="field-lookup-display" data-testid="field-lookup-display-trigger">
+                      <SelectValue placeholder={form.lookup.objectId ? "选择显示字段..." : "请先选目标对象"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {displayFieldOptions.length === 0 ? (
+                        <div className="p-2 text-xs text-muted-foreground">
+                          {!form.lookup.objectId ? "请先选目标对象" : "该对象没有可显示字段"}
+                        </div>
+                      ) : (
+                        displayFieldOptions.map((o) => (
+                          <SelectItem key={o.value} value={o.value}>
+                            {o.label}
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {shouldShowLookupWarning(editingCode, form.type) && (
+                  <div
+                    className="col-span-2 rounded-md border border-amber-500/40 bg-amber-50 dark:bg-amber-950/30 p-3 space-y-1.5"
+                    data-testid="field-lookup-helper"
+                  >
+                    <p className="text-xs font-semibold text-amber-700 dark:text-amber-300 flex items-center gap-1.5">
+                      <span aria-hidden>⚠</span>
+                      {LOOKUP_EDIT_WARNING.title}
+                    </p>
+                    <p className="text-xs text-amber-700 dark:text-amber-300">
+                      {LOOKUP_EDIT_WARNING.body}
+                    </p>
+                    <p className="text-xs text-amber-700 dark:text-amber-300">
+                      {LOOKUP_EDIT_WARNING.action}
+                    </p>
+                  </div>
+                )}
+              </>
+            )}
+
             <div className="space-y-1.5 col-span-2">
               <Label htmlFor="field-desc">描述</Label>
               <Input
@@ -298,9 +473,9 @@ export function ObjectFieldPanel({
                   <TableHead>字段名</TableHead>
                   <TableHead>显示名</TableHead>
                   <TableHead>类型</TableHead>
+                  <TableHead>关联配置</TableHead>
                   <TableHead>必填</TableHead>
                   <TableHead>唯一</TableHead>
-                  <TableHead>默认值</TableHead>
                   <TableHead className="text-right">操作</TableHead>
                 </TableRow>
               </TableHeader>
@@ -312,11 +487,11 @@ export function ObjectFieldPanel({
                     <TableCell>
                       <Badge variant="outline">{typeLabel(p.type)}</Badge>
                     </TableCell>
+                    <TableCell className="text-xs text-muted-foreground" data-testid={`field-lookup-desc-${p.code}`}>
+                      {lookupDescription(p)}
+                    </TableCell>
                     <TableCell>{p.required ? "是" : "否"}</TableCell>
                     <TableCell>{p.unique ? "是" : "否"}</TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {p.defaultValue || "-"}
-                    </TableCell>
                     <TableCell className="text-right">
                       <Button
                         variant="ghost"

@@ -28,6 +28,10 @@ public class ApiException extends RuntimeException {
     public static ApiException conflict(String message) {
         return new ApiException(HttpStatus.CONFLICT, 409, message);
     }
+    /** AC-103.6: HTTP 412 Precondition Failed — 用于 ETag/If-Match 不匹配. */
+    public static ApiException preconditionFailed(String message) {
+        return new ApiException(HttpStatus.PRECONDITION_FAILED, 412, message);
+    }
     public static ApiException forbidden(String message) {
         return new ApiException(HttpStatus.FORBIDDEN, 403, message);
     }

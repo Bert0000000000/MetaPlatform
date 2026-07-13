@@ -35,7 +35,7 @@ public class AppObjectFieldService {
 
     private static final Set<String> SUPPORTED_TYPES = Set.of(
             "text", "longtext", "number", "boolean", "date", "datetime",
-            "select", "multiselect", "email", "phone"
+            "select", "multiselect", "email", "phone", "lookup"
     );
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
@@ -59,8 +59,9 @@ public class AppObjectFieldService {
     }
 
     @Transactional
-    public List<FieldView> add(String appRef, Long oid, FieldRequest req) {
+    public List<FieldView> add(String appRef, Long oid, FieldRequest req, Integer expectedVersion) {
         var entity = getObject(appRef, oid);
+        assertVersionMatches(entity, expectedVersion);
         validate(req);
 
         List<FieldView> fields = parseSchema(entity.getSchemaJson());
@@ -68,15 +69,28 @@ public class AppObjectFieldService {
             throw ApiException.conflict("字段 code 已存在: " + req.code());
         }
 
+        // v1.0.2 B1.3: lookup 字段校验 (限 5 个 / 对象)
+        int existingLookups = (int) fields.stream()
+                .filter(f -> "lookup".equals(f.type()))
+                .count();
+        AppObjectService.LookupSpec lookupSpec = null;
+        if ("lookup".equals(req.type())) {
+            LookupValidator.validate(req.type(), toLookupSpec(req.lookup()), existingLookups);
+            // 目标对象存在性
+            validateLookupTargetExists(toLookupSpec(req.lookup()), req.code());
+            lookupSpec = toLookupSpec(req.lookup());
+        }
+
         FieldView newField = new FieldView(
                 req.code(), req.name(), req.type(),
                 Boolean.TRUE.equals(req.required()),
                 req.description(), req.defaultValue(),
-                Boolean.TRUE.equals(req.unique())
+                Boolean.TRUE.equals(req.unique()),
+                "lookup".equals(req.type()) ? req.lookup() : null
         );
         fields.add(newField);
 
-        ensureDataTableColumn(entity, newField);
+        ensureDataTableColumn(entity, newField, lookupSpec);
 
         entity.setSchemaJson(writeSchema(fields));
         entity.setVersion(entity.getVersion() + 1);
@@ -85,13 +99,14 @@ public class AppObjectFieldService {
     }
 
     @Transactional
-    public List<FieldView> update(String appRef, Long oid, String code, FieldRequest req) {
+    public List<FieldView> update(String appRef, Long oid, String code, FieldRequest req, Integer expectedVersion) {
         var entity = getObject(appRef, oid);
+        assertVersionMatches(entity, expectedVersion);
         List<FieldView> fields = parseSchema(entity.getSchemaJson());
         int idx = indexOf(fields, code);
         FieldView old = fields.get(idx);
 
-        // 类型不可变更；其余允许更新
+        // 类型不可变更；其余允许更新 (v1.0.2 AC-103.5)
         FieldView updated = new FieldView(
                 code,
                 req.name() != null ? req.name() : old.name(),
@@ -99,7 +114,9 @@ public class AppObjectFieldService {
                 req.required() != null ? req.required() : old.required(),
                 req.description() != null ? req.description() : old.description(),
                 req.defaultValue() != null ? req.defaultValue() : old.defaultValue(),
-                req.unique() != null ? req.unique() : old.unique()
+                req.unique() != null ? req.unique() : old.unique(),
+                // v1.0.2 B1.3: lookup 配置不可修改 (字段类型锁定 AC-103.5)
+                old.lookup()
         );
         fields.set(idx, updated);
 
@@ -110,8 +127,9 @@ public class AppObjectFieldService {
     }
 
     @Transactional
-    public List<FieldView> delete(String appRef, Long oid, String code) {
+    public List<FieldView> delete(String appRef, Long oid, String code, Integer expectedVersion) {
         var entity = getObject(appRef, oid);
+        assertVersionMatches(entity, expectedVersion);
         List<FieldView> fields = parseSchema(entity.getSchemaJson());
         if (!fields.removeIf(f -> f.code().equals(code))) {
             throw ApiException.notFound("字段 " + code + " 不存在");
@@ -120,6 +138,16 @@ public class AppObjectFieldService {
         entity.setVersion(entity.getVersion() + 1);
         objectRepository.save(entity);
         return fields;
+    }
+
+    /** AC-103.6: If-Match 校验 — 期望版本与当前不一致时抛 412. */
+    private void assertVersionMatches(AppObjectEntity entity, Integer expectedVersion) {
+        if (expectedVersion == null) return;
+        if (!expectedVersion.equals(entity.getVersion())) {
+            throw ApiException.preconditionFailed(
+                "对象版本不匹配: 当前=" + entity.getVersion() + ", 期望=" + expectedVersion
+                    + " (对象已被他人修改，请刷新后重试)");
+        }
     }
 
     private AppObjectEntity getObject(String appRef, Long oid) {
@@ -138,17 +166,41 @@ public class AppObjectFieldService {
         if (req.type() == null || !SUPPORTED_TYPES.contains(req.type())) {
             throw ApiException.badRequest("不支持的字段类型: " + req.type());
         }
+        // v1.0.2 B1.3: lookup 字段强校验 (必填 lookup 子对象)
+        if ("lookup".equals(req.type())) {
+            if (req.lookup() == null) {
+                throw ApiException.badRequest(
+                    "lookup 字段 [" + req.code() + "] 必须提供 lookup 配置 { objectId, displayField }");
+            }
+        }
     }
 
-    private void ensureDataTableColumn(AppObjectEntity entity, FieldView field) {
+    private void ensureDataTableColumn(AppObjectEntity entity, FieldView field, AppObjectService.LookupSpec lookup) {
         var def = new AppObjectService.FieldDef(
-                field.code(), field.name(), toBackendType(field.type()), field.required(), field.unique()
+                field.code(), field.name(), toBackendType(field.type()), field.required(), field.unique(),
+                lookup
         );
         if (entity.getDataTableName() == null || entity.getDataTableName().isBlank()) {
             String tableName = dynamicTableService.createTable(entity.getCode(), List.of(def));
             entity.setDataTableName(tableName);
         } else {
             dynamicTableService.addColumn(entity.getDataTableName(), def);
+        }
+    }
+
+    /** v1.0.2 B1.3: 转换 LookupRequest → LookupSpec. */
+    private AppObjectService.LookupSpec toLookupSpec(LookupRequest req) {
+        if (req == null) return null;
+        return new AppObjectService.LookupSpec(req.objectId(), req.displayField());
+    }
+
+    /** v1.0.2 B1.3: 校验 lookup 引用的目标对象存在. */
+    private void validateLookupTargetExists(AppObjectService.LookupSpec lookup, String fieldCode) {
+        if (lookup == null || lookup.objectId() == null) return;
+        var target = objectRepository.findById(lookup.objectId()).orElse(null);
+        if (target == null) {
+            throw ApiException.badRequest(
+                "lookup 字段 [" + fieldCode + "] 引用的目标对象 " + lookup.objectId() + " 不存在");
         }
     }
 
@@ -193,7 +245,9 @@ public class AppObjectFieldService {
             Boolean required,
             String description,
             String defaultValue,
-            Boolean unique
+            Boolean unique,
+            // v1.0.2 B1.3: lookup 字段子配置 (type=lookup 时存在)
+            LookupRequest lookup
     ) {}
 
     public record FieldRequest(
@@ -203,6 +257,13 @@ public class AppObjectFieldService {
             Boolean required,
             @Size(max = 500) String description,
             @Size(max = 500) String defaultValue,
-            Boolean unique
+            Boolean unique,
+            // v1.0.2 B1.3: lookup 字段配置 (type=lookup 时必填)
+            LookupRequest lookup
     ) {}
+
+    /**
+     * v1.0.2 B1.3: lookup 字段请求子对象.
+     */
+    public record LookupRequest(Long objectId, String displayField) {}
 }

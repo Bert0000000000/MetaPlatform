@@ -481,6 +481,33 @@ export function FieldPropertyPanel({
           </PropSection>
         )}
 
+        {/* v1.0.2 Sprint 2 F1.3: lookup 字段专属提示 — 必填目标对象+显示字段 */}
+        {field.type === "lookup" && has("binding") && (
+          <div
+            className="rounded border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700"
+            data-testid="lookup-config-hint"
+          >
+            <div className="font-medium mb-1">关联字段配置</div>
+            <ul className="list-disc list-inside space-y-0.5">
+              <li>
+                目标对象：
+                {field.boundObject
+                  ? ontologyObjects?.find((o) => o.id === field.boundObject)?.label
+                  : <span className="text-destructive">未选</span>}
+              </li>
+              <li>
+                显示字段：
+                {field.boundProperty
+                  ? <span className="font-mono">{field.boundProperty}</span>
+                  : <span className="text-destructive">未选</span>}
+              </li>
+            </ul>
+            <div className="mt-1 text-[10px] text-amber-600">
+              提交表单前必须选齐目标对象 + 显示字段
+            </div>
+          </div>
+        )}
+
         {/* Layout */}
         {has("layout") && (
           <PropSection title="布局与状态">

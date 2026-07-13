@@ -52,6 +52,8 @@ export default function PageEditor() {
         onSave={editor.savePage}
         onPublish={editor.publishForm}
         canPublish={canPublish}
+        onConfigureWorkflow={() => navigate(`/apps/${appId}/workflow-designer?formId=${editor.formId}`)}
+        canConfigureWorkflow={pageType === "form" && !!editor.formId}
         onBack={() => navigate(`/apps/${appId}/overview`)}
       >
         {renderEditorByType(pageType)}
@@ -62,9 +64,9 @@ export default function PageEditor() {
   function renderEditorByType(type: string) {
     switch (type) {
       case "form": case "lowcode":
-        return <FormLowCodeEditor {...commonProps} appId={appId} pageName={editor.pageName} selectedCompId={editor.selectedCompId} setSelectedCompId={editor.setSelectedCompId} />;
+        return <FormLowCodeEditor {...commonProps} appId={appId} pageName={editor.pageName} selectedCompId={editor.selectedCompId} setSelectedCompId={editor.setSelectedCompId} device={editor.device} />;
       case "list":
-        return <ListPageEditor {...commonProps} />;
+        return <ListPageEditor {...commonProps} appId={appId} pageData={editor.pageData} formId={editor.formId} />;
       case "dashboard": case "report":
         return <ReportEditor {...commonProps} appId={appId} />;
       case "workflow":
@@ -72,7 +74,7 @@ export default function PageEditor() {
       case "bi":
         return <BIEditor {...commonProps} />;
       default:
-        return <FormLowCodeEditor {...commonProps} appId={appId} pageName={editor.pageName} selectedCompId={editor.selectedCompId} setSelectedCompId={editor.setSelectedCompId} />;
+        return <FormLowCodeEditor {...commonProps} appId={appId} pageName={editor.pageName} selectedCompId={editor.selectedCompId} setSelectedCompId={editor.setSelectedCompId} device={editor.device} />;
     }
   }
 }

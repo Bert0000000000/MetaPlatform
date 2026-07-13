@@ -2,7 +2,7 @@ import { useState, ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Save, Loader2, Monitor, Tablet, Smartphone, Bot, Hash, Clock, X, Pencil, Globe } from "lucide-react";
+import { ArrowLeft, Save, Loader2, Monitor, Tablet, Smartphone, Bot, Hash, Clock, X, Pencil, Globe, Workflow } from "lucide-react";
 import { TYPE_META, type PageVersion } from "./types";
 import { AICoPilot } from "./AICoPilot";
 
@@ -22,13 +22,15 @@ interface EditorShellProps {
   onSave: () => void;
   onPublish?: () => void;
   canPublish?: boolean;
+  onConfigureWorkflow?: () => void;
+  canConfigureWorkflow?: boolean;
   onBack?: () => void;
   children: ReactNode;
 }
 
 export function EditorShell({
   pageName, onPageNameChange, pageType, dirty, currentVersion, versions,
-  onRestoreVersion, device, onDeviceChange, showAI, onToggleAI, saving, onSave, onPublish, canPublish, onBack, children
+  onRestoreVersion, device, onDeviceChange, showAI, onToggleAI, saving, onSave, onPublish, canPublish, onConfigureWorkflow, canConfigureWorkflow, onBack, children
 }: EditorShellProps) {
   const [showVersions, setShowVersions] = useState(false);
   const typeMeta = TYPE_META[pageType] || TYPE_META.lowcode;
@@ -80,6 +82,19 @@ export function EditorShell({
             {saving ? <Loader2 className="size-3 mr-1 animate-spin" /> : <Save className="size-3 mr-1" />}
             {saving ? "保存中" : "保存"}
           </Button>
+          {onConfigureWorkflow && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 text-xs gap-1"
+              onClick={onConfigureWorkflow}
+              disabled={!canConfigureWorkflow}
+              title={canConfigureWorkflow ? "配置表单提交后的审批流程" : "请先保存并发布表单"}
+            >
+              <Workflow className="size-3" />
+              配置流程
+            </Button>
+          )}
           {onPublish && (
             <Button
               size="sm"

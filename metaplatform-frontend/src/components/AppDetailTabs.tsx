@@ -8,6 +8,7 @@ const appTabs = [
   { key: "datamodeling", label: "业务数据建模" },
   { key: "pages", label: "页面" },
   { key: "workflows", label: "流程" },
+  { key: "todos", label: "待办" },
   { key: "config", label: "应用配置" },
   { key: "publish", label: "应用发布" },
   { key: "export", label: "应用导出" },

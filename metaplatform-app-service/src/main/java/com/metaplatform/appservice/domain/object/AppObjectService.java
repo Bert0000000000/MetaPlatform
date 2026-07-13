@@ -1,6 +1,8 @@
 package com.metaplatform.appservice.domain.object;
 
 import com.metaplatform.appservice.api.error.ApiException;
+import com.metaplatform.appservice.api.page.PageParams;
+import com.metaplatform.appservice.api.page.PageResult;
 import com.metaplatform.appservice.domain.app.AppEntity;
 import com.metaplatform.appservice.domain.app.AppRepository;
 import com.metaplatform.appservice.domain.app.AppService;
@@ -10,11 +12,14 @@ import com.metaplatform.appservice.domain.ontology.OntologyFieldSpec;
 import com.metaplatform.appservice.security.TenantContext;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
@@ -32,8 +37,10 @@ public class AppObjectService {
     private static final Pattern CODE_PATTERN = Pattern.compile("^[a-z][a-z0-9_]{1,63}$");
     private static final Set<String> ALLOWED_TYPES =
             Set.of("string", "longtext", "number", "boolean", "date", "datetime", "enum",
-                    "text", "select", "multiselect", "email", "phone");
+                    "text", "select", "multiselect", "email", "phone", "lookup");
     public static final int MAX_FIELDS = 50;
+    /** v1.0.2 B1.2: 单个对象最多 5 个 lookup 字段, 防止嵌套引用过深. */
+    public static final int MAX_LOOKUP_FIELDS = 5;
 
     private final AppRepository appRepository;
     private final AppObjectRepository repository;
@@ -59,6 +66,27 @@ public class AppObjectService {
         return repository.findByAppIdOrderById(appId);
     }
 
+    /**
+     * v1.0.2 B1.1: 分页查询对象列表.
+     *
+     * <p>排序固定按 id ASC (与 v1.0.1 全量查询行为一致).
+     * 客户端无需关心 sort 参数 (后续 Sprint 3 行级权限 / 列表增强再扩展).
+     *
+     * @param appRef 应用 ID 或 code
+     * @param params 分页参数 (page 1-based, size 1-500)
+     * @return 分页结果
+     */
+    @Transactional(readOnly = true)
+    public PageResult<AppObjectEntity> listPaged(String appRef, PageParams params) {
+        Long appId = resolveAppId(appRef);
+        var pageable = PageRequest.of(
+                params.zeroBasedPage(),
+                params.size(),
+                Sort.by(Sort.Direction.ASC, "id"));
+        var page = repository.findByAppId(appId, pageable);
+        return PageResult.from(page);
+    }
+
     @Transactional(readOnly = true)
     public AppObjectEntity get(String appRef, Long oid) {
         Long appId = resolveAppId(appRef);
@@ -78,6 +106,7 @@ public class AppObjectService {
 
         List<FieldDef> fieldDefs = new ArrayList<>();
         List<FieldSpec> inputFields = req.fields() == null ? List.of() : req.fields();
+        int lookupCount = 0;
         for (var f : inputFields) {
             if (!ALLOWED_TYPES.contains(f.type())) {
                 throw ApiException.badRequest("非法字段类型: " + f.type() + "，可选: " + ALLOWED_TYPES);
@@ -85,11 +114,20 @@ public class AppObjectService {
             if (f.code() == null || !CODE_PATTERN.matcher(f.code()).matches()) {
                 throw ApiException.badRequest("非法字段 code: " + f.code());
             }
+            // v1.0.2 B1.2: lookup 字段强校验 (委托给 LookupValidator 纯函数, 易单测)
+            LookupSpec lookup = null;
+            if (LookupValidator.validate(f.type(), f.lookup(), lookupCount)) {
+                lookup = f.lookup();
+                lookupCount++;
+            }
             boolean required = Boolean.TRUE.equals(f.required());
             boolean unique = Boolean.TRUE.equals(f.unique());
-            fieldDefs.add(new FieldDef(f.code(), f.name(), f.type(), required, unique));
+            fieldDefs.add(new FieldDef(f.code(), f.name(), f.type(), required, unique, lookup));
         }
         String schemaJson = writeSchemaJson(fieldDefs);
+
+        // v1.0.2 B1.2: 校验 lookup 目标对象存在 (跨对象引用)
+        validateLookupTargetExists(fieldDefs);
 
         String ontologyObjectId = null;
         String tableName = null;
@@ -121,7 +159,10 @@ public class AppObjectService {
         entity.setCreatedBy("dev-user");
 
         try {
-            return repository.save(entity);
+            var saved = repository.save(entity);
+            // v1.0.2 B1.2: save 后校验 lookup 自引用 (因为此时 selfOid 已分配)
+            validateLookupSelfReference(saved.getId(), fieldDefs);
+            return saved;
         } catch (DataIntegrityViolationException e) {
             // 回滚 ontology + drop data table
             safeDrop(tableName);
@@ -131,8 +172,16 @@ public class AppObjectService {
     }
 
     @Transactional
-    public AppObjectEntity update(String appRef, Long oid, AppObjectUpdateRequest req) {
+    public AppObjectEntity update(String appRef, Long oid, AppObjectUpdateRequest req, Integer expectedVersion) {
         var entity = get(appRef, oid);
+        // AC-103.6: If-Match / ETag 乐观锁校验
+        //   - expectedVersion 为 null  → 不做校验 (向后兼容)
+        //   - expectedVersion 非空且不等于当前 version → 412 Precondition Failed
+        if (expectedVersion != null && !expectedVersion.equals(entity.getVersion())) {
+            throw ApiException.preconditionFailed(
+                "对象版本不匹配: 当前=" + entity.getVersion() + ", 期望=" + expectedVersion
+                    + " (对象已被他人修改，请刷新后重试)");
+        }
         if (req.fields() != null && !req.fields().isEmpty()) {
             throw ApiException.badRequest("本版本不支持修改 fields；请删除重建");
         }
@@ -180,6 +229,38 @@ public class AppObjectService {
         }
     }
 
+    /**
+     * v1.0.2 B1.2: 校验目标对象是否存在 (跨对象引用).
+     * 委托给 LookupValidator.validateTargetExists, 注入当前所有对象 ID.
+     */
+    private void validateLookupTargetExists(List<FieldDef> defs) {
+        // 收集所有 lookup 字段涉及的 objectId
+        Set<Long> targetIds = new java.util.HashSet<>();
+        Map<String, AppObjectService.LookupSpec> fieldCode2Lookup = new java.util.HashMap<>();
+        for (FieldDef d : defs) {
+            if (d.lookup() != null) {
+                targetIds.add(d.lookup().objectId());
+                fieldCode2Lookup.put(d.code(), d.lookup());
+            }
+        }
+        if (targetIds.isEmpty()) return;
+        Set<Long> existing = repository.findAllById(targetIds).stream()
+                .map(AppObjectEntity::getId).collect(java.util.stream.Collectors.toSet());
+        for (var entry : fieldCode2Lookup.entrySet()) {
+            LookupValidator.validateTargetExists(
+                    entry.getValue().objectId(), existing, entry.getKey());
+        }
+    }
+
+    /**
+     * v1.0.2 B1.2: 校验 lookup 自引用. 在 create() 落库后调用, 因为此时自身 oid 已分配.
+     */
+    private void validateLookupSelfReference(Long selfOid, List<FieldDef> defs) {
+        for (FieldDef d : defs) {
+            LookupValidator.validateSelfReference(selfOid, d.lookup(), d.code());
+        }
+    }
+
     private static String toOntologyType(String t) {
         return switch (t) {
             case "string", "longtext", "text", "email", "phone" -> "String";
@@ -187,13 +268,16 @@ public class AppObjectService {
             case "boolean" -> "Boolean";
             case "date", "datetime" -> "Date";
             case "select", "multiselect", "enum" -> "Enum";
+            // v1.0.2 B1.2: lookup 是外键 ID, ontology-engine 视为 Long
+            case "lookup" -> "Long";
             default -> "String";
         };
     }
 
     private static String writeSchemaJson(List<FieldDef> defs) {
         try {
-            var arr = new ObjectMapper().createArrayNode();
+            var mapper = new ObjectMapper();
+            var arr = mapper.createArrayNode();
             for (FieldDef d : defs) {
                 var o = arr.addObject();
                 o.put("code", d.code());
@@ -201,6 +285,12 @@ public class AppObjectService {
                 o.put("type", d.type());
                 o.put("required", d.required());
                 o.put("unique", Boolean.TRUE.equals(d.unique()));
+                // v1.0.2 B1.2: lookup 子配置写入 schema_json
+                if (d.lookup() != null) {
+                    var lookupNode = o.putObject("lookup");
+                    lookupNode.put("objectId", d.lookup().objectId());
+                    lookupNode.put("displayField", d.lookup().displayField());
+                }
             }
             return arr.toString();
         } catch (Exception e) {
@@ -215,8 +305,16 @@ public class AppObjectService {
         try { ontologyClient.dropObjectType(id); } catch (Exception ignored) {}
     }
 
-    public record FieldDef(String code, String name, String type, Boolean required, Boolean unique) {}
-    public record FieldSpec(String code, String name, String type, Boolean required, Boolean unique) {}
+    public record FieldDef(String code, String name, String type, Boolean required, Boolean unique, LookupSpec lookup) {}
+    public record FieldSpec(String code, String name, String type, Boolean required, Boolean unique, LookupSpec lookup) {}
     public record AppObjectCreateRequest(String code, String name, String description, List<FieldSpec> fields) {}
     public record AppObjectUpdateRequest(String name, String description, List<FieldSpec> fields) {}
+
+    /**
+     * v1.0.2 B1.2: lookup (关联字段) 配置.
+     *
+     * <p>语义: 当前字段引用 {@code objectId} 指向的目标对象的 {@code displayField}.
+     * 数据库存储外键 ID (BIGINT), 列表显示 displayField 值.
+     */
+    public record LookupSpec(Long objectId, String displayField) {}
 }
