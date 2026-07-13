@@ -28,7 +28,7 @@ interface EditorShellProps {
 
 export function EditorShell({
   pageName, onPageNameChange, pageType, dirty, currentVersion, versions,
-  onRestoreVersion, device, onDeviceChange, showAI, onToggleAI, saving, onSave, onBack, children
+  onRestoreVersion, device, onDeviceChange, showAI, onToggleAI, saving, onSave, onPublish, canPublish, onBack, children
 }: EditorShellProps) {
   const [showVersions, setShowVersions] = useState(false);
   const typeMeta = TYPE_META[pageType] || TYPE_META.lowcode;
@@ -80,6 +80,19 @@ export function EditorShell({
             {saving ? <Loader2 className="size-3 mr-1 animate-spin" /> : <Save className="size-3 mr-1" />}
             {saving ? "保存中" : "保存"}
           </Button>
+          {onPublish && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 text-xs gap-1"
+              onClick={onPublish}
+              disabled={!canPublish}
+              title={canPublish ? "发布表单，开放公开访问" : "请先保存页面以创建表单"}
+            >
+              <Globe className="size-3" />
+              发布
+            </Button>
+          )}
         </div>
       </div>
 

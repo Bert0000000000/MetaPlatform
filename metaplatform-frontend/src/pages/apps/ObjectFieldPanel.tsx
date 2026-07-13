@@ -313,7 +313,7 @@ export function ObjectFieldPanel({
                       <Badge variant="outline">{typeLabel(p.type)}</Badge>
                     </TableCell>
                     <TableCell>{p.required ? "是" : "否"}</TableCell>
-                    <TableCell>否</TableCell>
+                    <TableCell>{p.unique ? "是" : "否"}</TableCell>
                     <TableCell className="text-muted-foreground">
                       {p.defaultValue || "-"}
                     </TableCell>

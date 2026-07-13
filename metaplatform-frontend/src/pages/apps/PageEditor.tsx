@@ -18,6 +18,7 @@ export default function PageEditor() {
   const editor = usePageEditor(appId, pageId);
 
   const pageType = editor.pageData?.type || "lowcode";
+  const canPublish = pageType === "form" && !!editor.formId;
 
   if (editor.loading) {
     return (
@@ -49,6 +50,8 @@ export default function PageEditor() {
         onToggleAI={() => editor.setShowAI(!editor.showAI)}
         saving={editor.saving}
         onSave={editor.savePage}
+        onPublish={editor.publishForm}
+        canPublish={canPublish}
         onBack={() => navigate(`/apps/${appId}/overview`)}
       >
         {renderEditorByType(pageType)}

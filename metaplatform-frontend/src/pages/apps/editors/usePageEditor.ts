@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { appsApi, filesystemApi, appPageComponentsApi, appServiceApi, appReportsApi, appDashboardsApi } from "@/lib/api";
 import type { AppPageComponent } from "@/lib/api";
+import { toast } from "@/lib/toast";
 import type { PageComponent, PageVersion } from "./types";
 import { getMockComponents } from "./mockData";
 
@@ -247,6 +248,8 @@ export interface UsePageEditorReturn {
   loading: boolean;
   loadPage: () => Promise<void>;
   savePage: () => Promise<void>;
+  publishForm: () => Promise<void>;
+  formId: string | null;
   restoreVersion: (ver: PageVersion) => void;
   markDirty: () => void;
 }
@@ -437,6 +440,21 @@ export function usePageEditor(appId: string | undefined, pageId: string | null):
     setSaving(false);
   }, [appId, pageId, currentVersion, components, pageName, versions, pageData?.type, linkedIds]);
 
+  const publishForm = useCallback(async () => {
+    if (!appId) return;
+    const fid = linkedIds.form_id;
+    if (!fid) {
+      toast.warning("请先保存页面以创建表单，再执行发布");
+      return;
+    }
+    try {
+      await appServiceApi.forms.publish(appId, fid);
+      toast.success("表单已发布，外部用户可通过公开链接访问");
+    } catch (e) {
+      toast.error("发布失败: " + (e instanceof Error ? e.message : String(e)));
+    }
+  }, [appId, linkedIds.form_id]);
+
   const restoreVersion = useCallback((ver: PageVersion) => {
     setComponents(ver.components);
     setCurrentVersion(ver.version);
@@ -453,6 +471,8 @@ export function usePageEditor(appId: string | undefined, pageId: string | null):
     saving, device, setDevice,
     showAI, setShowAI,
     selectedCompId, setSelectedCompId,
-    loading, loadPage, savePage, restoreVersion, markDirty,
+    loading, loadPage, savePage, publishForm,
+    formId: linkedIds.form_id,
+    restoreVersion, markDirty,
   };
 }
