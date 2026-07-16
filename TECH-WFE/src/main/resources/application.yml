@@ -1,0 +1,18 @@
+server:
+  port: 8801
+
+spring:
+  application:
+    name: tech-wfe
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+
+logging:
+  level:
+    root: INFO
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

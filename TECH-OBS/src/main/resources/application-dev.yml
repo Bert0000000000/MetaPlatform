@@ -1,0 +1,25 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:metaplatform_obs}
+    username: ${DB_USERNAME:meta}
+    password: ${DB_PASSWORD:meta}
+    driver-class-name: org.postgresql.Driver
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    schemas: public
+
+app:
+  obs:
+    loki:
+      base-url: ${LOKI_BASE_URL:http://localhost:3100}
+      query-path: /loki/api/v1/query_range
+      connect-timeout-ms: 5000
+      read-timeout-ms: 30000
+      default-limit: 100
+      max-limit: 5000
+    query:
+      max-time-range-hours: 168
+      default-page-size: 50
+      max-page-size: 500

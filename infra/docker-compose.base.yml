@@ -1,0 +1,182 @@
+# ════════════════════════════════════════════════════════════
+# MetaPlatform M1 本地开发基础基础设施
+# 服务：PostgreSQL / Redis / ZooKeeper / Kafka / RabbitMQ
+# ════════════════════════════════════════════════════════════
+
+services:
+  postgres:
+    image: postgres:17
+    container_name: infra-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: metaplatform
+      POSTGRES_USER: meta
+      POSTGRES_PASSWORD: meta
+      POSTGRES_MULTIPLE_DATABASES: metaplatform_iam,metaplatform_ont,metaplatform_rule,metaplatform_gw,metaplatform_wfe,metaplatform_rag
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - infra-postgres-data:/var/lib/postgresql/data
+      - ./init-multiple-databases.sh:/docker-entrypoint-initdb.d/init-multiple-databases.sh:ro
+    ports:
+      - "5432:5432"
+    networks:
+      - infra-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U meta -d metaplatform"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  redis:
+    image: redis:7.4
+    container_name: infra-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass meta
+    volumes:
+      - infra-redis-data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - infra-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "meta", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.8.0
+    container_name: infra-zookeeper
+    restart: unless-stopped
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    volumes:
+      - infra-zookeeper-data:/var/lib/zookeeper/data
+      - infra-zookeeper-logs:/var/lib/zookeeper/log
+    ports:
+      - "2181:2181"
+    networks:
+      - infra-net
+    healthcheck:
+      test: ["CMD", "bash", "-c", "zookeeper-shell localhost:2181 ls / 2>/dev/null | grep -q '\\[zookeeper\\]'"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+
+  kafka:
+    image: confluentinc/cp-kafka:7.8.0
+    container_name: infra-kafka
+    restart: unless-stopped
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_LOG_RETENTION_HOURS: 168
+    volumes:
+      - infra-kafka-data:/var/lib/kafka/data
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    networks:
+      - infra-net
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  rabbitmq:
+    image: rabbitmq:4-management
+    container_name: infra-rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: meta
+      RABBITMQ_DEFAULT_PASS: meta
+    volumes:
+      - infra-rabbitmq-data:/var/lib/rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - infra-net
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "status"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+
+  ont-neo4j:
+    image: neo4j:5.26
+    container_name: infra-ont-neo4j
+    restart: unless-stopped
+    environment:
+      NEO4J_AUTH: neo4j/metaplatform
+      NEO4J_PLUGINS: '["apoc"]'
+    volumes:
+      - ont-neo4j-data:/data
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    networks:
+      - infra-net
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:7474 || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  obs-loki:
+    image: grafana/loki:3.3.2
+    container_name: infra-loki
+    restart: unless-stopped
+    command: -config.file=/etc/loki/local-config.yaml
+    volumes:
+      - ./loki-config.yaml:/etc/loki/local-config.yaml:ro
+      - infra-loki-data:/loki
+    ports:
+      - "3100:3100"
+    networks:
+      - infra-net
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3100/ready || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+volumes:
+  infra-postgres-data:
+    name: infra-postgres-data
+  infra-redis-data:
+    name: infra-redis-data
+  infra-zookeeper-data:
+    name: infra-zookeeper-data
+  infra-zookeeper-logs:
+    name: infra-zookeeper-logs
+  infra-kafka-data:
+    name: infra-kafka-data
+  infra-rabbitmq-data:
+    name: infra-rabbitmq-data
+  ont-neo4j-data:
+    name: ont-neo4j-data
+  infra-loki-data:
+    name: infra-loki-data
+
+networks:
+  infra-net:
+    name: infra-net
+    driver: bridge

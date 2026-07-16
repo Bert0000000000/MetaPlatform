@@ -1,0 +1,39 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/metaplatform_msg
+    username: ${DB_USERNAME:meta}
+    password: ${DB_PASSWORD:meta}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      retries: 3
+      acks: all
+    admin:
+      auto-create-topics: false
+
+app:
+  msg:
+    outbox:
+      poll-interval-ms: 5000
+      batch-size: 100
+      max-retries: 3
+      backoff-initial-ms: 1000
+      backoff-max-ms: 60000
+      backoff-multiplier: 2.0
+      dlq-topic: metaplatform.dlq
+    consumer-group:
+      monitor-interval-ms: 30000

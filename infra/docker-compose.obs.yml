@@ -1,0 +1,62 @@
+# ════════════════════════════════════════════════════════════
+# MetaPlatform M1 本地开发可观测性基础设施（精简版）
+# 服务：Prometheus + Grafana
+# ════════════════════════════════════════════════════════════
+
+services:
+  prometheus:
+    image: prom/prometheus:v3.0.1
+    container_name: infra-prometheus
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --web.console.libraries=/usr/share/prometheus/console_libraries
+      - --web.console.templates=/usr/share/prometheus/consoles
+      - --web.enable-lifecycle
+    volumes:
+      - infra-prometheus-data:/prometheus
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
+    networks:
+      - infra-net
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  grafana:
+    image: grafana/grafana:11.3.1
+    container_name: infra-grafana
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: meta
+      GF_SECURITY_ADMIN_PASSWORD: meta
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - infra-grafana-data:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    networks:
+      - infra-net
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+volumes:
+  infra-prometheus-data:
+    name: infra-prometheus-data
+  infra-grafana-data:
+    name: infra-grafana-data
+
+networks:
+  infra-net:
+    name: infra-net
+    driver: bridge
+    external: true

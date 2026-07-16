@@ -1,0 +1,27 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:metaplatform_gw;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+  flyway:
+    enabled: false
+
+app:
+  jwt:
+    secret: metaplatform-jwt-secret-key-2026
+  whitelist:
+    paths:
+      - /api/v1/iam/auth/login
+      - /api/v1/iam/auth/register
+      - /api/v1/iam/auth/refresh
+      - /api/v1/iam/auth/captcha
+      - /actuator/**
+      - /health/**

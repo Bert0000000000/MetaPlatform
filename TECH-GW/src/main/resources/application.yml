@@ -1,0 +1,44 @@
+server:
+  port: 8000
+
+spring:
+  application:
+    name: tech-gw
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: false
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:metaplatform-jwt-secret-key-2026}
+  whitelist:
+    paths:
+      - /api/v1/iam/auth/login
+      - /api/v1/iam/auth/register
+      - /api/v1/iam/auth/refresh
+      - /api/v1/iam/auth/captcha
+      - /actuator/**
+      - /health/**
+
+logging:
+  level:
+    root: INFO
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

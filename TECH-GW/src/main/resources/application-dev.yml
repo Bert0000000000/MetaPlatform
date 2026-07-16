@@ -1,0 +1,41 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/metaplatform_gw
+    username: ${DB_USERNAME:meta}
+    password: ${DB_PASSWORD:meta}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    show-sql: true
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:meta}
+      database: 0
+  cloud:
+    gateway:
+      routes:
+        - id: iam
+          uri: http://localhost:8101
+          predicates:
+            - Path=/api/v1/iam/**
+        - id: ont
+          uri: http://localhost:8201
+          predicates:
+            - Path=/api/v1/ont/**
+        - id: obs
+          uri: http://localhost:8301
+          predicates:
+            - Path=/api/v1/obs/**
+        - id: llmgw
+          uri: http://localhost:8401
+          predicates:
+            - Path=/api/v1/llmgw/**
+        - id: rule
+          uri: http://localhost:8501
+          predicates:
+            - Path=/api/v1/rule/**
+        - id: msg
+          uri: http://localhost:8601
+          predicates:
+            - Path=/api/v1/msg/**
