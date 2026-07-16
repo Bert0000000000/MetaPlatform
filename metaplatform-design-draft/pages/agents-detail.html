@@ -1,0 +1,209 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>财务助手 - 员工详情 - 数字员工 - MetaPlatform</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<style id="theme-vars">
+:root {
+  --background:#0a0a0a;--foreground:#fafafa;--card:#111111;--card-foreground:#fafafa;
+  --muted:#1a1a1a;--muted-foreground:#a1a1a1;--accent:#1a1a1a;--accent-foreground:#fafafa;
+  --border:#262626;--primary:#fafafa;--primary-foreground:#0a0a0a;
+  --destructive:#ff6166;--success:#62d178;--success-subtle:#14241a;
+  --warning:#eab308;--warning-subtle:#1a1800;
+  --sidebar:#0f0f0f;--sidebar-foreground:#fafafa;--sidebar-primary:#fafafa;
+  --sidebar-primary-foreground:#0a0a0a;--sidebar-accent:#1a1a1a;
+  --sidebar-accent-foreground:#fafafa;--sidebar-border:#262626;
+  --radius:8px;--font-sans:'Geist',ui-sans-serif,system-ui,sans-serif;
+  --font-mono:'Geist Mono',ui-monospace,monospace;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:var(--font-sans);font-size:14px;color:var(--foreground);background:var(--background);color:var(--foreground)}
+.v-sidebar-item{display:flex;align-items:center;gap:8px;padding:7px 10px;border:1px solid transparent;border-radius:6px;cursor:pointer;font-size:13px;color:var(--sidebar-foreground);text-decoration:none;transition:background .15s,color .15s}
+.v-sidebar-item:hover{background:var(--sidebar-accent)}
+.v-sidebar-item.active{background:var(--sidebar-primary);color:var(--sidebar-primary-foreground)}
+.v-tab{padding:8px 12px;font-size:13px;color:var(--muted-foreground);border-bottom:2px solid transparent;cursor:pointer;text-decoration:none}
+.v-tab.active{color:var(--foreground);border-bottom-color:var(--foreground)}
+.v-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px}
+.v-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:0 12px;height:32px;border:1px solid var(--border);border-radius:6px;background:var(--background);color:var(--foreground);color:var(--foreground);font:600 13px/1 var(--font-sans);cursor:pointer}
+.v-btn-primary{background:var(--primary);color:var(--primary-foreground);border-color:var(--primary)}
+.v-btn-primary:hover{background:#262626}
+.v-input{height:32px;padding:0 10px;border:1px solid var(--border);border-radius:6px;background:var(--background);color:var(--foreground);color:var(--foreground);font:13px/1 var(--font-sans);outline:none}
+.v-input:focus{border-color:#a1a1a1}
+.v-table{width:100%;border-collapse:collapse;font-size:13px}
+.v-table thead{border-bottom:1px solid var(--border)}
+.v-table th{padding:8px 12px;text-align:left;font:600 11px/1 var(--font-mono);letter-spacing:.04em;color:var(--muted-foreground);text-transform:uppercase}
+.v-table td{padding:8px 12px;border-bottom:1px solid var(--muted)}
+.v-table tbody tr:hover{background:var(--muted)}
+.v-badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:999px;font:600 11px/1 var(--font-mono)}
+.v-badge-success{background:var(--success-subtle);color:var(--success)}
+.v-badge-warning{background:var(--warning-subtle);color:var(--warning)}
+.v-badge-error{background:#fef2f2;color:var(--destructive)}
+.v-badge-neutral{background:var(--muted);color:var(--muted-foreground)}
+.v-eyebrow{font:600 11px/1 var(--font-mono);color:var(--muted-foreground);text-transform:uppercase;letter-spacing:.04em}
+.v-meta{font-size:12px;color:var(--muted-foreground)}
+.v-divider{border:0;border-top:1px solid var(--border);margin:12px 0}
+</style>
+</head>
+<body style="display:flex;height:100vh;overflow:hidden">
+
+<!-- Sidebar -->
+<aside style="width:220px;background:var(--sidebar);border-right:1px solid var(--sidebar-border);display:flex;flex-direction:column;flex-shrink:0;height:100vh">
+  <div style="padding:12px 16px;border-bottom:1px solid var(--sidebar-border);display:flex;align-items:center;gap:8px">
+    <div style="width:24px;height:24px;border-radius:4px;background:var(--primary);display:flex;align-items:center;justify-content:center">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1" y="1" width="12" height="12" rx="2.5" fill="var(--primary-foreground)"/><rect x="4" y="4" width="6" height="6" rx="1" fill="var(--primary)"/></svg>
+    </div>
+    <span style="font-size:13px;font-weight:600;color:var(--sidebar-foreground)">MetaPlatform</span>
+  </div>
+  <nav style="flex:1;padding:8px;display:flex;flex-direction:column;gap:1px;overflow-y:auto">
+    <a class="v-sidebar-item" data-dom-id="nav-dashboard"><i data-lucide="layout-dashboard" style="width:16px;height:16px"></i><span>工作台</span></a>
+    <a class="v-sidebar-item" data-dom-id="nav-superai"><i data-lucide="brain" style="width:16px;height:16px"></i><span>SuperAI</span></a>
+    <a class="v-sidebar-item" data-dom-id="nav-architecture"><i data-lucide="app-layout" style="width:16px;height:16px"></i><span>架构中心</span></a>
+    <a class="v-sidebar-item" data-dom-id="nav-apps"><i data-lucide="cube" style="width:16px;height:16px"></i><span>应用中心</span></a>
+    <a class="v-sidebar-item" data-dom-id="nav-ontology"><i data-lucide="kanban" style="width:16px;height:16px"></i><span>本体引擎</span></a>
+    <a class="v-sidebar-item" data-dom-id="nav-mcp"><i data-lucide="plug" style="width:16px;height:16px"></i><span>MCP 中心</span></a>
+    <a class="v-sidebar-item active" data-dom-id="nav-agents"><i data-lucide="bot" style="width:16px;height:16px"></i><span>数字员工</span></a>
+    <a class="v-sidebar-item" data-dom-id="nav-admin"><i data-lucide="settings" style="width:16px;height:16px"></i><span>后台管理</span></a>
+  </nav>
+  <div style="padding:8px 16px;border-top:1px solid var(--sidebar-border);font-size:11px;color:var(--muted-foreground)">v3.0 &middot; Ontology-driven AI Platform</div>
+</aside>
+
+<!-- Main Area -->
+<div style="flex:1;display:flex;flex-direction:column;overflow:hidden">
+  <!-- Top Bar -->
+  <header style="height:48px;display:flex;align-items:center;padding:0 16px;gap:12px;border-bottom:1px solid var(--border);background:var(--background);color:var(--foreground);flex-shrink:0">
+    <input class="v-input" style="width:240px" placeholder="搜索或 AI 助手" />
+    <div style="flex:1"></div>
+    <i data-lucide="bell" style="width:16px;height:16px;color:var(--muted-foreground);cursor:pointer"></i>
+    <div style="width:24px;height:24px;border-radius:50%;background:var(--primary);color:var(--primary-foreground);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600">A</div>
+    <span style="font-size:13px;font-weight:500">Admin</span>
+  </header>
+
+  <!-- Tabs -->
+  <div style="display:flex;align-items:center;padding:0 16px;border-bottom:1px solid var(--border);background:var(--background);color:var(--foreground);flex-shrink:0">
+    <a class="v-tab active" data-dom-id="tab-agents-list">我的员工</a>
+    <a class="v-tab" data-dom-id="tab-agents-knowledge">知识提炼</a>
+    <a class="v-tab" data-dom-id="tab-agents-tasks">任务管理</a>
+    <a class="v-tab" data-dom-id="tab-agents-collab">协作管理</a>
+    <a class="v-tab" data-dom-id="tab-agents-evaluation">效果评估</a>
+  </div>
+
+  <!-- Main Content -->
+  <div style="flex:1;overflow-y:auto;background:var(--background);color:var(--foreground);padding:16px">
+
+    <!-- Breadcrumb -->
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:16px;font-size:13px">
+      <a style="color:var(--muted-foreground);text-decoration:none;cursor:pointer">数字员工</a>
+      <i data-lucide="chevron-right" style="width:14px;height:14px;color:var(--muted-foreground)"></i>
+      <span style="font-weight:500">财务助手</span>
+    </div>
+
+    <!-- Inner Tabs -->
+    <div style="display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:20px">
+      <a class="v-tab active" data-dom-id="tab-detail-basic">基本信息</a>
+      <a class="v-tab" data-dom-id="tab-detail-capability">能力配置</a>
+      <a class="v-tab" data-dom-id="tab-detail-knowledge">知识范围</a>
+      <a class="v-tab" data-dom-id="tab-detail-dialogue">对话记录</a>
+      <a class="v-tab" data-dom-id="tab-detail-trace">执行轨迹</a>
+    </div>
+
+    <!-- Profile Section -->
+    <div style="display:flex;gap:16px;margin-bottom:24px">
+
+      <!-- Avatar & Name Card -->
+      <div class="v-card" style="flex-shrink:0;width:280px;text-align:center">
+        <div style="width:80px;height:80px;border-radius:50%;background:var(--muted);margin:0 auto 12px;display:flex;align-items:center;justify-content:center">
+          <i data-lucide="calculator" style="width:36px;height:36px;color:var(--foreground)"></i>
+        </div>
+        <div style="font-size:18px;font-weight:600;margin-bottom:4px">财务助手</div>
+        <div class="v-meta" style="margin-bottom:16px">负责报销审核、费用分析与财务报表生成</div>
+        <span class="v-badge v-badge-success" style="margin-bottom:16px">运行中</span>
+        <hr class="v-divider">
+        <div style="display:flex;justify-content:center;gap:8px;margin-top:8px">
+          <button class="v-btn" style="flex:1"><i data-lucide="pencil" style="width:13px;height:13px"></i>编辑</button>
+          <button class="v-btn" style="flex:1"><i data-lucide="message-circle" style="width:13px;height:13px"></i>对话</button>
+        </div>
+      </div>
+
+      <!-- Config & Stats -->
+      <div style="flex:1;display:flex;flex-direction:column;gap:12px">
+
+        <!-- Config Info -->
+        <div class="v-card">
+          <div class="v-eyebrow" style="margin-bottom:12px">配置信息</div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px">
+            <div>
+              <div class="v-meta" style="margin-bottom:4px">绑定模型</div>
+              <div style="font-size:14px;font-weight:500">GPT-4o</div>
+            </div>
+            <div>
+              <div class="v-meta" style="margin-bottom:4px">Temperature</div>
+              <div style="font-size:14px;font-weight:500">0.7</div>
+            </div>
+            <div>
+              <div class="v-meta" style="margin-bottom:4px">最大 Token</div>
+              <div style="font-size:14px;font-weight:500">4096</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="v-card">
+          <div class="v-eyebrow" style="margin-bottom:12px">运行统计</div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px">
+            <div>
+              <div class="v-meta" style="margin-bottom:4px">总对话次数</div>
+              <div style="font-size:24px;font-weight:700;line-height:1.1">1,234</div>
+            </div>
+            <div>
+              <div class="v-meta" style="margin-bottom:4px">任务完成率</div>
+              <div style="font-size:24px;font-weight:700;line-height:1.1">96.5<span style="font-size:14px;font-weight:400">%</span></div>
+            </div>
+            <div>
+              <div class="v-meta" style="margin-bottom:4px">平均响应时间</div>
+              <div style="font-size:24px;font-weight:700;line-height:1.1">1.2<span style="font-size:14px;font-weight:400">s</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="v-card">
+          <div class="v-eyebrow" style="margin-bottom:12px">最近活动</div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--muted);border-radius:6px">
+              <i data-lucide="check-circle" style="width:14px;height:14px;color:var(--success);flex-shrink:0"></i>
+              <div style="flex:1;min-width:0">
+                <div style="font-size:13px;font-weight:500">完成月度报销审核任务</div>
+                <div class="v-meta">3 分钟前</div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--muted);border-radius:6px">
+              <i data-lucide="message-square" style="width:14px;height:14px;color:var(--muted-foreground);flex-shrink:0"></i>
+              <div style="flex:1;min-width:0">
+                <div style="font-size:13px;font-weight:500">与用户张三完成费用咨询对话</div>
+                <div class="v-meta">28 分钟前</div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--muted);border-radius:6px">
+              <i data-lucide="file-text" style="width:14px;height:14px;color:var(--muted-foreground);flex-shrink:0"></i>
+              <div style="flex:1;min-width:0">
+                <div style="font-size:13px;font-weight:500">生成 Q2 财务分析报表</div>
+                <div class="v-meta">1 小时前</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>lucide.createIcons();</script>
+</body>
+</html>

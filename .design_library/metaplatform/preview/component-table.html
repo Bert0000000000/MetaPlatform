@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Table Component - MetaPlatform</title>
+  <link rel="stylesheet" href="../colors_and_type.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      padding: var(--space-6);
+      font-family: var(--font-body);
+      color: var(--fg);
+      background: var(--bg);
+    }
+    h2.section-title {
+      font-size: var(--font-size-h3);
+      font-weight: var(--font-weight-h3);
+      color: var(--fg);
+      margin-bottom: var(--space-5);
+    }
+    .table-container {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      width: 100%;
+      max-width: 800px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    thead th {
+      background: var(--surface-dim);
+      font-weight: var(--font-weight-lead);
+      font-size: var(--font-size-caption);
+      color: var(--muted-foreground);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: var(--space-3) var(--space-5);
+      text-align: left;
+    }
+    tbody td {
+      border-bottom: 1px solid var(--border);
+      font-size: var(--font-size-body);
+      color: var(--fg);
+      padding: var(--space-3) var(--space-5);
+    }
+    tbody tr:last-child td {
+      border-bottom: none;
+    }
+    .badge {
+      display: inline-block;
+      background: var(--color-primary-container);
+      color: var(--color-primary);
+      border-radius: var(--radius-full);
+      padding: 1px 8px;
+      font-size: var(--font-size-caption);
+      font-weight: var(--font-weight-lead);
+      line-height: 1.6;
+    }
+    .badge.success {
+      background: #dcfce7;
+      color: #16a34a;
+    }
+    .badge.warning {
+      background: #fef3c7;
+      color: #d97706;
+    }
+    .badge.error {
+      background: #fee2e2;
+      color: #dc2626;
+    }
+    .action-link {
+      color: var(--primary);
+      font-size: var(--font-size-body);
+      cursor: pointer;
+      text-decoration: none;
+      background: none;
+      border: none;
+      padding: 0;
+      font-family: var(--font-body);
+    }
+    .action-link:hover {
+      color: var(--primary-hover);
+      text-decoration: underline;
+    }
+    .action-link + .action-link {
+      margin-left: var(--space-4);
+    }
+  </style>
+</head>
+<body>
+
+  <h2 class="section-title">Data Table</h2>
+
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>名称</th>
+          <th>类型</th>
+          <th>状态</th>
+          <th>更新时间</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>用户认证服务</td>
+          <td>微服务</td>
+          <td><span class="badge success">运行中</span></td>
+          <td>2026-07-16 14:32</td>
+          <td>
+            <button class="action-link">编辑</button>
+            <button class="action-link">删除</button>
+          </td>
+        </tr>
+        <tr>
+          <td>数据分析平台</td>
+          <td>Web 应用</td>
+          <td><span class="badge success">运行中</span></td>
+          <td>2026-07-16 12:18</td>
+          <td>
+            <button class="action-link">编辑</button>
+            <button class="action-link">删除</button>
+          </td>
+        </tr>
+        <tr>
+          <td>消息推送中心</td>
+          <td>微服务</td>
+          <td><span class="badge warning">维护中</span></td>
+          <td>2026-07-15 09:45</td>
+          <td>
+            <button class="action-link">编辑</button>
+            <button class="action-link">删除</button>
+          </td>
+        </tr>
+        <tr>
+          <td>日志采集引擎</td>
+          <td>后台任务</td>
+          <td><span class="badge error">已停止</span></td>
+          <td>2026-07-14 22:10</td>
+          <td>
+            <button class="action-link">编辑</button>
+            <button class="action-link">删除</button>
+          </td>
+        </tr>
+        <tr>
+          <td>权限管理系统</td>
+          <td>Web 应用</td>
+          <td><span class="badge success">运行中</span></td>
+          <td>2026-07-16 10:05</td>
+          <td>
+            <button class="action-link">编辑</button>
+            <button class="action-link">删除</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</body>
+</html>

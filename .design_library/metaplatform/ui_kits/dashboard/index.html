@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MetaPlatform UI Kit</title>
+  <link rel="stylesheet" href="../../colors_and_type.css" />
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    .uikit-shell { width: 100%; max-width: 1184px; margin: 0 auto; overflow: hidden; }
+    .uikit-truncate { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .uikit-nowrap { white-space: nowrap; flex-shrink: 0; }
+    .uikit-table-wrap { max-width: 100%; overflow-x: auto; overscroll-behavior-x: contain; }
+    .uikit-responsive-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(0, 1fr)); gap: 16px; }
+    .uikit-main { min-width: 0; }
+    .uikit-toolbar { min-width: 0; }
+    .uikit-action-cell { max-width: 160px; }
+    .uikit-action { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    @media (max-width: 900px) {
+      .uikit-responsive-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 640px) {
+      .uikit-shell { flex-direction: column; }
+    }
+  </style>
+  <!-- uikit-layout-guards: .uikit-shell .uikit-truncate .uikit-nowrap .uikit-table-wrap .uikit-action-cell .uikit-action -->
+</head>
+<body>
+  <div id="root" data-layout-guard="uikit-v1"></div>
+  <script type="text/babel">
+    const { useState, useRef, useCallback } = React;
+
+    /* ──────────────────────────── Data ──────────────────────────── */
+
+    const navGroups = [
+      { label: 'Token', items: [
+        { key: 'colors', label: '色彩' },
+        { key: 'typography', label: '排版' },
+        { key: 'spacing', label: '间距' },
+      ]},
+      { label: '组件', items: [
+        { key: 'button', label: 'Button' },
+        { key: 'card', label: 'Card' },
+        { key: 'table', label: 'Table' },
+        { key: 'input', label: 'Input' },
+        { key: 'badge', label: 'Badge' },
+        { key: 'sidebar', label: 'Sidebar' },
+      ]},
+    ];
+
+    const primaryPalette = [
+      { token: '--mp-blue-50', hex: '#eff6ff' },
+      { token: '--mp-blue-100', hex: '#dbeafe' },
+      { token: '--mp-blue-200', hex: '#bfdbfe' },
+      { token: '--mp-blue-300', hex: '#93c5fd' },
+      { token: '--mp-blue-400', hex: '#60a5fa' },
+      { token: '--mp-blue-500', hex: '#3b82f6' },
+      { token: '--mp-blue-600', hex: '#2563eb' },
+      { token: '--mp-blue-700', hex: '#1d4ed8' },
+      { token: '--mp-blue-800', hex: '#1e40af' },
+      { token: '--mp-blue-900', hex: '#1e3a8a' },
+    ];
+
+    const neutralPalette = [
+      { token: '--mp-slate-50', hex: '#f8fafc' },
+      { token: '--mp-slate-100', hex: '#f1f5f9' },
+      { token: '--mp-slate-200', hex: '#e2e8f0' },
+      { token: '--mp-slate-300', hex: '#cbd5e1' },
+      { token: '--mp-slate-400', hex: '#94a3b8' },
+      { token: '--mp-slate-500', hex: '#64748b' },
+      { token: '--mp-slate-600', hex: '#475569' },
+      { token: '--mp-slate-700', hex: '#334155' },
+      { token: '--mp-slate-800', hex: '#1e293b' },
+      { token: '--mp-slate-900', hex: '#0f172a' },
+    ];
+
+    const semanticPalettes = [
+      { label: 'Success', tokens: [
+        { token: '--mp-green-50', hex: '#f0fdf4' },
+        { token: '--mp-green-100', hex: '#dcfce7' },
+        { token: '--mp-green-200', hex: '#bbf7d0' },
+        { token: '--mp-green-300', hex: '#86efac' },
+        { token: '--mp-green-400', hex: '#4ade80' },
+        { token: '--mp-green-500', hex: '#22c55e' },
+        { token: '--mp-green-600', hex: '#16a34a' },
+        { token: '--mp-green-700', hex: '#15803d' },
+        { token: '--mp-green-800', hex: '#166534' },
+        { token: '--mp-green-900', hex: '#14532d' },
+      ]},
+      { label: 'Warning', tokens: [
+        { token: '--mp-amber-50', hex: '#fffbeb' },
+        { token: '--mp-amber-100', hex: '#fef3c7' },
+        { token: '--mp-amber-200', hex: '#fde68a' },
+        { token: '--mp-amber-300', hex: '#fcd34d' },
+        { token: '--mp-amber-400', hex: '#fbbf24' },
+        { token: '--mp-amber-500', hex: '#f59e0b' },
+        { token: '--mp-amber-600', hex: '#d97706' },
+        { token: '--mp-amber-700', hex: '#b45309' },
+        { token: '--mp-amber-800', hex: '#92400e' },
+        { token: '--mp-amber-900', hex: '#78350f' },
+      ]},
+      { label: 'Error', tokens: [
+        { token: '--mp-red-50', hex: '#fef2f2' },
+        { token: '--mp-red-100', hex: '#fee2e2' },
+        { token: '--mp-red-200', hex: '#fecaca' },
+        { token: '--mp-red-300', hex: '#fca5a5' },
+        { token: '--mp-red-400', hex: '#f87171' },
+        { token: '--mp-red-500', hex: '#ef4444' },
+        { token: '--mp-red-600', hex: '#dc2626' },
+        { token: '--mp-red-700', hex: '#b91c1c' },
+        { token: '--mp-red-800', hex: '#991b1b' },
+        { token: '--mp-red-900', hex: '#7f1d1d' },
+      ]},
+    ];
+
+    const typographyRows = [
+      { name: 'Display', cssClass: 'mp-display', desc: '22px / 700 / -0.01em' },
+      { name: 'H1', cssClass: 'mp-h1', desc: '18px / 700 / 1.4' },
+      { name: 'H2', cssClass: 'mp-h2', desc: '16px / 600 / 1.5' },
+      { name: 'H3', cssClass: 'mp-h3', desc: '14px / 600 / 1.5' },
+      { name: 'H4', cssClass: 'mp-h4', desc: '13px / 600 / 1.5' },
+      { name: 'Body', cssClass: 'mp-body', desc: '14px / 400 / 1.6' },
+      { name: 'Lead', cssClass: 'mp-lead', desc: '14px / 500 / 1.6' },
+      { name: 'Caption', cssClass: 'mp-caption', desc: '12px / 400 / 1.5' },
+      { name: 'Eyebrow', cssClass: 'mp-eyebrow', desc: '11px / 600 / 0.04em / uppercase' },
+      { name: 'Mono', cssClass: 'mp-mono', desc: '12px / 400 / 1.5' },
+    ];
+
+    const spacingTokens = [
+      { token: '--space-1', value: '2px' },
+      { token: '--space-2', value: '4px' },
+      { token: '--space-3', value: '8px' },
+      { token: '--space-4', value: '12px' },
+      { token: '--space-5', value: '16px' },
+      { token: '--space-6', value: '24px' },
+      { token: '--space-7', value: '32px' },
+      { token: '--space-8', value: '48px' },
+    ];
+
+    const tableData = [
+      { id: 'MP-001', name: '数据管道 A', type: 'ETL', status: 'success', statusLabel: '运行中', owner: '张三', updated: '2026-07-15' },
+      { id: 'MP-002', name: '模型训练 B', type: 'AI', status: 'warning', statusLabel: '等待中', owner: '李四', updated: '2026-07-14' },
+      { id: 'MP-003', name: 'API 网关 C', type: 'Service', status: 'error', statusLabel: '异常', owner: '王五', updated: '2026-07-13' },
+      { id: 'MP-004', name: '质量检测 D', type: 'QA', status: 'primary', statusLabel: '审核中', owner: '赵六', updated: '2026-07-12' },
+      { id: 'MP-005', name: '知识图谱 E', type: 'Graph', status: 'default', statusLabel: '已停止', owner: '钱七', updated: '2026-07-11' },
+    ];
+
+    const sidebarMenus = [
+      { label: '工作台', icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0a1 1 0 01-1-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 01-1 1' },
+      { label: 'SuperAI', icon: 'M13 10V3L4 14h7v7l9-11h-7z' },
+      { label: '架构中心', icon: 'M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z' },
+      { label: '应用中心', icon: 'M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z' },
+      { label: '流程中心', icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4' },
+      { label: '数据中心', icon: 'M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4' },
+      { label: '本体引擎', icon: 'M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9' },
+      { label: '质量中心', icon: 'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z' },
+      { label: '知识库', icon: 'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253' },
+      { label: '云市场', icon: 'M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z' },
+      { label: '数字员工', icon: 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z' },
+      { label: '后台管理', icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z' },
+    ];
+
+    const badgeVariants = {
+      default:  { bg: 'var(--mp-slate-100)', color: 'var(--mp-slate-700)', label: 'Default' },
+      primary:  { bg: 'var(--mp-blue-50)',   color: 'var(--mp-blue-600)',  label: 'Primary' },
+      success:  { bg: 'var(--mp-green-50)',   color: 'var(--mp-green-600)', label: 'Success' },
+      warning:  { bg: 'var(--mp-amber-50)',   color: 'var(--mp-amber-600)', label: 'Warning' },
+      error:    { bg: 'var(--mp-red-50)',     color: 'var(--mp-red-600)',   label: 'Error' },
+    };
+
+    /* ──────────────────────────── Helpers ──────────────────────────── */
+
+    const SectionTitle = ({ children }) => (
+      <h2 style={{ fontSize: 'var(--font-size-display)', fontWeight: 'var(--font-weight-h1)', color: 'var(--fg)', marginBottom: 'var(--space-5)', paddingBottom: 'var(--space-3)', borderBottom: '1px solid var(--border)' }}>{children}</h2>
+    );
+    const SubTitle = ({ children }) => (
+      <h3 style={{ fontSize: 'var(--font-size-h3)', fontWeight: 'var(--font-weight-h3)', color: 'var(--fg)', marginBottom: 'var(--space-4)' }}>{children}</h3>
+    );
+    const Section = ({ children, style }) => (
+      <section style={{ marginBottom: 'var(--space-7)', ...style }}>{children}</section>
+    );
+
+    /* ──────────────────────────── Panel: Colors ──────────────────────────── */
+
+    const PaletteGrid = ({ tokens, columns }) => (
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
+        {tokens.map(t => (
+          <div key={t.token} style={{ textAlign: 'center' }}>
+            <div style={{ width: 60, height: 60, borderRadius: 'var(--mp-radius-md)', background: t.hex, border: '1px solid var(--mp-slate-200)', marginBottom: 4 }}></div>
+            <div style={{ fontSize: 'var(--font-size-mono)', color: 'var(--muted-foreground)', lineHeight: 1.3 }}>{t.token.replace('--mp-', '')}</div>
+            <div style={{ fontSize: 'var(--font-size-mono)', color: 'var(--muted-foreground)' }}>{t.hex}</div>
+          </div>
+        ))}
+      </div>
+    );
+
+    const ColorsPanel = () => (
+      <div>
+        <SectionTitle>色彩</SectionTitle>
+        <Section>
+          <SubTitle>Primary Blue</SubTitle>
+          <PaletteGrid tokens={primaryPalette} />
+        </Section>
+        <Section>
+          <SubTitle>Neutral Slate</SubTitle>
+          <PaletteGrid tokens={neutralPalette} />
+        </Section>
+        {semanticPalettes.map(sp => (
+          <Section key={sp.label}>
+            <SubTitle>{sp.label}</SubTitle>
+            <PaletteGrid tokens={sp.tokens} />
+          </Section>
+        ))}
+      </div>
+    );
+
+    /* ──────────────────────────── Panel: Typography ──────────────────────────── */
+
+    const TypographyPanel = () => (
+      <div>
+        <SectionTitle>排版</SectionTitle>
+        <Section>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
+            {typographyRows.map(r => (
+              <div key={r.name} style={{ display: 'flex', alignItems: 'baseline', gap: 'var(--space-6)', borderBottom: '1px solid var(--mp-slate-100)', paddingBottom: 'var(--space-3)' }}>
+                <div style={{ width: 80, flexShrink: 0, fontSize: 'var(--font-size-caption)', fontWeight: 'var(--font-weight-eyebrow)', color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{r.name}</div>
+                <div className={r.cssClass} style={{ flex: 1 }}>MetaPlatform 元数据平台{r.name === 'Eyebrow' ? ' Eyebrow Text' : ''}</div>
+                <div style={{ width: 220, flexShrink: 0, fontSize: 'var(--font-size-caption)', color: 'var(--muted-foreground)' }}>{r.desc}</div>
+              </div>
+            ))}
+          </div>
+        </Section>
+      </div>
+    );
+
+    /* ──────────────────────────── Panel: Spacing ──────────────────────────── */
+
+    const SpacingPanel = () => (
+      <div>
+        <SectionTitle>间距</SectionTitle>
+        <Section>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+            {spacingTokens.map(s => (
+              <div key={s.token} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
+                <div style={{ width: 100, flexShrink: 0, fontSize: 'var(--font-size-mono)', color: 'var(--muted-foreground)' }}>{s.token}</div>
+                <div style={{ width: parseInt(s.value), height: 24, background: 'var(--mp-blue-400)', borderRadius: 2, opacity: 0.7 }}></div>
+                <div style={{ fontSize: 'var(--font-size-caption)', color: 'var(--muted-foreground)' }}>{s.value}</div>
+              </div>
+            ))}
+          </div>
+        </Section>
+        <Section>
+          <SubTitle>Radius</SubTitle>
+          <div style={{ display: 'flex', gap: 'var(--space-6)', flexWrap: 'wrap' }}>
+            {[['--mp-radius-sm','3px'],['--mp-radius-md','4px'],['--mp-radius-lg','6px'],['--mp-radius-xl','8px'],['--mp-radius-full','9999px']].map(([t, v]) => (
+              <div key={t} style={{ textAlign: 'center' }}>
+                <div style={{ width: 48, height: 48, border: '2px solid var(--mp-blue-400)', borderRadius: v, marginBottom: 4 }}></div>
+                <div style={{ fontSize: 'var(--font-size-caption)', color: 'var(--muted-foreground)' }}>{v}</div>
+              </div>
+            ))}
+          </div>
+        </Section>
+      </div>
+    );
+
+    /* ──────────────────────────── Panel: Button ──────────────────────────── */
+
+    const Button = ({ children, variant, size, hovered, onEnter, onLeave, style }) => {
+      const base = { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: 'none', outline: 'none', fontFamily: 'var(--font-body)', fontWeight: 'var(--font-weight-body)', transition: 'background 0.15s', lineHeight: 1, whiteSpace: 'nowrap' };
+      let s;
+      if (variant === 'ghost') {
+        s = { ...base, background: hovered ? 'var(--mp-state-hover)' : 'transparent', color: 'var(--fg)', border: '1px solid var(--border)', borderRadius: 'var(--mp-radius-md)', padding: size === 'sm' ? '4px 12px' : '8px 16px', fontSize: size === 'sm' ? 'var(--font-size-caption)' : 'var(--font-size-body)', ...style };
+      } else {
+        s = { ...base, background: hovered ? 'var(--primary-hover)' : 'var(--primary)', color: '#ffffff', borderRadius: 'var(--mp-radius-md)', padding: size === 'sm' ? '4px 12px' : '8px 16px', fontSize: size === 'sm' ? 'var(--font-size-caption)' : 'var(--font-size-body)', ...style };
+      }
+      return <button style={s} onMouseEnter={onEnter} onMouseLeave={onLeave}>{children}</button>;
+    };
+
+    const Hoverable = ({ children }) => {
+      const [h, setH] = useState(false);
+      return React.cloneElement(children, { hovered: h, onEnter: () => setH(true), onLeave: () => setH(false) });
+    };
+
+    const ButtonPanel = () => (
+      <div>
+        <SectionTitle>Button</SectionTitle>
+        <Section>
+          <SubTitle>Primary</SubTitle>
+          <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'center' }}>
+            <Hoverable><Button>主要按钮</Button></Hoverable>
+            <Hoverable><Button variant="ghost">Ghost 按钮</Button></Hoverable>
+          </div>
+        </Section>
+        <Section>
+          <SubTitle>尺寸</SubTitle>
+          <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'center' }}>
+            <Hoverable><Button size="sm">小号按钮</Button></Hoverable>
+            <Hoverable><Button>默认按钮</Button></Hoverable>
+          </div>
+        </Section>
+        <Section>
+          <SubTitle>状态</SubTitle>
+          <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'center' }}>
+            <Hoverable><Button>正常</Button></Hoverable>
+            <button style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: 'var(--muted-foreground)', color: '#ffffff', borderRadius: 'var(--mp-radius-md)', padding: '8px 16px', fontSize: 'var(--font-size-body)', fontFamily: 'var(--font-body)', cursor: 'not-allowed', opacity: 0.5, border: 'none' }}>禁用</button>
+          </div>
+        </Section>
+      </div>
+    );
+
+    /* ──────────────────────────── Panel: Card ──────────────────────────── */
+
+    const Card = ({ children, style }) => (
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--mp-radius-lg)', padding: 'var(--space-5)', ...style }}>{children}</div>
+    );
+
+    const CardPanel = () => (
+      <div>
+        <SectionTitle>Card</SectionTitle>
+        <Section>
+          <SubTitle>Default Card</SubTitle>
+          <Card style={{ maxWidth: 400 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-4)' }}>
+              <span style={{ fontSize: 'var(--font-size-h2)', fontWeight: 'var(--font-weight-h2)', color: 'var(--fg)' }}>项目概览</span>
+              <a href="javascript:void(0)" style={{ fontSize: 'var(--font-size-caption)', color: 'var(--link)', textDecoration: 'none' }}>查看全部 &rarr;</a>
+            </div>
+            <p style={{ fontSize: 'var(--font-size-body)', color: 'var(--muted-foreground)', lineHeight: 'var(--line-height-body)', marginBottom: 'var(--space-5)' }}>这是卡片正文内容区域，用于展示关键信息摘要和描述。支持多行文本展示。</p>
+            <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'flex-end' }}>
+              <Hoverable><Button variant="ghost">取消</Button></Hoverable>
+              <Hoverable><Button>确认</Button></Hoverable>
+            </div>
+          </Card>
+        </Section>
+        <Section>
+          <SubTitle>Stat Card</SubTitle>
+          <Card style={{ maxWidth: 220, marginBottom: 'var(--space-4)' }}>
+            <div style={{ fontSize: 'var(--font-size-caption)', color: 'var(--muted-foreground)', marginBottom: 'var(--space-2)' }}>月活跃用户</div>
+            <div style={{ fontSize: 'var(--font-size-display)', fontWeight: 'var(--font-weight-display)', color: 'var(--fg)', marginBottom: 'var(--space-2)' }}>128,450</div>
+            <div style={{ fontSize: 'var(--font-size-caption)', color: 'var(--mp-green-600)', fontWeight: 500 }}>+12% <span style={{ color: 'var(--muted-foreground)' }}>较上月</span></div>
+          </Card>
+        </Section>
+        <Section>
+          <SubTitle>Stat Card Grid</SubTitle>
+          <div className="uikit-responsive-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 'var(--space-4)', maxWidth: 600 }}>
+            {[
+              { label: '总任务数', value: '2,847', trend: '+5.2%', up: true },
+              { label: '成功率', value: '98.6%', trend: '+1.3%', up: true },
+              { label: '平均延迟', value: '42ms', trend: '-8ms', up: false },
+            ].map(c => (
+              <Card key={c.label}>
+                <div style={{ fontSize: 'var(--font-size-caption)', color: 'var(--muted-foreground)', marginBottom: 'var(--space-2)' }}>{c.label}</div>
+                <div style={{ fontSize: 'var(--font-size-display)', fontWeight: 'var(--font-weight-display)', color: 'var(--fg)', marginBottom: 'var(--space-2)' }}>{c.value}</div>
+                <div style={{ fontSize: 'var(--font-size-caption)', color: c.up ? 'var(--mp-green-600)' : 'var(--mp-blue-600)', fontWeight: 500 }}>{c.trend}</div>
+              </Card>
+            ))}
+          </div>
+        </Section>
+      </div>
+    );
+
+    /* ──────────────────────────── Panel: Table ──────────────────────────── */
+
+    const Badge = ({ variant, children }) => {
+      const v = badgeVariants[variant] || badgeVariants.default;
+      return (
+        <span style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 8px', borderRadius: 'var(--mp-radius-full)', fontSize: 'var(--font-size-caption)', fontWeight: 500, background: v.bg, color: v.color, lineHeight: 1.5 }}>
+          {children}
+        </span>
+      );
+    };
+
+    const TablePanel = () => (
+      <div>
+        <SectionTitle>Table</SectionTitle>
+        <Section>
+          <div className="uikit-table-wrap" style={{ border: '1px solid var(--border)', borderRadius: 'var(--mp-radius-lg)', overflow: 'hidden' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--font-size-body)' }}>
+              <thead>
+                <tr style={{ background: 'var(--surface-dim)' }}>
+                  {['编号', '名称', '类型', '状态', '负责人', '更新时间', '操作'].map(h => (
+                    <th key={h} style={{ padding: 'var(--space-3) var(--space-4)', textAlign: 'left', fontSize: 'var(--font-size-caption)', fontWeight: 'var(--font-weight-eyebrow)', color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.04em', borderBottom: '1px solid var(--border)' }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {tableData.map(row => (
+                  <tr key={row.id} style={{ borderBottom: '1px solid var(--border)' }}>
+                    <td style={{ padding: 'var(--space-3) var(--space-4)', color: 'var(--muted-foreground)', fontSize: 'var(--font-size-caption)' }}>{row.id}</td>
+                    <td style={{ padding: 'var(--space-3) var(--space-4)', color: 'var(--fg)', fontWeight: 500 }}>{row.name}</td>
+                    <td style={{ padding: 'var(--space-3) var(--space-4)', color: 'var(--muted-foreground)' }}>{row.type}</td>
+                    <td style={{ padding: 'var(--space-3) var(--space-4)' }}><Badge variant={row.status}>{row.statusLabel}</Badge></td>
+                    <td style={{ padding: 'var(--space-3) var(--space-4)', color: 'var(--fg)' }}>{row.owner}</td>
+                    <td style={{ padding: 'var(--space-3) var(--space-4)', color: 'var(--muted-foreground)', fontSize: 'var(--font-size-caption)' }}><span className="uikit-nowrap">{row.updated}</span></td>
+                    <td className="uikit-action-cell" style={{ padding: 'var(--space-3) var(--space-4)' }}>
+                      <a className="uikit-action" href="javascript:void(0)" style={{ color: 'var(--link)', textDecoration: 'none', fontSize: 'var(--font-size-caption)', marginRight: 8 }}>编辑</a>
+                      <a className="uikit-action" href="javascript:void(0)" style={{ color: 'var(--link)', textDecoration: 'none', fontSize: 'var(--font-size-caption)' }}>详情</a>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Section>
+      </div>
+    );
+
+    /* ──────────────────────────── Panel: Input ──────────────────────────── */
+
+    const InputField = ({ label, placeholder, disabled, icon, focused, onFocus, onBlur, style }) => (
+      <div style={{ ...style }}>
+        {label && <label style={{ display: 'block', fontSize: 'var(--font-size-caption)', fontWeight: 500, color: 'var(--fg)', marginBottom: 'var(--space-2)' }}>{label}</label>}
+        <div style={{ display: 'flex', alignItems: 'center', background: disabled ? 'var(--muted)' : 'var(--surface)', border: `1px solid ${focused ? 'var(--primary)' : 'var(--border)'}`, borderRadius: 'var(--mp-radius-md)', padding: '0 var(--space-3)', height: 'var(--size-input-height-md)' }}>
+          {icon && <span style={{ marginRight: 'var(--space-2)', display: 'flex', alignItems: 'center', color: disabled ? 'var(--mp-slate-300)' : 'var(--muted-foreground)' }}>{icon}</span>}
+          <input
+            type="text"
+            placeholder={placeholder}
+            disabled={disabled}
+            onFocus={onFocus}
+            onBlur={onBlur}
+            style={{ flex: 1, border: 'none', outline: 'none', background: 'transparent', fontSize: 'var(--font-size-body)', color: disabled ? 'var(--muted-foreground)' : 'var(--fg)', fontFamily: 'var(--font-body)', lineHeight: 1, cursor: disabled ? 'not-allowed' : 'text', '::placeholder': { color: 'var(--muted-foreground)' } }}
+          />
+        </div>
+      </div>
+    );
+
+    const InputPanel = () => (
+      <div>
+        <SectionTitle>Input</SectionTitle>
+        <Section>
+          <SubTitle>标准输入框</SubTitle>
+          <div style={{ maxWidth: 360 }}>
+            <FocusableInput label="项目名称" placeholder="请输入项目名称" />
+          </div>
+        </Section>
+        <Section>
+          <SubTitle>搜索输入框</SubTitle>
+          <div style={{ maxWidth: 360 }}>
+            <FocusableInput
+              label="搜索"
+              placeholder="搜索应用、模型、数据..."
+              icon={<svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>}
+            />
+          </div>
+        </Section>
+        <Section>
+          <SubTitle>禁用态</SubTitle>
+          <div style={{ maxWidth: 360 }}>
+            <InputField label="禁用字段" placeholder="不可编辑" disabled />
+          </div>
+        </Section>
+      </div>
+    );
+
+    const FocusableInput = (props) => {
+      const [f, setF] = useState(false);
+      return <InputField {...props} focused={f} onFocus={() => setF(true)} onBlur={() => setF(false)} />;
+    };
+
+    /* ──────────────────────────── Panel: Badge ──────────────────────────── */
+
+    const BadgePanel = () => (
+      <div>
+        <SectionTitle>Badge</SectionTitle>
+        <Section>
+          <SubTitle>变体</SubTitle>
+          <div style={{ display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
+            {Object.entries(badgeVariants).map(([k, v]) => (
+              <Badge key={k} variant={k}>{v.label}</Badge>
+            ))}
+          </div>
+        </Section>
+        <Section>
+          <SubTitle>使用场景</SubTitle>
+          <div style={{ display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', fontSize: 'var(--font-size-body)', color: 'var(--fg)' }}>
+              部署状态：<Badge variant="success">已上线</Badge>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', fontSize: 'var(--font-size-body)', color: 'var(--fg)' }}>
+              审核状态：<Badge variant="warning">待审核</Badge>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', fontSize: 'var(--font-size-body)', color: 'var(--fg)' }}>
+              错误标记：<Badge variant="error">失败</Badge>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', fontSize: 'var(--font-size-body)', color: 'var(--fg)' }}>
+              版本标签：<Badge variant="primary">v2.0</Badge>
+            </div>
+          </div>
+        </Section>
+      </div>
+    );
+
+    /* ──────────────────────────── Panel: Sidebar ──────────────────────────── */
+
+    const SidebarPanel = () => {
+      const [active, setActive] = useState(0);
+      return (
+        <div>
+          <SectionTitle>Sidebar</SectionTitle>
+          <Section>
+            <div style={{ display: 'flex', gap: 'var(--space-6)', alignItems: 'flex-start' }}>
+              <div style={{ width: 220, background: 'var(--mp-sidebar-bg)', borderRadius: 'var(--mp-radius-lg)', padding: 'var(--space-4) 0', flexShrink: 0, overflow: 'hidden' }}>
+                {sidebarMenus.map((item, i) => (
+                  <div
+                    key={item.label}
+                    onClick={() => setActive(i)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 'var(--space-3)',
+                      padding: '8px var(--space-5)', cursor: 'pointer',
+                      color: i === active ? 'var(--mp-sidebar-text-active)' : 'var(--mp-sidebar-text)',
+                      background: i === active ? 'rgba(59,130,246,0.15)' : 'transparent',
+                      fontWeight: i === active ? 500 : 400, fontSize: 'var(--font-size-body)',
+                      borderLeft: i === active ? '3px solid #60a5fa' : '3px solid transparent',
+                      transition: 'all 0.15s',
+                    }}
+                  >
+                    <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round"><path d={item.icon}/></svg>
+                    <span className="uikit-truncate">{item.label}</span>
+                  </div>
+                ))}
+                <div style={{ marginTop: 'var(--space-6)', padding: '0 var(--space-5)', borderTop: '1px solid var(--mp-slate-700)', paddingTop: 'var(--space-3)' }}>
+                  <div style={{ fontSize: 'var(--font-size-caption)', color: 'var(--mp-slate-500)' }}>MetaPlatform v2.4.0</div>
+                </div>
+              </div>
+              <div style={{ flex: 1, fontSize: 'var(--font-size-body)', color: 'var(--muted-foreground)' }}>
+                <p style={{ marginTop: 0, marginBottom: 'var(--space-4)' }}>点击左侧菜单项查看交互效果。当前选中：</p>
+                <div style={{ padding: 'var(--space-4)', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--mp-radius-lg)' }}>
+                  <span style={{ fontSize: 'var(--font-size-caption)', color: 'var(--muted-foreground)' }}>Active Menu: </span>
+                  <span style={{ color: 'var(--fg)', fontWeight: 500 }}>{sidebarMenus[active].label}</span>
+                </div>
+              </div>
+            </div>
+          </Section>
+        </div>
+      );
+    };
+
+    /* ──────────────────────────── App Shell ──────────────────────────── */
+
+    const panels = {
+      colors: ColorsPanel,
+      typography: TypographyPanel,
+      spacing: SpacingPanel,
+      button: ButtonPanel,
+      card: CardPanel,
+      table: TablePanel,
+      input: InputPanel,
+      badge: BadgePanel,
+      sidebar: SidebarPanel,
+    };
+
+    const App = () => {
+      const [active, setActive] = useState('button');
+      const ActivePanel = panels[active];
+
+      return (
+        <div className="uikit-shell" style={{ display: 'flex', height: '100vh', margin: 0, fontFamily: 'var(--font-family-base)', background: 'var(--surface-dim)' }}>
+          {/* ── Left Nav ── */}
+          <nav style={{ width: 200, flexShrink: 0, background: 'var(--surface)', borderRight: '1px solid var(--border)', height: '100vh', overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ padding: 'var(--space-5) var(--space-4)', borderBottom: '1px solid var(--border)' }}>
+              <span style={{ fontSize: 'var(--font-size-h1)', fontWeight: 'var(--font-weight-h1)', color: 'var(--fg)' }}>MetaPlatform</span>
+            </div>
+            <div style={{ flex: 1, padding: 'var(--space-3) 0' }}>
+              {navGroups.map(group => (
+                <div key={group.label} style={{ marginBottom: 'var(--space-4)' }}>
+                  <div style={{ padding: 'var(--space-2) var(--space-5)', fontSize: 'var(--font-size-eyebrow)', fontWeight: 'var(--font-weight-eyebrow)', color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{group.label}</div>
+                  {group.items.map(item => (
+                    <div
+                      key={item.key}
+                      onClick={() => setActive(item.key)}
+                      onMouseEnter={e => e.currentTarget.style.background = 'var(--surface-dim)'}
+                      onMouseLeave={e => e.currentTarget.style.background = active === item.key ? 'var(--surface-dim)' : 'transparent'}
+                      style={{
+                        padding: '6px var(--space-5)', cursor: 'pointer', fontSize: 'var(--font-size-body)',
+                        color: active === item.key ? 'var(--primary)' : 'var(--fg)',
+                        fontWeight: active === item.key ? 'var(--font-weight-lead)' : 400,
+                        background: active === item.key ? 'var(--surface-dim)' : 'transparent',
+                        transition: 'background 0.12s, color 0.12s',
+                      }}
+                    >
+                      {item.label}
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </nav>
+
+          {/* ── Right Content ── */}
+          <main className="uikit-main" style={{ flex: 1, overflowY: 'auto', padding: 'var(--space-6)' }}>
+            <ActivePanel />
+          </main>
+        </div>
+      );
+    };
+
+    /* ──────────────────────────── Mount ──────────────────────────── */
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>

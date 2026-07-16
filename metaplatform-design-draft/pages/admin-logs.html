@@ -1,0 +1,234 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>系统日志 - 后台管理 - MetaPlatform</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+:root{--background:#0a0a0a;--foreground:#fafafa;--card:#111111;--card-foreground:#fafafa;--muted:#1a1a1a;--muted-foreground:#a1a1a1;--accent:#1a1a1a;--accent-foreground:#fafafa;--border:#262626;--primary:#fafafa;--primary-foreground:#0a0a0a;--destructive:#ff6166;--success:#62d178;--success-subtle:#14241a;--warning:#eab308;--warning-subtle:#1a1800;--sidebar:#0f0f0f;--sidebar-foreground:#fafafa;--sidebar-primary:#fafafa;--sidebar-primary-foreground:#0a0a0a;--sidebar-accent:#1a1a1a;--sidebar-accent-foreground:#fafafa;--sidebar-border:#262626;--radius:8px;--font-sans:'Geist',ui-sans-serif,system-ui,sans-serif;--font-mono:'Geist Mono',ui-monospace,monospace}
+*{box-sizing:border-box}body{margin:0;font-family:var(--font-sans);font-size:14px;color:var(--foreground);background:var(--background);color:var(--foreground)}
+.v-sidebar-item{display:flex;align-items:center;gap:8px;padding:7px 10px;border:1px solid transparent;border-radius:6px;cursor:pointer;font-size:13px;color:var(--sidebar-foreground);text-decoration:none;transition:background .15s,color .15s}.v-sidebar-item:hover{background:var(--sidebar-accent)}.v-sidebar-item.active{background:var(--sidebar-primary);color:var(--sidebar-primary-foreground)}
+.v-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:0 12px;height:32px;border:1px solid var(--border);border-radius:6px;background:var(--background);color:var(--foreground);color:var(--foreground);font:600 13px/1 var(--font-sans);cursor:pointer}.v-btn-primary{background:var(--primary);color:var(--primary-foreground);border-color:var(--primary)}.v-btn-primary:hover{background:#262626}
+.v-input{height:32px;padding:0 10px;border:1px solid var(--border);border-radius:6px;background:var(--background);color:var(--foreground);color:var(--foreground);font:13px/1 var(--font-sans);outline:none}.v-input:focus{border-color:#a1a1a1}
+.v-table{width:100%;border-collapse:collapse;font-size:13px}.v-table thead{border-bottom:1px solid var(--border)}.v-table th{padding:8px 12px;text-align:left;font:600 11px/1 var(--font-mono);letter-spacing:.04em;color:var(--muted-foreground);text-transform:uppercase}.v-table td{padding:8px 12px;border-bottom:1px solid var(--muted)}.v-table tbody tr:hover{background:var(--muted)}
+.v-badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:999px;font:600 11px/1 var(--font-mono)}.v-badge-success{background:var(--success-subtle);color:var(--success)}.v-badge-warning{background:var(--warning-subtle);color:var(--warning)}.v-badge-neutral{background:var(--muted);color:var(--muted-foreground)}.v-badge-error{background:#fef2f2;color:var(--destructive)}
+.v-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px}.v-meta{font-size:12px;color:var(--muted-foreground)}.v-eyebrow{font:600 11px/1 var(--font-mono);color:var(--muted-foreground);text-transform:uppercase;letter-spacing:.04em}
+.v-tab{padding:8px 12px;font-size:13px;color:var(--muted-foreground);border-bottom:2px solid transparent;cursor:pointer;text-decoration:none}.v-tab.active{color:var(--foreground);border-bottom-color:var(--foreground)}
+select.v-input{appearance:auto;padding-right:24px}
+</style>
+</head>
+<body style="display:flex;height:100vh;overflow:hidden">
+
+<!-- Sidebar -->
+<aside style="width:220px;background:var(--sidebar);border-right:1px solid var(--sidebar-border);display:flex;flex-direction:column;flex-shrink:0;height:100vh">
+  <div style="padding:12px 16px;border-bottom:1px solid var(--sidebar-border);display:flex;align-items:center;gap:8px">
+    <div style="width:24px;height:24px;border-radius:4px;background:var(--primary);display:flex;align-items:center;justify-content:center">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1" y="1" width="12" height="12" rx="2.5" fill="var(--primary-foreground)"/><rect x="4" y="4" width="6" height="6" rx="1" fill="var(--primary)"/></svg>
+    </div>
+    <span style="font-size:13px;font-weight:600;color:var(--sidebar-foreground)">MetaPlatform</span>
+  </div>
+  <nav style="flex:1;padding:8px;display:flex;flex-direction:column;gap:1px;overflow-y:auto">
+    <a class="v-sidebar-item" data-dom-id="nav-dashboard"><i data-lucide="layout-dashboard" style="width:16px;height:16px"></i><span>工作台</span></a>
+    <a class="v-sidebar-item" data-dom-id="nav-superai"><i data-lucide="brain" style="width:16px;height:16px"></i><span>SuperAI</span></a>
+    <a class="v-sidebar-item" data-dom-id="nav-architecture"><i data-lucide="app-layout" style="width:16px;height:16px"></i><span>架构中心</span></a>
+    <a class="v-sidebar-item" data-dom-id="nav-apps"><i data-lucide="cube" style="width:16px;height:16px"></i><span>应用中心</span></a>
+    <a class="v-sidebar-item" data-dom-id="nav-ontology"><i data-lucide="kanban" style="width:16px;height:16px"></i><span>本体引擎</span></a>
+    <a class="v-sidebar-item" data-dom-id="nav-mcp"><i data-lucide="plug" style="width:16px;height:16px"></i><span>MCP 中心</span></a>
+    <a class="v-sidebar-item" data-dom-id="nav-agents"><i data-lucide="bot" style="width:16px;height:16px"></i><span>数字员工</span></a>
+    <a class="v-sidebar-item active" data-dom-id="nav-admin"><i data-lucide="settings" style="width:16px;height:16px"></i><span>后台管理</span></a>
+  </nav>
+  <div style="padding:8px 16px;border-top:1px solid var(--sidebar-border);font-size:11px;color:var(--muted-foreground)">v3.0 &middot; Ontology-driven AI Platform</div>
+</aside>
+
+<!-- Main Area -->
+<div style="flex:1;display:flex;flex-direction:column;overflow:hidden">
+  <!-- Top Bar -->
+  <header style="height:48px;display:flex;align-items:center;padding:0 16px;gap:12px;border-bottom:1px solid var(--border);background:var(--background);color:var(--foreground);flex-shrink:0">
+    <input style="height:32px;padding:0 10px;border:1px solid var(--border);border-radius:6px;background:var(--background);color:var(--foreground);font-size:13px;color:var(--muted-foreground);outline:none;width:240px" placeholder="搜索或 AI 助手" />
+    <div style="flex:1"></div>
+    <i data-lucide="bell" style="width:16px;height:16px;color:var(--muted-foreground);cursor:pointer"></i>
+    <div style="width:24px;height:24px;border-radius:50%;background:var(--primary);color:var(--primary-foreground);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600">A</div>
+    <span style="font-size:13px;font-weight:500">Admin</span>
+  </header>
+
+  <!-- Tabs -->
+  <div style="display:flex;align-items:center;padding:0 16px;border-bottom:1px solid var(--border);background:var(--background);color:var(--foreground);flex-shrink:0">
+    <a class="v-tab" href="admin-users.html">用户管理</a>
+    <a class="v-tab" href="admin-permissions.html">权限管理</a>
+    <a class="v-tab" href="admin-org.html">组织管理</a>
+    <a class="v-tab active" href="admin-logs.html">系统日志</a>
+    <a class="v-tab" href="admin-config.html">系统配置</a>
+  </div>
+
+  <!-- Main Content -->
+  <div style="flex:1;overflow-y:auto;background:var(--background);color:var(--foreground);padding:16px">
+
+    <!-- Filter Bar -->
+    <div class="v-card" style="margin-bottom:16px">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:6px">
+          <span style="font-size:12px;font-weight:500;color:var(--muted-foreground);white-space:nowrap">时间范围</span>
+          <input type="date" class="v-input" value="2026-07-15" style="width:140px" />
+          <span style="color:var(--muted-foreground)">~</span>
+          <input type="date" class="v-input" value="2026-07-16" style="width:140px" />
+        </div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <span style="font-size:12px;font-weight:500;color:var(--muted-foreground);white-space:nowrap">级别</span>
+          <select class="v-input" style="width:110px">
+            <option value="">全部</option>
+            <option>Info</option>
+            <option>Warn</option>
+            <option>Error</option>
+          </select>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <span style="font-size:12px;font-weight:500;color:var(--muted-foreground);white-space:nowrap">模块</span>
+          <select class="v-input" style="width:140px">
+            <option value="">全部模块</option>
+            <option>用户管理</option>
+            <option>权限管理</option>
+            <option>本体引擎</option>
+            <option>LLM Gateway</option>
+            <option>工作流引擎</option>
+            <option>系统配置</option>
+          </select>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <span style="font-size:12px;font-weight:500;color:var(--muted-foreground);white-space:nowrap">操作人</span>
+          <input class="v-input" placeholder="输入用户名" style="width:120px" />
+        </div>
+        <div style="flex:1"></div>
+        <button class="v-btn"><i data-lucide="search" style="width:13px;height:13px"></i> 查询</button>
+        <button class="v-btn"><i data-lucide="download" style="width:13px;height:13px"></i> 导出</button>
+      </div>
+    </div>
+
+    <!-- Logs Table -->
+    <div class="v-card" style="padding:0;overflow:hidden">
+      <table class="v-table">
+        <thead>
+          <tr>
+            <th style="width:160px">时间</th>
+            <th style="width:70px;text-align:center">级别</th>
+            <th style="width:80px">操作人</th>
+            <th style="width:100px">模块</th>
+            <th>操作描述</th>
+            <th style="width:120px">IP 地址</th>
+            <th style="width:70px">操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="v-meta" style="font-family:var(--font-mono);font-size:12px">2026-07-16 10:32:15</td>
+            <td style="text-align:center"><span class="v-badge v-badge-success">Info</span></td>
+            <td>Admin</td>
+            <td class="v-meta">用户管理</td>
+            <td>新增用户「孙七」，分配角色「普通用户」，归属数据部</td>
+            <td class="v-meta" style="font-family:var(--font-mono);font-size:12px">10.0.1.100</td>
+            <td><button class="v-btn" style="padding:0 8px;height:26px;font-size:11px"><i data-lucide="eye" style="width:12px;height:12px"></i> 详情</button></td>
+          </tr>
+          <tr>
+            <td class="v-meta" style="font-family:var(--font-mono);font-size:12px">2026-07-16 10:28:03</td>
+            <td style="text-align:center"><span class="v-badge v-badge-warning">Warn</span></td>
+            <td>赵六</td>
+            <td class="v-meta">LLM Gateway</td>
+            <td>模型调用超时：doubao-pro-32k，请求耗时 32000ms，已自动重试</td>
+            <td class="v-meta" style="font-family:var(--font-mono);font-size:12px">10.0.1.205</td>
+            <td><button class="v-btn" style="padding:0 8px;height:26px;font-size:11px"><i data-lucide="eye" style="width:12px;height:12px"></i> 详情</button></td>
+          </tr>
+          <tr>
+            <td class="v-meta" style="font-family:var(--font-mono);font-size:12px">2026-07-16 10:15:42</td>
+            <td style="text-align:center"><span class="v-badge v-badge-error">Error</span></td>
+            <td>系统</td>
+            <td class="v-meta">工作流引擎</td>
+            <td>审批流实例 #WF-20260716-003 执行失败：节点「AI审核」超时未响应</td>
+            <td class="v-meta" style="font-family:var(--font-mono);font-size:12px">10.0.2.10</td>
+            <td><button class="v-btn" style="padding:0 8px;height:26px;font-size:11px"><i data-lucide="eye" style="width:12px;height:12px"></i> 详情</button></td>
+          </tr>
+          <tr>
+            <td class="v-meta" style="font-family:var(--font-mono);font-size:12px">2026-07-16 10:10:18</td>
+            <td style="text-align:center"><span class="v-badge v-badge-success">Info</span></td>
+            <td>Admin</td>
+            <td class="v-meta">权限管理</td>
+            <td>修改角色「数据工程师」权限：新增「本体引擎-管理」权限</td>
+            <td class="v-meta" style="font-family:var(--font-mono);font-size:12px">10.0.1.100</td>
+            <td><button class="v-btn" style="padding:0 8px;height:26px;font-size:11px"><i data-lucide="eye" style="width:12px;height:12px"></i> 详情</button></td>
+          </tr>
+          <tr>
+            <td class="v-meta" style="font-family:var(--font-mono);font-size:12px">2026-07-16 09:55:30</td>
+            <td style="text-align:center"><span class="v-badge v-badge-success">Info</span></td>
+            <td>张三</td>
+            <td class="v-meta">本体引擎</td>
+            <td>创建业务对象「采购订单」，包含 12 个属性和 3 个关联关系</td>
+            <td class="v-meta" style="font-family:var(--font-mono);font-size:12px">10.0.1.150</td>
+            <td><button class="v-btn" style="padding:0 8px;height:26px;font-size:11px"><i data-lucide="eye" style="width:12px;height:12px"></i> 详情</button></td>
+          </tr>
+          <tr>
+            <td class="v-meta" style="font-family:var(--font-mono);font-size:12px">2026-07-16 09:42:05</td>
+            <td style="text-align:center"><span class="v-badge v-badge-warning">Warn</span></td>
+            <td>系统</td>
+            <td class="v-meta">系统配置</td>
+            <td>磁盘使用率达到 78%，建议清理临时文件或扩容</td>
+            <td class="v-meta" style="font-family:var(--font-mono);font-size:12px">10.0.2.10</td>
+            <td><button class="v-btn" style="padding:0 8px;height:26px;font-size:11px"><i data-lucide="eye" style="width:12px;height:12px"></i> 详情</button></td>
+          </tr>
+          <tr>
+            <td class="v-meta" style="font-family:var(--font-mono);font-size:12px">2026-07-16 09:30:12</td>
+            <td style="text-align:center"><span class="v-badge v-badge-success">Info</span></td>
+            <td>李四</td>
+            <td class="v-meta">数据中心</td>
+            <td>启动 Flink CDC 任务：mysql-orders -> Hudi ods_orders，并行度 4</td>
+            <td class="v-meta" style="font-family:var(--font-mono);font-size:12px">10.0.1.180</td>
+            <td><button class="v-btn" style="padding:0 8px;height:26px;font-size:11px"><i data-lucide="eye" style="width:12px;height:12px"></i> 详情</button></td>
+          </tr>
+          <tr>
+            <td class="v-meta" style="font-family:var(--font-mono);font-size:12px">2026-07-16 09:15:00</td>
+            <td style="text-align:center"><span class="v-badge v-badge-error">Error</span></td>
+            <td>系统</td>
+            <td class="v-meta">LLM Gateway</td>
+            <td>模型 API 调用失败：API Key 过期，endpoint ep-doubao-pro-128k</td>
+            <td class="v-meta" style="font-family:var(--font-mono);font-size:12px">10.0.2.10</td>
+            <td><button class="v-btn" style="padding:0 8px;height:26px;font-size:11px"><i data-lucide="eye" style="width:12px;height:12px"></i> 详情</button></td>
+          </tr>
+          <tr>
+            <td class="v-meta" style="font-family:var(--font-mono);font-size:12px">2026-07-16 08:58:44</td>
+            <td style="text-align:center"><span class="v-badge v-badge-success">Info</span></td>
+            <td>Admin</td>
+            <td class="v-meta">系统配置</td>
+            <td>更新平台配置：默认模型由 doubao-lite 切换为 doubao-pro-32k</td>
+            <td class="v-meta" style="font-family:var(--font-mono);font-size:12px">10.0.1.100</td>
+            <td><button class="v-btn" style="padding:0 8px;height:26px;font-size:11px"><i data-lucide="eye" style="width:12px;height:12px"></i> 详情</button></td>
+          </tr>
+          <tr>
+            <td class="v-meta" style="font-family:var(--font-mono);font-size:12px">2026-07-16 08:45:20</td>
+            <td style="text-align:center"><span class="v-badge v-badge-success">Info</span></td>
+            <td>张三</td>
+            <td class="v-meta">用户管理</td>
+            <td>用户登录成功：张三，IP 10.0.1.150，浏览器 Chrome 127</td>
+            <td class="v-meta" style="font-family:var(--font-mono);font-size:12px">10.0.1.150</td>
+            <td><button class="v-btn" style="padding:0 8px;height:26px;font-size:11px"><i data-lucide="eye" style="width:12px;height:12px"></i> 详情</button></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:12px">
+      <div class="v-meta">共 10 条记录</div>
+      <div style="display:flex;align-items:center;gap:4px">
+        <button class="v-btn" style="padding:0 8px;height:28px;font-size:12px" disabled>&laquo;</button>
+        <button class="v-btn v-btn-primary" style="padding:0 8px;height:28px;font-size:12px">1</button>
+        <button class="v-btn" style="padding:0 8px;height:28px;font-size:12px" disabled>&raquo;</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>lucide.createIcons();</script>
+</body>
+</html>

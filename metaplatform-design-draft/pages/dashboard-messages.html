@@ -1,0 +1,279 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>消息 - MetaPlatform</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<style id="theme-vars">
+:root {
+  --background: #ffffff; --foreground: #0a0a0a; --card: #ffffff; --card-foreground: #0a0a0a;
+  --muted: #f5f5f5; --muted-foreground: #737373; --accent: #f5f5f5; --accent-foreground: #0a0a0a;
+  --border: #e8e8e8; --primary: #0a0a0a; --primary-foreground: #fafafa;
+  --destructive: #ff6166; --destructive-foreground: #fafafa;
+  --success: #62d178; --success-subtle: #f0fdf4; --success-foreground: #0a0a0a;
+  --warning: #eab308; --warning-subtle: #fefce8;
+  --sidebar: #fafafa; --sidebar-foreground: #0a0a0a; --sidebar-primary: #171717;
+  --sidebar-primary-foreground: #fafafa; --sidebar-accent: #f5f5f5;
+  --sidebar-accent-foreground: #171717; --sidebar-border: #e5e5e5;
+  --radius: 8px; --font-sans: 'Geist', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'Geist Mono', ui-monospace, monospace;
+}
+* { box-sizing: border-box; }
+body { margin: 0; font-family: var(--font-sans); font-size: 14px; color: var(--foreground); background: var(--background); }
+.v-sidebar-item { display:flex; align-items:center; gap:8px; padding:7px 10px; border:1px solid transparent; border-radius:6px; cursor:pointer; font-size:13px; color:var(--sidebar-foreground); text-decoration:none; transition:background .15s,color .15s; }
+.v-sidebar-item:hover { background:var(--sidebar-accent); }
+.v-sidebar-item.active { background:var(--sidebar-primary); color:var(--sidebar-primary-foreground); }
+.v-tab { padding:8px 12px; font-size:13px; color:var(--muted-foreground); border-bottom:2px solid transparent; cursor:pointer; text-decoration:none; }
+.v-tab.active { color:var(--foreground); border-bottom-color:var(--foreground); }
+.v-card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:16px; }
+.v-btn { display:inline-flex; align-items:center; justify-content:center; gap:6px; padding:0 12px; height:32px; border:1px solid var(--border); border-radius:6px; background:var(--background);color:var(--foreground); color:var(--foreground); font:600 13px/1 var(--font-sans); cursor:pointer; }
+.v-btn-primary { background:var(--primary); color:var(--primary-foreground); border-color:var(--primary); }
+.v-btn-primary:hover { background:#262626; }
+.v-input { height:32px; padding:0 10px; border:1px solid var(--border); border-radius:6px; background:var(--background);color:var(--foreground); color:var(--foreground); font:13px/1 var(--font-sans); outline:none; }
+.v-input:focus { border-color:#a1a1a1; }
+.v-table { width:100%; border-collapse:collapse; font-size:13px; }
+.v-table thead { border-bottom:1px solid var(--border); }
+.v-table th { padding:8px 12px; text-align:left; font:600 11px/1 var(--font-mono); letter-spacing:.04em; color:var(--muted-foreground); text-transform:uppercase; }
+.v-table td { padding:8px 12px; border-bottom:1px solid var(--muted); }
+.v-table tbody tr:hover { background:var(--muted); }
+.v-badge { display:inline-flex; align-items:center; padding:2px 8px; border-radius:999px; font:600 11px/1 var(--font-mono); }
+.v-badge-success { background:var(--success-subtle); color:var(--success); }
+.v-badge-warning { background:var(--warning-subtle); color:var(--warning); }
+.v-badge-error { background:#fef2f2; color:var(--destructive); }
+.v-badge-neutral { background:var(--muted); color:var(--muted-foreground); }
+.v-eyebrow { font:600 11px/1 var(--font-mono); color:var(--muted-foreground); text-transform:uppercase; letter-spacing:.04em; }
+.v-value { font-size:24px; font-weight:700; line-height:1.1; }
+.v-meta { font-size:12px; color:var(--muted-foreground); }
+.v-divider { border:0; border-top:1px solid var(--border); margin:12px 0; }
+.msg-cat { display:flex; align-items:center; gap:8px; padding:8px 12px; border-radius:6px; cursor:pointer; font-size:13px; color:var(--foreground); transition:background .15s; }
+.msg-cat:hover { background:var(--muted); }
+.msg-cat.active { background:var(--muted); font-weight:600; }
+.msg-item { padding:12px 16px; border-bottom:1px solid var(--border); cursor:pointer; transition:background .15s; }
+.msg-item:hover { background:var(--muted); }
+.msg-item.unread { background:var(--success-subtle); }
+.msg-item.unread:hover { background:#e8f8ec; }
+</style>
+</head>
+<body style="display:flex;height:100vh;overflow:hidden">
+
+<!-- Sidebar -->
+<aside style="width:220px;background:var(--sidebar);border-right:1px solid var(--sidebar-border);display:flex;flex-direction:column;flex-shrink:0;height:100vh">
+  <div style="padding:12px 16px;border-bottom:1px solid var(--sidebar-border);display:flex;align-items:center;gap:8px">
+    <div style="width:24px;height:24px;border-radius:4px;background:var(--primary);display:flex;align-items:center;justify-content:center">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1" y="1" width="12" height="12" rx="2.5" fill="var(--primary-foreground)"/><rect x="4" y="4" width="6" height="6" rx="1" fill="var(--primary)"/></svg>
+    </div>
+    <span style="font-size:13px;font-weight:600;color:var(--sidebar-foreground)">MetaPlatform</span>
+  </div>
+  <nav style="flex:1;padding:8px;display:flex;flex-direction:column;gap:1px;overflow-y:auto">
+    <a class="v-sidebar-item active" data-dom-id="nav-dashboard"><i data-lucide="layout-dashboard" style="width:16px;height:16px"></i><span>工作台</span></a>
+    <a class="v-sidebar-item" data-dom-id="nav-superai"><i data-lucide="brain" style="width:16px;height:16px"></i><span>SuperAI</span></a>
+    <a class="v-sidebar-item" data-dom-id="nav-architecture"><i data-lucide="app-layout" style="width:16px;height:16px"></i><span>架构中心</span></a>
+    <a class="v-sidebar-item" data-dom-id="nav-apps"><i data-lucide="cube" style="width:16px;height:16px"></i><span>应用中心</span></a>
+    <a class="v-sidebar-item" data-dom-id="nav-ontology"><i data-lucide="kanban" style="width:16px;height:16px"></i><span>本体引擎</span></a>
+    <a class="v-sidebar-item" data-dom-id="nav-mcp"><i data-lucide="plug" style="width:16px;height:16px"></i><span>MCP 中心</span></a>
+    <a class="v-sidebar-item" data-dom-id="nav-agents"><i data-lucide="bot" style="width:16px;height:16px"></i><span>数字员工</span></a>
+    <a class="v-sidebar-item" data-dom-id="nav-admin"><i data-lucide="settings" style="width:16px;height:16px"></i><span>后台管理</span></a>
+  </nav>
+  <div style="padding:8px 16px;border-top:1px solid var(--sidebar-border);font-size:11px;color:var(--muted-foreground)">v3.0 &middot; Ontology-driven AI Platform</div>
+</aside>
+
+<!-- Main Area -->
+<div style="flex:1;display:flex;flex-direction:column;overflow:hidden">
+  <!-- Top Bar -->
+  <header style="height:48px;display:flex;align-items:center;padding:0 16px;gap:12px;border-bottom:1px solid var(--border);background:var(--background);color:var(--foreground);flex-shrink:0">
+    <input style="height:32px;padding:0 10px;border:1px solid var(--border);border-radius:6px;background:var(--background);color:var(--foreground);font-size:13px;color:var(--muted-foreground);outline:none;width:240px" placeholder="搜索或 AI 助手" />
+    <div style="flex:1"></div>
+    <i data-lucide="bell" style="width:16px;height:16px;color:var(--muted-foreground);cursor:pointer"></i>
+    <div style="width:24px;height:24px;border-radius:50%;background:var(--primary);color:var(--primary-foreground);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600">A</div>
+    <span style="font-size:13px;font-weight:500">Admin</span>
+  </header>
+
+  <!-- Tabs -->
+  <div style="display:flex;align-items:center;padding:0 16px;border-bottom:1px solid var(--border);background:var(--background);color:var(--foreground);flex-shrink:0">
+    <a class="v-tab" data-dom-id="tab-dashboard">工作台</a>
+    <a class="v-tab" data-dom-id="tab-myapps">我的应用</a>
+    <a class="v-tab" data-dom-id="tab-myagents">我的数字员工</a>
+    <a class="v-tab active" data-dom-id="tab-messages">消息</a>
+    <a class="v-tab" data-dom-id="tab-portal">门户</a>
+    <a class="v-tab" data-dom-id="tab-deliverables">交付材料</a>
+  </div>
+
+  <!-- Main Content -->
+  <div class="v-main" style="flex:1;overflow-y:auto;background:var(--background);color:var(--foreground);padding:16px;display:flex;gap:16px">
+
+    <!-- Left: Category List -->
+    <div class="v-card" style="width:200px;flex-shrink:0;padding:8px;display:flex;flex-direction:column;gap:2px">
+      <div class="v-eyebrow" style="padding:8px 12px;margin-bottom:4px">消息分类</div>
+      <div class="msg-cat active">
+        <i data-lucide="inbox" style="width:16px;height:16px"></i>
+        <span>全部</span>
+        <div style="flex:1"></div>
+        <span class="v-badge v-badge-neutral">12</span>
+      </div>
+      <div class="msg-cat">
+        <i data-lucide="info" style="width:16px;height:16px"></i>
+        <span>系统通知</span>
+        <div style="flex:1"></div>
+        <span class="v-badge v-badge-neutral">4</span>
+      </div>
+      <div class="msg-cat">
+        <i data-lucide="check-circle" style="width:16px;height:16px"></i>
+        <span>审批通知</span>
+        <div style="flex:1"></div>
+        <span class="v-badge v-badge-neutral">3</span>
+      </div>
+      <div class="msg-cat">
+        <i data-lucide="clock" style="width:16px;height:16px"></i>
+        <span>任务提醒</span>
+        <div style="flex:1"></div>
+        <span class="v-badge v-badge-neutral">3</span>
+      </div>
+      <div class="msg-cat">
+        <i data-lucide="megaphone" style="width:16px;height:16px"></i>
+        <span>平台公告</span>
+        <div style="flex:1"></div>
+        <span class="v-badge v-badge-neutral">2</span>
+      </div>
+    </div>
+
+    <!-- Right: Message List -->
+    <div class="v-card" style="flex:1;padding:0;overflow:hidden;display:flex;flex-direction:column">
+      <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+        <div class="v-eyebrow">全部消息</div>
+        <button class="v-btn" style="height:28px;font-size:12px">全部已读</button>
+      </div>
+      <div style="flex:1;overflow-y:auto">
+
+        <!-- Message 1 (unread) -->
+        <div class="msg-item unread">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <div style="width:6px;height:6px;border-radius:50%;background:var(--primary)"></div>
+              <span style="font-weight:600;font-size:13px">审批通过：采购申请 #20260716-003</span>
+            </div>
+            <span class="v-meta">10 分钟前</span>
+          </div>
+          <div class="v-meta" style="padding-left:14px">您提交的"服务器采购申请"已通过审批，采购流程将自动启动。请关注后续物流信息。</div>
+        </div>
+
+        <!-- Message 2 (unread) -->
+        <div class="msg-item unread">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <div style="width:6px;height:6px;border-radius:50%;background:var(--primary)"></div>
+              <span style="font-weight:600;font-size:13px">数字员工"数据分析师"任务完成</span>
+            </div>
+            <span class="v-meta">32 分钟前</span>
+          </div>
+          <div class="v-meta" style="padding-left:14px">数据分析师已完成"Q2 销售趋势分析报告"，已自动归档至交付材料。</div>
+        </div>
+
+        <!-- Message 3 (unread) -->
+        <div class="msg-item unread">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <div style="width:6px;height:6px;border-radius:50%;background:var(--primary)"></div>
+              <span style="font-weight:600;font-size:13px">待办提醒：审批工单等待处理</span>
+            </div>
+            <span class="v-meta">1 小时前</span>
+          </div>
+          <div class="v-meta" style="padding-left:14px">您有 2 条审批工单待处理："差旅报销 #R-20260715-008"和"项目立项 #P-20260716-001"。</div>
+        </div>
+
+        <!-- Message 4 (read) -->
+        <div class="msg-item">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <div style="width:6px;height:6px;border-radius:50%;background:transparent"></div>
+              <span style="font-weight:500;font-size:13px">系统：本体引擎 v3.0.2 已部署</span>
+            </div>
+            <span class="v-meta">2 小时前</span>
+          </div>
+          <div class="v-meta" style="padding-left:14px">本体引擎已升级至 v3.0.2，修复了 OWL 推理性能问题，新增 SPARQL 端点缓存。</div>
+        </div>
+
+        <!-- Message 5 (read) -->
+        <div class="msg-item">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <div style="width:6px;height:6px;border-radius:50%;background:transparent"></div>
+              <span style="font-weight:500;font-size:13px">平台公告：MCP 生态集市上线</span>
+            </div>
+            <span class="v-meta">3 小时前</span>
+          </div>
+          <div class="v-meta" style="padding-left:14px">MCP 生态集市已正式上线，支持搜索、安装和管理第三方 MCP Server，欢迎体验。</div>
+        </div>
+
+        <!-- Message 6 (read) -->
+        <div class="msg-item">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <div style="width:6px;height:6px;border-radius:50%;background:transparent"></div>
+              <span style="font-weight:500;font-size:13px">任务提醒：周报提交截止</span>
+            </div>
+            <span class="v-meta">5 小时前</span>
+          </div>
+          <div class="v-meta" style="padding-left:14px">本周周报提交截止时间为今日 18:00，请及时填写并提交。</div>
+        </div>
+
+        <!-- Message 7 (read) -->
+        <div class="msg-item">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <div style="width:6px;height:6px;border-radius:50%;background:transparent"></div>
+              <span style="font-weight:500;font-size:13px">审批驳回：请假申请 #L-20260715-012</span>
+            </div>
+            <span class="v-meta">昨天 17:30</span>
+          </div>
+          <div class="v-meta" style="padding-left:14px">您的请假申请已被驳回，原因：与项目交付时间冲突。请与项目经理确认后重新提交。</div>
+        </div>
+
+        <!-- Message 8 (read) -->
+        <div class="msg-item">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <div style="width:6px;height:6px;border-radius:50%;background:transparent"></div>
+              <span style="font-weight:500;font-size:13px">系统通知：Milvus 集群扩容完成</span>
+            </div>
+            <span class="v-meta">昨天 14:00</span>
+          </div>
+          <div class="v-meta" style="padding-left:14px">Milvus 向量数据库集群已扩容至 8 节点，RaBitQ 量化索引重建完成，查询性能提升约 40%。</div>
+        </div>
+
+        <!-- Message 9 (read) -->
+        <div class="msg-item">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <div style="width:6px;height:6px;border-radius:50%;background:transparent"></div>
+              <span style="font-weight:500;font-size:13px">平台公告：v3.0 正式发布</span>
+            </div>
+            <span class="v-meta">2026-07-15</span>
+          </div>
+          <div class="v-meta" style="padding-left:14px">MetaPlatform v3.0 正式发布，全新 Ontology 引擎、MCP 协议支持与数字员工调度能力。</div>
+        </div>
+
+        <!-- Message 10 (read) -->
+        <div class="msg-item">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <div style="width:6px;height:6px;border-radius:50%;background:transparent"></div>
+              <span style="font-weight:500;font-size:13px">任务提醒：知识库数据更新</span>
+            </div>
+            <span class="v-meta">2026-07-14</span>
+          </div>
+          <div class="v-meta" style="padding-left:14px">RAG 知识库已完成本月增量索引更新，共新增文档 156 篇，删除过期文档 23 篇。</div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>lucide.createIcons();</script>
+</body>
+</html>

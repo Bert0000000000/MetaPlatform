@@ -1,0 +1,25 @@
+{
+  "slug": "table",
+  "schemaVersion": 2,
+  "name": "Table",
+  "category": "data-display",
+  "sourceKind": "from-scratch",
+  "confidence": "medium",
+  "semanticTypeCandidates": [
+    { "type": "table", "evidence": "structured data grid with headers and rows" }
+  ],
+  "variantDimensions": [],
+  "representativeVariants": [
+    {
+      "name": "Default",
+      "whySelected": "Standard data table",
+      "traits": { "fontSize": "var(--type-body)", "borderCollapse": "collapse", "headerBg": "var(--surface-dim)", "rowBorderBottom": "1px solid var(--border)" },
+      "childrenDigest": "thead > tr > th + tbody > tr > td"
+    }
+  ],
+  "anatomy": ["container", "header-row", "body-rows"],
+  "structurePatterns": ["table", "w-full"],
+  "usageHints": { "priorityHint": "core" },
+  "doNotInvent": ["sortable columns", "row selection checkbox", "expandable rows"],
+  "unknowns": []
+}

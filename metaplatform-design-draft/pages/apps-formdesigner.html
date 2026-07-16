@@ -1,0 +1,169 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>表单设计器 - 应用中心 - MetaPlatform</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<style id="theme-vars">
+:root{--background:#0a0a0a;--foreground:#fafafa;--card:#111111;--card-foreground:#fafafa;--muted:#1a1a1a;--muted-foreground:#a1a1a1;--accent:#1a1a1a;--accent-foreground:#fafafa;--border:#262626;--primary:#fafafa;--primary-foreground:#0a0a0a;--destructive:#ff6166;--success:#62d178;--success-subtle:#14241a;--warning:#eab308;--warning-subtle:#1a1800;--sidebar:#0f0f0f;--sidebar-foreground:#fafafa;--sidebar-primary:#fafafa;--sidebar-primary-foreground:#0a0a0a;--sidebar-accent:#1a1a1a;--sidebar-accent-foreground:#fafafa;--sidebar-border:#262626;--radius:8px;--font-sans:'Geist',ui-sans-serif,system-ui,sans-serif;--font-mono:'Geist Mono',ui-monospace,monospace}
+*{box-sizing:border-box}body{margin:0;font-family:var(--font-sans);font-size:14px;color:var(--foreground);background:var(--background);color:var(--foreground)}
+.v-sidebar-item{display:flex;align-items:center;gap:8px;padding:7px 10px;border:1px solid transparent;border-radius:6px;cursor:pointer;font-size:13px;color:var(--sidebar-foreground);text-decoration:none;transition:background .15s,color .15s}.v-sidebar-item:hover{background:var(--sidebar-accent)}.v-sidebar-item.active{background:var(--sidebar-primary);color:var(--sidebar-primary-foreground)}
+.v-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:0 12px;height:32px;border:1px solid var(--border);border-radius:6px;background:var(--background);color:var(--foreground);color:var(--foreground);font:600 13px/1 var(--font-sans);cursor:pointer}.v-btn-primary{background:var(--primary);color:var(--primary-foreground);border-color:var(--primary)}
+.v-input{height:32px;padding:0 10px;border:1px solid var(--border);border-radius:6px;background:var(--background);color:var(--foreground);color:var(--foreground);font:13px/1 var(--font-sans);outline:none}.v-input:focus{border-color:#a1a1a1}
+.v-badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:999px;font:600 11px/1 var(--font-mono)}.v-badge-neutral{background:var(--muted);color:var(--muted-foreground)}
+.v-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px}
+.v-tab{padding:8px 12px;font-size:13px;color:var(--muted-foreground);border-bottom:2px solid transparent;cursor:pointer;text-decoration:none}.v-tab.active{color:var(--foreground);border-bottom-color:var(--foreground)}
+.v-meta{font-size:12px;color:var(--muted-foreground)}.v-eyebrow{font:600 11px/1 var(--font-mono);color:var(--muted-foreground);text-transform:uppercase;letter-spacing:.04em}
+.form-label{display:block;font-size:13px;font-weight:500;margin-bottom:6px;color:var(--foreground)}
+.component-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;cursor:grab;font-size:13px;transition:background .15s}.component-item:hover{background:var(--muted)}
+.canvas-field{display:flex;flex-direction:column;gap:4px;padding:10px 12px;border:1px solid var(--border);border-radius:6px;background:var(--background);color:var(--foreground);cursor:pointer;transition:border-color .15s}.canvas-field:hover{border-color:#a1a1a1}.canvas-field.selected{border-color:var(--foreground);box-shadow:0 0 0 1px var(--foreground)}
+.prop-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--muted)}
+.switch{position:relative;width:36px;height:20px;cursor:pointer}.switch input{opacity:0;width:0;height:0}.switch .slider{position:absolute;inset:0;background:var(--muted);border-radius:10px;transition:background .2s}.switch .slider::before{content:'';position:absolute;width:14px;height:14px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:transform .2s}.switch input:checked+.slider{background:var(--primary)}.switch input:checked+.slider::before{transform:translateX(16px)}
+</style>
+</head>
+<body style="display:flex;height:100vh;overflow:hidden">
+
+<!-- Sidebar -->
+<aside style="width:220px;background:var(--sidebar);border-right:1px solid var(--sidebar-border);display:flex;flex-direction:column;flex-shrink:0;height:100vh">
+  <div style="padding:12px 16px;border-bottom:1px solid var(--sidebar-border);display:flex;align-items:center;gap:8px">
+    <div style="width:24px;height:24px;border-radius:4px;background:var(--primary);display:flex;align-items:center;justify-content:center">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1" y="1" width="12" height="12" rx="2.5" fill="var(--primary-foreground)"/><rect x="4" y="4" width="6" height="6" rx="1" fill="var(--primary)"/></svg>
+    </div>
+    <span style="font-size:13px;font-weight:600;color:var(--sidebar-foreground)">MetaPlatform</span>
+  </div>
+  <nav style="flex:1;padding:8px;display:flex;flex-direction:column;gap:1px;overflow-y:auto">
+    <a class="v-sidebar-item" data-dom-id="nav-dashboard"><i data-lucide="layout-dashboard" style="width:16px;height:16px"></i><span>工作台</span></a>
+    <a class="v-sidebar-item" data-dom-id="nav-superai"><i data-lucide="brain" style="width:16px;height:16px"></i><span>SuperAI</span></a>
+    <a class="v-sidebar-item" data-dom-id="nav-architecture"><i data-lucide="app-layout" style="width:16px;height:16px"></i><span>架构中心</span></a>
+    <a class="v-sidebar-item active" data-dom-id="nav-apps"><i data-lucide="cube" style="width:16px;height:16px"></i><span>应用中心</span></a>
+    <a class="v-sidebar-item" data-dom-id="nav-ontology"><i data-lucide="kanban" style="width:16px;height:16px"></i><span>本体引擎</span></a>
+    <a class="v-sidebar-item" data-dom-id="nav-mcp"><i data-lucide="plug" style="width:16px;height:16px"></i><span>MCP 中心</span></a>
+    <a class="v-sidebar-item" data-dom-id="nav-agents"><i data-lucide="bot" style="width:16px;height:16px"></i><span>数字员工</span></a>
+    <a class="v-sidebar-item" data-dom-id="nav-admin"><i data-lucide="settings" style="width:16px;height:16px"></i><span>后台管理</span></a>
+  </nav>
+  <div style="padding:8px 16px;border-top:1px solid var(--sidebar-border);font-size:11px;color:var(--muted-foreground)">v3.0 &middot; Ontology-driven AI Platform</div>
+</aside>
+
+<!-- Main Area -->
+<div style="flex:1;display:flex;flex-direction:column;overflow:hidden">
+  <!-- Top Bar -->
+  <header style="height:48px;display:flex;align-items:center;padding:0 16px;gap:12px;border-bottom:1px solid var(--border);background:var(--background);color:var(--foreground);flex-shrink:0">
+    <input style="height:32px;padding:0 10px;border:1px solid var(--border);border-radius:6px;background:var(--background);color:var(--foreground);font-size:13px;color:var(--muted-foreground);outline:none;width:240px" placeholder="搜索或 AI 助手" />
+    <div style="flex:1"></div>
+    <i data-lucide="bell" style="width:16px;height:16px;color:var(--muted-foreground);cursor:pointer"></i>
+    <div style="width:24px;height:24px;border-radius:50%;background:var(--primary);color:var(--primary-foreground);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600">A</div>
+    <span style="font-size:13px;font-weight:500">Admin</span>
+  </header>
+
+  <!-- Tabs -->
+  <div style="display:flex;align-items:center;padding:0 16px;border-bottom:1px solid var(--border);background:var(--background);color:var(--foreground);flex-shrink:0">
+    <a class="v-tab">应用列表</a>
+    <a class="v-tab">模型设计</a>
+    <a class="v-tab active">表单设计器</a>
+    <a class="v-tab">流程设计器</a>
+    <a class="v-tab">应用配置</a>
+    <a class="v-tab">应用发布</a>
+    <a class="v-tab">版本管理</a>
+  </div>
+
+  <!-- Main Content: 3-column layout -->
+  <div style="flex:1;overflow:hidden;background:var(--background);color:var(--foreground);display:flex">
+
+    <!-- Left: Component Panel -->
+    <div style="width:200px;border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto">
+      <div style="padding:12px 12px 8px">
+        <div class="v-eyebrow">基础组件</div>
+      </div>
+      <div style="padding:0 12px 12px;display:flex;flex-direction:column;gap:4px">
+        <div class="component-item"><i data-lucide="type" style="width:14px;height:14px;color:var(--muted-foreground)"></i> 单行文本</div>
+        <div class="component-item"><i data-lucide="align-left" style="width:14px;height:14px;color:var(--muted-foreground)"></i> 多行文本</div>
+        <div class="component-item"><i data-lucide="hash" style="width:14px;height:14px;color:var(--muted-foreground)"></i> 数字</div>
+        <div class="component-item"><i data-lucide="calendar" style="width:14px;height:14px;color:var(--muted-foreground)"></i> 日期</div>
+        <div class="component-item"><i data-lucide="chevrons-up-down" style="width:14px;height:14px;color:var(--muted-foreground)"></i> 下拉选择</div>
+        <div class="component-item"><i data-lucide="circle-dot" style="width:14px;height:14px;color:var(--muted-foreground)"></i> 单选</div>
+        <div class="component-item"><i data-lucide="check-square" style="width:14px;height:14px;color:var(--muted-foreground)"></i> 复选</div>
+        <div class="component-item"><i data-lucide="paperclip" style="width:14px;height:14px;color:var(--muted-foreground)"></i> 附件</div>
+      </div>
+    </div>
+
+    <!-- Center: Canvas -->
+    <div style="flex:1;overflow-y:auto;padding:24px;display:flex;justify-content:center">
+      <div style="width:560px;border:2px dashed var(--border);border-radius:var(--radius);padding:24px;min-height:400px;background:var(--muted)">
+        <div style="text-align:center;margin-bottom:20px">
+          <div style="font-size:15px;font-weight:600">客户信息录入表单</div>
+          <div class="v-meta" style="margin-top:4px">从左侧拖拽组件到此处</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <!-- Field 1: selected -->
+          <div class="canvas-field selected">
+            <label class="form-label">客户名称 <span style="color:var(--destructive)">*</span></label>
+            <input class="v-input" style="width:100%" value="" placeholder="请输入客户名称" readonly />
+          </div>
+          <!-- Field 2 -->
+          <div class="canvas-field">
+            <label class="form-label">客户级别</label>
+            <select class="v-input" style="width:100%;appearance:auto" disabled>
+              <option>请选择客户级别</option>
+              <option>VIP 客户</option>
+              <option>普通客户</option>
+              <option>潜在客户</option>
+            </select>
+          </div>
+          <!-- Field 3 -->
+          <div class="canvas-field">
+            <label class="form-label">备注</label>
+            <textarea style="width:100%;height:72px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font:13px/1.4 var(--font-sans);resize:none;outline:none" placeholder="请输入备注信息" readonly></textarea>
+          </div>
+          <!-- Submit -->
+          <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:8px">
+            <button class="v-btn">取消</button>
+            <button class="v-btn v-btn-primary">提交</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Property Panel -->
+    <div style="width:280px;border-left:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto">
+      <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
+        <div class="v-eyebrow">属性面板</div>
+        <div style="font-size:13px;font-weight:500;margin-top:4px">客户名称</div>
+      </div>
+      <div style="padding:12px 16px;display:flex;flex-direction:column">
+        <div class="prop-row">
+          <span style="font-size:13px">字段标签</span>
+          <input class="v-input" style="width:160px;height:28px;font-size:12px" value="客户名称" />
+        </div>
+        <div class="prop-row">
+          <span style="font-size:13px">字段类型</span>
+          <select class="v-input" style="width:160px;height:28px;font-size:12px;appearance:auto">
+            <option>文本</option>
+            <option>数字</option>
+            <option>日期</option>
+          </select>
+        </div>
+        <div class="prop-row">
+          <span style="font-size:13px">必填</span>
+          <label class="switch"><input type="checkbox" checked><span class="slider"></span></label>
+        </div>
+        <div class="prop-row">
+          <span style="font-size:13px">默认值</span>
+          <input class="v-input" style="width:160px;height:28px;font-size:12px" placeholder="" />
+        </div>
+        <div class="prop-row" style="border-bottom:none">
+          <span style="font-size:13px">提示文字</span>
+          <input class="v-input" style="width:160px;height:28px;font-size:12px" value="请输入客户名称" />
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>lucide.createIcons();</script>
+</body>
+</html>

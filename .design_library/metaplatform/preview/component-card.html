@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Card - MetaPlatform</title>
+  <link rel="stylesheet" href="../colors_and_type.css">
+  <style>
+    body {
+      padding: var(--space-6);
+      font-family: var(--font-body);
+      color: var(--fg);
+      background: var(--bg);
+      margin: 0;
+    }
+    .page-title {
+      font-family: var(--font-heading);
+      font-size: var(--font-size-h1);
+      font-weight: var(--font-weight-h1);
+      line-height: var(--line-height-h1);
+      margin: 0 0 var(--space-7) 0;
+      color: var(--fg);
+    }
+    .section {
+      margin-bottom: var(--space-7);
+    }
+    .section-label {
+      font-family: var(--font-body);
+      font-size: var(--font-size-eyebrow);
+      font-weight: var(--font-weight-eyebrow);
+      line-height: var(--line-height-eyebrow);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--muted-foreground);
+      margin: 0 0 var(--space-4) 0;
+    }
+
+    /* Card base */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-4);
+      box-sizing: border-box;
+    }
+
+    /* Default Card */
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: var(--space-4);
+    }
+    .card-header-title {
+      font-family: var(--font-heading);
+      font-size: var(--font-size-h3);
+      font-weight: var(--font-weight-h3);
+      line-height: var(--line-height-h3);
+      color: var(--fg);
+      margin: 0;
+    }
+    .card-header-action {
+      font-family: var(--font-body);
+      font-size: var(--font-size-caption);
+      font-weight: var(--font-weight-lead);
+      color: var(--link);
+      cursor: default;
+      background: none;
+      border: none;
+      padding: 0;
+    }
+    .card-body {
+      margin-bottom: var(--space-4);
+    }
+    .card-body p {
+      font-family: var(--font-body);
+      font-size: var(--font-size-body);
+      font-weight: var(--font-weight-body);
+      line-height: var(--line-height-body);
+      color: var(--fg);
+      margin: 0 0 var(--space-3) 0;
+    }
+    .card-body p:last-child {
+      margin-bottom: 0;
+    }
+    .card-footer {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-body);
+      font-size: var(--font-size-body);
+      font-weight: var(--font-weight-lead);
+      line-height: 1;
+      height: var(--size-button-height-md);
+      padding: 0 var(--space-5);
+      border: none;
+      border-radius: var(--radius-md);
+      cursor: default;
+      white-space: nowrap;
+      user-select: none;
+      outline: none;
+      box-sizing: border-box;
+    }
+    .btn-primary {
+      background: var(--primary);
+      color: #ffffff;
+    }
+    .btn-ghost {
+      background: transparent;
+      color: var(--fg);
+      border: 1px solid var(--border);
+    }
+
+    /* Stat Card */
+    .stat-card {
+      max-width: 260px;
+    }
+    .stat-label {
+      font-family: var(--font-body);
+      font-size: var(--font-size-caption);
+      font-weight: var(--font-weight-caption);
+      line-height: var(--line-height-caption);
+      color: var(--muted-foreground);
+      margin: 0 0 var(--space-2) 0;
+    }
+    .stat-value {
+      font-family: var(--font-display);
+      font-size: 28px;
+      font-weight: 700;
+      line-height: 1.2;
+      color: var(--fg);
+      margin: 0 0 var(--space-2) 0;
+    }
+    .stat-trend {
+      font-family: var(--font-body);
+      font-size: var(--font-size-caption);
+      font-weight: var(--font-weight-lead);
+      color: var(--success);
+      margin: 0;
+    }
+
+    /* Grid */
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--space-5);
+      max-width: 840px;
+    }
+    .grid-3 .stat-card {
+      max-width: none;
+    }
+    .grid-3 .stat-value {
+      font-size: 22px;
+    }
+  </style>
+</head>
+<body>
+  <h1 class="page-title">Card</h1>
+
+  <!-- Default Card -->
+  <div class="section">
+    <div class="section-label">Default Card</div>
+    <div class="card" style="max-width: 400px;">
+      <div class="card-header">
+        <h3 class="card-header-title">Project Overview</h3>
+        <button class="card-header-action">View all</button>
+      </div>
+      <div class="card-body">
+        <p>Track your project progress and team activity in real time. All key metrics are updated automatically.</p>
+        <p>Last synced 2 minutes ago. 12 active contributors this week.</p>
+      </div>
+      <div class="card-footer">
+        <button class="btn btn-primary">Open</button>
+        <button class="btn btn-ghost">Dismiss</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stat Card -->
+  <div class="section">
+    <div class="section-label">Stat Card</div>
+    <div class="card stat-card">
+      <p class="stat-label">Monthly Revenue</p>
+      <p class="stat-value">$48,260</p>
+      <p class="stat-trend">&#8593; 12% vs last month</p>
+    </div>
+  </div>
+
+  <!-- Grid Cards -->
+  <div class="section">
+    <div class="section-label">Grid Cards</div>
+    <div class="grid-3">
+      <div class="card stat-card">
+        <p class="stat-label">Active Users</p>
+        <p class="stat-value">3,842</p>
+        <p class="stat-trend">&#8593; 8% vs last week</p>
+      </div>
+      <div class="card stat-card">
+        <p class="stat-label">Conversion Rate</p>
+        <p class="stat-value">5.6%</p>
+        <p class="stat-trend">&#8593; 2.1% vs last week</p>
+      </div>
+      <div class="card stat-card">
+        <p class="stat-label">Avg. Session</p>
+        <p class="stat-value">4m 32s</p>
+        <p class="stat-trend">&#8593; 5% vs last week</p>
+      </div>
+    </div>
+  </div>
+
+  <script>/* no interaction needed */</script>
+</body>
+</html>

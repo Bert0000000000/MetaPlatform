@@ -1,0 +1,286 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>应用架构 - 架构中心 - MetaPlatform</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+:root{--background:#0a0a0a;--foreground:#fafafa;--card:#111111;--card-foreground:#fafafa;--muted:#1a1a1a;--muted-foreground:#a1a1a1;--accent:#1a1a1a;--accent-foreground:#fafafa;--border:#262626;--primary:#fafafa;--primary-foreground:#0a0a0a;--destructive:#ff6166;--success:#62d178;--success-subtle:#14241a;--warning:#eab308;--warning-subtle:#1a1800;--sidebar:#0f0f0f;--sidebar-foreground:#fafafa;--sidebar-primary:#fafafa;--sidebar-primary-foreground:#0a0a0a;--sidebar-accent:#1a1a1a;--sidebar-accent-foreground:#fafafa;--sidebar-border:#262626;--radius:8px;--font-sans:'Geist',ui-sans-serif,system-ui,sans-serif;--font-mono:'Geist Mono',ui-monospace,monospace}
+*{box-sizing:border-box}body{margin:0;font-family:var(--font-sans);font-size:14px;color:var(--foreground);background:var(--background);color:var(--foreground)}
+.v-sidebar-item{display:flex;align-items:center;gap:8px;padding:7px 10px;border:1px solid transparent;border-radius:6px;cursor:pointer;font-size:13px;color:var(--sidebar-foreground);text-decoration:none;transition:background .15s,color .15s}.v-sidebar-item:hover{background:var(--sidebar-accent)}.v-sidebar-item.active{background:var(--sidebar-primary);color:var(--sidebar-primary-foreground)}
+.v-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:0 12px;height:32px;border:1px solid var(--border);border-radius:6px;background:var(--background);color:var(--foreground);color:var(--foreground);font:600 13px/1 var(--font-sans);cursor:pointer}.v-btn-primary{background:var(--primary);color:var(--primary-foreground);border-color:var(--primary)}.v-btn-primary:hover{background:#262626}
+.v-input{height:32px;padding:0 10px;border:1px solid var(--border);border-radius:6px;background:var(--background);color:var(--foreground);color:var(--foreground);font:13px/1 var(--font-sans);outline:none}.v-input:focus{border-color:#a1a1a1}
+.v-table{width:100%;border-collapse:collapse;font-size:13px}.v-table thead{border-bottom:1px solid var(--border)}.v-table th{padding:8px 12px;text-align:left;font:600 11px/1 var(--font-mono);letter-spacing:.04em;color:var(--muted-foreground);text-transform:uppercase}.v-table td{padding:8px 12px;border-bottom:1px solid var(--muted)}.v-table tbody tr:hover{background:var(--muted)}
+.v-badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:999px;font:600 11px/1 var(--font-mono)}.v-badge-success{background:var(--success-subtle);color:var(--success)}.v-badge-warning{background:var(--warning-subtle);color:var(--warning)}.v-badge-neutral{background:var(--muted);color:var(--muted-foreground)}
+.v-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px}
+.v-meta{font-size:12px;color:var(--muted-foreground)}
+.v-eyebrow{font:600 11px/1 var(--font-mono);color:var(--muted-foreground);text-transform:uppercase;letter-spacing:.04em}
+.v-tab{padding:8px 12px;font-size:13px;color:var(--muted-foreground);border-bottom:2px solid transparent;cursor:pointer;text-decoration:none}.v-tab.active{color:var(--foreground);border-bottom-color:var(--foreground)}
+.v-divider{border:0;border-top:1px solid var(--border);margin:12px 0}
+
+.tech-tag{display:inline-flex;align-items:center;padding:2px 8px;border-radius:4px;font-size:11px;font-family:var(--font-mono);font-weight:500;background:var(--muted);color:var(--muted-foreground);margin-right:4px;margin-bottom:4px}
+.health-bar{height:4px;border-radius:2px;background:var(--muted);overflow:hidden}.health-bar-fill{height:100%;border-radius:2px}
+.app-card{display:flex;flex-direction:column;gap:10px}
+.capability-tag{display:inline-flex;align-items:center;padding:1px 6px;border-radius:4px;font-size:11px;background:var(--muted);color:var(--muted-foreground);margin-right:4px}
+</style>
+</head>
+<body style="display:flex;height:100vh;overflow:hidden">
+
+<!-- Sidebar -->
+<aside style="width:220px;background:var(--sidebar);border-right:1px solid var(--sidebar-border);display:flex;flex-direction:column;flex-shrink:0;height:100vh">
+  <div style="padding:12px 16px;border-bottom:1px solid var(--sidebar-border);display:flex;align-items:center;gap:8px">
+    <div style="width:24px;height:24px;border-radius:4px;background:var(--primary);display:flex;align-items:center;justify-content:center">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1" y="1" width="12" height="12" rx="2.5" fill="var(--primary-foreground)"/><rect x="4" y="4" width="6" height="6" rx="1" fill="var(--primary)"/></svg>
+    </div>
+    <span style="font-size:13px;font-weight:600;color:var(--sidebar-foreground)">MetaPlatform</span>
+  </div>
+  <nav style="flex:1;padding:8px;display:flex;flex-direction:column;gap:1px;overflow-y:auto">
+    <a class="v-sidebar-item" href="dashboard.html"><i data-lucide="layout-dashboard" style="width:16px;height:16px"></i><span>工作台</span></a>
+    <a class="v-sidebar-item" href="#"><i data-lucide="brain" style="width:16px;height:16px"></i><span>SuperAI</span></a>
+    <a class="v-sidebar-item active" href="#"><i data-lucide="app-layout" style="width:16px;height:16px"></i><span>架构中心</span></a>
+    <a class="v-sidebar-item" href="#"><i data-lucide="cube" style="width:16px;height:16px"></i><span>应用中心</span></a>
+    <a class="v-sidebar-item" href="#"><i data-lucide="kanban" style="width:16px;height:16px"></i><span>本体引擎</span></a>
+    <a class="v-sidebar-item" href="#"><i data-lucide="plug" style="width:16px;height:16px"></i><span>MCP 中心</span></a>
+    <a class="v-sidebar-item" href="#"><i data-lucide="bot" style="width:16px;height:16px"></i><span>数字员工</span></a>
+    <a class="v-sidebar-item" href="#"><i data-lucide="settings" style="width:16px;height:16px"></i><span>后台管理</span></a>
+  </nav>
+  <div style="padding:8px 16px;border-top:1px solid var(--sidebar-border);font-size:11px;color:var(--muted-foreground)">v3.0 &middot; Ontology-driven AI Platform</div>
+</aside>
+
+<!-- Main Area -->
+<div style="flex:1;display:flex;flex-direction:column;overflow:hidden">
+  <!-- Top Bar -->
+  <header style="height:48px;display:flex;align-items:center;padding:0 16px;gap:12px;border-bottom:1px solid var(--border);background:var(--background);color:var(--foreground);flex-shrink:0">
+    <input style="height:32px;padding:0 10px;border:1px solid var(--border);border-radius:6px;background:var(--background);color:var(--foreground);font-size:13px;color:var(--muted-foreground);outline:none;width:240px" placeholder="搜索或 AI 助手" />
+    <div style="flex:1"></div>
+    <i data-lucide="bell" style="width:16px;height:16px;color:var(--muted-foreground);cursor:pointer"></i>
+    <div style="width:24px;height:24px;border-radius:50%;background:var(--primary);color:var(--primary-foreground);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600">A</div>
+    <span style="font-size:13px;font-weight:500">Admin</span>
+  </header>
+
+  <!-- Tabs -->
+  <div style="display:flex;align-items:center;padding:0 16px;border-bottom:1px solid var(--border);background:var(--background);color:var(--foreground);flex-shrink:0">
+    <a class="v-tab" href="arch-business.html">业务架构</a>
+    <a class="v-tab active" href="arch-app.html">应用架构</a>
+    <a class="v-tab" href="arch-data.html">数据架构</a>
+    <a class="v-tab" href="arch-tech.html">技术架构</a>
+    <a class="v-tab" href="arch-governance.html">架构治理</a>
+  </div>
+
+  <!-- Main Content -->
+  <div style="flex:1;overflow-y:auto;background:var(--background);color:var(--foreground);padding:16px">
+
+    <!-- Toolbar -->
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px">
+      <button class="v-btn v-btn-primary"><i data-lucide="plus" style="width:14px;height:14px"></i>注册应用</button>
+      <div style="flex:1"></div>
+      <input class="v-input" style="width:240px" placeholder="搜索应用系统..." />
+    </div>
+
+    <!-- App Cards Grid -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+
+      <!-- CRM系统 -->
+      <div class="v-card app-card">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="width:32px;height:32px;border-radius:6px;background:#eff6ff;display:flex;align-items:center;justify-content:center">
+            <i data-lucide="contact" style="width:16px;height:16px;color:#3b82f6"></i>
+          </div>
+          <div>
+            <div style="font-weight:600;font-size:13px">CRM系统</div>
+            <div class="v-meta">客户关系管理</div>
+          </div>
+        </div>
+        <div>
+          <div class="v-eyebrow" style="margin-bottom:6px">技术栈</div>
+          <div><span class="tech-tag">Java 21</span><span class="tech-tag">Spring Boot</span><span class="tech-tag">React 19</span></div>
+        </div>
+        <div>
+          <div class="v-eyebrow" style="margin-bottom:6px">支撑业务能力</div>
+          <div><span class="capability-tag">客户获取</span><span class="capability-tag">客户服务</span><span class="capability-tag">线索管理</span></div>
+        </div>
+        <hr class="v-divider" style="margin:4px 0">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div>
+            <div class="v-eyebrow" style="margin-bottom:4px">健康度</div>
+            <div class="health-bar" style="width:80px"><div class="health-bar-fill" style="width:92%;background:var(--success)"></div></div>
+          </div>
+          <div style="text-align:right">
+            <div class="v-eyebrow" style="margin-bottom:4px">技术债务</div>
+            <span style="font-weight:600;font-size:14px">2</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ERP系统 -->
+      <div class="v-card app-card">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="width:32px;height:32px;border-radius:6px;background:#fef3c7;display:flex;align-items:center;justify-content:center">
+            <i data-lucide="building" style="width:16px;height:16px;color:#d97706"></i>
+          </div>
+          <div>
+            <div style="font-weight:600;font-size:13px">ERP系统</div>
+            <div class="v-meta">企业资源计划</div>
+          </div>
+        </div>
+        <div>
+          <div class="v-eyebrow" style="margin-bottom:6px">技术栈</div>
+          <div><span class="tech-tag">Java 21</span><span class="tech-tag">Spring Boot</span><span class="tech-tag">PostgreSQL</span></div>
+        </div>
+        <div>
+          <div class="v-eyebrow" style="margin-bottom:6px">支撑业务能力</div>
+          <div><span class="capability-tag">企业管理</span><span class="capability-tag">组织管理</span><span class="capability-tag">财务管理</span></div>
+        </div>
+        <hr class="v-divider" style="margin:4px 0">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div>
+            <div class="v-eyebrow" style="margin-bottom:4px">健康度</div>
+            <div class="health-bar" style="width:80px"><div class="health-bar-fill" style="width:75%;background:var(--warning)"></div></div>
+          </div>
+          <div style="text-align:right">
+            <div class="v-eyebrow" style="margin-bottom:4px">技术债务</div>
+            <span style="font-weight:600;font-size:14px">5</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 数据平台 -->
+      <div class="v-card app-card">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="width:32px;height:32px;border-radius:6px;background:#f0fdf4;display:flex;align-items:center;justify-content:center">
+            <i data-lucide="database" style="width:16px;height:16px;color:#16a34a"></i>
+          </div>
+          <div>
+            <div style="font-weight:600;font-size:13px">数据平台</div>
+            <div class="v-meta">数据集成与分析</div>
+          </div>
+        </div>
+        <div>
+          <div class="v-eyebrow" style="margin-bottom:6px">技术栈</div>
+          <div><span class="tech-tag">Python 3.13</span><span class="tech-tag">Flink</span><span class="tech-tag">StarRocks</span></div>
+        </div>
+        <div>
+          <div class="v-eyebrow" style="margin-bottom:6px">支撑业务能力</div>
+          <div><span class="capability-tag">数据治理</span><span class="capability-tag">数据分析</span></div>
+        </div>
+        <hr class="v-divider" style="margin:4px 0">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div>
+            <div class="v-eyebrow" style="margin-bottom:4px">健康度</div>
+            <div class="health-bar" style="width:80px"><div class="health-bar-fill" style="width:88%;background:var(--success)"></div></div>
+          </div>
+          <div style="text-align:right">
+            <div class="v-eyebrow" style="margin-bottom:4px">技术债务</div>
+            <span style="font-weight:600;font-size:14px">1</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- OA系统 -->
+      <div class="v-card app-card">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="width:32px;height:32px;border-radius:6px;background:#faf5ff;display:flex;align-items:center;justify-content:center">
+            <i data-lucide="file-text" style="width:16px;height:16px;color:#9333ea"></i>
+          </div>
+          <div>
+            <div style="font-weight:600;font-size:13px">OA系统</div>
+            <div class="v-meta">协同办公</div>
+          </div>
+        </div>
+        <div>
+          <div class="v-eyebrow" style="margin-bottom:6px">技术栈</div>
+          <div><span class="tech-tag">Java 21</span><span class="tech-tag">React 19</span><span class="tech-tag">MySQL</span></div>
+        </div>
+        <div>
+          <div class="v-eyebrow" style="margin-bottom:6px">支撑业务能力</div>
+          <div><span class="capability-tag">企业管理</span><span class="capability-tag">部门管理</span><span class="capability-tag">岗位管理</span></div>
+        </div>
+        <hr class="v-divider" style="margin:4px 0">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div>
+            <div class="v-eyebrow" style="margin-bottom:4px">健康度</div>
+            <div class="health-bar" style="width:80px"><div class="health-bar-fill" style="width:65%;background:var(--warning)"></div></div>
+          </div>
+          <div style="text-align:right">
+            <div class="v-eyebrow" style="margin-bottom:4px">技术债务</div>
+            <span style="font-weight:600;font-size:14px">4</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- BI系统 -->
+      <div class="v-card app-card">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="width:32px;height:32px;border-radius:6px;background:#fff7ed;display:flex;align-items:center;justify-content:center">
+            <i data-lucide="bar-chart-3" style="width:16px;height:16px;color:#ea580c"></i>
+          </div>
+          <div>
+            <div style="font-weight:600;font-size:13px">BI系统</div>
+            <div class="v-meta">商业智能</div>
+          </div>
+        </div>
+        <div>
+          <div class="v-eyebrow" style="margin-bottom:6px">技术栈</div>
+          <div><span class="tech-tag">StarRocks</span><span class="tech-tag">Grafana</span><span class="tech-tag">React 19</span></div>
+        </div>
+        <div>
+          <div class="v-eyebrow" style="margin-bottom:6px">支撑业务能力</div>
+          <div><span class="capability-tag">数据分析</span><span class="capability-tag">目标管理</span></div>
+        </div>
+        <hr class="v-divider" style="margin:4px 0">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div>
+            <div class="v-eyebrow" style="margin-bottom:4px">健康度</div>
+            <div class="health-bar" style="width:80px"><div class="health-bar-fill" style="width:95%;background:var(--success)"></div></div>
+          </div>
+          <div style="text-align:right">
+            <div class="v-eyebrow" style="margin-bottom:4px">技术债务</div>
+            <span style="font-weight:600;font-size:14px">0</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- API网关 -->
+      <div class="v-card app-card">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="width:32px;height:32px;border-radius:6px;background:#f0f9ff;display:flex;align-items:center;justify-content:center">
+            <i data-lucide="globe" style="width:16px;height:16px;color:#0284c7"></i>
+          </div>
+          <div>
+            <div style="font-weight:600;font-size:13px">API网关</div>
+            <div class="v-meta">接口管理与路由</div>
+          </div>
+        </div>
+        <div>
+          <div class="v-eyebrow" style="margin-bottom:6px">技术栈</div>
+          <div><span class="tech-tag">Spring Boot</span><span class="tech-tag">Kafka</span><span class="tech-tag">Redis</span></div>
+        </div>
+        <div>
+          <div class="v-eyebrow" style="margin-bottom:6px">支撑业务能力</div>
+          <div><span class="capability-tag">技术基础设施</span><span class="capability-tag">协议适配</span></div>
+        </div>
+        <hr class="v-divider" style="margin:4px 0">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div>
+            <div class="v-eyebrow" style="margin-bottom:4px">健康度</div>
+            <div class="health-bar" style="width:80px"><div class="health-bar-fill" style="width:85%;background:var(--success)"></div></div>
+          </div>
+          <div style="text-align:right">
+            <div class="v-eyebrow" style="margin-bottom:4px">技术债务</div>
+            <span style="font-weight:600;font-size:14px">1</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+<script>lucide.createIcons();</script>
+</body>
+</html>

@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Badge Component — MetaPlatform Design System</title>
+  <link rel="stylesheet" href="../colors_and_type.css">
+  <style>
+    /* Page layout */
+    .page { max-width: 720px; margin: 0 auto; padding: 40px 24px; }
+    .page-title { font-family: var(--font-heading); font-size: var(--font-size-h1); font-weight: var(--font-weight-h1); color: var(--foreground); margin: 0 0 8px; }
+    .page-desc { font-family: var(--font-body); font-size: var(--font-size-body); color: var(--muted-foreground); margin: 0 0 32px; }
+
+    /* Section */
+    .section { margin-bottom: 40px; }
+    .section-title {
+      font-family: var(--font-heading); font-size: var(--font-size-h3);
+      font-weight: var(--font-weight-h3); color: var(--foreground);
+      margin: 0 0 4px; padding-bottom: 8px; border-bottom: 1px solid var(--border);
+    }
+    .section-desc { font-size: var(--font-size-caption); color: var(--muted-foreground); margin: 4px 0 16px; }
+
+    /* Badge base */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      height: 20px;
+      padding: 0 6px;
+      border-radius: var(--radius-full);
+      font-size: var(--font-size-caption);
+      font-weight: var(--font-weight-lead);
+      white-space: nowrap;
+      line-height: 1;
+    }
+
+    /* Color variants */
+    .badge--default { background: var(--surface-dim); color: var(--muted-foreground); }
+    .badge--primary { background: var(--color-primary-container, var(--mp-blue-50)); color: var(--primary); }
+    .badge--success { background: #f0fdf4; color: var(--success); }
+    .badge--warning { background: #fffbeb; color: var(--warning); }
+    .badge--error   { background: var(--error-container); color: var(--error); }
+
+    /* Badge row */
+    .badge-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+
+    /* Usage table */
+    .usage-table { width: 100%; border-collapse: collapse; font-size: var(--font-size-caption); }
+    .usage-table th,
+    .usage-table td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); }
+    .usage-table th { font-weight: var(--font-weight-h4); color: var(--muted-foreground); font-size: var(--font-size-eyebrow); text-transform: uppercase; letter-spacing: 0.04em; }
+    .usage-table td { color: var(--foreground); }
+    .usage-table tbody tr:last-child td { border-bottom: none; }
+
+    /* Spec code block */
+    .spec-block {
+      background: var(--surface-dim); border: 1px solid var(--border); border-radius: var(--radius-md);
+      padding: 16px; font-family: var(--font-mono); font-size: var(--font-size-mono);
+      color: var(--foreground); line-height: 1.6; overflow-x: auto;
+    }
+    .spec-block .comment { color: var(--muted-foreground); }
+    .spec-block .prop    { color: var(--primary); }
+  </style>
+</head>
+<body style="margin: 0; font-family: var(--font-body); background: var(--bg); color: var(--fg);">
+
+  <div class="page">
+    <h1 class="page-title">Badge</h1>
+    <p class="page-desc">用于状态标记、分类标签等场景的紧凑型标签组件。</p>
+
+    <!-- Color Variants -->
+    <div class="section">
+      <h2 class="section-title">Color Variants</h2>
+      <p class="section-desc">5 种语义色变体，分别对应默认、主要、成功、警告和错误状态。</p>
+      <div class="badge-row">
+        <span class="badge badge--default">Default</span>
+        <span class="badge badge--primary">Primary</span>
+        <span class="badge badge--success">Success</span>
+        <span class="badge badge--warning">Warning</span>
+        <span class="badge badge--error">Error</span>
+      </div>
+    </div>
+
+    <!-- Chinese labels -->
+    <div class="section">
+      <h2 class="section-title">中文标签</h2>
+      <p class="section-desc">中文场景下 Badge 同样保持紧凑排列。</p>
+      <div class="badge-row">
+        <span class="badge badge--default">草稿</span>
+        <span class="badge badge--primary">处理中</span>
+        <span class="badge badge--success">已完成</span>
+        <span class="badge badge--warning">待审核</span>
+        <span class="badge badge--error">异常</span>
+      </div>
+    </div>
+
+    <!-- Usage Examples — Table -->
+    <div class="section">
+      <h2 class="section-title">Usage Examples</h2>
+      <p class="section-desc">模拟 Dashboard 表格中的状态列使用场景。</p>
+      <table class="usage-table">
+        <thead>
+          <tr>
+            <th>任务名称</th>
+            <th>类型</th>
+            <th>状态</th>
+            <th>最后更新</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>本体模型同步</td>
+            <td><span class="badge badge--primary">SuperAI</span></td>
+            <td><span class="badge badge--primary">运行中</span></td>
+            <td>2 分钟前</td>
+          </tr>
+          <tr>
+            <td>数据质量巡检</td>
+            <td><span class="badge badge--success">数据中心</span></td>
+            <td><span class="badge badge--success">已完成</span></td>
+            <td>15 分钟前</td>
+          </tr>
+          <tr>
+            <td>流程审批通知</td>
+            <td><span class="badge badge--default">流程中心</span></td>
+            <td><span class="badge badge--warning">待审核</span></td>
+            <td>1 小时前</td>
+          </tr>
+          <tr>
+            <td>API 网关监控</td>
+            <td><span class="badge badge--error">架构中心</span></td>
+            <td><span class="badge badge--error">异常</span></td>
+            <td>5 分钟前</td>
+          </tr>
+          <tr>
+            <td>知识库索引重建</td>
+            <td><span class="badge badge--default">知识库</span></td>
+            <td><span class="badge badge--default">已停止</span></td>
+            <td>3 小时前</td>
+          </tr>
+          <tr>
+            <td>数字员工调度</td>
+            <td><span class="badge badge--primary">数字员工</span></td>
+            <td><span class="badge badge--success">已完成</span></td>
+            <td>30 分钟前</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Design Tokens Reference -->
+    <div class="section">
+      <h2 class="section-title">Design Tokens</h2>
+      <p class="section-desc">组件所引用的设计变量一览。</p>
+      <div class="spec-block">
+<span class="comment">/* Badge Base */</span>
+display: inline-flex;
+align-items: center;
+height: 20px;
+padding: 0 6px;
+border-radius: <span class="prop">var(--radius-full)</span>;
+font-size: <span class="prop">var(--font-size-caption)</span>;   <span class="comment">/* 12px */</span>
+font-weight: <span class="prop">var(--font-weight-lead)</span>;  <span class="comment">/* 500 */</span>
+
+<span class="comment">/* --default */</span>
+background: <span class="prop">var(--surface-dim)</span>;
+color: <span class="prop">var(--muted-foreground)</span>;
+
+<span class="comment">/* --primary */</span>
+background: <span class="prop">var(--mp-blue-50)</span>;
+color: <span class="prop">var(--primary)</span>;
+
+<span class="comment">/* --success */</span>
+background: <span class="prop">#f0fdf4</span>;
+color: <span class="prop">var(--success)</span>;
+
+<span class="comment">/* --warning */</span>
+background: <span class="prop">#fffbeb</span>;
+color: <span class="prop">var(--warning)</span>;
+
+<span class="comment">/* --error */</span>
+background: <span class="prop">var(--error-container)</span>;
+color: <span class="prop">var(--error)</span>;
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

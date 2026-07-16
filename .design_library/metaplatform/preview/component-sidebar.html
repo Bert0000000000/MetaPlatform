@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sidebar Component — MetaPlatform Design System</title>
+  <link rel="stylesheet" href="../colors_and_type.css">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body { margin: 0; font-family: var(--font-body); background: var(--bg); color: var(--fg); }
+
+    /* Layout */
+    .layout { display: flex; height: 100vh; overflow: hidden; }
+
+    /* Sidebar */
+    .sidebar {
+      width: 220px;
+      min-width: 220px;
+      height: 100vh;
+      background: #0f172a;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+    }
+
+    /* Brand area */
+    .sidebar__brand {
+      padding: 16px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #ffffff;
+      letter-spacing: -0.01em;
+      border-bottom: 1px solid rgba(148,163,184,0.12);
+      flex-shrink: 0;
+    }
+
+    /* Navigation */
+    .sidebar__nav {
+      flex: 1;
+      padding: 8px 8px;
+      overflow-y: auto;
+    }
+
+    .sidebar__item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      font-size: 12px;
+      color: #94a3b8;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+      text-decoration: none;
+      user-select: none;
+    }
+    .sidebar__item:hover {
+      color: #cbd5e1;
+      background: rgba(148,163,184,0.06);
+    }
+    .sidebar__item--active {
+      background: rgba(59,130,246,0.15);
+      color: #60a5fa;
+    }
+    .sidebar__item--active:hover {
+      color: #60a5fa;
+      background: rgba(59,130,246,0.20);
+    }
+
+    .sidebar__item svg {
+      flex-shrink: 0;
+      width: 16px;
+      height: 16px;
+    }
+
+    /* Footer */
+    .sidebar__footer {
+      padding: 16px;
+      font-size: 11px;
+      color: #475569;
+      border-top: 1px solid rgba(148,163,184,0.12);
+      flex-shrink: 0;
+    }
+
+    /* Main content placeholder */
+    .main {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--surface-dim);
+      color: var(--muted-foreground);
+      font-size: var(--font-size-h3);
+    }
+
+    /* Spec panel */
+    .spec-overlay {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: #0f172a;
+      color: #cbd5e1;
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      line-height: 1.6;
+      max-width: 360px;
+      box-shadow: var(--shadow-2);
+      z-index: 10;
+    }
+    .spec-overlay h3 {
+      font-family: var(--font-heading);
+      font-size: 13px;
+      font-weight: 600;
+      color: #60a5fa;
+      margin: 0 0 10px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .spec-overlay .tok { color: #60a5fa; }
+    .spec-overlay .val { color: #fbbf24; }
+  </style>
+</head>
+<body>
+
+  <div class="layout">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar__brand">MetaPlatform</div>
+
+      <nav class="sidebar__nav">
+        <!-- 1. 工作台 (active) -->
+        <a class="sidebar__item sidebar__item--active" href="#">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="1" y="1" width="6" height="6" rx="1.5"/>
+            <rect x="9" y="1" width="6" height="6" rx="1.5"/>
+            <rect x="1" y="9" width="6" height="6" rx="1.5"/>
+            <rect x="9" y="9" width="6" height="6" rx="1.5"/>
+          </svg>
+          工作台
+        </a>
+
+        <!-- 2. SuperAI -->
+        <a class="sidebar__item" href="#">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="8,1 15,6 12,14 4,14 1,6"/>
+          </svg>
+          SuperAI
+        </a>
+
+        <!-- 3. 架构中心 -->
+        <a class="sidebar__item" href="#">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="8" cy="8" r="6"/>
+            <circle cx="8" cy="8" r="2"/>
+            <line x1="8" y1="2" x2="8" y2="6"/>
+            <line x1="8" y1="10" x2="8" y2="14"/>
+            <line x1="2" y1="8" x2="6" y2="8"/>
+            <line x1="10" y1="8" x2="14" y2="8"/>
+          </svg>
+          架构中心
+        </a>
+
+        <!-- 4. 应用中心 -->
+        <a class="sidebar__item" href="#">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="2" width="5" height="5" rx="1"/>
+            <rect x="9" y="2" width="5" height="5" rx="1"/>
+            <rect x="2" y="9" width="5" height="5" rx="1"/>
+            <rect x="9" y="9" width="5" height="5" rx="1"/>
+          </svg>
+          应用中心
+        </a>
+
+        <!-- 5. 流程中心 -->
+        <a class="sidebar__item" href="#">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="2,8 6,4 8,6 10,4 14,8"/>
+            <polyline points="2,12 6,8 8,10 10,8 14,12"/>
+          </svg>
+          流程中心
+        </a>
+
+        <!-- 6. 数据中心 -->
+        <a class="sidebar__item" href="#">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="2" width="12" height="3" rx="1"/>
+            <rect x="2" y="6.5" width="12" height="3" rx="1"/>
+            <rect x="2" y="11" width="12" height="3" rx="1"/>
+            <circle cx="11" cy="3.5" r="0.8" fill="currentColor"/>
+            <circle cx="11" cy="8" r="0.8" fill="currentColor"/>
+            <circle cx="11" cy="12.5" r="0.8" fill="currentColor"/>
+          </svg>
+          数据中心
+        </a>
+
+        <!-- 7. 本体引擎 -->
+        <a class="sidebar__item" href="#">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="8" cy="3" r="2"/>
+            <circle cx="3" cy="13" r="2"/>
+            <circle cx="13" cy="13" r="2"/>
+            <line x1="8" y1="5" x2="4" y2="11"/>
+            <line x1="8" y1="5" x2="12" y2="11"/>
+            <line x1="5" y1="13" x2="11" y2="13"/>
+          </svg>
+          本体引擎
+        </a>
+
+        <!-- 8. 质量中心 -->
+        <a class="sidebar__item" href="#">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8,1 L10,5.5 L15,6 L11.5,9.5 L12.5,14.5 L8,12 L3.5,14.5 L4.5,9.5 L1,6 L6,5.5 Z"/>
+          </svg>
+          质量中心
+        </a>
+
+        <!-- 9. 知识库 -->
+        <a class="sidebar__item" href="#">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M2,3 C2,2 3,1 4,1 L12,1 C13,1 14,2 14,3 L14,14 L8,12 L2,14 Z"/>
+          </svg>
+          知识库
+        </a>
+
+        <!-- 10. 云市场 -->
+        <a class="sidebar__item" href="#">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3,13 C1,11 1,5 3,3 C5,1 11,1 13,3 C15,5 15,11 13,13 C11,15 5,15 3,13 Z"/>
+            <circle cx="8" cy="8" r="2"/>
+          </svg>
+          云市场
+        </a>
+
+        <!-- 11. 数字员工 -->
+        <a class="sidebar__item" href="#">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="8" cy="5" r="2.5"/>
+            <path d="M3,14 C3,11 5,9 8,9 C11,9 13,11 13,14"/>
+          </svg>
+          数字员工
+        </a>
+
+        <!-- 12. 后台管理 -->
+        <a class="sidebar__item" href="#">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="8" cy="8" r="6"/>
+            <line x1="8" y1="8" x2="11" y2="11"/>
+            <circle cx="5" cy="6" r="0.5" fill="currentColor"/>
+            <circle cx="8" cy="5.5" r="0.5" fill="currentColor"/>
+            <circle cx="6" cy="9" r="0.5" fill="currentColor"/>
+            <circle cx="10" cy="7" r="0.5" fill="currentColor"/>
+          </svg>
+          后台管理
+        </a>
+      </nav>
+
+      <div class="sidebar__footer">v1.2 &middot; 本体论驱动 AI 平台</div>
+    </aside>
+
+    <!-- Main content placeholder -->
+    <main class="main">
+      主内容区域
+    </main>
+  </div>
+
+  <!-- Spec overlay -->
+  <div class="spec-overlay">
+    <h3>Sidebar Tokens</h3>
+    width: <span class="val">220px</span><br>
+    background: <span class="val">#0f172a</span><br>
+    brand font-size: <span class="val">14px</span><br>
+    brand font-weight: <span class="val">600</span><br>
+    brand color: <span class="val">#ffffff</span><br>
+    brand padding: <span class="val">16px</span><br>
+    item padding: <span class="val">8px 16px</span><br>
+    item font-size: <span class="val">12px</span><br>
+    item color: <span class="val">#94a3b8</span><br>
+    item radius: <span class="val">4px</span><br>
+    item icon: <span class="val">16x16 inline SVG</span><br>
+    active bg: <span class="val">rgba(59,130,246,0.15)</span><br>
+    active color: <span class="val">#60a5fa</span><br>
+    hover color: <span class="val">#cbd5e1</span><br>
+    footer font-size: <span class="val">11px</span><br>
+    footer color: <span class="val">#475569</span>
+  </div>
+
+</body>
+</html>

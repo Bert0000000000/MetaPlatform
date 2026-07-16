@@ -1,0 +1,57 @@
+# Build outputs
+**/target/
+**/*.class
+**/*.jar
+**/*.war
+**/dist/
+
+# Node
+**/node_modules/
+**/package-lock.json
+**/.vite/
+**/*.tsbuildinfo
+
+# Backend runtime
+metaplatform-api/data/
+metaplatform-api/backups/
+
+# Published-app snapshot files (one sqlite per published app; created
+# at publish time and re-populated on each re-publish. Never commit
+# them — they're test output and runtime artifacts).
+data/published/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+# Trae IDE AI agent generated logs (cache/debug output)
+.*.log
+
+# Local Node runtime (portable binaries)
+tools/node-v22/
+
+# Local Maven runtime (portable binaries)
+tools/maven/
+
+# RuoYi-Vue-Pro source code (large, cloned on demand)
+deploy/ruoyi-build/ruoyi-vue-pro/
+
+# Verification screenshots / logs
+verify-*.png
+docs/artifacts/verification/screenshots/
+docs/artifacts/verification/logs/
+*.err
+*.out
+
+# Maven wrapper
+!.mvn/wrapper/maven-wrapper.jar

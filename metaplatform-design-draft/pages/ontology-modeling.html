@@ -1,0 +1,351 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>本体论管理 - 本体引擎 - MetaPlatform</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+:root{--background:#0a0a0a;--foreground:#fafafa;--card:#111111;--card-foreground:#fafafa;--muted:#1a1a1a;--muted-foreground:#a1a1a1;--accent:#1a1a1a;--accent-foreground:#fafafa;--border:#262626;--primary:#fafafa;--primary-foreground:#0a0a0a;--destructive:#ff6166;--success:#62d178;--success-subtle:#14241a;--warning:#eab308;--warning-subtle:#1a1800;--sidebar:#0f0f0f;--sidebar-foreground:#fafafa;--sidebar-primary:#fafafa;--sidebar-primary-foreground:#0a0a0a;--sidebar-accent:#1a1a1a;--sidebar-accent-foreground:#fafafa;--sidebar-border:#262626;--radius:8px;--font-sans:'Geist',ui-sans-serif,system-ui,sans-serif;--font-mono:'Geist Mono',ui-monospace,monospace}
+*{box-sizing:border-box}body{margin:0;font-family:var(--font-sans);font-size:14px;color:var(--foreground);background:var(--background);color:var(--foreground)}
+.v-sidebar-item{display:flex;align-items:center;gap:8px;padding:7px 10px;border:1px solid transparent;border-radius:6px;cursor:pointer;font-size:13px;color:var(--sidebar-foreground);text-decoration:none;transition:background .15s,color .15s}.v-sidebar-item:hover{background:var(--sidebar-accent)}.v-sidebar-item.active{background:var(--sidebar-primary);color:var(--sidebar-primary-foreground)}
+.v-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:0 12px;height:32px;border:1px solid var(--border);border-radius:6px;background:var(--background);color:var(--foreground);color:var(--foreground);font:600 13px/1 var(--font-sans);cursor:pointer}.v-btn-primary{background:var(--primary);color:var(--primary-foreground);border-color:var(--primary)}.v-input{height:32px;padding:0 10px;border:1px solid var(--border);border-radius:6px;background:var(--background);color:var(--foreground);color:var(--foreground);font:13px/1 var(--font-sans);outline:none}.v-input:focus{border-color:#a1a1a1}
+.v-table{width:100%;border-collapse:collapse;font-size:13px}.v-table thead{border-bottom:1px solid var(--border)}.v-table th{padding:8px 12px;text-align:left;font:600 11px/1 var(--font-mono);letter-spacing:.04em;color:var(--muted-foreground);text-transform:uppercase}.v-table td{padding:8px 12px;border-bottom:1px solid var(--muted)}.v-table tbody tr:hover{background:var(--muted)}
+.v-badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:999px;font:600 11px/1 var(--font-mono)}.v-badge-success{background:var(--success-subtle);color:var(--success)}.v-badge-warning{background:var(--warning-subtle);color:var(--warning)}.v-badge-neutral{background:var(--muted);color:var(--muted-foreground)}
+.v-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px}.v-meta{font-size:12px;color:var(--muted-foreground)}.v-eyebrow{font:600 11px/1 var(--font-mono);color:var(--muted-foreground);text-transform:uppercase;letter-spacing:.04em}.v-tab{padding:8px 12px;font-size:13px;color:var(--muted-foreground);border-bottom:2px solid transparent;cursor:pointer;text-decoration:none}.v-tab.active{color:var(--foreground);border-bottom-color:var(--foreground)}
+.tree-group{cursor:pointer;user-select:none}.tree-group-label{display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:4px;font-size:13px;font-weight:500;cursor:pointer}.tree-group-label:hover{background:var(--muted)}.tree-item{display:flex;align-items:center;gap:6px;padding:5px 8px 5px 28px;border-radius:4px;font-size:13px;cursor:pointer;color:var(--foreground)}.tree-item:hover{background:var(--muted)}.tree-item.active{background:var(--accent);font-weight:500}
+.detail-field{display:flex;align-items:flex-start;gap:12px;padding:8px 0}.detail-label{width:72px;flex-shrink:0;font-size:13px;color:var(--muted-foreground);font-weight:500}.detail-value{font-size:13px;color:var(--foreground)}
+</style>
+</head>
+<body style="display:flex;height:100vh;overflow:hidden">
+
+<!-- Sidebar -->
+<aside style="width:220px;background:var(--sidebar);border-right:1px solid var(--sidebar-border);display:flex;flex-direction:column;flex-shrink:0;height:100vh">
+  <div style="padding:12px 16px;border-bottom:1px solid var(--sidebar-border);display:flex;align-items:center;gap:8px">
+    <div style="width:24px;height:24px;border-radius:4px;background:var(--primary);display:flex;align-items:center;justify-content:center">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1" y="1" width="12" height="12" rx="2.5" fill="var(--primary-foreground)"/><rect x="4" y="4" width="6" height="6" rx="1" fill="var(--primary)"/></svg>
+    </div>
+    <span style="font-size:13px;font-weight:600;color:var(--sidebar-foreground)">MetaPlatform</span>
+  </div>
+  <nav style="flex:1;padding:8px;display:flex;flex-direction:column;gap:1px;overflow-y:auto">
+    <a class="v-sidebar-item" href="dashboard.html"><i data-lucide="layout-dashboard" style="width:16px;height:16px"></i><span>工作台</span></a>
+    <a class="v-sidebar-item" href="dialogue.html"><i data-lucide="brain" style="width:16px;height:16px"></i><span>SuperAI</span></a>
+    <a class="v-sidebar-item" href="arch-tech.html"><i data-lucide="app-layout" style="width:16px;height:16px"></i><span>架构中心</span></a>
+    <a class="v-sidebar-item" href="apps-list.html"><i data-lucide="cube" style="width:16px;height:16px"></i><span>应用中心</span></a>
+    <a class="v-sidebar-item active" href="ontology-modeling.html"><i data-lucide="kanban" style="width:16px;height:16px"></i><span>本体引擎</span></a>
+    <a class="v-sidebar-item" href="#"><i data-lucide="plug" style="width:16px;height:16px"></i><span>MCP 中心</span></a>
+    <a class="v-sidebar-item" href="agents-mine.html"><i data-lucide="bot" style="width:16px;height:16px"></i><span>数字员工</span></a>
+    <a class="v-sidebar-item" href="admin-users.html"><i data-lucide="settings" style="width:16px;height:16px"></i><span>后台管理</span></a>
+  </nav>
+  <div style="padding:8px 16px;border-top:1px solid var(--sidebar-border);font-size:11px;color:var(--muted-foreground)">v3.0 &middot; Ontology-driven AI Platform</div>
+</aside>
+
+<!-- Main Area -->
+<div style="flex:1;display:flex;flex-direction:column;overflow:hidden">
+  <!-- Top Bar -->
+  <header style="height:48px;display:flex;align-items:center;padding:0 16px;gap:12px;border-bottom:1px solid var(--border);background:var(--background);color:var(--foreground);flex-shrink:0">
+    <input class="v-input" style="width:240px" placeholder="搜索或 AI 助手" />
+    <div style="flex:1"></div>
+    <i data-lucide="bell" style="width:16px;height:16px;color:var(--muted-foreground);cursor:pointer"></i>
+    <div style="width:24px;height:24px;border-radius:50%;background:var(--primary);color:var(--primary-foreground);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600">A</div>
+    <span style="font-size:13px;font-weight:500">Admin</span>
+  </header>
+
+  <!-- Tabs -->
+  <div style="display:flex;align-items:center;padding:0 16px;border-bottom:1px solid var(--border);background:var(--background);color:var(--foreground);flex-shrink:0">
+    <a class="v-tab active" href="ontology-modeling.html">本体论管理</a>
+    <a class="v-tab" href="ontology-datacenter.html">数据中心</a>
+    <a class="v-tab" href="ontology-action.html">Action 编排</a>
+    <a class="v-tab" href="ontology-graph.html">知识图谱</a>
+  </div>
+
+  <!-- Main Content: Left-Right Split -->
+  <div style="flex:1;display:flex;overflow:hidden">
+
+    <!-- Left Panel: Concept Tree (300px) -->
+    <div style="width:300px;border-right:1px solid var(--border);overflow-y:auto;flex-shrink:0;background:var(--sidebar)">
+      <div style="padding:12px 12px 8px;display:flex;align-items:center;justify-content:space-between">
+        <span class="v-eyebrow">概念树</span>
+        <button class="v-btn" style="height:28px;padding:0 8px;font-size:12px"><i data-lucide="plus" style="width:14px;height:14px"></i></button>
+      </div>
+
+      <!-- Tree: 概念 -->
+      <div class="tree-group">
+        <div class="tree-group-label">
+          <i data-lucide="chevron-down" style="width:14px;height:14px;color:var(--muted-foreground)"></i>
+          <i data-lucide="box" style="width:14px;height:14px;color:var(--muted-foreground)"></i>
+          <span>概念</span>
+          <span class="v-badge v-badge-neutral" style="margin-left:auto">4</span>
+        </div>
+        <div class="tree-item active">
+          <i data-lucide="circle" style="width:6px;height:6px;color:var(--primary)"></i>
+          <span>客户</span>
+          <span class="v-meta" style="margin-left:auto">8属性</span>
+        </div>
+        <div class="tree-item">
+          <i data-lucide="circle" style="width:6px;height:6px;color:var(--muted-foreground)"></i>
+          <span>订单</span>
+          <span class="v-meta" style="margin-left:auto">12属性</span>
+        </div>
+        <div class="tree-item">
+          <i data-lucide="circle" style="width:6px;height:6px;color:var(--muted-foreground)"></i>
+          <span>产品</span>
+          <span class="v-meta" style="margin-left:auto">6属性</span>
+        </div>
+        <div class="tree-item">
+          <i data-lucide="circle" style="width:6px;height:6px;color:var(--muted-foreground)"></i>
+          <span>供应商</span>
+          <span class="v-meta" style="margin-left:auto">5属性</span>
+        </div>
+      </div>
+
+      <!-- Tree: 实体类型 -->
+      <div class="tree-group">
+        <div class="tree-group-label">
+          <i data-lucide="chevron-right" style="width:14px;height:14px;color:var(--muted-foreground)"></i>
+          <i data-lucide="database" style="width:14px;height:14px;color:var(--muted-foreground)"></i>
+          <span>实体类型</span>
+          <span class="v-badge v-badge-neutral" style="margin-left:auto">6</span>
+        </div>
+      </div>
+
+      <!-- Tree: 关系类型 -->
+      <div class="tree-group">
+        <div class="tree-group-label">
+          <i data-lucide="chevron-right" style="width:14px;height:14px;color:var(--muted-foreground)"></i>
+          <i data-lucide="git-branch" style="width:14px;height:14px;color:var(--muted-foreground)"></i>
+          <span>关系类型</span>
+          <span class="v-badge v-badge-neutral" style="margin-left:auto">8</span>
+        </div>
+      </div>
+
+      <!-- Tree: 属性定义 -->
+      <div class="tree-group">
+        <div class="tree-group-label">
+          <i data-lucide="chevron-right" style="width:14px;height:14px;color:var(--muted-foreground)"></i>
+          <i data-lucide="list" style="width:14px;height:14px;color:var(--muted-foreground)"></i>
+          <span>属性定义</span>
+          <span class="v-badge v-badge-neutral" style="margin-left:auto">31</span>
+        </div>
+      </div>
+
+      <!-- Tree: 规则 -->
+      <div class="tree-group">
+        <div class="tree-group-label">
+          <i data-lucide="chevron-right" style="width:14px;height:14px;color:var(--muted-foreground)"></i>
+          <i data-lucide="shield-check" style="width:14px;height:14px;color:var(--muted-foreground)"></i>
+          <span>规则</span>
+          <span class="v-badge v-badge-neutral" style="margin-left:auto">5</span>
+        </div>
+      </div>
+
+      <!-- Tree: 版本管理 -->
+      <div class="tree-group">
+        <div class="tree-group-label">
+          <i data-lucide="chevron-right" style="width:14px;height:14px;color:var(--muted-foreground)"></i>
+          <i data-lucide="history" style="width:14px;height:14px;color:var(--muted-foreground)"></i>
+          <span>版本管理</span>
+          <span class="v-badge v-badge-neutral" style="margin-left:auto">3</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Panel: Main Content -->
+    <div style="flex:1;overflow-y:auto;padding:16px">
+
+      <!-- Concept Detail Card -->
+      <div class="v-card" style="margin-bottom:16px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <i data-lucide="box" style="width:16px;height:16px;color:var(--primary)"></i>
+            <span style="font-size:16px;font-weight:600">客户</span>
+            <span class="v-badge v-badge-success">已发布</span>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="v-btn"><i data-lucide="pencil" style="width:14px;height:14px"></i> 编辑</button>
+            <button class="v-btn"><i data-lucide="copy" style="width:14px;height:14px"></i> 复制</button>
+            <button class="v-btn" style="color:var(--destructive)"><i data-lucide="trash-2" style="width:14px;height:14px"></i></button>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+          <div class="detail-field">
+            <span class="detail-label">名称</span>
+            <span class="detail-value">客户</span>
+          </div>
+          <div class="detail-field">
+            <span class="detail-label">标识</span>
+            <span class="detail-value" style="font-family:var(--font-mono);font-size:12px">Customer</span>
+          </div>
+          <div class="detail-field">
+            <span class="detail-label">父概念</span>
+            <span class="detail-value" style="color:var(--muted-foreground)">无</span>
+          </div>
+          <div class="detail-field" style="grid-column:span 3">
+            <span class="detail-label">描述</span>
+            <span class="detail-value">企业客户信息管理，包含客户基本资料、联系方式、等级状态等核心属性</span>
+          </div>
+          <div class="detail-field">
+            <span class="detail-label">创建时间</span>
+            <span class="detail-value">2026-06-20 14:30</span>
+          </div>
+          <div class="detail-field">
+            <span class="detail-label">更新时间</span>
+            <span class="detail-value">2026-07-15 09:12</span>
+          </div>
+          <div class="detail-field">
+            <span class="detail-label">版本</span>
+            <span class="detail-value">v2.1</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Attributes Table -->
+      <div class="v-card" style="margin-bottom:16px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:14px;font-weight:600">属性列表</span>
+            <span class="v-badge v-badge-neutral">8</span>
+          </div>
+          <button class="v-btn"><i data-lucide="plus" style="width:14px;height:14px"></i> 添加属性</button>
+        </div>
+        <table class="v-table">
+          <thead>
+            <tr>
+              <th>属性名称</th>
+              <th>标识</th>
+              <th>数据类型</th>
+              <th>必填</th>
+              <th>默认值</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="font-weight:500">客户名称</td>
+              <td style="font-family:var(--font-mono);font-size:12px;color:var(--muted-foreground)">name</td>
+              <td><span class="v-badge v-badge-neutral">文本</span></td>
+              <td><span class="v-badge v-badge-success">必填</span></td>
+              <td class="v-meta">-</td>
+              <td><i data-lucide="pencil" style="width:14px;height:14px;cursor:pointer;color:var(--muted-foreground)"></i></td>
+            </tr>
+            <tr>
+              <td style="font-weight:500">手机号</td>
+              <td style="font-family:var(--font-mono);font-size:12px;color:var(--muted-foreground)">phone</td>
+              <td><span class="v-badge v-badge-neutral">文本</span></td>
+              <td><span class="v-badge v-badge-success">必填</span></td>
+              <td class="v-meta">-</td>
+              <td><i data-lucide="pencil" style="width:14px;height:14px;cursor:pointer;color:var(--muted-foreground)"></i></td>
+            </tr>
+            <tr>
+              <td style="font-weight:500">邮箱</td>
+              <td style="font-family:var(--font-mono);font-size:12px;color:var(--muted-foreground)">email</td>
+              <td><span class="v-badge v-badge-neutral">文本</span></td>
+              <td><span class="v-badge v-badge-neutral">选填</span></td>
+              <td class="v-meta">-</td>
+              <td><i data-lucide="pencil" style="width:14px;height:14px;cursor:pointer;color:var(--muted-foreground)"></i></td>
+            </tr>
+            <tr>
+              <td style="font-weight:500">客户级别</td>
+              <td style="font-family:var(--font-mono);font-size:12px;color:var(--muted-foreground)">level</td>
+              <td><span class="v-badge v-badge-neutral">枚举</span></td>
+              <td><span class="v-badge v-badge-success">必填</span></td>
+              <td class="v-meta">普通</td>
+              <td><i data-lucide="pencil" style="width:14px;height:14px;cursor:pointer;color:var(--muted-foreground)"></i></td>
+            </tr>
+            <tr>
+              <td style="font-weight:500">注册时间</td>
+              <td style="font-family:var(--font-mono);font-size:12px;color:var(--muted-foreground)">createdAt</td>
+              <td><span class="v-badge v-badge-neutral">日期</span></td>
+              <td><span class="v-badge v-badge-success">必填</span></td>
+              <td class="v-meta">-</td>
+              <td><i data-lucide="pencil" style="width:14px;height:14px;cursor:pointer;color:var(--muted-foreground)"></i></td>
+            </tr>
+            <tr>
+              <td style="font-weight:500">状态</td>
+              <td style="font-family:var(--font-mono);font-size:12px;color:var(--muted-foreground)">status</td>
+              <td><span class="v-badge v-badge-neutral">枚举</span></td>
+              <td><span class="v-badge v-badge-success">必填</span></td>
+              <td class="v-meta">活跃</td>
+              <td><i data-lucide="pencil" style="width:14px;height:14px;cursor:pointer;color:var(--muted-foreground)"></i></td>
+            </tr>
+            <tr>
+              <td style="font-weight:500">地区</td>
+              <td style="font-family:var(--font-mono);font-size:12px;color:var(--muted-foreground)">region</td>
+              <td><span class="v-badge v-badge-neutral">文本</span></td>
+              <td><span class="v-badge v-badge-neutral">选填</span></td>
+              <td class="v-meta">-</td>
+              <td><i data-lucide="pencil" style="width:14px;height:14px;cursor:pointer;color:var(--muted-foreground)"></i></td>
+            </tr>
+            <tr>
+              <td style="font-weight:500">备注</td>
+              <td style="font-family:var(--font-mono);font-size:12px;color:var(--muted-foreground)">remark</td>
+              <td><span class="v-badge v-badge-neutral">长文本</span></td>
+              <td><span class="v-badge v-badge-neutral">选填</span></td>
+              <td class="v-meta">-</td>
+              <td><i data-lucide="pencil" style="width:14px;height:14px;cursor:pointer;color:var(--muted-foreground)"></i></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Relations Table -->
+      <div class="v-card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:14px;font-weight:600">关系列表</span>
+            <span class="v-badge v-badge-neutral">2</span>
+          </div>
+          <button class="v-btn"><i data-lucide="plus" style="width:14px;height:14px"></i> 添加关系</button>
+        </div>
+        <table class="v-table">
+          <thead>
+            <tr>
+              <th>源概念</th>
+              <th>关系名称</th>
+              <th>目标概念</th>
+              <th>基数</th>
+              <th>反向关系</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="font-weight:500">客户</td>
+              <td>
+                <span style="display:inline-flex;align-items:center;gap:4px">
+                  <i data-lucide="arrow-right" style="width:14px;height:14px;color:var(--muted-foreground)"></i>
+                  拥有
+                </span>
+              </td>
+              <td>订单</td>
+              <td><span class="v-badge v-badge-neutral">1:N</span></td>
+              <td class="v-meta">属于</td>
+              <td><i data-lucide="pencil" style="width:14px;height:14px;cursor:pointer;color:var(--muted-foreground)"></i></td>
+            </tr>
+            <tr>
+              <td style="font-weight:500">客户</td>
+              <td>
+                <span style="display:inline-flex;align-items:center;gap:4px">
+                  <i data-lucide="arrow-right" style="width:14px;height:14px;color:var(--muted-foreground)"></i>
+                  跟进
+                </span>
+              </td>
+              <td>商机</td>
+              <td><span class="v-badge v-badge-neutral">1:N</span></td>
+              <td class="v-meta">来自</td>
+              <td><i data-lucide="pencil" style="width:14px;height:14px;cursor:pointer;color:var(--muted-foreground)"></i></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>lucide.createIcons();</script>
+</body>
+</html>

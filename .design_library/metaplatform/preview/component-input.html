@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Input Component - MetaPlatform</title>
+  <link rel="stylesheet" href="../colors_and_type.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      padding: var(--space-6);
+      font-family: var(--font-body);
+      color: var(--fg);
+      background: var(--bg);
+    }
+    h2.section-title {
+      font-size: var(--font-size-h3);
+      font-weight: var(--font-weight-h3);
+      color: var(--fg);
+      margin-bottom: var(--space-5);
+    }
+    .section {
+      margin-bottom: var(--space-7);
+      max-width: 400px;
+    }
+    .field-label {
+      display: block;
+      font-size: var(--font-size-lead);
+      font-weight: var(--font-weight-lead);
+      color: var(--fg);
+      margin-bottom: var(--space-2);
+    }
+    input[type="text"],
+    input[type="search"] {
+      display: block;
+      width: 100%;
+      height: 32px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 0 var(--space-5);
+      font-size: var(--font-size-body);
+      font-family: var(--font-body);
+      color: var(--fg);
+      background: var(--surface);
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    input[type="text"]:focus,
+    input[type="search"]:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px rgba(59,130,246,0.12);
+    }
+    input[type="text"]:disabled {
+      background: var(--surface-dim);
+      color: var(--muted-foreground);
+      cursor: not-allowed;
+      opacity: 0.7;
+    }
+    input[type="text"]:disabled:focus {
+      border-color: var(--border);
+      box-shadow: none;
+    }
+    .search-wrapper {
+      position: relative;
+    }
+    .search-icon {
+      position: absolute;
+      left: var(--space-3);
+      top: 50%;
+      transform: translateY(-50%);
+      width: 20px;
+      height: 20px;
+      color: var(--muted-foreground);
+      pointer-events: none;
+    }
+    input[type="search"] {
+      background: var(--surface-dim);
+      border: none;
+      border-radius: var(--radius-md);
+      padding-left: 36px;
+    }
+    input[type="search"]:focus {
+      border: none;
+      box-shadow: 0 0 0 2px rgba(59,130,246,0.12);
+    }
+    input::placeholder {
+      color: var(--muted-foreground);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Default Input -->
+  <div class="section">
+    <h2 class="section-title">Default Input</h2>
+    <label class="field-label" for="input-username">用户名</label>
+    <input type="text" id="input-username" placeholder="请输入用户名">
+  </div>
+
+  <!-- Search Input -->
+  <div class="section">
+    <h2 class="section-title">Search Input</h2>
+    <div class="search-wrapper">
+      <svg class="search-icon" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M8.75 14.375a5.625 5.625 0 100-11.25 5.625 5.625 0 000 11.25z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M13.125 13.125l3.125 3.125" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <input type="search" id="input-search" placeholder="搜索...">
+    </div>
+  </div>
+
+  <!-- Disabled Input -->
+  <div class="section">
+    <h2 class="section-title">Disabled Input</h2>
+    <label class="field-label" for="input-disabled">邮箱地址</label>
+    <input type="text" id="input-disabled" value="admin@metaplatform.com" disabled>
+  </div>
+
+  <!-- With Value -->
+  <div class="section">
+    <h2 class="section-title">With Value</h2>
+    <label class="field-label" for="input-value">显示名称</label>
+    <input type="text" id="input-value" value="MetaPlatform 管理员">
+  </div>
+
+</body>
+</html>

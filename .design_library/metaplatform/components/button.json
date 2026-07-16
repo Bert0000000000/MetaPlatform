@@ -1,0 +1,34 @@
+{
+  "slug": "button",
+  "schemaVersion": 2,
+  "name": "Button",
+  "category": "actions",
+  "sourceKind": "from-scratch",
+  "confidence": "medium",
+  "semanticTypeCandidates": [
+    { "type": "button", "evidence": "interactive click target with label" }
+  ],
+  "variantDimensions": [
+    { "dimension": "style", "values": ["primary", "secondary", "ghost"] },
+    { "dimension": "size", "values": ["sm", "md"] }
+  ],
+  "representativeVariants": [
+    {
+      "name": "Primary",
+      "whySelected": "Most used action button",
+      "traits": { "background": "var(--primary)", "color": "var(--primary-foreground)", "radius": "var(--radius-md)", "padding": "var(--space-1) var(--space-3)", "fontSize": "var(--type-sm)" },
+      "childrenDigest": "label text"
+    },
+    {
+      "name": "Ghost",
+      "whySelected": "Secondary actions, toolbar buttons",
+      "traits": { "background": "transparent", "color": "var(--fg)", "border": "1px solid var(--border)", "radius": "var(--radius-md)" },
+      "childrenDigest": "label text"
+    }
+  ],
+  "anatomy": ["label"],
+  "structurePatterns": ["inline-flex", "gap-sm", "items-center"],
+  "usageHints": { "priorityHint": "core" },
+  "doNotInvent": ["icon-only toggle", "loading spinner", "button-group"],
+  "unknowns": []
+}

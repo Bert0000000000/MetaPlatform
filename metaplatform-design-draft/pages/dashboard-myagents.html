@@ -1,0 +1,232 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>我的数字员工 - MetaPlatform</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<style id="theme-vars">
+:root {
+  --background: #ffffff; --foreground: #0a0a0a; --card: #ffffff; --card-foreground: #0a0a0a;
+  --muted: #f5f5f5; --muted-foreground: #737373; --accent: #f5f5f5; --accent-foreground: #0a0a0a;
+  --border: #e8e8e8; --primary: #0a0a0a; --primary-foreground: #fafafa;
+  --destructive: #ff6166; --destructive-foreground: #fafafa;
+  --success: #62d178; --success-subtle: #f0fdf4; --success-foreground: #0a0a0a;
+  --warning: #eab308; --warning-subtle: #fefce8;
+  --sidebar: #fafafa; --sidebar-foreground: #0a0a0a; --sidebar-primary: #171717;
+  --sidebar-primary-foreground: #fafafa; --sidebar-accent: #f5f5f5;
+  --sidebar-accent-foreground: #171717; --sidebar-border: #e5e5e5;
+  --radius: 8px; --font-sans: 'Geist', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'Geist Mono', ui-monospace, monospace;
+}
+* { box-sizing: border-box; }
+body { margin: 0; font-family: var(--font-sans); font-size: 14px; color: var(--foreground); background: var(--background); }
+.v-sidebar-item { display:flex; align-items:center; gap:8px; padding:7px 10px; border:1px solid transparent; border-radius:6px; cursor:pointer; font-size:13px; color:var(--sidebar-foreground); text-decoration:none; transition:background .15s,color .15s; }
+.v-sidebar-item:hover { background:var(--sidebar-accent); }
+.v-sidebar-item.active { background:var(--sidebar-primary); color:var(--sidebar-primary-foreground); }
+.v-tab { padding:8px 12px; font-size:13px; color:var(--muted-foreground); border-bottom:2px solid transparent; cursor:pointer; text-decoration:none; }
+.v-tab.active { color:var(--foreground); border-bottom-color:var(--foreground); }
+.v-card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:16px; }
+.v-btn { display:inline-flex; align-items:center; justify-content:center; gap:6px; padding:0 12px; height:32px; border:1px solid var(--border); border-radius:6px; background:var(--background);color:var(--foreground); color:var(--foreground); font:600 13px/1 var(--font-sans); cursor:pointer; }
+.v-btn-primary { background:var(--primary); color:var(--primary-foreground); border-color:var(--primary); }
+.v-btn-primary:hover { background:#262626; }
+.v-input { height:32px; padding:0 10px; border:1px solid var(--border); border-radius:6px; background:var(--background);color:var(--foreground); color:var(--foreground); font:13px/1 var(--font-sans); outline:none; }
+.v-input:focus { border-color:#a1a1a1; }
+.v-table { width:100%; border-collapse:collapse; font-size:13px; }
+.v-table thead { border-bottom:1px solid var(--border); }
+.v-table th { padding:8px 12px; text-align:left; font:600 11px/1 var(--font-mono); letter-spacing:.04em; color:var(--muted-foreground); text-transform:uppercase; }
+.v-table td { padding:8px 12px; border-bottom:1px solid var(--muted); }
+.v-table tbody tr:hover { background:var(--muted); }
+.v-badge { display:inline-flex; align-items:center; padding:2px 8px; border-radius:999px; font:600 11px/1 var(--font-mono); }
+.v-badge-success { background:var(--success-subtle); color:var(--success); }
+.v-badge-warning { background:var(--warning-subtle); color:var(--warning); }
+.v-badge-error { background:#fef2f2; color:var(--destructive); }
+.v-badge-neutral { background:var(--muted); color:var(--muted-foreground); }
+.v-eyebrow { font:600 11px/1 var(--font-mono); color:var(--muted-foreground); text-transform:uppercase; letter-spacing:.04em; }
+.v-value { font-size:24px; font-weight:700; line-height:1.1; }
+.v-meta { font-size:12px; color:var(--muted-foreground); }
+.v-divider { border:0; border-top:1px solid var(--border); margin:12px 0; }
+.v-dot { width:8px; height:8px; border-radius:50%; display:inline-block; flex-shrink:0; }
+.v-dot-online { background:var(--success); }
+.v-dot-offline { background:var(--muted-foreground); }
+</style>
+</head>
+<body style="display:flex;height:100vh;overflow:hidden">
+
+<!-- Sidebar -->
+<aside style="width:220px;background:var(--sidebar);border-right:1px solid var(--sidebar-border);display:flex;flex-direction:column;flex-shrink:0;height:100vh">
+  <div style="padding:12px 16px;border-bottom:1px solid var(--sidebar-border);display:flex;align-items:center;gap:8px">
+    <div style="width:24px;height:24px;border-radius:4px;background:var(--primary);display:flex;align-items:center;justify-content:center">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1" y="1" width="12" height="12" rx="2.5" fill="var(--primary-foreground)"/><rect x="4" y="4" width="6" height="6" rx="1" fill="var(--primary)"/></svg>
+    </div>
+    <span style="font-size:13px;font-weight:600;color:var(--sidebar-foreground)">MetaPlatform</span>
+  </div>
+  <nav style="flex:1;padding:8px;display:flex;flex-direction:column;gap:1px;overflow-y:auto">
+    <a class="v-sidebar-item active" data-dom-id="nav-dashboard"><i data-lucide="layout-dashboard" style="width:16px;height:16px"></i><span>工作台</span></a>
+    <a class="v-sidebar-item" data-dom-id="nav-superai"><i data-lucide="brain" style="width:16px;height:16px"></i><span>SuperAI</span></a>
+    <a class="v-sidebar-item" data-dom-id="nav-architecture"><i data-lucide="app-layout" style="width:16px;height:16px"></i><span>架构中心</span></a>
+    <a class="v-sidebar-item" data-dom-id="nav-apps"><i data-lucide="cube" style="width:16px;height:16px"></i><span>应用中心</span></a>
+    <a class="v-sidebar-item" data-dom-id="nav-ontology"><i data-lucide="kanban" style="width:16px;height:16px"></i><span>本体引擎</span></a>
+    <a class="v-sidebar-item" data-dom-id="nav-mcp"><i data-lucide="plug" style="width:16px;height:16px"></i><span>MCP 中心</span></a>
+    <a class="v-sidebar-item" data-dom-id="nav-agents"><i data-lucide="bot" style="width:16px;height:16px"></i><span>数字员工</span></a>
+    <a class="v-sidebar-item" data-dom-id="nav-admin"><i data-lucide="settings" style="width:16px;height:16px"></i><span>后台管理</span></a>
+  </nav>
+  <div style="padding:8px 16px;border-top:1px solid var(--sidebar-border);font-size:11px;color:var(--muted-foreground)">v3.0 &middot; Ontology-driven AI Platform</div>
+</aside>
+
+<!-- Main Area -->
+<div style="flex:1;display:flex;flex-direction:column;overflow:hidden">
+  <!-- Top Bar -->
+  <header style="height:48px;display:flex;align-items:center;padding:0 16px;gap:12px;border-bottom:1px solid var(--border);background:var(--background);color:var(--foreground);flex-shrink:0">
+    <input style="height:32px;padding:0 10px;border:1px solid var(--border);border-radius:6px;background:var(--background);color:var(--foreground);font-size:13px;color:var(--muted-foreground);outline:none;width:240px" placeholder="搜索或 AI 助手" />
+    <div style="flex:1"></div>
+    <i data-lucide="bell" style="width:16px;height:16px;color:var(--muted-foreground);cursor:pointer"></i>
+    <div style="width:24px;height:24px;border-radius:50%;background:var(--primary);color:var(--primary-foreground);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600">A</div>
+    <span style="font-size:13px;font-weight:500">Admin</span>
+  </header>
+
+  <!-- Tabs -->
+  <div style="display:flex;align-items:center;padding:0 16px;border-bottom:1px solid var(--border);background:var(--background);color:var(--foreground);flex-shrink:0">
+    <a class="v-tab" data-dom-id="tab-dashboard">工作台</a>
+    <a class="v-tab" data-dom-id="tab-myapps">我的应用</a>
+    <a class="v-tab active" data-dom-id="tab-myagents">我的数字员工</a>
+    <a class="v-tab" data-dom-id="tab-messages">消息</a>
+    <a class="v-tab" data-dom-id="tab-portal">门户</a>
+    <a class="v-tab" data-dom-id="tab-deliverables">交付材料</a>
+  </div>
+
+  <!-- Main Content -->
+  <div class="v-main" style="flex:1;overflow-y:auto;background:var(--background);color:var(--foreground);padding:16px">
+
+    <!-- Summary Bar -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <div style="display:flex;align-items:center;gap:16px">
+        <div class="v-eyebrow">数字员工</div>
+        <span class="v-meta">共 5 个 &middot; 4 在线 &middot; 1 离线</span>
+      </div>
+      <button class="v-btn-primary v-btn"><i data-lucide="plus" style="width:14px;height:14px"></i> 创建数字员工</button>
+    </div>
+
+    <!-- Agent Card Grid -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+
+      <!-- Agent 1: 财务助手 -->
+      <div class="v-card" style="display:flex;flex-direction:column;gap:10px">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="width:32px;height:32px;border-radius:6px;background:var(--muted);display:flex;align-items:center;justify-content:center">
+              <i data-lucide="calculator" style="width:18px;height:18px"></i>
+            </div>
+            <div>
+              <div style="font-weight:600;font-size:14px">财务助手</div>
+              <div class="v-meta">FINANCE-AGENT-01</div>
+            </div>
+          </div>
+          <span class="v-dot v-dot-online"></span>
+        </div>
+        <div style="font-size:13px;color:var(--muted-foreground);line-height:1.5">负责财务报表生成、费用审批辅助、预算分析与异常检测，每日定时执行财务数据汇总任务。</div>
+        <hr class="v-divider">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <span class="v-badge v-badge-success">运行中</span>
+          <div class="v-meta">本周任务 <span style="font-weight:600;color:var(--foreground)">23</span></div>
+        </div>
+      </div>
+
+      <!-- Agent 2: HR助手 -->
+      <div class="v-card" style="display:flex;flex-direction:column;gap:10px">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="width:32px;height:32px;border-radius:6px;background:var(--muted);display:flex;align-items:center;justify-content:center">
+              <i data-lucide="user-check" style="width:18px;height:18px"></i>
+            </div>
+            <div>
+              <div style="font-weight:600;font-size:14px">HR 助手</div>
+              <div class="v-meta">HR-AGENT-01</div>
+            </div>
+          </div>
+          <span class="v-dot v-dot-online"></span>
+        </div>
+        <div style="font-size:13px;color:var(--muted-foreground);line-height:1.5">处理员工入职/离职流程、考勤异常提醒、绩效数据收集与 HR 政策问答。</div>
+        <hr class="v-divider">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <span class="v-badge v-badge-success">运行中</span>
+          <div class="v-meta">本周任务 <span style="font-weight:600;color:var(--foreground)">18</span></div>
+        </div>
+      </div>
+
+      <!-- Agent 3: 数据分析师 -->
+      <div class="v-card" style="display:flex;flex-direction:column;gap:10px">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="width:32px;height:32px;border-radius:6px;background:var(--muted);display:flex;align-items:center;justify-content:center">
+              <i data-lucide="line-chart" style="width:18px;height:18px"></i>
+            </div>
+            <div>
+              <div style="font-weight:600;font-size:14px">数据分析师</div>
+              <div class="v-meta">DATA-AGENT-01</div>
+            </div>
+          </div>
+          <span class="v-dot v-dot-online"></span>
+        </div>
+        <div style="font-size:13px;color:var(--muted-foreground);line-height:1.5">自动化数据探查与趋势分析，对接 StarRocks 执行 SQL 查询，生成分析报告并推送至交付材料。</div>
+        <hr class="v-divider">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <span class="v-badge v-badge-success">运行中</span>
+          <div class="v-meta">本周任务 <span style="font-weight:600;color:var(--foreground)">31</span></div>
+        </div>
+      </div>
+
+      <!-- Agent 4: 合规检查员 -->
+      <div class="v-card" style="display:flex;flex-direction:column;gap:10px">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="width:32px;height:32px;border-radius:6px;background:var(--muted);display:flex;align-items:center;justify-content:center">
+              <i data-lucide="shield-check" style="width:18px;height:18px"></i>
+            </div>
+            <div>
+              <div style="font-weight:600;font-size:14px">合规检查员</div>
+              <div class="v-meta">COMPLIANCE-AGENT-01</div>
+            </div>
+          </div>
+          <span class="v-dot v-dot-offline"></span>
+        </div>
+        <div style="font-size:13px;color:var(--muted-foreground);line-height:1.5">自动审查业务流程合规性，基于规则引擎与本体约束进行数据隐私与操作合规检查。</div>
+        <hr class="v-divider">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <span class="v-badge v-badge-warning">已暂停</span>
+          <div class="v-meta">本周任务 <span style="font-weight:600;color:var(--foreground)">7</span></div>
+        </div>
+      </div>
+
+      <!-- Agent 5: 采购助手 -->
+      <div class="v-card" style="display:flex;flex-direction:column;gap:10px">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="width:32px;height:32px;border-radius:6px;background:var(--muted);display:flex;align-items:center;justify-content:center">
+              <i data-lucide="package" style="width:18px;height:18px"></i>
+            </div>
+            <div>
+              <div style="font-weight:600;font-size:14px">采购助手</div>
+              <div class="v-meta">PROCURE-AGENT-01</div>
+            </div>
+          </div>
+          <span class="v-dot v-dot-online"></span>
+        </div>
+        <div style="font-size:13px;color:var(--muted-foreground);line-height:1.5">处理采购申请审批、供应商信息维护、采购数据分析与智能比价推荐。</div>
+        <hr class="v-divider">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <span class="v-badge v-badge-success">运行中</span>
+          <div class="v-meta">本周任务 <span style="font-weight:600;color:var(--foreground)">15</span></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>lucide.createIcons();</script>
+</body>
+</html>

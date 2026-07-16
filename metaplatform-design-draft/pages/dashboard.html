@@ -1,0 +1,197 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>工作台 - MetaPlatform</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<style id="theme-vars">
+:root {
+  --background: #ffffff; --foreground: #0a0a0a; --card: #ffffff; --card-foreground: #0a0a0a;
+  --muted: #f5f5f5; --muted-foreground: #737373; --accent: #f5f5f5; --accent-foreground: #0a0a0a;
+  --border: #e8e8e8; --primary: #0a0a0a; --primary-foreground: #fafafa;
+  --destructive: #ff6166; --destructive-foreground: #fafafa;
+  --success: #62d178; --success-subtle: #f0fdf4; --success-foreground: #0a0a0a;
+  --warning: #eab308; --warning-subtle: #fefce8;
+  --sidebar: #fafafa; --sidebar-foreground: #0a0a0a; --sidebar-primary: #171717;
+  --sidebar-primary-foreground: #fafafa; --sidebar-accent: #f5f5f5;
+  --sidebar-accent-foreground: #171717; --sidebar-border: #e5e5e5;
+  --radius: 8px; --font-sans: 'Geist', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'Geist Mono', ui-monospace, monospace;
+}
+* { box-sizing: border-box; }
+body { margin: 0; font-family: var(--font-sans); font-size: 14px; color: var(--foreground); background: var(--background); }
+.v-sidebar-item { display:flex; align-items:center; gap:8px; padding:7px 10px; border:1px solid transparent; border-radius:6px; cursor:pointer; font-size:13px; color:var(--sidebar-foreground); text-decoration:none; transition:background .15s,color .15s; }
+.v-sidebar-item:hover { background:var(--sidebar-accent); }
+.v-sidebar-item.active { background:var(--sidebar-primary); color:var(--sidebar-primary-foreground); }
+.v-tab { padding:8px 12px; font-size:13px; color:var(--muted-foreground); border-bottom:2px solid transparent; cursor:pointer; text-decoration:none; }
+.v-tab.active { color:var(--foreground); border-bottom-color:var(--foreground); }
+.v-card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:16px; }
+.v-btn { display:inline-flex; align-items:center; justify-content:center; gap:6px; padding:0 12px; height:32px; border:1px solid var(--border); border-radius:6px; background:var(--background);color:var(--foreground); color:var(--foreground); font:600 13px/1 var(--font-sans); cursor:pointer; }
+.v-btn-primary { background:var(--primary); color:var(--primary-foreground); border-color:var(--primary); }
+.v-btn-primary:hover { background:#262626; }
+.v-input { height:32px; padding:0 10px; border:1px solid var(--border); border-radius:6px; background:var(--background);color:var(--foreground); color:var(--foreground); font:13px/1 var(--font-sans); outline:none; }
+.v-input:focus { border-color:#a1a1a1; }
+.v-table { width:100%; border-collapse:collapse; font-size:13px; }
+.v-table thead { border-bottom:1px solid var(--border); }
+.v-table th { padding:8px 12px; text-align:left; font:600 11px/1 var(--font-mono); letter-spacing:.04em; color:var(--muted-foreground); text-transform:uppercase; }
+.v-table td { padding:8px 12px; border-bottom:1px solid var(--muted); }
+.v-table tbody tr:hover { background:var(--muted); }
+.v-badge { display:inline-flex; align-items:center; padding:2px 8px; border-radius:999px; font:600 11px/1 var(--font-mono); }
+.v-badge-success { background:var(--success-subtle); color:var(--success); }
+.v-badge-warning { background:var(--warning-subtle); color:var(--warning); }
+.v-badge-error { background:#fef2f2; color:var(--destructive); }
+.v-badge-neutral { background:var(--muted); color:var(--muted-foreground); }
+.v-eyebrow { font:600 11px/1 var(--font-mono); color:var(--muted-foreground); text-transform:uppercase; letter-spacing:.04em; }
+.v-value { font-size:24px; font-weight:700; line-height:1.1; }
+.v-meta { font-size:12px; color:var(--muted-foreground); }
+.v-divider { border:0; border-top:1px solid var(--border); margin:12px 0; }
+</style>
+</head>
+<body style="display:flex;height:100vh;overflow:hidden">
+
+<!-- Sidebar -->
+<aside style="width:220px;background:var(--sidebar);border-right:1px solid var(--sidebar-border);display:flex;flex-direction:column;flex-shrink:0;height:100vh">
+  <div style="padding:12px 16px;border-bottom:1px solid var(--sidebar-border);display:flex;align-items:center;gap:8px">
+    <div style="width:24px;height:24px;border-radius:4px;background:var(--primary);display:flex;align-items:center;justify-content:center">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1" y="1" width="12" height="12" rx="2.5" fill="var(--primary-foreground)"/><rect x="4" y="4" width="6" height="6" rx="1" fill="var(--primary)"/></svg>
+    </div>
+    <span style="font-size:13px;font-weight:600;color:var(--sidebar-foreground)">MetaPlatform</span>
+  </div>
+  <nav style="flex:1;padding:8px;display:flex;flex-direction:column;gap:1px;overflow-y:auto">
+    <a class="v-sidebar-item active" data-dom-id="nav-dashboard"><i data-lucide="layout-dashboard" style="width:16px;height:16px"></i><span>工作台</span></a>
+    <a class="v-sidebar-item" data-dom-id="nav-superai"><i data-lucide="brain" style="width:16px;height:16px"></i><span>SuperAI</span></a>
+    <a class="v-sidebar-item" data-dom-id="nav-architecture"><i data-lucide="app-layout" style="width:16px;height:16px"></i><span>架构中心</span></a>
+    <a class="v-sidebar-item" data-dom-id="nav-apps"><i data-lucide="cube" style="width:16px;height:16px"></i><span>应用中心</span></a>
+    <a class="v-sidebar-item" data-dom-id="nav-ontology"><i data-lucide="kanban" style="width:16px;height:16px"></i><span>本体引擎</span></a>
+    <a class="v-sidebar-item" data-dom-id="nav-mcp"><i data-lucide="plug" style="width:16px;height:16px"></i><span>MCP 中心</span></a>
+    <a class="v-sidebar-item" data-dom-id="nav-agents"><i data-lucide="bot" style="width:16px;height:16px"></i><span>数字员工</span></a>
+    <a class="v-sidebar-item" data-dom-id="nav-admin"><i data-lucide="settings" style="width:16px;height:16px"></i><span>后台管理</span></a>
+  </nav>
+  <div style="padding:8px 16px;border-top:1px solid var(--sidebar-border);font-size:11px;color:var(--muted-foreground)">v3.0 &middot; Ontology-driven AI Platform</div>
+</aside>
+
+<!-- Main Area -->
+<div style="flex:1;display:flex;flex-direction:column;overflow:hidden">
+  <!-- Top Bar -->
+  <header style="height:48px;display:flex;align-items:center;padding:0 16px;gap:12px;border-bottom:1px solid var(--border);background:var(--background);color:var(--foreground);flex-shrink:0">
+    <input style="height:32px;padding:0 10px;border:1px solid var(--border);border-radius:6px;background:var(--background);color:var(--foreground);font-size:13px;color:var(--muted-foreground);outline:none;width:240px" placeholder="搜索或 AI 助手" />
+    <div style="flex:1"></div>
+    <i data-lucide="bell" style="width:16px;height:16px;color:var(--muted-foreground);cursor:pointer"></i>
+    <div style="width:24px;height:24px;border-radius:50%;background:var(--primary);color:var(--primary-foreground);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600">A</div>
+    <span style="font-size:13px;font-weight:500">Admin</span>
+  </header>
+
+  <!-- Tabs -->
+  <div style="display:flex;align-items:center;padding:0 16px;border-bottom:1px solid var(--border);background:var(--background);color:var(--foreground);flex-shrink:0">
+    <a class="v-tab active" data-dom-id="tab-dashboard">工作台</a>
+    <a class="v-tab" data-dom-id="tab-myapps">我的应用</a>
+    <a class="v-tab" data-dom-id="tab-myagents">我的数字员工</a>
+    <a class="v-tab" data-dom-id="tab-messages">消息</a>
+    <a class="v-tab" data-dom-id="tab-portal">门户</a>
+    <a class="v-tab" data-dom-id="tab-deliverables">交付材料</a>
+  </div>
+
+  <!-- Main Content -->
+  <div class="v-main" style="flex:1;overflow-y:auto;background:var(--background);color:var(--foreground);padding:16px">
+
+    <!-- KPI Cards -->
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px">
+      <div class="v-card">
+        <div class="v-eyebrow" style="margin-bottom:8px">应用数</div>
+        <div class="v-value">12</div>
+        <div class="v-meta" style="margin-top:4px">较上周 +2</div>
+      </div>
+      <div class="v-card">
+        <div class="v-eyebrow" style="margin-bottom:8px">运行中</div>
+        <div class="v-value">8</div>
+        <div class="v-meta" style="margin-top:4px">正常运行</div>
+      </div>
+      <div class="v-card">
+        <div class="v-eyebrow" style="margin-bottom:8px">数字员工</div>
+        <div class="v-value">5</div>
+        <div class="v-meta" style="margin-top:4px">4 在线 / 1 离线</div>
+      </div>
+      <div class="v-card">
+        <div class="v-eyebrow" style="margin-bottom:8px">待办</div>
+        <div class="v-value">3</div>
+        <div class="v-meta" style="margin-top:4px">2 审批 / 1 任务</div>
+      </div>
+    </div>
+
+    <!-- Recent Apps Table -->
+    <div class="v-card" style="margin-bottom:24px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div class="v-eyebrow">最近应用</div>
+        <a class="v-tab" style="padding:4px 8px;font-size:12px" data-dom-id="tab-myapps">查看全部</a>
+      </div>
+      <table class="v-table">
+        <thead>
+          <tr>
+            <th>名称</th>
+            <th>类型</th>
+            <th>状态</th>
+            <th>更新时间</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="font-weight:500">客户管理系统</td>
+            <td class="v-meta">低代码应用</td>
+            <td><span class="v-badge v-badge-success">已发布</span></td>
+            <td class="v-meta">2026-07-16 10:30</td>
+          </tr>
+          <tr>
+            <td style="font-weight:500">智能审批流程</td>
+            <td class="v-meta">审批流</td>
+            <td><span class="v-badge v-badge-success">已发布</span></td>
+            <td class="v-meta">2026-07-16 09:15</td>
+          </tr>
+          <tr>
+            <td style="font-weight:500">数据质量监控</td>
+            <td class="v-meta">数字员工</td>
+            <td><span class="v-badge v-badge-success">运行中</span></td>
+            <td class="v-meta">2026-07-15 18:42</td>
+          </tr>
+          <tr>
+            <td style="font-weight:500">知识问答助手</td>
+            <td class="v-meta">AI 应用</td>
+            <td><span class="v-badge v-badge-warning">开发中</span></td>
+            <td class="v-meta">2026-07-15 14:20</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Announcements -->
+    <div class="v-card">
+      <div class="v-eyebrow" style="margin-bottom:12px">公告</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;align-items:flex-start;gap:8px;padding:10px;background:var(--muted);border-radius:6px">
+          <i data-lucide="megaphone" style="width:14px;height:14px;color:var(--muted-foreground);flex-shrink:0;margin-top:2px"></i>
+          <div>
+            <div style="font-size:13px;font-weight:500">平台 v3.0 正式发布</div>
+            <div class="v-meta" style="margin-top:2px">Ontology 引擎全面升级，新增 MCP 协议支持和数字员工调度能力。请各团队尽快完成迁移。</div>
+            <div class="v-meta" style="margin-top:4px">2026-07-15 09:00</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:8px;padding:10px;background:var(--muted);border-radius:6px">
+          <i data-lucide="alert-triangle" style="width:14px;height:14px;color:var(--warning);flex-shrink:0;margin-top:2px"></i>
+          <div>
+            <div style="font-size:13px;font-weight:500">系统维护通知</div>
+            <div class="v-meta" style="margin-top:2px">计划于 2026-07-18 02:00-04:00 进行数据库升级，届时部分功能不可用。</div>
+            <div class="v-meta" style="margin-top:4px">2026-07-14 16:30</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>lucide.createIcons();</script>
+</body>
+</html>

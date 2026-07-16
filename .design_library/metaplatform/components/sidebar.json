@@ -1,0 +1,25 @@
+{
+  "slug": "sidebar",
+  "schemaVersion": 2,
+  "name": "Sidebar",
+  "category": "navigation",
+  "sourceKind": "from-scratch",
+  "confidence": "medium",
+  "semanticTypeCandidates": [
+    { "type": "navigation", "evidence": "vertical nav menu with icon+label items" }
+  ],
+  "variantDimensions": [],
+  "representativeVariants": [
+    {
+      "name": "Default",
+      "whySelected": "Main app sidebar",
+      "traits": { "width": "220px", "background": "var(--sidebar)", "color": "var(--on-sidebar)", "activeItemBg": "rgba(59,130,246,0.15)", "activeItemColor": "var(--primary)" },
+      "childrenDigest": "brand + nav-items + footer"
+    }
+  ],
+  "anatomy": ["brand", "nav-list", "footer"],
+  "structurePatterns": ["flex-col", "h-screen", "shrink-0"],
+  "usageHints": { "priorityHint": "core" },
+  "doNotInvent": ["collapsible sidebar", "multi-level submenu", "sidebar groups"],
+  "unknowns": []
+}
