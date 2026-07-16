@@ -1,2 +1,0 @@
-Set-Location D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\metaplatform-api
-npm.cmd run dev 2>&1 | Tee-Object -FilePath D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\metaplatform-api\.dev.log

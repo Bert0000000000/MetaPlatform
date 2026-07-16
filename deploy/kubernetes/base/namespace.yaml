@@ -1,8 +1,0 @@
-# MetaPlatform namespace
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: metaplatform
-  labels:
-    name: metaplatform
-    app.kubernetes.io/part-of: metaplatform
