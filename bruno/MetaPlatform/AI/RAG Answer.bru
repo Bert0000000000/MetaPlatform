@@ -1,0 +1,36 @@
+meta {
+  name: RAG end-to-end
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/api/ai/rag/answer
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "question": "What is vector search?",
+    "topK": 3
+  }
+}
+
+tests {
+  test("returns answer", function() {
+    expect(res.body.data.answer).to.be.a('string');
+    expect(res.body.data.answer.length).to.be.greaterThan(0);
+  });
+  test("has citations", function() {
+    expect(res.body.data.citations).to.be.an('array');
+  });
+}

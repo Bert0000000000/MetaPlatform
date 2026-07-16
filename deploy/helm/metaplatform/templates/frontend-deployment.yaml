@@ -1,0 +1,116 @@
+{{- if .Values.frontend.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "metaplatform.fullname" . }}-frontend
+  labels:
+    {{- include "metaplatform.labels" . | nindent 4 }}
+    app: metaplatform-frontend
+    tier: frontend
+spec:
+  replicas: {{ .Values.frontend.replicaCount }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      {{- include "metaplatform.frontend.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "metaplatform.labels" . | nindent 8 }}
+        app: metaplatform-frontend
+        tier: frontend
+    spec:
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: frontend
+          image: "{{ .Values.frontend.image.repository }}:{{ .Values.frontend.image.tag }}"
+          ports:
+            - name: http
+              containerPort: 80
+          resources:
+            {{- toYaml .Values.frontend.resources | nindent 12 }}
+          readinessProbe:
+            httpGet: { path: /, port: http }
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: { path: /, port: http }
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          volumeMounts:
+            - name: site
+              mountPath: /usr/share/nginx/html
+            - name: config
+              mountPath: /etc/nginx/conf.d
+      volumes:
+        - name: site
+          configMap:
+            name: {{ include "metaplatform.fullname" . }}-frontend-site
+        - name: config
+          configMap:
+            name: {{ include "metaplatform.fullname" . }}-frontend-nginx
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "metaplatform.fullname" . }}-frontend
+  labels:
+    {{- include "metaplatform.labels" . | nindent 4 }}
+    app: metaplatform-frontend
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "metaplatform.frontend.selectorLabels" . | nindent 4 }}
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+      protocol: TCP
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "metaplatform.fullname" . }}-frontend-nginx
+  labels:
+    {{- include "metaplatform.labels" . | nindent 4 }}
+data:
+  default.conf: |
+    server {
+      listen 80;
+      server_name _;
+      root /usr/share/nginx/html;
+      index index.html;
+      location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+      }
+      location /api/ {
+        proxy_pass http://{{ include "metaplatform.fullname" . }}-api/api/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_http_version 1.1;
+      }
+      location / { try_files $uri $uri/ /index.html; }
+    }
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "metaplatform.fullname" . }}-frontend-site
+  labels:
+    {{- include "metaplatform.labels" . | nindent 4 }}
+data:
+  index.html: |
+    <!DOCTYPE html>
+    <html><head><meta charset="utf-8"><title>MetaPlatform</title></head>
+    <body><h1>MetaPlatform</h1><p>Replace this with the real static site.</p></body>
+    </html>
+{{- end }}

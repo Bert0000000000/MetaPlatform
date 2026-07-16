@@ -1,0 +1,56 @@
+# Nginx config for the frontend with reverse proxy to API
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: metaplatform-frontend-nginx
+  namespace: metaplatform
+data:
+  default.conf: |
+    server {
+      listen 80;
+      server_name _;
+      root /usr/share/nginx/html;
+      index index.html;
+
+      # Cache static assets aggressively
+      location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+      }
+
+      # Reverse proxy API calls to the backend service
+      location /api/ {
+        proxy_pass http://metaplatform-api/api/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_http_version 1.1;
+        proxy_read_timeout 60s;
+      }
+
+      # SPA fallback
+      location / {
+        try_files $uri $uri/ /index.html;
+      }
+
+      # Health
+      location = /healthz { return 200 "ok"; }
+    }
+---
+# Placeholder site content (overridden by overlay with real assets)
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: metaplatform-frontend-site
+  namespace: metaplatform
+data:
+  index.html: |
+    <!DOCTYPE html>
+    <html lang="en">
+    <head><meta charset="utf-8"><title>MetaPlatform</title></head>
+    <body>
+      <h1>MetaPlatform</h1>
+      <p>Replace this ConfigMap with the static site assets.</p>
+    </body>
+    </html>

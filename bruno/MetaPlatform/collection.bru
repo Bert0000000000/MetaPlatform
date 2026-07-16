@@ -1,0 +1,44 @@
+meta {
+  name: MetaPlatform
+  type: collection
+  version: "1.6.0"
+}
+
+vars {
+  baseUrl: http://localhost:3001
+  email: admin@metaplatform.com
+  password: admin123
+}
+
+docs {
+  # MetaPlatform API Collection
+
+  A complete collection of all ~140 API endpoints, organized by section.
+
+  ## Setup
+
+  1. Open Bruno (https://usebruno.com)
+  2. Import this collection: `File → Open Collection → select bruno/MetaPlatform/`
+  3. Set environment to `Local Dev` (auto-detected)
+
+  ## Sections
+
+  - Auth           — login, refresh, /me
+  - Health         — /api/health
+  - Storage        — PG / Neo4j / ES / MinIO / Kafka
+  - AI             — Embeddings, LLM, Agent, RAG, OCR
+  - Analytics      — ClickHouse, NL2SQL, CDC, Quality, Simulator
+  - Observability  — Metrics, Logs, Traces, Audit
+  - Notifications  — In-app, Email, WebSocket
+  - Scheduler      — Cron jobs
+  - Apps           — Application management
+  - Ontology       — Object types, attributes, relations
+  - Processes      — BPMN instances, tasks
+  - Knowledge      — Documents, search, RAG
+  - Agents         — AI agent workspace
+  - Admin          — Users, orgs, billing, plugins
+  - Market         — Apps, agents, templates, APIs
+
+  All authenticated endpoints expect `Authorization: Bearer <token>` — get one
+  via the Auth > Login request.
+}

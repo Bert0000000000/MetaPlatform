@@ -1,0 +1,23 @@
+meta {
+  name: Prometheus metrics
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/observability/metrics
+  body: none
+  auth: none
+}
+
+docs {
+  Public Prometheus scrape endpoint. No auth required.
+}
+
+tests {
+  test("returns Prometheus format", function() {
+    expect(res.body).to.be.a('string');
+    expect(res.body).to.include('# HELP');
+    expect(res.body).to.include('metaplatform_process_cpu_seconds_total');
+  });
+}

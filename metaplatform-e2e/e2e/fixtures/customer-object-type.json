@@ -1,0 +1,109 @@
+{
+  "name": "Customer",
+  "displayName": "Customer",
+  "description": "Customer business object type for E2E integration testing",
+  "fields": [
+    {
+      "name": "companyName",
+      "displayName": "Company Name",
+      "type": "STRING",
+      "required": true,
+      "maxLength": 200,
+      "searchable": true,
+      "sortable": true
+    },
+    {
+      "name": "email",
+      "displayName": "Email Address",
+      "type": "STRING",
+      "required": true,
+      "validationRule": "email != null && email.contains('@') && email.contains('.')"
+    },
+    {
+      "name": "phone",
+      "displayName": "Phone Number",
+      "type": "STRING",
+      "required": false
+    },
+    {
+      "name": "industry",
+      "displayName": "Industry",
+      "type": "STRING",
+      "required": false,
+      "allowedValues": ["Technology", "Manufacturing", "Finance", "Healthcare", "Retail", "Other"]
+    },
+    {
+      "name": "annualRevenue",
+      "displayName": "Annual Revenue",
+      "type": "DECIMAL",
+      "required": false,
+      "validationRule": "annualRevenue == null || annualRevenue >= 0"
+    },
+    {
+      "name": "employeeCount",
+      "displayName": "Employee Count",
+      "type": "INTEGER",
+      "required": false,
+      "validationRule": "employeeCount == null || employeeCount >= 0"
+    },
+    {
+      "name": "website",
+      "displayName": "Website",
+      "type": "STRING",
+      "required": false
+    },
+    {
+      "name": "address",
+      "displayName": "Address",
+      "type": "STRING",
+      "required": false
+    }
+  ],
+  "lifecycle": {
+    "states": ["draft", "active", "suspended", "archived"],
+    "transitions": [
+      {"from": "draft", "to": "active", "name": "activate", "description": "Activate a draft customer"},
+      {"from": "active", "to": "suspended", "name": "suspend", "description": "Suspend an active customer"},
+      {"from": "suspended", "to": "active", "name": "reactivate", "description": "Reactivate a suspended customer"},
+      {"from": "active", "to": "archived", "name": "archive", "description": "Archive an active customer"},
+      {"from": "suspended", "to": "archived", "name": "archive", "description": "Archive a suspended customer"}
+    ],
+    "initialState": "draft"
+  },
+  "views": {
+    "table": {
+      "columns": ["companyName", "email", "industry", "annualRevenue", "state"],
+      "defaultSort": "companyName",
+      "defaultOrder": "ASC"
+    },
+    "form": {
+      "sections": [
+        {
+          "title": "Basic Information",
+          "fields": ["companyName", "email", "phone", "website"]
+        },
+        {
+          "title": "Business Details",
+          "fields": ["industry", "annualRevenue", "employeeCount"]
+        },
+        {
+          "title": "Address",
+          "fields": ["address"]
+        }
+      ]
+    },
+    "kanban": {
+      "groupBy": "state",
+      "cardFields": ["companyName", "email", "annualRevenue"]
+    }
+  },
+  "relations": [
+    {
+      "name": "orders",
+      "targetType": "Order",
+      "cardinality": "1:N",
+      "description": "Customer has many orders"
+    }
+  ],
+  "tenantId": "00000000-0000-0000-0000-000000000001"
+}

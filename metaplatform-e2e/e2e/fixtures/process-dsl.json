@@ -1,0 +1,29 @@
+{
+  "name": "E2E Approval Process",
+  "description": "Simple approval workflow for E2E testing",
+  "version": 1,
+  "nodes": [
+    {"id": "start", "type": "START", "name": "Start"},
+    {"id": "review", "type": "TASK", "name": "Review Request", "assigneeType": "USER", "assigneeExpression": "'e2e-reviewer'"},
+    {"id": "gateway", "type": "GATEWAY", "name": "Approval Decision", "gatewayType": "XOR"},
+    {"id": "approved", "type": "TASK", "name": "Process Approved", "assigneeType": "USER", "assigneeExpression": "'e2e-processor'"},
+    {"id": "rejected", "type": "END", "name": "Rejected"},
+    {"id": "end", "type": "END", "name": "Completed"}
+  ],
+  "transitions": [
+    {"from": "start", "to": "review"},
+    {"from": "review", "to": "gateway"},
+    {"from": "gateway", "to": "approved", "condition": "approved == true"},
+    {"from": "gateway", "to": "rejected", "condition": "approved == false"},
+    {"from": "approved", "to": "end"}
+  ],
+  "variables": [
+    {"name": "approved", "type": "BOOLEAN", "defaultValue": false},
+    {"name": "requestAmount", "type": "DECIMAL", "defaultValue": 0},
+    {"name": "requestType", "type": "STRING", "defaultValue": "general"}
+  ],
+  "sla": {
+    "review": {"timeoutMinutes": 60, "escalation": "e2e-admin"},
+    "approved": {"timeoutMinutes": 30}
+  }
+}

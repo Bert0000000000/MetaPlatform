@@ -1,0 +1,63 @@
+# MetaPlatform Frontend (static HTML) Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: metaplatform-frontend
+  namespace: metaplatform
+  labels:
+    app: metaplatform-frontend
+    tier: frontend
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: metaplatform-frontend
+  template:
+    metadata:
+      labels:
+        app: metaplatform-frontend
+        tier: frontend
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10002
+        runAsGroup: 10002
+      containers:
+        - name: frontend
+          image: nginx:1.27-alpine
+          ports:
+            - name: http
+              containerPort: 80
+          resources:
+            requests: { cpu: 50m, memory: 64Mi }
+            limits:   { cpu: 200m, memory: 256Mi }
+          readinessProbe:
+            httpGet: { path: /, port: http }
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: { path: /, port: http }
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: site
+              mountPath: /usr/share/nginx/html
+            - name: config
+              mountPath: /etc/nginx/conf.d
+      volumes:
+        - name: site
+          configMap:
+            name: metaplatform-frontend-site
+        - name: config
+          configMap:
+            name: metaplatform-frontend-nginx

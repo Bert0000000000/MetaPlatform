@@ -1,0 +1,38 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: platform-base
+  datasource:
+    url: jdbc:postgresql://localhost:5434/platform_base
+    username: base
+    password: metaplatform
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+  data:
+    redis:
+      host: localhost
+      port: 6380
+  kafka:
+    bootstrap-servers: localhost:9094
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+
+platform:
+  rbac:
+    cache-ttl-seconds: 300
+  audit:
+    topic: platform.audit.events
+  tenant:
+    header-name: X-Tenant-Id
+
+logging:
+  level:
+    com.metaplatform.base: DEBUG

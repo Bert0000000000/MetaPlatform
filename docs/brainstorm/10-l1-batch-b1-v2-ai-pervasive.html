@@ -1,0 +1,118 @@
+<h2>MetaPlatform · L1 细化 · B1 用户面三层 (v2 · AI 贯穿版)</h2>
+<p class="subtitle">⚠️ v1 → v2 关键修正：AI 不是"一层"，而是像电力一样贯穿所有层。每个上层能力都自带 AI 嵌入式增强。</p>
+
+<div class="section">
+  <div class="label">架构原则级修正（v2）</div>
+  <div class="pros-cons">
+    <div class="pros">
+      <h4>v1（错误）</h4>
+      <ul>
+        <li>AI 作为独立的"紫色层"——只在 AI 胶水层</li>
+        <li>其他层"调用"AI 胶水层才能获得 AI 能力</li>
+        <li>结果：AI 成了"按需启用的插件"</li>
+      </ul>
+    </div>
+    <div class="cons">
+      <h4>v2（正确）</h4>
+      <ul>
+        <li>AI 是<strong>"贯穿全栈的能力基质 (AI Substrate)"</strong></li>
+        <li>每一层、每一个组件都自带 AI 嵌入式增强</li>
+        <li>对应您原话："AI 和本体论是积木之间的胶水"——胶水渗透在每两层之间</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ============== L1-1 v2 ============== -->
+<div class="mockup">
+  <div class="mockup-header">L1-1 · 用户与 AI 对话层 (v2 · AI 贯穿)</div>
+  <div class="mockup-body">
+    <p><strong>职责</strong>：所有用户触点的统一入口。承担 5 类交互形态——自然语言对话、Web 拖拽、移动端原生、AI Agent API、企业 ChatOps 嵌入。<span style="background: #af52de; color: white; padding: 2px 6px; border-radius: 3px; font-size: 0.75rem;">AI 贯穿</span></p>
+    <p><strong>关键概念</strong>：</p>
+    <ul style="margin-left: 1.25rem; color: var(--text-secondary); font-size: 0.85rem;">
+      <li>会话 (Session) / 工作面 (Workspace) / Copilot —— <em>(v1 保留)</em></li>
+      <li><strong>指令 (Intent)</strong> —— NL 文本 / 结构化指令 / 语音 / <strong>图片（AI 视觉理解）</strong> / <strong>视频片段</strong></li>
+      <li>回复 (Render) —— 表单 / 图表 / 列表 / <strong>AI 生成的临时组件</strong></li>
+      <li>🆕 <strong>AI 嵌入式控件 (Embedded AI)</strong> —— 表单中每个字段都可"AI 补全"、"AI 校验"、"AI 翻译"、"AI 提取"</li>
+      <li>🆕 <strong>上下文记忆 (Context Memory)</strong> —— 跨会话/跨页面的"用户偏好"+"历史操作"+"本企业知识"长记忆</li>
+      <li>🆕 <strong>NL 解析器 (Intent Parser)</strong> —— 不是单点服务，而是<strong>嵌入每个交互卡片的"理解层"</strong></li>
+      <li>🆕 <strong>多模态输入 (Multimodal)</strong> —— 拍一张合同照片 → AI 提取关键字段 → 自动填入业务对象</li>
+    </ul>
+    <p><strong>典型数据流 (v2 增强版)</strong>：</p>
+    <ul style="margin-left: 1.25rem; color: var(--text-secondary); font-size: 0.85rem;">
+      <li><strong>NL 操作流</strong>：用户输入"把所有北京的客户标为 VIP" → 嵌入式 NL 解析器 → 解析为业务对象操作 → 调用业务对象层</li>
+      <li>🆕 <strong>多模态流</strong>：用户拍一张名片 → AI OCR + NER 提取人名/电话/公司 → 建议"是否创建客户对象？" → 用户点"是" → 自动填表</li>
+      <li>🆕 <strong>智能补全流</strong>：用户在"客户名称"输入"阿里" → AI 实时建议"阿里巴巴西溪园区"（基于历史+工商数据）</li>
+      <li>🆕 <strong>跨会话流</strong>：用户上次说"我关心上海客户"，本次打开直接看到"上海客户看板"（上下文记忆起作用）</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ============== L1-2 v2 ============== -->
+<div class="mockup">
+  <div class="mockup-header">L1-2 · 应用与场景市场 (v2 · AI 贯穿)</div>
+  <div class="mockup-body">
+    <p><strong>职责</strong>：把"业务对象 + 流程 + 视图"组合成"可销售/可复用的端到端应用包"。<span style="background: #af52de; color: white; padding: 2px 6px; border-radius: 3px; font-size: 0.75rem;">AI 贯穿</span></p>
+    <p><strong>关键概念 (v2 增强)</strong>：</p>
+    <ul style="margin-left: 1.25rem; color: var(--text-secondary); font-size: 0.85rem;">
+      <li>应用包 / 场景模板 / 发布 / 订阅 / 差异 —— <em>(v1 保留)</em></li>
+      <li>🆕 <strong>AI 语义搜索</strong> —— 用户说"我要一个适合制造业的合同管理" → AI 理解意图 → 推荐</li>
+      <li>🆕 <strong>AI 业务匹配度评分</strong> —— 订阅前 AI 评估"这个应用和你的业务匹配度 78%，需要修改 X/Y/Z"</li>
+      <li>🆕 <strong>AI 升级合并助手</strong> —— 应用升级时 AI 帮客户决定"哪些个性化保留、哪些接受新版本"</li>
+      <li>🆕 <strong>AI 应用质量评估</strong> —— 自动检测应用包的安全性、性能、合规性，给评分</li>
+    </ul>
+    <p><strong>典型数据流 (v2 增强版)</strong>：用户说"我需要一个采购到付款的模板" → AI 检索市场 → 推荐 3 个 → 用户点开 → AI 评估"匹配度 82%，建议补充 2 个业务对象（'供应商评级'/'收货确认'）" → 一键安装</p>
+  </div>
+</div>
+
+<!-- ============== L1-3 v2 ============== -->
+<div class="mockup">
+  <div class="mockup-header">L1-3 · 页面与表单生成器 (v2 · AI 贯穿)</div>
+  <div class="mockup-body">
+    <p><strong>职责</strong>：把"业务对象定义"自动 + 半自动地转成 UI。P3 派生的关键。<span style="background: #af52de; color: white; padding: 2px 6px; border-radius: 3px; font-size: 0.75rem;">AI 贯穿</span></p>
+    <p><strong>关键概念 (v2 增强)</strong>：</p>
+    <ul style="margin-left: 1.25rem; color: var(--text-secondary); font-size: 0.85rem;">
+      <li>视图 / 表单 / 列表 / 看板 / 组件 / 布局 / 权限投影 —— <em>(v1 保留)</em></li>
+      <li>🆕 <strong>NL 页面生成器 (NL Page Builder)</strong> —— 用户说"做一个客户列表，包含最近购买时间和 VIP 等级，按 VIP 倒序" → AI 生成完整配置</li>
+      <li>🆕 <strong>智能布局 (Smart Layout)</strong> —— AI 读业务对象定义后自动推荐"重要字段放前 / 长文本占满宽"</li>
+      <li>🆕 <strong>字段语义识别 (Field Semantics)</strong> —— 看到"phone"字段自动配电话控件 + 国际区号 + AI 校验</li>
+      <li>🆕 <strong>AI 异常 UI 检测</strong> —— 自动检测"按钮文字和操作不一致" / "必填项未标红"等问题</li>
+      <li>🆕 <strong>NL 微调 (NL Refine)</strong> —— 用户说"把客户列表的标题列改宽一点" → AI 调整布局</li>
+    </ul>
+    <p><strong>典型数据流 (v2 增强版)</strong>：</p>
+    <ul style="margin-left: 1.25rem; color: var(--text-secondary); font-size: 0.85rem;">
+      <li><strong>NL 生成流</strong>：用户说"做一个客户列表，显示近 30 天活跃度" → AI 解析 → 自动配置列表字段 + 过滤 + 排序 → 预览</li>
+      <li>🆕 <strong>智能补全流</strong>：建模者输入字段"手机号" → AI 自动配电话控件 + AI 校验（"138 不存在"）+ AI 补全（区号）</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ============== L1-4 v2 ============== -->
+<div class="mockup">
+  <div class="mockup-header">L1-4 · 流程自动化引擎 (v2 · AI 贯穿)</div>
+  <div class="mockup-body">
+    <p><strong>职责</strong>：让业务跑起来。支持 BPMN/状态机/规则三种范式。<span style="background: #af52de; color: white; padding: 2px 6px; border-radius: 3px; font-size: 0.75rem;">AI 贯穿</span></p>
+    <p><strong>关键概念 (v2 增强)</strong>：</p>
+    <ul style="margin-left: 1.25rem; color: var(--text-secondary); font-size: 0.85rem;">
+      <li>流程定义 / 流程实例 / 触发器 / 节点 / SLA / 参与者解析 / 补偿 —— <em>(v1 保留)</em></li>
+      <li>🆕 <strong>NL 流程设计 (NL Process Designer)</strong> —— 用户说"金额超过 1 万要总经办审批" → AI 生成 BPMN 节点</li>
+      <li>🆕 <strong>AI 节点 (AI Node)</strong> —— 流程中可以插入"AI 决策节点"：AI 看完所有材料 → 给出"通过/驳回/补充信息"建议 + 置信度</li>
+      <li>🆕 <strong>流程挖掘 (Process Mining)</strong> —— 实际执行数据和设计流程对比，发现"卡点" / "绕路" / "异常分支"</li>
+      <li>🆕 <strong>异常检测 (Anomaly Detection)</strong> —— 实时监控"某流程实例耗时是平均的 5 倍" → 自动告警</li>
+      <li>🆕 <strong>AI 智能派单</strong> —— 不是简单"按角色"，而是 AI 看历史处理速度 / 业务专长 / 当前负载 → 推荐最合适的人</li>
+      <li>🆕 <strong>NL 流程解释 (Process Explainer)</strong> —— 用户问"为什么这个流程卡了 3 天？" → AI 解释根因</li>
+    </ul>
+    <p><strong>典型数据流 (v2 增强版)</strong>：用户提交"采购申请" → 触发流程 → AI 节点"金额异常检测"判断"该申请人近 30 天有 3 次类似申请" → 标注"建议人工复审" → 部门经理收到带 AI 建议的审批任务 → AI 还给出"参考处理时长 2 天"</p>
+  </div>
+</div>
+
+<div class="section">
+  <div class="label">v2 小结：AI 贯穿的 4 个体现</div>
+  <ul style="color: var(--text-secondary); font-size: 0.85rem; margin-left: 1.25rem;">
+    <li>🆕 <strong>每个组件都自带 AI</strong>——表单字段、列表列、流程节点都是"AI 增强的"</li>
+    <li>🆕 <strong>NL 是新的"编程语言"</strong>——拖拽和 NL 是平行的两种构建方式</li>
+    <li>🆕 <strong>多模态交互</strong>——图片/语音/视频都是合法输入</li>
+    <li>🆕 <strong>上下文记忆跨会话</strong>——AI 记得用户"关心上海客户"</li>
+  </ul>
+  <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 0.5rem;">⚠️ <strong>架构影响</strong>：这个修正意味着 B3 的"AI 胶水层"和 B3 的"能力库"必须重新设计——AI 不再是"独立层"，而是"贯穿全栈的能力基质 (AI Substrate)"。这一点我会在 B3 落地时同步修正。</p>
+</div>

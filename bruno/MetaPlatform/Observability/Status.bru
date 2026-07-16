@@ -1,0 +1,23 @@
+meta {
+  name: Observability status
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/api/observability/status
+  body: none
+  auth: none
+}
+
+tests {
+  test("returns tracer status", function() {
+    expect(res.body.data.tracer).to.have.property('tracesInMemory');
+  });
+  test("returns logger status", function() {
+    expect(res.body.data.logger).to.have.property('bufferedLogs');
+  });
+  test("returns audit status", function() {
+    expect(res.body.data.audit).to.have.property('buffered');
+  });
+}

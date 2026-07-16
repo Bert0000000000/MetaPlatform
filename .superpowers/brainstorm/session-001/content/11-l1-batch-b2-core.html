@@ -1,0 +1,181 @@
+<h2>MetaPlatform · L1 细化 · B2 核心三层（灵魂层）</h2>
+<p class="subtitle">B1（用户面）+ B2（核心）+ B3（底座）= 完整架构。B2 是 MetaPlatform 与所有"低代码"产品拉开差距的关键层。</p>
+
+<!-- ============== L2-1 业务对象层 ============== -->
+<div class="mockup">
+  <div class="mockup-header">L2-1 · 业务对象层 (G2 主积木) <span style="background: #af52de; color: white; padding: 2px 6px; border-radius: 3px; font-size: 0.7rem;">AI 贯穿</span></div>
+  <div class="mockup-body">
+    <p><strong>职责</strong>：MetaPlatform 的"业务语义中心"。所有客户业务对象（客户/订单/合同/设备/员工…）的定义、实例、关系、规则都在这一层。它是 K1 决策（G2 主积木）的具体载体，也是 P3 架构中"上层 UI/流程 读的对象"。</p>
+
+    <p><strong>关键概念</strong>：</p>
+    <ul style="margin-left: 1.25rem; color: var(--text-secondary); font-size: 0.85rem;">
+      <li><strong>对象类型 (Object Type)</strong> — 业务对象的"类"定义；如"客户"、"订单"。含字段、约束、继承、版本</li>
+      <li><strong>对象实例 (Object Instance)</strong> — 一个具体的客户/订单；带 ID、字段值、关系引用</li>
+      <li><strong>字段 (Field)</strong> — 原子数据单元；含类型（文本/数字/日期/枚举/文件/引用/计算/AI 提取）</li>
+      <li><strong>关系 (Relation)</strong> — 对象之间的"关联"：1-1 / 1-N / N-N；可带元数据（"客户-订单"上挂"销售员"）</li>
+      <li><strong>业务规则 (Business Rule)</strong> — 跨字段/跨对象的约束；如"订单金额 > 客户授信额时拒绝"</li>
+      <li><strong>视图配置 (View Config)</strong> — 这个对象在哪些场景下展示什么字段；可被多个 UI 复用</li>
+      <li><strong>生命周期 (Lifecycle)</strong> — 对象的状态机；如"订单：草稿→待审→已批→已发→已收→关单"</li>
+      <li><strong>数据来源 (Data Source)</strong> — 对象实例存在哪里（平台内/外部 ERP/外部数据库/外部 API）</li>
+      <li><strong>权限 (Permission)</strong> — 谁能看/写/删哪些字段/哪些实例（行级 + 列级 + 字段级）</li>
+    </ul>
+
+    <p><strong>AI 贯穿（v2 新增）</strong>：</p>
+    <ul style="margin-left: 1.25rem; color: var(--text-secondary); font-size: 0.85rem;">
+      <li>🆕 <strong>AI 字段类型 (AI Field)</strong> — 字段类型可以是"AI 提取"（从附件中提取金额）、"AI 生成"（根据描述自动写文案）、"AI 分类"（自动打标签）</li>
+      <li>🆕 <strong>NL 建模 (NL Modeling)</strong> — 用户说"我需要一个'客户'对象，名字、地址、信用等级" → AI 生成对象类型</li>
+      <li>🆕 <strong>AI 关系建议 (Relation Suggestion)</strong> — 平台看历史数据，建议"客户"和"订单"可能需要 N-N 关系（已下单数）</li>
+      <li>🆕 <strong>AI 规则发现 (Rule Discovery)</strong> — 平台从历史数据中挖掘潜在规则："老客户违约率比新客户低 40%" → 提示建模者添加规则</li>
+      <li>🆕 <strong>AI 字段补全 (Smart Field)</strong> — 创建"客户"时 AI 建议"是否需要加'行业'字段？87% 同行有"</li>
+    </ul>
+
+    <p><strong>上下游</strong>：</p>
+    <ul style="margin-left: 1.25rem; color: var(--text-secondary); font-size: 0.85rem;">
+      <li><strong>向上</strong>：B1 的 4 层（对话/场景/页面/流程）都"读"业务对象定义来生成 UI/触发流</li>
+      <li><strong>向下</strong>：本体引擎（业务对象定义直接映射为本体） + 数据/知识层（实例数据存哪/怎么存）</li>
+    </ul>
+
+    <p><strong>典型数据流 (AI 贯穿版)</strong>：建模者 NL 输入"做一个'客户'对象" → AI 建议字段（名称/电话/地址/行业/VIP） → 建模者确认 → AI 自动映射到本体（"客户"= 实体 / 字段 = 属性） → 平台自动生成默认 UI（表单/列表） → 用户填数据 → 业务规则生效（电话格式/重复检测） → 业务对象实例持久化到存储</p>
+  </div>
+</div>
+
+<!-- ============== L2-2 本体引擎 ============== -->
+<div class="mockup">
+  <div class="mockup-header">L2-2 · 本体引擎 + 知识图谱 (P3 双向同步核心) <span style="background: #af52de; color: white; padding: 2px 6px; border-radius: 3px; font-size: 0.7rem;">AI 贯穿</span></div>
+  <div class="mockup-body">
+    <p><strong>职责</strong>：MetaPlatform 的"语义枢纽"和"知识图谱运行时"。负责：实体模型管理、关系图谱、推理引擎、语义查询、双向同步事件总线。这是 P3 架构中"单一真源"的具体实现。</p>
+
+    <p><strong>关键概念</strong>：</p>
+    <ul style="margin-left: 1.25rem; color: var(--text-secondary); font-size: 0.85rem;">
+      <li><strong>实体类型 (Entity Type)</strong> — 本体论层面的"类"；与业务对象类型一一对应，但更"形而上"（含继承、抽象类、属性约束）</li>
+      <li><strong>属性 (Property)</strong> — 实体的特征；含数据类型、值域、唯一性、外键</li>
+      <li><strong>关系 (Relationship)</strong> — 实体之间的"语义连接"；含基数、方向、属性（带"权重"/"有效期"）</li>
+      <li><strong>公理 (Axiom)</strong> — 本体层面的硬约束；如"A 继承 B 则 A 的所有属性必须满足 B 的约束"</li>
+      <li><strong>推理 (Reasoning)</strong> — 从已知事实推出新事实；如"A 是 B 的子类" + "x 是 A" → 推出"x 是 B"</li>
+      <li><strong>语义查询 (Semantic Query)</strong> — 用 SPARQL-like 语言查询图谱；可跨实体/跨关系</li>
+      <li><strong>图算法 (Graph Algorithm)</strong> — 最短路径/PageRank/社区发现/中心性分析；用于推荐/风险/关系挖掘</li>
+      <li><strong>事件总线 (Event Bus)</strong> — 本体的变更（创建/更新/删除）通过事件总线广播给所有订阅者（页面生成器/流程引擎/AI Agent）</li>
+      <li><strong>版本 (Versioning)</strong> — 本体的"演化"管理；支持 v1/v2 并存、按租户分版本、灰度切换</li>
+    </ul>
+
+    <p><strong>AI 贯穿（v2 新增）</strong>：</p>
+    <ul style="margin-left: 1.25rem; color: var(--text-secondary); font-size: 0.85rem;">
+      <li>🆕 <strong>NL 本体编辑 (NL Ontology Editing)</strong> — 用户说"客户有'主要联系人'，和'员工'实体相关" → AI 翻译为本体定义</li>
+      <li>🆕 <strong>AI 本体检查 (Ontology Linter)</strong> — 自动发现"循环引用"/"未使用的实体"/"可合并的相似实体"</li>
+      <li>🆕 <strong>AI 推理建议</strong> — 建模者定义"供应商"和"制造商" → AI 建议"是否需要提取'合作类型'作为关系属性？"</li>
+      <li>🆕 <strong>AI 异常图谱检测</strong> — 检测"客户 A 同时与 5 个员工有'联系人'关系" → 提示"可能是数据脏"或"建议提取中间实体"</li>
+      <li>🆕 <strong>图谱 RAG (GraphRAG)</strong> — AI 不只查文档，还查图谱关系；"找出所有'与 X 公司有合作且近 3 年内违约的'客户"</li>
+    </ul>
+
+    <p><strong>上下游</strong>：</p>
+    <ul style="margin-left: 1.25rem; color: var(--text-secondary); font-size: 0.85rem;">
+      <li><strong>向上</strong>：业务对象层（接收对象定义） + B1 各层（订阅事件） + AI Substrate（调用推理/图谱 RAG）</li>
+      <li><strong>向下</strong>：存储底座（图数据库 Neo4j / 关系型 PG 存元数据） + 平台底座（事务一致性、并发控制）</li>
+    </ul>
+
+    <p><strong>典型数据流 (P3 双向同步)</strong>：</p>
+    <ol style="margin-left: 1.25rem; color: var(--text-secondary); font-size: 0.85rem;">
+      <li>建模者在业务对象层"创建'供应商'对象" → 本体引擎接收 → 写入 Neo4j（图）+ PG（元数据）</li>
+      <li>事件总线广播"EntityCreated: Supplier" → 页面生成器自动生成默认 UI → 流程引擎可订阅</li>
+      <li>用户在 UI 中"添加'供应商评级'字段" → 业务对象层变化 → 触发"半自动双向同步" → 弹出"确认要将此改动写入本体？" → 建模者确认 → 本体更新</li>
+      <li>AI Substrate 收到事件 → 推断"新字段与'供应商风险'相关，是否生成 AI 评估规则？" → 提示建模者</li>
+    </ol>
+  </div>
+</div>
+
+<!-- ============== L2-3 数据/知识统一层 ============== -->
+<div class="mockup">
+  <div class="mockup-header">L2-3 · 数据/知识统一层 (5 类) <span style="background: #af52de; color: white; padding: 2px 6px; border-radius: 3px; font-size: 0.7rem;">AI 贯穿</span></div>
+  <div class="mockup-body">
+    <p><strong>职责</strong>：统一访问企业内的 5 类数据/知识。RAG / 非结构化 / 主数据 三类"内置"（平台亲自做）；数据湖/数据仓库"对接"（通过适配器消费）。</p>
+
+    <!-- RAG -->
+    <p><strong>3.1 · RAG 知识库 (内置)</strong>：</p>
+    <ul style="margin-left: 1.25rem; color: var(--text-secondary); font-size: 0.85rem;">
+      <li>关键概念：文档库 (Corpus) / 索引 (Index) / 向量 (Embedding) / 检索 (Retrieval) / 重排 (Rerank) / 引用 (Citation)</li>
+      <li>AI 贯穿：🆕 NL 文档问答（"我们公司的差旅报销标准是什么？"） / 🆕 AI 自动生成 FAQ / 🆕 文档版本管理（协同编辑） / 🆕 跨文档语义推理</li>
+    </ul>
+
+    <!-- 非结构化 -->
+    <p><strong>3.2 · 非结构化知识库 (内置)</strong>：</p>
+    <ul style="margin-left: 1.25rem; color: var(--text-secondary); font-size: 0.85rem;">
+      <li>关键概念：对象存储 / 文件版本 / 权限 / 标签 / OCR / 媒体转码</li>
+      <li>AI 贯穿：🆕 AI 自动打标签（合同/发票/邮件/图纸） / 🆕 AI 内容摘要 / 🆕 AI 智能分类 / 🆕 AI 跨文件关联（"找出所有提到 A 项目的合同"）</li>
+    </ul>
+
+    <!-- MDM -->
+    <p><strong>3.3 · 主数据 (MDM, 内置)</strong>：</p>
+    <ul style="margin-left: 1.25rem; color: var(--text-secondary); font-size: 0.85rem;">
+      <li>关键概念：黄金记录 (Golden Record) / 数据匹配 (Match) / 合并 (Merge) / 生存 (Survivorship) / 数据质量 (Quality)</li>
+      <li>AI 贯穿：🆕 AI 匹配（同公司不同写法） / 🆕 AI 合并规则建议 / 🆕 AI 质量评分 / 🆕 AI 数据血缘</li>
+    </ul>
+
+    <!-- 数据湖 -->
+    <p><strong>3.4 · 数据湖 (半对接)</strong>：</p>
+    <ul style="margin-left: 1.25rem; color: var(--text-secondary); font-size: 0.85rem;">
+      <li>关键概念：Hudi/Iceberg/Hive 元数据 / Schema 演进 / 原始数据 (Raw) / 标准化数据 (Standardized)</li>
+      <li>AI 贯穿：🆕 AI Schema 推断 / 🆕 AI 数据探索（"这个数据湖里有什么？"） / 🆕 AI 跨源 JOIN 建议</li>
+    </ul>
+
+    <!-- 数据仓库 -->
+    <p><strong>3.5 · 数据仓库 (弱对接)</strong>：</p>
+    <ul style="margin-left: 1.25rem; color: var(--text-secondary); font-size: 0.85rem;">
+      <li>关键概念：OLAP Cube / 指标 (Metric) / 维度 (Dimension) / 仪表盘 (Dashboard) / ETL/ELT</li>
+      <li>AI 贯穿：🆕 AI 指标推荐 / 🆕 AI 异常指标检测 / 🆕 NL→SQL (Text2SQL)</li>
+    </ul>
+
+    <p><strong>上下游</strong>：</p>
+    <ul style="margin-left: 1.25rem; color: var(--text-secondary); font-size: 0.85rem;">
+      <li><strong>向上</strong>：业务对象层（实例数据持久化） + 本体引擎（图谱数据） + B1 各层（消费数据/知识） + AI Substrate（消费所有 5 类）</li>
+      <li><strong>向下</strong>：存储底座（PG / Milvus / Neo4j / MinIO）+ 外部系统（ERP/CRM/DB/MQ/API 通过 Integration Hub 接入）</li>
+    </ul>
+
+    <p><strong>典型数据流 (AI 贯穿版)</strong>：用户问"过去一年与 A 公司签订的所有合同和关键条款" → AI Substrate 解析 → 同时查询 RAG（非结构化合同文档）+ MDM（客户主数据）+ 业务对象（合同实例）→ AI 合并回答（附引用、附指标趋势）</p>
+  </div>
+</div>
+
+<!-- ============== B2 小结 ============== -->
+<div class="section">
+  <div class="label">B2 关键耦合关系（灵魂三层的"咬合"）</div>
+  <table style="width: 100%; font-size: 0.85rem; border-collapse: collapse; color: var(--text-secondary);">
+    <tr style="border-bottom: 1px solid var(--border);">
+      <th style="text-align: left; padding: 4px;">关系</th>
+      <th style="text-align: left; padding: 4px;">方向</th>
+      <th style="text-align: left; padding: 4px;">机制</th>
+    </tr>
+    <tr>
+      <td style="padding: 4px;"><strong>业务对象 ↔ 本体</strong></td>
+      <td style="padding: 4px;">双向</td>
+      <td style="padding: 4px;">P3 半自动同步；业务对象定义 → 本体实体；本体变化 → 业务对象变化（需建模者确认）</td>
+    </tr>
+    <tr>
+      <td style="padding: 4px;"><strong>业务对象 → 数据/知识</strong></td>
+      <td style="padding: 4px;">向下</td>
+      <td style="padding: 4px;">业务对象实例存储到 RAG/MDM/湖/仓（按数据源配置）</td>
+    </tr>
+    <tr>
+      <td style="padding: 4px;"><strong>本体 → 数据/知识</strong></td>
+      <td style="padding: 4px;">向下</td>
+      <td style="padding: 4px;">图谱数据存 Neo4j（本体层）+ 图谱关系可引用 RAG 文档 / MDM 记录</td>
+    </tr>
+    <tr>
+      <td style="padding: 4px;"><strong>数据/知识 → AI Substrate</strong></td>
+      <td style="padding: 4px;">向上</td>
+      <td style="padding: 4px;">AI 消费 5 类数据：图谱 RAG / 文档 RAG / 结构化 NL2SQL / MDM 匹配 / 湖探索</td>
+    </tr>
+    <tr>
+      <td style="padding: 4px;"><strong>AI Substrate → 业务对象 / 本体</strong></td>
+      <td style="padding: 4px;">向下</td>
+      <td style="padding: 4px;">AI 建议的对象/字段/关系/规则进入"待确认"区，建模者点确认才写入</td>
+    </tr>
+  </table>
+</div>
+
+<div class="section">
+  <div class="label">B2 小结</div>
+  <ul style="color: var(--text-secondary); font-size: 0.85rem; margin-left: 1.25rem;">
+    <li><strong>业务对象层</strong>是"业务侧"看到的主积木；<strong>本体引擎</strong>是"工程侧"的真源；<strong>数据/知识层</strong>是"数据侧"的承载</li>
+    <li>三层之间是<strong>三角咬合</strong>——任何一层的变化会通过事件总线传播到另外两层</li>
+    <li>AI 贯穿在三层中都有具体体现：业务对象层（AI 字段/NL 建模） + 本体引擎（图谱 RAG/NL 本体编辑） + 数据/知识（5 类各自有 AI 增强）</li>
+  </ul>
+</div>

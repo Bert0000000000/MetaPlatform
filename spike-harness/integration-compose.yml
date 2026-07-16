@@ -1,0 +1,93 @@
+# integration-spike: 共享基础设施 docker-compose
+# 本体 + 数据栈共用一个 PG + 一个 Kafka，避免重复容器
+# 启动：docker compose -f spike-harness/integration-compose.yml up -d
+# 停止：docker compose -f spike-harness/integration-compose.yml down
+services:
+  postgres:
+    image: postgres:16
+    container_name: mp-pg-spike
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: ontology_meta
+      POSTGRES_USER: meta
+      POSTGRES_PASSWORD: metaplatform
+    volumes:
+      - pg-spike-data:/var/lib/postgresql/data
+    networks:
+      - mp-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U meta -d ontology_meta"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  kafka:
+    image: apache/kafka:3.7.0
+    container_name: mp-kafka-spike
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://mp-kafka-spike:9092
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 100
+    networks:
+      - mp-net
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  doris-fe:
+    image: apache/doris:doris-fe-2.1.7
+    container_name: mp-doris-fe
+    ports:
+      - "8030:8030"
+      - "9030:9030"
+    environment:
+      FE_SERVERS: fe1:127.0.0.1:9010
+      FE_ID: 1
+    networks:
+      - mp-net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:8030/api/bootstrap | grep -q '\"msg\":\"success\"' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+
+  doris-be:
+    image: apache/doris:doris-be-2.1.7
+    container_name: mp-doris-be
+    ports:
+      - "8040:8040"
+      - "9040:9040"
+    environment:
+      FE_SERVERS: fe1:172.21.0.3:9010
+      BE_ADDR: 172.21.0.5:9050
+    networks:
+      - mp-net
+    depends_on:
+      doris-fe:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:8040/api/health | grep -q '\"status\": \"OK\"' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+
+networks:
+  mp-net:
+    external: true
+
+volumes:
+  pg-spike-data:

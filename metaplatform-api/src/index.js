@@ -1,0 +1,272 @@
+/**
+ * MetaPlatform API — Main entry point
+ */
+import express from "express";
+import cors from "cors";
+import rateLimit from "express-rate-limit";
+import { authenticate, optionalAuth } from "./middleware/auth.js";
+
+/**
+ * Wrap an async Express route handler so thrown/rejected errors
+ * are forwarded to the Express error-handling middleware.
+ */
+export function asyncHandler(fn) {
+  return (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
+}
+import authRoutes from "./routes/auth.js";
+import appPublicRoutes from "./routes/app-public.js";
+import appsRoutes from "./routes/apps.js";
+import ontologyRoutes from "./routes/ontology.js";
+import processesRoutes from "./routes/processes.js";
+import dataRoutes from "./routes/data.js";
+import knowledgeRoutes from "./routes/knowledge.js";
+import agentsRoutes from "./routes/agents.js";
+import adminRoutes from "./routes/admin.js";
+import messagesRoutes from "./routes/messages.js";
+import flowableRoutes from "./routes/flowable.js";
+import pagesRoutes from "./routes/pages.js";
+import exportRoutes from "./routes/export.js";
+import llmRoutes from "./routes/llm.js";
+import dispatchRoutes from "./routes/dispatch.js";
+import announcementsRoutes from "./routes/announcements.js";
+import todosRoutes from "./routes/todos.js";
+import qualityRoutes from "./routes/quality.js";
+import versionsRoutes from "./routes/versions.js";
+import triggersRoutes from "./routes/triggers.js";
+import exportHistoryRoutes from "./routes/export-history.js";
+import knowledgeQaRoutes from "./routes/knowledge-qa.js";
+import knowledgeGraphRoutes from "./routes/knowledge-graph.js";
+import marketRoutes from "./routes/market.js";
+import filesystemRoutes from "./routes/filesystem.js";
+import orchestrationsRoutes from "./routes/orchestrations.js";
+import ocrRoutes from "./routes/ocr.js";
+import architectureRoutes from "./routes/architecture.js";
+import storageRoutes from "./routes/storage.js";
+import aiRoutes from "./routes/ai.js";
+import analyticsRoutes from "./routes/analytics.js";
+import notificationsRoutes from "./routes/notifications.js";
+import schedulerRoutes from "./routes/scheduler.js";
+import { cacheMiddleware, redisHealthCheck } from "./middleware/cache.js";
+import { initAll, healthCheckAll } from "./integrations/index.js";
+import cdc from "./cdc.js";
+import observabilityRoutes from "./routes/observability.js";
+import openapiRoutes from "./openapi.js";
+import { metricsMiddleware } from "./observability/metrics.js";
+import { loggerMiddleware } from "./observability/logger.js";
+import { tracerMiddleware } from "./observability/tracer.js";
+import { runtimeProxy } from "./services/runtime-proxy.js";
+import { reattach, probe } from "./services/runtime-orchestrator.js";
+import db from "./db.js";
+
+const app = express();
+const PORT = process.env.PORT || 3001;
+
+// ─── Rate Limiters ────────────────────────────────────────
+// General rate limiter: 100 requests per minute per IP
+const generalLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: "Too many requests, please try again later" },
+});
+
+// Auth rate limiter: 10 requests per minute per IP (stricter for login/register)
+const authLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: "Too many authentication attempts, please try again later" },
+});
+
+// ─── Middleware ──────────────────────────────────────────
+app.use(cors());                          // Allow all origins (dev mode)
+app.use(express.json());                  // Parse JSON bodies
+app.use(generalLimiter);                  // Apply general rate limiting
+app.use(tracerMiddleware);
+app.use(loggerMiddleware);
+app.use(metricsMiddleware);
+// Tenant resolver: runs after authenticate middleware (attached per-route below)
+app.use((req, res, next) => {
+  if (req.user) tenantResolver(req, res, next);
+  else next();
+});
+
+// ─── Routes ──────────────────────────────────────────────
+// Auth routes — PUBLIC for login/register, rate-limited separately
+app.use("/api/auth", authLimiter, authRoutes);
+
+// Public app market endpoints — no auth
+app.use("/api/public", appPublicRoutes);
+
+// F4.6.13 API Key management (key CRUD + whoami). The keys themselves
+// are sent by clients on every request via Authorization: Bearer or
+// X-API-Key, and resolved by apiKeyMiddleware which we export from
+// the same module (see the import above).
+import apiKeyRoutes, { apiKeyMiddleware } from "./routes/api-keys.js";
+app.use("/api/auth/api-keys", apiKeyMiddleware(), apiKeyRoutes);
+
+// Runtime health — public, used by the publish tab to show the
+// platform-wide "Docker daemon reachable?" banner. Doesn't expose
+// any internal data, only the orchestrator's connection state.
+app.get("/api/runtime/health", async (_req, res) => {
+  try {
+    const p = await probe();
+    if (!p.ok) {
+      return res.json({ success: true, data: { docker: "degraded", error: p.error } });
+    }
+    return res.json({ success: true, data: { docker: "ok" } });
+  } catch (err) {
+    return res.json({ success: true, data: { docker: "degraded", error: err.message } });
+  }
+});
+
+// Protected API routes — accept either Bearer JWT OR an API key
+// (apiKeyMiddleware falls through to `next()` when no mp_live_ key is
+// present, so the JWT authenticate middleware picks up the slack).
+// apiKeyRateLimit sits AFTER authenticate so JWT users are not affected.
+import { apiKeyRateLimit } from "./middleware/api-rate-limit.js";
+app.use("/api/apps", apiKeyMiddleware(), authenticate, apiKeyRateLimit(), cacheMiddleware(30), appsRoutes);
+app.use("/api/ontology", apiKeyMiddleware(), authenticate, apiKeyRateLimit(), cacheMiddleware(30), ontologyRoutes);
+app.use("/api/processes", apiKeyMiddleware(), authenticate, apiKeyRateLimit(), cacheMiddleware(30), processesRoutes);
+app.use("/api/data", apiKeyMiddleware(), authenticate, apiKeyRateLimit(), cacheMiddleware(30), dataRoutes);
+app.use("/api/knowledge", apiKeyMiddleware(), authenticate, apiKeyRateLimit(), cacheMiddleware(30), knowledgeRoutes);
+app.use("/api/agents", apiKeyMiddleware(), authenticate, apiKeyRateLimit(), cacheMiddleware(30), agentsRoutes);
+app.use("/api/admin", authenticate, cacheMiddleware(30), adminRoutes);
+app.use("/api/messages", authenticate, cacheMiddleware(15), messagesRoutes);
+// F4.6.17 — webhook endpoints (auth-protected; not API-key gated)
+import webhooksRoutes from "./routes/webhooks.js";
+app.use("/api/webhooks", authenticate, cacheMiddleware(10), webhooksRoutes);
+app.use("/api/flowable", authenticate, cacheMiddleware(30), flowableRoutes);
+app.use("/api/pages", authenticate, cacheMiddleware(30), pagesRoutes);
+app.use("/api/export", authenticate, exportRoutes);
+app.use("/api/llm", authenticate, cacheMiddleware(30), llmRoutes);
+app.use("/api/dispatch", authenticate, dispatchRoutes);
+app.use("/api/announcements", authenticate, cacheMiddleware(15), announcementsRoutes);
+app.use("/api/todos", authenticate, cacheMiddleware(15), todosRoutes);
+app.use("/api/quality", authenticate, cacheMiddleware(30), qualityRoutes);
+app.use("/api/versions", authenticate, cacheMiddleware(30), versionsRoutes);
+app.use("/api/triggers", authenticate, cacheMiddleware(30), triggersRoutes);
+app.use("/api/export-history", authenticate, cacheMiddleware(30), exportHistoryRoutes);
+app.use("/api/knowledge/qa", authenticate, cacheMiddleware(15), knowledgeQaRoutes);
+app.use("/api/knowledge/graph", authenticate, cacheMiddleware(60), knowledgeGraphRoutes);
+app.use("/api/market", authenticate, cacheMiddleware(30), marketRoutes);
+app.use("/api/filesystem", authenticate, cacheMiddleware(30), filesystemRoutes);
+app.use("/api/orchestrations", authenticate, cacheMiddleware(30), orchestrationsRoutes);
+app.use("/api/ocr", authenticate, cacheMiddleware(30), ocrRoutes);
+app.use("/api/architecture", authenticate, cacheMiddleware(60), architectureRoutes);
+
+// Phase 2: Unified storage layer endpoints (Neo4j / ES / Milvus / MinIO / Kafka)
+app.use("/api/storage", authenticate, storageRoutes);
+
+// Phase 3: AI substrate endpoints (embeddings / LLM / agent / RAG / OCR)
+app.use("/api/ai", authenticate, aiRoutes);
+app.use("/api/analytics", authenticate, analyticsRoutes);
+
+// Phase 5: Observability — metrics (public scrape), logs/traces/audit (auth)
+app.use("/api/observability", observabilityRoutes);
+
+app.use("/api/notifications", authenticate, notificationsRoutes);
+app.use("/api/scheduler", authenticate, schedulerRoutes);
+
+// Reverse-proxy: every `/app/:slug/*` request resolves to either a
+// dedicated docker runtime (container mode) or the in-process
+// snapshot reader (degraded mode). Mounted before openapiRoutes so
+// published-app URLs don't accidentally trip the docs path regex.
+app.use(runtimeProxy());
+
+// API documentation (OpenAPI 3 + Swagger UI)
+app.use("/api", openapiRoutes);
+
+// ─── Health check (public, optional auth) ────────────────
+app.get("/api/health", optionalAuth, async (_req, res) => {
+  try {
+    const redisStatus = await redisHealthCheck();
+    const dbStatus = process.env.DATABASE_URL ? "postgresql" : "sqlite";
+    const storageHealth = await healthCheckAll().catch((e) => ({ error: e.message }));
+    res.json({
+      success: true,
+      data: {
+        status: "ok",
+        database: dbStatus,
+        cache: redisStatus.status,
+        storage: storageHealth,
+        timestamp: new Date().toISOString(),
+      },
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ─── Error handler ──────────────────────────────────────
+app.use((err, _req, res, _next) => {
+  console.error("[API Error]", err.message);
+  res.status(err.status || 500).json({
+    success: false,
+    error: err.message || "Internal Server Error",
+  });
+});
+
+// ─── Initialize storage backends ───────────────────────
+async function bootstrap() {
+  try {
+    await initAll();
+  } catch (err) {
+    console.warn("[Bootstrap] initAll failed:", err.message);
+  }
+
+  // ─── Start server ───────────────────────────────────────
+  const server = app.listen(PORT, () => {
+    console.log(`\n  MetaPlatform API server running at:`);
+    console.log(`  -> http://localhost:${PORT}`);
+    console.log(`  -> Press Ctrl+C to stop\n`);
+
+    // Reattach to any `app-<slug>` containers the docker daemon still
+    // has running from a previous process. This is what makes the
+    // system survive platform restarts without dropping anyone out of
+    // their published app. If the docker daemon is unreachable we
+    // simply skip — runtimeProxy will fall back to the snapshot sqlite.
+    reattach(db).then((r) => {
+      if (r.degraded) {
+        console.log(`  -> [runtime] degraded: ${r.error || "docker unreachable"}; using snapshot fallback`);
+      } else if (r.reattached.length) {
+        console.log(`  -> [runtime] reattached to ${r.reattached.length} container(s): ${r.reattached.map((x) => x.slug).join(", ")}`);
+      }
+    }).catch((err) => console.warn(`  -> [runtime] reattach failed: ${err.message}`));
+
+    // Background pruner: keeps historical published containers bounded so
+    // /app/<historicalSlug> history doesn't leak ports (range 31001-31499).
+    if (process.env.RUNTIME_PRUNE_ENABLED !== "false") {
+      import("./services/runtime-pruner.js").then(({ startPruner }) => {
+        const s = startPruner({ db, aliasMap });
+        console.log(`  -> [pruner] started (intervalMs=${s.intervalMs})`);
+      }).catch((err) => console.warn(`  -> [pruner] start failed: ${err.message}`));
+    }
+
+    if (process.env.CDC_ENABLED !== "false") {
+      cdc.start();
+    }
+
+    // Start task scheduler (Phase 7)
+    if (process.env.SCHEDULER_ENABLED !== "false") {
+      import("./scheduler.js").then((s) => s.start()).catch((err) =>
+        console.warn("[Scheduler] start failed:", err.message)
+      );
+    }
+
+    // Attach notification WebSocket gateway
+    if (process.env.NOTIFICATIONS_WS_ENABLED !== "false") {
+      import("./notifications/websocket.js").then(({ attachNotificationWs }) => {
+        attachNotificationWs(server, "/api/notifications/ws");
+        console.log(`  -> WebSocket: ws://localhost:${PORT}/api/notifications/ws`);
+      }).catch((err) => console.warn("[Notifications] WS attach failed:", err.message));
+    }
+  });
+}
+
+bootstrap().catch((err) => {
+  console.error("[Bootstrap] Fatal error:", err);
+  process.exit(1);
+});

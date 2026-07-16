@@ -1,0 +1,24 @@
+meta {
+  name: Analytics status
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/analytics/status
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+tests {
+  test("returns clickhouse status", function() {
+    expect(res.body.data.clickhouse).to.have.property('status');
+  });
+  test("returns cdc status", function() {
+    expect(res.body.data.cdc).to.have.property('trackedTables');
+  });
+}

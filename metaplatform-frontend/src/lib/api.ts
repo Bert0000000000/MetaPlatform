@@ -1,0 +1,2251 @@
+/**
+ * MetaPlatform API Client
+ * Connects to the backend API at /api/*
+ */
+
+import { getToken, logout, type AuthUser } from "./auth";
+
+const BASE_URL = "/api";
+
+interface ApiResponse<T = unknown> {
+  success: boolean;
+  data?: T;
+  error?: string;
+  total?: number;
+}
+
+async function request<T>(
+  path: string,
+  options: RequestInit = {},
+): Promise<T> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...(options.headers as Record<string, string>),
+  };
+  const token = getToken();
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
+  let res: Response;
+  try {
+    res = await fetch(`${BASE_URL}${path}`, { ...options, headers });
+  } catch (err) {
+    // 网络层失败（vite proxy 504、后端宕机等），给用户一个可读的提示
+    throw new Error(
+      `网络请求失败: ${path} (${err instanceof Error ? err.message : String(err)})`,
+    );
+  }
+
+  // 401: 立刻清登录态并跳转，不读 body
+  if (res.status === 401) {
+    logout();
+    throw new Error("Unauthorized — redirecting to login");
+  }
+
+  // 非 2xx 但有 JSON body 的业务错误
+  const ctype = res.headers.get("content-type") ?? "";
+  if (!ctype.includes("application/json")) {
+    const text = await res.text().catch(() => "");
+    throw new Error(
+      `后端返回非 JSON 响应 (status=${res.status}, path=${path}): ${text.slice(0, 120)}`,
+    );
+  }
+
+  let json: ApiResponse<T>;
+  try {
+    json = (await res.json()) as ApiResponse<T>;
+  } catch (err) {
+    throw new Error(
+      `响应 JSON 解析失败 (status=${res.status}, path=${path}): ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
+
+  if (!json.success) {
+    throw new Error(json.error || `API error: ${res.status}`);
+  }
+  return json.data as T;
+}
+
+// ─── Auth ──────────────────────────────────────────────────
+export const authApi = {
+  login: (email: string, password: string) =>
+    request<{ user: AuthUser; token: string }>("/auth/login", {
+      method: "POST",
+      body: JSON.stringify({ email, password }),
+    }),
+  register: (data: { name: string; email: string; password: string; department?: string }) =>
+    request<{ user: AuthUser; token: string }>("/auth/register", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  me: () => request<AuthUser>("/auth/me"),
+
+  // F4.6.13 API Key authentication — server-side CRUD on api_keys
+  apiKeys: {
+    list: () =>
+      request<ApiKey[]>("/auth/api-keys"),
+    create: (data: {
+      name: string;
+      scopes?: string;
+      appId?: string | null;
+      expiresAt?: string | null;
+      rateLimit?: number | null;
+    }) =>
+      request<ApiKey & { key: string }>("/auth/api-keys", {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
+    revoke: (id: string) =>
+      request<{ id: string; revokedAt: string }>(`/auth/api-keys/${id}`, {
+        method: "DELETE",
+      }),
+    // F4.6.14 — adjust rate_limit / rename without rotating the secret.
+    update: (id: string, data: { rateLimit?: number | null; name?: string }) =>
+      request<ApiKey>(`/auth/api-keys/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify(data),
+      }),
+    // F4.6.16 — last-24h aggregate dashboard data.
+    stats: () => request<ApiKeyStats>("/auth/api-keys/stats"),
+    whoami: () =>
+      request<{ id: string; name: string; scopes: string[]; app_id: string | null; tenant_id: string; rate_limit: number | null }>(
+        "/auth/api-keys/whoami",
+      ),
+  },
+
+  /**
+   * Decode the current JWT payload (cheap; no signature check) — for
+   * narrowing UI by user-id without an extra /auth/me round trip.
+   * Returns null if no token or payload malformed.
+   */
+  currentUserIdFromToken: (): string | null => {
+    const t = getToken();
+    if (!t) return null;
+    try {
+      const payload = JSON.parse(
+        atob(t.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")),
+      );
+      return payload?.sub ?? null;
+    } catch {
+      return null;
+    }
+  },
+  changePassword: (oldPassword: string, newPassword: string) =>
+    request<{ message: string }>("/auth/password", {
+      method: "PUT",
+      body: JSON.stringify({ oldPassword, newPassword }),
+    }),
+};
+
+// ─── Applications ─────────────────────────────────────────
+// F4.1.7 — wizard templates + wizard payload
+export interface AppTemplate {
+  key: string;
+  name: string;
+  label: string;
+  description: string;
+  icon: string;
+  category: string;
+  objects: string[];
+  pages: string[];
+  flows: string[];
+}
+
+export interface AppModule {
+  id: string;
+  appId: string;
+  label: string;
+  icon?: string;
+  color?: string;
+  bgColor?: string;
+  typeFilter?: string[];
+  pageIds?: string[];
+  sortOrder?: number;
+  config?: Record<string, unknown>;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export const appsApi = {
+  list: (params?: { status?: string }) => {
+    const qs = params?.status ? `?status=${params.status}` : "";
+    return request<Application[]>(`/apps${qs}`);
+  },
+  // F4.1.7 — wizard step 1: load seeded industry templates.
+  templates: () => request<AppTemplate[]>("/apps/templates/list"),
+  get: (id: string) => request<Application>(`/apps/${id}`),
+  create: (data: Partial<Application> & { environment?: string }) =>
+    request<Application>("/apps", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  // F4.1.7 复制现有应用
+  clone: (data: {
+    sourceAppId: string;
+    name: string;
+    icon?: string;
+    description?: string;
+    category?: string;
+    environment?: string;
+  }) =>
+    request<Application>("/apps/clone", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  update: (id: string, data: Partial<Application>) =>
+    request<Application>(`/apps/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+  delete: (id: string) =>
+    request(`/apps/${id}`, { method: "DELETE" }),
+  stats: (id: string) =>
+    request<{ objects: number; pages: number; flows: number }>(
+      `/apps/${id}/stats`,
+    ),
+  publish: (id: string) =>
+    request<Application & {
+      published_url: string;
+      app_slug: string;
+      runtime?: {
+        mode: "container" | "degraded";
+        port: number | null;
+        containerId?: string | null;
+        url?: string | null;
+        error?: string | null;
+      };
+    }>(`/apps/${id}/publish`, { method: "POST" }),
+  unpublish: (id: string) =>
+    request<Application>(`/apps/${id}/unpublish`, { method: "POST" }),
+  listPublished: () => request<Application[]>("/apps/published"),
+  getBySlug: (slug: string) => request<Application>(`/apps/slug/${slug}`),
+  listPublications: (id: string) => request<{
+    id: string;
+    slug: string;
+    published_url: string;
+    published_version: string;
+    created_at: string;
+    environment: "production" | "archived";
+    isLive: boolean;
+  }[]>(`/apps/${id}/publications`),
+
+  // App Pages (nested under /api/apps/:id/pages)
+  listPages: (appId: string) =>
+    request<AppPage[]>(`/apps/${appId}/pages`),
+  createPage: (appId: string, data: Partial<AppPage>) =>
+    request<AppPage>(`/apps/${appId}/pages`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  updatePage: (appId: string, pageId: string, data: Partial<AppPage>) =>
+    request<AppPage>(`/apps/${appId}/pages/${pageId}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+  deletePage: (appId: string, pageId: string) =>
+    request(`/apps/${appId}/pages/${pageId}`, { method: "DELETE" }),
+
+  // App Config (nested under /api/apps/:id/config)
+  listConfig: (appId: string) =>
+    request<AppConfigItem[]>(`/apps/${appId}/config`),
+  createConfig: (appId: string, data: Partial<AppConfigItem>) =>
+    request<AppConfigItem>(`/apps/${appId}/config`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  updateConfig: (appId: string, key: string, data: Partial<AppConfigItem>) =>
+    request<AppConfigItem>(`/apps/${appId}/config/${key}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+  deleteConfig: (appId: string, key: string) =>
+    request<{ deleted: string }>(`/apps/${appId}/config/${key}`, {
+      method: "DELETE",
+    }),
+
+  // App Modules
+  listModules: (appId: string) => request<AppModule[]>(`/apps/${appId}/modules`),
+  createModule: (appId: string, data: Partial<AppModule>) =>
+    request<AppModule>(`/apps/${appId}/modules`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  updateModule: (appId: string, moduleId: string, data: Partial<AppModule>) =>
+    request<AppModule[]>(`/apps/${appId}/modules/${moduleId}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+  deleteModule: (appId: string, moduleId: string) =>
+    request<AppModule[]>(`/apps/${appId}/modules/${moduleId}`, {
+      method: "DELETE",
+    }),
+
+  // Gray release
+  getGrayConfig: (appId: string) =>
+    request<{ strategy: string; percentage: number; tenants: string[]; userGroups: string[] } | null>(
+      `/apps/${appId}/gray`,
+    ),
+  setGrayConfig: (appId: string, data: { strategy: string; percentage: number; tenants?: string[]; userGroups?: string[] }) =>
+    request<{ strategy: string; percentage: number }>(`/apps/${appId}/gray`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+  rollback: (appId: string, data: { versionId: string }) =>
+    request<{ message: string }>(`/apps/${appId}/rollback`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  activity: (appId: string, limit = 10) =>
+    request<any[]>(`/apps/${appId}/activity?limit=${limit}`),
+  getRuntime: (id: string) =>
+    request<{
+      slug: string;
+      persisted: {
+        containerId: string | null;
+        port: number | null;
+        mode: string | null;
+      };
+      runtime: {
+        state: string;
+        running?: boolean;
+        port?: number | null;
+        containerId?: string | null;
+        startedAt?: string;
+        error?: string;
+      };
+      published_url: string;
+    }>(`/apps/${id}/runtime`),
+  getRuntimeHealth: () =>
+    request<{
+      docker: "ok" | "degraded";
+      error?: string;
+    }>(`/runtime/health`),
+  restorePublication: (id: string, publicationId: string) =>
+    request<{
+      restored_from: { id: string; slug: string; version: string; created_at: string };
+    }>(`/apps/${id}/restore`, {
+      method: "POST",
+      body: JSON.stringify({ publicationId }),
+    }),
+  getAdminRuntimeSummary: () => request<{
+    docker: "ok" | "degraded";
+    docker_error?: string | null;
+    totals: {
+      total: number;
+      container_running: number;
+      degraded: number;
+      absent: number;
+    };
+    items: Array<{
+      app_id: string;
+      name: string;
+      app_slug: string;
+      alias_slug: string;
+      published_at: string;
+      persisted_port: number | null;
+      persisted_mode: string | null;
+      runtime: {
+        state?: string;
+        running?: boolean;
+        port?: number | null;
+        containerId?: string;
+        startedAt?: string;
+        error?: string;
+      } | null;
+      serving_mode: string;
+    }>;
+  }>(`/admin/runtime/summary`),
+  pruneRuntimes: () =>
+    request<{
+      started_at: string;
+      finished_at?: string;
+      kept?: number;
+      pruned?: Array<{ slug: string; reason: string }>;
+      orphan_pruned?: string[];
+      error?: string | null;
+      skipped?: string;
+    }>(`/admin/runtime/prune`, { method: "POST" }),
+};
+
+// ─── Analytics (strategic dashboard) ──────────────────────
+export interface StrategicMetrics {
+  users: { total: number; active: number };
+  apps: { total: number; published: number; draft: number; adoptionRate: number };
+  content: { objects: number; pages: number; flows: number; objects_per_app: number };
+  agents: { total: number; active: number; onlineRate: number };
+  collaboration: { messages: number; unread: number; audit_logs: number };
+  coverage: Record<string, boolean>;
+  as_of: string;
+}
+
+export const analyticsApi = {
+  getStrategicMetrics: () =>
+    request<StrategicMetrics>(`/analytics/strategic`),
+};
+
+// ─── Pages (standalone) ──────────────────────────────────
+export const pagesApi = {
+  list: (appId?: string) => {
+    const qs = appId ? `?app_id=${appId}` : "";
+    return request<AppPage[]>(`/pages${qs}`);
+  },
+  get: (id: string) => request<AppPage>(`/pages/${id}`),
+  create: (data: Partial<AppPage>) =>
+    request<AppPage>("/pages", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  update: (id: string, data: Partial<AppPage>) =>
+    request<AppPage>(`/pages/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+  delete: (id: string) =>
+    request(`/pages/${id}`, { method: "DELETE" }),
+  reorder: (data: { items: Array<{ id: string; sort_order: number }> }) =>
+    request<{ updated: number }>("/pages/reorder", {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+};
+
+// ─── Ontology ─────────────────────────────────────────────
+export const ontologyApi = {
+  listObjects: (appId?: string) => {
+    const qs = appId ? `?app_id=${appId}` : "";
+    return request<OntologyObject[]>(`/ontology/objects${qs}`);
+  },
+  getObject: (id: string) =>
+    request<OntologyObject & { properties: OntologyProperty[] }>(
+      `/ontology/objects/${id}`,
+    ),
+  createObject: (data: Partial<OntologyObject>) =>
+    request<OntologyObject>("/ontology/objects", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  updateObject: (id: string, data: Partial<OntologyObject>) =>
+    request<OntologyObject>(`/ontology/objects/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+  deleteObject: (id: string) =>
+    request(`/ontology/objects/${id}`, { method: "DELETE" }),
+  listProperties: (objectId: string) =>
+    request<OntologyProperty[]>(`/ontology/objects/${objectId}/properties`),
+  createProperty: (objectId: string, data: Partial<OntologyProperty>) =>
+    request<OntologyProperty>(
+      `/ontology/objects/${objectId}/properties`,
+      { method: "POST", body: JSON.stringify(data) },
+    ),
+  deleteProperty: (id: string) =>
+    request(`/ontology/properties/${id}`, { method: "DELETE" }),
+  updateProperty: (id: string, data: Partial<OntologyProperty>) =>
+    request<OntologyProperty>(`/ontology/properties/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+  listRelations: () => request<OntologyRelation[]>("/ontology/relations"),
+  createRelation: (data: Partial<OntologyRelation>) =>
+    request<OntologyRelation>("/ontology/relations", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  deleteRelation: (id: string) =>
+    request<{ deleted: string }>(`/ontology/relations/${id}`, { method: "DELETE" }),
+
+  // Actions
+  listActions: (objectId?: string) => {
+    const qs = objectId ? `?object_id=${objectId}` : "";
+    return request<OntologyAction[]>(`/ontology/actions${qs}`);
+  },
+  createAction: (data: Partial<OntologyAction>) =>
+    request<OntologyAction>("/ontology/actions", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  updateAction: (id: string, data: Partial<OntologyAction>) =>
+    request<OntologyAction>(`/ontology/actions/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+  deleteAction: (id: string) =>
+    request(`/ontology/actions/${id}`, { method: "DELETE" }),
+
+  // Functions
+  listFunctions: (objectId?: string) => {
+    const qs = objectId ? `?object_id=${objectId}` : "";
+    return request<OntologyFunction[]>(`/ontology/functions${qs}`);
+  },
+  createFunction: (data: Partial<OntologyFunction>) =>
+    request<OntologyFunction>("/ontology/functions", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  updateFunction: (id: string, data: Partial<OntologyFunction>) =>
+    request<OntologyFunction>(`/ontology/functions/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+  deleteFunction: (id: string) =>
+    request(`/ontology/functions/${id}`, { method: "DELETE" }),
+
+  // Rules
+  listRules: (objectId?: string) => {
+    const qs = objectId ? `?object_id=${objectId}` : "";
+    return request<OntologyRule[]>(`/ontology/rules${qs}`);
+  },
+  createRule: (data: Partial<OntologyRule>) =>
+    request<OntologyRule>("/ontology/rules", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  updateRule: (id: string, data: Partial<OntologyRule>) =>
+    request<OntologyRule>(`/ontology/rules/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+  deleteRule: (id: string) =>
+    request(`/ontology/rules/${id}`, { method: "DELETE" }),
+
+  // Security Rules
+  listSecurityRules: () => request<any[]>("/ontology/security-rules"),
+  createSecurityRule: (data: any) => request("/ontology/security-rules", { method: "POST", body: JSON.stringify(data) }),
+  updateSecurityRule: (id: number, data: any) => request(`/ontology/security-rules/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+  deleteSecurityRule: (id: number) => request(`/ontology/security-rules/${id}`, { method: "DELETE" }),
+
+  // Auto Numbers
+  listAutoNumbers: () => request<any[]>("/ontology/auto-numbers"),
+  createAutoNumber: (data: any) => request("/ontology/auto-numbers", { method: "POST", body: JSON.stringify(data) }),
+
+  // ═══ P0-1 业务实例 (EntityInstance) ═══
+  listInstances: (objectId: string) =>
+    request<any[]>(`/ontology/objects/${objectId}/instances`),
+  createInstance: (objectId: string, data: Record<string, unknown>) =>
+    request<any>(`/ontology/objects/${objectId}/instances`, {
+      method: "POST",
+      body: JSON.stringify({ data }),
+    }),
+  updateInstance: (id: string, data: Record<string, unknown>) =>
+    request<any>(`/ontology/instances/${id}`, {
+      method: "PUT",
+      body: JSON.stringify({ data }),
+    }),
+  deleteInstance: (id: string) =>
+    request<any>(`/ontology/instances/${id}`, { method: "DELETE" }),
+
+  // ═══ P0-3 本体快照 ═══
+  listSnapshots: () =>
+    request<any[]>("/ontology/snapshots"),
+  createSnapshot: (label: string, description?: string) =>
+    request<any>("/ontology/snapshots", {
+      method: "POST",
+      body: JSON.stringify({ label, description }),
+    }),
+  getSnapshot: (id: string) =>
+    request<any>(`/ontology/snapshots/${id}`),
+  diffSnapshots: (fromId: string, toId: string) =>
+    request<any>(`/ontology/snapshots/${fromId}/diff/${toId}`),
+  deleteSnapshot: (id: string) =>
+    request<any>(`/ontology/snapshots/${id}`, { method: "DELETE" }),
+
+  // ═══ P1-5 事件流 ═══
+  listEvents: (params?: { type?: string; trace_id?: string; since?: string; limit?: number }) => {
+    const qs = new URLSearchParams();
+    if (params?.type) qs.set("type", params.type);
+    if (params?.trace_id) qs.set("trace_id", params.trace_id);
+    if (params?.since) qs.set("since", params.since);
+    if (params?.limit) qs.set("limit", String(params.limit));
+    const q = qs.toString();
+    return request<any[]>(`/ontology/events${q ? `?${q}` : ""}`);
+  },
+  createEvent: (data: { type: string; source?: string; target?: string; payload?: unknown; trace_id?: string }) =>
+    request<any>("/ontology/events", { method: "POST", body: JSON.stringify(data) }),
+};
+
+// ─── Processes ────────────────────────────────────────────
+export const processesApi = {
+  list: (params?: { type?: string; app_id?: string }) => {
+    const qs = new URLSearchParams(params || {}).toString();
+    return request<ProcessDefinition[]>(`/processes${qs ? `?${qs}` : ""}`);
+  },
+  get: (id: string) => request<ProcessDefinition>(`/processes/${id}`),
+  create: (data: Partial<ProcessDefinition>) =>
+    request<ProcessDefinition>("/processes", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  update: (id: string, data: Partial<ProcessDefinition>) =>
+    request<ProcessDefinition>(`/processes/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+  delete: (id: string) =>
+    request(`/processes/${id}`, { method: "DELETE" }),
+  listInstances: () =>
+    request<ProcessInstance[]>("/processes/instances"),
+  startInstance: (data: Partial<ProcessInstance>) =>
+    request<ProcessInstance>("/processes/instances", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  updateInstance: (id: string, data: Partial<ProcessInstance>) =>
+    request<ProcessInstance>(`/processes/instances/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+};
+
+// ─── Data ─────────────────────────────────────────────────
+export const dataApi = {
+  listSources: () => request<DataSource[]>("/data/sources"),
+  createSource: (data: Partial<DataSource>) =>
+    request<DataSource>("/data/sources", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  updateSource: (id: string, data: Partial<DataSource>) =>
+    request<DataSource>(`/data/sources/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+  deleteSource: (id: string) =>
+    request(`/data/sources/${id}`, { method: "DELETE" }),
+  testConnection: (id: string) =>
+    request<{ status: string; message: string }>(
+      `/data/sources/${id}/test`,
+    ),
+  listMetrics: () => request<DataMetric[]>("/data/metrics"),
+  createMetric: (data: Partial<DataMetric>) =>
+    request<DataMetric>("/data/metrics", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  // ETL Tasks
+  listETLTasks: () => request<any[]>("/data/etl-tasks"),
+
+  // Quality Rules
+  listQualityRules: () => request<any[]>("/data/quality-rules"),
+
+  // Realtime Events
+  listRealtimeEvents: () => request<any[]>("/data/realtime-events"),
+};
+
+// ─── Knowledge ────────────────────────────────────────────
+export const knowledgeApi = {
+  listDocuments: (category?: string) => {
+    const qs = category ? `?category=${category}` : "";
+    return request<KnowledgeDocument[]>(`/knowledge/documents${qs}`);
+  },
+  getDocument: (id: string) =>
+    request<KnowledgeDocument>(`/knowledge/documents/${id}`),
+  createDocument: (data: Partial<KnowledgeDocument>) =>
+    request<KnowledgeDocument>("/knowledge/documents", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  updateDocument: (id: string, data: Partial<KnowledgeDocument>) =>
+    request<KnowledgeDocument>(`/knowledge/documents/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+  deleteDocument: (id: string) =>
+    request(`/knowledge/documents/${id}`, { method: "DELETE" }),
+  search: (query: string) =>
+    request<KnowledgeDocument[]>(
+      `/knowledge/search?q=${encodeURIComponent(query)}`,
+    ),
+  categories: () =>
+    request<{ category: string; count: number }[]>(
+      "/knowledge/categories",
+    ),
+
+  // Processing Jobs
+  listProcessingJobs: () => request<any[]>("/knowledge/processing-jobs"),
+  createProcessingJob: (data: any) => request("/knowledge/processing-jobs", { method: "POST", body: JSON.stringify(data) }),
+
+  // Subscriptions
+  listSubscriptions: () => request<any[]>("/knowledge/subscriptions"),
+  createSubscription: (data: any) => request("/knowledge/subscriptions", { method: "POST", body: JSON.stringify(data) }),
+  toggleSubscription: (id: number, data: any) => request(`/knowledge/subscriptions/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+};
+
+// ─── Agents ───────────────────────────────────────────────
+// F1.1.4 — leader dashboard "team digital employee" panel data
+export interface AgentTeamOverview {
+  totalAgents: number;
+  totalActive: number;
+  totalBusy: number;
+  totalOffline: number;
+  totalError: number;
+  totalTasks: number;
+  totalDone: number;
+  completionRate: number;
+}
+export interface AgentTeamRow {
+  department: string;
+  agentCount: number;
+  activeCount: number;
+  busyCount: number;
+  offlineCount: number;
+  errorCount: number;
+  taskCount: number;
+  doneCount: number;
+}
+export interface AgentTopPerformer {
+  id: string;
+  name: string;
+  ownerName: string;
+  department: string;
+  status: string;
+  tasksDone: number;
+  tasksTotal: number;
+  successRate: number;
+}
+export interface AgentRecentActivity {
+  task_id: string;
+  agent_id: string;
+  agent_name: string;
+  status: string;
+  at: string;
+}
+export interface AgentTeamStats {
+  overview: AgentTeamOverview;
+  teams: AgentTeamRow[];
+  topPerformers: AgentTopPerformer[];
+  recentActivity: AgentRecentActivity[];
+}
+
+export const agentsApi = {
+  list: () => request<Agent[]>("/agents"),
+  teamStats: (params?: { limitTop?: number; limitAct?: number }) => {
+    const qs = new URLSearchParams();
+    if (params?.limitTop) qs.set("limitTop", String(params.limitTop));
+    if (params?.limitAct) qs.set("limitAct", String(params.limitAct));
+    const s = qs.toString();
+    return request<AgentTeamStats>(`/agents/team-stats${s ? `?${s}` : ""}`);
+  },
+  // F1.3.1 我创建的数字员工 — server-side filter by owner_id
+  listOwnedBy: (ownerId: string) =>
+    request<Agent[]>(`/agents?owner=${encodeURIComponent(ownerId)}`),
+  get: (id: string) => request<Agent>(`/agents/${id}`),
+  create: (data: Partial<Agent>) =>
+    request<Agent>("/agents", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  update: (id: string, data: Partial<Agent>) =>
+    request<Agent>(`/agents/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+  delete: (id: string) => request(`/agents/${id}`, { method: "DELETE" }),
+  listTasks: (agentId: string) =>
+    request<AgentTask[]>(`/agents/${agentId}/tasks`),
+  createTask: (agentId: string, data: Partial<AgentTask>) =>
+    request<AgentTask>(`/agents/${agentId}/tasks`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  updateTask: (id: string, data: Partial<AgentTask>) =>
+    request<AgentTask>(`/agents/tasks/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+};
+
+// ─── Export ────────────────────────────────────────────────
+export const exportApi = {
+  generate: (appId: string, targets: string[]) =>
+    request<{
+      exportId: string;
+      files: Array<{ name: string; content: string; type: string }>;
+      status: string;
+      app: { id: string; name: string; version: string };
+      generatedAt: string;
+    }>("/export/generate", {
+      method: "POST",
+      body: JSON.stringify({ appId, targets }),
+    }),
+  download: (appId: string, targets: string[]) =>
+    request<{
+      exportId: string;
+      files: Array<{ name: string; content: string; type: string }>;
+      status: string;
+    }>("/export/download", {
+      method: "POST",
+      body: JSON.stringify({ appId, targets }),
+    }),
+  /** Download all generated files for an app from backend (GET endpoint) */
+  downloadAll: (appId: string) =>
+    request<{
+      frontend: Array<{ name: string; content: string; type: string }>;
+      backend: Array<{ name: string; content: string; type: string }>;
+      database: Array<{ name: string; content: string; type: string }>;
+      deploy: Array<{ name: string; content: string; type: string }>;
+      app: { id: string; name: string; version: string };
+    }>(`/export/download/${appId}`),
+};
+
+// ─── Admin ────────────────────────────────────────────────
+export const adminApi = {
+  listUsers: () => request<User[]>("/admin/users"),
+  createUser: (data: Partial<User>) =>
+    request<User>("/admin/users", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  updateUser: (id: string, data: Partial<User>) =>
+    request<User>(`/admin/users/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+  deleteUser: (id: string) =>
+    request(`/admin/users/${id}`, { method: "DELETE" }),
+  listRoles: () => request<Role[]>("/admin/roles"),
+  listDepartments: () =>
+    request<Department[]>("/admin/departments"),
+  createDepartment: (data: Partial<Department>) =>
+    request<Department>("/admin/departments", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  updateDepartment: (id: string, data: Partial<Department>) =>
+    request<Department>(`/admin/departments/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+  deleteDepartment: (id: string) =>
+    request(`/admin/departments/${id}`, { method: "DELETE" }),
+  listLogs: (limit = 20, offset = 0) =>
+    request<AuditLog[]>(
+      `/admin/logs?limit=${limit}&offset=${offset}`,
+    ),
+  listConfig: () =>
+    request<SystemConfig[]>("/admin/config"),
+  updateConfig: (key: string, data: Partial<SystemConfig>) =>
+    request<SystemConfig>(`/admin/config/${key}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+  createLog: (data: Partial<AuditLog>) =>
+    request<AuditLog>("/admin/logs", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  // LLM / AI Gateway config
+  getLlmConfig: () =>
+    request<{ key: string; label: string; description: string; placeholder: string; value: string }[]>(
+      "/admin/llm-config",
+    ),
+  saveLlmConfig: (items: { key: string; value: string }[]) =>
+    request<{ key: string; label: string; value: string }[]>("/admin/llm-config", {
+      method: "PUT",
+      body: JSON.stringify({ items }),
+    }),
+  testLlmConnection: (provider?: "mock" | "real") =>
+    request<{ connected: boolean; reason?: string; baseUrl?: string; model?: string }>(
+      `/admin/llm-config/status${provider ? `?provider=${provider}` : ""}`,
+    ),
+};
+
+// ─── Messages ─────────────────────────────────────────────
+export const messagesApi = {
+  list: () => request<Message[]>("/messages"),
+  markRead: (id: string) =>
+    request<Message>(`/messages/${id}/read`, { method: "PUT" }),
+  create: (data: Partial<Message>) =>
+    request<Message>("/messages", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  unreadCount: () =>
+    request<{ count: number }>("/messages/unread-count"),
+};
+
+// ─── Announcements ─────────────────────────────────────
+export const announcementsApi = {
+  list: async (limit = 10) => {
+    const res = await request<any[]>(`/announcements?limit=${limit}`);
+    return res;
+  },
+  create: async (data: any) => {
+    const res = await request<any>("/announcements", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+    return res;
+  },
+};
+
+// ─── Todos ─────────────────────────────────────────────
+export const todosApi = {
+  list: async (params?: { user_id?: string; status?: string }) => {
+    const qs = new URLSearchParams(params || {}).toString();
+    const res = await request<any[]>(`/todos${qs ? `?${qs}` : ""}`);
+    return res;
+  },
+  create: async (data: any) => {
+    const res = await request<any>("/todos", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+    return res;
+  },
+};
+
+// ─── Quality ───────────────────────────────────────────
+export const qualityApi = {
+  listCases: async () => {
+    const res = await request<any[]>("/quality/cases");
+    return res;
+  },
+  createCase: async (data: any) => {
+    const res = await request<any>("/quality/cases", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+    return res;
+  },
+  runCase: async (id: string, result: string, duration: number) => {
+    const res = await request<any>(`/quality/cases/${id}/run`, {
+      method: "PUT",
+      body: JSON.stringify({ result, duration }),
+    });
+    return res;
+  },
+  listBugs: async () => {
+    const res = await request<any[]>("/quality/bugs");
+    return res;
+  },
+  createBug: async (data: any) => {
+    const res = await request<any>("/quality/bugs", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+    return res;
+  },
+  updateBug: async (id: string, data: any) => {
+    const res = await request<any>(`/quality/bugs/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+    return res;
+  },
+  getStats: async () => {
+    const res = await request<{
+      totalCases: number;
+      passedCases: number;
+      failedCases: number;
+      passRate: string;
+      totalBugs: number;
+      openBugs: number;
+    }>("/quality/stats");
+    return res;
+  },
+
+  // Ontology Tests
+  listOntologyTests: async () => {
+    const res = await request<any[]>("/quality/ontology-tests");
+    return res;
+  },
+  runOntologyTest: async (id: number) => {
+    const res = await request<any>(`/quality/ontology-tests/${id}/run`, { method: "POST" });
+    return res;
+  },
+
+  // UI Tests
+  listUITests: async () => {
+    const res = await request<any[]>("/quality/ui-tests");
+    return res;
+  },
+  runUITest: async (id: number) => {
+    const res = await request<any>(`/quality/ui-tests/${id}/run`, { method: "POST" });
+    return res;
+  },
+
+  // Process Tests
+  listProcessTests: async () => {
+    const res = await request<any[]>("/quality/process-tests");
+    return res;
+  },
+  runProcessTest: async (id: number) => {
+    const res = await request<any>(`/quality/process-tests/${id}/run`, { method: "POST" });
+    return res;
+  },
+
+  // AI Fixes
+  listAIFixes: async () => {
+    const res = await request<any[]>("/quality/ai-fixes");
+    return res;
+  },
+  applyAIFix: async (id: number) => {
+    const res = await request<any>(`/quality/ai-fixes/${id}/apply`, { method: "POST" });
+    return res;
+  },
+
+  // Reports
+  listReports: async () => {
+    const res = await request<any[]>("/quality/reports");
+    return res;
+  },
+  createReport: async (data: any) => {
+    const res = await request<any>("/quality/reports", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+    return res;
+  },
+};
+
+// ─── Versions ──────────────────────────────────────────
+export const versionsApi = {
+  listByApp: async (appId: string) => {
+    const res = await request<any[]>(`/versions/app/${appId}`);
+    return res;
+  },
+  create: async (data: any) => {
+    const res = await request<any>("/versions", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+    return res;
+  },
+};
+
+// ─── Triggers ──────────────────────────────────────────
+export const triggersApi = {
+  list: async () => {
+    const res = await request<any[]>("/triggers");
+    return res;
+  },
+  create: async (data: any) => {
+    const res = await request<any>("/triggers", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+    return res;
+  },
+  delete: async (id: string) => {
+    const res = await request<any>(`/triggers/${id}`, { method: "DELETE" });
+    return res;
+  },
+};
+
+// ─── Architecture ──────────────────────────────────────
+export const architectureApi = {
+  getSection: (section: "ba" | "aa" | "da" | "ta") =>
+    request<Record<string, unknown>>(`/architecture/${section}`),
+  updateSection: (section: "ba" | "aa" | "da" | "ta", data: Record<string, unknown>) =>
+    request(`/architecture/${section}`, { method: "PUT", body: JSON.stringify(data) }),
+};
+
+// ─── Export History ─────────────────────────────────────
+export const exportHistoryApi = {
+  list: async () => {
+    const res = await request<any[]>("/export-history");
+    return res;
+  },
+  create: async (data: any) => {
+    const res = await request<any>("/export-history", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+    return res;
+  },
+};
+
+// ─── Knowledge Q&A ─────────────────────────────────────
+export const knowledgeQaApi = {
+  list: async (limit = 20) => {
+    const res = await request<any[]>(`/knowledge/qa?limit=${limit}`);
+    return res;
+  },
+  create: async (data: any) => {
+    const res = await request<any>("/knowledge/qa", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+    return res;
+  },
+};
+
+// ─── Knowledge Graph ───────────────────────────────────
+export const knowledgeGraphApi = {
+  listNodes: async () => {
+    const res = await fetch(`${BASE_URL}/knowledge/graph/nodes`, {
+      headers: { "Authorization": `Bearer ${getToken()}` },
+    });
+    const json = await res.json();
+    return json.data;
+  },
+  createNode: async (data: any) => {
+    const res = await fetch(`${BASE_URL}/knowledge/graph/nodes`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${getToken()}`,
+      },
+      body: JSON.stringify(data),
+    });
+    const json = await res.json();
+    return json.data;
+  },
+  listEdges: async () => {
+    const res = await fetch(`${BASE_URL}/knowledge/graph/edges`, {
+      headers: { "Authorization": `Bearer ${getToken()}` },
+    });
+    const json = await res.json();
+    return json.data;
+  },
+  createEdge: async (data: any) => {
+    const res = await fetch(`${BASE_URL}/knowledge/graph/edges`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${getToken()}`,
+      },
+      body: JSON.stringify(data),
+    });
+    const json = await res.json();
+    return json.data;
+  },
+};
+
+// ─── Market ────────────────────────────────────────────
+export const marketApi = {
+  listTemplates: async (category?: string) => {
+    const qs = category ? `?category=${encodeURIComponent(category)}` : "";
+    const res = await request<any[]>(`/market/templates${qs}`);
+    return res;
+  },
+  createTemplate: async (data: any) => {
+    const res = await request<any>("/market/templates", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+    return res;
+  },
+  installTemplate: async (id: string) => {
+    const res = await request<any>(`/market/templates/${id}/install`, {
+      method: "POST",
+    });
+    return res;
+  },
+
+  // Developers
+  listDevelopers: async () => {
+    const res = await request<any[]>("/market/developers");
+    return res;
+  },
+
+  // Skills
+  listSkills: async () => {
+    const res = await request<any[]>("/market/skills");
+    return res;
+  },
+
+  // Workflow Templates
+  listWorkflowTemplates: async () => {
+    const res = await request<any[]>("/market/workflow-templates");
+    return res;
+  },
+
+  // Knowledge Packages
+  listKnowledgePackages: async () => {
+    const res = await request<any[]>("/market/knowledge-packages");
+    return res;
+  },
+
+  // API Library
+  listAPILibrary: async () => {
+    const res = await request<any[]>("/market/api-library");
+    return res;
+  },
+};
+
+// ─── Public Market ─────────────────────────────────────
+export const publicApi = {
+  listPublishedApps: async () => {
+    const res = await request<ApplicationLite[]>("/public/published-apps");
+    return res;
+  },
+  listFormSubmissions: (formId: string, params?: { page?: number; pageSize?: number; sortField?: string; sortOrder?: "asc" | "desc"; q?: string; status?: string }) =>
+    request<PaginatedSubmissions>(`/public/forms/${formId}/submissions?${submissionQueryString(params)}`),
+};
+
+// ─── App Collaborators ─────────────────────────────────
+export const appCollaboratorsApi = {
+  list: (appId: string) => request<AppCollaborator[]>(`/apps/${appId}/collaborators`),
+  create: (appId: string, data: { userEmail: string; userName?: string; role?: string }) =>
+    request<AppCollaborator>(`/apps/${appId}/collaborators`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  update: (appId: string, id: string, data: { role: string }) =>
+    request<AppCollaborator>(`/apps/${appId}/collaborators/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+  remove: (appId: string, id: string) =>
+    request<{ id: string }>(`/apps/${appId}/collaborators/${id}`, { method: "DELETE" }),
+};
+
+// ─── App Forms ─────────────────────────────────────────
+function submissionQueryString(params?: { page?: number; pageSize?: number; sortField?: string; sortOrder?: "asc" | "desc"; q?: string; status?: string }) {
+  const qs = new URLSearchParams();
+  if (params?.page) qs.set("page", String(params.page));
+  if (params?.pageSize) qs.set("pageSize", String(params.pageSize));
+  if (params?.sortField) qs.set("sortField", params.sortField);
+  if (params?.sortOrder) qs.set("sortOrder", params.sortOrder);
+  if (params?.q) qs.set("q", params.q);
+  if (params?.status) qs.set("status", params.status);
+  return qs.toString();
+}
+
+export const appFormsApi = {
+  list: (appId: string) => request<AppForm[]>(`/apps/${appId}/forms`),
+  get: (appId: string, formId: string) => request<AppForm>(`/apps/${appId}/forms/${formId}`),
+  create: (appId: string, data: Partial<AppForm>) =>
+    request<AppForm>(`/apps/${appId}/forms`, { method: "POST", body: JSON.stringify(data) }),
+  update: (appId: string, formId: string, data: Partial<AppForm>) =>
+    request<AppForm>(`/apps/${appId}/forms/${formId}`, { method: "PUT", body: JSON.stringify(data) }),
+  remove: (appId: string, formId: string) =>
+    request<{ id: string }>(`/apps/${appId}/forms/${formId}`, { method: "DELETE" }),
+  submissions: (appId: string, formId: string, limit = 50) =>
+    request<FormSubmission[]>(`/apps/${appId}/forms/${formId}/submissions?limit=${limit}`),
+  listSubmissions: (appId: string, formId: string, params?: { page?: number; pageSize?: number; sortField?: string; sortOrder?: "asc" | "desc"; q?: string; status?: string }) =>
+    request<PaginatedSubmissions>(`/apps/${appId}/forms/${formId}/submissions?${submissionQueryString(params)}`),
+};
+
+// ─── App Reports ───────────────────────────────────────
+export const appReportsApi = {
+  list: (appId: string) => request<AppReport[]>(`/apps/${appId}/reports`),
+  get: (appId: string, reportId: string) => request<AppReport>(`/apps/${appId}/reports/${reportId}`),
+  create: (appId: string, data: Partial<AppReport>) =>
+    request<AppReport>(`/apps/${appId}/reports`, { method: "POST", body: JSON.stringify(data) }),
+  update: (appId: string, reportId: string, data: Partial<AppReport>) =>
+    request<AppReport>(`/apps/${appId}/reports/${reportId}`, { method: "PUT", body: JSON.stringify(data) }),
+  remove: (appId: string, reportId: string) =>
+    request<{ id: string }>(`/apps/${appId}/reports/${reportId}`, { method: "DELETE" }),
+  run: (appId: string, reportId: string, params?: { limit?: number }) =>
+    request<{ rows: any[]; rowCount: number; took: number }>(`/apps/${appId}/reports/${reportId}/run`, {
+      method: "POST",
+      body: JSON.stringify(params || {}),
+    }),
+};
+
+// ─── App Dashboards ────────────────────────────────────
+export const appDashboardsApi = {
+  list: (appId: string) => request<AppDashboard[]>(`/apps/${appId}/dashboards`),
+  get: (appId: string, dashboardId: string) => request<AppDashboard>(`/apps/${appId}/dashboards/${dashboardId}`),
+  create: (appId: string, data: Partial<AppDashboard>) =>
+    request<AppDashboard>(`/apps/${appId}/dashboards`, { method: "POST", body: JSON.stringify(data) }),
+  update: (appId: string, dashboardId: string, data: Partial<AppDashboard>) =>
+    request<AppDashboard>(`/apps/${appId}/dashboards/${dashboardId}`, { method: "PUT", body: JSON.stringify(data) }),
+  remove: (appId: string, dashboardId: string) =>
+    request<{ id: string }>(`/apps/${appId}/dashboards/${dashboardId}`, { method: "DELETE" }),
+  widgetData: (appId: string, dashboardId: string, widgets?: any[]) =>
+    request<{ widgets: any[] }>(`/apps/${appId}/dashboards/${dashboardId}/widgets/data`, {
+      method: "POST",
+      body: JSON.stringify({ widgets }),
+    }),
+};
+
+// ─── App Datasets ──────────────────────────────────────
+export const appDatasetsApi = {
+  list: (appId: string) => request<AppDataset[]>(`/apps/${appId}/datasets`),
+  get: (appId: string, datasetId: string) => request<AppDataset>(`/apps/${appId}/datasets/${datasetId}`),
+  create: (appId: string, data: Partial<AppDataset>) =>
+    request<AppDataset>(`/apps/${appId}/datasets`, { method: "POST", body: JSON.stringify(data) }),
+  update: (appId: string, datasetId: string, data: Partial<AppDataset>) =>
+    request<AppDataset>(`/apps/${appId}/datasets/${datasetId}`, { method: "PUT", body: JSON.stringify(data) }),
+  remove: (appId: string, datasetId: string) =>
+    request<{ id: string }>(`/apps/${appId}/datasets/${datasetId}`, { method: "DELETE" }),
+  preview: (appId: string, datasetId: string, limit = 200) =>
+    request<{ rows: any[]; rowCount: number; took: number }>(`/apps/${appId}/datasets/${datasetId}/preview`, {
+      method: "POST",
+      body: JSON.stringify({ limit }),
+    }),
+};
+
+// ─── App Page Components ───────────────────────────────
+export const appPageComponentsApi = {
+  list: (appId: string, pageId?: string) =>
+    request<AppPageComponent[]>(`/apps/${appId}/page-components${pageId ? `?pageId=${pageId}` : ""}`),
+  create: (appId: string, data: Partial<AppPageComponent>) =>
+    request<AppPageComponent>(`/apps/${appId}/page-components`, { method: "POST", body: JSON.stringify(data) }),
+  update: (appId: string, componentId: string, data: Partial<AppPageComponent>) =>
+    request<AppPageComponent>(`/apps/${appId}/page-components/${componentId}`, { method: "PUT", body: JSON.stringify(data) }),
+  remove: (appId: string, componentId: string) =>
+    request<{ id: string }>(`/apps/${appId}/page-components/${componentId}`, { method: "DELETE" }),
+};
+
+// ─── Tenants ───────────────────────────────────────────
+export const tenantsApi = {
+  list: () => request<Tenant[]>("/tenants"),
+  create: (data: Partial<Tenant>) =>
+    request<Tenant>("/tenants", { method: "POST", body: JSON.stringify(data) }),
+  update: (id: string, data: Partial<Tenant>) =>
+    request<Tenant>(`/tenants/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+  remove: (id: string) => request(`/tenants/${id}`, { method: "DELETE" }),
+};
+
+// ─── App API Keys ──────────────────────────────────────
+export const apiKeysApi = {
+  list: (appId: string) => request<ApiKey[]>(`/apps/${appId}/api-keys`),
+  create: (appId: string, data: { label: string; scopes?: string[]; expiresAt?: string | null }) =>
+    request<ApiKey & { secret: string; salt: string }>(`/apps/${appId}/api-keys`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  rotate: (appId: string, keyId: string) =>
+    request<ApiKey & { secret: string; salt: string }>(`/apps/${appId}/api-keys/${keyId}/rotate`, { method: "POST" }),
+  revoke: (appId: string, keyId: string) =>
+    request(`/apps/${appId}/api-keys/${keyId}`, { method: "DELETE" }),
+};
+
+// ─── LLM Gateway ───────────────────────────────────────
+export const llmApi = {
+  chat: (
+    messages: { role: string; content: string }[],
+    options?: { model?: string; temperature?: number; maxTokens?: number; stream?: boolean },
+  ) =>
+    request<{ content: string; usage: { promptTokens: number; completionTokens: number; totalTokens: number } }>("/llm/chat", {
+      method: "POST",
+      body: JSON.stringify({ messages, ...options }),
+    }),
+  completion: (prompt: string, options?: { model?: string; temperature?: number; maxTokens?: number }) =>
+    request<{ text: string; usage: any }>("/llm/completion", {
+      method: "POST",
+      body: JSON.stringify({ prompt, ...options }),
+    }),
+  embedding: (input: string | string[], options?: { model?: string }) =>
+    request<{ embeddings: { index: number; embedding: number[] }[]; usage: any }>("/llm/embedding", {
+      method: "POST",
+      body: JSON.stringify({ input, ...options }),
+    }),
+  models: () => request<{ id: string; provider: string; type: string }[]>("/llm/models"),
+  usage: (days = 30) => request<any>(`/llm/usage?days=${days}`),
+};
+
+// ─── Filesystem (WebIDE) ──────────────────────────────
+export const filesystemApi = {
+  listFiles: async (params: { app_id?: string; parent_id?: string }) => {
+    const qs = new URLSearchParams(
+      Object.fromEntries(Object.entries(params).filter(([, v]) => v !== undefined)),
+    ).toString();
+    const res = await request<any[]>(`/filesystem/files${qs ? `?${qs}` : ""}`);
+    return res;
+  },
+  createFile: async (data: any) => {
+    const res = await request<any>("/filesystem/files", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+    return res;
+  },
+  updateFile: async (id: string, data: any) => {
+    const res = await request<any>(`/filesystem/files/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+    return res;
+  },
+  deleteFile: async (id: string) => {
+    const res = await request<any>(`/filesystem/files/${id}`, {
+      method: "DELETE",
+    });
+    return res;
+  },
+};
+
+// ─── Orchestrations ────────────────────────────────────
+export const orchestrationsApi = {
+  list: async () => {
+    const res = await request<any[]>("/orchestrations");
+    return res;
+  },
+  get: async (id: string) => {
+    const res = await request<any>(`/orchestrations/${id}`);
+    return res;
+  },
+  create: async (data: any) => {
+    const res = await request<any>("/orchestrations", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+    return res;
+  },
+  update: async (id: string, data: any) => {
+    const res = await request<any>(`/orchestrations/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+    return res;
+  },
+  delete: async (id: string) => {
+    const res = await request<any>(`/orchestrations/${id}`, { method: "DELETE" });
+    return res;
+  },
+};
+
+// ─── Types ────────────────────────────────────────────────
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  department?: string;
+  status: string;
+  avatar?: string;
+  last_login?: string;
+}
+
+export interface Application {
+  id: string;
+  name: string;
+  description?: string;
+  category: string;
+  status: string;
+  icon?: string;
+  version: string;
+  owner_id?: string;
+  objects_count: number;
+  pages_count: number;
+  flows_count: number;
+  app_slug?: string;
+  published_url?: string;
+  runtime_container_id?: string | null;
+  runtime_port?: number | null;
+  runtime_mode?: "container" | "degraded" | null;
+  /** F3.5.5 多环境发布 — initial deploy ring (dev/test/staging/prod) */
+  environment?: "dev" | "test" | "staging" | "prod";
+  created_at?: string;
+  updated_at?: string;
+}
+
+/** 公开应用市场中的已发布应用摘要（无需 auth） */
+export interface ApplicationLite {
+  id: string;
+  name: string;
+  description?: string;
+  category?: string;
+  icon?: string;
+  app_slug: string;
+  published_url?: string;
+  published_version?: string;
+  published_at?: string;
+}
+
+/** 应用协作者 */
+export interface AppCollaborator {
+  id: string;
+  appId?: string;
+  userEmail?: string;
+  userName?: string;
+  role: "owner" | "editor" | "viewer";
+  invitedBy?: string | null;
+  createdAt?: string;
+}
+
+/** 应用表单 */
+export interface AppForm {
+  id: string;
+  appId?: string;
+  name: string;
+  schema?: any;
+  version?: number;
+  status?: "draft" | "published";
+  createdBy?: string | null;
+  updatedBy?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+/** 表单提交记录 */
+export interface FormSubmission {
+  id: string;
+  appId?: string;
+  formId?: string;
+  version?: number;
+  submitterEmail?: string;
+  submitterName?: string;
+  values?: Record<string, unknown>;
+  metadata?: Record<string, unknown>;
+  status?: string;
+  submittedAt?: string;
+}
+
+/** 分页的表单提交记录 */
+export interface PaginatedSubmissions {
+  rows: FormSubmission[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
+/** 应用报表 */
+export interface AppReport {
+  id: string;
+  appId?: string;
+  name: string;
+  datasetId?: string | null;
+  layout?: any;
+  widgets?: any[];
+  schedule?: any;
+  status?: "draft" | "published" | "archived";
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+/** 应用仪表盘 */
+export interface AppDashboard {
+  id: string;
+  appId?: string;
+  name: string;
+  layout?: any;
+  widgets?: any[];
+  status?: "draft" | "published" | "archived";
+  createdBy?: string | null;
+  updatedBy?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+/** 应用数据集 */
+export interface AppDataset {
+  id: string;
+  appId?: string;
+  name: string;
+  description?: string;
+  sourceType: "ontology_object" | "view" | "form" | "sql";
+  ontologyObjectId?: string | null;
+  sqlText?: string | null;
+  formId?: string | null;
+  fields?: any[];
+  cacheTtlSeconds?: number;
+  createdBy?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+/** 页面组件 */
+export interface AppPageComponent {
+  id: string;
+  appId?: string;
+  pageId?: string | null;
+  componentKey: string;
+  props?: Record<string, unknown>;
+  x?: number;
+  y?: number;
+  w?: number;
+  h?: number;
+  sortOrder?: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+/** 租户 */
+export interface Tenant {
+  id: string;
+  name: string;
+  code: string;
+  plan?: string;
+  status?: string;
+  description?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface OntologyObject {
+  id: string;
+  app_id?: string;
+  name: string;
+  label: string;
+  description?: string;
+  icon?: string;
+  status: string;
+  properties_count: number;
+  actions_count: number;
+  rules_count: number;
+  // 唯一业务编码 (ontology-engine 后端 ObjectType.code), 可选
+  // 旧版 mock 或 metaplatform-api 返回的可能不带
+  code?: string;
+  // 关联的 EntityType ID (ontology-engine)
+  entityTypeId?: string;
+}
+
+/**
+ * Runtime information returned by POST /apps/:id/publish and
+ * GET /apps/:id/runtime. The platform process owns the registry; the
+ * `container` mode means a dedicated docker container is up and the
+ * reverse-proxy at `/app/:slug/*` forwards to it. The `degraded` mode
+ * means the docker daemon is unreachable and the platform is serving
+ * the published snapshot directly out of its own process — the data
+ * is still isolated per-app, but the runtime is no longer in a
+ * separate container.
+ */
+export interface RuntimeInfo {
+  mode: "container" | "degraded";
+  port: number | null;
+  containerId: string | null;
+  error?: string | null;
+  snapshot?: string | null;
+}
+
+export interface OntologyProperty {
+  id: string;
+  object_id: string;
+  name: string;
+  label: string;
+  type: string;
+  required: number;
+  unique_field: number;
+  default_value?: string;
+  description?: string;
+}
+
+export interface OntologyRelation {
+  id: string;
+  source_object_id: string;
+  target_object_id: string;
+  type: string;
+  label?: string;
+  description?: string;
+}
+
+export interface OntologyAction {
+  id: string;
+  object_id?: string;
+  name: string;
+  type: string;
+  trigger_type: string;
+  config?: string;
+  status: string;
+  created_at?: string;
+}
+
+export interface OntologyFunction {
+  id: string;
+  object_id?: string;
+  name: string;
+  type: string;
+  expression?: string;
+  description?: string;
+  status: string;
+  created_at?: string;
+}
+
+export interface OntologyRule {
+  id: string;
+  object_id?: string;
+  name: string;
+  type: string;
+  condition_expr?: string;
+  action?: string;
+  status: string;
+  created_at?: string;
+}
+
+export interface ProcessDefinition {
+  id: string;
+  app_id?: string;
+  name: string;
+  type: string;
+  status: string;
+  version: number;
+  bpmn_xml?: string;
+  description?: string;
+}
+
+export interface ProcessInstance {
+  id: string;
+  definition_id: string;
+  status: string;
+  initiator_id?: string;
+  variables?: string;
+  started_at: string;
+  ended_at?: string;
+}
+
+export interface DataSource {
+  id: string;
+  name: string;
+  type: string;
+  host?: string;
+  port?: number;
+  database_name?: string;
+  status: string;
+  description?: string;
+}
+
+export interface DataMetric {
+  id: string;
+  name: string;
+  value: string;
+  unit?: string;
+  trend?: number;
+}
+
+export interface KnowledgeDocument {
+  id: string;
+  title: string;
+  type: string;
+  category?: string;
+  content?: string;
+  file_size?: number;
+  status: string;
+  tags?: string;
+}
+
+export interface Agent {
+  id: string;
+  name: string;
+  description?: string;
+  type: string;
+  status: string;
+  model?: string;
+  skills?: string;
+  owner_id?: string;
+  assigned_to?: string;
+}
+
+export interface AgentTask {
+  id: string;
+  agent_id: string;
+  title: string;
+  status: string;
+  input?: string;
+  output?: string;
+}
+
+export interface Role {
+  id: string;
+  name: string;
+  label?: string;
+  code?: string;
+  permissions?: string[];
+  userCount?: number;
+  permissionCount?: number;
+  desc?: string;
+  builtin?: boolean;
+}
+
+export interface Department {
+  id: number;
+  name: string;
+  parent: string;
+  count: number;
+  leader: string;
+  icon: string;
+}
+
+export interface AuditLog {
+  id: string;
+  user_id?: string;
+  user_name?: string;
+  action: string;
+  module?: string;
+  target?: string;
+  detail?: string;
+  result: string;
+  created_at: string;
+}
+
+export interface Message {
+  id: string;
+  user_id: string;
+  type: string;
+  title: string;
+  content?: string;
+  read: number;
+  link?: string;
+  created_at: string;
+}
+
+export interface SystemConfig {
+  key: string;
+  value: string;
+  description?: string;
+}
+
+export interface AppPage {
+  id: string;
+  app_id: string;
+  name: string;
+  type: string;
+  icon?: string;
+  status: string;
+  config?: string;
+  sort_order: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface AppConfigItem {
+  id: string;
+  app_id: string;
+  key: string;
+  value?: string;
+  description?: string;
+  updated_at?: string;
+}
+
+export interface Orchestration {
+  id: string;
+  name: string;
+  type: string;
+  adapters: string[];
+  status: "active" | "draft" | "error";
+  trigger_type: string;
+  config?: string;
+  last_run?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+// F4.6.13 API Key (mint key payload, never includes the secret
+// again after creation — only the prefix and meta survive a round-trip).
+export interface ApiKey {
+  id: string;
+  tenant_id: string;
+  name: string;
+  key_prefix: string;
+  scopes: string;            // CSV on the server; split to array on UI
+  app_id: string | null;
+  created_by: string;
+  last_used_at?: string | null;
+  expires_at?: string | null;
+  revoked_at?: string | null;
+  /** F4.6.14 — requests per minute. null = unlimited. */
+  rate_limit?: number | null;
+  created_at: string;
+}
+
+// F4.6.16 — per-key call aggregates from /api/auth/api-keys/stats.
+export interface ApiKeyStatsSummary {
+  window_hours: number;
+  calls: number;
+  errors: number;
+  rate_limited: number;
+  error_rate: number;
+  active_keys: number;
+}
+export interface ApiKeyStatsRow {
+  key_id: string;
+  name: string;
+  key_prefix: string | null;
+  rate_limit: number | null;
+  calls: number;
+  errors: number;
+  rate_limited: number;
+  error_rate: number;
+}
+export interface ApiKeyStats {
+  summary: ApiKeyStatsSummary;
+  per_key: ApiKeyStatsRow[];
+  top_paths_24h: { path: string; calls: number }[];
+  timeline_24h: { hour: string; calls: number }[];
+}
+
+// F4.6.17 — webhook endpoints from /api/webhooks.
+export interface WebhookEndpoint {
+  id: string;
+  app_id: string;
+  name: string;
+  url: string;
+  events: string;
+  enabled: boolean;
+  secret_fingerprint?: string;
+  created_at: string;
+  updated_at: string;
+  /** Only present in the create response — secret is one-time. */
+  secret?: string;
+}
+export interface WebhookDelivery {
+  id: number;
+  endpoint_id: string;
+  event_type: string;
+  attempt: number;
+  status: "pending" | "success" | "failed";
+  response_status: number | null;
+  response_body: string | null;
+  last_error: string | null;
+  created_at: string;
+  delivered_at: string | null;
+}
+
+export const webhooksApi = {
+  list: (appId?: string) => {
+    const qs = appId ? `?appId=${encodeURIComponent(appId)}` : "";
+    return request<WebhookEndpoint[]>(`/webhooks${qs}`);
+  },
+  create: (data: { app_id: string; name: string; url: string; events?: string; enabled?: boolean }) =>
+    request<WebhookEndpoint>("/webhooks", { method: "POST", body: JSON.stringify(data) }),
+  update: (id: string, data: Partial<Pick<WebhookEndpoint, "name" | "url" | "events" | "enabled">>) =>
+    request<WebhookEndpoint>(`/webhooks/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
+  delete: (id: string) =>
+    request<{ id: string }>(`/webhooks/${id}`, { method: "DELETE" }),
+  test: (id: string, message?: string) =>
+    request<{ ok: boolean; status: number | null; delivery_id: number }>(
+      `/webhooks/${id}/test`,
+      { method: "POST", body: JSON.stringify({ message: message ?? "" }) },
+    ),
+  deliveries: (id: string, limit = 20) =>
+    request<WebhookDelivery[]>(`/webhooks/${id}/deliveries?limit=${limit}`),
+};
+
+// F4.6.22 — scheduler surface from /api/scheduler.
+export interface SchedulerJob {
+  name: string;
+  cron: string;
+  enabled: boolean;
+  nextRun?: string;
+}
+export interface SchedulerStatus {
+  running: boolean;
+  lastTickAt: string | null;
+  jobCount: number;
+  jobs: SchedulerJob[];
+}
+export interface SchedulerRun {
+  id: number;
+  job_name: string;
+  started_at: string;
+  finished_at: string | null;
+  status: "ok" | "error" | "running";
+  duration_ms: number | null;
+  error: string | null;
+}
+
+// ─── Scheduler (F4.6.22) ──────────────────────────────────
+export const schedulerApi = {
+  list: () => request<SchedulerStatus>("/scheduler"),
+  runs: (name: string, limit = 20) =>
+    request<SchedulerRun[]>(`/scheduler/${encodeURIComponent(name)}/runs?limit=${limit}`),
+  trigger: (name: string) =>
+    request<{ job: string; startedAt: string; durationMs: number; error: string | null }>(
+      `/scheduler/${encodeURIComponent(name)}/run`,
+      { method: "POST" },
+    ),
+  setEnabled: (name: string, enabled: boolean) =>
+    request<{ name: string; enabled: boolean }>(`/scheduler/${encodeURIComponent(name)}`, {
+      method: "PATCH",
+      body: JSON.stringify({ enabled }),
+    }),
+  delete: (name: string) =>
+    request<{ name: string }>(`/scheduler/${encodeURIComponent(name)}`, {
+      method: "DELETE",
+    }),
+  create: (data: { name: string; cron: string; handlerKind?: "log" | "webhook"; payload?: unknown }) =>
+    request<{ name: string; cron: string; handlerKind: string; enabled: boolean }>("/scheduler", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+};
+
+// ─── App Service (Java backend) ─────────────────────────────
+// 直接访问 metaplatform-app-service (:8092)，逐步替代 Node 端的应用中心逻辑。
+// 生产环境应通过 APISIX 统一网关路由。
+const APP_SERVICE_BASE = import.meta.env.VITE_APP_SERVICE_URL || "http://localhost:8092/api";
+
+async function appServiceRequest<T>(
+  path: string,
+  options: RequestInit = {},
+): Promise<T> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...(options.headers as Record<string, string>),
+  };
+  const token = getToken();
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
+  const res = await fetch(`${APP_SERVICE_BASE}${path}`, { ...options, headers });
+
+  if (res.status === 401) {
+    logout();
+    throw new Error("Unauthorized — redirecting to login");
+  }
+
+  const json: ApiResponse<T> = await res.json();
+
+  if (!json.success) {
+    throw new Error(json.error || `API error: ${res.status}`);
+  }
+  return json.data as T;
+}
+
+export interface AppServiceApp {
+  id: number;
+  code: string;
+  name: string;
+  icon?: string;
+  description?: string;
+  status: string;
+  version: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AppServiceObject {
+  id: number;
+  appId: number;
+  code: string;
+  name: string;
+  description?: string;
+  schemaJson: string;
+  dataTableName?: string;
+  ontologyObjectId?: string;
+  version: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AppServiceObjectField {
+  code: string;
+  name: string;
+  type: string;
+  required?: boolean;
+  description?: string;
+  defaultValue?: string;
+  unique?: boolean;
+  // v1.0.2 Sprint 2 F1.1: lookup 子配置 (type=lookup 时存在)
+  lookup?: { objectId: number; displayField: string };
+}
+
+export interface AppServiceForm {
+  id: number;
+  appId: number;
+  objectId: number;
+  code: string;
+  name: string;
+  schemaJson?: string;
+  status?: "draft" | "published";
+  version?: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface PublicFormSchema {
+  id: number;
+  name: string;
+  boundObjectId: string;
+  sections?: any[];
+}
+
+export interface FormDataPageResult {
+  rows: Record<string, unknown>[];
+  total: number;
+  page: number;
+  size: number;
+  sort: string[];
+  filters: Record<string, string>;
+}
+
+export interface FormDataQueryParams {
+  page?: number;
+  size?: number;
+  sort?: string;
+  columns?: string;
+  [column: string]: string | number | undefined;
+}
+
+export interface AppWorkflowDefinition {
+  id: number;
+  appId: number;
+  formId?: number;
+  name: string;
+  code: string;
+  processKey?: string;
+  deploymentId?: string;
+  processDefinitionId?: string;
+  processDefinitionKey?: string;
+  bpmnXml?: string;
+  status?: "draft" | "published" | "suspended";
+  fieldPermissions?: string;
+  version?: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface AppFormWorkflow {
+  id: number;
+  appId: number;
+  formId: number;
+  workflowDefinitionId: number;
+  enabled: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface TodoTask {
+  id: string;
+  name: string;
+  taskDefinitionKey: string;
+  createTime: string;
+  processInstanceId: string;
+  processDefinitionId: string;
+  assignee?: string;
+  submissionId?: number;
+  formId?: number;
+  appId?: number;
+  submitterId?: string;
+}
+
+export interface TodoTaskDetail {
+  task: TodoTask;
+  submission: {
+    id: number;
+    formId: number;
+    rowId: number;
+    valuesJson: string;
+    workflowStatus: string;
+    submitterId?: string;
+    createdAt: string;
+  };
+  fieldPermissions: Record<string, unknown>;
+}
+
+function buildQueryString(params: Record<string, string | number | undefined>): string {
+  const sp = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value === undefined || value === null || value === "") continue;
+    sp.set(key, String(value));
+  }
+  return sp.toString();
+}
+
+export const appServiceApi = {
+  // Apps
+  listApps: () => appServiceRequest<AppServiceApp[]>("/apps"),
+  getApp: (id: number | string) => appServiceRequest<AppServiceApp>(`/apps/${id}`),
+  createApp: (data: { code: string; name: string; icon?: string; description?: string }) =>
+    appServiceRequest<AppServiceApp>("/apps", { method: "POST", body: JSON.stringify(data) }),
+  updateApp: (id: number | string, data: { version: number; name?: string; icon?: string; description?: string }) =>
+    appServiceRequest<AppServiceApp>(`/apps/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+  deleteApp: (id: number | string) => appServiceRequest<void>(`/apps/${id}`, { method: "DELETE" }),
+
+  // Objects
+  listObjects: (appId: number | string) => appServiceRequest<AppServiceObject[]>(`/apps/${appId}/objects`),
+  getObject: (appId: number | string, oid: number) => appServiceRequest<AppServiceObject>(`/apps/${appId}/objects/${oid}`),
+  createObject: (appId: number | string, data: { code: string; name: string; description?: string; fields?: AppServiceObjectField[] }) =>
+    appServiceRequest<AppServiceObject>(`/apps/${appId}/objects`, { method: "POST", body: JSON.stringify(data) }),
+  updateObject: (appId: number | string, oid: number, data: { name?: string; description?: string }) =>
+    appServiceRequest<AppServiceObject>(`/apps/${appId}/objects/${oid}`, { method: "PUT", body: JSON.stringify(data) }),
+  deleteObject: (appId: number | string, oid: number) => appServiceRequest<{ deleted: boolean }>(`/apps/${appId}/objects/${oid}`, { method: "DELETE" }),
+
+  // Object fields
+  listFields: (appId: number | string, oid: number) => appServiceRequest<AppServiceObjectField[]>(`/apps/${appId}/objects/${oid}/fields`),
+  addField: (appId: number | string, oid: number, data: AppServiceObjectField) =>
+    appServiceRequest<AppServiceObjectField[]>(`/apps/${appId}/objects/${oid}/fields`, { method: "POST", body: JSON.stringify(data) }),
+  updateField: (appId: number | string, oid: number, code: string, data: Partial<AppServiceObjectField>) =>
+    appServiceRequest<AppServiceObjectField[]>(`/apps/${appId}/objects/${oid}/fields/${code}`, { method: "PUT", body: JSON.stringify(data) }),
+  deleteField: (appId: number | string, oid: number, code: string) =>
+    appServiceRequest<AppServiceObjectField[]>(`/apps/${appId}/objects/${oid}/fields/${code}`, { method: "DELETE" }),
+
+  // Forms
+  forms: {
+    list: (appId: number | string) => appServiceRequest<AppServiceForm[]>(`/apps/${appId}/forms`),
+    get: (appId: number | string, formId: number | string) =>
+      appServiceRequest<AppServiceForm>(`/apps/${appId}/forms/${formId}`),
+    create: (appId: number | string, data: { objectId: number; code: string; name: string; schema: unknown }) =>
+      appServiceRequest<AppServiceForm>(`/apps/${appId}/forms`, { method: "POST", body: JSON.stringify(data) }),
+    update: (appId: number | string, formId: number | string, data: { name?: string; schema?: unknown }) =>
+      appServiceRequest<AppServiceForm>(`/apps/${appId}/forms/${formId}`, { method: "PUT", body: JSON.stringify(data) }),
+    publish: (appId: number | string, formId: number | string) =>
+      appServiceRequest<AppServiceForm>(`/apps/${appId}/forms/${formId}/publish`, { method: "POST" }),
+    listData: (appId: number | string, formId: number | string, params: FormDataQueryParams = {}) =>
+      appServiceRequest<FormDataPageResult>(
+        `/apps/${appId}/forms/${formId}/data?${buildQueryString(params)}`,
+      ),
+    exportCsv: (appId: number | string, formId: number | string, params: FormDataQueryParams = {}) =>
+      fetch(`${APP_SERVICE_BASE}/apps/${appId}/forms/${formId}/data.csv?${buildQueryString(params)}`, {
+        headers: { Authorization: `Bearer ${getToken() || ""}` },
+      }),
+  },
+
+  // Public forms (no auth)
+  public: {
+    getFormSchema: (formId: number | string) => appServiceRequest<PublicFormSchema>(`/public/forms/${formId}`),
+    submitForm: (formId: number | string, values: Record<string, unknown>, submitterEmail?: string, submitterName?: string) =>
+      appServiceRequest<{ id: number }>(`/public/forms/${formId}/submit`, {
+        method: "POST",
+        body: JSON.stringify({ values, submitterEmail, submitterName }),
+      }),
+    getFormData: (formId: number | string, params: FormDataQueryParams = {}) =>
+      appServiceRequest<FormDataPageResult>(`/public/forms/${formId}/data?${buildQueryString(params)}`),
+    /**
+     * v1.0.2 Sprint 2 F1.4: 加载表单中所有 lookup 字段的下拉选项.
+     * @returns [{field, options:[{id,label}, ...]}, ...]
+     */
+    getLookupOptions: (formId: number | string) =>
+      appServiceRequest<Array<{ field: string; options: Array<{ id: number; label: string }> }>>(
+        `/public/forms/${formId}/lookup-options`,
+      ),
+    getSubmissions: (formId: number | string, params: FormDataQueryParams = {}) =>
+      appServiceRequest<FormDataPageResult>(`/public/forms/${formId}/submissions?${buildQueryString(params)}`),
+  },
+
+  // Workflows
+  workflows: {
+    list: (appId: number | string) => appServiceRequest<AppWorkflowDefinition[]>(`/apps/${appId}/workflows`),
+    get: (appId: number | string, id: number | string) => appServiceRequest<AppWorkflowDefinition>(`/apps/${appId}/workflows/${id}`),
+    create: (appId: number | string, data: { name: string; code: string; formId?: number; bpmnXml: string }) =>
+      appServiceRequest<AppWorkflowDefinition>(`/apps/${appId}/workflows`, { method: "POST", body: JSON.stringify(data) }),
+    update: (appId: number | string, id: number | string, data: { name: string; formId?: number; bpmnXml: string }) =>
+      appServiceRequest<AppWorkflowDefinition>(`/apps/${appId}/workflows/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+    publish: (appId: number | string, id: number | string) =>
+      appServiceRequest<AppWorkflowDefinition>(`/apps/${appId}/workflows/${id}/publish`, { method: "POST" }),
+    suspend: (appId: number | string, id: number | string) =>
+      appServiceRequest<AppWorkflowDefinition>(`/apps/${appId}/workflows/${id}/suspend`, { method: "POST" }),
+    delete: (appId: number | string, id: number | string) =>
+      appServiceRequest<{ deleted: string }>(`/apps/${appId}/workflows/${id}`, { method: "DELETE" }),
+  },
+
+  // Form workflow binding
+  formWorkflow: {
+    get: (appId: number | string, formId: number | string) =>
+      appServiceRequest<AppFormWorkflow | null>(`/apps/${appId}/forms/${formId}/workflow`),
+    bind: (appId: number | string, formId: number | string, workflowDefinitionId: number | string) =>
+      appServiceRequest<AppFormWorkflow>(`/apps/${appId}/forms/${formId}/workflow`, {
+        method: "POST",
+        body: JSON.stringify({ workflowDefinitionId }),
+      }),
+    unbind: (appId: number | string, formId: number | string) =>
+      appServiceRequest<{ unbound: string }>(`/apps/${appId}/forms/${formId}/workflow`, { method: "DELETE" }),
+  },
+
+  // Process instances
+  processInstances: {
+    get: (appId: number | string, processInstanceId: string) =>
+      appServiceRequest<{
+        instance: Record<string, unknown>;
+        bpmnXml: string;
+        historicActivities: Record<string, unknown>[];
+        currentTasks: Record<string, unknown>[];
+        workflowDefinition: Record<string, unknown>;
+      }>(`/apps/${appId}/process-instances/${processInstanceId}`),
+  },
+
+  // Todos
+  todos: {
+    list: (appId: number | string) => appServiceRequest<TodoTask[]>(`/apps/${appId}/todos`),
+    get: (appId: number | string, taskId: string) => appServiceRequest<TodoTaskDetail>(`/apps/${appId}/todos/${taskId}`),
+    complete: (appId: number | string, taskId: string, comment?: string) =>
+      appServiceRequest<{ status: string }>(`/apps/${appId}/todos/${taskId}/complete`, {
+        method: "POST",
+        body: JSON.stringify({ comment }),
+      }),
+    reject: (appId: number | string, taskId: string, comment: string) =>
+      appServiceRequest<{ status: string }>(`/apps/${appId}/todos/${taskId}/reject`, {
+        method: "POST",
+        body: JSON.stringify({ comment }),
+      }),
+  },
+};

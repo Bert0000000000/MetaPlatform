@@ -1,0 +1,33 @@
+meta {
+  name: Run agent
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/api/ai/agent
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "question": "List all ontology objects",
+    "tools": ["get_ontology_object"],
+    "maxSteps": 2
+  }
+}
+
+tests {
+  test("agent ran", function() {
+    expect(res.body.data).to.have.property('stepsTaken');
+  });
+}

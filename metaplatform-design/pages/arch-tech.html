@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html class="light" lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>架构中心 - 技术架构 - MetaPlatform</title>
+    <style id="theme-vars">
+:root {
+  --color-primary: #3b82f6;
+  --color-primary-hover: #2563eb;
+  --color-primary-light: #eff6ff;
+  --color-bg: #ffffff;
+  --color-bg-secondary: #f8fafc;
+  --color-surface: #ffffff;
+  --color-surface-hover: #f8fafc;
+  --color-sidebar-bg: #0f172a;
+  --color-sidebar-text: #94a3b8;
+  --color-sidebar-text-hover: #cbd5e1;
+  --color-sidebar-active-bg: rgba(59, 130, 246, 0.15);
+  --color-sidebar-active-text: #60a5fa;
+  --color-sidebar-border: rgba(148, 163, 184, 0.1);
+  --color-text-primary: #0f172a;
+  --color-text-secondary: #64748b;
+  --color-text-inverse: #ffffff;
+  --color-border: #e2e8f0;
+  --state-success: #22c55e;
+  --state-success-bg: #f0fdf4;
+  --state-warning: #f59e0b;
+  --state-warning-bg: #fffbeb;
+  --state-error: #ef4444;
+  --state-error-bg: #fef2f2;
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans SC", sans-serif;
+  --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  --font-size-xs: 11px;
+  --font-size-sm: 12px;
+  --font-size-base: 13px;
+  --font-size-lg: 14px;
+  --font-size-xl: 18px;
+  --font-size-2xl: 22px;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --line-height-normal: 1.5;
+  --spacing-xs: 2px;
+  --spacing-sm: 4px;
+  --spacing-md: 8px;
+  --spacing-lg: 12px;
+  --spacing-xl: 16px;
+  --spacing-2xl: 24px;
+  --radius-sm: 3px;
+  --radius-md: 4px;
+  --radius-lg: 6px;
+  --radius-full: 9999px;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-float: 0 8px 24px rgba(0, 0, 0, 0.1);
+  --sidebar-width: 220px;
+}
+    </style>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+    @theme inline { --color-primary: var(--color-primary); --color-border: var(--color-border); }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; overflow: hidden; font-family: var(--font-sans); font-size: var(--font-size-base); color: var(--color-text-primary); background: var(--color-bg); line-height: var(--line-height-normal); -webkit-font-smoothing: antialiased; }
+    input, textarea, select, button { font-family: inherit; font-size: inherit; }
+    .nav-item { display: flex; align-items: center; gap: var(--spacing-lg); padding: var(--spacing-md) var(--spacing-xl); font-size: var(--font-size-sm); font-weight: var(--font-weight-normal); color: var(--color-sidebar-text); border-radius: var(--radius-md); cursor: pointer; transition: all 0.15s; text-decoration: none; border: none; background: none; width: 100%; text-align: left; }
+    .nav-item:hover { background: var(--color-sidebar-active-bg); color: var(--color-sidebar-text-hover); }
+    .nav-item svg { width: 16px; height: 16px; flex-shrink: 0; }
+    .nav-item[data-dom-id="nav-architecture"] { background: var(--color-sidebar-active-bg); color: var(--color-sidebar-active-text); }
+    .tab-item { display: flex; align-items: center; gap: var(--spacing-sm); padding: var(--spacing-sm) var(--spacing-lg); font-size: var(--font-size-sm); font-weight: var(--font-weight-normal); color: var(--color-text-secondary); border-bottom: 2px solid transparent; cursor: pointer; transition: all 0.15s; white-space: nowrap; background: none; border-top: none; border-left: none; border-right: none; }
+    .tab-item:hover { color: var(--color-text-primary); }
+    .tab-item.active { color: var(--color-primary); border-bottom-color: var(--color-primary); font-weight: var(--font-weight-medium); }
+    .btn { display: inline-flex; align-items: center; gap: var(--spacing-sm); padding: var(--spacing-sm) var(--spacing-lg); font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); border-radius: var(--radius-md); cursor: pointer; transition: all 0.15s; white-space: nowrap; border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-text-primary); }
+    .btn:hover { background: var(--color-surface-hover); }
+    .btn svg { width: 14px; height: 14px; }
+    .btn-primary { border-color: var(--color-primary); background: var(--color-primary); color: var(--color-text-inverse); }
+    .btn-primary:hover { background: var(--color-primary-hover); }
+    .btn-ghost { border-color: transparent; color: var(--color-text-secondary); }
+    .btn-ghost:hover { background: var(--color-bg-secondary); }
+    .badge { display: inline-flex; align-items: center; padding: 1px 6px; font-size: var(--font-size-xs); font-weight: var(--font-weight-medium); border-radius: var(--radius-full); }
+    .badge-default { background: var(--color-bg-secondary); color: var(--color-text-secondary); }
+    .badge-primary { background: var(--color-primary-light); color: var(--color-primary); }
+    .badge-success { background: var(--state-success-bg); color: var(--state-success); }
+    .badge-warning { background: var(--state-warning-bg); color: var(--state-warning); }
+    .badge-error { background: var(--state-error-bg); color: var(--state-error); }
+    .card { border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface); }
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: var(--radius-full); }
+    </style>
+</head>
+<body>
+<div style="display:flex; height:100vh; width:100vw; overflow:hidden;">
+
+    <!-- SIDEBAR -->
+    <aside style="width:var(--sidebar-width); background:var(--color-sidebar-bg); display:flex; flex-direction:column; flex-shrink:0; border-right:1px solid var(--color-sidebar-border);">
+        <div style="height:56px; padding:0 var(--spacing-xl); display:flex; align-items:center; border-bottom:1px solid var(--color-sidebar-border);">
+            <span style="color:var(--color-text-inverse); font-size:var(--font-size-lg); font-weight:var(--font-weight-semibold);">MetaPlatform</span>
+        </div>
+        <nav style="flex:1; overflow-y:auto; padding:var(--spacing-md) var(--spacing-md); display:flex; flex-direction:column; gap:1px;">
+            <a class="nav-item" data-dom-id="nav-dashboard"><i data-lucide="layout-dashboard"></i><span>工作台</span></a>
+            <a class="nav-item" data-dom-id="nav-superai"><i data-lucide="sparkles"></i><span>SuperAI</span></a>
+            <a class="nav-item" data-dom-id="nav-architecture"><i data-lucide="building-2"></i><span>架构中心</span></a>
+            <a class="nav-item" data-dom-id="nav-apps"><i data-lucide="app-window"></i><span>应用中心</span></a>
+            <a class="nav-item" data-dom-id="nav-process"><i data-lucide="git-branch"></i><span>流程中心</span></a>
+            <a class="nav-item" data-dom-id="nav-data"><i data-lucide="database"></i><span>数据中心</span></a>
+            <a class="nav-item" data-dom-id="nav-ontology"><i data-lucide="brain"></i><span>本体引擎</span></a>
+            <a class="nav-item" data-dom-id="nav-quality"><i data-lucide="shield-check"></i><span>质量中心</span></a>
+            <a class="nav-item" data-dom-id="nav-knowledge"><i data-lucide="book-open"></i><span>知识库</span></a>
+            <a class="nav-item" data-dom-id="nav-market"><i data-lucide="cloud"></i><span>云市场</span></a>
+            <a class="nav-item" data-dom-id="nav-agents"><i data-lucide="bot"></i><span>数字员工</span></a>
+            <a class="nav-item" data-dom-id="nav-admin"><i data-lucide="settings"></i><span>后台管理</span></a>
+        </nav>
+        <div style="padding:var(--spacing-lg) var(--spacing-xl); border-top:1px solid var(--color-sidebar-border); font-size:var(--font-size-xs); color:var(--color-sidebar-text);">
+            v1.2 · 本体论驱动 AI 平台
+        </div>
+    </aside>
+
+    <!-- MAIN AREA -->
+    <div style="flex:1; display:flex; flex-direction:column; min-width:0;">
+
+        <!-- TOPBAR -->
+        <header style="height:56px; border-bottom:1px solid var(--color-border); background:var(--color-surface); display:flex; align-items:center; padding:0 var(--spacing-xl); flex-shrink:0; gap:var(--spacing-lg);">
+            <div style="width:260px; display:flex; align-items:center; gap:var(--spacing-sm); padding:var(--spacing-sm) var(--spacing-lg); border:1px solid var(--color-border); border-radius:var(--radius-md); background:var(--color-bg-secondary); cursor:pointer;">
+                <i data-lucide="search" style="width:14px; height:14px; color:var(--color-text-secondary);"></i>
+                <span style="font-size:var(--font-size-sm); color:var(--color-text-secondary); flex:1;">搜索或 AI 助手</span>
+                <span style="font-size:var(--font-size-xs); color:var(--color-text-secondary); background:var(--color-bg); padding:1px 4px; border-radius:var(--radius-sm); border:1px solid var(--color-border);">&#8984;K</span>
+            </div>
+            <div style="flex:1;"></div>
+            <button style="position:relative; background:none; border:none; cursor:pointer; color:var(--color-text-secondary); padding:var(--spacing-sm);">
+                <i data-lucide="bell" style="width:16px; height:16px;"></i>
+                <span style="position:absolute; top:-2px; right:-2px; width:8px; height:8px; background:var(--state-error); border-radius:var(--radius-full); border:1px solid var(--color-surface);"></span>
+            </button>
+            <div style="display:flex; align-items:center; gap:var(--spacing-sm); padding:var(--spacing-sm) var(--spacing-md); border:1px solid var(--color-border); border-radius:var(--radius-md); cursor:pointer; font-size:var(--font-size-sm); color:var(--color-text-primary);">
+                <div style="width:22px; height:22px; border-radius:var(--radius-full); background:rgba(59,130,246,0.15); color:var(--color-primary); font-size:var(--font-size-xs); font-weight:var(--font-weight-medium); display:flex; align-items:center; justify-content:center;">A</div>
+                <span>Admin</span>
+                <i data-lucide="chevron-down" style="width:12px; height:12px;"></i>
+            </div>
+        </header>
+
+        <!-- TAB BAR -->
+        <div style="border-bottom:1px solid var(--color-border); background:var(--color-surface); display:flex; padding:0 var(--spacing-xl); flex-shrink:0; overflow-x:auto;">
+            <button class="tab-item" data-tab="tab-arch-business">业务架构</button>
+            <button class="tab-item" data-tab="tab-arch-app">应用架构</button>
+            <button class="tab-item" data-tab="tab-arch-data">数据架构</button>
+            <button class="tab-item active" data-tab="tab-arch-tech">技术架构</button>
+        </div>
+
+        <!-- PAGE CONTENT -->
+        <main style="flex:1; overflow-y:auto; background:var(--color-bg-secondary);">
+            <div style="max-width:1280px; margin:0 auto; padding:var(--spacing-2xl) var(--spacing-2xl);">
+
+                <!-- Header -->
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:var(--spacing-2xl);">
+                    <div>
+                        <div style="display:flex; align-items:center; gap:var(--spacing-lg); margin-bottom:var(--spacing-xs);">
+                            <i data-lucide="server" style="width:20px; height:20px; color:var(--color-primary);"></i>
+                            <h1 style="font-size:var(--font-size-xl); font-weight:var(--font-weight-semibold); color:var(--color-text-primary);">技术架构</h1>
+                        </div>
+                        <p style="font-size:var(--font-size-sm); color:var(--color-text-secondary); margin-left:32px;">技术栈、服务与基础设施全景视图</p>
+                    </div>
+                    <div style="display:flex; gap:var(--spacing-md);">
+                        <button class="btn"><i data-lucide="network"></i> 拓扑视图</button>
+                        <button class="btn btn-primary"><i data-lucide="plus"></i> 注册服务</button>
+                    </div>
+                </div>
+
+                <!-- Stats -->
+                <div style="display:flex; gap:var(--spacing-lg); margin-bottom:var(--spacing-2xl);">
+                    <div class="card" style="padding:var(--spacing-lg) var(--spacing-xl); flex:1; display:flex; align-items:center; gap:var(--spacing-lg);">
+                        <i data-lucide="server" style="width:16px; height:16px; color:var(--color-primary);"></i>
+                        <div>
+                            <div style="font-size:var(--font-size-sm); color:var(--color-text-secondary);">运行服务</div>
+                            <div style="font-size:var(--font-size-xl); font-weight:var(--font-weight-semibold); color:var(--color-text-primary);">5</div>
+                        </div>
+                    </div>
+                    <div class="card" style="padding:var(--spacing-lg) var(--spacing-xl); flex:1; display:flex; align-items:center; gap:var(--spacing-lg);">
+                        <i data-lucide="hard-drive" style="width:16px; height:16px; color:var(--state-success);"></i>
+                        <div>
+                            <div style="font-size:var(--font-size-sm); color:var(--color-text-secondary);">实例总数</div>
+                            <div style="font-size:var(--font-size-xl); font-weight:var(--font-weight-semibold); color:var(--color-text-primary);">18</div>
+                        </div>
+                    </div>
+                    <div class="card" style="padding:var(--spacing-lg) var(--spacing-xl); flex:1; display:flex; align-items:center; gap:var(--spacing-lg);">
+                        <i data-lucide="activity" style="width:16px; height:16px; color:var(--state-warning);"></i>
+                        <div>
+                            <div style="font-size:var(--font-size-sm); color:var(--color-text-secondary);">告警</div>
+                            <div style="font-size:var(--font-size-xl); font-weight:var(--font-weight-semibold); color:var(--color-text-primary);">2</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Service Cards Grid -->
+                <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:var(--spacing-lg);">
+
+                    <!-- Card 1: API 网关 -->
+                    <div class="card" style="padding:var(--spacing-xl); display:flex; flex-direction:column;">
+                        <div style="display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:var(--spacing-md);">
+                            <div style="display:flex; align-items:center; gap:var(--spacing-md);">
+                                <div style="width:32px; height:32px; border-radius:var(--radius-md); background:var(--color-primary-light); display:flex; align-items:center; justify-content:center;">
+                                    <i data-lucide="globe" style="width:16px; height:16px; color:var(--color-primary);"></i>
+                                </div>
+                                <span style="font-size:var(--font-size-base); font-weight:var(--font-weight-medium); color:var(--color-text-primary);">API 网关</span>
+                            </div>
+                            <span class="badge badge-success">健康</span>
+                        </div>
+                        <p style="font-size:var(--font-size-xs); color:var(--color-text-secondary); margin-bottom:var(--spacing-lg); flex:1;">统一 API 入口，路由分发、限流熔断与认证鉴权</p>
+                        <div style="display:flex; flex-direction:column; gap:var(--spacing-sm); margin-bottom:var(--spacing-lg); font-size:var(--font-size-xs); color:var(--color-text-secondary);">
+                            <span><i data-lucide="cpu" style="width:12px; height:12px; vertical-align:-2px;"></i> Kong + Nginx</span>
+                            <span style="display:flex; justify-content:space-between;"><span><i data-lucide="user" style="width:12px; height:12px; vertical-align:-2px;"></i> 张明</span><span><i data-lucide="layers" style="width:12px; height:12px; vertical-align:-2px;"></i> 4 实例</span></span>
+                        </div>
+                        <div style="border-top:1px solid var(--color-border); padding-top:var(--spacing-lg);">
+                            <button class="btn" style="width:100%; justify-content:center;"><i data-lucide="eye"></i> 查看详情</button>
+                        </div>
+                    </div>
+
+                    <!-- Card 2: 消息队列 -->
+                    <div class="card" style="padding:var(--spacing-xl); display:flex; flex-direction:column;">
+                        <div style="display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:var(--spacing-md);">
+                            <div style="display:flex; align-items:center; gap:var(--spacing-md);">
+                                <div style="width:32px; height:32px; border-radius:var(--radius-md); background:var(--color-primary-light); display:flex; align-items:center; justify-content:center;">
+                                    <i data-lucide="mail" style="width:16px; height:16px; color:var(--color-primary);"></i>
+                                </div>
+                                <span style="font-size:var(--font-size-base); font-weight:var(--font-weight-medium); color:var(--color-text-primary);">消息队列</span>
+                            </div>
+                            <span class="badge badge-success">健康</span>
+                        </div>
+                        <p style="font-size:var(--font-size-xs); color:var(--color-text-secondary); margin-bottom:var(--spacing-lg); flex:1;">异步消息中间件，支持事件驱动与削峰填谷</p>
+                        <div style="display:flex; flex-direction:column; gap:var(--spacing-sm); margin-bottom:var(--spacing-lg); font-size:var(--font-size-xs); color:var(--color-text-secondary);">
+                            <span><i data-lucide="cpu" style="width:12px; height:12px; vertical-align:-2px;"></i> Apache Kafka</span>
+                            <span style="display:flex; justify-content:space-between;"><span><i data-lucide="user" style="width:12px; height:12px; vertical-align:-2px;"></i> 李华</span><span><i data-lucide="layers" style="width:12px; height:12px; vertical-align:-2px;"></i> 6 实例</span></span>
+                        </div>
+                        <div style="border-top:1px solid var(--color-border); padding-top:var(--spacing-lg);">
+                            <button class="btn" style="width:100%; justify-content:center;"><i data-lucide="eye"></i> 查看详情</button>
+                        </div>
+                    </div>
+
+                    <!-- Card 3: 缓存服务 -->
+                    <div class="card" style="padding:var(--spacing-xl); display:flex; flex-direction:column;">
+                        <div style="display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:var(--spacing-md);">
+                            <div style="display:flex; align-items:center; gap:var(--spacing-md);">
+                                <div style="width:32px; height:32px; border-radius:var(--radius-md); background:var(--color-primary-light); display:flex; align-items:center; justify-content:center;">
+                                    <i data-lucide="zap" style="width:16px; height:16px; color:var(--color-primary);"></i>
+                                </div>
+                                <span style="font-size:var(--font-size-base); font-weight:var(--font-weight-medium); color:var(--color-text-primary);">缓存服务</span>
+                            </div>
+                            <span class="badge badge-success">健康</span>
+                        </div>
+                        <p style="font-size:var(--font-size-xs); color:var(--color-text-secondary); margin-bottom:var(--spacing-lg); flex:1;">高性能分布式缓存，热数据加速与会话管理</p>
+                        <div style="display:flex; flex-direction:column; gap:var(--spacing-sm); margin-bottom:var(--spacing-lg); font-size:var(--font-size-xs); color:var(--color-text-secondary);">
+                            <span><i data-lucide="cpu" style="width:12px; height:12px; vertical-align:-2px;"></i> Redis Cluster</span>
+                            <span style="display:flex; justify-content:space-between;"><span><i data-lucide="user" style="width:12px; height:12px; vertical-align:-2px;"></i> 王强</span><span><i data-lucide="layers" style="width:12px; height:12px; vertical-align:-2px;"></i> 6 实例</span></span>
+                        </div>
+                        <div style="border-top:1px solid var(--color-border); padding-top:var(--spacing-lg);">
+                            <button class="btn" style="width:100%; justify-content:center;"><i data-lucide="eye"></i> 查看详情</button>
+                        </div>
+                    </div>
+
+                    <!-- Card 4: 对象存储 -->
+                    <div class="card" style="padding:var(--spacing-xl); display:flex; flex-direction:column;">
+                        <div style="display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:var(--spacing-md);">
+                            <div style="display:flex; align-items:center; gap:var(--spacing-md);">
+                                <div style="width:32px; height:32px; border-radius:var(--radius-md); background:var(--color-primary-light); display:flex; align-items:center; justify-content:center;">
+                                    <i data-lucide="archive" style="width:16px; height:16px; color:var(--color-primary);"></i>
+                                </div>
+                                <span style="font-size:var(--font-size-base); font-weight:var(--font-weight-medium); color:var(--color-text-primary);">对象存储</span>
+                            </div>
+                            <span class="badge badge-warning">告警</span>
+                        </div>
+                        <p style="font-size:var(--font-size-xs); color:var(--color-text-secondary); margin-bottom:var(--spacing-lg); flex:1;">非结构化数据存储，文档/图片/模型文件的统一管理</p>
+                        <div style="display:flex; flex-direction:column; gap:var(--spacing-sm); margin-bottom:var(--spacing-lg); font-size:var(--font-size-xs); color:var(--color-text-secondary);">
+                            <span><i data-lucide="cpu" style="width:12px; height:12px; vertical-align:-2px;"></i> MinIO</span>
+                            <span style="display:flex; justify-content:space-between;"><span><i data-lucide="user" style="width:12px; height:12px; vertical-align:-2px;"></i> 陈芳</span><span><i data-lucide="layers" style="width:12px; height:12px; vertical-align:-2px;"></i> 4 实例</span></span>
+                        </div>
+                        <div style="border-top:1px solid var(--color-border); padding-top:var(--spacing-lg);">
+                            <button class="btn" style="width:100%; justify-content:center;"><i data-lucide="eye"></i> 查看详情</button>
+                        </div>
+                    </div>
+
+                    <!-- Card 5: 容器编排 -->
+                    <div class="card" style="padding:var(--spacing-xl); display:flex; flex-direction:column;">
+                        <div style="display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:var(--spacing-md);">
+                            <div style="display:flex; align-items:center; gap:var(--spacing-md);">
+                                <div style="width:32px; height:32px; border-radius:var(--radius-md); background:var(--color-primary-light); display:flex; align-items:center; justify-content:center;">
+                                    <i data-lucide="container" style="width:16px; height:16px; color:var(--color-primary);"></i>
+                                </div>
+                                <span style="font-size:var(--font-size-base); font-weight:var(--font-weight-medium); color:var(--color-text-primary);">容器编排</span>
+                            </div>
+                            <span class="badge badge-success">健康</span>
+                        </div>
+                        <p style="font-size:var(--font-size-xs); color:var(--color-text-secondary); margin-bottom:var(--spacing-lg); flex:1;">容器化部署与编排平台，自动扩缩容与服务发现</p>
+                        <div style="display:flex; flex-direction:column; gap:var(--spacing-sm); margin-bottom:var(--spacing-lg); font-size:var(--font-size-xs); color:var(--color-text-secondary);">
+                            <span><i data-lucide="cpu" style="width:12px; height:12px; vertical-align:-2px;"></i> Kubernetes 1.28</span>
+                            <span style="display:flex; justify-content:space-between;"><span><i data-lucide="user" style="width:12px; height:12px; vertical-align:-2px;"></i> 赵亮</span><span><i data-lucide="layers" style="width:12px; height:12px; vertical-align:-2px;"></i> 3 节点</span></span>
+                        </div>
+                        <div style="border-top:1px solid var(--color-border); padding-top:var(--spacing-lg);">
+                            <button class="btn" style="width:100%; justify-content:center;"><i data-lucide="eye"></i> 查看详情</button>
+                        </div>
+                    </div>
+
+                    <!-- Card 6: 日志监控 -->
+                    <div class="card" style="padding:var(--spacing-xl); display:flex; flex-direction:column;">
+                        <div style="display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:var(--spacing-md);">
+                            <div style="display:flex; align-items:center; gap:var(--spacing-md);">
+                                <div style="width:32px; height:32px; border-radius:var(--radius-md); background:var(--color-primary-light); display:flex; align-items:center; justify-content:center;">
+                                    <i data-lucide="line-chart" style="width:16px; height:16px; color:var(--color-primary);"></i>
+                                </div>
+                                <span style="font-size:var(--font-size-base); font-weight:var(--font-weight-medium); color:var(--color-text-primary);">日志监控</span>
+                            </div>
+                            <span class="badge badge-warning">告警</span>
+                        </div>
+                        <p style="font-size:var(--font-size-xs); color:var(--color-text-secondary); margin-bottom:var(--spacing-lg); flex:1;">集中式日志采集、指标监控与告警通知平台</p>
+                        <div style="display:flex; flex-direction:column; gap:var(--spacing-sm); margin-bottom:var(--spacing-lg); font-size:var(--font-size-xs); color:var(--color-text-secondary);">
+                            <span><i data-lucide="cpu" style="width:12px; height:12px; vertical-align:-2px;"></i> ELK + Prometheus</span>
+                            <span style="display:flex; justify-content:space-between;"><span><i data-lucide="user" style="width:12px; height:12px; vertical-align:-2px;"></i> 刘伟</span><span><i data-lucide="layers" style="width:12px; height:12px; vertical-align:-2px;"></i> 5 实例</span></span>
+                        </div>
+                        <div style="border-top:1px solid var(--color-border); padding-top:var(--spacing-lg);">
+                            <button class="btn" style="width:100%; justify-content:center;"><i data-lucide="eye"></i> 查看详情</button>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+        </main>
+    </div>
+</div>
+<script>lucide.createIcons();</script>
+</body>
+</html>

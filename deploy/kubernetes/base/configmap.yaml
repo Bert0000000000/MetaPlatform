@@ -1,0 +1,45 @@
+# Non-secret config for MetaPlatform API
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: metaplatform-api-config
+  namespace: metaplatform
+data:
+  NODE_ENV: "production"
+  PORT: "3001"
+  LOG_LEVEL: "info"
+
+  # Storage backends (service DNS inside cluster)
+  REDIS_URL: "redis://metaplatform-redis:6379"
+  NEO4J_URL: "bolt://metaplatform-neo4j:7687"
+  ELASTICSEARCH_URL: "http://metaplatform-elasticsearch:9200"
+  ELASTICSEARCH_INDEX: "metaplatform"
+  MINIO_ENDPOINT: "metaplatform-minio"
+  MINIO_PORT: "9000"
+  MINIO_BUCKET: "metaplatform"
+  KAFKA_BROKERS: "metaplatform-kafka:9092"
+  KAFKA_CLIENT_ID: "metaplatform-api"
+  KAFKA_GROUP_ID: "metaplatform-api-consumers"
+  CLICKHOUSE_URL: "http://metaplatform-clickhouse:8123"
+  CLICKHOUSE_USER: "meta"
+  CLICKHOUSE_DATABASE: "metaplatform"
+
+  # Feature flags
+  CDC_ENABLED: "true"
+  CDC_TABLES: "ontology_objects,knowledge_documents,process_instances,messages,todos"
+  CDC_POLL_INTERVAL_MS: "5000"
+  CDC_TOPIC_PREFIX: "metaplatform.cdc"
+
+  # AI
+  EMBEDDING_MODEL: "text-embedding-3-small"
+  EMBEDDING_DIM: "1536"
+  LLM_PROVIDER: "openai"
+  LLM_MODEL: "gpt-4o-mini"
+  LLM_BASE_URL: "https://api.openai.com/v1"
+  OCR_LANGS: "eng+chi_sim"
+
+  # Misc
+  RAG_TOPK: "5"
+  RAG_COLLECTION: "metaplatform_vectors"
+  AUDIT_BUFFER_SIZE: "1000"
+  LOG_BUFFER_SIZE: "2000"

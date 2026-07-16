@@ -1,0 +1,35 @@
+meta {
+  name: Embed text
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/ai/embed
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "text": "MetaPlatform is an enterprise AI middleware platform"
+  }
+}
+
+tests {
+  test("returns vector", function() {
+    expect(res.body.data.vector).to.be.an('array');
+    expect(res.body.data.vector.length).to.be.greaterThan(0);
+  });
+  test("vector dimension matches", function() {
+    expect(res.body.data.vector.length).to.equal(res.body.data.dimension);
+  });
+}

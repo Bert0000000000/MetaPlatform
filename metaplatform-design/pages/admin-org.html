@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html class="light" lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>后台管理 - 组织架构 - MetaPlatform</title>
+    <style id="theme-vars">
+:root {
+  --color-primary: #3b82f6;
+  --color-primary-hover: #2563eb;
+  --color-primary-light: #eff6ff;
+  --color-bg: #ffffff;
+  --color-bg-secondary: #f8fafc;
+  --color-surface: #ffffff;
+  --color-surface-hover: #f8fafc;
+  --color-sidebar-bg: #0f172a;
+  --color-sidebar-text: #94a3b8;
+  --color-sidebar-text-hover: #cbd5e1;
+  --color-sidebar-active-bg: rgba(59, 130, 246, 0.15);
+  --color-sidebar-active-text: #60a5fa;
+  --color-sidebar-border: rgba(148, 163, 184, 0.1);
+  --color-text-primary: #0f172a;
+  --color-text-secondary: #64748b;
+  --color-text-inverse: #ffffff;
+  --color-border: #e2e8f0;
+  --state-success: #22c55e;
+  --state-success-bg: #f0fdf4;
+  --state-warning: #f59e0b;
+  --state-warning-bg: #fffbeb;
+  --state-error: #ef4444;
+  --state-error-bg: #fef2f2;
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans SC", sans-serif;
+  --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  --font-size-xs: 11px;
+  --font-size-sm: 12px;
+  --font-size-base: 13px;
+  --font-size-lg: 14px;
+  --font-size-xl: 18px;
+  --font-size-2xl: 22px;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --line-height-normal: 1.5;
+  --spacing-xs: 2px;
+  --spacing-sm: 4px;
+  --spacing-md: 8px;
+  --spacing-lg: 12px;
+  --spacing-xl: 16px;
+  --spacing-2xl: 24px;
+  --radius-sm: 3px;
+  --radius-md: 4px;
+  --radius-lg: 6px;
+  --radius-full: 9999px;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-float: 0 8px 24px rgba(0, 0, 0, 0.1);
+  --sidebar-width: 220px;
+}
+    </style>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+    @theme inline { --color-primary: var(--color-primary); --color-border: var(--color-border); }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; overflow: hidden; font-family: var(--font-sans); font-size: var(--font-size-base); color: var(--color-text-primary); background: var(--color-bg); line-height: var(--line-height-normal); -webkit-font-smoothing: antialiased; }
+    input, textarea, select, button { font-family: inherit; font-size: inherit; }
+    .nav-item { display: flex; align-items: center; gap: var(--spacing-lg); padding: var(--spacing-md) var(--spacing-xl); font-size: var(--font-size-sm); font-weight: var(--font-weight-normal); color: var(--color-sidebar-text); border-radius: var(--radius-md); cursor: pointer; transition: all 0.15s; text-decoration: none; border: none; background: none; width: 100%; text-align: left; }
+    .nav-item:hover { background: var(--color-sidebar-active-bg); color: var(--color-sidebar-text-hover); }
+    .nav-item svg { width: 16px; height: 16px; flex-shrink: 0; }
+    .nav-item[data-dom-id="nav-admin"] { background: var(--color-sidebar-active-bg); color: var(--color-sidebar-active-text); }
+    .tab-item { display: flex; align-items: center; gap: var(--spacing-sm); padding: var(--spacing-sm) var(--spacing-lg); font-size: var(--font-size-sm); font-weight: var(--font-weight-normal); color: var(--color-text-secondary); border-bottom: 2px solid transparent; cursor: pointer; transition: all 0.15s; white-space: nowrap; background: none; border-top: none; border-left: none; border-right: none; }
+    .tab-item:hover { color: var(--color-text-primary); }
+    .tab-item.active { color: var(--color-primary); border-bottom-color: var(--color-primary); font-weight: var(--font-weight-medium); }
+    .btn { display: inline-flex; align-items: center; gap: var(--spacing-sm); padding: var(--spacing-sm) var(--spacing-lg); font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); border-radius: var(--radius-md); cursor: pointer; transition: all 0.15s; white-space: nowrap; border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-text-primary); }
+    .btn:hover { background: var(--color-surface-hover); }
+    .btn svg { width: 14px; height: 14px; }
+    .btn-primary { border-color: var(--color-primary); background: var(--color-primary); color: var(--color-text-inverse); }
+    .btn-primary:hover { background: var(--color-primary-hover); }
+    .btn-ghost { border-color: transparent; color: var(--color-text-secondary); }
+    .btn-ghost:hover { background: var(--color-bg-secondary); }
+    .badge { display: inline-flex; align-items: center; padding: 1px 6px; font-size: var(--font-size-xs); font-weight: var(--font-weight-medium); border-radius: var(--radius-full); }
+    .badge-default { background: var(--color-bg-secondary); color: var(--color-text-secondary); }
+    .badge-primary { background: var(--color-primary-light); color: var(--color-primary); }
+    .badge-success { background: var(--state-success-bg); color: var(--state-success); }
+    .card { border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface); }
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: var(--radius-full); }
+    .tree-node { padding: var(--spacing-md) var(--spacing-lg); font-size: var(--font-size-sm); cursor: pointer; border-radius: var(--radius-md); transition: all 0.15s; display: flex; align-items: center; gap: var(--spacing-sm); }
+    .tree-node:hover { background: var(--color-surface-hover); }
+    .tree-node.active { background: var(--color-primary-light); color: var(--color-primary); font-weight: var(--font-weight-medium); }
+    .tree-node svg { width: 14px; height: 14px; flex-shrink: 0; }
+    .tree-toggle { width: 14px; height: 14px; color: var(--color-text-secondary); transition: transform 0.15s; flex-shrink: 0; }
+    .tree-children { padding-left: var(--spacing-xl); }
+    .tree-children.collapsed { display: none; }
+    .info-row { display: flex; align-items: flex-start; gap: var(--spacing-lg); padding: var(--spacing-md) 0; border-bottom: 1px solid var(--color-border); }
+    .info-row:last-child { border-bottom: none; }
+    .info-label { width: 64px; flex-shrink: 0; font-size: var(--font-size-sm); color: var(--color-text-secondary); }
+    .info-value { font-size: var(--font-size-sm); color: var(--color-text-primary); flex: 1; }
+    </style>
+</head>
+<body>
+<div style="display:flex; height:100vh; width:100vw; overflow:hidden;">
+
+    <!-- SIDEBAR -->
+    <aside style="width:var(--sidebar-width); background:var(--color-sidebar-bg); display:flex; flex-direction:column; flex-shrink:0; border-right:1px solid var(--color-sidebar-border);">
+        <div style="height:56px; padding:0 var(--spacing-xl); display:flex; align-items:center; border-bottom:1px solid var(--color-sidebar-border);">
+            <span style="color:var(--color-text-inverse); font-size:var(--font-size-lg); font-weight:var(--font-weight-semibold);">MetaPlatform</span>
+        </div>
+        <nav style="flex:1; overflow-y:auto; padding:var(--spacing-md) var(--spacing-md); display:flex; flex-direction:column; gap:1px;">
+            <a class="nav-item" data-dom-id="nav-dashboard"><i data-lucide="layout-dashboard"></i><span>工作台</span></a>
+            <a class="nav-item" data-dom-id="nav-superai"><i data-lucide="sparkles"></i><span>SuperAI</span></a>
+            <a class="nav-item" data-dom-id="nav-architecture"><i data-lucide="building-2"></i><span>架构中心</span></a>
+            <a class="nav-item" data-dom-id="nav-apps"><i data-lucide="app-window"></i><span>应用中心</span></a>
+            <a class="nav-item" data-dom-id="nav-process"><i data-lucide="git-branch"></i><span>流程中心</span></a>
+            <a class="nav-item" data-dom-id="nav-data"><i data-lucide="database"></i><span>数据中心</span></a>
+            <a class="nav-item" data-dom-id="nav-ontology"><i data-lucide="brain"></i><span>本体引擎</span></a>
+            <a class="nav-item" data-dom-id="nav-quality"><i data-lucide="shield-check"></i><span>质量中心</span></a>
+            <a class="nav-item" data-dom-id="nav-knowledge"><i data-lucide="book-open"></i><span>知识库</span></a>
+            <a class="nav-item" data-dom-id="nav-market"><i data-lucide="cloud"></i><span>云市场</span></a>
+            <a class="nav-item" data-dom-id="nav-agents"><i data-lucide="bot"></i><span>数字员工</span></a>
+            <a class="nav-item" data-dom-id="nav-admin"><i data-lucide="settings"></i><span>后台管理</span></a>
+        </nav>
+        <div style="padding:var(--spacing-lg) var(--spacing-xl); border-top:1px solid var(--color-sidebar-border); font-size:var(--font-size-xs); color:var(--color-sidebar-text);">
+            v1.2 · 本体论驱动 AI 平台
+        </div>
+    </aside>
+
+    <!-- MAIN AREA -->
+    <div style="flex:1; display:flex; flex-direction:column; min-width:0;">
+
+        <!-- TOPBAR -->
+        <header style="height:56px; border-bottom:1px solid var(--color-border); background:var(--color-surface); display:flex; align-items:center; padding:0 var(--spacing-xl); flex-shrink:0; gap:var(--spacing-lg);">
+            <div style="width:260px; display:flex; align-items:center; gap:var(--spacing-sm); padding:var(--spacing-sm) var(--spacing-lg); border:1px solid var(--color-border); border-radius:var(--radius-md); background:var(--color-bg-secondary); cursor:pointer;">
+                <i data-lucide="search" style="width:14px; height:14px; color:var(--color-text-secondary);"></i>
+                <span style="font-size:var(--font-size-sm); color:var(--color-text-secondary); flex:1;">搜索或 AI 助手</span>
+                <span style="font-size:var(--font-size-xs); color:var(--color-text-secondary); background:var(--color-bg); padding:1px 4px; border-radius:var(--radius-sm); border:1px solid var(--color-border);">⌘K</span>
+            </div>
+            <div style="flex:1;"></div>
+            <button style="position:relative; background:none; border:none; cursor:pointer; color:var(--color-text-secondary); padding:var(--spacing-sm);">
+                <i data-lucide="bell" style="width:16px; height:16px;"></i>
+                <span style="position:absolute; top:-2px; right:-2px; width:8px; height:8px; background:var(--state-error); border-radius:var(--radius-full); border:1px solid var(--color-surface);"></span>
+            </button>
+            <div style="display:flex; align-items:center; gap:var(--spacing-sm); padding:var(--spacing-sm) var(--spacing-md); border:1px solid var(--color-border); border-radius:var(--radius-md); cursor:pointer; font-size:var(--font-size-sm); color:var(--color-text-primary);">
+                <div style="width:22px; height:22px; border-radius:var(--radius-full); background:rgba(59,130,246,0.15); color:var(--color-primary); font-size:var(--font-size-xs); font-weight:var(--font-weight-medium); display:flex; align-items:center; justify-content:center;">A</div>
+                <span>Admin</span>
+                <i data-lucide="chevron-down" style="width:12px; height:12px;"></i>
+            </div>
+        </header>
+
+        <!-- TAB BAR -->
+        <div style="border-bottom:1px solid var(--color-border); background:var(--color-surface); display:flex; padding:0 var(--spacing-xl); flex-shrink:0; overflow-x:auto;">
+            <button class="tab-item" data-tab="tab-admin-users">用户</button>
+            <button class="tab-item" data-tab="tab-admin-permissions">权限</button>
+            <button class="tab-item active" data-tab="tab-admin-org">组织架构</button>
+            <button class="tab-item" data-tab="tab-admin-logs">监控日志</button>
+            <button class="tab-item" data-tab="tab-admin-backup">备份恢复</button>
+            <button class="tab-item" data-tab="tab-admin-deploy">部署环境</button>
+            <button class="tab-item" data-tab="tab-admin-billing">计费</button>
+            <button class="tab-item" data-tab="tab-admin-plugins">插件管理</button>
+        </div>
+
+        <!-- PAGE CONTENT -->
+        <main style="flex:1; overflow-y:auto; background:var(--color-bg-secondary);">
+            <div style="max-width:1280px; margin:0 auto; padding:var(--spacing-2xl) var(--spacing-2xl);">
+
+                <!-- Header -->
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:var(--spacing-2xl);">
+                    <div>
+                        <div style="display:flex; align-items:center; gap:var(--spacing-lg); margin-bottom:var(--spacing-xs);">
+                            <i data-lucide="network" style="width:20px; height:20px; color:var(--color-primary);"></i>
+                            <h1 style="font-size:var(--font-size-xl); font-weight:var(--font-weight-semibold); color:var(--color-text-primary);">组织架构</h1>
+                        </div>
+                        <p style="font-size:var(--font-size-sm); color:var(--color-text-secondary); margin-left:32px;">管理公司组织架构与部门信息</p>
+                    </div>
+                    <button class="btn btn-primary"><i data-lucide="plus"></i> 新建部门</button>
+                </div>
+
+                <!-- Two-column Layout: Tree + Detail -->
+                <div style="display:flex; gap:var(--spacing-xl);">
+
+                    <!-- Left: Org Tree -->
+                    <div class="card" style="width:280px; flex-shrink:0; overflow-y:auto; max-height:calc(100vh - 280px);">
+                        <div style="padding:var(--spacing-lg) var(--spacing-xl); border-bottom:1px solid var(--color-border); font-size:var(--font-size-sm); font-weight:var(--font-weight-medium); color:var(--color-text-secondary);">组织架构</div>
+                        <div style="padding:var(--spacing-md);">
+                            <!-- CEO -->
+                            <div class="tree-node active">
+                                <i data-lucide="chevron-down" class="tree-toggle"></i>
+                                <i data-lucide="building-2" style="width:14px; height:14px; color:var(--color-primary);"></i>
+                                <span>CEO / 总裁办</span>
+                            </div>
+                            <div class="tree-children">
+                                <!-- CTO -->
+                                <div class="tree-node">
+                                    <i data-lucide="chevron-down" class="tree-toggle"></i>
+                                    <i data-lucide="monitor" style="width:14px; height:14px; color:var(--color-text-secondary);"></i>
+                                    <span>CTO / 技术中心</span>
+                                </div>
+                                <div class="tree-children">
+                                    <div class="tree-node" style="padding-left:var(--spacing-2xl);">
+                                        <span style="width:14px;"></span>
+                                        <i data-lucide="code" style="width:14px; height:14px; color:var(--color-text-secondary);"></i>
+                                        <span>研发部</span>
+                                        <span class="badge badge-default" style="margin-left:auto;">18人</span>
+                                    </div>
+                                    <div class="tree-node" style="padding-left:var(--spacing-2xl);">
+                                        <span style="width:14px;"></span>
+                                        <i data-lucide="shield-check" style="width:14px; height:14px; color:var(--color-text-secondary);"></i>
+                                        <span>测试部</span>
+                                        <span class="badge badge-default" style="margin-left:auto;">8人</span>
+                                    </div>
+                                    <div class="tree-node" style="padding-left:var(--spacing-2xl);">
+                                        <span style="width:14px;"></span>
+                                        <i data-lucide="server" style="width:14px; height:14px; color:var(--color-text-secondary);"></i>
+                                        <span>运维部</span>
+                                        <span class="badge badge-default" style="margin-left:auto;">5人</span>
+                                    </div>
+                                </div>
+                                <!-- COO -->
+                                <div class="tree-node">
+                                    <i data-lucide="chevron-down" class="tree-toggle"></i>
+                                    <i data-lucide="briefcase" style="width:14px; height:14px; color:var(--color-text-secondary);"></i>
+                                    <span>COO / 运营中心</span>
+                                </div>
+                                <div class="tree-children">
+                                    <div class="tree-node" style="padding-left:var(--spacing-2xl);">
+                                        <span style="width:14px;"></span>
+                                        <i data-lucide="megaphone" style="width:14px; height:14px; color:var(--color-text-secondary);"></i>
+                                        <span>市场部</span>
+                                        <span class="badge badge-default" style="margin-left:auto;">12人</span>
+                                    </div>
+                                    <div class="tree-node" style="padding-left:var(--spacing-2xl);">
+                                        <span style="width:14px;"></span>
+                                        <i data-lucide="headphones" style="width:14px; height:14px; color:var(--color-text-secondary);"></i>
+                                        <span>客服部</span>
+                                        <span class="badge badge-default" style="margin-left:auto;">15人</span>
+                                    </div>
+                                </div>
+                                <!-- CFO -->
+                                <div class="tree-node">
+                                    <i data-lucide="chevron-down" class="tree-toggle"></i>
+                                    <i data-lucide="banknote" style="width:14px; height:14px; color:var(--color-text-secondary);"></i>
+                                    <span>CFO / 财务中心</span>
+                                </div>
+                                <div class="tree-children">
+                                    <div class="tree-node" style="padding-left:var(--spacing-2xl);">
+                                        <span style="width:14px;"></span>
+                                        <i data-lucide="calculator" style="width:14px; height:14px; color:var(--color-text-secondary);"></i>
+                                        <span>财务部</span>
+                                        <span class="badge badge-default" style="margin-left:auto;">6人</span>
+                                    </div>
+                                    <div class="tree-node" style="padding-left:var(--spacing-2xl);">
+                                        <span style="width:14px;"></span>
+                                        <i data-lucide="file-text" style="width:14px; height:14px; color:var(--color-text-secondary);"></i>
+                                        <span>法务部</span>
+                                        <span class="badge badge-default" style="margin-left:auto;">3人</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right: Department Detail Card -->
+                    <div class="card" style="flex:1;">
+                        <div style="padding:var(--spacing-lg) var(--spacing-xl); border-bottom:1px solid var(--color-border); display:flex; align-items:center; justify-content:space-between;">
+                            <div style="display:flex; align-items:center; gap:var(--spacing-lg);">
+                                <i data-lucide="building-2" style="width:18px; height:18px; color:var(--color-primary);"></i>
+                                <span style="font-size:var(--font-size-base); font-weight:var(--font-weight-medium); color:var(--color-text-primary);">CEO / 总裁办</span>
+                                <span class="badge badge-success">正常</span>
+                            </div>
+                            <div style="display:flex; gap:var(--spacing-xs);">
+                                <button class="btn btn-ghost"><i data-lucide="edit-2"></i></button>
+                            </div>
+                        </div>
+                        <div style="padding:var(--spacing-xl);">
+                            <!-- Info Fields -->
+                            <div class="info-row">
+                                <div class="info-label">部门名称</div>
+                                <div class="info-value" style="font-weight:var(--font-weight-medium);">CEO / 总裁办</div>
+                            </div>
+                            <div class="info-row">
+                                <div class="info-label">负责人</div>
+                                <div class="info-value" style="display:flex; align-items:center; gap:var(--spacing-sm);">
+                                    <div style="width:22px; height:22px; border-radius:var(--radius-full); background:rgba(59,130,246,0.15); color:var(--color-primary); font-size:var(--font-size-xs); font-weight:var(--font-weight-medium); display:flex; align-items:center; justify-content:center;">张</div>
+                                    <span>张伟</span>
+                                </div>
+                            </div>
+                            <div class="info-row">
+                                <div class="info-label">部门人数</div>
+                                <div class="info-value">
+                                    <span style="font-weight:var(--font-weight-semibold); color:var(--color-primary);">128</span>
+                                    <span style="color:var(--color-text-secondary);"> 人</span>
+                                </div>
+                            </div>
+                            <div class="info-row">
+                                <div class="info-label">上级部门</div>
+                                <div class="info-value" style="color:var(--color-text-secondary);">-</div>
+                            </div>
+                            <div class="info-row">
+                                <div class="info-label">创建时间</div>
+                                <div class="info-value">2023-01-01</div>
+                            </div>
+                            <div class="info-row">
+                                <div class="info-label">部门描述</div>
+                                <div class="info-value">负责公司整体战略规划与决策，统筹管理各业务线。直属部门包含总裁办秘书处和战略规划组。</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+</div>
+<script>lucide.createIcons();</script>
+</body>
+</html>

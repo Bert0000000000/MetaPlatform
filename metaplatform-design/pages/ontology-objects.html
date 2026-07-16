@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html class="light" lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>本体引擎 - 对象 - MetaPlatform</title>
+    <style id="theme-vars">
+:root {
+  --color-primary: #3b82f6;
+  --color-primary-hover: #2563eb;
+  --color-primary-light: #eff6ff;
+  --color-bg: #ffffff;
+  --color-bg-secondary: #f8fafc;
+  --color-surface: #ffffff;
+  --color-surface-hover: #f8fafc;
+  --color-sidebar-bg: #0f172a;
+  --color-sidebar-text: #94a3b8;
+  --color-sidebar-text-hover: #cbd5e1;
+  --color-sidebar-active-bg: rgba(59, 130, 246, 0.15);
+  --color-sidebar-active-text: #60a5fa;
+  --color-sidebar-border: rgba(148, 163, 184, 0.1);
+  --color-text-primary: #0f172a;
+  --color-text-secondary: #64748b;
+  --color-text-inverse: #ffffff;
+  --color-border: #e2e8f0;
+  --state-success: #22c55e;
+  --state-success-bg: #f0fdf4;
+  --state-warning: #f59e0b;
+  --state-warning-bg: #fffbeb;
+  --state-error: #ef4444;
+  --state-error-bg: #fef2f2;
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans SC", sans-serif;
+  --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  --font-size-xs: 11px;
+  --font-size-sm: 12px;
+  --font-size-base: 13px;
+  --font-size-lg: 14px;
+  --font-size-xl: 18px;
+  --font-size-2xl: 22px;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --line-height-normal: 1.5;
+  --spacing-xs: 2px;
+  --spacing-sm: 4px;
+  --spacing-md: 8px;
+  --spacing-lg: 12px;
+  --spacing-xl: 16px;
+  --spacing-2xl: 24px;
+  --radius-sm: 3px;
+  --radius-md: 4px;
+  --radius-lg: 6px;
+  --radius-full: 9999px;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-float: 0 8px 24px rgba(0, 0, 0, 0.1);
+  --sidebar-width: 220px;
+}
+    </style>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+    @theme inline { --color-primary: var(--color-primary); --color-border: var(--color-border); }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; overflow: hidden; font-family: var(--font-sans); font-size: var(--font-size-base); color: var(--color-text-primary); background: var(--color-bg); line-height: var(--line-height-normal); -webkit-font-smoothing: antialiased; }
+    input, textarea, select, button { font-family: inherit; font-size: inherit; }
+    .nav-item { display: flex; align-items: center; gap: var(--spacing-lg); padding: var(--spacing-md) var(--spacing-xl); font-size: var(--font-size-sm); font-weight: var(--font-weight-normal); color: var(--color-sidebar-text); border-radius: var(--radius-md); cursor: pointer; transition: all 0.15s; text-decoration: none; border: none; background: none; width: 100%; text-align: left; }
+    .nav-item:hover { background: var(--color-sidebar-active-bg); color: var(--color-sidebar-text-hover); }
+    .nav-item svg { width: 16px; height: 16px; flex-shrink: 0; }
+    .tab-item { display: flex; align-items: center; gap: var(--spacing-sm); padding: var(--spacing-sm) var(--spacing-lg); font-size: var(--font-size-sm); font-weight: var(--font-weight-normal); color: var(--color-text-secondary); border-bottom: 2px solid transparent; cursor: pointer; transition: all 0.15s; white-space: nowrap; background: none; border-top: none; border-left: none; border-right: none; }
+    .tab-item:hover { color: var(--color-text-primary); }
+    .tab-item.active { color: var(--color-primary); border-bottom-color: var(--color-primary); font-weight: var(--font-weight-medium); }
+    .btn { display: inline-flex; align-items: center; gap: var(--spacing-sm); padding: var(--spacing-sm) var(--spacing-lg); font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); border-radius: var(--radius-md); cursor: pointer; transition: all 0.15s; white-space: nowrap; border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-text-primary); }
+    .btn:hover { background: var(--color-surface-hover); }
+    .btn svg { width: 14px; height: 14px; }
+    .btn-primary { border-color: var(--color-primary); background: var(--color-primary); color: var(--color-text-inverse); }
+    .btn-primary:hover { background: var(--color-primary-hover); }
+    .btn-ghost { border-color: transparent; color: var(--color-text-secondary); }
+    .btn-ghost:hover { background: var(--color-bg-secondary); }
+    .inp { width: 100%; padding: 6px 10px; font-size: var(--font-size-sm); border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-bg); color: var(--color-text-primary); outline: none; transition: border-color 0.15s; }
+    .inp:focus { border-color: var(--color-primary); box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.12); }
+    .inp::placeholder { color: var(--color-text-secondary); }
+    .badge { display: inline-flex; align-items: center; padding: 1px 6px; font-size: var(--font-size-xs); font-weight: var(--font-weight-medium); border-radius: var(--radius-full); }
+    .badge-default { background: var(--color-bg-secondary); color: var(--color-text-secondary); }
+    .badge-primary { background: var(--color-primary-light); color: var(--color-primary); }
+    .badge-success { background: var(--state-success-bg); color: var(--state-success); }
+    .badge-warning { background: var(--state-warning-bg); color: var(--state-warning); }
+    .badge-error { background: var(--state-error-bg); color: var(--state-error); }
+    .card { border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface); }
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: var(--radius-full); }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { text-align: left; padding: var(--spacing-md) var(--spacing-lg); font-size: var(--font-size-sm); white-space: nowrap; }
+    th { color: var(--color-text-secondary); font-weight: var(--font-weight-medium); background: var(--color-bg-secondary); border-bottom: 1px solid var(--color-border); }
+    td { color: var(--color-text-primary); border-bottom: 1px solid var(--color-border); }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--color-surface-hover); }
+    </style>
+</head>
+<body>
+<div style="display:flex; height:100vh; width:100vw; overflow:hidden;">
+
+    <!-- SIDEBAR -->
+    <aside style="width:var(--sidebar-width); background:var(--color-sidebar-bg); display:flex; flex-direction:column; flex-shrink:0; border-right:1px solid var(--color-sidebar-border);">
+        <div style="height:56px; padding:0 var(--spacing-xl); display:flex; align-items:center; border-bottom:1px solid var(--color-sidebar-border);">
+            <span style="color:var(--color-text-inverse); font-size:var(--font-size-lg); font-weight:var(--font-weight-semibold);">MetaPlatform</span>
+        </div>
+        <nav style="flex:1; overflow-y:auto; padding:var(--spacing-md) var(--spacing-md); display:flex; flex-direction:column; gap:1px;">
+            <a class="nav-item" data-dom-id="nav-dashboard"><i data-lucide="layout-dashboard"></i><span>工作台</span></a>
+            <a class="nav-item" data-dom-id="nav-superai"><i data-lucide="sparkles"></i><span>SuperAI</span></a>
+            <a class="nav-item" data-dom-id="nav-architecture"><i data-lucide="building-2"></i><span>架构中心</span></a>
+            <a class="nav-item" data-dom-id="nav-apps"><i data-lucide="app-window"></i><span>应用中心</span></a>
+            <a class="nav-item" data-dom-id="nav-process"><i data-lucide="git-branch"></i><span>流程中心</span></a>
+            <a class="nav-item" data-dom-id="nav-data"><i data-lucide="database"></i><span>数据中心</span></a>
+            <a class="nav-item" data-dom-id="nav-ontology" style="background: rgba(59,130,246,0.15); color: #60a5fa;"><i data-lucide="brain"></i><span>本体引擎</span></a>
+            <a class="nav-item" data-dom-id="nav-quality"><i data-lucide="shield-check"></i><span>质量中心</span></a>
+            <a class="nav-item" data-dom-id="nav-knowledge"><i data-lucide="book-open"></i><span>知识库</span></a>
+            <a class="nav-item" data-dom-id="nav-market"><i data-lucide="cloud"></i><span>云市场</span></a>
+            <a class="nav-item" data-dom-id="nav-agents"><i data-lucide="bot"></i><span>数字员工</span></a>
+            <a class="nav-item" data-dom-id="nav-admin"><i data-lucide="settings"></i><span>后台管理</span></a>
+        </nav>
+        <div style="padding:var(--spacing-lg) var(--spacing-xl); border-top:1px solid var(--color-sidebar-border); font-size:var(--font-size-xs); color:var(--color-sidebar-text);">
+            v1.2 · 本体论驱动 AI 平台
+        </div>
+    </aside>
+
+    <!-- MAIN AREA -->
+    <div style="flex:1; display:flex; flex-direction:column; min-width:0;">
+
+        <!-- TOPBAR -->
+        <header style="height:56px; border-bottom:1px solid var(--color-border); background:var(--color-surface); display:flex; align-items:center; padding:0 var(--spacing-xl); flex-shrink:0; gap:var(--spacing-lg);">
+            <div style="width:260px; display:flex; align-items:center; gap:var(--spacing-sm); padding:var(--spacing-sm) var(--spacing-lg); border:1px solid var(--color-border); border-radius:var(--radius-md); background:var(--color-bg-secondary); cursor:pointer;">
+                <i data-lucide="search" style="width:14px; height:14px; color:var(--color-text-secondary);"></i>
+                <span style="font-size:var(--font-size-sm); color:var(--color-text-secondary); flex:1;">搜索或 AI 助手</span>
+                <span style="font-size:var(--font-size-xs); color:var(--color-text-secondary); background:var(--color-bg); padding:1px 4px; border-radius:var(--radius-sm); border:1px solid var(--color-border);">⌘K</span>
+            </div>
+            <div style="flex:1;"></div>
+            <button style="position:relative; background:none; border:none; cursor:pointer; color:var(--color-text-secondary); padding:var(--spacing-sm);">
+                <i data-lucide="bell" style="width:16px; height:16px;"></i>
+                <span style="position:absolute; top:-2px; right:-2px; width:8px; height:8px; background:var(--state-error); border-radius:var(--radius-full); border:1px solid var(--color-surface);"></span>
+            </button>
+            <div style="display:flex; align-items:center; gap:var(--spacing-sm); padding:var(--spacing-sm) var(--spacing-md); border:1px solid var(--color-border); border-radius:var(--radius-md); cursor:pointer; font-size:var(--font-size-sm); color:var(--color-text-primary);">
+                <div style="width:22px; height:22px; border-radius:var(--radius-full); background:rgba(59,130,246,0.15); color:var(--color-primary); font-size:var(--font-size-xs); font-weight:var(--font-weight-medium); display:flex; align-items:center; justify-content:center;">A</div>
+                <span>Admin</span>
+                <i data-lucide="chevron-down" style="width:12px; height:12px;"></i>
+            </div>
+        </header>
+
+        <!-- TAB BAR -->
+        <div style="border-bottom:1px solid var(--color-border); background:var(--color-surface); display:flex; padding:0 var(--spacing-xl); flex-shrink:0; overflow-x:auto;">
+            <button class="tab-item active" data-tab="tab-ontology-objects">对象</button>
+            <button class="tab-item" data-tab="tab-ontology-attributes">属性</button>
+            <button class="tab-item" data-tab="tab-ontology-relations">关系</button>
+            <button class="tab-item" data-tab="tab-ontology-actions">动作</button>
+            <button class="tab-item" data-tab="tab-ontology-functions">函数</button>
+            <button class="tab-item" data-tab="tab-ontology-rules">流程规则</button>
+            <button class="tab-item" data-tab="tab-ontology-security">安全</button>
+            <button class="tab-item" data-tab="tab-ontology-governance">治理与发布</button>
+        </div>
+
+        <!-- PAGE CONTENT -->
+        <main style="flex:1; overflow-y:auto; background:var(--color-bg-secondary);">
+            <div style="max-width:1280px; margin:0 auto; padding:var(--spacing-2xl) var(--spacing-2xl);">
+
+                <!-- Header -->
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:var(--spacing-2xl);">
+                    <div>
+                        <div style="display:flex; align-items:center; gap:var(--spacing-lg); margin-bottom:var(--spacing-xs);">
+                            <i data-lucide="brain" style="width:20px; height:20px; color:var(--color-primary);"></i>
+                            <h1 style="font-size:var(--font-size-xl); font-weight:var(--font-weight-semibold); color:var(--color-text-primary);">ObjectType 管理</h1>
+                        </div>
+                        <p style="font-size:var(--font-size-sm); color:var(--color-text-secondary); margin-left:32px;">查看所有业务对象类型</p>
+                    </div>
+                    <button class="btn btn-primary"><i data-lucide="plus"></i> 新建对象</button>
+                </div>
+
+                <!-- Search & Filter -->
+                <div class="card" style="padding:var(--spacing-lg); margin-bottom:var(--spacing-lg); display:flex; align-items:center; gap:var(--spacing-lg);">
+                    <div style="flex:1; position:relative;">
+                        <i data-lucide="search" style="position:absolute; left:10px; top:50%; transform:translateY(-50%); width:14px; height:14px; color:var(--color-text-secondary);"></i>
+                        <input type="text" class="inp" placeholder="搜索对象名称或编码..." style="padding-left:30px;">
+                    </div>
+                    <select class="inp" style="width:140px; cursor:pointer;">
+                        <option>全部类型</option>
+                        <option>已发布</option>
+                        <option>草稿</option>
+                        <option>开发中</option>
+                    </select>
+                </div>
+
+                <!-- Table -->
+                <div class="card">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>名称</th>
+                                <th>编码</th>
+                                <th>描述</th>
+                                <th>字段数</th>
+                                <th>状态</th>
+                                <th>更新时间</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td style="font-weight:var(--font-weight-medium);">客户信息</td>
+                                <td><code style="font-family:var(--font-mono); font-size:var(--font-size-xs); color:var(--color-text-secondary); background:var(--color-bg-secondary); padding:2px 6px; border-radius:var(--radius-sm);">customer_info</code></td>
+                                <td style="color:var(--color-text-secondary);">管理客户基本资料</td>
+                                <td>12</td>
+                                <td><span class="badge badge-success">已发布</span></td>
+                                <td style="color:var(--color-text-secondary);">2024-01-15</td>
+                                <td><button class="btn btn-ghost"><i data-lucide="edit-2"></i></button><button class="btn btn-ghost"><i data-lucide="more-horizontal"></i></button></td>
+                            </tr>
+                            <tr>
+                                <td style="font-weight:var(--font-weight-medium);">产品目录</td>
+                                <td><code style="font-family:var(--font-mono); font-size:var(--font-size-xs); color:var(--color-text-secondary); background:var(--color-bg-secondary); padding:2px 6px; border-radius:var(--radius-sm);">product</code></td>
+                                <td style="color:var(--color-text-secondary);">产品信息与分类</td>
+                                <td>8</td>
+                                <td><span class="badge badge-success">已发布</span></td>
+                                <td style="color:var(--color-text-secondary);">2024-01-14</td>
+                                <td><button class="btn btn-ghost"><i data-lucide="edit-2"></i></button><button class="btn btn-ghost"><i data-lucide="more-horizontal"></i></button></td>
+                            </tr>
+                            <tr>
+                                <td style="font-weight:var(--font-weight-medium);">订单管理</td>
+                                <td><code style="font-family:var(--font-mono); font-size:var(--font-size-xs); color:var(--color-text-secondary); background:var(--color-bg-secondary); padding:2px 6px; border-radius:var(--radius-sm);">order</code></td>
+                                <td style="color:var(--color-text-secondary);">订单生命周期跟踪</td>
+                                <td>15</td>
+                                <td><span class="badge badge-success">已发布</span></td>
+                                <td style="color:var(--color-text-secondary);">2024-01-13</td>
+                                <td><button class="btn btn-ghost"><i data-lucide="edit-2"></i></button><button class="btn btn-ghost"><i data-lucide="more-horizontal"></i></button></td>
+                            </tr>
+                            <tr>
+                                <td style="font-weight:var(--font-weight-medium);">员工档案</td>
+                                <td><code style="font-family:var(--font-mono); font-size:var(--font-size-xs); color:var(--color-text-secondary); background:var(--color-bg-secondary); padding:2px 6px; border-radius:var(--radius-sm);">employee</code></td>
+                                <td style="color:var(--color-text-secondary);">员工基本信息</td>
+                                <td>10</td>
+                                <td><span class="badge badge-default">草稿</span></td>
+                                <td style="color:var(--color-text-secondary);">2024-01-12</td>
+                                <td><button class="btn btn-ghost"><i data-lucide="edit-2"></i></button><button class="btn btn-ghost"><i data-lucide="more-horizontal"></i></button></td>
+                            </tr>
+                            <tr>
+                                <td style="font-weight:var(--font-weight-medium);">供应商</td>
+                                <td><code style="font-family:var(--font-mono); font-size:var(--font-size-xs); color:var(--color-text-secondary); background:var(--color-bg-secondary); padding:2px 6px; border-radius:var(--radius-sm);">supplier</code></td>
+                                <td style="color:var(--color-text-secondary);">供应商资质管理</td>
+                                <td>6</td>
+                                <td><span class="badge badge-default">草稿</span></td>
+                                <td style="color:var(--color-text-secondary);">2024-01-10</td>
+                                <td><button class="btn btn-ghost"><i data-lucide="edit-2"></i></button><button class="btn btn-ghost"><i data-lucide="more-horizontal"></i></button></td>
+                            </tr>
+                            <tr>
+                                <td style="font-weight:var(--font-weight-medium);">工单系统</td>
+                                <td><code style="font-family:var(--font-mono); font-size:var(--font-size-xs); color:var(--color-text-secondary); background:var(--color-bg-secondary); padding:2px 6px; border-radius:var(--radius-sm);">ticket</code></td>
+                                <td style="color:var(--color-text-secondary);">售后服务管理</td>
+                                <td>9</td>
+                                <td><span class="badge badge-success">已发布</span></td>
+                                <td style="color:var(--color-text-secondary);">2024-01-08</td>
+                                <td><button class="btn btn-ghost"><i data-lucide="edit-2"></i></button><button class="btn btn-ghost"><i data-lucide="more-horizontal"></i></button></td>
+                            </tr>
+                            <tr>
+                                <td style="font-weight:var(--font-weight-medium);">合同管理</td>
+                                <td><code style="font-family:var(--font-mono); font-size:var(--font-size-xs); color:var(--color-text-secondary); background:var(--color-bg-secondary); padding:2px 6px; border-radius:var(--radius-sm);">contract</code></td>
+                                <td style="color:var(--color-text-secondary);">合同签署与跟踪</td>
+                                <td>11</td>
+                                <td><span class="badge badge-primary">开发中</span></td>
+                                <td style="color:var(--color-text-secondary);">2024-01-05</td>
+                                <td><button class="btn btn-ghost"><i data-lucide="edit-2"></i></button><button class="btn btn-ghost"><i data-lucide="more-horizontal"></i></button></td>
+                            </tr>
+                            <tr>
+                                <td style="font-weight:var(--font-weight-medium);">库存管理</td>
+                                <td><code style="font-family:var(--font-mono); font-size:var(--font-size-xs); color:var(--color-text-secondary); background:var(--color-bg-secondary); padding:2px 6px; border-radius:var(--radius-sm);">inventory</code></td>
+                                <td style="color:var(--color-text-secondary);">库存与出入库</td>
+                                <td>7</td>
+                                <td><span class="badge badge-success">已发布</span></td>
+                                <td style="color:var(--color-text-secondary);">2024-01-03</td>
+                                <td><button class="btn btn-ghost"><i data-lucide="edit-2"></i></button><button class="btn btn-ghost"><i data-lucide="more-horizontal"></i></button></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+        </main>
+    </div>
+</div>
+<script>lucide.createIcons();</script>
+</body>
+</html>
