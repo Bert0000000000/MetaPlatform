@@ -38,7 +38,17 @@ export async function createApplication(req: ArchAppCreateRequest): Promise<Arch
   try {
     return await post<ArchApplication>('/v1/ea/applications', req);
   } catch {
-    const item: ArchApplication = { appId: `a_${Date.now()}`, ...req, capabilityIds: req.capabilityIds || [], dependencyAppIds: req.dependencyAppIds || [], status: (req.status as ArchApplication['status']) || 'active' };
+    const item: ArchApplication = {
+      appId: `a_${Date.now()}`,
+      name: req.name,
+      code: req.code,
+      description: req.description,
+      status: (req.status as ArchApplication['status']) || 'active',
+      technologyStack: req.technologyStack,
+      owner: req.owner,
+      capabilityIds: req.capabilityIds || [],
+      dependencyAppIds: req.dependencyAppIds || [],
+    };
     save([...load().filter((a) => !MOCK.some((m) => m.appId === a.appId)), item]);
     return item;
   }
@@ -50,7 +60,22 @@ export async function updateApplication(id: string, req: ArchAppCreateRequest): 
   } catch {
     const items = load();
     const idx = items.findIndex((a) => a.appId === id);
-    if (idx >= 0) { items[idx] = { ...items[idx], ...req }; save(items); return items[idx]; }
+    if (idx >= 0) {
+      const existing = items[idx]!;
+      items[idx] = {
+        ...existing,
+        name: req.name,
+        code: req.code,
+        description: req.description,
+        status: (req.status as ArchApplication['status']) || existing.status,
+        technologyStack: req.technologyStack,
+        owner: req.owner,
+        capabilityIds: req.capabilityIds ?? existing.capabilityIds,
+        dependencyAppIds: req.dependencyAppIds ?? existing.dependencyAppIds,
+      };
+      save(items);
+      return items[idx]!;
+    }
     throw new Error('应用不存在');
   }
 }

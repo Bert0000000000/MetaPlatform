@@ -296,12 +296,8 @@ class BusinessCapabilityServiceTest {
 
         when(capabilityRepository.findByIdAndTenantIdAndDeletedAtIsNull(capabilityId, "tenant-default"))
                 .thenReturn(Optional.of(entity));
-        when(capabilityRepository.findByIdAndTenantIdAndDeletedAtIsNull(descendantId, "tenant-default"))
-                .thenReturn(Optional.of(descendant));
         when(capabilityRepository.findByTenantIdAndParentIdAndDeletedAtIsNull("tenant-default", capabilityId))
                 .thenReturn(List.of(descendant));
-        when(capabilityRepository.findByTenantIdAndParentIdAndDeletedAtIsNull("tenant-default", descendantId))
-                .thenReturn(List.of());
 
         MoveCapabilityRequest request = new MoveCapabilityRequest();
         request.setNewParentId(descendantId);

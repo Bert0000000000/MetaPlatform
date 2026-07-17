@@ -41,7 +41,7 @@ export default function MetricsPanel() {
   }, [range]);
 
   const chartData = trend.map((p) => ({
-    time: new Date(p.time).toLocaleString('zh-CN', { hour: '2-digit', minute: '2-digit', month: 'short', day: 'short' }),
+    time: new Date(p.time).toLocaleString('zh-CN', { hour: '2-digit', minute: '2-digit', month: '2-digit', day: '2-digit' }),
     apiCalls: p.apiCalls,
     errors: p.errors,
     value: p.value,

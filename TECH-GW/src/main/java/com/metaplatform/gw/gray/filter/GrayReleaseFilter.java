@@ -40,7 +40,7 @@ public class GrayReleaseFilter implements GlobalFilter, Ordered {
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         ServerHttpRequest request = exchange.getRequest();
         String path = request.getURI().getPath();
-        String method = request.getMethodValue();
+        String method = request.getMethod().name();
 
         if (path.startsWith("/api/v1/gw/") || path.equals("/health") || path.startsWith("/health/")) {
             return chain.filter(exchange);

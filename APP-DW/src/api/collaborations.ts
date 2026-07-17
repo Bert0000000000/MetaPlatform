@@ -1,5 +1,4 @@
 import { get, post, put, del } from './client';
-import type { PageResponse } from '@/types';
 
 export type CollabStatus = 'pending' | 'running' | 'completed' | 'failed';
 

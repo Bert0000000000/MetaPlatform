@@ -91,12 +91,19 @@ class AuditService:
         by_action: dict[str, int] = {}
         for r in deleg_records:
             by_action[r.action.value] = by_action.get(r.action.value, 0) + 1
+        total_delegations = sum(
+            1 for r in deleg_records if r.action == AuditAction.TASK_DELEGATED
+        )
+        completed = by_action.get(AuditAction.TASK_COMPLETED.value, 0)
+        # 成功率 = completed / totalDelegations；total 为 0 时约定为 0.0
+        success_rate = (completed / total_delegations) if total_delegations else 0.0
         return {
-            "totalDelegations": sum(1 for r in deleg_records if r.action == AuditAction.TASK_DELEGATED),
-            "completed": by_action.get(AuditAction.TASK_COMPLETED.value, 0),
+            "totalDelegations": total_delegations,
+            "completed": completed,
             "failed": by_action.get(AuditAction.TASK_FAILED.value, 0),
             "cancelled": by_action.get(AuditAction.TASK_CANCELLED.value, 0),
             "byAction": by_action,
+            "successRate": success_rate,
         }
 
     async def get_error_stats(self, tenant_id: str) -> dict:

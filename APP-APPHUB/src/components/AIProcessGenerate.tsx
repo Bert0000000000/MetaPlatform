@@ -60,7 +60,7 @@ export default function AIProcessGenerate({ onApply }: AIProcessGenerateProps) {
               {result.description}
             </Typography.Paragraph>
             <Space wrap>
-              {result.nodes.map((n) => (
+              {result.nodes.map((n: ProcessGenResult['nodes'][number]) => (
                 <Tag color={n.type === 'start' ? 'green' : n.type === 'end' ? 'red' : 'blue'} key={n.id}>
                   {n.name} ({n.type}){n.assignee && ` - ${n.assignee}`}
                 </Tag>

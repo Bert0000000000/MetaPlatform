@@ -98,8 +98,6 @@ class CapabilityRoleServiceTest {
         request.setRoleId(roleId);
         request.setRelationship("INVALID");
 
-        when(capabilityRoleRepository.existsByTenantIdAndCapabilityIdAndRoleId("tenant-default", capabilityId, roleId))
-                .thenReturn(false);
         when(businessRoleService.findById(roleId)).thenReturn(buildRole(roleId, "SALES_MANAGER", "销售经理"));
 
         assertThatThrownBy(() -> capabilityRoleService.assignRole(capabilityId, request))

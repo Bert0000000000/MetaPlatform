@@ -1,4 +1,4 @@
-import { Card, Form, Rate, Input, Button, Select, Space, Typography, message } from 'antd';
+import { Card, Form, Rate, Input, Button, Typography, message } from 'antd';
 import { useState } from 'react';
 import { ThunderboltOutlined } from '@ant-design/icons';
 
@@ -6,7 +6,7 @@ interface QualityScoreFormProps {
   employeeId?: string;
 }
 
-export default function QualityScoreForm({ employeeId }: QualityScoreFormProps) {
+export default function QualityScoreForm(_props: QualityScoreFormProps) {
   const [form] = Form.useForm();
   const [submitting, setSubmitting] = useState(false);
 

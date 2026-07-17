@@ -4,6 +4,7 @@ import com.metaplatform.obs.common.ErrorCode;
 import com.metaplatform.obs.common.TenantContext;
 import com.metaplatform.obs.dto.PageResponse;
 import com.metaplatform.obs.exception.ObsException;
+import com.metaplatform.obs.topology.dto.ServiceDependenciesResponse;
 import com.metaplatform.obs.trace.dto.Span;
 import com.metaplatform.obs.trace.dto.TopologyEdge;
 import com.metaplatform.obs.trace.dto.TopologyGraph;
@@ -122,17 +123,26 @@ public class TraceService {
         return buildGraphFromDependencies(deps);
     }
 
-    public TopologyGraph getServiceDependencies(String service) {
+    public ServiceDependenciesResponse getServiceDependencies(String service) {
         if (service == null || service.isBlank()) {
             throw new ObsException(ErrorCode.MISSING_REQUIRED_FIELD, "service 不能为空");
         }
         String tenantId = TenantContext.get();
         List<ServiceDependencyEntity> up = dependencyRepository.findUpstream(tenantId, service);
         List<ServiceDependencyEntity> down = dependencyRepository.findDownstream(tenantId, service);
-        List<ServiceDependencyEntity> combined = new ArrayList<>(up.size() + down.size());
-        combined.addAll(up);
-        combined.addAll(down);
-        return buildGraphFromDependencies(combined);
+        List<String> upstream = new ArrayList<>(up.size());
+        for (ServiceDependencyEntity dep : up) {
+            upstream.add(dep.getSourceService());
+        }
+        List<String> downstream = new ArrayList<>(down.size());
+        for (ServiceDependencyEntity dep : down) {
+            downstream.add(dep.getTargetService());
+        }
+        return ServiceDependenciesResponse.builder()
+                .service(service)
+                .upstream(upstream)
+                .downstream(downstream)
+                .build();
     }
 
     private TopologyGraph buildGraphFromDependencies(List<ServiceDependencyEntity> deps) {

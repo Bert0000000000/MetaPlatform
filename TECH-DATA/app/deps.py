@@ -112,3 +112,31 @@ def get_schema_discovery_service(request: Request) -> SchemaDiscoveryService:
 
 def get_repository(request: Request) -> DataSourceRepository:
     return request.app.state.registry.repository
+
+
+def get_etl_service(request: Request) -> EtlTaskService:
+    return request.app.state.registry.etl_service
+
+
+def get_dbt_service(request: Request) -> DbtService:
+    return request.app.state.registry.dbt_service
+
+
+def get_lakehouse_service(request: Request) -> LakehouseService:
+    return request.app.state.registry.lakehouse_service
+
+
+def get_warehouse_service(request: Request) -> WarehouseService:
+    return request.app.state.registry.warehouse_service
+
+
+def get_catalog_service(request: Request) -> CatalogService:
+    return request.app.state.registry.catalog_service
+
+
+def get_quality_service(request: Request) -> QualityService:
+    return request.app.state.registry.quality_service
+
+
+def get_monitoring_service(request: Request) -> MonitoringService:
+    return request.app.state.registry.monitoring_service

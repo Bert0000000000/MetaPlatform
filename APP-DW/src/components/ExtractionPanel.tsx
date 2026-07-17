@@ -22,7 +22,6 @@ import {
   ThunderboltOutlined,
   ApartmentOutlined,
   TeamOutlined,
-  CodeOutlined,
   SafetyOutlined,
   CloudUploadOutlined,
 } from '@ant-design/icons';

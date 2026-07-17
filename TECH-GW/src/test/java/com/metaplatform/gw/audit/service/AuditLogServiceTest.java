@@ -106,7 +106,7 @@ class AuditLogServiceTest {
         };
 
         when(repository.aggregateLatency(anyString(), any(), any(), any()))
-                .thenReturn(List.of(aggregate));
+                .thenReturn(List.<Object[]>of(aggregate));
 
         StepVerifier.create(service.getStatistics("tenant-default",
                         LocalDateTime.now().minusDays(1), LocalDateTime.now()))

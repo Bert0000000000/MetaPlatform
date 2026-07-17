@@ -7,7 +7,7 @@ import type { SearchResult } from '@/types';
 
 export default function GlobalSearch() {
   const [options, setOptions] = useState<{ value: string; label: React.ReactNode; item: SearchResult }[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [, setLoading] = useState(false);
   const navigate = useNavigate();
   const timerRef = useRef<number | null>(null);
 
@@ -64,7 +64,6 @@ export default function GlobalSearch() {
       <Input
         prefix={<SearchOutlined />}
         placeholder="搜索概念或实体"
-        loading={loading}
         allowClear
       />
     </AutoComplete>

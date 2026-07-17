@@ -90,8 +90,6 @@ class CapabilityConceptMappingServiceTest {
         request.setConceptId("concept-001");
         request.setMappingType("DIRECT");
 
-        when(mappingRepository.existsByTenantIdAndCapabilityIdAndConceptIdAndDeletedAtIsNull(
-                "tenant-default", capabilityId, "concept-001")).thenReturn(false);
         doThrow(new EaException(com.metaplatform.ea.common.ErrorCode.NOT_FOUND, "Ontology 概念不存在: concept-001"))
                 .when(ontIntegrationService).validateConceptExists("concept-001");
 
@@ -121,9 +119,6 @@ class CapabilityConceptMappingServiceTest {
         request.setCapabilityId(capabilityId);
         request.setConceptId("concept-001");
         request.setMappingType("INVALID");
-
-        when(mappingRepository.existsByTenantIdAndCapabilityIdAndConceptIdAndDeletedAtIsNull(
-                "tenant-default", capabilityId, "concept-001")).thenReturn(false);
 
         assertThatThrownBy(() -> mappingService.create(request))
                 .isInstanceOf(EaException.class)

@@ -17,7 +17,6 @@ import {
   PlusOutlined,
   EditOutlined,
   DeleteOutlined,
-  EyeOutlined,
   FileTextOutlined,
 } from '@ant-design/icons';
 import { listResources, deleteResource } from '@/api/resources';

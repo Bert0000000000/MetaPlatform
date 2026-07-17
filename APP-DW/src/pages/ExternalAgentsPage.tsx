@@ -11,9 +11,8 @@ import {
   message,
   Descriptions,
 } from 'antd';
-import { PlusOutlined, SyncOutlined, LinkOutlined } from '@ant-design/icons';
+import { PlusOutlined, SyncOutlined } from '@ant-design/icons';
 import {
-  delegateTask,
   discoverAgents,
   listDelegations,
   listExternalAgents,
@@ -59,7 +58,7 @@ export default function ExternalAgentsPage() {
     {
       title: '委托',
       key: 'delegation',
-      render: (_, d: DelegationRequest) => (
+      render: (_: unknown, d: DelegationRequest) => (
         <Space direction="vertical" size={0}>
           <Typography.Text strong>{d.task}</Typography.Text>
           <Typography.Text type="secondary" style={{ fontSize: 12 }}>
@@ -68,16 +67,16 @@ export default function ExternalAgentsPage() {
         </Space>
       ),
     },
-    { title: '状态', dataIndex: 'status', render: (v) => <Tag>{v}</Tag> },
+    { title: '状态', dataIndex: 'status', render: (v: unknown) => <Tag>{String(v)}</Tag> },
     {
       title: '结果',
       dataIndex: 'result',
-      render: (v) => (v ? <code>{JSON.stringify(v).slice(0, 60)}</code> : '-'),
+      render: (v: unknown) => (v ? <code>{JSON.stringify(v).slice(0, 60)}</code> : '-'),
     },
     {
       title: '完成时间',
       dataIndex: 'completedAt',
-      render: (v) => (v ? new Date(v).toLocaleString() : '-'),
+      render: (v: string | undefined) => (v ? new Date(v).toLocaleString() : '-'),
     },
   ];
 

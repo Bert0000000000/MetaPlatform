@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { Button, Card, Empty, Form, Input, InputNumber, Select, Space, Switch, Tag, Typography, message } from 'antd';
+import { Button, Card, Empty, Form, Input, InputNumber, Select, Space, Switch, Tag } from 'antd';
 import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
 
 export interface CustomValidationRule {

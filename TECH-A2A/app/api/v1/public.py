@@ -42,3 +42,23 @@ async def get_public_card(
         f"Agent Card 不存在: agentId={agent_id}",
         data={"agentId": agent_id},
     )
+
+
+@router.get(
+    "/agents/.well-known/agent.json",
+    summary="公共 .well-known 别名（与 /.well-known/agent.json 等价）",
+)
+async def get_public_cards_under_agents_prefix(
+    request: Request,
+    ctx: RequestContext = Depends(request_context_dep),
+    service: AgentCardService = Depends(get_card_service),
+) -> dict:
+    """与 `/.well-known/agent.json` 内容等价的别名路由，便于 A2A 客户端按
+    `https://host/api/v1/a2a/agents/.well-known/agent.json` 的常见写法发现。
+    本路由只复用 `list_published_cards` 公开契约，不触动 audit / delegation 既有逻辑。"""
+
+    cards = await service.list_published_cards()
+    return success(
+        [card_to_public_dict(c) for c in cards],
+        trace_id=ctx.trace_id,
+    )

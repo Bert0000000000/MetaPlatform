@@ -139,6 +139,86 @@ public class ValueStreamService {
                 .build();
     }
 
+    @Transactional
+    public ValueStreamStageResponse createStage(UUID valueStreamId, CreateValueStreamStageRequest request) {
+        ValueStreamEntity valueStream = findById(valueStreamId);
+        List<ValueStreamStageEntity> stages = stageRepository
+                .findByValueStreamIdAndDeletedAtIsNullOrderBySortOrderAsc(valueStreamId);
+        if (stages.stream().anyMatch(stage -> stage.getName().equals(request.getName()))) {
+            throw new EaException(ErrorCode.ALREADY_EXISTS, "阶段名称在该价值流下已存在");
+        }
+
+        int sortOrder = request.getSortOrder() != null
+                ? request.getSortOrder()
+                : stages.stream().mapToInt(ValueStreamStageEntity::getSortOrder).max().orElse(-1) + 1;
+        Instant now = Instant.now();
+        ValueStreamStageEntity stage = ValueStreamStageEntity.builder()
+                .tenantId(valueStream.getTenantId())
+                .valueStreamId(valueStreamId)
+                .name(request.getName())
+                .description(request.getDescription())
+                .sortOrder(sortOrder)
+                .createdAt(now)
+                .updatedAt(now)
+                .build();
+        return toStageResponse(stageRepository.save(stage));
+    }
+
+    @Transactional(readOnly = true)
+    public List<ValueStreamStageResponse> listStages(UUID valueStreamId) {
+        findById(valueStreamId);
+        return stageRepository.findByValueStreamIdAndDeletedAtIsNullOrderBySortOrderAsc(valueStreamId)
+                .stream().map(this::toStageResponse).toList();
+    }
+
+    @Transactional
+    public ValueStreamStageResponse updateStage(UUID valueStreamId, UUID stageId,
+                                                 UpdateValueStreamStageRequest request) {
+        ValueStreamStageEntity stage = findStageById(stageId);
+        ensureStageBelongsToValueStream(stage, valueStreamId);
+        if (StringUtils.hasText(request.getName())) stage.setName(request.getName());
+        if (request.getDescription() != null) stage.setDescription(request.getDescription());
+        if (request.getSortOrder() != null) stage.setSortOrder(request.getSortOrder());
+        stage.setUpdatedAt(Instant.now());
+        return toStageResponse(stageRepository.save(stage));
+    }
+
+    @Transactional
+    public void deleteStage(UUID valueStreamId, UUID stageId) {
+        ValueStreamStageEntity stage = findStageById(stageId);
+        ensureStageBelongsToValueStream(stage, valueStreamId);
+        Instant now = Instant.now();
+        stage.setDeletedAt(now);
+        stage.setUpdatedAt(now);
+        stageRepository.save(stage);
+    }
+
+    private ValueStreamStageEntity findStageById(UUID stageId) {
+        String tenantId = TenantContext.getOrDefault();
+        return stageRepository.findByIdAndDeletedAtIsNull(stageId)
+                .filter(stage -> stage.getTenantId().equals(tenantId))
+                .orElseThrow(() -> new EaException(ErrorCode.NOT_FOUND, "价值流阶段不存在"));
+    }
+
+    private void ensureStageBelongsToValueStream(ValueStreamStageEntity stage, UUID valueStreamId) {
+        if (!stage.getValueStreamId().equals(valueStreamId)) {
+            throw new EaException(ErrorCode.INVALID_PARAM, "阶段不属于指定价值流");
+        }
+    }
+
+    private ValueStreamStageResponse toStageResponse(ValueStreamStageEntity stage) {
+        return ValueStreamStageResponse.builder()
+                .id(stage.getId())
+                .valueStreamId(stage.getValueStreamId())
+                .tenantId(stage.getTenantId())
+                .name(stage.getName())
+                .description(stage.getDescription())
+                .sortOrder(stage.getSortOrder())
+                .createdAt(stage.getCreatedAt())
+                .updatedAt(stage.getUpdatedAt())
+                .build();
+    }
+
     private ValueStreamEntity findById(UUID id) {
         String tenantId = TenantContext.getOrDefault();
         return valueStreamRepository.findByIdAndDeletedAtIsNull(id)

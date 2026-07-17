@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { Button, Form, Input, Modal, Space, Tag, Typography, message } from 'antd';
-import { SendOutlined } from '@ant-design/icons';
+import { Form, Input, Modal, Space, Tag, message } from 'antd';
 import { delegateTask } from '@/api/a2a';
 import type { ExternalAgent } from '@/api/a2a';
 

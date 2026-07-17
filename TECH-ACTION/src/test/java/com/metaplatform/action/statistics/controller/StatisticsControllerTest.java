@@ -21,9 +21,10 @@ import java.time.Instant;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -77,7 +78,7 @@ class StatisticsControllerTest {
                 .successRate(100.0)
                 .avgDurationMs(80L)
                 .build();
-        when(statisticsService.getStatsByAction(anyString(), any(Instant.class), any(Instant.class)))
+        when(statisticsService.getStatsByAction(anyString(), nullable(Instant.class), nullable(Instant.class)))
                 .thenReturn(List.of(stats));
 
         mockMvc.perform(get("/api/v1/action/statistics/by-action"))
@@ -115,7 +116,7 @@ class StatisticsControllerTest {
                         .durationMs(100)
                         .build()))
                 .total(1).page(1).size(20).totalPages(1).build();
-        when(statisticsService.getExecutionHistory(anyString(), eq("act-1"), eq(null), anyInt(), anyInt()))
+        when(statisticsService.getExecutionHistory(anyString(), eq("act-1"), isNull(), nullable(Integer.class), nullable(Integer.class)))
                 .thenReturn(page);
 
         mockMvc.perform(get("/api/v1/action/statistics/executions")

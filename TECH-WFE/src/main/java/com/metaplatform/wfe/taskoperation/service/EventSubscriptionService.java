@@ -67,7 +67,7 @@ public class EventSubscriptionService {
     public void delete(String id) {
         String tenantId = TenantContext.get();
         EventSubscriptionEntity entity = repository.findByIdAndTenantId(id, tenantId)
-                .orElseThrow(() -> new WfeException(ErrorCode.NOT_FOUND, "事件订阅不存在"));
+                .orElseThrow(() -> new WfeException(ErrorCode.EVENT_SUBSCRIPTION_NOT_FOUND, "事件订阅不存在"));
         repository.delete(entity);
     }
 

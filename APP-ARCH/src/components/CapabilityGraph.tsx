@@ -49,7 +49,7 @@ export default function CapabilityGraph({ data }: Props) {
     const colWidth = 200;
     const rowHeight = 80;
 
-    flatNodes.forEach((node, idx) => {
+    flatNodes.forEach((node) => {
       const col = node.level;
       const sameLevel = flatNodes.filter((n) => n.level === node.level);
       const row = sameLevel.findIndex((n) => n.id === node.id);

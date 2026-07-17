@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Card, Empty, Input, Progress, Space, Table, Tag, Typography, Button } from 'antd';
+import { Card, Empty, Input, Progress, Space, Table, Typography, Button } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { ThunderboltOutlined } from '@ant-design/icons';
 import { matchEmployees } from '@/api/schedule';
@@ -37,7 +37,7 @@ export default function EmployeeMatchingPage() {
     {
       title: '行动',
       key: 'actions',
-      render: (_, r) => <Button type="link">分配给此员工</Button>,
+      render: () => <Button type="link">分配给此员工</Button>,
     },
   ];
 

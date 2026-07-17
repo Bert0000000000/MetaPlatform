@@ -1,5 +1,7 @@
 package com.metaplatform.ea.debt.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import com.metaplatform.ea.application.entity.ApplicationEntity;
 import com.metaplatform.ea.application.repository.ApplicationRepository;
 import com.metaplatform.ea.common.ErrorCode;
@@ -31,6 +33,7 @@ public class TechDebtService {
 
     private final TechDebtRepository repository;
     private final ApplicationRepository applicationRepository;
+    private final ObjectMapper objectMapper;
 
     @Transactional
     public TechDebtResponse create(CreateTechDebtRequest request) {

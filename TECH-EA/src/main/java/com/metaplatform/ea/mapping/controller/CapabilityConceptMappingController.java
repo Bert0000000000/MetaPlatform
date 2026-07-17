@@ -1,9 +1,12 @@
 package com.metaplatform.ea.mapping.controller;
 
 import com.metaplatform.ea.common.ApiResponse;
+import com.metaplatform.ea.mapping.dto.ConsistencyCheckResponse;
 import com.metaplatform.ea.mapping.dto.CreateMappingRequest;
 import com.metaplatform.ea.mapping.dto.MapConceptRequest;
+import com.metaplatform.ea.mapping.dto.MappingFilterRequest;
 import com.metaplatform.ea.mapping.dto.MappingResponse;
+import com.metaplatform.ea.mapping.dto.SyncResultResponse;
 import com.metaplatform.ea.mapping.dto.UpdateMappingRequest;
 import com.metaplatform.ea.mapping.service.CapabilityConceptMappingService;
 import jakarta.validation.Valid;

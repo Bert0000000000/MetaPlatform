@@ -9,7 +9,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.AdditionalAnswers;
 import org.springframework.http.MediaType;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -24,6 +23,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.RETURNS_SELF;
 
 @ExtendWith(MockitoExtension.class)
 class RuleIntegrationServiceTest {
@@ -46,7 +46,7 @@ class RuleIntegrationServiceTest {
     void evaluateRuleset_shouldReturnJsonNode_whenRuleSucceeds() {
         WebClient.Builder clonedBuilder = mock(WebClient.Builder.class);
         WebClient client = mock(WebClient.class);
-        WebClient.RequestBodyUriSpec requestSpec = mock(WebClient.RequestBodyUriSpec.class, AdditionalAnswers.RETURNS_SELF);
+        WebClient.RequestBodyUriSpec requestSpec = mock(WebClient.RequestBodyUriSpec.class, RETURNS_SELF);
         WebClient.ResponseSpec responseSpec = mock(WebClient.ResponseSpec.class);
 
         when(webClientBuilder.clone()).thenReturn(clonedBuilder);
@@ -83,7 +83,7 @@ class RuleIntegrationServiceTest {
 
     @Test
     void resolveTargetNodeId_shouldReturnValue_whenNoResultKey() throws Exception {
-        JsonNode ruleResult = objectMapper.readTree("node-3");
+        JsonNode ruleResult = objectMapper.readTree("\"node-3\"");
 
         String target = ruleIntegrationService.resolveTargetNodeId(ruleResult, null);
 

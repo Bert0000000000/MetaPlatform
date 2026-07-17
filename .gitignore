@@ -55,3 +55,31 @@ docs/artifacts/verification/logs/
 
 # Maven wrapper
 !.mvn/wrapper/maven-wrapper.jar
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.eggs/
+
+# SQLite local dev databases
+*.db
+
+# Pytest cache
+.pytest_cache/
+
+# Build artifacts
+BOOT-INF/
+META-INF/
+
+# Vite generated config artifacts
+*.vite.config.d.ts
+
+# Local .env files
+.env
+
+# Temporary scripts and JSON outputs
+docs/006-TMP/*.json
+docs/006-TMP/*.txt
+docs/006-TMP/jwt.txt

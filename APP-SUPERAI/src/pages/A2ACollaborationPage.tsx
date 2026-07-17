@@ -14,7 +14,7 @@ import {
   Descriptions,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { GlobalOutlined, SendOutlined } from '@ant-design/icons';
+import { SendOutlined } from '@ant-design/icons';
 import { delegateA2A, listExternalAgents } from '@/api/a2a';
 import type { ExternalAgent } from '@/api/a2a';
 

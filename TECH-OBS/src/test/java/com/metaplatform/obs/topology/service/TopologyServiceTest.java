@@ -55,6 +55,14 @@ class TopologyServiceTest {
                 ServiceDependencyEntity.builder()
                         .sourceService("tech-iam").targetService("tech-rag")
                         .callCount(10).avgDurationMs(50.0).build()));
+        when(healthRepository.findByServiceName("tenant-test", "tech-iam")).thenReturn(
+                ServiceHealthEntity.builder()
+                        .serviceName("tech-iam").status("HEALTHY")
+                        .responseTimeMs(45.0).errorRate(0.001).build());
+        when(healthRepository.findByServiceName("tenant-test", "tech-rag")).thenReturn(
+                ServiceHealthEntity.builder()
+                        .serviceName("tech-rag").status("DEGRADED")
+                        .responseTimeMs(120.0).errorRate(0.05).build());
         when(healthRepository.findAll("tenant-test")).thenReturn(List.of(
                 ServiceHealthEntity.builder()
                         .serviceName("tech-iam").status("HEALTHY")

@@ -1,4 +1,4 @@
-import { Button, Card, Empty, Form, Input, Select, Space, Switch } from 'antd';
+import { Button, Card, Empty, Form, Input, Select, Space } from 'antd';
 import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
 import type { RuleCondition } from '@/api/rules';
 

@@ -18,7 +18,7 @@ export default function TaskCreatePage() {
   const handleSubmit = async () => {
     setSubmitting(true);
     try {
-      const v = await form.validateFields();
+      await form.validateFields();
       message.success(`任务已创建并分配给数字员工`);
       navigate('/dw/tasks');
     } finally {

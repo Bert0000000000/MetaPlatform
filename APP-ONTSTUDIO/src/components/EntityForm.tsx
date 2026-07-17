@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Form, Input, Select, TreeSelect, Modal, Spin } from 'antd';
+import { Form, Input, TreeSelect, Modal, Spin, Select } from 'antd';
 import { listAttributes } from '@/api/attributes';
 import type { Entity, EntityCreateRequest, Attribute, ConceptHierarchyNode } from '@/types';
 
@@ -90,7 +90,7 @@ export default function EntityForm({
           rules={[{ required: true, message: '请选择所属概念' }]}
         >
           <TreeSelect
-            treeData={buildTreeSelect(conceptTree)}
+            treeData={buildTreeSelect(conceptTree) as any}
             placeholder="请选择所属概念"
             treeDefaultExpandAll
             disabled={!!initial}

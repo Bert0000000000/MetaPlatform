@@ -50,10 +50,6 @@ function loadTasks(): EmployeeTask[] {
   }
 }
 
-function saveTasks(items: EmployeeTask[]): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
-}
-
 export async function listTasks(employeeId: string): Promise<EmployeeTask[]> {
   try {
     return await get<EmployeeTask[]>('/v1/agent/employees/tasks', { employeeId });

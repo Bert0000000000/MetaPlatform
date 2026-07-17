@@ -45,7 +45,7 @@ export default function RelationTypePage() {
     try {
       const [r, c, inst] = await Promise.all([
         listRelationTypes(),
-        listConcepts({}),
+        listConcepts(),
         listRelationInstances(),
       ]);
       setRelations(r.items);

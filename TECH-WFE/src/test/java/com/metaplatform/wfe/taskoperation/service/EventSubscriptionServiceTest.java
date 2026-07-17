@@ -84,7 +84,7 @@ class EventSubscriptionServiceTest {
 
         assertThatThrownBy(() -> service.delete("missing"))
                 .isInstanceOf(WfeException.class)
-                .extracting("errorCode").isEqualTo(ErrorCode.NOT_FOUND);
+                .extracting("errorCode").isEqualTo(ErrorCode.EVENT_SUBSCRIPTION_NOT_FOUND);
     }
 
     @Test

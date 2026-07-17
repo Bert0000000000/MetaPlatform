@@ -2,7 +2,6 @@ import { useState, useRef, useMemo, useCallback, useEffect } from 'react';
 import { Bubble, Sender, Welcome } from '@ant-design/x';
 import { Button, Tabs, Typography, Flex, Tag, Space, Tooltip, Select, Card, theme } from 'antd';
 import {
-  PlusOutlined,
   RobotOutlined,
   UserOutlined,
   MessageOutlined,

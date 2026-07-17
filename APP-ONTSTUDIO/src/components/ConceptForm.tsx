@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Form, Input, Select, Modal, TreeSelect } from 'antd';
+import { Form, Input, Modal, TreeSelect } from 'antd';
 import type { Concept, ConceptCreateRequest, ConceptHierarchyNode } from '@/types';
 
 interface ConceptFormProps {
@@ -90,7 +90,7 @@ export default function ConceptForm({
           label="父概念"
         >
           <TreeSelect
-            treeData={buildTreeSelect(conceptTree)}
+            treeData={buildTreeSelect(conceptTree) as any}
             placeholder="请选择父概念"
             allowClear
             treeDefaultExpandAll

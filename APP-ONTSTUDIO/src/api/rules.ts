@@ -116,7 +116,7 @@ export async function deleteRule(id: string): Promise<void> {
   }
 }
 
-export async function testRule(ruleId: string, sample?: Record<string, unknown>): Promise<{
+export async function testRule(_ruleId: string, _sample?: Record<string, unknown>): Promise<{
   passed: boolean;
   conditions: Array<{ id: string; passed: boolean; message: string }>;
   actions: Array<{ id: string; executed: boolean; output?: string; error?: string }>;

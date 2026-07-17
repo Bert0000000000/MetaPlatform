@@ -8,7 +8,34 @@ from datetime import datetime, timezone
 from threading import RLock
 from typing import Any, List, Optional
 
+from app.agents.orm import Base
+from app.memory.orm import MemoryMessageORM, MemorySessionORM
 from app.memory.schemas import ConversationSession, Message, MessageRole
+
+
+def _session_row_to_model(row: MemorySessionORM) -> ConversationSession:
+    return ConversationSession(
+        session_id=row.session_id,
+        tenant_id=row.tenant_id,
+        agent_id=row.agent_id,
+        title=row.title or "",
+        message_count=row.message_count,
+        last_message_at=row.last_message_at,
+        created_at=row.created_at if row.created_at else _now(),
+    )
+
+
+def _message_row_to_model(row: MemoryMessageORM) -> Message:
+    return Message(
+        id=row.id,
+        session_id=row.session_id,
+        tenant_id=row.tenant_id,
+        agent_id=row.agent_id,
+        role=MessageRole(row.role),
+        content=row.content,
+        metadata=dict(row.meta_data) if row.meta_data else None,
+        created_at=row.created_at if row.created_at else _now(),
+    )
 
 
 def _now() -> datetime:
@@ -148,3 +175,124 @@ class InMemoryMemoryRepository(MemoryRepository):
         with self._lock:
             self._sessions.clear()
             self._messages.clear()
+
+
+class SqlAlchemyMemoryRepository(MemoryRepository):
+    """Async SQLAlchemy 2.0 repository backed by memory tables."""
+
+    def __init__(self, session_factory) -> None:
+        self._session_factory = session_factory
+
+    @classmethod
+    async def create_all(cls, engine) -> None:
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+
+    async def create_session(
+        self, tenant_id: str, agent_id: str, title: str = ""
+    ) -> ConversationSession:
+        session_id = _new_id("sess")
+        now = _now()
+        row = MemorySessionORM(
+            session_id=session_id,
+            tenant_id=tenant_id,
+            agent_id=agent_id,
+            title=title,
+            message_count=0,
+            created_at=now,
+        )
+        async with self._session_factory() as session:
+            session.add(row)
+            await session.commit()
+            return _session_row_to_model(row)
+
+    async def get_session(
+        self, session_id: str, tenant_id: str
+    ) -> Optional[ConversationSession]:
+        async with self._session_factory() as session:
+            row = await session.get(MemorySessionORM, session_id)
+            if row is None or row.tenant_id != tenant_id:
+                return None
+            return _session_row_to_model(row)
+
+    async def list_sessions(
+        self, tenant_id: str, agent_id: str
+    ) -> List[ConversationSession]:
+        from sqlalchemy import select
+
+        async with self._session_factory() as session:
+            stmt = select(MemorySessionORM).where(
+                MemorySessionORM.tenant_id == tenant_id,
+                MemorySessionORM.agent_id == agent_id,
+            )
+            rows = (await session.execute(stmt)).scalars().all()
+            results = [_session_row_to_model(r) for r in rows]
+            results.sort(key=lambda s: s.last_message_at or s.created_at, reverse=True)
+            return results
+
+    async def add_message(
+        self,
+        session_id: str,
+        tenant_id: str,
+        agent_id: str,
+        role: MessageRole,
+        content: str,
+        metadata: Optional[dict] = None,
+    ) -> Message:
+        msg_id = _new_id("msg")
+        now = _now()
+        msg_row = MemoryMessageORM(
+            id=msg_id,
+            session_id=session_id,
+            tenant_id=tenant_id,
+            agent_id=agent_id,
+            role=role.value,
+            content=content,
+            meta_data=dict(metadata) if metadata else None,
+            created_at=now,
+        )
+        async with self._session_factory() as session:
+            session.add(msg_row)
+            sess_row = await session.get(MemorySessionORM, session_id)
+            if sess_row and sess_row.tenant_id == tenant_id:
+                sess_row.message_count = sess_row.message_count + 1
+                sess_row.last_message_at = now
+            await session.commit()
+            return _message_row_to_model(msg_row)
+
+    async def get_messages(
+        self, session_id: str, tenant_id: str, max_messages: int = 20
+    ) -> List[Message]:
+        from sqlalchemy import select
+
+        async with self._session_factory() as session:
+            stmt = (
+                select(MemoryMessageORM)
+                .where(
+                    MemoryMessageORM.session_id == session_id,
+                    MemoryMessageORM.tenant_id == tenant_id,
+                )
+                .order_by(MemoryMessageORM.created_at)
+            )
+            rows = (await session.execute(stmt)).scalars().all()
+            msgs = [_message_row_to_model(r) for r in rows]
+            if max_messages > 0:
+                msgs = msgs[-max_messages:]
+            return msgs
+
+    async def clear_session(self, session_id: str, tenant_id: str) -> bool:
+        from sqlalchemy import delete, select
+
+        async with self._session_factory() as session:
+            sess_row = await session.get(MemorySessionORM, session_id)
+            if sess_row is None or sess_row.tenant_id != tenant_id:
+                return False
+            await session.execute(
+                delete(MemoryMessageORM).where(
+                    MemoryMessageORM.session_id == session_id,
+                    MemoryMessageORM.tenant_id == tenant_id,
+                )
+            )
+            await session.delete(sess_row)
+            await session.commit()
+            return True

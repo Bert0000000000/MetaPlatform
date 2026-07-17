@@ -70,9 +70,16 @@ export async function updateCapability(id: string, req: CapabilityCreateRequest)
     const items = load();
     const idx = items.findIndex((c) => c.capabilityId === id);
     if (idx >= 0) {
-      items[idx] = { ...items[idx], ...req };
+      items[idx] = {
+        ...items[idx],
+        name: req.name,
+        code: req.code,
+        description: req.description,
+        parentCapabilityId: req.parentCapabilityId,
+        status: (req.status as Capability['status']) || items[idx]!.status,
+      };
       save(items);
-      return items[idx];
+      return items[idx]!;
     }
     throw new Error('能力不存在');
   }

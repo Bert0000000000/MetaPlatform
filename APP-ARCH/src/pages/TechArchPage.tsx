@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Card, Table, Button, Space, Modal, Form, Input, Select, Tag, message, Popconfirm, Tabs } from 'antd';
+import { Card, Table, Button, Modal, Form, Input, Select, Tag, message, Popconfirm, Tabs } from 'antd';
 import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
 import { listTechStacks, createTechStack, deleteTechStack, listInfrastructure, createInfrastructure, deleteInfrastructure } from '@/api/techArchitecture';
 import type { TechStack, Infrastructure } from '@/types';

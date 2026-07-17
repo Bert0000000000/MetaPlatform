@@ -99,13 +99,17 @@ def registry(
     agent_service_client = AgentServiceClient(base_url="")
     wfe_client = WFEClient(base_url="")
 
-    delegation_service = DelegationService(
-        delegation_repository, agent_client, outbox_service
-    )
     inbound_service = InboundService(outbox_service)
     auth_service = AuthService()
     message_service = MessagingService(message_repository)
     audit_service = AuditService(audit_repository)
+
+    delegation_service = DelegationService(
+        delegation_repository,
+        agent_client,
+        outbox_service,
+        audit_service=audit_service,
+    )
 
     reg = Registry(
         card_repository=card_repository,

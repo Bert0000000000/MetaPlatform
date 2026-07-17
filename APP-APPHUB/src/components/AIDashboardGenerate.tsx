@@ -30,7 +30,7 @@ export default function AIDashboardGenerate({ onApply }: AIDashboardGenerateProp
 
   const handleApply = () => {
     if (!result) return;
-    const widgets: DashboardWidget[] = result.widgets.map((w) => ({
+    const widgets: DashboardWidget[] = result.widgets.map((w: DashboardGenResult['widgets'][number]) => ({
       id: `ai_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`,
       type: (w.type as DashboardWidget['type']) || 'stat',
       title: w.title,
@@ -81,7 +81,7 @@ export default function AIDashboardGenerate({ onApply }: AIDashboardGenerateProp
                 {result.description}
               </Typography.Paragraph>
               <Space wrap>
-                {result.widgets.map((w) => (
+                {result.widgets.map((w: DashboardGenResult['widgets'][number]) => (
                   <Tag key={w.id} color="blue">
                     {w.title} - {w.type}
                   </Tag>
@@ -91,14 +91,14 @@ export default function AIDashboardGenerate({ onApply }: AIDashboardGenerateProp
 
             {result.apiExamples.length > 0 && (
               <Card title="API 示例" size="small">
-                {result.apiExamples.map((ex, i) => (
+                {result.apiExamples.map((ex: DashboardGenResult['apiExamples'][number], i: number) => (
                   <Card key={i} type="inner" size="small" style={{ marginBottom: 8 }}>
                     <Typography.Text strong>
                       {ex.method} {ex.url}
                     </Typography.Text>
-                    <div style={{ color: '#666', fontSize: 12, marginBottom: 4 }}>
+                    <Typography.Paragraph style={{ color: '#666', fontSize: 12, marginBottom: 4 }}>
                       {ex.description}
-                    </Typography.Text>
+                    </Typography.Paragraph>
                     <pre
                       style={{
                         background: '#fafafa',

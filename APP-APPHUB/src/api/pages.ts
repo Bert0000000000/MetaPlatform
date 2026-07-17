@@ -1,4 +1,4 @@
-import { get, post, put, del } from './client';
+import { get, put, del } from './client';
 import type { PageResponse } from '@/types';
 
 export interface DashboardWidget {

@@ -12,12 +12,18 @@ from typing import Optional
 
 from fastapi import Request
 
-from app.agents.repository import AgentRepository, InMemoryAgentRepository
+from app.agents.orm import Base
+from app.agents.repository import (
+    AgentRepository,
+    InMemoryAgentRepository,
+    SqlAlchemyAgentRepository,
+)
 from app.agents.service import AgentService
 from app.card.service import AgentCardService
 from app.checkpoint.repository import (
     CheckpointRepository,
     InMemoryCheckpointRepository,
+    SqlAlchemyCheckpointRepository,
 )
 from app.checkpoint.service import CheckpointService
 from app.clients.action import ActionClient
@@ -27,19 +33,59 @@ from app.config import settings
 from app.conversations.repository import (
     ConversationRepository,
     InMemoryConversationRepository,
+    SqlAlchemyConversationRepository,
 )
 from app.conversations.service import ConversationService
 from app.events.outbox import OutboxService
 from app.execution.engine import ExecutionEngine
 from app.execution.service import ExecutionService
-from app.memory.repository import InMemoryMemoryRepository, MemoryRepository
+from app.memory.repository import (
+    InMemoryMemoryRepository,
+    MemoryRepository,
+    SqlAlchemyMemoryRepository,
+)
 from app.memory.service import MemoryService
-from app.steps.repository import InMemoryStepRepository, StepRepository
+from app.steps.repository import (
+    InMemoryStepRepository,
+    SqlAlchemyStepRepository,
+    StepRepository,
+)
 from app.steps.service import StepService
-from app.tasks.repository import InMemoryTaskRepository, TaskRepository
+from app.tasks.repository import (
+    InMemoryTaskRepository,
+    SqlAlchemyTaskRepository,
+    TaskRepository,
+)
 from app.tasks.service import TaskService
-from app.tools.repository import InMemoryToolRepository, ToolRepository
+from app.tools.repository import (
+    InMemoryToolRepository,
+    SqlAlchemyToolRepository,
+    ToolRepository,
+)
 from app.tools.service import ToolService
+
+
+def _is_sqlalchemy_backend() -> bool:
+    return settings.database_url.startswith("postgresql")
+
+
+def _create_sqlalchemy_session_factory():
+    from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+
+    engine = create_async_engine(settings.database_url, echo=False)
+    return async_sessionmaker(engine, expire_on_commit=False), engine
+
+
+async def _init_sqlalchemy_tables(engine) -> None:
+    import app.tasks.orm  # noqa: F401
+    import app.memory.orm  # noqa: F401
+    import app.checkpoint.orm  # noqa: F401
+    import app.conversations.orm  # noqa: F401
+    import app.tools.orm  # noqa: F401
+    import app.steps.orm  # noqa: F401
+
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
 
 
 @dataclass
@@ -91,7 +137,34 @@ _REGISTRY: Optional[Registry] = None
 
 
 def _build_default_registry() -> Registry:
-    repo: AgentRepository = InMemoryAgentRepository()
+    if _is_sqlalchemy_backend():
+        session_factory, engine = _create_sqlalchemy_session_factory()
+        import asyncio
+
+        asyncio.get_event_loop().run_until_complete(_init_sqlalchemy_tables(engine))
+
+        repo: AgentRepository = SqlAlchemyAgentRepository(session_factory)
+        memory_repo: MemoryRepository = SqlAlchemyMemoryRepository(
+            session_factory
+        )
+        checkpoint_repo: CheckpointRepository = (
+            SqlAlchemyCheckpointRepository(session_factory)
+        )
+        task_repo: TaskRepository = SqlAlchemyTaskRepository(session_factory)
+        conversation_repo: ConversationRepository = (
+            SqlAlchemyConversationRepository(session_factory)
+        )
+        tool_repo: ToolRepository = SqlAlchemyToolRepository(session_factory)
+        step_repo: StepRepository = SqlAlchemyStepRepository(session_factory)
+    else:
+        repo = InMemoryAgentRepository()
+        memory_repo = InMemoryMemoryRepository()
+        checkpoint_repo = InMemoryCheckpointRepository()
+        task_repo = InMemoryTaskRepository()
+        conversation_repo = InMemoryConversationRepository()
+        tool_repo = InMemoryToolRepository()
+        step_repo = InMemoryStepRepository()
+
     agent_service = AgentService(repo)
 
     llm_client = LLMGWClient(
@@ -115,11 +188,9 @@ def _build_default_registry() -> Registry:
     execution_service = ExecutionService(agent_service, execution_engine)
 
     # Memory
-    memory_repo = InMemoryMemoryRepository()
     memory_service = MemoryService(memory_repo)
 
     # Checkpoint
-    checkpoint_repo = InMemoryCheckpointRepository()
     checkpoint_service = CheckpointService(checkpoint_repo)
 
     # Events / Outbox
@@ -129,21 +200,17 @@ def _build_default_registry() -> Registry:
     )
 
     # Tasks
-    task_repo = InMemoryTaskRepository()
     task_service = TaskService(task_repo)
 
     # Conversations
-    conversation_repo = InMemoryConversationRepository()
     conversation_service = ConversationService(
         conversation_repo, agent_service, execution_service
     )
 
     # Tools
-    tool_repo = InMemoryToolRepository()
     tool_service = ToolService(tool_repo, action_client, rag_client)
 
     # Steps
-    step_repo = InMemoryStepRepository()
     step_service = StepService(step_repo)
 
     # Card

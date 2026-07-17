@@ -97,16 +97,15 @@ public class AuditLogService {
             List<Object[]> aggregates = auditLogRepository.aggregateLatency(
                     TenantContext.resolveOrDefault(tenantId), start, end, pageable);
 
-            long totalRequests = 0L;
-            long totalErrors = 0L;
+            long[] totals = new long[2]; // [0]=totalRequests, [1]=totalErrors
             List<LatencyStats> perPath = aggregates.stream().map(row -> {
                 String path = row[0] != null ? row[0].toString() : null;
                 long pathTotal = row[1] != null ? ((Number) row[1]).longValue() : 0L;
                 Double avgDuration = row[2] != null ? ((Number) row[2]).doubleValue() : null;
                 long maxDuration = row[3] != null ? ((Number) row[3]).longValue() : 0L;
                 long errors = row[4] != null ? ((Number) row[4]).longValue() : 0L;
-                totalRequests += pathTotal;
-                totalErrors += errors;
+                totals[0] += pathTotal;
+                totals[1] += errors;
                 return LatencyStats.builder()
                         .path(path)
                         .totalRequests(pathTotal)
@@ -117,6 +116,8 @@ public class AuditLogService {
                         .build();
             }).toList();
 
+            long totalRequests = totals[0];
+            long totalErrors = totals[1];
             Double overallErrorRate = totalRequests == 0 ? 0.0 : (double) totalErrors / totalRequests;
             return AuditLogStatistics.builder()
                     .perPath(perPath)

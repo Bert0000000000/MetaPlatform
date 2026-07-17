@@ -240,10 +240,10 @@ export default function RuleManagementPage() {
             <Switch />
           </Form.Item>
           <Form.Item name="conditions" label="触发条件">
-            <ConditionEditor />
+            <ConditionEditor value={[]} onChange={() => {}} />
           </Form.Item>
           <Form.Item name="actions" label="执行动作">
-            <ActionEditor />
+            <ActionEditor value={[]} onChange={() => {}} />
           </Form.Item>
         </Form>
       </Modal>

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Card, Empty, Form, Input, Button, Space, Typography } from 'antd';
+import { Card, Empty, Form, Input, Space, Typography } from 'antd';
 import { ThunderboltOutlined } from '@ant-design/icons';
 import type { PromptTemplate } from '@/types';
 

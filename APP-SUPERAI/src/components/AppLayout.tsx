@@ -9,7 +9,6 @@ import {
   ProfileOutlined,
   AimOutlined,
   ClusterOutlined,
-  ThunderboltOutlined,
   PlayCircleOutlined,
   FileSearchOutlined,
   ExperimentOutlined,

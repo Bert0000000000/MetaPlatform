@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Card, Table, Button, Space, Modal, Form, Input, Select, Tag, message, Popconfirm, Tabs, Typography } from 'antd';
+import { Card, Table, Button, Space, Modal, Form, Input, Select, Tag, message, Popconfirm, Tabs } from 'antd';
 import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
 import { listDomains, createDomain, deleteDomain, listEntities, createEntity, deleteEntity, listFlows } from '@/api/dataArchitecture';
 import type { DataDomain, DataEntity, DataFlow } from '@/types';

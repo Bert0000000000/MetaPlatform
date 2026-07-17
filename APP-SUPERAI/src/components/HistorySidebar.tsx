@@ -1,5 +1,8 @@
 import { useState, useMemo, useCallback } from 'react';
-import { Button, Input, Conversations, Space, Tooltip, Typography } from 'antd';
+import { Button, Input, Typography } from 'antd';
+import type { MenuProps } from 'antd';
+import { Conversations } from '@ant-design/x';
+import type { ConversationItemType, ItemType } from '@ant-design/x/es/conversations/interface';
 import {
   PlusOutlined,
   MessageOutlined,
@@ -46,9 +49,9 @@ export default function HistorySidebar({
     return result;
   }, [sessions, searchKeyword, showFavoritesOnly]);
 
-  const conversationItems = useMemo(
+  const conversationItems = useMemo<ItemType[]>(
     () =>
-      filteredSessions.map((s) => ({
+      filteredSessions.map<ItemType>((s) => ({
         key: s.id,
         label: (
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -64,11 +67,12 @@ export default function HistorySidebar({
   );
 
   const handleMenuClick = useCallback(
-    (key: string, conversationKey: string) => {
-      if (key === 'delete') {
-        onDelete(conversationKey);
-      } else if (key === 'favorite') {
-        onToggleFavorite(conversationKey);
+    (info: { key: string }, conversationKey: ConversationItemType['key']) => {
+      const sessionId = String(conversationKey);
+      if (info.key === 'delete') {
+        onDelete(sessionId);
+      } else if (info.key === 'favorite') {
+        onToggleFavorite(sessionId);
       }
     },
     [onDelete, onToggleFavorite],
@@ -118,8 +122,8 @@ export default function HistorySidebar({
                 danger: true,
               },
             ],
-            onClick: (info) => handleMenuClick(info.key, conversation.key),
-          })}
+            onClick: (info) => handleMenuClick(info, conversation.key),
+          } satisfies MenuProps)}
         />
       </div>
 

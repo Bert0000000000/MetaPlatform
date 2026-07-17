@@ -5,6 +5,8 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any, Optional
 
+from app.audit.schemas import AuditAction
+from app.audit.service import AuditService
 from app.clients.agent_client import AgentClient
 from app.delegation.repository import DelegationRepository
 from app.delegation.schemas import (
@@ -30,10 +32,13 @@ class DelegationService:
         repository: DelegationRepository,
         agent_client: AgentClient,
         outbox_service: OutboxService,
+        audit_service: Optional[AuditService] = None,
     ) -> None:
         self._repo = repository
         self._agent_client = agent_client
         self._outbox = outbox_service
+        # 审计服务可选；为空时失败回写审计静默跳过（保持向后兼容）
+        self._audit = audit_service
 
     async def delegate_task(
         self,
@@ -87,7 +92,11 @@ class DelegationService:
                 "status": status,
             }
             if status == TaskStatus.COMPLETED:
-                update_fields["result"] = result.get("result")
+                # 兼容真实 Agent 路径：result 内可能缺少 artifacts 字段，
+                # 兜底写入空列表，保证 data.result.artifacts 始终存在
+                inner_result = dict(result.get("result") or {})
+                inner_result.setdefault("artifacts", [])
+                update_fields["result"] = inner_result
                 update_fields["completed_at"] = _now()
             elif status == TaskStatus.FAILED:
                 update_fields["error"] = result.get("error")
@@ -134,6 +143,16 @@ class DelegationService:
                 {"taskId": task.id if task else "", "error": "Send failed"},
                 trace_id=trace_id,
             )
+            # 失败回写 TASK_FAILED 审计，使 TASK_DELEGATED/TASK_FAILED 双记录成对出现
+            if self._audit is not None and task is not None:
+                await self._audit.record_audit(
+                    tenant_id,
+                    AuditAction.TASK_FAILED,
+                    actor_id=task.source_agent_id,
+                    target_id=task.target_agent_id,
+                    details={"taskId": task.id, "reason": "Send failed"},
+                    trace_id=trace_id,
+                )
             if task is None:
                 raise TaskNotFoundError(f"Task 不存在")
             return task
@@ -226,7 +245,8 @@ class DelegationService:
 
     async def get_status_history(self, tenant_id: str, task_id: str) -> list:
         task = await self.get_task(tenant_id, task_id)
-        return task.status_history
+        # 按 timestamp 升序返回，确保消费方拿到稳定的时间线
+        return sorted(task.status_history, key=lambda e: e.timestamp)
 
     async def get_artifacts(self, tenant_id: str, task_id: str) -> list:
         task = await self.get_task(tenant_id, task_id)

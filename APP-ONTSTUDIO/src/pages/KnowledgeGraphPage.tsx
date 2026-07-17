@@ -8,7 +8,7 @@ export default function KnowledgeGraphPage() {
   const [concepts, setConcepts] = useState<Concept[]>([]);
 
   useEffect(() => {
-    listConcepts({}).then((r) => setConcepts(r.items));
+    listConcepts().then((r) => setConcepts(r.items));
   }, []);
 
   const nodes = concepts.map((c) => ({

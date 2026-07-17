@@ -16,7 +16,7 @@ const MOCK_VERSIONS: VersionEntry[] = [
   { version: '1.2.0', timestamp: '2026-07-10T09:00:00Z', changeLog: '知识库从财务切到 HR' },
 ];
 
-export default function EmployeeVersionHistory({ employeeId }: EmployeeVersionHistoryProps) {
+export default function EmployeeVersionHistory(_props: EmployeeVersionHistoryProps) {
   return (
     <Card title="版本历史">
       {MOCK_VERSIONS.length === 0 ? (

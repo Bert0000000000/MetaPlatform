@@ -61,7 +61,7 @@ services:
     networks:
       - infra-net
     healthcheck:
-      test: ["CMD", "bash", "-c", "zookeeper-shell localhost:2181 ls / 2>/dev/null | grep -q '\\[zookeeper\\]'"]
+      test: ["CMD", "bash", "-c", "echo srvr | nc -w 2 localhost 2181 | grep -q Zookeeper"]
       interval: 10s
       timeout: 10s
       retries: 5

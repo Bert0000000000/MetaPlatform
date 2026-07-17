@@ -67,6 +67,28 @@ class RateLimitService:
         )
         return self._repo.insert(record)
 
+    def find_enabled_rule(
+        self,
+        tenant_id: str,
+        scope: "RateLimitScope",
+        target_id: str,
+        type_: "RateLimitType",
+    ) -> Optional[RateLimitRecord]:
+        """Pick the first enabled rule for ``(scope, target, type)``."""
+
+        from app.ratelimits.schemas import RateLimitScope, RateLimitType
+
+        records = self._repo.list(tenant_id)
+        for record in records:
+            if (
+                record.enabled
+                and record.scope == scope
+                and record.target_id == target_id
+                and record.type == type_
+            ):
+                return record
+        return None
+
     def list(
         self,
         tenant_id: str,
@@ -134,6 +156,10 @@ class RateLimitService:
         # In-memory stats reset: record reset timestamp only.
         record.updated_at = _now()
         self._repo.update(record)
+        # Clear any in-memory counter held by an associated RateLimitGuard.
+        guard = getattr(self, "_guard", None)
+        if guard is not None:
+            guard.reset()
         return {
             "rateLimitId": rate_limit_id,
             "resetAt": record.updated_at,

@@ -1,6 +1,3 @@
-import { get, post, put, del } from './client';
-import type { PageResponse } from '@/types';
-
 export interface ScheduleIntent {
   intentId: string;
   userId: string;
@@ -56,8 +53,6 @@ export interface ScheduleExecution {
   finalReport?: string;
 }
 
-const STORAGE_KEY = 'mate_superai_schedule';
-
 function load<T>(key: string): T[] {
   const raw = localStorage.getItem(key);
   if (!raw) return [];
@@ -105,7 +100,7 @@ export async function detectIntent(text: string): Promise<ScheduleIntent> {
   return intent;
 }
 
-export async function matchEmployees(intent: string): Promise<Array<{ employeeId: string; name: string; confidence: number }>> {
+export async function matchEmployees(_intent: string): Promise<Array<{ employeeId: string; name: string; confidence: number }>> {
   await new Promise((r) => setTimeout(r, 500));
   return [
     { employeeId: 'finance-bot', name: '财务数字员工', confidence: 0.92 },

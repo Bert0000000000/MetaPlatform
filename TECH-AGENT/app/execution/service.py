@@ -7,7 +7,7 @@ from typing import AsyncIterator, Dict
 
 from app.agents.schemas import Agent, AgentStatus
 from app.agents.service import AgentService
-from app.common.errors import AgentNotActiveError
+from app.common.errors import AgentNotActiveError, AgentNotFoundError
 from app.execution.engine import ExecutionEngine
 from app.execution.schemas import (
     ExecuteContext,
@@ -38,12 +38,7 @@ class ExecutionService:
         *,
         trace_id: str | None = None,
     ) -> ExecuteResponse:
-        agent = await self._agent_service.get(tenant_id, agent_id)
-        if agent.status != AgentStatus.ACTIVE:
-            raise AgentNotActiveError(
-                "Agent 未激活，无法执行",
-                data={"agentId": agent_id, "status": agent.status.value},
-            )
+        agent = await self._ensure_active_agent(tenant_id, agent_id)
         started_at = datetime.now(timezone.utc)
         result = await self._engine.run(
             agent,
@@ -63,12 +58,7 @@ class ExecutionService:
         *,
         trace_id: str | None = None,
     ) -> AsyncIterator[Dict[str, object]]:
-        agent = await self._agent_service.get(tenant_id, agent_id)
-        if agent.status != AgentStatus.ACTIVE:
-            raise AgentNotActiveError(
-                "Agent 未激活，无法执行",
-                data={"agentId": agent_id, "status": agent.status.value},
-            )
+        agent = await self._ensure_active_agent(tenant_id, agent_id)
         async for event in self._engine.stream(
             agent,
             tenant_id,
@@ -78,6 +68,39 @@ class ExecutionService:
             trace_id=trace_id,
         ):
             yield event
+
+    async def validate_agent(
+        self,
+        tenant_id: str,
+        agent_id: str,
+    ) -> None:
+        """Validate the agent for streaming endpoints.
+
+        Must be invoked BEFORE constructing the ``StreamingResponse`` so that
+        ``AgentNotFoundError`` / ``AgentNotActiveError`` surface through the
+        global exception handlers as a regular JSON envelope, instead of
+        being raised inside the async-generator after the response has
+        started (which would otherwise bubble up as
+        ``RuntimeError: Caught handled exception, but response already started``).
+        """
+
+        await self._ensure_active_agent(tenant_id, agent_id)
+
+    async def _ensure_active_agent(
+        self,
+        tenant_id: str,
+        agent_id: str,
+    ) -> Agent:
+        try:
+            agent = await self._agent_service.get(tenant_id, agent_id)
+        except AgentNotFoundError:
+            raise
+        if agent.status != AgentStatus.ACTIVE:
+            raise AgentNotActiveError(
+                "Agent 未激活，无法执行",
+                data={"agentId": agent_id, "status": agent.status.value},
+            )
+        return agent
 
     def _build_context_string(self, context: ExecuteContext | None) -> str:
         if not context:

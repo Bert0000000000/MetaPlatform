@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Card, Table, Button, Space, Modal, Form, Input, Select, Tag, message, Popconfirm, List, Typography } from 'antd';
+import { Card, Table, Button, Space, Modal, Form, Input, Select, Tag, message, Popconfirm, List } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { listPrinciples, createPrinciple, updatePrinciple, deletePrinciple } from '@/api/governance';
 import type { Principle } from '@/types';
@@ -39,7 +39,12 @@ export default function PrinciplesPage() {
       title: '操作', key: 'action',
       render: (_: unknown, r: Principle) => (
         <Space>
-          <Button type="link" size="small" icon={<EditOutlined />} onClick={() => { setEditing(r); form.setFieldsValue({ ...r, standards: r.standards?.join('\n') }); setModalOpen(true); }}>编辑</Button>
+          <Button type="link" size="small" icon={<EditOutlined />} onClick={() => {
+            setEditing(r);
+            const standardsValue = Array.isArray(r.standards) ? r.standards.join('\n') : '';
+            form.setFieldsValue({ ...r, standards: standardsValue } as unknown as Partial<Principle>);
+            setModalOpen(true);
+          }}>编辑</Button>
           <Popconfirm title="确认删除？" onConfirm={async () => { await deletePrinciple(r.id); message.success('已删除'); load(); }}><Button type="link" size="small" danger icon={<DeleteOutlined />}>删除</Button></Popconfirm>
         </Space>
       ),

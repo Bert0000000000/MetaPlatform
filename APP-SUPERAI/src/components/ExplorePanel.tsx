@@ -7,7 +7,6 @@ import {
   Space,
   Typography,
   Tabs,
-  Descriptions,
   Table,
   Empty,
   Input as AntInput,

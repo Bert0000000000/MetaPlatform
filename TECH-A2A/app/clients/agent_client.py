@@ -150,6 +150,8 @@ class AgentClient:
         task_type: str,
         payload: Dict[str, Any],
     ) -> Dict[str, Any]:
+        # mock 模式：将 artifacts 放在 result 内部，保证消费方从 result 中可直接
+        # 拿到产出物占位列表（与真实 Agent 路径在 result 内放置 artifacts 对齐）。
         return {
             "id": task_id,
             "status": "COMPLETED",
@@ -157,8 +159,8 @@ class AgentClient:
                 "taskType": task_type,
                 "summary": f"Mock execution for task {task_id}",
                 "output": payload,
+                "artifacts": [],
             },
-            "artifacts": [],
         }
 
     def _mock_get_task(self, task_id: str) -> Dict[str, Any]:

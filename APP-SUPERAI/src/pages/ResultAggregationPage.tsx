@@ -1,5 +1,4 @@
 import { Card, Empty, Typography } from 'antd';
-import { aggregateResults } from '@/api/schedule';
 
 export default function ResultAggregationPage() {
   return (

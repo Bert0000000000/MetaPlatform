@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Card, Empty, Spin, Table, Tag, Typography, Button } from 'antd';
+import { Card, Empty, Spin, Table, Tag, Button } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { ReloadOutlined } from '@ant-design/icons';
 import type { McpClient } from '@/types';

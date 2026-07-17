@@ -427,9 +427,7 @@ async def test_highlight_html_contains_mark_tags(
 # --------------------------------------------------------- API controller tests
 
 
-@patch("httpx.AsyncClient.post", new_callable=AsyncMock)
 async def test_locate_citations_api(
-    mock_post: AsyncMock,
     client: httpx.AsyncClient,
     tenant_headers: dict[str, str],
 ) -> None:
@@ -449,10 +447,6 @@ async def test_locate_citations_api(
         headers=tenant_headers,
     )
     doc_id = resp.json()["data"]["id"]
-
-    mock_post.return_value = _mock_response(
-        {"data": [{"embedding": [0.9, 0.1, 0.0]}]}
-    )
 
     resp = await client.post(
         "/api/v1/rag/citations/locate",

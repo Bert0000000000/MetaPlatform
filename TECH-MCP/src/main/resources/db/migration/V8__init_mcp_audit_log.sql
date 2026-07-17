@@ -1,5 +1,8 @@
+-- V8: MCP Audit Log (P3-MCP-03)
+-- Phase 3：调用审计（调用列表/详情/Token 统计/错误/趋势）
+
 CREATE TABLE mcp_audit_log (
-    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id              UUID PRIMARY KEY,
     tenant_id       VARCHAR(64) NOT NULL DEFAULT 'tenant-default',
     tool_id         UUID,
     tool_code       VARCHAR(128),
@@ -11,10 +14,10 @@ CREATE TABLE mcp_audit_log (
     error_message   TEXT,
     trace_id        VARCHAR(64),
     user_id         VARCHAR(64),
-    called_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    called_at       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_mcp_audit_tenant_called ON mcp_audit_log (tenant_id, called_at DESC);
-CREATE INDEX idx_mcp_audit_tool ON mcp_audit_log (tenant_id, tool_id, called_at DESC);
-CREATE INDEX idx_mcp_audit_status ON mcp_audit_log (tenant_id, status, called_at DESC);
+CREATE INDEX idx_mcp_audit_tenant_called ON mcp_audit_log (tenant_id, called_at);
+CREATE INDEX idx_mcp_audit_tool ON mcp_audit_log (tenant_id, tool_id, called_at);
+CREATE INDEX idx_mcp_audit_status ON mcp_audit_log (tenant_id, status, called_at);
 CREATE INDEX idx_mcp_audit_trace ON mcp_audit_log (trace_id);

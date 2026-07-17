@@ -106,7 +106,7 @@ public class TestCaseService {
                 actual = results.stream()
                         .filter(r -> entity.getRuleId().equals(r.getRuleId()))
                         .findFirst()
-                        .map(r -> r.getAction() != null ? r.getAction().getConfig() : Map.of("matched", r.isMatched()))
+                        .map(r -> r.getAction() != null ? r.getAction().getConfig() : Map.<String, Object>of("matched", r.isMatched()))
                         .orElse(Map.of("matched", false));
             } else {
                 actual = Map.of("results", results.stream()

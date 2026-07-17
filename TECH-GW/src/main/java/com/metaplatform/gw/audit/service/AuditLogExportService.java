@@ -51,7 +51,7 @@ public class AuditLogExportService {
 
     private static String toCsvLine(AuditLogResponse r) {
         return String.format("%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s",
-                escape(r.getId()),
+                escape(r.getId() == null ? "" : r.getId().toString()),
                 escape(r.getTenantId()),
                 escape(r.getApiId() == null ? "" : r.getApiId().toString()),
                 escape(r.getPath()),

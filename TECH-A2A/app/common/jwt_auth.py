@@ -23,11 +23,14 @@ JWT_WHITELIST: Set[str] = {
     "/api/v1/a2a/health",
     "/.well-known/agent.json",
     "/api/v1/a2a/jsonrpc",
+    "/api/v1/a2a/agents/.well-known/agent.json",
+    "/api/v1/a2a/.well-known/agent.json",
 }
 
 # Path prefixes that bypass JWT enforcement (for dynamic routes).
 JWT_WHITELIST_PREFIXES: tuple[str, ...] = (
     "/.well-known/agents/",
+    "/api/v1/a2a/.well-known/agents/",
 )
 
 

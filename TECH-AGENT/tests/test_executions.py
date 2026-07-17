@@ -159,3 +159,24 @@ async def test_stream_agent_rejects_draft(
     )
     assert resp.status_code == 409
     assert resp.json()["code"] == int(ErrorCode.AGENT_NOT_ACTIVE)
+
+
+async def test_stream_agent_rejects_unknown_agent(
+    client: AsyncClient,
+    tenant_headers: dict[str, str],
+) -> None:
+    """Regression: SSE endpoint must surface 404 for unknown agents.
+
+    The validation must happen BEFORE the StreamingResponse starts sending,
+    so that the global exception handler can produce the standard JSON
+    error envelope. Otherwise starlette raises
+    ``RuntimeError: Caught handled exception, but response already started``.
+    """
+
+    resp = await client.post(
+        f"{BASE}/agents/agt-not-exist/execute/stream",
+        json={"input": "test"},
+        headers=tenant_headers,
+    )
+    assert resp.status_code == 404
+    assert resp.json()["code"] == int(ErrorCode.AGENT_NOT_FOUND)

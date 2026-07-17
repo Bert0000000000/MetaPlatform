@@ -89,6 +89,32 @@ async def test_delegation_stats(
     assert data["completed"] >= 1  # mock mode completes immediately
 
 
+async def test_delegation_stats_success_rate(
+    client: AsyncClient,
+    tenant_headers: dict[str, str],
+) -> None:
+    """delegation-stats 应返回 successRate = completed / totalDelegations。"""
+
+    await _generate_audit_data(client, tenant_headers)
+
+    resp = await client.get(f"{BASE}/audit/delegation-stats", headers=tenant_headers)
+    assert resp.status_code == 200
+    data = resp.json()["data"]
+    # 保留原有字段
+    assert "completed" in data
+    assert "failed" in data
+    assert "cancelled" in data
+    assert "byAction" in data
+    assert "totalDelegations" in data
+    # 新增 successRate 字段，值在 [0, 1] 区间
+    assert "successRate" in data
+    rate = data["successRate"]
+    assert isinstance(rate, (int, float))
+    assert 0.0 <= rate <= 1.0
+    # mock 模式下委派的 task 直接完成，比例应大于 0
+    assert rate > 0.0
+
+
 async def test_error_stats(
     client: AsyncClient,
     tenant_headers: dict[str, str],

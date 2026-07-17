@@ -2,7 +2,9 @@ package com.metaplatform.ea.process.controller;
 
 import com.metaplatform.ea.common.ApiResponse;
 import com.metaplatform.ea.process.dto.BusinessProcessResponse;
+import com.metaplatform.ea.process.dto.BusinessProcessVersionResponse;
 import com.metaplatform.ea.process.dto.CreateBusinessProcessRequest;
+import com.metaplatform.ea.process.dto.CreateProcessVersionRequest;
 import com.metaplatform.ea.process.dto.UpdateBusinessProcessRequest;
 import com.metaplatform.ea.process.service.BusinessProcessService;
 import jakarta.validation.Valid;

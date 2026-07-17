@@ -1,4 +1,4 @@
-import { Card, Form, Input, InputNumber, Switch, Select } from 'antd';
+import { Card, Form, Input, Switch, Select } from 'antd';
 import type { FormConfig } from '@/types';
 
 interface FormSettingsProps {

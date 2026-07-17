@@ -1,4 +1,4 @@
-import { get, post, put, del } from './client';
+import { get, post, del } from './client';
 import type { PageResponse } from '@/types';
 
 export interface DataSource {
@@ -66,7 +66,7 @@ export async function createDataSource(req: Omit<DataSource, 'id' | 'createdAt' 
   }
 }
 
-export async function testConnection(req: Omit<DataSource, 'id' | 'createdAt' | 'tables'>): Promise<{ ok: boolean; message: string; tables?: string[] }> {
+export async function testConnection(_req: Omit<DataSource, 'id' | 'createdAt' | 'tables'>): Promise<{ ok: boolean; message: string; tables?: string[] }> {
   await new Promise((r) => setTimeout(r, 800));
   return {
     ok: true,

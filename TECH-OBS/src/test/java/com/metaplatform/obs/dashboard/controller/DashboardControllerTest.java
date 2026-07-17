@@ -80,7 +80,7 @@ class DashboardControllerTest {
         mockMvc.perform(post("/api/v1/obs/dashboards/" + id + "/share"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.shareToken").value("abc-token"))
-                .andExpect(jsonPath("$.data.isPublic").value(true));
+                .andExpect(jsonPath("$.data.public").value(true));
     }
 
     @Test
@@ -125,7 +125,7 @@ class DashboardControllerTest {
                         .contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.title").value("Updated"))
-                .andExpect(jsonPath("$.data.isPublic").value(true));
+                .andExpect(jsonPath("$.data.public").value(true));
     }
 
     @Test
@@ -143,7 +143,6 @@ class DashboardControllerTest {
                 .id(id).title("Overview")
                 .layout(JsonNodeFactory.instance.arrayNode())
                 .panels(JsonNodeFactory.instance.arrayNode())
-                .exportedAt(Instant.now())
                 .build();
         when(dashboardService.export(eq(id))).thenReturn(export);
 

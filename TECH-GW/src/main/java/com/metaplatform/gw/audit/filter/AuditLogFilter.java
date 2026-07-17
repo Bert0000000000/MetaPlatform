@@ -52,15 +52,14 @@ public class AuditLogFilter implements GlobalFilter, Ordered {
             public Mono<Void> writeWith(org.reactivestreams.Publisher<? extends DataBuffer> body) {
                 return super.writeWith(Flux.from(body)
                         .collectList()
-                        .flatMap(buffers -> {
+                        .flatMapMany(buffers -> {
                             long responseSize = buffers.stream()
                                     .mapToLong(DataBuffer::readableByteCount)
                                     .sum();
                             long durationMs = Duration.ofNanos(System.nanoTime() - startNs).toMillis();
                             record(exchange, request, response, requestSize, responseSize, durationMs, null);
                             return Flux.fromIterable(buffers)
-                                    .doFinally(s -> DataBufferUtils.release(buffers.get(buffers.size() - 1)))
-                                    .then();
+                                    .doFinally(s -> DataBufferUtils.release(buffers.get(buffers.size() - 1)));
                         }));
             }
         };
@@ -98,7 +97,7 @@ public class AuditLogFilter implements GlobalFilter, Ordered {
             InetSocketAddress remote = request.getRemoteAddress();
             String clientIp = remote != null && remote.getAddress() != null
                     ? remote.getAddress().getHostAddress() : null;
-            String method = request.getMethodValue();
+            String method = request.getMethod().name();
 
             RecordAuditLogRequest recordRequest = RecordAuditLogRequest.builder()
                     .tenantId(tenantId)

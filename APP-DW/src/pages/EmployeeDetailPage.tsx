@@ -150,7 +150,7 @@ export default function EmployeeDetailPage() {
         title={
           <Space>
             <Badge
-              status={isRunning ? 'success' : employee.status === 'ERROR' ? 'error' : 'default'}
+              status={isRunning ? 'success' : 'default'}
               offset={[0, 30]}
             >
               <Avatar size={64} src={employee.avatar} style={{ background: '#f0f5ff', color: '#1677ff' }}>
@@ -401,8 +401,8 @@ export default function EmployeeDetailPage() {
               children: <ExtractionPanel employeeId={employee.employeeId} />,
             },
           ]}
-        }
-      />
+        />
+      </Card>
     </div>
   );
 }

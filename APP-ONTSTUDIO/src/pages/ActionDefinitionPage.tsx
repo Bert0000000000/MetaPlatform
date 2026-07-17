@@ -6,7 +6,6 @@ import {
   Form,
   Input,
   Modal,
-  Select,
   Space,
   Switch,
   Table,
@@ -16,7 +15,7 @@ import {
   Popconfirm,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { PlusOutlined, EditOutlined, DeleteOutlined, ThunderboltOutlined } from '@ant-design/icons';
+import { PlusOutlined, DeleteOutlined, ThunderboltOutlined } from '@ant-design/icons';
 import { createAction, deleteAction, listActions } from '@/api/actions';
 import type { ActionDefinition } from '@/api/actions';
 

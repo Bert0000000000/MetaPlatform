@@ -1,4 +1,4 @@
-import { get, post } from './client';
+import { get } from './client';
 
 export interface ExternalAgent {
   agentId: string;

@@ -117,6 +117,6 @@ class TopologyControllerTest {
 
         mockMvc.perform(get("/api/v1/obs/service-topology/health/tech-iam"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.service").value("tech-iam"));
+                .andExpect(jsonPath("$.data.serviceName").value("tech-iam"));
     }
 }

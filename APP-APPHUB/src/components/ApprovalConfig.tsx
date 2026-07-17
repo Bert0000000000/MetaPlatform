@@ -1,4 +1,4 @@
-import { Form, Input, Select, InputNumber, Switch, Button, Space, Typography, Divider } from 'antd';
+import { Form, Input, Select, InputNumber, Switch, Button, Space, Divider } from 'antd';
 import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
 import type { ApprovalNodeConfig, AssigneeType, ApprovalMode } from '@/types';
 

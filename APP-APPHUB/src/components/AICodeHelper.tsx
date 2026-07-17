@@ -66,7 +66,7 @@ export default function AICodeHelper({ defaultLanguage = 'typescript' }: AICodeH
             <Typography.Text type="secondary">{result.description}</Typography.Text>
             {result.dependencies && (
               <Space wrap>
-                {result.dependencies.map((d) => (
+                {result.dependencies.map((d: string) => (
                   <Tag key={d} color="blue">{d}</Tag>
                 ))}
               </Space>

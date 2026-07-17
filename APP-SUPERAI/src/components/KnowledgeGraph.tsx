@@ -96,7 +96,6 @@ export default function KnowledgeGraph({ data, height = 400 }: KnowledgeGraphPro
     if (layout !== 'force' || nodes.length === 0) return;
 
     let animationId: number;
-    const nodeMap = new Map(nodes.map((n) => [n.id, n]));
 
     const tick = () => {
       setNodes((prev) => {

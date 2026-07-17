@@ -128,7 +128,7 @@ export default function AnalysisPanel({ query, onQueryChange, onResult }: Analys
           }
         />
         {auditResult.risks.length > 0 && (
-          <Card size="small" title={<Typography.Text danger>严重风险</Typography.Text>}>
+          <Card size="small" title={<Typography.Text type="danger">严重风险</Typography.Text>}>
             {auditResult.risks.map((r, i) => (
               <Tag key={i} color="red" icon={<CloseCircleOutlined />} style={{ marginBottom: 4 }}>
                 {r}

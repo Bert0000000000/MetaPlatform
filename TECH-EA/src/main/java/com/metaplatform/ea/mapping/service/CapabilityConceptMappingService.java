@@ -5,18 +5,27 @@ import com.metaplatform.ea.capability.service.BusinessCapabilityService;
 import com.metaplatform.ea.common.ErrorCode;
 import com.metaplatform.ea.common.TenantContext;
 import com.metaplatform.ea.exception.EaException;
+import com.metaplatform.ea.mapping.dto.ConsistencyCheckResponse;
 import com.metaplatform.ea.mapping.dto.CreateMappingRequest;
 import com.metaplatform.ea.mapping.dto.MapConceptRequest;
+import com.metaplatform.ea.mapping.dto.MappingFilterRequest;
 import com.metaplatform.ea.mapping.dto.MappingResponse;
+import com.metaplatform.ea.mapping.dto.SyncResultResponse;
 import com.metaplatform.ea.mapping.dto.UpdateMappingRequest;
 import com.metaplatform.ea.mapping.entity.CapabilityConceptMappingEntity;
 import com.metaplatform.ea.mapping.repository.CapabilityConceptMappingRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -37,7 +46,7 @@ public class CapabilityConceptMappingService {
         String tenantId = TenantContext.getOrDefault();
         capabilityService.findById(request.getCapabilityId());
         validateMappingType(request.getMappingType());
-        validateJson(request.getMetadata());
+        validateJson(request.getMetadata(), "metadata");
         ontIntegrationService.validateConceptExists(request.getConceptId());
 
         if (mappingRepository.existsByTenantIdAndCapabilityIdAndConceptIdAndDeletedAtIsNull(
@@ -228,7 +237,7 @@ public class CapabilityConceptMappingService {
             entity.setConceptCode(request.getConceptCode());
         }
         if (request.getMetadata() != null) {
-            validateJson(request.getMetadata());
+            validateJson(request.getMetadata(), "metadata");
             entity.setMetadata(normalizeJson(request.getMetadata(), "{}"));
         }
         entity.setUpdatedAt(Instant.now());

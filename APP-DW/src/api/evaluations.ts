@@ -1,5 +1,4 @@
-import { get, post, put, del } from './client';
-import type { PageResponse } from '@/types';
+import { get } from './client';
 
 export interface ConversationRecord {
   conversationId: string;
@@ -136,7 +135,7 @@ export async function listReports(employeeId?: string): Promise<EvaluationReport
   return employeeId ? items.filter((r) => r.employeeId === employeeId) : items;
 }
 
-export async function getQualityTrend(employeeId: string): Promise<Array<{
+export async function getQualityTrend(_employeeId: string): Promise<Array<{
   date: string;
   score: number;
 }>> {

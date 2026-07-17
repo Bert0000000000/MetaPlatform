@@ -1,4 +1,4 @@
-import { Card, Descriptions, Tag, Typography, Space } from 'antd';
+import { Card, Descriptions, Typography, Space } from 'antd';
 import { CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import type { EvaluationReport } from '@/api/evaluations';
 

@@ -61,6 +61,7 @@ export default function FlowDesignerPage() {
   const [submitting, setSubmitting] = useState(false);
   const [testModalOpen, setTestModalOpen] = useState(false);
   const [publishModalOpen, setPublishModalOpen] = useState(false);
+  const [aiGenerateOpen, setAiGenerateOpen] = useState(false);
   const [testResult, setTestResult] = useState<FlowTestResult | null>(null);
   const [validationResult, setValidationResult] = useState<FlowValidationResult | null>(null);
   const [formModules, setFormModules] = useState<ModuleItem[]>([]);
@@ -609,13 +610,15 @@ export default function FlowDesignerPage() {
 
       <Modal
         title="AI 流程生成"
-        open={false}
+        open={aiGenerateOpen}
+        onCancel={() => setAiGenerateOpen(false)}
         footer={null}
         width={680}
       >
         <AIProcessGenerate
           onApply={(gen) => {
             message.info(`已应用 AI 生成的流程：${gen.name}`);
+            setAiGenerateOpen(false);
           }}
         />
       </Modal>

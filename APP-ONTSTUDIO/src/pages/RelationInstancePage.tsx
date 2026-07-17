@@ -5,7 +5,6 @@ import {
   Table,
   Tag,
   Typography,
-  Tabs,
 } from 'antd';
 import {
   listRelationInstances,

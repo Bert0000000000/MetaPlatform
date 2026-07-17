@@ -88,7 +88,7 @@ class OntIntegrationServiceTest {
             if (status.is4xxClientError() || status.is5xxServerError()) {
                 return Mono.just(response)
                         .flatMap(r -> Mono.error(WebClientResponseException.create(
-                                status, status.getReasonPhrase(), null, new byte[0], null)));
+                                status.value(), status.getReasonPhrase(), null, new byte[0], null)));
             }
             return Mono.just(response);
         };

@@ -1,4 +1,4 @@
-import { Card, Tag, Timeline, Typography } from 'antd';
+import { Card, Space, Tag, Timeline, Typography } from 'antd';
 import type { ReactNode } from 'react';
 import type { ConversationRecord } from '@/api/evaluations';
 
@@ -22,7 +22,7 @@ export default function ReplayPanel({ conversation }: ReplayPanelProps) {
             <div>
               <Space direction="vertical" size={0} style={{ width: '100%' }}>
                 <Typography.Text strong>
-                  {ICON[m.role]} {m.role}
+                  {ICON[m.role] ?? null} {m.role}
                   <Typography.Text type="secondary" style={{ marginLeft: 8, fontSize: 12 }}>
                     {new Date(m.timestamp).toLocaleString()}
                   </Typography.Text>
@@ -36,7 +36,7 @@ export default function ReplayPanel({ conversation }: ReplayPanelProps) {
                     <pre style={{ margin: '8px 0 0 0', fontSize: 11, fontFamily: 'monospace' }}>
                       {JSON.stringify(m.toolCall.args, null, 2)}
                     </pre>
-                    {m.toolCall.result && (
+                    {m.toolCall.result != null && (
                       <pre style={{ margin: '8px 0 0 0', fontSize: 11, fontFamily: 'monospace' }}>
                         {JSON.stringify(m.toolCall.result, null, 2)}
                       </pre>
@@ -51,5 +51,3 @@ export default function ReplayPanel({ conversation }: ReplayPanelProps) {
     </Card>
   );
 }
-
-import { Space } from 'antd';

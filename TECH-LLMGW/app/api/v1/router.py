@@ -2,11 +2,22 @@
 
 from fastapi import APIRouter
 
-from app.api.v1 import audit, chat, cost, embeddings, models, prompts, quotas, ratelimits
+from app.api.v1 import (
+    audit,
+    chat,
+    chat_completions,
+    cost,
+    embeddings,
+    models,
+    prompts,
+    quotas,
+    ratelimits,
+)
 
 router = APIRouter(prefix="/api/v1/llmgw")
 router.include_router(models.router)
 router.include_router(chat.router)
+router.include_router(chat_completions.router)
 router.include_router(embeddings.router)
 router.include_router(prompts.router)
 router.include_router(quotas.router)

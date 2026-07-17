@@ -62,6 +62,16 @@ async def delegate_task(
         details={"taskId": task.id, "taskType": task.task_type},
         trace_id=ctx.trace_id,
     )
+    # 若 mock/同步调用直接完成，补充 TASK_COMPLETED 审计，保证审计统计一致
+    if task.status == TaskStatus.COMPLETED:
+        await audit.record_audit(
+            ctx.tenant_id,
+            AuditAction.TASK_COMPLETED,
+            actor_id=task.source_agent_id,
+            target_id=task.target_agent_id,
+            details={"taskId": task.id, "taskType": task.task_type},
+            trace_id=ctx.trace_id,
+        )
     return success(task_to_dict(task), trace_id=ctx.trace_id)
 
 

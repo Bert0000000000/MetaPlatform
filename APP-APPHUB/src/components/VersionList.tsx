@@ -4,7 +4,6 @@ import {
   RollbackOutlined,
   CloudUploadOutlined,
   DeleteOutlined,
-  DiffOutlined,
   EyeOutlined,
 } from '@ant-design/icons';
 import type { AppVersion } from '@/api/versions';

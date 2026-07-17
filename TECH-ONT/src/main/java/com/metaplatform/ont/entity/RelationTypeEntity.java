@@ -57,7 +57,7 @@ public class RelationTypeEntity {
     @Builder.Default
     private Integer maxCardinality = 0;
 
-    @Column(name = "symmetric", nullable = false)
+    @Column(name = "symmetric_flag", nullable = false)
     @Builder.Default
     private Boolean symmetric = false;
 

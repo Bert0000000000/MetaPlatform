@@ -150,8 +150,6 @@ class TechDebtServiceTest {
         when(repository.findByIdAndDeletedAtIsNull(debtId)).thenReturn(Optional.of(entity));
         when(applicationRepository.findByIdAndDeletedAtIsNull(entity.getScopeId()))
                 .thenReturn(Optional.empty());
-        when(applicationRepository.findByTenantIdAndDeletedAtIsNull("tenant-default"))
-                .thenReturn(List.of());
 
         TechDebtImpactResponse response = service.analyzeImpact(debtId);
 

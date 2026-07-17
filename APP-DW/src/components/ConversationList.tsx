@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Card, Empty, Rate, Table, Tag, Typography } from 'antd';
+import { Card, Empty, Rate, Table, Tag, Typography, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { listConversations, scoreConversation } from '@/api/evaluations';
 import type { ConversationRecord } from '@/api/evaluations';
@@ -55,11 +55,11 @@ export default function ConversationList({ employeeId, onSelect }: ConversationL
     {
       title: '评分',
       dataIndex: 'qualityScore',
-      render: (v?: number, r) => (
+      render: (v?: number, r?: ConversationRecord) => (
         v ? (
           <Rate disabled value={Math.round(v * 5)} />
         ) : (
-          <Rate onChange={(s) => handleRate(r, s / 5)} />
+          <Rate onChange={(s) => r && handleRate(r, s / 5)} />
         )
       ),
     },
@@ -91,5 +91,3 @@ export default function ConversationList({ employeeId, onSelect }: ConversationL
     </Card>
   );
 }
-
-import { message } from 'antd';

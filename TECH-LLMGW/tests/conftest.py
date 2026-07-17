@@ -27,6 +27,13 @@ from app.prompts.repository import PromptRepository  # noqa: E402
 from app.prompts.service import PromptService  # noqa: E402
 from app.quotas.repository import QuotaRepository  # noqa: E402
 from app.quotas.service import QuotaService  # noqa: E402
+from app.ratelimits.runtime import RateLimitGuard  # noqa: E402
+from app.cost.repository import UsageRepository  # noqa: E402
+from app.cost.service import CostReportService  # noqa: E402
+from app.audit.repository import AuditLogRepository  # noqa: E402
+from app.audit.service import AuditLogService  # noqa: E402
+from app.ratelimits.repository import RateLimitRepository  # noqa: E402
+from app.ratelimits.service import RateLimitService  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
 
 from main import app  # noqa: E402
@@ -74,6 +81,9 @@ def registry():
     cost_service = CostReportService(usage_repo)
     audit_repo = AuditLogRepository()
     audit_service = AuditLogService(audit_repo)
+    rate_limit_repo = RateLimitRepository()
+    rate_limit_service = RateLimitService(rate_limit_repo)
+    rate_limit_service._guard = RateLimitGuard(rate_limit_service)
 
     from app.deps import Registry
 
@@ -88,6 +98,8 @@ def registry():
         prompt_service=prompt_service,
         quota_repo=quota_repo,
         quota_service=quota_service,
+        rate_limit_repo=rate_limit_repo,
+        rate_limit_service=rate_limit_service,
         usage_repo=usage_repo,
         cost_service=cost_service,
         audit_repo=audit_repo,

@@ -43,7 +43,9 @@ class AgentRegistryService:
             endpoints=list(request.endpoints),
             capabilities=list(request.capabilities),
             metadata=dict(request.metadata),
-            status=HealthStatus.HEALTHY,
+            # 优先采用调用方显式传入的 status（例如 UNHEALTHY/UNKNOWN），
+            # 缺省仍为 HEALTHY 以保持向后兼容
+            status=request.status if request.status is not None else HealthStatus.HEALTHY,
             last_heartbeat=datetime.now(timezone.utc),
         )
         return await self._repo.create(reg)

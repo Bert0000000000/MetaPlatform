@@ -80,10 +80,9 @@ public class TaskHistoryService {
             if (historic.getProcessInstanceId() != null) {
                 List<HistoricActivityInstance> activities = historyService.createHistoricActivityInstanceQuery()
                         .processInstanceId(historic.getProcessInstanceId())
-                        .taskId(taskId)
                         .list();
                 for (HistoricActivityInstance a : activities) {
-                    if (a.getEndTime() != null) {
+                    if (a.getEndTime() != null && taskId.equals(a.getTaskId())) {
                         entries.add(TaskHistoryEntry.builder()
                                 .type("ACTIVITY_" + (a.getActivityType() != null ? a.getActivityType() : "UNKNOWN"))
                                 .operator(a.getAssignee())

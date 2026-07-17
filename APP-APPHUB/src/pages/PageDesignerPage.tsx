@@ -73,7 +73,7 @@ export default function PageDesignerPage() {
     }
     return (
       <Card title={w.title} size="small">
-        <div style={{ minHeight: 80, padding: 12 }}>{w.config?.text || '文本'}</div>
+        <div style={{ minHeight: 80, padding: 12 }}>{(w.config?.text as string) || '文本'}</div>
       </Card>
     );
   };

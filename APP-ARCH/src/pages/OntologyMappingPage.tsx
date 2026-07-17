@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { Card, Row, Col, Tag, Typography, List, Button } from 'antd';
+import { Card, Row, Col, Tag, Typography, List } from 'antd';
 import { getOntologyMappings } from '@/api/ontologyMapping';
 import OntologyMappingGraph from '@/components/OntologyMapping';
 import type { OntologyMapping, ImpactAnalysisResult } from '@/types';

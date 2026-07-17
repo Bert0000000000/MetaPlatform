@@ -1,4 +1,4 @@
-import { get, post, put, del } from './client';
+import { get, post, del } from './client';
 import type { PageResponse } from '@/types';
 
 export interface FieldMapping {
@@ -75,7 +75,7 @@ export async function createMapping(req: Omit<DataMapping, 'mappingId' | 'create
   }
 }
 
-export async function runMapping(id: string): Promise<{ ok: boolean; rowsAffected: number }> {
+export async function runMapping(_id: string): Promise<{ ok: boolean; rowsAffected: number }> {
   await new Promise((r) => setTimeout(r, 1000));
   return { ok: true, rowsAffected: Math.floor(Math.random() * 1000) };
 }

@@ -122,7 +122,7 @@ export default function ActionPanel({ query, onQueryChange, onResult }: ActionPa
           <Descriptions.Item label="消息">{result.message}</Descriptions.Item>
           <Descriptions.Item label="时间">{new Date(result.executedAt).toLocaleString()}</Descriptions.Item>
         </Descriptions>
-        {result.output && typeof result.output === 'object' && !Array.isArray(result.output) && (
+        {result.output && typeof result.output === 'object' && !Array.isArray(result.output) ? (
           <Table
             size="small"
             style={{ marginTop: 8 }}
@@ -133,7 +133,7 @@ export default function ActionPanel({ query, onQueryChange, onResult }: ActionPa
             ]}
             pagination={false}
           />
-        )}
+        ) : null}
         {Array.isArray(result.output) && (
           <Table
             size="small"

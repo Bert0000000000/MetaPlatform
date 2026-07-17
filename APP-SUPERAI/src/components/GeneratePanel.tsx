@@ -11,7 +11,6 @@ import {
   Alert,
   Descriptions,
   Table,
-  Tabs,
 } from 'antd';
 import {
   CodeOutlined,
@@ -200,7 +199,7 @@ export default function GeneratePanel({ query, onQueryChange, onResult }: Genera
             showIcon
           />
           {reviewResult.securityIssues.length > 0 && (
-            <Card size="small" title={<Typography.Text danger>安全问题</Typography.Text>}>
+            <Card size="small" title={<Typography.Text type="danger">安全问题</Typography.Text>}>
               <Table
                 size="small"
                 dataSource={reviewResult.securityIssues.map((i, idx) => ({ ...i, key: idx }))}

@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS ont_relation_type (
     cardinality VARCHAR(32) NOT NULL DEFAULT 'MANY_TO_MANY',
     min_cardinality INTEGER NOT NULL DEFAULT 0,
     max_cardinality INTEGER NOT NULL DEFAULT 0,
-    symmetric BOOLEAN NOT NULL DEFAULT FALSE,
+    symmetric_flag BOOLEAN NOT NULL DEFAULT FALSE,
     transitive BOOLEAN NOT NULL DEFAULT FALSE,
     inverse_relation_type_id VARCHAR(64),
     attribute_ids JSONB,

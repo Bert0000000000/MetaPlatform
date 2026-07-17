@@ -210,3 +210,54 @@ export interface FlowTestResult {
   finalStatus: 'approved' | 'rejected' | 'error';
   duration: number;
 }
+
+// ============ Gen Result Types ============
+
+export interface FormGenResult {
+  name: string;
+  description: string;
+  fields: Partial<FormField>[];
+}
+
+export interface ProcessGenNode {
+  id: string;
+  name: string;
+  type: FlowNodeType;
+  assignee?: string;
+}
+
+export interface ProcessGenResult {
+  name: string;
+  description: string;
+  bpmnXml: string;
+  nodes: ProcessGenNode[];
+}
+
+export interface CodeGenResult {
+  language: string;
+  description: string;
+  code: string;
+  dependencies?: string[];
+}
+
+export interface DashboardGenWidget {
+  id: string;
+  title: string;
+  type: string;
+  dataSource: string;
+  apiExample?: string;
+}
+
+export interface DashboardApiExample {
+  method: string;
+  url: string;
+  description: string;
+  curl: string;
+}
+
+export interface DashboardGenResult {
+  title: string;
+  description: string;
+  widgets: DashboardGenWidget[];
+  apiExamples: DashboardApiExample[];
+}

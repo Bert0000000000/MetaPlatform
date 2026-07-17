@@ -112,7 +112,9 @@ def _build_default_registry() -> Registry:
 
     # Delegation
     delegation_repo: DelegationRepository = InMemoryDelegationRepository()
-    delegation_service = DelegationService(delegation_repo, agent_client, outbox_service)
+    delegation_service = DelegationService(
+        delegation_repo, agent_client, outbox_service, audit_service=audit_service
+    )
 
     # Inbound
     inbound_service = InboundService(outbox_service)

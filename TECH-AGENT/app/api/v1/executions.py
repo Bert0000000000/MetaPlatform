@@ -61,6 +61,13 @@ async def stream_agent(
     ctx: RequestContext = Depends(request_context_dep),
     service: ExecutionService = Depends(get_execution_service),
 ) -> StreamingResponse:
+    # Validate BEFORE constructing StreamingResponse so that BizException
+    # (AgentNotFoundError / AgentNotActiveError) propagates through the global
+    # exception handler as a regular JSON envelope. Once StreamingResponse is
+    # built, any exception raised inside the async generator would happen
+    # after `http.response.start` has been sent, raising
+    # `RuntimeError: Caught handled exception, but response already started`.
+    await service.validate_agent(ctx.tenant_id, agent_id)
     return StreamingResponse(
         _sse_stream(service, ctx.tenant_id, agent_id, body, ctx.trace_id),
         media_type="text/event-stream",

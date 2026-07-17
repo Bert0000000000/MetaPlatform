@@ -14,11 +14,12 @@ const TYPE_LABEL: Record<NotificationType, { label: string; color: string }> = {
 
 export default function NotificationsPage() {
   const navigate = useNavigate();
+  void navigate;
   const [list, setList] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState<NotificationReadStatus>('all');
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [settings, setSettings] = useState<NotificationSettings | null>(null);
+  const [, setSettings] = useState<NotificationSettings | null>(null);
   const [form] = Form.useForm<NotificationSettings>();
 
   const load = async () => {

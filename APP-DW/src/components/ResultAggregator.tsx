@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { CSSProperties } from 'react';
-import { Button, Card, Empty, Form, Input, Space, Typography, message } from 'antd';
+import { Button, Card, Empty, Space, Typography, message } from 'antd';
 import { ThunderboltOutlined, FileTextOutlined } from '@ant-design/icons';
 import { aggregateResult } from '@/api/collaborations';
 import type { CollaborationTask } from '@/api/collaborations';

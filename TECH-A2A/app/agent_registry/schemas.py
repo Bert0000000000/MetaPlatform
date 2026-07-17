@@ -39,6 +39,9 @@ class RegisterAgentRequest(BaseModel):
     endpoints: List[str] = Field(default_factory=list)
     capabilities: List[str] = Field(default_factory=list)
     metadata: Dict[str, Any] = Field(default_factory=dict)
+    # 可选初始状态：缺省沿用 service 端的默认值（HEALTHY）；调用方可显式传
+    # HEALTHY / UNHEALTHY / UNKNOWN 表达注册时的真实状态（例如：注册即已失联）
+    status: Optional[HealthStatus] = None
 
 
 def registration_to_dict(reg: AgentRegistration) -> dict:

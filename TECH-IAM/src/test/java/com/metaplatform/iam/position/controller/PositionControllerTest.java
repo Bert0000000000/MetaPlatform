@@ -5,7 +5,10 @@ import com.metaplatform.iam.position.dto.PositionResponse;
 import com.metaplatform.iam.position.service.PositionService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.FilterType;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -18,7 +21,13 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(PositionController.class)
+@WebMvcTest(controllers = PositionController.class,
+        excludeFilters = @ComponentScan.Filter(
+                type = FilterType.ASSIGNABLE_TYPE,
+                classes = {com.metaplatform.iam.security.SecurityConfig.class,
+                           com.metaplatform.iam.security.JwtAuthenticationFilter.class,
+                           com.metaplatform.iam.common.TraceFilter.class}))
+@AutoConfigureMockMvc(addFilters = false)
 class PositionControllerTest {
 
     @Autowired

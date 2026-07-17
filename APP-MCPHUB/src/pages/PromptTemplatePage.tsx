@@ -217,7 +217,7 @@ export default function PromptTemplatePage() {
             <Input.TextArea rows={6} placeholder="你是一个...请基于 {{name}} 的数据..." />
           </Form.Item>
           <Form.Item name="variables" label="变量定义">
-            <VariableEditor />
+            <VariableEditor value={[]} onChange={() => {}} />
           </Form.Item>
           <Form.Item name="tags" label="标签">
             <Select mode="tags" placeholder="输入后回车" />

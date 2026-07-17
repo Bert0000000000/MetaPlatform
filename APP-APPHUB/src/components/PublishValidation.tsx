@@ -69,7 +69,7 @@ export default function PublishValidation({ result, onPublish, publishing }: Pub
 
         {result.errors.length > 0 && (
           <div>
-            <Typography.Text danger strong>
+            <Typography.Text type="danger" strong>
               <CloseCircleOutlined /> 错误（{result.errors.length}）
             </Typography.Text>
             <List

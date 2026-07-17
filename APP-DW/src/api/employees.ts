@@ -1,4 +1,3 @@
-import { get, post, put, del } from './client';
 import type { Employee, EmployeeCreateRequest, PageResponse } from '@/types';
 
 const STORAGE_KEY = 'app_dw_employees';

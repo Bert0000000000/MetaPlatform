@@ -2,14 +2,11 @@ import { useEffect, useState } from 'react';
 import {
   Card,
   Empty,
-  Form,
-  Input,
   Select,
   Space,
   Typography,
   Tabs,
   Table,
-  Tag,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { listEmployees } from '@/api/employees';
@@ -17,7 +14,7 @@ import { getQualityTrend, listReports } from '@/api/evaluations';
 import ConversationList from '@/components/ConversationList';
 import ReplayPanel from '@/components/ReplayPanel';
 import QualityScoreForm from '@/components/QualityScoreForm';
-import EvaluationReport from '@/components/EvaluationReport';
+import EvaluationReportCard from '@/components/EvaluationReport';
 import TrendChart from '@/components/TrendChart';
 import type { Employee } from '@/types';
 import type { ConversationRecord, EvaluationReport } from '@/api/evaluations';
@@ -117,7 +114,7 @@ export default function EvaluationPage() {
                       dataSource={reports}
                       columns={columns}
                       expandable={{
-                        expandedRowRender: (r) => <EvaluationReport report={r} />,
+                        expandedRowRender: (r) => <EvaluationReportCard report={r} />,
                       }}
                       pagination={{ pageSize: 10 }}
                     />

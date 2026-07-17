@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     reload: bool = False
     jwt_secret: str = "metaplatform-jwt-secret-key-2026"
     jwt_algorithm: str = "HS256"
+    database_url: str = "sqlite+aiosqlite:///./tech_llmgw.db"
 
 
 settings = Settings()

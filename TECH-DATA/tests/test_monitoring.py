@@ -10,7 +10,7 @@ async def test_overview(client, tenant_headers):
     resp = await client.get("/api/v1/data/monitoring/overview", headers=tenant_headers)
     assert resp.status_code == 200
     data = resp.json()["data"]
-    assert data["tenantId"] == "tenant-test"
+    assert data["tenantId"] == "tenant-default"
     assert data["totalPipelines"] >= 0
 
 

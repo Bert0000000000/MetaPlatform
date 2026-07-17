@@ -5,11 +5,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.metaplatform.ea.common.ErrorCode;
 import com.metaplatform.ea.common.TenantContext;
 import com.metaplatform.ea.exception.EaException;
-import com.metaplatform.ea.process.dto.CreateBusinessProcessRequest;
 import com.metaplatform.ea.process.dto.BusinessProcessResponse;
+import com.metaplatform.ea.process.dto.BusinessProcessVersionResponse;
+import com.metaplatform.ea.process.dto.CreateBusinessProcessRequest;
+import com.metaplatform.ea.process.dto.CreateProcessVersionRequest;
 import com.metaplatform.ea.process.dto.UpdateBusinessProcessRequest;
 import com.metaplatform.ea.process.entity.BusinessProcessEntity;
+import com.metaplatform.ea.process.entity.BusinessProcessVersionEntity;
 import com.metaplatform.ea.process.repository.BusinessProcessRepository;
+import com.metaplatform.ea.process.repository.BusinessProcessVersionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -17,6 +21,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -129,7 +135,7 @@ public class BusinessProcessService {
     @Transactional(readOnly = true)
     public Map<String, Object> getFlowchart(UUID processId) {
         BusinessProcessEntity entity = findById(processId);
-        return readFlowchart(buildFlowchartFromSteps(entity));
+        return buildFlowchartFromSteps(entity);
     }
 
     private Map<String, Object> buildFlowchartFromSteps(BusinessProcessEntity entity) {

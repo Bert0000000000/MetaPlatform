@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { CSSProperties } from 'react';
-import { Card, Progress, Space, Tag, Typography } from 'antd';
+import { Card, Progress, Space, Typography } from 'antd';
 import type { EmployeeTask } from '@/types';
 
 interface ExecutionProgressProps {

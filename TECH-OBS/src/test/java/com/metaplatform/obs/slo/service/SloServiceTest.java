@@ -24,6 +24,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.within;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -78,7 +79,7 @@ class SloServiceTest {
 
         SloEntity entity = service.create(req);
         assertThat(entity.getWindow()).isEqualTo("30d");
-        assertThat(entity.getErrorBudgetTotal()).isEqualTo(0.1);
+        assertThat(entity.getErrorBudgetTotal()).isCloseTo(0.1, within(0.0001));
         assertThat(entity.getStatus()).isEqualTo("HEALTHY");
     }
 
@@ -93,7 +94,7 @@ class SloServiceTest {
     @Test
     @DisplayName("calculateTotalBudget 应返回 100 - target")
     void shouldCalculateTotalBudget() {
-        assertThat(service.calculateTotalBudget(99.9)).isEqualTo(0.1);
+        assertThat(service.calculateTotalBudget(99.9)).isCloseTo(0.1, within(0.0001));
         assertThat(service.calculateTotalBudget(99.0)).isEqualTo(1.0);
         assertThat(service.calculateTotalBudget(100.0)).isEqualTo(0.0);
     }

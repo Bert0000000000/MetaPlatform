@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Row, Col, Card, Tree, Button, Table, Space, Input, Modal, Form, message, Popconfirm, Tag, Typography } from 'antd';
+import { Row, Col, Card, Tree, Button, Table, Space, Input, Modal, Form, message, Popconfirm, Tag } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import type { DataNode } from 'antd/es/tree';
 import { listCapabilities, getCapabilityTree, createCapability, updateCapability, deleteCapability } from '@/api/capabilities';

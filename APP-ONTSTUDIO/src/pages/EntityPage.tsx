@@ -83,7 +83,7 @@ export default function EntityPage() {
       title: '实体名称',
       dataIndex: 'name',
       key: 'name',
-      render: (text: string, record: Entity) => (
+      render: (text: string, _record: Entity) => (
         <Typography.Link>{text}</Typography.Link>
       ),
     },

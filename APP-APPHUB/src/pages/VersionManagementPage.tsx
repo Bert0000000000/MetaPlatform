@@ -13,13 +13,12 @@ import {
   message,
   Spin,
 } from 'antd';
-import { ArrowLeftOutlined, SaveOutlined, PlusOutlined, DiffOutlined } from '@ant-design/icons';
+import { ArrowLeftOutlined, PlusOutlined, DiffOutlined } from '@ant-design/icons';
 import {
   listVersions,
   createVersion,
   publishVersion,
   rollbackVersion,
-  getVersion,
   deleteVersion,
 } from '@/api/versions';
 import { getApp } from '@/api/apps';

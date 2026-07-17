@@ -34,6 +34,33 @@ def _mock_response(json_data: dict, status_code: int = 200) -> MagicMock:
     return mock
 
 
+# Save the real post method so API tests can let test-client requests
+# (base_url=http://test) pass through while mocking internal HTTP calls.
+_real_async_post = httpx.AsyncClient.post
+
+
+def _api_post_with_internal_mock(internal_handler):
+    """Return an async ``post`` replacement for ``httpx.AsyncClient.post``.
+
+    Requests whose URL starts with ``http://test`` (the test client) are
+    forwarded to the real implementation so the ASGI transport is used.
+    All other requests (internal calls to LLMGW / ONT) are routed to
+    *internal_handler(url, *args, **kwargs)* which must return a mock response.
+    """
+
+    async def _post(self, url, *args, **kwargs):
+        url_str = str(url)
+        # Test client requests use a relative URL or base_url=http://test.
+        # Internal calls (LLMGW/ONT) use absolute URLs like http://localhost.
+        if url_str.startswith("http://test") or not (
+            url_str.startswith("http://") or url_str.startswith("https://")
+        ):
+            return await _real_async_post(self, url, *args, **kwargs)
+        return internal_handler(url, *args, **kwargs)
+
+    return _post
+
+
 async def _setup_doc_with_content(
     kb_service: KnowledgeBaseService,
     doc_service: DocumentService,
@@ -385,9 +412,18 @@ async def test_graph_search_rrf_fusion_combines_results(
 # --------------------------------------------------------- API controller tests
 
 
-@patch("httpx.AsyncClient.post", new_callable=AsyncMock)
+@patch(
+    "httpx.AsyncClient.post",
+    new=_api_post_with_internal_mock(
+        _post_side_effect_with_graph(
+            llmgw_embedding=[0.1, 0.2, 0.3],
+            ont_nodes=[],
+            ont_edges=[],
+            ont_relations=[],
+        )
+    ),
+)
 async def test_graph_search_api(
-    mock_post: AsyncMock,
     client: httpx.AsyncClient,
     tenant_headers: dict[str, str],
 ) -> None:
@@ -400,13 +436,6 @@ async def test_graph_search_api(
         headers=tenant_headers,
     )
     kb_id = resp.json()["data"]["id"]
-
-    mock_post.side_effect = _post_side_effect_with_graph(
-        llmgw_embedding=[0.1, 0.2, 0.3],
-        ont_nodes=[],
-        ont_edges=[],
-        ont_relations=[],
-    )
 
     resp = await client.post(
         "/api/v1/rag/graph-search",

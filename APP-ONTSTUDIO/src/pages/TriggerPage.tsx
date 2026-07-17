@@ -7,7 +7,6 @@ import {
   Input,
   Modal,
   Select,
-  Space,
   Switch,
   Table,
   Tag,
@@ -54,7 +53,6 @@ function generateId(): string {
 
 export default function TriggerPage() {
   const [triggers, setTriggers] = useState<DataTrigger[]>([]);
-  const [loading, setLoading] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
   const [form] = Form.useForm();
 

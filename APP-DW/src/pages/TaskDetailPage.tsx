@@ -4,16 +4,13 @@ import {
   Button,
   Card,
   Descriptions,
-  Empty,
   Space,
   Spin,
   Tabs,
   Tag,
   Typography,
-  message,
 } from 'antd';
 import { ArrowLeftOutlined } from '@ant-design/icons';
-import { getTask } from '@/api/tasks';
 import ExecutionProgress from '@/components/ExecutionProgress';
 import ExecutionTimeline from '@/components/ExecutionTimeline';
 import ReplayPlayer from '@/components/ReplayPlayer';

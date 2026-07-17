@@ -1,5 +1,4 @@
-import { get, post } from './client';
-import type { PageResponse } from '@/types';
+import { get } from './client';
 
 export interface ExternalAgent {
   agentId: string;

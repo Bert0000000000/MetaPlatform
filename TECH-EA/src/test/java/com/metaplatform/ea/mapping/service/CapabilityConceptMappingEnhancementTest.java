@@ -145,7 +145,6 @@ class CapabilityConceptMappingEnhancementTest {
     @Test
     void syncFromOntology_shouldCreate_whenNewConcept() {
         when(mappingRepository.findByTenantIdAndDeletedAtIsNull("tenant-default")).thenReturn(List.of());
-        doNothing().when(ontIntegrationService).validateConceptExists(any());
 
         CapabilityConceptMappingService.OntConceptSnapshot snapshot = new CapabilityConceptMappingService.OntConceptSnapshot();
         snapshot.setConceptId("concept-new");

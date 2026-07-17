@@ -1,4 +1,4 @@
-import { Card, Empty, Table, Tag, Typography } from 'antd';
+import { Card, Empty, Table, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 
 interface OpLog {

@@ -14,9 +14,8 @@ public class WebClientConfig {
 
     @Bean
     public WebClient ontWebClient(@Value("${ea.ont.base-url:http://localhost:8201}") String baseUrl) {
-        HttpClient httpClient = HttpClient.builder()
-                .responseTimeout(Duration.ofSeconds(10))
-                .build();
+        HttpClient httpClient = HttpClient.create()
+                .responseTimeout(Duration.ofSeconds(10));
         return WebClient.builder()
                 .baseUrl(baseUrl)
                 .clientConnector(new ReactorClientHttpConnector(httpClient))

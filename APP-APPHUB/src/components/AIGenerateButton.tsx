@@ -77,7 +77,7 @@ export default function AIGenerateButton({
                 {result.description}
               </Typography.Paragraph>
               <Space wrap>
-                {result.fields.map((f) => (
+                {result.fields.map((f: FormGenResult['fields'][number]) => (
                   <Tag key={f.fieldKey} color="blue">
                     {f.label} ({f.type})
                     {f.required && ' *'}
