@@ -1,0 +1,1 @@
+"""Data warehouse query domain."""

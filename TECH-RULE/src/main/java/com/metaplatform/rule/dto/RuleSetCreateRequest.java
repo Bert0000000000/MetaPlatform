@@ -24,4 +24,6 @@ public class RuleSetCreateRequest {
     private RuleStatus status;
 
     private Integer priority;
+
+    private Boolean enabled;
 }

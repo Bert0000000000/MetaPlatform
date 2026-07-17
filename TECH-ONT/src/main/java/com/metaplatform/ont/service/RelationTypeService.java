@@ -124,6 +124,16 @@ public class RelationTypeService {
         return toResponse(entity, sourceName(entity), targetName(entity), instanceCount);
     }
 
+    @Transactional(readOnly = true)
+    public RelationTypeResponse getByCode(String code) {
+        String tenantId = TenantContext.get();
+        RelationTypeEntity entity = relationTypeRepository.findByTenantIdAndCode(tenantId, code)
+                .orElseThrow(() -> new OntException(ErrorCode.RELATION_NOT_FOUND, "关系类型不存在: " + code));
+        long instanceCount = relationInstanceRepository.countByTenantIdAndRelationTypeId(
+                entity.getTenantId(), entity.getRelationTypeId());
+        return toResponse(entity, sourceName(entity), targetName(entity), instanceCount);
+    }
+
     @Transactional
     public RelationTypeResponse update(String relationTypeId, RelationTypeUpdateRequest request) {
         RelationTypeEntity entity = findRelationType(relationTypeId);

@@ -6,6 +6,7 @@ import com.metaplatform.iam.dto.RegisterRequest;
 import com.metaplatform.iam.entity.UserEntity;
 import com.metaplatform.iam.exception.IamException;
 import com.metaplatform.iam.repository.UserRepository;
+import com.metaplatform.iam.audit.service.AuditLogService;
 import com.metaplatform.iam.util.JwtUtil;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -40,6 +41,9 @@ class AuthServiceTest {
 
     @Mock
     private IamOutboxService iamOutboxService;
+
+    @Mock
+    private AuditLogService auditLogService;
 
     @InjectMocks
     private AuthService authService;

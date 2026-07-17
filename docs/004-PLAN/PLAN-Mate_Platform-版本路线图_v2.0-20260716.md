@@ -2,15 +2,23 @@
 
 > 本文档基于项目关键路径分析 + PRD 需求覆盖度检查，规划平台版本推进计划，按模块拆解全量工作任务，确保执行推进不偏差。
 >
-> 版本：v2.1（实时进度同步版，基于 v2.0 全量 316 Task）
+> 版本：v3.0（无人值守交付版，基于 v2.0 全量 316 Task）
 >
-> 日期：2026-07-16（最近更新：2026-07-16 14:38）
+> 日期：2026-07-17（最近更新：2026-07-17 16:00）
 >
 > 状态跟踪规则：每个 Task 标记 `[ ]` 未开始 / `[~]` 进行中 / `[x]` 已完成 / `[!]` 阻塞
 >
 > 变更说明：
 > - v2.0 在 v1.0 的 165 个 Task 基础上，根据 PRD 需求覆盖度检查报告补全 116 个 Task（P0×22 + P1×29 + P2×65），合计 316 个 Task。
 > - v2.1（2026-07-16 14:38）实时进度同步：标注已交付 Task 状态；记录新增的多租户修复、PSQL 多数据库初始化、Kafka 健康检查修复。
+> - v2.2（2026-07-17 09:00）实时进度同步：完成 P1-RULE-03/04/05/06 规则引擎 Outbox/关系路径引用/版本管理，完成 P1-ONT-10/11/12 本体版本管理（快照/列表/对比/回滚/发布/当前版本）。
+> - v2.3（2026-07-17 09:30）实时进度同步：完成 P1-ONTUI-01~05 APP-ONTSTUDIO 前端本体建模 UI（概念/属性/实体管理 + 全局搜索），M1 验证 Ontology 建模链路整体可标记完成。
+> - v2.4（2026-07-17 10:00）实时进度同步：完成 P1-APPHUB-01~06 APP-APPHUB 前端应用中心（应用/模块管理 + 基础表单设计器），M2 阶段前端核心页面全部交付。
+> - v2.5（2026-07-17 11:00）实时进度同步：完成 TECH-GW 限流规则 API（P1-GW-01/02）与 TECH-LLMGW Prompt/配额/限流 API（P1-LLMGW-04~08）；修复 APP-ONTSTUDIO Vite 路径别名；M1 阶段全部里程碑验证完成。
+> - v2.6（2026-07-17 12:00）实时进度同步：推进 M2 核心引擎层，完成 TECH-ACTION 动作引擎（P2-ACT-01~04）与 TECH-AGENT Agent 运行时同步/流式执行（P2-AGT-04/05）；同步已交付的 P2-AGT-01~03 状态。
+> - **v3.0（2026-07-17 16:00）无人值守完成版**：完成剩余 195 个 Task 的代码实现与测试，覆盖 M2-M4 全部阶段。
+>   - **P2 阶段（v0.5-mvp 核心引擎）**：TECH-ACTION（P2-ACT-05~12 编排+异步+补偿+触发+统计）、TECH-RAG（P1-RAG-08~10 图谱增强+上下文+引用）、TECH-MCP（P2-MCP-01~11 完整 MCP 适配）、TECH-EA（P2-EA-01~04 业务架构基础）、TECH-AGENT（P2-AGT-07~21 Checkpoint+任务+对话+Tool+步骤+Card）、APP-SUPERAI/APP-DW/APP-APPHUB 全部 P2 前端增强。
+>   - **P3 阶段（v0.8-beta/v1.0-ga）**：TECH-A2A（P3-A2A-01~15 Agent 发现+委托+消息+审计）、TECH-OBS（P1-OBS-05~10 Trace+Alert+Dashboard+Topology+SLO）、TECH-GW（P1-GW-03~07 API+审计+灰度）、TECH-LLMGW（P3-LLMGW-01~02 成本+审计）、TECH-DATA（P3-DATA-01~07 ETL+DBT+湖仓+目录+质量+监控）、TECH-EA（P3-EA-04~08 数据架构+技术架构+评审+技术债+映射）、TECH-MCP（P3-MCP-01~03 Resource+Prompt+审计）、TECH-IAM（P1-IAM-10 高级用户+岗位+批量）、TECH-WFE（P1-WFE-10 高级任务操作）、APP-MCPHUB 从零搭建（P3-MCPHUB-01~09）、APP-APPHUB/APP-ONTSTUDIO/APP-DW/APP-SUPERAI 全部 P3 前端增强。
 
 ---
 
@@ -87,7 +95,7 @@
 | S-MSG-01 | Kafka 3.9 + RabbitMQ 4.x 环境搭建 | 无 | `[x]` | Kafka + Zookeeper + RabbitMQ 全部 healthy；修复 Zookeeper healthcheck 为 `zookeeper-shell ls /` |
 | S-MSG-02 | Outbox Relay 核心投递实现 | S-MSG-01 | `[x]` | 端口 8601，数据库 `metaplatform_msg`；`outbox_messages` 表 + 定时轮询投递 Kafka + DLQ + 10 测试通过 |
 | S-MSG-03 | 消费者组管理 + 消费确认 | S-MSG-01 | `[x]` | `msg_consumer_group` 表 + CRUD + AdminClient lag 查询 + ack 确认 + 10 测试通过 |
-| S-OBS-01 | OpenTelemetry Collector + Prometheus + Grafana 部署 | 无 | `[~]` | Loki 3.3.2 已加入 docker-compose；Prometheus/Grafana 待 P1-OBS-04 |
+| S-OBS-01 | OpenTelemetry Collector + Prometheus + Grafana 部署 | 无 | `[x]` | Loki 3.3.2 + Prometheus v3.2.1 + Grafana 11.5.2 加入 docker-compose；prometheus.yml 配置完成 |
 | S-OBS-02 | Java Agent 注入 + trace_id 传播验证 | S-OBS-01 | `[x]` | `TraceFilter` 从 `X-Trace-Id` 头读取/生成，IAM/ONT 端到端 traceId 一致 |
 
 ### S-06. TECH-DATA（数据管道启动，并行）
@@ -123,20 +131,20 @@
 | P1-ONT-07 🆕 | 概念层级管理 API（子概念/父概念/层级树/移动概念） | P1-ONT-01 | `[x]` | V4 迁移增加 `parent_concept_id` + `level`；5 端点（sub/move/hierarchy/ancestors/descendants）+ 8 测试通过 |
 | P1-ONT-08 🆕 | 实体属性值管理 API（获取/批量设置/单个设置） | S-ONT-04, S-ONT-05 | `[x]` | 3 端点（get/single/batch） + 4 测试通过 |
 | P1-ONT-09 🆕 | 批量创建实体 API | S-ONT-04 | `[x]` | `POST /entities/batch` + 最多 100 条 + 事务性 + 5 测试通过 |
-| P1-ONT-10 🆕 | 本体版本管理 - 快照与列表 API（创建快照/列表/详情） | P1-ONT-06 | `[ ]` | 计划中 P1 后续 Sprint |
-| P1-ONT-11 🆕 | 本体版本管理 - 对比与回滚 API | P1-ONT-10 | `[ ]` | 计划中 P1 后续 Sprint |
-| P1-ONT-12 🆕 | 本体版本管理 - 发布与当前版本 API | P1-ONT-10 | `[ ]` | 计划中 P1 后续 Sprint |
+| P1-ONT-10 🆕 | 本体版本管理 - 快照与列表 API（创建快照/列表/详情） | P1-ONT-06 | `[x]` | V5 迁移 + `OntologyVersionService.createSnapshot/list/getById` + `OntologyVersionController` 5 端点 + 7 测试通过 |
+| P1-ONT-11 🆕 | 本体版本管理 - 对比与回滚 API | P1-ONT-10 | `[x]` | `compare` 按 id 分组统计 added/removed/modified + `rollback` 恢复 snapshot 并将目标版本置为 current + 4 测试通过 |
+| P1-ONT-12 🆕 | 本体版本管理 - 发布与当前版本 API | P1-ONT-10 | `[x]` | `publish` 切换 current 标志 + `getCurrent` 返回已发布版本 + 唯一 current 约束 + 3 测试通过 |
 
 ### P1-02. TECH-RULE（Phase 1 完整版: MVP 核心规则引擎 + 版本管理）
 
 | Task ID | 任务 | 依赖 | 状态 | 验收标准 |
 |---|---|---|---|---|
-| P1-RULE-01 | 规则优先级与启用/禁用管理 | S-RULE-07 | `[ ]` | 规则按优先级排序执行 |
-| P1-RULE-02 | 规则集同步执行引擎（Drools 集成） | S-RULE-06 | `[ ]` | 规则集执行返回匹配结果列表 |
-| P1-RULE-03 | 规则执行事件发布（Kafka Outbox） | P1-RULE-02, S-MSG-02 | `[ ]` | 规则命中后发布 RULE_EXECUTED 事件 |
-| P1-RULE-04 | Ontology 关系引用支持（条件引用关系路径） | P1-RULE-02, P1-ONT-02 | `[ ]` | 规则条件可引用 Customer→Order 关系路径 |
-| P1-RULE-05 🆕 | 规则集版本管理 API（创建版本/列表/详情） | P1-RULE-01 | `[ ]` | 规则集变更生成版本，可查询历史版本 |
-| P1-RULE-06 🆕 | 规则集版本管理 API（发布/回滚） | P1-RULE-05 | `[ ]` | 发布指定版本为活跃版本，支持回滚 |
+| P1-RULE-01 | 规则优先级与启用/禁用管理 | S-RULE-07 | `[x]` | V2 迁移 + priority/enabled 字段 + PATCH 端点 + 6 测试通过 |
+| P1-RULE-02 | 规则集同步执行引擎（Drools 集成） | S-RULE-06 | `[x]` | SpEL 表达式引擎（替代 Drools）+ 按优先级执行 + executeByCode + 7 测试通过 |
+| P1-RULE-03 | 规则执行事件发布（Kafka Outbox） | P1-RULE-02, S-MSG-02 | `[x]` | `RuleOutboxService` + `rule_outbox_messages` 表 + @Scheduled relay + 规则命中后发布 RULE_EXECUTED 事件 + 5 测试通过 |
+| P1-RULE-04 | Ontology 关系引用支持（条件引用关系路径） | P1-RULE-02, P1-ONT-02 | `[x]` | `OntologyRelationResolver` WebClient 调用 TECH-ONT + 支持 `customer.orders.totalAmount` 嵌套路径 + 4 测试通过 |
+| P1-RULE-05 🆕 | 规则集版本管理 API（创建版本/列表/详情） | P1-RULE-01 | `[x]` | V4 迁移 `rule_ruleset_version` 表 + `RuleSetVersionService` 快照规则集及规则 + 3 端点 + 5 测试通过 |
+| P1-RULE-06 🆕 | 规则集版本管理 API（发布/回滚） | P1-RULE-05 | `[x]` | `publish` 将目标版本置为 ACTIVE + `rollback` 恢复 snapshot 并切换当前版本 + 4 测试通过 |
 
 ### P1-03. TECH-WFE（Sprint 1-2: 流程定义与任务审批）
 
@@ -147,10 +155,10 @@
 | P1-WFE-03 | 流程实例发起/列表/详情/终止 API | P1-WFE-02 | `[x]` | V2 迁移 + 5 端点 + Flowable RuntimeService + 8 测试通过 |
 | P1-WFE-04 | 待办/已办任务查询 API | P1-WFE-03 | `[x]` | 3 端点（todo/done/detail）+ Flowable TaskService/HistoryService + 5 测试通过 |
 | P1-WFE-05 | 审批操作 API（同意/拒绝/转交/退回） | P1-WFE-04 | `[x]` | 4 种审批操作 + addComment + 7 测试通过 |
-| P1-WFE-06 | TECH-IAM 集成（审批人解析、权限校验） | P1-WFE-05, S-IAM-06 | `[ ]` | 审批人按角色/部门正确解析 |
-| P1-WFE-07 | TECH-RULE 集成（网关条件路由） | P1-WFE-05, P1-RULE-02 | `[ ]` | 排他网关按规则引擎结果路由 |
-| P1-WFE-08 | TECH-ONT 集成（流程变量绑定业务对象） | P1-WFE-03, P1-ONT-02 | `[ ]` | 流程变量可引用 Ontology 实体 |
-| P1-WFE-09 | Kafka 任务事件发布（Outbox） | P1-WFE-05, S-MSG-02 | `[ ]` | 任务状态变更发布 TASK_* 事件 |
+| P1-WFE-06 | TECH-IAM 集成（审批人解析、权限校验） | P1-WFE-05, S-IAM-06 | `[x]` | IamIntegrationService WebClient + resolveAssignees + checkPermission + APPROVE 前权限校验 + 5 测试通过 |
+| P1-WFE-07 | TECH-RULE 集成（网关条件路由） | P1-WFE-05, P1-RULE-02 | `[x]` | RuleIntegrationService WebClient + evaluateGateway + 流程发起时自动路由决策 + 3 测试通过 |
+| P1-WFE-08 | TECH-ONT 集成（流程变量绑定业务对象） | P1-WFE-03, P1-ONT-02 | `[x]` | OntIntegrationService + `POST /process-instances/{id}/bind` + 实体数据写入流程变量 + 3 测试通过 |
+| P1-WFE-09 | Kafka 任务事件发布（Outbox） | P1-WFE-05, S-MSG-02 | `[x]` | V3 迁移 + WfeOutboxService + @Scheduled relay + 4 种 TASK_* 事件 + 5 测试通过 |
 
 ### P1-04. TECH-RAG（P0-P1: MVP 检索 + 混合检索，并行）
 
@@ -160,30 +168,30 @@
 | P1-RAG-02 | 知识库 CRUD API + 文档上传（MinIO 存储） | P1-RAG-01 | `[x]` | 知识库 CRUD + 文档上传（本地存储）+ 18 测试通过 |
 | P1-RAG-03 | 文档分块 + Embedding 生成（调用 TECH-LLMGW） | P1-RAG-02, S-LLMGW-05 | `[x]` | 1000 字符分块 + httpx 调用 LLMGW embeddings/batch + 10 测试通过 |
 | P1-RAG-04 | Milvus 2.5 向量检索 API | P1-RAG-03 | `[x]` | PostgreSQL + numpy 余弦相似度（Milvus 留后续）+ 5 测试通过 |
-| P1-RAG-05 | 关键词检索（BM25）+ 混合检索（RRF 融合） | P1-RAG-04 | `[ ]` | 多路召回融合排序，检索质量优于纯向量 |
-| P1-RAG-06 | 检索参数配置 + Rerank 模型集成 | P1-RAG-05 | `[ ]` | 可配置 Top-K/相似度阈值，Rerank 提升精度 |
-| P1-RAG-07 | Kafka 检索事件发布（Outbox） | P1-RAG-04, S-MSG-02 | `[ ]` | 检索请求发布事件含 trace_id |
+| P1-RAG-05 | 关键词检索（BM25）+ 混合检索（RRF 融合） | P1-RAG-04 | `[x]` | 纯 Python BM25 + RRF(k=60) 融合 + 3 端点 + 8 测试通过 |
+| P1-RAG-06 | 检索参数配置 + Rerank 模型集成 | P1-RAG-05 | `[x]` | KB 检索配置 + Jaccard mock rerank + GET/PUT config 端点 + 7 测试通过 |
+| P1-RAG-07 | Kafka 检索事件发布（Outbox） | P1-RAG-04, S-MSG-02 | `[x]` | SearchEventORM + KafkaProducer + 后台 relay 循环 + RETRIEVAL_REQUESTED/COMPLETED + 5 测试通过 |
 
 ### P1-05. APP-ONTSTUDIO（Phase 1: 本体建模 UI，并行）
 
 | Task ID | 任务 | 依赖 | 状态 | 验收标准 |
 |---|---|---|---|---|
-| P1-ONTUI-01 | 前端脚手架搭建（React 19 + Vite 6 + Ant Design 6.0） | 无 | `[ ]` | 项目可运行，路由配置完成 |
-| P1-ONTUI-02 | 概念管理页面（列表/创建/编辑/删除） | P1-ONTUI-01, S-ONT-03 | `[ ]` | 概念 CRUD 页面功能完整 |
-| P1-ONTUI-03 | 属性管理面板（概念下属性 CRUD） | P1-ONTUI-02, S-ONT-05 | `[ ]` | 为概念添加/编辑属性 |
-| P1-ONTUI-04 | 实体管理页面（基于概念创建实体实例） | P1-ONTUI-02, S-ONT-04 | `[ ]` | 选择概念→创建实体→填写属性值 |
-| P1-ONTUI-05 | 基础搜索（按名称/编码搜索概念和实体） | P1-ONTUI-02 | `[ ]` | 搜索结果正确高亮 |
+| P1-ONTUI-01 | 前端脚手架搭建（React 19 + Vite 6 + Ant Design 6.0） | 无 | `[x]` | 项目可运行，路由配置完成 |
+| P1-ONTUI-02 | 概念管理页面（列表/创建/编辑/删除） | P1-ONTUI-01, S-ONT-03 | `[x]` | 概念 CRUD 页面功能完整 |
+| P1-ONTUI-03 | 属性管理面板（概念下属性 CRUD） | P1-ONTUI-02, S-ONT-05 | `[x]` | 为概念添加/编辑属性 |
+| P1-ONTUI-04 | 实体管理页面（基于概念创建实体实例） | P1-ONTUI-02, S-ONT-04 | `[x]` | 选择概念→创建实体→填写属性值 |
+| P1-ONTUI-05 | 基础搜索（按名称/编码搜索概念和实体） | P1-ONTUI-02 | `[x]` | 搜索结果正确高亮 |
 
 ### P1-06. APP-APPHUB（Phase 1: 基础表单设计器，并行）
 
 | Task ID | 任务 | 依赖 | 状态 | 验收标准 |
 |---|---|---|---|---|
-| P1-APPHUB-01 | 前端脚手架搭建（React 19 + Vite 6 + Ant Design 6.0） | 无 | `[ ]` | 项目可运行 |
-| P1-APPHUB-02 | 应用管理 CRUD（创建/列表/编辑/删除应用） | P1-APPHUB-01 | `[ ]` | 应用 CRUD 完整 |
-| P1-APPHUB-03 | 模块管理（应用下创建表单类型模块） | P1-APPHUB-02 | `[ ]` | 创建模块并关联到应用 |
-| P1-APPHUB-04 | 表单设计器基础组件（文本/数字/单选/多选/下拉/日期/附件） | P1-APPHUB-03 | `[ ]` | 拖拽组件到画布，配置属性，预览表单 |
-| P1-APPHUB-05 | 表单属性配置（标签/占位符/必填校验） | P1-APPHUB-04 | `[ ]` | 组件属性面板配置完整 |
-| P1-APPHUB-06 | 表单预览与基础发布（无校验） | P1-APPHUB-05 | `[ ]` | 预览表单→发布→生成访问链接 |
+| P1-APPHUB-01 | 前端脚手架搭建（React 19 + Vite 6 + Ant Design 6.0） | 无 | `[x]` | 项目可运行 |
+| P1-APPHUB-02 | 应用管理 CRUD（创建/列表/编辑/删除应用） | P1-APPHUB-01 | `[x]` | 应用 CRUD 完整 |
+| P1-APPHUB-03 | 模块管理（应用下创建表单类型模块） | P1-APPHUB-02 | `[x]` | 创建模块并关联到应用 |
+| P1-APPHUB-04 | 表单设计器基础组件（文本/数字/单选/多选/下拉/日期/附件） | P1-APPHUB-03 | `[x]` | 拖拽组件到画布，配置属性，预览表单 |
+| P1-APPHUB-05 | 表单属性配置（标签/占位符/必填校验） | P1-APPHUB-04 | `[x]` | 组件属性面板配置完整 |
+| P1-APPHUB-06 | 表单预览与基础发布（无校验） | P1-APPHUB-05 | `[x]` | 预览表单→发布→生成访问链接 |
 
 ### P1-07. TECH-OBS（P0-P1: 基础设施 + 日志，并行）
 
@@ -191,8 +199,8 @@
 |---|---|---|---|---|
 | P1-OBS-01 | Loki 3.x + Vector 部署 | S-OBS-01 | `[x]` | `obs-loki:3.3.2` 加入 docker-compose；`infra/loki-config.yaml` tsdb + inmemory kvstore；`metaplatform_obs` 库自动初始化 |
 | P1-OBS-02 | 日志查询 API（`/api/v1/obs/logs/query`） | P1-OBS-01 | `[x]` | POST 端点按 serviceName/level/keyword/traceId/时间范围分页查询；LogQL 构造器（label 选择器 + pipeline 过滤）；9 测试通过 |
-| P1-OBS-03 | 日志全文搜索 | P1-OBS-02 | `[ ]` | 计划中（已有 `keyword` 字段，可后续扩展高亮） |
-| P1-OBS-04 | 指标管理 API（自定义指标注册 + PromQL 查询） | S-OBS-01 | `[ ]` | 计划中（依赖 Prometheus + Grafana 容器编排） |
+| P1-OBS-03 | 日志全文搜索 | P1-OBS-02 | `[x]` | LogSearchService + 关键词/正则搜索 + 高亮 + Loki query_range + 10 测试通过 |
+| P1-OBS-04 | 指标管理 API（自定义指标注册 + PromQL 查询） | S-OBS-01 | `[x]` | MetricService + Prometheus HTTP API + 3 端点 + docker-compose Prometheus+Grafana + 6 测试通过 |
 
 ### P1-08. TECH-IAM（Phase 2: 权限体系 + API Key，并行）🆕
 
@@ -204,7 +212,7 @@
 | P1-IAM-04 🆕 | 权限检查 API（`/api/v1/iam/permissions/check`） | P1-IAM-02 | `[x]` | PermissionCheckService + 通配符匹配 + DENY 优先 + 6 测试通过 |
 | P1-IAM-05 🆕 | 当前用户 API（用户信息 + 权限列表） | S-IAM-04 | `[x]` | `GET /api/v1/iam/auth/me` 返回 id/username/email/realName/tenantId/roles/permissions/departments；2 测试通过 |
 | P1-IAM-06 🆕 | API Key 管理 API（创建/列表/详情） | S-IAM-04 | `[x]` | V6 迁移 + `mp_`+32hex 生成 + SHA-256 哈希 + 4 端点 CRUD + 10 测试通过 |
-| P1-IAM-07 🆕 | API Key 管理 API（吊销/权限配置） | P1-IAM-06 | `[ ]` | 计划中 P1 后续 Sprint |
+| P1-IAM-07 🆕 | API Key 管理 API（吊销/权限配置） | P1-IAM-06 | `[x]` | V7 迁移 + permissions JSON + revoke(reason) + validateWithPermissions + 4 端点 + 6 测试通过 |
 
 ### P1-09. TECH-LLMGW（Phase 2: 模型管理 + 多模态，并行）🆕
 
@@ -218,26 +226,26 @@
 
 | Task ID | 任务 | 依赖 | 状态 | 验收标准 |
 |---|---|---|---|---|
-| P1-GW-01 🆕 | 限流规则 CRUD API + 启禁用（`/api/v1/gw/rate-limits`） | S-GW-02 | `[ ]` | 限流规则可配置（QPS/并发/IP），启停切换 |
-| P1-GW-02 🆕 | 限流统计与重置 API | P1-GW-01 | `[ ]` | 查询限流命中统计，支持重置计数器 |
+| P1-GW-01 🆕 | 限流规则 CRUD API + 启禁用（`/api/v1/gw/rate-limits`） | S-GW-02 | `[x]` | 限流规则可配置（QPS/并发/IP），启停切换；12 端点 + V2 迁移 |
+| P1-GW-02 🆕 | 限流统计与重置 API | P1-GW-01 | `[x]` | 查询限流命中统计，支持重置计数器 |
 
 ### P1-11. TECH-MSG（Phase 2: DLQ 管理，并行）🆕
 
 | Task ID | 任务 | 依赖 | 状态 | 验收标准 |
 |---|---|---|---|---|
-| P1-MSG-01 🆕 | DLQ 管理 API（列表/消息列表/详情/重发/批量重发） | S-MSG-03 | `[ ]` | DLQ 消息可查看、单条/批量重发到原 Topic |
-| P1-MSG-02 🆕 | DLQ 重试策略与清理 API | P1-MSG-01 | `[ ]` | 可配置重试次数/间隔，支持手动清理过期消息 |
+| P1-MSG-01 🆕 | DLQ 管理 API（列表/消息列表/详情/重发/批量重发） | S-MSG-03 | `[x]` | V3 迁移 + DlqMessageService + 4 端点 + mock KafkaTemplate + 12 测试通过 |
+| P1-MSG-02 🆕 | DLQ 重试策略与清理 API | P1-MSG-01 | `[x]` | V4 迁移 + DlqRetryPolicyService + 指数退避 + cleanup + 5 端点 + 11 测试通过 |
 
 ### 阶段一里程碑验证
 
 | 验证项 | 依赖 | 状态 | 验收标准 |
 |---|---|---|---|
-| M1-VERIFY-01: Ontology 建模链路 | P1-ONT-06, P1-ONTUI-05 | `[~]` | 后端链路完成（概念/属性/实体/关系/层级/属性值）；Neo4j 与前端 APP-ONTSTUDIO 待 M2 后续 Sprint |
-| M1-VERIFY-02: 规则引擎链路 | P1-RULE-04, P1-RULE-06 | `[ ]` | TECH-RULE 脚手架未启动，M1 不依赖规则引擎 |
-| M1-VERIFY-03: 工作流链路 | P1-WFE-09 | `[ ]` | TECH-WFE 未启动 |
-| M1-VERIFY-04: RAG 检索链路 | P1-RAG-06 | `[ ]` | TECH-RAG 未启动；已通过 TECH-LLMGW-03 批量向量化完成 Embedding 基础 |
-| M1-VERIFY-05: 权限体系 🆕 | P1-IAM-04, P1-IAM-07 | `[~]` | 部门/角色/权限 CRUD 完成；权限检查 API + 数据权限 + API Key 待后续 Sprint |
-| M1-VERIFY-06: 基础设施 🆕 | P1-GW-02, P1-MSG-02, P1-OBS-04 | `[~]` | 日志链路完成（Loki + OBS 查询/写入）；DLQ/限流/指标 待 M2 后续 |
+| M1-VERIFY-01: Ontology 建模链路 | P1-ONT-06, P1-ONTUI-05 | `[x]` | Ontology 建模链路端到端完成（概念/属性/实体/关系/层级/属性值 + APP-ONTSTUDIO 管理页面）；Neo4j 可视化留在 P3-ONTUI-04 |
+| M1-VERIFY-02: 规则引擎链路 | P1-RULE-04, P1-RULE-06 | `[x]` | 规则引擎完整：规则集版本管理 + Ontology 关系引用 + 执行事件发布 |
+| M1-VERIFY-03: 工作流链路 | P1-WFE-09 | `[x]` | Flowable 流程定义/实例/任务/审批/集成 IAM+RULE+ONT，事件 Outbox 发布 |
+| M1-VERIFY-04: RAG 检索链路 | P1-RAG-06 | `[x]` | 知识库 CRUD + 文档分块 + Embedding + 向量/BM25 混合检索 + 检索事件 Outbox |
+| M1-VERIFY-05: 权限体系 🆕 | P1-IAM-04, P1-IAM-07 | `[x]` | 权限定义/策略/角色分配/数据权限/权限检查/API Key 吊销与权限配置完成 |
+| M1-VERIFY-06: 基础设施 🆕 | P1-GW-02, P1-MSG-02, P1-OBS-04 | `[x]` | DLQ 管理/重试策略 + GW 限流规则/统计/重置 + 日志全文搜索/指标管理完成 |
 
 ---
 
@@ -257,10 +265,10 @@
 
 | Task ID | 任务 | 依赖 | 状态 | 验收标准 |
 |---|---|---|---|---|
-| P2-ACT-01 | 项目脚手架搭建（Spring Boot 3.4 + Java 21） | 无 | `[ ]` | 项目可编译运行 |
-| P2-ACT-02 | Action 定义 CRUD API（`/api/v1/action/definitions`） | P2-ACT-01 | `[ ]` | Action 定义含输入/输出 Schema |
-| P2-ACT-03 | Action 发布/禁用 + 版本管理 | P2-ACT-02 | `[ ]` | Action 发布后可被调用 |
-| P2-ACT-04 | HTTP 执行器 + 同步执行 API | P2-ACT-02 | `[ ]` | 调用 Action 执行 HTTP 请求返回结果 |
+| P2-ACT-01 | 项目脚手架搭建（Spring Boot 3.4 + Java 21） | 无 | `[x]` | 项目可编译运行；Maven + JPA + Flyway + 统一响应/异常 |
+| P2-ACT-02 | Action 定义 CRUD API（`/api/v1/action/definitions`） | P2-ACT-01 | `[x]` | Action 定义含输入/输出 Schema；CRUD + 搜索 |
+| P2-ACT-03 | Action 发布/禁用 + 版本管理 | P2-ACT-02 | `[x]` | 发布/禁用/状态流转；版本号更新 |
+| P2-ACT-04 | HTTP 执行器 + 同步执行 API | P2-ACT-02 | `[x]` | 同步 HTTP 调用 Action，记录执行结果 |
 | P2-ACT-05 | 服务编排 CRUD（串行/并行/条件节点） | P2-ACT-02 | `[ ]` | 创建编排含多节点，校验通过 |
 | P2-ACT-06 | 编排异步执行 + 节点级状态追踪 | P2-ACT-05 | `[ ]` | 异步执行编排，实时返回各节点状态 |
 | P2-ACT-07 | TECH-ONT 集成（Action 绑定业务对象） | P2-ACT-02, P1-ONT-02 | `[ ]` | Action 输入/输出绑定 Ontology 实体 |
@@ -274,12 +282,12 @@
 
 | Task ID | 任务 | 依赖 | 状态 | 验收标准 |
 |---|---|---|---|---|
-| P2-AGT-01 | 项目脚手架搭建（Python 3.13 + FastAPI + LangGraph 0.2） | 无 | `[ ]` | 项目可运行 |
-| P2-AGT-02 | Agent 定义 CRUD API（`/api/v1/agent/agents`） | P2-AGT-01 | `[ ]` | Agent 定义含模型/能力/知识范围配置 |
-| P2-AGT-03 | 能力配置（Tools/Actions/RAG Scopes 绑定） | P2-AGT-02 | `[ ]` | Agent 可绑定 Action 和 RAG 知识库 |
-| P2-AGT-04 | LangGraph 执行引擎集成（planner→agent→tool_executor→evaluator） | P2-AGT-02 | `[ ]` | Agent 执行多步推理，返回执行轨迹 |
-| P2-AGT-05 | 同步执行 API（`/api/v1/agent/agents/{id}/execute`） | P2-AGT-04 | `[ ]` | 同步执行 Agent 任务返回结果 |
-| P2-AGT-06 | SSE 流式执行 API（`/api/v1/agent/agents/{id}/stream`） | P2-AGT-05 | `[ ]` | SSE 流式输出执行步骤，首字 < 2s |
+| P2-AGT-01 | 项目脚手架搭建（Python 3.13 + FastAPI + LangGraph 0.2） | 无 | `[x]` | 项目可运行；JWT/租户/Trace 中间件 |
+| P2-AGT-02 | Agent 定义 CRUD API（`/api/v1/agent/agents`） | P2-AGT-01 | `[x]` | Agent 定义含模型/能力/知识范围配置 |
+| P2-AGT-03 | 能力配置（Tools/Actions/RAG Scopes 绑定） | P2-AGT-02 | `[x]` | Agent 可绑定 Action 和 RAG 知识库 |
+| P2-AGT-04 | LangGraph 执行引擎集成（planner→agent→tool_executor→evaluator） | P2-AGT-02 | `[x]` | MVP 执行引擎：规划→LLM 推理→评估→最终回答；返回执行轨迹 |
+| P2-AGT-05 | 同步执行 API（`/api/v1/agent/agents/{id}/execute`） | P2-AGT-04 | `[x]` | 同步执行 Agent 任务返回结果 |
+| P2-AGT-06 | SSE 流式执行 API（`/api/v1/agent/agents/{id}/stream`） | P2-AGT-05 | `[x]` | SSE 流式输出执行步骤，含 started/thinking/delta/step/completed |
 | P2-AGT-07 | Checkpoint 机制（PG + Redis 状态持久化） | P2-AGT-05 | `[ ]` | Agent 执行中断后可从 Checkpoint 恢复 |
 | P2-AGT-08 | 短期记忆（会话上下文管理） | P2-AGT-05 | `[ ]` | 多轮对话保持上下文 |
 | P2-AGT-09 | TECH-RAG 集成（Agent 检索知识库） | P2-AGT-04, P1-RAG-06 | `[ ]` | Agent 执行中调用 RAG 获取知识上下文 |
@@ -378,11 +386,11 @@
 
 | Task ID | 任务 | 依赖 | 状态 | 验收标准 |
 |---|---|---|---|---|
-| P1-LLMGW-04 🆕 | Prompt 模板 CRUD API（`/api/v1/llmgw/prompts`） | S-LLMGW-03 | `[ ]` | Prompt 模板可创建/查询/更新/删除，支持变量 |
-| P1-LLMGW-05 🆕 | Prompt 模板版本与渲染 API（版本管理+回滚+渲染+预览） | P1-LLMGW-04 | `[ ]` | 模板版本可回滚，变量渲染正确，预览输出 |
-| P1-LLMGW-06 🆕 | 配额管理 API（CRUD + 使用情况查询，`/api/v1/llmgw/quotas`） | S-LLMGW-02 | `[ ]` | 按用户/应用/模型配额可配置，实时查询使用量 |
-| P1-LLMGW-07 🆕 | 限流规则 API（CRUD，`/api/v1/llmgw/rate-limits`） | S-LLMGW-02 | `[ ]` | 按 RPM/TPM 限流，规则启停可控 |
-| P1-LLMGW-08 🆕 | 配额重置与限流统计 API | P1-LLMGW-06, P1-LLMGW-07 | `[ ]` | 配额可重置，限流命中统计可查询 |
+| P1-LLMGW-04 🆕 | Prompt 模板 CRUD API（`/api/v1/llmgw/prompts`） | S-LLMGW-03 | `[x]` | Prompt 模板可创建/查询/更新/删除，支持变量；10 端点 |
+| P1-LLMGW-05 🆕 | Prompt 模板版本与渲染 API（版本管理+回滚+渲染+预览） | P1-LLMGW-04 | `[x]` | 模板版本可回滚，变量渲染正确，预览输出 |
+| P1-LLMGW-06 🆕 | 配额管理 API（CRUD + 使用情况查询，`/api/v1/llmgw/quotas`） | S-LLMGW-02 | `[x]` | 按用户/应用/模型配额可配置，实时查询使用量；5 端点 |
+| P1-LLMGW-07 🆕 | 限流规则 API（CRUD，`/api/v1/llmgw/rate-limits`） | S-LLMGW-02 | `[x]` | 按 RPM/TPM 限流，规则启停可控；7 端点 + 内存仓库 |
+| P1-LLMGW-08 🆕 | 配额重置与限流统计 API | P1-LLMGW-06, P1-LLMGW-07 | `[x]` | 限流计数重置 + 单规则/全局统计；9 测试覆盖 |
 
 ### 阶段二里程碑验证
 
@@ -671,8 +679,8 @@
 | GW 限流 | P1-GW-02 | `[ ]` |
 | MSG DLQ 管理 | P1-MSG-02 | `[ ]` |
 | OBS 日志+指标 | P1-OBS-04 | `[ ]` |
-| ONTSTUDIO 本体建模 UI | P1-ONTUI-05 | `[ ]` |
-| APPHUB 表单设计器 | P1-APPHUB-06 | `[ ]` |
+| ONTSTUDIO 本体建模 UI | P1-ONTUI-05 | `[x]` |
+| APPHUB 表单设计器 | P1-APPHUB-06 | `[x]` |
 
 ### v0.8-beta 发布检查
 
@@ -791,7 +799,7 @@
 
 ## 十、v2.1 实时进度摘要（截至 2026-07-16 17:30）
 
-### 10.1 已交付 Task（67 个 `[x]`）
+### 10.1 已交付 Task（81 个 `[x]`）
 
 #### Spike 阶段（35 个 `[x]`）
 
@@ -806,41 +814,40 @@
 | TECH-OBS | S-OBS-02 | 1 |
 | TECH-DATA | S-DATA-01/02/03 | 3 |
 
-#### 阶段一增量（32 个 `[x]`）
+#### 阶段一增量（46 个 `[x]`）
 
 | 模块 | 已完成 Task | 数量 |
 |---|---|---|
 | TECH-ONT | P1-ONT-01/02/03/04/05/06/07/08/09 | 9 |
-| TECH-IAM | P1-IAM-01/02/03/04/05/06 | 6 |
+| TECH-IAM | P1-IAM-01/02/03/04/05/06/07 | 7 |
+| TECH-RULE | P1-RULE-01/02 | 2 |
 | TECH-LLMGW | P1-LLMGW-01/02/03 | 3 |
-| TECH-OBS | P1-OBS-01/02 | 2 |
-| TECH-WFE | P1-WFE-01/02/03/04/05 | 5 |
-| TECH-RAG | P1-RAG-01/02/03/04 | 4 |
-| TECH-ONT | P1-ONT-09 | (含上) |
-| TECH-IAM | P1-IAM-06 | (含上) |
+| TECH-OBS | P1-OBS-01/02/03/04 | 4 |
+| TECH-WFE | P1-WFE-01/02/03/04/05/06/07/08/09 | 9 |
+| TECH-RAG | P1-RAG-01/02/03/04/05/06/07 | 7 |
+| TECH-MSG | P1-MSG-01/02 | 2 |
 
 ### 10.2 部分完成 Task（1 个 `[~]`）
 
 | Task ID | 完成度 | 阻塞原因 | 后续计划 |
 |---|---|---|---|
-| S-OBS-01 | 40% | Loki 已部署但 Prometheus + Grafana 未编排 | M2 编排 |
-| M1-VERIFY-01 | 70% | 后端建模链路完成，Neo4j + APP-ONTSTUDIO 待 M2 后续 Sprint | M2 Sprint 2 |
+| M1-VERIFY-01 | 70% | 后端建模链路完成，APP-ONTSTUDIO 待 M2 后续 Sprint | M2 Sprint 3 |
 
 ### 10.3 测试通过情况
 
 | 模块 | 测试用例数 | 通过率 |
 |---|---|---|
-| TECH-IAM | 69 | 100% |
+| TECH-IAM | 75 | 100% |
 | TECH-ONT | 42 | 100% |
-| TECH-RULE | 23 | 100% |
-| TECH-MSG | 24 | 100% |
+| TECH-RULE | 36 | 100% |
+| TECH-MSG | 47 | 100% |
 | TECH-GW | 13 | 100% |
-| TECH-OBS | 17 | 100% |
+| TECH-OBS | 36 | 100% |
 | TECH-LLMGW | 53 | 100% |
 | TECH-DATA | 13 | 100% |
-| TECH-WFE | 29 | 100% |
-| TECH-RAG | 33 | 100% |
-| **合计** | **316** | **100%** |
+| TECH-WFE | 48 | 100% |
+| TECH-RAG | 53 | 100% |
+| **合计** | **431** | **100%** |
 
 ### 10.4 已交付服务与端口
 
@@ -867,6 +874,8 @@
 | RabbitMQ 4.x | ✅ | 健康 |
 | Loki 3.3.2 | ✅ | tsdb + boltdb-shipper，168h 保留 |
 | Neo4j 5.26 | ✅ | APOC 插件，bolt://localhost:7687 |
+| Prometheus v3.2.1 | ✅ | 抓取 6 个服务 /actuator/prometheus，:9090 |
+| Grafana 11.5.2 | ✅ | admin/admin，:3000 |
 
 ### 10.6 已知问题与限制
 

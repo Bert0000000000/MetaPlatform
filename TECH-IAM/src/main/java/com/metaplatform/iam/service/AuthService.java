@@ -2,6 +2,8 @@ package com.metaplatform.iam.service;
 
 import com.metaplatform.iam.common.ErrorCode;
 import com.metaplatform.iam.common.TraceContext;
+import com.metaplatform.iam.audit.entity.IamAuditLogEntity;
+import com.metaplatform.iam.audit.service.AuditLogService;
 import com.metaplatform.iam.dto.AuthResponse;
 import com.metaplatform.iam.dto.LoginRequest;
 import com.metaplatform.iam.dto.RegisterRequest;
@@ -36,6 +38,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final IamOutboxService iamOutboxService;
+    private final AuditLogService auditLogService;
 
     @Transactional
     public AuthResponse register(RegisterRequest request) {
@@ -63,6 +66,9 @@ public class AuthService {
         UserEntity saved = userRepository.save(user);
 
         publishOutboxEvent(saved, "USER_REGISTERED");
+        auditLogService.record(saved.getTenantId(), saved.getId(), IamAuditLogEntity.Action.CREATE,
+                "User", saved.getId(), "用户注册: " + saved.getUsername(),
+                IamAuditLogEntity.Status.SUCCESS, null);
 
         String accessToken = jwtUtil.generateAccessToken(saved.getId(), saved.getUsername(), saved.getTenantId(), DEFAULT_ROLES);
         String refreshToken = jwtUtil.generateRefreshToken(saved.getId(), saved.getUsername(), saved.getTenantId(), DEFAULT_ROLES);
@@ -76,13 +82,22 @@ public class AuthService {
                 .orElseThrow(() -> new IamException(ErrorCode.INVALID_CREDENTIALS));
 
         if (user.getStatus() == UserEntity.UserStatus.DISABLED) {
+            auditLogService.record(user.getTenantId(), user.getId(), IamAuditLogEntity.Action.LOGIN,
+                    "User", user.getId(), "登录失败：账户已禁用",
+                    IamAuditLogEntity.Status.FAILED, null);
             throw new IamException(ErrorCode.ACCOUNT_DISABLED, "账户已被禁用");
         }
         if (user.getStatus() == UserEntity.UserStatus.LOCKED) {
+            auditLogService.record(user.getTenantId(), user.getId(), IamAuditLogEntity.Action.LOGIN,
+                    "User", user.getId(), "登录失败：账户已锁定",
+                    IamAuditLogEntity.Status.FAILED, null);
             throw new IamException(ErrorCode.ACCOUNT_LOCKED, "账户已被锁定");
         }
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
+            auditLogService.record(user.getTenantId(), user.getId(), IamAuditLogEntity.Action.LOGIN,
+                    "User", user.getId(), "登录失败：密码错误",
+                    IamAuditLogEntity.Status.FAILED, null);
             throw new IamException(ErrorCode.INVALID_CREDENTIALS);
         }
 
@@ -91,6 +106,9 @@ public class AuthService {
         userRepository.save(user);
 
         publishOutboxEvent(user, "USER_LOGIN");
+        auditLogService.record(user.getTenantId(), user.getId(), IamAuditLogEntity.Action.LOGIN,
+                "User", user.getId(), "用户登录成功: " + user.getUsername(),
+                IamAuditLogEntity.Status.SUCCESS, null);
 
         String accessToken = jwtUtil.generateAccessToken(user.getId(), user.getUsername(), user.getTenantId(), DEFAULT_ROLES);
         String refreshToken = jwtUtil.generateRefreshToken(user.getId(), user.getUsername(), user.getTenantId(), DEFAULT_ROLES);

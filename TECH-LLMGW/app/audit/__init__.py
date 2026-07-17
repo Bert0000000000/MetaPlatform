@@ -1,0 +1,1 @@
+"""Audit log domain for TECH-LLMGW."""

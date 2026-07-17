@@ -2,6 +2,8 @@ package com.metaplatform.iam.service;
 
 import com.metaplatform.iam.common.ErrorCode;
 import com.metaplatform.iam.common.PageResponse;
+import com.metaplatform.iam.audit.entity.IamAuditLogEntity;
+import com.metaplatform.iam.audit.service.AuditLogService;
 import com.metaplatform.iam.dto.role.AssignRolePermissionsRequest;
 import com.metaplatform.iam.dto.role.AssignRolePermissionsResponse;
 import com.metaplatform.iam.dto.role.CreateRoleRequest;
@@ -39,6 +41,7 @@ public class RoleService {
     private final RoleRepository roleRepository;
     private final RolePermissionRepository rolePermissionRepository;
     private final PermissionRepository permissionRepository;
+    private final AuditLogService auditLogService;
 
     @Transactional
     public RoleResponse create(CreateRoleRequest request) {
@@ -182,6 +185,9 @@ public class RoleService {
         if (!toCreate.isEmpty()) {
             rolePermissionRepository.saveAll(toCreate);
         }
+        auditLogService.record(role.getTenantId(), operator, IamAuditLogEntity.Action.ROLE_ASSIGN,
+                "Role", role.getId(), "为角色分配权限: " + role.getRoleCode(),
+                IamAuditLogEntity.Status.SUCCESS, null);
         Map<String, String> codeById = permissions.stream()
                 .collect(Collectors.toMap(PermissionEntity::getId, PermissionEntity::getPermissionCode));
         Set<String> allPermIds = new HashSet<>(existing);

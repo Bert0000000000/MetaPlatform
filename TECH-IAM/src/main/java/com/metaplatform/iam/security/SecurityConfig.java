@@ -29,7 +29,13 @@ public class SecurityConfig {
                         "/api/v1/iam/auth/register",
                         "/api/v1/iam/auth/login",
                         "/api/v1/iam/auth/refresh",
-                        "/api/v1/iam/auth/captcha").permitAll()
+                        "/api/v1/iam/auth/captcha",
+                        "/api/v1/iam/sso/*/callback",
+                        "/api/v1/iam/sso/*/saml/assertion",
+                        "/api/v1/iam/mfa/verify").permitAll()
+                .requestMatchers(HttpMethod.GET,
+                        "/api/v1/iam/sso/*/authorize",
+                        "/api/v1/iam/mfa/status/**").permitAll()
                 .requestMatchers("/health/**", "/actuator/health", "/actuator/info", "/error").permitAll()
                 .anyRequest().authenticated()
             )

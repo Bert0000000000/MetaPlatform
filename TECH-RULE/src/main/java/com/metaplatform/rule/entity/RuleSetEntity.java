@@ -45,6 +45,10 @@ public class RuleSetEntity {
     @Builder.Default
     private Integer version = 1;
 
+    @Column(name = "enabled", nullable = false)
+    @Builder.Default
+    private Boolean enabled = true;
+
     @Column(name = "deleted", nullable = false)
     @Builder.Default
     private Boolean deleted = false;

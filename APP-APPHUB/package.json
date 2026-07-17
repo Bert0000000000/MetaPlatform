@@ -15,7 +15,9 @@
     "react-router-dom": "^7.0.0",
     "antd": "^6.0.0",
     "@ant-design/x": "^2.0.0",
-    "axios": "^1.7.9"
+    "@ant-design/icons": "^6.0.0",
+    "axios": "^1.7.9",
+    "recharts": "^2.15.0"
   },
   "devDependencies": {
     "vite": "^6.0.0",

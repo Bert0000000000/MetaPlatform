@@ -158,6 +158,46 @@ services:
       retries: 5
       start_period: 20s
 
+  obs-prometheus:
+    image: prom/prometheus:v3.2.1
+    container_name: infra-prometheus
+    restart: unless-stopped
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - obs-prometheus-data:/prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - infra-net
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:9090/-/healthy || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  obs-grafana:
+    image: grafana/grafana:11.5.2
+    container_name: infra-grafana
+    restart: unless-stopped
+    depends_on:
+      obs-prometheus:
+        condition: service_healthy
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    volumes:
+      - obs-grafana-data:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    networks:
+      - infra-net
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
 volumes:
   infra-postgres-data:
     name: infra-postgres-data
@@ -175,6 +215,10 @@ volumes:
     name: ont-neo4j-data
   infra-loki-data:
     name: infra-loki-data
+  obs-prometheus-data:
+    name: obs-prometheus-data
+  obs-grafana-data:
+    name: obs-grafana-data
 
 networks:
   infra-net:

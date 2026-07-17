@@ -54,6 +54,18 @@ class ProcessInstanceServiceTest {
     @Mock
     private RepositoryService repositoryService;
 
+    @Mock
+    private org.flowable.engine.TaskService taskService;
+
+    @Mock
+    private RuleIntegrationService ruleIntegrationService;
+
+    @Mock
+    private OntIntegrationService ontIntegrationService;
+
+    @Mock
+    private WfeOutboxService wfeOutboxService;
+
     @InjectMocks
     private ProcessInstanceService processInstanceService;
 

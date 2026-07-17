@@ -26,7 +26,11 @@ public enum ErrorCode {
     PROCESS_EXECUTION_FAILED(42202, HttpStatus.UNPROCESSABLE_ENTITY, "流程执行失败"),
     INTERNAL_ERROR(50001, HttpStatus.INTERNAL_SERVER_ERROR, "服务内部错误"),
     DATABASE_ERROR(50002, HttpStatus.INTERNAL_SERVER_ERROR, "数据库操作失败"),
-    DEPENDENCY_ERROR(50003, HttpStatus.INTERNAL_SERVER_ERROR, "依赖服务不可用");
+    DEPENDENCY_ERROR(50003, HttpStatus.INTERNAL_SERVER_ERROR, "依赖服务不可用"),
+    PERMISSION_CHECK_FAILED(50004, HttpStatus.INTERNAL_SERVER_ERROR, "权限校验服务调用失败"),
+    RULE_EVALUATION_FAILED(50005, HttpStatus.INTERNAL_SERVER_ERROR, "规则引擎调用失败"),
+    ONT_ENTITY_NOT_FOUND(40404, HttpStatus.NOT_FOUND, "业务对象实体不存在"),
+    OUTBOX_PUBLISH_FAILED(50006, HttpStatus.INTERNAL_SERVER_ERROR, "事件发布失败");
 
     private final int code;
     private final HttpStatus httpStatus;

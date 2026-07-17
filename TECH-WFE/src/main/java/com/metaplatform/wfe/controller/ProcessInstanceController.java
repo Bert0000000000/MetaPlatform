@@ -2,6 +2,7 @@ package com.metaplatform.wfe.controller;
 
 import com.metaplatform.wfe.common.ApiResponse;
 import com.metaplatform.wfe.common.PageResponse;
+import com.metaplatform.wfe.dto.BindVariableRequest;
 import com.metaplatform.wfe.dto.ProcessInstanceResponse;
 import com.metaplatform.wfe.dto.StartProcessInstanceRequest;
 import com.metaplatform.wfe.dto.TaskResponse;
@@ -50,5 +51,13 @@ public class ProcessInstanceController {
     @GetMapping("/{id}/tasks")
     public ApiResponse<List<TaskResponse>> getTasks(@PathVariable String id) {
         return ApiResponse.success(wfeTaskService.getTasksByProcessInstance(id));
+    }
+
+    // P1-WFE-08: 流程变量绑定业务对象
+    @PostMapping("/{id}/bind")
+    public ApiResponse<ProcessInstanceResponse> bindVariable(
+            @PathVariable String id,
+            @Valid @RequestBody BindVariableRequest request) {
+        return ApiResponse.success(processInstanceService.bindVariable(id, request));
     }
 }

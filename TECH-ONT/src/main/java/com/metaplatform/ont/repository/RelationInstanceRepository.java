@@ -25,5 +25,11 @@ public interface RelationInstanceRepository extends JpaRepository<RelationInstan
     Optional<RelationInstanceEntity> findByTenantIdAndRelationTypeIdAndSourceEntityIdAndTargetEntityId(
             String tenantId, String relationTypeId, String sourceEntityId, String targetEntityId);
 
+    List<RelationInstanceEntity> findByTenantIdAndRelationTypeIdAndSourceEntityId(
+            String tenantId, String relationTypeId, String sourceEntityId);
+
+    List<RelationInstanceEntity> findByTenantIdAndRelationTypeIdAndTargetEntityId(
+            String tenantId, String relationTypeId, String targetEntityId);
+
     void deleteByTenantIdAndRelationTypeId(String tenantId, String relationTypeId);
 }

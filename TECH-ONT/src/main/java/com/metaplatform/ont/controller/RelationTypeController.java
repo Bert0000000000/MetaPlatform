@@ -38,6 +38,11 @@ public class RelationTypeController {
         return ApiResponse.success(relationTypeService.getById(relationTypeId));
     }
 
+    @GetMapping("/by-code/{code}")
+    public ApiResponse<RelationTypeResponse> getByCode(@PathVariable String code) {
+        return ApiResponse.success(relationTypeService.getByCode(code));
+    }
+
     @PutMapping("/{relationTypeId}")
     public ApiResponse<RelationTypeResponse> update(@PathVariable String relationTypeId,
                                                     @Valid @RequestBody RelationTypeUpdateRequest request) {

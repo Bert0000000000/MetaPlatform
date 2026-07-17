@@ -12,10 +12,20 @@ from typing import Optional
 
 from fastapi import Request
 
+from app.catalog.service import CatalogService
+from app.dbt.repository import InMemoryDbtRepository
+from app.dbt.service import DbtService
+from app.etl.repository import InMemoryEtlTaskRepository
+from app.etl.service import EtlTaskService
+from app.lakehouse.repository import InMemoryLakehouseRepository
+from app.lakehouse.service import LakehouseService
 from app.models.repository import DataSourceRepository, InMemoryDataSourceRepository
+from app.monitoring.service import MonitoringService
+from app.quality.service import QualityService
 from app.services.connectors import ConnectionTester, SchemaExplorer
 from app.services.datasource_service import DataSourceService
 from app.services.schema_discovery_service import SchemaDiscoveryService
+from app.warehouse.service import WarehouseService
 
 
 @dataclass
@@ -25,6 +35,13 @@ class Registry:
     explorer: Optional[SchemaExplorer]
     datasource_service: DataSourceService
     schema_discovery_service: SchemaDiscoveryService
+    etl_service: EtlTaskService
+    dbt_service: DbtService
+    lakehouse_service: LakehouseService
+    warehouse_service: WarehouseService
+    catalog_service: CatalogService
+    quality_service: QualityService
+    monitoring_service: MonitoringService
 
     def reset(self) -> None:
         """Clear in-memory state and rebind mock connectors."""
@@ -43,12 +60,26 @@ def _build_default_registry() -> Registry:
     repo = InMemoryDataSourceRepository()
     ds_service = DataSourceService(repo, tester=None)
     schema_service = SchemaDiscoveryService(ds_service, explorer=None)
+    etl_service = EtlTaskService(InMemoryEtlTaskRepository())
+    dbt_service = DbtService(InMemoryDbtRepository())
+    lakehouse_service = LakehouseService(InMemoryLakehouseRepository())
+    warehouse_service = WarehouseService()
+    catalog_service = CatalogService()
+    quality_service = QualityService()
+    monitoring_service = MonitoringService()
     return Registry(
         repository=repo,
         tester=None,
         explorer=None,
         datasource_service=ds_service,
         schema_discovery_service=schema_service,
+        etl_service=etl_service,
+        dbt_service=dbt_service,
+        lakehouse_service=lakehouse_service,
+        warehouse_service=warehouse_service,
+        catalog_service=catalog_service,
+        quality_service=quality_service,
+        monitoring_service=monitoring_service,
     )
 
 

@@ -22,11 +22,19 @@ from app.models.repository import (
     InMemoryDocumentChunkRepository,
     InMemoryDocumentRepository,
     InMemoryKnowledgeBaseRepository,
+    InMemorySearchEventRepository,
 )
 from app.services.chunk_service import ChunkService
+from app.services.context_assembly_service import ContextAssemblyService
+from app.services.citation_service import CitationService
 from app.services.document_service import DocumentService, FileStorage
 from app.services.embedding_service import EmbeddingService
+from app.services.event_service import EventService
+from app.services.graph_enhanced_service import GraphEnhancedService
+from app.services.hybrid_search_service import HybridSearchService
+from app.services.keyword_search_service import KeywordSearchService
 from app.services.knowledge_base_service import KnowledgeBaseService
+from app.services.rerank_service import RerankService
 from app.services.retrieval_service import RetrievalService
 
 TENANT_ID = "tenant-test"
@@ -102,6 +110,11 @@ def mock_chunk_repository() -> InMemoryDocumentChunkRepository:
 
 
 @pytest.fixture
+def mock_event_repository() -> InMemorySearchEventRepository:
+    return InMemorySearchEventRepository()
+
+
+@pytest.fixture
 def mock_storage() -> MockFileStorage:
     return MockFileStorage()
 
@@ -151,27 +164,94 @@ def retrieval_service(
 
 
 @pytest.fixture
+def keyword_search_service(
+    mock_chunk_repository: InMemoryDocumentChunkRepository,
+    mock_doc_repository: InMemoryDocumentRepository,
+) -> KeywordSearchService:
+    return KeywordSearchService(mock_chunk_repository, mock_doc_repository)
+
+
+@pytest.fixture
+def hybrid_search_service(
+    retrieval_service: RetrievalService,
+    keyword_search_service: KeywordSearchService,
+) -> HybridSearchService:
+    return HybridSearchService(retrieval_service, keyword_search_service)
+
+
+@pytest.fixture
+def rerank_service() -> RerankService:
+    return RerankService()
+
+
+@pytest.fixture
+def event_service(
+    mock_event_repository: InMemorySearchEventRepository,
+) -> EventService:
+    return EventService(mock_event_repository)
+
+
+@pytest.fixture
+def graph_enhanced_service(
+    hybrid_search_service: HybridSearchService,
+    keyword_search_service: KeywordSearchService,
+) -> GraphEnhancedService:
+    return GraphEnhancedService(hybrid_search_service, keyword_search_service)
+
+
+@pytest.fixture
+def context_assembly_service(
+    hybrid_search_service: HybridSearchService,
+) -> ContextAssemblyService:
+    return ContextAssemblyService(hybrid_search_service)
+
+
+@pytest.fixture
+def citation_service(
+    mock_chunk_repository: InMemoryDocumentChunkRepository,
+    mock_doc_repository: InMemoryDocumentRepository,
+) -> CitationService:
+    return CitationService(mock_chunk_repository, mock_doc_repository)
+
+
+@pytest.fixture
 def registry(
     mock_kb_repository: InMemoryKnowledgeBaseRepository,
     mock_doc_repository: InMemoryDocumentRepository,
     mock_chunk_repository: InMemoryDocumentChunkRepository,
+    mock_event_repository: InMemorySearchEventRepository,
     mock_storage: MockFileStorage,
     kb_service: KnowledgeBaseService,
     doc_service: DocumentService,
     chunk_service: ChunkService,
     embedding_service: EmbeddingService,
     retrieval_service: RetrievalService,
+    keyword_search_service: KeywordSearchService,
+    hybrid_search_service: HybridSearchService,
+    rerank_service: RerankService,
+    event_service: EventService,
+    graph_enhanced_service: GraphEnhancedService,
+    context_assembly_service: ContextAssemblyService,
+    citation_service: CitationService,
 ) -> Registry:
     return Registry(
         kb_repository=mock_kb_repository,
         doc_repository=mock_doc_repository,
         chunk_repository=mock_chunk_repository,
+        event_repository=mock_event_repository,
         storage=mock_storage,
         kb_service=kb_service,
         doc_service=doc_service,
         chunk_service=chunk_service,
         embedding_service=embedding_service,
         retrieval_service=retrieval_service,
+        keyword_search_service=keyword_search_service,
+        hybrid_search_service=hybrid_search_service,
+        rerank_service=rerank_service,
+        event_service=event_service,
+        graph_enhanced_service=graph_enhanced_service,
+        context_assembly_service=context_assembly_service,
+        citation_service=citation_service,
     )
 
 

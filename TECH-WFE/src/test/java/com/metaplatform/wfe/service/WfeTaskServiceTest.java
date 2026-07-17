@@ -30,6 +30,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -45,8 +46,22 @@ class WfeTaskServiceTest {
     @Mock
     private RuntimeService runtimeService;
 
+    @Mock
+    private IamIntegrationService iamIntegrationService;
+
+    @Mock
+    private WfeOutboxService wfeOutboxService;
+
     @InjectMocks
     private WfeTaskService wfeTaskService;
+
+    @org.junit.jupiter.api.BeforeEach
+    void setUp() {
+        // P1-WFE-06: APPROVE 操作默认允许审批（userId 在测试上下文中可能为 null）
+        when(iamIntegrationService.checkPermission(
+                anyString(), nullable(String.class), anyString(), anyString()))
+                .thenReturn(true);
+    }
 
     // ════════════════════════════════════════════
     // P1-WFE-04: 任务查询测试
@@ -317,5 +332,56 @@ class WfeTaskServiceTest {
         assertThatThrownBy(() -> wfeTaskService.executeAction("task-001", request))
                 .isInstanceOf(WfeException.class)
                 .hasMessageContaining("无效的审批操作类型");
+    }
+
+    // ════════════════════════════════════════════
+    // P1-WFE-06 / P1-WFE-09: 权限校验与事件发布
+    // ════════════════════════════════════════════
+
+    @Test
+    void executeAction_shouldRejectPermission_whenNotApproved() {
+        when(iamIntegrationService.checkPermission(
+                anyString(), nullable(String.class), anyString(), anyString()))
+                .thenReturn(false);
+
+        TaskActionRequest request = new TaskActionRequest();
+        request.setAction("APPROVE");
+        request.setComment("同意");
+
+        mockTask("task-001", "pi-001");
+
+        assertThatThrownBy(() -> wfeTaskService.executeAction("task-001", request))
+                .isInstanceOf(WfeException.class)
+                .hasMessageContaining("无审批权限");
+
+        verify(taskService, never()).complete(anyString());
+    }
+
+    @Test
+    void executeAction_shouldPublishTaskCompletedEvent_whenApproved() {
+        TaskActionRequest request = new TaskActionRequest();
+        request.setAction("APPROVE");
+        request.setComment("同意");
+
+        mockTask("task-001", "pi-001");
+
+        wfeTaskService.executeAction("task-001", request);
+
+        verify(wfeOutboxService).publishEvent(
+                anyString(), eq("task-001"), eq("TASK_COMPLETED"), any(), any());
+    }
+
+    @Test
+    void executeAction_shouldPublishTaskRejectedEvent_whenRejected() {
+        TaskActionRequest request = new TaskActionRequest();
+        request.setAction("REJECT");
+        request.setComment("拒绝");
+
+        mockTask("task-001", "pi-001");
+
+        wfeTaskService.executeAction("task-001", request);
+
+        verify(wfeOutboxService).publishEvent(
+                anyString(), eq("task-001"), eq("TASK_REJECTED"), any(), any());
     }
 }

@@ -1,0 +1,17 @@
+package com.metaplatform.iam.mfa.dto;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class VerifyMfaResponse {
+
+    private Boolean verified;
+    private String userId;
+    private String message;
+}

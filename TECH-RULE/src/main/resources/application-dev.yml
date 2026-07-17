@@ -16,6 +16,11 @@ spring:
     locations: classpath:db/migration
     baseline-on-migrate: true
     schemas: public
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
 
 app:
   jwt:

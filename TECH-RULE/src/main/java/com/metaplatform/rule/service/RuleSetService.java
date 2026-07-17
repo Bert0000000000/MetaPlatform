@@ -43,6 +43,7 @@ public class RuleSetService {
                 .description(request.getDescription())
                 .status(request.getStatus() != null ? request.getStatus() : RuleStatus.ENABLED)
                 .priority(request.getPriority() != null ? request.getPriority() : 0)
+                .enabled(request.getEnabled() != null ? request.getEnabled() : true)
                 .version(1)
                 .createdBy(TenantContext.getUserId())
                 .updatedBy(TenantContext.getUserId())
@@ -95,6 +96,9 @@ public class RuleSetService {
         if (request.getPriority() != null) {
             entity.setPriority(request.getPriority());
         }
+        if (request.getEnabled() != null) {
+            entity.setEnabled(request.getEnabled());
+        }
         entity.setUpdatedBy(TenantContext.getUserId());
 
         RuleSetEntity saved = ruleSetRepository.save(entity);
@@ -114,6 +118,24 @@ public class RuleSetService {
         entity.setDeleted(true);
         entity.setUpdatedBy(TenantContext.getUserId());
         ruleSetRepository.save(entity);
+    }
+
+    @Transactional
+    public RuleSetResponse enable(String id) {
+        RuleSetEntity entity = findRuleSet(id);
+        entity.setEnabled(true);
+        entity.setUpdatedBy(TenantContext.getUserId());
+        RuleSetEntity saved = ruleSetRepository.save(entity);
+        return toResponse(saved);
+    }
+
+    @Transactional
+    public RuleSetResponse disable(String id) {
+        RuleSetEntity entity = findRuleSet(id);
+        entity.setEnabled(false);
+        entity.setUpdatedBy(TenantContext.getUserId());
+        RuleSetEntity saved = ruleSetRepository.save(entity);
+        return toResponse(saved);
     }
 
     private RuleSetEntity findRuleSet(String id) {
@@ -136,6 +158,7 @@ public class RuleSetService {
                 .status(entity.getStatus().name())
                 .priority(entity.getPriority())
                 .version(entity.getVersion())
+                .enabled(entity.getEnabled())
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())
                 .createdBy(entity.getCreatedBy())

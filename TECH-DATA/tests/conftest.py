@@ -76,6 +76,13 @@ def registry(
         explorer=mock_explorer,
         datasource_service=ds_service,
         schema_discovery_service=schema_service,
+        etl_service=EtlTaskService(InMemoryEtlTaskRepository()),
+        dbt_service=DbtService(InMemoryDbtRepository()),
+        lakehouse_service=LakehouseService(InMemoryLakehouseRepository()),
+        warehouse_service=WarehouseService(),
+        catalog_service=CatalogService(),
+        quality_service=QualityService(),
+        monitoring_service=MonitoringService(),
     )
 
 

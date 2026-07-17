@@ -16,6 +16,11 @@ spring:
     locations: classpath:db/migration
     baseline-on-migrate: true
     schemas: public
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
 
 flowable:
   database-schema-update: true
@@ -25,3 +30,12 @@ flowable:
 app:
   jwt:
     secret: ${JWT_SECRET:mate-platform-default-secret-key-must-be-over-32-bytes}
+
+iam:
+  base-url: ${IAM_BASE_URL:http://localhost:8101}
+
+rule:
+  base-url: ${RULE_BASE_URL:http://localhost:8501}
+
+ont:
+  base-url: ${ONT_BASE_URL:http://localhost:8201}

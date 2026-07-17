@@ -6,6 +6,7 @@ and cascades document deletion when a knowledge base is removed.
 
 from __future__ import annotations
 
+import json
 from typing import Any, Optional
 
 from app.common.errors import (
@@ -21,7 +22,9 @@ from app.models.schemas import (
     CreateKnowledgeBaseRequest,
     KnowledgeBase,
     KnowledgeBaseStatus,
+    SearchConfig,
     UpdateKnowledgeBaseRequest,
+    UpdateSearchConfigRequest,
 )
 
 
@@ -134,3 +137,58 @@ class KnowledgeBaseService:
         self, tenant_id: str, kb_id: str, delta: int = 1
     ) -> None:
         await self._kb_repo.increment_doc_count(kb_id, tenant_id, delta)
+
+    # ------------------------------------------------------- search config
+
+    async def get_search_config(
+        self, tenant_id: str, kb_id: str
+    ) -> SearchConfig:
+        """Return the search configuration for a KB, or defaults if unset."""
+
+        kb = await self._kb_repo.get(kb_id, tenant_id)
+        if kb is None:
+            raise KnowledgeBaseNotFoundError(
+                f"知识库不存在: id={kb_id}",
+                data={"id": kb_id},
+            )
+        if kb.search_config:
+            try:
+                data = json.loads(kb.search_config)
+                return SearchConfig(**data)
+            except (json.JSONDecodeError, TypeError, ValueError):
+                pass
+        return SearchConfig()
+
+    async def update_search_config(
+        self, tenant_id: str, kb_id: str, req: UpdateSearchConfigRequest
+    ) -> SearchConfig:
+        """Merge *req* into the existing search config and persist it."""
+
+        kb = await self._kb_repo.get(kb_id, tenant_id)
+        if kb is None:
+            raise KnowledgeBaseNotFoundError(
+                f"知识库不存在: id={kb_id}",
+                data={"id": kb_id},
+            )
+
+        # Load current config (or defaults).
+        current = SearchConfig()
+        if kb.search_config:
+            try:
+                data = json.loads(kb.search_config)
+                current = SearchConfig(**data)
+            except (json.JSONDecodeError, TypeError, ValueError):
+                pass
+
+        # Apply overrides from the request.
+        updated = current.model_copy(
+            update={
+                k: v
+                for k, v in req.model_dump(exclude_unset=True).items()
+                if v is not None
+            }
+        )
+
+        config_json = updated.model_dump_json()
+        await self._kb_repo.update(kb_id, tenant_id, {"search_config": config_json})
+        return updated

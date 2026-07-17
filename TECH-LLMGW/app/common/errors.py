@@ -19,9 +19,15 @@ class ErrorCode(IntEnum):
     TENANT_MISMATCH = 40302
     PROVIDER_NOT_FOUND = 40401
     MODEL_NOT_FOUND = 40402
+    PROMPT_NOT_FOUND = 40404
+    QUOTA_NOT_FOUND = 40405
+    RATE_LIMIT_NOT_FOUND = 40406
+    PROMPT_KEY_EXISTS = 40903
     INVALID_REQUEST = 42200
     MODEL_NOT_AVAILABLE = 42202
     ALL_PROVIDERS_FAILED = 42203
+    PROMPT_VARIABLE_MISSING = 42205
+    PROMPT_RENDER_FAILED = 42206
     INTERNAL_ERROR = 50001
     PROVIDER_API_ERROR = 50005
 
@@ -38,9 +44,15 @@ ERROR_HTTP_STATUS: dict[ErrorCode, int] = {
     ErrorCode.TENANT_MISMATCH: 403,
     ErrorCode.PROVIDER_NOT_FOUND: 404,
     ErrorCode.MODEL_NOT_FOUND: 404,
+    ErrorCode.PROMPT_NOT_FOUND: 404,
+    ErrorCode.QUOTA_NOT_FOUND: 404,
+    ErrorCode.RATE_LIMIT_NOT_FOUND: 404,
+    ErrorCode.PROMPT_KEY_EXISTS: 409,
     ErrorCode.INVALID_REQUEST: 422,
     ErrorCode.MODEL_NOT_AVAILABLE: 422,
     ErrorCode.ALL_PROVIDERS_FAILED: 422,
+    ErrorCode.PROMPT_VARIABLE_MISSING: 422,
+    ErrorCode.PROMPT_RENDER_FAILED: 422,
     ErrorCode.INTERNAL_ERROR: 500,
     ErrorCode.PROVIDER_API_ERROR: 500,
 }
@@ -131,3 +143,33 @@ class UnauthorizedError(BizException):
 class InvalidRequestError(BizException):
     code = ErrorCode.INVALID_REQUEST
     http_status = 422
+
+
+class PromptNotFoundError(BizException):
+    code = ErrorCode.PROMPT_NOT_FOUND
+    http_status = 404
+
+
+class PromptKeyExistsError(BizException):
+    code = ErrorCode.PROMPT_KEY_EXISTS
+    http_status = 409
+
+
+class PromptVariableMissingError(BizException):
+    code = ErrorCode.PROMPT_VARIABLE_MISSING
+    http_status = 422
+
+
+class PromptRenderFailedError(BizException):
+    code = ErrorCode.PROMPT_RENDER_FAILED
+    http_status = 422
+
+
+class QuotaNotFoundError(BizException):
+    code = ErrorCode.QUOTA_NOT_FOUND
+    http_status = 404
+
+
+class RateLimitNotFoundError(BizException):
+    code = ErrorCode.RATE_LIMIT_NOT_FOUND
+    http_status = 404

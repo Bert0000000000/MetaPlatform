@@ -17,4 +17,12 @@ public class RestClientConfig {
                 .readTimeout(Duration.ofMillis(properties.getReadTimeoutMs()))
                 .build();
     }
+
+    @Bean(name = "prometheusRestTemplate")
+    public RestTemplate prometheusRestTemplate(RestTemplateBuilder builder, ObsPrometheusProperties properties) {
+        return builder
+                .connectTimeout(Duration.ofMillis(properties.getConnectTimeoutMs()))
+                .readTimeout(Duration.ofMillis(properties.getReadTimeoutMs()))
+                .build();
+    }
 }

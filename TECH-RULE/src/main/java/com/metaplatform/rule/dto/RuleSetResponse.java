@@ -21,6 +21,7 @@ public class RuleSetResponse {
     private String status;
     private Integer priority;
     private Integer version;
+    private Boolean enabled;
     private Instant createdAt;
     private Instant updatedAt;
     private String createdBy;

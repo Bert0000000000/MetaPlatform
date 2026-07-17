@@ -5,6 +5,7 @@ import com.metaplatform.rule.common.PageResponse;
 import com.metaplatform.rule.dto.RuleDefinitionCreateRequest;
 import com.metaplatform.rule.dto.RuleDefinitionResponse;
 import com.metaplatform.rule.dto.RuleDefinitionUpdateRequest;
+import com.metaplatform.rule.dto.UpdatePriorityRequest;
 import com.metaplatform.rule.service.RuleDefinitionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -45,5 +46,21 @@ public class RuleDefinitionController {
     public ApiResponse<Void> delete(@PathVariable String id) {
         ruleDefinitionService.delete(id);
         return ApiResponse.success();
+    }
+
+    @PatchMapping("/{id}/priority")
+    public ApiResponse<RuleDefinitionResponse> updatePriority(@PathVariable String id,
+                                                              @Valid @RequestBody UpdatePriorityRequest request) {
+        return ApiResponse.success(ruleDefinitionService.updatePriority(id, request.getPriority()));
+    }
+
+    @PatchMapping("/{id}/enable")
+    public ApiResponse<RuleDefinitionResponse> enable(@PathVariable String id) {
+        return ApiResponse.success(ruleDefinitionService.enable(id));
+    }
+
+    @PatchMapping("/{id}/disable")
+    public ApiResponse<RuleDefinitionResponse> disable(@PathVariable String id) {
+        return ApiResponse.success(ruleDefinitionService.disable(id));
     }
 }

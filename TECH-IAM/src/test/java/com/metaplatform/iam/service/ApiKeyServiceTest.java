@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.metaplatform.iam.common.PageResponse;
 import com.metaplatform.iam.dto.apikey.ApiKeyCreatedResponse;
 import com.metaplatform.iam.dto.apikey.ApiKeyResponse;
+import com.metaplatform.iam.dto.apikey.PermissionEntry;
+import com.metaplatform.iam.dto.apikey.ValidateResponse;
 import com.metaplatform.iam.entity.ApiKeyEntity;
 import com.metaplatform.iam.exception.IamException;
 import com.metaplatform.iam.repository.ApiKeyRepository;
@@ -196,5 +198,108 @@ class ApiKeyServiceTest {
         assertThatThrownBy(() -> apiKeyService.validate("mp_somevalidkey12345678901234567"))
                 .isInstanceOf(IamException.class)
                 .hasMessageContaining("API Key 已过期");
+    }
+
+    // ==================== P1-IAM-07: 权限范围与吊销增强 ====================
+
+    @Test
+    void updatePermissions_shouldPersistPermissions() {
+        ApiKeyEntity entity = ApiKeyEntity.builder()
+                .id("ak-1").tenantId("tenant-default").name("key-1")
+                .keyPrefix("mp_abcde").keyHash("hash-1").userId("user-001")
+                .status(ApiKeyEntity.Status.ACTIVE).build();
+        when(apiKeyRepository.findById("ak-1")).thenReturn(Optional.of(entity));
+        when(apiKeyRepository.save(any(ApiKeyEntity.class))).thenAnswer(i -> i.getArgument(0));
+
+        List<PermissionEntry> permissions = List.of(
+                PermissionEntry.builder().resource("ont:concepts").actions(List.of("read", "write")).build(),
+                PermissionEntry.builder().resource("rule:rulesets").actions(List.of("execute")).build());
+        apiKeyService.updatePermissions("ak-1", permissions);
+
+        assertThat(entity.getPermissions()).contains("ont:concepts").contains("rule:rulesets");
+        verify(apiKeyRepository).save(entity);
+    }
+
+    @Test
+    void getPermissions_shouldReturnPermissions() {
+        ApiKeyEntity entity = ApiKeyEntity.builder()
+                .id("ak-1").tenantId("tenant-default").name("key-1")
+                .keyPrefix("mp_abcde").keyHash("hash-1").userId("user-001")
+                .permissions("[{\"resource\":\"ont:concepts\",\"actions\":[\"read\",\"write\"]}]")
+                .status(ApiKeyEntity.Status.ACTIVE).build();
+        when(apiKeyRepository.findById("ak-1")).thenReturn(Optional.of(entity));
+
+        List<PermissionEntry> result = apiKeyService.getPermissions("ak-1");
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getResource()).isEqualTo("ont:concepts");
+        assertThat(result.get(0).getActions()).containsExactly("read", "write");
+    }
+
+    @Test
+    void revoke_shouldRecordReasonAndTimestamp() {
+        ApiKeyEntity entity = ApiKeyEntity.builder()
+                .id("ak-1").tenantId("tenant-default").name("key-1")
+                .keyPrefix("mp_abcde").keyHash("hash-1").userId("user-001")
+                .status(ApiKeyEntity.Status.ACTIVE).build();
+        when(apiKeyRepository.findById("ak-1")).thenReturn(Optional.of(entity));
+        when(apiKeyRepository.save(any(ApiKeyEntity.class))).thenAnswer(i -> i.getArgument(0));
+
+        apiKeyService.revoke("ak-1", "安全违规");
+
+        assertThat(entity.getStatus()).isEqualTo(ApiKeyEntity.Status.REVOKED);
+        assertThat(entity.getRevokedReason()).isEqualTo("安全违规");
+        assertThat(entity.getRevokedAt()).isNotNull();
+        verify(apiKeyRepository).save(entity);
+    }
+
+    @Test
+    void validateWithPermissions_shouldReturnValid_whenKeyHasPermission() {
+        ApiKeyEntity entity = ApiKeyEntity.builder()
+                .id("ak-1").tenantId("tenant-default").name("key-1")
+                .keyPrefix("mp_abcde").keyHash("some-hash").userId("user-001")
+                .permissions("[{\"resource\":\"ont:concepts\",\"actions\":[\"read\",\"write\"]}]")
+                .status(ApiKeyEntity.Status.ACTIVE).build();
+        when(apiKeyRepository.findByKeyHash(any(String.class))).thenReturn(Optional.of(entity));
+        when(apiKeyRepository.save(any(ApiKeyEntity.class))).thenAnswer(i -> i.getArgument(0));
+
+        ValidateResponse response = apiKeyService.validateWithPermissions(
+                "mp_somevalidkey12345678901234567", "ont:concepts", "read");
+
+        assertThat(response.isValid()).isTrue();
+        assertThat(response.getUserId()).isEqualTo("user-001");
+        assertThat(response.getTenantId()).isEqualTo("tenant-default");
+        assertThat(response.getPermissions()).hasSize(1);
+    }
+
+    @Test
+    void validateWithPermissions_shouldReturnInvalid_whenKeyLacksPermission() {
+        ApiKeyEntity entity = ApiKeyEntity.builder()
+                .id("ak-1").tenantId("tenant-default").name("key-1")
+                .keyPrefix("mp_abcde").keyHash("some-hash").userId("user-001")
+                .permissions("[{\"resource\":\"ont:concepts\",\"actions\":[\"read\"]}]")
+                .status(ApiKeyEntity.Status.ACTIVE).build();
+        when(apiKeyRepository.findByKeyHash(any(String.class))).thenReturn(Optional.of(entity));
+
+        ValidateResponse response = apiKeyService.validateWithPermissions(
+                "mp_somevalidkey12345678901234567", "ont:concepts", "delete");
+
+        assertThat(response.isValid()).isFalse();
+        assertThat(response.getUserId()).isNull();
+    }
+
+    @Test
+    void validateWithPermissions_shouldReturnInvalid_whenKeyRevoked() {
+        ApiKeyEntity entity = ApiKeyEntity.builder()
+                .id("ak-1").tenantId("tenant-default").name("key-1")
+                .keyPrefix("mp_abcde").keyHash("some-hash").userId("user-001")
+                .permissions("[{\"resource\":\"ont:concepts\",\"actions\":[\"read\"]}]")
+                .status(ApiKeyEntity.Status.REVOKED).build();
+        when(apiKeyRepository.findByKeyHash(any(String.class))).thenReturn(Optional.of(entity));
+
+        ValidateResponse response = apiKeyService.validateWithPermissions(
+                "mp_somevalidkey12345678901234567", "ont:concepts", "read");
+
+        assertThat(response.isValid()).isFalse();
     }
 }

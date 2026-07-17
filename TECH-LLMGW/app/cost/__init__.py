@@ -1,0 +1,1 @@
+"""Cost report domain for TECH-LLMGW."""

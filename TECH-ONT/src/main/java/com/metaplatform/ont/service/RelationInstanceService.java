@@ -97,7 +97,13 @@ public class RelationInstanceService {
                                                        String targetEntityId) {
         String tenantId = TenantContext.get();
         List<RelationInstanceEntity> entities;
-        if (StringUtils.hasText(relationTypeId)) {
+        if (StringUtils.hasText(relationTypeId) && StringUtils.hasText(sourceEntityId)) {
+            entities = relationInstanceRepository.findByTenantIdAndRelationTypeIdAndSourceEntityId(
+                    tenantId, relationTypeId, sourceEntityId);
+        } else if (StringUtils.hasText(relationTypeId) && StringUtils.hasText(targetEntityId)) {
+            entities = relationInstanceRepository.findByTenantIdAndRelationTypeIdAndTargetEntityId(
+                    tenantId, relationTypeId, targetEntityId);
+        } else if (StringUtils.hasText(relationTypeId)) {
             entities = relationInstanceRepository.findByTenantIdAndRelationTypeId(tenantId, relationTypeId);
         } else if (StringUtils.hasText(sourceEntityId)) {
             entities = relationInstanceRepository.findByTenantIdAndSourceEntityId(tenantId, sourceEntityId);

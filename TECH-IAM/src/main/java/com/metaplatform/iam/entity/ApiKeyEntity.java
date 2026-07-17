@@ -57,9 +57,17 @@ public class ApiKeyEntity {
 
     /**
      * JSON 数组字符串，如 ["ont:read","iam:write"]。
+     * 保留向后兼容；细粒度权限见 {@link #permissions}。
      */
     @Column(name = "scopes", columnDefinition = "TEXT")
     private String scopes;
+
+    /**
+     * JSON 数组字符串，如 [{"resource":"ont:concepts","actions":["read","write"]}]。
+     * 表达资源 + 操作的细粒度权限范围。
+     */
+    @Column(name = "permissions", columnDefinition = "TEXT")
+    private String permissions;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 16)
@@ -70,6 +78,18 @@ public class ApiKeyEntity {
 
     @Column(name = "last_used_at")
     private Instant lastUsedAt;
+
+    /**
+     * 吊销原因（可空，仅 status=REVOKED 时有值）。
+     */
+    @Column(name = "revoked_reason", length = 256)
+    private String revokedReason;
+
+    /**
+     * 吊销时间（可空，仅 status=REVOKED 时有值）。
+     */
+    @Column(name = "revoked_at")
+    private Instant revokedAt;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

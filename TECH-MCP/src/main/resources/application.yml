@@ -1,0 +1,18 @@
+server:
+  port: 8105
+
+spring:
+  application:
+    name: tech-mcp
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+
+logging:
+  level:
+    root: INFO
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

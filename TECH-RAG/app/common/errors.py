@@ -28,6 +28,8 @@ class ErrorCode(IntEnum):
     DATABASE_ERROR = 50002
     LLMGW_ERROR = 50003
     EMBEDDING_FAILED = 50004
+    ONTOLOGY_ERROR = 50005
+    CITATION_NOT_FOUND = 40403
 
 
 # Map error code -> HTTP status. Used by the global exception handler.
@@ -41,6 +43,7 @@ ERROR_HTTP_STATUS: dict[ErrorCode, int] = {
     ErrorCode.TENANT_MISMATCH: 403,
     ErrorCode.KB_NOT_FOUND: 404,
     ErrorCode.DOCUMENT_NOT_FOUND: 404,
+    ErrorCode.CITATION_NOT_FOUND: 404,
     ErrorCode.KB_ALREADY_EXISTS: 409,
     ErrorCode.DOCUMENT_ALREADY_EXISTS: 409,
     ErrorCode.KB_NOT_EMPTY: 409,
@@ -48,6 +51,7 @@ ERROR_HTTP_STATUS: dict[ErrorCode, int] = {
     ErrorCode.DATABASE_ERROR: 500,
     ErrorCode.LLMGW_ERROR: 502,
     ErrorCode.EMBEDDING_FAILED: 500,
+    ErrorCode.ONTOLOGY_ERROR: 502,
 }
 
 
@@ -141,3 +145,13 @@ class LLMGWError(BizException):
 class EmbeddingFailedError(BizException):
     code = ErrorCode.EMBEDDING_FAILED
     http_status = 500
+
+
+class OntologyError(BizException):
+    code = ErrorCode.ONTOLOGY_ERROR
+    http_status = 502
+
+
+class CitationNotFoundError(BizException):
+    code = ErrorCode.CITATION_NOT_FOUND
+    http_status = 404

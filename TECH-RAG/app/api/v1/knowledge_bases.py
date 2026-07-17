@@ -1,7 +1,8 @@
-"""Knowledge base CRUD endpoints (P1-RAG-02)."""
+"""Knowledge base CRUD endpoints (P1-RAG-02) + search config (P1-RAG-06)."""
 
 from __future__ import annotations
 
+import json
 from typing import Optional
 
 from fastapi import APIRouter, Depends, Query, Request
@@ -12,7 +13,9 @@ from app.deps import get_kb_service
 from app.models.schemas import (
     CreateKnowledgeBaseRequest,
     KnowledgeBaseStatus,
+    SearchConfig,
     UpdateKnowledgeBaseRequest,
+    UpdateSearchConfigRequest,
     to_kb_detail,
     to_kb_list_item,
 )
@@ -98,3 +101,35 @@ async def delete_knowledge_base(
 ) -> dict:
     result = await service.delete(ctx.tenant_id, kb_id)
     return success(result, trace_id=ctx.trace_id)
+
+
+# ----------------------------------------------- retrieval config (P1-RAG-06)
+
+
+@router.get(
+    "/knowledge-bases/{kb_id}/retrieval-config",
+    summary="获取知识库检索配置",
+)
+async def get_retrieval_config(
+    kb_id: str,
+    request: Request,
+    ctx: RequestContext = Depends(request_context_dep),
+    service: KnowledgeBaseService = Depends(get_kb_service),
+) -> dict:
+    config = await service.get_search_config(ctx.tenant_id, kb_id)
+    return success(config.model_dump(), trace_id=ctx.trace_id)
+
+
+@router.put(
+    "/knowledge-bases/{kb_id}/retrieval-config",
+    summary="更新知识库检索配置",
+)
+async def update_retrieval_config(
+    kb_id: str,
+    body: UpdateSearchConfigRequest,
+    request: Request,
+    ctx: RequestContext = Depends(request_context_dep),
+    service: KnowledgeBaseService = Depends(get_kb_service),
+) -> dict:
+    config = await service.update_search_config(ctx.tenant_id, kb_id, body)
+    return success(config.model_dump(), trace_id=ctx.trace_id)

@@ -2,6 +2,8 @@ package com.metaplatform.wfe.service;
 
 import com.metaplatform.wfe.common.ErrorCode;
 import com.metaplatform.wfe.common.PageResponse;
+import com.metaplatform.wfe.common.TenantContext;
+import com.metaplatform.wfe.common.TraceContext;
 import com.metaplatform.wfe.dto.TaskActionRequest;
 import com.metaplatform.wfe.dto.TaskActionResponse;
 import com.metaplatform.wfe.dto.TaskResponse;
@@ -18,6 +20,7 @@ import org.flowable.task.api.history.HistoricTaskInstanceQuery;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -29,6 +32,8 @@ public class WfeTaskService {
     private final TaskService taskService;
     private final HistoryService historyService;
     private final RuntimeService runtimeService;
+    private final IamIntegrationService iamIntegrationService;
+    private final WfeOutboxService wfeOutboxService;
 
     // ════════════════════════════════════════════
     // P1-WFE-04: 任务查询
@@ -103,6 +108,8 @@ public class WfeTaskService {
 
     // ════════════════════════════════════════════
     // P1-WFE-05: 审批操作
+    // P1-WFE-06: TECH-IAM 集成权限校验
+    // P1-WFE-09: 操作成功后发布任务事件
     // ════════════════════════════════════════════
 
     public TaskActionResponse executeAction(String taskId, TaskActionRequest request) {
@@ -120,8 +127,19 @@ public class WfeTaskService {
             throw new WfeException(ErrorCode.TASK_NOT_FOUND);
         }
 
+        String tenantId = TenantContext.get();
+        String userId = TenantContext.getUserId();
         String processInstanceId = task.getProcessInstanceId();
         String comment = request.getComment() != null ? request.getComment() : "";
+
+        // P1-WFE-06: APPROVE 操作前校验审批权限
+        if ("APPROVE".equals(action)) {
+            boolean allowed = iamIntegrationService.checkPermission(
+                    tenantId, userId, "task:" + taskId, "approve");
+            if (!allowed) {
+                throw new WfeException(ErrorCode.PERMISSION_DENIED, "无审批权限");
+            }
+        }
 
         try {
             switch (action) {
@@ -138,12 +156,44 @@ public class WfeTaskService {
                     "审批操作执行失败: " + e.getMessage());
         }
 
+        // P1-WFE-09: 操作成功后发布任务事件（失败不阻断审批结果）
+        publishTaskEvent(tenantId, taskId, action, processInstanceId, comment, request.getTransferTo());
+
         return TaskActionResponse.builder()
                 .taskId(taskId)
                 .action(action)
                 .status("SUCCESS")
                 .message("审批操作执行成功")
                 .build();
+    }
+
+    private void publishTaskEvent(String tenantId, String taskId, String action,
+                                  String processInstanceId, String comment, String transferTo) {
+        try {
+            String eventType = switch (action) {
+                case "APPROVE" -> "TASK_COMPLETED";
+                case "REJECT" -> "TASK_REJECTED";
+                case "TRANSFER" -> "TASK_TRANSFERRED";
+                default -> null;
+            };
+            if (eventType == null) {
+                return;
+            }
+            Map<String, Object> payload = new HashMap<>();
+            payload.put("taskId", taskId);
+            payload.put("processInstanceId", processInstanceId);
+            payload.put("action", action);
+            payload.put("comment", comment);
+            if (transferTo != null) {
+                payload.put("transferTo", transferTo);
+            }
+            Map<String, String> headers = new HashMap<>();
+            headers.put(TraceContext.TRACE_ID_HEADER, TraceContext.getOrCreate());
+            wfeOutboxService.publishEvent(tenantId, taskId, eventType, payload, headers);
+        } catch (Exception e) {
+            log.warn("Failed to publish task event (non-blocking): taskId={}, action={}, error={}",
+                    taskId, action, e.getMessage());
+        }
     }
 
     private void doApprove(String taskId, String processInstanceId, String comment) {

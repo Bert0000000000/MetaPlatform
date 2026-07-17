@@ -23,6 +23,10 @@ from app.embeddings.client import MockEmbeddingClient  # noqa: E402
 from app.embeddings.service import EmbeddingService  # noqa: E402
 from app.models.repository import ModelRepository  # noqa: E402
 from app.models.service import ModelService  # noqa: E402
+from app.prompts.repository import PromptRepository  # noqa: E402
+from app.prompts.service import PromptService  # noqa: E402
+from app.quotas.repository import QuotaRepository  # noqa: E402
+from app.quotas.service import QuotaService  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
 
 from main import app  # noqa: E402
@@ -62,6 +66,14 @@ def registry():
     chat_service = ChatService(model_service, provider_client)
     embedding_client = MockEmbeddingClient()
     embedding_service = EmbeddingService(model_service, embedding_client)
+    prompt_repo = PromptRepository()
+    prompt_service = PromptService(prompt_repo, chat_service)
+    quota_repo = QuotaRepository()
+    quota_service = QuotaService(quota_repo)
+    usage_repo = UsageRepository()
+    cost_service = CostReportService(usage_repo)
+    audit_repo = AuditLogRepository()
+    audit_service = AuditLogService(audit_repo)
 
     from app.deps import Registry
 
@@ -72,6 +84,14 @@ def registry():
         chat_service=chat_service,
         embedding_client=embedding_client,
         embedding_service=embedding_service,
+        prompt_repo=prompt_repo,
+        prompt_service=prompt_service,
+        quota_repo=quota_repo,
+        quota_service=quota_service,
+        usage_repo=usage_repo,
+        cost_service=cost_service,
+        audit_repo=audit_repo,
+        audit_service=audit_service,
     )
     set_registry(reg)
     yield reg

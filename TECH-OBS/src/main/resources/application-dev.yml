@@ -23,3 +23,7 @@ app:
       max-time-range-hours: 168
       default-page-size: 50
       max-page-size: 500
+    prometheus:
+      base-url: ${PROMETHEUS_BASE_URL:http://localhost:9090}
+      connect-timeout-ms: 5000
+      read-timeout-ms: 30000

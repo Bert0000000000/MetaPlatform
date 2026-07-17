@@ -43,5 +43,7 @@ public class LokiQueryResponse {
         private String service;
         @JsonProperty("level")
         private String level;
+        @JsonProperty("job")
+        private String job;
     }
 }

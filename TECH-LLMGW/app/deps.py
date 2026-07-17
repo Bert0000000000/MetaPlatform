@@ -19,6 +19,12 @@ from app.embeddings.client import EmbeddingClient, MockEmbeddingClient
 from app.embeddings.service import EmbeddingService
 from app.models.repository import ModelRepository
 from app.models.service import ModelService
+from app.prompts.repository import PromptRepository
+from app.prompts.service import PromptService
+from app.quotas.repository import QuotaRepository
+from app.quotas.service import QuotaService
+from app.ratelimits.repository import RateLimitRepository
+from app.ratelimits.service import RateLimitService
 
 
 @dataclass
@@ -29,11 +35,26 @@ class Registry:
     chat_service: ChatService
     embedding_client: EmbeddingClient
     embedding_service: EmbeddingService
+    prompt_repo: PromptRepository
+    prompt_service: PromptService
+    quota_repo: QuotaRepository
+    quota_service: QuotaService
+    rate_limit_repo: RateLimitRepository
+    rate_limit_service: RateLimitService
+    usage_repo: UsageRepository
+    cost_service: CostReportService
+    audit_repo: AuditLogRepository
+    audit_service: AuditLogService
 
     def reset(self) -> None:
         """Reset all in-memory state and re-seed mock clients."""
 
         self.model_repo.clear()
+        self.prompt_repo.clear()
+        self.quota_repo.clear()
+        self.rate_limit_repo.clear()
+        self.usage_repo.clear()
+        self.audit_repo.clear()
         if isinstance(self.provider_client, MockProviderClient):
             self.provider_client.reset()
         if isinstance(self.embedding_client, MockEmbeddingClient):
@@ -51,6 +72,12 @@ def _build_default_registry() -> Registry:
     chat_service = ChatService(model_service, provider_client)
     embedding_client = MockEmbeddingClient()
     embedding_service = EmbeddingService(model_service, embedding_client)
+    prompt_repo = PromptRepository()
+    prompt_service = PromptService(prompt_repo, chat_service)
+    quota_repo = QuotaRepository()
+    quota_service = QuotaService(quota_repo)
+    rate_limit_repo = RateLimitRepository()
+    rate_limit_service = RateLimitService(rate_limit_repo)
     return Registry(
         model_repo=repo,
         model_service=model_service,
@@ -58,6 +85,12 @@ def _build_default_registry() -> Registry:
         chat_service=chat_service,
         embedding_client=embedding_client,
         embedding_service=embedding_service,
+        prompt_repo=prompt_repo,
+        prompt_service=prompt_service,
+        quota_repo=quota_repo,
+        quota_service=quota_service,
+        rate_limit_repo=rate_limit_repo,
+        rate_limit_service=rate_limit_service,
     )
 
 
@@ -102,3 +135,15 @@ def get_embedding_client(request: Request) -> EmbeddingClient:
 
 def get_model_repo(request: Request) -> ModelRepository:
     return request.app.state.registry.model_repo
+
+
+def get_prompt_service(request: Request) -> PromptService:
+    return request.app.state.registry.prompt_service
+
+
+def get_quota_service(request: Request) -> QuotaService:
+    return request.app.state.registry.quota_service
+
+
+def get_rate_limit_service(request: Request) -> RateLimitService:
+    return request.app.state.registry.rate_limit_service

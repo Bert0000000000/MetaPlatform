@@ -9,6 +9,8 @@ import java.util.List;
 @Repository
 public interface ConceptAttributeRepository extends JpaRepository<ConceptAttributeEntity, Long> {
 
+    List<ConceptAttributeEntity> findByTenantId(String tenantId);
+
     List<ConceptAttributeEntity> findByTenantIdAndConceptId(String tenantId, String conceptId);
 
     List<ConceptAttributeEntity> findByTenantIdAndAttributeId(String tenantId, String attributeId);

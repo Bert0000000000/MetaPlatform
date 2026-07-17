@@ -15,4 +15,6 @@ public class RuleSetUpdateRequest {
     private RuleStatus status;
 
     private Integer priority;
+
+    private Boolean enabled;
 }

@@ -6,6 +6,8 @@ import com.metaplatform.iam.common.ErrorCode;
 import com.metaplatform.iam.common.PageResponse;
 import com.metaplatform.iam.dto.apikey.ApiKeyCreatedResponse;
 import com.metaplatform.iam.dto.apikey.ApiKeyResponse;
+import com.metaplatform.iam.dto.apikey.PermissionEntry;
+import com.metaplatform.iam.dto.apikey.ValidateResponse;
 import com.metaplatform.iam.entity.ApiKeyEntity;
 import com.metaplatform.iam.exception.IamException;
 import com.metaplatform.iam.repository.ApiKeyRepository;
@@ -25,6 +27,8 @@ import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 
 @Slf4j
@@ -108,10 +112,95 @@ public class ApiKeyService {
 
     @Transactional
     public void revoke(String id) {
+        revoke(id, null);
+    }
+
+    /**
+     * 增强吊销：记录吊销原因和吊销时间。
+     *
+     * @param id     API Key ID
+     * @param reason 吊销原因，可为 null
+     */
+    @Transactional
+    public void revoke(String id, String reason) {
         ApiKeyEntity entity = apiKeyRepository.findById(id)
                 .orElseThrow(() -> new IamException(ErrorCode.NOT_FOUND, "API Key 不存在"));
         entity.setStatus(ApiKeyEntity.Status.REVOKED);
+        entity.setRevokedReason(reason);
+        entity.setRevokedAt(Instant.now());
         apiKeyRepository.save(entity);
+    }
+
+    // ==================== 权限范围 ====================
+
+    /**
+     * 更新 API Key 的权限范围（覆盖式写入）。
+     *
+     * @param id          API Key ID
+     * @param permissions 权限列表，空列表表示清空权限
+     */
+    @Transactional
+    public void updatePermissions(String id, List<PermissionEntry> permissions) {
+        ApiKeyEntity entity = apiKeyRepository.findById(id)
+                .orElseThrow(() -> new IamException(ErrorCode.NOT_FOUND, "API Key 不存在"));
+        entity.setPermissions(writePermissionsJson(permissions));
+        apiKeyRepository.save(entity);
+    }
+
+    /**
+     * 获取 API Key 的权限范围。
+     */
+    @Transactional(readOnly = true)
+    public List<PermissionEntry> getPermissions(String id) {
+        ApiKeyEntity entity = apiKeyRepository.findById(id)
+                .orElseThrow(() -> new IamException(ErrorCode.NOT_FOUND, "API Key 不存在"));
+        return readPermissionsJson(entity.getPermissions());
+    }
+
+    // ==================== 验证（含权限检查） ====================
+
+    /**
+     * 验证 API Key 有效性及对指定资源的操作权限。
+     * 不抛异常：所有失败场景返回 valid=false。
+     *
+     * @param apiKey   明文 API Key
+     * @param resource 资源标识，如 "ont:concepts"
+     * @param action   操作，如 "read"
+     * @return ValidateResponse，valid=true 时附带身份与权限范围
+     */
+    @Transactional
+    public ValidateResponse validateWithPermissions(String apiKey, String resource, String action) {
+        if (apiKey == null || apiKey.isBlank()) {
+            return ValidateResponse.builder().valid(false).build();
+        }
+        String keyHash = sha256(apiKey);
+        Optional<ApiKeyEntity> opt = apiKeyRepository.findByKeyHash(keyHash);
+        if (opt.isEmpty()) {
+            return ValidateResponse.builder().valid(false).build();
+        }
+        ApiKeyEntity entity = opt.get();
+        if (entity.getStatus() != ApiKeyEntity.Status.ACTIVE) {
+            return ValidateResponse.builder().valid(false).build();
+        }
+        if (entity.getExpiresAt() != null && entity.getExpiresAt().isBefore(Instant.now())) {
+            return ValidateResponse.builder().valid(false).build();
+        }
+        List<PermissionEntry> permissions = readPermissionsJson(entity.getPermissions());
+        boolean hasPermission = permissions.stream()
+                .anyMatch(p -> Objects.equals(p.getResource(), resource)
+                        && p.getActions() != null
+                        && p.getActions().contains(action));
+        if (!hasPermission) {
+            return ValidateResponse.builder().valid(false).build();
+        }
+        entity.setLastUsedAt(Instant.now());
+        apiKeyRepository.save(entity);
+        return ValidateResponse.builder()
+                .valid(true)
+                .userId(entity.getUserId())
+                .tenantId(entity.getTenantId())
+                .permissions(permissions)
+                .build();
     }
 
     // ==================== 验证 ====================
@@ -186,6 +275,30 @@ public class ApiKeyService {
                     .constructCollectionType(List.class, String.class));
         } catch (JsonProcessingException e) {
             log.warn("scopes 反序列化失败: {}", json, e);
+            return Collections.emptyList();
+        }
+    }
+
+    private String writePermissionsJson(List<PermissionEntry> permissions) {
+        if (permissions == null || permissions.isEmpty()) {
+            return null;
+        }
+        try {
+            return objectMapper.writeValueAsString(permissions);
+        } catch (JsonProcessingException e) {
+            throw new IamException(ErrorCode.INTERNAL_ERROR, "permissions 序列化失败");
+        }
+    }
+
+    private List<PermissionEntry> readPermissionsJson(String json) {
+        if (json == null || json.isBlank()) {
+            return Collections.emptyList();
+        }
+        try {
+            return objectMapper.readValue(json, objectMapper.getTypeFactory()
+                    .constructCollectionType(List.class, PermissionEntry.class));
+        } catch (JsonProcessingException e) {
+            log.warn("permissions 反序列化失败: {}", json, e);
             return Collections.emptyList();
         }
     }

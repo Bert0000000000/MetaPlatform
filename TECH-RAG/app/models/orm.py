@@ -37,6 +37,7 @@ class KnowledgeBaseORM(Base):
     description = Column(String(1024), nullable=True)
     status = Column(String(16), nullable=False, default="ACTIVE")
     doc_count = Column(Integer, nullable=False, default=0)
+    search_config = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
@@ -97,3 +98,21 @@ class DocumentChunkORM(Base):
     updated_at = Column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
+
+
+class SearchEventORM(Base):
+    """ORM mapping for ``rag_search_events`` (Outbox pattern, P1-RAG-07)."""
+
+    __tablename__ = "rag_search_events"
+
+    id = Column(String(64), primary_key=True)
+    tenant_id = Column(String(64), nullable=False, index=True)
+    event_type = Column(String(128), nullable=False)
+    payload = Column(Text, nullable=False)
+    headers = Column(Text, nullable=True)
+    status = Column(String(16), nullable=False, default="PENDING")
+    retry_count = Column(Integer, nullable=False, default=0)
+    max_retries = Column(Integer, nullable=False, default=3)
+    next_retry_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    sent_at = Column(DateTime(timezone=True), nullable=True)

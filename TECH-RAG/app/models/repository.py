@@ -13,7 +13,13 @@ from datetime import datetime, timezone
 from threading import RLock
 from typing import Any, Optional
 
-from app.models.orm import Base, DocumentChunkORM, DocumentORM, KnowledgeBaseORM
+from app.models.orm import (
+    Base,
+    DocumentChunkORM,
+    DocumentORM,
+    KnowledgeBaseORM,
+    SearchEventORM,
+)
 from app.models.schemas import (
     Document,
     DocumentChunk,
@@ -21,6 +27,7 @@ from app.models.schemas import (
     EmbeddingStatus,
     KnowledgeBase,
     KnowledgeBaseStatus,
+    SearchEvent,
 )
 
 
@@ -51,6 +58,7 @@ def _kb_row_to_model(row: KnowledgeBaseORM) -> KnowledgeBase:
         description=row.description,
         status=KnowledgeBaseStatus(row.status),
         doc_count=row.doc_count or 0,
+        search_config=row.search_config,
         created_at=row.created_at if row.created_at else _now(),
         updated_at=row.updated_at if row.updated_at else _now(),
     )
@@ -241,6 +249,7 @@ class SqlAlchemyKnowledgeBaseRepository(KnowledgeBaseRepository):
             description=kb.description,
             status=kb.status.value,
             doc_count=kb.doc_count,
+            search_config=kb.search_config,
             created_at=kb.created_at,
             updated_at=kb.updated_at,
         )
@@ -314,6 +323,8 @@ class SqlAlchemyKnowledgeBaseRepository(KnowledgeBaseRepository):
                 row.status = fields["status"].value
             if "doc_count" in fields:
                 row.doc_count = fields["doc_count"]
+            if "search_config" in fields:
+                row.search_config = fields["search_config"]
             row.updated_at = _now()
             await session.commit()
             return _kb_row_to_model(row)
@@ -602,6 +613,11 @@ class DocumentChunkRepository(ABC):
     ) -> list[DocumentChunk]: ...
 
     @abstractmethod
+    async def list_by_documents(
+        self, document_ids: list[str], tenant_id: str
+    ) -> list[DocumentChunk]: ...
+
+    @abstractmethod
     async def update(
         self, chunk_id: str, tenant_id: str, fields: dict[str, Any]
     ) -> Optional[DocumentChunk]: ...
@@ -666,6 +682,18 @@ class InMemoryDocumentChunkRepository(DocumentChunkRepository):
                 if tid == tenant_id
                 and chunk.document_id in document_ids
                 and chunk.embedding_status == EmbeddingStatus.GENERATED
+            ]
+        results.sort(key=lambda c: c.chunk_index)
+        return results
+
+    async def list_by_documents(
+        self, document_ids: list[str], tenant_id: str
+    ) -> list[DocumentChunk]:
+        with self._lock:
+            results = [
+                chunk
+                for (tid, _), chunk in self._store.items()
+                if tid == tenant_id and chunk.document_id in document_ids
             ]
         results.sort(key=lambda c: c.chunk_index)
         return results
@@ -778,6 +806,21 @@ class SqlAlchemyDocumentChunkRepository(DocumentChunkRepository):
             rows = (await session.execute(stmt)).scalars().all()
             return [_chunk_row_to_model(r) for r in rows]
 
+    async def list_by_documents(
+        self, document_ids: list[str], tenant_id: str
+    ) -> list[DocumentChunk]:
+        from sqlalchemy import select
+
+        if not document_ids:
+            return []
+        async with self._session_factory() as session:
+            stmt = select(DocumentChunkORM).where(
+                DocumentChunkORM.tenant_id == tenant_id,
+                DocumentChunkORM.document_id.in_(document_ids),
+            ).order_by(DocumentChunkORM.chunk_index)
+            rows = (await session.execute(stmt)).scalars().all()
+            return [_chunk_row_to_model(r) for r in rows]
+
     async def update(
         self, chunk_id: str, tenant_id: str, fields: dict[str, Any]
     ) -> Optional[DocumentChunk]:
@@ -812,3 +855,240 @@ class SqlAlchemyDocumentChunkRepository(DocumentChunkRepository):
             result = await session.execute(stmt)
             await session.commit()
             return result.rowcount or 0
+
+
+# =====================================================================
+# Search Event Repository (P1-RAG-07 Outbox)
+# =====================================================================
+
+
+def _new_event_id() -> str:
+    return f"evt-{uuid.uuid4().hex[:24]}"
+
+
+def _event_row_to_model(row: SearchEventORM) -> SearchEvent:
+    return SearchEvent(
+        id=row.id,
+        tenant_id=row.tenant_id,
+        event_type=row.event_type,
+        payload=row.payload,
+        headers=row.headers,
+        status=row.status,
+        retry_count=row.retry_count or 0,
+        max_retries=row.max_retries or 3,
+        next_retry_at=row.next_retry_at,
+        created_at=row.created_at if row.created_at else _now(),
+        sent_at=row.sent_at,
+    )
+
+
+class SearchEventRepository(ABC):
+    """Abstract repository contract for search events (Outbox)."""
+
+    @abstractmethod
+    async def create(self, event: SearchEvent) -> SearchEvent: ...
+
+    @abstractmethod
+    async def list_pending(
+        self, tenant_id: str, limit: int = 100
+    ) -> list[SearchEvent]: ...
+
+    @abstractmethod
+    async def list_all_pending(self, limit: int = 100) -> list[SearchEvent]: ...
+
+    @abstractmethod
+    async def mark_sent(self, event_id: str) -> bool: ...
+
+    @abstractmethod
+    async def mark_dead(self, event_id: str) -> bool: ...
+
+    @abstractmethod
+    async def increment_retry(self, event_id: str) -> bool: ...
+
+    @abstractmethod
+    async def list_by_tenant(
+        self, tenant_id: str, limit: int = 100
+    ) -> list[SearchEvent]: ...
+
+
+class InMemorySearchEventRepository(SearchEventRepository):
+    """Thread-safe in-memory repository (used by tests & default runtime)."""
+
+    def __init__(self) -> None:
+        self._lock = RLock()
+        self._store: dict[str, SearchEvent] = {}
+
+    async def create(self, event: SearchEvent) -> SearchEvent:
+        with self._lock:
+            if not event.id:
+                event.id = _new_event_id()
+            event.created_at = _now()
+            self._store[event.id] = event
+            return event
+
+    async def list_pending(
+        self, tenant_id: str, limit: int = 100
+    ) -> list[SearchEvent]:
+        with self._lock:
+            results = [
+                evt
+                for evt in self._store.values()
+                if evt.tenant_id == tenant_id and evt.status == "PENDING"
+            ]
+        results.sort(key=lambda e: e.created_at)
+        return results[:limit]
+
+    async def list_all_pending(self, limit: int = 100) -> list[SearchEvent]:
+        with self._lock:
+            results = [
+                evt for evt in self._store.values() if evt.status == "PENDING"
+            ]
+        results.sort(key=lambda e: e.created_at)
+        return results[:limit]
+
+    async def mark_sent(self, event_id: str) -> bool:
+        with self._lock:
+            evt = self._store.get(event_id)
+            if evt is None:
+                return False
+            evt.status = "SENT"
+            evt.sent_at = _now()
+            return True
+
+    async def mark_dead(self, event_id: str) -> bool:
+        with self._lock:
+            evt = self._store.get(event_id)
+            if evt is None:
+                return False
+            evt.status = "DEAD"
+            return True
+
+    async def increment_retry(self, event_id: str) -> bool:
+        with self._lock:
+            evt = self._store.get(event_id)
+            if evt is None:
+                return False
+            evt.retry_count += 1
+            evt.next_retry_at = _now()
+            return True
+
+    async def list_by_tenant(
+        self, tenant_id: str, limit: int = 100
+    ) -> list[SearchEvent]:
+        with self._lock:
+            results = [
+                evt for evt in self._store.values()
+                if evt.tenant_id == tenant_id
+            ]
+        results.sort(key=lambda e: e.created_at)
+        return results[:limit]
+
+    # -- test helpers --------------------------------------------------
+
+    def clear(self) -> None:
+        with self._lock:
+            self._store.clear()
+
+
+class SqlAlchemySearchEventRepository(SearchEventRepository):
+    """Async SQLAlchemy 2.0 repository backed by ``rag_search_events`` table."""
+
+    def __init__(self, session_factory) -> None:
+        self._session_factory = session_factory
+
+    async def create(self, event: SearchEvent) -> SearchEvent:
+        if not event.id:
+            event.id = _new_event_id()
+        event.created_at = _now()
+        row = SearchEventORM(
+            id=event.id,
+            tenant_id=event.tenant_id,
+            event_type=event.event_type,
+            payload=event.payload,
+            headers=event.headers,
+            status=event.status,
+            retry_count=event.retry_count,
+            max_retries=event.max_retries,
+            next_retry_at=event.next_retry_at,
+            created_at=event.created_at,
+            sent_at=event.sent_at,
+        )
+        async with self._session_factory() as session:
+            session.add(row)
+            await session.commit()
+            return event
+
+    async def list_pending(
+        self, tenant_id: str, limit: int = 100
+    ) -> list[SearchEvent]:
+        from sqlalchemy import select
+
+        async with self._session_factory() as session:
+            stmt = (
+                select(SearchEventORM)
+                .where(
+                    SearchEventORM.tenant_id == tenant_id,
+                    SearchEventORM.status == "PENDING",
+                )
+                .order_by(SearchEventORM.created_at)
+                .limit(limit)
+            )
+            rows = (await session.execute(stmt)).scalars().all()
+            return [_event_row_to_model(r) for r in rows]
+
+    async def list_all_pending(self, limit: int = 100) -> list[SearchEvent]:
+        from sqlalchemy import select
+
+        async with self._session_factory() as session:
+            stmt = (
+                select(SearchEventORM)
+                .where(SearchEventORM.status == "PENDING")
+                .order_by(SearchEventORM.created_at)
+                .limit(limit)
+            )
+            rows = (await session.execute(stmt)).scalars().all()
+            return [_event_row_to_model(r) for r in rows]
+
+    async def mark_sent(self, event_id: str) -> bool:
+        async with self._session_factory() as session:
+            row = await session.get(SearchEventORM, event_id)
+            if row is None:
+                return False
+            row.status = "SENT"
+            row.sent_at = _now()
+            await session.commit()
+            return True
+
+    async def mark_dead(self, event_id: str) -> bool:
+        async with self._session_factory() as session:
+            row = await session.get(SearchEventORM, event_id)
+            if row is None:
+                return False
+            row.status = "DEAD"
+            await session.commit()
+            return True
+
+    async def increment_retry(self, event_id: str) -> bool:
+        async with self._session_factory() as session:
+            row = await session.get(SearchEventORM, event_id)
+            if row is None:
+                return False
+            row.retry_count = (row.retry_count or 0) + 1
+            row.next_retry_at = _now()
+            await session.commit()
+            return True
+
+    async def list_by_tenant(
+        self, tenant_id: str, limit: int = 100
+    ) -> list[SearchEvent]:
+        from sqlalchemy import select
+
+        async with self._session_factory() as session:
+            stmt = (
+                select(SearchEventORM)
+                .where(SearchEventORM.tenant_id == tenant_id)
+                .order_by(SearchEventORM.created_at)
+                .limit(limit)
+            )
+            rows = (await session.execute(stmt)).scalars().all()
+            return [_event_row_to_model(r) for r in rows]

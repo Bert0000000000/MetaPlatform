@@ -12,6 +12,7 @@ import com.metaplatform.iam.exception.IamException;
 import com.metaplatform.iam.repository.PermissionRepository;
 import com.metaplatform.iam.repository.RolePermissionRepository;
 import com.metaplatform.iam.repository.RoleRepository;
+import com.metaplatform.iam.audit.service.AuditLogService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -37,6 +38,9 @@ class RoleServiceTest {
 
     @Mock
     private PermissionRepository permissionRepository;
+
+    @Mock
+    private AuditLogService auditLogService;
 
     @InjectMocks
     private RoleService roleService;

@@ -21,6 +21,7 @@ import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -44,6 +45,11 @@ public class RuleExecutionService {
                 .orElseThrow(() -> new RuleException(ErrorCode.RULESET_NOT_FOUND));
         if (!tenantId.equals(ruleSet.getTenantId())) {
             throw new RuleException(ErrorCode.TENANT_MISMATCH);
+        }
+
+        // 规则集禁用时直接返回空结果
+        if (Boolean.FALSE.equals(ruleSet.getEnabled())) {
+            return Collections.emptyList();
         }
 
         // 加载所有 enabled 且未删除的规则，按 priority 升序

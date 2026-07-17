@@ -137,6 +137,33 @@ public class RuleDefinitionService {
         ruleDefinitionRepository.save(entity);
     }
 
+    @Transactional
+    public RuleDefinitionResponse updatePriority(String id, int priority) {
+        RuleDefinitionEntity entity = findRuleDefinition(id);
+        entity.setPriority(priority);
+        entity.setUpdatedBy(TenantContext.getUserId());
+        RuleDefinitionEntity saved = ruleDefinitionRepository.save(entity);
+        return toResponse(saved);
+    }
+
+    @Transactional
+    public RuleDefinitionResponse enable(String id) {
+        RuleDefinitionEntity entity = findRuleDefinition(id);
+        entity.setEnabled(true);
+        entity.setUpdatedBy(TenantContext.getUserId());
+        RuleDefinitionEntity saved = ruleDefinitionRepository.save(entity);
+        return toResponse(saved);
+    }
+
+    @Transactional
+    public RuleDefinitionResponse disable(String id) {
+        RuleDefinitionEntity entity = findRuleDefinition(id);
+        entity.setEnabled(false);
+        entity.setUpdatedBy(TenantContext.getUserId());
+        RuleDefinitionEntity saved = ruleDefinitionRepository.save(entity);
+        return toResponse(saved);
+    }
+
     private RuleDefinitionEntity findRuleDefinition(String id) {
         String tenantId = TenantContext.get();
         RuleDefinitionEntity entity = ruleDefinitionRepository.findByIdAndDeletedFalse(id)

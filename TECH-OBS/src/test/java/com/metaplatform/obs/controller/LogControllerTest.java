@@ -6,11 +6,15 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.metaplatform.obs.dto.LogEntry;
 import com.metaplatform.obs.dto.LogIngestRequest;
 import com.metaplatform.obs.dto.LogQueryRequest;
+import com.metaplatform.obs.dto.LogSearchRequest;
+import com.metaplatform.obs.dto.LogSearchResponse;
 import com.metaplatform.obs.dto.PageResponse;
+import com.metaplatform.obs.dto.RegexSearchRequest;
 import com.metaplatform.obs.exception.GlobalExceptionHandler;
 import com.metaplatform.obs.exception.ObsException;
 import com.metaplatform.obs.common.ErrorCode;
 import com.metaplatform.obs.service.LogIngestService;
+import com.metaplatform.obs.service.LogSearchService;
 import com.metaplatform.obs.service.LokiQueryService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,6 +51,9 @@ class LogControllerTest {
 
     @MockBean
     private LogIngestService logIngestService;
+
+    @MockBean
+    private LogSearchService logSearchService;
 
     @Test
     void query_shouldReturnSuccessWithPageResponse() throws Exception {
@@ -188,5 +195,73 @@ class LogControllerTest {
                         .content(objectMapper.writeValueAsString(root)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value(ErrorCode.INVALID_PARAM.getCode()));
+    }
+
+    @Test
+    void search_shouldReturnSuccessWithHighlights() throws Exception {
+        LogSearchResponse.Highlight highlight = LogSearchResponse.Highlight.builder()
+                .start(0).end(5).text("error").build();
+        LogSearchResponse.LogSearchResult result = LogSearchResponse.LogSearchResult.builder()
+                .timestamp(Instant.parse("2026-07-16T00:00:00Z"))
+                .service("tech-iam")
+                .level("ERROR")
+                .message("error login failed")
+                .highlights(List.of(highlight))
+                .build();
+        LogSearchResponse resp = LogSearchResponse.builder()
+                .total(1).page(1).pageSize(50).totalPages(1)
+                .results(List.of(result))
+                .build();
+        when(logSearchService.search(any(LogSearchRequest.class))).thenReturn(resp);
+
+        LogSearchRequest req = new LogSearchRequest();
+        req.setKeyword("error");
+        req.setService("tech-iam");
+        req.setStartTime(OffsetDateTime.of(2026, 7, 16, 0, 0, 0, 0, ZoneOffset.UTC));
+        req.setEndTime(OffsetDateTime.of(2026, 7, 16, 23, 59, 59, 0, ZoneOffset.UTC));
+
+        mockMvc.perform(post("/api/v1/obs/logs/search")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(0))
+                .andExpect(jsonPath("$.data.total").value(1))
+                .andExpect(jsonPath("$.data.results[0].service").value("tech-iam"))
+                .andExpect(jsonPath("$.data.results[0].highlights[0].start").value(0))
+                .andExpect(jsonPath("$.data.results[0].highlights[0].end").value(5));
+    }
+
+    @Test
+    void search_shouldReturn400WhenKeywordMissing() throws Exception {
+        LogSearchRequest req = new LogSearchRequest();
+        req.setStartTime(OffsetDateTime.of(2026, 7, 16, 0, 0, 0, 0, ZoneOffset.UTC));
+        req.setEndTime(OffsetDateTime.of(2026, 7, 16, 1, 0, 0, 0, ZoneOffset.UTC));
+
+        mockMvc.perform(post("/api/v1/obs/logs/search")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value(ErrorCode.INVALID_PARAM.getCode()));
+    }
+
+    @Test
+    void searchRegex_shouldReturnSuccess() throws Exception {
+        LogSearchResponse resp = LogSearchResponse.builder()
+                .total(0).page(1).pageSize(50).totalPages(0)
+                .results(List.of())
+                .build();
+        when(logSearchService.searchRegex(any(RegexSearchRequest.class))).thenReturn(resp);
+
+        RegexSearchRequest req = new RegexSearchRequest();
+        req.setPattern("ERROR.*timeout");
+        req.setStartTime(OffsetDateTime.of(2026, 7, 16, 0, 0, 0, 0, ZoneOffset.UTC));
+        req.setEndTime(OffsetDateTime.of(2026, 7, 16, 1, 0, 0, 0, ZoneOffset.UTC));
+
+        mockMvc.perform(post("/api/v1/obs/logs/search/regex")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(0))
+                .andExpect(jsonPath("$.data.total").value(0));
     }
 }
