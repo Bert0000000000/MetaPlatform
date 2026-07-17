@@ -79,7 +79,7 @@ public class OntologyVersionService {
     @Transactional(readOnly = true)
     public OntologyVersionResponse getById(String versionId) {
         String tenantId = TenantContext.get();
-        OntologyVersionEntity version = versionRepository.findByIdAndTenantId(versionId, tenantId)
+        OntologyVersionEntity version = versionRepository.findByVersionIdAndTenantId(versionId, tenantId)
                 .orElseThrow(() -> new OntException(ErrorCode.VERSION_NOT_FOUND));
         return toResponse(version);
     }
@@ -95,7 +95,7 @@ public class OntologyVersionService {
     @Transactional
     public OntologyVersionResponse publish(String versionId) {
         String tenantId = TenantContext.get();
-        OntologyVersionEntity version = versionRepository.findByIdAndTenantId(versionId, tenantId)
+        OntologyVersionEntity version = versionRepository.findByVersionIdAndTenantId(versionId, tenantId)
                 .orElseThrow(() -> new OntException(ErrorCode.VERSION_NOT_FOUND));
         if (!"DRAFT".equals(version.getStatus())) {
             throw new OntException(ErrorCode.VERSION_CONFLICT, "只能发布草稿状态的版本");
@@ -117,7 +117,7 @@ public class OntologyVersionService {
     @Transactional
     public OntologyVersionResponse rollback(String versionId) {
         String tenantId = TenantContext.get();
-        OntologyVersionEntity version = versionRepository.findByIdAndTenantId(versionId, tenantId)
+        OntologyVersionEntity version = versionRepository.findByVersionIdAndTenantId(versionId, tenantId)
                 .orElseThrow(() -> new OntException(ErrorCode.VERSION_NOT_FOUND));
         if (!"PUBLISHED".equals(version.getStatus())) {
             throw new OntException(ErrorCode.VERSION_NOT_PUBLISHED);
@@ -141,7 +141,7 @@ public class OntologyVersionService {
     @Transactional(readOnly = true)
     public OntologyVersionCompareResponse compare(String sourceVersionId, String targetVersionId) {
         String tenantId = TenantContext.get();
-        OntologyVersionEntity source = versionRepository.findByIdAndTenantId(sourceVersionId, tenantId)
+        OntologyVersionEntity source = versionRepository.findByVersionIdAndTenantId(sourceVersionId, tenantId)
                 .orElseThrow(() -> new OntException(ErrorCode.VERSION_NOT_FOUND));
 
         JsonNode targetSnapshot;
@@ -152,7 +152,7 @@ public class OntologyVersionService {
             targetSnapshot = current.getSnapshot();
             resolvedTargetId = current.getVersionId();
         } else {
-            OntologyVersionEntity target = versionRepository.findByIdAndTenantId(targetVersionId, tenantId)
+            OntologyVersionEntity target = versionRepository.findByVersionIdAndTenantId(targetVersionId, tenantId)
                     .orElseThrow(() -> new OntException(ErrorCode.VERSION_NOT_FOUND));
             targetSnapshot = target.getSnapshot();
             resolvedTargetId = target.getVersionId();

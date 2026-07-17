@@ -12,7 +12,7 @@ public interface OntologyVersionRepository extends JpaRepository<OntologyVersion
 
     List<OntologyVersionEntity> findByTenantIdOrderByVersionNumberDesc(String tenantId);
 
-    Optional<OntologyVersionEntity> findByIdAndTenantId(String versionId, String tenantId);
+    Optional<OntologyVersionEntity> findByVersionIdAndTenantId(String versionId, String tenantId);
 
     Optional<OntologyVersionEntity> findByTenantIdAndCurrentTrue(String tenantId);
 

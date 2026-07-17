@@ -112,7 +112,7 @@ class OntologyVersionServiceTest {
     @Test
     void getById_shouldReturnVersion_whenExists() {
         OntologyVersionEntity version = version(1);
-        when(versionRepository.findByIdAndTenantId(version.getVersionId(), TenantContext.DEFAULT_TENANT_ID))
+        when(versionRepository.findByVersionIdAndTenantId(version.getVersionId(), TenantContext.DEFAULT_TENANT_ID))
                 .thenReturn(Optional.of(version));
 
         OntologyVersionResponse response = versionService.getById(version.getVersionId());
@@ -122,7 +122,7 @@ class OntologyVersionServiceTest {
 
     @Test
     void getById_shouldThrow_whenNotFound() {
-        when(versionRepository.findByIdAndTenantId("missing", TenantContext.DEFAULT_TENANT_ID))
+        when(versionRepository.findByVersionIdAndTenantId("missing", TenantContext.DEFAULT_TENANT_ID))
                 .thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> versionService.getById("missing"))
@@ -137,7 +137,7 @@ class OntologyVersionServiceTest {
         version.setStatus("DRAFT");
         version.setCurrent(false);
 
-        when(versionRepository.findByIdAndTenantId(version.getVersionId(), TenantContext.DEFAULT_TENANT_ID))
+        when(versionRepository.findByVersionIdAndTenantId(version.getVersionId(), TenantContext.DEFAULT_TENANT_ID))
                 .thenReturn(Optional.of(version));
         when(versionRepository.findByTenantIdAndCurrentTrue(TenantContext.DEFAULT_TENANT_ID)).thenReturn(Optional.empty());
         when(versionRepository.save(any(OntologyVersionEntity.class))).thenReturn(version);
@@ -154,7 +154,7 @@ class OntologyVersionServiceTest {
         OntologyVersionEntity version = version(1);
         version.setStatus("PUBLISHED");
 
-        when(versionRepository.findByIdAndTenantId(version.getVersionId(), TenantContext.DEFAULT_TENANT_ID))
+        when(versionRepository.findByVersionIdAndTenantId(version.getVersionId(), TenantContext.DEFAULT_TENANT_ID))
                 .thenReturn(Optional.of(version));
 
         assertThatThrownBy(() -> versionService.publish(version.getVersionId()))
@@ -168,7 +168,7 @@ class OntologyVersionServiceTest {
         OntologyVersionEntity source = version(1);
         OntologyVersionEntity current = version(2);
 
-        when(versionRepository.findByIdAndTenantId(source.getVersionId(), TenantContext.DEFAULT_TENANT_ID))
+        when(versionRepository.findByVersionIdAndTenantId(source.getVersionId(), TenantContext.DEFAULT_TENANT_ID))
                 .thenReturn(Optional.of(source));
         when(versionRepository.findByTenantIdAndCurrentTrue(TenantContext.DEFAULT_TENANT_ID))
                 .thenReturn(Optional.of(current));
@@ -185,7 +185,7 @@ class OntologyVersionServiceTest {
         OntologyVersionEntity version = version(1);
         version.setStatus("DRAFT");
 
-        when(versionRepository.findByIdAndTenantId(version.getVersionId(), TenantContext.DEFAULT_TENANT_ID))
+        when(versionRepository.findByVersionIdAndTenantId(version.getVersionId(), TenantContext.DEFAULT_TENANT_ID))
                 .thenReturn(Optional.of(version));
 
         assertThatThrownBy(() -> versionService.rollback(version.getVersionId()))

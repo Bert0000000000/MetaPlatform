@@ -12,7 +12,7 @@ services:
       POSTGRES_DB: metaplatform
       POSTGRES_USER: meta
       POSTGRES_PASSWORD: meta
-      POSTGRES_MULTIPLE_DATABASES: metaplatform_iam,metaplatform_ont,metaplatform_rule,metaplatform_gw,metaplatform_wfe,metaplatform_rag
+      POSTGRES_MULTIPLE_DATABASES: metaplatform_iam,metaplatform_ont,metaplatform_rule,metaplatform_gw,metaplatform_wfe,metaplatform_rag,metaplatform_agent,metaplatform_llmgw,metaplatform_data,metaplatform_obs,metaplatform_ea,metaplatform_mcp,metaplatform_action,metaplatform_msg
       PGDATA: /var/lib/postgresql/data/pgdata
     volumes:
       - infra-postgres-data:/var/lib/postgresql/data
