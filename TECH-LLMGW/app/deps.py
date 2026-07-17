@@ -213,6 +213,11 @@ def get_rate_limit_service(request: Request) -> RateLimitService:
     return request.app.state.registry.rate_limit_service
 
 
+def get_rate_limit_guard(request: Request):
+    """Return the RateLimitGuard attached to the registry, or None."""
+    return getattr(request.app.state.registry, "_guard", None)
+
+
 def get_audit_service(request: Request) -> AuditLogService:
     return request.app.state.registry.audit_service
 

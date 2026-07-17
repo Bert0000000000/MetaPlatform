@@ -171,9 +171,15 @@ class RateLimitService:
         tenant_id: str,
         rate_limit_id: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """Return hit statistics. With in-memory store, returns zeroed placeholders."""
+        """Return hit statistics from the runtime guard."""
+        guard = getattr(self, "_guard", None)
+        guard_hits = guard.get_hit_counts() if guard else {}
+
         if rate_limit_id is not None:
             record = self.detail(tenant_id, rate_limit_id)
+            hit_info = guard_hits.get((tenant_id, rate_limit_id), {})
+            current = hit_info.get("current", 0)
+            blocked = hit_info.get("blocked", 0)
             return {
                 "rateLimitId": record.rate_limit_id,
                 "name": record.name,
@@ -182,24 +188,30 @@ class RateLimitService:
                 "type": record.type.value,
                 "limit": record.limit_value,
                 "windowSeconds": record.window_seconds,
-                "current": 0,
-                "remaining": record.limit_value,
-                "hitCount": 0,
-                "blockedCount": 0,
+                "current": current,
+                "remaining": max(0, record.limit_value - current),
+                "hitCount": current,
+                "blockedCount": blocked,
                 "status": RateLimitStatus.ENABLED.value if record.enabled else RateLimitStatus.DISABLED.value,
                 "resetAt": None,
             }
 
         all_items = self._repo.list(tenant_id)
+        total_hits = sum(h.get("current", 0) for h in guard_hits.values())
+        total_blocked = sum(h.get("blocked", 0) for h in guard_hits.values())
         return {
             "totalRules": len(all_items),
             "activeRules": sum(1 for r in all_items if r.enabled),
-            "totalHits": 0,
-            "totalBlocked": 0,
+            "totalHits": total_hits,
+            "totalBlocked": total_blocked,
             "items": [self._to_list_item(r) for r in all_items],
         }
 
     def _to_list_item(self, record: RateLimitRecord) -> Dict[str, Any]:
+        guard = getattr(self, "_guard", None)
+        guard_hits = guard.get_hit_counts() if guard else {}
+        hit_info = guard_hits.get((record.tenant_id, record.rate_limit_id), {})
+        current = hit_info.get("current", 0)
         return {
             "rateLimitId": record.rate_limit_id,
             "name": record.name,
@@ -208,8 +220,8 @@ class RateLimitService:
             "type": record.type.value,
             "limit": record.limit_value,
             "windowSeconds": record.window_seconds,
-            "current": 0,
-            "remaining": record.limit_value,
+            "current": current,
+            "remaining": max(0, record.limit_value - current),
             "status": RateLimitStatus.ENABLED.value if record.enabled else RateLimitStatus.DISABLED.value,
             "createdAt": record.created_at,
             "updatedAt": record.updated_at,

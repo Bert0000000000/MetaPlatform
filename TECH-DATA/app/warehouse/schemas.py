@@ -63,3 +63,22 @@ class CreateMaterializedViewRequest(BaseModel):
     layer: WarehouseLayer
     definition: str
     refreshStrategy: str = "daily"
+
+
+class QueryHistoryItem(BaseModel):
+    """Single entry in the query history log."""
+
+    queryId: str
+    sql: str
+    layer: Optional[WarehouseLayer] = None
+    rowCount: int
+    durationMs: int
+    status: str
+    executedAt: datetime
+
+
+class QueryHistoryResponse(BaseModel):
+    items: List[QueryHistoryItem]
+    total: int
+    page: int
+    pageSize: int

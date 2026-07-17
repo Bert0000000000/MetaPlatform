@@ -101,3 +101,17 @@ async def refresh_view(
 ) -> dict:
     mv = await service.refresh_materialized_view(ctx.tenant_id, mv_id)
     return success(mv.model_dump(), trace_id=ctx.trace_id)
+
+
+@router.get("/warehouse/query-history", summary="查询历史记录")
+async def list_query_history(
+    request: Request,
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=20, ge=1, le=100),
+    ctx: RequestContext = Depends(request_context_dep),
+    service: WarehouseService = Depends(get_warehouse_service),
+) -> dict:
+    result = await service.list_query_history(
+        ctx.tenant_id, page=page, page_size=page_size
+    )
+    return success(result, trace_id=ctx.trace_id)

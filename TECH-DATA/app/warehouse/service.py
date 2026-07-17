@@ -13,6 +13,7 @@ from app.warehouse.schemas import (
     LayerInfo,
     MaterializedView,
     QueryColumn,
+    QueryHistoryItem,
     QueryRequest,
     QueryResult,
     WarehouseLayer,
@@ -66,6 +67,7 @@ _MOCK_TABLES = [
 class WarehouseService:
     def __init__(self) -> None:
         self._views: Dict[str, MaterializedView] = {}
+        self._history: List[QueryHistoryItem] = []
 
     async def execute_query(
         self, tenant_id: str, request: QueryRequest
@@ -86,12 +88,44 @@ class WarehouseService:
         rows = [[1, now.isoformat()]] * min(request.limit, 3)
         duration = int((time.time() - start) * 1000) + 5
 
+        # Record in history
+        self._history.append(
+            QueryHistoryItem(
+                queryId=f"qh-{uuid.uuid4().hex[:12]}",
+                sql=request.sql[:500],
+                layer=request.layer,
+                rowCount=len(rows),
+                durationMs=duration,
+                status="success",
+                executedAt=_now(),
+            )
+        )
+
         return QueryResult(
             columns=columns,
             rows=rows,
             rowCount=len(rows),
             durationMs=duration,
         )
+
+    async def list_query_history(
+        self,
+        tenant_id: str,
+        *,
+        page: int = 1,
+        page_size: int = 20,
+    ) -> dict:
+        """Return paginated query execution history."""
+        total = len(self._history)
+        start_idx = (page - 1) * page_size
+        end_idx = start_idx + page_size
+        items = self._history[start_idx:end_idx]
+        return {
+            "items": [item.model_dump() for item in items],
+            "total": total,
+            "page": page,
+            "pageSize": page_size,
+        }
 
     async def list_layers(self) -> List[LayerInfo]:
         result: List[LayerInfo] = []

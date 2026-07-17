@@ -58,6 +58,8 @@ class RateLimitGuard:
         self._lock = threading.RLock()
         # (tenant_id, rule_id) -> deque of monotonic timestamps
         self._hits: Dict[Tuple[str, str], Deque[float]] = {}
+        # (tenant_id, rule_id) -> blocked count
+        self._blocked: Dict[Tuple[str, str], int] = {}
 
     # ----------------------------------------------------------------- API
 
@@ -80,6 +82,7 @@ class RateLimitGuard:
             now = time.monotonic()
             self._trim(bucket, rule.window_seconds, now)
             if len(bucket) >= rule.limit_value:
+                self._blocked[key] = self._blocked.get(key, 0) + 1
                 return RateLimitDecision(
                     allowed=False,
                     rule_id=rule.rate_limit_id,
@@ -110,6 +113,23 @@ class RateLimitGuard:
     def reset(self) -> None:
         with self._lock:
             self._hits.clear()
+            self._blocked.clear()
+
+    def get_hit_counts(self) -> Dict[Tuple[str, str], Dict[str, int]]:
+        """Return current window counts and blocked counts for all rules."""
+        with self._lock:
+            now = time.monotonic()
+            result: Dict[Tuple[str, str], Dict[str, int]] = {}
+            for key, bucket in self._hits.items():
+                # Trim expired entries for accurate current count
+                rule = self._service.detail(key[0], key[1]) if key else None
+                window = rule.window_seconds if rule else 60
+                self._trim(bucket, window, now)
+                result[key] = {
+                    "current": len(bucket),
+                    "blocked": self._blocked.get(key, 0),
+                }
+            return result
 
     # ------------------------------------------------------------ internals
 

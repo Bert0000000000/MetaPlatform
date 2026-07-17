@@ -5,6 +5,9 @@ Phase 2 acceptance fix: the LLM Gateway used to expose only
 OpenAI-style client call ``/chat/completions`` with a plain ``messages``
 array. This thin wrapper accepts that contract and routes through the
 existing ``ChatService.text_chat`` so the path is uniform.
+
+P3 fix: rate-limit guard is now invoked before the model call so that
+configured RPM/TPM rules actually take effect.
 """
 
 from __future__ import annotations
@@ -18,12 +21,14 @@ from pydantic import BaseModel, Field
 from app.chat.service import ChatService
 from app.common.api_response import success
 from app.common.context import RequestContext, request_context_dep
-from app.deps import get_chat_service
 from app.common.errors import (
     AllProvidersFailedError,
     InvalidParamError,
     ModelNotAvailableError,
+    RateLimitExceededError,
 )
+from app.deps import get_chat_service, get_rate_limit_guard
+from app.ratelimits.schemas import RateLimitScope, RateLimitType
 
 router = APIRouter(tags=["chat-completions"])
 
@@ -56,6 +61,7 @@ async def chat_completions(
     body: ChatCompletionRequest,
     ctx: RequestContext = Depends(request_context_dep),
     service: ChatService = Depends(get_chat_service),
+    guard = Depends(get_rate_limit_guard),
 ) -> dict:
     """Thin OpenAI-compatible wrapper.
 
@@ -70,6 +76,20 @@ async def chat_completions(
     text = _flatten_text(body.messages, body.system)
     if not text.strip():
         raise InvalidParamError("messages 内容不能为空")
+
+    # Rate limit check: RPM per model
+    if guard is not None:
+        decision = guard.check_and_increment(
+            ctx.tenant_id,
+            RateLimitScope.MODEL,
+            body.model,
+            RateLimitType.RPM,
+        )
+        if not decision.allowed:
+            raise RateLimitExceededError(
+                f"RPM 限流: model={body.model}, limit={decision.limit}",
+                data=decision.to_dict(),
+            )
 
     start = time.monotonic()
     resp = service.text_chat(

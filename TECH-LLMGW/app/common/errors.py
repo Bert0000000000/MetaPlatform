@@ -28,6 +28,7 @@ class ErrorCode(IntEnum):
     ALL_PROVIDERS_FAILED = 42203
     PROMPT_VARIABLE_MISSING = 42205
     PROMPT_RENDER_FAILED = 42206
+    RATE_LIMIT_EXCEEDED = 42901
     INTERNAL_ERROR = 50001
     PROVIDER_API_ERROR = 50005
 
@@ -53,6 +54,7 @@ ERROR_HTTP_STATUS: dict[ErrorCode, int] = {
     ErrorCode.ALL_PROVIDERS_FAILED: 422,
     ErrorCode.PROMPT_VARIABLE_MISSING: 422,
     ErrorCode.PROMPT_RENDER_FAILED: 422,
+    ErrorCode.RATE_LIMIT_EXCEEDED: 429,
     ErrorCode.INTERNAL_ERROR: 500,
     ErrorCode.PROVIDER_API_ERROR: 500,
 }
@@ -173,3 +175,8 @@ class QuotaNotFoundError(BizException):
 class RateLimitNotFoundError(BizException):
     code = ErrorCode.RATE_LIMIT_NOT_FOUND
     http_status = 404
+
+
+class RateLimitExceededError(BizException):
+    code = ErrorCode.RATE_LIMIT_EXCEEDED
+    http_status = 429
