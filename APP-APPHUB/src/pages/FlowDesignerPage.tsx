@@ -28,7 +28,7 @@ import FormBinding from '@/components/FormBinding';
 import FlowTestPanel from '@/components/FlowTestPanel';
 import PublishValidation from '@/components/PublishValidation';
 import AIProcessGenerate from '@/components/AIProcessGenerate';
-import type { ModuleItem, FlowConfig, FlowNode, FlowEdge, FlowNodeType, FlowValidationResult, FlowTestResult, FormFieldBinding } from '@/types';
+import type { ModuleItem, FlowConfig, FlowNode, FlowEdge, FlowNodeType, FlowValidationResult, FlowTestResult, FormFieldBinding, ProcessGenResult } from '@/types';
 
 const { TextArea } = Input;
 
@@ -48,6 +48,62 @@ const NODE_SIZE: Record<FlowNodeType, { width: number; height: number }> = {
 
 function generateId(prefix: string): string {
   return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`;
+}
+
+const DESIGNER_IMPORT_KEY = 'metaplatform:designer:import';
+
+function normalizeNodeType(t: string): FlowNodeType {
+  if (t === 'start' || t === 'startEvent') return 'start';
+  if (t === 'end' || t === 'endEvent') return 'end';
+  if (t === 'condition' || t === 'exclusiveGateway' || t === 'parallelGateway') return 'condition';
+  return 'approval';
+}
+
+function gridPosition(index: number): { x: number; y: number } {
+  const col = index % 4;
+  const row = Math.floor(index / 4);
+  return { x: col * 200, y: row * 100 };
+}
+
+function buildFlowFromAI(gen: ProcessGenResult): {
+  nodes: FlowNode[];
+  edges: FlowEdge[];
+  bpmnXml?: string;
+} {
+  const nodes: FlowNode[] = gen.nodes.map((n, i) => ({
+    id: n.id || generateId('node'),
+    type: normalizeNodeType(String(n.type)),
+    name: n.name,
+    position: gridPosition(i),
+  }));
+  let edges: FlowEdge[];
+  if (gen.edges && gen.edges.length > 0) {
+    edges = gen.edges.map((e) => ({
+      id: generateId('edge'),
+      source: e.source,
+      target: e.target,
+      label: e.label,
+    }));
+  } else {
+    edges = [];
+    for (let i = 0; i < nodes.length - 1; i++) {
+      edges.push({ id: generateId('edge'), source: nodes[i].id, target: nodes[i + 1].id });
+    }
+  }
+  return { nodes, edges, bpmnXml: gen.bpmnXml || undefined };
+}
+
+function consumeDesignerImport(): { type: string; content: string } | null {
+  try {
+    const raw = localStorage.getItem(DESIGNER_IMPORT_KEY);
+    if (!raw) return null;
+    const data = JSON.parse(raw) as { type?: string; content?: string };
+    localStorage.removeItem(DESIGNER_IMPORT_KEY);
+    if (data.type && data.content) return { type: data.type, content: data.content };
+    return null;
+  } catch {
+    return null;
+  }
 }
 
 export default function FlowDesignerPage() {
@@ -70,18 +126,45 @@ export default function FlowDesignerPage() {
 
   useEffect(() => {
     if (!moduleId) return;
-    getModule(moduleId).then((m) => {
-      setModule(m);
-      setConfig({ name: m.name, description: m.description || '', nodes: [], edges: [] });
-    });
-    getFlow(moduleId).then((flow) => {
-      if (flow.nodes.length > 0) {
-        setConfig(flow);
+    let cancelled = false;
+    (async () => {
+      try {
+        const m = await getModule(moduleId);
+        if (cancelled) return;
+        setModule(m);
+        let cfg: FlowConfig = { name: m.name, description: m.description || '', nodes: [], edges: [] };
+        try {
+          const flow = await getFlow(moduleId);
+          if (flow.nodes.length > 0) cfg = flow;
+        } catch {
+          // no existing flow
+        }
+        const imported = consumeDesignerImport();
+        if (imported && imported.type === 'process') {
+          try {
+            const gen = JSON.parse(imported.content) as ProcessGenResult;
+            const { nodes, edges, bpmnXml } = buildFlowFromAI(gen);
+            cfg = {
+              name: gen.name || cfg.name,
+              description: gen.description || cfg.description,
+              nodes,
+              edges,
+              bpmnXml,
+            };
+            message.success('从 AI 导入流程');
+          } catch {
+            // ignore parse error
+          }
+        }
+        if (!cancelled) setConfig(cfg);
+      } catch {
+        // ignore load error
       }
-    });
+    })();
     if (appId) {
       listFormModules(appId).then(setFormModules).catch(() => {});
     }
+    return () => { cancelled = true; };
   }, [moduleId, appId]);
 
   const selectedNode = config.nodes.find((n) => n.id === selectedNodeId) || null;
@@ -617,7 +700,16 @@ export default function FlowDesignerPage() {
       >
         <AIProcessGenerate
           onApply={(gen) => {
-            message.info(`已应用 AI 生成的流程：${gen.name}`);
+            const { nodes, edges, bpmnXml } = buildFlowFromAI(gen);
+            setConfig((prev) => ({
+              ...prev,
+              name: gen.name || prev.name,
+              description: gen.description || prev.description,
+              nodes,
+              edges,
+              bpmnXml,
+            }));
+            message.success('已应用 AI 生成的流程');
             setAiGenerateOpen(false);
           }}
         />

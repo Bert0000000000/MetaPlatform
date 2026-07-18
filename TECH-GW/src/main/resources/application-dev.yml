@@ -13,6 +13,8 @@ spring:
       password: ${REDIS_PASSWORD:meta}
       database: 0
   cloud:
+    compatibility-verifier:
+      enabled: false
     gateway:
       routes:
         - id: iam
@@ -39,3 +41,35 @@ spring:
           uri: http://localhost:8601
           predicates:
             - Path=/api/v1/msg/**
+        - id: action
+          uri: http://localhost:8104
+          predicates:
+            - Path=/api/v1/action/**
+        - id: mcp
+          uri: http://localhost:8105
+          predicates:
+            - Path=/api/v1/mcp/**
+        - id: ea
+          uri: http://localhost:8106
+          predicates:
+            - Path=/api/v1/ea/**
+        - id: wfe
+          uri: http://localhost:8801
+          predicates:
+            - Path=/api/v1/wfe/**
+        - id: data
+          uri: http://localhost:8701
+          predicates:
+            - Path=/api/v1/data/**
+        - id: rag
+          uri: http://localhost:8901
+          predicates:
+            - Path=/api/v1/rag/**
+        - id: agent
+          uri: http://localhost:8511
+          predicates:
+            - Path=/api/v1/agent/**
+        - id: a2a
+          uri: http://localhost:8502
+          predicates:
+            - Path=/api/v1/a2a/**

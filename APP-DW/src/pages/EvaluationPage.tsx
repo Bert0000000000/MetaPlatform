@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import {
+  Button,
   Card,
   Empty,
   Select,
@@ -7,17 +8,27 @@ import {
   Typography,
   Tabs,
   Table,
+  message,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
+import { FileTextOutlined } from '@ant-design/icons';
 import { listEmployees } from '@/api/employees';
-import { getQualityTrend, listReports } from '@/api/evaluations';
+import { generateReport, getQualityTrend, listReports } from '@/api/evaluations';
 import ConversationList from '@/components/ConversationList';
 import ReplayPanel from '@/components/ReplayPanel';
 import QualityScoreForm from '@/components/QualityScoreForm';
 import EvaluationReportCard from '@/components/EvaluationReport';
 import TrendChart from '@/components/TrendChart';
+import AutoScorePanel from '@/components/AutoScorePanel';
+import OptimizationSuggestionsCard from '@/components/OptimizationSuggestionsCard';
 import type { Employee } from '@/types';
 import type { ConversationRecord, EvaluationReport } from '@/api/evaluations';
+
+const REPORT_PERIOD_OPTIONS = [
+  { label: '近 7 天', value: '7d' },
+  { label: '近 30 天', value: '30d' },
+  { label: '近 90 天', value: '90d' },
+];
 
 export default function EvaluationPage() {
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -25,6 +36,8 @@ export default function EvaluationPage() {
   const [selected, setSelected] = useState<ConversationRecord | null>(null);
   const [trend, setTrend] = useState<Array<{ date: string; score: number }>>([]);
   const [reports, setReports] = useState<EvaluationReport[]>([]);
+  const [reportPeriod, setReportPeriod] = useState<string>('30d');
+  const [generating, setGenerating] = useState(false);
 
   useEffect(() => {
     listEmployees({}).then((r) => {
@@ -33,11 +46,28 @@ export default function EvaluationPage() {
     });
   }, []);
 
+  // 切换员工时刷新所有 Tab 依赖的数据
   useEffect(() => {
     if (!employeeId) return;
     getQualityTrend(employeeId).then(setTrend);
     listReports(employeeId).then(setReports);
   }, [employeeId]);
+
+  const handleGenerateReport = async () => {
+    if (!employeeId) {
+      message.warning('请先选择数字员工');
+      return;
+    }
+    setGenerating(true);
+    try {
+      await generateReport(employeeId, reportPeriod);
+      message.success('报告已生成');
+      const fresh = await listReports(employeeId);
+      setReports(fresh);
+    } finally {
+      setGenerating(false);
+    }
+  };
 
   const columns: ColumnsType<EvaluationReport> = [
     { title: '周期', dataIndex: 'period' },
@@ -77,7 +107,7 @@ export default function EvaluationPage() {
         items={[
           {
             key: 'conversations',
-            label: '对话记录 + 回放',
+            label: '对话回放',
             children: (
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                 <ConversationList
@@ -95,9 +125,28 @@ export default function EvaluationPage() {
             ),
           },
           {
-            key: 'score',
-            label: '质量评分',
-            children: <QualityScoreForm employeeId={employeeId} />,
+            key: 'autoScore',
+            label: '自动评分',
+            children: (
+              <Space direction="vertical" style={{ width: '100%' }} size="middle">
+                <AutoScorePanel
+                  employeeId={employeeId}
+                  conversationId={selected?.conversationId}
+                />
+                <QualityScoreForm employeeId={employeeId} />
+              </Space>
+            ),
+          },
+          {
+            key: 'suggestions',
+            label: '优化建议',
+            children: employeeId ? (
+              <OptimizationSuggestionsCard employeeId={employeeId} />
+            ) : (
+              <Card>
+                <Empty description="请先选择数字员工" />
+              </Card>
+            ),
           },
           {
             key: 'reports',
@@ -105,7 +154,30 @@ export default function EvaluationPage() {
             children: (
               <Space direction="vertical" style={{ width: '100%' }} size="middle">
                 <TrendChart data={trend} />
-                <Card title="历史报告">
+                <Card
+                  title="历史报告"
+                  extra={
+                    <Space>
+                      <Select
+                        size="small"
+                        value={reportPeriod}
+                        onChange={setReportPeriod}
+                        options={REPORT_PERIOD_OPTIONS}
+                        style={{ width: 110 }}
+                      />
+                      <Button
+                        type="primary"
+                        size="small"
+                        icon={<FileTextOutlined />}
+                        loading={generating}
+                        onClick={handleGenerateReport}
+                        disabled={!employeeId}
+                      >
+                        一键生成报告
+                      </Button>
+                    </Space>
+                  }
+                >
                   {reports.length === 0 ? (
                     <Empty description="还没有生成的报告" />
                   ) : (

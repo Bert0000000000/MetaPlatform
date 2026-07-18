@@ -15,6 +15,7 @@ import {
   Typography,
   message,
   Popconfirm,
+  Alert,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
@@ -22,12 +23,29 @@ import {
   EditOutlined,
   DeleteOutlined,
   ExperimentOutlined,
+  TableOutlined,
 } from '@ant-design/icons';
 import { createRule, deleteRule, listRules, updateRule } from '@/api/rules';
+import {
+  listDecisionTables,
+  createDecisionTable,
+  updateDecisionTable,
+  deleteDecisionTable,
+  executeDecisionTable,
+} from '@/api/decision-tables';
 import ConditionEditor from '@/components/ConditionEditor';
 import ActionEditor from '@/components/ActionEditor';
 import TestRunner from '@/components/TestRunner';
+import DecisionTableEditor from '@/components/DecisionTableEditor';
+import TestCaseManager from '@/components/TestCaseManager';
 import type { OntologyRule, RuleAction, RuleCondition } from '@/api/rules';
+import type { DecisionTable, HitPolicy, DecisionTableColumn, DecisionTableRow } from '@/types';
+
+const HIT_POLICY_DEFAULT: HitPolicy = 'first';
+
+function newId(prefix: string): string {
+  return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`;
+}
 
 export default function RuleManagementPage() {
   const [rules, setRules] = useState<OntologyRule[]>([]);
@@ -38,6 +56,19 @@ export default function RuleManagementPage() {
   const [testing, setTesting] = useState<OntologyRule | null>(null);
   const [form] = Form.useForm();
 
+  // 决策表状态
+  const [decisionTables, setDecisionTables] = useState<DecisionTable[]>([]);
+  const [decisionTablesLoading, setDecisionTablesLoading] = useState(false);
+  const [currentTableId, setCurrentTableId] = useState<string | undefined>();
+  const [tableForm] = Form.useForm();
+  const [tableEditorOpen, setTableEditorOpen] = useState(false);
+
+  // 测试用例 Tab：用例关联目标
+  const [testCaseTarget, setTestCaseTarget] = useState<{ ruleId?: string; decisionTableId?: string }>(
+    {},
+  );
+
+  // ============ 规则 ============
   const load = async () => {
     setLoading(true);
     try {
@@ -75,6 +106,128 @@ export default function RuleManagementPage() {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  // ============ 决策表 ============
+  const loadDecisionTables = async () => {
+    setDecisionTablesLoading(true);
+    try {
+      const data = await listDecisionTables();
+      setDecisionTables(data);
+      if (!currentTableId && data.length > 0) {
+        setCurrentTableId(data[0]!.id);
+      }
+    } finally {
+      setDecisionTablesLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadDecisionTables();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const currentTable = decisionTables.find((t) => t.id === currentTableId);
+
+  const handleTableChange = (next: DecisionTable) => {
+    setDecisionTables((prev) => prev.map((t) => (t.id === next.id ? next : t)));
+  };
+
+  const handleSaveTable = async () => {
+    if (!currentTable) return;
+    try {
+      await updateDecisionTable(currentTable.id, {
+        code: currentTable.code,
+        name: currentTable.name,
+        description: currentTable.description,
+        conceptId: currentTable.conceptId,
+        hitPolicy: currentTable.hitPolicy,
+        columns: currentTable.columns,
+        rows: currentTable.rows,
+        enabled: currentTable.enabled,
+      });
+      message.success('决策表已保存');
+    } catch (err) {
+      message.error(err instanceof Error ? err.message : '保存失败');
+    }
+  };
+
+  const handleExecTable = async (input: Record<string, unknown>) => {
+    if (!currentTable) return;
+    try {
+      const result = await executeDecisionTable(currentTable.id, input);
+      if (result.outputs.length === 0) {
+        message.info('未命中任何规则行');
+      } else {
+        message.success(`命中 ${result.matchedRows.length} 行，输出：${JSON.stringify(result.outputs)}`);
+      }
+    } catch (err) {
+      message.error(err instanceof Error ? err.message : '执行失败');
+    }
+  };
+
+  const handleOpenCreateTable = () => {
+    tableForm.resetFields();
+    tableForm.setFieldsValue({
+      code: '',
+      name: '',
+      description: '',
+      conceptId: '',
+      hitPolicy: HIT_POLICY_DEFAULT,
+    });
+    setTableEditorOpen(true);
+  };
+
+  const handleCreateTableSubmit = async () => {
+    const v = await tableForm.validateFields();
+    const inputCol: DecisionTableColumn = {
+      id: newId('col'),
+      name: '输入1',
+      field: 'inputField',
+      columnType: 'input',
+      operator: 'eq',
+    };
+    const outputCol: DecisionTableColumn = {
+      id: newId('col'),
+      name: '输出1',
+      field: 'outputField',
+      columnType: 'output',
+    };
+    const row: DecisionTableRow = {
+      id: newId('row'),
+      enabled: true,
+      priority: 1,
+      description: '示例规则行',
+      cells: {
+        [inputCol.id]: { value: '-' , isEmpty: true },
+        [outputCol.id]: { value: '' },
+      },
+    };
+    const payload = {
+      code: v.code as string,
+      name: v.name as string,
+      description: v.description as string,
+      conceptId: (v.conceptId as string) || undefined,
+      hitPolicy: (v.hitPolicy as HitPolicy) ?? HIT_POLICY_DEFAULT,
+      columns: [inputCol, outputCol],
+      rows: [row],
+      enabled: true,
+    };
+    const created = await createDecisionTable(payload);
+    setDecisionTables((prev) => [...prev, created]);
+    setCurrentTableId(created.id);
+    setTableEditorOpen(false);
+    message.success('已创建');
+  };
+
+  const handleDeleteTable = async (id: string) => {
+    await deleteDecisionTable(id);
+    setDecisionTables((prev) => prev.filter((t) => t.id !== id));
+    if (currentTableId === id) {
+      const remaining = decisionTables.filter((t) => t.id !== id);
+      setCurrentTableId(remaining[0]?.id);
+    }
+    message.success('已删除');
   };
 
   const columns: ColumnsType<OntologyRule> = [
@@ -198,6 +351,126 @@ export default function RuleManagementPage() {
               <Empty description="从规则列表选择一个规则进行测试" />
             ),
           },
+          {
+            key: 'decision-table',
+            label: (
+              <Space size={4}>
+                <TableOutlined />
+                决策表
+              </Space>
+            ),
+            children: (
+              <Space direction="vertical" style={{ width: '100%' }} size="middle">
+                <Card size="small">
+                  <Space wrap>
+                    <Typography.Text strong>当前决策表：</Typography.Text>
+                    <Select
+                      style={{ width: 320 }}
+                      placeholder="选择一个决策表"
+                      loading={decisionTablesLoading}
+                      value={currentTableId}
+                      onChange={(v) => setCurrentTableId(v)}
+                      options={decisionTables.map((t) => ({
+                        label: `${t.name} (${t.code})`,
+                        value: t.id,
+                      }))}
+                    />
+                    <Button icon={<PlusOutlined />} onClick={handleOpenCreateTable}>
+                      新建决策表
+                    </Button>
+                    {currentTable && (
+                      <>
+                        <Button type="primary" onClick={handleSaveTable}>
+                          保存
+                        </Button>
+                        <Popconfirm
+                          title="确定删除该决策表？"
+                          onConfirm={() => handleDeleteTable(currentTable.id)}
+                        >
+                          <Button danger icon={<DeleteOutlined />}>
+                            删除
+                          </Button>
+                        </Popconfirm>
+                      </>
+                    )}
+                  </Space>
+                </Card>
+                {currentTable ? (
+                  <DecisionTableEditor
+                    key={currentTable.id}
+                    table={currentTable}
+                    onChange={handleTableChange}
+                    onExecute={handleExecTable}
+                  />
+                ) : (
+                  <Empty description="暂无决策表，请点击「新建决策表」" />
+                )}
+              </Space>
+            ),
+          },
+          {
+            key: 'test-cases',
+            label: '测试用例',
+            children: (
+              <Space direction="vertical" style={{ width: '100%' }} size="middle">
+                <Card size="small">
+                  <Space wrap>
+                    <Typography.Text strong>用例关联：</Typography.Text>
+                    <Select
+                      allowClear
+                      placeholder="选择关联规则"
+                      style={{ width: 240 }}
+                      value={testCaseTarget.ruleId}
+                      onChange={(v) =>
+                        setTestCaseTarget((prev) => ({
+                          ...prev,
+                          ruleId: v,
+                          decisionTableId: prev.decisionTableId && v ? undefined : prev.decisionTableId,
+                        }))
+                      }
+                      options={rules.map((r) => ({
+                        label: `${r.name} (${r.code})`,
+                        value: r.ruleId,
+                      }))}
+                    />
+                    <Select
+                      allowClear
+                      placeholder="选择关联决策表"
+                      style={{ width: 240 }}
+                      value={testCaseTarget.decisionTableId}
+                      onChange={(v) =>
+                        setTestCaseTarget((prev) => ({
+                          ...prev,
+                          decisionTableId: v,
+                          ruleId: prev.ruleId && v ? undefined : prev.ruleId,
+                        }))
+                      }
+                      options={decisionTables.map((t) => ({
+                        label: `${t.name} (${t.code})`,
+                        value: t.id,
+                      }))}
+                    />
+                    <Alert
+                      type="info"
+                      showIcon
+                      style={{ padding: '4px 12px' }}
+                      message={
+                        testCaseTarget.ruleId || testCaseTarget.decisionTableId
+                          ? `当前过滤：${testCaseTarget.ruleId ? `规则 ${testCaseTarget.ruleId}` : ''} ${
+                              testCaseTarget.decisionTableId ? `决策表 ${testCaseTarget.decisionTableId}` : ''
+                            }`
+                          : '未选择过滤，展示全部用例'
+                      }
+                    />
+                  </Space>
+                </Card>
+                <TestCaseManager
+                  ruleId={testCaseTarget.ruleId}
+                  decisionTableId={testCaseTarget.decisionTableId}
+                />
+              </Space>
+            ),
+          },
         ]}
       />
 
@@ -244,6 +517,41 @@ export default function RuleManagementPage() {
           </Form.Item>
           <Form.Item name="actions" label="执行动作">
             <ActionEditor value={[]} onChange={() => {}} />
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      <Modal
+        open={tableEditorOpen}
+        title="新建决策表"
+        onCancel={() => setTableEditorOpen(false)}
+        onOk={handleCreateTableSubmit}
+        width={640}
+        destroyOnClose
+      >
+        <Form form={tableForm} layout="vertical">
+          <Form.Item name="code" label="编码" rules={[{ required: true, message: '请输入编码' }]}>
+            <Input placeholder="例如 ORDER_DISCOUNT" />
+          </Form.Item>
+          <Form.Item name="name" label="名称" rules={[{ required: true, message: '请输入名称' }]}>
+            <Input />
+          </Form.Item>
+          <Form.Item name="description" label="描述">
+            <Input.TextArea rows={2} />
+          </Form.Item>
+          <Form.Item name="conceptId" label="关联概念 (可选)">
+            <Input placeholder="conceptId" />
+          </Form.Item>
+          <Form.Item name="hitPolicy" label="命中策略" rules={[{ required: true }]}>
+            <Select
+              options={[
+                { label: '首次命中', value: 'first' },
+                { label: '全部命中', value: 'all' },
+                { label: '优先级', value: 'priority' },
+                { label: '唯一命中', value: 'unique' },
+                { label: '聚合', value: 'collect' },
+              ]}
+            />
           </Form.Item>
         </Form>
       </Modal>

@@ -40,6 +40,11 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         ServerHttpRequest request = exchange.getRequest();
         String path = request.getPath().value();
 
+        // Allow CORS preflight requests to pass through without JWT validation.
+        if (request.getMethod().name().equalsIgnoreCase("OPTIONS")) {
+            return chain.filter(exchange);
+        }
+
         if (isWhitelisted(path)) {
             return chain.filter(exchange);
         }

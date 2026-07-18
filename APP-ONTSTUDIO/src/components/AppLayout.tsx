@@ -12,6 +12,8 @@ import {
   PartitionOutlined,
   BellOutlined,
   MonitorOutlined,
+  SafetyCertificateOutlined,
+  ShareAltOutlined,
 } from '@ant-design/icons';
 import GlobalSearch from './GlobalSearch';
 
@@ -26,6 +28,8 @@ const menuItems = [
   { key: '/versions', icon: <HistoryOutlined />, label: '版本管理' },
   { key: '/datasources', icon: <DatabaseOutlined />, label: '数据源' },
   { key: '/mappings', icon: <PartitionOutlined />, label: '数据映射' },
+  { key: '/quality', icon: <SafetyCertificateOutlined />, label: '数据质量' },
+  { key: '/lineage', icon: <ShareAltOutlined />, label: '数据血缘' },
   { key: '/actions', icon: <ThunderboltOutlined />, label: 'Action 定义' },
   { key: '/orchestrations', icon: <PartitionOutlined />, label: 'Action 编排' },
   { key: '/triggers', icon: <BellOutlined />, label: '触发器' },

@@ -5,19 +5,35 @@ import {
   Card,
   Form,
   Input,
+  InputNumber,
+  Select,
   Space,
   Spin,
   Tabs,
   Typography,
   message,
 } from 'antd';
-import { ArrowLeftOutlined, SaveOutlined, EyeOutlined } from '@ant-design/icons';
+import { ArrowLeftOutlined, SaveOutlined, EyeOutlined, PlayCircleOutlined } from '@ant-design/icons';
 import { getPage, savePage } from '@/api/pages';
 import DashboardCanvas from '@/components/DashboardCanvas';
 import TableWidget from '@/components/TableWidget';
 import ChartWidget from '@/components/ChartWidget';
 import AIDashboardGenerate from '@/components/AIDashboardGenerate';
-import type { PageDesignerConfig, DashboardWidget } from '@/api/pages';
+import type {
+  PageDesignerConfig,
+  DashboardWidget,
+  DataSourceBinding,
+  DataSourceType,
+} from '@/api/pages';
+import type { DashboardGenResult } from '@/types';
+
+const DATA_SOURCE_TYPE_OPTIONS: Array<{ label: string; value: DataSourceType }> = [
+  { label: '本体 (TECH-ONT)', value: 'ontology' },
+  { label: 'RAG 知识库 (TECH-RAG)', value: 'rag' },
+  { label: '数据源 (TECH-DATA)', value: 'data' },
+  { label: '静态数据', value: 'static' },
+  { label: '自定义 API', value: 'api' },
+];
 
 export default function PageDesignerPage() {
   const { pageId } = useParams<{ pageId: string }>();
@@ -30,11 +46,40 @@ export default function PageDesignerPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [previewing, setPreviewing] = useState<DashboardWidget | null>(null);
+  const [dsWidgetId, setDsWidgetId] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     if (!pageId) return;
     getPage(pageId).then((c) => {
-      setConfig(c);
+      let widgets = c.widgets;
+      try {
+        const raw = localStorage.getItem('metaplatform:designer:import');
+        if (raw) {
+          const data = JSON.parse(raw) as { type?: string; content?: string };
+          localStorage.removeItem('metaplatform:designer:import');
+          if (data.type === 'dashboard' && data.content) {
+            const gen = JSON.parse(data.content) as DashboardGenResult;
+            const importedWidgets: DashboardWidget[] = gen.widgets.map((w) => {
+              const ds: DataSourceBinding = w.dataSource
+                ? { type: 'api', sourceId: w.dataSource }
+                : { type: 'static' };
+              return {
+                id: `ai_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`,
+                type: (w.type as DashboardWidget['type']) || 'stat',
+                title: w.title,
+                dataSource: ds,
+                apiExample: w.apiExample,
+                position: { x: 0, y: 0, w: 6, h: 2 },
+              };
+            });
+            widgets = [...widgets, ...importedWidgets];
+            message.success(`从 AI 导入 ${importedWidgets.length} 个组件`);
+          }
+        }
+      } catch {
+        // ignore parse error
+      }
+      setConfig({ ...c, widgets });
       setLoading(false);
     });
   }, [pageId]);
@@ -58,9 +103,82 @@ export default function PageDesignerPage() {
     message.success('已应用 AI 生成的组件');
   };
 
+  const handleTestScript = () => {
+    const script = config.scripts?.onLoad;
+    if (!script || !script.trim()) {
+      message.warning('请先输入 onLoad 脚本');
+      return;
+    }
+    try {
+      // eslint-disable-next-line no-new-func
+      const fn = new Function('context', script);
+      fn({ config, message });
+      message.success('onLoad 脚本执行成功');
+    } catch (e) {
+      message.error(`脚本执行失败: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  };
+
+  const handleUpdateScripts = (key: 'onLoad' | 'onShow', value: string) => {
+    setConfig({
+      ...config,
+      scripts: { ...config.scripts, [key]: value },
+    });
+  };
+
+  const selectedDsWidget = config.widgets.find((w) => w.id === dsWidgetId) || config.widgets[0];
+
+  const handleUpdateWidgetDataSource = (id: string, patch: Partial<DataSourceBinding>) => {
+    setConfig({
+      ...config,
+      widgets: config.widgets.map((w) => {
+        if (w.id !== id) return w;
+        const current: DataSourceBinding = w.dataSource || { type: 'static' };
+        return { ...w, dataSource: { ...current, ...patch } };
+      }),
+    });
+  };
+
   const renderWidget = (w: DashboardWidget) => {
     if (w.type === 'table') return <TableWidget widget={w} />;
-    if (w.type.startsWith('chart-')) return <ChartWidget widget={w} />;
+    if (
+      w.type === 'chart-bar' ||
+      w.type === 'chart-line' ||
+      w.type === 'chart-pie' ||
+      w.type === 'chart-area' ||
+      w.type === 'chart-scatter' ||
+      w.type === 'gauge'
+    ) {
+      return <ChartWidget widget={w} />;
+    }
+    if (w.type === 'iframe') {
+      const url = (w.config?.url as string) || '';
+      return (
+        <Card title={w.title} size="small">
+          {url ? (
+            <iframe
+              title={w.title}
+              src={url}
+              style={{ width: '100%', height: 240, border: 'none' }}
+            />
+          ) : (
+            <div style={{ color: '#999', padding: 24, textAlign: 'center' }}>
+              请在 config.url 中配置嵌入地址
+            </div>
+          )}
+        </Card>
+      );
+    }
+    if (w.type === 'rich-text') {
+      const content = (w.config?.content as string) || '';
+      return (
+        <Card title={w.title} size="small">
+          <div style={{ minHeight: 80, padding: 12, whiteSpace: 'pre-wrap' }}>
+            {content || '富文本内容为空'}
+          </div>
+        </Card>
+      );
+    }
     if (w.type === 'stat') {
       return (
         <Card title={w.title} size="small">
@@ -153,6 +271,124 @@ export default function PageDesignerPage() {
                       onChange={(k) => setConfig({ ...config, layout: k as 'grid' | 'free' })}
                     />
                   </Form.Item>
+                </Form>
+              </Card>
+            ),
+          },
+          {
+            key: 'scripts',
+            label: '页面脚本',
+            children: (
+              <Card>
+                <Form layout="vertical" style={{ maxWidth: 720 }}>
+                  <Typography.Paragraph type="secondary">
+                    编辑页面生命周期脚本（onLoad / onShow）。脚本以字符串形式保存，运行时通过
+                    <code> new Function('context', script) </code>
+                    执行，<code>context</code> 包含当前页面配置与 antd message。
+                  </Typography.Paragraph>
+                  <Form.Item label="onLoad（页面加载时执行）">
+                    <Input.TextArea
+                      rows={8}
+                      placeholder="// 可访问 context.config / context.message&#10;context.message.info('页面已加载');"
+                      value={config.scripts?.onLoad || ''}
+                      onChange={(e) => handleUpdateScripts('onLoad', e.target.value)}
+                    />
+                  </Form.Item>
+                  <Form.Item label="onShow（页面显示时执行）">
+                    <Input.TextArea
+                      rows={6}
+                      placeholder="// 可访问 context.config / context.message&#10;context.message.info('页面已展示');"
+                      value={config.scripts?.onShow || ''}
+                      onChange={(e) => handleUpdateScripts('onShow', e.target.value)}
+                    />
+                  </Form.Item>
+                  <Form.Item>
+                    <Button
+                      icon={<PlayCircleOutlined />}
+                      onClick={handleTestScript}
+                    >
+                      测试运行 onLoad
+                    </Button>
+                  </Form.Item>
+                </Form>
+              </Card>
+            ),
+          },
+          {
+            key: 'datasource',
+            label: '数据源',
+            children: (
+              <Card>
+                <Form layout="vertical" style={{ maxWidth: 720 }}>
+                  {config.widgets.length === 0 ? (
+                    <Typography.Text type="secondary">
+                      画布暂无组件，请先在「设计」Tab 添加组件。
+                    </Typography.Text>
+                  ) : (
+                    <>
+                      <Form.Item label="选择组件">
+                        <Select
+                          value={selectedDsWidget?.id}
+                          onChange={(v) => setDsWidgetId(v)}
+                          options={config.widgets.map((w) => ({
+                            label: `${w.title} (${w.type})`,
+                            value: w.id,
+                          }))}
+                        />
+                      </Form.Item>
+                      {selectedDsWidget && (
+                        <>
+                          <Form.Item label="数据源类型">
+                            <Select
+                              value={selectedDsWidget.dataSource?.type || 'static'}
+                              options={DATA_SOURCE_TYPE_OPTIONS}
+                              onChange={(v: DataSourceType) =>
+                                handleUpdateWidgetDataSource(selectedDsWidget.id, { type: v })
+                              }
+                            />
+                          </Form.Item>
+                          <Form.Item label="sourceId（本体概念ID / RAG知识库ID / 数据源ID / API URL）">
+                            <Input
+                              value={selectedDsWidget.dataSource?.sourceId || ''}
+                              placeholder="例如 /v1/ont/concepts/employee 或 https://example.com/api"
+                              onChange={(e) =>
+                                handleUpdateWidgetDataSource(selectedDsWidget.id, {
+                                  sourceId: e.target.value,
+                                })
+                              }
+                            />
+                          </Form.Item>
+                          <Form.Item label="query（查询语句或 PromQL）">
+                            <Input.TextArea
+                              rows={3}
+                              value={selectedDsWidget.dataSource?.query || ''}
+                              placeholder="例如 MATCH (n:Employee) RETURN n 或 员工流失率趋势"
+                              onChange={(e) =>
+                                handleUpdateWidgetDataSource(selectedDsWidget.id, {
+                                  query: e.target.value,
+                                })
+                              }
+                            />
+                          </Form.Item>
+                          <Form.Item label="refreshInterval（秒，0 = 不自动刷新）">
+                            <InputNumber
+                              min={0}
+                              value={selectedDsWidget.dataSource?.refreshInterval ?? 0}
+                              onChange={(v) =>
+                                handleUpdateWidgetDataSource(selectedDsWidget.id, {
+                                  refreshInterval: typeof v === 'number' ? v : 0,
+                                })
+                              }
+                              style={{ width: 200 }}
+                            />
+                          </Form.Item>
+                          <Typography.Text type="secondary">
+                            当前绑定：{JSON.stringify(selectedDsWidget.dataSource || { type: 'static' })}
+                          </Typography.Text>
+                        </>
+                      )}
+                    </>
+                  )}
                 </Form>
               </Card>
             ),

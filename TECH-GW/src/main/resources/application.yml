@@ -23,7 +23,7 @@ spring:
 
 app:
   jwt:
-    secret: ${JWT_SECRET:metaplatform-jwt-secret-key-2026}
+    secret: ${JWT_SECRET:mate-platform-default-secret-key-must-be-over-32-bytes}
   whitelist:
     paths:
       - /api/v1/iam/auth/login

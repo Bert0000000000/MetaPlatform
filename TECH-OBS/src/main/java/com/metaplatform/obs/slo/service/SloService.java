@@ -31,7 +31,6 @@ import java.util.UUID;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class SloService {
 
     private static final Set<String> VALID_SLI_TYPES = Set.of("AVAILABILITY", "LATENCY", "THROUGHPUT");
@@ -40,9 +39,16 @@ public class SloService {
     private final SloRepository sloRepository;
     private final ObsPrometheusProperties prometheusProperties;
     private final ObjectMapper objectMapper = new ObjectMapper();
-
-    @Qualifier("prometheusRestTemplate")
     private final RestTemplate restTemplate;
+
+    public SloService(
+            SloRepository sloRepository,
+            ObsPrometheusProperties prometheusProperties,
+            @Qualifier("prometheusRestTemplate") RestTemplate restTemplate) {
+        this.sloRepository = sloRepository;
+        this.prometheusProperties = prometheusProperties;
+        this.restTemplate = restTemplate;
+    }
 
     public SloEntity create(SloRequest request) {
         validate(request);

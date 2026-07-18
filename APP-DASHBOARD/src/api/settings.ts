@@ -1,59 +1,47 @@
 import { get, post, put, del } from './client';
 import type { UserSettings, ApiToken, ActiveSession, ThemeMode } from '@/types';
 
-const SETTINGS_KEY = 'mate_dash_settings';
+const SETTINGS_KEY = 'mate_platform_settings';
+const TOKENS_KEY = 'mate_platform_api_tokens';
+const SESSIONS_KEY = 'mate_platform_active_sessions';
 
-const DEFAULT_SETTINGS: UserSettings = {
+export const DEFAULT_SETTINGS: UserSettings = {
   language: 'zh-CN',
   timezone: 'Asia/Shanghai',
+  dateFormat: 'YYYY-MM-DD HH:mm:ss',
   defaultPage: '/dashboard',
   theme: 'light',
   layout: ['metrics', 'approvals', 'workers', 'notifications'],
 };
 
-const MOCK_TOKENS: ApiToken[] = [
-  {
-    id: 'tok1',
-    name: 'CI/CD Token',
-    token: 'mp_xxx****xxxx',
-    createdAt: '2026-06-01T10:00:00Z',
-    lastUsedAt: '2026-07-17T08:00:00Z',
-    expiresAt: '2026-12-31T23:59:59Z',
-  },
-];
+/**
+ * Best-effort read from localStorage. Returns undefined when not present or invalid.
+ * Used as a fallback when the backend IAM settings API is not yet available.
+ */
+function readLocal<T>(key: string): T | undefined {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as T) : undefined;
+  } catch {
+    return undefined;
+  }
+}
 
-const MOCK_SESSIONS: ActiveSession[] = [
-  {
-    id: 's1',
-    device: 'Chrome / Windows',
-    ip: '192.168.1.100',
-    location: '上海',
-    lastActiveAt: '2026-07-17T11:00:00Z',
-    current: true,
-  },
-  {
-    id: 's2',
-    device: 'Safari / iPhone',
-    ip: '10.0.0.5',
-    location: '北京',
-    lastActiveAt: '2026-07-16T20:00:00Z',
-    current: false,
-  },
-];
+function writeLocal<T>(key: string, value: T): void {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // ignore quota errors
+  }
+}
 
 export async function getSettings(): Promise<UserSettings> {
   try {
-    return await get<UserSettings>('/v1/iam/settings');
+    const remote = await get<UserSettings>('/v1/iam/settings');
+    writeLocal(SETTINGS_KEY, remote);
+    return remote;
   } catch {
-    const raw = localStorage.getItem(SETTINGS_KEY);
-    if (raw) {
-      try {
-        return { ...DEFAULT_SETTINGS, ...JSON.parse(raw) };
-      } catch {
-        return DEFAULT_SETTINGS;
-      }
-    }
-    return DEFAULT_SETTINGS;
+    return readLocal<UserSettings>(SETTINGS_KEY) ?? DEFAULT_SETTINGS;
   }
 }
 
@@ -61,9 +49,11 @@ export async function updateSettings(settings: Partial<UserSettings>): Promise<v
   try {
     await put('/v1/iam/settings', settings);
   } catch {
-    const current = await getSettings();
-    localStorage.setItem(SETTINGS_KEY, JSON.stringify({ ...current, ...settings }));
+    // Backend not ready: fall through to local persistence.
   }
+  // Always keep localStorage in sync so reloads + SettingsContext stay consistent.
+  const current = readLocal<UserSettings>(SETTINGS_KEY) ?? DEFAULT_SETTINGS;
+  writeLocal(SETTINGS_KEY, { ...current, ...settings });
 }
 
 export async function setTheme(theme: ThemeMode): Promise<void> {
@@ -72,46 +62,75 @@ export async function setTheme(theme: ThemeMode): Promise<void> {
 
 export async function getApiTokens(): Promise<ApiToken[]> {
   try {
-    return await get<ApiToken[]>('/v1/iam/tokens');
+    const remote = await get<ApiToken[]>('/v1/iam/tokens');
+    writeLocal(TOKENS_KEY, remote);
+    return remote;
   } catch {
-    return MOCK_TOKENS;
+    return readLocal<ApiToken[]>(TOKENS_KEY) ?? [];
   }
 }
 
 export async function createApiToken(name: string, expiresAt?: string): Promise<ApiToken> {
+  const token: ApiToken = {
+    id: `local-${Date.now()}`,
+    name,
+    token: `mate.${btoa(`${name}:${Date.now()}`)}.${Math.random().toString(36).slice(2, 10)}`,
+    createdAt: new Date().toISOString(),
+    expiresAt,
+  };
   try {
-    return await post<ApiToken>('/v1/iam/tokens', { name, expiresAt });
+    const remote = await post<ApiToken>('/v1/iam/tokens', { name, expiresAt });
+    const list = readLocal<ApiToken[]>(TOKENS_KEY) ?? [];
+    writeLocal(TOKENS_KEY, [remote, ...list]);
+    return remote;
   } catch {
-    return {
-      id: `tok_${Date.now()}`,
-      name,
-      token: `mp_${Math.random().toString(36).slice(2)}${Math.random().toString(36).slice(2)}`,
-      createdAt: new Date().toISOString(),
-      expiresAt,
-    };
+    const list = readLocal<ApiToken[]>(TOKENS_KEY) ?? [];
+    writeLocal(TOKENS_KEY, [token, ...list]);
+    return token;
   }
 }
 
 export async function revokeApiToken(id: string): Promise<void> {
   try {
-    await del(`/v1/iam/tokens/${id}`);
+    await del<void>(`/v1/iam/tokens/${id}`);
   } catch {
-    // mock
+    // Backend not ready: local-only removal below.
   }
+  const list = readLocal<ApiToken[]>(TOKENS_KEY) ?? [];
+  writeLocal(TOKENS_KEY, list.filter((t) => t.id !== id));
 }
 
 export async function getActiveSessions(): Promise<ActiveSession[]> {
   try {
-    return await get<ActiveSession[]>('/v1/iam/sessions');
+    const remote = await get<ActiveSession[]>('/v1/iam/sessions');
+    writeLocal(SESSIONS_KEY, remote);
+    return remote;
   } catch {
-    return MOCK_SESSIONS;
+    // Synthesize a "current session" entry so the UI always has something to show.
+    const fallback: ActiveSession[] = [
+      {
+        id: 'current',
+        device: navigator.userAgent.includes('Chrome')
+          ? 'Chrome on Desktop'
+          : navigator.userAgent.includes('Firefox')
+            ? 'Firefox on Desktop'
+            : 'Current Browser',
+        ip: '127.0.0.1',
+        location: '本地',
+        lastActiveAt: new Date().toISOString(),
+        current: true,
+      },
+    ];
+    return readLocal<ActiveSession[]>(SESSIONS_KEY) ?? fallback;
   }
 }
 
 export async function revokeSession(id: string): Promise<void> {
   try {
-    await del(`/v1/iam/sessions/${id}`);
+    await del<void>(`/v1/iam/sessions/${id}`);
   } catch {
-    // mock
+    // Backend not ready: local-only removal below.
   }
+  const list = readLocal<ActiveSession[]>(SESSIONS_KEY) ?? [];
+  writeLocal(SESSIONS_KEY, list.filter((s) => s.id !== id));
 }

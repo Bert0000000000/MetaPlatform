@@ -27,8 +27,9 @@ import {
   BookOutlined,
   ThunderboltOutlined,
   ApiOutlined,
+  CopyOutlined,
 } from '@ant-design/icons';
-import { listEmployees, deleteEmployee, activateEmployee, deactivateEmployee } from '@/api/employees';
+import { listEmployees, deleteEmployee, activateEmployee, deactivateEmployee, cloneEmployee } from '@/api/employees';
 import type { Employee } from '@/types';
 import {
   ROLE_CATEGORY_OPTIONS,
@@ -98,6 +99,20 @@ export default function EmployeeListPage() {
     }
   };
 
+  const handleClone = async (employee: Employee) => {
+    try {
+      const created = await cloneEmployee(
+        employee,
+        `${employee.name} - 副本`,
+        `${employee.code}_copy`,
+      );
+      message.success(`已克隆为「${created.name}」`);
+      load();
+    } catch (error) {
+      message.error(error instanceof Error ? error.message : '克隆失败');
+    }
+  };
+
   const formatTime = (v?: string) => {
     if (!v) return '-';
     const d = new Date(v);
@@ -118,13 +133,21 @@ export default function EmployeeListPage() {
       onClick: () => message.info('编辑功能可在创建向导基础上扩展'),
     },
     {
+      key: 'clone',
+      icon: <CopyOutlined />,
+      label: '克隆员工',
+      onClick: () => handleClone(employee),
+    },
+    {
       key: 'toggle',
       label: employee.status === 'ACTIVE' ? '停用' : '启用',
       onClick: () => handleToggleStatus(employee),
     },
+    { type: 'divider' },
     {
       key: 'delete',
       icon: <DeleteOutlined />,
+      danger: true,
       label: (
         <Popconfirm
           title="确认删除"

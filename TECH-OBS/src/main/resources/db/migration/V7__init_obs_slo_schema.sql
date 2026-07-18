@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS obs_slo (
     sli_type                VARCHAR(32)     NOT NULL,
     sli_query               TEXT            NOT NULL,
     target                  DOUBLE PRECISION NOT NULL,
-    window                  VARCHAR(32)     NOT NULL DEFAULT '30d',
+    "window"                VARCHAR(32)     NOT NULL DEFAULT '30d',
     error_budget_total      DOUBLE PRECISION,
     error_budget_consumed   DOUBLE PRECISION NOT NULL DEFAULT 0,
     burn_rate               DOUBLE PRECISION NOT NULL DEFAULT 0,

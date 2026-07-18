@@ -128,3 +128,41 @@ export const COMPONENT_DEFINITIONS: ComponentDefinition[] = [
     defaultProps: { label: '分组', fieldKey: 'field_group', width: '100%' },
   },
 ];
+
+/**
+ * 自定义组件注册中心：支持运行时注册、按 type/category 查询。
+ * 启动时会把内置 COMPONENT_DEFINITIONS 全部装入，确保内置组件可被统一检索。
+ */
+export class CustomComponentRegistry {
+  private readonly components = new Map<string, ComponentDefinition>();
+
+  constructor() {
+    COMPONENT_DEFINITIONS.forEach((def) => {
+      this.components.set(def.type, def);
+    });
+  }
+
+  registerComponent(definition: ComponentDefinition): void {
+    this.components.set(definition.type, definition);
+  }
+
+  getComponent(type: string): ComponentDefinition | undefined {
+    return this.components.get(type);
+  }
+
+  listComponents(category?: string): ComponentDefinition[] {
+    const all = Array.from(this.components.values());
+    return category ? all.filter((c) => c.category === category) : all;
+  }
+
+  listCategories(): string[] {
+    const categories = new Set<string>();
+    this.components.forEach((c) => {
+      if (c.category) categories.add(c.category);
+    });
+    return Array.from(categories);
+  }
+}
+
+export const customRegistry = new CustomComponentRegistry();
+

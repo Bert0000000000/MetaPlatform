@@ -8,15 +8,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
-import org.springframework.core.io.buffer.DataBuffer;
-import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.http.server.reactive.ServerHttpResponse;
-import org.springframework.http.server.reactive.ServerHttpResponseDecorator;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.net.InetSocketAddress;
@@ -26,6 +22,12 @@ import java.time.Duration;
  * Records every proxied request/response into the audit log. Runs after authentication
  * (so the JWT-populated user/tenant headers are visible) but with low priority so it
  * always wraps the outbound chain.
+ *
+ * Note: We intentionally do NOT wrap the response with ServerHttpResponseDecorator here.
+ * Buffering the response body (e.g. via Flux.collectList()) breaks Netty's chunked
+ * transfer encoding and causes "Parse Error: Data after Connection: close" on clients
+ * using HTTP/1.1 proxies (such as Vite dev server). Response size is therefore not
+ * captured; if needed in the future, use a non-buffering tap (doOnNext) instead.
  */
 @Component
 @RequiredArgsConstructor
@@ -47,24 +49,11 @@ public class AuditLogFilter implements GlobalFilter, Ordered {
                 ? request.getHeaders().getContentLength()
                 : 0L;
 
-        ServerHttpResponseDecorator decorated = new ServerHttpResponseDecorator(response) {
-            @Override
-            public Mono<Void> writeWith(org.reactivestreams.Publisher<? extends DataBuffer> body) {
-                return super.writeWith(Flux.from(body)
-                        .collectList()
-                        .flatMapMany(buffers -> {
-                            long responseSize = buffers.stream()
-                                    .mapToLong(DataBuffer::readableByteCount)
-                                    .sum();
-                            long durationMs = Duration.ofNanos(System.nanoTime() - startNs).toMillis();
-                            record(exchange, request, response, requestSize, responseSize, durationMs, null);
-                            return Flux.fromIterable(buffers)
-                                    .doFinally(s -> DataBufferUtils.release(buffers.get(buffers.size() - 1)));
-                        }));
-            }
-        };
-
-        return chain.filter(exchange.mutate().response(decorated).build())
+        return chain.filter(exchange)
+                .doAfterTerminate(() -> {
+                    long durationMs = Duration.ofNanos(System.nanoTime() - startNs).toMillis();
+                    record(exchange, request, response, requestSize, 0L, durationMs, null);
+                })
                 .onErrorResume(err -> {
                     long durationMs = Duration.ofNanos(System.nanoTime() - startNs).toMillis();
                     record(exchange, request, response, requestSize, 0L, durationMs, err.getMessage());

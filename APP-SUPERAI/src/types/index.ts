@@ -241,6 +241,8 @@ export interface GeneratedConfig {
   content: string;
   language?: string;
   metadata?: Record<string, unknown>;
+  targetAppId?: string;
+  targetModuleType?: 'form' | 'flow' | 'page';
 }
 
 export interface FormGenResult {

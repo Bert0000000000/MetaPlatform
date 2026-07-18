@@ -75,7 +75,10 @@ public class ActionDefinitionService {
         int s = size == null || size < 1 ? 20 : Math.min(size, 100);
         Pageable pageable = PageRequest.of(p - 1, s, Sort.by(Sort.Direction.DESC, "updatedAt"));
 
-        Page<ActionDefinitionEntity> result = actionDefinitionRepository.search(tenantId, status, keyword, pageable);
+        String keywordPattern = (keyword == null || keyword.isBlank())
+                ? null
+                : "%" + keyword.toLowerCase() + "%";
+        Page<ActionDefinitionEntity> result = actionDefinitionRepository.search(tenantId, status, keywordPattern, pageable);
         return PageResponse.<ActionDefinitionListItem>builder()
                 .items(result.getContent().stream().map(this::toListItem).toList())
                 .total(result.getTotalElements())

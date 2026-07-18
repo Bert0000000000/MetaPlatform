@@ -1,3 +1,5 @@
+import type { FC } from 'react';
+
 export type AppStatus = 'DESIGNING' | 'PUBLISHED' | 'OFFLINE';
 export type ModuleType = 'FORM' | 'FLOW' | 'BOARD' | 'PAGE';
 
@@ -104,10 +106,13 @@ export interface FormConfig {
 }
 
 export interface ComponentDefinition {
+  id?: string;
   type: string;
   label: string;
-  category: 'basic' | 'advanced' | 'layout';
-  defaultProps: Partial<FormField>;
+  category: string;
+  icon?: string;
+  defaultProps: Record<string, unknown>;
+  render?: FC<Record<string, unknown>>;
 }
 
 // ============ Flow Designer Types (P2-APPHUB-01~05) ============
@@ -163,6 +168,7 @@ export interface FlowConfig {
   nodes: FlowNode[];
   edges: FlowEdge[];
   formModuleId?: string;
+  bpmnXml?: string;
 }
 
 export interface FormFieldBinding {
@@ -226,11 +232,18 @@ export interface ProcessGenNode {
   assignee?: string;
 }
 
+export interface ProcessGenEdge {
+  source: string;
+  target: string;
+  label?: string;
+}
+
 export interface ProcessGenResult {
   name: string;
   description: string;
   bpmnXml: string;
   nodes: ProcessGenNode[];
+  edges?: ProcessGenEdge[];
 }
 
 export interface CodeGenResult {

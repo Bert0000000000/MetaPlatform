@@ -114,6 +114,8 @@ export type ThemeMode = 'light' | 'dark';
 export interface UserSettings {
   language: string;
   timezone: string;
+  /** Preferred date/time format pattern, e.g. "YYYY-MM-DD HH:mm:ss". */
+  dateFormat: string;
   defaultPage: string;
   theme: ThemeMode;
   layout: string[];

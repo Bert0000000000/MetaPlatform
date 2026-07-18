@@ -33,8 +33,8 @@ public interface GwApiRepository extends JpaRepository<GwApiEntity, UUID> {
            "WHERE a.tenantId = :tenantId AND a.deletedAt IS NULL " +
            "AND (:groupName IS NULL OR a.groupName = :groupName) " +
            "AND (:version IS NULL OR a.version = :version) " +
-           "AND (:keyword IS NULL OR LOWER(a.name) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
-           "     OR LOWER(a.path) LIKE LOWER(CONCAT('%', :keyword, '%')))")
+           "AND (:keyword IS NULL OR LOWER(a.name) LIKE :keyword " +
+           "     OR LOWER(a.path) LIKE :keyword)")
     Page<GwApiEntity> searchApis(
             @Param("tenantId") String tenantId,
             @Param("groupName") String groupName,

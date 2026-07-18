@@ -16,12 +16,14 @@ import {
 } from '@ant-design/icons';
 import { streamChat } from '@/api/chat';
 import { listKnowledgeBases, search as ragSearch } from '@/api/rag';
+import { semanticQuery as ontSemanticQuery } from '@/api/ontology';
 import HistorySidebar from '@/components/HistorySidebar';
 import MarkdownRenderer from '@/components/MarkdownRenderer';
 import AnalysisPanel from '@/components/AnalysisPanel';
 import ActionPanel from '@/components/ActionPanel';
 import ExplorePanel from '@/components/ExplorePanel';
 import GeneratePanel from '@/components/GeneratePanel';
+import KnowledgeGraph from '@/components/KnowledgeGraph';
 import type {
   ChatSession,
   ChatMessage,
@@ -298,6 +300,20 @@ export default function ChatPage() {
 
       const systemPrompt = MODE_SYSTEM_PROMPTS[activeSession.mode];
 
+      // In exploration mode, fetch ontology graph in parallel and embed into the assistant message.
+      if (activeSession.mode === 'exploration') {
+        ontSemanticQuery(trimmed)
+          .then((graphData) => {
+            updateMessage(sessionId, assistantId, (msg) => ({
+              ...msg,
+              metadata: { ...(msg.metadata || {}), graphData },
+            }));
+          })
+          .catch(() => {
+            /* Graph fetch failed; assistant text response still shows. */
+          });
+      }
+
       streamChat(
         [
           { role: 'system', content: systemPrompt + (ragContext ? '\n\n请基于以下参考知识回答问题：' + ragContext : '') },
@@ -429,6 +445,7 @@ export default function ChatPage() {
   const bubbleItems: React.ComponentProps<typeof Bubble.List>['items'] = useMemo(() => {
     return activeSession.messages.map((msg) => {
       const isUser = msg.role === 'user';
+      const graphData = !isUser ? msg.metadata?.graphData : undefined;
       return {
         key: msg.id,
         role: isUser ? 'user' : 'ai',
@@ -439,7 +456,26 @@ export default function ChatPage() {
         content: isUser ? (
           <div style={{ whiteSpace: 'pre-wrap' }}>{msg.content}</div>
         ) : (
-          <MarkdownRenderer content={msg.content || '...'} />
+          <div>
+            <MarkdownRenderer content={msg.content || '...'} />
+            {graphData && graphData.nodes.length > 0 && (
+              <Card
+                size="small"
+                style={{ marginTop: 12, background: 'transparent' }}
+                bodyStyle={{ padding: 8 }}
+                title={
+                  <Space size={4}>
+                    <ApartmentOutlined />
+                    <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                      知识图谱 · {graphData.nodes.length} 节点 / {graphData.edges.length} 关系
+                    </Typography.Text>
+                  </Space>
+                }
+              >
+                <KnowledgeGraph data={graphData} height={300} />
+              </Card>
+            )}
+          </div>
         ),
         footer:
           !isUser && msg.citations && msg.citations.length > 0

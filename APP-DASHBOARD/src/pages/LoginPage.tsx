@@ -41,14 +41,14 @@ export default function LoginPage() {
         <Form<LoginFormValues>
           layout="vertical"
           onFinish={handleSubmit}
-          initialValues={{ tenantId: 'default' }}
+          initialValues={{ tenantId: 'tenant-default' }}
         >
           <Form.Item
             name="tenantId"
             label="租户 ID"
             rules={[{ required: true, message: '请输入租户 ID' }]}
           >
-            <Input placeholder="例如：default" />
+            <Input placeholder="例如：tenant-default" />
           </Form.Item>
           <Form.Item
             name="username"

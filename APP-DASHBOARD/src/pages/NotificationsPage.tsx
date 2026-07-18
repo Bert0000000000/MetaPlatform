@@ -1,8 +1,19 @@
-import { useEffect, useState } from 'react';
-import { Card, List, Tag, Typography, Space, Button, Segmented, Empty, Modal, Form, Switch, message } from 'antd';
+import { useState } from 'react';
+import { Card, List, Tag, Typography, Space, Button, Segmented, Modal, Form, Switch, message } from 'antd';
 import { useNavigate } from 'react-router-dom';
-import { getNotifications, markAsRead, markAsUnread, markAllAsRead, getNotificationSettings, updateNotificationSettings } from '@/api/notifications';
+import {
+  getNotifications,
+  markAsRead,
+  markAsUnread,
+  markAllAsRead,
+  getNotificationSettings,
+  updateNotificationSettings,
+} from '@/api/notifications';
 import type { NotificationItem, NotificationReadStatus, NotificationType, NotificationSettings } from '@/types';
+import { useSettings } from '@/contexts/SettingsContext';
+import { useAsync } from '@/hooks/useAsync';
+import { StateContainer, PageHeader } from '@/components/common';
+import { formatRelative } from '@/utils/datetime';
 
 const TYPE_LABEL: Record<NotificationType, { label: string; color: string }> = {
   approval: { label: '审批', color: 'blue' },
@@ -15,122 +26,136 @@ const TYPE_LABEL: Record<NotificationType, { label: string; color: string }> = {
 export default function NotificationsPage() {
   const navigate = useNavigate();
   void navigate;
-  const [list, setList] = useState<NotificationItem[]>([]);
-  const [loading, setLoading] = useState(false);
+  const { settings } = useSettings();
   const [filter, setFilter] = useState<NotificationReadStatus>('all');
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [, setSettings] = useState<NotificationSettings | null>(null);
   const [form] = Form.useForm<NotificationSettings>();
 
-  const load = async () => {
-    setLoading(true);
+  const { data: list, loading, error, reload } = useAsync<NotificationItem[]>(
+    () => getNotifications(filter),
+    [filter],
+  );
+
+  const handleMarkRead = async (id: string) => {
     try {
-      const items = await getNotifications(filter);
-      setList(items);
-    } finally {
-      setLoading(false);
+      await markAsRead(id);
+      reload();
+    } catch (e) {
+      message.error(e instanceof Error ? e.message : '操作失败');
     }
   };
 
-  useEffect(() => {
-    load();
-  }, [filter]);
-
-  const handleMarkRead = async (id: string) => {
-    await markAsRead(id);
-    load();
-  };
-
   const handleMarkUnread = async (id: string) => {
-    await markAsUnread(id);
-    load();
+    try {
+      await markAsUnread(id);
+      reload();
+    } catch (e) {
+      message.error(e instanceof Error ? e.message : '操作失败');
+    }
   };
 
   const handleMarkAll = async () => {
-    await markAllAsRead();
-    load();
-    message.success('已全部标记为已读');
+    try {
+      await markAllAsRead();
+      reload();
+      message.success('已全部标记为已读');
+    } catch (e) {
+      message.error(e instanceof Error ? e.message : '操作失败');
+    }
   };
 
   const openSettings = async () => {
-    const s = await getNotificationSettings();
-    setSettings(s);
-    form.setFieldsValue(s);
-    setSettingsOpen(true);
+    try {
+      const s = await getNotificationSettings();
+      form.setFieldsValue(s);
+      setSettingsOpen(true);
+    } catch (e) {
+      message.error(e instanceof Error ? e.message : '加载通知设置失败');
+    }
   };
 
   const handleSaveSettings = async (values: NotificationSettings) => {
-    await updateNotificationSettings(values);
-    setSettings(values);
-    setSettingsOpen(false);
-    message.success('通知设置已保存');
+    try {
+      await updateNotificationSettings(values);
+      setSettingsOpen(false);
+      message.success('通知设置已保存');
+    } catch (e) {
+      message.error(e instanceof Error ? e.message : '保存失败');
+    }
   };
 
+  const items = list ?? [];
+
   return (
-    <Card
-      title="消息中心"
-      extra={
-        <Space>
-          <Button onClick={handleMarkAll}>全部已读</Button>
-          <Button onClick={openSettings}>通知设置</Button>
-        </Space>
-      }
-    >
-      <Segmented
-        options={[
-          { label: '全部', value: 'all' },
-          { label: '未读', value: 'unread' },
-          { label: '已读', value: 'read' },
-        ]}
-        value={filter}
-        onChange={(v) => setFilter(v as NotificationReadStatus)}
-        style={{ marginBottom: 16 }}
+    <>
+      <PageHeader
+        title="消息中心"
+        subtitle={`共 ${items.length} 条 · 未读 ${items.filter((n) => !n.read).length} 条`}
+        extra={
+          <Space>
+            <Button onClick={handleMarkAll}>全部已读</Button>
+            <Button onClick={openSettings}>通知设置</Button>
+          </Space>
+        }
       />
-      {list.length === 0 ? (
-        <Empty description="暂无通知" />
-      ) : (
-        <List
-          loading={loading}
-          dataSource={list}
-          renderItem={(item) => (
-            <List.Item
-              actions={[
-                item.read ? (
-                  <Button key="unread" type="link" size="small" onClick={() => handleMarkUnread(item.id)}>
-                    标为未读
-                  </Button>
-                ) : (
-                  <Button key="read" type="link" size="small" onClick={() => handleMarkRead(item.id)}>
-                    标为已读
-                  </Button>
-                ),
-              ].filter(Boolean)}
-            >
-              <List.Item.Meta
-                avatar={
-                  <Tag color={TYPE_LABEL[item.type].color}>{TYPE_LABEL[item.type].label}</Tag>
-                }
-                title={
-                  <Space>
-                    <Typography.Text strong={!item.read}>{item.title}</Typography.Text>
-                    {!item.read && <Tag color="processing">未读</Tag>}
-                  </Space>
-                }
-                description={
-                  <div>
-                    <Typography.Text type="secondary">{item.content}</Typography.Text>
-                    <div>
-                      <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                        {new Date(item.createdAt).toLocaleString('zh-CN')}
-                      </Typography.Text>
-                    </div>
-                  </div>
-                }
-              />
-            </List.Item>
-          )}
+      <Card>
+        <Segmented
+          options={[
+            { label: '全部', value: 'all' },
+            { label: '未读', value: 'unread' },
+            { label: '已读', value: 'read' },
+          ]}
+          value={filter}
+          onChange={(v) => setFilter(v as NotificationReadStatus)}
+          style={{ marginBottom: 16 }}
         />
-      )}
+        <StateContainer
+          loading={loading}
+          error={error}
+          isEmpty={!loading && !error && items.length === 0}
+          emptyDescription="暂无通知"
+          onRetry={reload}
+        >
+          <List
+            dataSource={items}
+            renderItem={(item) => (
+              <List.Item
+                actions={[
+                  item.read ? (
+                    <Button key="unread" type="link" size="small" onClick={() => handleMarkUnread(item.id)}>
+                      标为未读
+                    </Button>
+                  ) : (
+                    <Button key="read" type="link" size="small" onClick={() => handleMarkRead(item.id)}>
+                      标为已读
+                    </Button>
+                  ),
+                ].filter(Boolean)}
+              >
+                <List.Item.Meta
+                  avatar={<Tag color={TYPE_LABEL[item.type].color}>{TYPE_LABEL[item.type].label}</Tag>}
+                  title={
+                    <Space>
+                      <Typography.Text strong={!item.read}>{item.title}</Typography.Text>
+                      {!item.read && <Tag color="processing">未读</Tag>}
+                    </Space>
+                  }
+                  description={
+                    <div>
+                      <Typography.Text type="secondary">{item.content}</Typography.Text>
+                      <div>
+                        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                          {formatRelative(item.createdAt, settings)}
+                        </Typography.Text>
+                      </div>
+                    </div>
+                  }
+                />
+              </List.Item>
+            )}
+          />
+        </StateContainer>
+      </Card>
 
       <Modal
         title="通知设置"
@@ -164,6 +189,6 @@ export default function NotificationsPage() {
           </Form.Item>
         </Form>
       </Modal>
-    </Card>
+    </>
   );
 }

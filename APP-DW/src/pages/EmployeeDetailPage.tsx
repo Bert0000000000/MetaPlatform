@@ -23,12 +23,15 @@ import {
   MoreOutlined,
   DeleteOutlined,
   SettingOutlined,
+  CopyOutlined,
 } from '@ant-design/icons';
-import { getEmployee, activateEmployee, deactivateEmployee, deleteEmployee } from '@/api/employees';
+import { getEmployee, activateEmployee, deactivateEmployee, deleteEmployee, cloneEmployee } from '@/api/employees';
 import { listTasks } from '@/api/tasks';
 import EmbeddedChat from '@/components/EmbeddedChat';
 import DocumentUpload from '@/components/DocumentUpload';
 import ExtractionPanel from '@/components/ExtractionPanel';
+import EmployeeVersionHistory from '@/components/EmployeeVersionHistory';
+import OperationLogPanel from '@/components/OperationLogPanel';
 import type { Employee, EmployeeTask, TaskStatus } from '@/types';
 import {
   ROLE_CATEGORY_MAP,
@@ -108,6 +111,21 @@ export default function EmployeeDetailPage() {
     }
   };
 
+  const handleClone = async () => {
+    if (!employee) return;
+    try {
+      const created = await cloneEmployee(
+        employee,
+        `${employee.name} - 副本`,
+        `${employee.code}_copy`,
+      );
+      message.success(`已克隆为「${created.name}」`);
+      navigate(`/dw/employees/${created.employeeId}`);
+    } catch (error) {
+      message.error(error instanceof Error ? error.message : '克隆失败');
+    }
+  };
+
   const moreItems: MenuProps['items'] = [
     {
       key: 'config',
@@ -115,10 +133,17 @@ export default function EmployeeDetailPage() {
       label: '能力配置',
       onClick: () => navigate(`/dw/employees/${id}/capability`),
     },
+    {
+      key: 'clone',
+      icon: <CopyOutlined />,
+      label: '克隆员工',
+      onClick: handleClone,
+    },
     { type: 'divider' },
     {
       key: 'delete',
       icon: <DeleteOutlined />,
+      danger: true,
       label: (
         <Popconfirm
           title="确认删除"
@@ -399,6 +424,16 @@ export default function EmployeeDetailPage() {
               key: 'extraction',
               label: 'AI 抽取',
               children: <ExtractionPanel employeeId={employee.employeeId} />,
+            },
+            {
+              key: 'versions',
+              label: '版本历史',
+              children: <EmployeeVersionHistory employeeId={employee.employeeId} />,
+            },
+            {
+              key: 'logs',
+              label: '操作日志',
+              children: <OperationLogPanel employeeId={employee.employeeId} />,
             },
           ]}
         />

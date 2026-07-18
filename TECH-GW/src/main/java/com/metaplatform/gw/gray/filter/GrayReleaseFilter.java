@@ -53,6 +53,10 @@ public class GrayReleaseFilter implements GlobalFilter, Ordered {
                                 && method.equalsIgnoreCase(api.getMethod()))
                         .findFirst())
                 .subscribeOn(Schedulers.boundedElastic())
+                .onErrorResume(err -> {
+                    log.warn("Gray release API catalog query failed, skip gray routing: {}", err.getMessage());
+                    return Mono.just(Optional.<GwApiEntity>empty());
+                })
                 .flatMap(maybeApi -> maybeApi
                         .map(api -> applyGray(exchange, chain, request, path, method, api))
                         .orElseGet(() -> chain.filter(exchange)));

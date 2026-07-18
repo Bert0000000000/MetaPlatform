@@ -81,7 +81,10 @@ public class ApiService {
             String tid = TenantContext.resolveOrDefault(tenantId);
             Pageable pageable = PageRequest.of(Math.max(page - 1, 0), size,
                     Sort.by(Sort.Direction.DESC, "createdAt"));
-            Page<GwApiEntity> entityPage = apiRepository.searchApis(tid, groupName, version, keyword, pageable);
+            String keywordPattern = (keyword == null || keyword.isBlank())
+                    ? null
+                    : "%" + keyword.toLowerCase() + "%";
+            Page<GwApiEntity> entityPage = apiRepository.searchApis(tid, groupName, version, keywordPattern, pageable);
 
             List<ApiListItem> items = entityPage.getContent().stream()
                     .map(ApiService::toListItem)

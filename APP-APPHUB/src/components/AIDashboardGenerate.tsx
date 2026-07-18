@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Button, Card, Empty, Input, Space, Tag, Typography, message, Spin } from 'antd';
 import { ThunderboltOutlined, BarChartOutlined } from '@ant-design/icons';
 import { generateDashboard } from '@/api/generate';
-import type { DashboardWidget } from '@/api/pages';
+import type { DashboardWidget, DataSourceBinding } from '@/api/pages';
 import type { DashboardGenResult } from '@/types';
 
 interface AIDashboardGenerateProps {
@@ -30,14 +30,19 @@ export default function AIDashboardGenerate({ onApply }: AIDashboardGenerateProp
 
   const handleApply = () => {
     if (!result) return;
-    const widgets: DashboardWidget[] = result.widgets.map((w: DashboardGenResult['widgets'][number]) => ({
-      id: `ai_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`,
-      type: (w.type as DashboardWidget['type']) || 'stat',
-      title: w.title,
-      dataSource: w.dataSource,
-      apiExample: w.apiExample,
-      position: { x: 0, y: 0, w: 6, h: 2 },
-    }));
+    const widgets: DashboardWidget[] = result.widgets.map((w: DashboardGenResult['widgets'][number]) => {
+      const ds: DataSourceBinding = w.dataSource
+        ? { type: 'api', sourceId: w.dataSource }
+        : { type: 'static' };
+      return {
+        id: `ai_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`,
+        type: (w.type as DashboardWidget['type']) || 'stat',
+        title: w.title,
+        dataSource: ds,
+        apiExample: w.apiExample,
+        position: { x: 0, y: 0, w: 6, h: 2 },
+      };
+    });
     onApply(widgets);
     message.success('已应用');
     setResult(null);

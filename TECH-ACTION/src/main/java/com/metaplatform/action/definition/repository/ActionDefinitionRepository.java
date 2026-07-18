@@ -23,7 +23,7 @@ public interface ActionDefinitionRepository extends JpaRepository<ActionDefiniti
     @Query("SELECT a FROM ActionDefinitionEntity a " +
            "WHERE a.tenantId = :tenantId AND a.deletedAt IS NULL " +
            "AND (:status IS NULL OR a.status = :status) " +
-           "AND (:keyword IS NULL OR LOWER(a.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(a.code) LIKE LOWER(CONCAT('%', :keyword, '%')))")
+           "AND (:keyword IS NULL OR LOWER(a.name) LIKE :keyword OR LOWER(a.code) LIKE :keyword)")
     Page<ActionDefinitionEntity> search(@Param("tenantId") String tenantId,
                                         @Param("status") String status,
                                         @Param("keyword") String keyword,

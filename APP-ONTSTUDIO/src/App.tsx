@@ -16,6 +16,8 @@ import OrchestrationPage from '@/pages/OrchestrationPage';
 import TriggerPage from '@/pages/TriggerPage';
 import ExecutionMonitorPage from '@/pages/ExecutionMonitorPage';
 import KnowledgeGraphPage from '@/pages/KnowledgeGraphPage';
+import DataQualityPage from '@/pages/DataQualityPage';
+import DataLineagePage from '@/pages/DataLineagePage';
 import { isLoggedIn } from '@/utils/auth';
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
@@ -50,6 +52,8 @@ export default function App() {
           <Route path="triggers" element={<TriggerPage />} />
           <Route path="executions" element={<ExecutionMonitorPage />} />
           <Route path="graph" element={<KnowledgeGraphPage />} />
+          <Route path="quality" element={<DataQualityPage />} />
+          <Route path="lineage" element={<DataLineagePage />} />
         </Route>
       </Routes>
     </BrowserRouter>

@@ -141,7 +141,11 @@ def _build_default_registry() -> Registry:
         session_factory, engine = _create_sqlalchemy_session_factory()
         import asyncio
 
-        asyncio.get_event_loop().run_until_complete(_init_sqlalchemy_tables(engine))
+        loop = asyncio.new_event_loop()
+        try:
+            loop.run_until_complete(_init_sqlalchemy_tables(engine))
+        finally:
+            loop.close()
 
         repo: AgentRepository = SqlAlchemyAgentRepository(session_factory)
         memory_repo: MemoryRepository = SqlAlchemyMemoryRepository(

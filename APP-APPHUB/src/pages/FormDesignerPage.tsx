@@ -23,13 +23,56 @@ import {
   DragOutlined,
 } from '@ant-design/icons';
 import { getModule, updateModule } from '@/api/modules';
+import AIGenerateButton from '@/components/AIGenerateButton';
 import { COMPONENT_DEFINITIONS } from '@/components/componentRegistry';
-import type { ModuleItem, FormField, FormConfig } from '@/types';
+import type { ModuleItem, FormField, FormConfig, FormGenResult } from '@/types';
 
 const { TextArea } = Input;
+const DESIGNER_IMPORT_KEY = 'metaplatform:designer:import';
 
 function generateFieldKey(type: string): string {
   return `${type}_${Date.now().toString(36)}`;
+}
+
+function toFormField(f: Partial<FormField>, idx: number): FormField {
+  return {
+    id: crypto.randomUUID(),
+    type: f.type || 'text',
+    label: f.label || `字段${idx + 1}`,
+    fieldKey: f.fieldKey || generateFieldKey(f.type || 'text'),
+    placeholder: f.placeholder,
+    defaultValue: f.defaultValue,
+    width: f.width || ('100%' as const),
+    required: f.required,
+    minLength: f.minLength,
+    maxLength: f.maxLength,
+    pattern: f.pattern,
+    patternMessage: f.patternMessage,
+    readonly: f.readonly,
+    hidden: f.hidden,
+    helpText: f.helpText,
+    options: f.options,
+    precision: f.precision,
+    min: f.min,
+    max: f.max,
+    unit: f.unit,
+    accept: f.accept,
+    maxFileSize: f.maxFileSize,
+    maxFileCount: f.maxFileCount,
+  };
+}
+
+function consumeDesignerImport(): { type: string; content: string } | null {
+  try {
+    const raw = localStorage.getItem(DESIGNER_IMPORT_KEY);
+    if (!raw) return null;
+    const data = JSON.parse(raw) as { type?: string; content?: string };
+    localStorage.removeItem(DESIGNER_IMPORT_KEY);
+    if (data.type && data.content) return { type: data.type, content: data.content };
+    return null;
+  } catch {
+    return null;
+  }
 }
 
 export default function FormDesignerPage() {
@@ -44,18 +87,47 @@ export default function FormDesignerPage() {
     if (!moduleId) return;
     getModule(moduleId).then((m) => {
       setModule(m);
-      setConfig(
-        m.config || {
-          name: m.name,
-          fields: [],
-          submitText: '提交',
-          submitAction: 'toast',
-          allowWithdraw: true,
-          allowEdit: false,
+      const initialConfig: FormConfig = m.config || {
+        name: m.name,
+        fields: [],
+        submitText: '提交',
+        submitAction: 'toast',
+        allowWithdraw: true,
+        allowEdit: false,
+      };
+      const imported = consumeDesignerImport();
+      if (imported && imported.type === 'form') {
+        try {
+          const gen = JSON.parse(imported.content) as FormGenResult;
+          const existingKeys = new Set(initialConfig.fields.map((f) => f.fieldKey));
+          const newFields = gen.fields
+            .filter((f) => f.fieldKey && !existingKeys.has(f.fieldKey))
+            .map((f, idx) => toFormField(f, idx));
+          if (newFields.length > 0) {
+            setConfig({ ...initialConfig, fields: [...initialConfig.fields, ...newFields] });
+            message.success(`从 AI 导入 ${newFields.length} 个字段`);
+            return;
+          }
+        } catch {
+          // ignore parse error
         }
-      );
+      }
+      setConfig(initialConfig);
     });
   }, [moduleId]);
+
+  const handleAIGenerate = (result: FormGenResult) => {
+    const existingKeys = new Set(config.fields.map((f) => f.fieldKey));
+    const newFields = result.fields
+      .filter((f) => f.fieldKey && !existingKeys.has(f.fieldKey))
+      .map((f, idx) => toFormField(f, idx));
+    if (newFields.length === 0) {
+      message.warning('AI 生成的字段已存在，未重复导入');
+      return;
+    }
+    setConfig((prev) => ({ ...prev, fields: [...prev.fields, ...newFields] }));
+    message.success(`已导入 ${newFields.length} 个 AI 字段`);
+  };
 
   const selectedField = config.fields.find((f) => f.id === selectedId) || null;
 
@@ -364,6 +436,10 @@ export default function FormDesignerPage() {
           </Typography.Title>
         </Space>
         <Space>
+          <AIGenerateButton
+            onApply={handleAIGenerate}
+            promptPlaceholder="描述你要创建的表单，例如：员工请假申请"
+          />
           <Button icon={<EyeOutlined />} onClick={handlePreview}>
             预览
           </Button>

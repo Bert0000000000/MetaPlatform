@@ -1,30 +1,6 @@
 import { post, get, del } from './client';
 import type { DocumentItem } from '@/types';
 
-const STORAGE_KEY = 'app_dw_documents';
-
-function loadDocs(): DocumentItem[] {
-  const raw = localStorage.getItem(STORAGE_KEY);
-  if (!raw) return [];
-  try {
-    return JSON.parse(raw) as DocumentItem[];
-  } catch {
-    return [];
-  }
-}
-
-function saveDocs(items: DocumentItem[]): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
-}
-
-function now(): string {
-  return new Date().toISOString();
-}
-
-function generateId(): string {
-  return `doc_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
-}
-
 function detectFileType(filename: string): DocumentItem['fileType'] {
   const ext = filename.split('.').pop()?.toLowerCase() || '';
   if (ext === 'pdf') return 'pdf';
@@ -50,55 +26,20 @@ export async function uploadDocument(
     throw new Error('仅支持 PDF、Word、TXT、Markdown 文件');
   }
 
-  const doc: DocumentItem = {
-    id: generateId(),
-    employeeId,
-    filename: file.name,
-    fileType,
-    fileSize: file.size,
-    status: 'uploaded',
-    uploadedAt: now(),
-  };
-
-  try {
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('employeeId', employeeId);
-    const result = await post<DocumentItem>('/v1/rag/documents/upload', formData);
-    saveDocs([...loadDocs(), result]);
-    return result;
-  } catch {
-    const items = loadDocs();
-    doc.status = 'ready';
-    doc.processedAt = now();
-    saveDocs([...items, doc]);
-    return doc;
-  }
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('employeeId', employeeId);
+  return post<DocumentItem>('/v1/rag/documents/upload', formData);
 }
 
 export async function listDocuments(employeeId: string): Promise<DocumentItem[]> {
-  try {
-    return await get<DocumentItem[]>(`/v1/rag/documents`, { employeeId });
-  } catch {
-    return loadDocs().filter((d) => d.employeeId === employeeId);
-  }
+  return get<DocumentItem[]>('/v1/rag/documents', { employeeId });
 }
 
 export async function deleteDocument(docId: string): Promise<void> {
-  try {
-    await del<void>(`/v1/rag/documents/${docId}`);
-  } catch {
-    const items = loadDocs().filter((d) => d.id !== docId);
-    saveDocs(items);
-  }
+  return del<void>(`/v1/rag/documents/${docId}`);
 }
 
 export async function getDocument(docId: string): Promise<DocumentItem> {
-  try {
-    return await get<DocumentItem>(`/v1/rag/documents/${docId}`);
-  } catch {
-    const doc = loadDocs().find((d) => d.id === docId);
-    if (!doc) throw new Error('文档不存在');
-    return doc;
-  }
+  return get<DocumentItem>(`/v1/rag/documents/${docId}`);
 }

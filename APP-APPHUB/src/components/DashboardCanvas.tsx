@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Card, Button, Space, Empty, Tag } from 'antd';
 import {
   PlusOutlined,
@@ -5,7 +6,8 @@ import {
   EditOutlined,
   BorderOutlined,
 } from '@ant-design/icons';
-import type { PageDesignerConfig, DashboardWidget } from '@/api/pages';
+import { get, post } from '@/api/client';
+import type { PageDesignerConfig, DashboardWidget, DashboardWidgetType, DataSourceBinding } from '@/api/pages';
 
 interface DashboardCanvasProps {
   config: PageDesignerConfig;
@@ -13,23 +15,133 @@ interface DashboardCanvasProps {
   onPreview: (w: DashboardWidget) => void;
 }
 
-const TYPE_LABELS: Record<DashboardWidget['type'], { label: string; color: string }> = {
+const TYPE_LABELS: Record<DashboardWidgetType, { label: string; color: string }> = {
   table: { label: '表格', color: 'blue' },
   'chart-bar': { label: '柱状图', color: 'cyan' },
   'chart-line': { label: '折线图', color: 'green' },
   'chart-pie': { label: '饼图', color: 'orange' },
+  'chart-area': { label: '面积图', color: 'geekblue' },
+  'chart-scatter': { label: '散点图', color: 'magenta' },
+  gauge: { label: '仪表盘', color: 'red' },
+  iframe: { label: '嵌入网页', color: 'volcano' },
+  'rich-text': { label: '富文本', color: 'gold' },
   stat: { label: '统计', color: 'purple' },
   text: { label: '文本', color: 'default' },
 };
 
+interface DataSourceResult {
+  data: unknown[];
+  loading: boolean;
+  error?: string;
+}
+
+const FALLBACK_MOCK_DATA: Array<Record<string, unknown>> = Array.from({ length: 7 }).map((_, i) => ({
+  id: `${i + 1}`,
+  name: `P${i + 1}`,
+  value: Math.floor(Math.random() * 1000),
+}));
+
+/**
+ * 数据源绑定 hook：根据 DataSourceBinding.type 调用对应后端 API，
+ * 失败时回退到 mock 数据并 console.warn 警告，支持 refreshInterval 自动刷新。
+ */
+export function useDataSource(binding: DataSourceBinding | undefined): DataSourceResult {
+  const [data, setData] = useState<unknown[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | undefined>(undefined);
+
+  const filterKey = binding?.filter ? JSON.stringify(binding.filter) : '';
+
+  useEffect(() => {
+    if (!binding || !binding.type) {
+      setData([]);
+      setLoading(false);
+      setError(undefined);
+      return;
+    }
+
+    if (binding.type === 'static') {
+      const staticData = binding.filter ? Object.values(binding.filter) : [];
+      setData(staticData);
+      setLoading(false);
+      setError(undefined);
+      return;
+    }
+
+    let cancelled = false;
+    const sourceId = binding.sourceId || '';
+    const query = binding.query || '';
+
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        let result: unknown[];
+        switch (binding.type) {
+          case 'ontology':
+            result = await get<unknown[]>(`/v1/ont/concepts/${sourceId}/entities`);
+            break;
+          case 'rag':
+            result = await post<unknown[]>('/v1/rag/search', { query, ...binding.filter });
+            break;
+          case 'data':
+            result = await post<unknown[]>(
+              `/v1/data/datasources/${sourceId}/query`,
+              { query, ...binding.filter }
+            );
+            break;
+          case 'api':
+            result = await get<unknown[]>(sourceId);
+            break;
+          default:
+            result = [];
+        }
+        if (!cancelled) {
+          setData(result);
+          setError(undefined);
+        }
+      } catch (e) {
+        console.warn('useDataSource: 数据源加载失败，回退到 mock 数据', binding, e);
+        if (!cancelled) {
+          setData(FALLBACK_MOCK_DATA);
+          setError('数据源加载失败，已使用 mock 数据');
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    fetchData();
+
+    let intervalId: ReturnType<typeof setInterval> | undefined;
+    if (binding.refreshInterval && binding.refreshInterval > 0) {
+      intervalId = setInterval(fetchData, binding.refreshInterval * 1000);
+    }
+
+    return () => {
+      cancelled = true;
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [binding?.type, binding?.sourceId, binding?.query, binding?.refreshInterval, filterKey]);
+
+  return { data, loading, error };
+}
+
+function describeDataSource(binding: DataSourceBinding | undefined): string {
+  if (!binding || !binding.type) return '';
+  const parts: string[] = [binding.type];
+  if (binding.sourceId) parts.push(binding.sourceId);
+  if (binding.query) parts.push(binding.query);
+  return parts.join(' / ');
+}
+
 export default function DashboardCanvas({ config, onChange, onPreview }: DashboardCanvasProps) {
-  const handleAdd = (type: DashboardWidget['type']) => {
+  const handleAdd = (type: DashboardWidgetType) => {
     const w: DashboardWidget = {
       id: `w_${Date.now().toString(36)}`,
       type,
       title: `新${TYPE_LABELS[type].label}`,
       position: { x: 0, y: config.widgets.length * 100, w: 6, h: 2 },
-      dataSource: '',
+      dataSource: { type: 'static' },
       apiExample: '',
     };
     onChange({ ...config, widgets: [...config.widgets, w] });
@@ -43,7 +155,7 @@ export default function DashboardCanvas({ config, onChange, onPreview }: Dashboa
     <div>
       <Card size="small" title="添加组件" style={{ marginBottom: 16 }}>
         <Space wrap>
-          {(Object.keys(TYPE_LABELS) as DashboardWidget['type'][]).map((t) => (
+          {(Object.keys(TYPE_LABELS) as DashboardWidgetType[]).map((t) => (
             <Button key={t} icon={<PlusOutlined />} onClick={() => handleAdd(t)}>
               {TYPE_LABELS[t].label}
             </Button>
@@ -102,8 +214,8 @@ export default function DashboardCanvas({ config, onChange, onPreview }: Dashboa
                   textAlign: 'center',
                 }}
               >
-                {w.dataSource ? (
-                  <code>{w.dataSource}</code>
+                {describeDataSource(w.dataSource) ? (
+                  <code>{describeDataSource(w.dataSource)}</code>
                 ) : (
                   '配置数据源后展示数据'
                 )}

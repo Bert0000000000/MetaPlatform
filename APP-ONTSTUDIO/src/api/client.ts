@@ -3,7 +3,7 @@ import { message } from 'antd';
 import { getToken, removeToken } from '@/utils/auth';
 
 export const apiClient = axios.create({
-  baseURL: '/api',
+  baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
@@ -21,9 +21,15 @@ apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
 apiClient.interceptors.response.use(
   (response) => {
     const data = response.data;
-    if (data && data.code && data.code !== 'SUCCESS' && data.code !== '200') {
-      message.error(data.message || '请求失败');
-      return Promise.reject(new Error(data.message || '请求失败'));
+    // Backend ApiResponse.success() returns code: 0 (number) with message: "success".
+    if (data && typeof data === 'object' && 'code' in data) {
+      const code = (data as { code?: string | number }).code;
+      const isSuccess =
+        code === 0 || code === '0' || code === 'SUCCESS' || code === '200' || code === 200;
+      if (!isSuccess) {
+        message.error((data as { message?: string }).message || '请求失败');
+        return Promise.reject(new Error((data as { message?: string }).message || '请求失败'));
+      }
     }
     return response;
   },
@@ -38,7 +44,7 @@ apiClient.interceptors.response.use(
       message.error(msg);
     }
     return Promise.reject(error);
-  }
+  },
 );
 
 export async function get<T>(url: string, params?: Record<string, unknown>): Promise<T> {

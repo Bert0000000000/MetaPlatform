@@ -19,6 +19,7 @@ import {
   DashboardOutlined,
   PlayCircleOutlined,
   SafetyOutlined,
+  ExportOutlined,
 } from '@ant-design/icons';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
@@ -30,6 +31,7 @@ import {
   reviewCode,
   generateDashboard,
 } from '@/api/generate';
+import { importToDesigner } from '@/utils/designerImport';
 import type {
   FormGenResult,
   ProcessGenResult,
@@ -48,6 +50,7 @@ interface GeneratePanelProps {
   query: string;
   onQueryChange: (q: string) => void;
   onResult: (metadata: { generatedConfig?: GeneratedConfig; codeReview?: CodeReviewResult }) => void;
+  onImportToDesigner?: (config: GeneratedConfig) => void;
 }
 
 const GEN_MODES: { value: GenMode; label: string; icon: React.ReactNode }[] = [
@@ -59,7 +62,7 @@ const GEN_MODES: { value: GenMode; label: string; icon: React.ReactNode }[] = [
   { value: 'dashboard', label: '仪表盘生成', icon: <DashboardOutlined /> },
 ];
 
-export default function GeneratePanel({ query, onQueryChange, onResult }: GeneratePanelProps) {
+export default function GeneratePanel({ query, onQueryChange, onResult, onImportToDesigner }: GeneratePanelProps) {
   const [mode, setMode] = useState<GenMode>('form');
   const [loading, setLoading] = useState(false);
   const [language, setLanguage] = useState('typescript');
@@ -117,6 +120,14 @@ export default function GeneratePanel({ query, onQueryChange, onResult }: Genera
     }
   }, [mode, query, language, codeInput, onResult]);
 
+  const handleImportToDesigner = useCallback((config: GeneratedConfig) => {
+    if (onImportToDesigner) {
+      onImportToDesigner(config);
+    } else {
+      importToDesigner(config);
+    }
+  }, [onImportToDesigner]);
+
   const renderFormResult = () => {
     if (!formResult) return null;
     return (
@@ -140,7 +151,27 @@ export default function GeneratePanel({ query, onQueryChange, onResult }: Genera
   const renderProcessResult = () => {
     if (!processResult) return null;
     return (
-      <Card size="small" title={processResult.name}>
+      <Card
+        size="small"
+        title={processResult.name}
+        extra={
+          <Button
+            size="small"
+            type="link"
+            icon={<ExportOutlined />}
+            onClick={() =>
+              handleImportToDesigner({
+                type: 'process' as GenerateType,
+                title: processResult.name,
+                content: JSON.stringify(processResult, null, 2),
+                targetModuleType: 'flow',
+              })
+            }
+          >
+            应用到设计器
+          </Button>
+        }
+      >
         <Typography.Paragraph type="secondary">{processResult.description}</Typography.Paragraph>
         <Typography.Title level={5}>流程节点</Typography.Title>
         {processResult.nodes.map((node, i) => (
@@ -245,7 +276,27 @@ export default function GeneratePanel({ query, onQueryChange, onResult }: Genera
   const renderDashboardResult = () => {
     if (!dashboardResult) return null;
     return (
-      <Card size="small" title={dashboardResult.title}>
+      <Card
+        size="small"
+        title={dashboardResult.title}
+        extra={
+          <Button
+            size="small"
+            type="link"
+            icon={<ExportOutlined />}
+            onClick={() =>
+              handleImportToDesigner({
+                type: 'dashboard' as GenerateType,
+                title: dashboardResult.title,
+                content: JSON.stringify(dashboardResult, null, 2),
+                targetModuleType: 'page',
+              })
+            }
+          >
+            应用到设计器
+          </Button>
+        }
+      >
         <Typography.Paragraph type="secondary">{dashboardResult.description}</Typography.Paragraph>
         <Typography.Title level={5}>仪表盘组件</Typography.Title>
         {dashboardResult.widgets.map((w) => (

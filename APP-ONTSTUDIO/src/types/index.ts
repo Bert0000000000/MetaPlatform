@@ -155,3 +155,227 @@ export const DATA_TYPES = [
   { label: 'JSON', value: 'JSON' },
   { label: '引用', value: 'Reference' },
 ];
+
+// ============ Data Quality Types (V12-05) ============
+
+export type QualityDimension =
+  | 'completeness'
+  | 'accuracy'
+  | 'consistency'
+  | 'timeliness'
+  | 'uniqueness'
+  | 'validity';
+
+export type QualitySeverity = 'info' | 'warning' | 'critical';
+
+export type QualityIssueStatus = 'open' | 'resolved' | 'ignored';
+
+export interface QualityRule {
+  ruleId: string;
+  name: string;
+  dimension: QualityDimension;
+  description: string;
+  conceptId?: string;
+  attributeId?: string;
+  expression: string;
+  severity: QualitySeverity;
+  enabled: boolean;
+}
+
+export interface QualityIssue {
+  issueId: string;
+  ruleId: string;
+  ruleName: string;
+  dimension: QualityDimension;
+  severity: QualitySeverity;
+  status: QualityIssueStatus;
+  conceptId: string;
+  conceptName?: string;
+  attributeId?: string;
+  attributeName?: string;
+  entityId?: string;
+  entityName?: string;
+  message: string;
+  detectedAt: string;
+  resolvedAt?: string;
+  suggestion?: string;
+}
+
+export interface QualityScoreCard {
+  dimension: QualityDimension;
+  score: number; // 0-100
+  issueCount: number;
+  trend: number; // delta vs last period, can be negative
+}
+
+export interface QualityOverview {
+  overallScore: number;
+  totalRules: number;
+  enabledRules: number;
+  totalIssues: number;
+  openIssues: number;
+  criticalIssues: number;
+  lastRunAt?: string;
+  scores: QualityScoreCard[];
+}
+
+// ============ Data Lineage Types (V12-05) ============
+
+export type LineageNodeType =
+  | 'datasource'
+  | 'table'
+  | 'field'
+  | 'mapping'
+  | 'concept'
+  | 'attribute'
+  | 'entity'
+  | 'relation'
+  | 'action'
+  | 'output';
+
+export interface LineageNode {
+  id: string;
+  label: string;
+  type: LineageNodeType;
+  parentId?: string;
+  metadata?: {
+    sourceType?: string;
+    conceptId?: string;
+    attributeName?: string;
+    transform?: string;
+    schedule?: string;
+    status?: string;
+  };
+}
+
+export interface LineageEdge {
+  id: string;
+  source: string;
+  target: string;
+  label?: string;
+  kind: 'flow' | 'mapping' | 'reference' | 'trigger';
+}
+
+export interface DataLineage {
+  nodes: LineageNode[];
+  edges: LineageEdge[];
+  rootId?: string;
+}
+
+export interface LineageImpactResult {
+  impactedNodes: string[];
+  upstreamCount: number;
+  downstreamCount: number;
+  impactPath: string[];
+}
+
+// ============ Decision Table & Test Cases (V12-06) ============
+
+/** 决策表命中策略 */
+export type HitPolicy = 'first' | 'all' | 'priority' | 'unique' | 'collect';
+
+/** 决策表列比较运算符 */
+export type DecisionTableOperator =
+  | 'eq'
+  | 'ne'
+  | 'gt'
+  | 'lt'
+  | 'gte'
+  | 'lte'
+  | 'in'
+  | 'contains'
+  | 'between';
+
+/** 决策表列类型 */
+export type DecisionTableColumnType = 'input' | 'output';
+
+/** 决策表列定义 */
+export interface DecisionTableColumn {
+  id: string;
+  name: string;
+  field: string; // 绑定的本体属性字段
+  columnType: DecisionTableColumnType;
+  operator?: DecisionTableOperator;
+  defaultValue?: string;
+}
+
+/** 决策表单元格 */
+export interface DecisionTableCell {
+  value: string;
+  isEmpty?: boolean; // 表示 "-"（任意值）
+}
+
+/** 决策表行（一条规则） */
+export interface DecisionTableRow {
+  id: string;
+  cells: Record<string, DecisionTableCell>; // columnId -> cell
+  enabled: boolean;
+  priority: number;
+  description?: string;
+}
+
+/** 决策表 */
+export interface DecisionTable {
+  id: string;
+  code: string;
+  name: string;
+  description?: string;
+  conceptId?: string;
+  hitPolicy: HitPolicy;
+  columns: DecisionTableColumn[];
+  rows: DecisionTableRow[];
+  enabled: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** 决策表创建/更新请求载荷 */
+export type DecisionTablePayload = Omit<DecisionTable, 'id' | 'createdAt' | 'updatedAt'>;
+
+/** 决策表执行结果 */
+export interface DecisionTableExecutionResult {
+  matchedRows: DecisionTableRow[];
+  outputs: Record<string, unknown>[];
+}
+
+/** 测试用例状态 */
+export type TestCaseStatus = 'pending' | 'pass' | 'fail' | 'error';
+
+/** 测试用例 */
+export interface TestCase {
+  id: string;
+  ruleId?: string;
+  decisionTableId?: string;
+  name: string;
+  description?: string;
+  input: Record<string, unknown>;
+  expectedOutput?: Record<string, unknown>;
+  actualOutput?: Record<string, unknown>;
+  status: TestCaseStatus;
+  executedAt?: string;
+  errorMessage?: string;
+}
+
+/** 测试用例创建/更新请求载荷 */
+export type TestCasePayload = Omit<TestCase, 'id' | 'actualOutput' | 'status' | 'executedAt' | 'errorMessage'>;
+
+/** 测试运行结果 */
+export interface TestRun {
+  id: string;
+  ruleId?: string;
+  decisionTableId?: string;
+  startedAt: string;
+  finishedAt?: string;
+  totalCases: number;
+  passedCount: number;
+  failedCount: number;
+  errorCount: number;
+  results: TestCase[];
+}
+
+/** 测试运行请求载荷 */
+export interface TestRunRequest {
+  ruleId?: string;
+  decisionTableId?: string;
+  testCaseIds?: string[];
+}

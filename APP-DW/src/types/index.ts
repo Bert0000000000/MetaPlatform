@@ -65,6 +65,25 @@ export interface EmployeeCreateRequest {
 
 export interface EmployeeUpdateRequest extends EmployeeCreateRequest {}
 
+export interface EmployeeVersion {
+  version: string;
+  timestamp: string;
+  changeLog: string;
+}
+
+export interface EmployeeOperationLog {
+  id: string;
+  actor: string;
+  action: string;
+  resource: string;
+  timestamp: string;
+  ip?: string;
+  status: 'success' | 'failed';
+}
+
+// ============ Evaluation Types (V12-09 效果评估自动化) ============
+export * from './evaluation';
+
 export const ROLE_CATEGORY_OPTIONS: { label: string; value: RoleCategory; color: string }[] = [
   { label: '财务类', value: 'FINANCE', color: 'blue' },
   { label: 'HR类', value: 'HR', color: 'green' },
