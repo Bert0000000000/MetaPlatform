@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Form, Input, Button, Card, Typography, message } from 'antd';
 import { login } from '@/api/auth';
+import { isLoggedIn } from '@/utils/auth';
 
 interface LoginFormValues {
   username: string;
@@ -12,6 +13,13 @@ interface LoginFormValues {
 export default function LoginPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+
+  // If already logged in, redirect to dashboard to avoid staying on login page.
+  useEffect(() => {
+    if (isLoggedIn()) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [navigate]);
 
   const handleSubmit = async (values: LoginFormValues) => {
     setLoading(true);

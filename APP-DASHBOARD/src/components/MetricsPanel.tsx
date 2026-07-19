@@ -22,8 +22,12 @@ const ICON_MAP: Record<string, React.ReactNode> = {
 export default function MetricsPanel() {
   const [cards, setCards] = useState<MetricCard[]>([]);
   const [trend, setTrend] = useState<MetricTrendPoint[]>([]);
-  const [range, setRange] = useState<TimeRange>('24h');
   const [loading, setLoading] = useState(false);
+  const [range, setRange] = useState<TimeRange>('24h');
+
+  // Guard against non-array backend responses / HMR stale state.
+  const safeCards = Array.isArray(cards) ? cards : [];
+  const safeTrend = Array.isArray(trend) ? trend : [];
 
   const load = async (r: TimeRange) => {
     setLoading(true);
@@ -40,7 +44,7 @@ export default function MetricsPanel() {
     load(range);
   }, [range]);
 
-  const chartData = trend.map((p) => ({
+  const chartData = safeTrend.map((p) => ({
     time: new Date(p.time).toLocaleString('zh-CN', { hour: '2-digit', minute: '2-digit', month: '2-digit', day: '2-digit' }),
     apiCalls: p.apiCalls,
     errors: p.errors,
@@ -65,7 +69,7 @@ export default function MetricsPanel() {
     >
       <Spin spinning={loading}>
         <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-          {cards.map((card) => (
+          {safeCards.map((card) => (
             <Col span={6} key={card.key}>
               <Card size="small">
                 <Statistic

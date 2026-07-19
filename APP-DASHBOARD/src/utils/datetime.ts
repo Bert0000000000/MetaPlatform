@@ -108,5 +108,5 @@ export function formatRelative(
       return rtf.format(Math.round(diffMs / unitMs), unit);
     }
   }
-  return formatDateTime(d, settings);
+  return formatDateTime(d, { language: settings?.language } as Parameters<typeof formatDateTime>[1]);
 }

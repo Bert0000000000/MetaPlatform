@@ -212,7 +212,7 @@ export default function SettingsPage() {
                   </Form.Item>
                 </Form>
                 <Divider>实时预览</Divider>
-                <Space direction="vertical" style={{ maxWidth: 560, width: '100%' }}>
+                <Space orientation="vertical" style={{ maxWidth: 560, width: '100%' }}>
                   <Typography.Text type="secondary">
                     当前语言: {settings.language} · 时区: {settings.timezone}
                   </Typography.Text>

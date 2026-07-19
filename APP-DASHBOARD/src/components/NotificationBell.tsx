@@ -105,7 +105,7 @@ export default function NotificationBell() {
   );
 
   return (
-    <Dropdown dropdownRender={() => dropdownContent} trigger={['click']} open={open} onOpenChange={setOpen} placement="bottomRight">
+    <Dropdown popupRender={() => dropdownContent} trigger={['click']} open={open} onOpenChange={setOpen} placement="bottomRight">
       <Badge count={unread} size="small">
         <Button type="text" icon={<BellOutlined />} style={{ fontSize: 18 }} />
       </Badge>

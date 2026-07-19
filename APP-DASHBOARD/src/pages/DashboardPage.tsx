@@ -4,6 +4,8 @@ import {
   RobotOutlined,
   MessageOutlined,
   ApartmentOutlined,
+  PartitionOutlined,
+  ApiOutlined,
   ArrowRightOutlined,
 } from '@ant-design/icons';
 import { getUser } from '@/utils/auth';
@@ -13,9 +15,11 @@ import MetricsPanel from '@/components/MetricsPanel';
 
 const QUICK_ACTIONS = [
   { title: '应用中心', desc: '低代码应用构建', icon: <AppstoreOutlined />, link: 'http://localhost:9201/apps', color: '#1677ff' },
-  { title: '超级 AI', desc: '智能对话与分析', icon: <MessageOutlined />, link: 'http://localhost:9203/chat', color: '#722ed1' },
-  { title: '数字员工', desc: 'AI 自动化任务', icon: <RobotOutlined />, link: 'http://localhost:9204/dw', color: '#52c41a' },
-  { title: '本体工作室', desc: '本体论引擎', icon: <ApartmentOutlined />, link: 'http://localhost:9205/concepts', color: '#fa8c16' },
+  { title: '超级 AI', desc: '智能对话与分析', icon: <MessageOutlined />, link: 'http://localhost:9301/chat', color: '#722ed1' },
+  { title: '数字员工', desc: 'AI 自动化任务', icon: <RobotOutlined />, link: 'http://localhost:9401/dw', color: '#52c41a' },
+  { title: '本体工作室', desc: '本体论引擎', icon: <ApartmentOutlined />, link: 'http://localhost:9101/concepts', color: '#fa8c16' },
+  { title: '架构中心', desc: 'EA 架构资产管理', icon: <PartitionOutlined />, link: 'http://localhost:9206', color: '#13c2c2' },
+  { title: 'MCP 服务中心', desc: 'MCP Server/Client 管理', icon: <ApiOutlined />, link: 'http://localhost:9501', color: '#eb2f96' },
 ];
 
 export default function DashboardPage() {
@@ -41,13 +45,13 @@ export default function DashboardPage() {
 
       <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
         {QUICK_ACTIONS.map((action) => (
-          <Col span={6} key={action.title}>
+          <Col span={8} key={action.title}>
             <Card
               hoverable
               onClick={() => window.open(action.link, '_blank')}
               style={{ height: '100%' }}
             >
-              <Space direction="vertical" size="middle">
+              <Space orientation="vertical" size="middle">
                 <div
                   style={{
                     width: 48,
