@@ -13,7 +13,8 @@ class Settings(BaseSettings):
     reload: bool = False
     jwt_secret: str = "metaplatform-jwt-secret-key-2026"
     jwt_algorithm: str = "HS256"
-    database_url: str = "sqlite+aiosqlite:///./tech_llmgw.db"
+    # Platform metadata database. PostgreSQL is required for production.
+    database_url: str = "postgresql+asyncpg://meta:meta@localhost:5432/metaplatform_llmgw"
 
 
 settings = Settings()

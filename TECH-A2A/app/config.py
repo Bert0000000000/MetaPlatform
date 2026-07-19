@@ -14,8 +14,8 @@ class Settings(BaseSettings):
     jwt_secret: str = "metaplatform-jwt-secret-key-2026"
     jwt_algorithm: str = "HS256"
 
-    # Platform metadata database. Defaults to SQLite for local dev/tests.
-    database_url: str = "sqlite+aiosqlite:///./tech_a2a.db"
+    # Platform metadata database. PostgreSQL is required for production.
+    database_url: str = "postgresql+asyncpg://meta:meta@localhost:5432/metaplatform_a2a"
 
     # TECH-AGENT base URL. Empty string enables mock mode.
     agent_base_url: str = "http://localhost:8501"
