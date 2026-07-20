@@ -1,7 +1,9 @@
 import { Outlet, useNavigate } from 'react-router-dom';
-import { Layout, theme, Typography } from 'antd';
+import { Layout, theme, Typography, Button, Space } from 'antd';
+import { LogoutOutlined } from '@ant-design/icons';
 import { PlatformMenu } from '@mate/shared';
-import GlobalSearch from './GlobalSearch';
+import GlobalSearch from '@/components/GlobalSearch';
+import { removeToken } from '@/utils/auth';
 
 const { Header, Sider, Content } = Layout;
 
@@ -10,6 +12,11 @@ export default function AppLayout() {
   const {
     token: { colorBgContainer, borderRadiusLG },
   } = theme.useToken();
+
+  const handleLogout = () => {
+    removeToken();
+    navigate('/login');
+  };
 
   return (
     <Layout style={{ minHeight: '100vh' }}>
@@ -26,7 +33,12 @@ export default function AppLayout() {
         <Typography.Title level={4} style={{ margin: 0 }}>
           Ontology Studio
         </Typography.Title>
-        <GlobalSearch />
+        <Space>
+          <GlobalSearch />
+          <Button type="text" icon={<LogoutOutlined />} onClick={handleLogout}>
+            退出
+          </Button>
+        </Space>
       </Header>
       <Layout>
         <Sider width={240} style={{ background: colorBgContainer }}>
