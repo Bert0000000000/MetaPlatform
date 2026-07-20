@@ -55,9 +55,9 @@ export function findActiveMenu(pathname: string): ActiveMenuResult | null {
   };
 }
 
-export function resolveMenuHref(item: PlatformMenuItem, _currentAppUrl?: string): string {
+export function resolveMenuHref(item: PlatformMenuItem): string {
   if (!item.path) return '#';
-  if (item.external && item.appUrl) {
+  if (item.appUrl) {
     return item.appUrl + item.path;
   }
   return item.path;

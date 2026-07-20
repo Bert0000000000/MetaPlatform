@@ -4,7 +4,6 @@ export interface PlatformMenuItem {
   icon?: string;
   path?: string;
   appUrl?: string;
-  external?: boolean;
   children?: PlatformMenuItem[];
 }
 
