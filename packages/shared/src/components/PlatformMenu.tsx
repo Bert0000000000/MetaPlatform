@@ -40,7 +40,7 @@ function toAntdItems(
         icon: renderIcon(item.icon),
         label: item.label,
         children: toAntdItems(item.children, currentModule, onNavigate),
-        onClick: handleClick,
+        onTitleClick: handleClick,
       } as ItemType;
     }
 
