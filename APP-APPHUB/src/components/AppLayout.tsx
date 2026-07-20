@@ -1,24 +1,16 @@
-import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { Layout, Menu, theme, Typography, Button } from 'antd';
-import { AppstoreOutlined, LogoutOutlined } from '@ant-design/icons';
+import { Outlet, useNavigate } from 'react-router-dom';
+import { Layout, theme, Typography, Button } from 'antd';
+import { LogoutOutlined } from '@ant-design/icons';
+import { PlatformMenu } from '@mate/shared';
 import { removeToken } from '@/utils/auth';
 
 const { Header, Sider, Content } = Layout;
 
 export default function AppLayout() {
   const navigate = useNavigate();
-  const location = useLocation();
   const {
     token: { colorBgContainer, borderRadiusLG },
   } = theme.useToken();
-
-  const menuItems = [
-    {
-      key: '/apps',
-      icon: <AppstoreOutlined />,
-      label: '应用管理',
-    },
-  ];
 
   const handleLogout = () => {
     removeToken();
@@ -45,14 +37,8 @@ export default function AppLayout() {
         </Button>
       </Header>
       <Layout>
-        <Sider width={200} style={{ background: colorBgContainer }}>
-          <Menu
-            mode="inline"
-            selectedKeys={[location.pathname.startsWith('/apps') ? '/apps' : location.pathname]}
-            style={{ height: '100%', borderRight: 0 }}
-            items={menuItems}
-            onClick={({ key }) => navigate(key)}
-          />
+        <Sider width={240} style={{ background: colorBgContainer }}>
+          <PlatformMenu currentModule="apphub" />
         </Sider>
         <Layout style={{ padding: '16px 24px' }}>
           <Content
