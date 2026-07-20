@@ -1,5 +1,3 @@
-import type { ReactNode } from 'react';
-
 export interface PlatformMenuItem {
   key: string;
   label: string;

@@ -4,7 +4,7 @@ import { Menu } from 'antd';
 import type { ItemType } from 'antd/es/menu/interface';
 import * as Icons from '@ant-design/icons';
 import { PLATFORM_MENU, type PlatformMenuItem } from '../config/platformMenu';
-import { findActiveMenu, resolveMenuHref } from '../utils/menuMatcher';
+import { findActiveMenu } from '../utils/menuMatcher';
 
 export interface PlatformMenuProps {
   currentModule: string;
@@ -28,7 +28,6 @@ function toAntdItems(
 ): ItemType[] {
   return items.map((item) => {
     const isExternalModule = item.key !== currentModule;
-    const href = resolveMenuHref(item, isExternalModule ? item.appUrl : undefined);
     const label = isExternalModule && item.appUrl
       ? item.label
       : item.label;
