@@ -59,13 +59,22 @@ export function PlatformMenu({ currentModule, mode = 'inline' }: PlatformMenuPro
 
   const active = useMemo(() => findActiveMenu(location.pathname), [location.pathname]);
   const selectedKeys = active?.moduleKey === currentModule ? [active.itemKey] : [];
-  const computedOpenKeys = active?.moduleKey === currentModule ? active.openKeys : [currentModule];
+  const routeOpenKeys = useMemo(
+    () => (active?.moduleKey === currentModule ? active.openKeys : [currentModule]),
+    [active, currentModule]
+  );
 
-  const [openKeys, setOpenKeys] = useState<string[]>(computedOpenKeys);
+  const [openKeys, setOpenKeys] = useState<string[]>(routeOpenKeys);
 
   useEffect(() => {
-    setOpenKeys(computedOpenKeys);
-  }, [computedOpenKeys]);
+    setOpenKeys((prev) => {
+      // 仅在路由驱动的展开项真正变化时才更新，避免数组引用变化导致无限渲染
+      if (prev.length === routeOpenKeys.length && prev.every((k, i) => k === routeOpenKeys[i])) {
+        return prev;
+      }
+      return routeOpenKeys;
+    });
+  }, [routeOpenKeys]);
 
   const items = useMemo(
     () => toAntdItems(PLATFORM_MENU, currentModule, (path) => navigate(path)),
