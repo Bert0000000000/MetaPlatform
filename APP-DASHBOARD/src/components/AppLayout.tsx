@@ -1,48 +1,15 @@
-import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { Layout, Menu, theme, Typography, Button, Space, Avatar } from 'antd';
-import { UserOutlined } from '@ant-design/icons';
-import {
-  DashboardOutlined,
-  MessageOutlined,
-  RobotOutlined,
-  AppstoreOutlined,
-  ApartmentOutlined,
-  PartitionOutlined,
-  ApiOutlined,
-  BellOutlined,
-  FileSearchOutlined,
-  SettingOutlined,
-  LogoutOutlined,
-} from '@ant-design/icons';
+import { Outlet, useNavigate } from 'react-router-dom';
+import { Layout, theme, Typography, Button, Space, Avatar } from 'antd';
+import { UserOutlined, LogoutOutlined } from '@ant-design/icons';
+import { PlatformMenu } from '@mate/shared';
 import { removeToken, getUser } from '@/utils/auth';
 import NotificationBell from '@/components/NotificationBell';
 import GlobalSearch from '@/components/GlobalSearch';
 
 const { Header, Sider, Content } = Layout;
 
-interface MenuItem {
-  key: string;
-  icon: React.ReactNode;
-  label: string;
-  external?: boolean;
-}
-
-const MENU_ITEMS: MenuItem[] = [
-  { key: '/dashboard', icon: <DashboardOutlined />, label: '工作台' },
-  { key: 'http://localhost:9301', icon: <MessageOutlined />, label: '超级 AI', external: true },
-  { key: 'http://localhost:9401', icon: <RobotOutlined />, label: '数字员工', external: true },
-  { key: 'http://localhost:9201', icon: <AppstoreOutlined />, label: '应用中心', external: true },
-  { key: 'http://localhost:9101', icon: <ApartmentOutlined />, label: '本体论引擎', external: true },
-  { key: 'http://localhost:9206', icon: <PartitionOutlined />, label: '架构中心', external: true },
-  { key: 'http://localhost:9501', icon: <ApiOutlined />, label: 'MCP 服务中心', external: true },
-  { key: '/notifications', icon: <BellOutlined />, label: '消息中心' },
-  { key: '/deliverables', icon: <FileSearchOutlined />, label: '历史交付物' },
-  { key: '/settings', icon: <SettingOutlined />, label: '个性化设置' },
-];
-
 export default function AppLayout() {
   const navigate = useNavigate();
-  const location = useLocation();
   const user = getUser();
   const {
     token: { colorBgContainer, borderRadiusLG, colorBorderSecondary },
@@ -53,19 +20,8 @@ export default function AppLayout() {
     navigate('/login');
   };
 
-  const activeKey =
-    MENU_ITEMS.find((m) => !m.external && location.pathname.startsWith(m.key))?.key || '/dashboard';
   const displayName = user?.username || 'Guest';
   const initials = displayName.charAt(0).toUpperCase();
-
-  const handleMenuClick = ({ key }: { key: string }) => {
-    const item = MENU_ITEMS.find((m) => m.key === key);
-    if (item?.external) {
-      window.open(item.key, '_blank', 'noopener,noreferrer');
-    } else {
-      navigate(key);
-    }
-  };
 
   return (
     <Layout style={{ minHeight: '100vh' }}>
@@ -99,14 +55,8 @@ export default function AppLayout() {
         </Space>
       </Header>
       <Layout>
-        <Sider width={200} style={{ background: colorBgContainer }}>
-          <Menu
-            mode="inline"
-            selectedKeys={[activeKey]}
-            style={{ height: '100%', borderRight: 0 }}
-            items={MENU_ITEMS}
-            onClick={handleMenuClick}
-          />
+        <Sider width={240} style={{ background: colorBgContainer }}>
+          <PlatformMenu currentModule="dashboard" />
         </Sider>
         <Layout style={{ padding: '16px 24px' }}>
           <Content
