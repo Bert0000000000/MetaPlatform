@@ -1,34 +1,16 @@
-import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { Layout, Menu, theme, Typography, Button } from 'antd';
-import {
-  RobotOutlined,
-  UnorderedListOutlined,
-  StarOutlined,
-  TeamOutlined,
-  GlobalOutlined,
-  LogoutOutlined,
-} from '@ant-design/icons';
+import { Outlet, useNavigate } from 'react-router-dom';
+import { Layout, theme, Typography, Button } from 'antd';
+import { LogoutOutlined } from '@ant-design/icons';
+import { PlatformMenu } from '@mate/shared';
 import { removeToken } from '@/utils/auth';
 
 const { Header, Sider, Content } = Layout;
 
-const menuItems = [
-  { key: '/dw/employees', icon: <RobotOutlined />, label: '数字员工' },
-  { key: '/dw/tasks', icon: <UnorderedListOutlined />, label: '任务中心' },
-  { key: '/dw/evaluation', icon: <StarOutlined />, label: '效果评估' },
-  { key: '/dw/collaborations', icon: <TeamOutlined />, label: '多员工协作' },
-  { key: '/dw/external-agents', icon: <GlobalOutlined />, label: 'A2A 外部协作' },
-];
-
 export default function AppLayout() {
   const navigate = useNavigate();
-  const location = useLocation();
   const {
     token: { colorBgContainer, borderRadiusLG },
   } = theme.useToken();
-
-  const selectedKey =
-    menuItems.find((m) => location.pathname.startsWith(m.key))?.key || '/dw/employees';
 
   const handleLogout = () => {
     removeToken();
@@ -55,14 +37,8 @@ export default function AppLayout() {
         </Button>
       </Header>
       <Layout>
-        <Sider width={220} style={{ background: colorBgContainer }}>
-          <Menu
-            mode="inline"
-            selectedKeys={[selectedKey]}
-            style={{ height: '100%', borderRight: 0 }}
-            items={menuItems}
-            onClick={({ key }) => navigate(key)}
-          />
+        <Sider width={240} style={{ background: colorBgContainer }}>
+          <PlatformMenu currentModule="dw" />
         </Sider>
         <Layout style={{ padding: '16px 24px' }}>
           <Content
