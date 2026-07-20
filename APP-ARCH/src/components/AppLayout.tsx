@@ -1,69 +1,13 @@
-import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { Layout, Menu, theme, Typography, Button } from 'antd';
-import {
-  ApartmentOutlined,
-  AppstoreOutlined,
-  DeploymentUnitOutlined,
-  NodeIndexOutlined,
-  TeamOutlined,
-  DatabaseOutlined,
-  CloudServerOutlined,
-  AuditOutlined,
-  SafetyCertificateOutlined,
-  BugOutlined,
-  ApartmentOutlined as ArchIcon,
-  LogoutOutlined,
-} from '@ant-design/icons';
+import { Outlet, useNavigate } from 'react-router-dom';
+import { Layout, theme, Typography, Button } from 'antd';
+import { LogoutOutlined } from '@ant-design/icons';
+import { PlatformMenu } from '@mate/shared';
 import { removeToken } from '@/utils/auth';
 
 const { Header, Sider, Content } = Layout;
 
-const MENU_GROUPS = [
-  {
-    key: 'g1',
-    type: 'group' as const,
-    label: '业务架构',
-    children: [
-      { key: '/arch', icon: <ApartmentOutlined />, label: '架构总览' },
-      { key: '/arch/capabilities', icon: <ArchIcon />, label: '能力地图' },
-      { key: '/arch/applications', icon: <AppstoreOutlined />, label: '应用系统' },
-      { key: '/arch/value-streams', icon: <DeploymentUnitOutlined />, label: '价值流' },
-      { key: '/arch/processes', icon: <NodeIndexOutlined />, label: '业务流程' },
-      { key: '/arch/org-roles', icon: <TeamOutlined />, label: '组织与角色' },
-    ],
-  },
-  {
-    key: 'g2',
-    type: 'group' as const,
-    label: '技术架构',
-    children: [
-      { key: '/arch/data', icon: <DatabaseOutlined />, label: '数据架构' },
-      { key: '/arch/tech', icon: <CloudServerOutlined />, label: '技术架构' },
-    ],
-  },
-  {
-    key: 'g3',
-    type: 'group' as const,
-    label: '架构治理',
-    children: [
-      { key: '/arch/principles', icon: <SafetyCertificateOutlined />, label: '原则与标准' },
-      { key: '/arch/reviews', icon: <AuditOutlined />, label: '评审流程' },
-      { key: '/arch/tech-debt', icon: <BugOutlined />, label: '技术债务' },
-    ],
-  },
-  {
-    key: 'g4',
-    type: 'group' as const,
-    label: '集成',
-    children: [
-      { key: '/arch/ontology-mapping', icon: <DeploymentUnitOutlined />, label: '本体映射' },
-    ],
-  },
-];
-
 export default function AppLayout() {
   const navigate = useNavigate();
-  const location = useLocation();
   const {
     token: { colorBgContainer, borderRadiusLG },
   } = theme.useToken();
@@ -93,15 +37,8 @@ export default function AppLayout() {
         </Button>
       </Header>
       <Layout>
-        <Sider width={220} style={{ background: colorBgContainer, overflow: 'auto' }}>
-          <Menu
-            mode="inline"
-            selectedKeys={[location.pathname]}
-            defaultOpenKeys={['g1', 'g2', 'g3', 'g4']}
-            style={{ height: '100%', borderRight: 0 }}
-            items={MENU_GROUPS}
-            onClick={({ key }) => navigate(key)}
-          />
+        <Sider width={240} style={{ background: colorBgContainer, overflow: 'auto' }}>
+          <PlatformMenu currentModule="arch" />
         </Sider>
         <Layout style={{ padding: '16px 24px' }}>
           <Content
