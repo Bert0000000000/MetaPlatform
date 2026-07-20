@@ -1,51 +1,15 @@
-import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { Layout, Menu, theme, Typography } from 'antd';
-import {
-  ApartmentOutlined,
-  BlockOutlined,
-  BranchesOutlined,
-  NodeIndexOutlined,
-  ExperimentOutlined,
-  HistoryOutlined,
-  DatabaseOutlined,
-  ThunderboltOutlined,
-  PartitionOutlined,
-  BellOutlined,
-  MonitorOutlined,
-  SafetyCertificateOutlined,
-  ShareAltOutlined,
-} from '@ant-design/icons';
+import { Outlet, useNavigate } from 'react-router-dom';
+import { Layout, theme, Typography } from 'antd';
+import { PlatformMenu } from '@mate/shared';
 import GlobalSearch from './GlobalSearch';
 
 const { Header, Sider, Content } = Layout;
 
-const menuItems = [
-  { key: '/concepts', icon: <ApartmentOutlined />, label: '本体管理' },
-  { key: '/entities', icon: <BlockOutlined />, label: '实体管理' },
-  { key: '/relations', icon: <BranchesOutlined />, label: '关系类型' },
-  { key: '/relation-instances', icon: <PartitionOutlined />, label: '关系实例' },
-  { key: '/rules', icon: <ExperimentOutlined />, label: '规则管理' },
-  { key: '/versions', icon: <HistoryOutlined />, label: '版本管理' },
-  { key: '/datasources', icon: <DatabaseOutlined />, label: '数据源' },
-  { key: '/mappings', icon: <PartitionOutlined />, label: '数据映射' },
-  { key: '/quality', icon: <SafetyCertificateOutlined />, label: '数据质量' },
-  { key: '/lineage', icon: <ShareAltOutlined />, label: '数据血缘' },
-  { key: '/actions', icon: <ThunderboltOutlined />, label: 'Action 定义' },
-  { key: '/orchestrations', icon: <PartitionOutlined />, label: 'Action 编排' },
-  { key: '/triggers', icon: <BellOutlined />, label: '触发器' },
-  { key: '/executions', icon: <MonitorOutlined />, label: '执行监控' },
-  { key: '/graph', icon: <NodeIndexOutlined />, label: '知识图谱' },
-];
-
 export default function AppLayout() {
   const navigate = useNavigate();
-  const location = useLocation();
   const {
     token: { colorBgContainer, borderRadiusLG },
   } = theme.useToken();
-
-  const selectedKey =
-    menuItems.find((m) => location.pathname.startsWith(m.key))?.key || '/concepts';
 
   return (
     <Layout style={{ minHeight: '100vh' }}>
@@ -65,14 +29,8 @@ export default function AppLayout() {
         <GlobalSearch />
       </Header>
       <Layout>
-        <Sider width={220} style={{ background: colorBgContainer }}>
-          <Menu
-            mode="inline"
-            selectedKeys={[selectedKey]}
-            style={{ height: '100%', borderRight: 0 }}
-            items={menuItems}
-            onClick={({ key }) => navigate(key)}
-          />
+        <Sider width={240} style={{ background: colorBgContainer }}>
+          <PlatformMenu currentModule="ontstudio" />
         </Sider>
         <Layout style={{ padding: '16px 24px' }}>
           <Content
