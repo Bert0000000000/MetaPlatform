@@ -24,7 +24,7 @@ export async function listVersions(): Promise<OntologyVersion[]> {
 }
 
 export async function createVersion(req: Omit<OntologyVersion, 'versionId' | 'createdAt'>): Promise<OntologyVersion> {
-  return post<OntologyVersion>(BASE, req);
+  return post<OntologyVersion>(`${BASE}/snapshot`, req);
 }
 
 export async function updateVersion(id: string, req: Partial<OntologyVersion>): Promise<OntologyVersion> {
