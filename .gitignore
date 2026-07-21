@@ -83,3 +83,19 @@ META-INF/
 docs/006-TMP/*.json
 docs/006-TMP/*.txt
 docs/006-TMP/jwt.txt
+# Temporary screenshots and images produced during verification
+docs/006-TMP/*.png
+docs/006-TMP/*.jpg
+docs/006-TMP/*.jpeg
+docs/006-TMP/*.gif
+docs/006-TMP/*.webp
+docs/006-TMP/backend-logs/
+docs/006-TMP/frontend-logs/
+# Verification screenshots generated in app directories
+**/multimodal-*.png
+**/tmp-*.png
+**/tmp-*.html
+**/tmp-*.json
+**/tmp-*.py
+# Design drafts
+metaplatform-design-draft/
