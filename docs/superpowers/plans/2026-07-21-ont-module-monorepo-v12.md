@@ -621,14 +621,18 @@ git add TECH-ONT/src/main/java/com/metaplatform/ont/config/LlmGwProperties.java 
 git commit -m "feat(tech-ont): add LlmGwProperties for TECH-LLMGW connection"
 ```
 
-### Task 2.5: 重构 CypherConsoleService 使用 SAA ChatModel
+### Task 2.5: ~~重构 CypherConsoleService 使用 SAA ChatModel~~ 【PLAN PATCH - 跳过】
 
-**Files:**
-- Modify: `TECH-ONT/src/main/java/com/metaplatform/ont/service/CypherConsoleService.java`
+**状态**：**SKIP**（plan 假设错误）
 
-- [ ] **Step 1: 找到现有方法**
+**原因**：实际 Read `CypherConsoleService.java`（386 行）发现：
+- 该 Service 是**纯 Cypher 执行 + 模板 CRUD**，**无任何 AI/LLM 调用代码**
+- Grep `restTemplate|httpClient|webClient|LlmSuggestionClient` → No matches found
+- Java 端**整个 service 包**都没有 Python HTTP 调用
 
-Read `CypherConsoleService.java`，找到调用 Python HTTP 的方法（搜 `restTemplate` 或 `httpClient` 或 `LlmSuggestionClient`）。
+**结论**：plan 阶段 2 的"Python HTTP → SAA 改造"基于错误假设。Java 端从未调过 Python HTTP（LLM 集成只在 `app/services/ontology_discovery.py` 里）。
+
+**处理**：跳过 Task 2.5/2.6，**直接进入 Task 2.7 versions 修复**（这是 spec 11.1 真实工作）。`CypherConsoleService.java` 保持现状。
 
 - [ ] **Step 2: 注入 SAA ChatClient**
 
@@ -672,21 +676,13 @@ git add TECH-ONT/src/main/java/com/metaplatform/ont/service/CypherConsoleService
 git commit -m "refactor(tech-ont): CypherConsoleService use SAA ChatModel instead of Python HTTP"
 ```
 
-### Task 2.6: 重构 OntologyExploreService 使用 SAA ChatModel
+### Task 2.6: ~~重构 OntologyExploreService 使用 SAA ChatModel~~ 【PLAN PATCH - 跳过】
 
-**Files:**
-- Modify: `TECH-ONT/src/main/java/com/metaplatform/ont/service/OntologyExploreService.java`
+**状态**：**SKIP**（同 Task 2.5，plan 假设错误）
 
-- [ ] **Step 1: 同 2.5 步骤模式**
+**原因**：`OntologyExploreService.java` 同理，无 Python HTTP 调用。该 Service 是纯业务方法（搜索/探索本体结构），不需要 LLM。
 
-Read 文件 → 注入 ChatClient → 替换 Python HTTP → 编译 → 提交
-
-- [ ] **Step 2: 提交**
-
-```bash
-git add TECH-ONT/src/main/java/com/metaplatform/ont/service/OntologyExploreService.java
-git commit -m "refactor(tech-ont): OntologyExploreService use SAA ChatModel"
-```
+**处理**：跳过，直接进入 Task 2.7 versions 修复。
 
 ### Task 2.7: 修改 OntologyVersionController - 修 GET 列表返回形态
 
