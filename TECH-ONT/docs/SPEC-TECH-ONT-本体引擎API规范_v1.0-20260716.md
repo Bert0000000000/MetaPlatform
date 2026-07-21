@@ -2662,17 +2662,25 @@ X-Tenant-Id: <tenant_id>
 
 ### 3.7 版本管理 API
 
-#### 接口总览
+#### 接口总览（v1.2 修订）
 
-| 方法 | 路径 | 说明 |
-|---|---|---|
-| POST | `/api/v1/ont/versions` | 创建版本快照 |
-| GET | `/api/v1/ont/versions` | 版本列表（分页） |
-| GET | `/api/v1/ont/versions/{versionId}` | 获取版本详情 |
-| GET | `/api/v1/ont/versions/{versionId}/diff` | 版本差异对比 |
-| POST | `/api/v1/ont/versions/{versionId}/rollback` | 回滚至指定版本 |
-| POST | `/api/v1/ont/versions/{versionId}/publish` | 发布版本 |
-| GET | `/api/v1/ont/versions/current` | 获取当前版本信息 |
+> v1.2 修订说明：保留原有 RESTful 嵌套路径（`/{versionId}/diff`、`/rollback`、`/publish`）用于回滚/发布/详情等子动作；同时新增 **5 个平铺端点**用于列表/快照/对比/更新/删除的统一契约，对齐 v1.2 端点矩阵（见 11.1）。
+>
+> 详见 § 11.1 端点矩阵。
+
+| 方法 | 路径 | 说明 | v1.2 新增 |
+|---|---|---|---|
+| POST | `/api/v1/ont/versions` | 创建版本快照（与快照端点同义） | - |
+| POST | `/api/v1/ont/versions/snapshot` | v1.2 平铺端点：触发版本快照创建 | 是 |
+| GET | `/api/v1/ont/versions` | 版本列表（分页） | - |
+| GET | `/api/v1/ont/versions/compare` | v1.2 平铺端点：版本对比（Query: `aId`, `bId`） | 是 |
+| GET | `/api/v1/ont/versions/{versionId}` | 获取版本详情 | - |
+| GET | `/api/v1/ont/versions/{versionId}/diff` | 版本差异对比（legacy path） | - |
+| PUT | `/api/v1/ont/versions/{versionId}` | v1.2 平铺端点：更新版本元数据（label / description） | 是 |
+| DELETE | `/api/v1/ont/versions/{versionId}` | v1.2 平铺端点：删除版本快照（仅 DRAFT 状态） | 是 |
+| POST | `/api/v1/ont/versions/{versionId}/rollback` | 回滚至指定版本 | - |
+| POST | `/api/v1/ont/versions/{versionId}/publish` | 发布版本 | - |
+| GET | `/api/v1/ont/versions/current` | 获取当前版本信息 | - |
 
 ---
 
@@ -3371,6 +3379,214 @@ X-Tenant-Id: <tenant_id>
   "traceId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
 }
 ```
+
+---
+
+### 3.9 本体发现 API（v1.2 新增）
+
+> v1.2 新增。本节替代 v1.1 之前的 Python FastAPI `ontology_discovery.py`，由 `OntologyDiscoveryController`（Java 21 + Spring Boot 3.5）实现，端点行为与 Python 端点对齐。
+>
+> 详见 § 11.2 端点矩阵。
+>
+> 4 个核心端点：`GET /api/v1/ont/discovery/data-sources`、`POST /api/v1/ont/discovery/analyze`、`POST /api/v1/ont/discovery/{sourceId}/suggest`、`POST /api/v1/ont/discovery/import`。
+
+#### 接口总览
+
+| 方法 | 路径 | 说明 | v1.2 新增 |
+|---|---|---|---|
+| GET | `/api/v1/ont/discovery/data-sources` | 列出可被分析的数据源（来自 TECH-DATA 注册中心） | 是 |
+| POST | `/api/v1/ont/discovery/analyze` | 触发对指定数据源的结构与样本分析，返回候选概念/属性 | 是 |
+| POST | `/api/v1/ont/discovery/{sourceId}/suggest` | 基于分析结果为指定数据源生成本体建议（Concept/Attribute/Relation 候选集） | 是 |
+| POST | `/api/v1/ont/discovery/import` | 将用户确认的建议导入到本体模型（Concept/Attribute/Relation 落库） | 是 |
+
+#### 3.9.1 列出可分析数据源
+
+**GET** `/api/v1/ont/discovery/data-sources`
+
+**请求参数（Query）**
+
+| 参数 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| type | string | 否 | 数据源类型过滤：`MYSQL`、`POSTGRES`、`KAFKA`、`HUDI`、`STARROCKS` 等 |
+| keyword | string | 否 | 名称/编码模糊匹配 |
+
+**响应示例（200 OK）**
+
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": {
+    "items": [
+      {
+        "sourceId": "ds-erp-customer",
+        "name": "ERP 客户主数据",
+        "type": "MYSQL",
+        "tableCount": 12,
+        "rowCountEstimate": 152300,
+        "lastAnalyzedAt": "2026-07-15T10:00:00.000Z",
+        "registeredBy": "tech-data"
+      }
+    ],
+    "total": 8
+  },
+  "traceId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+}
+```
+
+---
+
+#### 3.9.2 触发数据源分析
+
+**POST** `/api/v1/ont/discovery/analyze`
+
+**请求参数（Body）**
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| sourceId | string | 是 | 数据源 ID（来自 `/data-sources`） |
+| sampleSize | integer | 否 | 采样行数，默认 1000 |
+| includeTables | string[] | 否 | 限定表名列表 |
+| reasoner | string | 否 | 推理策略：`HEURISTIC`（默认）/`LLM`（v1.2 启动 LLMGW 后可用） |
+
+**请求示例**
+
+```json
+{
+  "sourceId": "ds-erp-customer",
+  "sampleSize": 500,
+  "reasoner": "HEURISTIC"
+}
+```
+
+**响应示例（202 Accepted）**
+
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": {
+    "taskId": "disc-task-20260722-001",
+    "sourceId": "ds-erp-customer",
+    "status": "RUNNING",
+    "startedAt": "2026-07-22T08:00:00.000Z",
+    "estimatedSeconds": 30
+  },
+  "traceId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+}
+```
+
+**错误场景**
+
+| 错误码 | 场景 |
+|---|---|
+| 40410 | sourceId 不存在 |
+| 40910 | 同一数据源已有 RUNNING 任务 |
+
+---
+
+#### 3.9.3 生成本体建议
+
+**POST** `/api/v1/ont/discovery/{sourceId}/suggest`
+
+**请求参数（Body）**
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| taskId | string | 是 | 来自 `/analyze` 返回的任务 ID |
+| threshold | number | 否 | 置信度阈值，默认 0.6 |
+| maxConcepts | integer | 否 | 最大返回概念数，默认 50 |
+
+**响应示例（200 OK）**
+
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": {
+    "sourceId": "ds-erp-customer",
+    "taskId": "disc-task-20260722-001",
+    "suggestions": [
+      {
+        "kind": "CONCEPT",
+        "code": "CUSTOMER",
+        "name": "客户",
+        "confidence": 0.92,
+        "evidence": { "table": "t_customer", "columns": ["customer_id", "customer_name"] }
+      },
+      {
+        "kind": "ATTRIBUTE",
+        "parentConceptCode": "CUSTOMER",
+        "name": "客户名称",
+        "dataType": "STRING",
+        "confidence": 0.95,
+        "evidence": { "column": "customer_name" }
+      }
+    ],
+    "summary": {
+      "conceptCount": 8,
+      "attributeCount": 24,
+      "relationCount": 3,
+      "confidenceAvg": 0.81
+    }
+  },
+  "traceId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+}
+```
+
+---
+
+#### 3.9.4 导入本体建议
+
+**POST** `/api/v1/ont/discovery/import`
+
+**请求参数（Body）**
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| sourceId | string | 是 | 数据源 ID |
+| taskId | string | 是 | 关联的 `/suggest` 任务 ID |
+| accepted | Suggestion[] | 是 | 用户确认采纳的建议（来自 `/suggest` 响应） |
+| rejected | string[] | 否 | 显式拒绝的建议 ID（用于审计） |
+| versionId | string | 否 | 目标版本 ID；缺省使用 DRAFT 当前版本 |
+
+**请求示例**
+
+```json
+{
+  "sourceId": "ds-erp-customer",
+  "taskId": "disc-task-20260722-001",
+  "accepted": [
+    { "kind": "CONCEPT", "code": "CUSTOMER", "name": "客户" },
+    { "kind": "ATTRIBUTE", "parentConceptCode": "CUSTOMER", "name": "客户名称", "dataType": "STRING" }
+  ]
+}
+```
+
+**响应示例（200 OK）**
+
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": {
+    "importedConceptIds": ["concept-customer-001"],
+    "importedAttributeIds": ["attr-customer-name"],
+    "importedRelationTypeIds": [],
+    "versionId": "ver-1.3.0-draft",
+    "importedAt": "2026-07-22T08:05:00.000Z"
+  },
+  "traceId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+}
+```
+
+**错误场景**
+
+| 错误码 | 场景 |
+|---|---|
+| 40410 | sourceId / taskId 不存在 |
+| 42210 | 建议与现有本体冲突（code 重名 / 属性类型不匹配） |
+| 40310 | 当前用户无写权限 |
 
 ---
 
@@ -4391,3 +4607,63 @@ TECH-ONT/docs/openapi/ont-api-v1.0.yaml
 | 版本 | 日期 | 变更内容 | 作者 |
 |---|---|---|---|
 | v1.0 | 2026-07-16 | 初始版本，包含全部 8 组 API、数据模型、事件定义、交付计划 | 平台架构组 |
+| v1.0.1 | 2026-07-22 | Task 4.3：3.7 版本管理 API 新增 5 个平铺端点；新增 3.9 本体发现 API（4 端点，替代原 Python `ontology_discovery.py`）；新增 § 11 端点矩阵（11.1 / 11.2） | Trae |
+
+---
+
+## 11. 端点矩阵（v1.2 新增）
+
+> v1.2 引入的端点矩阵，作为面向客户端的统一契约视图。各端点的完整请求/响应定义参见：
+> - **§ 11.1 版本管理端点** → § 3.7 版本管理 API
+> - **§ 11.2 本体发现端点** → § 3.9 本体发现 API
+
+### 11.1 版本管理端点（versions）
+
+本节列出 v1.2 版本管理对外暴露的全部 9 个 REST 端点（含 4 个新增平铺端点），与 § 3.7 端到端对齐。
+
+| # | 方法 | 路径 | 用途 | 新增标记 |
+|---|---|---|---|---|
+| 1 | GET | `/api/v1/ont/versions` | 版本列表（分页，Query: `page`, `pageSize`, `status`, `label`） | - |
+| 2 | GET | `/api/v1/ont/versions/compare` | 版本对比（Query: `aId`, `bId`） | **v1.2 平铺端点** |
+| 3 | GET | `/api/v1/ont/versions/{versionId}` | 获取版本详情 | - |
+| 4 | GET | `/api/v1/ont/versions/{versionId}/diff` | 版本差异对比（legacy path） | - |
+| 5 | PUT | `/api/v1/ont/versions/{versionId}` | 更新版本元数据（label / description） | **v1.2 平铺端点** |
+| 6 | DELETE | `/api/v1/ont/versions/{versionId}` | 删除版本快照（仅 DRAFT 状态） | **v1.2 平铺端点** |
+| 7 | POST | `/api/v1/ont/versions` | 创建版本快照（Body: `version`, `label`, `description`, `baselineVersionId`） | - |
+| 8 | POST | `/api/v1/ont/versions/snapshot` | 触发版本快照创建（与 POST /versions 同义，推荐用法） | **v1.2 平铺端点** |
+| 9 | POST | `/api/v1/ont/versions/{versionId}/rollback` | 回滚至指定版本 | - |
+| 10 | POST | `/api/v1/ont/versions/{versionId}/publish` | 发布版本 | - |
+| 11 | GET | `/api/v1/ont/versions/current` | 获取当前版本信息 | - |
+
+**v1.2 新增端点汇总（5 个）**：
+- `GET /api/v1/ont/versions/compare?aId=&bId=`
+- `PUT /api/v1/ont/versions/{versionId}`
+- `DELETE /api/v1/ont/versions/{versionId}`
+- `POST /api/v1/ont/versions/snapshot`
+- `GET /api/v1/ont/versions` 列表查询契约增强（query 参数化分页/状态过滤）
+
+**契约对齐**：5 个平铺端点与 Spring Boot `OntologyVersionController` 控制器方法签名一一对应；OpenAPI 3.1 文件路径见附录 A。
+
+---
+
+### 11.2 本体发现端点（discovery）
+
+本节列出 v1.2 本体自动发现对外暴露的全部 4 个 REST 端点，与 § 3.9 端到端对齐。
+
+| # | 方法 | 路径 | 用途 | 新增标记 |
+|---|---|---|---|---|
+| 1 | GET | `/api/v1/ont/discovery/data-sources` | 列出可被分析的数据源（Query: `type`, `keyword`） | **v1.2 新增** |
+| 2 | POST | `/api/v1/ont/discovery/analyze` | 触发对指定数据源的结构与样本分析（Body: `sourceId`, `sampleSize`, `reasoner`） | **v1.2 新增** |
+| 3 | POST | `/api/v1/ont/discovery/{sourceId}/suggest` | 生成本体建议（Body: `taskId`, `threshold`, `maxConcepts`） | **v1.2 新增** |
+| 4 | POST | `/api/v1/ont/discovery/import` | 导入用户确认的建议到本体模型（Body: `sourceId`, `taskId`, `accepted[]`） | **v1.2 新增** |
+
+**契约对齐**：
+- 4 个端点由 `OntologyDiscoveryController` 实现，替代 v1.1 之前的 Python FastAPI `ontology_discovery.py`。
+- 与 Python 端点的语义对齐（相同的请求/响应字段命名、分页与 traceId 传播规范）。
+- 错误码 40410 / 40910 / 42210 / 40310 见 § 3.9 各端点。
+
+**前端消费方**：
+- `metaplatform-frontend/apps/ontstudio/src/api/discovery.ts` 已切换至本端点矩阵（Task 3.10 完成）。
+- `OntologyDiscoveryPage.tsx` 页面（v1.2 新增）使用 § 11.2 的 4 端点实现数据源 → 分析 → 建议 → 导入的全链路。
+
+---

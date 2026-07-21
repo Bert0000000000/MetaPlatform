@@ -67,6 +67,10 @@ TECH-ONT/
 
 TODO: 补充模块的快速开始指南
 
+## 跨模块依赖
+
+详细阻塞项与已解决项见 `docs/006-TMP/2026-07-21-ont-migration-cross-module-deps.md`。
+
 ## 相关文档
 
 - [项目总览](../../README.md)
