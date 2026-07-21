@@ -4,6 +4,8 @@ import com.metaplatform.ea.common.ErrorCode;
 import com.metaplatform.ea.common.TenantContext;
 import com.metaplatform.ea.dataarchitecture.dto.CreateDataFlowRequest;
 import com.metaplatform.ea.dataarchitecture.dto.DataFlowResponse;
+import com.metaplatform.ea.dataarchitecture.dto.UpdateDataFlowRequest;
+import com.metaplatform.ea.dataarchitecture.entity.DataEntityEntity;
 import com.metaplatform.ea.dataarchitecture.entity.DataFlowEntity;
 import com.metaplatform.ea.dataarchitecture.repository.DataEntityRepository;
 import com.metaplatform.ea.dataarchitecture.repository.DataFlowRepository;
@@ -11,6 +13,7 @@ import com.metaplatform.ea.exception.EaException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.time.Instant;
 import java.util.List;
@@ -26,12 +29,7 @@ public class DataFlowService {
     @Transactional
     public DataFlowResponse create(CreateDataFlowRequest request) {
         String tenantId = TenantContext.getOrDefault();
-        entityRepository.findByIdAndDeletedAtIsNull(request.getSourceEntityId())
-                .orElseThrow(() -> new EaException(ErrorCode.NOT_FOUND,
-                        "源数据实体不存在: " + request.getSourceEntityId()));
-        entityRepository.findByIdAndDeletedAtIsNull(request.getTargetEntityId())
-                .orElseThrow(() -> new EaException(ErrorCode.NOT_FOUND,
-                        "目标数据实体不存在: " + request.getTargetEntityId()));
+        validateEntities(request.getSourceEntityId(), request.getTargetEntityId());
 
         Instant now = Instant.now();
         DataFlowEntity entity = DataFlowEntity.builder()
@@ -61,6 +59,24 @@ public class DataFlowService {
     }
 
     @Transactional
+    public DataFlowResponse update(UUID id, UpdateDataFlowRequest request) {
+        DataFlowEntity entity = findById(id);
+        if (StringUtils.hasText(request.getName())) entity.setName(request.getName());
+        if (request.getSourceEntityId() != null || request.getTargetEntityId() != null) {
+            UUID sourceId = request.getSourceEntityId() != null ? request.getSourceEntityId() : entity.getSourceEntityId();
+            UUID targetId = request.getTargetEntityId() != null ? request.getTargetEntityId() : entity.getTargetEntityId();
+            validateEntities(sourceId, targetId);
+            entity.setSourceEntityId(sourceId);
+            entity.setTargetEntityId(targetId);
+        }
+        if (request.getFlowType() != null) entity.setFlowType(request.getFlowType());
+        if (request.getDescription() != null) entity.setDescription(request.getDescription());
+        if (request.getSchedule() != null) entity.setSchedule(request.getSchedule());
+        entity.setUpdatedAt(Instant.now());
+        return toResponse(flowRepository.save(entity));
+    }
+
+    @Transactional
     public void delete(UUID id) {
         DataFlowEntity entity = findById(id);
         Instant now = Instant.now();
@@ -74,6 +90,15 @@ public class DataFlowService {
         return flowRepository.findById(id)
                 .filter(e -> e.getDeletedAt() == null && e.getTenantId().equals(tenantId))
                 .orElseThrow(() -> new EaException(ErrorCode.NOT_FOUND, "数据流不存在"));
+    }
+
+    private void validateEntities(UUID sourceEntityId, UUID targetEntityId) {
+        entityRepository.findByIdAndDeletedAtIsNull(sourceEntityId)
+                .orElseThrow(() -> new EaException(ErrorCode.NOT_FOUND,
+                        "源数据实体不存在: " + sourceEntityId));
+        entityRepository.findByIdAndDeletedAtIsNull(targetEntityId)
+                .orElseThrow(() -> new EaException(ErrorCode.NOT_FOUND,
+                        "目标数据实体不存在: " + targetEntityId));
     }
 
     private DataFlowResponse toResponse(DataFlowEntity entity) {

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from sqlalchemy import JSON, Column, DateTime, Integer, String, func
+from sqlalchemy import JSON, Boolean, Column, DateTime, Integer, String, func
 from sqlalchemy.orm import DeclarativeBase
 
 from app.agents.orm import Base
@@ -19,6 +19,8 @@ class ConversationORM(Base):
     title = Column(String(512), nullable=True, default="")
     status = Column(String(32), nullable=False, default="ACTIVE")
     message_count = Column(Integer, nullable=False, default=0)
+    favorite = Column(Boolean, nullable=False, default=False)
+    mode = Column(String(32), nullable=False, default="chat")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()

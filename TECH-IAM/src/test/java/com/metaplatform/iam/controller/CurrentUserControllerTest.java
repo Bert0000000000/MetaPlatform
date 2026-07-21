@@ -2,6 +2,7 @@ package com.metaplatform.iam.controller;
 
 import com.metaplatform.iam.common.ErrorCode;
 import com.metaplatform.iam.dto.auth.CurrentUserResponse;
+import com.metaplatform.iam.dto.auth.UserPermissionsResponse;
 import com.metaplatform.iam.exception.GlobalExceptionHandler;
 import com.metaplatform.iam.exception.IamException;
 import com.metaplatform.iam.service.CurrentUserService;
@@ -82,6 +83,62 @@ class CurrentUserControllerTest {
         });
 
         mockMvc.perform(get("/api/v1/iam/auth/me"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void mePermissions_shouldReturnAggregatedPermissions_whenAuthenticated() throws Exception {
+        loginAs("u1", "alice");
+        UserPermissionsResponse response = UserPermissionsResponse.builder()
+                .userId("u1")
+                .tenantId("tenant-default")
+                .permissionCodes(List.of("project:read", "project:write"))
+                .permissions(List.of(
+                        UserPermissionsResponse.PermissionDetail.builder()
+                                .permissionId("perm-001")
+                                .permissionCode("project:read")
+                                .permissionName("项目读取")
+                                .resourceType("PROJECT")
+                                .actions(List.of("READ"))
+                                .effect("ALLOW")
+                                .build(),
+                        UserPermissionsResponse.PermissionDetail.builder()
+                                .permissionId("perm-002")
+                                .permissionCode("project:write")
+                                .permissionName("项目写入")
+                                .resourceType("PROJECT")
+                                .actions(List.of("CREATE", "UPDATE"))
+                                .effect("ALLOW")
+                                .build()))
+                .roles(List.of(UserPermissionsResponse.RoleSummary.builder()
+                        .roleId("role-001")
+                        .roleCode("DEVELOPER")
+                        .roleName("开发者")
+                        .dataScope("DEPT")
+                        .build()))
+                .build();
+        when(currentUserService.currentPermissions()).thenReturn(response);
+
+        mockMvc.perform(get("/api/v1/iam/auth/me/permissions"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(0))
+                .andExpect(jsonPath("$.data.userId").value("u1"))
+                .andExpect(jsonPath("$.data.permissionCodes[0]").value("project:read"))
+                .andExpect(jsonPath("$.data.permissions[0].permissionCode").value("project:read"))
+                .andExpect(jsonPath("$.data.permissions[0].actions[0]").value("READ"))
+                .andExpect(jsonPath("$.data.permissions[1].actions.length()").value(2))
+                .andExpect(jsonPath("$.data.roles[0].roleCode").value("DEVELOPER"))
+                .andExpect(jsonPath("$.data.roles[0].dataScope").value("DEPT"));
+    }
+
+    @Test
+    void mePermissions_shouldThrow_whenNotAuthenticated() throws Exception {
+        SecurityContextHolder.clearContext();
+        when(currentUserService.currentPermissions()).thenAnswer(invocation -> {
+            throw new IamException(ErrorCode.UNAUTHORIZED, "未登录或登录状态已失效");
+        });
+
+        mockMvc.perform(get("/api/v1/iam/auth/me/permissions"))
                 .andExpect(status().isUnauthorized());
     }
 }

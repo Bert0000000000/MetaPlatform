@@ -83,6 +83,29 @@ class ValueStreamStageTest {
     }
 
     @Test
+    void createStage_shouldPersistCapabilityAndRoleAssociations() {
+        when(valueStreamRepository.findByIdAndDeletedAtIsNull(valueStreamId)).thenReturn(Optional.of(buildValueStream()));
+        when(stageRepository.findByValueStreamIdAndDeletedAtIsNullOrderBySortOrderAsc(valueStreamId))
+                .thenReturn(List.of());
+        ArgumentCaptor<ValueStreamStageEntity> captor = ArgumentCaptor.forClass(ValueStreamStageEntity.class);
+        when(stageRepository.save(captor.capture())).thenAnswer(i -> i.getArgument(0));
+
+        UUID capabilityId = UUID.randomUUID();
+        UUID roleId = UUID.randomUUID();
+        CreateValueStreamStageRequest request = new CreateValueStreamStageRequest();
+        request.setName("开发");
+        request.setCapabilityIds(List.of(capabilityId));
+        request.setOutputs(List.of("需求文档"));
+        request.setParticipantRoleIds(List.of(roleId));
+
+        ValueStreamStageResponse response = service.createStage(valueStreamId, request);
+
+        assertThat(response.getCapabilityIds()).containsExactly(capabilityId);
+        assertThat(response.getOutputs()).containsExactly("需求文档");
+        assertThat(response.getParticipantRoleIds()).containsExactly(roleId);
+    }
+
+    @Test
     void createStage_shouldThrow_whenDuplicateName() {
         when(valueStreamRepository.findByIdAndDeletedAtIsNull(valueStreamId)).thenReturn(Optional.of(buildValueStream()));
         ValueStreamStageEntity existing = buildStage(UUID.randomUUID(), "开发");

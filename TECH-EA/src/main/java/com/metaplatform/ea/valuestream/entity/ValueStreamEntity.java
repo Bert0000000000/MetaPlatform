@@ -36,6 +36,12 @@ public class ValueStreamEntity {
     @Column(columnDefinition = "TEXT")
     private String description;
 
+    @Column(name = "trigger_event", length = 256)
+    private String triggerEvent;
+
+    @Column(name = "termination_event", length = 256)
+    private String terminationEvent;
+
     @Lob
     @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     @Column(name = "stages", columnDefinition = "jsonb")

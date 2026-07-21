@@ -1,5 +1,8 @@
 package com.metaplatform.obs.trace.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.metaplatform.obs.common.TraceFilter;
 import com.metaplatform.obs.dto.PageResponse;
 import com.metaplatform.obs.exception.GlobalExceptionHandler;
@@ -104,5 +107,60 @@ class TraceControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.nodes[0].service").value("tech-iam"))
                 .andExpect(jsonPath("$.data.edges[0].target").value("tech-rag"));
+    }
+
+    @Test
+    void getTraceSpans_shouldReturnTagsAndLogs() throws Exception {
+        ObjectMapper mapper = new ObjectMapper();
+        ObjectNode tags = mapper.createObjectNode();
+        tags.put("span.kind", "client");
+        tags.put("component", "llm");
+        tags.put("llm.model", "doubao-pro");
+        ArrayNode logs = mapper.createArrayNode();
+        ObjectNode logEntry = mapper.createObjectNode();
+        logEntry.put("timestamp", "2026-07-16T08:00:00Z");
+        logEntry.put("event", "completion");
+        logs.add(logEntry);
+
+        when(traceService.getTraceSpans(eq("trace-1"))).thenReturn(List.of(
+                Span.builder().spanId("s1").serviceName("tech-llmgw")
+                        .operationName("llm.chat")
+                        .startTimeUs(1_000_000L).durationUs(500_000L)
+                        .status("OK").tags(tags).logs(logs).build()));
+
+        mockMvc.perform(get("/api/v1/obs/traces/trace-1/spans"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].tags['llm.model']").value("doubao-pro"))
+                .andExpect(jsonPath("$.data[0].tags['span.kind']").value("client"))
+                .andExpect(jsonPath("$.data[0].logs[0].event").value("completion"));
+    }
+
+    @Test
+    void getTraceDetail_shouldReturnTagsAndLogsInSpans() throws Exception {
+        ObjectMapper mapper = new ObjectMapper();
+        ObjectNode tags = mapper.createObjectNode();
+        tags.put("component", "tool");
+        tags.put("tool.name", "query_database");
+        ArrayNode logs = mapper.createArrayNode();
+        ObjectNode logEntry = mapper.createObjectNode();
+        logEntry.put("event", "tool.result");
+        logs.add(logEntry);
+
+        TraceDetail detail = TraceDetail.builder()
+                .traceId("trace-1")
+                .startTime(Instant.parse("2026-07-16T00:00:00Z"))
+                .durationUs(120_000L)
+                .rootService("tech-agent")
+                .spanCount(1)
+                .errorCount(0)
+                .spans(List.of(Span.builder().spanId("s1").serviceName("tech-action")
+                        .operationName("tool.invoke").tags(tags).logs(logs).build()))
+                .build();
+        when(traceService.getTraceDetail(eq("trace-1"))).thenReturn(detail);
+
+        mockMvc.perform(get("/api/v1/obs/traces/trace-1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.spans[0].tags['tool.name']").value("query_database"))
+                .andExpect(jsonPath("$.data.spans[0].logs[0].event").value("tool.result"));
     }
 }

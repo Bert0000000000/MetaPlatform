@@ -19,6 +19,8 @@ public class McpServerListItem {
     private String code;
     private String transportType;
     private String status;
+    private long toolCount;
+    private Instant lastHeartbeatAt;
     private Instant createdAt;
     private Instant updatedAt;
 }

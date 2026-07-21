@@ -2,6 +2,7 @@ package com.metaplatform.ea.dataarchitecture.controller;
 
 import com.metaplatform.ea.common.ApiResponse;
 import com.metaplatform.ea.dataarchitecture.dto.CreateDataAssetRequest;
+import com.metaplatform.ea.dataarchitecture.dto.DataAssetCatalogResponse;
 import com.metaplatform.ea.dataarchitecture.dto.DataAssetResponse;
 import com.metaplatform.ea.dataarchitecture.dto.UpdateDataAssetRequest;
 import com.metaplatform.ea.dataarchitecture.service.DataAssetService;
@@ -25,8 +26,17 @@ public class DataAssetController {
     }
 
     @GetMapping
-    public ApiResponse<List<DataAssetResponse>> list() {
-        return ApiResponse.success(service.list());
+    public ApiResponse<List<DataAssetResponse>> list(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String assetType,
+            @RequestParam(required = false) String classification) {
+        return ApiResponse.success(service.list(keyword, assetType, classification));
+    }
+
+    @GetMapping("/catalog")
+    public ApiResponse<DataAssetCatalogResponse> catalog(
+            @RequestParam(required = false, defaultValue = "type") String groupBy) {
+        return ApiResponse.success(service.catalog(groupBy));
     }
 
     @GetMapping("/{id}")

@@ -23,6 +23,12 @@ from app.audit.repository import AuditLogRepository, SqlAlchemyAuditLogRepositor
 from app.audit.service import AuditLogService
 from app.chat.provider_client import MockProviderClient, ProviderClient
 from app.chat.service import ChatService
+from app.code.repository import (
+    CodeShareRepository,
+    CodeSnippetRepository,
+    CodeTemplateRepository,
+)
+from app.code.service import CodeService
 from app.config import settings
 from app.cost.repository import SqlAlchemyUsageRepository, UsageRepository
 from app.cost.service import CostReportService
@@ -37,6 +43,8 @@ from app.quotas.service import QuotaService
 from app.ratelimits.repository import RateLimitRepository, SqlAlchemyRateLimitRepository
 from app.ratelimits.runtime import RateLimitGuard
 from app.ratelimits.service import RateLimitService
+from app.routing.repository import RoutingRuleRepository, SqlAlchemyRoutingRuleRepository
+from app.routing.service import ModelRoutingOptimizer
 
 
 def _use_sqlalchemy() -> bool:
@@ -62,16 +70,30 @@ class Registry:
     cost_service: CostReportService
     audit_repo: Any
     audit_service: AuditLogService
+    template_repo: Any = None
+    snippet_repo: Any = None
+    share_repo: Any = None
+    code_service: Optional[CodeService] = None
+    routing_repo: Any = None
+    routing_service: Optional[ModelRoutingOptimizer] = None
 
-    def reset(self) -> None:
+    async def reset(self) -> None:
         """Reset all in-memory state and re-seed mock clients."""
 
-        self.model_repo.clear()
+        await self.model_repo.clear()
         self.prompt_repo.clear()
         self.quota_repo.clear()
         self.rate_limit_repo.clear()
         self.usage_repo.clear()
         self.audit_repo.clear()
+        if self.template_repo is not None:
+            self.template_repo.clear()
+        if self.snippet_repo is not None:
+            self.snippet_repo.clear()
+        if self.share_repo is not None:
+            self.share_repo.clear()
+        if self.routing_repo is not None:
+            self.routing_repo.clear()
         if isinstance(self.provider_client, MockProviderClient):
             self.provider_client.reset()
         if isinstance(self.embedding_client, MockEmbeddingClient):
@@ -96,6 +118,7 @@ def _build_default_registry() -> Registry:
         rate_limit_repo: Any = SqlAlchemyRateLimitRepository(session_factory)
         usage_repo: Any = SqlAlchemyUsageRepository(session_factory)
         audit_repo: Any = SqlAlchemyAuditLogRepository(session_factory)
+        routing_repo: Any = SqlAlchemyRoutingRuleRepository(session_factory)
     else:
         model_repo = ModelRepository()
         prompt_repo = PromptRepository()
@@ -103,6 +126,7 @@ def _build_default_registry() -> Registry:
         rate_limit_repo = RateLimitRepository()
         usage_repo = UsageRepository()
         audit_repo = AuditLogRepository()
+        routing_repo = RoutingRuleRepository()
 
     model_service = ModelService(model_repo)
     chat_service = ChatService(model_service, provider_client)
@@ -112,6 +136,20 @@ def _build_default_registry() -> Registry:
     rate_limit_service = RateLimitService(rate_limit_repo)
     cost_service = CostReportService(usage_repo)
     audit_service = AuditLogService(audit_repo)
+    routing_service = ModelRoutingOptimizer(model_service, cost_service, routing_repo)
+
+    # Code module (V12-02).  In-memory repositories are sufficient for
+    # Phase 2 / tests; SQLAlchemy-backed implementations can be swapped
+    # in later following the prompts module pattern.
+    template_repo = CodeTemplateRepository()
+    snippet_repo = CodeSnippetRepository()
+    share_repo = CodeShareRepository()
+    code_service = CodeService(
+        chat_service=chat_service,
+        template_repo=template_repo,
+        snippet_repo=snippet_repo,
+        share_repo=share_repo,
+    )
 
     return Registry(
         model_repo=model_repo,
@@ -130,6 +168,12 @@ def _build_default_registry() -> Registry:
         cost_service=cost_service,
         audit_repo=audit_repo,
         audit_service=audit_service,
+        template_repo=template_repo,
+        snippet_repo=snippet_repo,
+        share_repo=share_repo,
+        code_service=code_service,
+        routing_repo=routing_repo,
+        routing_service=routing_service,
     )
 
 
@@ -224,3 +268,11 @@ def get_audit_service(request: Request) -> AuditLogService:
 
 def get_cost_service(request: Request) -> CostReportService:
     return request.app.state.registry.cost_service
+
+
+def get_code_service(request: Request) -> CodeService:
+    return request.app.state.registry.code_service
+
+
+def get_routing_optimizer(request: Request) -> ModelRoutingOptimizer:
+    return request.app.state.registry.routing_service

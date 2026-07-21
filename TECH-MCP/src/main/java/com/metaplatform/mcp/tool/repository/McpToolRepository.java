@@ -25,6 +25,8 @@ public interface McpToolRepository extends JpaRepository<McpToolEntity, UUID> {
 
     List<McpToolEntity> findByTenantIdAndServerIdAndDeletedAtIsNull(String tenantId, UUID serverId);
 
+    long countByTenantIdAndServerIdAndDeletedAtIsNull(String tenantId, UUID serverId);
+
     List<McpToolEntity> findByTenantIdAndToolTypeAndDeletedAtIsNull(String tenantId, String toolType);
 
     List<McpToolEntity> findByTenantIdAndEnabledAndDeletedAtIsNull(String tenantId, Boolean enabled);
@@ -34,10 +36,18 @@ public interface McpToolRepository extends JpaRepository<McpToolEntity, UUID> {
            "AND (:serverId IS NULL OR t.serverId = :serverId) " +
            "AND (:toolType IS NULL OR t.toolType = :toolType) " +
            "AND (:enabled IS NULL OR t.enabled = :enabled) " +
+           "AND (:category IS NULL OR t.category = :category) " +
            "AND (:keyword IS NULL OR LOWER(t.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(t.code) LIKE LOWER(CONCAT('%', :keyword, '%')))")
     List<McpToolEntity> search(@Param("tenantId") String tenantId,
                                 @Param("serverId") UUID serverId,
                                 @Param("toolType") String toolType,
                                 @Param("enabled") Boolean enabled,
+                                @Param("category") String category,
                                 @Param("keyword") String keyword);
+
+    long countByTenantIdAndDeletedAtIsNull(String tenantId);
+
+    long countByTenantIdAndEnabledTrueAndDeletedAtIsNull(String tenantId);
+
+    long countByTenantIdAndEnabledFalseAndDeletedAtIsNull(String tenantId);
 }

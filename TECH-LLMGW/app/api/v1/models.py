@@ -42,7 +42,7 @@ async def sync_models(
     service: ModelService = Depends(get_model_service),
 ) -> dict:
     providers = body.providers if body else None
-    result = service.sync(ctx.tenant_id, providers=providers)
+    result = await service.sync(ctx.tenant_id, providers=providers)
     payload_out = {
         "syncedAt": result["syncedAt"].isoformat(),
         "providers": result["providers"],
@@ -63,7 +63,7 @@ async def list_models(
     service: ModelService = Depends(get_model_service),
 ) -> dict:
     type_ = _coerce_type(type)
-    models = service.list(
+    models = await service.list(
         ctx.tenant_id,
         provider=provider,
         type_=type_,
@@ -80,7 +80,7 @@ async def list_multimodal_models(
     ctx: RequestContext = Depends(request_context_dep),
     service: ModelService = Depends(get_model_service),
 ) -> dict:
-    models = service.list_multimodal(ctx.tenant_id)
+    models = await service.list_multimodal(ctx.tenant_id)
     items = service.to_list_items(models)
     return success(
         {"items": items, "total": len(items)},
@@ -94,7 +94,7 @@ async def list_embedding_models(
     ctx: RequestContext = Depends(request_context_dep),
     service: ModelService = Depends(get_model_service),
 ) -> dict:
-    models = service.list_embedding(ctx.tenant_id)
+    models = await service.list_embedding(ctx.tenant_id)
     items = service.to_list_items(models)
     return success(
         {"items": items, "total": len(items)},
@@ -110,7 +110,7 @@ async def list_global_models(
     service: ModelService = Depends(get_model_service),
 ) -> dict:
     type_ = _coerce_type(type)
-    models = service.list_global(ctx.tenant_id, type_=type_)
+    models = await service.list_global(ctx.tenant_id, type_=type_)
     items = service.to_list_items(models)
     return success(
         {"items": items, "total": len(items)},
@@ -125,5 +125,5 @@ async def get_model(
     ctx: RequestContext = Depends(request_context_dep),
     service: ModelService = Depends(get_model_service),
 ) -> dict:
-    model = service.detail(ctx.tenant_id, model_id)
+    model = await service.detail(ctx.tenant_id, model_id)
     return success(service.to_detail(model), trace_id=ctx.trace_id)

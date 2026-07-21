@@ -16,6 +16,12 @@ import pytest  # noqa: E402
 
 from app.chat.provider_client import MockProviderClient  # noqa: E402
 from app.chat.service import ChatService  # noqa: E402
+from app.code.repository import (  # noqa: E402
+    CodeShareRepository,
+    CodeSnippetRepository,
+    CodeTemplateRepository,
+)
+from app.code.service import CodeService  # noqa: E402
 from app.common.api_response import build_page  # noqa: E402
 from app.common.jwt_auth import create_token  # noqa: E402
 from app.deps import get_registry, set_registry  # noqa: E402
@@ -34,6 +40,8 @@ from app.audit.repository import AuditLogRepository  # noqa: E402
 from app.audit.service import AuditLogService  # noqa: E402
 from app.ratelimits.repository import RateLimitRepository  # noqa: E402
 from app.ratelimits.service import RateLimitService  # noqa: E402
+from app.routing.repository import RoutingRuleRepository  # noqa: E402
+from app.routing.service import ModelRoutingOptimizer  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
 
 from main import app  # noqa: E402
@@ -85,6 +93,20 @@ def registry():
     rate_limit_service = RateLimitService(rate_limit_repo)
     rate_limit_service._guard = RateLimitGuard(rate_limit_service)
 
+    routing_repo = RoutingRuleRepository()
+    routing_service = ModelRoutingOptimizer(model_service, cost_service, routing_repo)
+
+    # Code module (V12-02)
+    template_repo = CodeTemplateRepository()
+    snippet_repo = CodeSnippetRepository()
+    share_repo = CodeShareRepository()
+    code_service = CodeService(
+        chat_service=chat_service,
+        template_repo=template_repo,
+        snippet_repo=snippet_repo,
+        share_repo=share_repo,
+    )
+
     from app.deps import Registry
 
     reg = Registry(
@@ -104,6 +126,12 @@ def registry():
         cost_service=cost_service,
         audit_repo=audit_repo,
         audit_service=audit_service,
+        template_repo=template_repo,
+        snippet_repo=snippet_repo,
+        share_repo=share_repo,
+        code_service=code_service,
+        routing_repo=routing_repo,
+        routing_service=routing_service,
     )
     set_registry(reg)
     yield reg
@@ -131,8 +159,8 @@ def tenant_headers():
 
 
 @pytest.fixture
-def seeded_models(registry):
+async def seeded_models(registry):
     """Sync the full catalog so most tests start from a populated repo."""
 
-    registry.model_service.sync(TEST_TENANT)
+    await registry.model_service.sync(TEST_TENANT)
     return registry

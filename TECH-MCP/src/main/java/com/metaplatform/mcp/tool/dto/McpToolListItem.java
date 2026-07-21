@@ -18,6 +18,10 @@ public class McpToolListItem {
     private UUID serverId;
     private String name;
     private String code;
+    private String category;
+    private String version;
+    private String description;
+    private String inputSchema;
     private String toolType;
     private Boolean enabled;
     private Instant createdAt;

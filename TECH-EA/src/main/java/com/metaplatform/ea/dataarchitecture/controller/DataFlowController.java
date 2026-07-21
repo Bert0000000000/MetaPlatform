@@ -3,6 +3,7 @@ package com.metaplatform.ea.dataarchitecture.controller;
 import com.metaplatform.ea.common.ApiResponse;
 import com.metaplatform.ea.dataarchitecture.dto.CreateDataFlowRequest;
 import com.metaplatform.ea.dataarchitecture.dto.DataFlowResponse;
+import com.metaplatform.ea.dataarchitecture.dto.UpdateDataFlowRequest;
 import com.metaplatform.ea.dataarchitecture.service.DataFlowService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +32,12 @@ public class DataFlowController {
     @GetMapping("/{id}")
     public ApiResponse<DataFlowResponse> get(@PathVariable UUID id) {
         return ApiResponse.success(service.get(id));
+    }
+
+    @PutMapping("/{id}")
+    public ApiResponse<DataFlowResponse> update(@PathVariable UUID id,
+                                                  @Valid @RequestBody UpdateDataFlowRequest request) {
+        return ApiResponse.success(service.update(id, request));
     }
 
     @DeleteMapping("/{id}")

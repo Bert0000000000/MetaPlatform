@@ -1,5 +1,6 @@
 package com.metaplatform.ea.mapping.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.metaplatform.ea.exception.EaException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -16,6 +17,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class OntIntegrationServiceTest {
 
     private OntIntegrationService ontIntegrationService;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @BeforeEach
     void setUp() {
@@ -26,7 +28,7 @@ class OntIntegrationServiceTest {
         WebClient webClient = WebClient.builder()
                 .exchangeFunction(buildExchangeFunction(HttpStatus.OK))
                 .build();
-        ontIntegrationService = new OntIntegrationService(webClient);
+        ontIntegrationService = new OntIntegrationService(webClient, objectMapper);
 
         boolean result = ontIntegrationService.conceptExists("concept-001");
 
@@ -38,7 +40,7 @@ class OntIntegrationServiceTest {
         WebClient webClient = WebClient.builder()
                 .exchangeFunction(buildExchangeFunction(HttpStatus.NOT_FOUND))
                 .build();
-        ontIntegrationService = new OntIntegrationService(webClient);
+        ontIntegrationService = new OntIntegrationService(webClient, objectMapper);
 
         boolean result = ontIntegrationService.conceptExists("concept-001");
 
@@ -50,7 +52,7 @@ class OntIntegrationServiceTest {
         WebClient webClient = WebClient.builder()
                 .exchangeFunction(buildExchangeFunction(HttpStatus.INTERNAL_SERVER_ERROR))
                 .build();
-        ontIntegrationService = new OntIntegrationService(webClient);
+        ontIntegrationService = new OntIntegrationService(webClient, objectMapper);
 
         assertThatThrownBy(() -> ontIntegrationService.conceptExists("concept-001"))
                 .isInstanceOf(EaException.class)
@@ -62,7 +64,7 @@ class OntIntegrationServiceTest {
         WebClient webClient = WebClient.builder()
                 .exchangeFunction(buildExchangeFunction(HttpStatus.NOT_FOUND))
                 .build();
-        ontIntegrationService = new OntIntegrationService(webClient);
+        ontIntegrationService = new OntIntegrationService(webClient, objectMapper);
 
         assertThatThrownBy(() -> ontIntegrationService.validateConceptExists("concept-001"))
                 .isInstanceOf(EaException.class)
@@ -74,7 +76,7 @@ class OntIntegrationServiceTest {
         WebClient webClient = WebClient.builder()
                 .exchangeFunction(buildExchangeFunction(HttpStatus.OK))
                 .build();
-        ontIntegrationService = new OntIntegrationService(webClient);
+        ontIntegrationService = new OntIntegrationService(webClient, objectMapper);
 
         ontIntegrationService.validateConceptExists("concept-001");
     }

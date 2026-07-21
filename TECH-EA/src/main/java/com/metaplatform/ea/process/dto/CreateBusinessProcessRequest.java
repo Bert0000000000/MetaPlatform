@@ -18,6 +18,11 @@ public class CreateBusinessProcessRequest {
 
     private String description;
     private UUID valueStreamId;
+    private String processType;
+    private String frequency;
     private List<UUID> capabilities;
+    private List<UUID> applicationIds;
+    private List<UUID> responsibleRoleIds;
     private List<Map<String, Object>> processSteps;
+    private String bpmnXml;
 }

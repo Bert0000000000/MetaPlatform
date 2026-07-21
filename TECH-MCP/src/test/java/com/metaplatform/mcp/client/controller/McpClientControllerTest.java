@@ -134,4 +134,29 @@ class McpClientControllerTest {
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value(ErrorCode.CLIENT_NOT_FOUND.getCode()));
     }
+
+    @Test
+    void test_connection_alias_returns_updated_client() throws Exception {
+        UUID id = UUID.randomUUID();
+        McpClientResponse response = sampleResponse();
+        response.setId(id);
+        response.setStatus("CONNECTED");
+        when(mcpClientService.testConnection(id)).thenReturn(response);
+
+        mockMvc.perform(post("/api/v1/mcp/clients/{id}/test-connection", id))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("CONNECTED"));
+    }
+
+    @Test
+    void get_tools_returns_list() throws Exception {
+        UUID id = UUID.randomUUID();
+        McpToolListItem item = McpToolListItem.builder()
+                .id(UUID.randomUUID()).name("rt").code("remote_tool").toolType("MCP").enabled(true).build();
+        when(mcpClientService.getTools(id)).thenReturn(List.of(item));
+
+        mockMvc.perform(get("/api/v1/mcp/clients/{id}/tools", id))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].code").value("remote_tool"));
+    }
 }

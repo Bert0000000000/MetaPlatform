@@ -37,7 +37,7 @@ class ModelService:
 
     # ------------------------------------------------------------------ sync
 
-    def sync(
+    async def sync(
         self,
         tenant_id: str,
         providers: Optional[Sequence[str]] = None,
@@ -80,7 +80,7 @@ class ModelService:
                 enabled=True,
                 description=spec.description,
             )
-            _, created = self._repo.upsert(model)
+            _, created = await self._repo.upsert(model)
             stat["fetched"] += 1
             if created:
                 stat["added"] += 1
@@ -108,7 +108,7 @@ class ModelService:
                 enabled=True,
                 description=spec.description,
             )
-            _, created = self._repo.upsert(model)
+            _, created = await self._repo.upsert(model)
             if created:
                 public_added += 1
             else:
@@ -137,7 +137,7 @@ class ModelService:
 
     # ------------------------------------------------------------------ list
 
-    def list(
+    async def list(
         self,
         tenant_id: str,
         *,
@@ -145,43 +145,37 @@ class ModelService:
         type_: Optional[ModelType] = None,
         enabled: Optional[bool] = None,
     ) -> List[Model]:
-        return self._repo.list(
+        return await self._repo.list(
             tenant_id,
             provider=provider,
             type_=type_,
             enabled=enabled if enabled is not None else True,
         )
 
-    def list_multimodal(self, tenant_id: str) -> List[Model]:
-        return [
-            m
-            for m in self._repo.list(tenant_id, type_=ModelType.MULTIMODAL)
-            if ModelCapability.VISION.value in m.capabilities
-        ]
+    async def list_multimodal(self, tenant_id: str) -> List[Model]:
+        models = await self._repo.list(tenant_id, type_=ModelType.MULTIMODAL)
+        return [m for m in models if ModelCapability.VISION.value in m.capabilities]
 
-    def list_embedding(self, tenant_id: str) -> List[Model]:
-        return [
-            m
-            for m in self._repo.list(tenant_id, type_=ModelType.EMBEDDING)
-            if ModelCapability.EMBEDDING.value in m.capabilities
-        ]
+    async def list_embedding(self, tenant_id: str) -> List[Model]:
+        models = await self._repo.list(tenant_id, type_=ModelType.EMBEDDING)
+        return [m for m in models if ModelCapability.EMBEDDING.value in m.capabilities]
 
-    def list_global(
+    async def list_global(
         self,
         tenant_id: str,
         *,
         type_: Optional[ModelType] = None,
     ) -> List[Model]:
-        return self._repo.list_global(tenant_id, type_=type_)
+        return await self._repo.list_global(tenant_id, type_=type_)
 
     # ---------------------------------------------------------------- detail
 
-    def detail(self, tenant_id: str, model_id: str) -> Model:
-        model = self._repo.get_for_tenant(tenant_id, model_id)
+    async def detail(self, tenant_id: str, model_id: str) -> Model:
+        model = await self._repo.get_for_tenant(tenant_id, model_id)
         if model is None:
             # Allow public catalog fallback so cross-tenant lookups for the
             # "global" view are still resolvable.
-            model = self._repo.get(model_id, tenant_id=tenant_id)
+            model = await self._repo.get(model_id, tenant_id=tenant_id)
         if model is None:
             raise ModelNotFoundError(
                 f"模型不存在: modelId={model_id}",
@@ -191,12 +185,12 @@ class ModelService:
 
     # ------------------------------------------------------ runtime helpers
 
-    def resolve_active(self, tenant_id: str, model_id: str) -> Model:
+    async def resolve_active(self, tenant_id: str, model_id: str) -> Model:
         """Resolve a model that must be enabled & visible to ``tenant_id``."""
 
-        model = self._repo.get_for_tenant(tenant_id, model_id)
+        model = await self._repo.get_for_tenant(tenant_id, model_id)
         if model is None:
-            model = self._repo.get(model_id, tenant_id=tenant_id)
+            model = await self._repo.get(model_id, tenant_id=tenant_id)
         if model is None:
             raise ModelNotFoundError(
                 f"模型不存在: modelId={model_id}",

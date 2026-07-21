@@ -21,7 +21,7 @@ TENANT = "tenant-test"
 
 
 def _seed_embedding_model(service, *, enabled: bool = True) -> None:
-    service._repo.upsert(  # type: ignore[attr-defined]
+    service._repo.upsert_sync(  # type: ignore[attr-defined]
         Model(
             model_id="m-volcengine-doubao-embedding-large",
             tenant_id=TENANT,
@@ -40,7 +40,7 @@ def _seed_embedding_model(service, *, enabled: bool = True) -> None:
 
 
 def _seed_chat_model(service) -> None:
-    service._repo.upsert(  # type: ignore[attr-defined]
+    service._repo.upsert_sync(  # type: ignore[attr-defined]
         Model(
             model_id="m-openai-gpt-4o",
             tenant_id=TENANT,
@@ -59,14 +59,14 @@ def _seed_chat_model(service) -> None:
 
 
 class TestEmbeddingServiceBatch:
-    def test_embedding_batch_normalizes_vectors(self, registry):
+    async def test_embedding_batch_normalizes_vectors(self, registry):
         _seed_embedding_model(registry.model_service)
         req = BatchEmbeddingRequest(
             modelId="m-volcengine-doubao-embedding-large",
             inputs=["hello", "world"],
             normalize=True,
         )
-        resp = registry.embedding_service.batch(TENANT, req)
+        resp = await registry.embedding_service.batch(TENANT, req)
         assert resp.dimension == 16
         assert len(resp.embeddings) == 2
         for vec in resp.embeddings:
@@ -75,14 +75,14 @@ class TestEmbeddingServiceBatch:
         # Mock recorded the batch call.
         assert registry.embedding_client.calls  # type: ignore[attr-defined]
 
-    def test_embedding_batch_rejects_non_embedding_model(self, registry):
+    async def test_embedding_batch_rejects_non_embedding_model(self, registry):
         _seed_chat_model(registry.model_service)
         req = BatchEmbeddingRequest(
             modelId="m-openai-gpt-4o",
             inputs=["hello"],
         )
         with pytest.raises(UnsupportedModelTypeError):
-            registry.embedding_service.batch(TENANT, req)
+            await registry.embedding_service.batch(TENANT, req)
 
     def test_embedding_batch_input_too_many(self, registry):
         _seed_embedding_model(registry.model_service)
@@ -100,24 +100,24 @@ class TestEmbeddingServiceBatch:
                 inputs=["valid", "   "],
             )
 
-    def test_embedding_batch_404_unknown_model(self, registry):
+    async def test_embedding_batch_404_unknown_model(self, registry):
         req = BatchEmbeddingRequest(
             modelId="m-does-not-exist",
             inputs=["hi"],
         )
         with pytest.raises(ModelNotFoundError):
-            registry.embedding_service.batch(TENANT, req)
+            await registry.embedding_service.batch(TENANT, req)
 
-    def test_embedding_batch_422_disabled(self, registry):
+    async def test_embedding_batch_422_disabled(self, registry):
         _seed_embedding_model(registry.model_service, enabled=False)
         req = BatchEmbeddingRequest(
             modelId="m-volcengine-doubao-embedding-large",
             inputs=["hi"],
         )
         with pytest.raises(ModelNotAvailableError):
-            registry.embedding_service.batch(TENANT, req)
+            await registry.embedding_service.batch(TENANT, req)
 
-    def test_embedding_batch_translates_provider_errors(self, registry):
+    async def test_embedding_batch_translates_provider_errors(self, registry):
         _seed_embedding_model(registry.model_service)
 
         class _Boom(MockEmbeddingClient):
@@ -131,4 +131,4 @@ class TestEmbeddingServiceBatch:
             inputs=["hi"],
         )
         with pytest.raises(AllProvidersFailedError):
-            registry.embedding_service.batch(TENANT, req)
+            await registry.embedding_service.batch(TENANT, req)

@@ -25,7 +25,7 @@ from app.models.service import ModelService
 
 
 class _ModelProvider(Protocol):
-    def resolve_active(self, tenant_id: str, model_id: str) -> Model: ...
+    async def resolve_active(self, tenant_id: str, model_id: str) -> Model: ...
 
 
 class ChatService:
@@ -39,8 +39,8 @@ class ChatService:
 
     # ---------------------------------------------------------------- multimodal
 
-    def multimodal(self, tenant_id: str, request: MultimodalRequest) -> MultimodalResponse:
-        model = self._models.resolve_active(tenant_id, request.modelId)
+    async def multimodal(self, tenant_id: str, request: MultimodalRequest) -> MultimodalResponse:
+        model = await self._models.resolve_active(tenant_id, request.modelId)
         # Capability check happens AFTER the model is resolved so we get
         # the proper 404 / 422 cascade.
         if ModelCapability.VISION.value not in model.capabilities:
@@ -89,7 +89,7 @@ class ChatService:
 
     # --------------------------------------------------------------- text chat
 
-    def text_chat(
+    async def text_chat(
         self,
         tenant_id: str,
         model_id: str,
@@ -101,7 +101,7 @@ class ChatService:
     ) -> MultimodalResponse:
         """Text-only chat helper used by prompt preview and future endpoints."""
 
-        model = self._models.resolve_active(tenant_id, model_id)
+        model = await self._models.resolve_active(tenant_id, model_id)
         if model.type not in {ModelType.CHAT, ModelType.MULTIMODAL}:
             raise ModelNotAvailableError(
                 f"模型不支持文本对话: modelId={model_id}",

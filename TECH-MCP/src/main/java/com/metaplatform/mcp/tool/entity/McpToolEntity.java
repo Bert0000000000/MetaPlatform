@@ -35,6 +35,15 @@ public class McpToolEntity {
     @Column(nullable = false, length = 128)
     private String code;
 
+    @Column(length = 128)
+    private String category;
+
+    @Column(length = 32)
+    private String version;
+
+    @Column(columnDefinition = "TEXT")
+    private String tags;
+
     @Column(columnDefinition = "TEXT")
     private String description;
 

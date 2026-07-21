@@ -5,6 +5,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -35,6 +37,18 @@ public class BusinessRoleEntity {
 
     @Column(columnDefinition = "TEXT")
     private String responsibility;
+
+    @Column(name = "org_unit_id")
+    private UUID orgUnitId;
+
+    @Column(name = "domain", length = 64)
+    private String domain;
+
+    @Lob
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+    @Column(name = "iam_role_ids", columnDefinition = "jsonb")
+    @Builder.Default
+    private String iamRoleIds = "[]";
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;

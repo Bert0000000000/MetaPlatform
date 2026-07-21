@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from contextlib import asynccontextmanager
+
 import uvicorn
 from fastapi import FastAPI
 
@@ -13,10 +15,33 @@ from app.common.middleware import (
 from app.config import settings
 from app.deps import get_registry
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Create database tables on startup when using SQLAlchemy backend."""
+
+    if settings.database_url.startswith("postgresql"):
+        from app.common.db import init_db
+
+        # Import all ORM modules so their tables are registered on
+        # ``Base.metadata`` before ``create_all`` runs.
+        import app.models.orm  # noqa: F401
+        import app.prompts.orm  # noqa: F401
+        import app.quotas.orm  # noqa: F401
+        import app.ratelimits.orm  # noqa: F401
+        import app.audit.orm  # noqa: F401
+        import app.cost.orm  # noqa: F401
+        import app.routing.orm  # noqa: F401
+
+        await init_db()
+    yield
+
+
 app = FastAPI(
     title="TECH-LLMGW",
     description="LLM Gateway Service for Mate Platform (Phase 2)",
     version="0.2.0",
+    lifespan=lifespan,
 )
 
 # Install middlewares & error handlers.

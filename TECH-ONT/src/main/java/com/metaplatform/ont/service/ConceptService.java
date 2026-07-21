@@ -35,6 +35,7 @@ public class ConceptService {
     private final EntityRepository entityRepository;
     private final ObjectMapper objectMapper;
     private final OntSyncService ontSyncService;
+    private final EaWebhookService eaWebhookService;
 
     @Transactional
     public ConceptResponse create(ConceptCreateRequest request) {
@@ -81,6 +82,10 @@ public class ConceptService {
         saveAttributeAssociations(tenantId, saved.getConceptId(), request.getAttributeIds(), false);
 
         ontSyncService.syncConcept(saved.getConceptId());
+
+        eaWebhookService.notifyConceptChange(
+                saved.getConceptId(), saved.getCode(), saved.getName(),
+                "CREATED", buildChangePayload("parentConceptId", saved.getParentConceptId()));
 
         return toResponse(saved, request.getAttributeIds());
     }
@@ -150,6 +155,10 @@ public class ConceptService {
             attributeIds = request.getAttributeIds();
         }
 
+        eaWebhookService.notifyConceptChange(
+                saved.getConceptId(), saved.getCode(), saved.getName(),
+                "UPDATED", buildChangePayload("parentConceptId", saved.getParentConceptId()));
+
         return toResponse(saved, attributeIds);
     }
 
@@ -164,6 +173,10 @@ public class ConceptService {
         if (entityRepository.countByTenantIdAndConceptId(tenantId, conceptId) > 0) {
             throw new OntException(ErrorCode.CONCEPT_HAS_ENTITIES);
         }
+
+        eaWebhookService.notifyConceptChange(
+                concept.getConceptId(), concept.getCode(), concept.getName(),
+                "DELETED", buildChangePayload("parentConceptId", concept.getParentConceptId()));
 
         conceptAttributeRepository.deleteByTenantIdAndConceptId(tenantId, conceptId);
         conceptRepository.delete(concept);
@@ -217,6 +230,11 @@ public class ConceptService {
         ConceptEntity saved = conceptRepository.save(concept);
         // 子孙的 depth/path 也需要更新
         propagateToDescendants(saved);
+
+        eaWebhookService.notifyConceptChange(
+                saved.getConceptId(), saved.getCode(), saved.getName(),
+                "MOVED", buildChangePayload("newParentConceptId", saved.getParentConceptId()));
+
         return toResponse(saved, null);
     }
 
@@ -347,6 +365,14 @@ public class ConceptService {
         }
         // 此处只构建当前节点；层级树用 ancestors/descendants 端点递归覆盖
         return node;
+    }
+
+    private Map<String, Object> buildChangePayload(String key, Object value) {
+        Map<String, Object> payload = new HashMap<>();
+        if (value != null) {
+            payload.put(key, value);
+        }
+        return payload;
     }
 
     private void saveAttributeAssociations(String tenantId, String conceptId, List<String> attributeIds, boolean inherited) {

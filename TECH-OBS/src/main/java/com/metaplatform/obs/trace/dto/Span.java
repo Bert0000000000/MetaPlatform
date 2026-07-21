@@ -19,4 +19,5 @@ public class Span {
     private long durationUs;
     private String status;
     private JsonNode tags;
+    private JsonNode logs;
 }

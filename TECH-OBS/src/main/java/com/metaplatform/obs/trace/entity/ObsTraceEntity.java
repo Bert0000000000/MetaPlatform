@@ -25,6 +25,7 @@ public class ObsTraceEntity {
     private long startTimeUs;
     private long durationUs;
     private JsonNode tags;
+    private JsonNode logs;
     private String status;
     private Instant createdAt;
 }

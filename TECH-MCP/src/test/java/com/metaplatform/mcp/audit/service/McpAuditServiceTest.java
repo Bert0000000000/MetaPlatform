@@ -1,5 +1,6 @@
 package com.metaplatform.mcp.audit.service;
 
+import com.metaplatform.mcp.audit.dto.AnalyticsItem;
 import com.metaplatform.mcp.audit.dto.AuditLogResponse;
 import com.metaplatform.mcp.audit.dto.AuditLogStatistics;
 import com.metaplatform.mcp.audit.dto.TrendPoint;
@@ -72,10 +73,10 @@ class McpAuditServiceTest {
     void query_returns_page() {
         McpAuditLogEntity e = sampleEntity();
         Page<McpAuditLogEntity> page = new PageImpl<>(List.of(e), PageRequest.of(0, 20), 1);
-        when(repository.search(eq("tenant-default"), any(), any(), any(), any(), any(Pageable.class)))
+        when(repository.search(eq("tenant-default"), any(), any(), any(), any(), any(), any(), any(Pageable.class)))
                 .thenReturn(page);
 
-        PageResponse<AuditLogResponse> response = service.query(null, null, null, null, 1, 20);
+        PageResponse<AuditLogResponse> response = service.query(null, null, null, null, null, null, 1, 20);
         assertThat(response.getItems()).hasSize(1);
         assertThat(response.getTotal()).isEqualTo(1);
     }
@@ -109,42 +110,70 @@ class McpAuditServiceTest {
 
         AuditLogStatistics stats = service.statistics(null, null);
         assertThat(stats.getTotalCalls()).isEqualTo(10);
+        assertThat(stats.getSuccessCount()).isEqualTo(8);
+        assertThat(stats.getFailureCount()).isEqualTo(2);
         assertThat(stats.getSuccessRate()).isEqualTo(0.8);
         assertThat(stats.getAvgDuration()).isEqualTo(50.0);
-        assertThat(stats.getTotalInputTokens()).isEqualTo(100L);
-        assertThat(stats.getTotalOutputTokens()).isEqualTo(200L);
+        assertThat(stats.getTotalTokens()).isEqualTo(300L);
     }
 
     @Test
     void trends_returns_time_series() {
         Instant now = Instant.now();
-        when(repository.trendByInterval(eq("tenant-default"), eq("hour"), any(), any()))
-                .thenReturn(List.of(new Object[]{now, 5L}, new Object[]{now.plusSeconds(3600), 8L}));
+        when(repository.trendDetailed(eq("tenant-default"), eq("hour"), any(), any(), any(), any(), any(), any()))
+                .thenReturn(List.of(
+                        new Object[]{now, 5L, 1L, 100L, 50.0},
+                        new Object[]{now.plusSeconds(3600), 8L, 0L, 200L, 60.0}));
 
-        List<TrendPoint> points = service.trends("hour", null, null);
+        List<TrendPoint> points = service.trends("hour", null, null, null, null, null, null);
         assertThat(points).hasSize(2);
         assertThat(points.get(0).getCount()).isEqualTo(5L);
+        assertThat(points.get(0).getErrorCount()).isEqualTo(1L);
+        assertThat(points.get(0).getTokenCount()).isEqualTo(100L);
+    }
+
+    @Test
+    void analytics_returns_items_by_dimension() {
+        when(repository.analyticsByServer(eq("tenant-default"), any(), any(), any(), any(), any(), any()))
+                .thenReturn(List.<Object[]>of(new Object[]{UUID.randomUUID(), 10L, 1L, 100L, 50.0}));
+
+        List<AnalyticsItem> items = service.analytics("server", null, null, null, null, null, null);
+        assertThat(items).hasSize(1);
+        assertThat(items.get(0).getDimension()).isEqualTo("server");
+    }
+
+    @Test
+    void trace_returns_same_trace_logs() {
+        McpAuditLogEntity root = sampleEntity();
+        root.setTraceId("trace-1");
+        when(repository.findByIdAndTenantId(root.getId(), "tenant-default")).thenReturn(Optional.of(root));
+        when(repository.findByTraceIdAndTenantId("tenant-default", "trace-1"))
+                .thenReturn(List.of(root));
+
+        List<AuditLogResponse> chain = service.trace(root.getId());
+        assertThat(chain).hasSize(1);
+        assertThat(chain.get(0).getTraceId()).isEqualTo("trace-1");
     }
 
     @Test
     void export_csv_returns_bytes() {
-        when(repository.findAllForExport(eq("tenant-default"), any(), any(), any(), any(), any(Pageable.class)))
+        when(repository.findAllForExport(eq("tenant-default"), any(), any(), any(), any(), any(), any(), any(Pageable.class)))
                 .thenReturn(List.of(sampleEntity()));
 
-        byte[] bytes = service.export(null, null, null, null, "csv");
+        byte[] bytes = service.export(null, null, null, null, null, null, "csv");
         String content = new String(bytes);
         assertThat(content).contains("tool-1");
-        assertThat(content).startsWith("id,tool_code,status");
+        assertThat(content).startsWith("id,tool_code,server_id");
     }
 
     @Test
-    void export_json_returns_bytes() {
-        when(repository.findAllForExport(eq("tenant-default"), any(), any(), any(), any(), any(Pageable.class)))
+    void export_xlsx_returns_bytes() {
+        when(repository.findAllForExport(eq("tenant-default"), any(), any(), any(), any(), any(), any(), any(Pageable.class)))
                 .thenReturn(List.of(sampleEntity()));
 
-        byte[] bytes = service.export(null, null, null, null, "json");
-        String content = new String(bytes);
-        assertThat(content).startsWith("[");
-        assertThat(content).contains("\"toolCode\":\"tool-1\"");
+        byte[] bytes = service.export(null, null, null, null, null, null, "xlsx");
+        assertThat(bytes).hasSizeGreaterThan(0);
+        assertThat(bytes[0]).isEqualTo((byte) 0x50);
+        assertThat(bytes[1]).isEqualTo((byte) 0x4B);
     }
 }

@@ -16,3 +16,7 @@ management:
     web:
       exposure:
         include: health,info
+
+ont:
+  ea:
+    base-url: ${EA_BASE_URL:http://localhost:8106}

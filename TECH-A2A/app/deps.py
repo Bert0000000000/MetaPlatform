@@ -110,6 +110,10 @@ def _build_default_registry() -> Registry:
         timeout=settings.wfe_timeout,
     )
 
+    # Audit (must be created before Delegation since Delegation depends on it)
+    audit_repo: AuditRepository = InMemoryAuditRepository()
+    audit_service = AuditService(audit_repo)
+
     # Delegation
     delegation_repo: DelegationRepository = InMemoryDelegationRepository()
     delegation_service = DelegationService(
@@ -125,10 +129,6 @@ def _build_default_registry() -> Registry:
     # Messaging
     message_repo: MessageRepository = InMemoryMessageRepository()
     message_service = MessagingService(message_repo)
-
-    # Audit
-    audit_repo: AuditRepository = InMemoryAuditRepository()
-    audit_service = AuditService(audit_repo)
 
     return Registry(
         card_repository=card_repo,

@@ -39,6 +39,14 @@ public class BusinessProcessEntity {
     @Column(name = "value_stream_id")
     private UUID valueStreamId;
 
+    @Column(name = "process_type", length = 32)
+    @Builder.Default
+    private String processType = "MAIN";
+
+    @Column(name = "frequency", length = 32)
+    @Builder.Default
+    private String frequency = "DAILY";
+
     @Lob
     @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     @Column(name = "capabilities", columnDefinition = "jsonb")
@@ -47,9 +55,24 @@ public class BusinessProcessEntity {
 
     @Lob
     @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+    @Column(name = "application_ids", columnDefinition = "jsonb")
+    @Builder.Default
+    private String applicationIds = "[]";
+
+    @Lob
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+    @Column(name = "responsible_role_ids", columnDefinition = "jsonb")
+    @Builder.Default
+    private String responsibleRoleIds = "[]";
+
+    @Lob
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     @Column(name = "process_steps", columnDefinition = "jsonb")
     @Builder.Default
     private String processSteps = "[]";
+
+    @Column(name = "bpmn_xml", columnDefinition = "TEXT")
+    private String bpmnXml;
 
     @Column(nullable = false)
     @Builder.Default

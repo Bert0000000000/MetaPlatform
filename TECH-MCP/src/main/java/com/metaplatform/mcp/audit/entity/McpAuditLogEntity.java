@@ -30,6 +30,12 @@ public class McpAuditLogEntity {
     @Column(name = "tool_code", length = 128)
     private String toolCode;
 
+    @Column(name = "server_id")
+    private UUID serverId;
+
+    @Column(name = "client_id")
+    private UUID clientId;
+
     @Column(name = "invocation_type", length = 32)
     private String invocationType;
 

@@ -2,9 +2,12 @@ package com.metaplatform.mcp.server.controller;
 
 import com.metaplatform.mcp.common.ApiResponse;
 import com.metaplatform.mcp.common.PageResponse;
+import com.metaplatform.mcp.server.dto.ConnectionStatusResponse;
 import com.metaplatform.mcp.server.dto.CreateMcpServerRequest;
+import com.metaplatform.mcp.server.dto.IdeConfigResponse;
 import com.metaplatform.mcp.server.dto.McpServerListItem;
 import com.metaplatform.mcp.server.dto.McpServerResponse;
+import com.metaplatform.mcp.server.dto.ServerStatusResponse;
 import com.metaplatform.mcp.server.dto.UpdateMcpServerRequest;
 import com.metaplatform.mcp.server.service.McpServerService;
 import jakarta.validation.Valid;
@@ -62,8 +65,30 @@ public class McpServerController {
         return ApiResponse.success(mcpServerService.stop(id));
     }
 
+    @PostMapping("/{id}/restart")
+    public ApiResponse<McpServerResponse> restart(@PathVariable UUID id) {
+        return ApiResponse.success(mcpServerService.restart(id));
+    }
+
+    @GetMapping("/{id}/status")
+    public ApiResponse<ServerStatusResponse> status(@PathVariable UUID id) {
+        return ApiResponse.success(mcpServerService.status(id));
+    }
+
     @GetMapping("/{id}/capabilities")
     public ApiResponse<Map<String, Object>> getCapabilities(@PathVariable UUID id) {
         return ApiResponse.success(mcpServerService.getCapabilities(id));
+    }
+
+    @GetMapping("/{id}/ide-config")
+    public ApiResponse<IdeConfigResponse> generateIdeConfig(
+            @PathVariable UUID id,
+            @RequestParam(required = false, defaultValue = "generic") String ide) {
+        return ApiResponse.success(mcpServerService.generateIdeConfig(id, ide));
+    }
+
+    @GetMapping("/{id}/connection-status")
+    public ApiResponse<ConnectionStatusResponse> getConnectionStatus(@PathVariable UUID id) {
+        return ApiResponse.success(mcpServerService.getConnectionStatus(id));
     }
 }

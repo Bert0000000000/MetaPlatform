@@ -58,6 +58,11 @@ public class McpClientController {
         return ApiResponse.success(mcpClientService.testConnection(id));
     }
 
+    @PostMapping("/{id}/test-connection")
+    public ApiResponse<McpClientResponse> testConnectionAlias(@PathVariable UUID id) {
+        return ApiResponse.success(mcpClientService.testConnection(id));
+    }
+
     @GetMapping("/{id}/status")
     public ApiResponse<Map<String, Object>> getStatus(@PathVariable UUID id) {
         return ApiResponse.success(mcpClientService.getStatus(id));
@@ -71,5 +76,10 @@ public class McpClientController {
     @GetMapping("/{id}/discovered-tools")
     public ApiResponse<List<McpToolListItem>> getDiscoveredTools(@PathVariable UUID id) {
         return ApiResponse.success(mcpClientService.getDiscoveredTools(id));
+    }
+
+    @GetMapping("/{id}/tools")
+    public ApiResponse<List<McpToolListItem>> getTools(@PathVariable UUID id) {
+        return ApiResponse.success(mcpClientService.getTools(id));
     }
 }

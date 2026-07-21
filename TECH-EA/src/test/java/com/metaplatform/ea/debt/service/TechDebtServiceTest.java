@@ -127,6 +127,20 @@ class TechDebtServiceTest {
     }
 
     @Test
+    void listByLevelAndStatus_shouldFilter() {
+        TechDebtEntity entity = buildEntity(debtId, "CRITICAL");
+        entity.setDebtLevel("FATAL");
+        entity.setStatus("OPEN");
+        when(repository.findByTenantIdAndDeletedAtIsNull("tenant-default")).thenReturn(List.of(entity));
+
+        List<TechDebtResponse> result = service.listByLevelAndStatus("FATAL", "OPEN");
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getDebtLevel()).isEqualTo("FATAL");
+        assertThat(result.get(0).getStatus()).isEqualTo("OPEN");
+    }
+
+    @Test
     void update_shouldTransitionStatus() {
         TechDebtEntity entity = buildEntity(debtId, "OPEN");
         when(repository.findByIdAndDeletedAtIsNull(debtId)).thenReturn(Optional.of(entity));

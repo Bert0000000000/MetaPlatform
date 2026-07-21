@@ -54,6 +54,8 @@ public class ValueStreamService {
                 .name(request.getName())
                 .code(request.getCode())
                 .description(request.getDescription())
+                .triggerEvent(request.getTriggerEvent())
+                .terminationEvent(request.getTerminationEvent())
                 .stages(writeJson(request.getStages() != null ? request.getStages() : List.of()))
                 .status("ACTIVE")
                 .createdAt(now)
@@ -79,6 +81,8 @@ public class ValueStreamService {
         ValueStreamEntity entity = findById(id);
         if (StringUtils.hasText(request.getName())) entity.setName(request.getName());
         if (request.getDescription() != null) entity.setDescription(request.getDescription());
+        if (request.getTriggerEvent() != null) entity.setTriggerEvent(request.getTriggerEvent());
+        if (request.getTerminationEvent() != null) entity.setTerminationEvent(request.getTerminationEvent());
         if (request.getStages() != null) entity.setStages(writeJson(request.getStages()));
         if (StringUtils.hasText(request.getStatus())) entity.setStatus(request.getStatus().toUpperCase());
         entity.setUpdatedAt(Instant.now());
@@ -157,6 +161,9 @@ public class ValueStreamService {
                 .valueStreamId(valueStreamId)
                 .name(request.getName())
                 .description(request.getDescription())
+                .capabilityIds(writeJson(request.getCapabilityIds() != null ? request.getCapabilityIds() : List.of()))
+                .outputs(writeJson(request.getOutputs() != null ? request.getOutputs() : List.of()))
+                .participantRoleIds(writeJson(request.getParticipantRoleIds() != null ? request.getParticipantRoleIds() : List.of()))
                 .sortOrder(sortOrder)
                 .createdAt(now)
                 .updatedAt(now)
@@ -178,6 +185,9 @@ public class ValueStreamService {
         ensureStageBelongsToValueStream(stage, valueStreamId);
         if (StringUtils.hasText(request.getName())) stage.setName(request.getName());
         if (request.getDescription() != null) stage.setDescription(request.getDescription());
+        if (request.getCapabilityIds() != null) stage.setCapabilityIds(writeJson(request.getCapabilityIds()));
+        if (request.getOutputs() != null) stage.setOutputs(writeJson(request.getOutputs()));
+        if (request.getParticipantRoleIds() != null) stage.setParticipantRoleIds(writeJson(request.getParticipantRoleIds()));
         if (request.getSortOrder() != null) stage.setSortOrder(request.getSortOrder());
         stage.setUpdatedAt(Instant.now());
         return toStageResponse(stageRepository.save(stage));
@@ -213,10 +223,40 @@ public class ValueStreamService {
                 .tenantId(stage.getTenantId())
                 .name(stage.getName())
                 .description(stage.getDescription())
+                .capabilityIds(readUuidList(stage.getCapabilityIds()))
+                .outputs(readStringList(stage.getOutputs()))
+                .participantRoleIds(readUuidList(stage.getParticipantRoleIds()))
                 .sortOrder(stage.getSortOrder())
                 .createdAt(stage.getCreatedAt())
                 .updatedAt(stage.getUpdatedAt())
                 .build();
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<UUID> readUuidList(String json) {
+        if (json == null || json.isBlank()) return List.of();
+        try {
+            List<?> list = objectMapper.readValue(json, new TypeReference<List<?>>() {});
+            return list.stream()
+                    .map(item -> {
+                        if (item instanceof String) return UUID.fromString((String) item);
+                        return objectMapper.convertValue(item, UUID.class);
+                    })
+                    .toList();
+        } catch (Exception e) {
+            return List.of();
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<String> readStringList(String json) {
+        if (json == null || json.isBlank()) return List.of();
+        try {
+            List<?> list = objectMapper.readValue(json, new TypeReference<List<?>>() {});
+            return list.stream().map(Object::toString).toList();
+        } catch (Exception e) {
+            return List.of();
+        }
     }
 
     private ValueStreamEntity findById(UUID id) {
@@ -250,6 +290,8 @@ public class ValueStreamService {
                 .name(entity.getName())
                 .code(entity.getCode())
                 .description(entity.getDescription())
+                .triggerEvent(entity.getTriggerEvent())
+                .terminationEvent(entity.getTerminationEvent())
                 .stages(readStages(entity.getStages()))
                 .status(entity.getStatus())
                 .createdAt(entity.getCreatedAt())

@@ -1,5 +1,6 @@
 package com.metaplatform.mcp.audit.service;
 
+import com.metaplatform.mcp.audit.dto.AnalyticsItem;
 import com.metaplatform.mcp.audit.dto.AuditLogResponse;
 import com.metaplatform.mcp.audit.dto.AuditLogStatistics;
 import com.metaplatform.mcp.audit.dto.TrendPoint;
@@ -10,6 +11,10 @@ import com.metaplatform.mcp.common.PageResponse;
 import com.metaplatform.mcp.common.TenantContext;
 import com.metaplatform.mcp.exception.McpException;
 import lombok.RequiredArgsConstructor;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -17,6 +22,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -50,8 +57,8 @@ public class McpAuditService {
     }
 
     @Transactional(readOnly = true)
-    public PageResponse<AuditLogResponse> query(UUID toolId, String status,
-                                                Instant startTime, Instant endTime,
+    public PageResponse<AuditLogResponse> query(UUID toolId, UUID serverId, UUID clientId,
+                                                String status, Instant startTime, Instant endTime,
                                                 Integer page, Integer size) {
         String tenantId = TenantContext.getOrDefault();
         int p = page == null || page < 1 ? 1 : page;
@@ -59,11 +66,9 @@ public class McpAuditService {
         Pageable pageable = PageRequest.of(p - 1, s, Sort.by(Sort.Direction.DESC, "calledAt"));
 
         Page<McpAuditLogEntity> result = repository.search(
-                tenantId,
-                toolId,
+                tenantId, toolId, serverId, clientId,
                 status == null ? null : status.toUpperCase(),
-                startTime, endTime,
-                pageable);
+                startTime, endTime, pageable);
 
         List<AuditLogResponse> items = result.getContent().stream().map(this::toResponse).toList();
         return PageResponse.<AuditLogResponse>builder()
@@ -85,16 +90,25 @@ public class McpAuditService {
     public AuditLogStatistics statistics(Instant startTime, Instant endTime) {
         String tenantId = TenantContext.getOrDefault();
         Map<String, Long> byStatus = new LinkedHashMap<>();
+        long successCount = 0;
+        long failureCount = 0;
         for (Object[] row : repository.countByStatus(tenantId, startTime, endTime)) {
-            byStatus.put(String.valueOf(row[0]), ((Number) row[1]).longValue());
+            String status = String.valueOf(row[0]);
+            long count = ((Number) row[1]).longValue();
+            byStatus.put(status, count);
+            if (STATUS_SUCCESS.equalsIgnoreCase(status)) {
+                successCount = count;
+            } else {
+                failureCount += count;
+            }
         }
+
         Map<String, Long> byTool = new LinkedHashMap<>();
         for (Object[] row : repository.countByTool(tenantId, startTime, endTime)) {
             byTool.put(String.valueOf(row[0]), ((Number) row[1]).longValue());
         }
 
         long total = byStatus.values().stream().mapToLong(Long::longValue).sum();
-        long successCount = byStatus.getOrDefault(STATUS_SUCCESS, 0L);
         double successRate = total == 0 ? 0.0 : ((double) successCount) / total;
 
         Object[] agg = repository.aggregate(tenantId, startTime, endTime);
@@ -104,61 +118,97 @@ public class McpAuditService {
 
         return AuditLogStatistics.builder()
                 .totalCalls(total)
+                .successCount(successCount)
+                .failureCount(failureCount)
                 .successRate(successRate)
                 .avgDuration(avgDuration)
                 .totalInputTokens(inputTokens)
                 .totalOutputTokens(outputTokens)
+                .totalTokens(inputTokens + outputTokens)
                 .byStatus(byStatus)
                 .byTool(byTool)
                 .build();
     }
 
     @Transactional(readOnly = true)
-    public List<TrendPoint> trends(String interval, Instant startTime, Instant endTime) {
+    public List<TrendPoint> trends(String interval, UUID toolId, UUID serverId, UUID clientId,
+                                   String status, Instant startTime, Instant endTime) {
         String tenantId = TenantContext.getOrDefault();
         String effectiveInterval = "day".equalsIgnoreCase(interval) ? "day" : "hour";
-        List<Object[]> rows = repository.trendByInterval(tenantId, effectiveInterval, startTime, endTime);
+        List<Object[]> rows = repository.trendDetailed(
+                tenantId, effectiveInterval,
+                status == null ? null : status.toUpperCase(),
+                toolId, serverId, clientId, startTime, endTime);
+        return rows.stream().map(this::toTrendPoint).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<AnalyticsItem> analytics(String dimension, UUID toolId, UUID serverId, UUID clientId,
+                                         String status, Instant startTime, Instant endTime) {
+        String tenantId = TenantContext.getOrDefault();
+        String dim = dimension == null ? "tool" : dimension.toLowerCase();
+        String effectiveStatus = status == null ? null : status.toUpperCase();
+        List<Object[]> rows = switch (dim) {
+            case "server" -> repository.analyticsByServer(
+                    tenantId, effectiveStatus, toolId, serverId, clientId, startTime, endTime);
+            case "app", "client" -> repository.analyticsByClient(
+                    tenantId, effectiveStatus, toolId, serverId, clientId, startTime, endTime);
+            default -> repository.analyticsByTool(
+                    tenantId, effectiveStatus, toolId, serverId, clientId, startTime, endTime);
+        };
         return rows.stream().map(r -> {
-            Instant time = r[0] instanceof java.sql.Timestamp ts ? ts.toInstant()
-                    : r[0] instanceof Instant i ? i : Instant.now();
+            String key = r[0] == null ? "未知" : String.valueOf(r[0]);
             long count = ((Number) r[1]).longValue();
-            return TrendPoint.builder().time(time).count(count).build();
+            long errors = ((Number) r[2]).longValue();
+            long tokens = ((Number) r[3]).longValue();
+            double avg = ((Number) r[4]).doubleValue();
+            return AnalyticsItem.builder()
+                    .dimension(dim)
+                    .dimensionKey(key)
+                    .count(count)
+                    .errorCount(errors)
+                    .tokenCount(tokens)
+                    .avgDuration(avg)
+                    .build();
         }).toList();
     }
 
     @Transactional(readOnly = true)
-    public byte[] export(UUID toolId, String status, Instant startTime, Instant endTime, String format) {
+    public List<AuditLogResponse> trace(UUID id) {
+        String tenantId = TenantContext.getOrDefault();
+        McpAuditLogEntity root = repository.findByIdAndTenantId(id, tenantId)
+                .orElseThrow(() -> new McpException(ErrorCode.AUDIT_LOG_NOT_FOUND, "审计日志不存在"));
+        if (root.getTraceId() == null) {
+            return List.of(toResponse(root));
+        }
+        return repository.findByTraceIdAndTenantId(tenantId, root.getTraceId())
+                .stream().map(this::toResponse).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public byte[] export(UUID toolId, UUID serverId, UUID clientId,
+                         String status, Instant startTime, Instant endTime, String format) {
         String tenantId = TenantContext.getOrDefault();
         List<McpAuditLogEntity> all = repository.findAllForExport(
-                tenantId, toolId,
+                tenantId, toolId, serverId, clientId,
                 status == null ? null : status.toUpperCase(),
                 startTime, endTime,
                 PageRequest.of(0, EXPORT_LIMIT));
 
-        boolean asJson = "json".equalsIgnoreCase(format);
-        if (asJson) {
-            StringBuilder sb = new StringBuilder("[");
-            for (int i = 0; i < all.size(); i++) {
-                if (i > 0) sb.append(',');
-                McpAuditLogEntity e = all.get(i);
-                sb.append('{')
-                        .append("\"id\":\"").append(e.getId()).append("\",")
-                        .append("\"toolCode\":").append(json(e.getToolCode())).append(',')
-                        .append("\"status\":").append(json(e.getStatus())).append(',')
-                        .append("\"durationMs\":").append(e.getDurationMs()).append(',')
-                        .append("\"inputTokens\":").append(e.getInputTokens()).append(',')
-                        .append("\"outputTokens\":").append(e.getOutputTokens()).append(',')
-                        .append("\"calledAt\":").append(json(e.getCalledAt() == null ? null : e.getCalledAt().toString()))
-                        .append('}');
-            }
-            sb.append(']');
-            return sb.toString().getBytes();
+        if ("xlsx".equalsIgnoreCase(format)) {
+            return exportXlsx(all);
         }
+        return exportCsv(all);
+    }
+
+    private byte[] exportCsv(List<McpAuditLogEntity> all) {
         StringBuilder sb = new StringBuilder();
-        sb.append("id,tool_code,status,invocation_type,duration_ms,input_tokens,output_tokens,called_at,error_message\n");
+        sb.append("id,tool_code,server_id,client_id,status,invocation_type,duration_ms,input_tokens,output_tokens,called_at,error_message\n");
         for (McpAuditLogEntity e : all) {
             sb.append(e.getId()).append(',')
                     .append(csv(e.getToolCode())).append(',')
+                    .append(csv(e.getServerId() == null ? null : e.getServerId().toString())).append(',')
+                    .append(csv(e.getClientId() == null ? null : e.getClientId().toString())).append(',')
                     .append(csv(e.getStatus())).append(',')
                     .append(csv(e.getInvocationType())).append(',')
                     .append(e.getDurationMs()).append(',')
@@ -170,11 +220,60 @@ public class McpAuditService {
         return sb.toString().getBytes();
     }
 
+    private byte[] exportXlsx(List<McpAuditLogEntity> all) {
+        try (Workbook wb = new XSSFWorkbook(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            Sheet sheet = wb.createSheet("audit");
+            Row header = sheet.createRow(0);
+            String[] columns = {"id", "tool_code", "server_id", "client_id", "status", "invocation_type",
+                    "duration_ms", "input_tokens", "output_tokens", "called_at", "error_message"};
+            for (int i = 0; i < columns.length; i++) {
+                header.createCell(i).setCellValue(columns[i]);
+            }
+            for (int i = 0; i < all.size(); i++) {
+                McpAuditLogEntity e = all.get(i);
+                Row row = sheet.createRow(i + 1);
+                row.createCell(0).setCellValue(e.getId() == null ? "" : e.getId().toString());
+                row.createCell(1).setCellValue(e.getToolCode());
+                row.createCell(2).setCellValue(e.getServerId() == null ? "" : e.getServerId().toString());
+                row.createCell(3).setCellValue(e.getClientId() == null ? "" : e.getClientId().toString());
+                row.createCell(4).setCellValue(e.getStatus());
+                row.createCell(5).setCellValue(e.getInvocationType());
+                row.createCell(6).setCellValue(e.getDurationMs() == null ? 0 : e.getDurationMs());
+                row.createCell(7).setCellValue(e.getInputTokens() == null ? 0 : e.getInputTokens());
+                row.createCell(8).setCellValue(e.getOutputTokens() == null ? 0 : e.getOutputTokens());
+                row.createCell(9).setCellValue(e.getCalledAt() == null ? "" : e.getCalledAt().toString());
+                row.createCell(10).setCellValue(e.getErrorMessage());
+            }
+            wb.write(out);
+            return out.toByteArray();
+        } catch (IOException e) {
+            throw new McpException(ErrorCode.INTERNAL_ERROR, "导出 Excel 失败: " + e.getMessage());
+        }
+    }
+
+    private TrendPoint toTrendPoint(Object[] r) {
+        Instant time = r[0] instanceof java.sql.Timestamp ts ? ts.toInstant()
+                : r[0] instanceof Instant i ? i : Instant.now();
+        long count = ((Number) r[1]).longValue();
+        long errors = ((Number) r[2]).longValue();
+        long tokens = ((Number) r[3]).longValue();
+        double avg = ((Number) r[4]).doubleValue();
+        return TrendPoint.builder()
+                .time(time)
+                .count(count)
+                .errorCount(errors)
+                .tokenCount(tokens)
+                .avgDuration(avg)
+                .build();
+    }
+
     private AuditLogResponse toResponse(McpAuditLogEntity entity) {
         return AuditLogResponse.builder()
                 .id(entity.getId())
                 .toolId(entity.getToolId())
                 .toolCode(entity.getToolCode())
+                .serverId(entity.getServerId())
+                .clientId(entity.getClientId())
                 .invocationType(entity.getInvocationType())
                 .inputTokens(entity.getInputTokens())
                 .outputTokens(entity.getOutputTokens())
@@ -193,10 +292,5 @@ public class McpAuditService {
             return "\"" + value.replace("\"", "\"\"") + "\"";
         }
         return value;
-    }
-
-    private String json(String value) {
-        if (value == null) return "null";
-        return "\"" + value.replace("\"", "\\\"") + "\"";
     }
 }

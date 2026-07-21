@@ -35,15 +35,29 @@ public class ObsTraceRepository {
             .operationName(rs.getString("operation_name"))
             .startTimeUs(rs.getLong("start_time_us"))
             .durationUs(rs.getLong("duration_us"))
+            .tags(readJson(rs, "tags"))
+            .logs(readJson(rs, "logs"))
             .status(rs.getString("status"))
             .createdAt(rs.getTimestamp("created_at") != null
                     ? rs.getTimestamp("created_at").toInstant() : Instant.now())
             .build();
 
+    private static JsonNode readJson(java.sql.ResultSet rs, String column) {
+        try {
+            String value = rs.getString(column);
+            if (value == null || value.isBlank()) {
+                return null;
+            }
+            return new ObjectMapper().readTree(value);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
     public ObsTraceEntity insert(ObsTraceEntity entity) {
         String sql = "INSERT INTO obs_trace (tenant_id, trace_id, span_id, parent_span_id, service_name, "
-                + "operation_name, start_time_us, duration_us, tags, status, created_at) "
-                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?::jsonb, ?, ?)";
+                + "operation_name, start_time_us, duration_us, tags, logs, status, created_at) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?::jsonb, ?::jsonb, ?, ?)";
         UUID id = entity.getId() != null ? entity.getId() : UUID.randomUUID();
         Instant createdAt = entity.getCreatedAt() != null ? entity.getCreatedAt() : Instant.now();
         jdbcTemplate.update(sql,
@@ -56,6 +70,7 @@ public class ObsTraceRepository {
                 entity.getStartTimeUs(),
                 entity.getDurationUs(),
                 entity.getTags() != null ? entity.getTags().toString() : "{}",
+                entity.getLogs() != null ? entity.getLogs().toString() : "[]",
                 entity.getStatus() != null ? entity.getStatus() : "OK",
                 Timestamp.from(createdAt));
         entity.setId(id);
@@ -65,7 +80,7 @@ public class ObsTraceRepository {
 
     public List<ObsTraceEntity> findSpansByTraceId(String traceId) {
         String sql = "SELECT id, tenant_id, trace_id, span_id, parent_span_id, service_name, operation_name, "
-                + "start_time_us, duration_us, status, created_at FROM obs_trace "
+                + "start_time_us, duration_us, tags, logs, status, created_at FROM obs_trace "
                 + "WHERE trace_id = ? ORDER BY start_time_us ASC";
         return jdbcTemplate.query(sql, ROW_MAPPER, traceId);
     }
@@ -73,7 +88,7 @@ public class ObsTraceRepository {
     public List<ObsTraceEntity> search(String tenantId, String service, String operation,
                                        long startUs, long endUs, int limit, int offset) {
         StringBuilder sql = new StringBuilder("SELECT id, tenant_id, trace_id, span_id, parent_span_id, "
-                + "service_name, operation_name, start_time_us, duration_us, status, created_at "
+                + "service_name, operation_name, start_time_us, duration_us, tags, logs, status, created_at "
                 + "FROM obs_trace WHERE tenant_id = ?");
         List<Object> args = new ArrayList<>();
         args.add(tenantId);
@@ -125,7 +140,7 @@ public class ObsTraceRepository {
 
     public Optional<ObsTraceEntity> findById(UUID id) {
         String sql = "SELECT id, tenant_id, trace_id, span_id, parent_span_id, service_name, operation_name, "
-                + "start_time_us, duration_us, status, created_at FROM obs_trace WHERE id = ?";
+                + "start_time_us, duration_us, tags, logs, status, created_at FROM obs_trace WHERE id = ?";
         List<ObsTraceEntity> list = jdbcTemplate.query(sql, ROW_MAPPER, id);
         return list.isEmpty() ? Optional.empty() : Optional.of(list.get(0));
     }

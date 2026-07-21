@@ -25,6 +25,8 @@ def _conv_row_to_model(row: ConversationORM) -> Conversation:
         title=row.title or "",
         status=ConversationStatus(row.status),
         message_count=row.message_count,
+        favorite=getattr(row, "favorite", False) or False,
+        mode=getattr(row, "mode", "chat") or "chat",
         created_at=row.created_at if row.created_at else _now(),
         updated_at=row.updated_at if row.updated_at else _now(),
         last_message_at=row.last_message_at,
@@ -56,7 +58,11 @@ class ConversationRepository(ABC):
 
     @abstractmethod
     async def create(
-        self, tenant_id: str, agent_id: str, title: str = ""
+        self,
+        tenant_id: str,
+        agent_id: str,
+        title: str = "",
+        mode: str = "chat",
     ) -> Conversation: ...
 
     @abstractmethod
@@ -69,6 +75,9 @@ class ConversationRepository(ABC):
         self,
         tenant_id: str,
         agent_id: Optional[str] = None,
+        keyword: Optional[str] = None,
+        favorite: Optional[bool] = None,
+        mode: Optional[str] = None,
         page: int = 1,
         page_size: int = 20,
     ) -> tuple[List[Conversation], int]: ...
@@ -107,7 +116,11 @@ class InMemoryConversationRepository(ConversationRepository):
         self._messages: dict[tuple[str, str], list[ConversationMessage]] = {}
 
     async def create(
-        self, tenant_id: str, agent_id: str, title: str = ""
+        self,
+        tenant_id: str,
+        agent_id: str,
+        title: str = "",
+        mode: str = "chat",
     ) -> Conversation:
         with self._lock:
             conv = Conversation(
@@ -115,6 +128,7 @@ class InMemoryConversationRepository(ConversationRepository):
                 tenant_id=tenant_id,
                 agent_id=agent_id,
                 title=title,
+                mode=mode,
             )
             self._conversations[(tenant_id, conv.id)] = conv
             self._messages[(tenant_id, conv.id)] = []
@@ -130,6 +144,9 @@ class InMemoryConversationRepository(ConversationRepository):
         self,
         tenant_id: str,
         agent_id: Optional[str] = None,
+        keyword: Optional[str] = None,
+        favorite: Optional[bool] = None,
+        mode: Optional[str] = None,
         page: int = 1,
         page_size: int = 20,
     ) -> tuple[List[Conversation], int]:
@@ -137,7 +154,11 @@ class InMemoryConversationRepository(ConversationRepository):
             results = [
                 c
                 for (tid, _), c in self._conversations.items()
-                if tid == tenant_id and (agent_id is None or c.agent_id == agent_id)
+                if tid == tenant_id
+                and (agent_id is None or c.agent_id == agent_id)
+                and (keyword is None or keyword.lower() in (c.title or "").lower())
+                and (favorite is None or c.favorite == favorite)
+                and (mode is None or c.mode == mode)
             ]
         results.sort(key=lambda c: c.updated_at, reverse=True)
         total = len(results)
@@ -217,7 +238,11 @@ class SqlAlchemyConversationRepository(ConversationRepository):
             await conn.run_sync(Base.metadata.create_all)
 
     async def create(
-        self, tenant_id: str, agent_id: str, title: str = ""
+        self,
+        tenant_id: str,
+        agent_id: str,
+        title: str = "",
+        mode: str = "chat",
     ) -> Conversation:
         conv_id = _new_id("conv")
         now = _now()
@@ -228,6 +253,8 @@ class SqlAlchemyConversationRepository(ConversationRepository):
             title=title,
             status=ConversationStatus.ACTIVE.value,
             message_count=0,
+            favorite=False,
+            mode=mode,
             created_at=now,
             updated_at=now,
         )
@@ -249,6 +276,9 @@ class SqlAlchemyConversationRepository(ConversationRepository):
         self,
         tenant_id: str,
         agent_id: Optional[str] = None,
+        keyword: Optional[str] = None,
+        favorite: Optional[bool] = None,
+        mode: Optional[str] = None,
         page: int = 1,
         page_size: int = 20,
     ) -> tuple[List[Conversation], int]:
@@ -266,6 +296,17 @@ class SqlAlchemyConversationRepository(ConversationRepository):
                 count_base = count_base.where(
                     ConversationORM.agent_id == agent_id
                 )
+            if keyword is not None and keyword:
+                base = base.where(ConversationORM.title.ilike(f"%{keyword}%"))
+                count_base = count_base.where(
+                    ConversationORM.title.ilike(f"%{keyword}%")
+                )
+            if favorite is not None:
+                base = base.where(ConversationORM.favorite.is_(favorite))
+                count_base = count_base.where(ConversationORM.favorite.is_(favorite))
+            if mode is not None and mode:
+                base = base.where(ConversationORM.mode == mode)
+                count_base = count_base.where(ConversationORM.mode == mode)
             total = (await session.execute(count_base)).scalar_one()
             rows = (
                 await session.execute(
@@ -291,6 +332,10 @@ class SqlAlchemyConversationRepository(ConversationRepository):
                 row.message_count = fields["message_count"]
             if "last_message_at" in fields:
                 row.last_message_at = fields["last_message_at"]
+            if "favorite" in fields:
+                row.favorite = fields["favorite"]
+            if "mode" in fields:
+                row.mode = fields["mode"]
             row.updated_at = _now()
             await session.commit()
             return _conv_row_to_model(row)

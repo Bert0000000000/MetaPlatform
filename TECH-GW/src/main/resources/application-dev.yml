@@ -57,10 +57,18 @@ spring:
           uri: http://localhost:8801
           predicates:
             - Path=/api/v1/wfe/**
+        - id: apphub
+          uri: http://localhost:8801
+          predicates:
+            - Path=/api/v1/apphub/**
         - id: data
           uri: http://localhost:8701
           predicates:
             - Path=/api/v1/data/**
+        - id: search
+          uri: http://localhost:8701
+          predicates:
+            - Path=/api/v1/search/**
         - id: rag
           uri: http://localhost:8901
           predicates:

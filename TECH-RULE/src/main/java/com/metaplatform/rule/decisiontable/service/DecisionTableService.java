@@ -294,6 +294,14 @@ public class DecisionTableService {
     }
 
     private DecisionTableResponse toResponse(DecisionTableEntity entity) {
+        List<DecisionTableColumnDto> inputCols = readJson(entity.getInputColumns());
+        List<DecisionTableColumnDto> outputCols = readJson(entity.getOutputColumns());
+
+        // V11-03：合并 columns，便于前端直接消费
+        List<DecisionTableColumnDto> allColumns = new ArrayList<>(inputCols.size() + outputCols.size());
+        allColumns.addAll(inputCols);
+        allColumns.addAll(outputCols);
+
         return DecisionTableResponse.builder()
                 .id(entity.getId())
                 .tenantId(entity.getTenantId())
@@ -302,9 +310,14 @@ public class DecisionTableService {
                 .code(entity.getCode())
                 .description(entity.getDescription())
                 .hitPolicy(entity.getHitPolicy())
-                .inputColumns(readJson(entity.getInputColumns()))
-                .outputColumns(readJson(entity.getOutputColumns()))
+                .inputColumns(inputCols)
+                .outputColumns(outputCols)
+                .columns(allColumns)
                 .status(entity.getStatus())
+                // status != ARCHIVED 视为启用
+                .enabled(!"ARCHIVED".equalsIgnoreCase(entity.getStatus()))
+                // V1.1 阶段 conceptId 暂用 rulesetId 兼容，V1.2 阶段由 Ontology 关联表填充
+                .conceptId(entity.getRulesetId())
                 .version(entity.getVersion())
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())

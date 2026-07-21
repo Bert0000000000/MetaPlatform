@@ -9,10 +9,13 @@ import com.metaplatform.ea.process.dto.BusinessProcessResponse;
 import com.metaplatform.ea.process.dto.BusinessProcessVersionResponse;
 import com.metaplatform.ea.process.dto.CreateBusinessProcessRequest;
 import com.metaplatform.ea.process.dto.CreateProcessVersionRequest;
+import com.metaplatform.ea.process.dto.LinkProcessRoleRequest;
 import com.metaplatform.ea.process.dto.UpdateBusinessProcessRequest;
 import com.metaplatform.ea.process.entity.BusinessProcessEntity;
+import com.metaplatform.ea.process.entity.BusinessProcessRoleEntity;
 import com.metaplatform.ea.process.entity.BusinessProcessVersionEntity;
 import com.metaplatform.ea.process.repository.BusinessProcessRepository;
+import com.metaplatform.ea.process.repository.BusinessProcessRoleRepository;
 import com.metaplatform.ea.process.repository.BusinessProcessVersionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,6 +37,7 @@ public class BusinessProcessService {
 
     private final BusinessProcessRepository repository;
     private final BusinessProcessVersionRepository versionRepository;
+    private final BusinessProcessRoleRepository processRoleRepository;
     private final ObjectMapper objectMapper;
 
     @Transactional
@@ -49,8 +53,13 @@ public class BusinessProcessService {
                 .code(request.getCode())
                 .description(request.getDescription())
                 .valueStreamId(request.getValueStreamId())
+                .processType(normalizeEnum(request.getProcessType(), "MAIN"))
+                .frequency(normalizeEnum(request.getFrequency(), "DAILY"))
                 .capabilities(writeJson(request.getCapabilities() != null ? request.getCapabilities() : List.of()))
+                .applicationIds(writeJson(request.getApplicationIds() != null ? request.getApplicationIds() : List.of()))
+                .responsibleRoleIds(writeJson(request.getResponsibleRoleIds() != null ? request.getResponsibleRoleIds() : List.of()))
                 .processSteps(writeJson(request.getProcessSteps() != null ? request.getProcessSteps() : List.of()))
+                .bpmnXml(request.getBpmnXml())
                 .version(1)
                 .status("DRAFT")
                 .createdAt(now)
@@ -76,14 +85,52 @@ public class BusinessProcessService {
         if (StringUtils.hasText(request.getName())) entity.setName(request.getName());
         if (request.getDescription() != null) entity.setDescription(request.getDescription());
         if (request.getValueStreamId() != null) entity.setValueStreamId(request.getValueStreamId());
+        if (request.getProcessType() != null) entity.setProcessType(normalizeEnum(request.getProcessType(), entity.getProcessType()));
+        if (request.getFrequency() != null) entity.setFrequency(normalizeEnum(request.getFrequency(), entity.getFrequency()));
         if (request.getCapabilities() != null) entity.setCapabilities(writeJson(request.getCapabilities()));
+        if (request.getApplicationIds() != null) entity.setApplicationIds(writeJson(request.getApplicationIds()));
+        if (request.getResponsibleRoleIds() != null) entity.setResponsibleRoleIds(writeJson(request.getResponsibleRoleIds()));
         if (request.getProcessSteps() != null) {
             entity.setProcessSteps(writeJson(request.getProcessSteps()));
             entity.setVersion(entity.getVersion() + 1);
         }
+        if (request.getBpmnXml() != null) entity.setBpmnXml(request.getBpmnXml());
         if (StringUtils.hasText(request.getStatus())) entity.setStatus(request.getStatus().toUpperCase());
         entity.setUpdatedAt(Instant.now());
         return toResponse(repository.save(entity));
+    }
+
+    // ---------------------------------------------------------- role links
+
+    @Transactional
+    public List<BusinessProcessRoleEntity> linkRoles(UUID processId, LinkProcessRoleRequest request) {
+        BusinessProcessEntity entity = findById(processId);
+        String tenantId = TenantContext.getOrDefault();
+        processRoleRepository.deleteByProcessId(processId);
+        Instant now = Instant.now();
+        List<BusinessProcessRoleEntity> links = new ArrayList<>();
+        for (UUID roleId : request.getRoleIds()) {
+            links.add(BusinessProcessRoleEntity.builder()
+                    .tenantId(tenantId)
+                    .processId(processId)
+                    .roleId(roleId)
+                    .relationship(request.getRelationship() != null ? request.getRelationship().toUpperCase() : "RESPONSIBLE")
+                    .createdAt(now)
+                    .build());
+        }
+        List<BusinessProcessRoleEntity> saved = processRoleRepository.saveAll(links);
+        entity.setResponsibleRoleIds(writeJson(request.getRoleIds()));
+        entity.setUpdatedAt(now);
+        repository.save(entity);
+        return saved;
+    }
+
+    @Transactional(readOnly = true)
+    public List<UUID> getRoleIds(UUID processId) {
+        findById(processId);
+        return processRoleRepository.findByProcessId(processId).stream()
+                .map(BusinessProcessRoleEntity::getRoleId)
+                .toList();
     }
 
     // ---------------------------------------------------------- versions
@@ -239,12 +286,21 @@ public class BusinessProcessService {
                 .code(entity.getCode())
                 .description(entity.getDescription())
                 .valueStreamId(entity.getValueStreamId())
+                .processType(entity.getProcessType())
+                .frequency(entity.getFrequency())
                 .capabilities(readUuidList(entity.getCapabilities()))
+                .applicationIds(readUuidList(entity.getApplicationIds()))
+                .responsibleRoleIds(readUuidList(entity.getResponsibleRoleIds()))
                 .processSteps(readMapList(entity.getProcessSteps()))
+                .bpmnXml(entity.getBpmnXml())
                 .version(entity.getVersion())
                 .status(entity.getStatus())
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())
                 .build();
+    }
+
+    private String normalizeEnum(String value, String defaultValue) {
+        return StringUtils.hasText(value) ? value.toUpperCase() : defaultValue;
     }
 }

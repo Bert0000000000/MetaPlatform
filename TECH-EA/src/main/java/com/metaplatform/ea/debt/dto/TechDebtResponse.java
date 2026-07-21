@@ -27,6 +27,8 @@ public class TechDebtResponse {
     private String remediation;
     private String estimatedEffort;
     private String owner;
+    private String debtLevel;
+    private String repaymentPlan;
     private String metadata;
     private Instant createdAt;
     private Instant updatedAt;

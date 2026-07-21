@@ -15,6 +15,8 @@ from app.checkpoint.service import CheckpointService
 from app.clients.action import ActionClient
 from app.clients.llmgw import LLMGWClient
 from app.clients.rag import RAGClient
+from app.collaboration.repository import InMemoryCollaborationRepository
+from app.collaboration.service import CollaborationService
 from app.common.jwt_auth import create_token
 from app.common.middleware import (
     install_exception_handlers,
@@ -23,11 +25,15 @@ from app.common.middleware import (
 from app.conversations.repository import InMemoryConversationRepository
 from app.conversations.service import ConversationService
 from app.deps import Registry, set_registry
+from app.evaluation.service import EvaluationService
 from app.events.outbox import OutboxService
 from app.execution.engine import ExecutionEngine
+from app.learning.service import LearningService
 from app.execution.service import ExecutionService
 from app.memory.repository import InMemoryMemoryRepository
 from app.memory.service import MemoryService
+from app.plans.repository import InMemoryPlanRepository
+from app.plans.service import PlanService
 from app.steps.repository import InMemoryStepRepository
 from app.steps.service import StepService
 from app.tasks.repository import InMemoryTaskRepository
@@ -111,6 +117,18 @@ def registry(
 
     card_service = AgentCardService(agent_service)
 
+    evaluation_service = EvaluationService()
+
+    plan_repo = InMemoryPlanRepository()
+    plan_service = PlanService(plan_repo)
+
+    learning_service = LearningService(rag_client=rag_client)
+
+    collaboration_repo = InMemoryCollaborationRepository()
+    collaboration_service = CollaborationService(
+        collaboration_repo, agent_service=agent_service
+    )
+
     reg = Registry(
         repository=repository,
         agent_service=agent_service,
@@ -133,6 +151,12 @@ def registry(
         step_repository=step_repo,
         step_service=step_service,
         card_service=card_service,
+        evaluation_service=evaluation_service,
+        plan_repository=plan_repo,
+        plan_service=plan_service,
+        learning_service=learning_service,
+        collaboration_repository=collaboration_repo,
+        collaboration_service=collaboration_service,
     )
     set_registry(reg)
     yield reg

@@ -4,6 +4,9 @@ import com.metaplatform.ea.common.ErrorCode;
 import com.metaplatform.ea.common.PageResponse;
 import com.metaplatform.ea.common.TenantContext;
 import com.metaplatform.ea.exception.EaException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.metaplatform.ea.process.repository.BusinessProcessRoleRepository;
 import com.metaplatform.ea.role.dto.CreateRoleRequest;
 import com.metaplatform.ea.role.dto.RoleResponse;
 import com.metaplatform.ea.role.dto.UpdateRoleRequest;
@@ -18,6 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -25,6 +29,8 @@ import java.util.UUID;
 public class BusinessRoleService {
 
     private final BusinessRoleRepository roleRepository;
+    private final BusinessProcessRoleRepository processRoleRepository;
+    private final ObjectMapper objectMapper;
 
     @Transactional
     public RoleResponse create(CreateRoleRequest request) {
@@ -40,6 +46,9 @@ public class BusinessRoleService {
                 .code(request.getCode())
                 .description(request.getDescription())
                 .responsibility(request.getResponsibility())
+                .orgUnitId(request.getOrgUnitId())
+                .domain(request.getDomain())
+                .iamRoleIds(writeJson(request.getIamRoleIds()))
                 .createdAt(now)
                 .updatedAt(now)
                 .build();
@@ -48,13 +57,13 @@ public class BusinessRoleService {
     }
 
     @Transactional(readOnly = true)
-    public PageResponse<RoleResponse> list(String keyword, Integer page, Integer size) {
+    public PageResponse<RoleResponse> list(String keyword, UUID orgUnitId, String domain, Integer page, Integer size) {
         String tenantId = TenantContext.getOrDefault();
         int p = page == null || page < 1 ? 1 : page;
         int s = size == null || size < 1 ? 20 : Math.min(size, 100);
         Pageable pageable = PageRequest.of(p - 1, s, Sort.by(Sort.Direction.DESC, "updatedAt"));
 
-        Page<BusinessRoleEntity> result = roleRepository.search(tenantId, keyword, pageable);
+        Page<BusinessRoleEntity> result = roleRepository.search(tenantId, keyword, orgUnitId, domain, pageable);
         return PageResponse.<RoleResponse>builder()
                 .items(result.getContent().stream().map(this::toResponse).toList())
                 .total(result.getTotalElements())
@@ -62,6 +71,13 @@ public class BusinessRoleService {
                 .size(s)
                 .totalPages(result.getTotalPages())
                 .build();
+    }
+
+    @Transactional(readOnly = true)
+    public List<RoleResponse> listByOrgUnitId(UUID orgUnitId) {
+        String tenantId = TenantContext.getOrDefault();
+        return roleRepository.findByTenantIdAndOrgUnitIdAndDeletedAtIsNull(tenantId, orgUnitId)
+                .stream().map(this::toResponse).toList();
     }
 
     @Transactional(readOnly = true)
@@ -80,6 +96,15 @@ public class BusinessRoleService {
         }
         if (request.getResponsibility() != null) {
             entity.setResponsibility(request.getResponsibility());
+        }
+        if (request.getOrgUnitId() != null) {
+            entity.setOrgUnitId(request.getOrgUnitId());
+        }
+        if (request.getDomain() != null) {
+            entity.setDomain(request.getDomain());
+        }
+        if (request.getIamRoleIds() != null) {
+            entity.setIamRoleIds(writeJson(request.getIamRoleIds()));
         }
         entity.setUpdatedAt(Instant.now());
         BusinessRoleEntity saved = roleRepository.save(entity);
@@ -108,8 +133,36 @@ public class BusinessRoleService {
                 .code(entity.getCode())
                 .description(entity.getDescription())
                 .responsibility(entity.getResponsibility())
+                .orgUnitId(entity.getOrgUnitId())
+                .domain(entity.getDomain())
+                .iamRoleIds(readUuidList(entity.getIamRoleIds()))
+                .processCount(processRoleRepository.countByRoleId(entity.getId()))
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())
                 .build();
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<UUID> readUuidList(String json) {
+        if (json == null || json.isBlank()) return List.of();
+        try {
+            List<?> list = objectMapper.readValue(json, new TypeReference<List<?>>() {});
+            return list.stream()
+                    .map(item -> {
+                        if (item instanceof String) return UUID.fromString((String) item);
+                        return objectMapper.convertValue(item, UUID.class);
+                    })
+                    .toList();
+        } catch (Exception e) {
+            return List.of();
+        }
+    }
+
+    private String writeJson(Object value) {
+        try {
+            return objectMapper.writeValueAsString(value != null ? value : List.of());
+        } catch (Exception e) {
+            throw new EaException(ErrorCode.INTERNAL_ERROR, "JSON 序列化失败");
+        }
     }
 }

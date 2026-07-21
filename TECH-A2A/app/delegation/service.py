@@ -10,8 +10,10 @@ from app.audit.service import AuditService
 from app.clients.agent_client import AgentClient
 from app.delegation.repository import DelegationRepository
 from app.delegation.schemas import (
+    CreateDelegationRequest,
     DelegatedTask,
     DelegateTaskRequest,
+    DelegationCallbackRequest,
     StatusHistoryEntry,
     TaskArtifact,
     TaskStatus,
@@ -19,11 +21,55 @@ from app.delegation.schemas import (
 )
 from app.events.schemas import EventType
 from app.events.outbox import OutboxService
-from app.common.errors import TaskAlreadyCompletedError, TaskNotFoundError
+from app.common.errors import InvalidParamError, TaskAlreadyCompletedError, TaskNotFoundError
+
+
+# V14-06: 委托任务状态机（submitted → working → input-required → completed/failed/canceled）
+_DELEGATION_TRANSITIONS: dict[TaskStatus, set[TaskStatus]] = {
+    TaskStatus.SUBMITTED: {
+        TaskStatus.WORKING,
+        TaskStatus.INPUT_REQUIRED,
+        TaskStatus.COMPLETED,
+        TaskStatus.FAILED,
+        TaskStatus.CANCELED,
+    },
+    TaskStatus.WORKING: {
+        TaskStatus.INPUT_REQUIRED,
+        TaskStatus.COMPLETED,
+        TaskStatus.FAILED,
+        TaskStatus.CANCELED,
+    },
+    TaskStatus.INPUT_REQUIRED: {
+        TaskStatus.WORKING,
+        TaskStatus.COMPLETED,
+        TaskStatus.FAILED,
+        TaskStatus.CANCELED,
+    },
+    TaskStatus.COMPLETED: set(),
+    TaskStatus.FAILED: set(),
+    TaskStatus.CANCELED: set(),
+}
 
 
 def _now() -> datetime:
     return datetime.now(timezone.utc)
+
+
+def _parse_callback_status(value: str) -> TaskStatus:
+    mapping = {
+        "submitted": TaskStatus.SUBMITTED,
+        "working": TaskStatus.WORKING,
+        "input-required": TaskStatus.INPUT_REQUIRED,
+        "input_required": TaskStatus.INPUT_REQUIRED,
+        "completed": TaskStatus.COMPLETED,
+        "failed": TaskStatus.FAILED,
+        "canceled": TaskStatus.CANCELED,
+        "cancelled": TaskStatus.CANCELLED,
+    }
+    lower = value.lower()
+    if lower in mapping:
+        return mapping[lower]
+    return TaskStatus(value.upper())
 
 
 class DelegationService:
@@ -156,6 +202,153 @@ class DelegationService:
             if task is None:
                 raise TaskNotFoundError(f"Task 不存在")
             return task
+
+    # --------------------------------------------------- V14-06 delegations
+
+    async def create_delegation(
+        self,
+        tenant_id: str,
+        request: CreateDelegationRequest,
+        *,
+        trace_id: Optional[str] = None,
+    ) -> DelegatedTask:
+        """Create an async A2A delegation and wait for external callback."""
+
+        task = DelegatedTask(
+            id="",
+            tenant_id=tenant_id,
+            source_agent_id=request.sourceAgentId,
+            target_agent_id=request.targetAgentId,
+            task_type=request.taskType,
+            payload=dict(request.payload),
+            status=TaskStatus.SUBMITTED,
+            trace_id=trace_id,
+            timeout=request.timeout,
+            callback_url=request.callbackUrl,
+            status_history=[
+                StatusHistoryEntry(status=TaskStatus.SUBMITTED, detail="Delegation submitted"),
+            ],
+        )
+        task = await self._repo.create(task)
+
+        await self._outbox.publish_event(
+            EventType.AGENT_DELEGATED,
+            {
+                "taskId": task.id,
+                "sourceAgentId": task.source_agent_id,
+                "targetAgentId": task.target_agent_id,
+                "taskType": task.task_type,
+            },
+            trace_id=trace_id,
+        )
+        return task
+
+    async def apply_callback(
+        self,
+        tenant_id: str,
+        task_id: str,
+        request: DelegationCallbackRequest,
+        *,
+        trace_id: Optional[str] = None,
+    ) -> DelegatedTask:
+        """Apply an external agent callback with a state-machine guard."""
+
+        task = await self.get_task(tenant_id, task_id)
+        try:
+            new_status = _parse_callback_status(request.status)
+        except ValueError as exc:
+            raise InvalidParamError(
+                f"不支持的回调状态: {request.status}",
+                data={"allowed": [s.value for s in TaskStatus]},
+            ) from exc
+
+        # 对 V14-06 委托状态机路径做转校验
+        if task.status in _DELEGATION_TRANSITIONS:
+            allowed = _DELEGATION_TRANSITIONS[task.status]
+            if new_status not in allowed:
+                raise InvalidParamError(
+                    f"非法状态转换: {task.status.value} -> {new_status.value}",
+                    data={"from": task.status.value, "to": new_status.value},
+                )
+
+        update_fields: dict[str, Any] = {
+            "status": new_status,
+            "status_history": task.status_history + [
+                StatusHistoryEntry(
+                    status=new_status,
+                    detail=f"Callback received: {new_status.value}",
+                )
+            ],
+        }
+        if request.result is not None:
+            result = dict(request.result)
+            result.setdefault("artifacts", [])
+            update_fields["result"] = result
+        if request.error is not None:
+            update_fields["error"] = request.error
+        if request.artifacts is not None:
+            update_fields["artifacts"] = task.artifacts + list(request.artifacts)
+        if new_status in (TaskStatus.COMPLETED, TaskStatus.FAILED, TaskStatus.CANCELED):
+            update_fields["completed_at"] = _now()
+
+        updated = await self._repo.update(task_id, tenant_id, update_fields)
+        if updated is None:
+            raise TaskNotFoundError(
+                f"Task 不存在: taskId={task_id}",
+                data={"taskId": task_id},
+            )
+
+        if new_status == TaskStatus.COMPLETED:
+            await self._outbox.publish_event(
+                EventType.AGENT_COMPLETED,
+                {"taskId": task_id, "result": updated.result},
+                trace_id=trace_id,
+            )
+        elif new_status in (TaskStatus.FAILED, TaskStatus.CANCELED):
+            await self._outbox.publish_event(
+                EventType.AGENT_FAILED,
+                {"taskId": task_id, "error": updated.error},
+                trace_id=trace_id,
+            )
+
+        return updated
+
+    async def cancel_delegation(
+        self,
+        tenant_id: str,
+        task_id: str,
+        *,
+        trace_id: Optional[str] = None,
+    ) -> DelegatedTask:
+        """Cancel a delegation that has not reached a terminal state."""
+
+        task = await self.get_task(tenant_id, task_id)
+        if task.status in (TaskStatus.COMPLETED, TaskStatus.FAILED, TaskStatus.CANCELED, TaskStatus.CANCELLED):
+            raise TaskAlreadyCompletedError(
+                f"委托已终态，无法取消: taskId={task_id}, status={task.status.value}",
+                data={"taskId": task_id, "status": task.status.value},
+            )
+
+        update_fields = {
+            "status": TaskStatus.CANCELED,
+            "completed_at": _now(),
+            "status_history": task.status_history + [
+                StatusHistoryEntry(status=TaskStatus.CANCELED, detail="Delegation canceled")
+            ],
+        }
+        updated = await self._repo.update(task_id, tenant_id, update_fields)
+        if updated is None:
+            raise TaskNotFoundError(
+                f"Task 不存在: taskId={task_id}",
+                data={"taskId": task_id},
+            )
+
+        await self._outbox.publish_event(
+            EventType.TASK_CANCELLED,
+            {"taskId": task_id},
+            trace_id=trace_id,
+        )
+        return updated
 
     async def get_task(self, tenant_id: str, task_id: str) -> DelegatedTask:
         task = await self._repo.get(task_id, tenant_id)

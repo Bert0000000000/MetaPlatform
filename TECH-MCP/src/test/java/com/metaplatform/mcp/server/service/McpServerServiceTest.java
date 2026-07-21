@@ -5,6 +5,7 @@ import com.metaplatform.mcp.common.ErrorCode;
 import com.metaplatform.mcp.exception.McpException;
 import com.metaplatform.mcp.server.dto.CreateMcpServerRequest;
 import com.metaplatform.mcp.server.dto.McpServerResponse;
+import com.metaplatform.mcp.server.dto.ServerStatusResponse;
 import com.metaplatform.mcp.server.dto.UpdateMcpServerRequest;
 import com.metaplatform.mcp.server.entity.McpServerEntity;
 import com.metaplatform.mcp.server.repository.McpServerRepository;
@@ -52,6 +53,8 @@ class McpServerServiceTest {
                 .code(code)
                 .transportType("HTTP")
                 .endpointUrl("http://example.com")
+                .authType("none")
+                .authConfig("{}")
                 .status(status)
                 .config("{}")
                 .createdAt(now)
@@ -65,6 +68,11 @@ class McpServerServiceTest {
         request.setName("My Server");
         request.setCode("my_server");
         request.setTransportType("http");
+        request.setHost("0.0.0.0");
+        request.setPort(8080);
+        request.setAuthType("apikey");
+        request.setTimeoutMs(30000);
+        request.setMaxConcurrentCalls(100);
 
         when(mcpServerRepository.existsByTenantIdAndCodeAndDeletedAtIsNull("tenant-default", "my_server"))
                 .thenReturn(false);
@@ -73,12 +81,17 @@ class McpServerServiceTest {
             e.setId(UUID.randomUUID());
             return e;
         });
+        when(mcpToolRepository.findByTenantIdAndServerIdAndDeletedAtIsNull(any(), any()))
+                .thenReturn(List.of());
 
         McpServerResponse response = mcpServerService.create(request);
 
         assertThat(response.getCode()).isEqualTo("my_server");
         assertThat(response.getTransportType()).isEqualTo("HTTP");
-        assertThat(response.getStatus()).isEqualTo("INACTIVE");
+        assertThat(response.getHost()).isEqualTo("0.0.0.0");
+        assertThat(response.getPort()).isEqualTo(8080);
+        assertThat(response.getAuthType()).isEqualTo("apikey");
+        assertThat(response.getStatus()).isEqualTo("offline");
     }
 
     @Test
@@ -103,13 +116,45 @@ class McpServerServiceTest {
         McpServerEntity inactive = serverEntity("s1", "INACTIVE");
         when(mcpServerRepository.findByIdAndDeletedAtIsNull(id)).thenReturn(Optional.of(inactive));
         when(mcpServerRepository.save(any(McpServerEntity.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(mcpToolRepository.findByTenantIdAndServerIdAndDeletedAtIsNull(any(), any()))
+                .thenReturn(List.of());
         McpServerResponse started = mcpServerService.start(id);
-        assertThat(started.getStatus()).isEqualTo("ACTIVE");
+        assertThat(started.getStatus()).isEqualTo("online");
+        assertThat(started.getLastHeartbeatAt()).isNotNull();
 
         McpServerEntity active = serverEntity("s1", "ACTIVE");
         when(mcpServerRepository.findByIdAndDeletedAtIsNull(id)).thenReturn(Optional.of(active));
         McpServerResponse stopped = mcpServerService.stop(id);
-        assertThat(stopped.getStatus()).isEqualTo("INACTIVE");
+        assertThat(stopped.getStatus()).isEqualTo("offline");
+    }
+
+    @Test
+    void restart_server_returns_online() {
+        UUID id = UUID.randomUUID();
+        McpServerEntity entity = serverEntity("s1", "ACTIVE");
+        when(mcpServerRepository.findByIdAndDeletedAtIsNull(id)).thenReturn(Optional.of(entity));
+        when(mcpServerRepository.save(any(McpServerEntity.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(mcpToolRepository.findByTenantIdAndServerIdAndDeletedAtIsNull(any(), any()))
+                .thenReturn(List.of());
+
+        McpServerResponse response = mcpServerService.restart(id);
+
+        assertThat(response.getStatus()).isEqualTo("online");
+        assertThat(response.getLastHeartbeatAt()).isNotNull();
+    }
+
+    @Test
+    void status_returns_connection_status() {
+        UUID id = UUID.randomUUID();
+        McpServerEntity entity = serverEntity("s1", "ACTIVE");
+        entity.setLastHeartbeatAt(Instant.now());
+        when(mcpServerRepository.findByIdAndDeletedAtIsNull(id)).thenReturn(Optional.of(entity));
+
+        ServerStatusResponse status = mcpServerService.status(id);
+
+        assertThat(status.getStatus()).isEqualTo("ACTIVE");
+        assertThat(status.getConnectionStatus()).isEqualTo("online");
+        assertThat(status.getLastHeartbeatAt()).isNotNull();
     }
 
     @Test
@@ -130,12 +175,18 @@ class McpServerServiceTest {
         McpServerEntity entity = serverEntity("s1", "INACTIVE");
         when(mcpServerRepository.findByIdAndDeletedAtIsNull(id)).thenReturn(Optional.of(entity));
         when(mcpServerRepository.save(any(McpServerEntity.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(mcpToolRepository.findByTenantIdAndServerIdAndDeletedAtIsNull(any(), any()))
+                .thenReturn(List.of());
 
         UpdateMcpServerRequest request = new UpdateMcpServerRequest();
         request.setName("New Name");
+        request.setHost("127.0.0.1");
+        request.setPort(9090);
 
         McpServerResponse response = mcpServerService.update(id, request);
         assertThat(response.getName()).isEqualTo("New Name");
+        assertThat(response.getHost()).isEqualTo("127.0.0.1");
+        assertThat(response.getPort()).isEqualTo(9090);
     }
 
     @Test

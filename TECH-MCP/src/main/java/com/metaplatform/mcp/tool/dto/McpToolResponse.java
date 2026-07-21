@@ -18,6 +18,8 @@ public class McpToolResponse {
     private UUID serverId;
     private String name;
     private String code;
+    private String category;
+    private String version;
     private String description;
     private String inputSchema;
     private String outputSchema;
@@ -25,6 +27,7 @@ public class McpToolResponse {
     private String endpoint;
     private String beanClass;
     private Boolean enabled;
+    private java.util.List<String> tags;
     private Instant createdAt;
     private Instant updatedAt;
 }

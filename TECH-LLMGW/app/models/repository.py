@@ -56,6 +56,12 @@ class ModelRepository:
     """Thread-safe in-memory replacement for the ``llm_models`` table.
 
     Storage layout: ``models[(tenant_id, provider, code)] = Model``.
+
+    All public methods are async so that callers can use the same ``await``
+    syntax against either this in-memory repository or the SQLAlchemy
+    backend (:class:`SqlAlchemyModelRepository`). The in-memory
+    implementation is logically synchronous; the ``async`` keyword is
+    purely an ABI compatibility shim.
     """
 
     def __init__(self) -> None:
@@ -64,9 +70,12 @@ class ModelRepository:
 
     # ------------------------------------------------------------------ CRUD
 
-    def upsert(self, model: Model) -> tuple[Model, bool]:
-        """Insert or update by (tenant_id, provider, code). Returns
-        ``(model, created)`` where ``created`` is True on first insert."""
+    def upsert_sync(self, model: Model) -> tuple[Model, bool]:
+        """Synchronous insert or update by (tenant_id, provider, code).
+
+        Tests and seed helpers that run outside an event loop should use
+        this method. Production code goes through :meth:`upsert`.
+        """
 
         with self._lock:
             key = (model.tenant_id, model.provider, model.model_code)
@@ -77,11 +86,15 @@ class ModelRepository:
             self._models[key] = model
             return model, not existed
 
-    def remove(self, tenant_id: str, provider: str, code: str) -> bool:
+    async def upsert(self, model: Model) -> tuple[Model, bool]:
+        """Async-compatible wrapper around :meth:`upsert_sync`."""
+        return self.upsert_sync(model)
+
+    async def remove(self, tenant_id: str, provider: str, code: str) -> bool:
         with self._lock:
             return self._models.pop((tenant_id, provider, code), None) is not None
 
-    def get(self, model_id: str, tenant_id: Optional[str] = None) -> Optional[Model]:
+    async def get(self, model_id: str, tenant_id: Optional[str] = None) -> Optional[Model]:
         """Resolve a model by its public id ``m-{provider}-{code}``.
 
         When ``tenant_id`` is provided the lookup is scoped to that tenant
@@ -96,7 +109,7 @@ class ModelRepository:
                     return model
             return None
 
-    def get_for_tenant(self, tenant_id: str, model_id: str) -> Optional[Model]:
+    async def get_for_tenant(self, tenant_id: str, model_id: str) -> Optional[Model]:
         """Resolve a model strictly within ``tenant_id`` (no public fallback)."""
 
         with self._lock:
@@ -105,7 +118,7 @@ class ModelRepository:
                     return model
             return None
 
-    def list(
+    async def list(
         self,
         tenant_id: str,
         *,
@@ -125,7 +138,7 @@ class ModelRepository:
         results.sort(key=lambda m: (m.provider, m.model_code))
         return results
 
-    def list_global(
+    async def list_global(
         self,
         tenant_id: str,
         *,
@@ -143,13 +156,13 @@ class ModelRepository:
         results.sort(key=lambda m: (m.provider, m.model_code))
         return results
 
-    def all(self) -> List[Model]:
+    async def all(self) -> List[Model]:
         with self._lock:
             return list(self._models.values())
 
     # ---------------------------------------------------------- bulk helpers
 
-    def list_keys(self, tenant_id: str, provider: str) -> List[str]:
+    async def list_keys(self, tenant_id: str, provider: str) -> List[str]:
         with self._lock:
             return [
                 code
@@ -157,7 +170,7 @@ class ModelRepository:
                 if tid == tenant_id and prov == provider.upper()
             ]
 
-    def clear(self) -> None:
+    async def clear(self) -> None:
         with self._lock:
             self._models.clear()
 

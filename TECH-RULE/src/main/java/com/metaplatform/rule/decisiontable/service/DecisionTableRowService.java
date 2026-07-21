@@ -160,6 +160,25 @@ public class DecisionTableRowService {
                 .toList();
     }
 
+    // ════════════════════════════════════════════
+    // V11-03: 公开给 Controller 使用的辅助方法
+    // ════════════════════════════════════════════
+
+    /** 将行实体转换为 API 响应 DTO。 */
+    public DecisionTableRowResponse toRowResponse(DecisionTableRowEntity entity) {
+        return toResponse(entity);
+    }
+
+    /** 读取行的 inputValues JSON 为 Map。 */
+    public Map<String, Object> readInputMap(DecisionTableRowEntity row) {
+        return readMap(row.getInputValues());
+    }
+
+    /** 读取行的 outputValues JSON 为 Map。 */
+    public Map<String, Object> readOutputMap(DecisionTableRowEntity row) {
+        return readMap(row.getOutputValues());
+    }
+
     private DecisionTableRowEntity findRow(String tableId, String rowId) {
         return rowRepository.findByIdAndTableId(rowId, tableId)
                 .orElseThrow(() -> new RuleException(ErrorCode.DECISION_TABLE_ROW_NOT_FOUND));
