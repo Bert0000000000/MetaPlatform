@@ -32,6 +32,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -71,6 +72,7 @@ class McpClientServiceTest {
         when(postSpec.uri(anyString())).thenReturn(postSpec);
         when(postSpec.contentType(any())).thenReturn(postSpec);
         when(postSpec.accept(any(MediaType[].class))).thenReturn(postSpec);
+        lenient().when(postSpec.header(anyString(), anyString())).thenReturn(postSpec);
         when(postSpec.bodyValue(any())).thenReturn(headersSpec);
         when(headersSpec.retrieve()).thenReturn(responseSpec);
         when(responseSpec.bodyToMono(String.class)).thenReturn(Mono.just(responseBody));
@@ -95,6 +97,37 @@ class McpClientServiceTest {
         assertThat(response.getName()).isEqualTo("my-client");
         assertThat(response.getStatus()).isEqualTo("DISCONNECTED");
         assertThat(response.getTransportType()).isEqualTo("HTTP");
+    }
+
+    @Test
+    void create_client_with_all_fields() {
+        CreateMcpClientRequest request = new CreateMcpClientRequest();
+        request.setName("cursor-client");
+        request.setServerUrl("http://remote:8080/jsonrpc");
+        request.setBaseUrl("http://remote:8080/base");
+        request.setClientType("cursor");
+        request.setTransportType("sse");
+        request.setAuthType("apikey");
+        request.setAuthToken("sk-xxx");
+        request.setTimeoutMs(5000);
+        request.setHeaders("{\"X-Custom\":\"v\"}");
+        request.setServerIds("[\"550e8400-e29b-41d4-a716-446655440000\"]");
+
+        when(clientRepository.existsByTenantIdAndNameAndDeletedAtIsNull("tenant-default", "cursor-client"))
+                .thenReturn(false);
+        when(clientRepository.save(any(McpClientConnectionEntity.class))).thenAnswer(inv -> {
+            McpClientConnectionEntity e = inv.getArgument(0);
+            e.setId(UUID.randomUUID());
+            return e;
+        });
+
+        McpClientResponse response = mcpClientService.create(request);
+
+        assertThat(response.getBaseUrl()).isEqualTo("http://remote:8080/base");
+        assertThat(response.getClientType()).isEqualTo("cursor");
+        assertThat(response.getTransportType()).isEqualTo("SSE");
+        assertThat(response.getAuthType()).isEqualTo("apikey");
+        assertThat(response.getTimeoutMs()).isEqualTo(5000);
     }
 
     @Test
@@ -196,5 +229,23 @@ class McpClientServiceTest {
                 .isInstanceOf(McpException.class)
                 .extracting("errorCode")
                 .isEqualTo(ErrorCode.DISCOVERY_ERROR);
+    }
+
+    @Test
+    void get_tools_returns_discovered_tools() {
+        UUID id = UUID.randomUUID();
+        McpClientConnectionEntity entity = clientEntity(id, "http://remote:8080/jsonrpc", "CONNECTED");
+        when(clientRepository.findByIdAndDeletedAtIsNull(id)).thenReturn(Optional.of(entity));
+        McpToolEntity tool = McpToolEntity.builder()
+                .id(UUID.randomUUID()).tenantId("tenant-default").serverId(id)
+                .name("rt").code("remote_tool").toolType("MCP").enabled(true)
+                .createdAt(Instant.now()).updatedAt(Instant.now()).build();
+        when(mcpToolRepository.findByTenantIdAndServerIdAndDeletedAtIsNull("tenant-default", id))
+                .thenReturn(List.of(tool));
+
+        List<McpToolListItem> tools = mcpClientService.getTools(id);
+
+        assertThat(tools).hasSize(1);
+        assertThat(tools.get(0).getCode()).isEqualTo("remote_tool");
     }
 }

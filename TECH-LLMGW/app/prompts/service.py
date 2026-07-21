@@ -291,7 +291,7 @@ class PromptService:
             "missingVariables": missing,
         }
 
-    def preview(
+    async def preview(
         self,
         tenant_id: str,
         prompt_id: str,
@@ -337,7 +337,7 @@ class PromptService:
             merged = params.model_dump()
 
         start = time.monotonic()
-        chat_resp = self._chat.text_chat(
+        chat_resp = await self._chat.text_chat(
             tenant_id,
             model_id,
             rendered,

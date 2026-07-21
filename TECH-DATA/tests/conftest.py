@@ -22,6 +22,11 @@ from app.services.connectors import (
     MockSchemaExplorer,
 )
 from app.services.datasource_service import DataSourceService
+from app.services.query_service import (
+    InMemoryQueryHistoryRepository,
+    MockQueryExecutor,
+    QueryService,
+)
 from app.services.schema_discovery_service import SchemaDiscoveryService
 from app.etl.repository import InMemoryEtlTaskRepository
 from app.etl.service import EtlTaskService
@@ -31,8 +36,11 @@ from app.lakehouse.repository import InMemoryLakehouseRepository
 from app.lakehouse.service import LakehouseService
 from app.warehouse.service import WarehouseService
 from app.catalog.service import CatalogService
+from app.deliverables.service import DeliverableService
+from app.lineage.service import LineageService
 from app.quality.service import QualityService
 from app.monitoring.service import MonitoringService
+from app.search.service import SearchService
 
 TENANT_ID = "tenant-default"
 TRACE_ID = "test-trace-001"
@@ -73,11 +81,23 @@ def schema_service(
 
 
 @pytest.fixture
+def query_service(
+    ds_service: DataSourceService,
+) -> QueryService:
+    return QueryService(
+        ds_service,
+        executor=MockQueryExecutor(),
+        history_repo=InMemoryQueryHistoryRepository(),
+    )
+
+
+@pytest.fixture
 def registry(
     mock_repository: InMemoryDataSourceRepository,
     mock_tester: MockConnectionTester,
     mock_explorer: MockSchemaExplorer,
     ds_service: DataSourceService,
+    query_service: QueryService,
     schema_service: SchemaDiscoveryService,
 ) -> Registry:
     return Registry(
@@ -85,6 +105,7 @@ def registry(
         tester=mock_tester,
         explorer=mock_explorer,
         datasource_service=ds_service,
+        query_service=query_service,
         schema_discovery_service=schema_service,
         etl_service=EtlTaskService(InMemoryEtlTaskRepository()),
         dbt_service=DbtService(InMemoryDbtRepository()),
@@ -93,6 +114,9 @@ def registry(
         catalog_service=CatalogService(),
         quality_service=QualityService(),
         monitoring_service=MonitoringService(),
+        deliverable_service=DeliverableService(),
+        search_service=SearchService(DeliverableService()),
+        lineage_service=LineageService(),
     )
 
 

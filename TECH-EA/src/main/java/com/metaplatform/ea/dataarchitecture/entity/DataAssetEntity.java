@@ -51,6 +51,12 @@ public class DataAssetEntity {
     @Builder.Default
     private String metadata = "{}";
 
+    @Lob
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+    @Column(columnDefinition = "jsonb")
+    @Builder.Default
+    private String tags = "[]";
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 

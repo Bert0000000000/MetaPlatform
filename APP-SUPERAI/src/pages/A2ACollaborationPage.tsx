@@ -118,7 +118,7 @@ export default function A2ACollaborationPage() {
                 </Descriptions>
               ),
             }}
-          />
+           scroll={{ x: 'max-content' }}/>
         )}
       </Card>
 

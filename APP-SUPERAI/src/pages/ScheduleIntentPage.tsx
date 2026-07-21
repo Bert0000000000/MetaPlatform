@@ -116,7 +116,7 @@ export default function ScheduleIntentPage() {
         {intents.length === 0 && !loading ? (
           <Empty description="还没有历史" />
         ) : (
-          <Table rowKey="intentId" dataSource={intents} columns={columns} loading={loading} />
+          <Table rowKey="intentId" dataSource={intents} columns={columns} loading={loading} scroll={{ x: 'max-content' }} />
         )}
       </Card>
     </div>

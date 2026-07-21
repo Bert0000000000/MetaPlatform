@@ -10,7 +10,7 @@ from app.common.errors import ErrorCode
 def _seed_chat_model(service) -> None:
     from app.models.schemas import Model, ModelCapability, ModelType
 
-    service._repo.upsert(  # type: ignore[attr-defined]
+    service._repo.upsert_sync(  # type: ignore[attr-defined]
         Model(
             model_id="m-openai-gpt-4o-mini",
             tenant_id="tenant-test",
@@ -77,3 +77,34 @@ def test_chat_completions_returns_404_when_model_missing(
     resp = client.post("/api/v1/llmgw/chat/completions", json=body, headers=tenant_headers)
     assert resp.status_code == 404
     assert resp.json()["code"] == int(ErrorCode.MODEL_NOT_FOUND)
+
+
+def test_chat_completions_auto_route(
+    client: TestClient,
+    seeded_models,
+    tenant_headers,
+) -> None:
+    body = {
+        "messages": [{"role": "user", "content": "Hello"}],
+        "autoRoute": True,
+        "strategy": "cheapest",
+        "max_tokens": 32,
+    }
+    resp = client.post("/api/v1/llmgw/chat/completions", json=body, headers=tenant_headers)
+    assert resp.status_code == 200, resp.text
+    payload = resp.json()["data"]
+    assert payload["autoRouted"] is True
+    assert payload["recommendedModelId"]
+    assert payload["model"] == payload["recommendedModelId"]
+    assert payload["choices"][0]["message"]["role"] == "assistant"
+
+
+def test_chat_completions_requires_model_or_auto_route(
+    client: TestClient,
+    tenant_headers,
+) -> None:
+    body = {
+        "messages": [{"role": "user", "content": "Hello"}],
+    }
+    resp = client.post("/api/v1/llmgw/chat/completions", json=body, headers=tenant_headers)
+    assert resp.status_code == 400

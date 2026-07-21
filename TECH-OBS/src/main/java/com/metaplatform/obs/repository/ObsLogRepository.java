@@ -78,4 +78,10 @@ public class ObsLogRepository {
                 + "FROM obs_logs WHERE tenant_id = ? AND service_name = ? ORDER BY created_at DESC LIMIT ? OFFSET ?";
         return jdbcTemplate.query(sql, ROW_MAPPER, tenantId, serviceName, limit, offset);
     }
+
+    public List<ObsLogEntity> findByTraceId(String traceId, int limit) {
+        String sql = "SELECT id, tenant_id, service_name, level, trace_id, message, labels, created_at "
+                + "FROM obs_logs WHERE trace_id = ? ORDER BY created_at DESC LIMIT ?";
+        return jdbcTemplate.query(sql, ROW_MAPPER, traceId, limit);
+    }
 }

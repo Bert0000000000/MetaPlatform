@@ -132,7 +132,6 @@ export default function VersionList({
       dataSource={versions}
       columns={columns}
       pagination={false}
-      size="small"
-    />
+      size="small" scroll={{ x: 'max-content' }} />
   );
 }

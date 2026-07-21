@@ -22,7 +22,7 @@ def _seed_gpt4o(service, *, enabled: bool = True, vision: bool = True) -> None:
     caps = [ModelCapability.CHAT, ModelCapability.FUNCTION_CALLING]
     if vision:
         caps.append(ModelCapability.VISION)
-    service._repo.upsert(  # type: ignore[attr-defined]
+    service._repo.upsert_sync(  # type: ignore[attr-defined]
         Model(
             model_id="m-openai-gpt-4o",
             tenant_id=TENANT,
@@ -49,7 +49,7 @@ class _ExplodingProvider:
 
 
 class TestChatServiceMultimodal:
-    def test_multimodal_requires_vision_capability(self, registry):
+    async def test_multimodal_requires_vision_capability(self, registry):
         _seed_gpt4o(registry.model_service, vision=False)
         req = ServiceRequest(
             modelId="m-openai-gpt-4o",
@@ -57,9 +57,9 @@ class TestChatServiceMultimodal:
             images=[MultimodalImage(url="https://example.com/x.png")],
         )
         with pytest.raises(UnsupportedModalityError):
-            registry.chat_service.multimodal(TENANT, req)
+            await registry.chat_service.multimodal(TENANT, req)
 
-    def test_multimodal_chat_success_with_url_image(self, registry):
+    async def test_multimodal_chat_success_with_url_image(self, registry):
         _seed_gpt4o(registry.model_service)
         req = ServiceRequest(
             modelId="m-openai-gpt-4o",
@@ -68,7 +68,7 @@ class TestChatServiceMultimodal:
             temperature=0.1,
             maxTokens=64,
         )
-        resp = registry.chat_service.multimodal(TENANT, req)
+        resp = await registry.chat_service.multimodal(TENANT, req)
         assert resp.provider == "OPENAI"
         assert resp.model == "gpt-4o"
         assert resp.usage.promptTokens > 0
@@ -77,26 +77,26 @@ class TestChatServiceMultimodal:
         # Mock recorded exactly one call.
         assert len(registry.provider_client.calls) == 1  # type: ignore[attr-defined]
 
-    def test_multimodal_chat_success_with_base64_image(self, registry):
+    async def test_multimodal_chat_success_with_base64_image(self, registry):
         _seed_gpt4o(registry.model_service)
         req = ServiceRequest(
             modelId="m-openai-gpt-4o",
             text="describe",
             images=[MultimodalImage(base64="data:image/png;base64,iVBORw0KGgo=")],
         )
-        resp = registry.chat_service.multimodal(TENANT, req)
+        resp = await registry.chat_service.multimodal(TENANT, req)
         assert resp.finishReason == "stop"
 
-    def test_multimodal_404_unknown_model(self, registry):
+    async def test_multimodal_404_unknown_model(self, registry):
         req = ServiceRequest(
             modelId="m-nope",
             text="hi",
             images=[MultimodalImage(url="https://example.com/x.png")],
         )
         with pytest.raises(ModelNotFoundError):
-            registry.chat_service.multimodal(TENANT, req)
+            await registry.chat_service.multimodal(TENANT, req)
 
-    def test_multimodal_422_disabled_model(self, registry):
+    async def test_multimodal_422_disabled_model(self, registry):
         _seed_gpt4o(registry.model_service, enabled=False)
         req = ServiceRequest(
             modelId="m-openai-gpt-4o",
@@ -104,9 +104,9 @@ class TestChatServiceMultimodal:
             images=[MultimodalImage(url="https://example.com/x.png")],
         )
         with pytest.raises(ModelNotAvailableError):
-            registry.chat_service.multimodal(TENANT, req)
+            await registry.chat_service.multimodal(TENANT, req)
 
-    def test_multimodal_translates_provider_errors(self, registry):
+    async def test_multimodal_translates_provider_errors(self, registry):
         _seed_gpt4o(registry.model_service)
         # Replace the provider client with an exploding one.
         registry.provider_client = _ExplodingProvider()  # type: ignore[assignment]
@@ -118,4 +118,4 @@ class TestChatServiceMultimodal:
             images=[MultimodalImage(url="https://example.com/x.png")],
         )
         with pytest.raises(AllProvidersFailedError):
-            registry.chat_service.multimodal(TENANT, req)
+            await registry.chat_service.multimodal(TENANT, req)

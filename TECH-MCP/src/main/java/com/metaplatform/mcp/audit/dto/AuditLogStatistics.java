@@ -14,10 +14,13 @@ import java.util.Map;
 public class AuditLogStatistics {
 
     private long totalCalls;
+    private long successCount;
+    private long failureCount;
     private double successRate;
     private double avgDuration;
     private long totalInputTokens;
     private long totalOutputTokens;
+    private long totalTokens;
     private Map<String, Long> byStatus;
     private Map<String, Long> byTool;
 }

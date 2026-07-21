@@ -2,7 +2,8 @@ import { get, post } from './client';
 import type { KnowledgeBase, RagSearchResult } from '@/types';
 
 export async function listKnowledgeBases(): Promise<KnowledgeBase[]> {
-  return get<KnowledgeBase[]>('/v1/rag/knowledge-bases');
+  const page = await get<{ items: KnowledgeBase[]; total: number }>('/v1/rag/knowledge-bases');
+  return page?.items ?? [];
 }
 
 export async function search(

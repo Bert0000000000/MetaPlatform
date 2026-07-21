@@ -1,69 +1,17 @@
-import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { Layout, Menu, theme, Typography, Button } from 'antd';
-import {
-  ApartmentOutlined,
-  AppstoreOutlined,
-  DeploymentUnitOutlined,
-  NodeIndexOutlined,
-  TeamOutlined,
-  DatabaseOutlined,
-  CloudServerOutlined,
-  AuditOutlined,
-  SafetyCertificateOutlined,
-  BugOutlined,
-  ApartmentOutlined as ArchIcon,
-  LogoutOutlined,
-} from '@ant-design/icons';
+import { useState } from 'react';
+import { Outlet, useNavigate } from 'react-router-dom';
+import { Layout, theme, Typography, Button, Grid, Drawer } from 'antd';
+import { LogoutOutlined, MenuOutlined } from '@ant-design/icons';
+import { PlatformMenu } from '@mate/shared';
 import { removeToken } from '@/utils/auth';
 
 const { Header, Sider, Content } = Layout;
 
-const MENU_GROUPS = [
-  {
-    key: 'g1',
-    type: 'group' as const,
-    label: '业务架构',
-    children: [
-      { key: '/arch', icon: <ApartmentOutlined />, label: '架构总览' },
-      { key: '/arch/capabilities', icon: <ArchIcon />, label: '能力地图' },
-      { key: '/arch/applications', icon: <AppstoreOutlined />, label: '应用系统' },
-      { key: '/arch/value-streams', icon: <DeploymentUnitOutlined />, label: '价值流' },
-      { key: '/arch/processes', icon: <NodeIndexOutlined />, label: '业务流程' },
-      { key: '/arch/org-roles', icon: <TeamOutlined />, label: '组织与角色' },
-    ],
-  },
-  {
-    key: 'g2',
-    type: 'group' as const,
-    label: '技术架构',
-    children: [
-      { key: '/arch/data', icon: <DatabaseOutlined />, label: '数据架构' },
-      { key: '/arch/tech', icon: <CloudServerOutlined />, label: '技术架构' },
-    ],
-  },
-  {
-    key: 'g3',
-    type: 'group' as const,
-    label: '架构治理',
-    children: [
-      { key: '/arch/principles', icon: <SafetyCertificateOutlined />, label: '原则与标准' },
-      { key: '/arch/reviews', icon: <AuditOutlined />, label: '评审流程' },
-      { key: '/arch/tech-debt', icon: <BugOutlined />, label: '技术债务' },
-    ],
-  },
-  {
-    key: 'g4',
-    type: 'group' as const,
-    label: '集成',
-    children: [
-      { key: '/arch/ontology-mapping', icon: <DeploymentUnitOutlined />, label: '本体映射' },
-    ],
-  },
-];
-
 export default function AppLayout() {
   const navigate = useNavigate();
-  const location = useLocation();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const screens = Grid.useBreakpoint();
+  const isMobile = !screens.md;
   const {
     token: { colorBgContainer, borderRadiusLG },
   } = theme.useToken();
@@ -72,6 +20,8 @@ export default function AppLayout() {
     removeToken();
     navigate('/login');
   };
+
+  const menu = <PlatformMenu currentModule="arch" />;
 
   return (
     <Layout style={{ minHeight: '100vh' }}>
@@ -85,29 +35,42 @@ export default function AppLayout() {
           borderBottom: '1px solid #f0f0f0',
         }}
       >
-        <Typography.Title level={4} style={{ margin: 0 }}>
-          架构中心
-        </Typography.Title>
+        <div style={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 0 }}>
+          {isMobile && (
+            <Button
+              type="text"
+              icon={<MenuOutlined />}
+              onClick={() => setMenuOpen(true)}
+              style={{ marginRight: 8 }}
+            />
+          )}
+          <Typography.Title
+            level={4}
+            style={{
+              margin: 0,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            架构中心
+          </Typography.Title>
+        </div>
         <Button type="text" icon={<LogoutOutlined />} onClick={handleLogout}>
-          退出
+          {!isMobile && '退出'}
         </Button>
       </Header>
       <Layout>
-        <Sider width={220} style={{ background: colorBgContainer, overflow: 'auto' }}>
-          <Menu
-            mode="inline"
-            selectedKeys={[location.pathname]}
-            defaultOpenKeys={['g1', 'g2', 'g3', 'g4']}
-            style={{ height: '100%', borderRight: 0 }}
-            items={MENU_GROUPS}
-            onClick={({ key }) => navigate(key)}
-          />
-        </Sider>
-        <Layout style={{ padding: '16px 24px' }}>
+        {!isMobile && (
+          <Sider width={240} style={{ background: colorBgContainer, overflow: 'auto' }}>
+            {menu}
+          </Sider>
+        )}
+        <Layout className="mate-page-layout">
           <Content
             style={{
               background: colorBgContainer,
-              padding: 24,
+              padding: 'var(--mate-content-padding)',
               margin: 0,
               borderRadius: borderRadiusLG,
               minHeight: 280,
@@ -118,6 +81,15 @@ export default function AppLayout() {
           </Content>
         </Layout>
       </Layout>
+      <Drawer
+        placement="left"
+        open={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        width={240}
+        styles={{ body: { padding: 0 } }}
+      >
+        {menu}
+      </Drawer>
     </Layout>
   );
 }

@@ -65,6 +65,16 @@ public class TechDebtEntity {
     @Column(length = 128)
     private String owner;
 
+    @Column(name = "debt_level", length = 32)
+    @Builder.Default
+    private String debtLevel = "GENERAL";
+
+    @Lob
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+    @Column(name = "repayment_plan", columnDefinition = "jsonb")
+    @Builder.Default
+    private String repaymentPlan = "{}";
+
     @Lob
     @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     @Column(name = "metadata", columnDefinition = "jsonb")

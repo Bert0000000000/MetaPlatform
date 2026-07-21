@@ -24,5 +24,7 @@ public class CreateTechDebtRequest {
     private String remediation;
     private String estimatedEffort;
     private String owner;
+    private String debtLevel;
+    private String repaymentPlan;
     private String metadata;
 }

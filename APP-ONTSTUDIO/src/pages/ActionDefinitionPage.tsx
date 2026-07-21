@@ -124,7 +124,7 @@ export default function ActionDefinitionPage() {
         {actions.length === 0 && !loading ? (
           <Empty description="还没有 Action" />
         ) : (
-          <Table rowKey="actionId" dataSource={actions} columns={columns} loading={loading} />
+          <Table rowKey="actionId" dataSource={actions} columns={columns} loading={loading} scroll={{ x: 'max-content' }} />
         )}
       </Card>
 

@@ -14,7 +14,7 @@ export default function ToolEditPage() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    listCategories().then(setCategories);
+    listCategories().then((cs) => setCategories(cs.map((c) => c.name)));
     if (id) {
       getTool(id).then((t) => {
         setTool(t);

@@ -32,11 +32,36 @@ public class McpClientConnectionEntity {
     @Column(name = "server_url", nullable = false, length = 2048)
     private String serverUrl;
 
+    @Column(name = "base_url", length = 2048)
+    private String baseUrl;
+
+    @Column(name = "client_type", length = 32)
+    private String clientType;
+
     @Column(name = "transport_type", nullable = false, length = 20)
     private String transportType;
 
     @Column(nullable = false, length = 20)
     private String status;
+
+    @Column(name = "auth_type", length = 20)
+    private String authType;
+
+    @Column(name = "auth_token", length = 2048)
+    private String authToken;
+
+    @Column(name = "timeout_ms")
+    private Integer timeoutMs;
+
+    @Lob
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+    @Column(name = "headers", columnDefinition = "jsonb")
+    private String headers;
+
+    @Lob
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+    @Column(name = "server_ids", columnDefinition = "jsonb")
+    private String serverIds;
 
     @Column(name = "last_connected_at")
     private Instant lastConnectedAt;

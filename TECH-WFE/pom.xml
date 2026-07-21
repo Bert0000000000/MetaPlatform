@@ -98,6 +98,13 @@
             <artifactId>flyway-database-postgresql</artifactId>
         </dependency>
 
+        <!-- Nashorn JS 引擎（受限沙箱执行表单脚本） -->
+        <dependency>
+            <groupId>org.openjdk.nashorn</groupId>
+            <artifactId>nashorn-core</artifactId>
+            <version>15.4</version>
+        </dependency>
+
         <!-- Kafka (Outbox 事件发布) -->
         <dependency>
             <groupId>org.springframework.kafka</groupId>

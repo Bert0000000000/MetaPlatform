@@ -16,6 +16,11 @@ class TaskStatus(str, Enum):
     COMPLETED = "COMPLETED"
     FAILED = "FAILED"
     CANCELLED = "CANCELLED"
+    # V14-06 A2A 委托任务状态机
+    SUBMITTED = "SUBMITTED"
+    WORKING = "WORKING"
+    INPUT_REQUIRED = "INPUT_REQUIRED"
+    CANCELED = "CANCELED"
 
 
 class StatusHistoryEntry(BaseModel):
@@ -72,6 +77,26 @@ class UpdateCallbackUrlRequest(BaseModel):
 
 class AdditionalInputRequest(BaseModel):
     input: Dict[str, Any] = Field(default_factory=dict)
+
+
+class CreateDelegationRequest(BaseModel):
+    """Request body for creating an A2A delegation (V14-06)."""
+
+    sourceAgentId: str = Field(min_length=1, max_length=128)
+    targetAgentId: str = Field(min_length=1, max_length=128)
+    taskType: str = "generic"
+    payload: Dict[str, Any] = Field(default_factory=dict)
+    timeout: Optional[float] = None
+    callbackUrl: Optional[str] = None
+
+
+class DelegationCallbackRequest(BaseModel):
+    """External agent callback payload (V14-06)."""
+
+    status: str = Field(min_length=1)
+    result: Optional[Dict[str, Any]] = None
+    error: Optional[str] = None
+    artifacts: Optional[List[TaskArtifact]] = None
 
 
 def task_to_dict(task: DelegatedTask) -> dict:

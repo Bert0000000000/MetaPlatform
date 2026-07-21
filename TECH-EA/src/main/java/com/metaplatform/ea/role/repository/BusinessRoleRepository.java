@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -20,11 +21,17 @@ public interface BusinessRoleRepository extends JpaRepository<BusinessRoleEntity
 
     boolean existsByTenantIdAndCodeAndDeletedAtIsNull(String tenantId, String code);
 
+    List<BusinessRoleEntity> findByTenantIdAndOrgUnitIdAndDeletedAtIsNull(String tenantId, UUID orgUnitId);
+
     @Query("SELECT r FROM BusinessRoleEntity r " +
            "WHERE r.tenantId = :tenantId AND r.deletedAt IS NULL " +
            "AND (:keyword IS NULL OR LOWER(r.name) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
-           "OR LOWER(r.code) LIKE LOWER(CONCAT('%', :keyword, '%')))")
+           "OR LOWER(r.code) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
+           "AND (:orgUnitId IS NULL OR r.orgUnitId = :orgUnitId) " +
+           "AND (:domain IS NULL OR r.domain = :domain)")
     Page<BusinessRoleEntity> search(@Param("tenantId") String tenantId,
                                     @Param("keyword") String keyword,
+                                    @Param("orgUnitId") UUID orgUnitId,
+                                    @Param("domain") String domain,
                                     Pageable pageable);
 }

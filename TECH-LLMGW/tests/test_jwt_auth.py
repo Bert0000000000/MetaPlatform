@@ -9,7 +9,7 @@ from app.common.jwt_auth import create_token, verify_token
 
 
 # Constants aligned with conftest.py
-JWT_SECRET = "metaplatform-jwt-secret-key-2026"
+JWT_SECRET = "mate-platform-default-secret-key-must-be-over-32-bytes"
 TEST_TENANT = "tenant-test"
 
 

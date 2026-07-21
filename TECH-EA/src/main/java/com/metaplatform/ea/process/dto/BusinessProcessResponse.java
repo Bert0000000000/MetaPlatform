@@ -22,8 +22,13 @@ public class BusinessProcessResponse {
     private String code;
     private String description;
     private UUID valueStreamId;
+    private String processType;
+    private String frequency;
     private List<String> capabilities;
+    private List<String> applicationIds;
+    private List<String> responsibleRoleIds;
     private List<Map<String, Object>> processSteps;
+    private String bpmnXml;
     private Integer version;
     private String status;
     private Instant createdAt;

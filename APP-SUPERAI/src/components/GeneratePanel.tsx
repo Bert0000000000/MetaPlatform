@@ -21,8 +21,6 @@ import {
   SafetyOutlined,
   ExportOutlined,
 } from '@ant-design/icons';
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import {
   generateForm,
   generateProcess,
@@ -32,6 +30,7 @@ import {
   generateDashboard,
 } from '@/api/generate';
 import { importToDesigner } from '@/utils/designerImport';
+import CodeWorkspace from './CodeWorkspace';
 import type {
   FormGenResult,
   ProcessGenResult,
@@ -40,6 +39,7 @@ import type {
   DashboardGenResult,
   GenerateType,
   GeneratedConfig,
+  CodeSnippet,
 } from '@/types';
 
 const { TextArea } = Input;
@@ -65,7 +65,7 @@ const GEN_MODES: { value: GenMode; label: string; icon: React.ReactNode }[] = [
 export default function GeneratePanel({ query, onQueryChange, onResult, onImportToDesigner }: GeneratePanelProps) {
   const [mode, setMode] = useState<GenMode>('form');
   const [loading, setLoading] = useState(false);
-  const [language, setLanguage] = useState('typescript');
+  const [language, setLanguage] = useState('python');
   const [formResult, setFormResult] = useState<FormGenResult | null>(null);
   const [processResult, setProcessResult] = useState<ProcessGenResult | null>(null);
   const [codeResult, setCodeResult] = useState<CodeGenResult | null>(null);
@@ -73,6 +73,7 @@ export default function GeneratePanel({ query, onQueryChange, onResult, onImport
   const [reviewResult, setReviewResult] = useState<CodeReviewResult | null>(null);
   const [dashboardResult, setDashboardResult] = useState<DashboardGenResult | null>(null);
   const [codeInput, setCodeInput] = useState('');
+  const [activeSnippet, setActiveSnippet] = useState<CodeSnippet | null>(null);
 
   const handleGenerate = useCallback(async () => {
     setLoading(true);
@@ -93,6 +94,7 @@ export default function GeneratePanel({ query, onQueryChange, onResult, onImport
         case 'code': {
           const result = await generateCode(query, language);
           setCodeResult(result);
+          setActiveSnippet(null);
           onResult({ generatedConfig: { type: 'code' as GenerateType, title: result.description, content: result.code, language: result.language } });
           break;
         }
@@ -143,7 +145,7 @@ export default function GeneratePanel({ query, onQueryChange, onResult, onImport
             { title: '必填', dataIndex: 'required', key: 'required', render: (v: boolean) => v ? <Tag color="red">必填</Tag> : <Tag>可选</Tag> },
           ]}
           pagination={false}
-        />
+         scroll={{ x: 'max-content' }}/>
       </Card>
     );
   };
@@ -194,19 +196,13 @@ export default function GeneratePanel({ query, onQueryChange, onResult, onImport
   const renderCodeResult = () => {
     if (!codeResult) return null;
     return (
-      <Card size="small" title={codeResult.description}>
-        {codeResult.dependencies && codeResult.dependencies.length > 0 && (
-          <Space style={{ marginBottom: 8 }}>
-            <Typography.Text type="secondary">依赖：</Typography.Text>
-            {codeResult.dependencies.map((d) => (
-              <Tag key={d} color="blue">{d}</Tag>
-            ))}
-          </Space>
-        )}
-        <SyntaxHighlighter language={codeResult.language} style={oneLight} customStyle={{ fontSize: 13, borderRadius: 6 }}>
-          {codeResult.code}
-        </SyntaxHighlighter>
-      </Card>
+      <CodeWorkspace
+        initialCode={codeResult.code}
+        initialLanguage={codeResult.language}
+        description={codeResult.description}
+        snippetId={activeSnippet?.snippetId}
+        onSnippetChange={setActiveSnippet}
+      />
     );
   };
 
@@ -241,7 +237,7 @@ export default function GeneratePanel({ query, onQueryChange, onResult, onImport
                   { title: '规则', dataIndex: 'rule', key: 'rule' },
                 ]}
                 pagination={false}
-              />
+               scroll={{ x: 'max-content' }}/>
             </Card>
           )}
           {reviewResult.qualityIssues.length > 0 && (
@@ -256,7 +252,7 @@ export default function GeneratePanel({ query, onQueryChange, onResult, onImport
                   { title: '规则', dataIndex: 'rule', key: 'rule' },
                 ]}
                 pagination={false}
-              />
+               scroll={{ x: 'max-content' }}/>
             </Card>
           )}
           {reviewResult.suggestions.length > 0 && (
@@ -352,7 +348,7 @@ export default function GeneratePanel({ query, onQueryChange, onResult, onImport
               placeholder={
                 mode === 'form' ? '描述您想生成的表单，如：客户信息登记表单' :
                 mode === 'process' ? '描述审批流程，如：费用报销审批流程' :
-                mode === 'code' ? '描述代码需求，如：调用 LLM API 的示例代码' :
+                mode === 'code' ? '描述代码需求，如：计算斐波那契数列前 10 项' :
                 mode === 'dashboard' ? '描述仪表盘需求，如：销售数据分析仪表盘' :
                 '请输入描述'
               }
@@ -362,12 +358,10 @@ export default function GeneratePanel({ query, onQueryChange, onResult, onImport
               <Select
                 value={language}
                 onChange={setLanguage}
-                style={{ width: 150 }}
+                style={{ width: 160 }}
                 options={[
-                  { label: 'TypeScript', value: 'typescript' },
                   { label: 'Python', value: 'python' },
-                  { label: 'Java', value: 'java' },
-                  { label: 'curl', value: 'curl' },
+                  { label: 'TypeScript', value: 'typescript' },
                   { label: 'SQL', value: 'sql' },
                 ]}
               />

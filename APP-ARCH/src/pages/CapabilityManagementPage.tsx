@@ -38,6 +38,8 @@ export default function CapabilityManagementPage() {
     try {
       const [list, tree] = await Promise.all([listCapabilities(), getCapabilityTree()]);
       setCaps(list.items.length > 0 ? list.items : tree);
+    } catch (err) {
+      message.error(err instanceof Error ? err.message : '加载能力列表失败');
     } finally {
       setLoading(false);
     }
@@ -48,7 +50,8 @@ export default function CapabilityManagementPage() {
   }, []);
 
   const handleCreate = async () => {
-    form.validateFields().then(async (values) => {
+    try {
+      const values = await form.validateFields();
       if (editing) {
         await updateCapability(editing.capabilityId, values);
         message.success('更新成功');
@@ -60,13 +63,23 @@ export default function CapabilityManagementPage() {
       setEditing(null);
       form.resetFields();
       load();
-    });
+    } catch (err) {
+      // form.validateFields rejection returns a validation error object (not an Error);
+      // Form renders inline field errors, so only surface backend/axios errors here.
+      if (err instanceof Error) {
+        message.error(err.message || '操作失败');
+      }
+    }
   };
 
   const handleDelete = async (cap: Capability) => {
-    await deleteCapability(cap.capabilityId);
-    message.success('删除成功');
-    load();
+    try {
+      await deleteCapability(cap.capabilityId);
+      message.success('删除成功');
+      load();
+    } catch (err) {
+      message.error(err instanceof Error ? err.message : '删除失败');
+    }
   };
 
   const columns = [
@@ -101,7 +114,7 @@ export default function CapabilityManagementPage() {
         </Col>
         <Col span={18}>
           <Card title="能力列表" size="small" extra={<Input.Search placeholder="搜索" allowClear onSearch={() => load()} style={{ width: 200 }} />}>
-            <Table rowKey="capabilityId" columns={columns} dataSource={filtered} loading={loading} pagination={{ pageSize: 10 }} size="small" />
+            <Table rowKey="capabilityId" columns={columns} dataSource={filtered} loading={loading} pagination={{ pageSize: 10 }} size="small" scroll={{ x: 'max-content' }} />
           </Card>
         </Col>
       </Row>

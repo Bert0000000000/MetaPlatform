@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 @Data
@@ -20,7 +21,7 @@ public class DataEntityResponse {
     private String code;
     private String description;
     private String entityType;
-    private String attributes;
+    private List<DataField> fields;
     private Instant createdAt;
     private Instant updatedAt;
 }

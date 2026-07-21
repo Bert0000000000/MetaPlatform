@@ -193,8 +193,7 @@ export default function ConceptPage() {
             columns={columns}
             dataSource={displayConcepts}
             loading={loading}
-            pagination={{ pageSize: 10 }}
-          />
+            pagination={{ pageSize: 10 }} scroll={{ x: 'max-content' }} />
         </Card>
       </Col>
 

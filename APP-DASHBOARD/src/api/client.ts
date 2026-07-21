@@ -39,9 +39,27 @@ apiClient.interceptors.response.use(
     return response;
   },
   (error: AxiosError<{ code?: string; message?: string }>) => {
+    // Ignore browser-aborted requests (e.g. navigation/HMR/StrictMode unmount)
+    // to avoid misleading error toasts and redirects.
+    const isAborted =
+      error.code === 'ERR_CANCELED' ||
+      error.code === 'ECONNABORTED' ||
+      error.message?.toLowerCase().includes('aborted') ||
+      error.message?.toLowerCase().includes('canceled');
+    if (isAborted) {
+      return Promise.reject(error);
+    }
+
     const status = error.response?.status;
     const msg = error.response?.data?.message || error.message || '网络错误';
     if (status === 401) {
+      const onLoginPage =
+        typeof window !== 'undefined' && window.location.pathname === '/login';
+      // When on the login page, silently ignore 401s from best-effort calls
+      // (e.g. SettingsContext probing /v1/iam/settings) to avoid loops/toasts.
+      if (onLoginPage) {
+        return Promise.reject(error);
+      }
       removeToken();
       message.error('登录已过期，请重新登录');
       window.location.href = '/login';

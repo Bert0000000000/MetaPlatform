@@ -284,7 +284,7 @@ export default function ExtractionPanel({ employeeId, documentId }: ExtractionPa
           },
         ]}
         pagination={{ pageSize: 5 }}
-      />
+       scroll={{ x: 'max-content' }}/>
     );
   };
 

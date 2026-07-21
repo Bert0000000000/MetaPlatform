@@ -158,8 +158,7 @@ export default function EntityPage() {
             columns={columns}
             dataSource={entities}
             loading={loading}
-            pagination={{ pageSize: 10 }}
-          />
+            pagination={{ pageSize: 10 }} scroll={{ x: 'max-content' }} />
         </Card>
       </Col>
 

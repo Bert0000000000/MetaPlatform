@@ -18,11 +18,12 @@ public class CreateMcpToolRequest {
 
     private String description;
 
+    private String category;
+
     private String inputSchema;
 
     private String outputSchema;
 
-    @NotBlank(message = "toolType 不能为空")
     private String toolType;
 
     private String endpoint;
@@ -30,4 +31,6 @@ public class CreateMcpToolRequest {
     private String beanClass;
 
     private Boolean enabled;
+
+    private java.util.List<String> tags;
 }

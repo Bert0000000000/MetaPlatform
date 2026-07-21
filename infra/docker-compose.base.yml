@@ -8,6 +8,7 @@ services:
     image: postgres:17
     container_name: infra-postgres
     restart: unless-stopped
+    command: postgres -c 'max_connections=300'
     environment:
       POSTGRES_DB: metaplatform
       POSTGRES_USER: meta

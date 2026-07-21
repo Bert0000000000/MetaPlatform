@@ -20,6 +20,8 @@ public class ValueStreamResponse {
     private String name;
     private String code;
     private String description;
+    private String triggerEvent;
+    private String terminationEvent;
     private List<String> stages;
     private String status;
     private Instant createdAt;

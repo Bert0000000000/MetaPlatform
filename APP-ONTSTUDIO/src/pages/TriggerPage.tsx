@@ -128,7 +128,7 @@ export default function TriggerPage() {
         {triggers.length === 0 ? (
           <Empty description="还没有触发器" />
         ) : (
-          <Table rowKey="triggerId" dataSource={triggers} columns={columns} />
+          <Table rowKey="triggerId" dataSource={triggers} columns={columns} scroll={{ x: 'max-content' }} />
         )}
       </Card>
 

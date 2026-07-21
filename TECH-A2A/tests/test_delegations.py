@@ -474,3 +474,219 @@ async def test_cancel_task_records_cancel_audit(
     resp = await client.get(f"{BASE}/tasks/{task_id}", headers=tenant_headers)
     assert resp.status_code == 200
     assert resp.json()["data"]["status"] == "COMPLETED"
+
+
+# ========================================================= V14-06 /delegations
+
+DELEGATION_BODY = {
+    "sourceAgentId": "dw-internal-001",
+    "targetAgentId": "ext-agent-002",
+    "taskType": "a2a-delegation",
+    "payload": {"goal": "summarize report"},
+    "timeout": 120.0,
+    "callbackUrl": "http://callback.example.com/delegation",
+}
+
+
+async def test_create_delegation_returns_submitted(
+    client: AsyncClient,
+    tenant_headers: dict[str, str],
+) -> None:
+    """创建委托后应立即进入 SUBMITTED，等待外部 Agent 回调。"""
+
+    resp = await client.post(f"{BASE}/delegations", json=DELEGATION_BODY, headers=tenant_headers)
+    assert resp.status_code == 200, resp.text
+    data = resp.json()["data"]
+    assert data["status"] == "SUBMITTED"
+    assert data["taskId"].startswith("task-")
+    assert data["sourceAgentId"] == "dw-internal-001"
+    assert data["targetAgentId"] == "ext-agent-002"
+
+
+async def test_get_delegation_detail(
+    client: AsyncClient,
+    tenant_headers: dict[str, str],
+) -> None:
+    """委托详情接口应返回完整状态历史。"""
+
+    resp = await client.post(f"{BASE}/delegations", json=DELEGATION_BODY, headers=tenant_headers)
+    task_id = resp.json()["data"]["taskId"]
+
+    resp = await client.get(f"{BASE}/delegations/{task_id}", headers=tenant_headers)
+    assert resp.status_code == 200, resp.text
+    data = resp.json()["data"]
+    assert data["taskId"] == task_id
+    assert data["status"] == "SUBMITTED"
+    assert len(data["statusHistory"]) == 1
+
+
+async def test_delegation_callback_state_machine(
+    client: AsyncClient,
+    tenant_headers: dict[str, str],
+) -> None:
+    """模拟外部 Agent 回调：SUBMITTED → working → input-required → completed。"""
+
+    resp = await client.post(f"{BASE}/delegations", json=DELEGATION_BODY, headers=tenant_headers)
+    task_id = resp.json()["data"]["taskId"]
+
+    resp = await client.post(
+        f"{BASE}/delegations/{task_id}/callback",
+        json={"status": "working"},
+        headers=tenant_headers,
+    )
+    assert resp.status_code == 200, resp.text
+    assert resp.json()["data"]["status"] == "WORKING"
+
+    resp = await client.post(
+        f"{BASE}/delegations/{task_id}/callback",
+        json={"status": "input-required"},
+        headers=tenant_headers,
+    )
+    assert resp.status_code == 200, resp.text
+    assert resp.json()["data"]["status"] == "INPUT_REQUIRED"
+
+    resp = await client.post(
+        f"{BASE}/delegations/{task_id}/callback",
+        json={"status": "completed", "result": {"summary": "done"}},
+        headers=tenant_headers,
+    )
+    assert resp.status_code == 200, resp.text
+    data = resp.json()["data"]
+    assert data["status"] == "COMPLETED"
+    assert data["result"]["summary"] == "done"
+    assert "artifacts" in data["result"]
+
+
+async def test_delegation_cancel_while_submitted(
+    client: AsyncClient,
+    tenant_headers: dict[str, str],
+) -> None:
+    """在 SUBMITTED 状态下取消委托应进入 CANCELED。"""
+
+    resp = await client.post(f"{BASE}/delegations", json=DELEGATION_BODY, headers=tenant_headers)
+    task_id = resp.json()["data"]["taskId"]
+
+    resp = await client.post(
+        f"{BASE}/delegations/{task_id}/cancel", headers=tenant_headers
+    )
+    assert resp.status_code == 200, resp.text
+    assert resp.json()["data"]["status"] == "CANCELED"
+
+
+async def test_delegation_cancel_after_completed_fails(
+    client: AsyncClient,
+    tenant_headers: dict[str, str],
+) -> None:
+    """已完成的委托再次取消应返回 409。"""
+
+    resp = await client.post(f"{BASE}/delegations", json=DELEGATION_BODY, headers=tenant_headers)
+    task_id = resp.json()["data"]["taskId"]
+
+    await client.post(
+        f"{BASE}/delegations/{task_id}/callback",
+        json={"status": "completed", "result": {"summary": "done"}},
+        headers=tenant_headers,
+    )
+
+    resp = await client.post(
+        f"{BASE}/delegations/{task_id}/cancel", headers=tenant_headers
+    )
+    assert resp.status_code == 409, resp.text
+    assert resp.json()["code"] == int(ErrorCode.TASK_ALREADY_COMPLETED)
+
+
+async def test_delegation_callback_invalid_transition(
+    client: AsyncClient,
+    tenant_headers: dict[str, str],
+) -> None:
+    """非法状态转换应返回 400。"""
+
+    resp = await client.post(f"{BASE}/delegations", json=DELEGATION_BODY, headers=tenant_headers)
+    task_id = resp.json()["data"]["taskId"]
+
+    resp = await client.post(
+        f"{BASE}/delegations/{task_id}/callback",
+        json={"status": "completed"},
+        headers=tenant_headers,
+    )
+    assert resp.status_code == 200, resp.text
+
+    resp = await client.post(
+        f"{BASE}/delegations/{task_id}/callback",
+        json={"status": "working"},
+        headers=tenant_headers,
+    )
+    assert resp.status_code == 400, resp.text
+    assert resp.json()["code"] == int(ErrorCode.INVALID_PARAM)
+
+
+async def test_delegation_callback_rejects_unknown_status(
+    client: AsyncClient,
+    tenant_headers: dict[str, str],
+) -> None:
+    """回调传入未知状态应返回 400。"""
+
+    resp = await client.post(f"{BASE}/delegations", json=DELEGATION_BODY, headers=tenant_headers)
+    task_id = resp.json()["data"]["taskId"]
+
+    resp = await client.post(
+        f"{BASE}/delegations/{task_id}/callback",
+        json={"status": "unknown-status"},
+        headers=tenant_headers,
+    )
+    assert resp.status_code == 400, resp.text
+    assert resp.json()["code"] == int(ErrorCode.INVALID_PARAM)
+
+
+async def test_delegation_stream_returns_terminal_event(
+    client: AsyncClient,
+    tenant_headers: dict[str, str],
+) -> None:
+    """SSE 流在任务完成后应返回 completed 事件及结果。"""
+
+    resp = await client.post(f"{BASE}/delegations", json=DELEGATION_BODY, headers=tenant_headers)
+    task_id = resp.json()["data"]["taskId"]
+
+    await client.post(
+        f"{BASE}/delegations/{task_id}/callback",
+        json={"status": "completed", "result": {"summary": "streamed"}},
+        headers=tenant_headers,
+    )
+
+    resp = await client.get(
+        f"{BASE}/delegations/{task_id}/stream",
+        headers=tenant_headers,
+    )
+    assert resp.status_code == 200, resp.text
+    body = resp.text
+    assert "event: completed" in body
+    assert "streamed" in body
+
+
+async def test_list_delegations_filter_by_status(
+    client: AsyncClient,
+    tenant_headers: dict[str, str],
+) -> None:
+    """委托列表支持按状态过滤。"""
+
+    for i in range(2):
+        body = dict(DELEGATION_BODY)
+        body["targetAgentId"] = f"ext-agent-{i}"
+        await client.post(f"{BASE}/delegations", json=body, headers=tenant_headers)
+
+    resp = await client.get(
+        f"{BASE}/delegations",
+        params={"status": "SUBMITTED"},
+        headers=tenant_headers,
+    )
+    assert resp.status_code == 200, resp.text
+    data = resp.json()["data"]
+    assert data["total"] == 2
+    assert all(item["status"] == "SUBMITTED" for item in data["items"])
+
+    resp = await client.get(
+        f"{BASE}/delegations",
+        params={"status": "COMPLETED"},
+        headers=tenant_headers,
+    )
+    assert resp.json()["data"]["total"] == 0

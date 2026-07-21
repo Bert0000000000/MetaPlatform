@@ -17,6 +17,7 @@ class ErrorCode(IntEnum):
     TENANT_MISMATCH = 40302
     DATASOURCE_NOT_FOUND = 40401
     SCHEMA_NOT_FOUND = 40402
+    QUERY_NOT_FOUND = 40403
     DATASOURCE_NAME_DUPLICATE = 40901
     CONNECTION_TEST_FAILED = 42201
     SCHEMA_DISCOVERY_FAILED = 42202
@@ -34,6 +35,7 @@ ERROR_HTTP_STATUS: dict[ErrorCode, int] = {
     ErrorCode.TENANT_MISMATCH: 403,
     ErrorCode.DATASOURCE_NOT_FOUND: 404,
     ErrorCode.SCHEMA_NOT_FOUND: 404,
+    ErrorCode.QUERY_NOT_FOUND: 404,
     ErrorCode.DATASOURCE_NAME_DUPLICATE: 409,
     ErrorCode.CONNECTION_TEST_FAILED: 422,
     ErrorCode.SCHEMA_DISCOVERY_FAILED: 422,
@@ -96,6 +98,11 @@ class DataSourceNotFoundError(BizException):
 
 class SchemaNotFoundError(BizException):
     code = ErrorCode.SCHEMA_NOT_FOUND
+    http_status = 404
+
+
+class QueryNotFoundError(BizException):
+    code = ErrorCode.QUERY_NOT_FOUND
     http_status = 404
 
 

@@ -194,7 +194,7 @@ async def preview_prompt(
     ctx: RequestContext = Depends(request_context_dep),
     service: PromptService = Depends(get_prompt_service),
 ) -> dict:
-    result = service.preview(
+    result = await service.preview(
         ctx.tenant_id,
         prompt_id,
         body,

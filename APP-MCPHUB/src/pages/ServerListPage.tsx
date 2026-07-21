@@ -11,6 +11,10 @@ import {
   Typography,
   message,
   Popconfirm,
+  Result,
+  Row,
+  Col,
+  Statistic,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
@@ -20,6 +24,7 @@ import {
   PauseCircleOutlined,
   DeleteOutlined,
   ClusterOutlined,
+  ReloadOutlined,
 } from '@ant-design/icons';
 import { listServers, deleteServer, startServer, stopServer, createServer } from '@/api/servers';
 import { listTools } from '@/api/tools';
@@ -37,17 +42,21 @@ export default function ServerListPage() {
   const [servers, setServers] = useState<McpServer[]>([]);
   const [tools, setTools] = useState<McpTool[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
   const [keyword, setKeyword] = useState('');
   const [formOpen, setFormOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   const load = async () => {
     setLoading(true);
+    setError(null);
     try {
       const res = await listServers({ keyword });
       setServers(res.items);
       const t = await listTools();
       setTools(t.items);
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error('加载 Server 列表失败'));
     } finally {
       setLoading(false);
     }
@@ -58,21 +67,40 @@ export default function ServerListPage() {
   }, [keyword]);
 
   const handleDelete = async (s: McpServer) => {
-    await deleteServer(s.id);
-    message.success('Server 已删除');
-    load();
+    try {
+      await deleteServer(s.id);
+      message.success('Server 已删除');
+      load();
+    } catch (err) {
+      message.error(err instanceof Error ? err.message : '删除失败');
+    }
   };
 
   const handleStart = async (s: McpServer) => {
-    await startServer(s.id);
-    message.success('已启动');
-    load();
+    try {
+      await startServer(s.id);
+      message.success('已启动');
+      load();
+    } catch (err) {
+      message.error(err instanceof Error ? err.message : '启动失败');
+    }
   };
 
   const handleStop = async (s: McpServer) => {
-    await stopServer(s.id);
-    message.success('已停止');
-    load();
+    try {
+      await stopServer(s.id);
+      message.success('已停止');
+      load();
+    } catch (err) {
+      message.error(err instanceof Error ? err.message : '停止失败');
+    }
+  };
+
+  const stats = {
+    total: servers.length,
+    online: servers.filter((s) => s.status === 'online').length,
+    offline: servers.filter((s) => s.status === 'offline').length,
+    error: servers.filter((s) => s.status === 'error').length,
   };
 
   const columns: ColumnsType<McpServer> = [
@@ -94,14 +122,21 @@ export default function ServerListPage() {
     { title: '端点', dataIndex: 'endpoint', ellipsis: true },
     {
       title: '工具数',
-      key: 'tools',
-      render: (_, s) => <Tag color="blue">{s.toolIds.length}</Tag>,
+      dataIndex: 'toolCount',
+      render: (v) => <Tag color="blue">{v ?? 0}</Tag>,
     },
     {
       title: '状态',
       key: 'status',
       render: (_, s) => (
-        <Tag color={STATUS_MAP[s.status].color}>{STATUS_MAP[s.status].label}</Tag>
+        <Space direction="vertical" size={0}>
+          <Tag color={STATUS_MAP[s.status].color}>{STATUS_MAP[s.status].label}</Tag>
+          {s.lastHeartbeatAt && (
+            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+              心跳 {new Date(s.lastHeartbeatAt).toLocaleString()}
+            </Typography.Text>
+          )}
+        </Space>
       ),
     },
     {
@@ -142,6 +177,29 @@ export default function ServerListPage() {
         </Button>
       </div>
 
+      <Row gutter={16} style={{ marginBottom: 16 }}>
+        <Col span={6}>
+          <Card bordered={false}>
+            <Statistic title="总数" value={stats.total} />
+          </Card>
+        </Col>
+        <Col span={6}>
+          <Card bordered={false}>
+            <Statistic title="在线" value={stats.online} valueStyle={{ color: '#52c41a' }} />
+          </Card>
+        </Col>
+        <Col span={6}>
+          <Card bordered={false}>
+            <Statistic title="离线" value={stats.offline} valueStyle={{ color: '#8c8c8c' }} />
+          </Card>
+        </Col>
+        <Col span={6}>
+          <Card bordered={false}>
+            <Statistic title="异常" value={stats.error} valueStyle={{ color: '#ff4d4f' }} />
+          </Card>
+        </Col>
+      </Row>
+
       <Space style={{ marginBottom: 16 }} wrap>
         <Input.Search
           placeholder="搜索名称/编码"
@@ -152,16 +210,32 @@ export default function ServerListPage() {
       </Space>
 
       <Card>
-        {servers.length === 0 && !loading ? (
+        {loading ? (
+          <Table
+            rowKey="id"
+            dataSource={[]}
+            columns={columns}
+            loading
+            pagination={false} scroll={{ x: 'max-content' }} />
+        ) : error ? (
+          <Result
+            status="error"
+            title="加载失败"
+            subTitle={error.message}
+            extra={
+              <Button type="primary" icon={<ReloadOutlined />} onClick={load}>
+                重试
+              </Button>
+            }
+          />
+        ) : servers.length === 0 ? (
           <Empty description="还没有 MCP Server，点击右上角创建" />
         ) : (
           <Table
             rowKey="id"
             dataSource={servers}
             columns={columns}
-            loading={loading}
-            pagination={{ pageSize: 10 }}
-          />
+            pagination={{ pageSize: 10 }} scroll={{ x: 'max-content' }} />
         )}
       </Card>
 
@@ -175,6 +249,8 @@ export default function ServerListPage() {
             message.success('Server 已创建');
             setFormOpen(false);
             load();
+          } catch (err) {
+            message.error(err instanceof Error ? err.message : '创建失败');
           } finally {
             setSubmitting(false);
           }

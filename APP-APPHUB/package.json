@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "lint": "tsc --noEmit"
+    "lint": "tsc -b --noEmit"
   },
   "dependencies": {
     "react": "^19.0.0",
@@ -16,6 +16,8 @@
     "antd": "^6.0.0",
     "@ant-design/x": "^2.0.0",
     "@ant-design/icons": "^6.0.0",
+    "@monaco-editor/react": "^4.6.0",
+    "monaco-editor": "^0.45.0",
     "axios": "^1.7.9",
     "recharts": "^2.15.0"
   },
@@ -24,6 +26,7 @@
     "@vitejs/plugin-react": "^4.3.0",
     "typescript": "~5.7.2",
     "@types/react": "^19.0.0",
-    "@types/react-dom": "^19.0.0"
+    "@types/react-dom": "^19.0.0",
+    "@types/node": "^22.0.0"
   }
 }

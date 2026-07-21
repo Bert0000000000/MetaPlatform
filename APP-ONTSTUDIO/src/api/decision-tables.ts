@@ -6,25 +6,6 @@ import type {
   HitPolicy,
 } from '@/types';
 
-const CACHE_KEY = 'mate_platform_decision_tables';
-
-function readLocal<T>(key: string): T | null {
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? (JSON.parse(raw) as T) : null;
-  } catch {
-    return null;
-  }
-}
-
-function writeLocal<T>(key: string, value: T): void {
-  try {
-    localStorage.setItem(key, JSON.stringify(value));
-  } catch {
-    /* ignore */
-  }
-}
-
 export const HIT_POLICY_OPTIONS: Array<{ label: string; value: HitPolicy; description: string }> = [
   { label: '首次命中', value: 'first', description: '从上到下匹配第一条命中规则，返回其输出' },
   { label: '全部命中', value: 'all', description: '返回所有命中规则的输出（顺序敏感）' },
@@ -33,165 +14,160 @@ export const HIT_POLICY_OPTIONS: Array<{ label: string; value: HitPolicy; descri
   { label: '聚合', value: 'collect', description: '收集所有命中规则的输出列表' },
 ];
 
-/** 默认决策表 1：订单折扣决策表 */
-const DEFAULT_TABLE_ORDER_DISCOUNT: DecisionTable = {
-  id: 'dt-001',
-  code: 'ORDER_DISCOUNT',
-  name: '订单折扣决策表',
-  description: '依据订单金额与客户等级计算折扣率',
-  conceptId: 'concept-order',
-  hitPolicy: 'first',
-  columns: [
-    { id: 'col-amount', name: '订单金额', field: 'amount', columnType: 'input', operator: 'gte' },
-    { id: 'col-cust-level', name: '客户等级', field: 'customerLevel', columnType: 'input', operator: 'eq' },
-    { id: 'col-vip', name: '是否VIP', field: 'isVip', columnType: 'input', operator: 'eq' },
-    { id: 'col-discount', name: '折扣率', field: 'discountRate', columnType: 'output' },
-    { id: 'col-gift', name: '赠品', field: 'gift', columnType: 'output', defaultValue: '无' },
-  ],
-  rows: [
-    {
-      id: 'row-1',
-      enabled: true,
-      priority: 10,
-      description: 'VIP 大单 8 折 + 礼品',
-      cells: {
-        'col-amount': { value: '10000' },
-        'col-cust-level': { value: '-', isEmpty: true },
-        'col-vip': { value: 'true' },
-        'col-discount': { value: '0.8' },
-        'col-gift': { value: '高档礼品' },
-      },
-    },
-    {
-      id: 'row-2',
-      enabled: true,
-      priority: 20,
-      description: 'A 级客户中额订单 9 折',
-      cells: {
-        'col-amount': { value: '5000' },
-        'col-cust-level': { value: 'A' },
-        'col-vip': { value: '-', isEmpty: true },
-        'col-discount': { value: '0.9' },
-        'col-gift': { value: '标准礼品' },
-      },
-    },
-    {
-      id: 'row-3',
-      enabled: true,
-      priority: 30,
-      description: 'B 级客户 95 折',
-      cells: {
-        'col-amount': { value: '3000' },
-        'col-cust-level': { value: 'B' },
-        'col-vip': { value: '-', isEmpty: true },
-        'col-discount': { value: '0.95' },
-        'col-gift': { value: '-' , isEmpty: true },
-      },
-    },
-    {
-      id: 'row-4',
-      enabled: true,
-      priority: 40,
-      description: '默认无折扣',
-      cells: {
-        'col-amount': { value: '-', isEmpty: true },
-        'col-cust-level': { value: '-', isEmpty: true },
-        'col-vip': { value: '-', isEmpty: true },
-        'col-discount': { value: '1.0' },
-        'col-gift': { value: '-' , isEmpty: true },
-      },
-    },
-  ],
-  enabled: true,
-  createdAt: '2026-07-10T08:30:00.000Z',
-  updatedAt: '2026-07-15T10:20:00.000Z',
-};
+/**
+ * V11-03: APP-ONTSTUDIO 决策表 API 后端化。
+ *
+ * 后端在 TECH-RULE 的 DecisionTableController 实现完整 CRUD + execute：
+ *   - GET    /v1/rule/decision-tables              分页列表（已聚合 rows）
+ *   - GET    /v1/rule/decision-tables/:id          详情（已聚合 rows）
+ *   - POST   /v1/rule/decision-tables              创建
+ *   - PUT    /v1/rule/decision-tables/:id          更新
+ *   - DELETE /v1/rule/decision-tables/:id          删除
+ *   - POST   /v1/rule/decision-tables/:id/execute  执行
+ *
+ * 后端响应字段说明：
+ *   - columns: 合并后的 inputColumns + outputColumns（每列含 columnType: INPUT/OUTPUT）
+ *   - rows: 内联行数据（含 inputValues/outputValues map）
+ *   - enabled: 由 status 派生（status !== 'ARCHIVED'）
+ *   - conceptId: V1.1 阶段暂用 rulesetId 兼容，V1.2 阶段会通过 Ontology 关联表填充
+ *
+ * 前端 DecisionTable 类型期望字段：
+ *   - columns[].operator / rows[].cells / rows[].priority / rows[].description
+ *
+ * 由于后端 V1.1 schema 暂未独立存储 operator/cells/priority/description，
+ * 此处通过 `normalizeTable` 做兼容映射，等 V1.2 后端补齐后再去掉。
+ */
 
-/** 默认决策表 2：客户分级决策表 */
-const DEFAULT_TABLE_CUSTOMER_LEVEL: DecisionTable = {
-  id: 'dt-002',
-  code: 'CUSTOMER_LEVEL',
-  name: '客户分级决策表',
-  description: '根据年消费总额与活跃度划分客户等级',
-  conceptId: 'concept-customer',
-  hitPolicy: 'priority',
-  columns: [
-    { id: 'col-year-amount', name: '年消费额', field: 'yearAmount', columnType: 'input', operator: 'gte' },
-    { id: 'col-active-days', name: '活跃天数', field: 'activeDays', columnType: 'input', operator: 'gte' },
-    { id: 'col-complaint', name: '投诉次数', field: 'complaintCount', columnType: 'input', operator: 'lte' },
-    { id: 'col-level', name: '客户等级', field: 'level', columnType: 'output' },
-    { id: 'col-discount-level', name: '折扣档位', field: 'discountLevel', columnType: 'output' },
-  ],
-  rows: [
-    {
-      id: 'row-1',
-      enabled: true,
-      priority: 1,
-      description: '钻石客户：年消费 50w+，活跃 300+，投诉 ≤ 2',
-      cells: {
-        'col-year-amount': { value: '500000' },
-        'col-active-days': { value: '300' },
-        'col-complaint': { value: '2' },
-        'col-level': { value: 'S' },
-        'col-discount-level': { value: 'VIP1' },
-      },
-    },
-    {
-      id: 'row-2',
-      enabled: true,
-      priority: 2,
-      description: '黄金客户：年消费 20w+，活跃 200+',
-      cells: {
-        'col-year-amount': { value: '200000' },
-        'col-active-days': { value: '200' },
-        'col-complaint': { value: '5' },
-        'col-level': { value: 'A' },
-        'col-discount-level': { value: 'VIP2' },
-      },
-    },
-    {
-      id: 'row-3',
-      enabled: true,
-      priority: 3,
-      description: '白银客户：年消费 5w+，活跃 100+',
-      cells: {
-        'col-year-amount': { value: '50000' },
-        'col-active-days': { value: '100' },
-        'col-complaint': { value: '10' },
-        'col-level': { value: 'B' },
-        'col-discount-level': { value: 'VIP3' },
-      },
-    },
-    {
-      id: 'row-4',
-      enabled: true,
-      priority: 4,
-      description: '普通客户',
-      cells: {
-        'col-year-amount': { value: '-', isEmpty: true },
-        'col-active-days': { value: '-', isEmpty: true },
-        'col-complaint': { value: '-', isEmpty: true },
-        'col-level': { value: 'C' },
-        'col-discount-level': { value: 'NORMAL' },
-      },
-    },
-  ],
-  enabled: true,
-  createdAt: '2026-07-08T09:00:00.000Z',
-  updatedAt: '2026-07-16T14:50:00.000Z',
-};
-
-const DEFAULT_DECISION_TABLES: DecisionTable[] = [
-  DEFAULT_TABLE_ORDER_DISCOUNT,
-  DEFAULT_TABLE_CUSTOMER_LEVEL,
-];
-
-function getLocalTables(): DecisionTable[] {
-  return readLocal<DecisionTable[]>(CACHE_KEY) ?? DEFAULT_DECISION_TABLES;
+/** 后端原始响应（部分关键字段，便于类型推导）。 */
+interface DecisionTableBackend {
+  id: string;
+  code: string;
+  name: string;
+  description?: string;
+  rulesetId?: string;
+  conceptId?: string;
+  hitPolicy: string;
+  columns?: Array<{
+    id: string;
+    name: string;
+    field: string;
+    columnType: 'INPUT' | 'OUTPUT' | string;
+    dataType?: string;
+    expression?: string;
+  }>;
+  inputColumns?: DecisionTableBackend['columns'];
+  outputColumns?: DecisionTableBackend['columns'];
+  rows?: Array<{
+    id: string;
+    rowOrder?: number;
+    inputValues?: Record<string, unknown>;
+    outputValues?: Record<string, unknown>;
+    enabled?: boolean;
+  }>;
+  status?: string;
+  enabled?: boolean;
+  version?: number;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
-function setLocalTables(tables: DecisionTable[]): void {
-  writeLocal(CACHE_KEY, tables);
+function normalizeHitPolicy(raw: string | undefined): HitPolicy {
+  if (!raw) return 'first';
+  const lower = raw.toLowerCase();
+  if (lower === 'first' || lower === 'all' || lower === 'priority' || lower === 'unique' || lower === 'collect') {
+    return lower as HitPolicy;
+  }
+  return 'first';
+}
+
+function normalizeTable(raw: DecisionTableBackend): DecisionTable {
+  const inputCols = raw.inputColumns ?? [];
+  const outputCols = raw.outputColumns ?? [];
+  const allCols = raw.columns ?? [...inputCols, ...outputCols];
+
+  const columns = allCols.map((c) => ({
+    id: c.id,
+    name: c.name,
+    field: c.field,
+    columnType: (c.columnType?.toLowerCase() === 'output' ? 'output' : 'input') as 'input' | 'output',
+    operator: 'eq' as const,
+  }));
+
+  const rows = (raw.rows ?? []).map((r) => {
+    const cells: Record<string, { value: string; isEmpty?: boolean }> = {};
+    const inputVals = r.inputValues ?? {};
+    const outputVals = r.outputValues ?? {};
+    for (const col of allCols) {
+      const source = col.columnType?.toLowerCase() === 'output' ? outputVals : inputVals;
+      const v = source[col.field];
+      if (v === undefined || v === null || v === '') {
+        cells[col.id] = { value: '-', isEmpty: true };
+      } else {
+        cells[col.id] = { value: typeof v === 'string' ? v : String(v) };
+      }
+    }
+    return {
+      id: r.id,
+      cells,
+      enabled: r.enabled ?? true,
+      priority: r.rowOrder ?? 0,
+      description: '',
+    };
+  });
+
+  return {
+    id: raw.id,
+    code: raw.code,
+    name: raw.name,
+    description: raw.description ?? '',
+    conceptId: raw.conceptId ?? raw.rulesetId,
+    hitPolicy: normalizeHitPolicy(raw.hitPolicy),
+    columns,
+    rows,
+    enabled: raw.enabled ?? (raw.status !== 'ARCHIVED'),
+    createdAt: raw.createdAt ?? '',
+    updatedAt: raw.updatedAt ?? '',
+  };
+}
+
+/** 后端执行结果原始响应。 */
+interface DecisionTableExecutionBackend {
+  matchedRows?: Array<{
+    id: string;
+    inputValues?: Record<string, unknown>;
+    outputValues?: Record<string, unknown>;
+    enabled?: boolean;
+    rowOrder?: number;
+  }>;
+  outputs?: Record<string, unknown>[];
+  executionTimeMs?: number;
+}
+
+function normalizeExecution(raw: DecisionTableExecutionBackend, table?: DecisionTable): DecisionTableExecutionResult {
+  const columns = table?.columns ?? [];
+  const matchedRows = (raw.matchedRows ?? []).map((r) => {
+    const cells: Record<string, { value: string; isEmpty?: boolean }> = {};
+    for (const col of columns) {
+      const source = col.columnType === 'output' ? r.outputValues : r.inputValues;
+      const v = source?.[col.field];
+      if (v === undefined || v === null || v === '') {
+        cells[col.id] = { value: '-', isEmpty: true };
+      } else {
+        cells[col.id] = { value: typeof v === 'string' ? v : String(v) };
+      }
+    }
+    return {
+      id: r.id,
+      cells,
+      enabled: r.enabled ?? true,
+      priority: r.rowOrder ?? 0,
+      description: '',
+    };
+  });
+  return {
+    matchedRows,
+    outputs: raw.outputs ?? [],
+  };
 }
 
 /**
@@ -199,19 +175,11 @@ function setLocalTables(tables: DecisionTable[]): void {
  * 后端路径：GET /v1/rule/decision-tables
  */
 export async function listDecisionTables(conceptId?: string): Promise<DecisionTable[]> {
-  try {
-    const params = conceptId ? { conceptId } : undefined;
-    const data = await get<DecisionTable[]>('/v1/rule/decision-tables', params);
-    if (data && Array.isArray(data)) {
-      setLocalTables(data);
-      return data;
-    }
-    throw new Error('Empty decision tables');
-  } catch {
-    const base = getLocalTables();
-    if (!conceptId) return base;
-    return base.filter((t) => t.conceptId === conceptId);
-  }
+  const res = await get<{ items: DecisionTableBackend[] } | DecisionTableBackend[]>('/v1/rule/decision-tables');
+  const list = Array.isArray(res) ? res : (res?.items ?? []);
+  const normalized = list.map(normalizeTable);
+  if (!conceptId) return normalized;
+  return normalized.filter((t) => t.conceptId === conceptId);
 }
 
 /**
@@ -219,13 +187,8 @@ export async function listDecisionTables(conceptId?: string): Promise<DecisionTa
  * 后端路径：GET /v1/rule/decision-tables/:id
  */
 export async function getDecisionTable(id: string): Promise<DecisionTable> {
-  try {
-    return await get<DecisionTable>(`/v1/rule/decision-tables/${id}`);
-  } catch {
-    const found = getLocalTables().find((t) => t.id === id);
-    if (!found) throw new Error(`Decision table ${id} not found`);
-    return found;
-  }
+  const raw = await get<DecisionTableBackend>(`/v1/rule/decision-tables/${id}`);
+  return normalizeTable(raw);
 }
 
 /**
@@ -233,51 +196,78 @@ export async function getDecisionTable(id: string): Promise<DecisionTable> {
  * 后端路径：POST /v1/rule/decision-tables
  */
 export async function createDecisionTable(payload: DecisionTablePayload): Promise<DecisionTable> {
-  try {
-    const created = await post<DecisionTable>('/v1/rule/decision-tables', payload);
-    const tables = getLocalTables();
-    setLocalTables([...tables, created]);
-    return created;
-  } catch {
-    const now = new Date().toISOString();
-    const created: DecisionTable = {
-      ...payload,
-      id: `dt-${Date.now().toString(36)}`,
-      createdAt: now,
-      updatedAt: now,
-    };
-    const tables = getLocalTables();
-    setLocalTables([...tables, created]);
-    return created;
-  }
+  // 前端 payload 字段 -> 后端 CreateDecisionTableRequest 字段映射
+  const body = {
+    name: payload.name,
+    code: payload.code,
+    description: payload.description,
+    rulesetId: payload.conceptId,
+    hitPolicy: payload.hitPolicy.toUpperCase(),
+    inputColumns: payload.columns
+      .filter((c) => c.columnType === 'input')
+      .map((c) => ({
+        id: c.id,
+        name: c.name,
+        field: c.field,
+        dataType: 'string',
+        expression: c.operator ?? 'eq',
+        columnType: 'INPUT',
+      })),
+    outputColumns: payload.columns
+      .filter((c) => c.columnType === 'output')
+      .map((c) => ({
+        id: c.id,
+        name: c.name,
+        field: c.field,
+        dataType: 'string',
+        expression: c.defaultValue ?? '',
+        columnType: 'OUTPUT',
+      })),
+  };
+  const raw = await post<DecisionTableBackend>('/v1/rule/decision-tables', body);
+  return normalizeTable(raw);
 }
 
 /**
  * 更新决策表。
  * 后端路径：PUT /v1/rule/decision-tables/:id
+ *
+ * 注意：后端 update 接口当前不支持整表替换 columns/rows，仅更新元信息。
+ * 完整列/行变更应通过 addColumn/updateColumn/addRow/updateRow 等子端点。
+ * 此处仅更新基础字段，rows/columns 后续走子端点。
  */
 export async function updateDecisionTable(
   id: string,
   payload: DecisionTablePayload,
 ): Promise<DecisionTable> {
-  try {
-    const updated = await put<DecisionTable>(`/v1/rule/decision-tables/${id}`, payload);
-    const tables = getLocalTables().map((t) => (t.id === id ? updated : t));
-    setLocalTables(tables);
-    return updated;
-  } catch {
-    const now = new Date().toISOString();
-    const existing = getLocalTables().find((t) => t.id === id);
-    const updated: DecisionTable = {
-      ...(existing ?? { id, createdAt: now }),
-      ...payload,
-      id,
-      updatedAt: now,
-    };
-    const tables = getLocalTables().map((t) => (t.id === id ? updated : t));
-    setLocalTables(tables);
-    return updated;
-  }
+  const body = {
+    name: payload.name,
+    description: payload.description,
+    hitPolicy: payload.hitPolicy.toUpperCase(),
+    status: payload.enabled ? 'PUBLISHED' : 'ARCHIVED',
+    inputColumns: payload.columns
+      .filter((c) => c.columnType === 'input')
+      .map((c) => ({
+        id: c.id,
+        name: c.name,
+        field: c.field,
+        dataType: 'string',
+        expression: c.operator ?? 'eq',
+        columnType: 'INPUT',
+      })),
+    outputColumns: payload.columns
+      .filter((c) => c.columnType === 'output')
+      .map((c) => ({
+        id: c.id,
+        name: c.name,
+        field: c.field,
+        dataType: 'string',
+        expression: c.defaultValue ?? '',
+        columnType: 'OUTPUT',
+      })),
+  };
+  const raw = await put<DecisionTableBackend>(`/v1/rule/decision-tables/${id}`, body);
+  return normalizeTable(raw);
 }
 
 /**
@@ -285,13 +275,7 @@ export async function updateDecisionTable(
  * 后端路径：DELETE /v1/rule/decision-tables/:id
  */
 export async function deleteDecisionTable(id: string): Promise<void> {
-  try {
-    await del<void>(`/v1/rule/decision-tables/${id}`);
-  } catch {
-    /* ignore */
-  }
-  const tables = getLocalTables().filter((t) => t.id !== id);
-  setLocalTables(tables);
+  await del<void>(`/v1/rule/decision-tables/${id}`);
 }
 
 /**
@@ -302,91 +286,19 @@ export async function executeDecisionTable(
   id: string,
   input: Record<string, unknown>,
 ): Promise<DecisionTableExecutionResult> {
+  const raw = await post<DecisionTableExecutionBackend>(
+    `/v1/rule/decision-tables/${id}/execute`,
+    { inputData: input },
+  );
+
+  // 为了在 normalizeExecution 中把 outputs 的字段回填到 matchedRows 的 cells，
+  // 先查一次决策表元信息（columns），用于回填字段映射。
+  let table: DecisionTable | undefined;
   try {
-    return await post<DecisionTableExecutionResult>(
-      `/v1/rule/decision-tables/${id}/execute`,
-      input,
-    );
+    table = await getDecisionTable(id);
   } catch {
-    // 本地兜底执行：根据列定义对输入做匹配
-    const table = getLocalTables().find((t) => t.id === id);
-    if (!table) throw new Error(`Decision table ${id} not found`);
-
-    const inputColumns = table.columns.filter((c) => c.columnType === 'input');
-    const outputColumns = table.columns.filter((c) => c.columnType === 'output');
-
-    const matches = table.rows
-      .filter((r) => r.enabled)
-      .filter((r) =>
-        inputColumns.every((col) => {
-          const cell = r.cells[col.id];
-          if (!cell || cell.isEmpty || cell.value === '-') return true; // 任意值
-          const inputValue = input[col.field];
-          return compareValues(inputValue, cell.value, col.operator ?? 'eq');
-        }),
-      );
-
-    const ordered = table.hitPolicy === 'priority'
-      ? [...matches].sort((a, b) => a.priority - b.priority)
-      : matches;
-
-    const finalMatches =
-      table.hitPolicy === 'first' || table.hitPolicy === 'unique'
-        ? ordered.slice(0, 1)
-        : ordered;
-
-    const outputs = finalMatches.map((r) => {
-      const out: Record<string, unknown> = {};
-      outputColumns.forEach((col) => {
-        const cell = r.cells[col.id];
-        out[col.field] = cell && !cell.isEmpty && cell.value !== '-' ? cell.value : col.defaultValue ?? null;
-      });
-      return out;
-    });
-
-    if (table.hitPolicy === 'unique' && matches.length > 1) {
-      throw new Error(`决策表 ${table.code} 应唯一命中，但匹配到 ${matches.length} 行`);
-    }
-
-    return { matchedRows: finalMatches, outputs };
+    table = undefined;
   }
-}
 
-/** 简单的本地值比较（与后端语义保持一致） */
-function compareValues(
-  input: unknown,
-  cellValue: string,
-  operator: 'eq' | 'ne' | 'gt' | 'lt' | 'gte' | 'lte' | 'in' | 'contains' | 'between',
-): boolean {
-  if (input === undefined || input === null) return false;
-  const inputStr = typeof input === 'string' ? input : String(input);
-  const inputNum = typeof input === 'number' ? input : Number(input);
-  const cellNum = Number(cellValue);
-
-  switch (operator) {
-    case 'eq':
-      return inputStr === cellValue || (!Number.isNaN(inputNum) && inputNum === cellNum);
-    case 'ne':
-      return inputStr !== cellValue && !(inputNum === cellNum);
-    case 'gt':
-      return !Number.isNaN(inputNum) && !Number.isNaN(cellNum) && inputNum > cellNum;
-    case 'lt':
-      return !Number.isNaN(inputNum) && !Number.isNaN(cellNum) && inputNum < cellNum;
-    case 'gte':
-      return !Number.isNaN(inputNum) && !Number.isNaN(cellNum) && inputNum >= cellNum;
-    case 'lte':
-      return !Number.isNaN(inputNum) && !Number.isNaN(cellNum) && inputNum <= cellNum;
-    case 'in': {
-      const items = cellValue.split(',').map((s) => s.trim());
-      return items.includes(inputStr);
-    }
-    case 'contains':
-      return inputStr.includes(cellValue);
-    case 'between': {
-      const [min, max] = cellValue.split(',').map((s) => Number(s.trim()));
-      return !Number.isNaN(inputNum) && !Number.isNaN(min) && !Number.isNaN(max) && inputNum >= min && inputNum <= max;
-    }
-    default:
-      return false;
-  }
+  return normalizeExecution(raw, table);
 }

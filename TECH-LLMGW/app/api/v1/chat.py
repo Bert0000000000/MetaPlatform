@@ -47,7 +47,7 @@ async def chat_multimodal(
     service: ChatService = Depends(get_chat_service),
 ) -> dict:
     _ensure_image_count(body.images)
-    resp = service.multimodal(ctx.tenant_id, body)
+    resp = await service.multimodal(ctx.tenant_id, body)
     return success(
         {
             "id": resp.id,
@@ -117,7 +117,7 @@ async def chat_multimodal_upload(
         maxTokens=maxTokens,
         systemPrompt=systemPrompt,
     )
-    resp = service.multimodal(ctx.tenant_id, body)
+    resp = await service.multimodal(ctx.tenant_id, body)
     return success(
         {
             "id": resp.id,
@@ -149,7 +149,7 @@ async def chat_stream(
     # Pre-compute the full response so business errors (404, 422, …) are
     # raised *before* the StreamingResponse sends its 200 headers.
     mm_request = build_multimodal_request(body)
-    resp = service.multimodal(ctx.tenant_id, mm_request)
+    resp = await service.multimodal(ctx.tenant_id, mm_request)
 
     return StreamingResponse(
         stream_response(resp),

@@ -1,51 +1,28 @@
-import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { Layout, Menu, theme, Typography } from 'antd';
-import {
-  ApartmentOutlined,
-  BlockOutlined,
-  BranchesOutlined,
-  NodeIndexOutlined,
-  ExperimentOutlined,
-  HistoryOutlined,
-  DatabaseOutlined,
-  ThunderboltOutlined,
-  PartitionOutlined,
-  BellOutlined,
-  MonitorOutlined,
-  SafetyCertificateOutlined,
-  ShareAltOutlined,
-} from '@ant-design/icons';
-import GlobalSearch from './GlobalSearch';
+import { useState } from 'react';
+import { Outlet, useNavigate } from 'react-router-dom';
+import { Layout, theme, Typography, Button, Space, Grid, Drawer } from 'antd';
+import { LogoutOutlined, MenuOutlined } from '@ant-design/icons';
+import { PlatformMenu } from '@mate/shared';
+import GlobalSearch from '@/components/GlobalSearch';
+import { removeToken } from '@/utils/auth';
 
 const { Header, Sider, Content } = Layout;
 
-const menuItems = [
-  { key: '/concepts', icon: <ApartmentOutlined />, label: '本体管理' },
-  { key: '/entities', icon: <BlockOutlined />, label: '实体管理' },
-  { key: '/relations', icon: <BranchesOutlined />, label: '关系类型' },
-  { key: '/relation-instances', icon: <PartitionOutlined />, label: '关系实例' },
-  { key: '/rules', icon: <ExperimentOutlined />, label: '规则管理' },
-  { key: '/versions', icon: <HistoryOutlined />, label: '版本管理' },
-  { key: '/datasources', icon: <DatabaseOutlined />, label: '数据源' },
-  { key: '/mappings', icon: <PartitionOutlined />, label: '数据映射' },
-  { key: '/quality', icon: <SafetyCertificateOutlined />, label: '数据质量' },
-  { key: '/lineage', icon: <ShareAltOutlined />, label: '数据血缘' },
-  { key: '/actions', icon: <ThunderboltOutlined />, label: 'Action 定义' },
-  { key: '/orchestrations', icon: <PartitionOutlined />, label: 'Action 编排' },
-  { key: '/triggers', icon: <BellOutlined />, label: '触发器' },
-  { key: '/executions', icon: <MonitorOutlined />, label: '执行监控' },
-  { key: '/graph', icon: <NodeIndexOutlined />, label: '知识图谱' },
-];
-
 export default function AppLayout() {
   const navigate = useNavigate();
-  const location = useLocation();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const screens = Grid.useBreakpoint();
+  const isMobile = !screens.md;
   const {
     token: { colorBgContainer, borderRadiusLG },
   } = theme.useToken();
 
-  const selectedKey =
-    menuItems.find((m) => location.pathname.startsWith(m.key))?.key || '/concepts';
+  const handleLogout = () => {
+    removeToken();
+    navigate('/login');
+  };
+
+  const menu = <PlatformMenu currentModule="ontstudio" />;
 
   return (
     <Layout style={{ minHeight: '100vh' }}>
@@ -59,26 +36,45 @@ export default function AppLayout() {
           borderBottom: '1px solid #f0f0f0',
         }}
       >
-        <Typography.Title level={4} style={{ margin: 0 }}>
-          Ontology Studio
-        </Typography.Title>
-        <GlobalSearch />
+        <div style={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 0 }}>
+          {isMobile && (
+            <Button
+              type="text"
+              icon={<MenuOutlined />}
+              onClick={() => setMenuOpen(true)}
+              style={{ marginRight: 8 }}
+            />
+          )}
+          <Typography.Title
+            level={4}
+            style={{
+              margin: 0,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            Ontology Studio
+          </Typography.Title>
+        </div>
+        <Space size="middle" style={{ flexShrink: 0 }}>
+          {!isMobile && <GlobalSearch />}
+          <Button type="text" icon={<LogoutOutlined />} onClick={handleLogout}>
+            {!isMobile && '退出'}
+          </Button>
+        </Space>
       </Header>
       <Layout>
-        <Sider width={220} style={{ background: colorBgContainer }}>
-          <Menu
-            mode="inline"
-            selectedKeys={[selectedKey]}
-            style={{ height: '100%', borderRight: 0 }}
-            items={menuItems}
-            onClick={({ key }) => navigate(key)}
-          />
-        </Sider>
-        <Layout style={{ padding: '16px 24px' }}>
+        {!isMobile && (
+          <Sider width={240} style={{ background: colorBgContainer }}>
+            {menu}
+          </Sider>
+        )}
+        <Layout className="mate-page-layout">
           <Content
             style={{
               background: colorBgContainer,
-              padding: 24,
+              padding: 'var(--mate-content-padding)',
               margin: 0,
               borderRadius: borderRadiusLG,
               minHeight: 280,
@@ -89,6 +85,15 @@ export default function AppLayout() {
           </Content>
         </Layout>
       </Layout>
+      <Drawer
+        placement="left"
+        open={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        width={240}
+        styles={{ body: { padding: 0 } }}
+      >
+        {menu}
+      </Drawer>
     </Layout>
   );
 }

@@ -3,8 +3,11 @@ package com.metaplatform.mcp.server.controller;
 import com.metaplatform.mcp.common.ErrorCode;
 import com.metaplatform.mcp.common.PageResponse;
 import com.metaplatform.mcp.exception.McpException;
+import com.metaplatform.mcp.server.dto.ConnectionStatusResponse;
+import com.metaplatform.mcp.server.dto.IdeConfigResponse;
 import com.metaplatform.mcp.server.dto.McpServerListItem;
 import com.metaplatform.mcp.server.dto.McpServerResponse;
+import com.metaplatform.mcp.server.dto.ServerStatusResponse;
 import com.metaplatform.mcp.server.service.McpServerService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,7 +39,7 @@ class McpServerControllerTest {
     private McpServerResponse sampleResponse() {
         return McpServerResponse.builder()
                 .id(UUID.randomUUID()).name("srv").code("srv")
-                .transportType("HTTP").status("ACTIVE").config("{}")
+                .transportType("HTTP").status("online").config("{}")
                 .createdAt(Instant.now()).updatedAt(Instant.now()).build();
     }
 
@@ -67,27 +70,57 @@ class McpServerControllerTest {
     void list_servers_returns_page() throws Exception {
         McpServerListItem item = McpServerListItem.builder()
                 .id(UUID.randomUUID()).name("srv").code("srv")
-                .transportType("HTTP").status("ACTIVE").build();
+                .transportType("HTTP").status("online").toolCount(2)
+                .build();
         when(mcpServerService.list(any(), any(), any(), any()))
                 .thenReturn(PageResponse.<McpServerListItem>builder()
                         .items(List.of(item)).total(1).page(1).size(20).totalPages(1).build());
 
         mockMvc.perform(get("/api/v1/mcp/servers").param("page", "1").param("size", "20"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.items[0].code").value("srv"));
+                .andExpect(jsonPath("$.data.items[0].code").value("srv"))
+                .andExpect(jsonPath("$.data.items[0].toolCount").value(2));
     }
 
     @Test
-    void start_server_returns_active() throws Exception {
+    void start_server_returns_online() throws Exception {
         UUID id = UUID.randomUUID();
         McpServerResponse response = sampleResponse();
         response.setId(id);
-        response.setStatus("ACTIVE");
+        response.setStatus("online");
         when(mcpServerService.start(id)).thenReturn(response);
 
         mockMvc.perform(post("/api/v1/mcp/servers/{id}/start", id))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.status").value("ACTIVE"));
+                .andExpect(jsonPath("$.data.status").value("online"));
+    }
+
+    @Test
+    void restart_server_returns_online() throws Exception {
+        UUID id = UUID.randomUUID();
+        McpServerResponse response = sampleResponse();
+        response.setId(id);
+        response.setStatus("online");
+        when(mcpServerService.restart(id)).thenReturn(response);
+
+        mockMvc.perform(post("/api/v1/mcp/servers/{id}/restart", id))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("online"));
+    }
+
+    @Test
+    void get_status_returns_connection_status() throws Exception {
+        UUID id = UUID.randomUUID();
+        when(mcpServerService.status(id))
+                .thenReturn(ServerStatusResponse.builder()
+                        .status("ACTIVE")
+                        .connectionStatus("online")
+                        .lastHeartbeatAt(Instant.now())
+                        .build());
+
+        mockMvc.perform(get("/api/v1/mcp/servers/{id}/status", id))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.connectionStatus").value("online"));
     }
 
     @Test
@@ -118,5 +151,41 @@ class McpServerControllerTest {
         mockMvc.perform(post("/api/v1/mcp/servers/{id}/start", id))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value(ErrorCode.STATE_CONFLICT.getCode()));
+    }
+
+    @Test
+    void generate_ide_config_returns_config() throws Exception {
+        UUID id = UUID.randomUUID();
+        when(mcpServerService.generateIdeConfig(id, "cursor"))
+                .thenReturn(IdeConfigResponse.builder()
+                        .ideType("cursor")
+                        .fileName("mcp.json")
+                        .contentType("application/json")
+                        .content("{\"mcpServers\":{}}")
+                        .build());
+
+        mockMvc.perform(get("/api/v1/mcp/servers/{id}/ide-config", id).param("ide", "cursor"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.ideType").value("cursor"))
+                .andExpect(jsonPath("$.data.fileName").value("mcp.json"))
+                .andExpect(jsonPath("$.data.content").isString());
+    }
+
+    @Test
+    void get_connection_status_returns_status() throws Exception {
+        UUID id = UUID.randomUUID();
+        when(mcpServerService.getConnectionStatus(id))
+                .thenReturn(ConnectionStatusResponse.builder()
+                        .id(id)
+                        .name("srv")
+                        .type("server")
+                        .connectionStatus("online")
+                        .status("ACTIVE")
+                        .build());
+
+        mockMvc.perform(get("/api/v1/mcp/servers/{id}/connection-status", id))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.id").value(id.toString()))
+                .andExpect(jsonPath("$.data.connectionStatus").value("online"));
     }
 }

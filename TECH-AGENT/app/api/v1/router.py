@@ -6,8 +6,13 @@ from app.api.v1 import (
     agents,
     card,
     checkpoints,
+    collaboration,
     conversations,
+    employees,
+    evaluation,
     executions,
+    learning,
+    plans,
     steps,
     tasks,
     tools,
@@ -15,13 +20,18 @@ from app.api.v1 import (
 
 router = APIRouter(prefix="/api/v1/agent")
 router.include_router(agents.router)
+router.include_router(employees.router)
 router.include_router(executions.router)
 router.include_router(checkpoints.router)
 router.include_router(tasks.router)
 router.include_router(conversations.router)
+router.include_router(evaluation.router)
 router.include_router(tools.router)
 router.include_router(steps.router)
 router.include_router(card.router)
+router.include_router(plans.router)
+router.include_router(learning.router)
+router.include_router(collaboration.router)
 
 
 @router.get("/health", tags=["meta"])

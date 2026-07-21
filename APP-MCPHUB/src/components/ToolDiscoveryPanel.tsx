@@ -70,8 +70,7 @@ export default function ToolDiscoveryPanel({ client }: ToolDiscoveryPanelProps) 
           dataSource={tools}
           columns={columns}
           pagination={{ pageSize: 10 }}
-          size="small"
-        />
+          size="small" scroll={{ x: 'max-content' }} />
       )}
     </Card>
   );

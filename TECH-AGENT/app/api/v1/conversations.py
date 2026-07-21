@@ -31,7 +31,7 @@ async def create_conversation(
 
     req = CreateConversationRequest(**body)
     conv = await service.create_conversation(
-        ctx.tenant_id, req.agentId, req.title
+        ctx.tenant_id, req.agentId, req.title, mode=req.mode
     )
     return success(conversation_to_dict(conv), trace_id=ctx.trace_id)
 
@@ -40,6 +40,9 @@ async def create_conversation(
 async def list_conversations(
     request: Request,
     agentId: Optional[str] = Query(default=None),
+    keyword: Optional[str] = Query(default=None),
+    favorite: Optional[bool] = Query(default=None),
+    mode: Optional[str] = Query(default=None),
     page: int = Query(default=1, ge=1),
     pageSize: int = Query(default=20, ge=1, le=100),
     ctx: RequestContext = Depends(request_context_dep),
@@ -48,6 +51,9 @@ async def list_conversations(
     items, total = await service.list_conversations(
         ctx.tenant_id,
         agent_id=agentId,
+        keyword=keyword,
+        favorite=favorite,
+        mode=mode,
         page=page,
         page_size=pageSize,
     )
@@ -58,6 +64,17 @@ async def list_conversations(
         page_size=pageSize,
     )
     return success(paged, trace_id=ctx.trace_id)
+
+
+@router.post("/conversations/{conversation_id}/favorite", summary="切换会话收藏状态")
+async def toggle_favorite(
+    conversation_id: str,
+    request: Request,
+    ctx: RequestContext = Depends(request_context_dep),
+    service: ConversationService = Depends(get_conversation_service),
+) -> dict:
+    conv = await service.toggle_favorite(ctx.tenant_id, conversation_id)
+    return success(conversation_to_dict(conv), trace_id=ctx.trace_id)
 
 
 @router.get("/conversations/{conversation_id}", summary="会话详情")

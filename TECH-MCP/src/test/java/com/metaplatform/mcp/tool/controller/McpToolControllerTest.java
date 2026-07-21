@@ -5,6 +5,8 @@ import com.metaplatform.mcp.common.PageResponse;
 import com.metaplatform.mcp.exception.McpException;
 import com.metaplatform.mcp.tool.dto.McpToolListItem;
 import com.metaplatform.mcp.tool.dto.McpToolResponse;
+import com.metaplatform.mcp.tool.dto.McpToolVersionCompareResponse;
+import com.metaplatform.mcp.tool.dto.McpToolVersionResponse;
 import com.metaplatform.mcp.tool.service.McpToolService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,6 +38,7 @@ class McpToolControllerTest {
     private McpToolResponse sampleResponse() {
         return McpToolResponse.builder()
                 .id(UUID.randomUUID()).name("My Tool").code("my_tool")
+                .category("default").version("1.0.0")
                 .toolType("HTTP").endpoint("http://x").enabled(true)
                 .createdAt(Instant.now()).updatedAt(Instant.now()).build();
     }
@@ -77,13 +80,15 @@ class McpToolControllerTest {
     @Test
     void list_tools_returns_page() throws Exception {
         McpToolListItem item = McpToolListItem.builder()
-                .id(UUID.randomUUID()).name("t").code("t").toolType("HTTP").enabled(true).build();
-        when(mcpToolService.list(any(), any(), any(), any(), any(), any()))
+                .id(UUID.randomUUID()).name("t").code("t").category("default").version("1.0.0")
+                .toolType("HTTP").enabled(true).build();
+        when(mcpToolService.list(any(), any(), any(), any(), any(), any(), any()))
                 .thenReturn(PageResponse.<McpToolListItem>builder()
                         .items(List.of(item)).total(1).page(1).size(20).totalPages(1).build());
 
         mockMvc.perform(get("/api/v1/mcp/tools")
                         .param("toolType", "HTTP")
+                        .param("category", "default")
                         .param("page", "1")
                         .param("size", "20"))
                 .andExpect(status().isOk())
@@ -121,5 +126,62 @@ class McpToolControllerTest {
         mockMvc.perform(get("/api/v1/mcp/tools/{id}", id))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value(ErrorCode.TOOL_NOT_FOUND.getCode()));
+    }
+
+    @Test
+    void list_versions_returns_versions() throws Exception {
+        UUID id = UUID.randomUUID();
+        when(mcpToolService.listVersions(id))
+                .thenReturn(List.of(McpToolVersionResponse.builder()
+                        .id(UUID.randomUUID()).toolId(id).version("1.0.0").isCurrent(true).createdAt(Instant.now()).build()));
+
+        mockMvc.perform(get("/api/v1/mcp/tools/{id}/versions", id))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].version").value("1.0.0"));
+    }
+
+    @Test
+    void rollback_version_returns_current() throws Exception {
+        UUID id = UUID.randomUUID();
+        UUID versionId = UUID.randomUUID();
+        when(mcpToolService.rollback(id, versionId))
+                .thenReturn(McpToolVersionResponse.builder()
+                        .id(versionId).toolId(id).version("1.0.0").isCurrent(true).createdAt(Instant.now()).build());
+
+        mockMvc.perform(post("/api/v1/mcp/tools/{id}/versions/{versionId}/rollback", id, versionId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.isCurrent").value(true));
+    }
+
+    @Test
+    void set_current_version_returns_current() throws Exception {
+        UUID id = UUID.randomUUID();
+        UUID versionId = UUID.randomUUID();
+        when(mcpToolService.setCurrent(id, versionId))
+                .thenReturn(McpToolVersionResponse.builder()
+                        .id(versionId).toolId(id).version("1.0.0").isCurrent(true).createdAt(Instant.now()).build());
+
+        mockMvc.perform(post("/api/v1/mcp/tools/{id}/versions/{versionId}/set-current", id, versionId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.isCurrent").value(true));
+    }
+
+    @Test
+    void compare_versions_returns_diff() throws Exception {
+        UUID id = UUID.randomUUID();
+        UUID left = UUID.randomUUID();
+        UUID right = UUID.randomUUID();
+        when(mcpToolService.compareVersions(id, left, right))
+                .thenReturn(McpToolVersionCompareResponse.builder()
+                        .left(McpToolVersionResponse.builder().id(left).version("1.0.0").build())
+                        .right(McpToolVersionResponse.builder().id(right).version("1.0.1").build())
+                        .differences(List.of("schema"))
+                        .build());
+
+        mockMvc.perform(get("/api/v1/mcp/tools/{id}/versions/compare", id)
+                        .param("leftVersionId", left.toString())
+                        .param("rightVersionId", right.toString()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.differences[0]").value("schema"));
     }
 }

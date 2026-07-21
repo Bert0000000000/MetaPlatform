@@ -95,6 +95,61 @@ export interface FormField {
   maxFileCount?: number;
 }
 
+export interface FormGlobalSettings {
+  title: string;
+  description?: string;
+  tabMode?: 'none' | 'tab' | 'step';
+  submitText?: string;
+  layoutDensity?: 'default' | 'compact' | 'loose';
+}
+
+export interface LinkageRuleCondition {
+  fieldKey: string;
+  operator?: 'eq' | 'ne' | 'contains' | 'gt' | 'lt' | 'gte' | 'lte' | 'in';
+  value?: unknown;
+}
+
+export interface LinkageRuleAction {
+  fieldKey: string;
+  action: 'show' | 'hide' | 'require' | 'optional' | 'readonly' | 'editable' | 'setOptions' | 'setValue';
+  value?: unknown;
+  options?: Array<{ label: string; value: string }>;
+}
+
+export interface LinkageRule {
+  id: string;
+  name?: string;
+  when: LinkageRuleCondition;
+  then: LinkageRuleAction;
+}
+
+export interface FormScripts {
+  beforeSubmit?: string;
+  afterSubmit?: string;
+  onChange?: string;
+}
+
+export interface FormValidationError {
+  fieldKey?: string;
+  code: string;
+  message: string;
+}
+
+export interface FormValidateResponse {
+  valid: boolean;
+  errors: FormValidationError[];
+}
+
+export interface FormDefinitionResponse {
+  formId: string;
+  appId?: string;
+  globalSettings?: FormGlobalSettings;
+  linkageRules?: LinkageRule[];
+  scripts?: FormScripts;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface FormConfig {
   name: string;
   description?: string;
@@ -102,6 +157,9 @@ export interface FormConfig {
   submitAction?: 'toast' | 'redirect' | 'flow';
   allowWithdraw?: boolean;
   allowEdit?: boolean;
+  globalSettings?: FormGlobalSettings;
+  linkageRules?: LinkageRule[];
+  scripts?: FormScripts;
   fields: FormField[];
 }
 

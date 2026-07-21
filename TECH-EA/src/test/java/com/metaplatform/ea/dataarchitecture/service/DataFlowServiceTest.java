@@ -3,6 +3,7 @@ package com.metaplatform.ea.dataarchitecture.service;
 import com.metaplatform.ea.common.TenantContext;
 import com.metaplatform.ea.dataarchitecture.dto.CreateDataFlowRequest;
 import com.metaplatform.ea.dataarchitecture.dto.DataFlowResponse;
+import com.metaplatform.ea.dataarchitecture.dto.UpdateDataFlowRequest;
 import com.metaplatform.ea.dataarchitecture.entity.DataEntityEntity;
 import com.metaplatform.ea.dataarchitecture.entity.DataFlowEntity;
 import com.metaplatform.ea.dataarchitecture.repository.DataEntityRepository;
@@ -123,6 +124,31 @@ class DataFlowServiceTest {
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).getSourceEntityId()).isEqualTo(sourceId);
+    }
+
+    @Test
+    void update_shouldChangeFlowType() {
+        DataFlowEntity entity = DataFlowEntity.builder()
+                .id(UUID.randomUUID())
+                .tenantId("tenant-default")
+                .name("flow")
+                .sourceEntityId(sourceId)
+                .targetEntityId(targetId)
+                .flowType("BATCH")
+                .createdAt(Instant.now())
+                .updatedAt(Instant.now())
+                .build();
+        when(flowRepository.findById(entity.getId())).thenReturn(Optional.of(entity));
+        when(flowRepository.save(any(DataFlowEntity.class))).thenAnswer(i -> i.getArgument(0));
+
+        UpdateDataFlowRequest request = new UpdateDataFlowRequest();
+        request.setFlowType("REALTIME");
+        request.setSchedule("@daily");
+
+        DataFlowResponse response = service.update(entity.getId(), request);
+
+        assertThat(response.getFlowType()).isEqualTo("REALTIME");
+        assertThat(response.getSchedule()).isEqualTo("@daily");
     }
 
     @Test

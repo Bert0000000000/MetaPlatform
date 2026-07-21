@@ -48,6 +48,13 @@ export interface Citation {
   url?: string;
 }
 
+export interface ChatImage {
+  uid: string;
+  url?: string;
+  base64?: string;
+  detail?: 'low' | 'high' | 'auto';
+}
+
 export interface ChatMessage {
   id: string;
   role: 'user' | 'assistant';
@@ -57,6 +64,21 @@ export interface ChatMessage {
   citations?: Citation[];
   createdAt: string;
   metadata?: ChatMessageMetadata;
+  images?: ChatImage[];
+}
+
+export interface MultimodalModel {
+  modelId: string;
+  provider: string;
+  modelCode: string;
+  displayName: string;
+  type: string;
+  inputPrice: number;
+  outputPrice: number;
+  contextLength: number;
+  capabilities: string[];
+  enabled: boolean;
+  description?: string;
 }
 
 export interface ChatMessageMetadata {
@@ -68,6 +90,7 @@ export interface ChatMessageMetadata {
   graphData?: GraphData;
   generatedConfig?: GeneratedConfig;
   codeReview?: CodeReviewResult;
+  plan?: Plan;
 }
 
 export interface ChatSession {
@@ -197,6 +220,7 @@ export interface OntologyConcept {
   attributes: ConceptAttribute[];
   instances: ConceptInstance[];
   relatedConcepts: string[];
+  tags?: string[];
 }
 
 export interface ConceptAttribute {
@@ -283,6 +307,216 @@ export interface CodeReviewIssue {
   severity: 'critical' | 'warning' | 'info';
   message: string;
   rule: string;
+}
+
+// ============ Code Workspace Types (V12-02 / REQ-038~045) ============
+
+export type CodeLanguage = 'python' | 'typescript' | 'sql';
+
+export type ExecutionResultType = 'text' | 'table' | 'error';
+
+export interface CodeExecuteRequest {
+  language: string;
+  code: string;
+  timeoutMs?: number;
+}
+
+export interface ExecutionResult {
+  success: boolean;
+  stdout: string;
+  stderr: string;
+  durationMs: number;
+  resultType: ExecutionResultType;
+  text?: string | null;
+  columns: string[];
+  rows: Record<string, unknown>[];
+  rowCount: number;
+  errorName?: string | null;
+  errorMessage?: string | null;
+}
+
+export interface CodeTemplate {
+  templateId: string;
+  name: string;
+  description?: string;
+  language: string;
+  category?: string;
+  code: string;
+  tags: string[];
+  createdBy?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface CodeTemplateCreateRequest {
+  name: string;
+  description?: string;
+  language: string;
+  category?: string;
+  code: string;
+  tags?: string[];
+}
+
+export interface CodeTemplateUpdateRequest {
+  name?: string;
+  description?: string;
+  category?: string;
+  code?: string;
+  tags?: string[];
+}
+
+export interface CodeSnippet {
+  snippetId: string;
+  title: string;
+  description?: string;
+  language: string;
+  code: string;
+  tags: string[];
+  version: number;
+  changeLog?: string;
+  createdBy?: string;
+  updatedBy?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface CodeSnippetVersion extends CodeSnippet {
+  previousVersion?: number | null;
+}
+
+export interface CodeSnippetCreateRequest {
+  title: string;
+  description?: string;
+  language: string;
+  code: string;
+  tags?: string[];
+}
+
+export interface CodeSnippetUpdateRequest {
+  title?: string;
+  description?: string;
+  code?: string;
+  tags?: string[];
+  changeLog?: string;
+}
+
+export interface CodeSnippetDiffResult {
+  snippetId: string;
+  versionA: number;
+  versionB: number;
+  addedLines: string[];
+  removedLines: string[];
+  unifiedDiff: string;
+}
+
+export interface CodeShare {
+  shareId: string;
+  title?: string;
+  description?: string;
+  language: string;
+  code: string;
+  shareUrl: string;
+  exportContent: string;
+  createdBy?: string;
+  createdAt?: string;
+  expiresAt?: string | null;
+}
+
+export interface CodeShareRequest {
+  code: string;
+  language: string;
+  title?: string;
+  description?: string;
+}
+
+// ============ Data Analysis Types (V13-12) ============
+
+export type ExportFormat = 'csv' | 'json' | 'excel';
+
+// ============ Autonomous Task Plan Types (V15-02) ============
+
+export type PlanStepStatus =
+  | 'pending'
+  | 'running'
+  | 'completed'
+  | 'failed'
+  | 'skipped'
+  | 'approved';
+
+export type PlanStatus =
+  | 'draft'
+  | 'ready'
+  | 'running'
+  | 'completed'
+  | 'failed'
+  | 'cancelled';
+
+export interface PlanStep {
+  stepId: string;
+  title: string;
+  description: string;
+  action: string;
+  status: PlanStepStatus;
+  order: number;
+  requiresApproval: boolean;
+  input?: Record<string, unknown> | null;
+  output?: Record<string, unknown> | null;
+  errorMessage?: string | null;
+  startedAt?: string | null;
+  completedAt?: string | null;
+}
+
+export interface Plan {
+  planId: string;
+  tenantId?: string;
+  title: string;
+  description: string;
+  userInput: string;
+  agentId?: string | null;
+  status: PlanStatus;
+  steps: PlanStep[];
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface CreatePlanRequest {
+  userInput: string;
+  agentId?: string;
+  title?: string;
+}
+
+export interface DataSource {
+  id: string;
+  name: string;
+  sourceType: string;
+  status: string;
+}
+
+export interface QueryExecuteRequest {
+  dataSourceId: string;
+  sql: string;
+}
+
+export interface QueryExecuteResult {
+  queryId: string;
+  columns: string[];
+  rows: Record<string, unknown>[];
+  rowCount: number;
+  executionTime: number;
+}
+
+export interface QueryHistoryItem {
+  id: string;
+  dataSourceId: string;
+  sql: string;
+  rowCount: number;
+  executionTimeMs: number;
+  status: string;
+  createdAt: string;
+}
+
+export interface ExecutionPlan {
+  plan: unknown;
 }
 
 export interface DashboardGenResult {

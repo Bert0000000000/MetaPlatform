@@ -6,12 +6,14 @@ from app.api.v1 import (
     audit,
     chat,
     chat_completions,
+    code,
     cost,
     embeddings,
     models,
     prompts,
     quotas,
     ratelimits,
+    routing,
 )
 
 router = APIRouter(prefix="/api/v1/llmgw")
@@ -24,6 +26,8 @@ router.include_router(quotas.router)
 router.include_router(ratelimits.router)
 router.include_router(cost.router)
 router.include_router(audit.router)
+router.include_router(code.router)
+router.include_router(routing.router)
 
 
 @router.get("/health", tags=["meta"])

@@ -1,6 +1,22 @@
 import { useState, useRef, useMemo, useCallback, useEffect } from 'react';
 import { Bubble, Sender, Welcome } from '@ant-design/x';
-import { Button, Tabs, Typography, Flex, Tag, Space, Tooltip, Select, Card, theme } from 'antd';
+import {
+  Button,
+  Tabs,
+  Typography,
+  Flex,
+  Tag,
+  Space,
+  Tooltip,
+  Select,
+  Card,
+  theme,
+  Switch,
+  Upload,
+  Image,
+  message,
+} from 'antd';
+import type { UploadFile } from 'antd/es/upload/interface';
 import {
   RobotOutlined,
   UserOutlined,
@@ -13,16 +29,25 @@ import {
   GlobalOutlined,
   BookOutlined,
   HistoryOutlined,
+  PictureOutlined,
 } from '@ant-design/icons';
-import { streamChat } from '@/api/chat';
+import { streamChat, listMultimodalModels, multimodalUploadChat } from '@/api/chat';
 import { listKnowledgeBases, search as ragSearch } from '@/api/rag';
 import { semanticQuery as ontSemanticQuery } from '@/api/ontology';
+import {
+  listConversations,
+  createConversation,
+  deleteConversation,
+  toggleFavorite,
+  getHistory,
+} from '@/api/conversations';
 import HistorySidebar from '@/components/HistorySidebar';
 import MarkdownRenderer from '@/components/MarkdownRenderer';
 import AnalysisPanel from '@/components/AnalysisPanel';
 import ActionPanel from '@/components/ActionPanel';
 import ExplorePanel from '@/components/ExplorePanel';
 import GeneratePanel from '@/components/GeneratePanel';
+import PlanPanel from '@/components/PlanPanel';
 import KnowledgeGraph from '@/components/KnowledgeGraph';
 import type {
   ChatSession,
@@ -37,6 +62,9 @@ import type {
   GraphData,
   GeneratedConfig,
   CodeReviewResult,
+  ChatImage,
+  MultimodalModel,
+  Plan,
 } from '@/types';
 
 const MODES: { key: ChatMode; label: string; icon: React.ReactNode }[] = [
@@ -86,6 +114,30 @@ function now(): string {
   return new Date().toISOString();
 }
 
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(new Error('读取图片失败'));
+    reader.readAsDataURL(file);
+  });
+}
+
+const ALLOWED_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
+const MAX_IMAGE_SIZE_MB = 5;
+
+function beforeUpload(file: File): boolean {
+  const isAllowedType = ALLOWED_IMAGE_TYPES.includes(file.type);
+  if (!isAllowedType) {
+    message.error('仅支持 png、jpeg、webp 格式的图片');
+  }
+  const isLt5M = file.size / 1024 / 1024 < MAX_IMAGE_SIZE_MB;
+  if (!isLt5M) {
+    message.error('单张图片不能超过 5MB');
+  }
+  return isAllowedType && isLt5M;
+}
+
 function createSession(title = '新对话'): ChatSession {
   return {
     id: generateId(),
@@ -109,6 +161,24 @@ function createMessage(
     status: 'success',
     createdAt: now(),
     ...overrides,
+  };
+}
+
+function isBackendConversation(id: string): boolean {
+  return id.startsWith('conv-');
+}
+
+function conversationToSession(
+  conv: import('@/types').Conversation,
+  messages: ChatMessage[] = [],
+): ChatSession {
+  return {
+    id: conv.id,
+    title: conv.title || '新对话',
+    mode: conv.mode,
+    messages,
+    updatedAt: conv.updatedAt || now(),
+    favorite: conv.favorite,
   };
 }
 
@@ -169,10 +239,81 @@ export default function ChatPage() {
   const [knowledgeBases, setKnowledgeBases] = useState<KnowledgeBase[]>([]);
   const [selectedKbIds, setSelectedKbIds] = useState<string[]>([]);
   const [modeQuery, setModeQuery] = useState('');
+  const [isMultimodal, setIsMultimodal] = useState(false);
+  const [multimodalModels, setMultimodalModels] = useState<MultimodalModel[]>([]);
+  const [selectedModelId, setSelectedModelId] = useState<string>('');
+  const [imageFiles, setImageFiles] = useState<UploadFile[]>([]);
+  const loadedHistoryRef = useRef<Set<string>>(new Set());
+  const modelsLoadedRef = useRef(false);
 
   useEffect(() => {
     listKnowledgeBases().then(setKnowledgeBases).catch(() => {});
+    // 加载后端会话列表，与本地兜底会话合并
+    listConversations()
+      .then((convs) => {
+        if (convs.length === 0) return;
+        const backendSessions = convs.map((c) => conversationToSession(c));
+        setSessions((prev) => {
+          // 保留本地未持久化的会话（id 不以 conv- 开头）
+          const localOnly = prev.filter((s) => !isBackendConversation(s.id));
+          return [...backendSessions, ...localOnly];
+        });
+        // 默认选中第一个后端会话（如果有）
+        if (convs.length > 0) {
+          setActiveId((prev) =>
+            prev.startsWith('conv-') ? prev : backendSessions[0].id,
+          );
+        }
+      })
+      .catch(() => {
+        /* 后端未就绪时静默降级到本地会话 */
+      });
   }, []);
+
+  useEffect(() => {
+    if (isMultimodal && !modelsLoadedRef.current) {
+      modelsLoadedRef.current = true;
+      listMultimodalModels()
+        .then((models) => {
+          setMultimodalModels(models);
+          if (models.length > 0) {
+            setSelectedModelId((prev) => prev || models[0].modelId);
+          }
+        })
+        .catch(() => {
+          message.error('加载多模态模型失败');
+        });
+    }
+  }, [isMultimodal]);
+
+  const loadHistoryIfNeeded = useCallback(
+    async (sessionId: string) => {
+      if (!isBackendConversation(sessionId)) return;
+      if (loadedHistoryRef.current.has(sessionId)) return;
+      loadedHistoryRef.current.add(sessionId);
+      try {
+        const messages = await getHistory(sessionId);
+        if (messages.length === 0) return;
+        const chatMessages: ChatMessage[] = messages.map((m) => ({
+          id: m.id,
+          role: m.role,
+          content: m.content,
+          status: 'success' as const,
+          createdAt: m.createdAt,
+        }));
+        setSessions((prev) =>
+          prev.map((s) =>
+            s.id === sessionId && s.messages.length === 0
+              ? { ...s, messages: chatMessages }
+              : s,
+          ),
+        );
+      } catch {
+        loadedHistoryRef.current.delete(sessionId);
+      }
+    },
+    [],
+  );
 
   const activeSession = useMemo(
     () => sessions.find((s) => s.id === activeId) || sessions[0],
@@ -199,20 +340,36 @@ export default function ChatPage() {
   );
 
   const handleNewConversation = useCallback(() => {
-    const session = createSession();
-    setSessions((prev) => [session, ...prev]);
-    setActiveId(session.id);
+    const localSession = createSession();
+    setSessions((prev) => [localSession, ...prev]);
+    setActiveId(localSession.id);
     setInput('');
     setModeQuery('');
+    // 异步持久化到后端
+    createConversation({ title: '新对话', mode: 'chat' })
+      .then((conv) => {
+        setSessions((prev) =>
+          prev.map((s) => (s.id === localSession.id ? conversationToSession(conv) : s)),
+        );
+        setActiveId((prev) => (prev === localSession.id ? conv.id : prev));
+      })
+      .catch(() => {
+        /* 后端不可用时保留本地会话 */
+      });
   }, []);
 
-  const handleSelectConversation = useCallback((key: string) => {
-    setActiveId(key);
-    setInput('');
-    setModeQuery('');
-  }, []);
+  const handleSelectConversation = useCallback(
+    (key: string) => {
+      setActiveId(key);
+      setInput('');
+      setModeQuery('');
+      loadHistoryIfNeeded(key);
+    },
+    [loadHistoryIfNeeded],
+  );
 
   const handleDeleteConversation = useCallback((key: string) => {
+    const wasBackend = isBackendConversation(key);
     setSessions((prev) => {
       const filtered = prev.filter((s) => s.id !== key);
       if (filtered.length === 0) {
@@ -228,14 +385,32 @@ export default function ChatPage() {
       }
       return prev;
     });
+    loadedHistoryRef.current.delete(key);
+    if (wasBackend) {
+      deleteConversation(key).catch(() => {
+        /* 后端删除失败已不影响本地状态 */
+      });
+    }
   }, [sessions]);
 
-  const handleToggleFavorite = useCallback((id: string) => {
-    updateSession(id, (session) => ({
-      ...session,
-      favorite: !session.favorite,
-    }));
-  }, [updateSession]);
+  const handleToggleFavorite = useCallback(
+    (id: string) => {
+      updateSession(id, (session) => ({
+        ...session,
+        favorite: !session.favorite,
+      }));
+      if (isBackendConversation(id)) {
+        toggleFavorite(id).catch(() => {
+          // 后端失败时回滚本地状态
+          updateSession(id, (session) => ({
+            ...session,
+            favorite: !session.favorite,
+          }));
+        });
+      }
+    },
+    [updateSession],
+  );
 
   const handleSend = useCallback(
     async (text: string) => {
@@ -243,6 +418,84 @@ export default function ChatPage() {
       if (!trimmed || loading) return;
 
       const sessionId = activeSession.id;
+
+      if (isMultimodal) {
+        if (imageFiles.length === 0) {
+          message.warning('请至少上传一张图片');
+          return;
+        }
+        if (!selectedModelId) {
+          message.warning('请选择多模态模型');
+          return;
+        }
+
+        const filesToSend = imageFiles;
+        let chatImages: ChatImage[];
+        try {
+          chatImages = await Promise.all(
+            filesToSend
+              .filter((f) => f.originFileObj)
+              .map(async (f) => ({
+                uid: f.uid,
+                base64: await fileToBase64(f.originFileObj as File),
+                detail: 'auto' as const,
+              })),
+          );
+        } catch {
+          message.error('读取图片失败，请重试');
+          return;
+        }
+
+        const userMessage = createMessage('user', trimmed, {
+          status: 'local',
+          images: chatImages,
+        });
+        const assistantMessage = createMessage('assistant', '', {
+          status: 'loading',
+        });
+        const assistantId = assistantMessage.id;
+
+        updateSession(sessionId, (session) => ({
+          ...session,
+          messages: [...session.messages, userMessage, assistantMessage],
+          updatedAt: now(),
+        }));
+
+        if (activeSession.title === '新对话') {
+          updateSession(sessionId, (session) => ({
+            ...session,
+            title: trimmed.slice(0, 24) || '新对话',
+          }));
+        }
+
+        setLoading(true);
+        setInput('');
+        setImageFiles([]);
+
+        try {
+          const resp = await multimodalUploadChat({
+            modelId: selectedModelId,
+            text: trimmed,
+            images: filesToSend.map((f) => f.originFileObj as File).filter(Boolean),
+            systemPrompt: MODE_SYSTEM_PROMPTS[activeSession.mode],
+          });
+          updateMessage(sessionId, assistantId, (msg) => ({
+            ...msg,
+            content: resp.content,
+            status: 'success',
+          }));
+        } catch (error) {
+          updateMessage(sessionId, assistantId, (msg) => ({
+            ...msg,
+            content: `⚠️ ${error instanceof Error ? error.message : '多模态请求失败'}`,
+            status: 'error',
+          }));
+        } finally {
+          setLoading(false);
+        }
+        return;
+      }
+
       const userMessage = createMessage('user', trimmed, { status: 'local' });
       const assistantMessage = createMessage('assistant', '', {
         status: 'updating',
@@ -351,12 +604,19 @@ export default function ChatPage() {
         controller.signal,
       );
     },
-    [activeSession, loading, updateSession, updateMessage, selectedKbIds],
+    [activeSession, loading, updateSession, updateMessage, selectedKbIds, isMultimodal, selectedModelId, imageFiles],
   );
 
   const handleCancel = useCallback(() => {
     abortRef.current?.abort();
     setLoading(false);
+  }, []);
+
+  const handleMultimodalToggle = useCallback((checked: boolean) => {
+    setIsMultimodal(checked);
+    if (!checked) {
+      setImageFiles([]);
+    }
   }, []);
 
   const handleModeChange = useCallback(
@@ -380,6 +640,7 @@ export default function ChatPage() {
       graphData?: GraphData;
       generatedConfig?: GeneratedConfig;
       codeReview?: CodeReviewResult;
+      plan?: Plan;
     }) => {
       const sessionId = activeSession.id;
       const lastAssistantMsg = activeSession.messages
@@ -433,12 +694,20 @@ export default function ChatPage() {
             onResult={handleModeResult}
           />
         );
+      case 'task':
+        return (
+          <PlanPanel
+            query={modeQuery}
+            onQueryChange={setModeQuery}
+            onResult={handleModeResult}
+          />
+        );
       default:
         return null;
     }
   };
 
-  const isModePanelVisible = ['analysis', 'action', 'exploration', 'code'].includes(
+  const isModePanelVisible = ['analysis', 'action', 'exploration', 'code', 'task'].includes(
     activeSession.mode,
   );
 
@@ -454,7 +723,23 @@ export default function ChatPage() {
         streaming: msg.streaming,
         loading: msg.status === 'loading',
         content: isUser ? (
-          <div style={{ whiteSpace: 'pre-wrap' }}>{msg.content}</div>
+          <div>
+            <div style={{ whiteSpace: 'pre-wrap' }}>{msg.content}</div>
+            {msg.images && msg.images.length > 0 && (
+              <Image.PreviewGroup>
+                <Space wrap size="small" style={{ marginTop: 8 }}>
+                  {msg.images.map((img, idx) => (
+                    <Image
+                      key={idx}
+                      src={img.base64 || img.url}
+                      alt="用户上传图片"
+                      style={{ maxHeight: 120, borderRadius: 8, cursor: 'pointer' }}
+                    />
+                  ))}
+                </Space>
+              </Image.PreviewGroup>
+            )}
+          </div>
         ) : (
           <div>
             <MarkdownRenderer content={msg.content || '...'} />
@@ -624,14 +909,66 @@ export default function ChatPage() {
             }))}
             style={{ marginBottom: 8 }}
           />
+          <Flex justify="space-between" align="center" style={{ marginBottom: 8 }}>
+            <Space>
+              <Switch
+                checked={isMultimodal}
+                onChange={handleMultimodalToggle}
+                checkedChildren="多模态"
+                unCheckedChildren="文本"
+              />
+              {isMultimodal && (
+                <Select
+                  placeholder="选择多模态模型"
+                  value={selectedModelId}
+                  onChange={setSelectedModelId}
+                  options={multimodalModels.map((m) => ({
+                    label: m.displayName || m.modelCode,
+                    value: m.modelId,
+                  }))}
+                  style={{ width: 220 }}
+                />
+              )}
+            </Space>
+            {isMultimodal && (
+              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                最多 8 张，单张 ≤5MB（png/jpeg/webp）
+              </Typography.Text>
+            )}
+          </Flex>
+          {isMultimodal && (
+            <Upload
+              fileList={imageFiles}
+              onChange={({ fileList }) =>
+                setImageFiles(fileList.map((f) => ({ ...f, status: 'done' })))
+              }
+              beforeUpload={beforeUpload}
+              multiple
+              maxCount={8}
+              listType="picture-card"
+              accept="image/png,image/jpeg,image/webp"
+            >
+              {imageFiles.length < 8 && (
+                <div>
+                  <PictureOutlined />
+                  <div style={{ marginTop: 8 }}>上传图片</div>
+                </div>
+              )}
+            </Upload>
+          )}
           <Sender
             value={input}
             onChange={setInput}
             onSubmit={handleSend}
             loading={loading}
             onCancel={handleCancel}
-            placeholder={MODE_PLACEHOLDER[activeSession.mode]}
+            placeholder={
+              isMultimodal
+                ? '输入文字描述，与图片一起发送'
+                : MODE_PLACEHOLDER[activeSession.mode]
+            }
             autoSize={{ minRows: 2, maxRows: 6 }}
+            style={{ marginTop: isMultimodal ? 8 : 0 }}
           />
         </div>
       </div>

@@ -6,16 +6,21 @@ from app.api.v1 import (
     catalog,
     dbt,
     datasources,
+    deliverables,
     etl,
     lakehouse,
+    lineage,
     monitoring,
     quality,
+    queries,
     schema,
+    search,
     warehouse,
 )
 
 router = APIRouter(prefix="/api/v1/data")
 router.include_router(datasources.router)
+router.include_router(queries.router)
 router.include_router(schema.router)
 router.include_router(etl.router)
 router.include_router(dbt.router)
@@ -24,3 +29,6 @@ router.include_router(warehouse.router)
 router.include_router(catalog.router)
 router.include_router(quality.router)
 router.include_router(monitoring.router)
+router.include_router(deliverables.router)
+router.include_router(search.router)
+router.include_router(lineage.router)

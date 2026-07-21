@@ -17,7 +17,9 @@ from app.common.api_response import build_page, success
 from app.common.context import RequestContext, request_context_dep
 from app.common.errors import InvalidParamError
 from app.delegation.schemas import (
+    CreateDelegationRequest,
     DelegateTaskRequest,
+    DelegationCallbackRequest,
     TaskStatus,
     UpdateTimeoutRequest,
     task_to_dict,
@@ -328,4 +330,171 @@ async def update_timeout(
     service: DelegationService = Depends(get_delegation_service),
 ) -> dict:
     task = await service.update_timeout(ctx.tenant_id, task_id, body)
+    return success(task_to_dict(task), trace_id=ctx.trace_id)
+
+
+# =========================================================== V14-06 /delegations
+
+
+@router.post("/delegations", summary="创建 A2A 委托")
+async def create_delegation(
+    body: CreateDelegationRequest,
+    request: Request,
+    ctx: RequestContext = Depends(request_context_dep),
+    service: DelegationService = Depends(get_delegation_service),
+    audit: AuditService = Depends(get_audit_service),
+) -> dict:
+    task = await service.create_delegation(ctx.tenant_id, body, trace_id=ctx.trace_id)
+    await audit.record_audit(
+        ctx.tenant_id,
+        AuditAction.TASK_DELEGATED,
+        actor_id=task.source_agent_id,
+        target_id=task.target_agent_id,
+        details={"taskId": task.id, "taskType": task.task_type, "kind": "delegation"},
+        trace_id=ctx.trace_id,
+    )
+    return success(task_to_dict(task), trace_id=ctx.trace_id)
+
+
+@router.get("/delegations", summary="委托列表(分页)")
+async def list_delegations(
+    request: Request,
+    status: Optional[str] = Query(default=None),
+    sourceAgentId: Optional[str] = Query(default=None),
+    targetAgentId: Optional[str] = Query(default=None),
+    page: int = Query(default=1, ge=1),
+    pageSize: int = Query(default=20, ge=1, le=100),
+    ctx: RequestContext = Depends(request_context_dep),
+    service: DelegationService = Depends(get_delegation_service),
+) -> dict:
+    task_status = _parse_status(status)
+    items, total = await service.list_tasks(
+        ctx.tenant_id,
+        status=task_status,
+        source_agent_id=sourceAgentId,
+        target_agent_id=targetAgentId,
+        page=page,
+        page_size=pageSize,
+    )
+    paged = build_page(
+        [task_to_dict(t) for t in items],
+        total=total,
+        page=page,
+        page_size=pageSize,
+    )
+    return success(paged, trace_id=ctx.trace_id)
+
+
+@router.get("/delegations/{delegation_id}/stream", summary="SSE 委托状态流")
+async def stream_delegation(
+    delegation_id: str,
+    request: Request,
+    ctx: RequestContext = Depends(request_context_dep),
+    service: DelegationService = Depends(get_delegation_service),
+) -> StreamingResponse:
+    """SSE stream of delegation progress. Polls until terminal or timeout."""
+
+    terminal = {TaskStatus.COMPLETED, TaskStatus.FAILED, TaskStatus.CANCELED, TaskStatus.CANCELLED}
+
+    async def event_generator():
+        task = await service.get_task(ctx.tenant_id, delegation_id)
+        yield f"event: init\ndata: {json.dumps({'taskId': delegation_id, 'status': task.status.value})}\n\n"
+        await asyncio.sleep(0)
+
+        sent = 0
+        for entry in task.status_history:
+            yield f"event: progress\ndata: {json.dumps({'taskId': delegation_id, 'status': entry.status.value, 'detail': entry.detail, 'timestamp': entry.timestamp.isoformat()})}\n\n"
+            await asyncio.sleep(0)
+            sent += 1
+
+        if task.status in terminal:
+            if task.status == TaskStatus.COMPLETED:
+                yield f"event: completed\ndata: {json.dumps({'taskId': delegation_id, 'result': task.result})}\n\n"
+            elif task.status == TaskStatus.FAILED:
+                yield f"event: failed\ndata: {json.dumps({'taskId': delegation_id, 'error': task.error})}\n\n"
+            else:
+                yield f"event: canceled\ndata: {json.dumps({'taskId': delegation_id})}\n\n"
+            return
+
+        # 非终态时持续轮询，最多 30 秒
+        for _ in range(30):
+            await asyncio.sleep(1)
+            task = await service.get_task(ctx.tenant_id, delegation_id)
+            if len(task.status_history) > sent:
+                for entry in task.status_history[sent:]:
+                    yield f"event: progress\ndata: {json.dumps({'taskId': delegation_id, 'status': entry.status.value, 'detail': entry.detail, 'timestamp': entry.timestamp.isoformat()})}\n\n"
+                    await asyncio.sleep(0)
+                sent = len(task.status_history)
+
+            if task.status in terminal:
+                if task.status == TaskStatus.COMPLETED:
+                    yield f"event: completed\ndata: {json.dumps({'taskId': delegation_id, 'result': task.result})}\n\n"
+                elif task.status == TaskStatus.FAILED:
+                    yield f"event: failed\ndata: {json.dumps({'taskId': delegation_id, 'error': task.error})}\n\n"
+                else:
+                    yield f"event: canceled\ndata: {json.dumps({'taskId': delegation_id})}\n\n"
+                return
+
+        yield f"event: timeout\ndata: {json.dumps({'taskId': delegation_id, 'status': task.status.value})}\n\n"
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
+
+
+@router.get("/delegations/{delegation_id}", summary="委托详情")
+async def get_delegation(
+    delegation_id: str,
+    request: Request,
+    ctx: RequestContext = Depends(request_context_dep),
+    service: DelegationService = Depends(get_delegation_service),
+) -> dict:
+    task = await service.get_task(ctx.tenant_id, delegation_id)
+    return success(task_to_dict(task), trace_id=ctx.trace_id)
+
+
+@router.post("/delegations/{delegation_id}/cancel", summary="取消委托")
+async def cancel_delegation(
+    delegation_id: str,
+    request: Request,
+    ctx: RequestContext = Depends(request_context_dep),
+    service: DelegationService = Depends(get_delegation_service),
+    audit: AuditService = Depends(get_audit_service),
+) -> dict:
+    task = await service.cancel_delegation(ctx.tenant_id, delegation_id, trace_id=ctx.trace_id)
+    await audit.record_audit(
+        ctx.tenant_id,
+        AuditAction.TASK_CANCELLED,
+        actor_id=task.source_agent_id,
+        target_id=delegation_id,
+        trace_id=ctx.trace_id,
+    )
+    return success(task_to_dict(task), trace_id=ctx.trace_id)
+
+
+@router.post("/delegations/{delegation_id}/callback", summary="外部 Agent 结果回调(mock)")
+async def delegation_callback(
+    delegation_id: str,
+    body: DelegationCallbackRequest,
+    request: Request,
+    ctx: RequestContext = Depends(request_context_dep),
+    service: DelegationService = Depends(get_delegation_service),
+    audit: AuditService = Depends(get_audit_service),
+) -> dict:
+    task = await service.apply_callback(ctx.tenant_id, delegation_id, body, trace_id=ctx.trace_id)
+    if task.status == TaskStatus.COMPLETED:
+        await audit.record_audit(
+            ctx.tenant_id,
+            AuditAction.TASK_COMPLETED,
+            actor_id=task.source_agent_id,
+            target_id=task.target_agent_id,
+            details={"taskId": task.id, "taskType": task.task_type, "kind": "delegation-callback"},
+            trace_id=ctx.trace_id,
+        )
     return success(task_to_dict(task), trace_id=ctx.trace_id)

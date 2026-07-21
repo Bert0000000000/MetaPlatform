@@ -40,6 +40,9 @@ class ConceptServiceTest {
     @Mock
     private OntSyncService ontSyncService;
 
+    @Mock
+    private EaWebhookService eaWebhookService;
+
     @Spy
     private ObjectMapper objectMapper = new ObjectMapper();
 

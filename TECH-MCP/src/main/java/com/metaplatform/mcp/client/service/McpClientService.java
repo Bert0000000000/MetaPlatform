@@ -54,14 +54,25 @@ public class McpClientService {
             throw new McpException(ErrorCode.ALREADY_EXISTS, "MCP Client name 在该租户下已存在");
         }
         validateJson(request.getConfig(), "config");
+        validateJson(request.getHeaders(), "headers");
+        validateJson(request.getServerIds(), "serverIds");
 
         Instant now = Instant.now();
+        String serverUrl = request.getServerUrl();
+        String baseUrl = request.getBaseUrl() != null ? request.getBaseUrl() : serverUrl;
         McpClientConnectionEntity entity = McpClientConnectionEntity.builder()
                 .tenantId(tenantId)
                 .name(request.getName())
-                .serverUrl(request.getServerUrl())
+                .serverUrl(serverUrl)
+                .baseUrl(baseUrl)
+                .clientType(request.getClientType())
                 .transportType(request.getTransportType() == null ? "HTTP" : request.getTransportType().toUpperCase())
                 .status(STATUS_DISCONNECTED)
+                .authType(request.getAuthType())
+                .authToken(request.getAuthToken())
+                .timeoutMs(request.getTimeoutMs())
+                .headers(normalizeJson(request.getHeaders(), "{}"))
+                .serverIds(normalizeJson(request.getServerIds(), "[]"))
                 .config(normalizeJson(request.getConfig(), "{}"))
                 .createdAt(now)
                 .updatedAt(now)
@@ -100,8 +111,31 @@ public class McpClientService {
         if (request.getServerUrl() != null) {
             entity.setServerUrl(request.getServerUrl());
         }
+        if (request.getBaseUrl() != null) {
+            entity.setBaseUrl(request.getBaseUrl());
+        }
+        if (request.getClientType() != null) {
+            entity.setClientType(request.getClientType());
+        }
         if (request.getTransportType() != null) {
             entity.setTransportType(request.getTransportType().toUpperCase());
+        }
+        if (request.getAuthType() != null) {
+            entity.setAuthType(request.getAuthType());
+        }
+        if (request.getAuthToken() != null) {
+            entity.setAuthToken(request.getAuthToken());
+        }
+        if (request.getTimeoutMs() != null) {
+            entity.setTimeoutMs(request.getTimeoutMs());
+        }
+        if (request.getHeaders() != null) {
+            validateJson(request.getHeaders(), "headers");
+            entity.setHeaders(request.getHeaders());
+        }
+        if (request.getServerIds() != null) {
+            validateJson(request.getServerIds(), "serverIds");
+            entity.setServerIds(request.getServerIds());
         }
         if (request.getConfig() != null) {
             validateJson(request.getConfig(), "config");
@@ -122,8 +156,9 @@ public class McpClientService {
     @Transactional
     public McpClientResponse testConnection(UUID id) {
         McpClientConnectionEntity entity = findById(id);
+        String endpoint = effectiveUrl(entity);
         try {
-            JsonNode result = callJsonRpc(entity.getServerUrl(), "initialize");
+            JsonNode result = callJsonRpc(endpoint, "initialize", entity);
             if (result != null && result.has("protocolVersion")) {
                 entity.setStatus(STATUS_CONNECTED);
                 entity.setLastConnectedAt(Instant.now());
@@ -131,7 +166,7 @@ public class McpClientService {
                 entity.setStatus(STATUS_DISCONNECTED);
             }
         } catch (Exception e) {
-            log.warn("MCP Client connection test failed for {}: {}", entity.getServerUrl(), e.getMessage());
+            log.warn("MCP Client connection test failed for {}: {}", endpoint, e.getMessage());
             entity.setStatus(STATUS_DISCONNECTED);
         }
         entity.setUpdatedAt(Instant.now());
@@ -155,9 +190,10 @@ public class McpClientService {
     public List<McpToolListItem> discoverTools(UUID id) {
         McpClientConnectionEntity entity = findById(id);
         String tenantId = entity.getTenantId();
+        String endpoint = effectiveUrl(entity);
         JsonNode result;
         try {
-            result = callJsonRpc(entity.getServerUrl(), "tools/list");
+            result = callJsonRpc(endpoint, "tools/list", entity);
         } catch (Exception e) {
             throw new McpException(ErrorCode.DISCOVERY_ERROR,
                     "MCP 工具发现失败: " + e.getMessage());
@@ -168,7 +204,7 @@ public class McpClientService {
         JsonNode toolsNode = result.get("tools");
         Instant now = Instant.now();
         for (JsonNode toolNode : toolsNode) {
-            upsertDiscoveredTool(tenantId, entity.getId(), entity.getServerUrl(), toolNode, now);
+            upsertDiscoveredTool(tenantId, entity.getId(), endpoint, toolNode, now);
         }
         entity.setStatus(STATUS_CONNECTED);
         entity.setLastConnectedAt(now);
@@ -189,6 +225,11 @@ public class McpClientService {
                 .filter(t -> TOOL_TYPE_MCP.equals(t.getToolType()))
                 .map(this::toListItem)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<McpToolListItem> getTools(UUID id) {
+        return getDiscoveredTools(id);
     }
 
     McpClientConnectionEntity findById(UUID id) {
@@ -226,21 +267,30 @@ public class McpClientService {
         mcpToolRepository.save(entity);
     }
 
-    private JsonNode callJsonRpc(String serverUrl, String method) throws Exception {
+    private JsonNode callJsonRpc(String serverUrl, String method,
+                                  McpClientConnectionEntity connection) throws Exception {
         Map<String, Object> request = new LinkedHashMap<>();
         request.put("jsonrpc", "2.0");
         request.put("id", 1);
         request.put("method", method);
         request.put("params", Map.of());
         String body = objectMapper.writeValueAsString(request);
-        String response = webClientBuilder.build().post()
+
+        Duration timeout = connection.getTimeoutMs() != null && connection.getTimeoutMs() > 0
+                ? Duration.ofMillis(connection.getTimeoutMs())
+                : HTTP_TIMEOUT;
+
+        WebClient.RequestBodySpec postSpec = webClientBuilder.build().post()
                 .uri(serverUrl)
                 .contentType(MediaType.APPLICATION_JSON)
-                .accept(MediaType.APPLICATION_JSON)
-                .bodyValue(body)
+                .accept(MediaType.APPLICATION_JSON);
+
+        applyHeaders(postSpec, connection);
+
+        String response = postSpec.bodyValue(body)
                 .retrieve()
                 .bodyToMono(String.class)
-                .block(HTTP_TIMEOUT);
+                .block(timeout);
         if (response == null) {
             throw new McpException(ErrorCode.CLIENT_CONNECTION_ERROR, "远程服务器无响应");
         }
@@ -251,6 +301,35 @@ public class McpClientService {
                     "远程服务器返回错误: " + textOr(err, "message", "unknown"));
         }
         return root.has("result") ? root.get("result") : null;
+    }
+
+    private void applyHeaders(WebClient.RequestBodySpec postSpec,
+                              McpClientConnectionEntity connection) {
+        if (connection.getAuthToken() != null && !connection.getAuthToken().isBlank()) {
+            if ("bearer".equalsIgnoreCase(connection.getAuthType())) {
+                postSpec.header("Authorization", "Bearer " + connection.getAuthToken());
+            } else {
+                postSpec.header("Authorization", connection.getAuthToken());
+            }
+        }
+        if (connection.getHeaders() != null && !connection.getHeaders().isBlank()) {
+            try {
+                JsonNode headersNode = objectMapper.readTree(connection.getHeaders());
+                headersNode.fields().forEachRemaining(entry -> {
+                    if (!entry.getValue().isNull()) {
+                        postSpec.header(entry.getKey(), entry.getValue().asText());
+                    }
+                });
+            } catch (Exception e) {
+                log.warn("无法解析 Client headers JSON: {}", connection.getHeaders());
+            }
+        }
+    }
+
+    private String effectiveUrl(McpClientConnectionEntity entity) {
+        return entity.getBaseUrl() != null && !entity.getBaseUrl().isBlank()
+                ? entity.getBaseUrl()
+                : entity.getServerUrl();
     }
 
     private String textOr(JsonNode node, String field, String defaultValue) {
@@ -266,8 +345,15 @@ public class McpClientService {
                 .id(entity.getId())
                 .name(entity.getName())
                 .serverUrl(entity.getServerUrl())
+                .baseUrl(entity.getBaseUrl())
+                .clientType(entity.getClientType())
                 .transportType(entity.getTransportType())
                 .status(entity.getStatus())
+                .authType(entity.getAuthType())
+                .authToken(entity.getAuthToken())
+                .timeoutMs(entity.getTimeoutMs())
+                .headers(entity.getHeaders())
+                .serverIds(entity.getServerIds())
                 .lastConnectedAt(entity.getLastConnectedAt())
                 .config(entity.getConfig())
                 .createdAt(entity.getCreatedAt())
@@ -281,6 +367,8 @@ public class McpClientService {
                 .serverId(entity.getServerId())
                 .name(entity.getName())
                 .code(entity.getCode())
+                .description(entity.getDescription())
+                .inputSchema(entity.getInputSchema())
                 .toolType(entity.getToolType())
                 .enabled(entity.getEnabled())
                 .createdAt(entity.getCreatedAt())

@@ -27,9 +27,11 @@ public class BusinessRoleController {
     @GetMapping
     public ApiResponse<PageResponse<RoleResponse>> list(
             @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) UUID orgUnitId,
+            @RequestParam(required = false) String domain,
             @RequestParam(required = false) Integer page,
             @RequestParam(required = false) Integer size) {
-        return ApiResponse.success(roleService.list(keyword, page, size));
+        return ApiResponse.success(roleService.list(keyword, orgUnitId, domain, page, size));
     }
 
     @GetMapping("/{id}")

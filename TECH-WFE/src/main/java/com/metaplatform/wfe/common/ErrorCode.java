@@ -31,7 +31,18 @@ public enum ErrorCode {
     RULE_EVALUATION_FAILED(50005, HttpStatus.INTERNAL_SERVER_ERROR, "规则引擎调用失败"),
     ONT_ENTITY_NOT_FOUND(40404, HttpStatus.NOT_FOUND, "业务对象实体不存在"),
     EVENT_SUBSCRIPTION_NOT_FOUND(40405, HttpStatus.NOT_FOUND, "事件订阅不存在"),
-    OUTBOX_PUBLISH_FAILED(50006, HttpStatus.INTERNAL_SERVER_ERROR, "事件发布失败");
+    APP_VERSION_NOT_FOUND(40406, HttpStatus.NOT_FOUND, "应用版本不存在"),
+    APP_NOT_FOUND(40407, HttpStatus.NOT_FOUND, "应用不存在"),
+    TEMPLATE_NOT_FOUND(40408, HttpStatus.NOT_FOUND, "模板不存在"),
+    TEMPLATE_COMMENT_NOT_FOUND(40409, HttpStatus.NOT_FOUND, "模板评论不存在"),
+    APP_VERSION_STATUS_CONFLICT(40904, HttpStatus.CONFLICT, "应用版本状态冲突，操作与当前版本状态不兼容"),
+    TEMPLATE_ALREADY_INSTALLED(40905, HttpStatus.CONFLICT, "模板已安装过"),
+    OUTBOX_PUBLISH_FAILED(50006, HttpStatus.INTERNAL_SERVER_ERROR, "事件发布失败"),
+    FORM_DEFINITION_NOT_FOUND(40410, HttpStatus.NOT_FOUND, "表单定义不存在"),
+    APP_RELEASE_NOT_FOUND(40411, HttpStatus.NOT_FOUND, "应用发布记录不存在"),
+    FORM_VALIDATE_FAILED(42203, HttpStatus.UNPROCESSABLE_ENTITY, "表单校验失败"),
+    FORM_SCRIPT_EXECUTION_FAILED(42204, HttpStatus.UNPROCESSABLE_ENTITY, "表单脚本执行失败"),
+    APP_RELEASE_STATUS_CONFLICT(40906, HttpStatus.CONFLICT, "应用发布状态冲突，操作与当前状态不兼容");
 
     private final int code;
     private final HttpStatus httpStatus;

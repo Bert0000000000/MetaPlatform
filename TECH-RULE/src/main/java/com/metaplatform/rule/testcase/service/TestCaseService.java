@@ -11,6 +11,8 @@ import com.metaplatform.rule.service.RuleExecutionService;
 import com.metaplatform.rule.testcase.dto.CreateTestCaseRequest;
 import com.metaplatform.rule.testcase.dto.TestCaseResponse;
 import com.metaplatform.rule.testcase.dto.TestCaseStatistics;
+import com.metaplatform.rule.testcase.dto.TestRunRequestDto;
+import com.metaplatform.rule.testcase.dto.TestRunResultDto;
 import com.metaplatform.rule.testcase.dto.UpdateTestCaseRequest;
 import com.metaplatform.rule.testcase.entity.TestCaseEntity;
 import com.metaplatform.rule.testcase.repository.TestCaseRepository;
@@ -20,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -67,6 +70,45 @@ public class TestCaseService {
                 ? testCaseRepository.findByTenantIdAndRulesetId(tenantId, rulesetId)
                 : testCaseRepository.findByTenantId(tenantId);
         return entities.stream().map(this::toResponse).toList();
+    }
+
+    /**
+     * V11-03：扩展列表查询，支持 ruleId / targetType / targetId 多维度过滤。
+     *
+     * <p>参数为空时不过滤；多个参数同时存在时按 AND 组合。
+     */
+    @Transactional(readOnly = true)
+    public List<TestCaseResponse> list(String ruleId, String targetType, String targetId, String rulesetId) {
+        String tenantId = TenantContext.get();
+
+        // 优先走索引化的查询路径
+        if (StringUtils.hasText(targetType) && StringUtils.hasText(targetId)) {
+            List<TestCaseEntity> entities = testCaseRepository
+                    .findByTenantIdAndTargetTypeAndTargetId(tenantId, targetType, targetId);
+            return entities.stream()
+                    .filter(e -> !StringUtils.hasText(ruleId) || ruleId.equals(e.getRuleId()))
+                    .filter(e -> !StringUtils.hasText(rulesetId) || rulesetId.equals(e.getRulesetId()))
+                    .map(this::toResponse)
+                    .toList();
+        }
+
+        if (StringUtils.hasText(rulesetId)) {
+            return testCaseRepository.findByTenantIdAndRulesetId(tenantId, rulesetId).stream()
+                    .filter(e -> !StringUtils.hasText(ruleId) || ruleId.equals(e.getRuleId()))
+                    .map(this::toResponse)
+                    .toList();
+        }
+
+        if (StringUtils.hasText(ruleId)) {
+            return testCaseRepository.findByTenantId(tenantId).stream()
+                    .filter(e -> ruleId.equals(e.getRuleId()))
+                    .map(this::toResponse)
+                    .toList();
+        }
+
+        return testCaseRepository.findByTenantId(tenantId).stream()
+                .map(this::toResponse)
+                .toList();
     }
 
     @Transactional(readOnly = true)
@@ -131,6 +173,68 @@ public class TestCaseService {
         String tenantId = TenantContext.get();
         List<TestCaseEntity> cases = testCaseRepository.findByTenantIdAndRulesetId(tenantId, rulesetId);
         return cases.stream().map(tc -> run(tc.getId())).toList();
+    }
+
+    /**
+     * V11-03：批量运行测试用例并返回聚合结果。
+     *
+     * <p>支持以下过滤维度（任一组合）：
+     * <ul>
+     *   <li>{@code testCaseIds} - 显式指定用例 ID 列表</li>
+     *   <li>{@code ruleId} - 按规则 ID 过滤</li>
+     *   <li>{@code targetType} + {@code targetId} - 按目标过滤</li>
+     * </ul>
+     *
+     * <p>返回的 {@link TestRunResultDto} 与前端 {@code TestRun} 类型对齐：
+     * 当 {@code targetType == "DECISION_TABLE"} 时填充 {@code decisionTableId} 字段。
+     */
+    @Transactional
+    public TestRunResultDto runBatch(TestRunRequestDto request) {
+        String tenantId = TenantContext.get();
+        Instant startedAt = Instant.now();
+
+        // 选取目标用例
+        List<TestCaseEntity> candidates;
+        if (request.getTestCaseIds() != null && !request.getTestCaseIds().isEmpty()) {
+            candidates = testCaseRepository.findAllById(request.getTestCaseIds()).stream()
+                    .filter(e -> tenantId.equals(e.getTenantId()))
+                    .toList();
+        } else if (StringUtils.hasText(request.getTargetType()) && StringUtils.hasText(request.getTargetId())) {
+            candidates = testCaseRepository.findByTenantIdAndTargetTypeAndTargetId(
+                    tenantId, request.getTargetType(), request.getTargetId());
+        } else if (StringUtils.hasText(request.getRuleId())) {
+            candidates = testCaseRepository.findByTenantId(tenantId).stream()
+                    .filter(e -> request.getRuleId().equals(e.getRuleId()))
+                    .toList();
+        } else {
+            candidates = testCaseRepository.findByTenantId(tenantId);
+        }
+
+        // 逐条运行（复用 run(id) 单条逻辑）
+        List<TestCaseResponse> results = candidates.stream()
+                .map(tc -> run(tc.getId()))
+                .toList();
+
+        int passed = (int) results.stream().filter(r -> "PASS".equalsIgnoreCase(r.getStatus())).count();
+        int failed = (int) results.stream().filter(r -> "FAIL".equalsIgnoreCase(r.getStatus())).count();
+        int errored = (int) results.stream().filter(r -> "ERROR".equalsIgnoreCase(r.getStatus())).count();
+
+        String decisionTableId = "DECISION_TABLE".equalsIgnoreCase(request.getTargetType())
+                ? request.getTargetId()
+                : null;
+
+        return TestRunResultDto.builder()
+                .id("tr-" + UUID.randomUUID())
+                .ruleId(request.getRuleId())
+                .decisionTableId(decisionTableId)
+                .startedAt(startedAt)
+                .finishedAt(Instant.now())
+                .totalCases(results.size())
+                .passedCount(passed)
+                .failedCount(failed)
+                .errorCount(errored)
+                .results(results)
+                .build();
     }
 
     @Transactional(readOnly = true)

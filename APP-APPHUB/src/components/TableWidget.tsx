@@ -51,8 +51,7 @@ export default function TableWidget({ widget }: TableWidgetProps) {
             size="small"
             dataSource={rows}
             columns={MOCK_COLUMNS}
-            pagination={false}
-          />
+            pagination={false} scroll={{ x: 'max-content' }} />
         )
       ) : (
         <Empty description="未配置数据源" />

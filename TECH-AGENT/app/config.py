@@ -11,8 +11,8 @@ class Settings(BaseSettings):
     host: str = "0.0.0.0"
     port: int = 8511
     reload: bool = False
-    jwt_secret: str = "metaplatform-jwt-secret-key-2026"
-    jwt_algorithm: str = "HS256"
+    jwt_secret: str = "mate-platform-default-secret-key-must-be-over-32-bytes"
+    jwt_algorithm: str = "HS384"
 
     # Platform metadata database. Defaults to SQLite for local dev/tests.
     # PostgreSQL example:

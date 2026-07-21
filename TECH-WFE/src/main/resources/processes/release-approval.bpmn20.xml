@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:flowable="http://flowable.org/bpmn"
+             targetNamespace="http://metaplatform.apphub/release-approval">
+    <process id="releaseApprovalProcess" name="应用发布审批流程" isExecutable="true">
+        <startEvent id="start" name="提交发布申请" flowable:initiator="applicant"/>
+
+        <userTask id="techLeadApproval" name="技术负责人审批" flowable:assignee="${techLeadId}"/>
+
+        <userTask id="opsApproval" name="运维审批" flowable:assignee="${opsOwnerId}"/>
+
+        <endEvent id="end" name="发布已批准"/>
+
+        <sequenceFlow id="flow1" sourceRef="start" targetRef="techLeadApproval"/>
+        <sequenceFlow id="flow2" sourceRef="techLeadApproval" targetRef="opsApproval"/>
+        <sequenceFlow id="flow3" sourceRef="opsApproval" targetRef="end"/>
+    </process>
+</definitions>

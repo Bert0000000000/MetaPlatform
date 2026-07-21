@@ -15,22 +15,30 @@ import {
   Switch,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { PlusOutlined, EditOutlined, DeleteOutlined, CodeOutlined } from '@ant-design/icons';
+import {
+  PlusOutlined,
+  EditOutlined,
+  DeleteOutlined,
+  CodeOutlined,
+  FolderOutlined,
+} from '@ant-design/icons';
 import { listTools, listCategories, deleteTool, updateTool } from '@/api/tools';
 import ToolForm from '@/components/ToolForm';
 import ToolCategoryTree from '@/components/ToolCategoryTree';
-import type { McpTool } from '@/types';
+import CategoryManagementModal from '@/components/CategoryManagementModal';
+import type { McpTool, McpToolCategory } from '@/types';
 
 export default function ToolListPage() {
   const navigate = useNavigate();
   const [tools, setTools] = useState<McpTool[]>([]);
-  const [categories, setCategories] = useState<string[]>([]);
+  const [categories, setCategories] = useState<McpToolCategory[]>([]);
   const [loading, setLoading] = useState(false);
   const [keyword, setKeyword] = useState('');
   const [category, setCategory] = useState<string>();
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<McpTool | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [categoryModalOpen, setCategoryModalOpen] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -119,7 +127,7 @@ export default function ToolListPage() {
             icon={<EditOutlined />}
             onClick={() => navigate(`/tools/${t.id}`)}
           >
-            编辑
+            详情
           </Button>
           <Popconfirm title="确定删除？" onConfirm={() => handleDelete(t)}>
             <Button type="link" danger icon={<DeleteOutlined />}>
@@ -137,13 +145,18 @@ export default function ToolListPage() {
         <Typography.Title level={4} style={{ margin: 0 }}>
           工具注册中心
         </Typography.Title>
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={() => navigate('/tools/new')}
-        >
-          创建工具
-        </Button>
+        <Space>
+          <Button icon={<FolderOutlined />} onClick={() => setCategoryModalOpen(true)}>
+            分类管理
+          </Button>
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => navigate('/tools/new')}
+          >
+            创建工具
+          </Button>
+        </Space>
       </div>
 
       <Space style={{ marginBottom: 16 }} wrap>
@@ -159,7 +172,7 @@ export default function ToolListPage() {
           style={{ width: 160 }}
           value={category}
           onChange={setCategory}
-          options={categories.map((c) => ({ label: c, value: c }))}
+          options={categories.map((c) => ({ label: c.name, value: c.code }))}
         />
       </Space>
 
@@ -181,8 +194,7 @@ export default function ToolListPage() {
               columns={columns}
               loading={loading}
               pagination={{ pageSize: 10 }}
-              size="middle"
-            />
+              size="middle" scroll={{ x: 'max-content' }} />
           )}
         </Card>
       </div>
@@ -190,7 +202,7 @@ export default function ToolListPage() {
       <ToolForm
         open={formOpen}
         initial={editing}
-        categories={categories}
+        categories={categories.map((c) => c.name)}
         onOk={async (values) => {
           if (editing) {
             setSubmitting(true);
@@ -210,6 +222,11 @@ export default function ToolListPage() {
           setEditing(null);
         }}
         confirmLoading={submitting}
+      />
+
+      <CategoryManagementModal
+        open={categoryModalOpen}
+        onCancel={() => setCategoryModalOpen(false)}
       />
     </div>
   );

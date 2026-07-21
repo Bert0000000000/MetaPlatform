@@ -41,6 +41,38 @@ public class McpServerEntity {
     @Column(name = "endpoint_url", length = 2048)
     private String endpointUrl;
 
+    @Column(length = 256)
+    private String host;
+
+    @Column
+    private Integer port;
+
+    @Column(name = "sse_endpoint", length = 2048)
+    private String sseEndpoint;
+
+    @Column(name = "auth_type", length = 20)
+    private String authType;
+
+    @Lob
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+    @Column(name = "auth_config", columnDefinition = "jsonb")
+    private String authConfig;
+
+    @Column(name = "timeout_ms")
+    private Integer timeoutMs;
+
+    @Column(name = "max_concurrent_calls")
+    private Integer maxConcurrentCalls;
+
+    @Column(name = "health_check_url", length = 2048)
+    private String healthCheckUrl;
+
+    @Column(name = "last_heartbeat_at")
+    private Instant lastHeartbeatAt;
+
+    @Column(name = "last_error_message", columnDefinition = "TEXT")
+    private String lastErrorMessage;
+
     @Column(nullable = false, length = 20)
     private String status;
 

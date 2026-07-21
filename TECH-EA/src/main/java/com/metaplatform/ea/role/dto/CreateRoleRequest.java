@@ -3,6 +3,9 @@ package com.metaplatform.ea.role.dto;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
+import java.util.List;
+import java.util.UUID;
+
 @Data
 public class CreateRoleRequest {
 
@@ -15,4 +18,10 @@ public class CreateRoleRequest {
     private String description;
 
     private String responsibility;
+
+    private UUID orgUnitId;
+
+    private String domain;
+
+    private List<UUID> iamRoleIds;
 }

@@ -1,9 +1,13 @@
 package com.metaplatform.ea.dataarchitecture.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.metaplatform.ea.common.ErrorCode;
 import com.metaplatform.ea.common.TenantContext;
 import com.metaplatform.ea.dataarchitecture.dto.CreateDataEntityRequest;
 import com.metaplatform.ea.dataarchitecture.dto.DataEntityResponse;
+import com.metaplatform.ea.dataarchitecture.dto.DataField;
 import com.metaplatform.ea.dataarchitecture.dto.UpdateDataEntityRequest;
 import com.metaplatform.ea.dataarchitecture.entity.DataEntityEntity;
 import com.metaplatform.ea.dataarchitecture.repository.DataEntityRepository;
@@ -14,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
@@ -22,6 +27,7 @@ import java.util.UUID;
 public class DataEntityService {
 
     private final DataEntityRepository repository;
+    private final ObjectMapper objectMapper;
 
     @Transactional
     public DataEntityResponse create(CreateDataEntityRequest request) {
@@ -38,7 +44,7 @@ public class DataEntityService {
                 .code(request.getCode())
                 .description(request.getDescription())
                 .entityType(request.getEntityType())
-                .attributes(request.getAttributes() != null ? request.getAttributes() : "[]")
+                .attributes(toAttributes(request.getFields()))
                 .createdAt(now)
                 .updatedAt(now)
                 .build();
@@ -65,7 +71,7 @@ public class DataEntityService {
         if (StringUtils.hasText(request.getName())) entity.setName(request.getName());
         if (request.getDescription() != null) entity.setDescription(request.getDescription());
         if (request.getEntityType() != null) entity.setEntityType(request.getEntityType());
-        if (request.getAttributes() != null) entity.setAttributes(request.getAttributes());
+        if (request.getFields() != null) entity.setAttributes(toAttributes(request.getFields()));
         if (request.getDomainId() != null) entity.setDomainId(request.getDomainId());
         entity.setUpdatedAt(Instant.now());
         return toResponse(repository.save(entity));
@@ -96,9 +102,28 @@ public class DataEntityService {
                 .code(entity.getCode())
                 .description(entity.getDescription())
                 .entityType(entity.getEntityType())
-                .attributes(entity.getAttributes())
+                .fields(fromAttributes(entity.getAttributes()))
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())
                 .build();
+    }
+
+    private String toAttributes(List<DataField> fields) {
+        try {
+            return objectMapper.writeValueAsString(fields != null ? fields : Collections.emptyList());
+        } catch (JsonProcessingException e) {
+            throw new EaException(ErrorCode.INTERNAL_ERROR, "字段序列化失败: " + e.getMessage());
+        }
+    }
+
+    private List<DataField> fromAttributes(String attributes) {
+        try {
+            if (!StringUtils.hasText(attributes)) {
+                return Collections.emptyList();
+            }
+            return objectMapper.readValue(attributes, new TypeReference<List<DataField>>() {});
+        } catch (JsonProcessingException e) {
+            throw new EaException(ErrorCode.INTERNAL_ERROR, "字段反序列化失败: " + e.getMessage());
+        }
     }
 }

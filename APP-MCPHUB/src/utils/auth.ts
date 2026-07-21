@@ -1,5 +1,5 @@
-const TOKEN_KEY = 'mate_mcphub_token';
-const USER_KEY = 'mate_mcphub_user';
+const TOKEN_KEY = 'mate_platform_token';
+const USER_KEY = 'mate_platform_user';
 
 export interface AuthUser {
   id: string;

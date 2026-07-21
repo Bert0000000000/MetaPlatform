@@ -125,8 +125,7 @@ export default function ApiKeyGenerator() {
         columns={columns}
         loading={loading}
         pagination={false}
-        size="small"
-      />
+        size="small" scroll={{ x: 'max-content' }} />
 
       <Modal
         open={modalOpen}

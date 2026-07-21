@@ -13,7 +13,7 @@ import {
 import { ArrowLeftOutlined } from '@ant-design/icons';
 import ExecutionProgress from '@/components/ExecutionProgress';
 import ExecutionTimeline from '@/components/ExecutionTimeline';
-import ReplayPlayer from '@/components/ReplayPlayer';
+import ReplayPanel from '@/components/ReplayPanel';
 import TaskControls from '@/components/TaskControls';
 import TraceLinkViewer from '@/components/TraceLinkViewer';
 import type { EmployeeTask } from '@/types';
@@ -87,7 +87,7 @@ export default function TaskDetailPage() {
         items={[
           { key: 'progress', label: '实时进度', children: <ExecutionProgress task={task} /> },
           { key: 'timeline', label: '执行轨迹', children: <ExecutionTimeline task={task} /> },
-          { key: 'replay', label: '重放', children: <ReplayPlayer task={task} /> },
+          { key: 'replay', label: '执行回放', children: <ReplayPanel traceId={task.id} /> },
           { key: 'controls', label: '任务干预', children: <TaskControls task={task} onChange={setTask} /> },
           { key: 'trace', label: 'Trace 链路', children: <TraceLinkViewer traceId={task.id} /> },
         ]}

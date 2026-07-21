@@ -20,7 +20,7 @@ async def batch_embeddings(
     ctx: RequestContext = Depends(request_context_dep),
     service: EmbeddingService = Depends(get_embedding_service),
 ) -> dict:
-    resp = service.batch(ctx.tenant_id, body)
+    resp = await service.batch(ctx.tenant_id, body)
     return success(
         {
             "model": resp.model,

@@ -10,6 +10,7 @@ import com.metaplatform.ea.process.dto.UpdateBusinessProcessRequest;
 import com.metaplatform.ea.process.entity.BusinessProcessEntity;
 import com.metaplatform.ea.process.entity.BusinessProcessVersionEntity;
 import com.metaplatform.ea.process.repository.BusinessProcessRepository;
+import com.metaplatform.ea.process.repository.BusinessProcessRoleRepository;
 import com.metaplatform.ea.process.repository.BusinessProcessVersionRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -40,6 +41,9 @@ class BusinessProcessVersionTest {
 
     @Mock
     private BusinessProcessVersionRepository versionRepository;
+
+    @Mock
+    private BusinessProcessRoleRepository processRoleRepository;
 
     @Spy
     private ObjectMapper objectMapper = new ObjectMapper();

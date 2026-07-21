@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 @Data
@@ -22,6 +23,7 @@ public class DataAssetResponse {
     private UUID entityId;
     private String classification;
     private String metadata;
+    private List<String> tags;
     private Instant createdAt;
     private Instant updatedAt;
 }

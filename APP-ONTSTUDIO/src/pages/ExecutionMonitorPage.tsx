@@ -124,7 +124,7 @@ export default function ExecutionMonitorPage() {
         {executions.length === 0 ? (
           <Empty description="暂无执行记录" />
         ) : (
-          <Table rowKey="execId" dataSource={executions} columns={columns} pagination={{ pageSize: 10 }} />
+          <Table rowKey="execId" dataSource={executions} columns={columns} pagination={{ pageSize: 10 }} scroll={{ x: 'max-content' }} />
         )}
       </Card>
     </div>

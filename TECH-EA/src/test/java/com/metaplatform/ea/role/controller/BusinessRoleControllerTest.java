@@ -87,7 +87,7 @@ class BusinessRoleControllerTest {
                         .updatedAt(Instant.now())
                         .build()))
                 .total(1).page(1).size(20).totalPages(1).build();
-        when(roleService.list(eq(null), eq(null), eq(null))).thenReturn(page);
+        when(roleService.list(eq(null), eq(null), eq(null), eq(null), eq(null))).thenReturn(page);
 
         mockMvc.perform(get("/api/v1/ea/roles"))
                 .andExpect(status().isOk())

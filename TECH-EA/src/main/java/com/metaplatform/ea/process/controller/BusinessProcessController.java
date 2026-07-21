@@ -5,7 +5,9 @@ import com.metaplatform.ea.process.dto.BusinessProcessResponse;
 import com.metaplatform.ea.process.dto.BusinessProcessVersionResponse;
 import com.metaplatform.ea.process.dto.CreateBusinessProcessRequest;
 import com.metaplatform.ea.process.dto.CreateProcessVersionRequest;
+import com.metaplatform.ea.process.dto.LinkProcessRoleRequest;
 import com.metaplatform.ea.process.dto.UpdateBusinessProcessRequest;
+import com.metaplatform.ea.process.entity.BusinessProcessRoleEntity;
 import com.metaplatform.ea.process.service.BusinessProcessService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -69,5 +71,16 @@ public class BusinessProcessController {
     @GetMapping("/{id}/flowchart")
     public ApiResponse<Map<String, Object>> flowchart(@PathVariable UUID id) {
         return ApiResponse.success(businessProcessService.getFlowchart(id));
+    }
+
+    @PostMapping("/{id}/roles")
+    public ApiResponse<List<BusinessProcessRoleEntity>> linkRoles(@PathVariable UUID id,
+                                                                  @Valid @RequestBody LinkProcessRoleRequest request) {
+        return ApiResponse.success(businessProcessService.linkRoles(id, request));
+    }
+
+    @GetMapping("/{id}/roles")
+    public ApiResponse<List<UUID>> getRoleIds(@PathVariable UUID id) {
+        return ApiResponse.success(businessProcessService.getRoleIds(id));
     }
 }

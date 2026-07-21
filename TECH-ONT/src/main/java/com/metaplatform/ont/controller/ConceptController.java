@@ -6,11 +6,15 @@ import com.metaplatform.ont.dto.ConceptHierarchyResponse;
 import com.metaplatform.ont.dto.ConceptResponse;
 import com.metaplatform.ont.dto.ConceptUpdateRequest;
 import com.metaplatform.ont.dto.MoveConceptRequest;
+import com.metaplatform.ont.dto.OntologyConceptDto;
 import com.metaplatform.ont.dto.PageResponse;
 import com.metaplatform.ont.service.ConceptService;
+import com.metaplatform.ont.service.OntologyExploreService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/ont/concepts")
@@ -18,6 +22,7 @@ import org.springframework.web.bind.annotation.*;
 public class ConceptController {
 
     private final ConceptService conceptService;
+    private final OntologyExploreService ontologyExploreService;
 
     @PostMapping
     public ApiResponse<ConceptResponse> create(@Valid @RequestBody ConceptCreateRequest request) {
@@ -72,5 +77,24 @@ public class ConceptController {
     @GetMapping("/{conceptId}/descendants")
     public ApiResponse<ConceptHierarchyResponse> descendants(@PathVariable String conceptId) {
         return ApiResponse.success(conceptService.getDescendants(conceptId));
+    }
+
+    /**
+     * 概念搜索（V12-01 REQ-030）：按关键字、属性、标签过滤。
+     * 返回对齐前端 OntologyConcept 形状的列表。
+     */
+    @GetMapping("/search")
+    public ApiResponse<List<OntologyConceptDto>> search(@RequestParam(required = false) String keyword,
+                                                        @RequestParam(required = false) String attribute,
+                                                        @RequestParam(required = false) String tag) {
+        return ApiResponse.success(ontologyExploreService.search(keyword, attribute, tag));
+    }
+
+    /**
+     * 概念详情（V12-01 REQ-031）：返回完整属性、实例、关联概念。
+     */
+    @GetMapping("/{conceptId}/detail")
+    public ApiResponse<OntologyConceptDto> detail(@PathVariable String conceptId) {
+        return ApiResponse.success(ontologyExploreService.getDetail(conceptId));
     }
 }

@@ -7,6 +7,8 @@ import com.metaplatform.ea.role.dto.CreateRoleRequest;
 import com.metaplatform.ea.role.dto.RoleResponse;
 import com.metaplatform.ea.role.dto.UpdateRoleRequest;
 import com.metaplatform.ea.role.entity.BusinessRoleEntity;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.metaplatform.ea.process.repository.BusinessProcessRoleRepository;
 import com.metaplatform.ea.role.repository.BusinessRoleRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -15,6 +17,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -36,6 +39,12 @@ class BusinessRoleServiceTest {
 
     @Mock
     private BusinessRoleRepository roleRepository;
+
+    @Mock
+    private BusinessProcessRoleRepository processRoleRepository;
+
+    @Spy
+    private ObjectMapper objectMapper = new ObjectMapper();
 
     @InjectMocks
     private BusinessRoleService roleService;
@@ -60,16 +69,21 @@ class BusinessRoleServiceTest {
         request.setCode("SALES_MANAGER");
         request.setDescription("负责销售管理");
         request.setResponsibility("制定销售策略");
+        request.setDomain("SALES");
+        request.setIamRoleIds(List.of(UUID.randomUUID()));
 
         when(roleRepository.existsByTenantIdAndCodeAndDeletedAtIsNull("tenant-default", "SALES_MANAGER"))
                 .thenReturn(false);
         when(roleRepository.save(any(BusinessRoleEntity.class))).thenAnswer(i -> i.getArgument(0));
+        when(processRoleRepository.countByRoleId(any())).thenReturn(2L);
 
         RoleResponse response = roleService.create(request);
 
         assertThat(response.getCode()).isEqualTo("SALES_MANAGER");
         assertThat(response.getName()).isEqualTo("销售经理");
         assertThat(response.getResponsibility()).isEqualTo("制定销售策略");
+        assertThat(response.getDomain()).isEqualTo("SALES");
+        assertThat(response.getProcessCount()).isEqualTo(2L);
     }
 
     @Test
@@ -107,10 +121,10 @@ class BusinessRoleServiceTest {
     void list_shouldReturnPagedResult() {
         BusinessRoleEntity entity = buildEntity(roleId, "SALES_MANAGER", "销售经理");
         Page<BusinessRoleEntity> page = new PageImpl<>(List.of(entity));
-        when(roleRepository.search(eq("tenant-default"), eq(null), any(Pageable.class)))
+        when(roleRepository.search(eq("tenant-default"), eq(null), eq(null), eq(null), any(Pageable.class)))
                 .thenReturn(page);
 
-        PageResponse<RoleResponse> response = roleService.list(null, null, null);
+        PageResponse<RoleResponse> response = roleService.list(null, null, null, null, null);
 
         assertThat(response.getTotal()).isEqualTo(1);
         assertThat(response.getItems().get(0).getCode()).isEqualTo("SALES_MANAGER");

@@ -19,7 +19,7 @@ export default function RelationInstancePage() {
 
   useEffect(() => {
     Promise.all([listRelationInstances(), listRelationTypes()]).then(([ins, t]) => {
-      setInstances(ins);
+      setInstances(ins.items);
       setTypes(t.items);
       setLoading(false);
     });
@@ -41,20 +41,32 @@ export default function RelationInstancePage() {
               {
                 title: '关系类型',
                 dataIndex: 'relationTypeId',
-                render: (v) => {
+                render: (v, record) => {
                   const t = types.find((x) => x.relationTypeId === v);
-                  return t ? <Tag color="blue">{t.name}</Tag> : <Tag>{v}</Tag>;
+                  return t ? (
+                    <Tag color="blue">{t.name}</Tag>
+                  ) : (
+                    <Tag>{record.relationTypeCode || v}</Tag>
+                  );
                 },
               },
-              { title: '源实体', dataIndex: 'sourceEntityId' },
-              { title: '目标实体', dataIndex: 'targetEntityId' },
+              {
+                title: '源实体',
+                key: 'source',
+                render: (_, r) => r.sourceEntityName || r.sourceEntityId,
+              },
+              {
+                title: '目标实体',
+                key: 'target',
+                render: (_, r) => r.targetEntityName || r.targetEntityId,
+              },
               {
                 title: '创建时间',
                 dataIndex: 'createdAt',
                 render: (v) => (v ? new Date(v).toLocaleString() : '-'),
               },
             ]}
-          />
+           scroll={{ x: 'max-content' }}/>
         )}
       </Card>
     </div>

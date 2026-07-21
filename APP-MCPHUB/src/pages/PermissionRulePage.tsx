@@ -195,8 +195,7 @@ export default function PermissionRulePage() {
             dataSource={rules}
             columns={columns}
             loading={loading}
-            pagination={{ pageSize: 10 }}
-          />
+            pagination={{ pageSize: 10 }} scroll={{ x: 'max-content' }} />
         )}
       </Card>
 

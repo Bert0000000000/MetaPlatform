@@ -3,6 +3,7 @@ package com.metaplatform.ea.dataarchitecture.dto;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
+import java.util.List;
 import java.util.UUID;
 
 @Data
@@ -16,6 +17,6 @@ public class CreateDataEntityRequest {
 
     private String description;
     private String entityType;
-    private String attributes;
+    private List<DataField> fields;
     private UUID domainId;
 }

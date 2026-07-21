@@ -6,19 +6,25 @@ import com.metaplatform.rule.decisiontable.dto.AddColumnRequest;
 import com.metaplatform.rule.decisiontable.dto.AddRowRequest;
 import com.metaplatform.rule.decisiontable.dto.BatchImportRowsRequest;
 import com.metaplatform.rule.decisiontable.dto.CreateDecisionTableRequest;
+import com.metaplatform.rule.decisiontable.dto.DecisionTableExecutionResultDto;
 import com.metaplatform.rule.decisiontable.dto.DecisionTableRowResponse;
 import com.metaplatform.rule.decisiontable.dto.DecisionTableResponse;
 import com.metaplatform.rule.decisiontable.dto.UpdateColumnRequest;
 import com.metaplatform.rule.decisiontable.dto.UpdateDecisionTableRequest;
 import com.metaplatform.rule.decisiontable.dto.UpdateRowRequest;
 import com.metaplatform.rule.decisiontable.dto.ValidationResultDto;
+import com.metaplatform.rule.decisiontable.entity.DecisionTableEntity;
+import com.metaplatform.rule.decisiontable.entity.DecisionTableRowEntity;
 import com.metaplatform.rule.decisiontable.service.DecisionTableRowService;
 import com.metaplatform.rule.decisiontable.service.DecisionTableService;
+import com.metaplatform.rule.testing.dto.RuleTestRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/rule/decision-tables")
@@ -33,16 +39,28 @@ public class DecisionTableController {
         return ApiResponse.success(decisionTableService.create(request));
     }
 
+    /**
+     * V11-03：列表查询，聚合 rows 字段以便前端直接渲染整张表。
+     *
+     * <p>为了避免 N+1 查询开销，此处按需在响应中嵌入行数据。后续 V1.2 可加上
+     * {@code includeRows} 查询参数控制是否返回。
+     */
     @GetMapping
     public ApiResponse<PageResponse<DecisionTableResponse>> list(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int pageSize) {
-        return ApiResponse.success(decisionTableService.list(page, pageSize));
+        PageResponse<DecisionTableResponse> result = decisionTableService.list(page, pageSize);
+        for (DecisionTableResponse resp : result.getItems()) {
+            resp.setRows(decisionTableRowService.listRows(resp.getId()));
+        }
+        return ApiResponse.success(result);
     }
 
     @GetMapping("/{id}")
     public ApiResponse<DecisionTableResponse> get(@PathVariable String id) {
-        return ApiResponse.success(decisionTableService.getById(id));
+        DecisionTableResponse resp = decisionTableService.getById(id);
+        resp.setRows(decisionTableRowService.listRows(id));
+        return ApiResponse.success(resp);
     }
 
     @PutMapping("/{id}")
@@ -113,5 +131,67 @@ public class DecisionTableController {
     @PostMapping("/{id}/validate")
     public ApiResponse<ValidationResultDto> validate(@PathVariable String id) {
         return ApiResponse.success(decisionTableRowService.validate(id));
+    }
+
+    // ════════════════════════════════════════════
+    // V11-03: 决策表执行端点
+    // ════════════════════════════════════════════
+
+    /**
+     * 执行决策表，返回命中的行与输出。
+     *
+     * <p>路径与前端 {@code executeDecisionTable} 一致：{@code POST /v1/rule/decision-tables/{id}/execute}。
+     * 入参为 {@link RuleTestRequest#getInputData()}，与 {@code /test} 端点共享 schema。
+     */
+    @PostMapping("/{id}/execute")
+    public ApiResponse<DecisionTableExecutionResultDto> execute(
+            @PathVariable String id,
+            @Valid @RequestBody RuleTestRequest request) {
+        DecisionTableEntity table = decisionTableService.getEntity(id);
+        List<DecisionTableRowEntity> rows = decisionTableRowService.getEnabledRows(id);
+        String hitPolicy = table.getHitPolicy() == null ? "FIRST" : table.getHitPolicy().toUpperCase();
+
+        long start = System.currentTimeMillis();
+        List<DecisionTableRowResponse> matchedRows = new ArrayList<>();
+        List<Map<String, Object>> outputs = new ArrayList<>();
+
+        for (DecisionTableRowEntity row : rows) {
+            Map<String, Object> rowInputs = decisionTableRowService.readInputMap(row);
+            if (matchesInput(request.getInputData(), rowInputs)) {
+                matchedRows.add(decisionTableRowService.toRowResponse(row));
+                outputs.add(decisionTableRowService.readOutputMap(row));
+                if ("FIRST".equalsIgnoreCase(hitPolicy)) {
+                    break;
+                }
+            }
+        }
+        long elapsed = System.currentTimeMillis() - start;
+
+        return ApiResponse.success(DecisionTableExecutionResultDto.builder()
+                .matchedRows(matchedRows)
+                .outputs(outputs)
+                .executionTimeMs(elapsed)
+                .build());
+    }
+
+    /**
+     * 简单的字符串化值比较：将输入值与行配置值都转为字符串比较。
+     *
+     * <p>注意：V1.1 阶段仅做字符串等值匹配，V1.2 阶段会引入完整的 operator
+     * （eq/ne/gt/lt/gte/lte/in/contains/between）与 columnType 派生类型转换。
+     */
+    private boolean matchesInput(Map<String, Object> inputData, Map<String, Object> rowInputs) {
+        if (rowInputs.isEmpty()) {
+            return true; // 空输入视为通配
+        }
+        for (Map.Entry<String, Object> entry : rowInputs.entrySet()) {
+            Object inputValue = inputData.get(entry.getKey());
+            String expected = entry.getValue() == null ? "" : String.valueOf(entry.getValue());
+            String actual = inputValue == null ? "" : String.valueOf(inputValue);
+            if (!expected.equals(actual)) {
+                return false;
+            }
+        }
+        return true;
     }
 }

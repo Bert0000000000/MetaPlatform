@@ -29,6 +29,11 @@ from app.checkpoint.service import CheckpointService
 from app.clients.action import ActionClient
 from app.clients.llmgw import LLMGWClient
 from app.clients.rag import RAGClient
+from app.collaboration.repository import (
+    CollaborationRepository,
+    InMemoryCollaborationRepository,
+)
+from app.collaboration.service import CollaborationService
 from app.config import settings
 from app.conversations.repository import (
     ConversationRepository,
@@ -36,7 +41,9 @@ from app.conversations.repository import (
     SqlAlchemyConversationRepository,
 )
 from app.conversations.service import ConversationService
+from app.evaluation.service import EvaluationService
 from app.events.outbox import OutboxService
+from app.learning.service import LearningService
 from app.execution.engine import ExecutionEngine
 from app.execution.service import ExecutionService
 from app.memory.repository import (
@@ -45,6 +52,8 @@ from app.memory.repository import (
     SqlAlchemyMemoryRepository,
 )
 from app.memory.service import MemoryService
+from app.plans.repository import InMemoryPlanRepository, PlanRepository
+from app.plans.service import PlanService
 from app.steps.repository import (
     InMemoryStepRepository,
     SqlAlchemyStepRepository,
@@ -111,6 +120,12 @@ class Registry:
     step_repository: StepRepository
     step_service: StepService
     card_service: AgentCardService
+    evaluation_service: EvaluationService
+    plan_repository: PlanRepository
+    plan_service: PlanService
+    learning_service: LearningService
+    collaboration_repository: CollaborationRepository
+    collaboration_service: CollaborationService
 
     def reset(self) -> None:
         """Clear in-memory state."""
@@ -129,7 +144,13 @@ class Registry:
             self.tool_repository.clear()
         if isinstance(self.step_repository, InMemoryStepRepository):
             self.step_repository.clear()
+        if isinstance(self.plan_repository, InMemoryPlanRepository):
+            self.plan_repository.clear()
+        if isinstance(self.collaboration_repository, InMemoryCollaborationRepository):
+            self.collaboration_repository.clear()
         self.outbox_service.clear()
+        self.evaluation_service.clear()
+        self.learning_service.clear()
 
 
 _LOCK = RLock()
@@ -160,6 +181,8 @@ def _build_default_registry() -> Registry:
         )
         tool_repo: ToolRepository = SqlAlchemyToolRepository(session_factory)
         step_repo: StepRepository = SqlAlchemyStepRepository(session_factory)
+        # Plans use in-memory storage in this version (mock).
+        plan_repo: PlanRepository = InMemoryPlanRepository()
     else:
         repo = InMemoryAgentRepository()
         memory_repo = InMemoryMemoryRepository()
@@ -168,6 +191,7 @@ def _build_default_registry() -> Registry:
         conversation_repo = InMemoryConversationRepository()
         tool_repo = InMemoryToolRepository()
         step_repo = InMemoryStepRepository()
+        plan_repo = InMemoryPlanRepository()
 
     agent_service = AgentService(repo)
 
@@ -220,6 +244,21 @@ def _build_default_registry() -> Registry:
     # Card
     card_service = AgentCardService(agent_service)
 
+    # Evaluation
+    evaluation_service = EvaluationService()
+
+    # Plans (V15-02)
+    plan_service = PlanService(plan_repo)
+
+    # Learning (V15-03)
+    learning_service = LearningService(rag_client=rag_client)
+
+    # Collaboration (V15-04)
+    collaboration_repo = InMemoryCollaborationRepository()
+    collaboration_service = CollaborationService(
+        collaboration_repo, agent_service=agent_service
+    )
+
     return Registry(
         repository=repo,
         agent_service=agent_service,
@@ -242,6 +281,12 @@ def _build_default_registry() -> Registry:
         step_repository=step_repo,
         step_service=step_service,
         card_service=card_service,
+        evaluation_service=evaluation_service,
+        plan_repository=plan_repo,
+        plan_service=plan_service,
+        learning_service=learning_service,
+        collaboration_repository=collaboration_repo,
+        collaboration_service=collaboration_service,
     )
 
 
@@ -306,3 +351,19 @@ def get_step_service(request: Request) -> StepService:
 
 def get_card_service(request: Request) -> AgentCardService:
     return request.app.state.registry.card_service
+
+
+def get_evaluation_service(request: Request) -> EvaluationService:
+    return request.app.state.registry.evaluation_service
+
+
+def get_plan_service(request: Request) -> PlanService:
+    return request.app.state.registry.plan_service
+
+
+def get_learning_service(request: Request) -> LearningService:
+    return request.app.state.registry.learning_service
+
+
+def get_collaboration_service(request: Request) -> CollaborationService:
+    return request.app.state.registry.collaboration_service

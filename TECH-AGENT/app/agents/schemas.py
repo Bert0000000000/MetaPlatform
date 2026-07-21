@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 from enum import Enum
-from typing import List, Optional
+from typing import Any, List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -30,8 +30,37 @@ class Agent(BaseModel):
     temperature: float = 0.7
     max_tokens: int = 4096
     status: AgentStatus = AgentStatus.DRAFT
+    deleted_at: Optional[datetime] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
+class AgentVersion(BaseModel):
+    """Agent 配置变更的版本快照。"""
+
+    id: str
+    tenant_id: str
+    agent_id: str
+    version: str
+    change_log: str = ""
+    snapshot: Optional[dict[str, Any]] = None
+    created_by: Optional[str] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
+class AgentOperationLog(BaseModel):
+    """Agent 操作审计日志。"""
+
+    id: str
+    tenant_id: str
+    agent_id: str
+    actor: str = "system"
+    action: str
+    resource: str = "agent"
+    ip: Optional[str] = None
+    status: str = "success"
+    trace_id: Optional[str] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 # ----------------------------------------------------------- request schemas
@@ -63,6 +92,13 @@ class UpdateAgentRequest(BaseModel):
     status: Optional[AgentStatus] = None
 
 
+class CloneAgentRequest(BaseModel):
+    """克隆 Agent 请求：以源 Agent 为模板创建新 Agent，仅指定新名称与编码。"""
+
+    name: str = Field(min_length=1, max_length=256)
+    code: str = Field(min_length=1, max_length=128)
+
+
 # ------------------------------------------------------------ response schemas
 
 
@@ -83,6 +119,32 @@ def to_dict(agent: Agent) -> dict:
         "temperature": agent.temperature,
         "maxTokens": agent.max_tokens,
         "status": status_value,
+        "deletedAt": agent.deleted_at,
         "createdAt": agent.created_at,
         "updatedAt": agent.updated_at,
+    }
+
+
+def version_to_dict(version: AgentVersion) -> dict:
+    """Serialize an AgentVersion to the API response shape (camelCase)."""
+    return {
+        "version": version.version,
+        "timestamp": version.created_at,
+        "changeLog": version.change_log,
+        "snapshot": version.snapshot,
+        "createdBy": version.created_by,
+    }
+
+
+def operation_log_to_dict(log: AgentOperationLog) -> dict:
+    """Serialize an AgentOperationLog to the API response shape (camelCase)."""
+    return {
+        "id": log.id,
+        "actor": log.actor,
+        "action": log.action,
+        "resource": log.resource,
+        "timestamp": log.created_at,
+        "ip": log.ip,
+        "status": log.status,
+        "traceId": log.trace_id,
     }

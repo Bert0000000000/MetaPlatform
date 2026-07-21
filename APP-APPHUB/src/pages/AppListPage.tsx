@@ -4,7 +4,6 @@ import {
   Button,
   Card,
   Empty,
-  Input,
   Select,
   Space,
   Tag,
@@ -25,6 +24,7 @@ import { listApps, deleteApp, createApp, updateApp, listGroups } from '@/api/app
 import AppForm from '@/components/AppForm';
 import type { AppItem, AppCreateRequest, AppUpdateRequest, AppStatus } from '@/types';
 import type { MenuProps } from 'antd';
+import { SearchInput } from '@mate/shared';
 
 const { Meta } = Card;
 
@@ -126,11 +126,10 @@ export default function AppListPage() {
   return (
     <div>
       <Space style={{ marginBottom: 16 }} wrap>
-        <Input.Search
+        <SearchInput
           placeholder="搜索应用名称"
-          allowClear
-          onSearch={(v) => setKeyword(v)}
-          style={{ width: 240 }}
+          onSearch={setKeyword}
+          width={240}
         />
         <Select
           placeholder="应用分组"

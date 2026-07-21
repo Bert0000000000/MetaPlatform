@@ -15,4 +15,7 @@ public class TrendPoint {
 
     private Instant time;
     private long count;
+    private long errorCount;
+    private long tokenCount;
+    private double avgDuration;
 }

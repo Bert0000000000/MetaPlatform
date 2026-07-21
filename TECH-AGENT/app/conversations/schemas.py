@@ -23,6 +23,8 @@ class Conversation(BaseModel):
     title: str = ""
     status: ConversationStatus = ConversationStatus.ACTIVE
     message_count: int = 0
+    favorite: bool = False
+    mode: str = "chat"
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     last_message_at: Optional[datetime] = None
@@ -43,6 +45,7 @@ class ConversationMessage(BaseModel):
 class CreateConversationRequest(BaseModel):
     agentId: str = Field(min_length=1)
     title: str = ""
+    mode: str = "chat"
 
 
 class SendMessageRequest(BaseModel):
@@ -52,15 +55,19 @@ class SendMessageRequest(BaseModel):
 
 def conversation_to_dict(conv: Conversation) -> dict:
     return {
+        "id": conv.id,
         "conversationId": conv.id,
         "tenantId": conv.tenant_id,
         "agentId": conv.agent_id,
         "title": conv.title,
         "status": conv.status.value,
         "messageCount": conv.message_count,
+        "favorite": conv.favorite,
+        "mode": conv.mode,
         "createdAt": conv.created_at,
         "updatedAt": conv.updated_at,
         "lastMessageAt": conv.last_message_at,
+        "preview": "",
     }
 
 

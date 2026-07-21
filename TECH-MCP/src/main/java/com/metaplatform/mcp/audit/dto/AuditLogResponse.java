@@ -17,6 +17,8 @@ public class AuditLogResponse {
     private UUID id;
     private UUID toolId;
     private String toolCode;
+    private UUID serverId;
+    private UUID clientId;
     private String invocationType;
     private Integer inputTokens;
     private Integer outputTokens;

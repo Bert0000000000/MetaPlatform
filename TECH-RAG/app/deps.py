@@ -13,6 +13,7 @@ from typing import Optional
 
 from fastapi import Request
 
+from app.config import settings
 from app.models.repository import (
     DocumentChunkRepository,
     DocumentRepository,

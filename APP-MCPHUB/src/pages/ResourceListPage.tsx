@@ -126,7 +126,7 @@ export default function ResourceListPage() {
         {resources.length === 0 && !loading ? (
           <Empty description="还没有 MCP 资源" />
         ) : (
-          <Table rowKey="id" dataSource={resources} columns={columns} loading={loading} />
+          <Table rowKey="id" dataSource={resources} columns={columns} loading={loading} scroll={{ x: 'max-content' }} />
         )}
       </Card>
     </div>

@@ -183,8 +183,7 @@ export default function VersionPage() {
                     dataSource={versions}
                     columns={columns}
                     loading={loading}
-                    pagination={false}
-                  />
+                    pagination={false} scroll={{ x: 'max-content' }} />
                 )}
               </Card>
             ),

@@ -176,6 +176,7 @@ public class TraceService {
                 .durationUs(e.getDurationUs())
                 .status(e.getStatus())
                 .tags(e.getTags())
+                .logs(e.getLogs())
                 .build();
     }
 }

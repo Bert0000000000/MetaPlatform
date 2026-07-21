@@ -15,5 +15,7 @@ public class CreateValueStreamRequest {
     private String code;
 
     private String description;
+    private String triggerEvent;
+    private String terminationEvent;
     private List<String> stages;
 }

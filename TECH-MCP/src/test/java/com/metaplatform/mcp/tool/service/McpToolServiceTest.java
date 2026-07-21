@@ -2,14 +2,19 @@ package com.metaplatform.mcp.tool.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.metaplatform.mcp.common.ErrorCode;
+import com.metaplatform.mcp.common.PageResponse;
 import com.metaplatform.mcp.exception.McpException;
 import com.metaplatform.mcp.tool.dto.CreateMcpToolRequest;
 import com.metaplatform.mcp.tool.dto.McpToolListItem;
 import com.metaplatform.mcp.tool.dto.McpToolResponse;
+import com.metaplatform.mcp.tool.dto.McpToolVersionCompareResponse;
+import com.metaplatform.mcp.tool.dto.McpToolVersionResponse;
 import com.metaplatform.mcp.tool.dto.UpdateMcpToolRequest;
-import com.metaplatform.mcp.common.PageResponse;
 import com.metaplatform.mcp.tool.entity.McpToolEntity;
+import com.metaplatform.mcp.tool.entity.McpToolVersionEntity;
+import com.metaplatform.mcp.tool.repository.McpToolCategoryRepository;
 import com.metaplatform.mcp.tool.repository.McpToolRepository;
+import com.metaplatform.mcp.tool.repository.McpToolVersionRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -31,13 +36,17 @@ class McpToolServiceTest {
 
     @Mock
     private McpToolRepository mcpToolRepository;
+    @Mock
+    private McpToolVersionRepository mcpToolVersionRepository;
+    @Mock
+    private McpToolCategoryRepository mcpToolCategoryRepository;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
     private McpToolService mcpToolService;
 
     @BeforeEach
     void setUp() {
-        mcpToolService = new McpToolService(mcpToolRepository, objectMapper);
+        mcpToolService = new McpToolService(mcpToolRepository, mcpToolVersionRepository, mcpToolCategoryRepository, objectMapper);
     }
 
     private McpToolEntity toolEntity(String code, String toolType, boolean enabled) {
@@ -47,6 +56,8 @@ class McpToolServiceTest {
                 .tenantId("tenant-default")
                 .name("tool-" + code)
                 .code(code)
+                .category("default")
+                .version("1.0.0")
                 .description("desc")
                 .inputSchema("{}")
                 .outputSchema("{}")
@@ -64,10 +75,13 @@ class McpToolServiceTest {
         CreateMcpToolRequest request = new CreateMcpToolRequest();
         request.setName("My Tool");
         request.setCode("my_tool");
+        request.setCategory("default");
         request.setToolType("http");
         request.setEndpoint("http://example.com");
         request.setEnabled(true);
 
+        when(mcpToolCategoryRepository.existsByTenantIdAndCodeAndDeletedAtIsNull("tenant-default", "default"))
+                .thenReturn(true);
         when(mcpToolRepository.existsByTenantIdAndCodeAndDeletedAtIsNull("tenant-default", "my_tool"))
                 .thenReturn(false);
         when(mcpToolRepository.save(any(McpToolEntity.class)))
@@ -76,6 +90,7 @@ class McpToolServiceTest {
                     e.setId(UUID.randomUUID());
                     return e;
                 });
+        when(mcpToolVersionRepository.save(any(McpToolVersionEntity.class))).thenAnswer(inv -> inv.getArgument(0));
 
         McpToolResponse response = mcpToolService.create(request);
 
@@ -83,6 +98,7 @@ class McpToolServiceTest {
         assertThat(response.getToolType()).isEqualTo("HTTP");
         assertThat(response.getEnabled()).isTrue();
         assertThat(response.getId()).isNotNull();
+        verify(mcpToolVersionRepository).save(any(McpToolVersionEntity.class));
     }
 
     @Test
@@ -99,6 +115,25 @@ class McpToolServiceTest {
                 .isInstanceOf(McpException.class)
                 .extracting("errorCode")
                 .isEqualTo(ErrorCode.ALREADY_EXISTS);
+    }
+
+    @Test
+    void create_tool_unknown_category_throws() {
+        CreateMcpToolRequest request = new CreateMcpToolRequest();
+        request.setName("My Tool");
+        request.setCode("cat_tool");
+        request.setCategory("missing");
+        request.setToolType("HTTP");
+
+        when(mcpToolRepository.existsByTenantIdAndCodeAndDeletedAtIsNull("tenant-default", "cat_tool"))
+                .thenReturn(false);
+        when(mcpToolCategoryRepository.existsByTenantIdAndCodeAndDeletedAtIsNull("tenant-default", "missing"))
+                .thenReturn(false);
+
+        assertThatThrownBy(() -> mcpToolService.create(request))
+                .isInstanceOf(McpException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.TOOL_CATEGORY_NOT_FOUND);
     }
 
     @Test
@@ -143,6 +178,23 @@ class McpToolServiceTest {
     }
 
     @Test
+    void update_tool_schema_change_creates_version() {
+        UUID id = UUID.randomUUID();
+        McpToolEntity entity = toolEntity("t1", "HTTP", true);
+        when(mcpToolRepository.findByIdAndDeletedAtIsNull(id)).thenReturn(Optional.of(entity));
+        when(mcpToolRepository.save(any(McpToolEntity.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(mcpToolVersionRepository.save(any(McpToolVersionEntity.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        UpdateMcpToolRequest request = new UpdateMcpToolRequest();
+        request.setInputSchema("{\"type\":\"object\"}");
+
+        McpToolResponse response = mcpToolService.update(id, request);
+
+        assertThat(response.getVersion()).isEqualTo("1.0.1");
+        verify(mcpToolVersionRepository).save(any(McpToolVersionEntity.class));
+    }
+
+    @Test
     void enable_and_disable_tool() {
         UUID id = UUID.randomUUID();
 
@@ -160,11 +212,11 @@ class McpToolServiceTest {
 
     @Test
     void list_with_filters_returns_paginated() {
-        when(mcpToolRepository.search(any(), any(), any(), any(), any()))
+        when(mcpToolRepository.search(any(), any(), any(), any(), any(), any()))
                 .thenReturn(List.of(toolEntity("t1", "HTTP", true), toolEntity("t2", "BEAN", true)));
 
         PageResponse<McpToolListItem> page = mcpToolService.list(
-                null, "http", true, null, 1, 10);
+                null, "http", true, null, "default", 1, 10);
 
         assertThat(page.getItems()).hasSize(2);
         assertThat(page.getPage()).isEqualTo(1);
@@ -183,5 +235,76 @@ class McpToolServiceTest {
 
         assertThat(entity.getDeletedAt()).isNotNull();
         verify(mcpToolRepository).save(entity);
+    }
+
+    @Test
+    void list_versions_returns_sorted() {
+        UUID toolId = UUID.randomUUID();
+        McpToolEntity entity = toolEntity("t1", "HTTP", true);
+        entity.setId(toolId);
+        when(mcpToolRepository.findByIdAndDeletedAtIsNull(toolId)).thenReturn(Optional.of(entity));
+        when(mcpToolVersionRepository.findByToolIdAndTenantIdOrderByCreatedAtDesc(toolId, "tenant-default"))
+                .thenReturn(List.of(
+                        McpToolVersionEntity.builder().id(UUID.randomUUID()).toolId(toolId).version("1.0.1").isCurrent(true).createdAt(Instant.now()).build(),
+                        McpToolVersionEntity.builder().id(UUID.randomUUID()).toolId(toolId).version("1.0.0").isCurrent(false).createdAt(Instant.now()).build()
+                ));
+
+        List<McpToolVersionResponse> versions = mcpToolService.listVersions(toolId);
+
+        assertThat(versions).hasSize(2);
+        assertThat(versions.get(0).getVersion()).isEqualTo("1.0.1");
+    }
+
+    @Test
+    void rollback_restores_version() {
+        UUID toolId = UUID.randomUUID();
+        UUID versionId = UUID.randomUUID();
+        McpToolEntity entity = toolEntity("t1", "HTTP", true);
+        entity.setId(toolId);
+        entity.setInputSchema("{\"new\":true}");
+        McpToolVersionEntity version = McpToolVersionEntity.builder()
+                .id(versionId)
+                .toolId(toolId)
+                .tenantId("tenant-default")
+                .version("1.0.0")
+                .schema("{\"old\":true}")
+                .description("old desc")
+                .isCurrent(false)
+                .createdAt(Instant.now())
+                .build();
+
+        when(mcpToolRepository.findByIdAndDeletedAtIsNull(toolId)).thenReturn(Optional.of(entity));
+        when(mcpToolVersionRepository.findByIdAndTenantId(versionId, "tenant-default")).thenReturn(Optional.of(version));
+        when(mcpToolVersionRepository.save(any(McpToolVersionEntity.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(mcpToolRepository.save(any(McpToolEntity.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        McpToolVersionResponse response = mcpToolService.rollback(toolId, versionId);
+
+        assertThat(response.getIsCurrent()).isTrue();
+        assertThat(entity.getVersion()).isEqualTo("1.0.0");
+        assertThat(entity.getInputSchema()).isEqualTo("{\"old\":true}");
+    }
+
+    @Test
+    void compare_versions_returns_differences() {
+        UUID toolId = UUID.randomUUID();
+        UUID leftId = UUID.randomUUID();
+        UUID rightId = UUID.randomUUID();
+        McpToolEntity entity = toolEntity("t1", "HTTP", true);
+        entity.setId(toolId);
+        McpToolVersionEntity left = McpToolVersionEntity.builder()
+                .id(leftId).toolId(toolId).tenantId("tenant-default").version("1.0.0")
+                .schema("{\"a\":1}").description("d1").createdAt(Instant.now()).build();
+        McpToolVersionEntity right = McpToolVersionEntity.builder()
+                .id(rightId).toolId(toolId).tenantId("tenant-default").version("1.0.1")
+                .schema("{\"a\":2}").description("d2").createdAt(Instant.now()).build();
+
+        when(mcpToolRepository.findByIdAndDeletedAtIsNull(toolId)).thenReturn(Optional.of(entity));
+        when(mcpToolVersionRepository.findByIdAndTenantId(leftId, "tenant-default")).thenReturn(Optional.of(left));
+        when(mcpToolVersionRepository.findByIdAndTenantId(rightId, "tenant-default")).thenReturn(Optional.of(right));
+
+        McpToolVersionCompareResponse compare = mcpToolService.compareVersions(toolId, leftId, rightId);
+
+        assertThat(compare.getDifferences()).contains("description", "schema");
     }
 }

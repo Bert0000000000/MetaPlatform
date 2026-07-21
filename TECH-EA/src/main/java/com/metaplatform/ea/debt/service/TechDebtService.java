@@ -30,6 +30,7 @@ public class TechDebtService {
 
     private static final Set<String> ALLOWED_SEVERITIES = Set.of("LOW", "MEDIUM", "HIGH", "CRITICAL");
     private static final Set<String> ALLOWED_STATUSES = Set.of("OPEN", "IN_PROGRESS", "RESOLVED", "WONT_FIX");
+    private static final Set<String> ALLOWED_DEBT_LEVELS = Set.of("FATAL", "SERIOUS", "GENERAL", "MINOR");
 
     private final TechDebtRepository repository;
     private final ApplicationRepository applicationRepository;
@@ -43,7 +44,9 @@ public class TechDebtService {
         }
         validateSeverity(request.getSeverity());
         validateStatus(request.getStatus());
+        validateDebtLevel(request.getDebtLevel());
         validateJson(request.getMetadata(), "metadata");
+        validateJson(request.getRepaymentPlan(), "repaymentPlan");
         validateScope(request);
 
         Instant now = Instant.now();
@@ -61,6 +64,8 @@ public class TechDebtService {
                 .remediation(request.getRemediation())
                 .estimatedEffort(request.getEstimatedEffort())
                 .owner(request.getOwner())
+                .debtLevel(normalizeDebtLevel(request.getDebtLevel()))
+                .repaymentPlan(normalizeJson(request.getRepaymentPlan(), "{}"))
                 .metadata(normalizeJson(request.getMetadata(), "{}"))
                 .createdAt(now)
                 .updatedAt(now)
@@ -80,6 +85,17 @@ public class TechDebtService {
             items = repository.findByTenantIdAndDeletedAtIsNull(tenantId);
         }
         return items.stream().map(this::toResponse).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<TechDebtResponse> listByLevelAndStatus(String level, String status) {
+        String tenantId = TenantContext.getOrDefault();
+        List<TechDebtEntity> items = repository.findByTenantIdAndDeletedAtIsNull(tenantId);
+        return items.stream()
+                .filter(e -> !StringUtils.hasText(level) || level.equalsIgnoreCase(e.getDebtLevel()))
+                .filter(e -> !StringUtils.hasText(status) || status.equalsIgnoreCase(e.getStatus()))
+                .map(this::toResponse)
+                .toList();
     }
 
     @Transactional(readOnly = true)
@@ -105,6 +121,14 @@ public class TechDebtService {
         if (request.getRemediation() != null) entity.setRemediation(request.getRemediation());
         if (request.getEstimatedEffort() != null) entity.setEstimatedEffort(request.getEstimatedEffort());
         if (request.getOwner() != null) entity.setOwner(request.getOwner());
+        if (StringUtils.hasText(request.getDebtLevel())) {
+            validateDebtLevel(request.getDebtLevel());
+            entity.setDebtLevel(request.getDebtLevel().toUpperCase());
+        }
+        if (request.getRepaymentPlan() != null) {
+            validateJson(request.getRepaymentPlan(), "repaymentPlan");
+            entity.setRepaymentPlan(normalizeJson(request.getRepaymentPlan(), "{}"));
+        }
         if (request.getMetadata() != null) {
             validateJson(request.getMetadata(), "metadata");
             entity.setMetadata(normalizeJson(request.getMetadata(), "{}"));
@@ -203,6 +227,17 @@ public class TechDebtService {
         }
     }
 
+    private void validateDebtLevel(String debtLevel) {
+        if (debtLevel == null) return;
+        if (!ALLOWED_DEBT_LEVELS.contains(debtLevel.toUpperCase())) {
+            throw new EaException(ErrorCode.INVALID_PARAM, "debtLevel 必须为 FATAL/SERIOUS/GENERAL/MINOR");
+        }
+    }
+
+    private String normalizeDebtLevel(String debtLevel) {
+        return debtLevel != null ? debtLevel.toUpperCase() : "GENERAL";
+    }
+
     private void validateStatus(String status) {
         if (status == null) return;
         if (!ALLOWED_STATUSES.contains(status.toUpperCase())) {
@@ -240,6 +275,8 @@ public class TechDebtService {
                 .remediation(entity.getRemediation())
                 .estimatedEffort(entity.getEstimatedEffort())
                 .owner(entity.getOwner())
+                .debtLevel(entity.getDebtLevel())
+                .repaymentPlan(entity.getRepaymentPlan())
                 .metadata(entity.getMetadata())
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())

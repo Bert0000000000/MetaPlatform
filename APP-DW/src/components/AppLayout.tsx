@@ -1,39 +1,27 @@
-import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { Layout, Menu, theme, Typography, Button } from 'antd';
-import {
-  RobotOutlined,
-  UnorderedListOutlined,
-  StarOutlined,
-  TeamOutlined,
-  GlobalOutlined,
-  LogoutOutlined,
-} from '@ant-design/icons';
+import { useState } from 'react';
+import { Outlet, useNavigate } from 'react-router-dom';
+import { Layout, theme, Typography, Button, Grid, Drawer } from 'antd';
+import { LogoutOutlined, MenuOutlined } from '@ant-design/icons';
+import { PlatformMenu } from '@mate/shared';
 import { removeToken } from '@/utils/auth';
 
 const { Header, Sider, Content } = Layout;
 
-const menuItems = [
-  { key: '/dw/employees', icon: <RobotOutlined />, label: '数字员工' },
-  { key: '/dw/tasks', icon: <UnorderedListOutlined />, label: '任务中心' },
-  { key: '/dw/evaluation', icon: <StarOutlined />, label: '效果评估' },
-  { key: '/dw/collaborations', icon: <TeamOutlined />, label: '多员工协作' },
-  { key: '/dw/external-agents', icon: <GlobalOutlined />, label: 'A2A 外部协作' },
-];
-
 export default function AppLayout() {
   const navigate = useNavigate();
-  const location = useLocation();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const screens = Grid.useBreakpoint();
+  const isMobile = !screens.md;
   const {
     token: { colorBgContainer, borderRadiusLG },
   } = theme.useToken();
-
-  const selectedKey =
-    menuItems.find((m) => location.pathname.startsWith(m.key))?.key || '/dw/employees';
 
   const handleLogout = () => {
     removeToken();
     navigate('/login');
   };
+
+  const menu = <PlatformMenu currentModule="dw" />;
 
   return (
     <Layout style={{ minHeight: '100vh' }}>
@@ -47,28 +35,42 @@ export default function AppLayout() {
           borderBottom: '1px solid #f0f0f0',
         }}
       >
-        <Typography.Title level={4} style={{ margin: 0 }}>
-          数字员工工作台
-        </Typography.Title>
+        <div style={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 0 }}>
+          {isMobile && (
+            <Button
+              type="text"
+              icon={<MenuOutlined />}
+              onClick={() => setMenuOpen(true)}
+              style={{ marginRight: 8 }}
+            />
+          )}
+          <Typography.Title
+            level={4}
+            style={{
+              margin: 0,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            数字员工工作台
+          </Typography.Title>
+        </div>
         <Button type="text" icon={<LogoutOutlined />} onClick={handleLogout}>
-          退出
+          {!isMobile && '退出'}
         </Button>
       </Header>
       <Layout>
-        <Sider width={220} style={{ background: colorBgContainer }}>
-          <Menu
-            mode="inline"
-            selectedKeys={[selectedKey]}
-            style={{ height: '100%', borderRight: 0 }}
-            items={menuItems}
-            onClick={({ key }) => navigate(key)}
-          />
-        </Sider>
-        <Layout style={{ padding: '16px 24px' }}>
+        {!isMobile && (
+          <Sider width={240} style={{ background: colorBgContainer }}>
+            {menu}
+          </Sider>
+        )}
+        <Layout className="mate-page-layout">
           <Content
             style={{
               background: colorBgContainer,
-              padding: 24,
+              padding: 'var(--mate-content-padding)',
               margin: 0,
               borderRadius: borderRadiusLG,
               minHeight: 280,
@@ -79,6 +81,15 @@ export default function AppLayout() {
           </Content>
         </Layout>
       </Layout>
+      <Drawer
+        placement="left"
+        open={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        width={240}
+        styles={{ body: { padding: 0 } }}
+      >
+        {menu}
+      </Drawer>
     </Layout>
   );
 }

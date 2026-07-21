@@ -28,8 +28,8 @@ class EmbeddingService:
         self._models = model_service
         self._client = client
 
-    def batch(self, tenant_id: str, request: BatchEmbeddingRequest) -> BatchEmbeddingResponse:
-        model = self._models.resolve_active(tenant_id, request.modelId)
+    async def batch(self, tenant_id: str, request: BatchEmbeddingRequest) -> BatchEmbeddingResponse:
+        model = await self._models.resolve_active(tenant_id, request.modelId)
         if model.type != ModelType.EMBEDDING or ModelCapability.EMBEDDING.value not in model.capabilities:
             raise UnsupportedModelTypeError(
                 f"模型不支持 Embedding: modelId={request.modelId}",
