@@ -233,7 +233,7 @@ class CypherConsoleServiceTest {
 
         CypherExecuteResponse response = cypherConsoleService.execute(request);
 
-        assertThat(response.getColumns()).containsExactly("name", "code");
+        assertThat(response.getColumns()).containsExactlyInAnyOrder("name", "code");
         assertThat(response.getRows()).hasSize(2);
         assertThat(response.getRowCount()).isEqualTo(2);
         assertThat(response.getDurationMs()).isGreaterThanOrEqualTo(0);

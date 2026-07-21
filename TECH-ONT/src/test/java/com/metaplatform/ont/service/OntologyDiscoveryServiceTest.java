@@ -44,7 +44,7 @@ import static org.mockito.Mockito.when;
         "spring.autoconfigure.exclude=" +
                 "org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration," +
                 "org.springframework.boot.autoconfigure.data.neo4j.Neo4jAutoConfiguration," +
-                "org.springframework.ai.autoconfigure.chat.client.ChatClientAutoConfiguration," +
+                "org.springframework.ai.model.chat.client.autoconfigure.ChatClientAutoConfiguration," +
                 "org.springframework.ai.mcp.server.common.autoconfigure.McpServerAutoConfiguration",
         "spring.flyway.enabled=true",
         "spring.jpa.hibernate.ddl-auto=validate"
