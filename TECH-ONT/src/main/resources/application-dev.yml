@@ -27,6 +27,17 @@ spring:
     authentication:
       username: ${NEO4J_USERNAME:neo4j}
       password: ${NEO4J_PASSWORD:metaplatform}
+  ai:
+    alibaba:
+      agent:
+        proxy:
+          nacos:
+            enabled: true
+            serverAddr: ${NACOS_SERVER_ADDR:localhost:8848}
+            namespace: ${NACOS_NAMESPACE:metaplatform}
+            username: ${NACOS_USERNAME:}
+            password: ${NACOS_PASSWORD:}
+            agentName: ${NACOS_AGENT_NAME:tech-ont}
 
 app:
   jwt:
