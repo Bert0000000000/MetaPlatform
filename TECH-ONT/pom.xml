@@ -120,7 +120,7 @@
 
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>
-            <artifactId>spring-ai-alibaba-starter-nacos-config</artifactId>
+            <artifactId>spring-ai-alibaba-starter-config-nacos</artifactId>
         </dependency>
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>
