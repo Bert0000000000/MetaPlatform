@@ -31,3 +31,9 @@ spring:
 app:
   jwt:
     secret: ${JWT_SECRET:mate-platform-default-secret-key-must-be-over-32-bytes}
+
+mate:
+  llmgw:
+    base-url: http://localhost:8210
+    default-model: qwen-max
+    timeout-seconds: 30
