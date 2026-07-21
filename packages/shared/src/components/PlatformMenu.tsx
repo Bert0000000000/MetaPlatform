@@ -26,29 +26,41 @@ function toAntdItems(
 ): ItemType[] {
   return items.map((item) => {
     const isExternalModule = item.key !== currentModule;
-    const handleClick = () => {
-      if (isExternalModule && item.appUrl && item.path) {
-        window.location.href = item.appUrl + item.path;
-      } else if (item.path && onNavigate) {
-        onNavigate(item.path);
-      }
-    };
 
-    if (item.children && item.children.length > 0) {
+    // 叶子菜单：点击后在本应用内导航或跨应用跳转。
+    if (!item.children || item.children.length === 0) {
+      const handleClick = () => {
+        if (isExternalModule && item.appUrl && item.path) {
+          window.location.href = item.appUrl + item.path;
+        } else if (item.path && onNavigate) {
+          onNavigate(item.path);
+        }
+      };
       return {
         key: item.key,
         icon: renderIcon(item.icon),
         label: item.label,
-        children: toAntdItems(item.children, currentModule, onNavigate),
-        onTitleClick: handleClick,
+        onClick: handleClick,
       } as ItemType;
     }
+
+    // 含子菜单的节点（一级模块或三级分组）：
+    // - 外部模块：点击标题跳转到该模块首页
+    // - 当前模块：不绑定点击事件，让 antd 仅处理展开/折叠
+    const handleTitleClick = isExternalModule
+      ? () => {
+          if (item.appUrl && item.path) {
+            window.location.href = item.appUrl + item.path;
+          }
+        }
+      : undefined;
 
     return {
       key: item.key,
       icon: renderIcon(item.icon),
       label: item.label,
-      onClick: handleClick,
+      children: toAntdItems(item.children, currentModule, onNavigate),
+      onTitleClick: handleTitleClick,
     } as ItemType;
   });
 }

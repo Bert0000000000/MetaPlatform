@@ -16,6 +16,7 @@ export const PLATFORM_MENU: PlatformMenuItem[] = [
     appUrl: 'http://localhost:9202',
     children: [
       { key: 'dashboard-home', label: '工作台', path: '/dashboard' },
+      { key: 'dashboard-aiops', label: '智能运维', path: '/aiops' },
       { key: 'dashboard-notifications', label: '消息中心', path: '/notifications' },
       { key: 'dashboard-deliverables', label: '历史交付物', path: '/deliverables' },
       { key: 'dashboard-settings', label: '个性化设置', path: '/settings' },
@@ -30,6 +31,7 @@ export const PLATFORM_MENU: PlatformMenuItem[] = [
     children: [
       { key: 'superai-chat', label: '智能对话', path: '/chat' },
       { key: 'superai-analysis', label: '数据分析', path: '/analysis' },
+      { key: 'superai-cost-optimization', label: '成本优化', path: '/cost-optimization' },
       { key: 'superai-schedule', label: '任务编排', path: '/schedule/orchestration' },
       { key: 'superai-plan', label: '执行计划', path: '/schedule/plan' },
       { key: 'superai-parallel', label: '并行执行监控', path: '/schedule/parallel' },
@@ -68,6 +70,8 @@ export const PLATFORM_MENU: PlatformMenuItem[] = [
     appUrl: 'http://localhost:9201',
     children: [
       { key: 'apphub-apps', label: '应用管理', path: '/apps' },
+      { key: 'apphub-market', label: '应用市场', path: '/market' },
+      { key: 'apphub-my-templates', label: '我的模板', path: '/my-templates' },
     ],
   },
   {
@@ -178,6 +182,15 @@ export const PLATFORM_MENU: PlatformMenuItem[] = [
       { key: 'mcphub-prompts', label: 'Prompt 模板', path: '/prompts' },
       { key: 'mcphub-audit', label: '调用审计', path: '/audit' },
       { key: 'mcphub-integrations', label: '外部对接', path: '/integrations' },
+      {
+        key: 'mcphub-external',
+        label: '外部 Agent 对接',
+        children: [
+          { key: 'mcphub-external-agents', label: '外部 Agent 目录', path: '/external-agents' },
+          { key: 'mcphub-trusts', label: '信任管理', path: '/trusts' },
+          { key: 'mcphub-collaborations', label: '协作审计', path: '/collaborations' },
+        ],
+      },
       { key: 'mcphub-ide-config', label: 'IDE 配置', path: '/ide-config' },
       { key: 'mcphub-connection-monitor', label: '连接监控', path: '/connection-monitor' },
     ],
