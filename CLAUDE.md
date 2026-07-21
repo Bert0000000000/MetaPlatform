@@ -201,6 +201,7 @@ TECH-DATA    ← 外部数据源, TECH-MSG
 | 项目总览 | `README.md` |
 | 命名规范 | `docs/000-GUIDE/GUIDE-NAMING-CONVENTION_v1.0-20260716.md` |
 | 文档结构规范 | `docs/000-GUIDE/GUIDE-DOC-STRUCTURE_v1.0-20260716.md` |
+| **UI 设计规范** | `docs/000-GUIDE/GUIDE-Mate_Platform-UI_Design_Specification_v1.0-20260719.md` |
 | 应用架构 | `docs/001-ARCH/ARCH-Mate_Platform-应用架构_v1.0-20260716.md` |
 | 技术选型 | `docs/002-TS/TS-Mate_Platform-技术选型建议_自研最新版_v1.1-20260716.md` |
 | **版本路线图与任务拆解（全量版）** | `docs/004-PLAN/PLAN-Mate_Platform-版本路线图_v2.0-20260716.md` |
