@@ -19,7 +19,8 @@
     "paths": {
       "@/*": ["src/*"],
       "@mate/shared": ["../../packages/shared/src/index.ts"]
-    }
+    },
+    "types": ["react", "react-dom", "vite/client"]
   },
   "include": ["src"]
 }

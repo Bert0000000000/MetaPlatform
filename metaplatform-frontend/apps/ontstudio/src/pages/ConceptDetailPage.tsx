@@ -54,6 +54,7 @@ import type {
   AttributeCreateRequest,
   Entity,
   DataLineage,
+  PageResponse,
 } from '@/types';
 
 export default function ConceptDetailPage() {
@@ -549,7 +550,7 @@ function VersionsTab({ conceptId, conceptName }: { conceptId: string; conceptNam
     try {
       const res = await listVersions();
       // 兼容后端返回 PageResponse 或数组两种形态
-      const list = Array.isArray(res) ? res : (res.items ?? []);
+      const list = Array.isArray(res) ? res : ((res as unknown as PageResponse<OntologyVersion>).items ?? []);
       setVersions(list);
     } finally {
       setLoading(false);

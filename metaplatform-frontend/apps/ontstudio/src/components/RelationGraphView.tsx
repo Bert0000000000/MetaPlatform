@@ -32,7 +32,7 @@ export default function RelationGraphView({ relations }: RelationGraphViewProps)
         y,
         width: 140,
         height: 50,
-        label: `${r.sourceConcept} → ${r.targetConcept}`,
+        label: `${r.sourceConceptId} → ${r.targetConceptId}`,
         attrs: {
           body: { fill: '#e6f4ff', stroke: '#1677ff' },
           label: { fontSize: 11, fill: '#333' },

@@ -31,7 +31,7 @@ import type {
 } from '@/api/discovery';
 
 const { Title, Text } = Typography;
-const { Step } = Steps;
+
 
 const STEP_SELECT = 0;
 const STEP_ANALYZE = 1;
@@ -402,11 +402,11 @@ export default function OntologyDiscoveryPage() {
       <Title level={4} style={{ marginTop: 0 }}>
         本体自动发现
       </Title>
-      <Steps current={currentStep} style={{ marginBottom: 24 }}>
-        {STEP_TITLES.map((title) => (
-          <Step key={title} title={title} />
-        ))}
-      </Steps>
+      <Steps
+        current={currentStep}
+        style={{ marginBottom: 24 }}
+        items={STEP_TITLES.map((title) => ({ key: title, title }))}
+      />
       {error && (
         <Alert
           type="error"

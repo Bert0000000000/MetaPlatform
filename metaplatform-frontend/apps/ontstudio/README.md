@@ -145,6 +145,21 @@ pnpm --filter @mate/ontstudio preview
 
 > **不再使用独立运行模式**：v1.2 起必须在 pnpm workspace 内运行；旧的 `cd APP-ONTSTUDIO && npm install && npm run dev` 流程已废弃。
 
+### Windows 本地构建说明
+
+当前 Windows 环境（含本项目使用的容器/沙箱）下，`pnpm install` 可能因 symlink 权限（`EBUSY/EPERM`）无法完成；若改用 npm 独立安装子应用依赖，可执行：
+
+```bash
+cd metaplatform-frontend/apps/ontstudio
+npm install --no-workspaces --legacy-peer-deps
+```
+
+安装完成后：
+
+- TypeScript 类型检查应通过：`node node_modules/typescript/bin/tsc -b`
+- `npm run build`（`tsc -b && vite build`）在某些 Windows 环境可能因 `node_modules/vite/node_modules` 目录项损坏（PowerShell 可枚举但 Node.js `fs` 返回 `ENOENT`，且无法删除/重命名该目录项）而失败。该问题属于 Windows 文件系统/NTFS 元数据异常，**建议在 WSL2 或 CI/Linux 环境中重新执行 `npm install` 后运行 `npm run build`**。
+- 若 Linux/macOS/WSL2 下使用 pnpm，仍优先走 `pnpm install` + `pnpm --filter @mate/ontstudio build`。
+
 ## 后端依赖
 
 | 服务 | 端口 | 说明 |
