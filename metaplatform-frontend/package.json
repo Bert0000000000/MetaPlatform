@@ -11,6 +11,5 @@
     "build": "pnpm -r build",
     "portal:dev": "pnpm --filter portal dev",
     "ontstudio:dev": "pnpm --filter @mate/ontstudio dev"
-  },
-  "packageManager": "[email protected]"
+  }
 }
