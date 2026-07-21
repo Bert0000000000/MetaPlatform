@@ -109,7 +109,7 @@ export default function TaskTemplatePage() {
         {templates.length === 0 && !loading ? (
           <Empty description="还没有模板" />
         ) : (
-          <Table rowKey="templateId" dataSource={templates} columns={columns} loading={loading} />
+          <Table rowKey="templateId" dataSource={templates} columns={columns} loading={loading} scroll={{ x: 'max-content' }} />
         )}
       </Card>
 

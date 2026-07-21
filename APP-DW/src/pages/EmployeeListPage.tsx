@@ -4,7 +4,6 @@ import {
   Button,
   Card,
   Empty,
-  Input,
   Select,
   Space,
   Tag,
@@ -16,6 +15,7 @@ import {
   Row,
   Col,
   Statistic,
+  Result,
 } from 'antd';
 import {
   PlusOutlined,
@@ -28,8 +28,9 @@ import {
   ThunderboltOutlined,
   ApiOutlined,
   CopyOutlined,
+  ReloadOutlined,
 } from '@ant-design/icons';
-import { listEmployees, deleteEmployee, activateEmployee, deactivateEmployee, cloneEmployee } from '@/api/employees';
+import { listEmployees, deleteEmployee, activateEmployee, deactivateEmployee } from '@/api/employees';
 import type { Employee } from '@/types';
 import {
   ROLE_CATEGORY_OPTIONS,
@@ -37,6 +38,8 @@ import {
   EMPLOYEE_STATUS_MAP,
 } from '@/types';
 import type { MenuProps } from 'antd';
+import EmployeeCloneButton from '@/components/EmployeeCloneButton';
+import { SearchInput } from '@mate/shared';
 
 const { Meta } = Card;
 
@@ -52,12 +55,14 @@ export default function EmployeeListPage() {
   const navigate = useNavigate();
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
   const [keyword, setKeyword] = useState('');
   const [status, setStatus] = useState<string>('');
   const [roleCategory, setRoleCategory] = useState<string>('');
 
   const load = async () => {
     setLoading(true);
+    setError(null);
     try {
       const res = await listEmployees({
         keyword,
@@ -65,6 +70,8 @@ export default function EmployeeListPage() {
         roleCategory: roleCategory || undefined,
       });
       setEmployees(res.items);
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error('加载数字员工列表失败'));
     } finally {
       setLoading(false);
     }
@@ -99,18 +106,10 @@ export default function EmployeeListPage() {
     }
   };
 
-  const handleClone = async (employee: Employee) => {
-    try {
-      const created = await cloneEmployee(
-        employee,
-        `${employee.name} - 副本`,
-        `${employee.code}_copy`,
-      );
-      message.success(`已克隆为「${created.name}」`);
-      load();
-    } catch (error) {
-      message.error(error instanceof Error ? error.message : '克隆失败');
-    }
+  // V12-07: 克隆成功后跳转到新员工详情页。
+  const handleCloned = (newEmployee: Employee) => {
+    load();
+    navigate(`/dw/employees/${newEmployee.employeeId}`);
   };
 
   const formatTime = (v?: string) => {
@@ -135,8 +134,14 @@ export default function EmployeeListPage() {
     {
       key: 'clone',
       icon: <CopyOutlined />,
-      label: '克隆员工',
-      onClick: () => handleClone(employee),
+      // V12-07: 使用 EmployeeCloneButton 渲染菜单项，弹出确认对话框输入新员工名称/编码。
+      label: (
+        <EmployeeCloneButton
+          source={employee}
+          asMenuItem
+          onCloned={handleCloned}
+        />
+      ),
     },
     {
       key: 'toggle',
@@ -210,11 +215,10 @@ export default function EmployeeListPage() {
       </Row>
 
       <Space style={{ marginBottom: 16 }} wrap>
-        <Input.Search
+        <SearchInput
           placeholder="搜索员工名称或角色"
-          allowClear
-          onSearch={(v) => setKeyword(v)}
-          style={{ width: 260 }}
+          onSearch={setKeyword}
+          width={260}
         />
         <Select
           placeholder="角色分类"
@@ -251,7 +255,26 @@ export default function EmployeeListPage() {
         </Button>
       </Space>
 
-      {employees.length === 0 && !loading ? (
+      {loading ? (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 16 }}>
+          {[0, 1, 2, 3].map((i) => (
+            <Card key={i} loading>
+              <div style={{ height: 120 }} />
+            </Card>
+          ))}
+        </div>
+      ) : error ? (
+        <Result
+          status="error"
+          title="加载失败"
+          subTitle={error.message}
+          extra={
+            <Button type="primary" icon={<ReloadOutlined />} onClick={load}>
+              重试
+            </Button>
+          }
+        />
+      ) : employees.length === 0 ? (
         <Empty
           description="还没有数字员工，点击创建第一位吧"
           image={Empty.PRESENTED_IMAGE_SIMPLE}
@@ -273,7 +296,6 @@ export default function EmployeeListPage() {
               <Card
                 key={employee.employeeId}
                 hoverable
-                loading={loading}
                 onClick={() => navigate(`/dw/employees/${employee.employeeId}`)}
                 actions={[
                   <span key="tools">{employee.capability.tools.length} 个工具</span>,

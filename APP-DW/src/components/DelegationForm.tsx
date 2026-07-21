@@ -1,15 +1,16 @@
 import { useState } from 'react';
 import { Form, Input, Modal, Space, Tag, message } from 'antd';
-import { delegateTask } from '@/api/a2a';
-import type { ExternalAgent } from '@/api/a2a';
+import { createDelegation } from '@/api/a2a';
+import type { Delegation, ExternalAgent } from '@/api/a2a';
 
 interface DelegationFormProps {
   open: boolean;
   agent: ExternalAgent;
   onCancel: () => void;
+  onSuccess?: (delegation: Delegation) => void;
 }
 
-export default function DelegationForm({ open, agent, onCancel }: DelegationFormProps) {
+export default function DelegationForm({ open, agent, onCancel, onSuccess }: DelegationFormProps) {
   const [form] = Form.useForm();
   const [submitting, setSubmitting] = useState(false);
 
@@ -17,19 +18,23 @@ export default function DelegationForm({ open, agent, onCancel }: DelegationForm
     const v = await form.validateFields();
     setSubmitting(true);
     try {
-      const payload: Record<string, unknown> = {};
+      const payload: Record<string, unknown> = { task: v.task };
       try {
         if (v.payload) payload['data'] = JSON.parse(v.payload);
       } catch {
         message.warning('payload 不是合法 JSON');
         return;
       }
-      const res = await delegateTask(agent.agentId, v.task, payload);
-      if (res.status === 'completed') {
-        message.success(`外部 Agent 已返回结果`);
-        form.resetFields();
-        onCancel();
-      }
+      const res = await createDelegation({
+        sourceAgentId: 'app-dw',
+        targetAgentId: agent.agentId,
+        taskType: 'a2a-delegation',
+        payload,
+      });
+      message.success('外部委托已提交');
+      form.resetFields();
+      onSuccess?.(res);
+      onCancel();
     } finally {
       setSubmitting(false);
     }
@@ -53,7 +58,7 @@ export default function DelegationForm({ open, agent, onCancel }: DelegationForm
             ))}
           </Space>
         </Form.Item>
-        <Form.Item name="task" label="任务描述" rules={[{ required: true }]}>
+        <Form.Item name="task" label="任务目标" rules={[{ required: true }]}>
           <Input.TextArea rows={3} placeholder="详细描述要外部 Agent 完成的任务..." />
         </Form.Item>
         <Form.Item

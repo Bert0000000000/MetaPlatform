@@ -1,26 +1,9 @@
 import { Row, Col, Card, Typography, Space, Avatar } from 'antd';
-import {
-  AppstoreOutlined,
-  RobotOutlined,
-  MessageOutlined,
-  ApartmentOutlined,
-  PartitionOutlined,
-  ApiOutlined,
-  ArrowRightOutlined,
-} from '@ant-design/icons';
 import { getUser } from '@/utils/auth';
 import ApprovalCard from '@/components/ApprovalCard';
 import WorkerStatusCard from '@/components/WorkerStatusCard';
 import MetricsPanel from '@/components/MetricsPanel';
-
-const QUICK_ACTIONS = [
-  { title: '应用中心', desc: '低代码应用构建', icon: <AppstoreOutlined />, link: 'http://localhost:9201/apps', color: '#1677ff' },
-  { title: '超级 AI', desc: '智能对话与分析', icon: <MessageOutlined />, link: 'http://localhost:9301/chat', color: '#722ed1' },
-  { title: '数字员工', desc: 'AI 自动化任务', icon: <RobotOutlined />, link: 'http://localhost:9401/dw', color: '#52c41a' },
-  { title: '本体工作室', desc: '本体论引擎', icon: <ApartmentOutlined />, link: 'http://localhost:9101/concepts', color: '#fa8c16' },
-  { title: '架构中心', desc: 'EA 架构资产管理', icon: <PartitionOutlined />, link: 'http://localhost:9206', color: '#13c2c2' },
-  { title: 'MCP 服务中心', desc: 'MCP Server/Client 管理', icon: <ApiOutlined />, link: 'http://localhost:9501', color: '#eb2f96' },
-];
+import ShortcutPanel from '@/components/ShortcutPanel';
 
 export default function DashboardPage() {
   const user = getUser();
@@ -43,48 +26,7 @@ export default function DashboardPage() {
         </Space>
       </Card>
 
-      <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
-        {QUICK_ACTIONS.map((action) => (
-          <Col span={8} key={action.title}>
-            <Card
-              hoverable
-              onClick={() => window.open(action.link, '_blank')}
-              style={{ height: '100%' }}
-            >
-              <Space orientation="vertical" size="middle">
-                <div
-                  style={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: 12,
-                    background: `${action.color}15`,
-                    color: action.color,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: 24,
-                  }}
-                >
-                  {action.icon}
-                </div>
-                <div>
-                  <Typography.Text strong style={{ fontSize: 16 }}>
-                    {action.title}
-                  </Typography.Text>
-                  <div>
-                    <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                      {action.desc}
-                    </Typography.Text>
-                  </div>
-                </div>
-                <Typography.Link>
-                  进入 <ArrowRightOutlined />
-                </Typography.Link>
-              </Space>
-            </Card>
-          </Col>
-        ))}
-      </Row>
+      <ShortcutPanel />
 
       <Row gutter={[16, 16]}>
         <Col span={24}>

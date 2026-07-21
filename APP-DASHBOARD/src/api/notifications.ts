@@ -1,100 +1,48 @@
 import { get, post, put } from './client';
 import type { NotificationItem, NotificationSettings, NotificationType } from '@/types';
+import { getUser } from '@/utils/auth';
 
-const SETTINGS_KEY = 'mate_platform_notification_settings';
-
-const MOCK_NOTIFICATIONS: NotificationItem[] = [
-  {
-    id: 'ntf-001',
-    type: 'system',
-    title: '系统初始化完成',
-    content: 'Mate Platform 本地开发环境已就绪。',
-    read: false,
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 'ntf-002',
-    type: 'task',
-    title: '销售助手完成了一项任务',
-    content: '客户跟进任务已自动记录到 CRM。',
-    read: true,
-    createdAt: new Date(Date.now() - 3_600_000).toISOString(),
-  },
-  {
-    id: 'ntf-003',
-    type: 'approval',
-    title: '请假审批待处理',
-    content: '张三提交的请假申请需要您审批。',
-    read: false,
-    createdAt: new Date(Date.now() - 7_200_000).toISOString(),
-  },
-];
+function getUserId(): string | undefined {
+  return getUser()?.id;
+}
 
 export async function getNotifications(filter: 'all' | 'unread' | 'read' = 'all'): Promise<NotificationItem[]> {
-  try {
-    return await get<NotificationItem[]>('/v1/obs/notifications', { filter });
-  } catch {
-    // Backend not ready; fall back to local mock data.
-    if (filter === 'unread') return MOCK_NOTIFICATIONS.filter((n) => !n.read);
-    if (filter === 'read') return MOCK_NOTIFICATIONS.filter((n) => n.read);
-    return MOCK_NOTIFICATIONS;
-  }
+  const userId = getUserId();
+  if (!userId) return [];
+  const items = await get<NotificationItem[]>('/v1/obs/notifications', {
+    userId,
+    status: filter,
+    limit: 50,
+    offset: 0,
+  });
+  return Array.isArray(items) ? items : [];
 }
 
 export async function getUnreadCount(): Promise<number> {
-  try {
-    return await get<number>('/v1/obs/notifications/unread-count');
-  } catch {
-    return MOCK_NOTIFICATIONS.filter((n) => !n.read).length;
-  }
+  const userId = getUserId();
+  if (!userId) return 0;
+  const count = await get<number>('/v1/obs/notifications/unread-count', { userId });
+  return typeof count === 'number' ? count : 0;
 }
 
 export async function markAsRead(id: string): Promise<void> {
-  try {
-    await post(`/v1/obs/notifications/${id}/read`);
-  } catch {
-    // Backend not ready: local-only update below.
-  }
-  updateLocalReadStatus(id, true);
+  await put(`/v1/obs/notifications/${id}/read`);
 }
 
 export async function markAllAsRead(): Promise<void> {
-  try {
-    await post('/v1/obs/notifications/read-all');
-  } catch {
-    // Backend not ready: local-only update below.
-  }
-  MOCK_NOTIFICATIONS.forEach((n) => {
-    n.read = true;
-  });
+  const userId = getUserId();
+  if (!userId) return;
+  await post(`/v1/obs/notifications/read-all?userId=${encodeURIComponent(userId)}`);
 }
 
 export async function markAsUnread(id: string): Promise<void> {
-  try {
-    await post(`/v1/obs/notifications/${id}/unread`);
-  } catch {
-    // Backend not ready: local-only update below.
-  }
-  updateLocalReadStatus(id, false);
-}
-
-function updateLocalReadStatus(id: string, read: boolean): void {
-  const item = MOCK_NOTIFICATIONS.find((n) => n.id === id);
-  if (item) {
-    item.read = read;
-  }
+  // TODO: backend unread reset support
+  console.warn('markAsUnread not supported yet', id);
 }
 
 export async function getNotificationSettings(): Promise<NotificationSettings> {
-  try {
-    return await get<NotificationSettings>('/v1/obs/notifications/settings');
-  } catch {
-    try {
-      const raw = localStorage.getItem(SETTINGS_KEY);
-      if (raw) return JSON.parse(raw) as NotificationSettings;
-    } catch {
-      // ignore
-    }
+  const userId = getUserId();
+  if (!userId) {
     return {
       approval: true,
       task: true,
@@ -105,19 +53,13 @@ export async function getNotificationSettings(): Promise<NotificationSettings> {
       push: false,
     };
   }
+  return get<NotificationSettings>('/v1/obs/notifications/settings', { userId });
 }
 
 export async function updateNotificationSettings(settings: NotificationSettings): Promise<void> {
-  try {
-    await put('/v1/obs/notifications/settings', settings);
-  } catch {
-    // Backend not ready: persist locally.
-  }
-  try {
-    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
-  } catch {
-    // ignore quota errors
-  }
+  const userId = getUserId();
+  if (!userId) return;
+  await put('/v1/obs/notifications/settings', { ...settings, userId });
 }
 
 export function createLocalNotification(type: NotificationType, title: string, content: string): NotificationItem {

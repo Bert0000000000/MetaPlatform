@@ -12,11 +12,13 @@ import {
   Typography,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { PlusOutlined, EyeOutlined } from '@ant-design/icons';
+import { PlusOutlined, EyeOutlined, MessageOutlined } from '@ant-design/icons';
 import { listTasks, getTaskStats } from '@/api/tasks';
 import { listEmployees } from '@/api/employees';
+import { recordFeedback } from '@/api/learning';
 import TaskAssignment from '@/components/TaskAssignment';
-import type { Employee, EmployeeTask } from '@/types';
+import TaskFeedbackModal from '@/components/TaskFeedbackModal';
+import type { Employee, EmployeeTask, ExecutionResult, FeedbackType } from '@/types';
 
 const STATUS_MAP: Record<EmployeeTask['status'], { label: string; color: string }> = {
   pending: { label: '待处理', color: 'default' },
@@ -34,6 +36,8 @@ export default function TaskListPage() {
   const [keyword, setKeyword] = useState('');
   const [status, setStatus] = useState<string>();
   const [employeeId, setEmployeeId] = useState<string>();
+  const [feedbackTask, setFeedbackTask] = useState<EmployeeTask | null>(null);
+  const [feedbackLoading, setFeedbackLoading] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -99,9 +103,18 @@ export default function TaskListPage() {
       title: '操作',
       key: 'actions',
       render: (_, t) => (
-        <Button type="link" icon={<EyeOutlined />} onClick={() => navigate(`/dw/tasks/${t.id}`)}>
-          详情
-        </Button>
+        <Space>
+          <Button type="link" icon={<EyeOutlined />} onClick={() => navigate(`/dw/tasks/${t.id}`)}>
+            详情
+          </Button>
+          <Button
+            type="link"
+            icon={<MessageOutlined />}
+            onClick={() => setFeedbackTask(t)}
+          >
+            反馈
+          </Button>
+        </Space>
       ),
     },
   ];
@@ -111,6 +124,30 @@ export default function TaskListPage() {
     const matchS = !status || t.status === status;
     return matchK && matchS;
   });
+
+  const handleFeedbackSubmit = async (values: {
+    executionResult: ExecutionResult;
+    feedbackType: FeedbackType;
+    suggestion: string;
+    tags: string[];
+  }) => {
+    if (!feedbackTask) return;
+    setFeedbackLoading(true);
+    try {
+      await recordFeedback({
+        employeeId: feedbackTask.employeeId,
+        taskId: feedbackTask.id,
+        taskTitle: feedbackTask.title,
+        executionResult: values.executionResult,
+        feedbackType: values.feedbackType,
+        suggestion: values.suggestion,
+        tags: values.tags,
+      });
+      setFeedbackTask(null);
+    } finally {
+      setFeedbackLoading(false);
+    }
+  };
 
   return (
     <div>
@@ -157,7 +194,7 @@ export default function TaskListPage() {
           {filtered.length === 0 && !loading ? (
             <Empty description="还没有任务" />
           ) : (
-            <Table rowKey="id" dataSource={filtered} columns={columns} loading={loading} />
+            <Table rowKey="id" dataSource={filtered} columns={columns} loading={loading} scroll={{ x: 'max-content' }} />
           )}
         </Card>
 
@@ -165,6 +202,14 @@ export default function TaskListPage() {
           <TaskAssignment employees={employees} onAssigned={load} />
         </Card>
       </div>
+
+      <TaskFeedbackModal
+        open={!!feedbackTask}
+        task={feedbackTask}
+        onCancel={() => setFeedbackTask(null)}
+        onSubmit={handleFeedbackSubmit}
+        loading={feedbackLoading}
+      />
     </div>
   );
 }

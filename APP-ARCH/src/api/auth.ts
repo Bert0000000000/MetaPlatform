@@ -7,7 +7,7 @@ export interface LoginRequest {
 }
 
 export interface LoginResponse {
-  token: string;
+  accessToken: string;
   user: {
     id: string;
     username: string;
@@ -18,6 +18,6 @@ export interface LoginResponse {
 
 export async function login(request: LoginRequest): Promise<void> {
   const response = await post<LoginResponse>('/v1/iam/auth/login', request);
-  setToken(response.token);
+  setToken(response.accessToken);
   setUser(response.user);
 }

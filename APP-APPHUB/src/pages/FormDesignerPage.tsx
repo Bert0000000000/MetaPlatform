@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Button,
@@ -13,6 +13,8 @@ import {
   Tag,
   Typography,
   message,
+  Tabs,
+  Modal,
 } from 'antd';
 import {
   ArrowLeftOutlined,
@@ -23,12 +25,34 @@ import {
   DragOutlined,
 } from '@ant-design/icons';
 import { getModule, updateModule } from '@/api/modules';
+import {
+  getFormDefinition,
+  saveFormSettings,
+  saveFormLinkageRules,
+  saveFormScripts,
+  validateForm,
+} from '@/api/forms';
 import AIGenerateButton from '@/components/AIGenerateButton';
 import { COMPONENT_DEFINITIONS } from '@/components/componentRegistry';
-import type { ModuleItem, FormField, FormConfig, FormGenResult } from '@/types';
+import FormGlobalSettingsPanel from '@/components/FormGlobalSettingsPanel';
+import FormLinkageRulesPanel from '@/components/FormLinkageRulesPanel';
+import FormScriptsPanel from '@/components/FormScriptsPanel';
+import { evaluateLinkageRules, applyLinkageToFields } from '@/utils/linkageEngine';
+import { runScript } from '@/utils/safeScriptRunner';
+import type {
+  ModuleItem,
+  FormField,
+  FormConfig,
+  FormGenResult,
+  FormGlobalSettings,
+  LinkageRule,
+  FormScripts,
+} from '@/types';
 
 const { TextArea } = Input;
 const DESIGNER_IMPORT_KEY = 'metaplatform:designer:import';
+
+type ActiveTab = 'fields' | 'settings' | 'linkage' | 'scripts';
 
 function generateFieldKey(type: string): string {
   return `${type}_${Date.now().toString(36)}`;
@@ -75,6 +99,29 @@ function consumeDesignerImport(): { type: string; content: string } | null {
   }
 }
 
+function normalizeConfig(m: ModuleItem): FormConfig {
+  const base: FormConfig = m.config || {
+    name: m.name,
+    fields: [],
+    submitText: '提交',
+    submitAction: 'toast',
+    allowWithdraw: true,
+    allowEdit: false,
+  };
+  return {
+    ...base,
+    globalSettings: base.globalSettings || {
+      title: base.name || m.name,
+      description: base.description || '',
+      tabMode: 'none',
+      submitText: base.submitText || '提交',
+      layoutDensity: 'default',
+    },
+    linkageRules: base.linkageRules || [],
+    scripts: base.scripts || {},
+  };
+}
+
 export default function FormDesignerPage() {
   const { appId, moduleId } = useParams<{ appId: string; moduleId: string }>();
   const navigate = useNavigate();
@@ -82,19 +129,30 @@ export default function FormDesignerPage() {
   const [config, setConfig] = useState<FormConfig>({ name: '', fields: [] });
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [activeTab, setActiveTab] = useState<ActiveTab>('fields');
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewValues, setPreviewValues] = useState<Record<string, unknown>>({});
+  const [previewForm] = Form.useForm();
 
   useEffect(() => {
     if (!moduleId) return;
-    getModule(moduleId).then((m) => {
+    Promise.all([getModule(moduleId), getFormDefinition(moduleId)]).then(([m, definition]) => {
       setModule(m);
-      const initialConfig: FormConfig = m.config || {
-        name: m.name,
-        fields: [],
-        submitText: '提交',
-        submitAction: 'toast',
-        allowWithdraw: true,
-        allowEdit: false,
-      };
+      let initialConfig = normalizeConfig(m);
+
+      const settings = definition.globalSettings as FormGlobalSettings | undefined;
+      const rules = definition.linkageRules as LinkageRule[] | undefined;
+      const scripts = definition.scripts as FormScripts | undefined;
+
+      if (settings || rules || scripts) {
+        initialConfig = {
+          ...initialConfig,
+          globalSettings: settings || initialConfig.globalSettings,
+          linkageRules: rules || initialConfig.linkageRules,
+          scripts: scripts || initialConfig.scripts,
+        };
+      }
+
       const imported = consumeDesignerImport();
       if (imported && imported.type === 'form') {
         try {
@@ -185,20 +243,44 @@ export default function FormDesignerPage() {
     });
   };
 
-  const handleSave = async () => {
-    if (!moduleId) return;
+  const validateLocal = (): boolean => {
     if (config.fields.length === 0) {
       message.warning('请至少添加一个组件');
-      return;
+      return false;
     }
     const keys = config.fields.map((f) => f.fieldKey);
     if (new Set(keys).size !== keys.length) {
       message.warning('字段标识不能重复');
-      return;
+      return false;
     }
+    return true;
+  };
+
+  const handleSave = async () => {
+    if (!moduleId) return;
+    if (!validateLocal()) return;
+
     setSubmitting(true);
     try {
-      await updateModule(moduleId, { config });
+      const validateRes = await validateForm(moduleId, {
+        fields: config.fields,
+        globalSettings: config.globalSettings,
+        linkageRules: config.linkageRules,
+        scripts: config.scripts,
+        values: previewValues,
+      });
+      if (!validateRes.valid) {
+        const first = validateRes.errors[0];
+        message.error(first ? `[${first.code}] ${first.message}` : '表单校验未通过');
+        return;
+      }
+
+      await Promise.all([
+        updateModule(moduleId, { config }),
+        saveFormSettings(moduleId, config.globalSettings || { title: config.name }),
+        saveFormLinkageRules(moduleId, config.linkageRules || []),
+        saveFormScripts(moduleId, config.scripts || {}),
+      ]);
       message.success('表单保存成功');
     } finally {
       setSubmitting(false);
@@ -206,8 +288,40 @@ export default function FormDesignerPage() {
   };
 
   const handlePreview = () => {
-    message.info('预览功能待完善');
+    if (!validateLocal()) return;
+    setPreviewValues(previewForm.getFieldsValue(true));
+    setPreviewOpen(true);
   };
+
+  const linkageResult = useMemo(
+    () => evaluateLinkageRules(config.linkageRules || [], previewValues),
+    [config.linkageRules, previewValues]
+  );
+  const scriptResult = useMemo(
+    () => runScript(config.scripts?.onChange || '', previewValues),
+    [config.scripts, previewValues]
+  );
+  const displayFields = useMemo(() => {
+    let fields = applyLinkageToFields(config.fields, linkageResult);
+    fields = fields.map((field) => {
+      const key = field.fieldKey;
+      const updates: Partial<FormField> = {};
+      if (scriptResult.fieldVisible[key] !== undefined) {
+        updates.hidden = !scriptResult.fieldVisible[key];
+      }
+      if (scriptResult.fieldRequired[key] !== undefined) {
+        updates.required = scriptResult.fieldRequired[key];
+      }
+      if (scriptResult.fieldReadonly[key] !== undefined) {
+        updates.readonly = scriptResult.fieldReadonly[key];
+      }
+      if (scriptResult.fieldOptions[key] !== undefined) {
+        updates.options = scriptResult.fieldOptions[key];
+      }
+      return { ...field, ...updates };
+    });
+    return fields;
+  }, [config.fields, linkageResult, scriptResult]);
 
   const renderCanvasField = (field: FormField) => {
     const isSelected = selectedId === field.id;
@@ -300,35 +414,7 @@ export default function FormDesignerPage() {
     if (!selectedField) {
       return (
         <Form layout="vertical">
-          <Form.Item label="表单名称">
-            <Input
-              value={config.name}
-              onChange={(e) => setConfig((prev) => ({ ...prev, name: e.target.value }))}
-            />
-          </Form.Item>
-          <Form.Item label="表单描述">
-            <TextArea
-              rows={3}
-              value={config.description}
-              onChange={(e) => setConfig((prev) => ({ ...prev, description: e.target.value }))}
-            />
-          </Form.Item>
-          <Form.Item label="提交按钮文案">
-            <Input
-              value={config.submitText}
-              onChange={(e) => setConfig((prev) => ({ ...prev, submitText: e.target.value }))}
-            />
-          </Form.Item>
-          <Form.Item label="提交后行为">
-            <Select
-              value={config.submitAction}
-              onChange={(v) => setConfig((prev) => ({ ...prev, submitAction: v }))}
-            >
-              <Select.Option value="toast">显示成功提示</Select.Option>
-              <Select.Option value="redirect">跳转到指定页面</Select.Option>
-              <Select.Option value="flow">发起流程</Select.Option>
-            </Select>
-          </Form.Item>
+          <Empty description="点击画布中的字段进行编辑" />
         </Form>
       );
     }
@@ -420,6 +506,119 @@ export default function FormDesignerPage() {
     );
   };
 
+  const renderRightPanel = () => {
+    switch (activeTab) {
+      case 'settings':
+        return <FormGlobalSettingsPanel config={config} onChange={setConfig} />;
+      case 'linkage':
+        return <FormLinkageRulesPanel config={config} onChange={setConfig} />;
+      case 'scripts':
+        return <FormScriptsPanel config={config} onChange={setConfig} />;
+      default:
+        return renderPropertyPanel();
+    }
+  };
+
+  const renderRuntimeField = (field: FormField) => {
+    if (field.hidden) return null;
+    const disabled = !!field.readonly;
+    const rules = field.required ? [{ required: true, message: `请输入${field.label}` }] : [];
+
+    switch (field.type) {
+      case 'textarea':
+        return (
+          <Form.Item name={field.fieldKey} label={field.label} rules={rules}>
+            <TextArea placeholder={field.placeholder} rows={3} disabled={disabled} />
+          </Form.Item>
+        );
+      case 'number':
+        return (
+          <Form.Item name={field.fieldKey} label={field.label} rules={rules}>
+            <InputNumber style={{ width: '100%' }} placeholder={field.placeholder} disabled={disabled} />
+          </Form.Item>
+        );
+      case 'radio':
+        return (
+          <Form.Item name={field.fieldKey} label={field.label} rules={rules}>
+            <Select placeholder={field.placeholder} disabled={disabled}>
+              {field.options?.map((opt) => (
+                <Select.Option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </Select.Option>
+              ))}
+            </Select>
+          </Form.Item>
+        );
+      case 'checkbox':
+        return (
+          <Form.Item name={field.fieldKey} label={field.label} rules={rules}>
+            <Select mode="multiple" placeholder={field.placeholder} disabled={disabled}>
+              {field.options?.map((opt) => (
+                <Select.Option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </Select.Option>
+              ))}
+            </Select>
+          </Form.Item>
+        );
+      case 'select':
+        return (
+          <Form.Item name={field.fieldKey} label={field.label} rules={rules}>
+            <Select placeholder={field.placeholder} disabled={disabled}>
+              {field.options?.map((opt) => (
+                <Select.Option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </Select.Option>
+              ))}
+            </Select>
+          </Form.Item>
+        );
+      case 'date':
+        return (
+          <Form.Item name={field.fieldKey} label={field.label} rules={rules}>
+            <Input placeholder={field.placeholder || 'YYYY-MM-DD'} disabled={disabled} />
+          </Form.Item>
+        );
+      case 'switch':
+        return (
+          <Form.Item name={field.fieldKey} label={field.label} valuePropName="checked" rules={rules}>
+            <Switch disabled={disabled} />
+          </Form.Item>
+        );
+      case 'upload':
+        return (
+          <Form.Item name={field.fieldKey} label={field.label} rules={rules}>
+            <Button disabled={disabled}>上传附件</Button>
+          </Form.Item>
+        );
+      case 'divider':
+        return <div style={{ borderTop: '1px solid #d9d9d9', paddingTop: 8, marginBottom: 16 }}>{field.label}</div>;
+      case 'group':
+        return <Card size="small" title={field.label} style={{ background: '#fafafa', marginBottom: 16 }} />;
+      default:
+        return (
+          <Form.Item name={field.fieldKey} label={field.label} rules={rules}>
+            <Input placeholder={field.placeholder} disabled={disabled} />
+          </Form.Item>
+        );
+    }
+  };
+
+  const handlePreviewSubmit = async () => {
+    try {
+      const values = await previewForm.validateFields();
+      const beforeRes = runScript(config.scripts?.beforeSubmit || '', values);
+      if (beforeRes.errors.length > 0) {
+        message.error(beforeRes.errors[0].message);
+        return;
+      }
+      message.success('预览提交成功');
+      runScript(config.scripts?.afterSubmit || '', values);
+    } catch {
+      message.error('请检查表单填写');
+    }
+  };
+
   if (!module) {
     return <div style={{ padding: 40, textAlign: 'center' }}>加载中...</div>;
   }
@@ -487,10 +686,53 @@ export default function FormDesignerPage() {
           )}
         </Card>
 
-        <Card title="属性配置" style={{ width: 320, overflow: 'auto' }}>
-          {renderPropertyPanel()}
+        <Card
+          title="属性配置"
+          style={{ width: 360, overflow: 'auto', display: 'flex', flexDirection: 'column' }}
+          styles={{ body: { flex: 1, overflow: 'auto' } }}
+        >
+          <Tabs
+            activeKey={activeTab}
+            onChange={(k) => setActiveTab(k as ActiveTab)}
+            items={[
+              { key: 'fields', label: '字段' },
+              { key: 'settings', label: '全局设置' },
+              { key: 'linkage', label: '数据联动' },
+              { key: 'scripts', label: '表单脚本' },
+            ]}
+          />
+          <div style={{ marginTop: 12 }}>{renderRightPanel()}</div>
         </Card>
       </div>
+
+      <Modal
+        title={config.globalSettings?.title || config.name || '表单预览'}
+        open={previewOpen}
+        onCancel={() => setPreviewOpen(false)}
+        width={720}
+        footer={
+          <Space>
+            <Button onClick={() => setPreviewOpen(false)}>关闭</Button>
+            <Button type="primary" onClick={handlePreviewSubmit}>
+              {config.globalSettings?.submitText || config.submitText || '提交'}
+            </Button>
+          </Space>
+        }
+      >
+        <Form
+          form={previewForm}
+          layout="vertical"
+          onValuesChange={(_, allValues) => {
+            setPreviewValues(allValues);
+          }}
+        >
+          {displayFields.map((field) => (
+            <div key={field.id} style={{ width: field.width || '100%' }}>
+              {renderRuntimeField(field)}
+            </div>
+          ))}
+        </Form>
+      </Modal>
     </div>
   );
 }

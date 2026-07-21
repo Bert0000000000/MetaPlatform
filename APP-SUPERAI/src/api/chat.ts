@@ -1,5 +1,6 @@
 import { getToken, getUser } from '@/utils/auth';
-import type { Citation } from '@/types';
+import { apiClient, get } from './client';
+import type { Citation, MultimodalModel } from '@/types';
 
 export interface StreamMessage {
   role: 'system' | 'user' | 'assistant';
@@ -10,6 +11,55 @@ export interface StreamCallbacks {
   onDelta: (text: string) => void;
   onDone: (citations: Citation[]) => void;
   onError: (message: string) => void;
+}
+
+export interface MultimodalResponse {
+  id: string;
+  model: string;
+  provider: string;
+  content: string;
+  finishReason: string;
+  usage: {
+    promptTokens: number;
+    completionTokens: number;
+    totalTokens: number;
+  };
+  latencyMs: number;
+}
+
+export async function listMultimodalModels(): Promise<MultimodalModel[]> {
+  const data = await get<{ items: MultimodalModel[]; total: number }>(
+    '/v1/llmgw/models/multimodal',
+  );
+  return data.items;
+}
+
+export async function multimodalUploadChat(params: {
+  modelId: string;
+  text: string;
+  images: File[];
+  temperature?: number;
+  maxTokens?: number;
+  systemPrompt?: string;
+}): Promise<MultimodalResponse> {
+  const formData = new FormData();
+  formData.append('modelId', params.modelId);
+  formData.append('text', params.text);
+  formData.append('temperature', String(params.temperature ?? 0.7));
+  formData.append('maxTokens', String(params.maxTokens ?? 1024));
+  if (params.systemPrompt) {
+    formData.append('systemPrompt', params.systemPrompt);
+  }
+  for (const image of params.images) {
+    formData.append('image', image);
+  }
+
+  const response = await apiClient.post('/v1/llmgw/chat/multimodal/upload', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+  return response.data.data as MultimodalResponse;
 }
 
 export async function streamChat(

@@ -138,7 +138,7 @@ export default function DataMappingPage() {
         {mappings.length === 0 && !loading ? (
           <Empty description="还没有映射" />
         ) : (
-          <Table rowKey="mappingId" dataSource={mappings} columns={columns} loading={loading} />
+          <Table rowKey="mappingId" dataSource={mappings} columns={columns} loading={loading} scroll={{ x: 'max-content' }} />
         )}
       </Card>
 

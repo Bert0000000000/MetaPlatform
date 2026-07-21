@@ -7,6 +7,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
+      '@mate/shared': path.resolve(__dirname, '../packages/shared/src/index.ts'),
     },
   },
   server: {
@@ -15,6 +16,23 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:8000',
         changeOrigin: true,
+      },
+    },
+  },
+  build: {
+    target: 'es2020',
+    minify: 'esbuild',
+    cssCodeSplit: true,
+    sourcemap: false,
+    chunkSizeWarningLimit: 1000,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          'antd-vendor': ['antd', '@ant-design/icons'],
+          'antd-x-vendor': ['@ant-design/x'],
+          'antv-x6-vendor': ['@antv/x6'],
+        },
       },
     },
   },

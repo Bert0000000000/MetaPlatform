@@ -151,7 +151,7 @@ export default function DataSourcePage() {
         {ds.length === 0 && !loading ? (
           <Empty description="还没有数据源" />
         ) : (
-          <Table rowKey="id" dataSource={ds} columns={columns} loading={loading} />
+          <Table rowKey="id" dataSource={ds} columns={columns} loading={loading} scroll={{ x: 'max-content' }} />
         )}
       </Card>
 

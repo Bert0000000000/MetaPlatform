@@ -54,13 +54,13 @@ export default function RelationTypeForm({
         <Form.Item name="name" label="名称" rules={[{ required: true }]}>
           <Input />
         </Form.Item>
-        <Form.Item name="sourceConcept" label="源概念" rules={[{ required: true }]}>
+        <Form.Item name="sourceConceptId" label="源概念" rules={[{ required: true }]}>
           <Select
             showSearch
             options={concepts.map((c) => ({ label: c.name, value: c.conceptId }))}
           />
         </Form.Item>
-        <Form.Item name="targetConcept" label="目标概念" rules={[{ required: true }]}>
+        <Form.Item name="targetConceptId" label="目标概念" rules={[{ required: true }]}>
           <Select
             showSearch
             options={concepts.map((c) => ({ label: c.name, value: c.conceptId }))}

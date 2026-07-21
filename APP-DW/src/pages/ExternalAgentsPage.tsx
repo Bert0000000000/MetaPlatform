@@ -2,38 +2,39 @@ import { useEffect, useState } from 'react';
 import {
   Button,
   Card,
+  Descriptions,
   Empty,
+  Input,
   Modal,
+  Rate,
   Space,
   Table,
   Tag,
   Typography,
   message,
-  Descriptions,
 } from 'antd';
-import { PlusOutlined, SyncOutlined } from '@ant-design/icons';
-import {
-  discoverAgents,
-  listDelegations,
-  listExternalAgents,
-} from '@/api/a2a';
+import { PlusOutlined, SyncOutlined, EyeOutlined } from '@ant-design/icons';
+import { discoverAgents, listDelegations } from '@/api/a2a';
 import ExternalAgentCard from '@/components/ExternalAgentCard';
 import DelegationForm from '@/components/DelegationForm';
-import type { DelegationRequest, ExternalAgent } from '@/api/a2a';
+import DelegationDetailDrawer from '@/components/DelegationDetailDrawer';
+import type { Delegation, ExternalAgent } from '@/api/a2a';
 
 export default function ExternalAgentsPage() {
   const [agents, setAgents] = useState<ExternalAgent[]>([]);
-  const [delegations, setDelegations] = useState<DelegationRequest[]>([]);
+  const [delegations, setDelegations] = useState<Delegation[]>([]);
   const [loading, setLoading] = useState(false);
+  const [keyword, setKeyword] = useState('');
   const [delegatingAgent, setDelegatingAgent] = useState<ExternalAgent | null>(null);
-  const [viewing, setViewing] = useState<ExternalAgent | null>(null);
+  const [viewingAgent, setViewingAgent] = useState<ExternalAgent | null>(null);
+  const [detailId, setDetailId] = useState<string | null>(null);
 
   const load = async () => {
     setLoading(true);
     try {
-      const [a, d] = await Promise.all([listExternalAgents(), listDelegations()]);
+      const [a, d] = await Promise.all([discoverAgents(), listDelegations({ pageSize: 100 })]);
       setAgents(a);
-      setDelegations(d);
+      setDelegations(d.items);
     } finally {
       setLoading(false);
     }
@@ -48,35 +49,87 @@ export default function ExternalAgentsPage() {
     try {
       await discoverAgents();
       message.success('已发现外部 Agent');
-      load();
+      await load();
     } finally {
       setLoading(false);
     }
   };
 
+  const filteredAgents = agents.filter((a) =>
+    a.name.toLowerCase().includes(keyword.toLowerCase()) ||
+    (a.description || '').toLowerCase().includes(keyword.toLowerCase())
+  );
+
+  const handleDelegationSuccess = (d: Delegation) => {
+    setDelegations((prev) => [d, ...prev]);
+    setDetailId(d.taskId);
+  };
+
+  const handleDelegationChange = (d: Delegation) => {
+    setDelegations((prev) =>
+      prev.map((item) => (item.taskId === d.taskId ? d : item))
+    );
+  };
+
   const columns = [
     {
-      title: '委托',
-      key: 'delegation',
-      render: (_: unknown, d: DelegationRequest) => (
+      title: '委托任务',
+      key: 'task',
+      render: (_: unknown, d: Delegation) => (
         <Space direction="vertical" size={0}>
-          <Typography.Text strong>{d.task}</Typography.Text>
+          <Typography.Text strong>
+            {typeof d.payload?.task === 'string' ? d.payload.task : d.taskType}
+          </Typography.Text>
           <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-            Agent: {d.agentId}
+            目标: {d.targetAgentId}
           </Typography.Text>
         </Space>
       ),
     },
-    { title: '状态', dataIndex: 'status', render: (v: unknown) => <Tag>{String(v)}</Tag> },
     {
-      title: '结果',
-      dataIndex: 'result',
-      render: (v: unknown) => (v ? <code>{JSON.stringify(v).slice(0, 60)}</code> : '-'),
+      title: '状态',
+      dataIndex: 'status',
+      render: (v: Delegation['status']) => (
+        <Tag
+          color={
+            v === 'COMPLETED'
+              ? 'success'
+              : v === 'FAILED' || v === 'CANCELED' || v === 'CANCELLED'
+              ? 'error'
+              : v === 'WORKING'
+              ? 'processing'
+              : v === 'INPUT_REQUIRED'
+              ? 'warning'
+              : 'default'
+          }
+        >
+          {v}
+        </Tag>
+      ),
     },
     {
-      title: '完成时间',
-      dataIndex: 'completedAt',
-      render: (v: string | undefined) => (v ? new Date(v).toLocaleString() : '-'),
+      title: '结果摘要',
+      dataIndex: 'result',
+      render: (v?: Record<string, unknown>) =>
+        v ? <code>{JSON.stringify(v).slice(0, 60)}</code> : '-',
+    },
+    {
+      title: '创建时间',
+      dataIndex: 'createdAt',
+      render: (v: string) => new Date(v).toLocaleString(),
+    },
+    {
+      title: '操作',
+      key: 'actions',
+      render: (_: unknown, d: Delegation) => (
+        <Button
+          type="link"
+          icon={<EyeOutlined />}
+          onClick={() => setDetailId(d.taskId)}
+        >
+          详情
+        </Button>
+      ),
     },
   ];
 
@@ -87,13 +140,19 @@ export default function ExternalAgentsPage() {
           A2A 外部协作
         </Typography.Title>
         <Space>
+          <Input.Search
+            placeholder="搜索外部 Agent"
+            allowClear
+            onSearch={setKeyword}
+            style={{ width: 240 }}
+          />
           <Button icon={<SyncOutlined />} onClick={handleDiscover} loading={loading}>
             发现外部 Agent
           </Button>
         </Space>
       </div>
 
-      {agents.length === 0 && !loading ? (
+      {filteredAgents.length === 0 && !loading ? (
         <Empty
           description="尚未发现外部 Agent"
           image={Empty.PRESENTED_IMAGE_SIMPLE}
@@ -111,27 +170,26 @@ export default function ExternalAgentsPage() {
             marginBottom: 16,
           }}
         >
-          {agents.map((a) => (
+          {filteredAgents.map((a) => (
             <ExternalAgentCard
               key={a.agentId}
               agent={a}
               onDelegate={(ag) => setDelegatingAgent(ag)}
-              onViewDetail={(ag) => setViewing(ag)}
+              onViewDetail={(ag) => setViewingAgent(ag)}
             />
           ))}
         </div>
       )}
 
-      <Card title="委托历史" style={{ marginTop: 16 }}>
+      <Card title="委托历史">
         {delegations.length === 0 ? (
           <Empty description="暂无委托记录" />
         ) : (
           <Table
-            rowKey="delegationId"
+            rowKey="taskId"
             dataSource={delegations}
             columns={columns}
-            pagination={{ pageSize: 10 }}
-          />
+            pagination={{ pageSize: 10 }} scroll={{ x: 'max-content' }} />
         )}
       </Card>
 
@@ -139,39 +197,55 @@ export default function ExternalAgentsPage() {
         <DelegationForm
           open={!!delegatingAgent}
           agent={delegatingAgent}
-          onCancel={() => {
-            setDelegatingAgent(null);
-            load();
-          }}
+          onCancel={() => setDelegatingAgent(null)}
+          onSuccess={handleDelegationSuccess}
         />
       )}
 
       <Modal
-        title={viewing?.name}
-        open={!!viewing}
-        onCancel={() => setViewing(null)}
+        title="外部 Agent 详情"
+        open={!!viewingAgent}
+        onCancel={() => setViewingAgent(null)}
         footer={null}
         width={560}
       >
-        {viewing && (
-          <Descriptions column={2} bordered size="small">
-            <Descriptions.Item label="端点" span={2}>
-              <code>{viewing.endpoint}</code>
-            </Descriptions.Item>
-            <Descriptions.Item label="认证">{viewing.authType}</Descriptions.Item>
-            <Descriptions.Item label="状态">
-              <Tag>{viewing.status}</Tag>
-            </Descriptions.Item>
-            <Descriptions.Item label="评分">{viewing.rating}</Descriptions.Item>
-            <Descriptions.Item label="总委托">{viewing.totalDelegations}</Descriptions.Item>
-            <Descriptions.Item label="能力" span={2}>
-              {viewing.capabilities.map((c) => (
-                <Tag key={c}>{c}</Tag>
+        {viewingAgent && (
+          <Space direction="vertical" style={{ width: '100%' }}>
+            <Typography.Title level={5}>{viewingAgent.name}</Typography.Title>
+            <Typography.Paragraph type="secondary">
+              {viewingAgent.description || '暂无描述'}
+            </Typography.Paragraph>
+            <Descriptions column={1} bordered size="small">
+              <Descriptions.Item label="Agent ID">{viewingAgent.agentId}</Descriptions.Item>
+              <Descriptions.Item label="Endpoint">{viewingAgent.endpoint}</Descriptions.Item>
+              <Descriptions.Item label="认证方式">{viewingAgent.authType}</Descriptions.Item>
+              <Descriptions.Item label="状态">
+                <Tag color={viewingAgent.status === 'online' ? 'green' : viewingAgent.status === 'error' ? 'red' : 'default'}>
+                  {viewingAgent.status}
+                </Tag>
+              </Descriptions.Item>
+              <Descriptions.Item label="评分">
+                <Rate disabled defaultValue={viewingAgent.rating} allowHalf />
+              </Descriptions.Item>
+              <Descriptions.Item label="委托次数">{viewingAgent.totalDelegations}</Descriptions.Item>
+            </Descriptions>
+            <Space wrap>
+              {viewingAgent.capabilities.map((c) => (
+                <Tag key={c} color="blue">{c}</Tag>
               ))}
-            </Descriptions.Item>
-          </Descriptions>
+            </Space>
+            <Button type="primary" onClick={() => { setDelegatingAgent(viewingAgent); setViewingAgent(null); }}>
+              委托任务
+            </Button>
+          </Space>
         )}
       </Modal>
+
+      <DelegationDetailDrawer
+        delegationId={detailId}
+        onClose={() => setDetailId(null)}
+        onChange={handleDelegationChange}
+      />
     </div>
   );
 }

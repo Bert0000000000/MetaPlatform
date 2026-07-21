@@ -119,7 +119,7 @@ export default function FormBinding({ formModules, bindings, onChange }: FormBin
               ),
             },
           ]}
-        />
+         scroll={{ x: 'max-content' }}/>
       )}
     </div>
   );

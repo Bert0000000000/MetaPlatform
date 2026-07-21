@@ -21,6 +21,8 @@ const DEFAULT_SETTINGS: UserSettings = {
 
 interface SettingsContextValue {
   settings: UserSettings;
+  /** 解析后的实际主题：'system' 会根据 prefers-color-scheme 解析为 'light' | 'dark'。 */
+  resolvedTheme: 'light' | 'dark';
   loading: boolean;
   updateSettings: (patch: Partial<UserSettings>) => Promise<void>;
   setTheme: (theme: ThemeMode) => Promise<void>;
@@ -48,9 +50,16 @@ function saveToStorage(settings: UserSettings): void {
   }
 }
 
+/** 解析 'system' 主题为 'light' | 'dark'，依据浏览器 prefers-color-scheme。 */
+function resolveSystemTheme(): 'light' | 'dark' {
+  if (typeof window === 'undefined' || !window.matchMedia) return 'light';
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+
 export function SettingsProvider({ children }: { children: ReactNode }) {
   // Initialize from localStorage for instant first paint (avoids theme flash).
   const [settings, setSettings] = useState<UserSettings>(() => loadFromStorage());
+  const [systemTheme, setSystemTheme] = useState<'light' | 'dark'>(() => resolveSystemTheme());
   const [loading, setLoading] = useState(true);
 
   // Persist to localStorage on every change.
@@ -59,11 +68,25 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   }, [settings]);
 
   // Apply theme to <html data-theme> for global CSS hooks.
+  const resolvedTheme: 'light' | 'dark' =
+    settings.theme === 'system' ? systemTheme : settings.theme;
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', settings.theme);
-  }, [settings.theme]);
+    document.documentElement.setAttribute('data-theme', resolvedTheme);
+  }, [resolvedTheme]);
 
-  // Sync from backend on mount (best-effort; falls back to local on failure).
+  // Subscribe to OS theme changes when in 'system' mode.
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return;
+    const mql = window.matchMedia('(prefers-color-scheme: dark)');
+    const handler = (e: MediaQueryListEvent) => {
+      setSystemTheme(e.matches ? 'dark' : 'light');
+    };
+    mql.addEventListener('change', handler);
+    return () => mql.removeEventListener('change', handler);
+  }, []);
+
+  // Sync from backend on mount. 已登录态下后端不可达时由全局 axios 拦截器统一报错，
+  // 不再静默兜底，避免个人中心展示与后端不一致。
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -74,7 +97,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
           setSettings((prev) => ({ ...prev, ...remote }));
         }
       } catch {
-        // Backend not ready; keep using localStorage value.
+        // 登录页探针（未登录态）：保持 localStorage 默认值，不弹错。
+        // 已登录态的错误已由 axios 拦截器统一处理（message.error / 401 跳转）。
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -86,12 +110,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
 
   const updateSettings = useCallback(async (patch: Partial<UserSettings>) => {
     setSettings((prev) => ({ ...prev, ...patch }));
-    try {
-      const { updateSettings: remoteUpdate } = await import('@/api/settings');
-      await remoteUpdate(patch);
-    } catch {
-      // Backend not ready; local persistence is enough.
-    }
+    const { updateSettings: remoteUpdate } = await import('@/api/settings');
+    await remoteUpdate(patch);
   }, []);
 
   const setTheme = useCallback(
@@ -107,7 +127,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
 
   return (
     <SettingsContext.Provider
-      value={{ settings, loading, updateSettings, setTheme, resetSettings }}
+      value={{ settings, resolvedTheme, loading, updateSettings, setTheme, resetSettings }}
     >
       {children}
     </SettingsContext.Provider>

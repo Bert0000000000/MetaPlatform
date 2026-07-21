@@ -62,7 +62,20 @@ export async function put<T>(url: string, body?: unknown): Promise<T> {
   return (response.data as { data: T }).data;
 }
 
+export async function patch<T>(url: string, body?: unknown): Promise<T> {
+  const response = await apiClient.patch(url, body);
+  return (response.data as { data: T }).data;
+}
+
 export async function del<T>(url: string): Promise<T> {
   const response = await apiClient.delete(url);
   return (response.data as { data: T }).data;
+}
+
+export async function download(url: string, params?: Record<string, unknown>): Promise<Blob> {
+  const response = await apiClient.get(url, {
+    params,
+    responseType: 'blob',
+  });
+  return response.data as Blob;
 }

@@ -1,5 +1,5 @@
 import { get, post, put, del } from './client';
-import type { McpServer, McpServerCreateRequest, PageResponse } from '@/types';
+import type { McpServer, McpServerCreateRequest, McpServerStatus, PageResponse } from '@/types';
 
 export async function listServers(params?: { keyword?: string }): Promise<PageResponse<McpServer>> {
   return get<PageResponse<McpServer>>('/v1/mcp/servers', params);
@@ -27,4 +27,12 @@ export async function startServer(id: string): Promise<McpServer> {
 
 export async function stopServer(id: string): Promise<McpServer> {
   return post<McpServer>(`/v1/mcp/servers/${id}/stop`);
+}
+
+export async function restartServer(id: string): Promise<McpServer> {
+  return post<McpServer>(`/v1/mcp/servers/${id}/restart`);
+}
+
+export async function getServerStatus(id: string): Promise<McpServerStatus> {
+  return get<McpServerStatus>(`/v1/mcp/servers/${id}/status`);
 }

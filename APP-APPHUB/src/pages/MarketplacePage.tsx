@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Card, Empty, Modal, Space, Tag, Typography, message, Spin } from 'antd';
-import { AppstoreOutlined } from '@ant-design/icons';
+import { Card, Empty, Modal, Space, Tag, Typography, message, Spin, Result, Button } from 'antd';
+import { AppstoreOutlined, ReloadOutlined } from '@ant-design/icons';
 import {
   listTemplates,
   installTemplate,
@@ -13,6 +13,7 @@ import type { TemplateItem } from '@/api/marketplace';
 export default function MarketplacePage() {
   const [templates, setTemplates] = useState<TemplateItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
   const [keyword, setKeyword] = useState('');
   const [category, setCategory] = useState<TemplateItem['category']>();
   const [sortBy, setSortBy] = useState<'newest' | 'popular' | 'rating'>('newest');
@@ -20,6 +21,7 @@ export default function MarketplacePage() {
 
   const load = async () => {
     setLoading(true);
+    setError(null);
     try {
       const items = await listTemplates({ keyword, category });
       const sorted = [...items];
@@ -27,6 +29,8 @@ export default function MarketplacePage() {
       else if (sortBy === 'rating') sorted.sort((a, b) => b.rating - a.rating);
       else sorted.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
       setTemplates(sorted);
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error('加载模板列表失败'));
     } finally {
       setLoading(false);
     }
@@ -37,11 +41,15 @@ export default function MarketplacePage() {
   }, [keyword, category, sortBy]);
 
   const handleInstall = async (t: TemplateItem) => {
-    const res = await installTemplate(t.templateId);
-    if (res.success) {
-      message.success(`已安装模板：${t.name}（AppID: ${res.appId}）`);
-    } else {
-      message.error('安装失败');
+    try {
+      const res = await installTemplate(t.templateId);
+      if (res.success) {
+        message.success(`已安装模板：${t.name}（AppID: ${res.appId}）`);
+      } else {
+        message.error('安装失败');
+      }
+    } catch (err) {
+      message.error(err instanceof Error ? err.message : '安装失败');
     }
   };
 
@@ -65,8 +73,19 @@ export default function MarketplacePage() {
 
       {loading ? (
         <div style={{ textAlign: 'center', padding: 40 }}>
-          <Spin />
+          <Spin tip="加载中..." />
         </div>
+      ) : error ? (
+        <Result
+          status="error"
+          title="加载失败"
+          subTitle={error.message}
+          extra={
+            <Button type="primary" icon={<ReloadOutlined />} onClick={load}>
+              重试
+            </Button>
+          }
+        />
       ) : templates.length === 0 ? (
         <Empty description="没有匹配的模板" />
       ) : (

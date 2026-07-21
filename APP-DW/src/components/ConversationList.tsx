@@ -86,8 +86,7 @@ export default function ConversationList({ employeeId, onSelect }: ConversationL
         dataSource={convs}
         columns={columns}
         pagination={{ pageSize: 10 }}
-        size="small"
-      />
+        size="small" scroll={{ x: 'max-content' }} />
     </Card>
   );
 }

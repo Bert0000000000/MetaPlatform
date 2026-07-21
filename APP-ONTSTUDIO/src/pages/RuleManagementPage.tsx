@@ -74,6 +74,8 @@ export default function RuleManagementPage() {
     try {
       const r = await listRules();
       setRules(r.items);
+    } catch (err) {
+      message.error(err instanceof Error ? err.message : '加载规则列表失败');
     } finally {
       setLoading(false);
     }
@@ -84,9 +86,9 @@ export default function RuleManagementPage() {
   }, []);
 
   const handleSubmit = async () => {
-    const v = await form.validateFields();
-    setSubmitting(true);
     try {
+      const v = await form.validateFields();
+      setSubmitting(true);
       const payload = {
         ...v,
         conditions: form.getFieldValue('conditions') as RuleCondition[],
@@ -103,6 +105,12 @@ export default function RuleManagementPage() {
       setEditing(null);
       form.resetFields();
       load();
+    } catch (err) {
+      // form.validateFields rejection returns a validation error object (not an Error);
+      // Form renders inline field errors, so only surface backend/axios errors here.
+      if (err instanceof Error) {
+        message.error(err.message || '操作失败');
+      }
     } finally {
       setSubmitting(false);
     }
@@ -117,6 +125,8 @@ export default function RuleManagementPage() {
       if (!currentTableId && data.length > 0) {
         setCurrentTableId(data[0]!.id);
       }
+    } catch (err) {
+      message.error(err instanceof Error ? err.message : '加载决策表失败');
     } finally {
       setDecisionTablesLoading(false);
     }
@@ -179,55 +189,67 @@ export default function RuleManagementPage() {
   };
 
   const handleCreateTableSubmit = async () => {
-    const v = await tableForm.validateFields();
-    const inputCol: DecisionTableColumn = {
-      id: newId('col'),
-      name: '输入1',
-      field: 'inputField',
-      columnType: 'input',
-      operator: 'eq',
-    };
-    const outputCol: DecisionTableColumn = {
-      id: newId('col'),
-      name: '输出1',
-      field: 'outputField',
-      columnType: 'output',
-    };
-    const row: DecisionTableRow = {
-      id: newId('row'),
-      enabled: true,
-      priority: 1,
-      description: '示例规则行',
-      cells: {
-        [inputCol.id]: { value: '-' , isEmpty: true },
-        [outputCol.id]: { value: '' },
-      },
-    };
-    const payload = {
-      code: v.code as string,
-      name: v.name as string,
-      description: v.description as string,
-      conceptId: (v.conceptId as string) || undefined,
-      hitPolicy: (v.hitPolicy as HitPolicy) ?? HIT_POLICY_DEFAULT,
-      columns: [inputCol, outputCol],
-      rows: [row],
-      enabled: true,
-    };
-    const created = await createDecisionTable(payload);
-    setDecisionTables((prev) => [...prev, created]);
-    setCurrentTableId(created.id);
-    setTableEditorOpen(false);
-    message.success('已创建');
+    try {
+      const v = await tableForm.validateFields();
+      const inputCol: DecisionTableColumn = {
+        id: newId('col'),
+        name: '输入1',
+        field: 'inputField',
+        columnType: 'input',
+        operator: 'eq',
+      };
+      const outputCol: DecisionTableColumn = {
+        id: newId('col'),
+        name: '输出1',
+        field: 'outputField',
+        columnType: 'output',
+      };
+      const row: DecisionTableRow = {
+        id: newId('row'),
+        enabled: true,
+        priority: 1,
+        description: '示例规则行',
+        cells: {
+          [inputCol.id]: { value: '-' , isEmpty: true },
+          [outputCol.id]: { value: '' },
+        },
+      };
+      const payload = {
+        code: v.code as string,
+        name: v.name as string,
+        description: v.description as string,
+        conceptId: (v.conceptId as string) || undefined,
+        hitPolicy: (v.hitPolicy as HitPolicy) ?? HIT_POLICY_DEFAULT,
+        columns: [inputCol, outputCol],
+        rows: [row],
+        enabled: true,
+      };
+      const created = await createDecisionTable(payload);
+      setDecisionTables((prev) => [...prev, created]);
+      setCurrentTableId(created.id);
+      setTableEditorOpen(false);
+      message.success('已创建');
+    } catch (err) {
+      // form.validateFields rejection returns a validation error object (not an Error);
+      // Form renders inline field errors, so only surface backend/axios errors here.
+      if (err instanceof Error) {
+        message.error(err.message || '创建失败');
+      }
+    }
   };
 
   const handleDeleteTable = async (id: string) => {
-    await deleteDecisionTable(id);
-    setDecisionTables((prev) => prev.filter((t) => t.id !== id));
-    if (currentTableId === id) {
-      const remaining = decisionTables.filter((t) => t.id !== id);
-      setCurrentTableId(remaining[0]?.id);
+    try {
+      await deleteDecisionTable(id);
+      setDecisionTables((prev) => prev.filter((t) => t.id !== id));
+      if (currentTableId === id) {
+        const remaining = decisionTables.filter((t) => t.id !== id);
+        setCurrentTableId(remaining[0]?.id);
+      }
+      message.success('已删除');
+    } catch (err) {
+      message.error(err instanceof Error ? err.message : '删除失败');
     }
-    message.success('已删除');
   };
 
   const columns: ColumnsType<OntologyRule> = [
@@ -293,9 +315,13 @@ export default function RuleManagementPage() {
           <Popconfirm
             title="确定删除？"
             onConfirm={async () => {
-              await deleteRule(r.ruleId);
-              message.success('已删除');
-              load();
+              try {
+                await deleteRule(r.ruleId);
+                message.success('已删除');
+                load();
+              } catch (err) {
+                message.error(err instanceof Error ? err.message : '删除失败');
+              }
             }}
           >
             <Button type="link" danger icon={<DeleteOutlined />}>
@@ -337,7 +363,7 @@ export default function RuleManagementPage() {
                 {rules.length === 0 && !loading ? (
                   <Empty description="还没有规则" />
                 ) : (
-                  <Table rowKey="ruleId" dataSource={rules} columns={columns} loading={loading} />
+                  <Table rowKey="ruleId" dataSource={rules} columns={columns} loading={loading} scroll={{ x: 'max-content' }} />
                 )}
               </Card>
             ),

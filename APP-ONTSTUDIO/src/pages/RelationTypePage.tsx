@@ -50,7 +50,7 @@ export default function RelationTypePage() {
       ]);
       setRelations(r.items);
       setConcepts(c.items);
-      setInstances(inst);
+      setInstances(inst.items);
     } finally {
       setLoading(false);
     }
@@ -98,9 +98,9 @@ export default function RelationTypePage() {
       key: 'endpoints',
       render: (_, r) => (
         <Space>
-          <Tag>{concepts.find((c) => c.conceptId === r.sourceConcept)?.name || r.sourceConcept}</Tag>
+          <Tag>{concepts.find((c) => c.conceptId === r.sourceConceptId)?.name || r.sourceConceptName || r.sourceConceptId}</Tag>
           →
-          <Tag color="blue">{concepts.find((c) => c.conceptId === r.targetConcept)?.name || r.targetConcept}</Tag>
+          <Tag color="blue">{concepts.find((c) => c.conceptId === r.targetConceptId)?.name || r.targetConceptName || r.targetConceptId}</Tag>
         </Space>
       ),
     },
@@ -171,8 +171,7 @@ export default function RelationTypePage() {
                     dataSource={relations}
                     columns={columns}
                     loading={loading}
-                    pagination={{ pageSize: 10 }}
-                  />
+                    pagination={{ pageSize: 10 }} scroll={{ x: 'max-content' }} />
                 )}
               </Card>
             ),
@@ -204,7 +203,7 @@ export default function RelationTypePage() {
                         render: (v) => (v ? new Date(v).toLocaleString() : '-'),
                       },
                     ]}
-                  />
+                   scroll={{ x: 'max-content' }}/>
                 )}
               </Card>
             ),

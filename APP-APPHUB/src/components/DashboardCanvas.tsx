@@ -35,15 +35,9 @@ interface DataSourceResult {
   error?: string;
 }
 
-const FALLBACK_MOCK_DATA: Array<Record<string, unknown>> = Array.from({ length: 7 }).map((_, i) => ({
-  id: `${i + 1}`,
-  name: `P${i + 1}`,
-  value: Math.floor(Math.random() * 1000),
-}));
-
 /**
  * 数据源绑定 hook：根据 DataSourceBinding.type 调用对应后端 API，
- * 失败时回退到 mock 数据并 console.warn 警告，支持 refreshInterval 自动刷新。
+ * 失败时直接抛错（由调用方处理），支持 refreshInterval 自动刷新。
  */
 export function useDataSource(binding: DataSourceBinding | undefined): DataSourceResult {
   const [data, setData] = useState<unknown[]>([]);
@@ -100,10 +94,10 @@ export function useDataSource(binding: DataSourceBinding | undefined): DataSourc
           setError(undefined);
         }
       } catch (e) {
-        console.warn('useDataSource: 数据源加载失败，回退到 mock 数据', binding, e);
+        const msg = e instanceof Error ? e.message : '数据源加载失败';
         if (!cancelled) {
-          setData(FALLBACK_MOCK_DATA);
-          setError('数据源加载失败，已使用 mock 数据');
+          setData([]);
+          setError(msg);
         }
       } finally {
         if (!cancelled) setLoading(false);

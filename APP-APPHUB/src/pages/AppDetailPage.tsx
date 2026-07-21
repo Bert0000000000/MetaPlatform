@@ -31,6 +31,7 @@ import { getApp, updateApp, deleteApp } from '@/api/apps';
 import { listModules, createModule, updateModule, deleteModule } from '@/api/modules';
 import AppForm from '@/components/AppForm';
 import ModuleForm from '@/components/ModuleForm';
+import ReleaseRecordPage from '@/pages/ReleaseRecordPage';
 import type { AppItem, ModuleItem, ModuleCreateRequest, ModuleUpdateRequest, AppStatus } from '@/types';
 import type { MenuProps } from 'antd';
 
@@ -351,6 +352,11 @@ export default function AppDetailPage() {
                   <div>{app.group || '未分组'}</div>
                 </div>
               ),
+            },
+            {
+              key: 'releases',
+              label: '发布记录',
+              children: appId ? <ReleaseRecordPage appId={appId} /> : <Empty description="应用 ID 无效" />,
             },
           ]}
         />

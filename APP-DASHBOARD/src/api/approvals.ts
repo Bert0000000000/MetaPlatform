@@ -1,67 +1,62 @@
 import { get, post } from './client';
 import type { ApprovalTask, PageResponse } from '@/types';
+import { getUser } from '@/utils/auth';
 
-const MOCK_TASKS: ApprovalTask[] = [
-  {
-    taskId: 'task-001',
-    title: '采购申请审批',
-    flowName: '采购审批流程',
-    applicant: '张三',
-    applicantId: 'user-001',
-    priority: 'high',
-    status: 'pending',
-    createdAt: new Date(Date.now() - 1_800_000).toISOString(),
-  },
-  {
-    taskId: 'task-002',
-    title: '出差报销审批',
-    flowName: '费用报销流程',
-    applicant: '李四',
-    applicantId: 'user-002',
+interface TaskResponse {
+  id: string;
+  name: string;
+  assignee: string;
+  processInstanceId: string;
+  processDefinitionId: string;
+  createTime: string;
+  endTime?: string;
+  status: string;
+}
+
+interface WfePageResponse<T> {
+  items: T[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
+function mapTask(item: TaskResponse): ApprovalTask {
+  return {
+    taskId: item.id,
+    title: item.name,
+    applicantId: item.assignee,
+    applicant: item.assignee,
+    flowName: item.processDefinitionId || item.processInstanceId || '默认流程',
     priority: 'medium',
-    status: 'pending',
-    createdAt: new Date(Date.now() - 3_600_000).toISOString(),
-  },
-  {
-    taskId: 'task-003',
-    title: '合同用印审批',
-    flowName: '合同审批流程',
-    applicant: '王五',
-    applicantId: 'user-003',
-    priority: 'low',
-    status: 'pending',
-    createdAt: new Date(Date.now() - 7_200_000).toISOString(),
-  },
-];
+    status: item.status === 'pending' ? 'pending' : 'completed',
+    createdAt: item.createTime,
+    completedAt: item.endTime,
+  };
+}
 
 function emptyPage<T>(): PageResponse<T> {
   return { items: [], total: 0, page: 1, pageSize: 10, totalPages: 0 };
 }
 
-function mockPage(items: ApprovalTask[]): PageResponse<ApprovalTask> {
-  return { items, total: items.length, page: 1, pageSize: 10, totalPages: 1 };
+function getUserId(): string | undefined {
+  return getUser()?.id;
 }
 
 export async function getPendingTasks(): Promise<PageResponse<ApprovalTask>> {
-  try {
-    return await get<PageResponse<ApprovalTask>>('/v1/wfe/tasks/pending');
-  } catch {
-    return mockPage(MOCK_TASKS);
-  }
+  const userId = getUserId();
+  if (!userId) return emptyPage();
+  const page = await get<WfePageResponse<TaskResponse>>('/v1/wfe/tasks/todo', { userId, page: 1, size: 20 });
+  return { ...page, items: page.items.map(mapTask) };
 }
 
 export async function getCompletedTasks(): Promise<PageResponse<ApprovalTask>> {
-  try {
-    return await get<PageResponse<ApprovalTask>>('/v1/wfe/tasks/completed');
-  } catch {
-    return emptyPage();
-  }
+  const userId = getUserId();
+  if (!userId) return emptyPage();
+  const page = await get<WfePageResponse<TaskResponse>>('/v1/wfe/tasks/done', { userId, page: 1, size: 20 });
+  return { ...page, items: page.items.map(mapTask) };
 }
 
-export async function completeTask(taskId: string, action: 'approve' | 'reject', _comment: string): Promise<void> {
-  try {
-    await post(`/v1/wfe/tasks/${taskId}/${action}`, { comment: _comment });
-  } catch {
-    // Backend not ready: local-only completion.
-  }
+export async function completeTask(taskId: string, action: 'approve' | 'reject', comment: string): Promise<void> {
+  await post(`/v1/wfe/tasks/${taskId}/action`, { action, comment });
 }

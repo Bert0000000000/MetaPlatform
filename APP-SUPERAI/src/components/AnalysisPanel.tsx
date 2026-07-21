@@ -152,7 +152,7 @@ export default function AnalysisPanel({ query, onQueryChange, onResult }: Analys
   const renderChart = () => {
     if (!execResult) return <Typography.Text type="secondary">执行 SQL 后查看可视化</Typography.Text>;
     const { columns, rows } = execResult;
-    if (columns.length < 2) return <Table dataSource={rows} columns={columns.map((c) => ({ title: c, dataIndex: c, key: c }))} rowKey={(_, i) => String(i)} size="small" />;
+    if (columns.length < 2) return <Table dataSource={rows} columns={columns.map((c) => ({ title: c, dataIndex: c, key: c }))} rowKey={(_, i) => String(i)} size="small"  scroll={{ x: 'max-content' }}/>;
 
     const effectiveChartType = chartType === 'auto' ? 'bar' : chartType;
 
@@ -220,7 +220,7 @@ export default function AnalysisPanel({ query, onQueryChange, onResult }: Analys
             rowKey={(_, i) => String(i)}
             size="small"
             pagination={{ pageSize: 10 }}
-          />
+           scroll={{ x: 'max-content' }}/>
         );
     }
   };

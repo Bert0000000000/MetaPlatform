@@ -2,6 +2,10 @@ import axios, { AxiosError, type InternalAxiosRequestConfig } from 'axios';
 import { message } from 'antd';
 import { getToken, removeToken } from '@/utils/auth';
 
+interface SilentRequestConfig extends InternalAxiosRequestConfig {
+  silent?: boolean;
+}
+
 export const apiClient = axios.create({
   baseURL: '/api',
   timeout: 30000,
@@ -22,7 +26,9 @@ apiClient.interceptors.response.use(
   (response) => {
     const data = response.data;
     if (data && data.code && data.code !== 'SUCCESS' && data.code !== '200') {
-      message.error(data.message || '请求失败');
+      if (!(response.config as SilentRequestConfig).silent) {
+        message.error(data.message || '请求失败');
+      }
       return Promise.reject(new Error(data.message || '请求失败'));
     }
     return response;
@@ -30,19 +36,20 @@ apiClient.interceptors.response.use(
   (error: AxiosError<{ code?: string; message?: string }>) => {
     const status = error.response?.status;
     const msg = error.response?.data?.message || error.message || '网络错误';
+    const silent = (error.config as SilentRequestConfig | undefined)?.silent;
     if (status === 401) {
       removeToken();
       message.error('登录已过期，请重新登录');
       window.location.href = '/login';
-    } else {
+    } else if (!silent) {
       message.error(msg);
     }
     return Promise.reject(error);
   }
 );
 
-export async function get<T>(url: string, params?: Record<string, unknown>): Promise<T> {
-  const response = await apiClient.get(url, { params });
+export async function get<T>(url: string, params?: Record<string, unknown>, silent?: boolean): Promise<T> {
+  const response = await apiClient.get(url, { params, silent } as SilentRequestConfig);
   return response.data.data as T;
 }
 

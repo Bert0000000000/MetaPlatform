@@ -199,3 +199,60 @@ export interface EmployeeTask {
   result?: string;
   progress?: number;
 }
+
+// ============ Learning Types (V15-03) ============
+
+export type ExecutionResult = 'success' | 'failed' | 'partial';
+export type FeedbackType = 'thumb_up' | 'thumb_down' | 'suggestion';
+export type KnowledgeType = 'prompt_fragment' | 'tool_rule' | 'parameter_template' | 'experience';
+
+export interface FeedbackRecord {
+  feedbackId: string;
+  employeeId: string;
+  taskId: string;
+  taskTitle: string;
+  executionResult: ExecutionResult;
+  feedbackType: FeedbackType;
+  suggestion: string;
+  tags: string[];
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface LearnedKnowledge {
+  knowledgeId: string;
+  employeeId: string;
+  knowledgeType: KnowledgeType;
+  title: string;
+  content: string;
+  sourceFeedbackIds: string[];
+  taskPattern: string;
+  tags: string[];
+  confidence: number;
+  syncedToKb: boolean;
+  kbDocumentId?: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface LearningStats {
+  employeeId: string;
+  totalFeedback: number;
+  thumbUp: number;
+  thumbDown: number;
+  suggestions: number;
+  knowledgeFragments: number;
+  syncedFragments: number;
+  successRate: number;
+  topTags: string[];
+}
+
+export interface FeedbackCreateRequest {
+  employeeId: string;
+  taskId: string;
+  taskTitle: string;
+  executionResult: ExecutionResult;
+  feedbackType: FeedbackType;
+  suggestion: string;
+  tags: string[];
+}

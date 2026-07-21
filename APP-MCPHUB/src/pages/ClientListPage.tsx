@@ -18,9 +18,17 @@ import {
   DeleteOutlined,
   SyncOutlined,
   LinkOutlined,
+  EyeOutlined,
 } from '@ant-design/icons';
-import { listClients, deleteClient, syncClient } from '@/api/clients';
+import { listClients, deleteClient, discoverClientTools } from '@/api/clients';
 import type { McpClient } from '@/types';
+
+function normalizeStatus(status: string): McpClient['status'] {
+  const s = status.toLowerCase();
+  if (s === 'connected') return 'connected';
+  if (s === 'error') return 'error';
+  return 'disconnected';
+}
 
 const STATUS_MAP: Record<McpClient['status'], { label: string; color: string }> = {
   connected: { label: '已连接', color: 'success' },
@@ -54,8 +62,8 @@ export default function ClientListPage() {
   };
 
   const handleSync = async (c: McpClient) => {
-    const updated = await syncClient(c.id);
-    message.success(`已发现 ${updated.discoveredTools} 个工具`);
+    const tools = await discoverClientTools(c.id);
+    message.success(`已发现 ${tools.length} 个工具`);
     load();
   };
 
@@ -75,16 +83,22 @@ export default function ClientListPage() {
       ),
     },
     {
+      title: '类型',
+      dataIndex: 'clientType',
+      render: (v) => <Tag>{v || 'custom'}</Tag>,
+    },
+    {
       title: '认证',
       dataIndex: 'authType',
-      render: (v) => <Tag>{v}</Tag>,
+      render: (v) => <Tag>{v || 'none'}</Tag>,
     },
     {
       title: '状态',
       key: 'status',
-      render: (_, c) => (
-        <Tag color={STATUS_MAP[c.status].color}>{STATUS_MAP[c.status].label}</Tag>
-      ),
+      render: (_, c) => {
+        const s = normalizeStatus(c.status);
+        return <Tag color={STATUS_MAP[s].color}>{STATUS_MAP[s].label}</Tag>;
+      },
     },
     {
       title: '发现工具',
@@ -101,7 +115,10 @@ export default function ClientListPage() {
       key: 'actions',
       render: (_, c) => (
         <Space>
-          <Button type="link" icon={<EditOutlined />} onClick={() => navigate(`/clients/${c.id}`)}>
+          <Button type="link" icon={<EyeOutlined />} onClick={() => navigate(`/clients/${c.id}`)}>
+            详情
+          </Button>
+          <Button type="link" icon={<EditOutlined />} onClick={() => navigate(`/clients/${c.id}/edit`)}>
             编辑
           </Button>
           <Button type="link" icon={<SyncOutlined />} onClick={() => handleSync(c)}>
@@ -137,8 +154,7 @@ export default function ClientListPage() {
             dataSource={clients}
             columns={columns}
             loading={loading}
-            pagination={{ pageSize: 10 }}
-          />
+            pagination={{ pageSize: 10 }} scroll={{ x: 'max-content' }} />
         )}
       </Card>
     </div>

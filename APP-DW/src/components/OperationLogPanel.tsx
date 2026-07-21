@@ -89,8 +89,7 @@ export default function OperationLogPanel({ employeeId }: OperationLogPanelProps
           dataSource={logs}
           columns={columns}
           pagination={{ pageSize: 10 }}
-          size="small"
-        />
+          size="small" scroll={{ x: 'max-content' }} />
       )}
     </Card>
   );

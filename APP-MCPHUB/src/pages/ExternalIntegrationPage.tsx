@@ -179,7 +179,7 @@ export default function ExternalIntegrationPage() {
                 {integrations.length === 0 && !loading ? (
                   <Empty description="还没有外部集成" />
                 ) : (
-                  <Table rowKey="id" dataSource={integrations} columns={columns} loading={loading} />
+                  <Table rowKey="id" dataSource={integrations} columns={columns} loading={loading} scroll={{ x: 'max-content' }} />
                 )}
               </Card>
             ),

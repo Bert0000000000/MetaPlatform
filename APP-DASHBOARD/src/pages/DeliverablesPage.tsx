@@ -1,10 +1,8 @@
 import { useEffect, useState } from 'react';
 import {
-  Card,
   Table,
   Tag,
   Space,
-  Input,
   Select,
   Button,
   Modal,
@@ -14,7 +12,6 @@ import {
   Popconfirm,
 } from 'antd';
 import {
-  SearchOutlined,
   DownloadOutlined,
   DeleteOutlined,
   EyeOutlined,
@@ -24,6 +21,8 @@ import {
 } from '@ant-design/icons';
 import { listDeliverables, downloadDeliverable, deleteDeliverable } from '@/api/deliverables';
 import type { Deliverable, DeliverableType, DeliverableFormat } from '@/types';
+// V12-08: 使用 @mate/shared 统一的 SectionCard + SearchInput（带防抖）。
+import { SectionCard, SearchInput } from '@mate/shared';
 
 const TYPE_LABEL: Record<DeliverableType, string> = {
   report: '分析报告',
@@ -142,16 +141,15 @@ export default function DeliverablesPage() {
   ];
 
   return (
-    <Card
+    <SectionCard
       title="历史交付物"
       extra={
         <Space>
-          <Input.Search
+          {/* V12-08: SearchInput 内置 300ms 防抖，避免每次按键触发后端查询。 */}
+          <SearchInput
             placeholder="全文搜索"
-            allowClear
             onSearch={setKeyword}
-            prefix={<SearchOutlined />}
-            style={{ width: 240 }}
+            width={240}
           />
           <Select
             placeholder="类型筛选"
@@ -166,14 +164,14 @@ export default function DeliverablesPage() {
           </Select>
         </Space>
       }
+      bodyPadding={0}
     >
       <Table
         rowKey="id"
         columns={columns}
         dataSource={list}
         loading={loading}
-        pagination={{ pageSize: 10 }}
-      />
+        pagination={{ pageSize: 10 }} scroll={{ x: 'max-content' }} />
 
       <Modal
         title="交付物详情"
@@ -210,6 +208,6 @@ export default function DeliverablesPage() {
           </Descriptions>
         )}
       </Modal>
-    </Card>
+    </SectionCard>
   );
 }

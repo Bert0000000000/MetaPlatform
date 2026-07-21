@@ -172,8 +172,7 @@ export default function PromptTemplatePage() {
             dataSource={prompts}
             columns={columns}
             loading={loading}
-            pagination={{ pageSize: 10 }}
-          />
+            pagination={{ pageSize: 10 }} scroll={{ x: 'max-content' }} />
         )}
       </Card>
 

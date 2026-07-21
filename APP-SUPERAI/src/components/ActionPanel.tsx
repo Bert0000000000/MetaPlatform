@@ -132,6 +132,7 @@ export default function ActionPanel({ query, onQueryChange, onResult }: ActionPa
               { title: '值', dataIndex: 'value', key: 'value' },
             ]}
             pagination={false}
+            scroll={{ x: 'max-content' }}
           />
         ) : null}
         {Array.isArray(result.output) && (
@@ -142,6 +143,7 @@ export default function ActionPanel({ query, onQueryChange, onResult }: ActionPa
             columns={result.output.length > 0 ? Object.keys(result.output[0] as Record<string, unknown>).map((k) => ({ title: k, dataIndex: k, key: k })) : []}
             rowKey={(_, i) => String(i)}
             pagination={{ pageSize: 5 }}
+            scroll={{ x: 'max-content' }}
           />
         )}
         {typeof result.output === 'string' && (

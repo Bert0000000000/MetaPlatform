@@ -66,7 +66,7 @@ export default function EmployeeMatchingPage() {
         <Empty description="点击上方按钮匹配" />
       ) : (
         <Card title={`匹配结果（${results.length} 个）`}>
-          <Table rowKey="employeeId" dataSource={results} columns={columns} />
+          <Table rowKey="employeeId" dataSource={results} columns={columns} scroll={{ x: 'max-content' }} />
         </Card>
       )}
     </div>

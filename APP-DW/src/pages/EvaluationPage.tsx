@@ -189,7 +189,7 @@ export default function EvaluationPage() {
                         expandedRowRender: (r) => <EvaluationReportCard report={r} />,
                       }}
                       pagination={{ pageSize: 10 }}
-                    />
+                     scroll={{ x: 'max-content' }}/>
                   )}
                 </Card>
               </Space>

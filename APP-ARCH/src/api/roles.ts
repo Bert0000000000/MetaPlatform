@@ -1,5 +1,5 @@
 import { get, post, put, del } from './client';
-import type { OrgUnit, ArchRole } from '@/types';
+import type { OrgUnit, ArchRole, CreateRoleRequest, UpdateRoleRequest, PageResponse } from '@/types';
 
 export async function getOrgTree(): Promise<OrgUnit[]> {
   return get<OrgUnit[]>('/v1/ea/orgs/tree');
@@ -17,15 +17,15 @@ export async function deleteOrgUnit(id: string): Promise<void> {
   await del<void>(`/v1/ea/orgs/${id}`);
 }
 
-export async function listRoles(orgUnitId?: string): Promise<ArchRole[]> {
-  return get<ArchRole[]>('/v1/ea/roles', { orgUnitId });
+export async function listRoles(params?: { orgUnitId?: string; domain?: string; keyword?: string; page?: number; size?: number }): Promise<PageResponse<ArchRole>> {
+  return get<PageResponse<ArchRole>>('/v1/ea/roles', params as Record<string, unknown> | undefined);
 }
 
-export async function createRole(req: Partial<ArchRole>): Promise<ArchRole> {
+export async function createRole(req: CreateRoleRequest): Promise<ArchRole> {
   return post<ArchRole>('/v1/ea/roles', req);
 }
 
-export async function updateRole(id: string, req: Partial<ArchRole>): Promise<ArchRole> {
+export async function updateRole(id: string, req: UpdateRoleRequest): Promise<ArchRole> {
   return put<ArchRole>(`/v1/ea/roles/${id}`, req);
 }
 

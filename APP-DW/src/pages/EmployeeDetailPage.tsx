@@ -32,6 +32,7 @@ import DocumentUpload from '@/components/DocumentUpload';
 import ExtractionPanel from '@/components/ExtractionPanel';
 import EmployeeVersionHistory from '@/components/EmployeeVersionHistory';
 import OperationLogPanel from '@/components/OperationLogPanel';
+import LearningRecordsPanel from '@/components/LearningRecordsPanel';
 import type { Employee, EmployeeTask, TaskStatus } from '@/types';
 import {
   ROLE_CATEGORY_MAP,
@@ -296,7 +297,7 @@ export default function EmployeeDetailPage() {
                         render: (v: string) => new Date(v).toLocaleString(),
                       },
                     ]}
-                  />
+                   scroll={{ x: 'max-content' }}/>
                 </div>
               ),
             },
@@ -356,6 +357,11 @@ export default function EmployeeDetailPage() {
               ),
             },
             {
+              key: 'learning',
+              label: '学习记录',
+              children: <LearningRecordsPanel employee={employee} />,
+            },
+            {
               key: 'tasks',
               label: `任务列表 (${tasks.length})`,
               children: tasks.length === 0 ? (
@@ -407,7 +413,7 @@ export default function EmployeeDetailPage() {
                       render: (v?: string) => v || '-',
                     },
                   ]}
-                />
+                 scroll={{ x: 'max-content' }}/>
               ),
             },
             {

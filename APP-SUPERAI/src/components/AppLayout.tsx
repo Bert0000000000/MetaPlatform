@@ -1,6 +1,7 @@
+import { useState } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
-import { Layout, theme, Typography, Button } from 'antd';
-import { LogoutOutlined } from '@ant-design/icons';
+import { Layout, theme, Typography, Button, Grid, Drawer } from 'antd';
+import { LogoutOutlined, MenuOutlined } from '@ant-design/icons';
 import { PlatformMenu } from '@mate/shared';
 import { removeToken } from '@/utils/auth';
 
@@ -8,6 +9,9 @@ const { Header, Sider, Content } = Layout;
 
 export default function AppLayout() {
   const navigate = useNavigate();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const screens = Grid.useBreakpoint();
+  const isMobile = !screens.md;
   const {
     token: { colorBgContainer, borderRadiusLG },
   } = theme.useToken();
@@ -16,6 +20,8 @@ export default function AppLayout() {
     removeToken();
     navigate('/login');
   };
+
+  const menu = <PlatformMenu currentModule="superai" />;
 
   return (
     <Layout style={{ minHeight: '100vh' }}>
@@ -29,22 +35,42 @@ export default function AppLayout() {
           borderBottom: '1px solid #f0f0f0',
         }}
       >
-        <Typography.Title level={4} style={{ margin: 0 }}>
-          SuperAI
-        </Typography.Title>
+        <div style={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 0 }}>
+          {isMobile && (
+            <Button
+              type="text"
+              icon={<MenuOutlined />}
+              onClick={() => setMenuOpen(true)}
+              style={{ marginRight: 8 }}
+            />
+          )}
+          <Typography.Title
+            level={4}
+            style={{
+              margin: 0,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            SuperAI
+          </Typography.Title>
+        </div>
         <Button type="text" icon={<LogoutOutlined />} onClick={handleLogout}>
-          退出
+          {!isMobile && '退出'}
         </Button>
       </Header>
       <Layout>
-        <Sider width={240} style={{ background: colorBgContainer }}>
-          <PlatformMenu currentModule="superai" />
-        </Sider>
-        <Layout style={{ padding: '16px 24px' }}>
+        {!isMobile && (
+          <Sider width={240} style={{ background: colorBgContainer }}>
+            {menu}
+          </Sider>
+        )}
+        <Layout className="mate-page-layout">
           <Content
             style={{
               background: colorBgContainer,
-              padding: 24,
+              padding: 'var(--mate-content-padding)',
               margin: 0,
               borderRadius: borderRadiusLG,
               minHeight: 280,
@@ -55,6 +81,15 @@ export default function AppLayout() {
           </Content>
         </Layout>
       </Layout>
+      <Drawer
+        placement="left"
+        open={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        width={240}
+        styles={{ body: { padding: 0 } }}
+      >
+        {menu}
+      </Drawer>
     </Layout>
   );
 }

@@ -49,7 +49,7 @@ export default function LoginPage() {
         <Form<LoginFormValues>
           layout="vertical"
           onFinish={handleSubmit}
-          initialValues={{ tenantId: 'tenant-default' }}
+          initialValues={{ tenantId: 'default' }}
         >
           <Form.Item
             name="tenantId"

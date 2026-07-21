@@ -1,5 +1,9 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { ConfigProvider, App as AntApp } from 'antd';
+import zhCN from 'antd/locale/zh_CN';
+import enUS from 'antd/locale/en_US';
 import type { ReactNode } from 'react';
+import { ErrorBoundary, useThemeMode, useAsyncError, getAntdTheme } from '@mate/shared';
 import AppLayout from '@/components/AppLayout';
 import LoginPage from '@/pages/LoginPage';
 import ConceptPage from '@/pages/ConceptPage';
@@ -18,44 +22,60 @@ import ExecutionMonitorPage from '@/pages/ExecutionMonitorPage';
 import KnowledgeGraphPage from '@/pages/KnowledgeGraphPage';
 import DataQualityPage from '@/pages/DataQualityPage';
 import DataLineagePage from '@/pages/DataLineagePage';
+import OntologyDiscoveryPage from '@/pages/OntologyDiscoveryPage';
 import { isLoggedIn } from '@/utils/auth';
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
   return isLoggedIn() ? <>{children}</> : <Navigate to="/login" replace />;
 }
 
-export default function App() {
+function App() {
+  // V12-08: 统一主题壳 —— 与 APP-DASHBOARD 共享同一份 localStorage 设置。
+  const { resolvedTheme, language } = useThemeMode();
+  const locale = language === 'en-US' ? enUS : zhCN;
+  const { theme } = getAntdTheme(resolvedTheme, locale);
+  useAsyncError();
+
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route
-          path="/"
-          element={
-            <ProtectedRoute>
-              <AppLayout />
-            </ProtectedRoute>
-          }
-        >
-          <Route index element={<Navigate to="/concepts" replace />} />
-          <Route path="concepts" element={<ConceptPage />} />
-          <Route path="concepts/:id" element={<ConceptDetailPage />} />
-          <Route path="entities" element={<EntityPage />} />
-          <Route path="relations" element={<RelationTypePage />} />
-          <Route path="relation-instances" element={<RelationInstancePage />} />
-          <Route path="rules" element={<RuleManagementPage />} />
-          <Route path="versions" element={<VersionPage />} />
-          <Route path="datasources" element={<DataSourcePage />} />
-          <Route path="mappings" element={<DataMappingPage />} />
-          <Route path="actions" element={<ActionDefinitionPage />} />
-          <Route path="orchestrations" element={<OrchestrationPage />} />
-          <Route path="triggers" element={<TriggerPage />} />
-          <Route path="executions" element={<ExecutionMonitorPage />} />
-          <Route path="graph" element={<KnowledgeGraphPage />} />
-          <Route path="quality" element={<DataQualityPage />} />
-          <Route path="lineage" element={<DataLineagePage />} />
-        </Route>
-      </Routes>
-    </BrowserRouter>
+    <ErrorBoundary>
+      <ConfigProvider locale={locale} theme={theme}>
+        <AntApp>
+          <BrowserRouter>
+            <Routes>
+              <Route path="/login" element={<LoginPage />} />
+              <Route
+                path="/"
+                element={
+                  <ProtectedRoute>
+                    <AppLayout />
+                  </ProtectedRoute>
+                }
+              >
+                <Route index element={<Navigate to="/concepts" replace />} />
+                <Route path="concepts" element={<ConceptPage />} />
+                <Route path="concepts/:id" element={<ConceptDetailPage />} />
+                <Route path="entities" element={<EntityPage />} />
+                <Route path="relations" element={<RelationTypePage />} />
+                <Route path="relation-instances" element={<RelationInstancePage />} />
+                <Route path="rules" element={<RuleManagementPage />} />
+                <Route path="versions" element={<VersionPage />} />
+                <Route path="datasources" element={<DataSourcePage />} />
+                <Route path="mappings" element={<DataMappingPage />} />
+                <Route path="actions" element={<ActionDefinitionPage />} />
+                <Route path="orchestrations" element={<OrchestrationPage />} />
+                <Route path="triggers" element={<TriggerPage />} />
+                <Route path="executions" element={<ExecutionMonitorPage />} />
+                <Route path="graph" element={<KnowledgeGraphPage />} />
+                <Route path="quality" element={<DataQualityPage />} />
+                <Route path="lineage" element={<DataLineagePage />} />
+                <Route path="discovery" element={<OntologyDiscoveryPage />} />
+              </Route>
+            </Routes>
+          </BrowserRouter>
+        </AntApp>
+      </ConfigProvider>
+    </ErrorBoundary>
   );
 }
+
+export default App;
