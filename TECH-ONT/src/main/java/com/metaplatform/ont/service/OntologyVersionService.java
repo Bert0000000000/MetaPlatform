@@ -8,6 +8,7 @@ import com.metaplatform.ont.common.TenantContext;
 import com.metaplatform.ont.dto.OntologyVersionCompareResponse;
 import com.metaplatform.ont.dto.OntologyVersionCreateRequest;
 import com.metaplatform.ont.dto.OntologyVersionResponse;
+import com.metaplatform.ont.dto.OntologyVersionUpdateRequest;
 import com.metaplatform.ont.dto.PageResponse;
 import com.metaplatform.ont.entity.*;
 import com.metaplatform.ont.exception.OntException;
@@ -19,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 @Service
@@ -168,6 +170,67 @@ public class OntologyVersionService {
                 .targetVersionId(resolvedTargetId)
                 .changes(changes)
                 .build();
+    }
+
+    /**
+     * 修复 #2: 列出所有 version（不分页），按 versionNumber desc 排序。
+     */
+    @Transactional(readOnly = true)
+    public List<OntologyVersionResponse> listAll() {
+        String tenantId = TenantContext.get();
+        return versionRepository.findByTenantIdOrderByVersionNumberDesc(tenantId).stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 修复 #3: 通过两个 ID 比较（前端 GET /compare?aId&bId 调用形式）。
+     */
+    @Transactional(readOnly = true)
+    public OntologyVersionCompareResponse compareByTwoIds(String aId, String bId) {
+        String tenantId = TenantContext.get();
+        OntologyVersionEntity a = versionRepository.findByVersionIdAndTenantId(aId, tenantId)
+                .orElseThrow(() -> new OntException(ErrorCode.VERSION_NOT_FOUND, "Version not found: " + aId));
+        OntologyVersionEntity b = versionRepository.findByVersionIdAndTenantId(bId, tenantId)
+                .orElseThrow(() -> new OntException(ErrorCode.VERSION_NOT_FOUND, "Version not found: " + bId));
+
+        Map<String, OntologyVersionCompareResponse.ChangeSummary> changes = new LinkedHashMap<>();
+        for (String key : List.of("concepts", "attributes", "relationTypes", "relationInstances", "entities")) {
+            changes.put(key, compareArray(a.getSnapshot().get(key), b.getSnapshot().get(key)));
+        }
+
+        return OntologyVersionCompareResponse.builder()
+                .sourceVersionId(aId)
+                .targetVersionId(bId)
+                .changes(changes)
+                .build();
+    }
+
+    /**
+     * 修复 #4: 更新 version 的 description（当前实体无 changelog/updatedAt 列，仅更新 description）。
+     */
+    @Transactional
+    public OntologyVersionResponse update(String versionId, OntologyVersionUpdateRequest req) {
+        String tenantId = TenantContext.get();
+        OntologyVersionEntity v = versionRepository.findByVersionIdAndTenantId(versionId, tenantId)
+                .orElseThrow(() -> new OntException(ErrorCode.VERSION_NOT_FOUND));
+        v.setDescription(req.getDescription());
+        OntologyVersionEntity saved = versionRepository.save(v);
+        return toResponse(saved);
+    }
+
+    /**
+     * 修复 #5: 删除 version。
+     */
+    @Transactional
+    public void delete(String versionId) {
+        String tenantId = TenantContext.get();
+        OntologyVersionEntity v = versionRepository.findByVersionIdAndTenantId(versionId, tenantId)
+                .orElseThrow(() -> new OntException(ErrorCode.VERSION_NOT_FOUND));
+        if (Boolean.TRUE.equals(v.getCurrent())) {
+            throw new OntException(ErrorCode.VERSION_CONFLICT, "不能删除当前激活版本");
+        }
+        versionRepository.delete(v);
     }
 
     private JsonNode buildSnapshot(String tenantId) {
