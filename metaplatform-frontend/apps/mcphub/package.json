@@ -10,7 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@mate/shared": "*",
+    "@mate/shared": "workspace:*",
     "antd": "^6.0.0",
     "axios": "^1.7.9",
     "lucide-react": "^0.468.0",
