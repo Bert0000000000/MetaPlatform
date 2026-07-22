@@ -219,19 +219,9 @@ TECH-IAM     ← 所有服务（MCP / A2A 调用鉴权）
 
 ## 关键文档索引
 
-> ⚠️ v1.3 阶段 R0 已清理 `docs/000-GUIDE/`、`docs/001-ARCH/`、`docs/002-TS/`、`docs/003-SPEC/`、`docs/004-PLAN/`、`docs/005-RD/`、`docs/006-TMP/`、`docs/superpowers/`。下方为重建时需恢复的文档清单。
-
-| 文档 | 路径 | 状态 |
-|---|---|---|
-| 项目总览 | [`README.md`](README.md) | ✅ 保留 |
-| Claude Code 上下文 | [`CLAUDE.md`](CLAUDE.md) | ✅ 已更新 |
-| Agent 上下文 | [`agent.md`](agent.md) | ✅ 本文件 |
-| **PRD 集合** | **[`docs/prd/`](docs/prd/)** | **✅ 已重建（14 个文件）** |
-| 应用架构 | `docs/001-ARCH/ARCH-Mate_Platform-应用架构_v1.2-20260721.md` | 待重建 |
-| 技术选型 | `docs/002-TS/TS-Mate_Platform-技术选型建议_自研最新版_v1.3-20260721.md` | 待重建 |
-| 命名规范 | `docs/000-GUIDE/GUIDE-NAMING-CONVENTION_v1.0-20260716.md` | 待重建 |
-| 文档结构规范 | `docs/000-GUIDE/GUIDE-DOC-STRUCTURE_v1.0-20260716.md` | 待重建 |
-| UI 设计规范 | `docs/000-GUIDE/GUIDE-Mate_Platform-UI_Design_Specification_v1.0-20260719.md` | 待重建 |
-| 版本路线图 | `docs/004-PLAN/PLAN-Mate_Platform-版本路线图_v2.0-20260716.md` | 待重建 |
-| Spring AI Alibaba 迁移评估 | `docs/005-RD/RD-Mate_Platform-Spring_AI_Alibaba技术栈迁移评估_v1.0-20260721.md` | 待重建 |
-| OWL 调研 | `docs/005-RD/RD-Mate_Platform-Ontology_OWL调研报告_v1.0-20260716.md` | 待重建 |
+| 文档 | 路径 |
+|---|---|
+| 项目总览 | [`README.md`](README.md) |
+| Claude Code 上下文 | [`CLAUDE.md`](CLAUDE.md) |
+| Agent 上下文 | [`agent.md`](agent.md) |
+| **PRD 集合** | **[`docs/prd/`](docs/prd/)** |
