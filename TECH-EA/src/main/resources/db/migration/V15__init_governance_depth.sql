@@ -82,8 +82,8 @@ CREATE TABLE ea_review_ticket (
     CONSTRAINT fk_ert_template FOREIGN KEY (template_id) REFERENCES ea_review_template (id)
 );
 
-CREATE INDEX idx_ea_rt_tenant ON ea_review_ticket (tenant_id) WHERE deleted_at IS NULL;
-CREATE INDEX idx_ea_rt_status ON ea_review_ticket (tenant_id, status) WHERE deleted_at IS NULL;
+CREATE INDEX idx_ea_rticket_tenant ON ea_review_ticket (tenant_id) WHERE deleted_at IS NULL;
+CREATE INDEX idx_ea_rticket_status ON ea_review_ticket (tenant_id, status) WHERE deleted_at IS NULL;
 
 -- 技术债务分级与清偿计划扩展
 ALTER TABLE ea_tech_debt ADD COLUMN IF NOT EXISTS debt_level VARCHAR(32) DEFAULT 'GENERAL';
