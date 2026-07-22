@@ -1,3 +1,0 @@
-@echo off
-cd /D D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\TECH-MCP
-"C:\Program Files\Eclipse Adoptium\jdk-21.0.11.10-hotspot\bin\java.exe" -jar target\tech-mcp-0.0.1-SNAPSHOT.jar --spring.profiles.active=dev --server.port=8502 --spring.datasource.url=jdbc:postgresql://localhost:5432/metaplatform_mcp --spring.datasource.username=meta --spring.datasource.password=meta --spring.datasource.driver-class-name=org.postgresql.Driver --spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect --spring.flyway.locations=classpath:db/migration > D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\logs\tech-mcp-pg-r2.log 2>&1

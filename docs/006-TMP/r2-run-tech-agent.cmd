@@ -1,4 +1,0 @@
-@echo off
-cd /D D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\TECH-AGENT
-set PYTHONPATH=D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\docs\006-TMP
-d:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\TECH-AGENT\.venv\Scripts\python.exe -c "import importlib.util as u; s=u.spec_from_file_location('r2patch','D:/Hermes/Workspace/10_Projects/2026-07-02-MetaPlatform/docs/006-TMP/r2-patch-llmgw-jwt.py'); m=u.module_from_spec(s); s.loader.exec_module(m); import main; import uvicorn; uvicorn.run(main.app, host='0.0.0.0', port=8501)" > D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\logs\tech-agent-r2.log 2>&1

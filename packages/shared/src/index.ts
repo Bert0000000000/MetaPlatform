@@ -17,6 +17,22 @@ export * from './components';
 export * from './hooks';
 export * from './utils';
 
+// === 统一认证（消除二次登录） ===
+export {
+  getToken,
+  setToken,
+  getRefreshToken,
+  setRefreshToken,
+  removeToken,
+  getUser,
+  setUser,
+  getTenantId,
+  isLoggedIn,
+  type AuthUser,
+} from './auth/token';
+export { AuthProvider, useAuth } from './auth/AuthProvider';
+export { AuthGuard } from './auth/AuthGuard';
+
 export { PLATFORM_MENU, type PlatformMenuItem } from './config/platformMenu';
 export { PlatformMenu, type PlatformMenuProps } from './components/PlatformMenu';
 export { findActiveMenu, resolveMenuHref, type ActiveMenuResult } from './utils/menuMatcher';
