@@ -1,0 +1,210 @@
+# Docker Compose for the MetaPlatform frontend monorepo.
+#
+# Two profiles:
+#   dev  (default) - Vite hot-reload for every app on a fixed port
+#   prod           - nginx serving built static assets
+#
+# Usage:
+#   docker compose up portal              # start one app in dev mode
+#   docker compose --profile prod up portal
+#   docker compose up                     # start all 8 apps in dev mode
+
+name: metaplatform-frontend
+
+x-app-base: &app-base
+  build:
+    context: .
+    dockerfile: Dockerfile
+    target: dev
+  volumes:
+    - .:/app
+    - pnpm-store:/app/.pnpm-store
+    # Anonymous volumes so the in-container node_modules is not
+    # overwritten by a host directory that doesn't exist.
+    - /app/node_modules
+    - /app/apps/portal/node_modules
+    - /app/apps/dashboard/node_modules
+    - /app/apps/superai/node_modules
+    - /app/apps/apphub/node_modules
+    - /app/apps/arch/node_modules
+    - /app/apps/dw/node_modules
+    - /app/apps/mcphub/node_modules
+    - /app/apps/ontstudio/node_modules
+    - /app/packages/shared/node_modules
+  environment:
+    NODE_ENV: development
+  restart: unless-stopped
+
+x-prod-base: &prod-base
+  restart: unless-stopped
+
+services:
+  # ============================================================
+  # Development services (default profile)
+  # ============================================================
+  portal:
+    <<: *app-base
+    container_name: mate-portal
+    command: ["pnpm", "--filter", "portal", "dev", "--host", "0.0.0.0", "--port", "9200"]
+    ports:
+      - "9200:9200"
+
+  dashboard:
+    <<: *app-base
+    container_name: mate-dashboard
+    command: ["pnpm", "--filter", "dashboard", "dev", "--host", "0.0.0.0", "--port", "9203"]
+    ports:
+      - "9203:9203"
+
+  superai:
+    <<: *app-base
+    container_name: mate-superai
+    command: ["pnpm", "--filter", "superai", "dev", "--host", "0.0.0.0", "--port", "9205"]
+    ports:
+      - "9205:9205"
+
+  apphub:
+    <<: *app-base
+    container_name: mate-apphub
+    command: ["pnpm", "--filter", "apphub", "dev", "--host", "0.0.0.0", "--port", "9201"]
+    ports:
+      - "9201:9201"
+
+  arch:
+    <<: *app-base
+    container_name: mate-arch
+    command: ["pnpm", "--filter", "arch", "dev", "--host", "0.0.0.0", "--port", "9206"]
+    ports:
+      - "9206:9206"
+
+  dw:
+    <<: *app-base
+    container_name: mate-dw
+    command: ["pnpm", "--filter", "dw", "dev", "--host", "0.0.0.0", "--port", "9401"]
+    ports:
+      - "9401:9401"
+
+  mcphub:
+    <<: *app-base
+    container_name: mate-mcphub
+    command: ["pnpm", "--filter", "mcphub", "dev", "--host", "0.0.0.0", "--port", "9501"]
+    ports:
+      - "9501:9501"
+
+  ontstudio:
+    <<: *app-base
+    container_name: mate-ontstudio
+    command: ["pnpm", "--filter", "ontstudio", "dev", "--host", "0.0.0.0", "--port", "9301"]
+    ports:
+      - "9301:9301"
+
+  # ============================================================
+  # Production services (profile: prod)
+  # Built once, served by nginx, exposed on port 80 in-container.
+  # ============================================================
+  portal-prod:
+    <<: *prod-base
+    profiles: ["prod"]
+    container_name: mate-portal-prod
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: prod
+      args:
+        TARGET_APP: portal
+    ports:
+      - "9200:80"
+
+  dashboard-prod:
+    <<: *prod-base
+    profiles: ["prod"]
+    container_name: mate-dashboard-prod
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: prod
+      args:
+        TARGET_APP: dashboard
+    ports:
+      - "9203:80"
+
+  superai-prod:
+    <<: *prod-base
+    profiles: ["prod"]
+    container_name: mate-superai-prod
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: prod
+      args:
+        TARGET_APP: superai
+    ports:
+      - "9205:80"
+
+  apphub-prod:
+    <<: *prod-base
+    profiles: ["prod"]
+    container_name: mate-apphub-prod
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: prod
+      args:
+        TARGET_APP: apphub
+    ports:
+      - "9201:80"
+
+  arch-prod:
+    <<: *prod-base
+    profiles: ["prod"]
+    container_name: mate-arch-prod
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: prod
+      args:
+        TARGET_APP: arch
+    ports:
+      - "9206:80"
+
+  dw-prod:
+    <<: *prod-base
+    profiles: ["prod"]
+    container_name: mate-dw-prod
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: prod
+      args:
+        TARGET_APP: dw
+    ports:
+      - "9401:80"
+
+  mcphub-prod:
+    <<: *prod-base
+    profiles: ["prod"]
+    container_name: mate-mcphub-prod
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: prod
+      args:
+        TARGET_APP: mcphub
+    ports:
+      - "9501:80"
+
+  ontstudio-prod:
+    <<: *prod-base
+    profiles: ["prod"]
+    container_name: mate-ontstudio-prod
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: prod
+      args:
+        TARGET_APP: ontstudio
+    ports:
+      - "9301:80"
+
+volumes:
+  pnpm-store:
