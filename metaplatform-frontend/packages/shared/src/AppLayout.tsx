@@ -1,82 +1,62 @@
 import type { ReactNode } from 'react';
 import { Layout } from 'antd';
 import { Outlet } from 'react-router-dom';
-import { Hexagon, User, LogOut } from 'lucide-react';
+import { User, LogOut } from 'lucide-react';
 import PlatformMenu from './PlatformMenu';
+import { useAuth } from './auth/AuthProvider';
 
-const { Sider, Content } = Layout;
+const { Content } = Layout;
 
 export interface AppLayoutProps {
-  module: string;
+  module?: string;
   children?: ReactNode;
 }
 
-export default function AppLayout({ module, children }: AppLayoutProps) {
+export default function AppLayout({ children }: AppLayoutProps) {
+  const { user, logout } = useAuth();
+
   const handleLogout = () => {
-    localStorage.removeItem('mate_token');
+    logout();
     window.location.href = '/login';
   };
 
   return (
     <Layout className="v-app-layout" style={{ minHeight: '100vh', background: 'var(--background)' }}>
-      <Sider
+      <aside
         className="v-sider"
-        width={240}
         style={{
           position: 'fixed',
           left: 0,
           top: 0,
           bottom: 0,
+          height: '100vh',
+          width: 240,
           zIndex: 10,
           background: 'var(--sidebar)',
           borderRight: '1px solid var(--sidebar-border)',
           display: 'flex',
           flexDirection: 'column',
+          padding: '20px 12px',
         }}
       >
-        <div
-          className="v-sider-header"
-          style={{
-            height: 64,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 12,
-            padding: '0 16px',
-            borderBottom: '1px solid var(--sidebar-border)',
-            flexShrink: 0,
-          }}
-        >
-          <Hexagon
-            className="v-logo-icon"
-            style={{ width: 28, height: 28, color: 'var(--foreground)', strokeWidth: 1.5 }}
-          />
-          <span
-            className="v-logo-text"
-            style={{
-              fontSize: 16,
-              fontWeight: 600,
-              color: 'var(--foreground)',
-              fontFamily: 'var(--font-sans)',
-              letterSpacing: '-0.01em',
-            }}
-          >
-            Mate Platform
-          </span>
+        {/* Logo: white badge style, matches design draft */}
+        <div className="v-sidebar-logo">
+          <span className="v-sidebar-logo-badge">Mate</span>
         </div>
 
-        <div className="v-sider-menu" style={{ flex: 1, overflowY: 'auto', padding: '12px 10px' }}>
-          <PlatformMenu currentModule={module} />
+        <div className="v-sider-menu" style={{ flex: 1, overflowY: 'auto' }}>
+          <PlatformMenu />
         </div>
 
         <div
           className="v-sider-footer"
           style={{
+            padding: '16px 12px 0',
+            borderTop: '1px solid var(--sidebar-border)',
+            marginTop: 'auto',
             display: 'flex',
             flexDirection: 'column',
             gap: 8,
-            padding: '12px 16px',
-            borderTop: '1px solid var(--sidebar-border)',
-            flexShrink: 0,
           }}
         >
           <div
@@ -84,14 +64,17 @@ export default function AppLayout({ module, children }: AppLayoutProps) {
               height: 40,
               display: 'flex',
               alignItems: 'center',
-              gap: 10,
+              gap: 12,
+              padding: '0 12px',
+              borderRadius: 6,
+              color: 'var(--sidebar-foreground)',
+              fontSize: 14,
             }}
           >
             <div
-              className="v-avatar"
               style={{
-                width: 28,
-                height: 28,
+                width: 24,
+                height: 24,
                 borderRadius: '50%',
                 display: 'flex',
                 alignItems: 'center',
@@ -100,20 +83,16 @@ export default function AppLayout({ module, children }: AppLayoutProps) {
                 flexShrink: 0,
               }}
             >
-              <User style={{ width: 16, height: 16, color: 'var(--muted-foreground)', strokeWidth: 1.5 }} />
+              <User style={{ width: 14, height: 14, color: 'var(--muted-foreground)', strokeWidth: 1.5 }} />
             </div>
             <span
-              className="v-user-name"
               style={{
-                fontSize: 13,
-                color: 'var(--sidebar-foreground)',
-                fontFamily: 'var(--font-sans)',
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
                 whiteSpace: 'nowrap',
               }}
             >
-              当前用户
+              {user?.realName ?? user?.username ?? '当前用户'}
             </span>
           </div>
 
@@ -127,13 +106,14 @@ export default function AppLayout({ module, children }: AppLayoutProps) {
               border: 'none',
               cursor: 'pointer',
               textAlign: 'left',
+              marginBottom: 0,
             }}
           >
             <LogOut style={{ width: 18, height: 18, strokeWidth: 1.5 }} />
             <span>退出登录</span>
           </button>
         </div>
-      </Sider>
+      </aside>
 
       <Layout
         className="v-main-layout"
@@ -146,9 +126,11 @@ export default function AppLayout({ module, children }: AppLayoutProps) {
         <Content
           className="v-content"
           style={{
-            padding: 24,
+            padding: '0 24px',
             minHeight: '100vh',
             background: 'var(--background)',
+            display: 'flex',
+            flexDirection: 'column',
           }}
         >
           {children ?? <Outlet />}

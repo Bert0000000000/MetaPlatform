@@ -13,7 +13,7 @@
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
-    "@mate/shared": "file:../../packages/shared",
+    "@mate/shared": "workspace:*",
     "antd": "^6.0.0",
     "axios": "^1.7.9",
     "lucide-react": "^0.468.0",

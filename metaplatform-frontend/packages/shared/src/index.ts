@@ -1,6 +1,10 @@
 export { default as ErrorBoundary } from './ErrorBoundary';
-export { default as PlatformMenu } from './PlatformMenu';
+export { default as PlatformMenu, NAV_ITEMS, type NavItem } from './PlatformMenu';
 export { default as AppLayout } from './AppLayout';
+export { AuthProvider, useAuth, type AuthContextValue } from './auth/AuthProvider';
+export { AuthGuard } from './auth/AuthGuard';
+export { type AuthUser } from './auth/token';
+
 export { default as PageContainer } from './components/PageContainer';
 export { default as SectionCard } from './components/SectionCard';
 export { default as SearchInput } from './components/SearchInput';
@@ -14,6 +18,8 @@ export { default as ErrorState } from './components/ErrorState';
 export { default as EmptyState } from './components/EmptyState';
 export { default as StateContainer } from './components/StateContainer';
 export { default as PageHeader } from './components/PageHeader';
+export { default as SubTabs, type SubTabItem } from './components/SubTabs';
+export { default as Breadcrumb, type BreadcrumbItem, type BreadcrumbProps } from './components/Breadcrumb';
 
 export { useThemeMode, getAntdTheme } from './theme';
 export { useAsyncError } from './errors';

@@ -1,0 +1,29 @@
+{
+  "name": "metaplatform-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @mate/portal dev",
+    "dev:all": "pnpm -r --parallel dev",
+    "build": "pnpm -r build",
+    "build:app": "pnpm --filter",
+    "typecheck": "pnpm -r typecheck",
+    "preview": "pnpm --filter @mate/portal preview",
+    "clean": "pnpm -r exec rimraf dist node_modules/.vite",
+    "install:clean": "rimraf node_modules **/node_modules pnpm-lock.yaml && pnpm install"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^4.4.0",
+    "rimraf": "^6.0.0",
+    "typescript": "~5.7.0",
+    "vite": "^6.4.0"
+  }
+}

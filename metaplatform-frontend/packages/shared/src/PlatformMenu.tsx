@@ -1,93 +1,80 @@
-import { Menu } from 'antd';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useMemo } from 'react';
+import {
+  LayoutDashboard,
+  Sparkles,
+  GitBranch,
+  Boxes,
+  Database,
+  BookOpen,
+  Plug,
+  Bot,
+  Settings,
+  type LucideIcon,
+} from 'lucide-react';
 
-interface MenuItem {
+export interface NavItem {
   key: string;
   label: string;
+  icon: LucideIcon;
   path: string;
 }
 
-const modules: Record<string, MenuItem[]> = {
-  portal: [{ key: 'home', label: '首页', path: '/' }],
-  dashboard: [
-    { key: 'dashboard', label: '工作台', path: '/dashboard' },
-    { key: 'my-apps', label: '我的应用', path: '/my-apps' },
-    { key: 'my-agents', label: '我的数字员工', path: '/my-agents' },
-    { key: 'notifications', label: '消息', path: '/notifications' },
-    { key: 'portal', label: '门户', path: '/portal' },
-    { key: 'deliverables', label: '交付材料', path: '/deliverables' },
-  ],
-  ontstudio: [
-    { key: 'concepts', label: '概念管理', path: '/concepts' },
-    { key: 'entities', label: '实体管理', path: '/entities' },
-    { key: 'relations', label: '关系类型', path: '/relations' },
-    { key: 'relation-instances', label: '关系实例', path: '/relation-instances' },
-    { key: 'rules', label: '规则管理', path: '/rules' },
-    { key: 'versions', label: '版本管理', path: '/versions' },
-    { key: 'datasources', label: '数据源', path: '/datasources' },
-    { key: 'mappings', label: '数据映射', path: '/mappings' },
-    { key: 'actions', label: '动作定义', path: '/actions' },
-    { key: 'orchestrations', label: '编排', path: '/orchestrations' },
-    { key: 'triggers', label: '触发器', path: '/triggers' },
-    { key: 'executions', label: '执行监控', path: '/executions' },
-    { key: 'graph', label: '知识图谱', path: '/graph' },
-    { key: 'quality', label: '数据质量', path: '/quality' },
-    { key: 'lineage', label: '数据血缘', path: '/lineage' },
-    { key: 'discovery', label: '本体发现', path: '/discovery' },
-  ],
-  superai: [
-    { key: 'chat', label: 'AI 对话', path: '/chat' },
-    { key: 'schedule', label: '任务编排', path: '/schedule/orchestration' },
-    { key: 'schedule-plan', label: '执行计划', path: '/schedule/plan' },
-    { key: 'schedule-parallel', label: '并行执行', path: '/schedule/parallel' },
-    { key: 'schedule-aggregate', label: '结果聚合', path: '/schedule/aggregate' },
-    { key: 'schedule-templates', label: '任务模板', path: '/schedule/templates' },
-    { key: 'schedule-intent', label: '意图调度', path: '/schedule/intent' },
-    { key: 'schedule-match', label: '员工匹配', path: '/schedule/match' },
-    { key: 'schedule-plan-card', label: '计划卡片', path: '/schedule/plan-card' },
-    { key: 'schedule-execution', label: '执行监控', path: '/schedule/execution' },
-    { key: 'schedule-result', label: '结果总结', path: '/schedule/result' },
-    { key: 'schedule-export', label: '报告导出', path: '/schedule/export' },
-    { key: 'schedule-manual-select', label: '人工选择', path: '/schedule/manual-select' },
-    { key: 'schedule-a2a', label: 'A2A 协作', path: '/schedule/a2a' },
-    { key: 'analysis', label: '数据分析', path: '/analysis' },
-    { key: 'cost-optimization', label: '成本优化', path: '/cost-optimization' },
-  ],
-};
+/** 9 个一级导航菜单，与 UI 设计稿完全一致 */
+export const NAV_ITEMS: NavItem[] = [
+  { key: 'dashboard', label: '工作台', icon: LayoutDashboard, path: '/dashboard' },
+  { key: 'superai', label: 'SuperAI', icon: Sparkles, path: '/superai' },
+  { key: 'arch', label: '架构中心', icon: GitBranch, path: '/arch' },
+  { key: 'apps', label: '应用中心', icon: Boxes, path: '/apps' },
+  { key: 'ontology', label: '本体引擎', icon: Database, path: '/ontology' },
+  { key: 'knowledge', label: '知识库', icon: BookOpen, path: '/knowledge' },
+  { key: 'mcp', label: 'MCP 中心', icon: Plug, path: '/mcp' },
+  { key: 'agents', label: '数字员工', icon: Bot, path: '/agents' },
+  { key: 'admin', label: '后台管理', icon: Settings, path: '/admin' },
+];
 
 interface PlatformMenuProps {
-  currentModule: string;
+  currentModule?: string;
 }
 
 export default function PlatformMenu({ currentModule }: PlatformMenuProps) {
   const navigate = useNavigate();
   const location = useLocation();
-  const items = modules[currentModule] ?? [];
 
   const selectedKey = useMemo(() => {
     const pathname = location.pathname;
-    let match: MenuItem | undefined;
-    for (const item of items) {
+    // 匹配最长前缀
+    let bestMatch: NavItem | undefined;
+    for (const item of NAV_ITEMS) {
       if (pathname === item.path || pathname.startsWith(item.path + '/')) {
-        if (!match || item.path.length > match.path.length) {
-          match = item;
+        if (!bestMatch || item.path.length > bestMatch.path.length) {
+          bestMatch = item;
         }
       }
     }
-    return match?.key ?? (items[0]?.key || '');
-  }, [location.pathname, items]);
+    return bestMatch?.key ?? (currentModule ?? '');
+  }, [location.pathname, currentModule]);
 
   return (
-    <Menu
-      mode="inline"
-      selectedKeys={[selectedKey]}
-      items={items.map((i) => ({ key: i.key, label: i.label }))}
-      onClick={({ key }) => {
-        const target = items.find((i) => i.key === key);
-        if (target) navigate(target.path);
-      }}
-      style={{ background: 'transparent', borderRight: 0 }}
-    />
+    <nav className="v-sidebar-nav" style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      {NAV_ITEMS.map((item) => {
+        const Icon = item.icon;
+        const isActive = item.key === selectedKey;
+        return (
+          <a
+            key={item.key}
+            className={`v-sidebar-item${isActive ? ' active' : ''}`}
+            onClick={(e) => {
+              e.preventDefault();
+              navigate(item.path);
+            }}
+            style={{ cursor: 'pointer' }}
+          >
+            <Icon style={{ width: 18, height: 18, strokeWidth: 1.5, flexShrink: 0 }} />
+            <span>{item.label}</span>
+          </a>
+        );
+      })}
+    </nav>
   );
 }

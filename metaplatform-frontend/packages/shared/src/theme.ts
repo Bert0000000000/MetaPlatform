@@ -29,9 +29,9 @@ export function getAntdTheme(
         colorBgElevated: '#1a1a1a',
         colorBorder: '#262626',
         colorText: '#fafafa',
-        colorTextSecondary: '#a1a1aa',
+        colorTextSecondary: '#a1a1a1',
         colorTextTertiary: '#737373',
-        borderRadius: 8,
+        borderRadius: 4,
         fontFamily: "'Geist', ui-sans-serif, system-ui, sans-serif",
         controlHeight: 36,
       },
@@ -46,9 +46,9 @@ export function getAntdTheme(
           colorSubItemBg: '#0f0f0f',
         },
         Layout: {
-          colorBgBody: '#0a0a0a',
-          colorBgHeader: '#111111',
-          colorBgTrigger: '#1a1a1a',
+          bodyBg: '#0a0a0a',
+          headerBg: '#111111',
+          triggerBg: '#1a1a1a',
         },
         Card: {
           colorBgContainer: '#111111',
@@ -57,7 +57,7 @@ export function getAntdTheme(
         Table: {
           colorBgContainer: '#111111',
           colorBorderSecondary: '#262626',
-          headerBg: 'transparent',
+          headerBg: '#1a1a1a',
         },
         Input: {
           colorBgContainer: '#1a1a1a',

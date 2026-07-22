@@ -7,7 +7,7 @@
 # Usage:
 #   docker compose up portal              # start one app in dev mode
 #   docker compose --profile prod up portal
-#   docker compose up                     # start all 8 apps in dev mode
+#   docker compose up                     # start all 7 apps in dev mode
 
 name: metaplatform-frontend
 
@@ -29,10 +29,10 @@ x-app-base: &app-base
     - /app/apps/arch/node_modules
     - /app/apps/dw/node_modules
     - /app/apps/mcphub/node_modules
-    - /app/apps/ontstudio/node_modules
     - /app/packages/shared/node_modules
   environment:
     NODE_ENV: development
+    CI: "true"
   restart: unless-stopped
 
 x-prod-base: &prod-base
@@ -45,21 +45,21 @@ services:
   portal:
     <<: *app-base
     container_name: mate-portal
-    command: ["pnpm", "--filter", "portal", "dev", "--host", "0.0.0.0", "--port", "9200"]
+    command: ["pnpm", "--filter", "@mate/portal", "dev", "--host", "0.0.0.0", "--port", "9200"]
     ports:
       - "9200:9200"
 
   dashboard:
     <<: *app-base
     container_name: mate-dashboard
-    command: ["pnpm", "--filter", "dashboard", "dev", "--host", "0.0.0.0", "--port", "9203"]
+    command: ["pnpm", "--filter", "@mate/dashboard", "dev", "--host", "0.0.0.0", "--port", "9203"]
     ports:
       - "9203:9203"
 
   superai:
     <<: *app-base
     container_name: mate-superai
-    command: ["pnpm", "--filter", "superai", "dev", "--host", "0.0.0.0", "--port", "9205"]
+    command: ["pnpm", "--filter", "@mate/superai", "dev", "--host", "0.0.0.0", "--port", "9205"]
     ports:
       - "9205:9205"
 
@@ -90,13 +90,6 @@ services:
     command: ["pnpm", "--filter", "mcphub", "dev", "--host", "0.0.0.0", "--port", "9501"]
     ports:
       - "9501:9501"
-
-  ontstudio:
-    <<: *app-base
-    container_name: mate-ontstudio
-    command: ["pnpm", "--filter", "ontstudio", "dev", "--host", "0.0.0.0", "--port", "9301"]
-    ports:
-      - "9301:9301"
 
   # ============================================================
   # Production services (profile: prod)
@@ -192,19 +185,6 @@ services:
         TARGET_APP: mcphub
     ports:
       - "9501:80"
-
-  ontstudio-prod:
-    <<: *prod-base
-    profiles: ["prod"]
-    container_name: mate-ontstudio-prod
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: prod
-      args:
-        TARGET_APP: ontstudio
-    ports:
-      - "9301:80"
 
 volumes:
   pnpm-store:
