@@ -1,7 +1,15 @@
 import { Menu } from 'antd';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useMemo } from 'react';
 
-const modules: Record<string, { key: string; label: string; path: string }[]> = {
+interface MenuItem {
+  key: string;
+  label: string;
+  path: string;
+}
+
+const modules: Record<string, MenuItem[]> = {
+  portal: [{ key: 'home', label: '首页', path: '/' }],
   ontstudio: [
     { key: 'concepts', label: '概念管理', path: '/concepts' },
     { key: 'entities', label: '实体管理', path: '/entities' },
@@ -20,6 +28,24 @@ const modules: Record<string, { key: string; label: string; path: string }[]> = 
     { key: 'lineage', label: '数据血缘', path: '/lineage' },
     { key: 'discovery', label: '本体发现', path: '/discovery' },
   ],
+  superai: [
+    { key: 'chat', label: 'AI 对话', path: '/chat' },
+    { key: 'schedule', label: '任务编排', path: '/schedule/orchestration' },
+    { key: 'schedule-plan', label: '执行计划', path: '/schedule/plan' },
+    { key: 'schedule-parallel', label: '并行执行', path: '/schedule/parallel' },
+    { key: 'schedule-aggregate', label: '结果聚合', path: '/schedule/aggregate' },
+    { key: 'schedule-templates', label: '任务模板', path: '/schedule/templates' },
+    { key: 'schedule-intent', label: '意图调度', path: '/schedule/intent' },
+    { key: 'schedule-match', label: '员工匹配', path: '/schedule/match' },
+    { key: 'schedule-plan-card', label: '计划卡片', path: '/schedule/plan-card' },
+    { key: 'schedule-execution', label: '执行监控', path: '/schedule/execution' },
+    { key: 'schedule-result', label: '结果总结', path: '/schedule/result' },
+    { key: 'schedule-export', label: '报告导出', path: '/schedule/export' },
+    { key: 'schedule-manual-select', label: '人工选择', path: '/schedule/manual-select' },
+    { key: 'schedule-a2a', label: 'A2A 协作', path: '/schedule/a2a' },
+    { key: 'analysis', label: '数据分析', path: '/analysis' },
+    { key: 'cost-optimization', label: '成本优化', path: '/cost-optimization' },
+  ],
 };
 
 interface PlatformMenuProps {
@@ -31,15 +57,29 @@ export default function PlatformMenu({ currentModule }: PlatformMenuProps) {
   const location = useLocation();
   const items = modules[currentModule] ?? [];
 
+  const selectedKey = useMemo(() => {
+    const pathname = location.pathname;
+    let match: MenuItem | undefined;
+    for (const item of items) {
+      if (pathname === item.path || pathname.startsWith(item.path + '/')) {
+        if (!match || item.path.length > match.path.length) {
+          match = item;
+        }
+      }
+    }
+    return match?.key ?? (items[0]?.key || '');
+  }, [location.pathname, items]);
+
   return (
     <Menu
       mode="inline"
-      selectedKeys={[location.pathname.split('/')[1] || 'concepts']}
+      selectedKeys={[selectedKey]}
       items={items.map((i) => ({ key: i.key, label: i.label }))}
       onClick={({ key }) => {
         const target = items.find((i) => i.key === key);
         if (target) navigate(target.path);
       }}
+      style={{ background: 'transparent', borderRight: 0 }}
     />
   );
 }
