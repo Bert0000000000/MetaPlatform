@@ -1,9 +1,0 @@
-{
-  "name": "ontstudio",
-  "version": "0.1.0",
-  "private": true,
-  "type": "module",
-  "scripts": {
-    "typecheck": "echo 'ontstudio: no sources yet'"
-  }
-}
