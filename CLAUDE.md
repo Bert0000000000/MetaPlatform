@@ -31,7 +31,7 @@
 
 | 类别 | 技术 | 版本 | 说明 |
 |---|---|---|---|
-| 语言 | **Java** | **21 LTS** | **唯一后端语言** |
+| 语言 | **Java** | **25 LTS** | **唯一后端语言** |
 | 框架 | **Spring Boot** | **3.5.x** | 微服务基础 |
 | 框架 | Spring Framework | 6.2.x | 底层容器 |
 | 框架 | Spring Cloud | 2024.0.x | 微服务治理 |
@@ -99,7 +99,7 @@
 
 ### 后端语言统一（v1.2 重大约束）
 
-**核心约束**：Mate Platform 后端统一为 Java 21，**禁止新增 Python 后端服务**。
+**核心约束**：Mate Platform 后端统一为 Java 25，**禁止新增 Python 后端服务**。
 
 | 范围 | 状态 |
 |---|---|
@@ -181,7 +181,7 @@ TECH-IAM     ← 所有服务（MCP / A2A 调用鉴权）
 ### 新建模块
 
 1. 在项目根目录创建 `APP-XXX` 或 `TECH-XXX` 目录
-2. **语言约束**：后端服务必须用 Java 21 + Spring Boot 3.5
+2. **语言约束**：后端服务必须用 Java 25 + Spring Boot 3.5
 3. 编写 `README.md`：作用说明、上游依赖、下游消费、目录结构
 4. **Java 包名**：`com.metaplatform.[模块小写]`，TS 目录 `kebab-case`
 5. **API 路径**：`/api/v1/[模块]/[资源]`
@@ -221,7 +221,7 @@ TECH-IAM     ← 所有服务（MCP / A2A 调用鉴权）
 
 | 决策点 | 选择 | 理由 |
 |---|---|---|
-| **后端语言** | **Java 21（唯一）** | **v1.2 统一栈，消除双栈运维** |
+| **后端语言** | **Java 25（唯一）** | **v1.3 升级至 LTS 25，统一栈消除双栈运维** |
 | **AI Copilot 模块名** | **`APP-COPILOT`**（原 `APP-SUPERAI`） | v1.3 更名，强调 AI 协作助手定位 |
 | 向量数据库 | Milvus 2.5（SAA 适配） | 十亿级向量、RaBitQ 量化 |
 | 数据湖格式 | Hudi 1.x（主）/ Iceberg 1.8（备） | Hudi 原生支持 CDC/upsert |

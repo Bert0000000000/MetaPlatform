@@ -19,7 +19,7 @@
 ## 技术栈基线（v1.2）
 
 ### 后端
-- **Java 21** + Spring Boot 3.5.x + Spring AI 1.1.2
+- **Java 25** + Spring Boot 3.5.x + Spring AI 1.1.2
 - **Spring AI Alibaba 1.1.2.0**（AI 编排统一底座，BOM 管理）
 - **Spring Data JPA**（替换 SQLAlchemy）
 - **Spring WebFlux / MVC + 虚拟线程**（替换 FastAPI async）
@@ -105,7 +105,7 @@ MetaPlatform/
 
 ### 后端语言统一（v1.2 重大约束）
 
-**Mate Platform 后端统一为 Java 21，禁止新增 Python 后端服务**。
+**Mate Platform 后端统一为 Java 25，禁止新增 Python 后端服务**。
 
 | 范围 | 状态 |
 |---|---|
@@ -174,7 +174,7 @@ TECH-IAM     ← 所有服务（MCP / A2A 调用鉴权）
 ### 新建模块时
 
 1. 在项目根目录创建 `APP-XXX` 或 `TECH-XXX` 目录
-2. 后端服务必须用 **Java 21 + Spring Boot 3.5**，前端走 pnpm monorepo
+2. 后端服务必须用 **Java 25 + Spring Boot 3.5**，前端走 pnpm monorepo
 3. 编写 `README.md`：作用说明、上游依赖、下游消费、目录结构
 4. Java 包名 `com.metaplatform.[模块小写]`，TS 目录 `kebab-case`
 5. API 路径遵循 `/api/v1/[模块]/[资源]`
