@@ -2,6 +2,7 @@
   "name": "@mate/shared",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "main": "src/index.ts",
   "types": "src/index.ts",
   "exports": {
@@ -12,8 +13,10 @@
   "peerDependencies": {
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "react-router-dom": "^7.0.0",
     "antd": "^6.0.0",
-    "lucide-react": "^0.460.0"
+    "react-router-dom": "^7.0.0"
+  },
+  "dependencies": {
+    "lucide-react": "^0.468.0"
   }
 }

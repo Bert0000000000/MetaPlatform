@@ -1,17 +1,22 @@
 import type { ReactNode } from 'react';
 import { Layout } from 'antd';
 import { Outlet } from 'react-router-dom';
-import { Hexagon, User } from 'lucide-react';
+import { Hexagon, User, LogOut } from 'lucide-react';
 import PlatformMenu from './PlatformMenu';
 
 const { Sider, Content } = Layout;
 
-interface AppLayoutProps {
-  currentModule: string;
+export interface AppLayoutProps {
+  module: string;
   children?: ReactNode;
 }
 
-export default function AppLayout({ currentModule, children }: AppLayoutProps) {
+export default function AppLayout({ module, children }: AppLayoutProps) {
+  const handleLogout = () => {
+    localStorage.removeItem('mate_token');
+    window.location.href = '/login';
+  };
+
   return (
     <Layout className="v-app-layout" style={{ minHeight: '100vh', background: 'var(--background)' }}>
       <Sider
@@ -60,45 +65,73 @@ export default function AppLayout({ currentModule, children }: AppLayoutProps) {
         </div>
 
         <div className="v-sider-menu" style={{ flex: 1, overflowY: 'auto', padding: '12px 10px' }}>
-          <PlatformMenu currentModule={currentModule} />
+          <PlatformMenu currentModule={module} />
         </div>
 
         <div
           className="v-sider-footer"
           style={{
-            height: 56,
             display: 'flex',
-            alignItems: 'center',
-            gap: 10,
-            padding: '0 16px',
+            flexDirection: 'column',
+            gap: 8,
+            padding: '12px 16px',
             borderTop: '1px solid var(--sidebar-border)',
             flexShrink: 0,
           }}
         >
           <div
-            className="v-avatar"
             style={{
-              width: 28,
-              height: 28,
-              borderRadius: '50%',
+              height: 40,
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center',
-              background: 'var(--muted)',
+              gap: 10,
             }}
           >
-            <User style={{ width: 16, height: 16, color: 'var(--muted-foreground)', strokeWidth: 1.5 }} />
+            <div
+              className="v-avatar"
+              style={{
+                width: 28,
+                height: 28,
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: 'var(--muted)',
+                flexShrink: 0,
+              }}
+            >
+              <User style={{ width: 16, height: 16, color: 'var(--muted-foreground)', strokeWidth: 1.5 }} />
+            </div>
+            <span
+              className="v-user-name"
+              style={{
+                fontSize: 13,
+                color: 'var(--sidebar-foreground)',
+                fontFamily: 'var(--font-sans)',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              当前用户
+            </span>
           </div>
-          <span
-            className="v-user-name"
+
+          <button
+            type="button"
+            className="v-sidebar-item"
+            onClick={handleLogout}
             style={{
-              fontSize: 13,
-              color: 'var(--sidebar-foreground)',
-              fontFamily: 'var(--font-sans)',
+              width: '100%',
+              background: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+              textAlign: 'left',
             }}
           >
-            当前用户
-          </span>
+            <LogOut style={{ width: 18, height: 18, strokeWidth: 1.5 }} />
+            <span>退出登录</span>
+          </button>
         </div>
       </Sider>
 

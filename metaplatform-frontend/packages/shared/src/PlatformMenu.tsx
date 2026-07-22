@@ -10,6 +10,14 @@ interface MenuItem {
 
 const modules: Record<string, MenuItem[]> = {
   portal: [{ key: 'home', label: '首页', path: '/' }],
+  dashboard: [
+    { key: 'dashboard', label: '工作台', path: '/dashboard' },
+    { key: 'my-apps', label: '我的应用', path: '/my-apps' },
+    { key: 'my-agents', label: '我的数字员工', path: '/my-agents' },
+    { key: 'notifications', label: '消息', path: '/notifications' },
+    { key: 'portal', label: '门户', path: '/portal' },
+    { key: 'deliverables', label: '交付材料', path: '/deliverables' },
+  ],
   ontstudio: [
     { key: 'concepts', label: '概念管理', path: '/concepts' },
     { key: 'entities', label: '实体管理', path: '/entities' },
