@@ -7,7 +7,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(import.meta.dirname, './src'),
-      '@mate/shared': path.resolve(import.meta.dirname, '../../packages/shared/src/index.ts'),
+      '@mate/shared$': path.resolve(import.meta.dirname, '../../packages/shared/src/index.ts'),
     },
   },
   server: {

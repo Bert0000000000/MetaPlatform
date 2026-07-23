@@ -23,29 +23,29 @@ import type {
 // (unchanged endpoints — kept for backward compatibility with P2-SAI-13~17)
 
 export async function generateForm(description: string): Promise<FormGenResult> {
-  return post<FormGenResult>('/v1/generate/form', { description });
+  return post<FormGenResult>('/v1/copilot/generate/form', { description });
 }
 
 export async function generateProcess(description: string): Promise<ProcessGenResult> {
-  return post<ProcessGenResult>('/v1/generate/process', { description });
+  return post<ProcessGenResult>('/v1/copilot/generate/process', { description });
 }
 
 export async function explainCode(code: string): Promise<GeneratedConfig> {
-  return post<GeneratedConfig>('/v1/generate/explain-code', { code });
+  return post<GeneratedConfig>('/v1/copilot/generate/explain-code', { code });
 }
 
 export async function reviewCode(code: string): Promise<CodeReviewResult> {
-  return post<CodeReviewResult>('/v1/generate/review-code', { code });
+  return post<CodeReviewResult>('/v1/copilot/generate/review-code', { code });
 }
 
 export async function generateDashboard(description: string): Promise<DashboardGenResult> {
-  return post<DashboardGenResult>('/v1/generate/dashboard', { description });
+  return post<DashboardGenResult>('/v1/copilot/generate/dashboard', { description });
 }
 
 // ----------------------------------------------------- V12-02 code workspace
-// All code-related endpoints are mounted under /v1/llmgw/code/* on TECH-LLMGW.
+// All code-related endpoints are mounted under /v1/copilot/code/* on APP-COPILOT.
 
-const CODE_BASE = '/v1/llmgw/code';
+const CODE_BASE = '/v1/copilot/code';
 
 // REQ-038 — natural-language -> code
 export async function generateCode(

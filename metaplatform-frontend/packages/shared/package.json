@@ -8,15 +8,42 @@
   "exports": {
     ".": "./src/index.ts",
     "./theme": "./src/theme.ts",
-    "./global.css": "./src/global.css"
+    "./global.css": "./src/global.css",
+    "./flow": "./src/components/flow/index.ts",
+    "./flow/styles.css": "./src/components/flow/flow-canvas.css"
   },
   "peerDependencies": {
+    "antd": "^6.0.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "antd": "^6.0.0",
     "react-router-dom": "^7.0.0"
   },
   "dependencies": {
-    "lucide-react": "^0.468.0"
+    "@douyinfe/semi-icons": "2.80.0",
+    "@douyinfe/semi-ui": "2.80.0",
+    "@flowgram.ai/background-plugin": "1.0.12",
+    "@flowgram.ai/coze-editor": "1.0.12",
+    "@flowgram.ai/fixed-layout-editor": "^1.0.12",
+    "@flowgram.ai/fixed-semi-materials": "1.0.12",
+    "@flowgram.ai/form-materials": "1.0.12",
+    "@flowgram.ai/free-history-plugin": "1.0.12",
+    "@flowgram.ai/free-hover-plugin": "1.0.12",
+    "@flowgram.ai/free-lines-plugin": "1.0.12",
+    "@flowgram.ai/free-snap-plugin": "1.0.12",
+    "@flowgram.ai/free-stack-plugin": "1.0.12",
+    "@flowgram.ai/group-plugin": "1.0.12",
+    "@flowgram.ai/i18n": "1.0.12",
+    "@flowgram.ai/i18n-plugin": "1.0.12",
+    "@flowgram.ai/materials-plugin": "1.0.12",
+    "@flowgram.ai/minimap-plugin": "^1.0.12",
+    "@flowgram.ai/node-core-plugin": "1.0.12",
+    "@flowgram.ai/panel-manager-plugin": "1.0.12",
+    "@flowgram.ai/redux-devtool-plugin": "1.0.12",
+    "@flowgram.ai/shortcuts-plugin": "1.0.12",
+    "lucide-react": "^0.468.0",
+    "nanoid": "^6.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0"
   }
 }

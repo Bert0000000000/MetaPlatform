@@ -139,7 +139,7 @@ export default function ArchTechPage() {
       <style>{`
         :root { --info:#60a5fa; --info-subtle:#0f1729; }
         .at-page-header { margin-bottom:32px; }
-        .at-page-header h1 { font-size:24px; font-weight:700; margin-bottom:6px; }
+        .at-page-header h1 { font-size:22px; font-weight:700; margin-bottom:6px; }
         .at-page-header p { font-size:14px; color:var(--muted-foreground); }
         .at-v-card-plus { margin-top:20px; }
         .at-v-card-title { font-size:14px; font-weight:600; margin-bottom:16px; display:flex; align-items:center; gap:8px; }

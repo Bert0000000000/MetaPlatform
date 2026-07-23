@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import AppHeader from '@/components/AppHeader';
 import { useAppTabs } from '@/store/appTabs';
+import { FormDrawer } from '@mate/shared';
 
 const APP_SUB_TABS = [
   { label: '应用详情', path: '/apps/detail' },
@@ -66,6 +67,7 @@ const PERMISSION_MATRIX = [
 export default function AppConfigPage() {
   const navigate = useNavigate();
   const [activePanel, setActivePanel] = useState('env-vars');
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const { tabs, activeId } = useAppTabs();
   const active = tabs.find((t) => t.id === activeId) ?? tabs[0];
   const appId = active?.id ?? 'order-mgmt';
@@ -138,7 +140,7 @@ export default function AppConfigPage() {
                   环境变量
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                     <span className="v-meta">12 项</span>
-                    <button className="v-btn" style={{ height: 26, fontSize: 12, padding: '0 8px' }}><Plus style={{ width: 12, height: 12 }} />新增变量</button>
+                    <button className="v-btn" style={{ height: 26, fontSize: 12, padding: '0 8px' }} onClick={() => setDrawerOpen(true)}><Plus style={{ width: 12, height: 12 }} />新增变量</button>
                   </div>
                 </div>
                 {/* Toolbar */}
@@ -421,6 +423,33 @@ export default function AppConfigPage() {
           )}
         </div>
       </div>
+
+      <FormDrawer
+        open={drawerOpen}
+        title="新增环境变量"
+        onCancel={() => setDrawerOpen(false)}
+        onOk={() => setDrawerOpen(false)}
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div>
+            <label style={{ display: 'block', fontSize: 12, color: 'var(--muted-foreground)', marginBottom: 6 }}>变量名</label>
+            <input style={{ width: '100%', height: 36, background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '0 12px', fontSize: 13, color: 'var(--foreground)', outline: 'none', fontFamily: 'var(--font-mono)' }} placeholder="例如：ENABLE_FEATURE_X" />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: 12, color: 'var(--muted-foreground)', marginBottom: 6 }}>变量值</label>
+            <input style={{ width: '100%', height: 36, background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '0 12px', fontSize: 13, color: 'var(--foreground)', outline: 'none', fontFamily: 'var(--font-mono)' }} placeholder="请输入变量值" />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: 12, color: 'var(--muted-foreground)', marginBottom: 6 }}>环境</label>
+            <select style={{ width: '100%', height: 36, background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '0 12px', fontSize: 13, color: 'var(--foreground)', outline: 'none' }}>
+              <option>all</option>
+              <option>dev</option>
+              <option>staging</option>
+              <option>prod</option>
+            </select>
+          </div>
+        </div>
+      </FormDrawer>
     </div>
   );
 }

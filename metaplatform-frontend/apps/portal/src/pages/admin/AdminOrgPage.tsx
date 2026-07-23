@@ -6,7 +6,7 @@ import {
   Server, Monitor, Sparkles, Container, Figma, Search, Kanban,
   Pencil, Target, Code2, UserCheck, Wallet, ArrowUpRight, ArrowDownRight,
 } from 'lucide-react';
-import { SubTabs, type SubTabItem } from '@mate/shared';
+import { SubTabs, FormDrawer, Field, TextInput, TextArea, FormSection, type SubTabItem } from '@mate/shared';
 import { useLocation } from 'react-router-dom';
 import { MOCK_USERS } from '@/mock'; // MOCK
 
@@ -16,6 +16,8 @@ const ADMIN_TABS: SubTabItem[] = [
   { label: '组织管理', path: '/admin/org' },
   { label: '日志管理', path: '/admin/logs' },
   { label: '系统配置', path: '/admin/config' },
+  { label: '组件库', path: '/admin/components' },
+  { label: '运营数据', path: '/admin/operations' },
 ];
 
 // MOCK: 部门成员
@@ -60,6 +62,7 @@ export default function AdminOrgPage() {
     'finance': false,
   });
   const [selectedNode, setSelectedNode] = useState('tech');
+  const [editDrawerOpen, setEditDrawerOpen] = useState(false);
 
   const toggleNode = (id: string) => setExpandedNodes((prev) => ({ ...prev, [id]: !prev[id] }));
 
@@ -69,7 +72,7 @@ export default function AdminOrgPage() {
 
       <style>{`
         .ao-page-header { margin-bottom: 24px; display: flex; align-items: flex-start; justify-content: space-between; }
-        .ao-page-header h1 { font-size: 24px; font-weight: 600; margin-bottom: 4px; }
+        .ao-page-header h1 { font-size: 22px; font-weight: 600; margin-bottom: 4px; }
         .ao-page-header p { font-size: 14px; color: var(--muted-foreground); }
         .ao-tab-bar { display: flex; gap: 4px; margin-bottom: 24px; border-bottom: 1px solid var(--border); padding-bottom: 12px; }
         .ao-tab-bar .v-tab { cursor: pointer; text-decoration: none; }
@@ -150,7 +153,7 @@ export default function AdminOrgPage() {
         .ao-page-btn:hover { background: var(--muted); color: var(--foreground); }
         .ao-page-btn.active { background: var(--foreground); color: var(--background); border-color: var(--foreground); }
       `}</style>
-      <div style={{ padding: '0 0 24px' }}>
+      <div style={{ padding: '24px 0' }}>
         {/* Page Header */}
         <div className="ao-page-header">
           <div>
@@ -311,7 +314,7 @@ export default function AdminOrgPage() {
             <div className="v-card">
               <div className="ao-section-title">
                 <span>部门信息</span>
-                <button className="v-btn" style={{ height: 28, padding: '0 10px', fontSize: 12 }}><Pencil style={{ width: 12, height: 12 }} />编辑</button>
+                <button className="v-btn" style={{ height: 28, padding: '0 10px', fontSize: 12 }} onClick={() => setEditDrawerOpen(true)}><Pencil style={{ width: 12, height: 12 }} />编辑</button>
               </div>
               <div className="ao-info-grid">
                 <div className="ao-info-item"><span className="label">部门名称</span><span className="value">技术中心</span></div>
@@ -436,6 +439,28 @@ export default function AdminOrgPage() {
           </div>
         </div>
       </div>
+
+      <FormDrawer
+        open={editDrawerOpen}
+        title="编辑部门"
+        onCancel={() => setEditDrawerOpen(false)}
+        onOk={() => setEditDrawerOpen(false)}
+      >
+        <FormSection title="部门信息" desc="部门基本资料">
+          <Field label="部门名称" required>
+            <TextInput defaultValue="技术中心" />
+          </Field>
+          <Field label="负责人">
+            <TextInput defaultValue="王磊" />
+          </Field>
+          <Field label="人员编制">
+            <TextInput type="number" defaultValue={35} min={1} />
+          </Field>
+          <Field label="描述">
+            <TextArea placeholder="部门职责描述..." rows={3} defaultValue="负责平台后端架构、前端开发、AI 研究与运维保障" />
+          </Field>
+        </FormSection>
+      </FormDrawer>
     </>
   );
 }

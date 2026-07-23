@@ -10,8 +10,8 @@ import type {
 } from '@/types';
 
 /**
- * V11-04: 所有评估相关 API 已后端化，路径统一挂在 /v1/agent/evaluations/* 下。
- * 后端为 TECH-AGENT app/evaluation 模块（service + api/v1/evaluation.py）。
+ * V11-04: 所有评估相关 API 已后端化，路径统一挂在 /v1/dw/evaluations/* 下。
+ * 后端为 APP-DW evaluation 模块。
  * 已彻底移除 mock 兜底（mockAutoScoreResult / mockSuggestions / mockReportDetail / DEFAULT_RUBRIC）。
  *
  * V11-06: 新增 aggregateReport，承载多员工协作结果聚合。
@@ -48,7 +48,7 @@ export interface EvaluationReport {
   createdAt: string;
 }
 
-const BASE = '/v1/agent/evaluations';
+const BASE = '/v1/dw/evaluations';
 
 export async function listConversations(employeeId?: string): Promise<ConversationRecord[]> {
   return get<ConversationRecord[]>(`${BASE}/conversations`, { employeeId });
@@ -184,7 +184,7 @@ export interface AggregateReportResponse {
 /**
  * 多员工协作报告聚合（V11-06）。
  *
- * 后端：POST /api/v1/agent/evaluations/aggregate-report
+ * 后端：POST /api/v1/dw/evaluations/aggregate-report
  * 入参为协作任务下的员工 ID 列表，返回跨员工的维度聚合 + Markdown 报告。
  */
 export async function aggregateReport(

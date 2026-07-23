@@ -22,7 +22,7 @@ import {
   Maximize2,
   Globe,
 } from 'lucide-react';
-import { SubTabs, type SubTabItem } from '@mate/shared';
+import { SubTabs, FormDrawer, Field, TextInput, TextArea, Select, FormSection, type SubTabItem } from '@mate/shared';
 import { useLocation } from 'react-router-dom';
 import { MOCK_MCP_SERVERS } from '@/mock'; // MOCK
 
@@ -100,6 +100,8 @@ const HEALTH_RECORDS = [
 export default function McpServerPage() {
   const location = useLocation();
   const [selectedId, setSelectedId] = useState<string>('s1');
+  const [createDrawerOpen, setCreateDrawerOpen] = useState(false);
+  const [transport, setTransport] = useState<'sse' | 'stdio' | 'http'>('http');
 
   const selected = MOCK_SERVERS.find((s) => s.id === selectedId) ?? MOCK_SERVERS[0];
 
@@ -120,7 +122,7 @@ export default function McpServerPage() {
           管理 MCP Server 实例，监控连接状态、工具注册与 Nacos 心跳。
         </p>
         <div style={{ marginTop: 12, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-          <button className="v-btn-primary"><Plus style={{ width: 14, height: 14 }} />添加 Server</button>
+          <button className="v-btn-primary" onClick={() => setCreateDrawerOpen(true)}><Plus style={{ width: 14, height: 14 }} />添加 Server</button>
           <button className="v-btn"><RefreshCw style={{ width: 14, height: 14 }} />刷新状态</button>
           <button className="v-btn"><Download style={{ width: 14, height: 14 }} />导出</button>
         </div>
@@ -395,6 +397,59 @@ export default function McpServerPage() {
           </div>
         </div>
       </div>
+
+      <FormDrawer
+        open={createDrawerOpen}
+        title="新建 MCP Server"
+        onCancel={() => setCreateDrawerOpen(false)}
+        onOk={() => setCreateDrawerOpen(false)}
+      >
+        <FormSection title="基本信息" desc="Server 标识与展示">
+          <Field label="Server 名称" required>
+            <TextInput placeholder="例：mate-ont-server" />
+          </Field>
+          <Field label="显示名称">
+            <TextInput placeholder="例：本体引擎 MCP Server" />
+          </Field>
+          <Field label="描述">
+            <TextArea placeholder="Server 用途说明..." rows={3} />
+          </Field>
+          <Field label="标签">
+            <TextInput placeholder="core, ont, g2 （多个用逗号分隔）" />
+          </Field>
+        </FormSection>
+
+        <FormSection title="协议与传输" desc="协议版本与传输方式配置">
+          <Field label="协议版本">
+            <Select defaultValue="2.0">
+              <option value="1.0">1.0</option>
+              <option value="2.0">2.0</option>
+            </Select>
+          </Field>
+          <Field label="传输方式">
+            <Select value={transport} onChange={(e) => setTransport(e.target.value as typeof transport)}>
+              <option value="sse">SSE</option>
+              <option value="stdio">Stdio</option>
+              <option value="http">HTTP</option>
+            </Select>
+          </Field>
+          {transport === 'stdio' ? (
+            <Field label="Stdio 命令">
+              <TextInput placeholder="例：/usr/local/bin/mate-ont-server --port 8081" style={{ fontFamily: 'var(--font-mono)' }} />
+            </Field>
+          ) : (
+            <Field label="Endpoint URL">
+              <TextInput placeholder="例：http://mate-ont-server:8081/mcp" style={{ fontFamily: 'var(--font-mono)' }} />
+            </Field>
+          )}
+        </FormSection>
+
+        <FormSection title="运行参数" desc="健康检查配置">
+          <Field label="健康检查间隔（秒）">
+            <TextInput type="number" defaultValue={10} min={1} />
+          </Field>
+        </FormSection>
+      </FormDrawer>
     </div>
   );
 }

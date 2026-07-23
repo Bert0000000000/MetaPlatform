@@ -127,7 +127,8 @@ export default function AppLayout({ children }: AppLayoutProps) {
           className="v-content"
           style={{
             padding: '0 24px',
-            minHeight: '100vh',
+            height: '100vh',
+            overflow: 'hidden',
             background: 'var(--background)',
             display: 'flex',
             flexDirection: 'column',

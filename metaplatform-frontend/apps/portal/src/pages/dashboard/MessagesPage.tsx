@@ -102,7 +102,7 @@ export default function MessagesPage() {
       {/* Page header */}
       <div style={{ marginBottom: 24, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
         <div>
-          <h1 style={{ fontSize: 24, fontWeight: 600, marginBottom: 4 }}>消息</h1>
+          <h1 style={{ fontSize: 22, fontWeight: 600, marginBottom: 4 }}>消息</h1>
           <p style={{ fontSize: 14, color: 'var(--muted-foreground)' }}>系统通知和消息提醒</p>
         </div>
         <button className="v-btn" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>

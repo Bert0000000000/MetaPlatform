@@ -15,8 +15,9 @@ import {
   Play,
   Trash2,
 } from 'lucide-react';
-import { SubTabs, type SubTabItem } from '@mate/shared';
+import { SubTabs, FormDrawer, Field, TextInput, TextArea, Select, FormSection, type SubTabItem } from '@mate/shared';
 import { useLocation } from 'react-router-dom';
+import { CheckCircle } from 'lucide-react';
 
 // MOCK: Client 连接列表
 interface ClientConn {
@@ -68,6 +69,13 @@ const MCP_TABS: SubTabItem[] = [
 export default function McpClientPage() {
   const location = useLocation();
   const [activeTool, setActiveTool] = useState('tl1');
+  const [createDrawerOpen, setCreateDrawerOpen] = useState(false);
+  const [authType, setAuthType] = useState<'none' | 'apikey' | 'oauth2' | 'bearer'>('none');
+  const [testResult, setTestResult] = useState<'idle' | 'success'>('idle');
+
+  const handleTestConnection = () => {
+    setTestResult('success');
+  };
 
   return (
     <div>
@@ -75,13 +83,13 @@ export default function McpClientPage() {
 
       {/* Page header */}
       <div style={{ marginTop: 24, marginBottom: 32 }}>
-        <h1 style={{ fontSize: 24, fontWeight: 600, marginBottom: 6 }}>Client 管理</h1>
+        <h1 style={{ fontSize: 22, fontWeight: 600, marginBottom: 6 }}>Client 管理</h1>
         <p style={{ fontSize: 14, color: 'var(--muted-foreground)' }}>
           管理 MCP Client 连接，查看 Server 连接状态、工具调用与资源访问情况。
         </p>
         <div style={{ marginTop: 16, display: 'flex', gap: 8 }}>
           <button className="v-btn"><RefreshCw style={{ width: 14, height: 14 }} />刷新状态</button>
-          <button className="v-btn-primary"><Plus style={{ width: 14, height: 14 }} />新建连接</button>
+          <button className="v-btn-primary" onClick={() => setCreateDrawerOpen(true)}><Plus style={{ width: 14, height: 14 }} />新建连接</button>
         </div>
       </div>
 
@@ -284,6 +292,79 @@ export default function McpClientPage() {
           </div>
         </div>
       </div>
+
+      <FormDrawer
+        open={createDrawerOpen}
+        title="新建 MCP Client 连接"
+        onCancel={() => { setCreateDrawerOpen(false); setTestResult('idle'); }}
+        onOk={() => { setCreateDrawerOpen(false); setTestResult('idle'); }}
+      >
+        <FormSection title="基本信息" desc="配置连接名称与目标 Server URL">
+          <Field label="连接名称" required>
+            <TextInput placeholder="例：本体引擎连接" />
+          </Field>
+          <Field label="URL" required>
+            <TextInput placeholder="nacos://mate-ont-server:8081" />
+          </Field>
+          <Field label="协议版本">
+            <Select defaultValue="2.0">
+              <option value="1.0">1.0</option>
+              <option value="2.0">2.0</option>
+            </Select>
+          </Field>
+          <Field label="描述">
+            <TextArea placeholder="连接用途说明..." rows={3} />
+          </Field>
+        </FormSection>
+
+        <FormSection title="鉴权配置" desc="选择连接 Server 的鉴权方式">
+          <Field label="鉴权方式">
+            <Select value={authType} onChange={(e) => { setAuthType(e.target.value as typeof authType); setTestResult('idle'); }}>
+              <option value="none">无</option>
+              <option value="apikey">APIKey</option>
+              <option value="oauth2">OAuth2</option>
+              <option value="bearer">Bearer Token</option>
+            </Select>
+          </Field>
+          {authType === 'apikey' && (
+            <Field label="APIKey">
+              <TextInput type="password" placeholder="输入 API Key" />
+            </Field>
+          )}
+          {authType === 'bearer' && (
+            <Field label="Bearer Token">
+              <TextInput type="password" placeholder="输入 Bearer Token" />
+            </Field>
+          )}
+          {authType === 'oauth2' && (
+            <Field label="OAuth2 配置">
+              <TextInput placeholder="client_id:client_secret" />
+            </Field>
+          )}
+        </FormSection>
+
+        <FormSection title="运行参数" desc="连接同步与超时控制">
+          <Field label="同步间隔（秒）">
+            <TextInput type="number" defaultValue={30} min={1} />
+          </Field>
+          <Field label="超时（秒）">
+            <TextInput type="number" defaultValue={15} min={1} />
+          </Field>
+        </FormSection>
+
+        <FormSection title="连接测试" desc="提交前验证连接是否可用">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <button className="v-btn-primary" onClick={handleTestConnection} style={{ height: 32, fontSize: 13 }}>
+              <Plug style={{ width: 14, height: 14 }} />测试连接
+            </button>
+            {testResult === 'success' && (
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--success)' }}>
+                <CheckCircle style={{ width: 14, height: 14 }} />连接成功
+              </span>
+            )}
+          </div>
+        </FormSection>
+      </FormDrawer>
     </div>
   );
 }

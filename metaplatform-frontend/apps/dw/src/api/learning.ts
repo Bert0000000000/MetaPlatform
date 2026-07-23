@@ -8,24 +8,24 @@ import type {
 } from '@/types';
 
 export async function recordFeedback(request: FeedbackCreateRequest): Promise<FeedbackRecord> {
-  return post<FeedbackRecord>('/v1/agent/learning/feedback', request);
+  return post<FeedbackRecord>('/v1/dw/learning/feedback', request);
 }
 
 export async function listFeedback(params?: {
   employeeId?: string;
   taskId?: string;
 }): Promise<PageResponse<FeedbackRecord>> {
-  return get<PageResponse<FeedbackRecord>>('/v1/agent/learning/feedback', params as Record<string, unknown> | undefined);
+  return get<PageResponse<FeedbackRecord>>('/v1/dw/learning/feedback', params as Record<string, unknown> | undefined);
 }
 
 export async function updateFeedbackTags(feedbackId: string, tags: string[]): Promise<FeedbackRecord> {
-  return put<FeedbackRecord>(`/v1/agent/learning/feedback/${feedbackId}/tags`, { tags });
+  return put<FeedbackRecord>(`/v1/dw/learning/feedback/${feedbackId}/tags`, { tags });
 }
 
 export async function extractKnowledge(employeeId: string): Promise<{
   knowledge: LearnedKnowledge[];
 }> {
-  return post<{ knowledge: LearnedKnowledge[] }>('/v1/agent/learning/extract', { employee_id: employeeId });
+  return post<{ knowledge: LearnedKnowledge[] }>('/v1/dw/learning/extract', { employee_id: employeeId });
 }
 
 export async function listKnowledge(
@@ -33,7 +33,7 @@ export async function listKnowledge(
   syncedOnly = false,
 ): Promise<{ items: LearnedKnowledge[] }> {
   return get<{ items: LearnedKnowledge[] }>(
-    `/v1/agent/learning/employees/${employeeId}/knowledge`,
+    `/v1/dw/learning/employees/${employeeId}/knowledge`,
     { syncedOnly },
   );
 }
@@ -47,9 +47,9 @@ export async function syncToKnowledgeBase(employeeId: string): Promise<{
     employeeId: string;
     syncedCount: number;
     documentIds: string[];
-  }>(`/v1/agent/learning/employees/${employeeId}/sync-to-kb`);
+  }>(`/v1/dw/learning/employees/${employeeId}/sync-to-kb`);
 }
 
 export async function getLearningStats(employeeId: string): Promise<LearningStats> {
-  return get<LearningStats>(`/v1/agent/learning/employees/${employeeId}/stats`);
+  return get<LearningStats>(`/v1/dw/learning/employees/${employeeId}/stats`);
 }

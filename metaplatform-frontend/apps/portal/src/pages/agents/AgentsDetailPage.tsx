@@ -1,11 +1,12 @@
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useState } from 'react';
 import {
   ScanSearch, CircleDot, Pencil, Play, History, Power,
   TrendingUp, TrendingDown, Minus, Settings2, Workflow,
   Wrench, Code2, Copy, Download, ChevronRight, Search,
   FileSearch, Database, BarChart3, Send, ScrollText,
 } from 'lucide-react';
-import { SubTabs, type SubTabItem } from '@mate/shared';
+import { SubTabs, type SubTabItem, FormDrawer, Field, TextInput, TextArea, Select } from '@mate/shared';
 import { MOCK_AGENTS } from '@/mock'; // MOCK
 
 const AGENT_TABS: SubTabItem[] = [
@@ -78,6 +79,7 @@ const flowNodeTypeClass: Record<string, string> = {
 export default function AgentsDetailPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   return (
     <div>
@@ -156,7 +158,7 @@ export default function AgentsDetailPage() {
           </div>
         </div>
         <div className="ad-agent-header-actions">
-          <button className="v-btn"><Pencil style={{ width: 14, height: 14 }} /> 编辑</button>
+          <button className="v-btn" onClick={() => setDrawerOpen(true)}><Pencil style={{ width: 14, height: 14 }} /> 编辑</button>
           <button className="v-btn"><Play style={{ width: 14, height: 14 }} /> 手动触发</button>
           <button className="v-btn"><History style={{ width: 14, height: 14 }} /> 执行历史</button>
           <button className="v-btn" style={{ color: 'var(--destructive)', borderColor: 'rgba(255,97,102,0.3)' }}><Power style={{ width: 14, height: 14 }} /> 停止</button>
@@ -308,6 +310,38 @@ export default function AgentsDetailPage() {
           </tbody>
         </table>
       </div>
+
+      <FormDrawer open={drawerOpen} title="编辑数字员工" onCancel={() => setDrawerOpen(false)} onOk={() => setDrawerOpen(false)}>
+        <Field label="名称" required>
+          <TextInput defaultValue="数据质量巡检员" placeholder="请输入数字员工名称" />
+        </Field>
+        <Field label="关联 LLM 模型">
+          <Select defaultValue="doubao-pro-32k">
+            <option value="doubao-pro-32k">doubao-pro-32k</option>
+            <option value="doubao-pro-128k">doubao-pro-128k</option>
+            <option value="GPT-4o">GPT-4o</option>
+            <option value="Claude-3.5-Sonnet">Claude-3.5-Sonnet</option>
+            <option value="DeepSeek-V3">DeepSeek-V3</option>
+          </Select>
+        </Field>
+        <Field label="描述">
+          <TextArea
+            defaultValue="基于本体引擎的数据质量自动化巡检 Agent，负责定期扫描数据源、检测异常模式、生成质量报告并推送告警通知。"
+            rows={4}
+            placeholder="请输入描述"
+          />
+        </Field>
+        <Field label="Temperature">
+          <TextInput type="number" defaultValue={0.3} step={0.1} min={0} max={2} placeholder="0 - 2" />
+        </Field>
+        <Field label="System Prompt">
+          <TextArea
+            defaultValue={'你是 Mate Platform 的数据质量巡检员，负责对企业数据资产进行自动化质量检测与分析。'}
+            rows={6}
+            placeholder="请输入 System Prompt"
+          />
+        </Field>
+      </FormDrawer>
     </div>
   );
 }

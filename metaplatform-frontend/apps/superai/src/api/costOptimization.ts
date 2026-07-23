@@ -1,6 +1,6 @@
 import { apiClient } from './client';
 
-const BASE = '/v1/llmgw';
+const BASE = '/v1/copilot';
 
 export interface RoutingRequest {
   promptTokens: number;

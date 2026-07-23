@@ -8,7 +8,7 @@ import {
   X,
   ChevronDown,
 } from 'lucide-react';
-import { SubTabs, type SubTabItem } from '@mate/shared';
+import { SubTabs, StepDrawer, Field, TextInput, TextArea, Select, FormSection, type SubTabItem } from '@mate/shared';
 import { useLocation } from 'react-router-dom';
 import { MOCK_MCP_TOOLS } from '@/mock'; // MOCK
 
@@ -69,6 +69,145 @@ export default function McpToolsPage() {
   const location = useLocation();
   const [selectedId, setSelectedId] = useState<string>('t1');
   const [showDetail, setShowDetail] = useState(true);
+  const [registerDrawerOpen, setRegisterDrawerOpen] = useState(false);
+  const [autoPublish, setAutoPublish] = useState(false);
+  const [testRun, setTestRun] = useState<'idle' | 'running' | 'done'>('idle');
+
+  const registerSteps = [
+    {
+      title: '基本信息',
+      description: '工具标识与分类',
+      content: (
+        <FormSection title="基本信息" desc="工具名称、编码与分类">
+          <Field label="工具名称" required>
+            <TextInput placeholder="例：本体概念查询" />
+          </Field>
+          <Field label="工具编码">
+            <TextInput placeholder="例：ont_query_concept" style={{ fontFamily: 'var(--font-mono)' }} />
+          </Field>
+          <Field label="工具分类">
+            <Select defaultValue="query">
+              <option value="query">查询</option>
+              <option value="action">操作</option>
+              <option value="notify">通知</option>
+              <option value="integration">集成</option>
+            </Select>
+          </Field>
+          <Field label="描述">
+            <TextArea placeholder="工具用途与场景说明..." rows={3} />
+          </Field>
+        </FormSection>
+      ),
+    },
+    {
+      title: '定义 Schema',
+      description: '输入/输出参数与错误码',
+      content: (
+        <FormSection title="Schema 定义" desc="JSON 格式定义工具参数契约">
+          <Field label="输入参数">
+            <TextArea
+              rows={6}
+              style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}
+              defaultValue={'{\n  "type": "object",\n  "properties": {\n    "conceptId": { "type": "string" }\n  },\n  "required": ["conceptId"]\n}'}
+            />
+          </Field>
+          <Field label="输出参数">
+            <TextArea
+              rows={6}
+              style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}
+              defaultValue={'{\n  "type": "object",\n  "properties": {\n    "concept": { "type": "object" },\n    "relations": { "type": "array" }\n  }\n}'}
+            />
+          </Field>
+          <Field label="错误码定义">
+            <TextArea
+              rows={5}
+              style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}
+              placeholder={'4001 → 概念不存在\n4003 → 权限不足\n5000 → 内部错误'}
+            />
+          </Field>
+        </FormSection>
+      ),
+    },
+    {
+      title: '关联 Server',
+      description: '路由与超时',
+      content: (
+        <FormSection title="关联 Server" desc="选择承载工具的 MCP Server">
+          <Field label="选择 Server">
+            <Select defaultValue="s1">
+              <option value="s1">mate-ont-server</option>
+              <option value="s2">mate-rag-server</option>
+              <option value="s3">mate-llmgw-server</option>
+              <option value="s4">mate-agent-server</option>
+              <option value="s5">mate-data-server</option>
+            </Select>
+          </Field>
+          <Field label="路由权重">
+            <TextInput type="number" min={1} max={100} defaultValue={100} />
+          </Field>
+          <Field label="超时（ms）">
+            <TextInput type="number" min={100} defaultValue={30000} />
+          </Field>
+        </FormSection>
+      ),
+    },
+    {
+      title: '测试与发布',
+      description: '验证并发布',
+      content: (
+        <FormSection title="测试与发布" desc="提交前测试工具调用">
+          <Field label="测试输入">
+            <TextArea
+              rows={5}
+              style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}
+              placeholder={'{\n  "conceptId": "bo-001"\n}'}
+            />
+          </Field>
+          <Field label="测试结果">
+            <div style={{ minHeight: 80, padding: 12, background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--muted-foreground)' }}>
+              {testRun === 'idle' && '等待测试'}
+              {testRun === 'running' && '测试执行中...'}
+              {testRun === 'done' && '{\n  "status": "success",\n  "data": { "concept": "客户" }\n}'}
+            </div>
+          </Field>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+            <button
+              className="v-btn-primary"
+              style={{ height: 32, fontSize: 13 }}
+              onClick={() => {
+                setTestRun('running');
+                setTimeout(() => setTestRun('done'), 800);
+              }}
+            >
+              运行测试
+            </button>
+          </div>
+          <Field label="自动发布">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <button
+                type="button"
+                onClick={() => setAutoPublish((v) => !v)}
+                style={{
+                  width: 36, height: 20, borderRadius: 10, border: 'none', cursor: 'pointer',
+                  background: autoPublish ? 'var(--success)' : 'var(--border)',
+                  position: 'relative', transition: 'background 0.2s',
+                }}
+              >
+                <span style={{
+                  position: 'absolute', top: 2, left: 2, width: 16, height: 16, borderRadius: '50%',
+                  background: '#fff', transition: 'transform 0.2s',
+                  transform: autoPublish ? 'translateX(16px)' : 'translateX(0)',
+                }} />
+              </button>
+              <span style={{ fontSize: 13, color: 'var(--muted-foreground)' }}>
+                {autoPublish ? '完成后自动发布' : '完成后手动发布'}
+              </span>
+            </div>
+          </Field>
+        </FormSection>
+      ),
+    },
+  ];
 
   const selectedTool = MOCK_TOOLS.find((t) => t.id === selectedId) ?? MOCK_TOOLS[0];
 
@@ -79,7 +218,7 @@ export default function McpToolsPage() {
       {/* Page header */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginTop: 24, marginBottom: 24 }}>
         <div>
-          <h1 style={{ fontSize: 24, fontWeight: 600, marginBottom: 6 }}>工具注册</h1>
+          <h1 style={{ fontSize: 22, fontWeight: 600, marginBottom: 6 }}>工具注册</h1>
           <p style={{ fontSize: 14, color: 'var(--muted-foreground)' }}>
             管理平台暴露的 MCP 工具，包括注册、编辑、启用/禁用工具定义。
           </p>
@@ -164,7 +303,7 @@ export default function McpToolsPage() {
           />
         </div>
         <div style={{ flex: 1 }} />
-        <button className="v-btn-primary">
+        <button className="v-btn-primary" onClick={() => { setRegisterDrawerOpen(true); setTestRun('idle'); }}>
           <Plus style={{ width: 14, height: 14 }} />
           注册工具
         </button>
@@ -358,6 +497,14 @@ export default function McpToolsPage() {
           </div>
         )}
       </div>
+
+      <StepDrawer
+        open={registerDrawerOpen}
+        title="注册工具"
+        steps={registerSteps}
+        onCancel={() => setRegisterDrawerOpen(false)}
+        onFinish={() => setRegisterDrawerOpen(false)}
+      />
     </div>
   );
 }

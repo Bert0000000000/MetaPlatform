@@ -1,5 +1,5 @@
 import { Card, Typography, Space } from 'antd';
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 
 interface SectionCardProps {
   title: ReactNode;
@@ -7,6 +7,7 @@ interface SectionCardProps {
   children: ReactNode;
   bodyPadding?: number | string;
   className?: string;
+  style?: CSSProperties;
 }
 
 export default function SectionCard({
@@ -15,11 +16,13 @@ export default function SectionCard({
   children,
   bodyPadding = 20,
   className,
+  style,
 }: SectionCardProps) {
   return (
     <Card
       className={`v-card ${className ?? ''}`}
       styles={{ body: { padding: bodyPadding } }}
+      style={style}
     >
       <Space direction="vertical" style={{ width: '100%' }} size="middle">
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>

@@ -29,7 +29,7 @@ export interface LoginResponse {
 }
 
 export async function login(request: LoginRequest): Promise<void> {
-  const response = await post<LoginResponse>('/v1/iam/auth/login', request);
+  const response = await post<LoginResponse>('/v1/dashboard/auth/login', request);
   setToken(response.accessToken);
   const user: AuthUser = {
     id: response.user.id,

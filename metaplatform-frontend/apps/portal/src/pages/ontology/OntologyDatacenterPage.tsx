@@ -65,7 +65,7 @@ export default function OntologyDatacenterPage() {
       <SubTabs items={ONTOLOGY_TABS} activePath={location.pathname} />
 
       {/* Page Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 24, marginBottom: 24 }}>
         <div>
           <h1 style={{ fontSize: 22, fontWeight: 600, letterSpacing: '-0.02em' }}>数据中心</h1>
           <div style={{ fontSize: 13, color: 'var(--muted-foreground)', marginTop: 4 }}>数据源管理、数据湖监控与数据质量治理</div>

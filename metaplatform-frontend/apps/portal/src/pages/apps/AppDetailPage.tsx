@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import AppHeader from '@/components/AppHeader';
 import { useAppTabs } from '@/store/appTabs';
+import { FormDrawer, Field, TextInput, TextArea, Select, FormSection } from '@mate/shared';
 
 // MOCK: 应用详情下的子 tab（不含应用列表和当前应用名 tab）
 const APP_SUB_TABS = [
@@ -91,6 +92,7 @@ export default function AppDetailPage() {
   // Pagination for "页面列表" and "数据模型"
   const [pagesPage, setPagesPage] = useState(1);
   const [modelsPage, setModelsPage] = useState(1);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const PAGE_SIZE = 5;
   const pagesTotalPages = Math.ceil(PAGES.length / PAGE_SIZE);
   const modelsTotalPages = Math.ceil(MODELS.length / PAGE_SIZE);
@@ -109,7 +111,7 @@ export default function AppDetailPage() {
           <span className="v-badge v-badge-success"><CheckCircle style={{ width: 12, height: 12 }} />已发布</span>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          <button className="v-btn"><Pencil style={{ width: 15, height: 15 }} />编辑</button>
+          <button className="v-btn" onClick={() => setDrawerOpen(true)}><Pencil style={{ width: 15, height: 15 }} />编辑</button>
           <button className="v-btn"><Rocket style={{ width: 15, height: 15 }} />发布</button>
           <button className="v-btn"><ArrowDownCircle style={{ width: 15, height: 15 }} />下线</button>
         </div>
@@ -379,6 +381,58 @@ export default function AppDetailPage() {
           </div>
         </div>
       </div>
+
+      <FormDrawer
+        open={drawerOpen}
+        title="编辑应用"
+        onCancel={() => setDrawerOpen(false)}
+        onOk={() => setDrawerOpen(false)}
+      >
+        <FormSection title="基本信息" desc="应用核心元数据，编码创建后不可修改。">
+          <Field label="应用名称" required>
+            <TextInput defaultValue="订单管理系统" placeholder="请输入应用名称" />
+          </Field>
+          <Field label="应用编码">
+            <TextInput defaultValue="order-mgmt" readOnly placeholder="应用编码创建后不可修改" style={{ color: 'var(--muted-foreground)', cursor: 'not-allowed' }} />
+          </Field>
+          <Field label="应用类型">
+            <Select defaultValue="业务应用">
+              <option value="业务应用">业务应用</option>
+              <option value="工具应用">工具应用</option>
+              <option value="数据分析">数据分析</option>
+              <option value="AI助手">AI助手</option>
+            </Select>
+          </Field>
+          <Field label="描述">
+            <TextArea defaultValue="企业订单全流程管理，覆盖订单创建、审批、履约、结算等核心环节，支持多维度筛选、数据看板与自动报表。" placeholder="请输入应用描述" style={{ minHeight: 80 }} />
+          </Field>
+        </FormSection>
+        <FormSection title="外观与可见性" desc="配置应用展示图标与可见范围。">
+          <Field label="图标">
+            <Select defaultValue="cart">
+              <option value="cart">🛒 购物车</option>
+              <option value="users">👥 用户</option>
+              <option value="db">🗄️ 数据库</option>
+              <option value="sparkles">✨ AI</option>
+              <option value="box">📦 盒子</option>
+              <option value="shield">🛡️ 安全</option>
+            </Select>
+          </Field>
+          <Field label="可见范围">
+            <Select defaultValue="全公司">
+              <option value="全公司">全公司</option>
+              <option value="指定组织">指定组织</option>
+              <option value="私有">私有</option>
+            </Select>
+          </Field>
+          <Field label="负责人">
+            <TextInput defaultValue="Admin" placeholder="请输入负责人姓名或账号" />
+          </Field>
+          <Field label="标签">
+            <TextInput defaultValue="订单, 履约, 财务" placeholder="多个标签用英文逗号分隔" />
+          </Field>
+        </FormSection>
+      </FormDrawer>
     </div>
   );
 }

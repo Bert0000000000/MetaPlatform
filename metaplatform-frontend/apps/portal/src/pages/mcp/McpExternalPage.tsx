@@ -93,7 +93,7 @@ export default function McpExternalPage() {
 
       {/* Page header */}
       <div style={{ marginTop: 24, marginBottom: 24 }}>
-        <h1 style={{ fontSize: 24, fontWeight: 600, marginBottom: 6 }}>外部对接</h1>
+        <h1 style={{ fontSize: 22, fontWeight: 600, marginBottom: 6 }}>外部对接</h1>
         <p style={{ fontSize: 14, color: 'var(--muted-foreground)' }}>
           管理外部 MCP / A2A / REST 连接，接入第三方工具与服务能力。
         </p>

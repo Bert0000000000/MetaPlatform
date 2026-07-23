@@ -5,7 +5,7 @@ import {
   Database, Shield, Rocket, ListChecks, Plus, Filter, FileWarning,
   ExternalLink, GitPullRequest, ScrollText,
 } from 'lucide-react';
-import { SubTabs } from '@mate/shared';
+import { SubTabs, FormDrawer, Field, TextInput, TextArea, Select } from '@mate/shared';
 
 // MOCK
 const stats = [
@@ -58,13 +58,14 @@ const archTabs = [
 export default function ArchGovernancePage() {
   const location = useLocation();
   const [selectedRule, setSelectedRule] = useState(0);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   return (
     <>
       <style>{`
         :root { --destructive-subtle:#2a1418; --info:#60a5fa; --info-subtle:rgba(59,130,246,0.12); }
         .ag-page-header { margin-bottom:24px; }
-        .ag-page-header h1 { font-size:24px; font-weight:700; margin-bottom:6px; }
+        .ag-page-header h1 { font-size:22px; font-weight:700; margin-bottom:6px; }
         .ag-page-header p { font-size:14px; color:var(--muted-foreground); }
         .ag-stats-row { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:20px; }
         .ag-stat-card { background:var(--muted); border:1px solid var(--border); border-radius:var(--radius); padding:16px; }
@@ -82,7 +83,8 @@ export default function ArchGovernancePage() {
         .ag-category-name { color:var(--foreground); }
         .ag-category-count { font-family:var(--font-mono); font-size:11px; color:var(--muted-foreground); background:var(--muted); padding:1px 6px; border-radius:3px; }
         .ag-category-item.active .ag-category-count { background:var(--border); color:var(--foreground); }
-        .ag-category-icon { width:14px; height:14px; margin-right:8px; flex-shrink:0; color:var(--muted-foreground); }
+        .ag-category-icon { width:14px; height:14px; margin-right:8px; flex-shrink:0; color:var(--muted-foreground); display:inline-flex; align-items:center; justify-content:center; }
+        .ag-category-icon svg { width:14px; height:14px; stroke-width:1.75; }
         .ag-rules-card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; }
         .ag-rules-header { display:flex; align-items:center; justify-content:space-between; padding:16px 16px 12px; border-bottom:1px solid var(--border); }
         .ag-rules-header-title { font-size:14px; font-weight:600; display:flex; align-items:center; gap:8px; }
@@ -188,7 +190,7 @@ export default function ArchGovernancePage() {
             <div className="ag-rules-header" style={{ padding: '16px 16px 12px' }}>
               <div className="ag-rules-header-title"><ListChecks />治理规则（全部）</div>
               <div className="ag-rules-header-actions">
-                <button className="v-btn" style={{ height: 30, fontSize: 12, gap: 6, display: 'inline-flex', alignItems: 'center' }}><Plus style={{ width: 13, height: 13 }} />新增规则</button>
+                <button className="v-btn" style={{ height: 30, fontSize: 12, gap: 6, display: 'inline-flex', alignItems: 'center' }} onClick={() => setDrawerOpen(true)}><Plus style={{ width: 13, height: 13 }} />新增规则</button>
                 <button className="v-btn" style={{ height: 30, fontSize: 12, gap: 6, display: 'inline-flex', alignItems: 'center' }}><Filter style={{ width: 13, height: 13 }} />筛选</button>
               </div>
             </div>
@@ -304,6 +306,41 @@ export default function ArchGovernancePage() {
         </div>
       </div>
       </div>
+
+      <FormDrawer
+        open={drawerOpen}
+        title="新增治理规则"
+        onCancel={() => setDrawerOpen(false)}
+        onOk={() => setDrawerOpen(false)}
+      >
+        <Field label="规则名称" required>
+          <TextInput placeholder="请输入规则名称" />
+        </Field>
+        <Field label="规则类别">
+          <Select defaultValue="命名规范">
+            <option value="命名规范">命名规范</option>
+            <option value="依赖规范">依赖规范</option>
+            <option value="API规范">API规范</option>
+            <option value="安全规范">安全规范</option>
+          </Select>
+        </Field>
+        <Field label="适用范围">
+          <Select defaultValue="全局">
+            <option value="全局">全局</option>
+            <option value="指定模块">指定模块</option>
+          </Select>
+        </Field>
+        <Field label="规则说明">
+          <TextArea placeholder="请输入规则说明，包含约束内容、校验方式与例外情况" style={{ minHeight: 100 }} />
+        </Field>
+        <Field label="严重级别">
+          <Select defaultValue="警告">
+            <option value="错误">错误（阻断构建）</option>
+            <option value="警告">警告（提示但不阻断）</option>
+            <option value="提示">提示（仅记录）</option>
+          </Select>
+        </Field>
+      </FormDrawer>
     </>
   );
 }

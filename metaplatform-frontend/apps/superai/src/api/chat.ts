@@ -29,7 +29,7 @@ export interface MultimodalResponse {
 
 export async function listMultimodalModels(): Promise<MultimodalModel[]> {
   const data = await get<{ items: MultimodalModel[]; total: number }>(
-    '/v1/llmgw/models/multimodal',
+    '/v1/copilot/models/multimodal',
   );
   return data.items;
 }
@@ -54,7 +54,7 @@ export async function multimodalUploadChat(params: {
     formData.append('image', image);
   }
 
-  const response = await apiClient.post('/v1/llmgw/chat/multimodal/upload', formData, {
+  const response = await apiClient.post('/v1/copilot/chat/multimodal/upload', formData, {
     headers: {
       'Content-Type': 'multipart/form-data',
     },
@@ -72,7 +72,7 @@ export async function streamChat(
 
   let response: Response;
   try {
-    response = await fetch('/api/v1/llmgw/chat/completions/stream', {
+    response = await fetch('/api/v1/copilot/chat/completions/stream', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

@@ -1,4 +1,5 @@
 import { useLocation } from 'react-router-dom';
+import { useState } from 'react';
 import {
   Search,
   Plus,
@@ -17,7 +18,7 @@ import {
   MousePointerClick,
   Clock,
 } from 'lucide-react';
-import { SubTabs } from '@mate/shared';
+import { SubTabs, FormDrawer, Field, TextInput, TextArea, Select } from '@mate/shared';
 
 const DASHBOARD_TABS = [
   { label: '工作台', path: '/dashboard' },
@@ -65,6 +66,7 @@ const appCardStyle: React.CSSProperties = {
 
 export default function MyAppsPage() {
   const location = useLocation();
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
@@ -99,7 +101,7 @@ export default function MyAppsPage() {
           <option value="created">创建时间</option>
         </select>
         <div style={{ flex: 1 }} />
-        <button className="v-btn-primary" style={{ display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap' }}>
+        <button className="v-btn-primary" style={{ display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap' }} onClick={() => setDrawerOpen(true)}>
           <Plus style={{ width: 15, height: 15 }} />新建应用
         </button>
       </div>
@@ -178,6 +180,42 @@ export default function MyAppsPage() {
         })}
       </div>
       </div>
+
+      <FormDrawer open={drawerOpen} title="新建应用" onCancel={() => setDrawerOpen(false)} onOk={() => setDrawerOpen(false)}>
+        <Field label="应用名称" required>
+          <TextInput placeholder="请输入应用名称" />
+        </Field>
+        <Field label="应用编码">
+          <TextInput placeholder="请输入应用编码（如 app-order-mgmt）" />
+        </Field>
+        <Field label="应用类型">
+          <Select defaultValue="业务应用">
+            <option value="业务应用">业务应用</option>
+            <option value="工具应用">工具应用</option>
+            <option value="数据分析">数据分析</option>
+            <option value="AI助手">AI助手</option>
+          </Select>
+        </Field>
+        <Field label="描述">
+          <TextArea placeholder="请输入应用描述" rows={4} />
+        </Field>
+        <Field label="图标">
+          <Select defaultValue="app">
+            <option value="app">📦 应用图标</option>
+            <option value="chart">📊 图表图标</option>
+            <option value="bot">🤖 机器人图标</option>
+            <option value="db">🗄️ 数据库图标</option>
+            <option value="doc">📄 文档图标</option>
+          </Select>
+        </Field>
+        <Field label="可见范围">
+          <Select defaultValue="全公司">
+            <option value="全公司">全公司</option>
+            <option value="指定组织">指定组织</option>
+            <option value="私有">私有</option>
+          </Select>
+        </Field>
+      </FormDrawer>
     </div>
   );
 }

@@ -13,6 +13,8 @@ const ADMIN_TABS: SubTabItem[] = [
   { label: '组织管理', path: '/admin/org' },
   { label: '日志管理', path: '/admin/logs' },
   { label: '系统配置', path: '/admin/config' },
+  { label: '组件库', path: '/admin/components' },
+  { label: '运营数据', path: '/admin/operations' },
 ];
 
 // MOCK: 日志列表
@@ -61,7 +63,7 @@ export default function AdminLogsPage() {
 
       <style>{`
         .al-page-header { margin-bottom: 24px; }
-        .al-page-header h1 { font-size: 24px; font-weight: 600; margin-bottom: 4px; }
+        .al-page-header h1 { font-size: 22px; font-weight: 600; margin-bottom: 4px; }
         .al-page-header p { font-size: 14px; color: var(--muted-foreground); }
         .al-tab-bar { display: flex; gap: 4px; margin-bottom: 24px; border-bottom: 1px solid var(--border); padding-bottom: 12px; }
         .al-tab-bar .v-tab { cursor: pointer; text-decoration: none; }
@@ -115,7 +117,7 @@ export default function AdminLogsPage() {
         .al-v-select { background: var(--muted); border: 1px solid var(--border); border-radius: var(--radius); color: var(--foreground); font-size: 13px; padding: 8px 30px 8px 12px; outline: none; font-family: var(--font-sans); appearance: none; cursor: pointer; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23a1a1aa' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; }
         .al-v-select:focus { border-color: var(--foreground); }
       `}</style>
-      <div style={{ padding: '0 0 24px' }}>
+      <div style={{ padding: '24px 0' }}>
         {/* Page Header */}
         <div className="al-page-header">
           <h1>日志管理</h1>

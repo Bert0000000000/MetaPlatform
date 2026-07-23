@@ -22,12 +22,12 @@ export async function listConversations(params?: {
   favorite?: boolean;
   mode?: ChatMode;
 }): Promise<Conversation[]> {
-  const res = await get<PageResult<Conversation>>('/v1/agent/conversations', params as Record<string, unknown> | undefined);
+  const res = await get<PageResult<Conversation>>('/v1/copilot/conversations', params as Record<string, unknown> | undefined);
   return res?.items ?? [];
 }
 
 export async function createConversation(request: ConversationCreateRequest): Promise<Conversation> {
-  return post<Conversation>('/v1/agent/conversations', {
+  return post<Conversation>('/v1/copilot/conversations', {
     agentId: 'default',
     title: request.title,
     mode: request.mode,
@@ -35,15 +35,15 @@ export async function createConversation(request: ConversationCreateRequest): Pr
 }
 
 export async function getConversation(id: string): Promise<Conversation> {
-  return get<Conversation>(`/v1/agent/conversations/${id}`);
+  return get<Conversation>(`/v1/copilot/conversations/${id}`);
 }
 
 export async function deleteConversation(id: string): Promise<void> {
-  await del<void>(`/v1/agent/conversations/${id}`);
+  await del<void>(`/v1/copilot/conversations/${id}`);
 }
 
 export async function toggleFavorite(id: string): Promise<Conversation> {
-  return post<Conversation>(`/v1/agent/conversations/${id}/favorite`);
+  return post<Conversation>(`/v1/copilot/conversations/${id}/favorite`);
 }
 
 export async function getHistory(
@@ -51,7 +51,7 @@ export async function getHistory(
   params?: { page?: number; pageSize?: number },
 ): Promise<ConversationMessage[]> {
   const res = await get<PageResult<ConversationMessage>>(
-    `/v1/agent/conversations/${id}/messages`,
+    `/v1/copilot/conversations/${id}/messages`,
     params as Record<string, unknown> | undefined,
   );
   return res?.items ?? [];

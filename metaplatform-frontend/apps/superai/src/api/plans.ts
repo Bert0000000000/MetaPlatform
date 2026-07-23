@@ -1,7 +1,7 @@
 import { get, post } from './client';
 import type { Plan, CreatePlanRequest } from '@/types';
 
-const PLANS_BASE = '/v1/agent/plans';
+const PLANS_BASE = '/v1/copilot/plans';
 
 export async function createPlan(req: CreatePlanRequest): Promise<Plan> {
   return post<Plan>(PLANS_BASE, req);

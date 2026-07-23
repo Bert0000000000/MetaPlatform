@@ -540,6 +540,7 @@ a {
 
 .v-sidebar-item:hover {
   background: var(--sidebar-accent);
+  color: var(--sidebar-accent-foreground);
 }
 
 .v-sidebar-item.active,

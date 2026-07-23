@@ -8,7 +8,7 @@ import {
   Warehouse, ShieldCheck, MessageCircleQuestion,
   Briefcase, Database, Sparkles,
 } from 'lucide-react';
-import { SubTabs } from '@mate/shared';
+import { SubTabs, FormDrawer, Field, TextInput, TextArea, Select, FormSection } from '@mate/shared';
 import { openAppTab } from '@/store/appTabs';
 import { MOCK_APPS } from '@/mock'; // MOCK
 
@@ -47,6 +47,9 @@ export default function AppsListPage() {
   const location = useLocation();
   const [filterTab, setFilterTab] = useState('全部');
   const [viewMode, setViewMode] = useState<'list' | 'card'>('list');
+  const [createDrawerOpen, setCreateDrawerOpen] = useState(false);
+  const [editDrawerOpen, setEditDrawerOpen] = useState(false);
+  const [createAppType, setCreateAppType] = useState('业务应用');
 
   const openApp = (app: { id: string; name: string }) => {
     openAppTab({ id: app.id, name: app.name });
@@ -65,7 +68,7 @@ export default function AppsListPage() {
           <ChevronDown style={{ width: 14, height: 14, color: 'var(--muted-foreground)' }} />
         </button>
         <button className="v-btn"><Upload style={{ width: 16, height: 16 }} />导入应用</button>
-        <button className="v-btn-primary"><Plus style={{ width: 16, height: 16 }} />新建应用</button>
+        <button className="v-btn-primary" onClick={() => setCreateDrawerOpen(true)}><Plus style={{ width: 16, height: 16 }} />新建应用</button>
       </div>
 
       {/* Stats Cards */}
@@ -200,7 +203,7 @@ export default function AppsListPage() {
                 <td style={{ padding: '12px 16px' }}>
                   <div style={{ display: 'flex', gap: 4 }}>
                     <button className="v-btn" style={{ height: 30, width: 30, padding: 0, justifyContent: 'center' }} title="查看" onClick={() => navigate('/apps/detail')}><Eye style={{ width: 14, height: 14 }} /></button>
-                    <button className="v-btn" style={{ height: 30, width: 30, padding: 0, justifyContent: 'center' }} title="编辑" onClick={() => navigate('/apps/formdesigner')}><Pencil style={{ width: 14, height: 14 }} /></button>
+                    <button className="v-btn" style={{ height: 30, width: 30, padding: 0, justifyContent: 'center' }} title="编辑" onClick={() => setEditDrawerOpen(true)}><Pencil style={{ width: 14, height: 14 }} /></button>
                     {app.status !== 'offline' && (
                       <button className="v-btn" style={{ height: 30, width: 30, padding: 0, justifyContent: 'center' }} title="发布" onClick={() => navigate('/apps/publish')}><Rocket style={{ width: 14, height: 14 }} /></button>
                     )}
@@ -267,6 +270,84 @@ export default function AppsListPage() {
           );
         })}
       </div>
+
+      <FormDrawer
+        open={createDrawerOpen}
+        title="新建应用"
+        onCancel={() => setCreateDrawerOpen(false)}
+        onOk={() => setCreateDrawerOpen(false)}
+      >
+        <FormSection title="基本信息" desc="应用核心元数据，编码创建后不可修改。">
+          <Field label="应用名称" required>
+            <TextInput placeholder="请输入应用名称" />
+          </Field>
+          <Field label="应用编码">
+            <TextInput placeholder="自动生成或手动输入，如 crm、order-mgmt" style={{ fontFamily: 'var(--font-mono)' }} />
+          </Field>
+          <Field label="应用类型">
+            <Select value={createAppType} onChange={(e) => setCreateAppType(e.target.value)}>
+              <option value="业务应用">业务应用</option>
+              <option value="工具应用">工具应用</option>
+              <option value="数据分析">数据分析</option>
+              <option value="AI助手">AI助手</option>
+            </Select>
+            {createAppType === '业务应用' && (
+              <div style={{ marginTop: 8, padding: '8px 12px', background: 'var(--info-subtle, rgba(59,130,246,0.12))', border: '1px solid var(--border)', borderRadius: 'var(--radius)', fontSize: 12, color: 'var(--info, #60a5fa)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span>💡</span>
+                <span>创建后进入应用搭建向导</span>
+              </div>
+            )}
+          </Field>
+          <Field label="描述">
+            <TextArea placeholder="请输入应用描述" style={{ minHeight: 80 }} />
+          </Field>
+        </FormSection>
+        <FormSection title="配置" desc="图标、分组与可见范围。">
+          <Field label="图标">
+            <Select defaultValue="app">
+              <option value="app">📱 应用</option>
+              <option value="cart">🛒 购物车</option>
+              <option value="users">👥 用户</option>
+              <option value="db">🗄️ 数据库</option>
+              <option value="sparkles">✨ AI</option>
+              <option value="shield">🛡️ 安全</option>
+            </Select>
+          </Field>
+          <Field label="应用分组">
+            <Select defaultValue="核心业务">
+              <option value="核心业务">核心业务</option>
+              <option value="工具">工具</option>
+              <option value="数据">数据</option>
+              <option value="AI">AI</option>
+            </Select>
+          </Field>
+          <Field label="可见范围">
+            <Select defaultValue="全公司">
+              <option value="全公司">全公司</option>
+              <option value="指定组织">指定组织</option>
+              <option value="私有">私有</option>
+            </Select>
+          </Field>
+        </FormSection>
+      </FormDrawer>
+
+      <FormDrawer
+        open={editDrawerOpen}
+        title="编辑应用"
+        onCancel={() => setEditDrawerOpen(false)}
+        onOk={() => setEditDrawerOpen(false)}
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div>
+            <label style={{ display: 'block', fontSize: 12, color: 'var(--muted-foreground)', marginBottom: 6 }}>应用名称</label>
+            <input defaultValue="客户管理系统" style={{ width: '100%', height: 36, background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '0 12px', fontSize: 13, color: 'var(--foreground)', outline: 'none' }} />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: 12, color: 'var(--muted-foreground)', marginBottom: 6 }}>描述</label>
+            <textarea defaultValue="企业客户全生命周期管理与画像分析" style={{ width: '100%', minHeight: 80, resize: 'vertical', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '8px 12px', fontSize: 13, color: 'var(--foreground)', outline: 'none' }} />
+          </div>
+        </div>
+      </FormDrawer>
     </div>
   );
 }

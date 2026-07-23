@@ -117,7 +117,7 @@ function mapSession(res: SessionResponse): ActiveSession {
  */
 export async function getSettings(): Promise<UserSettings> {
   const userId = getUser()?.id;
-  const remote = await get<SettingsResponse>('/v1/iam/settings', { userId });
+  const remote = await get<SettingsResponse>('/v1/dashboard/settings', { userId });
   const settings = mapSettings(remote);
   writeLocal(SETTINGS_KEY, settings);
   return settings;
@@ -128,7 +128,7 @@ export async function getSettings(): Promise<UserSettings> {
  */
 export async function updateSettings(settings: Partial<UserSettings>): Promise<void> {
   const userId = getUser()?.id;
-  await put<SettingsResponse>('/v1/iam/settings', { userId, ...settings });
+  await put<SettingsResponse>('/v1/dashboard/settings', { userId, ...settings });
   const current = readLocal<UserSettings>(SETTINGS_KEY) ?? DEFAULT_SETTINGS;
   writeLocal(SETTINGS_KEY, { ...current, ...settings });
 }
@@ -139,7 +139,7 @@ export async function setTheme(theme: ThemeMode): Promise<void> {
 
 export async function getApiTokens(): Promise<ApiToken[]> {
   const tenantId = getTenantId();
-  const page = await get<{ items: ApiKeyResponse[] }>('/v1/iam/api-keys', {
+  const page = await get<{ items: ApiKeyResponse[] }>('/v1/dashboard/api-keys', {
     tenantId: tenantId || 'tenant-default',
     page: 0,
     size: 100,
@@ -150,7 +150,7 @@ export async function getApiTokens(): Promise<ApiToken[]> {
 export async function createApiToken(name: string, expiresAt?: string): Promise<ApiToken> {
   const tenantId = getTenantId() || 'tenant-default';
   const userId = getUser()?.id;
-  const remote = await post<ApiKeyCreatedResponse>('/v1/iam/api-keys', {
+  const remote = await post<ApiKeyCreatedResponse>('/v1/dashboard/api-keys', {
     tenantId,
     name,
     userId,
@@ -167,7 +167,7 @@ export async function createApiToken(name: string, expiresAt?: string): Promise<
 }
 
 export async function revokeApiToken(id: string): Promise<void> {
-  await del<void>(`/v1/iam/api-keys/${id}`);
+  await del<void>(`/v1/dashboard/api-keys/${id}`);
 }
 
 /**
@@ -175,10 +175,10 @@ export async function revokeApiToken(id: string): Promise<void> {
  */
 export async function getActiveSessions(): Promise<ActiveSession[]> {
   const userId = getUser()?.id;
-  const remote = await get<SessionResponse[]>('/v1/iam/sessions', { userId });
+  const remote = await get<SessionResponse[]>('/v1/dashboard/sessions', { userId });
   return Array.isArray(remote) ? remote.map(mapSession) : [];
 }
 
 export async function revokeSession(id: string): Promise<void> {
-  await del<void>(`/v1/iam/sessions/${id}`);
+  await del<void>(`/v1/dashboard/sessions/${id}`);
 }

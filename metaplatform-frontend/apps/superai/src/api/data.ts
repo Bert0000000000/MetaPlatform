@@ -9,16 +9,16 @@ import type {
 } from '@/types';
 
 export async function listDataSources(): Promise<DataSource[]> {
-  const resp = await get<{ items: DataSource[]; total: number }>('/v1/data/datasources');
+  const resp = await get<{ items: DataSource[]; total: number }>('/v1/copilot/datasources');
   return resp.items;
 }
 
 export async function executeQuery(req: QueryExecuteRequest): Promise<QueryExecuteResult> {
-  return post<QueryExecuteResult>('/v1/data/queries/execute', req);
+  return post<QueryExecuteResult>('/v1/copilot/queries/execute', req);
 }
 
 export async function getExecutionPlan(queryId: string): Promise<ExecutionPlan> {
-  return get<ExecutionPlan>(`/v1/data/queries/${queryId}/execution-plan`);
+  return get<ExecutionPlan>(`/v1/copilot/queries/${queryId}/execution-plan`);
 }
 
 export async function exportQueryResult(
@@ -26,7 +26,7 @@ export async function exportQueryResult(
   format: ExportFormat,
 ): Promise<Blob> {
   const response = await apiClient.post(
-    `/v1/data/queries/${queryId}/export?format=${format}`,
+    `/v1/copilot/queries/${queryId}/export?format=${format}`,
     undefined,
     { responseType: 'blob' },
   );
@@ -35,7 +35,7 @@ export async function exportQueryResult(
 
 export async function listQueryHistory(): Promise<QueryHistoryItem[]> {
   const resp = await get<{ items: QueryHistoryItem[]; total: number }>(
-    '/v1/data/queries/history',
+    '/v1/copilot/queries/history',
   );
   return resp.items;
 }

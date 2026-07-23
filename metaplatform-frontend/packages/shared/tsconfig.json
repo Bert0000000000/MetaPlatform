@@ -5,5 +5,5 @@
     "rootDir": "./src",
     "types": ["react", "react-dom", "node"]
   },
-  "include": ["src"]
+  "include": ["src", "../../node_modules/@flowgram.ai/fixed-layout-editor/dist/index.d.ts"]
 }

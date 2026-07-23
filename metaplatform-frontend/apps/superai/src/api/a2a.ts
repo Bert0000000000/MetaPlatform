@@ -9,9 +9,9 @@ export interface ExternalAgent {
 }
 
 export async function listExternalAgents(): Promise<ExternalAgent[]> {
-  return get<ExternalAgent[]>('/v1/a2a/external');
+  return get<ExternalAgent[]>('/v1/copilot/a2a/external');
 }
 
 export async function delegateA2A(agentId: string, task: string): Promise<{ success: boolean; output: string }> {
-  return post<{ success: boolean; output: string }>('/v1/a2a/delegate', { agentId, task });
+  return post<{ success: boolean; output: string }>('/v1/copilot/a2a/delegate', { agentId, task });
 }

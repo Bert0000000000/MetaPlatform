@@ -4,8 +4,9 @@ import {
   Code, GraduationCap, BarChart3, Search, Settings, MoreHorizontal,
   FileUp,
 } from 'lucide-react';
-import { SubTabs, type SubTabItem } from '@mate/shared';
+import { SubTabs, type SubTabItem, FormDrawer, Field, TextInput, TextArea, Select, FormSection } from '@mate/shared';
 import { useLocation } from 'react-router-dom';
+import { useState } from 'react';
 import { MOCK_KNOWLEDGE_BASES } from '@/mock'; // MOCK
 
 // MOCK: 知识库图标映射
@@ -55,6 +56,7 @@ const KB_TABS: SubTabItem[] = [
 
 export default function KnowledgeBasePage() {
   const location = useLocation();
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   return (
     <div>
@@ -74,7 +76,7 @@ export default function KnowledgeBasePage() {
           </button>
           <button className="v-btn"><Upload style={{ width: 16, height: 16 }} />批量导入</button>
           <button className="v-btn"><RefreshCw style={{ width: 16, height: 16 }} />重建索引</button>
-          <button className="v-btn-primary"><Plus style={{ width: 16, height: 16 }} />新建知识库</button>
+          <button className="v-btn-primary" onClick={() => setDrawerOpen(true)}><Plus style={{ width: 16, height: 16 }} />新建知识库</button>
         </div>
       </div>
 
@@ -236,6 +238,71 @@ export default function KnowledgeBasePage() {
           </tbody>
         </table>
       </div>
+
+    <FormDrawer open={drawerOpen} title="新建知识库" onCancel={() => setDrawerOpen(false)} onOk={() => setDrawerOpen(false)}>
+      <FormSection title="基本信息" desc="知识库标识与展示">
+        <Field label="知识库名称" required>
+          <TextInput placeholder="例：产品技术文档" />
+        </Field>
+        <Field label="知识库编码">
+          <TextInput placeholder="例：kb-product-tech" style={{ fontFamily: 'var(--font-mono)' }} />
+        </Field>
+        <Field label="描述">
+          <TextArea placeholder="知识库用途说明..." rows={3} />
+        </Field>
+        <Field label="图标">
+          <Select defaultValue="book">
+            <option value="book">📘 BookOpen</option>
+            <option value="message">💬 MessageCircle</option>
+            <option value="file">📄 FileText</option>
+            <option value="server">🖥️ Server</option>
+            <option value="blocks">🧩 Blocks</option>
+            <option value="code">💻 Code</option>
+            <option value="chart">📊 BarChart3</option>
+          </Select>
+        </Field>
+        <Field label="标签">
+          <TextInput placeholder="产品, 技术 （多个用逗号分隔）" />
+        </Field>
+      </FormSection>
+
+      <FormSection title="可见范围" desc="访问控制">
+        <Field label="可见范围">
+          <Select defaultValue="company">
+            <option value="company">全公司</option>
+            <option value="org">指定组织</option>
+            <option value="private">私有</option>
+          </Select>
+        </Field>
+        <Field label="所属组织">
+          <TextInput placeholder="例：技术中心" />
+        </Field>
+      </FormSection>
+
+      <FormSection title="嵌入与切片" desc="向量模型与文档切片策略">
+        <Field label="嵌入模型">
+          <Select defaultValue="text-embedding-v2">
+            <option value="text-embedding-v1">text-embedding-v1</option>
+            <option value="text-embedding-v2">text-embedding-v2</option>
+            <option value="bge-large-zh">bge-large-zh</option>
+          </Select>
+        </Field>
+        <Field label="切片策略">
+          <Select defaultValue="fixed">
+            <option value="fixed">固定长度</option>
+            <option value="paragraph">按段落</option>
+            <option value="heading">按标题</option>
+            <option value="smart">智能切片</option>
+          </Select>
+        </Field>
+        <Field label="切片大小">
+          <TextInput type="number" defaultValue={512} min={64} />
+        </Field>
+        <Field label="切片重叠">
+          <TextInput type="number" defaultValue={50} min={0} />
+        </Field>
+      </FormSection>
+    </FormDrawer>
     </div>
   );
 }

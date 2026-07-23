@@ -26,6 +26,6 @@ function mapAgent(item: AgentResponse): WorkerStatus {
 }
 
 export async function getEmployeeStatus(): Promise<WorkerStatus[]> {
-  const agents = await get<AgentResponse[]>('/v1/agent/agents');
+  const agents = await get<AgentResponse[]>('/v1/dashboard/workers');
   return Array.isArray(agents) ? agents.map(mapAgent) : [];
 }

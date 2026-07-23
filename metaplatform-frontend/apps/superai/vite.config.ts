@@ -7,14 +7,14 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(import.meta.dirname, './src'),
-      '@mate/shared': path.resolve(import.meta.dirname, '../../packages/shared/src/index.ts'),
+      '@mate/shared$': path.resolve(import.meta.dirname, '../../packages/shared/src/index.ts'),
     },
   },
   server: {
     port: 9240,
     proxy: {
-      '/api': {
-        target: 'http://localhost:8000',
+      '/api/v1/copilot': {
+        target: 'http://localhost:9002',
         changeOrigin: true,
       },
     },

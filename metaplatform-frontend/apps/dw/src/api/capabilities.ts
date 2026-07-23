@@ -20,22 +20,22 @@ export interface KnowledgeBase {
 }
 
 export async function listTools(): Promise<AgentTool[]> {
-  return get<AgentTool[]>('/v1/agent/tools');
+  return get<AgentTool[]>('/v1/dw/tools');
 }
 
 export async function listModels(): Promise<LlmModel[]> {
-  return get<LlmModel[]>('/v1/llmgw/models');
+  return get<LlmModel[]>('/v1/dw/models');
 }
 
 export async function listKnowledgeBases(): Promise<KnowledgeBase[]> {
-  return get<KnowledgeBase[]>('/v1/rag/knowledge-bases');
+  return get<KnowledgeBase[]>('/v1/dw/knowledge-bases');
 }
 
 export async function updateCapability(
   employeeId: string,
   capability: EmployeeCapability,
 ): Promise<Employee> {
-  return post<Employee>(`/v1/agent/employees/${employeeId}/capability`, capability);
+  return post<Employee>(`/v1/dw/employees/${employeeId}/capability`, capability);
 }
 
 export async function testCapability(
@@ -43,7 +43,7 @@ export async function testCapability(
   testMessage: string,
 ): Promise<{ reply: string; tokensUsed: number }> {
   return post<{ reply: string; tokensUsed: number }>(
-    `/v1/agent/employees/${employeeId}/test`,
+    `/v1/dw/employees/${employeeId}/test`,
     { message: testMessage },
   );
 }

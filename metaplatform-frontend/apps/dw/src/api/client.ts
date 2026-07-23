@@ -2,6 +2,9 @@ import axios, { AxiosError, type InternalAxiosRequestConfig } from 'axios';
 import { message } from 'antd';
 import { getToken, removeToken } from '@mate/shared';
 export const apiClient = axios.create({
+  // Vite dev proxy forwards /api -> http://localhost:8000 (gateway).
+  // All API paths use /v1/dw/* prefix routed to APP-DW (port 9003).
+  // Exception: /v1/a2a/* paths remain on the A2A protocol layer.
   baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
   timeout: 30000,
   headers: {

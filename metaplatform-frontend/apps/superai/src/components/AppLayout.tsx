@@ -21,7 +21,7 @@ export default function AppLayout() {
     navigate('/login');
   };
 
-  const menu = <PlatformMenu moduleKey="superai" />;
+  const menu = <PlatformMenu currentModule="superai" />;
 
   return (
     <Layout style={{ minHeight: '100vh' }}>

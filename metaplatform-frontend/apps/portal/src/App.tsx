@@ -63,6 +63,8 @@ const AdminPermissionsPage = lazy(() => import('./pages/admin/AdminPermissionsPa
 const AdminOrgPage = lazy(() => import('./pages/admin/AdminOrgPage'));
 const AdminLogsPage = lazy(() => import('./pages/admin/AdminLogsPage'));
 const AdminConfigPage = lazy(() => import('./pages/admin/AdminConfigPage'));
+const AdminComponentsPage = lazy(() => import('./pages/admin/AdminComponentsPage'));
+const AdminOperationsPage = lazy(() => import('./pages/admin/AdminOperationsPage'));
 
 function Loading() {
   return (
@@ -146,6 +148,8 @@ function AppRoutes() {
           <Route path="admin/org" element={<AdminOrgPage />} />
           <Route path="admin/logs" element={<AdminLogsPage />} />
           <Route path="admin/config" element={<AdminConfigPage />} />
+          <Route path="admin/components" element={<AdminComponentsPage />} />
+          <Route path="admin/operations" element={<AdminOperationsPage />} />
         </Route>
       </Routes>
     </Suspense>

@@ -25,5 +25,9 @@
     "rimraf": "^6.0.0",
     "typescript": "~5.7.0",
     "vite": "^6.4.0"
+  },
+  "dependencies": {
+    "@flowgram.ai/free-auto-layout-plugin": "^1.0.12",
+    "@flowgram.ai/free-node-panel-plugin": "^1.0.12"
   }
 }

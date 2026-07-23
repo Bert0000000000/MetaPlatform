@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { Graph } from '@antv/x6';
 import {
   Upload, Download, Settings2, CircleDot, GitBranch, Boxes, Database,
   TrendingUp, Minus, ZoomIn, ZoomOut, Maximize, Image as ImageIcon,
@@ -18,47 +19,32 @@ const ONTOLOGY_TABS = [
 ];
 
 // MOCK: 图谱节点
-const GRAPH_NODES = [
-  { id: 'n1', label: '客户', type: 'G2 · Concept', icon: User, nodeClass: 'node-concept', selected: true, left: 65, top: 60 },
-  { id: 'n2', label: '订单', type: 'G2 · Concept', icon: FileText, nodeClass: 'node-concept', left: 265, top: 60 },
-  { id: 'n3', label: '产品', type: 'G1 · Concept', icon: Package, nodeClass: 'node-concept', left: 465, top: 60 },
-  { id: 'n4', label: '合同', type: 'G2 · Concept', icon: FileSignature, nodeClass: 'node-concept', left: 265, top: 240 },
-  { id: 'n5', label: '组织', type: 'G1 · Concept', icon: Building2, nodeClass: 'node-g2', left: 65, top: 240 },
-  { id: 'n6', label: '人员', type: 'G4 · Concept', icon: Users, nodeClass: 'node-g3', left: 65, top: 420 },
-  { id: 'n7', label: '仓库', type: 'G4 · Concept', icon: Warehouse, nodeClass: 'node-g4', left: 465, top: 240 },
-  { id: 'n8', label: '供应商', type: 'G1 · Concept', icon: Truck, nodeClass: 'node-g1', left: 465, top: 420 },
+type GNode = { id: string; label: string; type: string; nodeClass: string; x: number; y: number };
+const GRAPH_NODES: GNode[] = [
+  { id: 'n1', label: '客户', type: 'G2 · Concept', nodeClass: 'node-concept', x: 65, y: 60 },
+  { id: 'n2', label: '订单', type: 'G2 · Concept', nodeClass: 'node-concept', x: 265, y: 60 },
+  { id: 'n3', label: '产品', type: 'G1 · Concept', nodeClass: 'node-concept', x: 465, y: 60 },
+  { id: 'n4', label: '合同', type: 'G2 · Concept', nodeClass: 'node-concept', x: 265, y: 240 },
+  { id: 'n5', label: '组织', type: 'G1 · Concept', nodeClass: 'node-g2', x: 65, y: 240 },
+  { id: 'n6', label: '人员', type: 'G4 · Concept', nodeClass: 'node-g3', x: 65, y: 420 },
+  { id: 'n7', label: '仓库', type: 'G4 · Concept', nodeClass: 'node-g4', x: 465, y: 240 },
+  { id: 'n8', label: '供应商', type: 'G1 · Concept', nodeClass: 'node-g1', x: 465, y: 420 },
 ];
 
-// MOCK: 边标签
-const EDGE_LABELS = [
-  { label: '下单', left: 205, top: 78 },
-  { label: '签署', left: 195, top: 168 },
-  { label: '所属', left: 126, top: 172 },
-  { label: '联系人', left: 136, top: 264 },
-  { label: '包含', left: 405, top: 78 },
-  { label: '配送', left: 400, top: 168 },
-  { label: '关联', left: 425, top: 168 },
-  { label: '包含', left: 146, top: 352 },
-  { label: '采购', left: 310, top: 260 },
-  { label: '供货', left: 506, top: 260 },
-  { label: '入库', left: 526, top: 352 },
-  { label: '依据', left: 342, top: 172 },
-];
-
-// MOCK: SVG 边
+// MOCK: 边（X6: source/target + label）
 const EDGES = [
-  { x1: 175, y1: 95, x2: 265, y2: 95, px: '265,91 273,95 265,99' },
-  { x1: 150, y1: 120, x2: 290, y2: 244, px: '287,250 294,244 290,238' },
-  { x1: 120, y1: 120, x2: 120, y2: 244, px: '116,244 120,252 124,244' },
-  { x1: 130, y1: 120, x2: 130, y2: 424, px: '126,424 130,432 134,424' },
-  { x1: 375, y1: 95, x2: 465, y2: 95, px: '465,91 473,95 465,99' },
-  { x1: 350, y1: 120, x2: 490, y2: 244, px: '487,250 494,244 490,238' },
-  { x1: 375, y1: 244, x2: 490, y2: 120, px: '494,116 490,124 486,116' },
-  { x1: 140, y1: 300, x2: 140, y2: 424, px: '136,424 140,432 144,424' },
-  { x1: 175, y1: 108, x2: 465, y2: 440, px: '461,444 469,440 465,436' },
-  { x1: 520, y1: 120, x2: 520, y2: 424, px: '516,424 520,432 524,424' },
-  { x1: 540, y1: 300, x2: 540, y2: 424, px: '536,424 540,432 544,424' },
-  { x1: 345, y1: 120, x2: 340, y2: 244, px: '336,244 340,252 344,244' },
+  { source: 'n1', target: 'n2', label: '下单' },
+  { source: 'n2', target: 'n4', label: '签署' },
+  { source: 'n1', target: 'n5', label: '所属' },
+  { source: 'n5', target: 'n6', label: '联系人' },
+  { source: 'n2', target: 'n3', label: '包含' },
+  { source: 'n2', target: 'n7', label: '配送' },
+  { source: 'n3', target: 'n7', label: '关联' },
+  { source: 'n5', target: 'n4', label: '包含' },
+  { source: 'n2', target: 'n8', label: '采购' },
+  { source: 'n3', target: 'n8', label: '供货' },
+  { source: 'n7', target: 'n8', label: '入库' },
+  { source: 'n4', target: 'n2', label: '依据' },
 ];
 
 // MOCK: 筛选 - 类型
@@ -116,13 +102,173 @@ export default function OntologyGraphPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const [selectedNode, setSelectedNode] = useState('n1');
+  const selectedNodeRef = useRef(selectedNode);
+  selectedNodeRef.current = selectedNode;
+  const graphRef = useRef<HTMLDivElement | null>(null);
+  const graphInstanceRef = useRef<Graph | null>(null);
+
+  // X6 初始化
+  useEffect(() => {
+    if (!graphRef.current) return;
+    const container = graphRef.current;
+    // 父容器用 flex 布局，首次测量时宽度可能为 0；推迟一帧等布局完成
+    let graph: Graph | null = null;
+    let ro: ResizeObserver | null = null;
+    let disposed = false;
+    const raf = requestAnimationFrame(() => {
+      if (disposed || !container.isConnected) return;
+      const initW = container.offsetWidth || container.clientWidth || 800;
+      const initH = container.offsetHeight || container.clientHeight || 560;
+      graph = new Graph({
+        container,
+        width: initW,
+        height: initH,
+        autoResize: false,
+        background: { color: 'transparent' },
+        panning: { enabled: true, modifiers: ['space'] },
+        mousewheel: { enabled: true, zoomAtMousePosition: true, modifiers: ['ctrl', 'meta'] },
+        interacting: { nodeMovable: true, edgeMovable: false },
+        connecting: { connector: 'normal' as any, router: 'normal' as any },
+        highlighting: {},
+      } as any);
+      // 强制同步一次最新尺寸
+      try { graph.resize(initW, initH); } catch {}
+      graphInstanceRef.current = graph;
+
+      // 用 ResizeObserver 监听 graphRef 父容器（layout 容器），尺寸变化时同步给 graph
+      ro = new ResizeObserver((entries) => {
+        for (const entry of entries) {
+          const { width, height } = entry.contentRect;
+          if (width > 0 && height > 0) {
+            try { graph?.resize(width, height); } catch {}
+          }
+        }
+      });
+      ro.observe(container.parentElement || container);
+
+      const jsonData = {
+        nodes: GRAPH_NODES.map((n) => {
+          const selected = n.id === selectedNodeRef.current;
+          return {
+            id: n.id,
+            shape: 'rect',
+            x: n.x,
+            y: n.y,
+            width: 110,
+            height: 64,
+            data: { label: n.label, type: n.type, nodeClass: n.nodeClass, selected },
+            attrs: {
+              body: {
+                rx: 6,
+                ry: 6,
+                fill: selected ? '#1a1d24' : 'var(--muted, #18181b)',
+                stroke: selected ? '#e4e4e7' : '#27272a',
+                strokeWidth: selected ? 2 : 1.5,
+              },
+              label: {
+                text: n.label,
+                fill: '#fafafa',
+                fontSize: 13,
+                fontWeight: 600,
+                refX: 55,
+                refY: 26,
+                textAnchor: 'middle',
+                textVerticalAnchor: 'middle',
+              },
+              // 类型标签（小字）
+              sub: {
+                text: n.type,
+                fill: '#a1a1aa',
+                fontSize: 10,
+                refX: 55,
+                refY: 48,
+                textAnchor: 'middle',
+                textVerticalAnchor: 'middle',
+              },
+            },
+          };
+        }),
+        edges: EDGES.map((e, i) => ({
+          id: `e${i}`,
+          source: e.source,
+          target: e.target,
+          shape: 'edge',
+          attrs: {
+            line: {
+              stroke: '#71717a',
+              strokeWidth: 1,
+              strokeDasharray: '4 4',
+              targetMarker: { name: 'block', size: 6, fill: '#71717a' },
+            },
+          },
+          labels: [
+            {
+              attrs: {
+                text: {
+                  text: e.label,
+                  fill: '#a1a1aa',
+                  fontSize: 10,
+                },
+              },
+            },
+          ],
+        })),
+      };
+      graph.fromJSON(jsonData as any);
+
+      graph.on('node:click', ({ node }) => {
+        setSelectedNode(node.id);
+      });
+
+      // 鼠标悬停反馈
+      graph.on('node:mouseenter', ({ node }) => {
+        const cell = node as any;
+        const isSel = cell.id === selectedNodeRef.current;
+        cell.attr('body/stroke', isSel ? '#fafafa' : '#71717a');
+        cell.attr('body/strokeWidth', isSel ? 2.5 : 1.5);
+      });
+      graph.on('node:mouseleave', ({ node }) => {
+        const cell = node as any;
+        const isSel = cell.id === selectedNodeRef.current;
+        cell.attr('body/stroke', isSel ? '#e4e4e7' : '#27272a');
+        cell.attr('body/strokeWidth', isSel ? 2 : 1.5);
+      });
+    });
+
+    return () => {
+      disposed = true;
+      cancelAnimationFrame(raf);
+      ro?.disconnect();
+      if (graph) {
+        graph.dispose();
+      }
+      graphInstanceRef.current = null;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // 选中态变化时刷新样式
+  useEffect(() => {
+    const graph = graphInstanceRef.current;
+    if (!graph) return;
+    GRAPH_NODES.forEach((n) => {
+      const cell = graph.getCellById(n.id) as any;
+      if (!cell) return;
+      const selected = n.id === selectedNode;
+      cell.attr('body', {
+        fill: selected ? '#1a1d24' : 'var(--muted, #18181b)',
+        stroke: selected ? '#e4e4e7' : '#27272a',
+        strokeWidth: selected ? 2 : 1.5,
+      });
+    });
+  }, [selectedNode]);
 
   return (
     <div>
       <SubTabs items={ONTOLOGY_TABS} activePath={location.pathname} />
 
       {/* Page Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 24, marginBottom: 20 }}>
         <div>
           <h1 style={{ fontSize: 22, fontWeight: 600, letterSpacing: '-0.02em' }}>知识图谱</h1>
           <div style={{ fontSize: 13, color: 'var(--muted-foreground)', marginTop: 4 }}>基于本体引擎的可视化知识关系网络，支持多数据源实体关系探索</div>
@@ -226,40 +372,7 @@ export default function OntologyGraphPage() {
 
         {/* CENTER: Graph Canvas */}
         <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
-          <div style={{ position: 'relative', flex: 1, minHeight: 560, overflow: 'hidden', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)' }}>
-            {/* SVG Edge Layer */}
-            <svg style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 1 }} viewBox="0 0 800 560" preserveAspectRatio="xMidYMid meet">
-              {EDGES.map((e, i) => (
-                <g key={i}>
-                  <line x1={e.x1} y1={e.y1} x2={e.x2} y2={e.y2} stroke="#555" strokeWidth={1} strokeDasharray="4 4" />
-                  <polygon points={e.px} fill="#555" />
-                </g>
-              ))}
-            </svg>
-            {/* Edge Labels */}
-            {EDGE_LABELS.map((el, i) => (
-              <div key={i} style={{ position: 'absolute', fontSize: 10, color: 'var(--muted-foreground)', background: 'var(--card)', padding: '1px 6px', borderRadius: 4, zIndex: 3, pointerEvents: 'none', whiteSpace: 'nowrap', left: el.left, top: el.top }}>{el.label}</div>
-            ))}
-            {/* Nodes */}
-            {GRAPH_NODES.map((node) => (
-              <div
-                key={node.id}
-                onClick={() => setSelectedNode(node.id)}
-                style={{
-                  position: 'absolute', width: 110, padding: '10px 14px', background: selectedNode === node.id ? 'var(--accent)' : 'var(--muted)',
-                  border: `1px solid ${selectedNode === node.id ? 'var(--foreground)' : 'var(--border)'}`,
-                  borderRadius: 'var(--radius)', textAlign: 'center', cursor: 'pointer', zIndex: 2,
-                  transition: 'border-color .15s, background .15s', left: node.left, top: node.top,
-                }}
-              >
-                <div style={{ width: 20, height: 20, margin: '0 auto 4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <node.icon style={{ width: 18, height: 18, color: nodeIconColor(node.nodeClass) }} />
-                </div>
-                <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 2 }}>{node.label}</div>
-                <div style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>{node.type}</div>
-              </div>
-            ))}
-          </div>
+          <div ref={graphRef} style={{ flex: 1, minHeight: 560, minWidth: 0, width: '100%', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', overflow: 'hidden' }} />
           {/* Bottom Stats Bar */}
           <div style={{ display: 'flex', gap: 16, padding: '12px 16px', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', flexWrap: 'wrap' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--muted-foreground)' }}><span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--foreground)' }} /> 总节点 <span style={{ color: 'var(--foreground)', fontWeight: 600 }}>8</span></div>

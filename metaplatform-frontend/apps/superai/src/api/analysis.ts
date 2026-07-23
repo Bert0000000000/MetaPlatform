@@ -11,22 +11,22 @@ export async function generateSql(
   query: string,
   ontologyConcepts?: string[],
 ): Promise<SqlGenerationResult> {
-  return post<SqlGenerationResult>('/v1/analysis/generate-sql', {
+  return post<SqlGenerationResult>('/v1/copilot/analysis/generate-sql', {
     query,
     ontologyConcepts,
   });
 }
 
 export async function executeSql(sql: string): Promise<SqlExecutionResult> {
-  return post<SqlExecutionResult>('/v1/analysis/execute-sql', { sql });
+  return post<SqlExecutionResult>('/v1/copilot/analysis/execute-sql', { sql });
 }
 
 export async function explainSql(sql: string): Promise<string> {
-  return post<string>('/v1/analysis/explain-sql', { sql });
+  return post<string>('/v1/copilot/analysis/explain-sql', { sql });
 }
 
 export async function auditSql(sql: string): Promise<SqlAuditResult> {
-  return post<SqlAuditResult>('/v1/analysis/audit-sql', { sql });
+  return post<SqlAuditResult>('/v1/copilot/analysis/audit-sql', { sql });
 }
 
 export async function autoDetectChartType(

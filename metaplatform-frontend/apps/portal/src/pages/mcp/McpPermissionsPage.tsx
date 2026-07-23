@@ -1,4 +1,5 @@
-import { SubTabs, type SubTabItem } from '@mate/shared';
+import { useState } from 'react';
+import { SubTabs, FormDrawer, Field, TextInput, TextArea, Select, FormSection, type SubTabItem } from '@mate/shared';
 import { useLocation } from 'react-router-dom';
 import {
   Plus,
@@ -92,6 +93,7 @@ const MCP_TABS: SubTabItem[] = [
 
 export default function McpPermissionsPage() {
   const location = useLocation();
+  const [createDrawerOpen, setCreateDrawerOpen] = useState(false);
 
   return (
     <div>
@@ -104,7 +106,7 @@ export default function McpPermissionsPage() {
           配置工具访问权限策略，控制不同模块、角色和客户端的工具调用范围。
         </p>
         <div style={{ marginTop: 12, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-          <button className="v-btn-primary"><Plus style={{ width: 14, height: 14 }} />新建策略</button>
+          <button className="v-btn-primary" onClick={() => setCreateDrawerOpen(true)}><Plus style={{ width: 14, height: 14 }} />新建策略</button>
           <button className="v-btn"><Download style={{ width: 14, height: 14 }} />导出</button>
           <button className="v-btn"><Upload style={{ width: 14, height: 14 }} />导入</button>
         </div>
@@ -281,6 +283,50 @@ export default function McpPermissionsPage() {
           );
         })}
       </div>
+
+      <FormDrawer
+        open={createDrawerOpen}
+        title="新建权限策略"
+        onCancel={() => setCreateDrawerOpen(false)}
+        onOk={() => setCreateDrawerOpen(false)}
+      >
+        <FormSection title="基本信息" desc="策略名称与优先级">
+          <Field label="策略名称" required>
+            <TextInput placeholder="例：数据分析师查询" />
+          </Field>
+          <Field label="优先级">
+            <TextInput type="number" min={1} max={100} defaultValue={50} />
+          </Field>
+          <Field label="描述">
+            <TextArea placeholder="策略用途说明..." rows={3} />
+          </Field>
+        </FormSection>
+
+        <FormSection title="主体与范围" desc="配置策略适用主体与工具范围">
+          <Field label="主体类型">
+            <Select defaultValue="user">
+              <option value="user">用户</option>
+              <option value="role">角色</option>
+              <option value="org">组织</option>
+            </Select>
+          </Field>
+          <Field label="主体ID/名称">
+            <TextInput placeholder="例：zhangsan 或 role:dev" />
+          </Field>
+          <Field label="工具范围">
+            <TextArea placeholder={'ont_query_*\nrag_search\ndata_read'} rows={5} style={{ fontFamily: 'var(--font-mono)' }} />
+          </Field>
+        </FormSection>
+
+        <FormSection title="约束条件" desc="可选：生效时间窗口与 IP 白名单">
+          <Field label="时间窗口">
+            <TextInput placeholder="09:00-18:00" />
+          </Field>
+          <Field label="IP 白名单">
+            <TextArea placeholder={'10.0.0.0/8\n192.168.1.100'} rows={4} style={{ fontFamily: 'var(--font-mono)' }} />
+          </Field>
+        </FormSection>
+      </FormDrawer>
     </div>
   );
 }

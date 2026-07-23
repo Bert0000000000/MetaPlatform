@@ -56,7 +56,7 @@ apiClient.interceptors.response.use(
       const onLoginPage =
         typeof window !== 'undefined' && window.location.pathname === '/login';
       // When on the login page, silently ignore 401s from best-effort calls
-      // (e.g. SettingsContext probing /v1/iam/settings) to avoid loops/toasts.
+      // (e.g. SettingsContext probing /v1/dashboard/settings) to avoid loops/toasts.
       if (onLoginPage) {
         return Promise.reject(error);
       }

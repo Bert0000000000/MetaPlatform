@@ -29,17 +29,17 @@ export async function uploadDocument(
   const formData = new FormData();
   formData.append('file', file);
   formData.append('employeeId', employeeId);
-  return post<DocumentItem>('/v1/rag/documents/upload', formData);
+  return post<DocumentItem>('/v1/dw/documents/upload', formData);
 }
 
 export async function listDocuments(employeeId: string): Promise<DocumentItem[]> {
-  return get<DocumentItem[]>('/v1/rag/documents', { employeeId });
+  return get<DocumentItem[]>('/v1/dw/documents', { employeeId });
 }
 
 export async function deleteDocument(docId: string): Promise<void> {
-  return del<void>(`/v1/rag/documents/${docId}`);
+  return del<void>(`/v1/dw/documents/${docId}`);
 }
 
 export async function getDocument(docId: string): Promise<DocumentItem> {
-  return get<DocumentItem>(`/v1/rag/documents/${docId}`);
+  return get<DocumentItem>(`/v1/dw/documents/${docId}`);
 }

@@ -1,10 +1,13 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Slider, Checkbox } from 'antd';
 import {
   History, Rocket, Check, ClipboardCheck, AlertTriangle,
   CheckCircle, XCircle, Filter, Download, Server, RotateCcw,
 } from 'lucide-react';
 import AppHeader from '@/components/AppHeader';
 import { useAppTabs } from '@/store/appTabs';
+import { StepDrawer, Field, TextArea, Select } from '@mate/shared';
 
 const APP_SUB_TABS = [
   { label: '应用详情', path: '/apps/detail' },
@@ -55,6 +58,9 @@ export default function AppPublishPage() {
   const active = tabs.find((t) => t.id === activeId) ?? tabs[0];
   const appId = active?.id ?? 'order-mgmt';
   const appName = active?.name ?? '订单管理系统';
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [grayRatio, setGrayRatio] = useState(100);
+  const [notifyChannels, setNotifyChannels] = useState<string[]>(['邮件', 'IM']);
 
   const steps = [
     { label: '开发', sub: 'v2.2.0-dev', state: 'completed' },
@@ -70,7 +76,7 @@ export default function AppPublishPage() {
       {/* Page Header */}
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginBottom: 24 }}>
         <button className="v-btn"><History style={{ width: 15, height: 15 }} />发布历史</button>
-        <button className="v-btn-primary"><Rocket style={{ width: 15, height: 15 }} />新建发布</button>
+        <button className="v-btn-primary" onClick={() => setDrawerOpen(true)}><Rocket style={{ width: 15, height: 15 }} />新建发布</button>
       </div>
 
       {/* Steps */}
@@ -235,6 +241,96 @@ export default function AppPublishPage() {
           </div>
         ))}
       </div>
+
+      <StepDrawer
+        open={drawerOpen}
+        title="新建发布"
+        onCancel={() => setDrawerOpen(false)}
+        onFinish={() => setDrawerOpen(false)}
+        steps={[
+          {
+            title: '选择版本',
+            description: '选择待发布的版本与说明',
+            content: (
+              <>
+                <Field label="选择版本号" required>
+                  <Select defaultValue="v2.3.0" style={{ fontFamily: 'var(--font-mono)' }}>
+                    <option value="v2.3.0">v2.3.0（最新）</option>
+                    <option value="v2.2.1">v2.2.1</option>
+                    <option value="v2.2.0">v2.2.0</option>
+                    <option value="v2.1.0">v2.1.0</option>
+                  </Select>
+                </Field>
+                <Field label="发布说明">
+                  <TextArea placeholder="请输入本次发布说明，包含变更内容、影响范围与回滚预案" style={{ minHeight: 120 }} />
+                </Field>
+              </>
+            ),
+          },
+          {
+            title: '检查项',
+            description: '自动检查结果与备注',
+            content: (
+              <>
+                <div style={{ fontSize: 12, color: 'var(--muted-foreground)', marginBottom: 8 }}>自动检查结果</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: 14, background: 'var(--muted)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', marginBottom: 16 }}>
+                  {[
+                    { label: '表单完整性', detail: '所有必填字段已配置' },
+                    { label: '流程配置', detail: '审批流节点完整，无孤立节点' },
+                    { label: '权限设置', detail: '角色权限矩阵已校验' },
+                    { label: '数据模型', detail: '实体关系一致，索引正常' },
+                  ].map((c) => (
+                    <div key={c.label} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <CheckCircle style={{ width: 16, height: 16, color: 'var(--success)', flexShrink: 0 }} />
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 13, fontWeight: 500 }}>{c.label}</div>
+                        <div style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>{c.detail}</div>
+                      </div>
+                      <span style={{ fontSize: 12, color: 'var(--success)', fontWeight: 500 }}>通过</span>
+                    </div>
+                  ))}
+                </div>
+                <Field label="备注">
+                  <TextArea placeholder="补充说明本次检查的注意事项或已知风险" style={{ minHeight: 80 }} />
+                </Field>
+              </>
+            ),
+          },
+          {
+            title: '发布范围',
+            description: '目标环境与灰度策略',
+            content: (
+              <>
+                <Field label="目标环境" required>
+                  <Select defaultValue="生产">
+                    <option value="开发">开发</option>
+                    <option value="测试">测试</option>
+                    <option value="预发">预发</option>
+                    <option value="生产">生产</option>
+                  </Select>
+                </Field>
+                <Field label="灰度比例">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <Slider value={grayRatio} onChange={setGrayRatio} style={{ flex: 1 }} min={0} max={100} />
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 600, minWidth: 44, textAlign: 'right' }}>{grayRatio}%</span>
+                  </div>
+                </Field>
+                <Field label="通知方式">
+                  <Checkbox.Group
+                    value={notifyChannels}
+                    onChange={(vals) => setNotifyChannels(vals as string[])}
+                    options={[
+                      { label: '邮件', value: '邮件' },
+                      { label: 'IM', value: 'IM' },
+                      { label: '短信', value: '短信' },
+                    ]}
+                  />
+                </Field>
+              </>
+            ),
+          },
+        ]}
+      />
     </div>
   );
 }

@@ -26,12 +26,13 @@ export interface TraceDetail {
   spans: ObsSpan[];
 }
 
-const BASE = '/v1/obs';
+// TODO: /v1/obs was not in the original DW mapping table; remapped to /v1/dw/traces
+const BASE = '/v1/dw/traces';
 
 export async function getTraceDetail(traceId: string): Promise<TraceDetail> {
-  return get<TraceDetail>(`${BASE}/traces/${traceId}`);
+  return get<TraceDetail>(`${BASE}/${traceId}`);
 }
 
 export async function getTraceSpans(traceId: string): Promise<ObsSpan[]> {
-  return get<ObsSpan[]>(`${BASE}/traces/${traceId}/spans`);
+  return get<ObsSpan[]>(`${BASE}/${traceId}/spans`);
 }

@@ -1,8 +1,9 @@
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useState } from 'react';
 import {
   Plus, Eye, CheckCheck, FileText, Check, X, Pencil,
 } from 'lucide-react';
-import { SubTabs, type SubTabItem } from '@mate/shared';
+import { SubTabs, type SubTabItem, StepDrawer, Field, TextInput, TextArea, Select, FormSection } from '@mate/shared';
 import { MOCK_AGENTS } from '@/mock'; // MOCK
 
 const AGENT_TABS: SubTabItem[] = [
@@ -44,6 +45,23 @@ const MOCK_REVIEWS = [
 export default function AgentsKnowledgePage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [form, setForm] = useState({
+    sourceType: '文档',
+    sourceUri: '',
+    description: '',
+    agent: '知识库管理员',
+    extractDepth: '详细',
+    outputFormat: 'JSON',
+    targetConcept: '业务对象-订单',
+    autoMap: true,
+    customMapRules: '',
+    reviewer: '',
+    autoPublish: false,
+    notifyOnPublish: true,
+  });
+  const update = (key: keyof typeof form, value: unknown) =>
+    setForm((f) => ({ ...f, [key]: value }));
 
   return (
     <div>
@@ -121,7 +139,7 @@ export default function AgentsKnowledgePage() {
           <div className="ak-section-title">提炼任务列表</div>
           <span className="v-meta">共 6 个任务</span>
         </div>
-        <button className="ak-action-btn"><Plus style={{ width: 14, height: 14 }} />新建提炼任务</button>
+        <button className="ak-action-btn" onClick={() => setDrawerOpen(true)}><Plus style={{ width: 14, height: 14 }} />新建提炼任务</button>
       </div>
       <div className="v-card" style={{ padding: 0, overflow: 'hidden', marginBottom: 28 }}>
         <table className="v-table" style={{ border: 'none' }}>
@@ -209,6 +227,148 @@ export default function AgentsKnowledgePage() {
           </div>
         ))}
       </div>
+
+      <StepDrawer
+        open={drawerOpen}
+        title="新建提炼任务"
+        steps={[
+          {
+            title: '选择源',
+            description: '指定知识提炼的来源',
+            content: (
+              <>
+                <Field label="来源类型">
+                  <Select value={form.sourceType} onChange={(e) => update('sourceType', e.target.value)}>
+                    <option value="文档">文档</option>
+                    <option value="网页">网页</option>
+                    <option value="数据库">数据库</option>
+                    <option value="Ontology">Ontology</option>
+                  </Select>
+                </Field>
+                <Field label="源文件 / URL">
+                  <TextArea
+                    placeholder={form.sourceType === '网页' ? '请粘贴 URL，多个用换行分隔' : '请输入源文件路径或标识，多个用换行分隔'}
+                    rows={4}
+                    value={form.sourceUri}
+                    onChange={(e) => update('sourceUri', e.target.value)}
+                  />
+                </Field>
+                <Field label="描述">
+                  <TextArea placeholder="请输入任务描述" rows={3} value={form.description} onChange={(e) => update('description', e.target.value)} />
+                </Field>
+              </>
+            ),
+          },
+          {
+            title: '选择数字员工',
+            description: '指定执行提炼任务的员工与输出',
+            content: (
+              <>
+                <Field label="选择员工">
+                  <Select value={form.agent} onChange={(e) => update('agent', e.target.value)}>
+                    <option value="知识库管理员">知识库管理员</option>
+                    <option value="合同审核员">合同审核员</option>
+                    <option value="客服助手">客服助手</option>
+                    <option value="数据分析师">数据分析师</option>
+                    <option value="代码审查员">代码审查员</option>
+                  </Select>
+                </Field>
+                <Field label="提炼深度">
+                  <Select value={form.extractDepth} onChange={(e) => update('extractDepth', e.target.value)}>
+                    <option value="摘要">摘要</option>
+                    <option value="详细">详细</option>
+                    <option value="深度">深度</option>
+                  </Select>
+                </Field>
+                <Field label="输出格式">
+                  <Select value={form.outputFormat} onChange={(e) => update('outputFormat', e.target.value)}>
+                    <option value="JSON">JSON</option>
+                    <option value="Markdown">Markdown</option>
+                    <option value="表格">表格</option>
+                  </Select>
+                </Field>
+              </>
+            ),
+          },
+          {
+            title: 'Ontology 映射',
+            description: '配置提炼结果到本体的映射',
+            content: (
+              <>
+                <Field label="目标概念">
+                  <Select value={form.targetConcept} onChange={(e) => update('targetConcept', e.target.value)}>
+                    <option value="业务对象-订单">业务对象-订单</option>
+                    <option value="业务对象-客户">业务对象-客户</option>
+                    <option value="业务对象-产品">业务对象-产品</option>
+                    <option value="业务对象-合同">业务对象-合同</option>
+                    <option value="业务对象-员工">业务对象-员工</option>
+                  </Select>
+                </Field>
+                <Field label="自动映射">
+                  <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--foreground)', cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={form.autoMap}
+                      onChange={(e) => update('autoMap', e.target.checked)}
+                      style={{ accentColor: '#60a5fa' }}
+                    />
+                    启用自动映射（基于本体引擎推荐）
+                  </label>
+                </Field>
+                <Field label="自定义映射规则">
+                  <TextArea
+                    placeholder="如 source_field -> target_field 的 YAML / JSON 规则"
+                    rows={5}
+                    value={form.customMapRules}
+                    onChange={(e) => update('customMapRules', e.target.value)}
+                  />
+                </Field>
+              </>
+            ),
+          },
+          {
+            title: '审核与发布',
+            description: '配置审核与发布策略',
+            content: (
+              <FormSection title="审核与发布确认" desc="请确认审核人与发布策略，点击「完成」按钮提交任务。">
+                <Field label="审核人">
+                  <TextInput placeholder="请输入审核人姓名" value={form.reviewer} onChange={(e) => update('reviewer', e.target.value)} />
+                </Field>
+                <Field label="自动发布">
+                  <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--foreground)', cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={form.autoPublish}
+                      onChange={(e) => update('autoPublish', e.target.checked)}
+                      style={{ accentColor: '#60a5fa' }}
+                    />
+                    审核通过后自动发布至知识库
+                  </label>
+                </Field>
+                <Field label="发布后通知">
+                  <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--foreground)', cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={form.notifyOnPublish}
+                      onChange={(e) => update('notifyOnPublish', e.target.checked)}
+                      style={{ accentColor: '#60a5fa' }}
+                    />
+                    发布后通过飞书通知相关成员
+                  </label>
+                </Field>
+                <div style={{ marginTop: 16, padding: 12, background: 'var(--muted)', borderRadius: 'var(--radius)', fontSize: 12, color: 'var(--muted-foreground)', lineHeight: 1.6 }}>
+                  <div>来源类型：{form.sourceType}</div>
+                  <div>执行员工：{form.agent}</div>
+                  <div>提炼深度：{form.extractDepth} · 输出格式：{form.outputFormat}</div>
+                  <div>目标概念：{form.targetConcept}</div>
+                </div>
+              </FormSection>
+            ),
+          },
+        ]}
+        onCancel={() => setDrawerOpen(false)}
+        onFinish={() => setDrawerOpen(false)}
+      />
     </div>
   );
 }

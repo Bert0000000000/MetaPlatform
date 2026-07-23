@@ -1,7 +1,7 @@
 import { get, post } from './client';
 
 // V15-04: Digital worker team collaboration API.
-// All endpoints live under /v1/agent/collaboration/tasks.
+// All endpoints live under /v1/dw/collaborations.
 
 export type CollabStatus = 'pending' | 'running' | 'completed' | 'failed';
 export type SubTaskStatus = 'pending' | 'running' | 'completed' | 'failed';
@@ -78,23 +78,23 @@ export async function listCollaborations(params?: {
   page?: number;
   pageSize?: number;
 }): Promise<{ items: CollaborationTask[]; total: number; page: number; pageSize: number; totalPages: number }> {
-  return get('/v1/agent/collaboration/tasks', params as Record<string, unknown> | undefined);
+  return get('/v1/dw/collaborations', params as Record<string, unknown> | undefined);
 }
 
 export async function createCollaboration(
   req: CreateCollaborationRequest,
 ): Promise<CollaborationTask> {
-  return post<CollaborationTask>('/v1/agent/collaboration/tasks', req);
+  return post<CollaborationTask>('/v1/dw/collaborations', req);
 }
 
 export async function getCollaboration(id: string): Promise<CollaborationTask> {
-  return get<CollaborationTask>(`/v1/agent/collaboration/tasks/${id}`);
+  return get<CollaborationTask>(`/v1/dw/collaborations/${id}`);
 }
 
 export async function executeCollaboration(id: string): Promise<CollaborationTask> {
-  return post<CollaborationTask>(`/v1/agent/collaboration/tasks/${id}/execute`);
+  return post<CollaborationTask>(`/v1/dw/collaborations/${id}/execute`);
 }
 
 export async function getCollaborationReport(id: string): Promise<CollaborationReport> {
-  return get<CollaborationReport>(`/v1/agent/collaboration/tasks/${id}/report`);
+  return get<CollaborationReport>(`/v1/dw/collaborations/${id}/report`);
 }

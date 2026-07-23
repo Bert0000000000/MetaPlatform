@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Plus, Search, UserX } from 'lucide-react';
-import { SubTabs, type SubTabItem } from '@mate/shared';
+import { SubTabs, FormDrawer, Field, TextInput, TextArea, Select, FormSection, type SubTabItem } from '@mate/shared';
 import { useLocation } from 'react-router-dom';
 import { MOCK_USERS } from '@/mock'; // MOCK
 
@@ -10,6 +10,8 @@ const ADMIN_TABS: SubTabItem[] = [
   { label: '组织管理', path: '/admin/org' },
   { label: '日志管理', path: '/admin/logs' },
   { label: '系统配置', path: '/admin/config' },
+  { label: '组件库', path: '/admin/components' },
+  { label: '运营数据', path: '/admin/operations' },
 ];
 
 // MOCK: 用户列表（基于设计稿，扩展头像色/状态/角色等展示字段）
@@ -69,6 +71,9 @@ export default function AdminUsersPage() {
   const [roleStates, setRoleStates] = useState<Record<string, boolean>>(
     Object.fromEntries(MOCK_ROLES.map((r) => [r.id, r.checked]))
   );
+  const [createDrawerOpen, setCreateDrawerOpen] = useState(false);
+  const [editDrawerOpen, setEditDrawerOpen] = useState(false);
+  const [editEnabled, setEditEnabled] = useState(true);
 
   const selected = MOCK_USER_ROWS.find((u) => u.id === selectedId) ?? MOCK_USER_ROWS[0];
 
@@ -78,7 +83,7 @@ export default function AdminUsersPage() {
 
       <style>{`
         .au-page-header { margin-bottom: 24px; }
-        .au-page-header h1 { font-size: 24px; font-weight: 600; margin-bottom: 4px; }
+        .au-page-header h1 { font-size: 22px; font-weight: 600; margin-bottom: 4px; }
         .au-page-header p { font-size: 14px; color: var(--muted-foreground); }
         .au-tab-bar { display: flex; gap: 4px; margin-bottom: 24px; border-bottom: 1px solid var(--border); padding-bottom: 12px; }
         .au-tab-bar .v-tab { cursor: pointer; text-decoration: none; }
@@ -133,7 +138,7 @@ export default function AdminUsersPage() {
         .au-v-select { background: var(--muted); border: 1px solid var(--border); border-radius: var(--radius); color: var(--foreground); font-size: 13px; padding: 8px 30px 8px 12px; outline: none; font-family: var(--font-sans); appearance: none; cursor: pointer; min-width: 120px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23a1a1aa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; }
         .au-v-select:focus { border-color: var(--foreground); }
       `}</style>
-      <div style={{ padding: '0 0 24px' }}>
+      <div style={{ padding: '24px 0' }}>
         {/* Page Header */}
         <div className="au-page-header">
           <h1>用户管理</h1>
@@ -188,7 +193,7 @@ export default function AdminUsersPage() {
             <option>架构组</option>
           </select>
           <div className="au-toolbar-spacer" />
-          <button className="v-btn-primary"><Plus style={{ width: 16, height: 16 }} />新建用户</button>
+          <button className="v-btn-primary" onClick={() => setCreateDrawerOpen(true)}><Plus style={{ width: 16, height: 16 }} />新建用户</button>
         </div>
 
         {/* Content area: table + detail panel */}
@@ -223,7 +228,7 @@ export default function AdminUsersPage() {
                       <td style={{ padding: '12px 16px', fontSize: 13, borderBottom: '1px solid var(--border)' }}><span className="v-meta">{u.lastLogin}</span></td>
                       <td style={{ padding: '12px 16px', fontSize: 13, borderBottom: '1px solid var(--border)' }}>
                         <div className="au-actions-cell">
-                          <button className="au-action-link">编辑</button>
+                          <button className="au-action-link" onClick={() => setEditDrawerOpen(true)}>编辑</button>
                           <button className="au-action-link">重置密码</button>
                           <button className="au-action-link danger">{u.locked ? '解锁' : '锁定'}</button>
                           <button className="au-action-link danger">删除</button>
@@ -315,6 +320,118 @@ export default function AdminUsersPage() {
           </div>
         </div>
       </div>
+
+      <FormDrawer
+        open={createDrawerOpen}
+        title="新建用户"
+        onCancel={() => setCreateDrawerOpen(false)}
+        onOk={() => setCreateDrawerOpen(false)}
+      >
+        <FormSection title="账号信息" desc="用户名与密码">
+          <Field label="姓名" required>
+            <TextInput placeholder="例：张三" />
+          </Field>
+          <Field label="用户名" required>
+            <TextInput placeholder="例：zhangsan" style={{ fontFamily: 'var(--font-mono)' }} />
+          </Field>
+          <Field label="邮箱" required>
+            <TextInput type="email" placeholder="zhangsan@meta.com" />
+          </Field>
+          <Field label="密码" required>
+            <TextInput type="password" placeholder="至少 8 位" />
+          </Field>
+          <Field label="确认密码" required>
+            <TextInput type="password" placeholder="再次输入密码" />
+          </Field>
+        </FormSection>
+
+        <FormSection title="组织与角色" desc="部门归属与角色分配">
+          <Field label="部门">
+            <Select defaultValue="技术部">
+              <option>技术部</option>
+              <option>产品部</option>
+              <option>运营部</option>
+              <option>数据组</option>
+              <option>客服组</option>
+              <option>架构组</option>
+            </Select>
+          </Field>
+          <Field label="角色">
+            <Select defaultValue="viewer">
+              <option value="admin">admin</option>
+              <option value="editor">editor</option>
+              <option value="viewer">viewer</option>
+            </Select>
+          </Field>
+        </FormSection>
+
+        <FormSection title="备注" desc="可选">
+          <Field label="备注">
+            <TextArea placeholder="用户备注信息..." rows={3} />
+          </Field>
+        </FormSection>
+      </FormDrawer>
+
+      <FormDrawer
+        open={editDrawerOpen}
+        title="编辑用户"
+        onCancel={() => setEditDrawerOpen(false)}
+        onOk={() => setEditDrawerOpen(false)}
+      >
+        <FormSection title="基本信息" desc="用户资料">
+          <Field label="姓名">
+            <TextInput defaultValue={selected.name} />
+          </Field>
+          <Field label="邮箱">
+            <TextInput type="email" defaultValue={selected.email} />
+          </Field>
+          <Field label="部门">
+            <Select defaultValue={selected.department}>
+              <option>技术部</option>
+              <option>产品部</option>
+              <option>运营部</option>
+              <option>数据组</option>
+              <option>客服组</option>
+              <option>架构组</option>
+            </Select>
+          </Field>
+          <Field label="角色">
+            <Select defaultValue={selected.role === '管理员' ? 'admin' : selected.role === '开发者' ? 'editor' : 'viewer'}>
+              <option value="admin">admin</option>
+              <option value="editor">editor</option>
+              <option value="viewer">viewer</option>
+            </Select>
+          </Field>
+        </FormSection>
+
+        <FormSection title="状态与备注" desc="启用状态与备注信息">
+          <Field label="启用状态">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <button
+                type="button"
+                onClick={() => setEditEnabled((v) => !v)}
+                style={{
+                  width: 36, height: 20, borderRadius: 10, border: 'none', cursor: 'pointer',
+                  background: editEnabled ? 'var(--success)' : 'var(--border)',
+                  position: 'relative', transition: 'background 0.2s',
+                }}
+              >
+                <span style={{
+                  position: 'absolute', top: 2, left: 2, width: 16, height: 16, borderRadius: '50%',
+                  background: '#fff', transition: 'transform 0.2s',
+                  transform: editEnabled ? 'translateX(16px)' : 'translateX(0)',
+                }} />
+              </button>
+              <span style={{ fontSize: 13, color: 'var(--muted-foreground)' }}>
+                {editEnabled ? '已启用' : '已禁用'}
+              </span>
+            </div>
+          </Field>
+          <Field label="备注">
+            <TextArea placeholder="用户备注信息..." rows={3} />
+          </Field>
+        </FormSection>
+      </FormDrawer>
     </>
   );
 }

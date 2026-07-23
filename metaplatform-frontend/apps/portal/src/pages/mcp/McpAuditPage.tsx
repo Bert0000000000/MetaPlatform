@@ -104,7 +104,7 @@ export default function McpAuditPage() {
 
       {/* Page header */}
       <div style={{ marginTop: 24, marginBottom: 24 }}>
-        <h1 style={{ fontSize: 24, fontWeight: 600, marginBottom: 6 }}>审计日志</h1>
+        <h1 style={{ fontSize: 22, fontWeight: 600, marginBottom: 6 }}>审计日志</h1>
         <p style={{ fontSize: 14, color: 'var(--muted-foreground)' }}>
           MCP 调用审计追踪，记录所有 Tool 调用、权限变更、配置修改、登录与注册行为。
         </p>

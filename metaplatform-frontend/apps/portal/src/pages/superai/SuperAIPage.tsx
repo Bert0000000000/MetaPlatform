@@ -4,7 +4,7 @@ import {
   Plus, ChevronDown, ChevronRight, User, Sparkles, Paperclip, Send,
   Copy, RefreshCw, ThumbsUp, ThumbsDown,
 } from 'lucide-react';
-import { SubTabs } from '@mate/shared';
+import { SubTabs, FormDrawer } from '@mate/shared';
 
 // MOCK
 const conversations = [
@@ -31,6 +31,7 @@ export default function SuperAIPage() {
   const [selectedConv, setSelectedConv] = useState(2); // 0-indexed, 3rd item active
   const [selectedModel, setSelectedModel] = useState('GPT-4o');
   const [thinkingExpanded, setThinkingExpanded] = useState<Record<number, boolean>>({});
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -102,7 +103,7 @@ export default function SuperAIPage() {
         .sa-textarea { width: 100%; min-height: 40px; max-height: 160px; resize: none; background: var(--muted); border: 1px solid var(--border); border-radius: var(--radius); color: var(--foreground); font-size: 14px; font-family: var(--font-sans); padding: 10px 14px; outline: none; line-height: 1.5; transition: border-color .15s; }
         .sa-textarea:focus { border-color: var(--foreground); }
         .sa-textarea::placeholder { color: var(--muted-foreground); }
-        .sa-model-indicator { display: inline-flex; align-items: center; font-size: 12px; color: var(--foreground); background: var(--muted); border: 1px solid var(--border); border-radius: var(--radius); padding: 0 12px; height: 40px; white-space: nowrap; flex-shrink: 0; }
+
         .sa-btn-icon { background: transparent; color: var(--muted-foreground); border: 1px solid var(--border); border-radius: var(--radius); height: 40px; width: 40px; padding: 0; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: background .15s, color .15s; flex-shrink: 0; }
         .sa-btn-icon:hover { background: var(--muted); color: var(--foreground); }
         .sa-btn-icon svg { width: 16px; height: 16px; }
@@ -115,7 +116,7 @@ export default function SuperAIPage() {
         <div className="sa-conv-panel">
           <div className="sa-conv-header">
             <h2>会话</h2>
-            <button className="v-btn" style={{ height: 32, padding: '0 12px', fontSize: 12, gap: 4, display: 'inline-flex', alignItems: 'center' }}>
+            <button className="v-btn" style={{ height: 32, padding: '0 12px', fontSize: 12, gap: 4, display: 'inline-flex', alignItems: 'center' }} onClick={() => { setInputText(''); setSelectedConv(-1); setThinkingExpanded({}); }}>
               <Plus style={{ width: 14, height: 14 }} />新建
             </button>
           </div>
@@ -324,11 +325,31 @@ export default function SuperAIPage() {
                 onChange={(e) => setInputText(e.target.value)}
               />
             </div>
-            <div className="sa-model-indicator">{selectedModel}</div>
             <button className="sa-btn-send"><Send /></button>
           </div>
         </div>
       </div>
+
+      <FormDrawer open={drawerOpen} title="新建会话" onCancel={() => setDrawerOpen(false)} onOk={() => setDrawerOpen(false)}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <label>
+            <span style={{ display: 'block', fontSize: 12, color: 'var(--muted-foreground)', marginBottom: 6 }}>会话标题</span>
+            <input type="text" placeholder="请输入会话标题" style={{ width: '100%', height: 36, background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '0 12px', fontSize: 13, color: 'var(--foreground)', outline: 'none' }} />
+          </label>
+          <label>
+            <span style={{ display: 'block', fontSize: 12, color: 'var(--muted-foreground)', marginBottom: 6 }}>模型</span>
+            <select style={{ width: '100%', height: 36, background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '0 12px', fontSize: 13, color: 'var(--foreground)', outline: 'none' }}>
+              <option>GPT-4o</option>
+              <option>Claude</option>
+              <option>Gemini</option>
+            </select>
+          </label>
+          <label>
+            <span style={{ display: 'block', fontSize: 12, color: 'var(--muted-foreground)', marginBottom: 6 }}>描述</span>
+            <textarea placeholder="请输入会话描述（可选）" rows={3} style={{ width: '100%', minHeight: 80, background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: 12, fontSize: 13, color: 'var(--foreground)', outline: 'none', resize: 'vertical' }} />
+          </label>
+        </div>
+      </FormDrawer>
     </>
   );
 }

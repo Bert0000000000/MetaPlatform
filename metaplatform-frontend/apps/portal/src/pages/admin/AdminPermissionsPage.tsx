@@ -3,7 +3,7 @@ import {
   Crown, Shield, UserCog, Code, BarChart3, Server, User, Eye,
   Info, Pencil, Menu, KeyRound, Database,
 } from 'lucide-react';
-import { SubTabs, type SubTabItem } from '@mate/shared';
+import { SubTabs, FormDrawer, Field, TextInput, TextArea, Select, FormSection, type SubTabItem } from '@mate/shared';
 import { useLocation } from 'react-router-dom';
 import { MOCK_USERS } from '@/mock'; // MOCK
 
@@ -13,6 +13,8 @@ const ADMIN_TABS: SubTabItem[] = [
   { label: '组织管理', path: '/admin/org' },
   { label: '日志管理', path: '/admin/logs' },
   { label: '系统配置', path: '/admin/config' },
+  { label: '组件库', path: '/admin/components' },
+  { label: '运营数据', path: '/admin/operations' },
 ];
 
 // MOCK: 角色列表
@@ -75,6 +77,7 @@ export default function AdminPermissionsPage() {
   const [maskingStates, setMaskingStates] = useState<Record<number, boolean>>(
     Object.fromEntries(MOCK_MASKING.map((m, i) => [i, m.on]))
   );
+  const [editDrawerOpen, setEditDrawerOpen] = useState(false);
 
   return (
     <>
@@ -82,7 +85,7 @@ export default function AdminPermissionsPage() {
 
       <style>{`
         .ap-page-header { margin-bottom: 28px; }
-        .ap-page-header h1 { font-size: 24px; font-weight: 600; margin-bottom: 4px; }
+        .ap-page-header h1 { font-size: 22px; font-weight: 600; margin-bottom: 4px; }
         .ap-page-header p { font-size: 14px; color: var(--muted-foreground); }
         .ap-tab-bar { display: flex; gap: 4px; margin-bottom: 24px; border-bottom: 1px solid var(--border); padding-bottom: 12px; }
         .ap-tab-bar .v-tab { cursor: pointer; text-decoration: none; }
@@ -157,7 +160,7 @@ export default function AdminPermissionsPage() {
         .ap-masking-toggle.on::after { transform: translateX(16px); }
         .ap-save-bar { display: flex; justify-content: flex-end; gap: 10px; padding-top: 4px; }
       `}</style>
-      <div style={{ padding: '0 0 24px' }}>
+      <div style={{ padding: '24px 0' }}>
         {/* Page Header */}
         <div className="ap-page-header">
           <h1>权限管理</h1>
@@ -217,7 +220,7 @@ export default function AdminPermissionsPage() {
             <div className="v-card">
               <div className="ap-section-head">
                 <h3><Info style={{ width: 16, height: 16, color: 'var(--muted-foreground)' }} /> 基本信息</h3>
-                <button className="v-btn" style={{ height: 30, fontSize: 12, padding: '0 10px', display: 'inline-flex', alignItems: 'center', gap: 4 }}><Pencil style={{ width: 13, height: 13 }} /> 编辑</button>
+                <button className="v-btn" style={{ height: 30, fontSize: 12, padding: '0 10px', display: 'inline-flex', alignItems: 'center', gap: 4 }} onClick={() => setEditDrawerOpen(true)}><Pencil style={{ width: 13, height: 13 }} /> 编辑</button>
               </div>
               <div className="ap-info-grid">
                 <div className="ap-info-item">
@@ -353,6 +356,32 @@ export default function AdminPermissionsPage() {
           </div>
         </div>
       </div>
+
+      <FormDrawer
+        open={editDrawerOpen}
+        title="编辑角色"
+        onCancel={() => setEditDrawerOpen(false)}
+        onOk={() => setEditDrawerOpen(false)}
+      >
+        <FormSection title="角色信息" desc="角色名称与数据范围">
+          <Field label="角色名称" required>
+            <TextInput defaultValue="模块管理员" />
+          </Field>
+          <Field label="数据范围">
+            <Select defaultValue={dataScope}>
+              <option value="全部">全部</option>
+              <option value="本部门">本部门</option>
+              <option value="本人">本人</option>
+            </Select>
+          </Field>
+          <Field label="描述">
+            <TextArea
+              rows={3}
+              defaultValue="管理指定模块的内容与配置，无法修改系统级参数和用户账号"
+            />
+          </Field>
+        </FormSection>
+      </FormDrawer>
     </>
   );
 }

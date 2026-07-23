@@ -88,3 +88,85 @@
   color: var(--muted-foreground);
   line-height: 1.5;
 }
+
+/* FlowGram.AI 暗色主题覆盖 */
+.gedit-playground,
+.gedit-flow-background-layer {
+  background-color: var(--background) !important;
+}
+
+/* 强制 canvas 有高度（父级有 min-height:540，playground 自身取 0 需强制撑开）*/
+.gedit-playground,
+.gedit-playground-container,
+.gedit-playground-pipeline,
+.gedit-flow-render-layer {
+  min-height: 540px !important;
+}
+
+/* 网格点改暗色 */
+.gedit-grid-svg circle {
+  stroke: var(--border, #262626) !important;
+  fill-opacity: 0.6 !important;
+}
+
+/* 节点默认背景（FlowGram 内置容器）*/
+.gedit-flow-node-render-container,
+.gedit-flow-default-node {
+  background: transparent !important;
+}
+
+/* 强制节点容器有尺寸 */
+.gedit-flow-activity-node,
+.gedit-flow-render-node {
+  background: transparent !important;
+  min-width: 80px !important;
+  min-height: 40px !important;
+}
+
+/* 强制每个节点 220x80（默认 80x40 太小） */
+.gedit-flow-activity-node[data-node-id] {
+  width: 220px !important;
+  height: 80px !important;
+}
+.gedit-flow-activity-node[data-node-id="condition"] {
+  width: 200px !important;
+}
+
+/* 滚动条 */
+.gedit-playground ::-webkit-scrollbar { width: 8px; height: 8px; }
+.gedit-playground ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+/* 拖拽视觉反馈 */
+.gedit-playground.gedit-drop-active {
+  outline: 2px dashed var(--primary, #a78bfa) !important;
+  outline-offset: -8px;
+  background-color: rgba(167, 139, 250, 0.04) !important;
+  transition: background-color .15s;
+}
+
+/* Minimap 暗色主题（覆盖 minimap-plugin 默认白色） */
+.gedit-minimap-panel,
+.minimap-panel {
+  background: var(--card, #171717) !important;
+  border: 1px solid var(--border, #262626) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5) !important;
+  z-index: 20 !important; /* 在属性面板之前 */
+}
+.gedit-minimap-panel .gedit-minimap-canvas,
+.gedit-minimap-canvas {
+  background: transparent !important;
+}
+
+/* 节点 port 小圆点（FlowGram 默认小圆点颜色 + 大小） */
+.gedit-flow-activity-node .gedit-port {
+  background: var(--primary, #a78bfa) !important;
+  border: 2px solid var(--background, #0a0a0a) !important;
+  width: 10px !important;
+  height: 10px !important;
+  border-radius: 50% !important;
+  box-shadow: 0 0 0 1px var(--border, #262626) !important;
+}
+.gedit-flow-activity-node .gedit-port:hover {
+  transform: scale(1.3);
+  background: var(--primary, #c4b5fd) !important;
+}

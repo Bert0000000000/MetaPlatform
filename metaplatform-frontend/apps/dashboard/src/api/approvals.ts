@@ -46,17 +46,17 @@ function getUserId(): string | undefined {
 export async function getPendingTasks(): Promise<PageResponse<ApprovalTask>> {
   const userId = getUserId();
   if (!userId) return emptyPage();
-  const page = await get<WfePageResponse<TaskResponse>>('/v1/wfe/tasks/todo', { userId, page: 1, size: 20 });
+  const page = await get<WfePageResponse<TaskResponse>>('/v1/dashboard/todos', { userId, page: 1, size: 20 });
   return { ...page, items: page.items.map(mapTask) };
 }
 
 export async function getCompletedTasks(): Promise<PageResponse<ApprovalTask>> {
   const userId = getUserId();
   if (!userId) return emptyPage();
-  const page = await get<WfePageResponse<TaskResponse>>('/v1/wfe/tasks/done', { userId, page: 1, size: 20 });
+  const page = await get<WfePageResponse<TaskResponse>>('/v1/dashboard/todos/done', { userId, page: 1, size: 20 });
   return { ...page, items: page.items.map(mapTask) };
 }
 
 export async function completeTask(taskId: string, action: 'approve' | 'reject', comment: string): Promise<void> {
-  await post(`/v1/wfe/tasks/${taskId}/action`, { action, comment });
+  await post(`/v1/dashboard/todos/${taskId}/action`, { action, comment });
 }

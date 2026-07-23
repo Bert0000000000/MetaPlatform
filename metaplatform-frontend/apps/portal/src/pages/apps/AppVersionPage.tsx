@@ -1,10 +1,13 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Switch } from 'antd';
 import {
   Download, Plus, GitCompare, Calendar, User,
   BarChart3, FileCode2, Activity, Route, FileText, Globe,
 } from 'lucide-react';
 import AppHeader from '@/components/AppHeader';
 import { useAppTabs } from '@/store/appTabs';
+import { FormDrawer, Field, TextInput, TextArea, Select } from '@mate/shared';
 
 const APP_SUB_TABS = [
   { label: '应用详情', path: '/apps/detail' },
@@ -84,6 +87,8 @@ export default function AppVersionPage() {
   const active = tabs.find((t) => t.id === activeId) ?? tabs[0];
   const appId = active?.id ?? 'order-mgmt';
   const appName = active?.name ?? '订单管理系统';
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [basedOnCurrent, setBasedOnCurrent] = useState(true);
 
   return (
     <div>
@@ -92,7 +97,7 @@ export default function AppVersionPage() {
       {/* Page Header */}
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginBottom: 24 }}>
         <button className="v-btn"><Download style={{ width: 15, height: 15 }} />导出</button>
-        <button className="v-btn-primary"><Plus style={{ width: 15, height: 15 }} />新建版本</button>
+        <button className="v-btn-primary" onClick={() => setDrawerOpen(true)}><Plus style={{ width: 15, height: 15 }} />新建版本</button>
       </div>
 
       {/* Version Compare Toolbar */}
@@ -241,6 +246,35 @@ export default function AppVersionPage() {
           </div>
         </div>
       </div>
+
+      <FormDrawer
+        open={drawerOpen}
+        title="新建版本"
+        onCancel={() => setDrawerOpen(false)}
+        onOk={() => setDrawerOpen(false)}
+      >
+        <Field label="版本号" required>
+          <TextInput defaultValue="v2.4.0" placeholder="例如：v1.0.0" style={{ fontFamily: 'var(--font-mono)' }} />
+        </Field>
+        <Field label="版本类型">
+          <Select defaultValue="小版本">
+            <option value="大版本">大版本（Major）</option>
+            <option value="小版本">小版本（Minor）</option>
+            <option value="补丁">补丁（Patch）</option>
+          </Select>
+        </Field>
+        <Field label="变更说明">
+          <TextArea placeholder="请输入版本变更说明，包含新增、修复、优化等" style={{ minHeight: 100 }} />
+        </Field>
+        <Field label="是否基于当前版本">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Switch checked={basedOnCurrent} onChange={setBasedOnCurrent} />
+            <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>
+              {basedOnCurrent ? '将基于当前生产版本 v2.3.0 创建新版本' : '从空白版本开始创建'}
+            </span>
+          </div>
+        </Field>
+      </FormDrawer>
     </div>
   );
 }

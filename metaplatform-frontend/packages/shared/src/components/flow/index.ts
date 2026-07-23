@@ -1,40 +1,28 @@
 /**
  * FlowCanvas 模块统一导出
+ *
+ * Mate 内部封装 FlowGram.AI 1.0.12 fixed-layout-editor 的统一入口，
+ * 复刻官方 demo-fixed-layout-simple / demo-free-layout-simple 风格，
+ * 业务侧只需：
+ *
+ *   import { FlowgramEditor } from '@mate/shared/components/flow';
+ *   import { ALL_NODE_REGISTRIES, BPMN_REGISTRIES, AGENT_REGISTRIES } from '@mate/shared/components/flow';
+ *
+ *   <FlowgramEditor initialData={initialData} nodeRegistries={ALL_NODE_REGISTRIES} />
  */
-export {
-  FlowContext,
-  FlowEditorMetaContext,
-  useFlowContext,
-  useFlowEditorMeta,
-  type FlowContextValue,
-  type FlowEditorMetaValue,
-} from './FlowContext';
 
-export { FlowProvider } from './FlowProvider';
-export { FlowToolbar } from './FlowToolbar';
-export { FlowPalette, PALETTE_DRAG_MIME } from './FlowPalette';
-export { FlowCanvas, useFlowZoomApi } from './FlowCanvas';
+export { FlowgramEditor, type FlowgramEditorProps } from './flowgram-demo/editor';
+export { Tools as DemoTools } from './flowgram-demo/components/tools';
+export { Minimap as DemoMinimap } from './flowgram-demo/components/minimap';
+export { FlowSelect as DemoFlowSelect, type FlowSelectProps } from './flowgram-demo/components/flow-select';
+export { buildEditorProps } from './flowgram-demo/hooks/use-editor-props';
+export { useAddNode } from './flowgram-demo/hooks/use-add-node';
 export {
-  FlowEditorCanvas,
-  type FlowEditorCanvasApi,
-  type FlowEditorCanvasProps,
-} from './FlowEditorCanvas';
-export { FlowPropertyPanel } from './FlowPropertyPanel';
-export {
-  FlowSurface,
-  type FlowSurfaceHandle,
-  type FlowSurfaceMode,
-  type FlowSurfaceProps,
-} from './FlowSurface';
-export { useFlowTheme } from './useFlowTheme';
-export { useFlowHistory, type UseFlowHistoryOptions, type UseFlowHistoryReturn } from './useFlowHistory';
-export {
-  getFlowSemanticTheme,
-  applyFlowThemeVars,
-  FLOW_THEMES,
-  type FlowThemeMode,
-  type FlowSemanticTheme,
-} from './flow-canvas-tokens';
+  BPMN_NODE_REGISTRIES,
+  AGENT_NODE_REGISTRIES,
+  ALL_NODE_REGISTRIES,
+  BUSINESS_FLOW_REGISTRIES,
+} from './node-registries';
 export {
   flowDataToFlowgram,
   flowgramToFlowData,
@@ -42,37 +30,6 @@ export {
   type FlowGramEdgeJSON,
   type FlowGramDocumentJSON,
 } from './flow-adapter';
-export {
-  buildFlowNodeRegistries,
-  flowDataToFlowgramJSON,
-  ALL_NODE_MATERIALS,
-} from './FlowNodeRegistries';
-
-export {
-  BPMN_NODE_MATERIALS,
-  BPMN_PALETTE_CATEGORIES,
-  BPMN_START_MATERIAL,
-  BPMN_END_MATERIAL,
-  BPMN_USER_TASK_MATERIAL,
-  BPMN_SERVICE_TASK_MATERIAL,
-  BPMN_GATEWAY_MATERIALS,
-} from './materials/bpmn';
-
-export {
-  AGENT_NODE_MATERIALS,
-  AGENT_PALETTE_CATEGORIES,
-  AGENT_INPUT_MATERIAL,
-  AGENT_OUTPUT_MATERIAL,
-  AGENT_LLM_MATERIAL,
-  AGENT_TOOL_CALL_MATERIAL,
-  AGENT_KNOWLEDGE_MATERIAL,
-  AGENT_CONDITION_MATERIAL,
-  AGENT_LOOP_MATERIAL,
-  AGENT_SUBFLOW_MATERIAL,
-  AGENT_HUMAN_MATERIAL,
-  AGENT_CODE_MATERIAL,
-} from './materials/agent';
-
 export { LEAVE_FLOW_INITIAL_DATA } from './bpmn-initial-data';
 export type {
   FlowNode,
@@ -85,3 +42,5 @@ export type {
   ThemeModeSetting,
   ResolvedThemeMode,
 } from './flow-types';
+
+import './flowgram-demo/index.css';

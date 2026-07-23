@@ -5,7 +5,7 @@ import {
   ScrollText, Building, Users, Truck, Warehouse, Receipt, Columns3,
   Link as LinkIcon, ArrowUpRight, ArrowDownLeft, ArrowRight, ArrowLeft,
 } from 'lucide-react';
-import { SubTabs } from '@mate/shared';
+import { SubTabs, FormDrawer, Field, TextInput, TextArea, Select, FormSection } from '@mate/shared';
 import { MOCK_ONTOLOGY_ENTITIES } from '@/mock'; // MOCK
 
 const ONTOLOGY_TABS = [
@@ -75,6 +75,7 @@ export default function OntologyModelingPage() {
   const location = useLocation();
   const [selectedOntology, setSelectedOntology] = useState(0);
   const [selectedConcept, setSelectedConcept] = useState(0);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   return (
     <div>
@@ -101,12 +102,16 @@ export default function OntologyModelingPage() {
         .om-relation-target{color:#60a5fa}
         .om-relation-icon{width:28px;height:28px;border-radius:4px;background:var(--muted);display:flex;align-items:center;justify-content:center;flex-shrink:0}
         .om-relation-icon svg{width:14px;height:14px;color:var(--muted-foreground)}
+        .om-stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}
+        .om-stat-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px}
+        .om-stat-value{font-size:28px;font-weight:700;line-height:1;letter-spacing:-0.02em}
+        .om-stat-label{font-size:12px;color:var(--muted-foreground);margin-top:6px}
       `}</style>
 
       <SubTabs items={ONTOLOGY_TABS} activePath={location.pathname} />
 
       {/* Page Header */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 24 }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginTop: 24, marginBottom: 24 }}>
         <div>
           <h1 style={{ fontSize: 22, fontWeight: 600, letterSpacing: '-0.02em' }}>本体论管理</h1>
           <div style={{ fontSize: 13, color: 'var(--muted-foreground)', marginTop: 4 }}>统一语义建模与推理引擎</div>
@@ -118,27 +123,23 @@ export default function OntologyModelingPage() {
             <ChevronDown style={{ width: 14, height: 14, color: 'var(--muted-foreground)' }} />
           </button>
           <button className="v-btn"><Upload style={{ width: 16, height: 16 }} />导入</button>
-          <button className="v-btn-primary"><Plus style={{ width: 16, height: 16 }} />新建本体</button>
+          <button className="v-btn-primary" onClick={() => setDrawerOpen(true)}><Plus style={{ width: 16, height: 16 }} />新建本体</button>
         </div>
       </div>
 
       {/* Stats */}
-      <div style={{ display: 'flex', gap: 16, marginBottom: 20 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <div>
-            <div style={{ fontSize: 20, fontWeight: 700, lineHeight: 1 }}>29</div>
-            <div style={{ fontSize: 12, color: 'var(--muted-foreground)', marginTop: 2 }}>概念总数</div>
-          </div>
+      <div className="om-stats-row">
+        <div className="om-stat-card">
+          <div className="om-stat-value">29</div>
+          <div className="om-stat-label">概念总数</div>
         </div>
-        <div style={{ width: 1, background: 'var(--border)', margin: '0 4px' }} />
-        <div>
-          <div style={{ fontSize: 20, fontWeight: 700, lineHeight: 1 }}>312</div>
-          <div style={{ fontSize: 12, color: 'var(--muted-foreground)', marginTop: 2 }}>属性总数</div>
+        <div className="om-stat-card">
+          <div className="om-stat-value">312</div>
+          <div className="om-stat-label">属性总数</div>
         </div>
-        <div style={{ width: 1, background: 'var(--border)', margin: '0 4px' }} />
-        <div>
-          <div style={{ fontSize: 20, fontWeight: 700, lineHeight: 1 }}>87</div>
-          <div style={{ fontSize: 12, color: 'var(--muted-foreground)', marginTop: 2 }}>关系总数</div>
+        <div className="om-stat-card">
+          <div className="om-stat-value">87</div>
+          <div className="om-stat-label">关系总数</div>
         </div>
       </div>
 
@@ -304,6 +305,51 @@ export default function OntologyModelingPage() {
 
       {/* MOCK: 引用本体实体数据 */}
       <span style={{ display: 'none' }}>{MOCK_ONTOLOGY_ENTITIES.length}</span>
+
+      <FormDrawer
+        open={drawerOpen}
+        title="新建本体"
+        onCancel={() => setDrawerOpen(false)}
+        onOk={() => setDrawerOpen(false)}
+      >
+        <FormSection title="基本信息" desc="本体的基础属性">
+          <Field label="本体名称" required>
+            <TextInput placeholder="请输入本体名称" />
+          </Field>
+          <Field label="本体编码">
+            <TextInput placeholder="请输入本体编码，如 ont-customer" />
+          </Field>
+          <Field label="所属领域">
+            <Select defaultValue="企业核心">
+              <option value="企业核心">企业核心</option>
+              <option value="产品领域">产品领域</option>
+              <option value="客户关系">客户关系</option>
+              <option value="供应链">供应链</option>
+              <option value="财务核算">财务核算</option>
+              <option value="人力资源">人力资源</option>
+            </Select>
+          </Field>
+          <Field label="描述">
+            <TextArea placeholder="请输入本体描述" rows={4} />
+          </Field>
+        </FormSection>
+
+        <FormSection title="配置" desc="本体的版本与可见性配置">
+          <Field label="版本">
+            <TextInput defaultValue="v1.0" placeholder="如 v1.0" />
+          </Field>
+          <Field label="可见范围">
+            <Select defaultValue="全公司">
+              <option value="全公司">全公司</option>
+              <option value="指定组织">指定组织</option>
+              <option value="私有">私有</option>
+            </Select>
+          </Field>
+          <Field label="负责人">
+            <TextInput placeholder="请输入负责人姓名或账号" />
+          </Field>
+        </FormSection>
+      </FormDrawer>
     </div>
   );
 }

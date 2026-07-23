@@ -3,6 +3,8 @@ import { message } from 'antd';
 import { getToken, removeToken } from '@mate/shared';
 
 export const apiClient = axios.create({
+  // Vite dev proxy forwards /api -> http://localhost:8000 (gateway).
+  // All API paths use /v1/copilot/* prefix routed to APP-COPILOT (port 9002).
   baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
   timeout: 30000,
   headers: {

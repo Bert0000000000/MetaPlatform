@@ -2,7 +2,7 @@ import { get } from './client';
 import type { EmployeeTask } from '@/types';
 
 export async function listTasks(employeeId: string): Promise<EmployeeTask[]> {
-  return get<EmployeeTask[]>('/v1/agent/employees/tasks', { employeeId });
+  return get<EmployeeTask[]>('/v1/dw/employees/tasks', { employeeId });
 }
 
 export async function getTaskStats(employeeId: string): Promise<{
