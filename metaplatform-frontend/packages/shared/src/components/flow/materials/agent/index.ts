@@ -1,0 +1,62 @@
+/**
+ * Agent 编排节点物料集合
+ */
+import type { FlowNodeMaterial, FlowPaletteCategory } from '../../flow-types';
+import { AGENT_INPUT_MATERIAL } from './InputNode';
+import { AGENT_OUTPUT_MATERIAL } from './OutputNode';
+import { AGENT_LLM_MATERIAL } from './LlmNode';
+import { AGENT_TOOL_CALL_MATERIAL } from './ToolCallNode';
+import { AGENT_KNOWLEDGE_MATERIAL } from './KnowledgeRetrievalNode';
+import {
+  AGENT_CONDITION_MATERIAL,
+  AGENT_LOOP_MATERIAL,
+  AGENT_SUBFLOW_MATERIAL,
+  AGENT_HUMAN_MATERIAL,
+  AGENT_CODE_MATERIAL,
+} from './ControlFlowNodes';
+
+export const AGENT_NODE_MATERIALS: FlowNodeMaterial[] = [
+  AGENT_INPUT_MATERIAL,
+  AGENT_OUTPUT_MATERIAL,
+  AGENT_LLM_MATERIAL,
+  AGENT_TOOL_CALL_MATERIAL,
+  AGENT_KNOWLEDGE_MATERIAL,
+  AGENT_CONDITION_MATERIAL,
+  AGENT_LOOP_MATERIAL,
+  AGENT_SUBFLOW_MATERIAL,
+  AGENT_HUMAN_MATERIAL,
+  AGENT_CODE_MATERIAL,
+];
+
+export const AGENT_PALETTE_CATEGORIES: FlowPaletteCategory[] = [
+  { key: 'agent.io', label: '输入 / 输出', items: [AGENT_INPUT_MATERIAL, AGENT_OUTPUT_MATERIAL] },
+  {
+    key: 'agent.reasoning',
+    label: '推理与工具',
+    items: [AGENT_LLM_MATERIAL, AGENT_TOOL_CALL_MATERIAL, AGENT_KNOWLEDGE_MATERIAL],
+  },
+  {
+    key: 'agent.control',
+    label: '控制流',
+    items: [
+      AGENT_CONDITION_MATERIAL,
+      AGENT_LOOP_MATERIAL,
+      AGENT_SUBFLOW_MATERIAL,
+      AGENT_HUMAN_MATERIAL,
+      AGENT_CODE_MATERIAL,
+    ],
+  },
+];
+
+export {
+  AGENT_INPUT_MATERIAL,
+  AGENT_OUTPUT_MATERIAL,
+  AGENT_LLM_MATERIAL,
+  AGENT_TOOL_CALL_MATERIAL,
+  AGENT_KNOWLEDGE_MATERIAL,
+  AGENT_CONDITION_MATERIAL,
+  AGENT_LOOP_MATERIAL,
+  AGENT_SUBFLOW_MATERIAL,
+  AGENT_HUMAN_MATERIAL,
+  AGENT_CODE_MATERIAL,
+};
