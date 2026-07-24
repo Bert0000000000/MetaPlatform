@@ -1,7 +1,7 @@
 # CLAUDE.md
 
 > 本文件供 Claude Code 读取，提供项目上下文、架构约束与开发规范。
-> 最近更新：2026-07-22（v1.3 重构期·第 1 阶段：仓库精简完成）
+> 最近更新：2026-07-24（v1.3 重构期·admin/components 流程画布接入完成）
 
 ## 项目概述
 
@@ -15,15 +15,16 @@
 - **MCP / A2A 协议**：对接外部 AI 工具（Cursor/Claude/Codex）与外部 Agent 系统
 - **数据治理**：CDC + 数据湖（Hudi/Iceberg）+ 数据仓库（StarRocks）
 
-## 仓库当前结构（2026-07-22 重构后）
+## 仓库当前结构（2026-07-24）
 
-仓库处于**精简待重建**阶段，仅保留：
+仓库处于**精简 + 重建过渡期**：
 - 根级文件：`README.md`、`CLAUDE.md`、`agent.md`、`.gitignore`、`.env.example`、`.env`、`package.json`、`package-lock.json`
 - 设计稿：`metaplatform-design-draft/`
 - PRD 文档：`docs/prd/`（集中按 APP-* 分子目录 + `_top/` 放顶层 PRD 文档）
+- **前端 monorepo**：`metaplatform-frontend/`（pnpm workspaces，结构 `apps/portal + apps/admin + packages/shared`，已落地 admin/components 流程画布功能）
 - 环境/工具目录：`.git/`、`.github/`、`.vscode/`、`.venv/`、`.uploads/`、`.trae-html-share-packages/`、`node_modules/`
 
-**APP-* 与 TECH-* 模块目录当前不存在**，将在重建阶段按 v1.2 架构依次创建。详见"关键技术决策"与"模块上下游关系"。
+**APP-* 与 TECH-* 后端模块目录当前不存在**，将在重建阶段按 v1.2 架构依次创建。详见"关键技术决策"与"模块上下游关系"。
 
 ## 技术栈基线（v1.2 / 2026-07-21）
 
@@ -34,8 +35,8 @@
 | 语言 | **Java** | **25 LTS** | **唯一后端语言** |
 | 框架 | **Spring Boot** | **3.5.x** | 微服务基础 |
 | 框架 | Spring Framework | 6.2.x | 底层容器 |
-| 框架 | Spring Cloud | 2024.0.x | 微服务治理 |
-| 框架 | Spring Cloud Alibaba | 2023.0.x | Nacos Config / Discovery |
+| 框架 | Spring Cloud | 2025.0.x | 微服务治理（对应 Spring Boot 3.5.x） |
+| 框架 | Spring Cloud Alibaba | 2025.0.0.0 | Nacos Config / Discovery（内置 Nacos client 3.0.3） |
 | AI | **Spring AI** | **1.1.2** | Java LLM 集成抽象 |
 | AI | **Spring AI Alibaba** | **1.1.2.0** | **AI 编排统一底座（BOM）** |
 | AI | Spring AI Alibaba Extensions | 1.1.2.1 | 扩展 |
@@ -251,6 +252,11 @@ TECH-IAM     ← 所有服务（MCP / A2A 调用鉴权）
 - **pytest → JUnit 5：异步测试改用 @SpringBootTest + WebTestClient**
 - **LangGraph → SAA Graph：注意 StateGraph 与 Graph DAG 的语义差异**
 - **仓库重构：删除模块目录前先 git commit 备份；Windows 文件锁导致的不可删除目录，git rm --cached 后手动在资源管理器中清理**
+- **FlowGram.AI 接入**：官方对外暴露的 `nodeRegistries` 并不能自动应用每个 registry 的 `formMeta`，必须在自己包一层 Provider 时覆盖 `getNodeDefaultRegistry`，把 `formMeta` 显式塞进 registry；否则所有节点都会退化成统一的 input 卡片
+- **FlowGram.AI 拖拽**：自定义节点外壳时务必绑定 `onMouseDown → nodeRender.startDrag(e) + stopPropagation`，否则卡片既无法拖动也无法选中连线
+- **FlowGram.AI fitView**：编辑器自带 `pg.config.fitView(doc.root.bounds.pad(30))` 对 `initialData` 时机敏感，常常不生效；兜底方案是 `<ForceFitViewport>`：用 demo 数据已知的**逻辑坐标常量**计算 `scale` + 居中 offset，挂到 `pg.style.transform`，并用 `ResizeObserver` 在容器变化时重算；**绝对不要用已被 transform 的 `.gedit-flow-background-layer` DOM rect**，会因父级 transform 引起的视口错位产生循环计算，背景层尺寸越算越大
+- **GitHub 推送失败排查**：本地 ping / Test-NetConnection TCP 443 都通，但 `git push` 报 `Recv failure: Connection was reset` —— 这是 GFW 针对 git 协议的特征指纹。处理顺序：(1) `git remote -v` 确认 origin URL 与本地路径一致；(2) 多 retries；(3) GitHub MCP (`push_files`) 作为最终兜底
+- **PowerShell git commit -m**：Heredoc `<<'EOF'` 在 PowerShell 中会被误解析为重定向；改用临时文件 `git commit -F file.txt` 最稳
 
 ## 版本计划与任务跟踪
 
@@ -258,7 +264,16 @@ TECH-IAM     ← 所有服务（MCP / A2A 调用鉴权）
 
 **v1.3 重构期（2026-07-22 起）**：
 - **阶段 R0（已完成）**：仓库精简——删除 16+ 历史模块目录、保留根级文件 + 设计稿 + PRD，恢复全部 PRD 至 `docs/prd/`
-- **阶段 R1（进行中）**：基础设施重建——monorepo 脚手架、Nacos 3.0+、IAM→ONT→RULE 底层链路
+- **阶段 R1（进行中）**：
+  - [x] 前端 monorepo 脚手架落地（`metaplatform-frontend/{apps,packages}/`，pnpm workspaces）
+  - [x] **admin/components「流程节点」接入真实 FlowGram editor 与 17 种节点专属卡片**
+    - 新增 `apps/portal/src/pages/admin/flowgram-editor.tsx`、`custom-base-node.tsx`、`node-render.tsx`，并改造 `AdminComponentsPage.tsx`
+    - 覆盖 `getNodeDefaultRegistry` 让 FlowGram 真正使用各节点的 `formMeta`
+    - 替换 `materials.renderDefaultNode` 让节点支持拖拽 / hover / 删除
+    - `ForceFitViewport` 用逻辑坐标常量 + ResizeObserver 计算居中 fit
+    - 画布工具栏（缩放 / 撤销 / 锁定 / minimap 等）+ 全屏编辑模式（含 Esc / 退出按钮 / 浏览器原生 Fullscreen API 兜底）
+    - 本地 commit：`60ec60b1 feat(portal/admin): 组件库流程节点画布接入真实 FlowGram editor 与节点库专属卡片`（推送 GitHub 失败：本地网络 TCP 443 正常但 git HTTPS 长连接被重置，且 origin 指向的远端 `Bert0000000000/MetaPlatform` 内容与本地前端不匹配，需用户确认正确远端 URL）
+  - [~] Nacos 3.0+、IAM→ONT→RULE 底层链路
 - **阶段 R2**：6 服务骨架 + Nacos（MCP/A2A/LLMGW/AGENT/RAG/DATA）
 - **阶段 R3**：核心服务 Java + SAA 重写（含 TECH-ONT 收敛）
 - **阶段 R4**：MCP / A2A 协议层
@@ -272,6 +287,8 @@ TECH-IAM     ← 所有服务（MCP / A2A 调用鉴权）
 |---|---|
 | 项目总览 | [`README.md`](README.md) |
 | Claude Code 上下文 | [`CLAUDE.md`](CLAUDE.md) |
-| Agent 上下文 | [`agent.md`](agent.md) |
+| Agent 上下文 | `agent.md` |
 | **PRD 集合** | **[`docs/prd/`](docs/prd/)** |
 | 设计稿 | `metaplatform-design-draft/` |
+| 前端 monorepo | [`metaplatform-frontend/`](metaplatform-frontend/)（pnpm workspaces） |
+| 组件库流程画布 | [`metaplatform-frontend/apps/portal/src/pages/admin/`](metaplatform-frontend/apps/portal/src/pages/admin/) |
