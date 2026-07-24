@@ -4,11 +4,16 @@
  *
  * Mate: 连线上的「+」按钮。
  *
- * 关键：hover 状态必须在外层一个容器内同时包含 trigger 和 menu，
- * 否则鼠标从 trigger 移向 menu 会触发外层 onMouseLeave → setOpen(false)
- * → 菜单被卸载 → 内部 onClick 永远不响应。
+ * 关键：
+ * 1. hover 状态必须在外层一个容器内同时包含 trigger 和 menu，
+ *    否则鼠标从 trigger 移向 menu 会触发外层 onMouseLeave → setOpen(false)
+ *    → 菜单被卸载 → 内部 onClick 永远不响应。
  *
- * 当前节点整体放进一个 wrapper，wrapper 同时是 trigger 区域。
+ * 2. menu 会向**上方**展开（bottom: '100%'），
+ *    避免被下方连线的下一个节点遮住。
+ *
+ * 3. menu 使用 React Portal 挂到 document.body，z-index 拉到 9999，
+ *    避开 FlowGram 内部 gedit-* 节点 / 边的 layer 叠加顺序。
  */
 import {
   FlowNodeEntity,
@@ -16,10 +21,13 @@ import {
   usePlayground,
 } from '@flowgram.ai/fixed-layout-editor';
 import { PlusCircle } from 'lucide-react';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { nodeRegistries } from '../node-registries';
 import { useAddNode } from '../hooks/use-add-node';
 import { getNodeTypeLabel } from '../../node-label-zh';
+
+const MENU_PORTAL_Z = 9999;
 
 export const NodeAdder = (props: {
   from: FlowNodeEntity;
@@ -31,22 +39,48 @@ export const NodeAdder = (props: {
   const context = useClientContext();
   const { handleAdd } = useAddNode();
   const [open, setOpen] = useState(false);
+  const [menuPos, setMenuPos] = useState<{ top: number; left: number; arrowSide: 'top' | 'bottom' } | null>(null);
   const closeTimer = useRef<number | null>(null);
+  const triggerRef = useRef<HTMLDivElement | null>(null);
 
   if (playground.config.readonlyOrDisabled) return null;
 
-  const handleEnter = () => {
+  const recalcPosition = () => {
+    const t = triggerRef.current;
+    if (!t) return;
+    const r = t.getBoundingClientRect();
+    const cx = r.left + r.width / 2;
+    // 默认向上展开，菜单不会被下方节点遮挡；
+    // 顶部空间不够时再翻下。
+    const winH = window.innerHeight;
+    const MENU_APPROX_HEIGHT = 320;
+    const upward = r.top - MENU_APPROX_HEIGHT - 12 > 0 || r.top > winH / 2;
+    if (upward) {
+      // 菜单顶端 = r.top - 8（用 transform translateY(-100%) 翻上去）
+      setMenuPos({
+        top: r.top - 8,
+        left: cx,
+        arrowSide: 'bottom', // 菜单底部对齐 trigger 顶部
+      });
+    } else {
+      setMenuPos({
+        top: r.bottom + 8,
+        left: cx,
+        arrowSide: 'top', // 菜单顶部对齐 trigger 底部
+      });
+    }
+  };
+
+  const openMenu = () => {
     if (closeTimer.current) {
       window.clearTimeout(closeTimer.current);
       closeTimer.current = null;
     }
+    recalcPosition();
     setOpen(true);
   };
 
-  const handleLeave = () => {
-    // 用 setTimeout 让用户有时间把鼠标从圆形按钮移到菜单上，
-    // 菜单本身也是同一个 wrapper 子元素，所以这条路不进；
-    // 但 Line adder 的 hover 区域会被 FlowGram 内部遮罩/层拦截，延迟 80ms 可以容错。
+  const scheduleClose = () => {
     if (closeTimer.current) {
       window.clearTimeout(closeTimer.current);
     }
@@ -55,6 +89,22 @@ export const NodeAdder = (props: {
     }, 80);
   };
 
+  useEffect(() => {
+    if (!open) return;
+    const onResize = () => recalcPosition();
+    window.addEventListener('resize', onResize);
+    window.addEventListener('scroll', onResize, true);
+    return () => {
+      window.removeEventListener('resize', onResize);
+      window.removeEventListener('scroll', onResize, true);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  const top = menuPos?.top ?? -9999;
+  const left = menuPos?.left ?? -9999;
+  const arrowSide = menuPos?.arrowSide ?? 'bottom';
+
   return (
     <div
       style={{
@@ -62,17 +112,22 @@ export const NodeAdder = (props: {
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
+        width: '100%',
+        height: '100%',
       }}
-      onMouseEnter={handleEnter}
-      onMouseLeave={handleLeave}
+      onMouseEnter={openMenu}
+      onMouseLeave={scheduleClose}
     >
       <div
+        ref={triggerRef}
         data-testid="flowgram-line-adder-trigger"
         style={{
           width: hoverActivated ? 28 : 18,
           height: hoverActivated ? 28 : 18,
           backgroundColor: hoverActivated ? '#6366f1' : 'rgba(255,255,255,0.2)',
-          border: hoverActivated ? '1px solid rgba(255,255,255,0.5)' : '1px solid rgba(255,255,255,0.18)',
+          border: hoverActivated
+            ? '1px solid rgba(255,255,255,0.5)'
+            : '1px solid rgba(255,255,255,0.18)',
           color: '#fff',
           borderRadius: '50%',
           cursor: 'pointer',
@@ -90,56 +145,68 @@ export const NodeAdder = (props: {
         )}
       </div>
 
-      {open ? (
-        <div
-          data-testid="flowgram-line-adder-menu"
-          style={{
-            position: 'absolute',
-            top: 32,
-            left: '50%',
-            transform: 'translateX(-50%)',
-            zIndex: 100,
-            background: 'rgba(15, 15, 20, 0.95)',
-            border: '1px solid rgba(255,255,255,0.12)',
-            borderRadius: 8,
-            minWidth: 180,
-            maxHeight: 320,
-            overflowY: 'auto',
-            color: '#fff',
-            padding: 4,
-            boxShadow: '0 8px 18px rgba(0,0,0,0.4)',
-          }}
-          // 注意：这里是同一个 React 子树，鼠标移入到 menu 不会触发外层 onMouseLeave
-        >
-          {nodeRegistries.map((registry) => (
+      {open && menuPos
+        ? createPortal(
             <div
-              key={registry.type}
-              onClick={(e) => {
-                // 阻止冒泡，避免触发外层 wrapper 的 leave
-                e.stopPropagation();
-                const item = registry?.onAdd(context, from);
-                handleAdd(item, from);
-                setOpen(false);
-              }}
+              data-testid="flowgram-line-adder-menu"
+              onMouseEnter={openMenu}
+              onMouseLeave={scheduleClose}
               style={{
-                padding: '6px 10px',
-                cursor: 'pointer',
-                fontSize: 12,
-                borderRadius: 4,
-                userSelect: 'none',
-              }}
-              onMouseEnter={(e) => {
-                (e.currentTarget as HTMLElement).style.background = 'rgba(99,102,241,0.25)';
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLElement).style.background = 'transparent';
+                position: 'fixed',
+                top,
+                left,
+                // 向上展开时 translateY(-100%) 翻上去，使菜单底部对齐 trigger 顶部；
+                // 向下展开时 translateY(0)。
+                transform:
+                  arrowSide === 'bottom'
+                    ? 'translate(-50%, -100%)'
+                    : 'translate(-50%, 0)',
+                zIndex: MENU_PORTAL_Z,
+                background: 'rgba(15, 15, 20, 0.97)',
+                border: '1px solid rgba(255,255,255,0.16)',
+                borderRadius: 10,
+                minWidth: 200,
+                maxHeight: 360,
+                overflowY: 'auto',
+                overflowX: 'hidden',
+                color: '#fff',
+                padding: 6,
+                boxShadow: '0 10px 28px rgba(0,0,0,0.6)',
+                backdropFilter: 'blur(8px)',
+                pointerEvents: 'auto',
               }}
             >
-              {getNodeTypeLabel(registry.type)}
-            </div>
-          ))}
-        </div>
-      ) : null}
+              {nodeRegistries.map((registry) => (
+                <div
+                  key={registry.type}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const item = registry?.onAdd(context, from);
+                    handleAdd(item, from);
+                    setOpen(false);
+                  }}
+                  style={{
+                    padding: '6px 10px',
+                    cursor: 'pointer',
+                    fontSize: 12,
+                    borderRadius: 6,
+                    userSelect: 'none',
+                    whiteSpace: 'nowrap',
+                  }}
+                  onMouseEnter={(e) => {
+                    (e.currentTarget as HTMLElement).style.background = 'rgba(99,102,241,0.25)';
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLElement).style.background = 'transparent';
+                  }}
+                >
+                  {getNodeTypeLabel(registry.type)}
+                </div>
+              ))}
+            </div>,
+            document.body
+          )
+        : null}
     </div>
   );
 };
