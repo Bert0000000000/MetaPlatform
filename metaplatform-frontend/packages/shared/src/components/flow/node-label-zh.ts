@@ -42,7 +42,6 @@ export const NODE_TYPE_LABEL_ZH: Record<string, string> = {
 
   // Fallback / internal
   block: '分支',
-  branch: '分支',
 };
 
 /**

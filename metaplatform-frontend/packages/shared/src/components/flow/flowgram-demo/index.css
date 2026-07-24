@@ -12,33 +12,70 @@
   display: flex;
   width: 100%;
   height: 100%;
+  min-height: 0;
   flex-direction: column;
   background: radial-gradient(circle at 0% 0%, #1a1c20 0%, #0a0b0d 100%);
+  overflow: hidden;
 }
 
 .demo-fixed-layout {
   display: flex;
   flex-direction: row;
   flex-grow: 1;
+  min-height: 0;
+  /* 限制在父容器内，不被内部编辑器撑高 */
+  height: 100%;
+  align-items: stretch;
 }
 
 .demo-fixed-editor {
   flex-grow: 1;
+  flex-shrink: 1;
   position: relative;
   height: 100%;
+  min-height: 0;
+  min-width: 0;
+  /* 防止 playground 内部 div 撑爆容器 */
+  overflow: hidden;
 }
 
 .demo-fixed-sidebar {
   width: 240px;
   flex-shrink: 0;
+  /* 关键：align-self: flex-start 阻止被 flex 拉伸成 layout 高度；
+     max-height 跟父容器 (demo-fixed-container) 等高，自己在内部 overflow 滚动。
+     在外层是 column / row 时均生效。 */
+  align-self: flex-start;
   height: 100%;
+  max-height: 100%;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 16px 12px 24px 12px;
   box-sizing: border-box;
   background: rgba(15, 15, 20, 0.85);
   backdrop-filter: blur(8px);
   border-right: 1px solid rgba(255, 255, 255, 0.08);
   color: #e0e0e6;
+  /* 自定义滚动条样式 */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+}
+
+.demo-fixed-sidebar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.demo-fixed-sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.demo-fixed-sidebar::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.18);
+  border-radius: 4px;
+}
+
+.demo-fixed-sidebar::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.28);
 }
 
 .fg-node-group {

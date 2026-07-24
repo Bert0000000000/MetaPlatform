@@ -21,6 +21,21 @@ import {
   Unlock as UnlockIcon,
 } from 'lucide-react';
 
+const toolButtonStyle: React.CSSProperties = {
+  width: 28,
+  height: 28,
+  background: 'transparent',
+  border: '1px solid rgba(255,255,255,0.1)',
+  borderRadius: 6,
+  color: '#fff',
+  cursor: 'pointer',
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: 0,
+  transition: 'background .15s, border-color .15s',
+};
+
 export function Tools() {
   const { history, playground } = useClientContext();
   const tools = usePlaygroundTools();
@@ -50,8 +65,9 @@ export function Tools() {
       style={{
         position: 'absolute',
         zIndex: 10,
-        bottom: 16,
-        left: 16,
+        top: 12,
+        left: '50%',
+        transform: 'translateX(-50%)',
         display: 'flex',
         gap: 8,
         alignItems: 'center',
@@ -63,28 +79,67 @@ export function Tools() {
         border: '1px solid rgba(255,255,255,0.12)',
       }}
     >
-      <button onClick={() => tools.zoomin()} aria-label="zoom-in">
-        <ZoomInIcon size={16} />
+      <button
+        onClick={() => tools.zoomin()}
+        aria-label="zoom-in"
+        style={toolButtonStyle}
+        title="放大"
+      >
+        <ZoomInIcon size={14} />
       </button>
-      <button onClick={() => tools.zoomout()} aria-label="zoom-out">
-        <ZoomOutIcon size={16} />
+      <button
+        onClick={() => tools.zoomout()}
+        aria-label="zoom-out"
+        style={toolButtonStyle}
+        title="缩小"
+      >
+        <ZoomOutIcon size={14} />
       </button>
-      <button onClick={() => tools.fitView()} aria-label="fit-view">
-        <FitIcon size={16} />
+      <button
+        onClick={() => tools.fitView()}
+        aria-label="fit-view"
+        style={toolButtonStyle}
+        title="适应屏幕"
+      >
+        <FitIcon size={14} />
       </button>
-      <button onClick={() => tools.changeLayout()} aria-label="change-layout" title="切换横/竖布局">
-        <UndoArrow size={16} />
+      <button
+        onClick={() => tools.changeLayout()}
+        aria-label="change-layout"
+        style={toolButtonStyle}
+        title="切换横/竖布局"
+      >
+        <UndoArrow size={14} />
       </button>
-      <button onClick={() => history.undo()} disabled={!canUndo} aria-label="undo">
-        <UndoIcon size={16} />
+      <button
+        onClick={() => history.undo()}
+        disabled={!canUndo}
+        aria-label="undo"
+        style={{ ...toolButtonStyle, opacity: canUndo ? 1 : 0.4 }}
+        title="撤销 (Ctrl+Z)"
+      >
+        <UndoIcon size={14} />
       </button>
-      <button onClick={() => history.redo()} disabled={!canRedo} aria-label="redo">
-        <RedoIcon size={16} />
+      <button
+        onClick={() => history.redo()}
+        disabled={!canRedo}
+        aria-label="redo"
+        style={{ ...toolButtonStyle, opacity: canRedo ? 1 : 0.4 }}
+        title="重做 (Ctrl+Shift+Z)"
+      >
+        <RedoIcon size={14} />
       </button>
-      <button onClick={toggleReadonly} aria-label="toggle-readonly">
-        {playground.config.readonly ? <LockIcon size={16} /> : <UnlockIcon size={16} />}
+      <button
+        onClick={toggleReadonly}
+        aria-label="toggle-readonly"
+        style={toolButtonStyle}
+        title="只读切换"
+      >
+        {playground.config.readonly ? <LockIcon size={14} /> : <UnlockIcon size={14} />}
       </button>
-      <span style={{ marginLeft: 6 }}>{Math.floor(tools.zoom * 100)}%</span>
+      <span style={{ marginLeft: 8, fontSize: 11, color: 'rgba(255,255,255,0.8)' }}>
+        {Math.floor(tools.zoom * 100)}%
+      </span>
     </div>
   );
 }
