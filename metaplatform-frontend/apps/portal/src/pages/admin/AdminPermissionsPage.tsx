@@ -170,8 +170,11 @@ export default function AdminPermissionsPage() {
   const loadPolicyFromRole = (r: RoleResponse) => {
     setPolicyDirty(false);
     setInfoDirty(false);
-    // 尝试从 description 解析（policy 字段需要后端 schema 升级，先用 description 存）
-    const policyStr = r.policy || r.description;
+    // 尝试从 policy 字段读取（如果有）或从 description 字段读取（带魔术前缀）
+    let policyStr: string | undefined = r.policy;
+    if (!policyStr && r.description && r.description.startsWith('__METAPLATFORM_POLICY__:')) {
+      policyStr = r.description.substring('__METAPLATFORM_POLICY__:'.length);
+    }
     if (policyStr && policyStr.startsWith('{') && policyStr.includes('"menuPerms"')) {
       try {
         const p = JSON.parse(policyStr);
@@ -188,6 +191,16 @@ export default function AdminPermissionsPage() {
     setApiPerms(new Set());
     setDataScope('DEPT');
     setMasking(DEFAULT_MASKING);
+  };
+
+  // 获取要显示在 "描述" 字段的文本（剥掉 policy 前缀）
+  const getDisplayDescription = (r: RoleResponse): string => {
+    if (!r.description) return '';
+    if (r.description.startsWith('__METAPLATFORM_POLICY__:')) return '';
+    // 旧的/无前缀的纯 JSON 也隐藏（识别 policy JSON 格式）
+    const t = r.description.trim();
+    if (t.startsWith('{') && t.includes('"menuPerms"')) return '';
+    return r.description;
   };
 
   const selected = useMemo(() => roles.find((r) => r.roleId === selectedRoleId) ?? null, [roles, selectedRoleId]);
@@ -227,7 +240,12 @@ export default function AdminPermissionsPage() {
       });
       setInfoDirty(false);
       setEditingInfo(false);
-      await load();
+      // 不调用 load() 以免跳到第一个角色，改为刷新当前角色
+      const updated = await Api.getRole(selected.roleId);
+      if (updated?.roleId === selected.roleId) {
+        setSelectedRoleId(null);  // force re-render
+        setTimeout(() => setSelectedRoleId(updated.roleId), 0);
+      }
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : '保存失败');
     }
@@ -242,13 +260,18 @@ export default function AdminPermissionsPage() {
         dataScope,
         masking,
       });
-      // 存到 description 字段（policy 字段需要后端 schema 升级）
+      // 存到 description 字段（policy 字段需要后端 schema 升级），用魔术前缀识别
       await Api.updateRole(selected.roleId, {
-        description: policy,
+        description: '__METAPLATFORM_POLICY__:' + policy,
         version: selected.version,
       });
       setPolicyDirty(false);
-      await load();
+      // 重新拉取当前角色以更新本地版本号，避免跳到第一个角色
+      const updated = await Api.getRole(selected.roleId);
+      if (updated?.roleId === selected.roleId) {
+        setSelectedRoleId(null);
+        setTimeout(() => setSelectedRoleId(updated.roleId), 0);
+      }
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : '保存失败');
     }
@@ -342,7 +365,7 @@ export default function AdminPermissionsPage() {
                           <span style={{ fontSize: 11, color: 'var(--muted-foreground)', background: 'var(--muted)', border: '1px solid var(--border)', borderRadius: 9999, padding: '1px 7px', flexShrink: 0 }}>{r.memberCount ?? 0}</span>
                         </div>
                         <div style={{ fontSize: 12, color: 'var(--muted-foreground)', lineHeight: 1.5, paddingLeft: 40, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                          {r.description || '暂无描述'}
+                          {getDisplayDescription(r) || '暂无描述'}
                         </div>
                       </div>
                     );
@@ -398,9 +421,9 @@ export default function AdminPermissionsPage() {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 4, gridColumn: '1 / -1' }}>
                       <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>描述</span>
                       {editingInfo ? (
-                        <textarea className="v-input" style={{ minHeight: 60, fontSize: 13 }} value={editingDesc} onChange={(e) => { setEditingDesc(e.target.value); setInfoDirty(true); }} />
+                        <textarea className="v-input" style={{ minHeight: 60, fontSize: 13 }} value={editingDesc} onChange={(e) => { setEditingDesc(e.target.value); setInfoDirty(true); }} placeholder={selected.description?.startsWith('__METAPLATFORM_POLICY__:') ? '(此角色的描述用于存储策略配置)' : ''} />
                       ) : (
-                        <span style={{ fontSize: 13, fontWeight: 400, color: 'var(--muted-foreground)' }}>{selected.description || '—'}</span>
+                        <span style={{ fontSize: 13, fontWeight: 400, color: 'var(--muted-foreground)' }}>{getDisplayDescription(selected) || '—'}</span>
                       )}
                     </div>
                   </div>
