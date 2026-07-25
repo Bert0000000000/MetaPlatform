@@ -1,7 +1,8 @@
-import { useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Hexagon } from 'lucide-react';
+import { Hexagon, Loader2 } from 'lucide-react';
 import { useAuth, Api, type AuthUser } from '@mate/shared';
+import { matchPreset, type SsoProvider } from '@mate/shared/api';
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -10,6 +11,13 @@ export default function LoginPage() {
   const [password, setPassword] = useState('Admin@12345');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [ssoProviders, setSsoProviders] = useState<SsoProvider[]>([]);
+  const [ssoLoading, setSsoLoading] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    // 拉取已启用的 SSO 提供方
+    Api.listEnabledSsoProviders().then(setSsoProviders).catch(() => setSsoProviders([]));
+  }, []);
 
   const handleLogin = async () => {
     if (!username || !password) {
@@ -20,7 +28,6 @@ export default function LoginPage() {
     setError(null);
     try {
       const resp = await Api.login({ username, password, tenantId: 'tenant-default' });
-      // 后端响应已通过拦截器解包，resp 直接是 AuthResponse
       const authedUser: AuthUser = {
         id: resp.userId ?? resp.user?.id ?? '',
         username: resp.username ?? resp.user?.username ?? username,
@@ -42,6 +49,68 @@ export default function LoginPage() {
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') handleLogin();
   };
+
+  /** 触发 SSO 跳转：拉取后端生成的 authorizeUrl 然后跳转 */
+  const handleSsoLogin = async (p: SsoProvider) => {
+    setSsoLoading((m) => ({ ...m, [p.providerId]: true }));
+    setError(null);
+    try {
+      const info = await Api.getSsoAuthorizeUrl(p.providerId, window.location.origin + '/sso/callback');
+      // 把 state 暂存到 sessionStorage，回调时校验
+      try { sessionStorage.setItem('sso_state', info.state); sessionStorage.setItem('sso_provider', p.providerId); } catch {}
+      window.location.href = info.authorizeUrl;
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : '发起 SSO 登录失败';
+      setError(msg);
+      setSsoLoading((m) => ({ ...m, [p.providerId]: false }));
+    }
+  };
+
+  // 检测当前 URL 是否包含 SSO 回调参数，自动处理
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('code');
+    const state = params.get('state');
+    if (code && state) {
+      const providerId = sessionStorage.getItem('sso_provider');
+      const expectedState = sessionStorage.getItem('sso_state');
+      if (!providerId) return;
+      if (expectedState && expectedState !== state) {
+        setError('SSO state 校验失败，请重新登录');
+        return;
+      }
+      setError(null);
+      setLoading(true);
+      if (!providerId) {
+        setError('SSO 回调缺少 providerId');
+        setLoading(false);
+        return;
+      }
+      Api.ssoCallback(providerId, { code, state })
+        .then((resp) => {
+          if (!resp.accessToken) {
+            setError('SSO 回调未返回 accessToken');
+            return;
+          }
+          const authedUser: AuthUser = {
+            id: resp.userId ?? '',
+            username: resp.username ?? '',
+            tenantId: 'tenant-default',
+            roles: ['USER'],
+          };
+          login(authedUser, resp.accessToken, resp.refreshToken);
+          sessionStorage.removeItem('sso_state');
+          sessionStorage.removeItem('sso_provider');
+          // 清理 URL 并跳转
+          window.history.replaceState({}, '', '/login');
+          navigate('/dashboard');
+        })
+        .catch((e: unknown) => {
+          setError(e instanceof Error ? e.message : 'SSO 回调失败');
+        })
+        .finally(() => setLoading(false));
+    }
+  }, [login, navigate]);
 
   return (
     <div
@@ -98,24 +167,73 @@ export default function LoginPage() {
 
           <div style={{ height: 1, background: 'var(--border)', marginBottom: 22 }} />
 
-          {/* SSO 登录（演示用，跟账号密码等价） */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
-            <button
-              className="v-btn"
-              style={{ width: '100%', justifyContent: 'center', height: 42 }}
-              onClick={handleLogin}
-              disabled={loading}
-            >
-              {loading ? '登录中...' : 'SSO 单点登录'}
-            </button>
-          </div>
+          {/* SSO 登录：显示后端已启用的提供方 */}
+          {ssoProviders.length > 0 && (
+            <>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
+                {ssoProviders.map((p) => {
+                  const preset = matchPreset(p);
+                  const brandColor = preset?.color || 'var(--muted-foreground)';
+                  const brandLabel = (preset?.brand?.[0] || 'S').toUpperCase();
+                  const isLoading = !!ssoLoading[p.providerId];
+                  return (
+                    <button
+                      key={p.providerId}
+                      onClick={() => handleSsoLogin(p)}
+                      disabled={loading || isLoading}
+                      style={{
+                        width: '100%',
+                        justifyContent: 'center',
+                        height: 42,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 10,
+                        background: 'var(--card)',
+                        border: '1px solid var(--border)',
+                        borderRadius: 'var(--radius)',
+                        color: 'var(--foreground)',
+                        cursor: loading || isLoading ? 'not-allowed' : 'pointer',
+                        opacity: loading || isLoading ? 0.6 : 1,
+                        fontSize: 13,
+                        fontWeight: 500,
+                        fontFamily: 'inherit',
+                      }}
+                      onMouseEnter={(e) => { if (!loading && !isLoading) e.currentTarget.style.borderColor = brandColor; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--border)'; }}
+                    >
+                      <span style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: 22,
+                        height: 22,
+                        borderRadius: 4,
+                        background: brandColor,
+                        color: '#fff',
+                        fontSize: 12,
+                        fontWeight: 700,
+                      }}>{brandLabel}</span>
+                      {isLoading ? (
+                        <>
+                          <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />
+                          正在跳转…
+                        </>
+                      ) : (
+                        <>使用 {p.name} 登录</>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
 
-          {/* 分隔线 */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-            <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
-            <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>或</span>
-            <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
-          </div>
+              {/* 分隔线 */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+                <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+                <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>或</span>
+                <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+              </div>
+            </>
+          )}
 
           {/* 账号密码 */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -165,6 +283,14 @@ export default function LoginPage() {
           </p>
         </div>
       </div>
+
+      {/* 让 spin 动画生效（避免修改全局 css） */}
+      <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }
+
+
+
+
+
