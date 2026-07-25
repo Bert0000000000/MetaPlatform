@@ -1,7 +1,7 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Layout } from 'antd';
 import { Outlet } from 'react-router-dom';
-import { User, LogOut } from 'lucide-react';
+import { User, LogOut, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import PlatformMenu from './PlatformMenu';
 import { useAuth } from './auth/AuthProvider';
 
@@ -14,6 +14,8 @@ export interface AppLayoutProps {
 
 export default function AppLayout({ children }: AppLayoutProps) {
   const { user, logout } = useAuth();
+  const [collapsed, setCollapsed] = useState(false);
+  const SIDEBAR_W = collapsed ? 64 : 240;
 
   const handleLogout = () => {
     logout();
@@ -30,28 +32,65 @@ export default function AppLayout({ children }: AppLayoutProps) {
           top: 0,
           bottom: 0,
           height: '100vh',
-          width: 240,
+          width: SIDEBAR_W,
           zIndex: 10,
           background: 'var(--sidebar)',
           borderRight: '1px solid var(--sidebar-border)',
           display: 'flex',
           flexDirection: 'column',
-          padding: '20px 12px',
+          padding: collapsed ? '20px 8px' : '20px 12px',
+          transition: 'width 0.2s ease, padding 0.2s ease',
         }}
       >
         {/* Logo: white badge style, matches design draft */}
-        <div className="v-sidebar-logo">
-          <span className="v-sidebar-logo-badge">Mate</span>
+        <div
+          className="v-sidebar-logo"
+          style={{ display: 'flex', alignItems: 'center', justifyContent: collapsed ? 'center' : 'flex-start', marginBottom: 16, gap: 8 }}
+        >
+          {collapsed ? (
+            <span className="v-sidebar-logo-badge" style={{ padding: '4px 8px' }}>M</span>
+          ) : (
+            <span className="v-sidebar-logo-badge">Mate</span>
+          )}
         </div>
 
-        <div className="v-sider-menu" style={{ flex: 1, overflowY: 'auto' }}>
-          <PlatformMenu />
+        {/* 折叠/展开按钮 */}
+        <button
+          type="button"
+          onClick={() => setCollapsed((c) => !c)}
+          title={collapsed ? '展开菜单' : '收起菜单'}
+          style={{
+            background: 'transparent',
+            border: '1px solid var(--border)',
+            color: 'var(--muted-foreground)',
+            cursor: 'pointer',
+            padding: collapsed ? '6px' : '6px 10px',
+            borderRadius: 6,
+            fontSize: 12,
+            marginBottom: 12,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 4,
+            transition: 'all 0.15s',
+          }}
+        >
+          {collapsed ? <ChevronsRight size={14} /> : (
+            <>
+              <ChevronsLeft size={14} />
+              <span>收起</span>
+            </>
+          )}
+        </button>
+
+        <div className="v-sider-menu" style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
+          <PlatformMenu collapsed={collapsed} />
         </div>
 
         <div
           className="v-sider-footer"
           style={{
-            padding: '16px 12px 0',
+            padding: collapsed ? '16px 0 0' : '16px 12px 0',
             borderTop: '1px solid var(--sidebar-border)',
             marginTop: 'auto',
             display: 'flex',
@@ -64,8 +103,9 @@ export default function AppLayout({ children }: AppLayoutProps) {
               height: 40,
               display: 'flex',
               alignItems: 'center',
+              justifyContent: collapsed ? 'center' : 'flex-start',
               gap: 12,
-              padding: '0 12px',
+              padding: collapsed ? '0' : '0 12px',
               borderRadius: 6,
               color: 'var(--sidebar-foreground)',
               fontSize: 14,
@@ -85,7 +125,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
             >
               <User style={{ width: 14, height: 14, color: 'var(--muted-foreground)', strokeWidth: 1.5 }} />
             </div>
-            <span
+            {!collapsed && <span
               style={{
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
@@ -93,7 +133,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
               }}
             >
               {user?.realName ?? user?.username ?? '当前用户'}
-            </span>
+            </span>}
           </div>
 
           <button
@@ -118,9 +158,10 @@ export default function AppLayout({ children }: AppLayoutProps) {
       <Layout
         className="v-main-layout"
         style={{
-          marginLeft: 240,
+          marginLeft: SIDEBAR_W,
           minHeight: '100vh',
           background: 'var(--background)',
+          transition: 'margin-left 0.2s ease',
         }}
       >
         <Content

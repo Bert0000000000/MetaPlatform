@@ -29,15 +29,16 @@ export const NAV_ITEMS: NavItem[] = [
   { key: 'ontology', label: '本体引擎', icon: Database, path: '/ontology' },
   { key: 'knowledge', label: '知识库', icon: BookOpen, path: '/knowledge' },
   { key: 'mcp', label: 'MCP 中心', icon: Plug, path: '/mcp' },
-  { key: 'agents', label: '数字员工', icon: Bot, path: '/agents' },
+  { key: 'agent', label: '数字员工', icon: Bot, path: '/agent' },
   { key: 'admin', label: '后台管理', icon: Settings, path: '/admin' },
 ];
 
-interface PlatformMenuProps {
+export interface PlatformMenuProps {
   currentModule?: string;
+  collapsed?: boolean;
 }
 
-export default function PlatformMenu({ currentModule }: PlatformMenuProps) {
+export default function PlatformMenu({ currentModule, collapsed = false }: PlatformMenuProps) {
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -68,10 +69,11 @@ export default function PlatformMenu({ currentModule }: PlatformMenuProps) {
               e.preventDefault();
               navigate(item.path);
             }}
-            style={{ cursor: 'pointer' }}
+            style={{ cursor: 'pointer', justifyContent: collapsed ? 'center' : 'flex-start', padding: collapsed ? '8px' : '0 12px' }}
+            title={item.label}
           >
             <Icon style={{ width: 18, height: 18, strokeWidth: 1.5, flexShrink: 0 }} />
-            <span>{item.label}</span>
+            {!collapsed && <span>{item.label}</span>}
           </a>
         );
       })}
