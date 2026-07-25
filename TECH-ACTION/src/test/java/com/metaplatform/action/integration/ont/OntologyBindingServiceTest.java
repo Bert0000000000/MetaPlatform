@@ -85,14 +85,17 @@ class OntologyBindingServiceTest {
         assertThat(response.getFieldMappings()).hasSize(1);
         ArgumentCaptor<ActionDefinitionEntity> captor = ArgumentCaptor.forClass(ActionDefinitionEntity.class);
         verify(actionDefinitionRepository).save(captor.capture());
-        assertThat(captor.getValue().getOntologyBinding()).contains("ent-input");
+        assertThat(captor.getValue().getOntologyBinding()).containsEntry("inputEntityId", "ent-input");
     }
 
     @Test
     void getBinding_shouldReturnBinding_whenExists() {
         ActionDefinitionEntity action = buildAction("act-1");
-        action.setOntologyBinding("{\"inputEntityId\":\"ent-input\",\"outputEntityId\":\"ent-output\","
-                + "\"fieldMappings\":[{\"source\":\"orderId\",\"target\":\"order.id\"}]}");
+        action.setOntologyBinding(java.util.Map.of(
+                "inputEntityId", "ent-input",
+                "outputEntityId", "ent-output",
+                "fieldMappings", java.util.List.of(
+                        java.util.Map.of("source", "orderId", "target", "order.id"))));
         when(actionDefinitionRepository.findByTenantIdAndActionIdAndDeletedAtIsNull("tenant-default", "act-1"))
                 .thenReturn(Optional.of(action));
 
@@ -222,9 +225,9 @@ class OntologyBindingServiceTest {
                 .name("发送通知")
                 .method("POST")
                 .url("https://notify.internal/api/v1/send")
-                .headers("{}")
-                .inputSchema("{\"type\":\"object\"}")
-                .outputSchema("{\"type\":\"object\"}")
+                .headers(java.util.Map.of())
+                .inputSchema(java.util.Map.of("type", "object"))
+                .outputSchema(java.util.Map.of("type", "object"))
                 .status("PUBLISHED")
                 .version(1)
                 .createdBy("system")

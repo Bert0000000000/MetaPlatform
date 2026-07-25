@@ -12,7 +12,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import reactor.core.publisher.Mono;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.*;
@@ -48,9 +48,9 @@ class RateLimitRuleControllerTest {
                         .totalRequests(0L)
                         .blockedRequests(0L)
                         .build())
-                .createdAt(LocalDateTime.now())
+                .createdAt(Instant.now())
                 .createdBy("system")
-                .updatedAt(LocalDateTime.now())
+                .updatedAt(Instant.now())
                 .updatedBy("system")
                 .build();
     }
@@ -92,8 +92,8 @@ class RateLimitRuleControllerTest {
                 .currentQps(0L)
                 .currentConcurrent(0L)
                 .triggeredCount(0L)
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
+                .createdAt(Instant.now())
+                .updatedAt(Instant.now())
                 .build();
 
         PageResponse<RateLimitListItemResponse> pageResponse = PageResponse.<RateLimitListItemResponse>builder()
@@ -179,7 +179,7 @@ class RateLimitRuleControllerTest {
         RateLimitDeleteResponse response = RateLimitDeleteResponse.builder()
                 .ruleId("rl-1")
                 .ruleName("test-limit")
-                .deletedAt(LocalDateTime.now())
+                .deletedAt(Instant.now())
                 .deletedBy("system")
                 .build();
 
@@ -201,7 +201,7 @@ class RateLimitRuleControllerTest {
                 .ruleId("rl-1")
                 .previousStatus("ENABLED")
                 .currentStatus("DISABLED")
-                .updatedAt(LocalDateTime.now())
+                .updatedAt(Instant.now())
                 .updatedBy("system")
                 .build();
 
@@ -231,7 +231,7 @@ class RateLimitRuleControllerTest {
                 .ruleId("rl-1")
                 .resetType("TOKEN")
                 .scopeId("user-001")
-                .resetAt(LocalDateTime.now())
+                .resetAt(Instant.now())
                 .resetBy("system")
                 .build();
 

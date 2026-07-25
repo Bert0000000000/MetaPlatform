@@ -20,7 +20,7 @@ export default function BusinessArchPage() {
         setStats({
           capabilities: caps.total,
           applications: apps.total,
-          processes: procs.total,
+          processes: procs.length,
           orgs: orgs.length,
         });
       })

@@ -616,7 +616,7 @@ export default function AuditStatisticsPage() {
                 <LineChart data={trendChartData}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="time" />
-                  <YAxis suffix="ms" />
+                  <YAxis />
                   <Tooltip />
                   <Line
                     type="monotone"
@@ -658,7 +658,8 @@ export default function AuditStatisticsPage() {
         columns={analyticsColumns}
         pagination={false}
         locale={{ emptyText: <Empty description="暂无数据" /> }}
-       scroll={{ x: 'max-content' }}/>
+        scroll={{ x: 'max-content' }}
+      />
     </Card>
   );
 
@@ -678,8 +679,9 @@ export default function AuditStatisticsPage() {
         dataSource={alertRules}
         columns={ruleColumns}
         pagination={false}
-        locale={{ emptyText: <Empty description="还没有告警规则" scroll={{ x: 'max-content' }} /> }}
-       scroll={{ x: 'max-content' }}/>
+        locale={{ emptyText: <Empty description="还没有告警规则" /> }}
+        scroll={{ x: 'max-content' }}
+      />
     </Card>
   );
 
@@ -690,8 +692,9 @@ export default function AuditStatisticsPage() {
         dataSource={logs}
         columns={logColumns}
         pagination={{ pageSize: 10 }}
-        locale={{ emptyText: <Empty description="暂无调用日志" scroll={{ x: 'max-content' }} /> }}
-       scroll={{ x: 'max-content' }}/>
+        locale={{ emptyText: <Empty description="暂无调用日志" /> }}
+        scroll={{ x: 'max-content' }}
+      />
     </Card>
   );
 
@@ -868,15 +871,15 @@ export default function AuditStatisticsPage() {
                 <Timeline
                   mode="left"
                   items={traceLogs.map((l) => ({
-                    label: formatTime(l.timestamp || l.calledAt || ''),
+                    label: formatTime(l.timestamp || ''),
                     children: (
                       <Space direction="vertical" size={0}>
                         <Typography.Text strong>
-                          {l.toolName || l.toolCode || '调用节点'}
+                          {l.toolName || '调用节点'}
                         </Typography.Text>
                         <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                          {l.method || l.invocationType} · {l.durationMs || l.duration} ms ·{' '}
-                          {l.status}
+                          {l.method || '-'} · {l.duration} ms ·{' '}
+                          {STATUS_MAP[l.status]?.label || l.status}
                         </Typography.Text>
                         {l.errorMessage && (
                           <Typography.Text type="danger" style={{ fontSize: 12 }}>
@@ -886,9 +889,9 @@ export default function AuditStatisticsPage() {
                       </Space>
                     ),
                     color:
-                      l.status === 'success' || l.status === 'SUCCESS'
+                      l.status === 'success'
                         ? 'green'
-                        : l.status === 'timeout' || l.status === 'TIMEOUT'
+                        : l.status === 'timeout'
                           ? 'orange'
                           : 'red',
                   }))}

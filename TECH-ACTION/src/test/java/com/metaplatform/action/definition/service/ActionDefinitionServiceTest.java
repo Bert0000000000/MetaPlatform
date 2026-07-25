@@ -62,8 +62,8 @@ class ActionDefinitionServiceTest {
         request.setName("发送通知");
         request.setMethod("POST");
         request.setUrl("https://notify.internal/api/v1/send");
-        request.setInputSchema("{\"type\":\"object\"}");
-        request.setOutputSchema("{\"type\":\"object\"}");
+        request.setInputSchema(java.util.Map.of("type", "object"));
+        request.setOutputSchema(java.util.Map.of("type", "object"));
 
         when(actionDefinitionRepository.existsByTenantIdAndCodeAndDeletedAtIsNull("tenant-default", "sendNotification"))
                 .thenReturn(false);
@@ -86,8 +86,8 @@ class ActionDefinitionServiceTest {
         request.setName("发送通知");
         request.setMethod("POST");
         request.setUrl("https://notify.internal/api/v1/send");
-        request.setInputSchema("{\"type\":\"object\"}");
-        request.setOutputSchema("{\"type\":\"object\"}");
+        request.setInputSchema(java.util.Map.of("type", "object"));
+        request.setOutputSchema(java.util.Map.of("type", "object"));
 
         when(actionDefinitionRepository.existsByTenantIdAndCodeAndDeletedAtIsNull("tenant-default", "sendNotification"))
                 .thenReturn(true);
@@ -105,8 +105,8 @@ class ActionDefinitionServiceTest {
         request.setMethod("POST");
         request.setUrl("https://notify.internal/api/v1/send");
         request.setHeaders(null);
-        request.setInputSchema("{\"type\":\"object\"}");
-        request.setOutputSchema("{\"type\":\"object\"}");
+        request.setInputSchema(java.util.Map.of("type", "object"));
+        request.setOutputSchema(java.util.Map.of("type", "object"));
 
         when(actionDefinitionRepository.existsByTenantIdAndCodeAndDeletedAtIsNull("tenant-default", "sendNotification"))
                 .thenReturn(false);
@@ -115,7 +115,7 @@ class ActionDefinitionServiceTest {
 
         actionDefinitionService.create(request);
 
-        assertThat(captor.getValue().getHeaders()).isEqualTo("{}");
+        assertThat(captor.getValue().getHeaders()).isEmpty();
     }
 
     @Test
@@ -171,8 +171,8 @@ class ActionDefinitionServiceTest {
         UpdateActionDefinitionRequest request = new UpdateActionDefinitionRequest();
         request.setName("发送通知（更新版）");
         request.setMethod("GET");
-        request.setHeaders("{\"X-Custom\":\"1\"}");
-        request.setInputSchema("{\"type\":\"object\"}");
+        request.setHeaders(java.util.Map.of("X-Custom", "1"));
+        request.setInputSchema(java.util.Map.of("type", "object"));
 
         ActionDefinitionResponse response = actionDefinitionService.update("act-1", request);
 
@@ -300,9 +300,9 @@ class ActionDefinitionServiceTest {
                 .name("发送通知")
                 .method("POST")
                 .url("https://notify.internal/api/v1/send")
-                .headers("{}")
-                .inputSchema("{\"type\":\"object\"}")
-                .outputSchema("{\"type\":\"object\"}")
+                .headers(java.util.Map.of())
+                .inputSchema(java.util.Map.of("type", "object"))
+                .outputSchema(java.util.Map.of("type", "object"))
                 .status(status)
                 .version(version)
                 .createdBy("system")

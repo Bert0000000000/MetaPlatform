@@ -25,8 +25,9 @@ public interface BusinessRoleRepository extends JpaRepository<BusinessRoleEntity
 
     @Query("SELECT r FROM BusinessRoleEntity r " +
            "WHERE r.tenantId = :tenantId AND r.deletedAt IS NULL " +
-           "AND (:keyword IS NULL OR LOWER(r.name) LIKE LOWER(CONCAT('%', cast(:keyword as string), '%'))) " +
-           "OR LOWER(r.code) LIKE LOWER(CONCAT('%', cast(:keyword as string), '%')))) " +
+           "AND (:keyword IS NULL " +
+           "     OR LOWER(r.name) LIKE LOWER(CONCAT('%', cast(:keyword as string), '%')) " +
+           "     OR LOWER(r.code) LIKE LOWER(CONCAT('%', cast(:keyword as string), '%'))) " +
            "AND (:orgUnitId IS NULL OR r.orgUnitId = :orgUnitId) " +
            "AND (:domain IS NULL OR r.domain = :domain)")
     Page<BusinessRoleEntity> search(@Param("tenantId") String tenantId,

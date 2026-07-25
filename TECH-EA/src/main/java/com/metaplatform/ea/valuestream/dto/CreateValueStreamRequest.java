@@ -18,4 +18,5 @@ public class CreateValueStreamRequest {
     private String triggerEvent;
     private String terminationEvent;
     private List<String> stages;
+    private String status;
 }

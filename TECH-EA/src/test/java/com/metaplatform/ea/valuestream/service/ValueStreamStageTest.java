@@ -1,10 +1,14 @@
 package com.metaplatform.ea.valuestream.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.metaplatform.ea.common.ErrorCode;
 import com.metaplatform.ea.common.TenantContext;
 import com.metaplatform.ea.exception.EaException;
+import com.metaplatform.ea.valuestream.dto.CreateValueStreamRequest;
 import com.metaplatform.ea.valuestream.dto.CreateValueStreamStageRequest;
+import com.metaplatform.ea.valuestream.dto.UpdateValueStreamRequest;
 import com.metaplatform.ea.valuestream.dto.UpdateValueStreamStageRequest;
+import com.metaplatform.ea.valuestream.dto.ValueStreamResponse;
 import com.metaplatform.ea.valuestream.dto.ValueStreamStageResponse;
 import com.metaplatform.ea.valuestream.entity.ValueStreamEntity;
 import com.metaplatform.ea.valuestream.entity.ValueStreamStageEntity;
@@ -172,6 +176,86 @@ class ValueStreamStageTest {
         service.deleteStage(valueStreamId, stageId);
 
         assertThat(captor.getValue().getDeletedAt()).isNotNull();
+    }
+
+    @Test
+    void create_shouldHonorRequestStatusWhenProvided() {
+        when(valueStreamRepository.existsByTenantIdAndCodeAndDeletedAtIsNull("tenant-default", "VS_DRAFT"))
+                .thenReturn(false);
+        ArgumentCaptor<ValueStreamEntity> captor = ArgumentCaptor.forClass(ValueStreamEntity.class);
+        when(valueStreamRepository.save(captor.capture())).thenAnswer(i -> i.getArgument(0));
+
+        CreateValueStreamRequest request = new CreateValueStreamRequest();
+        request.setName("草稿价值流");
+        request.setCode("VS_DRAFT");
+        request.setStatus("DRAFT");
+
+        ValueStreamResponse response = service.create(request);
+
+        assertThat(captor.getValue().getStatus()).isEqualTo("DRAFT");
+        assertThat(response.getStatus()).isEqualTo("DRAFT");
+    }
+
+    @Test
+    void create_shouldThrow_whenStatusIsInvalid() {
+        when(valueStreamRepository.existsByTenantIdAndCodeAndDeletedAtIsNull("tenant-default", "VS_ARCHIVED"))
+                .thenReturn(false);
+
+        CreateValueStreamRequest request = new CreateValueStreamRequest();
+        request.setName("归档价值流");
+        request.setCode("VS_ARCHIVED");
+        request.setStatus("ARCHIVED");
+
+        assertThatThrownBy(() -> service.create(request))
+                .isInstanceOfSatisfying(EaException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_FIELD_VALUE))
+                .hasMessageContaining("状态");
+    }
+
+    @Test
+    void update_shouldChangeActiveStatusToDraft() {
+        ValueStreamEntity entity = buildValueStream();
+        when(valueStreamRepository.findByIdAndDeletedAtIsNull(valueStreamId)).thenReturn(Optional.of(entity));
+        when(valueStreamRepository.save(any(ValueStreamEntity.class))).thenAnswer(i -> i.getArgument(0));
+
+        UpdateValueStreamRequest request = new UpdateValueStreamRequest();
+        request.setStatus("DRAFT");
+
+        ValueStreamResponse response = service.update(valueStreamId, request);
+
+        assertThat(entity.getStatus()).isEqualTo("DRAFT");
+        assertThat(response.getStatus()).isEqualTo("DRAFT");
+    }
+
+    @Test
+    void update_shouldThrow_whenStatusIsInvalid() {
+        ValueStreamEntity entity = buildValueStream();
+        when(valueStreamRepository.findByIdAndDeletedAtIsNull(valueStreamId)).thenReturn(Optional.of(entity));
+
+        UpdateValueStreamRequest request = new UpdateValueStreamRequest();
+        request.setStatus("ARCHIVED");
+
+        assertThatThrownBy(() -> service.update(valueStreamId, request))
+                .isInstanceOfSatisfying(EaException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_FIELD_VALUE))
+                .hasMessageContaining("状态");
+    }
+
+    @Test
+    void create_shouldDefaultToActiveWhenStatusNotProvided() {
+        when(valueStreamRepository.existsByTenantIdAndCodeAndDeletedAtIsNull("tenant-default", "VS_DEFAULT"))
+                .thenReturn(false);
+        ArgumentCaptor<ValueStreamEntity> captor = ArgumentCaptor.forClass(ValueStreamEntity.class);
+        when(valueStreamRepository.save(captor.capture())).thenAnswer(i -> i.getArgument(0));
+
+        CreateValueStreamRequest request = new CreateValueStreamRequest();
+        request.setName("默认价值流");
+        request.setCode("VS_DEFAULT");
+
+        ValueStreamResponse response = service.create(request);
+
+        assertThat(captor.getValue().getStatus()).isEqualTo("ACTIVE");
+        assertThat(response.getStatus()).isEqualTo("ACTIVE");
     }
 
     private ValueStreamEntity buildValueStream() {

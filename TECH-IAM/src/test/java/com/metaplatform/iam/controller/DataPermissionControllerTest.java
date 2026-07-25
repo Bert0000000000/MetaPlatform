@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
 import org.springframework.http.MediaType;
@@ -41,7 +41,7 @@ class DataPermissionControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    @MockBean
+    @MockitoBean
     private DataPermissionService dataPermissionService;
 
     @Test
@@ -49,13 +49,13 @@ class DataPermissionControllerTest {
         CreateDataPermissionRequest request = new CreateDataPermissionRequest();
         request.setRoleId("role-001");
         request.setResourceType("concept");
-        request.setDataScope(DataPermissionEntity.DataScope.DEPT);
+        request.setDataScope(DataPermissionEntity.DataScope.DEPARTMENT);
 
         DataPermissionResponse response = DataPermissionResponse.builder()
                 .dataPermissionId("dp-001")
                 .roleId("role-001")
                 .resourceType("concept")
-                .dataScope(DataPermissionEntity.DataScope.DEPT)
+                .dataScope(DataPermissionEntity.DataScope.DEPARTMENT)
                 .effect(DataPermissionEntity.Effect.ALLOW)
                 .version(1)
                 .build();
@@ -66,7 +66,7 @@ class DataPermissionControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.dataPermissionId").value("dp-001"))
-                .andExpect(jsonPath("$.data.dataScope").value("DEPT"));
+                .andExpect(jsonPath("$.data.dataScope").value("DEPARTMENT"));
     }
 
     @Test
@@ -87,7 +87,7 @@ class DataPermissionControllerTest {
         DataScopeResolveResponse response = DataScopeResolveResponse.builder()
                 .userId("user-001")
                 .resourceType("concept")
-                .dataScope(DataPermissionEntity.DataScope.DEPT)
+                .dataScope(DataPermissionEntity.DataScope.DEPARTMENT)
                 .rowFilter("dept_id IN ('dept-A')")
                 .columnFilter(List.of("salary"))
                 .build();
@@ -98,7 +98,7 @@ class DataPermissionControllerTest {
                         .param("resourceType", "concept")
                         .param("roleIds", "role-001"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.dataScope").value("DEPT"))
+                .andExpect(jsonPath("$.data.dataScope").value("DEPARTMENT"))
                 .andExpect(jsonPath("$.data.rowFilter").value("dept_id IN ('dept-A')"));
     }
 }

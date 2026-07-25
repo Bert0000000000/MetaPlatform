@@ -48,7 +48,6 @@ public class CypherTemplateEntity {
     private JsonNode tags;
 
     @Column(name = "is_builtin", nullable = false)
-    private Boolean isBuiltin;
     @Builder.Default
     private Boolean builtin = false;
 

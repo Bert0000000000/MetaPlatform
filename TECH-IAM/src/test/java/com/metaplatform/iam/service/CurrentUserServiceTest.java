@@ -86,7 +86,7 @@ class CurrentUserServiceTest {
                 .id("role-001").tenantId("tenant-default")
                 .roleCode("DEVELOPER").roleName("开发者")
                 .roleType(RoleEntity.RoleType.CUSTOM)
-                .dataScope(RoleEntity.DataScope.DEPT)
+                .dataScope(RoleEntity.DataScope.DEPARTMENT)
                 .enabled(true).version(1).build();
         when(roleRepository.findAllById(any())).thenReturn(List.of(role));
 
@@ -114,7 +114,7 @@ class CurrentUserServiceTest {
         assertThat(detail.getEffect()).isEqualTo("ALLOW");
         assertThat(response.getRoles()).hasSize(1);
         assertThat(response.getRoles().get(0).getRoleCode()).isEqualTo("DEVELOPER");
-        assertThat(response.getRoles().get(0).getDataScope()).isEqualTo("DEPT");
+        assertThat(response.getRoles().get(0).getDataScope()).isEqualTo("DEPARTMENT");
     }
 
     @Test

@@ -32,8 +32,9 @@ public interface BusinessCapabilityRepository extends JpaRepository<BusinessCapa
     @Query("SELECT c FROM BusinessCapabilityEntity c " +
            "WHERE c.tenantId = :tenantId AND c.deletedAt IS NULL " +
            "AND (:status IS NULL OR c.status = :status) " +
-           "AND (:keyword IS NULL OR LOWER(c.name) LIKE LOWER(CONCAT('%', cast(:keyword as string), '%'))) " +
-           "OR LOWER(c.code) LIKE LOWER(CONCAT('%', cast(:keyword as string), '%'))))")
+           "AND (:keyword IS NULL " +
+           "     OR LOWER(c.name) LIKE LOWER(CONCAT('%', cast(:keyword as string), '%')) " +
+           "     OR LOWER(c.code) LIKE LOWER(CONCAT('%', cast(:keyword as string), '%')))")
     Page<BusinessCapabilityEntity> search(@Param("tenantId") String tenantId,
                                           @Param("status") String status,
                                           @Param("keyword") String keyword,

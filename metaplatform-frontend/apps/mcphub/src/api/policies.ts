@@ -2,6 +2,7 @@ import { get, post, put, del, download } from './client';
 import type {
   Policy,
   PolicyCreateRequest,
+  PolicyUpdateRequest,
   PolicyMatrix,
   ConditionSyntax,
   PageResponse,

@@ -117,7 +117,7 @@ class RuleEngineServiceTest {
                 .tenantId(TenantContext.DEFAULT_TENANT_ID)
                 .code("customer_tier")
                 .name("客户分级")
-                .status(RuleStatus.DISABLED)
+                .status("DISABLED")
                 .enabled(false)
                 .build();
 
@@ -215,7 +215,7 @@ class RuleEngineServiceTest {
                 .tenantId(TenantContext.DEFAULT_TENANT_ID)
                 .code(code)
                 .name("客户分级")
-                .status(RuleStatus.ENABLED)
+                .status(RuleStatus.ENABLED.name())
                 .enabled(true)
                 .build();
     }
@@ -228,8 +228,8 @@ class RuleEngineServiceTest {
                 .code(code)
                 .name(code)
                 .conditionExpr(conditionExpr)
-                .actionType(ActionType.SET_TAG)
-                .actionConfig(objectMapper.valueToTree(Map.of("tag", "VIP")))
+                .actionType(ActionType.SET_TAG.name())
+                .actionConfig(Map.of("tag", "VIP"))
                 .priority(priority)
                 .enabled(true)
                 .build();

@@ -158,7 +158,7 @@ class ExecutionControllerTest {
         Instant now = Instant.now();
         ExecutionDetailResponse response = new ExecutionDetailResponse(
                 "exec-001", "act-001", "queryOrder", "COMPLETED",
-                "{\"orderId\":\"O-001\"}", "{\"status\":\"SHIPPED\"}",
+                java.util.Map.of("orderId", "O-001"), java.util.Map.of("status", "SHIPPED"),
                 null, null, "trace-001",
                 now, now, 120, null, null, null, null,
                 List.of(), List.of());

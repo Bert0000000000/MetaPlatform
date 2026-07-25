@@ -10,7 +10,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.test.StepVerifier;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -109,7 +109,7 @@ class AuditLogServiceTest {
                 .thenReturn(List.<Object[]>of(aggregate));
 
         StepVerifier.create(service.getStatistics("tenant-default",
-                        LocalDateTime.now().minusDays(1), LocalDateTime.now()))
+                        Instant.now().minusSeconds(86400), Instant.now()))
                 .assertNext(stats -> {
                     assertThat(stats.getTotalRequests()).isEqualTo(100L);
                     assertThat(stats.getTotalErrors()).isEqualTo(5L);
@@ -130,7 +130,7 @@ class AuditLogServiceTest {
                 .userId("user-1")
                 .traceId("trace-1")
                 .isError(false)
-                .createdAt(LocalDateTime.now())
+                .createdAt(Instant.now())
                 .build();
     }
 }

@@ -1,4 +1,13 @@
 spring:
+  config:
+    import:
+      - optional:nacos:tech-gw.yaml
+  cloud:
+    nacos:
+      discovery:
+        enabled: false
+      config:
+        enabled: false
   datasource:
     url: jdbc:h2:mem:metaplatform_gw;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE
     username: sa

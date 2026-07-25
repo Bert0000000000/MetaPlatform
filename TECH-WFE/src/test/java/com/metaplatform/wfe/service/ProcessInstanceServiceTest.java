@@ -94,8 +94,8 @@ class ProcessInstanceServiceTest {
                 .processKey("purchase_approval")
                 .name("采购审批流程")
                 .version(1)
-                .bpmnXml("<bpmn/>")
-                .flowgramJson("{\"nodes\":[]}")
+                .bpmnXml(Map.of("xml", "<bpmn/>"))
+                .flowgramJson(Map.of("nodes", List.of()))
                 .status(ProcessDefinitionStatus.DEPLOYED)
                 .build();
     }
@@ -120,7 +120,7 @@ class ProcessInstanceServiceTest {
                             .processKey("purchase_approval")
                             .businessKey("biz-001")
                             .status(ProcessInstanceStatus.RUNNING)
-                            .variables("{\"amount\":1000}")
+                            .variables(Map.of("amount", 1000))
                             .build();
                     return Optional.of(e);
                 });
@@ -139,7 +139,7 @@ class ProcessInstanceServiceTest {
         assertThat(response.getVariables()).containsEntry("amount", 1000);
         verify(wfeStateMachineEngine).startProcess(
                 eq(TenantContext.DEFAULT_TENANT_ID), anyString(),
-                eq("{\"nodes\":[]}"), nullable(String.class), any(Map.class));
+                eq(Map.of("nodes", List.of())), nullable(String.class), any(Map.class));
     }
 
     @Test
@@ -152,14 +152,14 @@ class ProcessInstanceServiceTest {
                 .processKey("purchase_approval")
                 .name("采购审批流程")
                 .version(1)
-                .bpmnXml("<bpmn/>")
+                .bpmnXml(Map.of("xml", "<bpmn/>"))
                 .status(ProcessDefinitionStatus.DEPLOYED)
                 .build();
         when(processDefinitionRepository.findByIdAndStatusNot(
                 "pd-001", ProcessDefinitionStatus.DELETED))
                 .thenReturn(Optional.of(pdEntity));
         when(bpmnToFlowGramConverter.convert("<bpmn/>"))
-                .thenReturn("{\"nodes\":[\"start\"]}");
+                .thenReturn(Map.of("nodes", List.of("start")));
 
         when(processInstanceRepository.save(any(ProcessInstanceEntity.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
@@ -179,7 +179,7 @@ class ProcessInstanceServiceTest {
 
         verify(bpmnToFlowGramConverter).convert("<bpmn/>");
         verify(wfeStateMachineEngine).startProcess(
-                anyString(), anyString(), eq("{\"nodes\":[\"start\"]}"),
+                anyString(), anyString(), eq(Map.of("nodes", List.of("start"))),
                 nullable(String.class), any(Map.class));
     }
 
@@ -197,7 +197,7 @@ class ProcessInstanceServiceTest {
                 .hasMessageContaining("流程定义不存在");
 
         verify(wfeStateMachineEngine, never()).startProcess(
-                anyString(), anyString(), anyString(), nullable(String.class), any(Map.class));
+                anyString(), anyString(), any(Map.class), nullable(String.class), any(Map.class));
     }
 
     @Test
@@ -210,7 +210,7 @@ class ProcessInstanceServiceTest {
                 .processKey("purchase_approval")
                 .name("采购审批流程")
                 .version(1)
-                .bpmnXml("<bpmn/>")
+                .bpmnXml(Map.of("xml", "<bpmn/>"))
                 .status(ProcessDefinitionStatus.DEPLOYED)
                 .build();
 
@@ -262,7 +262,7 @@ class ProcessInstanceServiceTest {
                 .processDefinitionId("pd-001").processKey("purchase_approval")
                 .businessKey("biz-001").status(ProcessInstanceStatus.RUNNING)
                 .startUserId("user-001")
-                .variables("{\"amount\":1000}")
+                .variables(Map.of("amount", 1000))
                 .build();
 
         when(processInstanceRepository.findByIdAndTenantId(

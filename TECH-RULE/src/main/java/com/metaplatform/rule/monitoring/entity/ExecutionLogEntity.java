@@ -19,6 +19,7 @@ import java.time.Instant;
 @AllArgsConstructor
 public class ExecutionLogEntity {
 
+    @Id
     @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "id", nullable = false, length = 64)
     private String id;

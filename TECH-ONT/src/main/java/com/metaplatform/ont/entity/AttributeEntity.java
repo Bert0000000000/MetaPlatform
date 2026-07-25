@@ -44,7 +44,6 @@ public class AttributeEntity {
     private Boolean required = false;
 
     @Column(name = "unique_value", nullable = false)
-    private String uniqueValue;
     @Builder.Default
     private Boolean unique = false;
 

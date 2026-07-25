@@ -20,6 +20,7 @@ import com.metaplatform.ont.common.OntStatus;
 @AllArgsConstructor
 public class RelationInstanceEntity {
 
+    @Id
     @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "relation_instance_id", nullable = false, length = 64)
     private String relationInstanceId;

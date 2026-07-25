@@ -21,6 +21,7 @@ import com.metaplatform.ont.common.OntStatus;
 @AllArgsConstructor
 public class RelationTypeEntity {
 
+    @Id
     @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "relation_type_id", nullable = false, length = 64)
     private String relationTypeId;
@@ -63,7 +64,7 @@ public class RelationTypeEntity {
     @Column(name = "max_cardinality", nullable = false)
     private Integer maxCardinality;
 
-    @Column(name = "symmetric", nullable = false)
+    @Column(name = "symmetric_flag", nullable = false)
     private Boolean symmetric;
 
     @Column(name = "transitive", nullable = false)

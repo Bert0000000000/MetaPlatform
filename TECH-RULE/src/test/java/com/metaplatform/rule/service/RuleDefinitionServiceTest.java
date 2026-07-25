@@ -58,7 +58,7 @@ class RuleDefinitionServiceTest {
                 .tenantId(TenantContext.DEFAULT_TENANT_ID)
                 .code("customer_tier")
                 .name("客户分级")
-                .status(RuleStatus.ENABLED)
+                .status(RuleStatus.ENABLED.name())
                 .build();
 
         RuleDefinitionCreateRequest request = new RuleDefinitionCreateRequest();
@@ -76,7 +76,7 @@ class RuleDefinitionServiceTest {
                 .code("vip_upgrade")
                 .name("VIP升级规则")
                 .conditionExpr("amount >= 100000")
-                .actionType(ActionType.SET_TAG)
+                .actionType(ActionType.SET_TAG.name())
                 .priority(0)
                 .enabled(true)
                 .build();
@@ -143,7 +143,7 @@ class RuleDefinitionServiceTest {
                 .code("vip_upgrade")
                 .name("VIP升级规则")
                 .conditionExpr("amount >= 100000")
-                .actionType(ActionType.SET_TAG)
+                .actionType(ActionType.SET_TAG.name())
                 .priority(0)
                 .enabled(true)
                 .build();

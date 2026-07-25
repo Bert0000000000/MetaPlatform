@@ -58,7 +58,7 @@ class RuleSetServiceTest {
                 .code("customer_tier")
                 .name("客户分级规则集")
                 .description("根据订单金额自动分级")
-                .status(RuleStatus.ENABLED)
+                .status(RuleStatus.ENABLED.name())
                 .priority(10)
                 .version(1)
                 .build();
@@ -97,7 +97,7 @@ class RuleSetServiceTest {
                 .tenantId(TenantContext.DEFAULT_TENANT_ID)
                 .code("customer_tier")
                 .name("客户分级规则集")
-                .status(RuleStatus.ENABLED)
+                .status(RuleStatus.ENABLED.name())
                 .priority(0)
                 .version(1)
                 .build();
@@ -126,7 +126,7 @@ class RuleSetServiceTest {
                 .tenantId(TenantContext.DEFAULT_TENANT_ID)
                 .code("customer_tier")
                 .name("旧名称")
-                .status(RuleStatus.ENABLED)
+                .status(RuleStatus.ENABLED.name())
                 .priority(0)
                 .version(1)
                 .build();

@@ -5,6 +5,14 @@ import { Graph } from '@antv/x6';
 import { listDeploymentTopologies, createDeploymentTopology, updateDeploymentTopology, deleteDeploymentTopology } from '@/api/deployments';
 import type { DeploymentTopology, DeploymentNode, DeploymentEdge } from '@/types';
 
+interface DeploymentTopologyFormValues {
+  name: string;
+  environment: 'dev' | 'test' | 'staging' | 'prod';
+  healthStatus: 'healthy' | 'warning' | 'critical';
+  nodes: string;
+  edges: string;
+}
+
 const ENV_OPTIONS = [
   { value: 'dev', label: '开发环境' },
   { value: 'test', label: '测试环境' },
@@ -34,7 +42,7 @@ export default function DeploymentTopologyPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<DeploymentTopology | null>(null);
   const [selectedTopology, setSelectedTopology] = useState<DeploymentTopology | null>(null);
-  const [form] = Form.useForm<Partial<DeploymentTopology>>();
+  const [form] = Form.useForm<DeploymentTopologyFormValues>();
   const graphRef = useRef<Graph | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
 
@@ -115,9 +123,11 @@ export default function DeploymentTopologyPage() {
   const handleSubmit = async () => {
     const values = await form.validateFields();
     const payload = {
-      ...values,
-      nodes: parseJson(values.nodes as unknown as string) as DeploymentNode[],
-      edges: parseJson(values.edges as unknown as string) as DeploymentEdge[],
+      name: values.name,
+      environment: values.environment,
+      healthStatus: values.healthStatus,
+      nodes: parseJson(values.nodes) as DeploymentNode[],
+      edges: parseJson(values.edges) as DeploymentEdge[],
     };
     if (editing) {
       await updateDeploymentTopology(editing.id, payload);
@@ -135,7 +145,9 @@ export default function DeploymentTopologyPage() {
   const handleEdit = (record: DeploymentTopology) => {
     setEditing(record);
     form.setFieldsValue({
-      ...record,
+      name: record.name,
+      environment: record.environment,
+      healthStatus: record.healthStatus,
       nodes: JSON.stringify(record.nodes ?? [], null, 2),
       edges: JSON.stringify(record.edges ?? [], null, 2),
     });

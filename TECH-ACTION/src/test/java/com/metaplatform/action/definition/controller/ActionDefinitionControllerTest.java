@@ -54,8 +54,8 @@ class ActionDefinitionControllerTest {
         request.setName("发送通知");
         request.setMethod("POST");
         request.setUrl("https://notify.internal/api/v1/send");
-        request.setInputSchema("{\"type\":\"object\"}");
-        request.setOutputSchema("{\"type\":\"object\"}");
+        request.setInputSchema(java.util.Map.of("type", "object"));
+        request.setOutputSchema(java.util.Map.of("type", "object"));
 
         ActionDefinitionResponse response = ActionDefinitionResponse.builder()
                 .actionId("act-1")

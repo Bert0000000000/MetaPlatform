@@ -1,6 +1,5 @@
 package com.metaplatform.ea.application.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.metaplatform.ea.application.dto.DependencyGraph;
 import com.metaplatform.ea.application.entity.ApplicationEntity;
 import com.metaplatform.ea.application.repository.ApplicationRepository;
@@ -11,10 +10,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -31,9 +30,6 @@ class ApplicationImpactTest {
 
     @Mock
     private ApplicationTechComponentService linkService;
-
-    @Spy
-    private ObjectMapper objectMapper = new ObjectMapper();
 
     @InjectMocks
     private ApplicationService service;
@@ -55,8 +51,8 @@ class ApplicationImpactTest {
 
     @Test
     void dependencyGraph_shouldCollectTransitiveDependencies() {
-        ApplicationEntity root = buildApp(rootAppId, "ROOT", List.of(depAppId.toString()));
-        ApplicationEntity dep = buildApp(depAppId, "DEP", List.of());
+        ApplicationEntity root = buildApp(rootAppId, "ROOT", depsOf(depAppId.toString(), "DEPENDS_ON"));
+        ApplicationEntity dep = buildApp(depAppId, "DEP", null);
         when(repository.findByIdAndDeletedAtIsNull(rootAppId)).thenReturn(Optional.of(root));
         when(repository.findByIdAndDeletedAtIsNull(depAppId)).thenReturn(Optional.of(dep));
 
@@ -70,7 +66,7 @@ class ApplicationImpactTest {
 
     @Test
     void dependencyGraph_shouldHandleLeafNode() {
-        ApplicationEntity root = buildApp(rootAppId, "LEAF", List.of());
+        ApplicationEntity root = buildApp(rootAppId, "LEAF", null);
         when(repository.findByIdAndDeletedAtIsNull(rootAppId)).thenReturn(Optional.of(root));
 
         DependencyGraph graph = service.dependencyGraph(rootAppId);
@@ -81,9 +77,9 @@ class ApplicationImpactTest {
 
     @Test
     void impactAnalysis_shouldGroupByType() {
-        ApplicationEntity root = buildApp(rootAppId, "ROOT", List.of(depAppId.toString()));
+        ApplicationEntity root = buildApp(rootAppId, "ROOT", depsOf(depAppId.toString(), "DEPENDS_ON"));
         root.setAppType("FRONTEND");
-        ApplicationEntity dep = buildApp(depAppId, "DEP", List.of());
+        ApplicationEntity dep = buildApp(depAppId, "DEP", null);
         dep.setAppType("BACKEND");
         when(repository.findByIdAndDeletedAtIsNull(rootAppId)).thenReturn(Optional.of(root));
         when(repository.findByIdAndDeletedAtIsNull(depAppId)).thenReturn(Optional.of(dep));
@@ -99,7 +95,7 @@ class ApplicationImpactTest {
 
     @Test
     void impactAnalysis_shouldReturnZeroNodes_forLeafApp() {
-        ApplicationEntity root = buildApp(rootAppId, "LEAF", List.of());
+        ApplicationEntity root = buildApp(rootAppId, "LEAF", null);
         when(repository.findByIdAndDeletedAtIsNull(rootAppId)).thenReturn(Optional.of(root));
 
         Map<String, Object> result = service.impactAnalysis(rootAppId);
@@ -110,7 +106,7 @@ class ApplicationImpactTest {
 
     @Test
     void dependencyGraph_shouldIgnoreMalformedDependencyIds() {
-        ApplicationEntity root = buildApp(rootAppId, "ROOT", List.of("not-a-uuid"));
+        ApplicationEntity root = buildApp(rootAppId, "ROOT", depsOf("not-a-uuid", "DEPENDS_ON"));
         when(repository.findByIdAndDeletedAtIsNull(rootAppId)).thenReturn(Optional.of(root));
 
         DependencyGraph graph = service.dependencyGraph(rootAppId);
@@ -119,7 +115,9 @@ class ApplicationImpactTest {
         assertThat(graph.getNodes()).hasSize(1);
     }
 
-    private ApplicationEntity buildApp(UUID id, String code, List<String> deps) {
+    private ApplicationEntity buildApp(UUID id, String code, Map<String, Object> deps) {
+        Map<String, Object> techStack = new HashMap<>();
+        techStack.put("items", List.of());
         return ApplicationEntity.builder()
                 .id(id)
                 .tenantId("tenant-default")
@@ -128,18 +126,16 @@ class ApplicationImpactTest {
                 .description("desc")
                 .appType("FRONTEND")
                 .status("ACTIVE")
-                .techStack("[]")
-                .dependencies(toJson(deps))
+                .techStack(techStack)
+                .dependencies(deps)
                 .createdAt(Instant.now())
                 .updatedAt(Instant.now())
                 .build();
     }
 
-    private String toJson(List<String> list) {
-        try {
-            return objectMapper.writeValueAsString(list);
-        } catch (Exception e) {
-            return "[]";
-        }
+    private Map<String, Object> depsOf(String depId, String type) {
+        Map<String, Object> deps = new HashMap<>();
+        deps.put(depId, type);
+        return deps;
     }
 }

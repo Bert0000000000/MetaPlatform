@@ -57,7 +57,7 @@ public class ValueStreamService {
                 .triggerEvent(request.getTriggerEvent())
                 .terminationEvent(request.getTerminationEvent())
                 .stages(writeJson(request.getStages() != null ? request.getStages() : List.of()))
-                .status("ACTIVE")
+                .status(resolveStatus(request.getStatus()))
                 .createdAt(now)
                 .updatedAt(now)
                 .build();
@@ -84,7 +84,7 @@ public class ValueStreamService {
         if (request.getTriggerEvent() != null) entity.setTriggerEvent(request.getTriggerEvent());
         if (request.getTerminationEvent() != null) entity.setTerminationEvent(request.getTerminationEvent());
         if (request.getStages() != null) entity.setStages(writeJson(request.getStages()));
-        if (StringUtils.hasText(request.getStatus())) entity.setStatus(request.getStatus().toUpperCase());
+        if (StringUtils.hasText(request.getStatus())) entity.setStatus(resolveStatus(request.getStatus()));
         entity.setUpdatedAt(Instant.now());
         return toResponse(valueStreamRepository.save(entity));
     }
@@ -257,6 +257,13 @@ public class ValueStreamService {
         } catch (Exception e) {
             return List.of();
         }
+    }
+
+    private String resolveStatus(String status) {
+        if (!StringUtils.hasText(status)) return "ACTIVE";
+        String upper = status.toUpperCase();
+        if ("ACTIVE".equals(upper) || "DRAFT".equals(upper)) return upper;
+        throw new EaException(ErrorCode.INVALID_FIELD_VALUE, "价值流状态仅支持 ACTIVE 或 DRAFT");
     }
 
     private ValueStreamEntity findById(UUID id) {

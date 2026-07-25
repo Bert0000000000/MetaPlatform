@@ -16,7 +16,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import reactor.core.publisher.Mono;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -48,8 +48,8 @@ class ApiControllerTest {
                 .groupName("default")
                 .version("v1")
                 .status("ACTIVE")
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
+                .createdAt(Instant.now())
+                .updatedAt(Instant.now())
                 .build();
     }
 
@@ -62,8 +62,8 @@ class ApiControllerTest {
                 .groupName("default")
                 .version("v1")
                 .status("ACTIVE")
-                .createdAt(LocalDateTime.now().toString())
-                .updatedAt(LocalDateTime.now().toString())
+                .createdAt(Instant.now().toString())
+                .updatedAt(Instant.now().toString())
                 .build();
     }
 

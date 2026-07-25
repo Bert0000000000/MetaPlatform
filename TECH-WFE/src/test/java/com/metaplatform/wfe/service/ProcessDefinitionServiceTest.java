@@ -21,6 +21,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -32,6 +33,8 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 class ProcessDefinitionServiceTest {
+
+    private static final String BPMN_XML = "<?xml version=\"1.0\"?><bpmn:definitions xmlns:bpmn=\"http://www.omg.org/spec/BPMN/20100524/MODEL\"></bpmn:definitions>";
 
     @Mock
     private ProcessDefinitionRepository processDefinitionRepository;
@@ -52,7 +55,7 @@ class ProcessDefinitionServiceTest {
         DeployRequest request = new DeployRequest();
         request.setProcessKey("purchase_approval");
         request.setName("采购审批流程");
-        request.setBpmnXml("<?xml version=\"1.0\"?><bpmn:definitions xmlns:bpmn=\"http://www.omg.org/spec/BPMN/20100524/MODEL\"></bpmn:definitions>");
+        request.setBpmnXml(Map.of("xml", BPMN_XML));
         return request;
     }
 
@@ -67,8 +70,8 @@ class ProcessDefinitionServiceTest {
         when(processDefinitionRepository.existsByTenantIdAndProcessKeyAndVersion(
                 TenantContext.DEFAULT_TENANT_ID, "purchase_approval", 1))
                 .thenReturn(false);
-        when(bpmnToFlowGramConverter.convert(request.getBpmnXml()))
-                .thenReturn("{\"nodes\":[]}");
+        when(bpmnToFlowGramConverter.convert(BPMN_XML))
+                .thenReturn(Map.of("nodes", List.of()));
 
         ProcessDefinitionEntity saved = ProcessDefinitionEntity.builder()
                 .id("pd-001")
@@ -77,7 +80,7 @@ class ProcessDefinitionServiceTest {
                 .name("采购审批流程")
                 .version(1)
                 .bpmnXml(request.getBpmnXml())
-                .flowgramJson("{\"nodes\":[]}")
+                .flowgramJson(Map.of("nodes", List.of()))
                 .status(ProcessDefinitionStatus.DEPLOYED)
                 .build();
         when(processDefinitionRepository.save(any(ProcessDefinitionEntity.class))).thenReturn(saved);
@@ -89,7 +92,7 @@ class ProcessDefinitionServiceTest {
         assertThat(response.getName()).isEqualTo("采购审批流程");
         assertThat(response.getVersion()).isEqualTo(1);
         assertThat(response.getStatus()).isEqualTo("DEPLOYED");
-        verify(bpmnToFlowGramConverter).convert(request.getBpmnXml());
+        verify(bpmnToFlowGramConverter).convert(BPMN_XML);
         verify(processDefinitionRepository).save(any(ProcessDefinitionEntity.class));
     }
 
@@ -103,7 +106,7 @@ class ProcessDefinitionServiceTest {
                 .processKey("purchase_approval")
                 .name("旧版本")
                 .version(1)
-                .bpmnXml("<xml/>")
+                .bpmnXml(Map.of("xml", "<xml/>"))
                 .status(ProcessDefinitionStatus.DEPLOYED)
                 .build();
 
@@ -119,7 +122,7 @@ class ProcessDefinitionServiceTest {
                 .isInstanceOf(WfeException.class)
                 .hasMessageContaining("已存在");
 
-        verify(bpmnToFlowGramConverter, never()).convert(anyString());
+        verify(bpmnToFlowGramConverter, never()).convert(any());
         verify(processDefinitionRepository, never()).save(any(ProcessDefinitionEntity.class));
     }
 
@@ -128,11 +131,13 @@ class ProcessDefinitionServiceTest {
         ProcessDefinitionEntity entity1 = ProcessDefinitionEntity.builder()
                 .id("pd-001").tenantId(TenantContext.DEFAULT_TENANT_ID)
                 .processKey("process_a").name("流程A").version(1)
-                .bpmnXml("<xml/>").status(ProcessDefinitionStatus.DEPLOYED).build();
+                .bpmnXml(Map.of("xml", "<xml/>"))
+                .status(ProcessDefinitionStatus.DEPLOYED).build();
         ProcessDefinitionEntity entity2 = ProcessDefinitionEntity.builder()
                 .id("pd-002").tenantId(TenantContext.DEFAULT_TENANT_ID)
                 .processKey("process_b").name("流程B").version(1)
-                .bpmnXml("<xml/>").status(ProcessDefinitionStatus.SUSPENDED).build();
+                .bpmnXml(Map.of("xml", "<xml/>"))
+                .status(ProcessDefinitionStatus.SUSPENDED).build();
 
         PageImpl<ProcessDefinitionEntity> page = new PageImpl<>(
                 List.of(entity1, entity2),
@@ -160,7 +165,8 @@ class ProcessDefinitionServiceTest {
         ProcessDefinitionEntity entity = ProcessDefinitionEntity.builder()
                 .id("pd-001").tenantId(TenantContext.DEFAULT_TENANT_ID)
                 .processKey("purchase_approval").name("采购审批流程").version(1)
-                .bpmnXml("<bpmn/>").status(ProcessDefinitionStatus.DEPLOYED).build();
+                .bpmnXml(Map.of("xml", "<bpmn/>"))
+                .status(ProcessDefinitionStatus.DEPLOYED).build();
 
         when(processDefinitionRepository.findByIdAndStatusNot(
                 "pd-001", ProcessDefinitionStatus.DELETED))
@@ -170,7 +176,7 @@ class ProcessDefinitionServiceTest {
 
         assertThat(response.getId()).isEqualTo("pd-001");
         assertThat(response.getProcessKey()).isEqualTo("purchase_approval");
-        assertThat(response.getBpmnXml()).isEqualTo("<bpmn/>");
+        assertThat(response.getBpmnXml()).isEqualTo(Map.of("xml", "<bpmn/>"));
     }
 
     @Test
@@ -189,7 +195,8 @@ class ProcessDefinitionServiceTest {
         ProcessDefinitionEntity entity = ProcessDefinitionEntity.builder()
                 .id("pd-001").tenantId(TenantContext.DEFAULT_TENANT_ID)
                 .processKey("purchase_approval").name("采购审批流程").version(1)
-                .bpmnXml("<bpmn/>").status(ProcessDefinitionStatus.DEPLOYED).build();
+                .bpmnXml(Map.of("xml", "<bpmn/>"))
+                .status(ProcessDefinitionStatus.DEPLOYED).build();
 
         when(processDefinitionRepository.findByIdAndStatusNot(
                 "pd-001", ProcessDefinitionStatus.DELETED))
@@ -209,7 +216,8 @@ class ProcessDefinitionServiceTest {
         ProcessDefinitionEntity entity = ProcessDefinitionEntity.builder()
                 .id("pd-001").tenantId(TenantContext.DEFAULT_TENANT_ID)
                 .processKey("purchase_approval").name("采购审批流程").version(1)
-                .bpmnXml("<bpmn/>").status(ProcessDefinitionStatus.SUSPENDED).build();
+                .bpmnXml(Map.of("xml", "<bpmn/>"))
+                .status(ProcessDefinitionStatus.SUSPENDED).build();
 
         when(processDefinitionRepository.findByIdAndStatusNot(
                 "pd-001", ProcessDefinitionStatus.DELETED))
@@ -229,7 +237,8 @@ class ProcessDefinitionServiceTest {
         ProcessDefinitionEntity entity = ProcessDefinitionEntity.builder()
                 .id("pd-001").tenantId(TenantContext.DEFAULT_TENANT_ID)
                 .processKey("purchase_approval").name("采购审批流程").version(1)
-                .bpmnXml("<bpmn/>").status(ProcessDefinitionStatus.DEPLOYED).build();
+                .bpmnXml(Map.of("xml", "<bpmn/>"))
+                .status(ProcessDefinitionStatus.DEPLOYED).build();
 
         when(processDefinitionRepository.findByIdAndStatusNot(
                 "pd-001", ProcessDefinitionStatus.DELETED))

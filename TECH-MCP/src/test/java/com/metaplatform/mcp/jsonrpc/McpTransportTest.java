@@ -15,6 +15,7 @@ class McpTransportTest {
     void protocolServiceHandlesInitialize() {
         McpProtocolService service = new McpProtocolService(
                 null, null, null, new ObjectMapper(), null, null, null);
+        service.registerHandlers();
         JsonRpcRequest request = new JsonRpcRequest();
         request.setId(1);
         request.setMethod("initialize");
@@ -29,6 +30,7 @@ class McpTransportTest {
     void stdioWritesOneJsonRpcResponsePerInputLine() throws Exception {
         McpProtocolService service = new McpProtocolService(
                 null, null, null, new ObjectMapper(), null, null, null);
+        service.registerHandlers();
         var input = new ByteArrayInputStream(
                 "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{}}\n"
                         .getBytes(StandardCharsets.UTF_8));

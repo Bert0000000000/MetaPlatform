@@ -84,7 +84,7 @@ class ConsumerGroupServiceTest {
                 .memberCount(3)
                 .consumedOffset(10L)
                 .lag(5L)
-                .status(ConsumerGroupEntity.ConsumerGroupStatus.ACTIVE)
+                .status(ConsumerGroupEntity.ConsumerGroupStatus.ACTIVE.name())
                 .build();
 
         AckRequest request = AckRequest.builder()
@@ -110,7 +110,7 @@ class ConsumerGroupServiceTest {
                 .id("cg-2")
                 .groupId("test-group")
                 .topicName("test-topic")
-                .status(ConsumerGroupEntity.ConsumerGroupStatus.ACTIVE)
+                .status(ConsumerGroupEntity.ConsumerGroupStatus.ACTIVE.name())
                 .build();
 
         when(consumerGroupRepository.findById("cg-2")).thenReturn(Optional.of(entity));
@@ -119,7 +119,7 @@ class ConsumerGroupServiceTest {
 
         consumerGroupService.unregister("cg-2");
 
-        assertThat(entity.getStatus()).isEqualTo(ConsumerGroupEntity.ConsumerGroupStatus.INACTIVE);
+        assertThat(entity.getStatus()).isEqualTo(ConsumerGroupEntity.ConsumerGroupStatus.INACTIVE.name());
         verify(consumerGroupRepository).save(entity);
     }
 
@@ -139,14 +139,14 @@ class ConsumerGroupServiceTest {
                 .tenantId("tenant-default")
                 .groupId("group-1")
                 .topicName("topic-1")
-                .status(ConsumerGroupEntity.ConsumerGroupStatus.ACTIVE)
+                .status(ConsumerGroupEntity.ConsumerGroupStatus.ACTIVE.name())
                 .build();
         ConsumerGroupEntity entity2 = ConsumerGroupEntity.builder()
                 .id("cg-2")
                 .tenantId("tenant-default")
                 .groupId("group-2")
                 .topicName("topic-2")
-                .status(ConsumerGroupEntity.ConsumerGroupStatus.ACTIVE)
+                .status(ConsumerGroupEntity.ConsumerGroupStatus.ACTIVE.name())
                 .build();
 
         when(consumerGroupRepository.findAll()).thenReturn(List.of(entity1, entity2));

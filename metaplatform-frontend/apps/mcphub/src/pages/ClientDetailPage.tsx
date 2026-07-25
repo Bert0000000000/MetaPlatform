@@ -34,8 +34,11 @@ function normalizeStatus(status: string): McpClient['status'] {
 
 const STATUS_MAP: Record<McpClient['status'], { label: string; color: string }> = {
   connected: { label: '已连接', color: 'success' },
+  CONNECTED: { label: '已连接', color: 'success' },
   disconnected: { label: '未连接', color: 'default' },
+  DISCONNECTED: { label: '未连接', color: 'default' },
   error: { label: '异常', color: 'error' },
+  ERROR: { label: '异常', color: 'error' },
 };
 
 export default function ClientDetailPage() {
