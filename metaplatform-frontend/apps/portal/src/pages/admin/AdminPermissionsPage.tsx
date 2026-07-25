@@ -342,41 +342,67 @@ export default function AdminPermissionsPage() {
                     </h3>
                     <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>已选 {menuPerms.size} 项</span>
                   </div>
-                  <div>
-                    {MENU_TREE.map((p) => {
-                      const PIcon = p.icon;
-                      const allOn = p.children.every((c) => menuPerms.has(c.id));
-                      const someOn = p.children.some((c) => menuPerms.has(c.id));
-                      return (
-                        <div key={p.id} style={{ marginBottom: 6 }}>
-                          <label style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
-                            <input
-                              type="checkbox"
-                              checked={allOn}
-                              ref={(el) => { if (el) el.indeterminate = !allOn && someOn; }}
-                              onChange={() => toggleAllInParent(p.id, p.children)}
-                              style={{ width: 16, height: 16, accentColor: 'var(--primary)' }}
-                            />
-                            <PIcon size={15} style={{ color: 'var(--muted-foreground)' }} />
-                            <span>{p.label}</span>
-                          </label>
-                          <div style={{ paddingLeft: 28, display: 'flex', flexWrap: 'wrap', gap: '4px 18px' }}>
-                            {p.children.map((c) => (
-                              <label key={c.id} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--muted-foreground)', cursor: 'pointer' }}>
-                                <input
-                                  type="checkbox"
-                                  checked={menuPerms.has(c.id)}
-                                  onChange={() => toggleMenu(c.id)}
-                                  style={{ width: 14, height: 14, accentColor: 'var(--primary)' }}
-                                />
-                                {c.label}
-                              </label>
-                            ))}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                    <thead>
+                      <tr>
+                        <th style={{ textAlign: 'left', padding: '8px 12px', fontSize: 11, fontWeight: 500, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.04em', borderBottom: '1px solid var(--border)', background: 'var(--muted)', width: '36%' }}>模块</th>
+                        <th colSpan={3} style={{ padding: '8px 12px', fontSize: 11, fontWeight: 500, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.04em', borderBottom: '1px solid var(--border)', borderLeft: '1px solid var(--border)', background: 'var(--muted)', textAlign: 'center' }}>查看 / 编辑</th>
+                        <th style={{ padding: '8px 12px', fontSize: 11, fontWeight: 500, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.04em', borderBottom: '1px solid var(--border)', borderLeft: '1px solid var(--border)', background: 'var(--muted)', textAlign: 'center' }}>管理</th>
+                        <th style={{ padding: '8px 12px', fontSize: 11, fontWeight: 500, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.04em', borderBottom: '1px solid var(--border)', borderLeft: '1px solid var(--border)', background: 'var(--muted)', textAlign: 'center' }}>发布</th>
+                        <th style={{ padding: '8px 12px', fontSize: 11, fontWeight: 500, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.04em', borderBottom: '1px solid var(--border)', borderLeft: '1px solid var(--border)', background: 'var(--muted)', textAlign: 'center' }}>执行</th>
+                        <th style={{ padding: '8px 12px', fontSize: 11, fontWeight: 500, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.04em', borderBottom: '1px solid var(--border)', borderLeft: '1px solid var(--border)', background: 'var(--muted)', textAlign: 'center' }}>系统设置</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {MENU_TREE.map((p) => {
+                        const PIcon = p.icon;
+                        // Map each action to a column
+                        const hasView    = p.children.some((c) => c.label === '查看');
+                        const hasEdit    = p.children.some((c) => c.label === '编辑');
+                        const hasManage  = p.children.some((c) => c.label === '管理');
+                        const hasPublish = p.children.some((c) => c.label === '发布');
+                        const hasRun     = p.children.some((c) => c.label === '执行');
+                        const hasSystem  = p.children.some((c) => c.label === '系统设置');
+                        const findByLabel = (l: string) => p.children.find((c) => c.label === l);
+                        const viewId    = findByLabel('查看')?.id;
+                        const editId    = findByLabel('编辑')?.id;
+                        const manageId  = findByLabel('管理')?.id;
+                        const publishId = findByLabel('发布')?.id;
+                        const runId     = findByLabel('执行')?.id;
+                        const systemId  = findByLabel('系统设置')?.id;
+                        const Cell = ({ id }: { id: string | undefined }) => id ? (
+                          <td onClick={() => toggleMenu(id)} style={{ padding: '8px 12px', textAlign: 'center', borderBottom: '1px solid var(--border)', borderLeft: '1px solid var(--border)', cursor: 'pointer' }}>
+                            <span style={{ display: 'inline-block', width: 18, height: 18, borderRadius: 4, border: '1.5px solid ' + (menuPerms.has(id) ? 'var(--success)' : 'var(--border)'), background: menuPerms.has(id) ? 'var(--success)' : 'transparent', position: 'relative', transition: 'all 0.15s' }}>
+                              {menuPerms.has(id) && (
+                                <svg viewBox="0 0 12 12" style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 12, height: 12 }}>
+                                  <path d="M2 6.5l2.5 2.5L10 3.5" stroke="var(--background)" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                                </svg>
+                              )}
+                            </span>
+                          </td>
+                        ) : (
+                          <td style={{ padding: '8px 12px', textAlign: 'center', borderBottom: '1px solid var(--border)', borderLeft: '1px solid var(--border)', color: 'var(--muted-foreground)' }}>—</td>
+                        );
+                        return (
+                          <tr key={p.id} style={{ background: 'var(--card)' }}>
+                            <td style={{ padding: '8px 12px', borderBottom: '1px solid var(--border)' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <PIcon size={14} style={{ color: 'var(--muted-foreground)', flexShrink: 0 }} />
+                                <span style={{ fontWeight: 500 }}>{p.label}</span>
+                              </div>
+                            </td>
+                            <Cell id={viewId} />
+                            <Cell id={editId} />
+                            <td style={{ padding: '8px 12px', textAlign: 'center', borderBottom: '1px solid var(--border)', borderLeft: '1px solid var(--border)', color: 'var(--muted-foreground)' }}></td>
+                            <Cell id={manageId} />
+                            <Cell id={publishId} />
+                            <Cell id={runId} />
+                            <Cell id={systemId} />
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
                 </div>
 
                 {/* API 权限 */}
