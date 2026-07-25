@@ -99,3 +99,24 @@ docs/006-TMP/frontend-logs/
 **/tmp-*.py
 # Design drafts
 metaplatform-design-draft/
+
+# === 2026-07-25 noise cleanup (see git log) ===
+
+# Local Maven repository caches (developers run mvn locally; never commit)
+**/.m2/
+
+# Build / test output files
+**/test-output.txt
+
+# Browser console IIFE debug scripts (paste-into-DevTools one-offs)
+eval_*.js
+
+# FlowGram dev/verification screenshots
+flowgram-*.png
+fullscreen-*.png
+shots/
+zoom-shots/
+
+# Codex / Claude session caches and uploads
+.cache/
+.uploads/
