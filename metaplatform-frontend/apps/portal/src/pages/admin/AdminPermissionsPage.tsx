@@ -17,13 +17,12 @@ import { useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import {
   Crown, Shield, UserCog, Code, BarChart3, Server, User, Eye,
-  Info, Menu, KeyRound, Database, Pencil, Check, X,
+  Info, Menu, KeyRound, Database, Pencil, Check, X, Plus,
   LayoutDashboard, GitBranch, Boxes, Database as DbIcon, Plug,
   BookOpen, Bot, Settings,
 } from 'lucide-react';
 import {
-  SubTabs, type SubTabItem,
-  Api,
+  SubTabs, FormDrawer, FormSection, Field, TextInput, TextArea, Select, type SubTabItem, Api,
 } from '@mate/shared';
 import type { RoleResponse, RoleType } from '@mate/shared/api';
 
@@ -115,6 +114,24 @@ export default function AdminPermissionsPage() {
   const [editingInfo, setEditingInfo] = useState(false);
   const [editingName, setEditingName] = useState('');
   const [editingDesc, setEditingDesc] = useState('');
+  const [createOpen, setCreateOpen] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [createForm, setCreateForm] = useState({ roleCode: '', roleName: '', roleType: 'CUSTOM' as RoleType, description: '' });
+
+  const submitCreate = async () => {
+    setCreating(true);
+    try {
+      const created = await Api.createRole({ roleCode: createForm.roleCode, roleName: createForm.roleName, roleType: createForm.roleType, description: createForm.description });
+      setCreateOpen(false);
+      setCreateForm({ roleCode: '', roleName: '', roleType: 'CUSTOM', description: '' });
+      await load();
+      if (created?.roleId) selectRole(created);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '创建失败');
+    } finally {
+      setCreating(false);
+    }
+  };
 
   const load = async () => {
     setLoading(true);
@@ -181,9 +198,14 @@ export default function AdminPermissionsPage() {
       <SubTabs items={ADMIN_TABS} activePath={location.pathname} />
       <div style={{ padding: '24px 0', flex: 1, minHeight: 0, overflow: 'auto' }}>
         {/* 标题 */}
-        <div style={{ marginBottom: 20 }}>
-          <h1 style={{ fontSize: 22, fontWeight: 600, marginBottom: 4 }}>权限管理</h1>
-          <p style={{ fontSize: 14, color: 'var(--muted-foreground)' }}>角色与权限策略配置</p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+          <div style={{ flex: 1 }}>
+            <h1 style={{ fontSize: 22, fontWeight: 600, marginBottom: 4 }}>权限管理</h1>
+            <p style={{ fontSize: 14, color: 'var(--muted-foreground)' }}>角色与权限策略配置</p>
+          </div>
+          <button className="v-btn-primary" onClick={() => setCreateOpen(true)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+            <Plus size={14} />新建角色
+          </button>
         </div>
 
         {error && (
@@ -273,7 +295,7 @@ export default function AdminPermissionsPage() {
                     ) : (
                       <div style={{ display: 'flex', gap: 6 }}>
                         <button className="v-btn" onClick={() => { setEditingInfo(false); setEditingName(selected.roleName); setEditingDesc(selected.description ?? ''); }} style={{ height: 30, fontSize: 12, padding: '0 10px' }}>取消</button>
-                        <button className="v-btn-primary" onClick={save} style={{ height: 30, fontSize: 12, padding: '0 10px' }}>保存</button>
+                        <button className='v-btn-primary' onClick={save} style={{ height: 30, fontSize: 12, padding: '0 10px' }}>保存</button>
                       </div>
                     )}
                   </div>
@@ -458,12 +480,42 @@ export default function AdminPermissionsPage() {
                 {/* 保存栏 */}
                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, paddingTop: 4 }}>
                   <button className="v-btn" onClick={() => { setMenuPerms(new Set()); setApiPerms(new Set()); setDataScope('DEPT'); setMasking(DEFAULT_MASKING); }}>取消</button>
-                  <button className="v-btn-primary" onClick={save}><Check size={14} style={{ display: 'inline', marginRight: 4 }} />保存更改</button>
+                  <button className='v-btn-primary' onClick={save}><Check size={14} style={{ display: 'inline', marginRight: 4 }} />保存更改</button>
                 </div>
               </div>
             ) : null}
           </div>
         )}
+
+      {/* 新建角色 Drawer */}
+      <FormDrawer
+        open={createOpen}
+        title="新建角色"
+        onCancel={() => { setCreateOpen(false); setCreateForm({ roleCode: '', roleName: '', roleType: 'CUSTOM', description: '' }); }}
+        onOk={submitCreate}
+        confirmLoading={creating}
+        okText="创建"
+      >
+        <FormSection title="基本信息">
+          <Field label="角色编码" required>
+            <TextInput value={createForm.roleCode} onChange={(e) => setCreateForm({ ...createForm, roleCode: e.target.value })} placeholder="如：APP_ADMIN" />
+          </Field>
+          <Field label="角色名称" required>
+            <TextInput value={createForm.roleName} onChange={(e) => setCreateForm({ ...createForm, roleName: e.target.value })} placeholder="如：应用管理员" />
+          </Field>
+          <Field label="类型">
+            <Select value={createForm.roleType} onChange={(e) => setCreateForm({ ...createForm, roleType: e.target.value as RoleType })}>
+              <option value="CUSTOM">CUSTOM（自定义）</option>
+              <option value="SYSTEM">SYSTEM（系统）</option>
+              <option value="BUILTIN">BUILTIN（内置）</option>
+              <option value="EXTERNAL">EXTERNAL（外部）</option>
+            </Select>
+          </Field>
+          <Field label="描述">
+            <TextArea value={createForm.description} onChange={(e) => setCreateForm({ ...createForm, description: e.target.value })} rows={3} />
+          </Field>
+        </FormSection>
+      </FormDrawer>
       </div>
     </div>
   );
