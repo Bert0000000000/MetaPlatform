@@ -42,7 +42,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
           transition: 'width 0.2s ease, padding 0.2s ease',
         }}
       >
-        {/* Logo: white badge style, matches design draft */}
+        {/* Logo */}
         <div
           className="v-sidebar-logo"
           style={{ display: 'flex', alignItems: 'center', justifyContent: collapsed ? 'center' : 'flex-start', marginBottom: 16, gap: 8 }}
@@ -53,35 +53,6 @@ export default function AppLayout({ children }: AppLayoutProps) {
             <span className="v-sidebar-logo-badge">Mate</span>
           )}
         </div>
-
-        {/* 折叠/展开按钮 */}
-        <button
-          type="button"
-          onClick={() => setCollapsed((c) => !c)}
-          title={collapsed ? '展开菜单' : '收起菜单'}
-          style={{
-            background: 'transparent',
-            border: '1px solid var(--border)',
-            color: 'var(--muted-foreground)',
-            cursor: 'pointer',
-            padding: collapsed ? '6px' : '6px 10px',
-            borderRadius: 6,
-            fontSize: 12,
-            marginBottom: 12,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 4,
-            transition: 'all 0.15s',
-          }}
-        >
-          {collapsed ? <ChevronsRight size={14} /> : (
-            <>
-              <ChevronsLeft size={14} />
-              <span>收起</span>
-            </>
-          )}
-        </button>
 
         <div className="v-sider-menu" style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
           <PlatformMenu collapsed={collapsed} />
@@ -98,6 +69,35 @@ export default function AppLayout({ children }: AppLayoutProps) {
             gap: 8,
           }}
         >
+          {/* 折叠/展开按钮（放在底部） */}
+          <button
+            type="button"
+            onClick={() => setCollapsed((c) => !c)}
+            title={collapsed ? '展开菜单' : '收起菜单'}
+            style={{
+              background: 'transparent',
+              border: '1px solid var(--border)',
+              color: 'var(--muted-foreground)',
+              cursor: 'pointer',
+              padding: collapsed ? '6px' : '6px 10px',
+              borderRadius: 6,
+              fontSize: 12,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 4,
+              transition: 'all 0.15s',
+            }}
+          >
+            {collapsed ? <ChevronsRight size={14} /> : (
+              <>
+                <ChevronsLeft size={14} />
+                <span>收起</span>
+              </>
+            )}
+          </button>
+
+          {/* 用户信息（折叠后只显示头像） */}
           <div
             style={{
               height: 40,
@@ -110,6 +110,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
               color: 'var(--sidebar-foreground)',
               fontSize: 14,
             }}
+            title={user?.realName ?? user?.username ?? '当前用户'}
           >
             <div
               style={{
@@ -125,21 +126,27 @@ export default function AppLayout({ children }: AppLayoutProps) {
             >
               <User style={{ width: 14, height: 14, color: 'var(--muted-foreground)', strokeWidth: 1.5 }} />
             </div>
-            {!collapsed && <span
-              style={{
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              {user?.realName ?? user?.username ?? '当前用户'}
-            </span>}
+            {!collapsed && (
+              <span
+                style={{
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  flex: 1,
+                  minWidth: 0,
+                }}
+              >
+                {user?.realName ?? user?.username ?? '当前用户'}
+              </span>
+            )}
           </div>
 
+          {/* 退出登录 */}
           <button
             type="button"
             className="v-sidebar-item"
             onClick={handleLogout}
+            title="退出登录"
             style={{
               width: '100%',
               background: 'transparent',
@@ -147,10 +154,12 @@ export default function AppLayout({ children }: AppLayoutProps) {
               cursor: 'pointer',
               textAlign: 'left',
               marginBottom: 0,
+              justifyContent: collapsed ? 'center' : 'flex-start',
+              padding: collapsed ? '8px' : '0 12px',
             }}
           >
             <LogOut style={{ width: 18, height: 18, strokeWidth: 1.5 }} />
-            <span>退出登录</span>
+            {!collapsed && <span>退出登录</span>}
           </button>
         </div>
       </aside>
