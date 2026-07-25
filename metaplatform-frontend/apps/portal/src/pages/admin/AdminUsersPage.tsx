@@ -5,10 +5,12 @@
  */
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Plus, Search, RefreshCw, Eye, Pencil, Trash2 } from 'lucide-react';
-import { SubTabs, FormDrawer, FormSection, Field, TextInput, TextArea, Select, PageLoading, ErrorState, EmptyState, Api, type SubTabItem } from '@mate/shared';
+import { Plus, Search, RefreshCw, Pencil, Trash2, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
+import { SubTabs, FormDrawer, FormSection, Field, TextInput, TextArea, Select, PageLoading, EmptyState, Api, type SubTabItem } from '@mate/shared';
 import type { UserResponse, UserStatus } from '@mate/shared/api';
 
+const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
+const DEFAULT_PAGE_SIZE = 10;
 const ADMIN_TABS: SubTabItem[] = [
   { label: '用户管理', path: '/admin' },
   { label: '权限管理', path: '/admin/permissions' },
@@ -56,12 +58,16 @@ export default function AdminUsersPage() {
   const [editOpen, setEditOpen] = useState(false);
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({ realName: '', username: '', email: '', password: '', phone: '' });
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   const load = async () => {
     setLoading(true);
     setError(null);
     try {
-      const resp = await Api.listUsers({ page: 1, size: 50, status: statusFilter === 'ALL' ? undefined : statusFilter });
+      const resp = await Api.listUsers({ page, size: pageSize, status: statusFilter === 'ALL' ? undefined : statusFilter });
       setUsers(resp.items);
       setTotal(resp.total);
       if (resp.items.length && !selectedId) setSelectedId(resp.items[0].id);
@@ -72,7 +78,11 @@ export default function AdminUsersPage() {
     }
   };
 
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, [statusFilter]);
+  // 状态筛选变化时回到第一页
+  useEffect(() => { setPage(1); /* eslint-disable-next-line */ }, [statusFilter]);
+  // 翻页/换 pageSize 时清空选中（防止选中不存在于新页面的用户）
+  useEffect(() => { setSelectedId(null); /* eslint-disable-next-line */ }, [page, pageSize]);
+  useEffect(() => { load(); /* eslint-disable-next-line */ }, [page, pageSize, statusFilter]);
 
   const filtered = useMemo(() => {
     if (!keyword) return users;
@@ -84,11 +94,12 @@ export default function AdminUsersPage() {
 
   const selected = users.find((u) => u.id === selectedId) ?? filtered[0] ?? null;
 
+  // 当前页（用于状态细分）+ 全部用户（仅用于总数）
   const counts = useMemo(() => {
-    const c = { total: users.length, enabled: 0, disabled: 0, locked: 0, pending: 0 };
+    const c = { total, enabled: 0, disabled: 0, locked: 0, pending: 0 };
     for (const u of users) c[u.status.toLowerCase() as 'enabled' | 'disabled' | 'locked' | 'pending']++;
     return c;
-  }, [users]);
+  }, [users, total]);
 
   const handleCreate = async () => {
     if (!form.username || !form.email || !form.password) {
@@ -241,8 +252,50 @@ export default function AdminUsersPage() {
                 })}
               </tbody>
             </table>
-            <div style={{ padding: '8px 16px', fontSize: 12, color: 'var(--muted-foreground)', borderTop: '1px solid var(--border)' }}>
-              共 {total} 个用户
+            {/* 分页 */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 16px', fontSize: 12, color: 'var(--muted-foreground)', borderTop: '1px solid var(--border)' }}>
+              <span>共 <strong style={{ color: 'var(--foreground)' }}>{total}</strong> 个用户</span>
+              <span style={{ marginLeft: 8 }}>每页</span>
+              <select
+                className='v-input'
+                style={{ height: 28, padding: '0 8px', fontSize: 12 }}
+                value={pageSize}
+                onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}
+              >
+                {PAGE_SIZE_OPTIONS.map((n) => (<option key={n} value={n}>{n}</option>))}
+              </select>
+              <div style={{ flex: 1 }} />
+              <button
+                className='au-action-link'
+                disabled={page <= 1}
+                onClick={() => setPage(1)}
+                title='第一页'
+                style={{ opacity: page <= 1 ? 0.4 : 1, cursor: page <= 1 ? 'not-allowed' : 'pointer' }}
+              ><ChevronsLeft size={14} /></button>
+              <button
+                className='au-action-link'
+                disabled={page <= 1}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                title='上一页'
+                style={{ opacity: page <= 1 ? 0.4 : 1, cursor: page <= 1 ? 'not-allowed' : 'pointer' }}
+              ><ChevronLeft size={14} /></button>
+              <span style={{ fontSize: 12, color: 'var(--foreground)', padding: '0 8px' }}>
+                <strong>{page}</strong> / {totalPages}
+              </span>
+              <button
+                className='au-action-link'
+                disabled={page >= totalPages}
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                title='下一页'
+                style={{ opacity: page >= totalPages ? 0.4 : 1, cursor: page >= totalPages ? 'not-allowed' : 'pointer' }}
+              ><ChevronRight size={14} /></button>
+              <button
+                className='au-action-link'
+                disabled={page >= totalPages}
+                onClick={() => setPage(totalPages)}
+                title='最后一页'
+                style={{ opacity: page >= totalPages ? 0.4 : 1, cursor: page >= totalPages ? 'not-allowed' : 'pointer' }}
+              ><ChevronsRight size={14} /></button>
             </div>
           </div>
         )}
