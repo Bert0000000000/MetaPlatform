@@ -9,6 +9,7 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
+import java.util.Map;
 import java.util.UUID;
 
 @Entity
@@ -24,6 +25,7 @@ public class ActionDefinitionEntity {
     private UUID id;
 
     @Column(name = "tenant_id", nullable = false, length = 64)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String tenantId;
 
     @Column(name = "action_id", nullable = false, length = 64)
@@ -44,25 +46,21 @@ public class ActionDefinitionEntity {
     @Column(nullable = false, length = 2048)
     private String url;
 
-    @Lob
-    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "headers", columnDefinition = "jsonb")
-    private String headers;
+    private Map<String, Object> headers;
 
-    @Lob
-    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "input_schema", columnDefinition = "jsonb", nullable = false)
-    private String inputSchema;
+    private Map<String, Object> inputSchema;
 
-    @Lob
-    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "output_schema", columnDefinition = "jsonb", nullable = false)
-    private String outputSchema;
+    private Map<String, Object> outputSchema;
 
-    @Lob
-    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "ontology_binding", columnDefinition = "jsonb")
-    private String ontologyBinding;
+    private Map<String, Object> ontologyBinding;
 
     @Column(nullable = false, length = 20)
     private String status;
@@ -71,6 +69,7 @@ public class ActionDefinitionEntity {
     private Integer version;
 
     @Column(name = "created_by", nullable = false, length = 64)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String createdBy;
 
     @Column(name = "updated_by", length = 64)

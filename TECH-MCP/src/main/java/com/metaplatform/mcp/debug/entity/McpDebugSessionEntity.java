@@ -24,6 +24,7 @@ public class McpDebugSessionEntity {
     private UUID id;
 
     @Column(name = "tenant_id", nullable = false, length = 64)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String tenantId;
 
     @Column(name = "server_id")
@@ -33,6 +34,7 @@ public class McpDebugSessionEntity {
     private UUID toolId;
 
     @Column(name = "method", length = 128)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String method;
 
     @Lob
@@ -55,24 +57,37 @@ public class McpDebugSessionEntity {
     @Column(name = "raw_response", columnDefinition = "TEXT")
     private String rawResponse;
 
+    @Column(nullable = false, length = 20)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    private String status;
+
     @Column(name = "duration_ms")
     private Long durationMs;
 
-    @Column(nullable = false, length = 20)
-    private String status;
-
     @Column(name = "error_message", columnDefinition = "TEXT")
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     private String errorMessage;
 
-    @Column(name = "breakpoint", nullable = false)
+    @Column(name = "trace_id", length = 64)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    private String traceId;
+
+    @Column(name = "is_breakpoint", nullable = false)
     private Boolean breakpoint;
 
-    @Column(name = "trace_id", nullable = false, length = 64)
-    private String traceId;
+    @Column(name = "started_at")
+    private Instant startedAt;
+
+    @Column(name = "completed_at")
+    private Instant completedAt;
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
+
+    @Column(name = "created_by", length = 100)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    private String createdBy;
 }

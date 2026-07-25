@@ -4,6 +4,16 @@ import { SearchOutlined, PlusOutlined, DeleteOutlined } from '@ant-design/icons'
 import { getAssetCatalog, listAssets, createAsset, updateAsset, deleteAsset, listEntities } from '@/api/dataArchitecture';
 import type { DataAsset, DataAssetCatalog, DataEntity } from '@/types';
 
+interface DataAssetFormValues {
+  name: string;
+  code: string;
+  assetType: string;
+  classification?: string;
+  entityId?: string;
+  tags?: string;
+  description?: string;
+}
+
 const GROUP_OPTIONS = [
   { label: '按系统类型', value: 'type' },
   { label: '按主题域', value: 'classification' },
@@ -20,7 +30,7 @@ export default function DataAssetCatalogPage() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<DataAsset | null>(null);
-  const [form] = Form.useForm<Partial<DataAsset>>();
+  const [form] = Form.useForm<DataAssetFormValues>();
 
   const loadCatalog = async () => {
     const data = await getAssetCatalog(groupBy);
@@ -54,7 +64,11 @@ export default function DataAssetCatalogPage() {
 
   const handleSubmit = async () => {
     const values = await form.validateFields();
-    const payload = { ...values, tags: values.tags ? String(values.tags).split(',').map((t) => t.trim()).filter(Boolean) : [] };
+    const { tags, ...rest } = values;
+    const payload = {
+      ...rest,
+      tags: tags ? tags.split(',').map((t) => t.trim()).filter(Boolean) : [],
+    };
     if (editing) {
       await updateAsset(editing.id, payload);
       message.success('更新成功');

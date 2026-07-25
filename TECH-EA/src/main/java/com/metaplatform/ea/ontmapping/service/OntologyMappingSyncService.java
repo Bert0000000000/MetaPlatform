@@ -6,6 +6,9 @@ import com.metaplatform.ea.application.service.ApplicationService;
 import com.metaplatform.ea.capability.dto.CapabilityResponse;
 import com.metaplatform.ea.capability.service.BusinessCapabilityService;
 import com.metaplatform.ea.common.TenantContext;
+import com.metaplatform.ea.dataarchitecture.dto.DataEntityResponse;
+import com.metaplatform.ea.dataarchitecture.dto.UpdateDataEntityRequest;
+import com.metaplatform.ea.dataarchitecture.service.DataEntityService;
 import com.metaplatform.ea.governance.review.dto.CreateReviewTicketRequest;
 import com.metaplatform.ea.governance.review.service.ReviewTicketService;
 import com.metaplatform.ea.mapping.service.OntIntegrationService;
@@ -14,6 +17,15 @@ import com.metaplatform.ea.ontmapping.entity.ConceptMappingRuleEntity;
 import com.metaplatform.ea.ontmapping.entity.OntologyChangeEventEntity;
 import com.metaplatform.ea.ontmapping.repository.ConceptMappingRuleRepository;
 import com.metaplatform.ea.ontmapping.repository.OntologyChangeEventRepository;
+import com.metaplatform.ea.process.dto.BusinessProcessResponse;
+import com.metaplatform.ea.process.dto.UpdateBusinessProcessRequest;
+import com.metaplatform.ea.process.service.BusinessProcessService;
+import com.metaplatform.ea.techarchitecture.dto.InfrastructureResponse;
+import com.metaplatform.ea.techarchitecture.dto.UpdateInfrastructureRequest;
+import com.metaplatform.ea.techarchitecture.service.InfrastructureService;
+import com.metaplatform.ea.techstack.dto.TechnologyStackResponse;
+import com.metaplatform.ea.techstack.dto.UpdateTechnologyStackRequest;
+import com.metaplatform.ea.techstack.service.TechnologyStackService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -34,6 +46,10 @@ public class OntologyMappingSyncService {
 
     private static final String ASSET_CAPABILITY = "CAPABILITY";
     private static final String ASSET_APPLICATION = "APPLICATION";
+    private static final String ASSET_TECH_STACK = "TECH_STACK";
+    private static final String ASSET_INFRASTRUCTURE = "INFRASTRUCTURE";
+    private static final String ASSET_DATA_ENTITY = "DATA_ENTITY";
+    private static final String ASSET_BUSINESS_PROCESS = "BUSINESS_PROCESS";
     private static final String STATUS_PENDING = "PENDING";
     private static final String STATUS_PROCESSED = "PROCESSED";
 
@@ -42,6 +58,10 @@ public class OntologyMappingSyncService {
     private final OntIntegrationService ontIntegrationService;
     private final BusinessCapabilityService capabilityService;
     private final ApplicationService applicationService;
+    private final TechnologyStackService techStackService;
+    private final InfrastructureService infrastructureService;
+    private final DataEntityService dataEntityService;
+    private final BusinessProcessService businessProcessService;
     private final ReviewTicketService reviewTicketService;
     private final ObjectMapper objectMapper;
 
@@ -218,6 +238,22 @@ public class OntologyMappingSyncService {
                 ApplicationResponse app = applicationService.get(assetId);
                 return new AssetInfo(app.getName(), app.getDescription());
             }
+            if (ASSET_TECH_STACK.equals(assetType)) {
+                TechnologyStackResponse stack = techStackService.get(assetId);
+                return new AssetInfo(stack.getName(), stack.getDescription());
+            }
+            if (ASSET_INFRASTRUCTURE.equals(assetType)) {
+                InfrastructureResponse infra = infrastructureService.get(assetId);
+                return new AssetInfo(infra.getName(), infra.getDescription());
+            }
+            if (ASSET_DATA_ENTITY.equals(assetType)) {
+                DataEntityResponse entity = dataEntityService.get(assetId);
+                return new AssetInfo(entity.getName(), entity.getDescription());
+            }
+            if (ASSET_BUSINESS_PROCESS.equals(assetType)) {
+                BusinessProcessResponse process = businessProcessService.get(assetId);
+                return new AssetInfo(process.getName(), process.getDescription());
+            }
         } catch (Exception e) {
             log.warn("Failed to resolve asset {}:{}", assetType, assetId, e);
         }
@@ -240,6 +276,34 @@ public class OntologyMappingSyncService {
                 if (StringUtils.hasText(concept.getName())) req.setName(concept.getName());
                 if (concept.getDescription() != null) req.setDescription(concept.getDescription());
                 applicationService.update(rule.getAssetId(), req);
+                return true;
+            }
+            if (ASSET_TECH_STACK.equals(rule.getAssetType())) {
+                UpdateTechnologyStackRequest req = new UpdateTechnologyStackRequest();
+                if (StringUtils.hasText(concept.getName())) req.setName(concept.getName());
+                if (concept.getDescription() != null) req.setDescription(concept.getDescription());
+                techStackService.update(rule.getAssetId(), req);
+                return true;
+            }
+            if (ASSET_INFRASTRUCTURE.equals(rule.getAssetType())) {
+                UpdateInfrastructureRequest req = new UpdateInfrastructureRequest();
+                if (StringUtils.hasText(concept.getName())) req.setName(concept.getName());
+                if (concept.getDescription() != null) req.setDescription(concept.getDescription());
+                infrastructureService.update(rule.getAssetId(), req);
+                return true;
+            }
+            if (ASSET_DATA_ENTITY.equals(rule.getAssetType())) {
+                UpdateDataEntityRequest req = new UpdateDataEntityRequest();
+                if (StringUtils.hasText(concept.getName())) req.setName(concept.getName());
+                if (concept.getDescription() != null) req.setDescription(concept.getDescription());
+                dataEntityService.update(rule.getAssetId(), req);
+                return true;
+            }
+            if (ASSET_BUSINESS_PROCESS.equals(rule.getAssetType())) {
+                UpdateBusinessProcessRequest req = new UpdateBusinessProcessRequest();
+                if (StringUtils.hasText(concept.getName())) req.setName(concept.getName());
+                if (concept.getDescription() != null) req.setDescription(concept.getDescription());
+                businessProcessService.update(rule.getAssetId(), req);
                 return true;
             }
         } catch (Exception e) {

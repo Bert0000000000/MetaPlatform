@@ -6,6 +6,8 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.Instant;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "msg_dlq_retry_policies",
@@ -21,6 +23,7 @@ public class DlqRetryPolicyEntity {
 
     @Id
     @Column(name = "id", nullable = false, length = 64)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String id;
 
     @Column(name = "tenant_id", nullable = false, length = 64)
@@ -28,6 +31,7 @@ public class DlqRetryPolicyEntity {
     private String tenantId = "tenant-default";
 
     @Column(name = "topic", nullable = false, length = 256)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String topic;
 
     @Column(name = "max_retries", nullable = false)

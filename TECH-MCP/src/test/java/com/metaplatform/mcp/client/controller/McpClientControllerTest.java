@@ -1,5 +1,9 @@
 package com.metaplatform.mcp.client.controller;
 
+import com.metaplatform.mcp.IamTestConfig;
+import org.springframework.context.annotation.Import;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+
 import com.metaplatform.mcp.client.dto.McpClientResponse;
 import com.metaplatform.mcp.client.service.McpClientService;
 import com.metaplatform.mcp.common.ErrorCode;
@@ -24,6 +28,8 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+@Import(IamTestConfig.class)
+@AutoConfigureMockMvc(addFilters = false)
 @WebMvcTest(McpClientController.class)
 class McpClientControllerTest {
 
@@ -156,6 +162,31 @@ class McpClientControllerTest {
         when(mcpClientService.getTools(id)).thenReturn(List.of(item));
 
         mockMvc.perform(get("/api/v1/mcp/clients/{id}/tools", id))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].code").value("remote_tool"));
+    }
+
+    @Test
+    void refresh_client_returns_updated_client() throws Exception {
+        UUID id = UUID.randomUUID();
+        McpClientResponse response = sampleResponse();
+        response.setId(id);
+        response.setStatus("CONNECTED");
+        when(mcpClientService.refresh(id)).thenReturn(response);
+
+        mockMvc.perform(post("/api/v1/mcp/clients/{id}/refresh", id))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("CONNECTED"));
+    }
+
+    @Test
+    void sync_client_returns_tools() throws Exception {
+        UUID id = UUID.randomUUID();
+        McpToolListItem item = McpToolListItem.builder()
+                .id(UUID.randomUUID()).name("rt").code("remote_tool").toolType("MCP").enabled(true).build();
+        when(mcpClientService.sync(id)).thenReturn(List.of(item));
+
+        mockMvc.perform(post("/api/v1/mcp/clients/{id}/sync", id))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[0].code").value("remote_tool"));
     }

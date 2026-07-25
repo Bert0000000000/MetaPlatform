@@ -50,7 +50,7 @@ class DataPermissionServiceTest {
         request.setRoleId("role-001");
         request.setResourceType("concept");
         request.setResourceId("PERSON");
-        request.setDataScope(DataPermissionEntity.DataScope.DEPT);
+        request.setDataScope(DataPermissionEntity.DataScope.DEPARTMENT);
         request.setColumnFilter(List.of("salary", "id_card"));
 
         when(dataPermissionRepository.existsByTenantIdAndRoleIdAndResourceTypeAndResourceIdAndDeletedFalse(
@@ -62,7 +62,7 @@ class DataPermissionServiceTest {
         assertThat(response.getRoleId()).isEqualTo("role-001");
         assertThat(response.getResourceType()).isEqualTo("concept");
         assertThat(response.getResourceId()).isEqualTo("PERSON");
-        assertThat(response.getDataScope()).isEqualTo(DataPermissionEntity.DataScope.DEPT);
+        assertThat(response.getDataScope()).isEqualTo(DataPermissionEntity.DataScope.DEPARTMENT);
         assertThat(response.getColumnFilter()).containsExactly("salary", "id_card");
         assertThat(response.getEffect()).isEqualTo(DataPermissionEntity.Effect.ALLOW);
     }
@@ -75,7 +75,7 @@ class DataPermissionServiceTest {
                 .effect(DataPermissionEntity.Effect.ALLOW).build();
         DataPermissionEntity deptScopeRule = DataPermissionEntity.builder()
                 .id("dp-2").tenantId("tenant-default").roleId("role-002")
-                .resourceType("concept").dataScope(DataPermissionEntity.DataScope.DEPT)
+                .resourceType("concept").dataScope(DataPermissionEntity.DataScope.DEPARTMENT)
                 .effect(DataPermissionEntity.Effect.ALLOW).build();
 
         when(dataPermissionRepository.findByTenantIdAndRoleIdAndResourceTypeAndDeletedFalse(
@@ -93,7 +93,7 @@ class DataPermissionServiceTest {
     void resolveDataScope_shouldReturnDept_andApplyRowFilterWithUserDepts() {
         DataPermissionEntity deptRule = DataPermissionEntity.builder()
                 .id("dp-1").tenantId("tenant-default").roleId("role-001")
-                .resourceType("concept").dataScope(DataPermissionEntity.DataScope.DEPT)
+                .resourceType("concept").dataScope(DataPermissionEntity.DataScope.DEPARTMENT)
                 .effect(DataPermissionEntity.Effect.ALLOW).build();
 
         when(dataPermissionRepository.findByTenantIdAndRoleIdAndResourceTypeAndDeletedFalse(
@@ -105,7 +105,7 @@ class DataPermissionServiceTest {
 
         DataPermissionEntity.DataScope scope = dataPermissionService
                 .resolveDataScope(List.of("role-001"), "concept");
-        assertThat(scope).isEqualTo(DataPermissionEntity.DataScope.DEPT);
+        assertThat(scope).isEqualTo(DataPermissionEntity.DataScope.DEPARTMENT);
 
         String rowFilter = dataPermissionService.applyRowFilter(scope, "user-001");
         assertThat(rowFilter).contains("dept_id IN");
@@ -154,7 +154,7 @@ class DataPermissionServiceTest {
     void resolve_shouldReturnCompleteResponse_withDeptAndSubScope() {
         DataPermissionEntity rule = DataPermissionEntity.builder()
                 .id("dp-1").tenantId("tenant-default").roleId("role-001")
-                .resourceType("concept").dataScope(DataPermissionEntity.DataScope.DEPT_AND_SUB)
+                .resourceType("concept").dataScope(DataPermissionEntity.DataScope.DEPARTMENT_TREE)
                 .columnFilter("[\"salary\"]")
                 .effect(DataPermissionEntity.Effect.ALLOW).build();
 
@@ -175,7 +175,7 @@ class DataPermissionServiceTest {
         DataScopeResolveResponse response = dataPermissionService
                 .resolve("user-001", List.of("role-001"), "concept");
 
-        assertThat(response.getDataScope()).isEqualTo(DataPermissionEntity.DataScope.DEPT_AND_SUB);
+        assertThat(response.getDataScope()).isEqualTo(DataPermissionEntity.DataScope.DEPARTMENT_TREE);
         assertThat(response.getRowFilter()).contains("dept-A");
         assertThat(response.getRowFilter()).contains("dept-B");
         assertThat(response.getColumnFilter()).containsExactly("salary");

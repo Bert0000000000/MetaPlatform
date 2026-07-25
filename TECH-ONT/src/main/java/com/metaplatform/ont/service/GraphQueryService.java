@@ -112,6 +112,45 @@ public class GraphQueryService {
     }
 
     /**
+     * 图谱导出（P1-ONT）：导出全量节点与边，支持按节点类型/边类型过滤与数量限制。
+     * limit 经裁剪后内联到 Cypher（Neo4j 对 LIMIT 参数化支持存在版本差异，内联更稳妥）。
+     */
+    public GraphQueryResponse export(List<String> nodeTypes, List<String> edgeTypes, int limit) {
+        int safeLimit = Math.max(1, Math.min(limit, 10000));
+
+        String nodeCypher = String.format(
+                "MATCH (n) WHERE n.id IS NOT NULL " +
+                "RETURN n.id as id, labels(n) as labels, properties(n) as properties LIMIT %d",
+                safeLimit);
+        Collection<Map<String, Object>> nodeRecords = executeQuery(nodeCypher, Map.of());
+
+        String edgeCypher = String.format(
+                "MATCH (a)-[r]->(b) WHERE a.id IS NOT NULL AND b.id IS NOT NULL " +
+                "RETURN elementId(r) as id, type(r) as type, a.id as source, b.id as target, properties(r) as properties LIMIT %d",
+                safeLimit);
+        Collection<Map<String, Object>> edgeRecords = executeQuery(edgeCypher, Map.of());
+
+        List<GraphNodeDto> nodes = nodeRecords.stream()
+                .map(this::toNodeDto)
+                .filter(n -> matchesNodeType(n, nodeTypes))
+                .collect(Collectors.collectingAndThen(
+                        Collectors.toMap(GraphNodeDto::getId, n -> n, (a, b) -> a),
+                        m -> new ArrayList<>(m.values())));
+
+        Set<String> visibleNodeIds = nodes.stream().map(GraphNodeDto::getId).collect(Collectors.toSet());
+
+        List<GraphEdgeDto> edges = edgeRecords.stream()
+                .map(this::toEdgeDto)
+                .filter(e -> CollectionUtils.isEmpty(edgeTypes) || edgeTypes.contains(e.getType()))
+                .filter(e -> visibleNodeIds.contains(e.getSource()) && visibleNodeIds.contains(e.getTarget()))
+                .collect(Collectors.collectingAndThen(
+                        Collectors.toMap(GraphEdgeDto::getId, e -> e, (a, b) -> a),
+                        m -> new ArrayList<>(m.values())));
+
+        return GraphQueryResponse.builder().nodes(nodes).edges(edges).build();
+    }
+
+    /**
      * 解析起始节点 ID 列表。
      * 1) 显式指定 startNodeId 时直接返回；
      * 2) 否则按 query 关键字在 Neo4j 中模糊匹配 Concept/Entity 节点

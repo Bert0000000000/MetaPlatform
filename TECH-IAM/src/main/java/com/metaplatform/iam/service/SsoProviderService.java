@@ -75,7 +75,7 @@ public class SsoProviderService {
                 .userInfoEndpoint(request.getUserInfoEndpoint())
                 .scopes(request.getScopes())
                 .enabled(request.getEnabled() == null ? Boolean.TRUE : request.getEnabled())
-                .config(toJson(request.getConfig()))
+                .config(request.getConfig())
                 .deleted(false)
                 .createdBy(operator)
                 .updatedBy(operator)
@@ -133,7 +133,7 @@ public class SsoProviderService {
         Optional.ofNullable(request.getUserInfoEndpoint()).ifPresent(entity::setUserInfoEndpoint);
         Optional.ofNullable(request.getScopes()).ifPresent(entity::setScopes);
         Optional.ofNullable(request.getEnabled()).ifPresent(entity::setEnabled);
-        Optional.ofNullable(request.getConfig()).ifPresent(c -> entity.setConfig(toJson(c)));
+        Optional.ofNullable(request.getConfig()).ifPresent(entity::setConfig);
         entity.setUpdatedBy(currentOperator());
         return toResponse(ssoProviderRepository.save(entity));
     }
@@ -335,7 +335,7 @@ public class SsoProviderService {
                 .userInfoEndpoint(entity.getUserInfoEndpoint())
                 .scopes(entity.getScopes())
                 .enabled(entity.getEnabled())
-                .config(fromJson(entity.getConfig()))
+                .config(entity.getConfig())
                 .version(entity.getVersion())
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())

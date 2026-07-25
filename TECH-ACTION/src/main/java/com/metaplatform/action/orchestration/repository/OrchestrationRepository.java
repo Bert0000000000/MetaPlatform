@@ -23,8 +23,8 @@ public interface OrchestrationRepository extends JpaRepository<OrchestrationEnti
     @Query("SELECT o FROM OrchestrationEntity o " +
            "WHERE o.tenantId = :tenantId AND o.deletedAt IS NULL " +
            "AND (:status IS NULL OR o.status = :status) " +
-           "AND (:keyword IS NULL OR LOWER(o.name) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
-           "OR LOWER(o.code) LIKE LOWER(CONCAT('%', :keyword, '%')))")
+           "AND (:keyword IS NULL OR LOWER(o.name) LIKE LOWER(CONCAT('%', cast(:keyword as string), '%')) " +
+           "OR LOWER(o.code) LIKE LOWER(CONCAT('%', cast(:keyword as string), '%')))")
     Page<OrchestrationEntity> search(@Param("tenantId") String tenantId,
                                      @Param("status") String status,
                                      @Param("keyword") String keyword,

@@ -567,6 +567,10 @@ export interface PolicyCreateRequest {
   enabled: boolean;
 }
 
+export interface PolicyUpdateRequest extends PolicyCreateRequest {
+  version: number;
+}
+
 export interface PolicyMatrixSubject {
   subjectId: string;
   subjectName: string;

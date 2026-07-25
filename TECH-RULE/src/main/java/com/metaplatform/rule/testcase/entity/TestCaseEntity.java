@@ -5,11 +5,10 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.type.SqlTypes;
 
+import java.util.Map;
 import java.time.Instant;
 
 @Entity
@@ -21,49 +20,54 @@ import java.time.Instant;
 public class TestCaseEntity {
 
     @Id
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "id", nullable = false, length = 64)
     private String id;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "tenant_id", nullable = false, length = 64)
     private String tenantId;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "rule_id", length = 64)
     private String ruleId;
 
-    @Column(name = "ruleset_id", length = 64)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "ruleset_id", nullable = false, length = 64)
     private String rulesetId;
 
-    @Column(name = "target_type", length = 16)
-    private String targetType;
-
-    @Column(name = "target_id", length = 64)
-    private String targetId;
-
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "name", nullable = false, length = 256)
     private String name;
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "input", columnDefinition = "jsonb")
-    @Builder.Default
-    private String input = "{}";
+    @Column(name = "input", nullable = false, columnDefinition = "jsonb")
+    private Map<String, Object> input;
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "expected_output", columnDefinition = "jsonb")
-    private String expectedOutput;
+    private Map<String, Object> expectedOutput;
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "actual_output", columnDefinition = "jsonb")
-    private String actualOutput;
+    private Map<String, Object> actualOutput;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "status", nullable = false, length = 16)
-    @Builder.Default
-    private String status = "PENDING";
+    private String status;
 
-    @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
-    @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
+
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "target_type", length = 16)
+    private String targetType;
+
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "target_id", length = 64)
+    private String targetId;
+
 }

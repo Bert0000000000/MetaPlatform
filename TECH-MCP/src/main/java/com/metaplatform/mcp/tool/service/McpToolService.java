@@ -2,15 +2,18 @@ package com.metaplatform.mcp.tool.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.metaplatform.mcp.audit.repository.McpAuditLogRepository;
 import com.metaplatform.mcp.common.ErrorCode;
 import com.metaplatform.mcp.common.PageResponse;
 import com.metaplatform.mcp.common.TenantContext;
+import com.metaplatform.mcp.common.TraceContext;
 import com.metaplatform.mcp.exception.McpException;
 import com.metaplatform.mcp.tool.dto.CreateMcpToolRequest;
 import com.metaplatform.mcp.tool.dto.McpToolListItem;
 import com.metaplatform.mcp.tool.dto.McpToolResponse;
 import com.metaplatform.mcp.tool.dto.McpToolVersionCompareResponse;
 import com.metaplatform.mcp.tool.dto.McpToolVersionResponse;
+import com.metaplatform.mcp.tool.dto.ToolStatsResponse;
 import com.metaplatform.mcp.tool.dto.UpdateMcpToolRequest;
 import com.metaplatform.mcp.tool.entity.McpToolEntity;
 import com.metaplatform.mcp.tool.entity.McpToolVersionEntity;
@@ -37,6 +40,7 @@ public class McpToolService {
     private final McpToolRepository mcpToolRepository;
     private final McpToolVersionRepository mcpToolVersionRepository;
     private final McpToolCategoryRepository mcpToolCategoryRepository;
+    private final McpAuditLogRepository mcpAuditLogRepository;
     private final ObjectMapper objectMapper;
 
     @Transactional
@@ -66,6 +70,7 @@ public class McpToolService {
                 .endpoint(request.getEndpoint())
                 .beanClass(request.getBeanClass())
                 .enabled(request.getEnabled() == null ? Boolean.TRUE : request.getEnabled())
+                .status("DRAFT")
                 .createdAt(now)
                 .updatedAt(now)
                 .build();
@@ -200,6 +205,65 @@ public class McpToolService {
         entity.setEnabled(Boolean.FALSE);
         entity.setUpdatedAt(Instant.now());
         return toResponse(mcpToolRepository.save(entity));
+    }
+
+    @Transactional
+    public McpToolResponse publish(UUID id) {
+        McpToolEntity entity = findById(id);
+        if ("PUBLISHED".equals(entity.getStatus())) {
+            throw new McpException(ErrorCode.STATE_CONFLICT, "Tool 已发布");
+        }
+        if (!Boolean.TRUE.equals(entity.getEnabled())) {
+            throw new McpException(ErrorCode.TOOL_NOT_ENABLED, "Tool 未启用，无法发布");
+        }
+        entity.setStatus("PUBLISHED");
+        entity.setPublishedAt(Instant.now());
+        entity.setPublishedBy(TraceContext.getUserId());
+        entity.setUpdatedAt(Instant.now());
+        return toResponse(mcpToolRepository.save(entity));
+    }
+
+    @Transactional(readOnly = true)
+    public ToolStatsResponse stats() {
+        String tenantId = TenantContext.getOrDefault();
+        long total = mcpToolRepository.countByTenantIdAndDeletedAtIsNull(tenantId);
+        long enabledCount = mcpToolRepository.countByTenantIdAndEnabledTrueAndDeletedAtIsNull(tenantId);
+        long disabledCount = mcpToolRepository.countByTenantIdAndEnabledFalseAndDeletedAtIsNull(tenantId);
+
+        java.util.Map<String, Long> byStatus = new java.util.LinkedHashMap<>();
+        for (Object[] row : mcpToolRepository.countByStatus(tenantId)) {
+            String status = row[0] == null ? "DRAFT" : (String) row[0];
+            byStatus.put(status, (Long) row[1]);
+        }
+
+        java.util.Map<String, Long> byCategory = new java.util.LinkedHashMap<>();
+        for (Object[] row : mcpToolRepository.countByCategory(tenantId)) {
+            String category = row[0] == null ? "uncategorized" : (String) row[0];
+            byCategory.put(category, (Long) row[1]);
+        }
+
+        Instant sevenDaysAgo = Instant.now().minus(java.time.Duration.ofDays(7));
+        java.util.List<ToolStatsResponse.TopTool> topTools = new java.util.ArrayList<>();
+        List<Object[]> toolCallCounts = mcpAuditLogRepository.countByTool(tenantId, sevenDaysAgo, null);
+        int limit = Math.min(toolCallCounts.size(), 10);
+        for (int i = 0; i < limit; i++) {
+            Object[] row = toolCallCounts.get(i);
+            String toolCode = row[0] == null ? "unknown" : (String) row[0];
+            long callCount = (Long) row[1];
+            topTools.add(ToolStatsResponse.TopTool.builder()
+                    .toolCode(toolCode)
+                    .callCount(callCount)
+                    .build());
+        }
+
+        return ToolStatsResponse.builder()
+                .total(total)
+                .enabledCount(enabledCount)
+                .disabledCount(disabledCount)
+                .byStatus(byStatus)
+                .byCategory(byCategory)
+                .topToolsByCalls7d(topTools)
+                .build();
     }
 
     @Transactional(readOnly = true)
@@ -350,6 +414,9 @@ public class McpToolService {
                 .endpoint(entity.getEndpoint())
                 .beanClass(entity.getBeanClass())
                 .enabled(entity.getEnabled())
+                .status(entity.getStatus())
+                .publishedAt(entity.getPublishedAt())
+                .publishedBy(entity.getPublishedBy())
                 .tags(parseTags(entity.getTags()))
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())

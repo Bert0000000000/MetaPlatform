@@ -24,39 +24,49 @@ public class McpClientConnectionEntity {
     private UUID id;
 
     @Column(name = "tenant_id", nullable = false, length = 64)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String tenantId;
 
-    @Column(nullable = false, length = 256)
-    private String name;
-
-    @Column(name = "server_url", nullable = false, length = 2048)
-    private String serverUrl;
-
-    @Column(name = "base_url", length = 2048)
-    private String baseUrl;
-
-    @Column(name = "client_type", length = 32)
+    @Column(name = "client_type", nullable = false, length = 32)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String clientType;
 
-    @Column(name = "transport_type", nullable = false, length = 20)
+    @Column(name = "name", length = 200)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    private String name;
+
+    @Column(name = "base_url", length = 2048)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    private String baseUrl;
+
+    @Column(name = "server_url", length = 2048)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    private String serverUrl;
+
+    @Column(name = "transport_type", length = 20)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String transportType;
 
-    @Column(nullable = false, length = 20)
-    private String status;
-
     @Column(name = "auth_type", length = 20)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String authType;
 
-    @Column(name = "auth_token", length = 2048)
+    @Column(name = "auth_token", length = 512)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String authToken;
+
+    @Lob
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+    @Column(name = "headers", columnDefinition = "jsonb")
+    private String headers;
 
     @Column(name = "timeout_ms")
     private Integer timeoutMs;
 
     @Lob
     @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    @Column(name = "headers", columnDefinition = "jsonb")
-    private String headers;
+    @Column(name = "config", columnDefinition = "jsonb")
+    private String config;
 
     @Lob
     @JdbcTypeCode(SqlTypes.LONGVARCHAR)
@@ -66,10 +76,9 @@ public class McpClientConnectionEntity {
     @Column(name = "last_connected_at")
     private Instant lastConnectedAt;
 
-    @Lob
-    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    @Column(name = "config", columnDefinition = "jsonb")
-    private String config;
+    @Column(name = "status", length = 20)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    private String status;
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;

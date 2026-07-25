@@ -1,58 +1,59 @@
 package com.metaplatform.iam.entity;
 
 import jakarta.persistence.*;
-import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
 
 @Entity
 @Table(name = "iam_user_settings")
-@Getter
-@Setter
+@Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 public class UserSettingsEntity {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "id", nullable = false, length = 64)
     private String id;
 
-    @Column(name = "user_id", nullable = false, unique = true, length = 64)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "user_id", nullable = false, length = 64)
     private String userId;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "language", nullable = false, length = 16)
-    @Builder.Default
-    private String language = "zh-CN";
+    private String language;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "timezone", nullable = false, length = 64)
-    @Builder.Default
-    private String timezone = "Asia/Shanghai";
+    private String timezone;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "date_format", nullable = false, length = 64)
-    @Builder.Default
-    private String dateFormat = "YYYY-MM-DD HH:mm:ss";
+    private String dateFormat;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "default_page", nullable = false, length = 128)
-    @Builder.Default
-    private String defaultPage = "/dashboard";
+    private String defaultPage;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "theme", nullable = false, length = 16)
-    @Builder.Default
-    private String theme = "light";
+    private String theme;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "layout", nullable = false, length = 1024)
-    @Builder.Default
-    private String layout = "[]";
+    private String layout;
 
-    @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
-    @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
+
 }

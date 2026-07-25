@@ -5,6 +5,8 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.Instant;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 /**
  * Outbox 消息实体（P1-WFE-09），用于可靠事件发布到 Kafka。
@@ -20,6 +22,7 @@ public class WfeOutboxMessageEntity {
 
     @Id
     @Column(name = "id", nullable = false, length = 64)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String id;
 
     @Column(name = "tenant_id", nullable = false, length = 64)
@@ -30,6 +33,7 @@ public class WfeOutboxMessageEntity {
     private String aggregateType = "Task";
 
     @Column(name = "aggregate_id", nullable = false, length = 64)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String aggregateId;
 
     @Column(name = "event_type", nullable = false, length = 128)

@@ -41,7 +41,7 @@ public class RuleSetService {
                 .code(request.getCode())
                 .name(request.getName())
                 .description(request.getDescription())
-                .status(request.getStatus() != null ? request.getStatus() : RuleStatus.ENABLED)
+                .status(request.getStatus() != null ? request.getStatus().name() : RuleStatus.ENABLED.name())
                 .priority(request.getPriority() != null ? request.getPriority() : 0)
                 .enabled(request.getEnabled() != null ? request.getEnabled() : true)
                 .version(1)
@@ -91,7 +91,7 @@ public class RuleSetService {
             entity.setDescription(request.getDescription());
         }
         if (request.getStatus() != null) {
-            entity.setStatus(request.getStatus());
+            entity.setStatus(request.getStatus().name());
         }
         if (request.getPriority() != null) {
             entity.setPriority(request.getPriority());
@@ -155,7 +155,7 @@ public class RuleSetService {
                 .code(entity.getCode())
                 .name(entity.getName())
                 .description(entity.getDescription())
-                .status(entity.getStatus().name())
+                .status(entity.getStatus())
                 .priority(entity.getPriority())
                 .version(entity.getVersion())
                 .enabled(entity.getEnabled())

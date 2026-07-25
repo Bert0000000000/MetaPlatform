@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.Instant;
+import java.util.Map;
 
 @Data
 @Builder
@@ -18,7 +19,7 @@ public class ProcessDefinitionResponse {
     private String processKey;
     private String name;
     private Integer version;
-    private String bpmnXml;
+    private Map<String, Object> bpmnXml;
     private String status;
     private String deployedBy;
     private Instant createdAt;

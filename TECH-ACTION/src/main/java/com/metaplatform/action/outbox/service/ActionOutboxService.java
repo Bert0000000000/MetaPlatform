@@ -15,9 +15,12 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -36,13 +39,13 @@ public class ActionOutboxService {
 
     @Transactional
     public void publish(String tenantId, String aggregateId, String eventType, Object payload, String traceId) {
-        String payloadJson = writePayload(payload);
+        Map<String, Object> payloadMap = writePayload(payload);
         Instant now = Instant.now();
         OutboxMessageEntity message = OutboxMessageEntity.builder()
                 .tenantId(tenantId)
                 .aggregateId(aggregateId)
                 .eventType(eventType)
-                .payload(payloadJson)
+                .payload(payloadMap)
                 .status(OutboxMessageEntity.STATUS_PENDING)
                 .retryCount(0)
                 .maxRetries(OutboxMessageEntity.DEFAULT_MAX_RETRIES)
@@ -69,8 +72,9 @@ public class ActionOutboxService {
 
     private void processSingle(OutboxMessageEntity message, Instant now) {
         try {
+            String payloadJson = toJsonString(message.getPayload());
             ProducerRecord<String, String> record = new ProducerRecord<>(relayTopic, null,
-                    message.getAggregateId(), message.getPayload());
+                    message.getAggregateId(), payloadJson);
             record.headers().add(ActionEventType.TRACE_ID_HEADER, utf8(message.getTraceId()));
             record.headers().add(ActionEventType.TENANT_ID_HEADER, utf8(message.getTenantId()));
             record.headers().add(ActionEventType.EVENT_TYPE_HEADER, utf8(message.getEventType()));
@@ -102,17 +106,26 @@ public class ActionOutboxService {
         outboxMessageRepository.save(message);
     }
 
-    private String writePayload(Object payload) {
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> writePayload(Object payload) {
         if (payload == null) {
-            return "{}";
+            return new LinkedHashMap<>();
         }
-        if (payload instanceof String s) {
-            return s;
+        if (payload instanceof Map<?, ?> map) {
+            return (Map<String, Object>) map;
         }
         try {
-            return objectMapper.writeValueAsString(payload);
+            return objectMapper.readValue(objectMapper.writeValueAsString(payload), Map.class);
         } catch (Exception e) {
             throw new ActionException(ErrorCode.INVALID_PARAM, "outbox payload 序列化失败");
+        }
+    }
+
+    private String toJsonString(Map<String, Object> payload) {
+        try {
+            return objectMapper.writeValueAsString(payload == null ? Map.of() : payload);
+        } catch (Exception e) {
+            return "{}";
         }
     }
 
@@ -124,6 +137,6 @@ public class ActionOutboxService {
     }
 
     private byte[] utf8(String value) {
-        return value == null ? new byte[0] : value.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        return value == null ? new byte[0] : value.getBytes(StandardCharsets.UTF_8);
     }
 }

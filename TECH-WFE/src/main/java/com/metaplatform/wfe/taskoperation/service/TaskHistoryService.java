@@ -1,6 +1,12 @@
 package com.metaplatform.wfe.taskoperation.service;
 
 import com.metaplatform.wfe.common.TenantContext;
+import com.metaplatform.wfe.entity.WfeActivityLogEntity;
+import com.metaplatform.wfe.entity.WfeTaskEntity;
+import com.metaplatform.wfe.entity.WfeTaskHistoryEntity;
+import com.metaplatform.wfe.repository.WfeActivityLogRepository;
+import com.metaplatform.wfe.repository.WfeTaskHistoryRepository;
+import com.metaplatform.wfe.repository.WfeTaskRepository;
 import com.metaplatform.wfe.taskoperation.dto.TaskHistoryEntry;
 import com.metaplatform.wfe.taskoperation.entity.TaskAddSignEntity;
 import com.metaplatform.wfe.taskoperation.entity.TaskDelegationEntity;
@@ -9,22 +15,22 @@ import com.metaplatform.wfe.taskoperation.repository.TaskAddSignRepository;
 import com.metaplatform.wfe.taskoperation.repository.TaskDelegationRepository;
 import com.metaplatform.wfe.taskoperation.repository.TaskUrgeRepository;
 import lombok.RequiredArgsConstructor;
-import org.flowable.engine.HistoryService;
-import org.flowable.engine.history.HistoricActivityInstance;
-import org.flowable.task.api.history.HistoricTaskInstance;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.Date;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class TaskHistoryService {
 
-    private final HistoryService historyService;
+    private final WfeTaskRepository wfeTaskRepository;
+    private final WfeTaskHistoryRepository wfeTaskHistoryRepository;
+    private final WfeActivityLogRepository wfeActivityLogRepository;
     private final TaskDelegationRepository delegationRepository;
     private final TaskAddSignRepository addSignRepository;
     private final TaskUrgeRepository urgeRepository;
@@ -34,6 +40,7 @@ public class TaskHistoryService {
         String tenantId = TenantContext.get();
         List<TaskHistoryEntry> entries = new ArrayList<>();
 
+        // 1. 本地操作历史：DELEGATE / ADDSIGN / URGE
         for (TaskDelegationEntity e : delegationRepository.findByTenantIdAndTaskIdOrderByCreatedAtDesc(tenantId, taskId)) {
             entries.add(TaskHistoryEntry.builder()
                     .type("DELEGATE")
@@ -61,44 +68,51 @@ public class TaskHistoryService {
                     .build());
         }
 
-        // 叠加 Flowable 历史：审批意见 + 任务实例生命周期
-        HistoricTaskInstance historic = historyService.createHistoricTaskInstanceQuery()
-                .taskId(taskId).singleResult();
-        if (historic != null) {
+        // 2. 任务实例生命周期：从自研任务表取任务创建/完成时间
+        wfeTaskRepository.findById(taskId).ifPresent(task -> {
             entries.add(TaskHistoryEntry.builder()
                     .type("TASK_CREATED")
-                    .operator(historic.getAssignee())
-                    .timestamp(toInstant(historic.getCreateTime()))
+                    .operator(task.getAssignee())
+                    .timestamp(task.getCreatedAt())
                     .build());
-            if (historic.getEndTime() != null) {
+            if (task.getCompletedAt() != null) {
                 entries.add(TaskHistoryEntry.builder()
                         .type("TASK_COMPLETED")
-                        .operator(historic.getAssignee())
-                        .timestamp(toInstant(historic.getEndTime()))
+                        .operator(task.getAssignee())
+                        .timestamp(task.getCompletedAt())
                         .build());
             }
-            if (historic.getProcessInstanceId() != null) {
-                List<HistoricActivityInstance> activities = historyService.createHistoricActivityInstanceQuery()
-                        .processInstanceId(historic.getProcessInstanceId())
-                        .list();
-                for (HistoricActivityInstance a : activities) {
-                    if (a.getEndTime() != null && taskId.equals(a.getTaskId())) {
-                        entries.add(TaskHistoryEntry.builder()
-                                .type("ACTIVITY_" + (a.getActivityType() != null ? a.getActivityType() : "UNKNOWN"))
-                                .operator(a.getAssignee())
-                                .timestamp(toInstant(a.getEndTime()))
-                                .build());
-                    }
+        });
+
+        // 3. 任务操作历史：APPROVE / REJECT / TRANSFER / RETURN
+        for (WfeTaskHistoryEntity h : wfeTaskHistoryRepository
+                .findByTenantIdAndTaskIdOrderByCreatedAtDesc(tenantId, taskId)) {
+            entries.add(TaskHistoryEntry.builder()
+                    .type(h.getAction())
+                    .operator(h.getOperator())
+                    .reason(h.getComment())
+                    .timestamp(h.getCreatedAt())
+                    .build());
+        }
+
+        // 4. 活动日志：ACTIVITY_xxx（流程级别的活动记录，按 taskId 过滤）
+        wfeTaskRepository.findById(taskId).ifPresent(task -> {
+            if (task.getProcessInstanceId() != null) {
+                List<WfeActivityLogEntity> activities = wfeActivityLogRepository
+                        .findByTenantIdAndProcessInstanceIdAndTaskId(
+                                tenantId, task.getProcessInstanceId(), taskId);
+                for (WfeActivityLogEntity a : activities) {
+                    entries.add(TaskHistoryEntry.builder()
+                            .type("ACTIVITY_" + (a.getActivityType() != null ? a.getActivityType() : "UNKNOWN"))
+                            .operator(a.getAssignee())
+                            .timestamp(a.getEnteredAt())
+                            .build());
                 }
             }
-        }
+        });
 
         entries.sort(Comparator.comparing(TaskHistoryEntry::getTimestamp,
                 Comparator.nullsLast(Comparator.naturalOrder())));
         return entries;
-    }
-
-    private java.time.Instant toInstant(Date date) {
-        return date != null ? date.toInstant() : null;
     }
 }

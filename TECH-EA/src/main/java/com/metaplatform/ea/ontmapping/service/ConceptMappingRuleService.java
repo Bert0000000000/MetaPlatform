@@ -119,6 +119,25 @@ public class ConceptMappingRuleService {
                 .stream().map(this::toResponse).toList();
     }
 
+    /**
+     * 反查指定架构资产关联的本体概念。
+     *
+     * @param assetType 资产类型（APPLICATION/CAPABILITY/TECH_STACK/INFRASTRUCTURE/DATA_ENTITY/BUSINESS_PROCESS）
+     * @param assetId   资产 UUID
+     * @return 关联的 Ontology 概念 ID 列表（去重）
+     */
+    @Transactional(readOnly = true)
+    public List<String> findConceptIdsByAsset(String assetType, UUID assetId) {
+        if (assetType == null || assetId == null) return List.of();
+        String tenantId = TenantContext.getOrDefault();
+        return ruleRepository
+                .findByTenantIdAndAssetTypeAndAssetIdAndDeletedAtIsNull(tenantId, assetType.toUpperCase(), assetId)
+                .stream()
+                .map(ConceptMappingRuleEntity::getConceptId)
+                .distinct()
+                .toList();
+    }
+
     private ConceptMappingRuleEntity findById(UUID id) {
         String tenantId = TenantContext.getOrDefault();
         return ruleRepository.findByIdAndTenantIdAndDeletedAtIsNull(id, tenantId)

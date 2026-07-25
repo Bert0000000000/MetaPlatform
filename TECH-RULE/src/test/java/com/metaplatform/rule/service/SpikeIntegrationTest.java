@@ -11,8 +11,10 @@ import com.metaplatform.rule.entity.ActionType;
 import com.metaplatform.rule.entity.RuleDefinitionEntity;
 import com.metaplatform.rule.entity.RuleSetEntity;
 import com.metaplatform.rule.entity.RuleStatus;
+import com.metaplatform.rule.monitoring.service.ExecutionLogService;
 import com.metaplatform.rule.repository.RuleDefinitionRepository;
 import com.metaplatform.rule.repository.RuleSetRepository;
+import com.metaplatform.rule.statistics.service.StatisticsService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -29,8 +31,9 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 
@@ -42,6 +45,10 @@ import static org.mockito.Mockito.when;
  * 2. 创建 Rule "vip-upgrade"，condition: amount >= 100000，action: SET_TAG:VIP
  * 3. 执行规则集，输入 {amount: 120000}，验证 matched=true
  * 4. 执行规则集，输入 {amount: 50000}，验证 matched=false
+ *
+ * <p>P0 改造后 RuleExecutionService 委托给 RuleEngineService#executeReadOnly，
+ * 故需要额外注入 RuleEngineService 及其新依赖（StatisticsService / ExecutionLogService /
+ * OntologyRelationResolver）。</p>
  */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -56,6 +63,18 @@ class SpikeIntegrationTest {
     @Mock
     private OntologyReferenceValidator ontologyReferenceValidator;
 
+    @Mock
+    private RuleOutboxService ruleOutboxService;
+
+    @Mock
+    private StatisticsService statisticsService;
+
+    @Mock
+    private ExecutionLogService executionLogService;
+
+    @Mock
+    private OntologyRelationResolver ontologyRelationResolver;
+
     @Spy
     private ObjectMapper objectMapper = new ObjectMapper();
 
@@ -66,6 +85,10 @@ class SpikeIntegrationTest {
     private RuleDefinitionService ruleDefinitionService;
 
     @InjectMocks
+    private RuleEngineService ruleEngineService;
+
+    // 注：@InjectMocks 不会自动将上面的 ruleEngineService 注入到 RuleExecutionService，
+    // 故在 setUp() 中手动构造，确保委托链路连通。
     private RuleExecutionService ruleExecutionService;
 
     private RuleSetEntity rulesetEntity;
@@ -82,7 +105,7 @@ class SpikeIntegrationTest {
                 .tenantId(TenantContext.DEFAULT_TENANT_ID)
                 .code("customer_tier")
                 .name("客户分级规则集")
-                .status(RuleStatus.ENABLED)
+                .status(RuleStatus.ENABLED.name())
                 .priority(0)
                 .version(1)
                 .deleted(false)
@@ -95,8 +118,8 @@ class SpikeIntegrationTest {
                 .code("vip_upgrade")
                 .name("VIP升级规则")
                 .conditionExpr("amount >= 100000")
-                .actionType(ActionType.SET_TAG)
-                .actionConfig(objectMapper.valueToTree(Map.of("tag", "VIP")))
+                .actionType(ActionType.SET_TAG.name())
+                .actionConfig(Map.of("tag", "VIP"))
                 .priority(0)
                 .enabled(true)
                 .deleted(false)
@@ -105,6 +128,20 @@ class SpikeIntegrationTest {
         // 公共 Mock 设置
         when(ruleSetRepository.existsByTenantIdAndCodeAndDeletedFalse(
                 TenantContext.DEFAULT_TENANT_ID, "customer_tier")).thenReturn(false);
+
+        // P0-1/P0-2：stub 统计与日志写入为 no-op，避免影响断言
+        doNothing().when(statisticsService).recordExecution(
+                anyString(), anyString(), anyBoolean(), anyBoolean(), anyLong());
+        doNothing().when(executionLogService).writeLog(
+                anyString(), anyString(), anyString(), anyString(),
+                anyBoolean(), anyLong(), any(), any(), any());
+
+        // P0-3：stub OntologyRelationResolver.enrich 直通原始输入
+        when(ontologyRelationResolver.enrich(any(), any())).thenAnswer(inv -> inv.getArgument(0));
+
+        // 手动构造 RuleExecutionService，注入 ruleEngineService（@InjectMocks 不会自动跨实例链式注入）
+        ruleExecutionService = new RuleExecutionService(ruleEngineService);
+
         when(ruleSetRepository.save(any(RuleSetEntity.class))).thenReturn(rulesetEntity);
         when(ruleSetRepository.findByIdAndDeletedFalse("rs-001")).thenReturn(Optional.of(rulesetEntity));
 

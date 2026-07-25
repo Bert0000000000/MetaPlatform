@@ -1,0 +1,47 @@
+spring:
+  cloud:
+    compatibility-verifier:
+      enabled: false
+    nacos:
+      discovery:
+        enabled: false
+      config:
+        enabled: false
+  config:
+    import: []
+  autoconfigure:
+    exclude:
+      - com.alibaba.cloud.nacos.registry.NacosServiceRegistryAutoConfiguration
+      - com.alibaba.cloud.nacos.discovery.NacosDiscoveryAutoConfiguration
+      - com.alibaba.cloud.nacos.NacosConfigAutoConfiguration
+      - org.springframework.cloud.autoconfigure.RefreshAutoConfiguration
+      - org.springframework.cloud.context.refresh.ContextRefresherAutoConfiguration
+      - com.alibaba.cloud.ai.agent.nacos.config.NacosAgentConfig
+      - com.alibaba.cloud.ai.autoconfigure.nacosconfig.NacosConfigAutoConfiguration
+      - com.alibaba.cloud.ai.autoconfigure.nacos.NacosMcServerAutoConfiguration
+      - com.alibaba.cloud.ai.a2a.autoconfigure.nacos.NacosA2aDiscoveryAutoConfiguration
+      - com.alibaba.cloud.ai.a2a.autoconfigure.nacos.NacosA2aRegistryAutoConfiguration
+      - org.springframework.ai.vectorstore.milvus.autoconfigure.MilvusVectorStoreAutoConfiguration
+      - org.springframework.ai.mcp.server.autoconfigure.McpServerAutoConfiguration
+      - org.springframework.ai.mcp.client.autoconfigure.McpClientAutoConfiguration
+  ai:
+    dashscope:
+      api-key: ${DASHSCOPE_API_KEY:sk-placeholder-for-dev-only-not-real}
+  datasource:
+    url: jdbc:postgresql://localhost:5432/metaplatform_a2a
+    username: meta
+    password: meta
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
+    show-sql: false
+
+mate:
+  a2a:
+    # 开发环境启用 mock 模式（不依赖上游服务）
+    agent-base-url: ""
+    agent-service-base-url: ""
+    wfe-base-url: ""

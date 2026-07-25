@@ -1,5 +1,9 @@
 package com.metaplatform.mcp.monitor.controller;
 
+import com.metaplatform.mcp.IamTestConfig;
+import org.springframework.context.annotation.Import;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+
 import com.metaplatform.mcp.monitor.dto.ConnectionMonitorResponse;
 import com.metaplatform.mcp.monitor.service.ConnectionMonitorService;
 import com.metaplatform.mcp.server.dto.ConnectionStatusResponse;
@@ -18,6 +22,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+@Import(IamTestConfig.class)
+@AutoConfigureMockMvc(addFilters = false)
 @WebMvcTest(ConnectionMonitorController.class)
 class ConnectionMonitorControllerTest {
 

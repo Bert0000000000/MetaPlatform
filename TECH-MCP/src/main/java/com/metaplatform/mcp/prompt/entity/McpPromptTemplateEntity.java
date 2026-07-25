@@ -24,32 +24,46 @@ public class McpPromptTemplateEntity {
     private UUID id;
 
     @Column(name = "tenant_id", nullable = false, length = 64)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String tenantId;
 
-    @Column(nullable = false, length = 256)
+    @Column(nullable = false, length = 200)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String name;
 
+    @Column(nullable = false, length = 128)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    private String code;
+
+    @Column(length = 32)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    private String category;
+
+    @Column(length = 64)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    private String language;
+
+    @Lob
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     @Column(columnDefinition = "TEXT")
     private String description;
 
     @Lob
     @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    @Column(nullable = false, columnDefinition = "TEXT")
+    @Column(name = "template", columnDefinition = "TEXT")
     private String template;
 
     @Lob
     @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    @Column(columnDefinition = "jsonb")
+    @Column(name = "variables", columnDefinition = "jsonb")
     private String variables;
 
     @Column(nullable = false)
     private Integer version;
 
     @Column(nullable = false, length = 32)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String status;
-
-    @Column(length = 64)
-    private String category;
 
     @Column(name = "created_at")
     private Instant createdAt;

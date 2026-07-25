@@ -1,4 +1,11 @@
 {
+  "name": "@metaplatform/ops-tools",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Mate Platform 运维/迁移/数据探查 Node 工具集（ES / Milvus / Kafka / MinIO / Neo4j 客户端）。前端 monorepo 入口在 metaplatform-frontend/。",
+  "scripts": {
+    "tools:list": "echo \"占位脚本：未来 ops 工具入口\""
+  },
   "dependencies": {
     "@elastic/elasticsearch": "^9.4.2",
     "@zilliz/milvus2-sdk-node": "^3.0.3",

@@ -46,8 +46,8 @@ public class DecisionTableRowService {
                 .tableId(tableId)
                 .tenantId(tenantId)
                 .rowOrder(order)
-                .inputValues(writeJson(request.getInputValues()))
-                .outputValues(writeJson(request.getOutputValues()))
+                .inputValues(request.getInputValues())
+                .outputValues(request.getOutputValues())
                 .enabled(request.getEnabled() != null ? request.getEnabled() : true)
                 .build();
 
@@ -69,8 +69,8 @@ public class DecisionTableRowService {
                     .tableId(tableId)
                     .tenantId(tenantId)
                     .rowOrder(order)
-                    .inputValues(writeJson(row.getInputValues()))
-                    .outputValues(writeJson(row.getOutputValues()))
+                    .inputValues(row.getInputValues())
+                    .outputValues(row.getOutputValues())
                     .enabled(row.getEnabled() != null ? row.getEnabled() : true)
                     .build();
             results.add(toResponse(rowRepository.save(entity)));
@@ -90,8 +90,8 @@ public class DecisionTableRowService {
     public DecisionTableRowResponse updateRow(String tableId, String rowId, UpdateRowRequest request) {
         DecisionTableRowEntity entity = findRow(tableId, rowId);
         if (request.getRowOrder() != null) entity.setRowOrder(request.getRowOrder());
-        if (request.getInputValues() != null) entity.setInputValues(writeJson(request.getInputValues()));
-        if (request.getOutputValues() != null) entity.setOutputValues(writeJson(request.getOutputValues()));
+        if (request.getInputValues() != null) entity.setInputValues(request.getInputValues());
+        if (request.getOutputValues() != null) entity.setOutputValues(request.getOutputValues());
         if (request.getEnabled() != null) entity.setEnabled(request.getEnabled());
         return toResponse(rowRepository.save(entity));
     }
@@ -111,8 +111,8 @@ public class DecisionTableRowService {
 
         List<ValidationResultDto.RowValidationError> errors = new ArrayList<>();
         for (DecisionTableRowEntity row : rows) {
-            Map<String, Object> inputs = readMap(row.getInputValues());
-            Map<String, Object> outputs = readMap(row.getOutputValues());
+            Map<String, Object> inputs = row.getInputValues() != null ? row.getInputValues() : Map.of();
+            Map<String, Object> outputs = row.getOutputValues() != null ? row.getOutputValues() : Map.of();
             // Validate input values contain all required input fields
             for (DecisionTableColumnDto col : inputCols) {
                 if (col.getField() != null && !inputs.containsKey(col.getField())) {
@@ -169,14 +169,14 @@ public class DecisionTableRowService {
         return toResponse(entity);
     }
 
-    /** 读取行的 inputValues JSON 为 Map。 */
+    /** 读取行的 inputValues Map。 */
     public Map<String, Object> readInputMap(DecisionTableRowEntity row) {
-        return readMap(row.getInputValues());
+        return row.getInputValues();
     }
 
-    /** 读取行的 outputValues JSON 为 Map。 */
+    /** 读取行的 outputValues Map。 */
     public Map<String, Object> readOutputMap(DecisionTableRowEntity row) {
-        return readMap(row.getOutputValues());
+        return row.getOutputValues();
     }
 
     private DecisionTableRowEntity findRow(String tableId, String rowId) {
@@ -184,29 +184,13 @@ public class DecisionTableRowService {
                 .orElseThrow(() -> new RuleException(ErrorCode.DECISION_TABLE_ROW_NOT_FOUND));
     }
 
-    private List<DecisionTableColumnDto> readColumns(String json) {
-        if (json == null || json.isBlank()) return List.of();
+    private List<DecisionTableColumnDto> readColumns(Map<String, Object> map) {
+        if (map == null) return List.of();
         try {
+            String json = objectMapper.writeValueAsString(map);
             return objectMapper.readValue(json, new TypeReference<>() {});
         } catch (Exception e) {
             return List.of();
-        }
-    }
-
-    private Map<String, Object> readMap(String json) {
-        if (json == null || json.isBlank()) return Map.of();
-        try {
-            return objectMapper.readValue(json, new TypeReference<>() {});
-        } catch (Exception e) {
-            return Map.of();
-        }
-    }
-
-    private String writeJson(Object value) {
-        try {
-            return objectMapper.writeValueAsString(value);
-        } catch (Exception e) {
-            throw new RuleException(ErrorCode.INTERNAL_ERROR, "JSON 序列化失败: " + e.getMessage());
         }
     }
 
@@ -215,8 +199,8 @@ public class DecisionTableRowService {
                 .id(entity.getId())
                 .tableId(entity.getTableId())
                 .rowOrder(entity.getRowOrder())
-                .inputValues(readMap(entity.getInputValues()))
-                .outputValues(readMap(entity.getOutputValues()))
+                .inputValues(entity.getInputValues())
+                .outputValues(entity.getOutputValues())
                 .enabled(entity.getEnabled())
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())

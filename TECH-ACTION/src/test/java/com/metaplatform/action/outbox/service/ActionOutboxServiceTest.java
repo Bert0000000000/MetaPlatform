@@ -60,7 +60,7 @@ class ActionOutboxServiceTest {
         assertThat(saved.getRetryCount()).isZero();
         assertThat(saved.getTraceId()).isEqualTo("trace-1");
         assertThat(saved.getCreatedAt()).isAfterOrEqualTo(before);
-        assertThat(saved.getPayload()).contains("COMPLETED");
+        assertThat(saved.getPayload()).containsEntry("status", "COMPLETED");
     }
 
     @Test
@@ -119,13 +119,13 @@ class ActionOutboxServiceTest {
     }
 
     @Test
-    void publish_shouldSaveStringPayloadAsIs() {
+    void publish_shouldSaveMapPayload() {
         actionOutboxService.publish("tenant-default", "exec-1", ActionEventType.ACTION_EXECUTED,
-                "{\"raw\":\"payload\"}", "trace-1");
+                Map.of("raw", "payload"), "trace-1");
 
         ArgumentCaptor<OutboxMessageEntity> captor = ArgumentCaptor.forClass(OutboxMessageEntity.class);
         verify(outboxMessageRepository).save(captor.capture());
-        assertThat(captor.getValue().getPayload()).isEqualTo("{\"raw\":\"payload\"}");
+        assertThat(captor.getValue().getPayload()).containsEntry("raw", "payload");
     }
 
     private OutboxMessageEntity buildMessage(int retryCount, int maxRetries) {
@@ -134,7 +134,7 @@ class ActionOutboxServiceTest {
                 .tenantId("tenant-default")
                 .aggregateId("exec-1")
                 .eventType(ActionEventType.ACTION_EXECUTED)
-                .payload("{\"status\":\"COMPLETED\"}")
+                .payload(java.util.Map.of("status", "COMPLETED"))
                 .status(OutboxMessageEntity.STATUS_PENDING)
                 .retryCount(retryCount)
                 .maxRetries(maxRetries)

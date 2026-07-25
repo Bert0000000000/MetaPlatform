@@ -2,10 +2,41 @@ server:
   port: 8104
 
 spring:
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/metaplatformaction?stringtype=varchar
+    username: ${DB_USER:meta}
+    password: ${DB_PASSWORD:meta}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        type:
+          preferred_jdbc_type_code_for_string: 12
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: false
+    open-in-view: false
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
   application:
     name: tech-action
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:dev}
+  cloud:
+    nacos:
+      discovery:
+        server-addr: ${NACOS_ADDR:localhost:8848}
+        namespace: metaplatform
+      config:
+        server-addr: ${NACOS_ADDR:localhost:8848}
+        namespace: metaplatform
+        file-extension: yaml
+  config:
+    import:
+      - optional:nacos:${spring.application.name}.yaml
 
 logging:
   level:

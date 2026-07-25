@@ -8,6 +8,8 @@ import lombok.NoArgsConstructor;
 
 import java.time.Instant;
 import java.util.UUID;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "mcp_audit_log")
@@ -22,12 +24,14 @@ public class McpAuditLogEntity {
     private UUID id;
 
     @Column(name = "tenant_id", nullable = false, length = 64)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String tenantId;
 
     @Column(name = "tool_id")
     private UUID toolId;
 
     @Column(name = "tool_code", length = 128)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String toolCode;
 
     @Column(name = "server_id")
@@ -37,6 +41,7 @@ public class McpAuditLogEntity {
     private UUID clientId;
 
     @Column(name = "invocation_type", length = 32)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String invocationType;
 
     @Column(name = "input_tokens", nullable = false)
@@ -49,6 +54,7 @@ public class McpAuditLogEntity {
     private Long durationMs;
 
     @Column(nullable = false, length = 32)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String status;
 
     @Column(name = "error_message", columnDefinition = "TEXT")

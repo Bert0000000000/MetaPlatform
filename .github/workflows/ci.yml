@@ -8,72 +8,71 @@ on:
 
 jobs:
   java-backend:
+    name: Java Backend (${{ matrix.module }})
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         module:
-          - TECH-IAM
-          - TECH-GW
-          - TECH-OBS
-          - TECH-EA
+          - APP-COPILOT
+          - APP-DASHBOARD
+          - APP-DW
+          - APP-KB
+          - TECH-A2A
           - TECH-ACTION
+          - TECH-AGENT
+          - TECH-DATA
+          - TECH-EA
+          - TECH-GW
+          - TECH-IAM
+          - TECH-LLMGW
+          - TECH-MCP
+          - TECH-MSG
+          - TECH-OBS
+          - TECH-ONT
+          - TECH-RAG
+          - TECH-RULE
+          - TECH-WFE
     steps:
-      - uses: actions/checkout@v4
-      - name: Set up JDK 21
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up JDK 25
         uses: actions/setup-java@v4
         with:
-          java-version: '21'
+          java-version: '25'
           distribution: 'temurin'
           cache: maven
       - name: Run Maven tests (${{ matrix.module }})
         working-directory: ./${{ matrix.module }}
         run: mvn -B test
 
-  python-backend:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        module:
-          - TECH-LLMGW
-          - TECH-A2A
-          - TECH-AGENT
-          - TECH-RAG
-          - TECH-DATA
-    steps:
-      - uses: actions/checkout@v4
-      - name: Set up Python 3.13
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.13'
-      - name: Install dependencies and test (${{ matrix.module }})
-        working-directory: ./${{ matrix.module }}
-        run: |
-          python -m pip install --upgrade pip
-          pip install -e ".[dev]" || pip install -r requirements-dev.txt || pip install pytest httpx
-          pytest
-
   frontend:
+    name: Frontend (metaplatform-frontend)
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        module:
-          - APP-DASHBOARD
-          - APP-SUPERAI
-          - APP-APPHUB
-          - APP-DW
-          - APP-ARCH
-          - APP-ONTSTUDIO
-          - APP-MCPHUB
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: npm
-          cache-dependency-path: ./${{ matrix.module }}/package-lock.json
-      - name: Install dependencies and lint (${{ matrix.module }})
-        working-directory: ./${{ matrix.module }}
-        run: |
-          npm ci
-          npm run lint
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/share/pnpm/store
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('metaplatform-frontend/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+      - name: Install dependencies
+        working-directory: ./metaplatform-frontend
+        run: pnpm install --frozen-lockfile
+      - name: Typecheck
+        working-directory: ./metaplatform-frontend
+        run: pnpm typecheck
+      - name: Build
+        working-directory: ./metaplatform-frontend
+        run: pnpm build

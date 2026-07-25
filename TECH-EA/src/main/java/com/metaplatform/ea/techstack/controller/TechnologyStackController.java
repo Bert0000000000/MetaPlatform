@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/v1/ea/technology-stacks")
+@RequestMapping({"/api/v1/ea/technology-stacks", "/api/v1/ea/tech-stacks"})
 @RequiredArgsConstructor
 public class TechnologyStackController {
 

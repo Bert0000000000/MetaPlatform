@@ -1,0 +1,74 @@
+server:
+  port: 8701
+
+spring:
+  application:
+    name: mate-data-server
+
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/metaplatform_data?stringtype=varchar
+    username: ${DB_USER:meta}
+    password: ${DB_PASSWORD:meta}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        type:
+          preferred_jdbc_type_code_for_string: 12
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: false
+    open-in-view: false
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+
+  batch:
+    job:
+      enabled: false
+    jdbc:
+      initialize-schema: embedded
+
+  cloud:
+    nacos:
+      discovery:
+        server-addr: ${NACOS_ADDR:localhost:8848}
+        namespace: metaplatform
+        # Nacos 3.0+ gRPC 端口
+        grpc-port: 9848
+      config:
+        server-addr: ${NACOS_ADDR:localhost:8848}
+        # Nacos 3.0+ Config 走 9849
+        grpc-port: 9849
+        namespace: metaplatform
+        file-extension: yaml
+  config:
+    import:
+      - optional:nacos:${spring.application.name}.yaml
+
+  kafka:
+    bootstrap-servers: ${KAFKA_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+    consumer:
+      group-id: mate-data-server
+      auto-offset-reset: latest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+
+# 数据集成服务配置
+mate:
+  data:
+    # AES-256 凭证加密密钥（SHA-256 派生 32 字节）
+    data-encryption-key: ${DATA_ENCRYPTION_KEY:metaplatform-data-key-2026}
+    # 数据源连接测试超时（秒）
+    connection-test-timeout: 5s
+    # SQL 查询最大返回行数
+    query-max-rows: 10000
+    # Kafka topic：数据集成事件发布
+    kafka-topic: data-integration-events

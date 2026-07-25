@@ -9,7 +9,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
@@ -29,8 +29,8 @@ public class RouteResponse {
     private List<Map<String, Object>> filters;
     private Integer priority;
     private Boolean enabled;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
+    private Instant createdAt;
+    private Instant updatedAt;
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
     private static final TypeReference<List<Map<String, Object>>> listTypeRef = new TypeReference<>() {};

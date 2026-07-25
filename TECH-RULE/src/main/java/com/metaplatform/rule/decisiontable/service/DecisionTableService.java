@@ -24,7 +24,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Slf4j
@@ -62,8 +64,8 @@ public class DecisionTableService {
                 .code(request.getCode())
                 .description(request.getDescription())
                 .hitPolicy(hitPolicy)
-                .inputColumns(writeJson(inputCols))
-                .outputColumns(writeJson(outputCols))
+                .inputColumns(toMap(inputCols))
+                .outputColumns(toMap(outputCols))
                 .status("DRAFT")
                 .version(1)
                 .createdBy(TenantContext.getUserId())
@@ -117,11 +119,11 @@ public class DecisionTableService {
         }
         if (request.getInputColumns() != null) {
             assignColumnIds(request.getInputColumns(), TYPE_INPUT);
-            entity.setInputColumns(writeJson(request.getInputColumns()));
+            entity.setInputColumns(toMap(request.getInputColumns()));
         }
         if (request.getOutputColumns() != null) {
             assignColumnIds(request.getOutputColumns(), TYPE_OUTPUT);
-            entity.setOutputColumns(writeJson(request.getOutputColumns()));
+            entity.setOutputColumns(toMap(request.getOutputColumns()));
         }
         entity.setUpdatedBy(TenantContext.getUserId());
 
@@ -156,13 +158,13 @@ public class DecisionTableService {
                 .build();
 
         if (TYPE_INPUT.equals(columnType)) {
-            List<DecisionTableColumnDto> cols = readJson(entity.getInputColumns());
+            List<DecisionTableColumnDto> cols = fromMap(entity.getInputColumns());
             cols.add(column);
-            entity.setInputColumns(writeJson(cols));
+            entity.setInputColumns(toMap(cols));
         } else if (TYPE_OUTPUT.equals(columnType)) {
-            List<DecisionTableColumnDto> cols = readJson(entity.getOutputColumns());
+            List<DecisionTableColumnDto> cols = fromMap(entity.getOutputColumns());
             cols.add(column);
-            entity.setOutputColumns(writeJson(cols));
+            entity.setOutputColumns(toMap(cols));
         } else {
             throw new RuleException(ErrorCode.INVALID_PARAM, "columnType 必须为 INPUT 或 OUTPUT");
         }
@@ -221,8 +223,8 @@ public class DecisionTableService {
 
     private boolean updateColumnInList(DecisionTableEntity entity, String type, String colId,
                                         UpdateColumnRequest request) {
-        String json = TYPE_INPUT.equals(type) ? entity.getInputColumns() : entity.getOutputColumns();
-        List<DecisionTableColumnDto> cols = readJson(json);
+        Map<String, Object> map = TYPE_INPUT.equals(type) ? entity.getInputColumns() : entity.getOutputColumns();
+        List<DecisionTableColumnDto> cols = fromMap(map);
         boolean found = false;
         for (DecisionTableColumnDto col : cols) {
             if (colId.equals(col.getId())) {
@@ -236,23 +238,23 @@ public class DecisionTableService {
         }
         if (found) {
             if (TYPE_INPUT.equals(type)) {
-                entity.setInputColumns(writeJson(cols));
+                entity.setInputColumns(toMap(cols));
             } else {
-                entity.setOutputColumns(writeJson(cols));
+                entity.setOutputColumns(toMap(cols));
             }
         }
         return found;
     }
 
     private boolean removeColumnFromList(DecisionTableEntity entity, String type, String colId) {
-        String json = TYPE_INPUT.equals(type) ? entity.getInputColumns() : entity.getOutputColumns();
-        List<DecisionTableColumnDto> cols = readJson(json);
+        Map<String, Object> map = TYPE_INPUT.equals(type) ? entity.getInputColumns() : entity.getOutputColumns();
+        List<DecisionTableColumnDto> cols = fromMap(map);
         boolean removed = cols.removeIf(col -> colId.equals(col.getId()));
         if (removed) {
             if (TYPE_INPUT.equals(type)) {
-                entity.setInputColumns(writeJson(cols));
+                entity.setInputColumns(toMap(cols));
             } else {
-                entity.setOutputColumns(writeJson(cols));
+                entity.setOutputColumns(toMap(cols));
             }
         }
         return removed;
@@ -273,29 +275,37 @@ public class DecisionTableService {
         }
     }
 
-    private String writeJson(Object value) {
+    private Map<String, Object> toMap(List<DecisionTableColumnDto> cols) {
         try {
-            return objectMapper.writeValueAsString(value);
+            String json = objectMapper.writeValueAsString(cols);
+            if (json == null || json.isBlank()) {
+                return new HashMap<>();
+            }
+            return objectMapper.readValue(json, new TypeReference<>() {});
         } catch (Exception e) {
             throw new RuleException(ErrorCode.INTERNAL_ERROR, "JSON 序列化失败: " + e.getMessage());
         }
     }
 
-    private List<DecisionTableColumnDto> readJson(String json) {
-        if (json == null || json.isBlank()) {
+    private List<DecisionTableColumnDto> fromMap(Map<String, Object> map) {
+        if (map == null) {
             return new ArrayList<>();
         }
         try {
+            String json = objectMapper.writeValueAsString(map);
+            if (json == null || json.isBlank()) {
+                return new ArrayList<>();
+            }
             return objectMapper.readValue(json, new TypeReference<>() {});
         } catch (Exception e) {
-            log.warn("Failed to parse decision table columns JSON: {}", e.getMessage());
+            log.warn("Failed to parse decision table columns from Map: {}", e.getMessage());
             return new ArrayList<>();
         }
     }
 
     private DecisionTableResponse toResponse(DecisionTableEntity entity) {
-        List<DecisionTableColumnDto> inputCols = readJson(entity.getInputColumns());
-        List<DecisionTableColumnDto> outputCols = readJson(entity.getOutputColumns());
+        List<DecisionTableColumnDto> inputCols = fromMap(entity.getInputColumns());
+        List<DecisionTableColumnDto> outputCols = fromMap(entity.getOutputColumns());
 
         // V11-03：合并 columns，便于前端直接消费
         List<DecisionTableColumnDto> allColumns = new ArrayList<>(inputCols.size() + outputCols.size());

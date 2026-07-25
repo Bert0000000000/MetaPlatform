@@ -7,31 +7,37 @@ import com.metaplatform.wfe.common.TraceContext;
 import com.metaplatform.wfe.dto.TaskActionRequest;
 import com.metaplatform.wfe.dto.TaskActionResponse;
 import com.metaplatform.wfe.dto.TaskResponse;
+import com.metaplatform.wfe.engine.WfeStateMachineEngine;
+import com.metaplatform.wfe.entity.WfeTaskCommentEntity;
+import com.metaplatform.wfe.entity.WfeTaskEntity;
+import com.metaplatform.wfe.entity.WfeTaskHistoryEntity;
 import com.metaplatform.wfe.exception.WfeException;
+import com.metaplatform.wfe.repository.WfeTaskCommentRepository;
+import com.metaplatform.wfe.repository.WfeTaskHistoryRepository;
+import com.metaplatform.wfe.repository.WfeTaskRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.flowable.engine.HistoryService;
-import org.flowable.engine.RuntimeService;
-import org.flowable.engine.TaskService;
-import org.flowable.task.api.Task;
-import org.flowable.task.api.TaskQuery;
-import org.flowable.task.api.history.HistoricTaskInstance;
-import org.flowable.task.api.history.HistoricTaskInstanceQuery;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
-import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class WfeTaskService {
 
-    private final TaskService taskService;
-    private final HistoryService historyService;
-    private final RuntimeService runtimeService;
+    private static final String STATUS_ACTIVE = "ACTIVE";
+    private static final String STATUS_COMPLETED = "COMPLETED";
+
+    private final WfeTaskRepository wfeTaskRepository;
+    private final WfeTaskHistoryRepository wfeTaskHistoryRepository;
+    private final WfeTaskCommentRepository wfeTaskCommentRepository;
+    private final WfeStateMachineEngine wfeStateMachineEngine;
     private final IamIntegrationService iamIntegrationService;
     private final WfeOutboxService wfeOutboxService;
 
@@ -40,69 +46,71 @@ public class WfeTaskService {
     // ════════════════════════════════════════════
 
     public PageResponse<TaskResponse> getTodoTasks(String userId, int page, int size) {
-        int firstResult = Math.max(0, (page - 1) * size);
-        int maxResults = Math.max(1, size);
+        String tenantId = TenantContext.get();
+        int safePage = Math.max(0, page - 1);
+        int safeSize = Math.max(1, size);
+        PageRequest pageRequest = PageRequest.of(safePage, safeSize,
+                Sort.by(Sort.Direction.DESC, "createdAt"));
 
-        TaskQuery query = taskService.createTaskQuery()
-                .taskAssignee(userId)
-                .active()
-                .orderByTaskCreateTime()
-                .desc();
+        Page<WfeTaskEntity> result = wfeTaskRepository
+                .findByTenantIdAndAssigneeAndStatus(tenantId, userId, STATUS_ACTIVE, pageRequest);
 
-        long total = query.count();
-        List<Task> tasks = query.listPage(firstResult, maxResults);
-
-        List<TaskResponse> items = tasks.stream().map(this::toResponse).toList();
+        List<TaskResponse> items = result.getContent().stream().map(this::toResponse).toList();
 
         return PageResponse.<TaskResponse>builder()
                 .items(items)
-                .total(total)
+                .total(result.getTotalElements())
                 .page(page)
                 .pageSize(size)
-                .totalPages((total + maxResults - 1) / maxResults)
+                .totalPages(result.getTotalPages())
                 .build();
     }
 
     public PageResponse<TaskResponse> getDoneTasks(String userId, int page, int size) {
-        int firstResult = Math.max(0, (page - 1) * size);
-        int maxResults = Math.max(1, size);
+        String tenantId = TenantContext.get();
+        int safePage = Math.max(0, page - 1);
+        int safeSize = Math.max(1, size);
+        PageRequest pageRequest = PageRequest.of(safePage, safeSize,
+                Sort.by(Sort.Direction.DESC, "createdAt"));
 
-        HistoricTaskInstanceQuery query = historyService.createHistoricTaskInstanceQuery()
-                .taskAssignee(userId)
-                .finished()
-                .orderByHistoricTaskInstanceEndTime()
-                .desc();
+        // 已办任务：当前用户作为 assignee 操作过的审批记录
+        Page<WfeTaskHistoryEntity> result = wfeTaskHistoryRepository
+                .findByTenantIdAndAssigneeAndActionIn(
+                        tenantId, userId,
+                        List.of("APPROVE", "REJECT", "TRANSFER", "RETURN"),
+                        pageRequest);
 
-        long total = query.count();
-        List<HistoricTaskInstance> tasks = query.listPage(firstResult, maxResults);
-
-        List<TaskResponse> items = tasks.stream().map(this::toResponse).toList();
+        List<TaskResponse> items = result.getContent().stream().map(this::toResponse).toList();
 
         return PageResponse.<TaskResponse>builder()
                 .items(items)
-                .total(total)
+                .total(result.getTotalElements())
                 .page(page)
                 .pageSize(size)
-                .totalPages((total + maxResults - 1) / maxResults)
+                .totalPages(result.getTotalPages())
                 .build();
     }
 
     public TaskResponse getTaskById(String taskId) {
-        HistoricTaskInstance task = historyService.createHistoricTaskInstanceQuery()
-                .taskId(taskId)
-                .singleResult();
-        if (task == null) {
-            throw new WfeException(ErrorCode.TASK_NOT_FOUND);
-        }
-        return toResponse(task);
+        // 优先从活动/已完成任务表查询
+        return wfeTaskRepository.findById(taskId)
+                .map(this::toResponse)
+                .orElseGet(() -> {
+                    // 不存在则从历史表查最新一条
+                    String tenantId = TenantContext.get();
+                    List<WfeTaskHistoryEntity> histories = wfeTaskHistoryRepository
+                            .findByTenantIdAndTaskIdOrderByCreatedAtDesc(tenantId, taskId);
+                    if (histories.isEmpty()) {
+                        throw new WfeException(ErrorCode.TASK_NOT_FOUND);
+                    }
+                    return toResponse(histories.get(0));
+                });
     }
 
     public List<TaskResponse> getTasksByProcessInstance(String processInstanceId) {
-        List<HistoricTaskInstance> tasks = historyService.createHistoricTaskInstanceQuery()
-                .processInstanceId(processInstanceId)
-                .orderByTaskCreateTime()
-                .desc()
-                .list();
+        String tenantId = TenantContext.get();
+        List<WfeTaskEntity> tasks = wfeTaskRepository
+                .findByTenantIdAndProcessInstanceIdOrderByCreatedAtDesc(tenantId, processInstanceId);
         return tasks.stream().map(this::toResponse).toList();
     }
 
@@ -122,10 +130,9 @@ public class WfeTaskService {
             throw new WfeException(ErrorCode.INVALID_PARAM, "转交操作必须指定 transferTo");
         }
 
-        Task task = taskService.createTaskQuery().taskId(taskId).singleResult();
-        if (task == null) {
-            throw new WfeException(ErrorCode.TASK_NOT_FOUND);
-        }
+        // 从自研任务表查询 ACTIVE 任务
+        WfeTaskEntity task = wfeTaskRepository.findByIdAndStatus(taskId, STATUS_ACTIVE)
+                .orElseThrow(() -> new WfeException(ErrorCode.TASK_NOT_FOUND));
 
         String tenantId = TenantContext.get();
         String userId = TenantContext.getUserId();
@@ -143,10 +150,10 @@ public class WfeTaskService {
 
         try {
             switch (action) {
-                case "APPROVE" -> doApprove(taskId, processInstanceId, comment);
-                case "REJECT" -> doReject(taskId, processInstanceId, comment);
-                case "TRANSFER" -> doTransfer(taskId, processInstanceId, comment, request.getTransferTo());
-                case "RETURN" -> doReturn(taskId, processInstanceId, comment);
+                case "APPROVE" -> doApprove(taskId, userId, comment);
+                case "REJECT" -> doReject(taskId, userId, comment);
+                case "TRANSFER" -> doTransfer(task, userId, comment, request.getTransferTo());
+                case "RETURN" -> doReturn(taskId, userId, comment);
             }
         } catch (WfeException e) {
             throw e;
@@ -179,7 +186,7 @@ public class WfeTaskService {
             if (eventType == null) {
                 return;
             }
-            Map<String, Object> payload = new HashMap<>();
+            Map<String, Object> payload = new java.util.HashMap<>();
             payload.put("taskId", taskId);
             payload.put("processInstanceId", processInstanceId);
             payload.put("action", action);
@@ -187,7 +194,7 @@ public class WfeTaskService {
             if (transferTo != null) {
                 payload.put("transferTo", transferTo);
             }
-            Map<String, String> headers = new HashMap<>();
+            Map<String, String> headers = new java.util.HashMap<>();
             headers.put(TraceContext.TRACE_ID_HEADER, TraceContext.getOrCreate());
             wfeOutboxService.publishEvent(tenantId, taskId, eventType, payload, headers);
         } catch (Exception e) {
@@ -196,30 +203,49 @@ public class WfeTaskService {
         }
     }
 
-    private void doApprove(String taskId, String processInstanceId, String comment) {
-        taskService.addComment(taskId, processInstanceId, comment);
-        taskService.complete(taskId);
-        log.info("Task approved: taskId={}, processInstanceId={}", taskId, processInstanceId);
+    private void doApprove(String taskId, String userId, String comment) {
+        // 状态机引擎内部会保存评论与历史，并推进流程
+        wfeStateMachineEngine.completeTask(taskId, "APPROVE", userId, comment, null);
+        log.info("Task approved: taskId={}, operator={}", taskId, userId);
     }
 
-    private void doReject(String taskId, String processInstanceId, String comment) {
-        taskService.addComment(taskId, processInstanceId, comment);
-        if (processInstanceId != null) {
-            runtimeService.deleteProcessInstance(processInstanceId, "REJECTED: " + comment);
+    private void doReject(String taskId, String userId, String comment) {
+        // 状态机引擎内部会保存评论、终止流程实例
+        wfeStateMachineEngine.completeTask(taskId, "REJECT", userId, comment, null);
+        log.info("Task rejected: taskId={}, operator={}", taskId, userId);
+    }
+
+    private void doTransfer(WfeTaskEntity task, String userId, String comment, String transferTo) {
+        // 转交不推进流程，只更新 assignee 与保存评论
+        task.setAssignee(transferTo);
+        wfeTaskRepository.save(task);
+        saveComment(task.getTenantId(), task.getId(), task.getProcessInstanceId(), userId,
+                "TRANSFER -> " + transferTo + (comment.isBlank() ? "" : " | " + comment));
+        log.info("Task transferred: taskId={}, from={}, to={}", task.getId(), userId, transferTo);
+    }
+
+    private void doReturn(String taskId, String userId, String comment) {
+        // 状态机引擎内部会保存评论与历史，通过 formData 携带 RETURN 标记推进流程
+        wfeStateMachineEngine.completeTask(taskId, "RETURN", userId, comment, Map.of("action", "RETURN"));
+        log.info("Task returned: taskId={}, operator={}", taskId, userId);
+    }
+
+    private void saveComment(String tenantId, String taskId, String processInstanceId,
+                             String userId, String content) {
+        try {
+            WfeTaskCommentEntity comment = WfeTaskCommentEntity.builder()
+                    .id(UUID.randomUUID().toString())
+                    .tenantId(tenantId)
+                    .taskId(taskId)
+                    .processInstanceId(processInstanceId)
+                    .userId(userId)
+                    .content(content)
+                    .build();
+            wfeTaskCommentRepository.save(comment);
+        } catch (Exception e) {
+            log.warn("Failed to save task comment (non-blocking): taskId={}, error={}",
+                    taskId, e.getMessage());
         }
-        log.info("Task rejected: taskId={}, processInstanceId={}", taskId, processInstanceId);
-    }
-
-    private void doTransfer(String taskId, String processInstanceId, String comment, String transferTo) {
-        taskService.addComment(taskId, processInstanceId, comment);
-        taskService.setAssignee(taskId, transferTo);
-        log.info("Task transferred: taskId={}, from={}, to={}", taskId, comment, transferTo);
-    }
-
-    private void doReturn(String taskId, String processInstanceId, String comment) {
-        taskService.addComment(taskId, processInstanceId, comment);
-        taskService.complete(taskId, Map.of("action", "RETURN"));
-        log.info("Task returned: taskId={}, processInstanceId={}", taskId, processInstanceId);
     }
 
     private boolean isValidAction(String action) {
@@ -231,34 +257,33 @@ public class WfeTaskService {
     // DTO 转换
     // ════════════════════════════════════════════
 
-    private TaskResponse toResponse(Task task) {
+    private TaskResponse toResponse(WfeTaskEntity task) {
+        String status = task.getStatus();
+        // 完成时间：ACTIVE 为 null；COMPLETED/REJECTED/TERMINATED 取 completedAt
+        java.time.Instant endTime = STATUS_ACTIVE.equals(status) ? null : task.getCompletedAt();
         return TaskResponse.builder()
                 .id(task.getId())
                 .name(task.getName())
                 .assignee(task.getAssignee())
                 .processInstanceId(task.getProcessInstanceId())
                 .processDefinitionId(task.getProcessDefinitionId())
-                .createTime(toInstant(task.getCreateTime()))
-                .endTime(null)
-                .status("ACTIVE")
+                .createTime(task.getCreatedAt())
+                .endTime(endTime)
+                .status(status)
                 .build();
     }
 
-    private TaskResponse toResponse(HistoricTaskInstance task) {
-        Date endTime = task.getEndTime();
+    private TaskResponse toResponse(WfeTaskHistoryEntity history) {
+        // 已办任务：历史记录的操作时间作为结束时间，状态统一为 COMPLETED
         return TaskResponse.builder()
-                .id(task.getId())
-                .name(task.getName())
-                .assignee(task.getAssignee())
-                .processInstanceId(task.getProcessInstanceId())
-                .processDefinitionId(task.getProcessDefinitionId())
-                .createTime(toInstant(task.getCreateTime()))
-                .endTime(toInstant(endTime))
-                .status(endTime != null ? "COMPLETED" : "ACTIVE")
+                .id(history.getTaskId())
+                .name(history.getName())
+                .assignee(history.getAssignee())
+                .processInstanceId(history.getProcessInstanceId())
+                .processDefinitionId(null)
+                .createTime(null)
+                .endTime(history.getCreatedAt())
+                .status(STATUS_COMPLETED)
                 .build();
-    }
-
-    private java.time.Instant toInstant(Date date) {
-        return date != null ? date.toInstant() : null;
     }
 }

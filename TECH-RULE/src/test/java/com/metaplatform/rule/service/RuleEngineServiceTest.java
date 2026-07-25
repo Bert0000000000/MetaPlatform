@@ -9,8 +9,10 @@ import com.metaplatform.rule.entity.RuleDefinitionEntity;
 import com.metaplatform.rule.entity.RuleSetEntity;
 import com.metaplatform.rule.entity.RuleStatus;
 import com.metaplatform.rule.exception.RuleException;
+import com.metaplatform.rule.monitoring.service.ExecutionLogService;
 import com.metaplatform.rule.repository.RuleDefinitionRepository;
 import com.metaplatform.rule.repository.RuleSetRepository;
+import com.metaplatform.rule.statistics.service.StatisticsService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -18,6 +20,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import java.util.List;
 import java.util.Map;
@@ -25,12 +29,21 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 
 /**
  * P1-RULE-02: 规则集同步执行引擎 测试。
+ *
+ * <p>P0 改造后新增依赖：StatisticsService、ExecutionLogService、OntologyRelationResolver，
+ * 均 stub 为 no-op / pass-through，验证主流程不破坏。</p>
  */
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class RuleEngineServiceTest {
 
     @Mock
@@ -42,6 +55,15 @@ class RuleEngineServiceTest {
     @Mock
     private RuleOutboxService ruleOutboxService;
 
+    @Mock
+    private StatisticsService statisticsService;
+
+    @Mock
+    private ExecutionLogService executionLogService;
+
+    @Mock
+    private OntologyRelationResolver ontologyRelationResolver;
+
     @Spy
     private ObjectMapper objectMapper = new ObjectMapper();
 
@@ -52,6 +74,16 @@ class RuleEngineServiceTest {
     void setUp() {
         TenantContext.clear();
         TenantContext.set(TenantContext.DEFAULT_TENANT_ID);
+
+        // P0-1/P0-2：stub 统计与日志写入为 no-op，避免影响断言
+        doNothing().when(statisticsService).recordExecution(
+                anyString(), anyString(), anyBoolean(), anyBoolean(), anyLong());
+        doNothing().when(executionLogService).writeLog(
+                anyString(), anyString(), anyString(), anyString(),
+                anyBoolean(), anyLong(), any(), any(), any());
+
+        // P0-3：stub OntologyRelationResolver.enrich 直通原始输入（测试不依赖 ONT 服务）
+        when(ontologyRelationResolver.enrich(any(), any())).thenAnswer(inv -> inv.getArgument(0));
     }
 
     @Test
@@ -85,7 +117,7 @@ class RuleEngineServiceTest {
                 .tenantId(TenantContext.DEFAULT_TENANT_ID)
                 .code("customer_tier")
                 .name("客户分级")
-                .status(RuleStatus.DISABLED)
+                .status("DISABLED")
                 .enabled(false)
                 .build();
 
@@ -183,7 +215,7 @@ class RuleEngineServiceTest {
                 .tenantId(TenantContext.DEFAULT_TENANT_ID)
                 .code(code)
                 .name("客户分级")
-                .status(RuleStatus.ENABLED)
+                .status(RuleStatus.ENABLED.name())
                 .enabled(true)
                 .build();
     }
@@ -196,8 +228,8 @@ class RuleEngineServiceTest {
                 .code(code)
                 .name(code)
                 .conditionExpr(conditionExpr)
-                .actionType(ActionType.SET_TAG)
-                .actionConfig(objectMapper.valueToTree(Map.of("tag", "VIP")))
+                .actionType(ActionType.SET_TAG.name())
+                .actionConfig(Map.of("tag", "VIP"))
                 .priority(priority)
                 .enabled(true)
                 .build();

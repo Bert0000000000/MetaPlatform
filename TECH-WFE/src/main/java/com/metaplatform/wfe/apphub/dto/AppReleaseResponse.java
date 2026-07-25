@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 
 @Data
 @Builder
@@ -17,7 +18,7 @@ public class AppReleaseResponse {
     private String releaseId;
     private String appId;
     private String version;
-    private String releaseNotes;
+    private Map<String, Object> releaseNotes;
     private String strategy;
     private Integer grayPercent;
     private List<String> grayUsers;

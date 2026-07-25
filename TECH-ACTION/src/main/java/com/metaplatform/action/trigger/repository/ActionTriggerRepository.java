@@ -25,6 +25,9 @@ public interface ActionTriggerRepository extends JpaRepository<ActionTriggerEnti
 
     List<ActionTriggerEntity> findAllByTriggerTypeAndEnabledAndDeletedAtIsNull(String triggerType, Boolean enabled);
 
+    List<ActionTriggerEntity> findByTenantIdAndTriggerTypeAndEventTopicAndEnabledTrueAndDeletedAtIsNull(
+            String tenantId, String triggerType, String eventTopic);
+
     @Query("SELECT t FROM ActionTriggerEntity t " +
            "WHERE t.tenantId = :tenantId AND t.deletedAt IS NULL " +
            "AND (:actionId IS NULL OR t.actionId = :actionId) " +

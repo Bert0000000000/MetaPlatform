@@ -43,7 +43,7 @@ public class ConsumerGroupService {
                 .memberCount(request.getMemberCount() != null ? request.getMemberCount() : 0)
                 .consumedOffset(0L)
                 .lag(0L)
-                .status(ConsumerGroupEntity.ConsumerGroupStatus.ACTIVE)
+                .status(ConsumerGroupEntity.ConsumerGroupStatus.ACTIVE.name())
                 .build();
 
         entity = consumerGroupRepository.save(entity);
@@ -83,7 +83,7 @@ public class ConsumerGroupService {
     @Transactional
     public void unregister(String id) {
         ConsumerGroupEntity entity = findById(id);
-        entity.setStatus(ConsumerGroupEntity.ConsumerGroupStatus.INACTIVE);
+        entity.setStatus(ConsumerGroupEntity.ConsumerGroupStatus.INACTIVE.name());
         consumerGroupRepository.save(entity);
         log.info("Consumer group unregistered: id={}, groupId={}", id, entity.getGroupId());
     }

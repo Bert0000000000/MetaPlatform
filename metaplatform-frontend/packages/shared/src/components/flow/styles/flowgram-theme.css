@@ -1,0 +1,86 @@
+/**
+ * FlowGram.AI 主题色覆盖层
+ * --------------------------------------------------
+ * FlowGram 官方仅暴露 9 个 --g-* CSS 变量
+ * （见 node_modules/@flowgram.ai/fixed-layout-editor/index.css L6-17）。
+ *
+ * 本文件把这 9 个变量映射到 Mate 设计稿 token —— 不动布局结构、不动
+ * Antd 6.0、不动 custom node renderDefaultNode。
+ *
+ * 作用范围：覆盖到 .gedit-playground 容器（不放 :root，避免污染全局）。
+ *
+ * 创建于 2026-07-25，v1.4 R1.5 Sprint 1。
+ */
+
+.gedit-playground,
+.gedit-playground-pipeline,
+.gedit-playground-layer {
+  /* === 品牌主色 === */
+  --g-selection-background: var(--primary, #fafafa);
+  --g-editor-background: var(--background, #0a0a0a);
+
+  --g-playground-select: var(--primary, #fafafa);
+  --g-playground-hover: var(--primary, #fafafa);
+  --g-playground-line: var(--primary, #fafafa);
+
+  --g-playground-blur: var(--muted-foreground, #a1a1a1);
+
+  /* === 选区 === */
+  --g-playground-selectBox-outline: var(--primary, #fafafa);
+  --g-playground-selectBox-background: rgba(250, 250, 250, 0.06);
+  --g-playground-select-hover-background: rgba(250, 250, 250, 0.06);
+
+  --g-playground-select-control-size: 12px;
+}
+
+/* === 选区硬编码颜色的兜底 === */
+.gedit-selector-bounds-background {
+  background-color: rgba(250, 250, 250, 0.04) !important;
+}
+
+/* === Grid 网格颜色（dark theme 适配） === */
+.gedit-grid-svg .gedit-grid-dot {
+  fill: var(--border, #262626);
+}
+
+/* === Loading 文字（默认 white 在 dark theme 上反白） === */
+.gedit-playground-loading {
+  color: var(--foreground, #fafafa);
+}
+
+/* === 滚动条（dark theme 适配） === */
+.gedit-playground-scroll-right-block,
+.gedit-playground-scroll-bottom-block {
+  background: var(--muted-foreground, #a1a1a1) !important;
+}
+
+/* === Tools 工具条与 Minimap 兜底 === */
+.gedit-toolbar,
+.gedit-minimap-container {
+  background: var(--card, #111111);
+  border: 1px solid var(--border, #262626);
+  color: var(--foreground, #fafafa);
+}
+
+/* === Light theme 适配（通过 [data-theme="light"] 切换） === */
+[data-theme='light'] .gedit-playground,
+[data-theme='light'] .gedit-playground-pipeline,
+[data-theme='light'] .gedit-playground-layer {
+  --g-selection-background: #18181b;
+  --g-editor-background: #ffffff;
+  --g-playground-select: #18181b;
+  --g-playground-hover: #18181b;
+  --g-playground-line: #18181b;
+  --g-playground-blur: #71717a;
+  --g-playground-selectBox-outline: #18181b;
+  --g-playground-selectBox-background: rgba(24, 24, 27, 0.08);
+  --g-playground-select-hover-background: rgba(24, 24, 27, 0.08);
+}
+
+[data-theme='light'] .gedit-grid-svg .gedit-grid-dot {
+  fill: #d4d4d8;
+}
+
+[data-theme='light'] .gedit-selector-bounds-background {
+  background-color: rgba(24, 24, 27, 0.04) !important;
+}

@@ -82,4 +82,14 @@ public class McpClientController {
     public ApiResponse<List<McpToolListItem>> getTools(@PathVariable UUID id) {
         return ApiResponse.success(mcpClientService.getTools(id));
     }
+
+    @PostMapping("/{id}/refresh")
+    public ApiResponse<McpClientResponse> refresh(@PathVariable UUID id) {
+        return ApiResponse.success(mcpClientService.refresh(id));
+    }
+
+    @PostMapping("/{id}/sync")
+    public ApiResponse<List<McpToolListItem>> sync(@PathVariable UUID id) {
+        return ApiResponse.success(mcpClientService.sync(id));
+    }
 }

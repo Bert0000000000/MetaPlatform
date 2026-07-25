@@ -1,0 +1,29 @@
+package com.metaplatform.mcp.jsonrpc.dto;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.util.List;
+import java.util.Map;
+
+/**
+ * MCP {@code resources/list} response.
+ */
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@JsonInclude(JsonInclude.Include.NON_NULL)
+public class ListResourcesResult {
+
+    private List<ResourceSchema> resources;
+
+    /** Opaque cursor for the next page; {@code null} when no more pages remain. */
+    private String nextCursor;
+
+    /** Reserved metadata. */
+    private Map<String, Object> meta;
+}

@@ -4,6 +4,7 @@ import com.metaplatform.iam.common.ErrorCode;
 import com.metaplatform.iam.exception.IamException;
 import com.metaplatform.iam.position.dto.CreatePositionRequest;
 import com.metaplatform.iam.position.dto.PositionResponse;
+import com.metaplatform.iam.position.dto.UpdatePositionRequest;
 import com.metaplatform.iam.position.entity.PositionEntity;
 import com.metaplatform.iam.position.repository.PositionRepository;
 import org.junit.jupiter.api.BeforeEach;

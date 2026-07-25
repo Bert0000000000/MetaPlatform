@@ -4,6 +4,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
+import java.util.Map;
+
 @Data
 public class CreateTriggerRequest {
 
@@ -20,5 +22,5 @@ public class CreateTriggerRequest {
 
     private String cronExpression;
 
-    private String config;
+    private Map<String, Object> config;
 }

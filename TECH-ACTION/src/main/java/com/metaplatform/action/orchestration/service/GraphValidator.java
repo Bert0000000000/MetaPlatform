@@ -1,6 +1,5 @@
 package com.metaplatform.action.orchestration.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.metaplatform.action.common.ErrorCode;
 import com.metaplatform.action.exception.ActionException;
@@ -26,19 +25,12 @@ public class GraphValidator {
 
     private final ObjectMapper objectMapper;
 
-    public void validate(String nodesJson, String edgesJson) {
-        JsonNode nodes = parseJson(nodesJson, "nodes");
-        JsonNode edges = parseJson(edgesJson, "edges");
-
-        if (!nodes.isArray()) {
-            throw new ActionException(ErrorCode.INVALID_GRAPH, "nodes 必须是数组");
-        }
-        if (!edges.isArray()) {
-            throw new ActionException(ErrorCode.INVALID_GRAPH, "edges 必须是数组");
-        }
+    public void validate(Map<String, Object> nodesMap, Map<String, Object> edgesMap) {
+        List<Map<String, Object>> nodes = toList(nodesMap, "nodes");
+        List<Map<String, Object>> edges = toList(edgesMap, "edges");
 
         Set<String> nodeIds = new HashSet<>();
-        for (JsonNode node : nodes) {
+        for (Map<String, Object> node : nodes) {
             String id = textField(node, "id");
             String type = textField(node, "type");
             if (id == null || id.isBlank()) {
@@ -58,7 +50,7 @@ public class GraphValidator {
             adjacency.put(id, new ArrayList<>());
         }
         Set<String> nodesWithIncoming = new HashSet<>();
-        for (JsonNode edge : edges) {
+        for (Map<String, Object> edge : edges) {
             String source = textField(edge, "source");
             String target = textField(edge, "target");
             if (source == null || target == null) {
@@ -108,16 +100,26 @@ public class GraphValidator {
         return false;
     }
 
-    private JsonNode parseJson(String json, String field) {
-        try {
-            return objectMapper.readTree(json == null || json.isBlank() ? "[]" : json);
-        } catch (Exception e) {
-            throw new ActionException(ErrorCode.INVALID_PARAM, field + " 不是合法的 JSON");
+    @SuppressWarnings("unchecked")
+    private List<Map<String, Object>> toList(Map<String, Object> source, String field) {
+        if (source == null || source.isEmpty()) {
+            return List.of();
         }
+        Object items = source.get(field);
+        if (items instanceof List<?> list) {
+            List<Map<String, Object>> result = new ArrayList<>();
+            for (Object o : list) {
+                if (o instanceof Map<?, ?> m) {
+                    result.add((Map<String, Object>) m);
+                }
+            }
+            return result;
+        }
+        return List.of();
     }
 
-    private String textField(JsonNode node, String field) {
-        JsonNode value = node.get(field);
-        return value == null || value.isNull() ? null : value.asText();
+    private String textField(Map<String, Object> node, String field) {
+        Object value = node == null ? null : node.get(field);
+        return value == null ? null : value.toString();
     }
 }

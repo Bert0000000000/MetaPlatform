@@ -65,8 +65,8 @@ class OrchestrationServiceTest {
         CreateOrchestrationRequest request = new CreateOrchestrationRequest();
         request.setCode("orderFlow");
         request.setName("订单流程");
-        request.setNodes("[]");
-        request.setEdges("[]");
+        request.setNodes(java.util.Map.of("items", java.util.List.of()));
+        request.setEdges(java.util.Map.of("items", java.util.List.of()));
 
         when(orchestrationRepository.existsByTenantIdAndCodeAndDeletedAtIsNull("tenant-default", "orderFlow"))
                 .thenReturn(false);
@@ -78,7 +78,7 @@ class OrchestrationServiceTest {
         assertThat(response.getStatus()).isEqualTo("DRAFT");
         assertThat(response.getVersion()).isEqualTo(1);
         assertThat(response.getOrchestrationId()).startsWith("orch-");
-        verify(graphValidator).validate("[]", "[]");
+        verify(graphValidator).validate(request.getNodes(), request.getEdges());
     }
 
     @Test
@@ -100,13 +100,13 @@ class OrchestrationServiceTest {
         CreateOrchestrationRequest request = new CreateOrchestrationRequest();
         request.setCode("orderFlow");
         request.setName("订单流程");
-        request.setNodes("[{\"id\":\"n1\"}]");
-        request.setEdges("[]");
+        request.setNodes(java.util.Map.of("items", java.util.List.of(java.util.Map.of("id", "n1"))));
+        request.setEdges(java.util.Map.of("items", java.util.List.of()));
 
         when(orchestrationRepository.existsByTenantIdAndCodeAndDeletedAtIsNull("tenant-default", "orderFlow"))
                 .thenReturn(false);
         doThrow(new ActionException(ErrorCode.INVALID_GRAPH, "节点 type 非法"))
-                .when(graphValidator).validate(anyString(), anyString());
+                .when(graphValidator).validate(any(java.util.Map.class), any(java.util.Map.class));
 
         assertThatThrownBy(() -> orchestrationService.create(request))
                 .isInstanceOf(ActionException.class)
@@ -196,9 +196,9 @@ class OrchestrationServiceTest {
                 .orchestrationId(orchestrationId)
                 .code(code)
                 .name("订单流程")
-                .nodes("[]")
-                .edges("[]")
-                .ruleIntegration("{}")
+                .nodes(java.util.Map.of("items", java.util.List.of()))
+                .edges(java.util.Map.of("items", java.util.List.of()))
+                .ruleIntegration(java.util.Map.of())
                 .status(status)
                 .version(version)
                 .createdBy("system")

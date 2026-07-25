@@ -1,16 +1,15 @@
 package com.metaplatform.gw.ratelimit.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
+import java.time.Instant;
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "gw_rate_limit_rule")
@@ -20,29 +19,36 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class GwRateLimitRuleEntity {
 
-    @Id
-    @Column(name = "id", length = 64)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "id", nullable = false, length = 64)
     private String id;
 
-    @Column(name = "tenant_id", length = 64, nullable = false)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "tenant_id", nullable = false, length = 64)
     private String tenantId;
 
-    @Column(name = "rule_id", length = 64, nullable = false)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "rule_id", nullable = false, length = 64)
     private String ruleId;
 
-    @Column(name = "rule_name", length = 128, nullable = false)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "rule_name", nullable = false, length = 128)
     private String ruleName;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "description", length = 1024)
     private String description;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "route_id", length = 64)
     private String routeId;
 
-    @Column(name = "scope", length = 16, nullable = false)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "scope", nullable = false, length = 16)
     private String scope;
 
-    @Column(name = "limit_type", length = 16, nullable = false)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "limit_type", nullable = false, length = 16)
     private String limitType;
 
     @Column(name = "qps_limit")
@@ -54,33 +60,38 @@ public class GwRateLimitRuleEntity {
     @Column(name = "token_limit")
     private Long tokenLimit;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "token_window", length = 16)
     private String tokenWindow;
 
-    @Column(name = "burst_factor", precision = 3, scale = 1)
+    @Column(name = "burst_factor")
     private BigDecimal burstFactor;
 
     @Column(name = "quota_alert_threshold")
     private Integer quotaAlertThreshold;
 
-    @Column(name = "status", length = 16, nullable = false)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "status", nullable = false, length = 16)
     private String status;
 
     @Column(name = "version", nullable = false)
     private Integer version;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+    @Column(name = "created_at", nullable = false)
+    private Instant createdAt;
 
-    @Column(name = "created_by", length = 64, nullable = false, updatable = false)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "created_by", nullable = false, length = 64)
     private String createdBy;
 
     @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
+    private Instant updatedAt;
 
-    @Column(name = "updated_by", length = 64, nullable = false)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "updated_by", nullable = false, length = 64)
     private String updatedBy;
 
     @Column(name = "deleted_at")
-    private LocalDateTime deletedAt;
+    private Instant deletedAt;
+
 }

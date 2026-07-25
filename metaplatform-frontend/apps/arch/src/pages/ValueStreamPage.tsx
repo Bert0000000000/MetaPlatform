@@ -6,6 +6,24 @@ import { listCapabilities } from '@/api/capabilities';
 import { listRoles } from '@/api/roles';
 import type { ValueStream, ValueStreamStage, Capability, ArchRole } from '@/types';
 
+interface ValueStreamFormValues {
+  name: string;
+  code: string;
+  description?: string;
+  triggerEvent?: string;
+  terminationEvent?: string;
+  status?: 'ACTIVE' | 'DRAFT';
+}
+
+interface ValueStreamStageFormValues {
+  name: string;
+  description?: string;
+  sortOrder?: number;
+  capabilityIds?: string[];
+  outputs?: string[];
+  participantRoleIds?: string[];
+}
+
 export default function ValueStreamPage() {
   const [list, setList] = useState<ValueStream[]>([]);
   const [stages, setStages] = useState<ValueStreamStage[]>([]);
@@ -18,8 +36,8 @@ export default function ValueStreamPage() {
   const [editingStage, setEditingStage] = useState<ValueStreamStage | null>(null);
   const [selectedStream, setSelectedStream] = useState<ValueStream | null>(null);
   const [detail, setDetail] = useState<ValueStream | null>(null);
-  const [form] = Form.useForm<Partial<ValueStream>>();
-  const [stageForm] = Form.useForm<Partial<ValueStreamStage>>();
+  const [form] = Form.useForm<ValueStreamFormValues>();
+  const [stageForm] = Form.useForm<ValueStreamStageFormValues>();
 
   const load = async () => {
     setLoading(true);
@@ -44,10 +62,23 @@ export default function ValueStreamPage() {
   const handleSubmit = async () => {
     const values = await form.validateFields();
     if (editing) {
-      await updateValueStream(editing.id, values);
+      await updateValueStream(editing.id, {
+        name: values.name,
+        description: values.description,
+        triggerEvent: values.triggerEvent,
+        terminationEvent: values.terminationEvent,
+        status: values.status,
+      });
       message.success('更新成功');
     } else {
-      await createValueStream(values as { name: string; code: string });
+      await createValueStream({
+        name: values.name,
+        code: values.code,
+        description: values.description,
+        triggerEvent: values.triggerEvent,
+        terminationEvent: values.terminationEvent,
+        status: values.status,
+      });
       message.success('创建成功');
     }
     setModalOpen(false);
@@ -87,7 +118,18 @@ export default function ValueStreamPage() {
 
   const openStageModal = (stage?: ValueStreamStage) => {
     setEditingStage(stage || null);
-    stageForm.setFieldsValue(stage || {});
+    if (stage) {
+      stageForm.setFieldsValue({
+        name: stage.name,
+        description: stage.description,
+        sortOrder: stage.sortOrder,
+        capabilityIds: stage.capabilityIds,
+        outputs: stage.outputs,
+        participantRoleIds: stage.participantRoleIds,
+      });
+    } else {
+      stageForm.resetFields();
+    }
     setStageModalOpen(true);
   };
 
@@ -101,7 +143,19 @@ export default function ValueStreamPage() {
       title: '操作', key: 'action',
       render: (_: unknown, r: ValueStream) => (
         <Space>
-          <Button type="link" size="small" icon={<EditOutlined />} onClick={() => { setEditing(r); form.setFieldsValue(r); setModalOpen(true); }}>编辑</Button>
+          <Button type="link" size="small" icon={<EditOutlined />} onClick={() => {
+            setEditing(r);
+            const statusUpper = typeof r.status === 'string' ? r.status.toUpperCase() : undefined;
+            form.setFieldsValue({
+              name: r.name,
+              code: r.code,
+              description: r.description,
+              triggerEvent: r.triggerEvent,
+              terminationEvent: r.terminationEvent,
+              status: statusUpper === 'ACTIVE' || statusUpper === 'DRAFT' ? statusUpper : undefined,
+            });
+            setModalOpen(true);
+          }}>编辑</Button>
           <Button type="link" size="small" onClick={() => { setSelectedStream(r); loadStages(r); setStageModalOpen(true); }}>阶段</Button>
           <Popconfirm title="确认删除？" onConfirm={() => handleDelete(r)}><Button type="link" size="small" danger icon={<DeleteOutlined />}>删除</Button></Popconfirm>
         </Space>

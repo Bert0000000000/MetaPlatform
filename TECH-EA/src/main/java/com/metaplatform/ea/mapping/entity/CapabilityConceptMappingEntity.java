@@ -8,12 +8,11 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
-import java.time.Instant;
 import java.util.UUID;
+import java.time.Instant;
 
 @Entity
-@Table(name = "ea_capability_concept_mapping",
-        uniqueConstraints = @UniqueConstraint(columnNames = {"tenant_id", "capability_id", "concept_id"}))
+@Table(name = "ea_capability_concept_mapping")
 @Data
 @Builder
 @NoArgsConstructor
@@ -22,25 +21,29 @@ public class CapabilityConceptMappingEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(name = "id", nullable = false)
     private UUID id;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "tenant_id", nullable = false, length = 64)
     private String tenantId;
 
     @Column(name = "capability_id", nullable = false)
     private UUID capabilityId;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "concept_id", nullable = false, length = 128)
     private String conceptId;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "concept_code", length = 128)
     private String conceptCode;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "mapping_type", nullable = false, length = 64)
     private String mappingType;
 
-    @Lob
-    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "metadata", columnDefinition = "jsonb")
     private String metadata;
 
@@ -52,4 +55,5 @@ public class CapabilityConceptMappingEntity {
 
     @Column(name = "deleted_at")
     private Instant deletedAt;
+
 }

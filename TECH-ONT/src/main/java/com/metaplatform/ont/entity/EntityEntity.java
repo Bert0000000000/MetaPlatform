@@ -22,6 +22,7 @@ public class EntityEntity {
 
     @Id
     @Column(name = "entity_id", nullable = false, length = 64)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String entityId;
 
     @Column(name = "tenant_id", nullable = false, length = 64)
@@ -39,7 +40,7 @@ public class EntityEntity {
     @Column(name = "description", length = 1024)
     private String description;
 
-    @JdbcTypeCode(SqlTypes.JSON)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "metadata", columnDefinition = "jsonb")
     private JsonNode metadata;
 
@@ -49,6 +50,7 @@ public class EntityEntity {
     private OntStatus status = OntStatus.ACTIVE;
 
     @Column(name = "created_by", length = 64)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String createdBy;
 
     @Column(name = "updated_by", length = 64)

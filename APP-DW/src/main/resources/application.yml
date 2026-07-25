@@ -1,0 +1,53 @@
+spring:
+  application:
+    name: app-dw
+  cloud:
+    nacos:
+      discovery:
+        server-addr: ${NACOS_ADDR:localhost:8848}
+        namespace: metaplatform
+      config:
+        server-addr: ${NACOS_ADDR:localhost:8848}
+        namespace: metaplatform
+        file-extension: yaml
+  config:
+    import:
+      - optional:nacos:${spring.application.name}.yaml
+  datasource:
+    url: jdbc:postgresql://localhost:5432/metaplatform_dw?stringtype=varchar
+    username: ${DB_USERNAME:meta}
+    password: ${DB_PASSWORD:meta}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        type:
+          preferred_jdbc_type_code_for_string: 12
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+server:
+  port: 9003
+
+mate:
+  dw:
+    agent-base-url: ${AGENT_BASE_URL:http://localhost:8401}
+    rag-base-url: ${RAG_BASE_URL:http://localhost:8901}
+    a2a-base-url: ${A2A_BASE_URL:http://localhost:8501}
+    llmgw-base-url: ${LLMGW_BASE_URL:http://localhost:8301}
+    ont-base-url: ${ONT_BASE_URL:http://localhost:8201}
+    # 业务 RAG Agent 配额
+    rag-agent:
+      max-topk: 100
+      timeout-ms: 5000
+      max-concurrent-per-employee: 50
+      max-qps-per-user: 10
+    # 页面专属 Agent 配额
+    page-agent:
+      p95-latency-ms: 2000
+      max-context-tokens: 8192

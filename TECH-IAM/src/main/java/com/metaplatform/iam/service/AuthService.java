@@ -7,10 +7,14 @@ import com.metaplatform.iam.audit.service.AuditLogService;
 import com.metaplatform.iam.dto.AuthResponse;
 import com.metaplatform.iam.dto.LoginRequest;
 import com.metaplatform.iam.dto.RegisterRequest;
+import com.metaplatform.iam.dto.auth.RefreshTokenRequest;
 import com.metaplatform.iam.entity.UserEntity;
 import com.metaplatform.iam.exception.IamException;
 import com.metaplatform.iam.repository.UserRepository;
+import com.metaplatform.iam.repository.UserSessionRepository;
+import com.metaplatform.iam.security.CurrentUserHolder;
 import com.metaplatform.iam.util.JwtUtil;
+import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -39,6 +43,7 @@ public class AuthService {
     private final JwtUtil jwtUtil;
     private final IamOutboxService iamOutboxService;
     private final AuditLogService auditLogService;
+    private final UserSessionRepository userSessionRepository;
 
     @Transactional
     public AuthResponse register(RegisterRequest request) {
@@ -113,6 +118,43 @@ public class AuthService {
         String accessToken = jwtUtil.generateAccessToken(user.getId(), user.getUsername(), user.getTenantId(), DEFAULT_ROLES);
         String refreshToken = jwtUtil.generateRefreshToken(user.getId(), user.getUsername(), user.getTenantId(), DEFAULT_ROLES);
         return buildAuthResponse(user, accessToken, refreshToken, "SUCCESS", now);
+    }
+
+    @Transactional
+    public void logout() {
+        String userId = CurrentUserHolder.requireUserId();
+        userSessionRepository.deleteByUserId(userId);
+        auditLogService.record(DEFAULT_TENANT_ID, userId, IamAuditLogEntity.Action.LOGOUT,
+                "User", userId, "用户登出",
+                IamAuditLogEntity.Status.SUCCESS, null);
+    }
+
+    @Transactional
+    public AuthResponse refresh(RefreshTokenRequest request) {
+        Claims claims;
+        try {
+            claims = jwtUtil.parseToken(request.getRefreshToken());
+        } catch (Exception e) {
+            throw new IamException(ErrorCode.TOKEN_EXPIRED, "refreshToken 无效或已过期");
+        }
+        if (!"refresh".equals(claims.get("type", String.class))) {
+            throw new IamException(ErrorCode.INVALID_CREDENTIALS, "提供的 Token 不是 refreshToken");
+        }
+        String userId = claims.getSubject();
+        UserEntity user = userRepository.findById(userId)
+                .orElseThrow(() -> new IamException(ErrorCode.USER_NOT_FOUND, "用户不存在"));
+        if (user.getStatus() == UserEntity.UserStatus.DISABLED) {
+            throw new IamException(ErrorCode.ACCOUNT_DISABLED, "账户已被禁用");
+        }
+
+        String accessToken = jwtUtil.generateAccessToken(user.getId(), user.getUsername(),
+                user.getTenantId(), DEFAULT_ROLES);
+        String refreshToken = jwtUtil.generateRefreshToken(user.getId(), user.getUsername(),
+                user.getTenantId(), DEFAULT_ROLES);
+        auditLogService.record(user.getTenantId(), user.getId(), IamAuditLogEntity.Action.LOGIN,
+                "User", user.getId(), "Token 刷新成功: " + user.getUsername(),
+                IamAuditLogEntity.Status.SUCCESS, null);
+        return buildAuthResponse(user, accessToken, refreshToken, "SUCCESS", null);
     }
 
     private String resolveTenantId(String requestTenantId) {

@@ -1,0 +1,52 @@
+spring:
+  application:
+    name: app-copilot
+  cloud:
+    nacos:
+      discovery:
+        server-addr: ${NACOS_ADDR:localhost:8848}
+        namespace: metaplatform
+      config:
+        server-addr: ${NACOS_ADDR:localhost:8848}
+        namespace: metaplatform
+        file-extension: yaml
+  config:
+    import:
+      - optional:nacos:${spring.application.name}.yaml
+  datasource:
+    url: jdbc:postgresql://localhost:5432/metaplatform_copilot?stringtype=varchar
+    username: ${DB_USERNAME:meta}
+    password: ${DB_PASSWORD:meta}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        type:
+          preferred_jdbc_type_code_for_string: 12
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+server:
+  port: 9002
+
+mate:
+  copilot:
+    llmgw-base-url: ${LLMGW_BASE_URL:http://localhost:8301}
+    a2a-base-url: ${A2A_BASE_URL:http://localhost:8501}
+    agent-base-url: ${AGENT_BASE_URL:http://localhost:8401}
+    rag-base-url: ${RAG_BASE_URL:http://localhost:8901}
+    mcp-base-url: ${MCP_BASE_URL:http://localhost:8080}
+    action-base-url: ${ACTION_BASE_URL:http://localhost:8104}
+    ont-base-url: ${ONT_BASE_URL:http://localhost:8201}
+    data-base-url: ${DATA_BASE_URL:http://localhost:8701}
+    # 调度配置
+    scheduling:
+      single-agent-timeout-ms: 5000
+      overall-timeout-ms: 10000
+      max-parallel-agents: 5
+      fallback-to-rag: true

@@ -14,25 +14,30 @@ import com.metaplatform.rule.decisiontable.dto.UpdateDecisionTableRequest;
 import com.metaplatform.rule.decisiontable.dto.UpdateRowRequest;
 import com.metaplatform.rule.decisiontable.dto.ValidationResultDto;
 import com.metaplatform.rule.decisiontable.entity.DecisionTableEntity;
-import com.metaplatform.rule.decisiontable.entity.DecisionTableRowEntity;
+import com.metaplatform.rule.decisiontable.service.DecisionTableExecutionEngine;
 import com.metaplatform.rule.decisiontable.service.DecisionTableRowService;
 import com.metaplatform.rule.decisiontable.service.DecisionTableService;
+import com.metaplatform.rule.statistics.service.StatisticsService;
 import com.metaplatform.rule.testing.dto.RuleTestRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/v1/rule/decision-tables")
 @RequiredArgsConstructor
 public class DecisionTableController {
 
+    private static final String TARGET_TYPE_DECISION_TABLE = "DECISION_TABLE";
+
     private final DecisionTableService decisionTableService;
     private final DecisionTableRowService decisionTableRowService;
+    private final DecisionTableExecutionEngine decisionTableExecutionEngine;
+    private final StatisticsService statisticsService;
 
     @PostMapping
     public ApiResponse<DecisionTableResponse> create(@Valid @RequestBody CreateDecisionTableRequest request) {
@@ -142,56 +147,34 @@ public class DecisionTableController {
      *
      * <p>路径与前端 {@code executeDecisionTable} 一致：{@code POST /v1/rule/decision-tables/{id}/execute}。
      * 入参为 {@link RuleTestRequest#getInputData()}，与 {@code /test} 端点共享 schema。
+     *
+     * <p>P0-1：执行完按 DECISION_TABLE 维度记录统计；
+     * P1-2：调用 {@link DecisionTableExecutionEngine} 支持完整操作符匹配。</p>
      */
     @PostMapping("/{id}/execute")
     public ApiResponse<DecisionTableExecutionResultDto> execute(
             @PathVariable String id,
             @Valid @RequestBody RuleTestRequest request) {
         DecisionTableEntity table = decisionTableService.getEntity(id);
-        List<DecisionTableRowEntity> rows = decisionTableRowService.getEnabledRows(id);
-        String hitPolicy = table.getHitPolicy() == null ? "FIRST" : table.getHitPolicy().toUpperCase();
 
         long start = System.currentTimeMillis();
-        List<DecisionTableRowResponse> matchedRows = new ArrayList<>();
-        List<Map<String, Object>> outputs = new ArrayList<>();
-
-        for (DecisionTableRowEntity row : rows) {
-            Map<String, Object> rowInputs = decisionTableRowService.readInputMap(row);
-            if (matchesInput(request.getInputData(), rowInputs)) {
-                matchedRows.add(decisionTableRowService.toRowResponse(row));
-                outputs.add(decisionTableRowService.readOutputMap(row));
-                if ("FIRST".equalsIgnoreCase(hitPolicy)) {
-                    break;
-                }
-            }
-        }
+        DecisionTableExecutionEngine.ExecutionOutcome outcome =
+                decisionTableExecutionEngine.execute(table, request.getInputData());
         long elapsed = System.currentTimeMillis() - start;
 
+        // P0-1：按决策表维度记录统计（失败不影响主流程）
+        try {
+            statisticsService.recordExecution(TARGET_TYPE_DECISION_TABLE, id,
+                    !outcome.matchedRows().isEmpty(), false, elapsed);
+        } catch (Exception e) {
+            log.warn("Failed to record decision-table execution statistics: tableId={}, error={}",
+                    id, e.getMessage());
+        }
+
         return ApiResponse.success(DecisionTableExecutionResultDto.builder()
-                .matchedRows(matchedRows)
-                .outputs(outputs)
+                .matchedRows(outcome.matchedRows())
+                .outputs(outcome.outputs())
                 .executionTimeMs(elapsed)
                 .build());
-    }
-
-    /**
-     * 简单的字符串化值比较：将输入值与行配置值都转为字符串比较。
-     *
-     * <p>注意：V1.1 阶段仅做字符串等值匹配，V1.2 阶段会引入完整的 operator
-     * （eq/ne/gt/lt/gte/lte/in/contains/between）与 columnType 派生类型转换。
-     */
-    private boolean matchesInput(Map<String, Object> inputData, Map<String, Object> rowInputs) {
-        if (rowInputs.isEmpty()) {
-            return true; // 空输入视为通配
-        }
-        for (Map.Entry<String, Object> entry : rowInputs.entrySet()) {
-            Object inputValue = inputData.get(entry.getKey());
-            String expected = entry.getValue() == null ? "" : String.valueOf(entry.getValue());
-            String actual = inputValue == null ? "" : String.valueOf(inputValue);
-            if (!expected.equals(actual)) {
-                return false;
-            }
-        }
-        return true;
     }
 }

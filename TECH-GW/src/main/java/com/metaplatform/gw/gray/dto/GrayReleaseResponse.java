@@ -6,7 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
 
@@ -24,10 +24,10 @@ public class GrayReleaseResponse {
     private Map<String, Object> strategyConfig;
     private String newVersion;
     private String oldVersion;
-    private LocalDateTime startAt;
-    private LocalDateTime endAt;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
+    private Instant startAt;
+    private Instant endAt;
+    private Instant createdAt;
+    private Instant updatedAt;
 
     public static GrayReleaseResponse fromEntity(GwGrayReleaseEntity entity) {
         return GrayReleaseResponse.builder()

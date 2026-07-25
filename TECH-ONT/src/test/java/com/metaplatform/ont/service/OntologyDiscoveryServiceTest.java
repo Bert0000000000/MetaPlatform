@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.document.Document;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -19,11 +20,13 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.testcontainers.DockerClientFactory;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -43,11 +46,37 @@ import static org.mockito.Mockito.when;
 @TestPropertySource(properties = {
         "spring.autoconfigure.exclude=" +
                 "org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration," +
-                "org.springframework.boot.autoconfigure.data.neo4j.Neo4jAutoConfiguration," +
-                "org.springframework.ai.model.chat.client.autoconfigure.ChatClientAutoConfiguration," +
-                "org.springframework.ai.mcp.server.common.autoconfigure.McpServerAutoConfiguration",
+                "org.springframework.boot.autoconfigure.neo4j.Neo4jAutoConfiguration," +
+                "org.springframework.boot.autoconfigure.data.neo4j.Neo4jDataAutoConfiguration," +
+                "org.springframework.boot.autoconfigure.data.neo4j.Neo4jRepositoriesAutoConfiguration," +
+                "org.springframework.cloud.autoconfigure.RefreshAutoConfiguration," +
+                "org.springframework.cloud.autoconfigure.ConfigurationPropertiesRebinderAutoConfiguration," +
+                "org.springframework.cloud.autoconfigure.RefreshEndpointAutoConfiguration," +
+                "org.springframework.cloud.autoconfigure.LifecycleMvcEndpointAutoConfiguration," +
+                "org.springframework.cloud.autoconfigure.WritableEnvironmentEndpointAutoConfiguration," +
+                "com.alibaba.cloud.nacos.discovery.NacosDiscoveryAutoConfiguration," +
+                "com.alibaba.cloud.nacos.discovery.NacosDiscoveryClientConfiguration," +
+                "com.alibaba.cloud.nacos.discovery.NacosDiscoveryHeartBeatConfiguration," +
+                "com.alibaba.cloud.nacos.discovery.reactive.NacosReactiveDiscoveryClientConfiguration," +
+                "com.alibaba.cloud.nacos.discovery.configclient.NacosConfigServerAutoConfiguration," +
+                "com.alibaba.cloud.nacos.endpoint.NacosDiscoveryEndpointAutoConfiguration," +
+                "com.alibaba.cloud.nacos.registry.NacosServiceRegistryAutoConfiguration," +
+                "com.alibaba.cloud.nacos.loadbalancer.LoadBalancerNacosAutoConfiguration," +
+                "com.alibaba.cloud.nacos.NacosServiceAutoConfiguration," +
+                "com.alibaba.cloud.nacos.util.UtilIPv6AutoConfiguration," +
+                "com.alibaba.cloud.ai.agent.nacos.config.NacosAgentConfig," +
+                "com.alibaba.cloud.ai.autoconfigure.nacosconfig.NacosConfigAutoConfiguration," +
+                "com.alibaba.cloud.ai.autoconfigure.nacos.NacosMcServerAutoConfiguration," +
+                "org.springframework.ai.mcp.server.common.autoconfigure.McpServerAutoConfiguration," +
+                "org.springframework.ai.mcp.server.common.autoconfigure.annotations.McpServerSpecificationFactoryAutoConfiguration," +
+                "org.springframework.ai.mcp.server.common.autoconfigure.annotations.McpServerAnnotationScannerAutoConfiguration," +
+                "org.springframework.ai.mcp.client.autoconfigure.McpClientAutoConfiguration," +
+                "org.springframework.ai.vectorstore.neo4j.autoconfigure.Neo4jVectorStoreAutoConfiguration",
+        "spring.ai.alibaba.dashscope.api-key=sk-test",
         "spring.flyway.enabled=true",
-        "spring.jpa.hibernate.ddl-auto=validate"
+        "spring.jpa.hibernate.ddl-auto=validate",
+        "spring.cloud.nacos.discovery.enabled=false",
+        "spring.cloud.nacos.config.enabled=false"
 })
 class OntologyDiscoveryServiceTest {
 
@@ -100,6 +129,9 @@ class OntologyDiscoveryServiceTest {
 
     @Autowired
     private ChatClient.Builder chatClientBuilder;
+
+    @MockitoBean
+    private ConceptEmbeddingService conceptEmbeddingService;
 
     @Test
     void getDataSources_returnsMockCatalog() {
@@ -181,17 +213,30 @@ class OntologyDiscoveryServiceTest {
                 .contains("owns");
     }
 
+    @Test
+    void recommendSimilarConcepts_returnsConceptIdsAndFiltersMissingMetadata() {
+        when(conceptEmbeddingService.searchSimilarConcepts("客户", 3)).thenReturn(List.of(
+                new Document("doc-1", "Customer", Map.of("conceptId", "customer")),
+                new Document("doc-2", "Client", Map.of("conceptId", "client")),
+                new Document("doc-3", "Unknown", Map.of("name", "Unknown"))
+        ));
+
+        List<String> result = service.recommendSimilarConcepts("客户", 3);
+
+        assertThat(result).containsExactly("customer", "client");
+    }
+
     /**
      * 测试专用配置：提供 singleton 作用域的 ChatClient.Builder 与 ConfigService mock，
-     * 避免 Spring AI ChatClientAutoConfiguration 原型作用域 bean 无法被 @MockitoBean 覆盖的问题，
-     * 同时绕过 NacosConfig 对真实 Nacos 服务的连接。
+     * 避免测试触发真实 DashScope 与 Nacos 调用；
+     * 同时 mock Neo4j 仓库与 Neo4jClient，使得 OntSyncService 在无 Neo4j 的集成环境下仍可注入。
      */
     @TestConfiguration
     static class TestConfig {
 
         @Bean
         @Primary
-        public ChatClient.Builder chatClientBuilder() {
+        public ChatClient.Builder mockChatClientBuilder() {
             return mock(ChatClient.Builder.class);
         }
 
@@ -199,6 +244,30 @@ class OntologyDiscoveryServiceTest {
         @Primary
         public ConfigService configService() {
             return mock(ConfigService.class);
+        }
+
+        @Bean
+        @Primary
+        public com.metaplatform.ont.graph.repository.ConceptNodeRepository conceptNodeRepository() {
+            return mock(com.metaplatform.ont.graph.repository.ConceptNodeRepository.class);
+        }
+
+        @Bean
+        @Primary
+        public com.metaplatform.ont.graph.repository.EntityNodeRepository entityNodeRepository() {
+            return mock(com.metaplatform.ont.graph.repository.EntityNodeRepository.class);
+        }
+
+        @Bean
+        @Primary
+        public com.metaplatform.ont.graph.repository.RelationEdgeRepository relationEdgeRepository() {
+            return mock(com.metaplatform.ont.graph.repository.RelationEdgeRepository.class);
+        }
+
+        @Bean
+        @Primary
+        public org.springframework.data.neo4j.core.Neo4jClient neo4jClient() {
+            return mock(org.springframework.data.neo4j.core.Neo4jClient.class);
         }
     }
 }

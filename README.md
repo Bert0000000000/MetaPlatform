@@ -1,131 +1,85 @@
-# Mate Platform
+# Mate Platform 仓库结构
 
-基于 Ontology 本体论引擎的企业级决策与运营提效平台。
+> 2026-07-24 v1.3 重构期 R1 落地说明。
 
-## 项目目标
+## 顶层目录
 
-- 通过 Ontology 引擎实现企业数据的联动关系与后续 Action 动作自动化。
-- 帮助企业解决信息化凹陷点，通过低代码/零代码前端应用系统让数据落到平台。
-- 支持快速搭建业务应用系统/模块（低代码/零代码 + AI 辅助开发）。
-- 提供 CRI/MCP 服务，对接 Cloud Code、Codex 等主流 AI 工具。
-- 通过 AI + Ontology 识别数据链路关系网，提升决策效率。
-- 提炼公司制度、流程文件、访谈信息，构建企业级 RAG 知识库。
-- 支持数据治理、外部数据集成、Open API 建设。
-
-## 项目结构
-
-```
+```text
 MetaPlatform/
-├── README.md              # 本文件
-├── docs/                  # 项目文档总目录
-│   ├── 000-GUIDE/         # 规范与指南
-│   ├── 001-ARCH/          # 架构设计
-│   ├── 002-TS/            # 技术选型
-│   ├── 003-SPEC/          # 规范与接口
-│   ├── 004-PLAN/          # 计划与路线图
-│   ├── 005-RD/            # 调研报告
-│   └── 006-TMP/           # 临时脚本
-├── APP-*/                 # 应用模块
-├── TECH-*/                # 技术服务模块
-└── infra/                 # 基础设施配置
+├── README.md                          # 本文件
+├── CLAUDE.md                          # Claude Code 项目上下文
+├── agent.md                           # Agent 工作流约定
+│
+├── package.json                       # @metaplatform/ops-tools（运维/迁移/探查 Node 工具集）
+├── pnpm-lock.yaml                     # 上述 ops-tools 锁定
+├── docker-compose.yml                 # postgres + redis + nacos 3.0+（本地基础设施）
+├── start-tech-services.ps1            # Windows 批量启动 TECH-* Java 服务
+│
+├── metaplatform-frontend/             # ⭐ 前端 pnpm monorepo（唯一前端入口）
+│   ├── apps/                          # 8 个 app
+│   │   ├── portal/                    # 后台管理 / 组件库 / FlowGram 流程画布
+│   │   ├── apphub/                    # 应用中心（低代码 + 流程设计 + 表单 + 页面）
+│   │   ├── arch/                      # 架构中心
+│   │   ├── dashboard/                 # 工作台
+│   │   ├── dw/                        # 数字员工
+│   │   ├── mcphub/                    # MCP 服务中心
+│   │   ├── ontstudio/                 # 本体引擎
+│   │   └── superai/                   # 超级 AI（Copilot）
+│   └── packages/
+│       └── shared/                    # 共享组件库 + FlowGram.AI 封装
+│
+├── APP-*/  TECH-*/                    # ⭐ Java 25 + Spring Boot 3.5 + SAA 后端
+│   ├── APP-COPILOT/  APP-DASHBOARD/  APP-DW/  APP-KB/
+│   └── TECH-A2A/  ACTION/  AGENT/  DATA/  EA/  GW/  IAM/  LLMGW/
+│       MCP/  MSG/  OBS/  ONT/  RAG/  RULE/  WFE/
+│
+├── docs/
+│   ├── prd/                           # PRD 集合（按 APP 分子目录 + _top/ 顶层）
+│   ├── NACOS-3.0-POC-CHECKLIST.md     # Nacos 3.0 升级 POC 清单
+│   ├── flow-component-catalog.md
+│   ├── flow-sidebar-group-accent.md
+│   └── superpowers/
+│
+├── metaplatform-design-draft/         # 设计稿归档
+├── .commit-catalog.md                 # 提交说明
+├── .env  .env.example  .gitignore
+├── .github/  .vscode/                 # CI / IDE 配置
+└── tests/                             # 测试
 ```
 
-## 应用架构总览
+## 关键约定
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│                        APP 应用层                             │
-│                                                              │
-│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐    │
-│  │ Dashboard │  │ SuperAI  │  │ 数字员工  │  │ 应用中心  │    │
-│  │ 仪表盘    │  │ 超级AI   │  │ APP-DW   │  │ APP-APPHUB│   │
-│  │          │  │          │  │          │  │(低代码+   │    │
-│  │ 全局看板  │  │ 智能问答  │  │ 员工管理  │  │ 流程设计器)│   │
-│  │ 待办通知  │  │ 数据分析  │  │ 任务监控  │  │ 应用列表  │    │
-│  │ 快捷入口  │  │ Action   │  │ 制度提炼  │  │ 应用市场  │    │
-│  └──────────┘  └──────────┘  └──────────┘  └──────────┘    │
-│                                                              │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │
-│  │ 本体论引擎    │  │ 架构中心      │  │ MCP服务中心   │      │
-│  │ APP-ONTSTUDIO│  │ APP-ARCH     │  │ APP-MCPHUB   │      │
-│  │              │  │              │  │              │      │
-│  │ 本体建模     │  │ 业务架构      │  │ MCP Server   │      │
-│  │ 数据中心     │  │ 应用架构      │  │ MCP Client   │      │
-│  │ Action编排   │  │ 数据架构      │  │ 工具注册中心  │      │
-│  │ 知识图谱     │  │ 架构治理      │  │ 调试与审计    │      │
-│  └──────────────┘  └──────────────┘  └──────────────┘      │
-└──────────────────────────┬───────────────────────────────────┘
-                           │
-                           ▼
-┌──────────────────────────────────────────────────────────────┐
-│                      TECH 技术服务层                           │
-│  TECH-ONT  TECH-WFE  TECH-RULE  TECH-ACTION  TECH-RAG        │
-│  TECH-AGENT  TECH-LLMGW  TECH-MCP  TECH-A2A  TECH-EA         │
-│  TECH-DATA  TECH-IAM  TECH-GW  TECH-MSG  TECH-OBS            │
-└──────────────────────────────────────────────────────────────┘
-```
+### 前端
 
-## 模块分类
+- **入口唯一在 `metaplatform-frontend/`**，使用 pnpm workspaces
+- 8 个 app 并行，按需 `pnpm --filter @mate/<app> dev`
+- 共享组件、FlowGram.AI 封装在 `metaplatform-frontend/packages/shared/`
+- 启动：`cd metaplatform-frontend && pnpm install && pnpm dev`
 
-### 应用模块（APP）
+### 后端
 
-| 模块 | 名称 | 说明 |
-|---|---|---|
-| `APP-DASHBOARD` | 仪表盘 | 全局工作台、指标看板、待办通知、快捷导航 |
-| `APP-SUPERAI` | 超级 AI | 智能问答、数据分析、Action 执行、Ontology 探索 |
-| `APP-DW` | 数字员工 | 数字员工管理、制度提炼、任务监控、多员工协作 |
-| `APP-APPHUB` | 应用中心 | 低代码设计器 + 流程设计器 + 应用列表 + 应用市场 |
-| `APP-ONTSTUDIO` | 本体论引擎 | 本体建模 + 数据中心 + Action 编排 + 知识图谱 |
-| `APP-ARCH` | 架构中心 | 业务/应用/数据/技术架构管理、架构治理 |
-| `APP-MCPHUB` | MCP 服务中心 | MCP Server/Client 管理、工具注册、调试审计 |
+- **18 个 Java 模块**目录（4 APP + 14 TECH），Java 25 + Spring Boot 3.5
+- Spring AI Alibaba 1.1.2.2（BOM 统一管理）
+- 端口分配见 [`start-tech-services.ps1`](start-tech-services.ps1)
+- 启动：先 `docker compose up -d`（Nacos 3.0+），再 `mvn spring-boot:run`
 
-### 技术服务模块（TECH）
+### 根级 package.json
 
-| 模块 | 名称 | 说明 |
-|---|---|---|
-| `TECH-ONT` | 本体引擎 | Ontology 建模、推理、版本管理 |
-| `TECH-WFE` | 工作流引擎 | BPMN 流程执行引擎 |
-| `TECH-RULE` | 规则引擎 | 业务规则计算 |
-| `TECH-ACTION` | Action Engine | 动作编排与执行 |
-| `TECH-RAG` | RAG 引擎 | 企业级知识检索增强 |
-| `TECH-AGENT` | Agent 框架 | 数字员工与 Agent 运行时 |
-| `TECH-LLMGW` | LLM Gateway | 大模型统一接入网关 |
-| `TECH-MCP` | MCP 适配 | Model Context Protocol 适配 |
-| `TECH-A2A` | A2A 适配 | Agent-to-Agent Protocol 适配 |
-| `TECH-EA` | EA 架构资产 | 企业架构资产管理 |
-| `TECH-DATA` | 数据集成 | CDC、ETL、数据湖、数据仓库 |
-| `TECH-IAM` | 身份认证 | 统一认证与权限 |
-| `TECH-GW` | API 网关 | 统一 API 网关 |
-| `TECH-MSG` | 消息队列 | Kafka / RabbitMQ 基座 |
-| `TECH-OBS` | 可观测性 | 日志、指标、链路追踪 |
+**不是前端 monorepo 入口**——是 `@metaplatform/ops-tools`，装的是 Node 端的运维/迁移/数据探查工具（ES / Milvus / Kafka / MinIO / Neo4j 客户端）。后续 ops 脚本入口放这里。
 
-## 命名规范
+## R1 阶段落地
 
-### 模块命名
+- [x] Nacos 3.0+ 升级（docker-compose.yml + [POC 清单](docs/NACOS-3.0-POC-CHECKLIST.md)）
+- [x] TECH-AGENT README 重写为 SAA 实现
+- [x] 根级遗留 src 清理（保留 ops-tools package.json）
+- [~] FlowGram.AI 三场景 UI 接入（portal/dw/superai）
 
-- 应用模块：`APP-` + 大写字母缩写，例：`APP-DASHBOARD`、`APP-APPHUB`
-- 技术服务模块：`TECH-` + 大写字母缩写，例：`TECH-ONT`、`TECH-WFE`
+## 相关文档
 
-### 文档命名
-
-- 格式：`[类型]-[模块]-[主题]_v[版本]-[日期].md`
-- 类型前缀：`ARCH`（架构）、`TS`（技术选型）、`SPEC`（规范）、`PLAN`（计划）、`RD`（调研）
-- 例：`TS-Mate_Platform-技术选型建议_自研最新版_v1.1-20260716.md`
-
-### 临时脚本
-
-- 统一放在 `docs/006-TMP/`
-- 命名格式：`tmp-[日期]-[用途].[ext]`
-
-## 快速导航
-
-- [规范指南](docs/000-GUIDE/)
-- [架构设计](docs/001-ARCH/)
-- [技术选型](docs/002-TS/)
-- [规范文档](docs/003-SPEC/)
-- [实施计划](docs/004-PLAN/)
-- [调研报告](docs/005-RD/)
-
-## 参与贡献
-
-TODO: 补充贡献指南
+| 文档 | 路径 |
+|---|---|
+| 项目总览（CLAUDE） | [CLAUDE.md](CLAUDE.md) |
+| Agent 工作流 | [agent.md](agent.md) |
+| PRD 集合 | [docs/prd/](docs/prd/) |
+| Nacos 3.0 POC 清单 | [docs/NACOS-3.0-POC-CHECKLIST.md](docs/NACOS-3.0-POC-CHECKLIST.md) |
+| 前端 monorepo | [metaplatform-frontend/](metaplatform-frontend/) |

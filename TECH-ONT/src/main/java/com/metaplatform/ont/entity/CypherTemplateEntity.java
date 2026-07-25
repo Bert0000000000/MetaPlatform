@@ -25,6 +25,7 @@ public class CypherTemplateEntity {
 
     @Id
     @Column(name = "template_id", nullable = false, length = 64)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String templateId;
 
     @Column(name = "tenant_id", nullable = false, length = 64)
@@ -51,6 +52,7 @@ public class CypherTemplateEntity {
     private Boolean builtin = false;
 
     @Column(name = "created_by", length = 64)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String createdBy;
 
     @Column(name = "updated_by", length = 64)

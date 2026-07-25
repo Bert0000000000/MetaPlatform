@@ -41,8 +41,8 @@ public class DeploymentTopologyService {
                 .tenantId(tenantId)
                 .name(name)
                 .environment(request.getEnvironment().trim().toLowerCase())
-                .nodes(toJson(request.getNodes()))
-                .edges(toJson(request.getEdges()))
+                .nodes(request.getNodes())
+                .edges(request.getEdges())
                 .healthStatus(StringUtils.hasText(request.getHealthStatus())
                         ? request.getHealthStatus().toLowerCase() : "healthy")
                 .createdAt(now)
@@ -84,8 +84,8 @@ public class DeploymentTopologyService {
         if (StringUtils.hasText(request.getEnvironment())) {
             entity.setEnvironment(request.getEnvironment().trim().toLowerCase());
         }
-        if (request.getNodes() != null) entity.setNodes(toJson(request.getNodes()));
-        if (request.getEdges() != null) entity.setEdges(toJson(request.getEdges()));
+        if (request.getNodes() != null) entity.setNodes(request.getNodes());
+        if (request.getEdges() != null) entity.setEdges(request.getEdges());
         if (StringUtils.hasText(request.getHealthStatus())) {
             entity.setHealthStatus(request.getHealthStatus().toLowerCase());
         }
@@ -109,15 +109,6 @@ public class DeploymentTopologyService {
                 .orElseThrow(() -> new EaException(ErrorCode.NOT_FOUND, "部署拓扑不存在"));
     }
 
-    private String toJson(Object value) {
-        if (value == null) return "[]";
-        try {
-            return objectMapper.writeValueAsString(value);
-        } catch (JsonProcessingException e) {
-            throw new EaException(ErrorCode.INVALID_PARAM, "拓扑数据序列化失败");
-        }
-    }
-
     private <T> List<T> fromJson(String json, TypeReference<List<T>> typeRef) {
         if (!StringUtils.hasText(json)) return List.of();
         try {
@@ -133,8 +124,8 @@ public class DeploymentTopologyService {
                 .tenantId(entity.getTenantId())
                 .name(entity.getName())
                 .environment(entity.getEnvironment())
-                .nodes(fromJson(entity.getNodes(), new TypeReference<>() {}))
-                .edges(fromJson(entity.getEdges(), new TypeReference<>() {}))
+                .nodes(entity.getNodes())
+                .edges(entity.getEdges())
                 .healthStatus(entity.getHealthStatus())
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())

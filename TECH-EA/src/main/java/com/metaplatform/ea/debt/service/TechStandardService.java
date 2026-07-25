@@ -96,7 +96,7 @@ public class TechStandardService {
     private void validateJson(String value, String field) {
         if (value == null || value.isBlank()) return;
         try {
-            new com.fasterxml.jackson.databind.ObjectMapper().readTree(value);
+            objectMapper.readTree(value);
         } catch (Exception e) {
             throw new EaException(ErrorCode.INVALID_PARAM, field + " 不是合法的 JSON");
         }

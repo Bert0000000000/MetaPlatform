@@ -1,5 +1,9 @@
 package com.metaplatform.mcp.tool.controller;
 
+import com.metaplatform.mcp.IamTestConfig;
+import org.springframework.context.annotation.Import;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+
 import com.metaplatform.mcp.common.ErrorCode;
 import com.metaplatform.mcp.common.PageResponse;
 import com.metaplatform.mcp.exception.McpException;
@@ -7,6 +11,7 @@ import com.metaplatform.mcp.tool.dto.McpToolListItem;
 import com.metaplatform.mcp.tool.dto.McpToolResponse;
 import com.metaplatform.mcp.tool.dto.McpToolVersionCompareResponse;
 import com.metaplatform.mcp.tool.dto.McpToolVersionResponse;
+import com.metaplatform.mcp.tool.dto.ToolStatsResponse;
 import com.metaplatform.mcp.tool.service.McpToolService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +22,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -26,6 +32,8 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+@Import(IamTestConfig.class)
+@AutoConfigureMockMvc(addFilters = false)
 @WebMvcTest(McpToolController.class)
 class McpToolControllerTest {
 
@@ -183,5 +191,38 @@ class McpToolControllerTest {
                         .param("rightVersionId", right.toString()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.differences[0]").value("schema"));
+    }
+
+    @Test
+    void publish_tool_returns_published() throws Exception {
+        UUID id = UUID.randomUUID();
+        McpToolResponse response = sampleResponse();
+        response.setId(id);
+        response.setStatus("PUBLISHED");
+        when(mcpToolService.publish(id)).thenReturn(response);
+
+        mockMvc.perform(post("/api/v1/mcp/tools/{id}/publish", id))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("PUBLISHED"));
+    }
+
+    @Test
+    void stats_returns_aggregated_data() throws Exception {
+        when(mcpToolService.stats()).thenReturn(ToolStatsResponse.builder()
+                .total(10L)
+                .enabledCount(7L)
+                .disabledCount(3L)
+                .byStatus(Map.of("DRAFT", 5L, "PUBLISHED", 5L))
+                .byCategory(Map.of("default", 8L))
+                .topToolsByCalls7d(List.of(
+                        ToolStatsResponse.TopTool.builder().toolCode("tool_a").callCount(100L).build()))
+                .build());
+
+        mockMvc.perform(get("/api/v1/mcp/tools/stats"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.total").value(10))
+                .andExpect(jsonPath("$.data.enabledCount").value(7))
+                .andExpect(jsonPath("$.data.byStatus.DRAFT").value(5))
+                .andExpect(jsonPath("$.data.topToolsByCalls7d[0].toolCode").value("tool_a"));
     }
 }

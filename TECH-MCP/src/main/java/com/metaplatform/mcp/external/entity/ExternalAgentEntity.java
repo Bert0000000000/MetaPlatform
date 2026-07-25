@@ -8,6 +8,8 @@ import lombok.NoArgsConstructor;
 
 import java.time.Instant;
 import java.util.UUID;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "mcp_external_agent")
@@ -22,6 +24,7 @@ public class ExternalAgentEntity {
     private UUID id;
 
     @Column(name = "tenant_id", nullable = false, length = 64)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String tenantId;
 
     @Column(nullable = false, length = 256)
@@ -55,6 +58,7 @@ public class ExternalAgentEntity {
     private Instant lastConnectedAt;
 
     @Column(name = "last_error_message", columnDefinition = "TEXT")
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String lastErrorMessage;
 
     @Column(name = "created_at", nullable = false)

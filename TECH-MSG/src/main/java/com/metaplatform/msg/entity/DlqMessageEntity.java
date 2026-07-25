@@ -6,6 +6,8 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.Instant;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "msg_dlq_messages")
@@ -18,6 +20,7 @@ public class DlqMessageEntity {
 
     @Id
     @Column(name = "id", nullable = false, length = 64)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String id;
 
     @Column(name = "tenant_id", nullable = false, length = 64)
@@ -25,6 +28,7 @@ public class DlqMessageEntity {
     private String tenantId = "tenant-default";
 
     @Column(name = "original_topic", nullable = false, length = 256)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String originalTopic;
 
     @Column(name = "original_message_key", length = 256)

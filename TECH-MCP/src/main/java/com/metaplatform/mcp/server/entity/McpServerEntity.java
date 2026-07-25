@@ -24,33 +24,42 @@ public class McpServerEntity {
     private UUID id;
 
     @Column(name = "tenant_id", nullable = false, length = 64)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String tenantId;
 
     @Column(nullable = false, length = 256)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String name;
 
     @Column(nullable = false, length = 128)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String code;
 
     @Column(columnDefinition = "TEXT")
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     private String description;
 
     @Column(name = "transport_type", nullable = false, length = 20)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String transportType;
 
     @Column(name = "endpoint_url", length = 2048)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String endpointUrl;
 
     @Column(length = 256)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String host;
 
     @Column
     private Integer port;
 
     @Column(name = "sse_endpoint", length = 2048)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String sseEndpoint;
 
     @Column(name = "auth_type", length = 20)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String authType;
 
     @Lob
@@ -65,15 +74,18 @@ public class McpServerEntity {
     private Integer maxConcurrentCalls;
 
     @Column(name = "health_check_url", length = 2048)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String healthCheckUrl;
 
     @Column(name = "last_heartbeat_at")
     private Instant lastHeartbeatAt;
 
     @Column(name = "last_error_message", columnDefinition = "TEXT")
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     private String lastErrorMessage;
 
     @Column(nullable = false, length = 20)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String status;
 
     @Lob

@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.Instant;
+import java.util.Map;
 
 @Data
 @Builder
@@ -19,7 +20,7 @@ public class TriggerResponse {
     private String triggerType;
     private String eventTopic;
     private String cronExpression;
-    private String config;
+    private Map<String, Object> config;
     private Boolean enabled;
     private String createdBy;
     private String updatedBy;

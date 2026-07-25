@@ -5,6 +5,8 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.Instant;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 /**
  * 模板评论与评分实体（V11-08）：用户对市场模板提交的评分（1~5）和评论内容，
@@ -24,6 +26,7 @@ public class TemplateCommentEntity {
 
     @Id
     @Column(name = "id", nullable = false, length = 64)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String id;
 
     @Column(name = "tenant_id", nullable = false, length = 64)
@@ -39,6 +42,7 @@ public class TemplateCommentEntity {
     private Integer rating;
 
     @Column(name = "comment", columnDefinition = "TEXT")
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String comment;
 
     @CreationTimestamp

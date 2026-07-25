@@ -4,6 +4,14 @@ import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { listTechnologyRadars, createTechnologyRadar, updateTechnologyRadar, deleteTechnologyRadar } from '@/api/technologyRadar';
 import type { TechnologyRadar, TechnologyRadarItem } from '@/types';
 
+interface TechnologyRadarFormValues {
+  name: string;
+  status?: 'active' | 'draft' | 'archived';
+  quadrants: string;
+  rings: string;
+  items: string;
+}
+
 const STATUS_MAP: Record<string, { color: string; label: string }> = {
   active: { color: 'green', label: '活跃' },
   draft: { color: 'blue', label: '草稿' },
@@ -76,7 +84,7 @@ export default function TechRadarPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<TechnologyRadar | null>(null);
   const [selectedRadar, setSelectedRadar] = useState<TechnologyRadar | null>(null);
-  const [form] = Form.useForm<Partial<TechnologyRadar>>();
+  const [form] = Form.useForm<TechnologyRadarFormValues>();
 
   const load = async () => {
     setLoading(true);
@@ -107,10 +115,11 @@ export default function TechRadarPage() {
   const handleSubmit = async () => {
     const values = await form.validateFields();
     const payload = {
-      ...values,
-      quadrants: parseJson(values.quadrants as unknown as string) as string[],
-      rings: parseJson(values.rings as unknown as string) as string[],
-      items: parseJson(values.items as unknown as string) as TechnologyRadarItem[],
+      name: values.name,
+      status: values.status,
+      quadrants: parseJson(values.quadrants) as string[],
+      rings: parseJson(values.rings) as string[],
+      items: parseJson(values.items) as TechnologyRadarItem[],
     };
     if (editing) {
       await updateTechnologyRadar(editing.id, payload);
@@ -128,7 +137,8 @@ export default function TechRadarPage() {
   const handleEdit = (record: TechnologyRadar) => {
     setEditing(record);
     form.setFieldsValue({
-      ...record,
+      name: record.name,
+      status: record.status,
       quadrants: stringifyJson(record.quadrants),
       rings: stringifyJson(record.rings),
       items: stringifyJson(record.items),

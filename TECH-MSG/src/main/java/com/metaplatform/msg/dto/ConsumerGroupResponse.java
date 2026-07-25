@@ -34,7 +34,7 @@ public class ConsumerGroupResponse {
                 .memberCount(e.getMemberCount())
                 .consumedOffset(e.getConsumedOffset())
                 .lag(e.getLag())
-                .status(e.getStatus().name())
+                .status(e.getStatus())
                 .createdAt(e.getCreatedAt())
                 .updatedAt(e.getUpdatedAt())
                 .build();

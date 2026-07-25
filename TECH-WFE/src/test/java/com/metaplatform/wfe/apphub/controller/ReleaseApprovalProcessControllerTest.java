@@ -19,6 +19,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -49,7 +50,7 @@ class ReleaseApprovalProcessControllerTest {
         ReleaseApprovalStartRequest request = new ReleaseApprovalStartRequest();
         request.setAppId("app-1");
         request.setVersion("v1.0.0");
-        request.setReleaseNotes("首次发布");
+        request.setReleaseNotes(Map.of("text", "首次发布"));
         request.setStrategy("GRAYSCALE");
         request.setGrayPercent(25);
         request.setTechLeadId("tech-lead");

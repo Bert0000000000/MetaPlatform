@@ -91,6 +91,16 @@ export interface ValueStreamCreateRequest {
   triggerEvent?: string;
   terminationEvent?: string;
   stages?: string[];
+  status?: 'ACTIVE' | 'DRAFT' | 'active' | 'draft';
+}
+
+export interface ValueStreamUpdateRequest {
+  name?: string;
+  description?: string;
+  triggerEvent?: string;
+  terminationEvent?: string;
+  stages?: string[];
+  status?: 'ACTIVE' | 'DRAFT' | 'active' | 'draft';
 }
 
 export interface ValueStreamStageCreateRequest {

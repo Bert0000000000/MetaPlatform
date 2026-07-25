@@ -10,6 +10,7 @@ import com.metaplatform.action.exception.ActionException;
 import com.metaplatform.action.integration.ont.dto.OntologyBindingRequest;
 import com.metaplatform.action.integration.ont.dto.OntologyBindingResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,6 +30,12 @@ public class OntologyBindingService {
     private final OntologyIntegrationService ontologyIntegrationService;
     private final ObjectMapper objectMapper;
 
+    @Value("${action.integration.ont.binding.input-entity-required:true}")
+    private boolean inputEntityRequired;
+
+    @Value("${action.integration.ont.binding.output-entity-required:false}")
+    private boolean outputEntityRequired;
+
     @Transactional
     public OntologyBindingResponse bind(String actionId, OntologyBindingRequest request) {
         ActionDefinitionEntity action = findAction(actionId);
@@ -42,19 +49,15 @@ public class OntologyBindingService {
             }
         }
 
-        ontologyIntegrationService.validateEntity(request.getInputEntityId());
-        ontologyIntegrationService.validateEntity(request.getOutputEntityId());
+        ontologyIntegrationService.validateEntity(request.getInputEntityId(), inputEntityRequired);
+        ontologyIntegrationService.validateEntity(request.getOutputEntityId(), outputEntityRequired);
 
         Map<String, Object> binding = new LinkedHashMap<>();
         binding.put("inputEntityId", request.getInputEntityId());
         binding.put("outputEntityId", request.getOutputEntityId());
         binding.put("fieldMappings", request.getFieldMappings());
 
-        try {
-            action.setOntologyBinding(objectMapper.writeValueAsString(binding));
-        } catch (Exception e) {
-            throw new ActionException(ErrorCode.INTERNAL_ERROR, "绑定配置序列化失败");
-        }
+        action.setOntologyBinding(binding);
         action.setUpdatedBy("system");
         action.setUpdatedAt(Instant.now());
         actionDefinitionRepository.save(action);
@@ -66,11 +69,11 @@ public class OntologyBindingService {
     @Transactional(readOnly = true)
     public OntologyBindingResponse getBinding(String actionId) {
         ActionDefinitionEntity action = findAction(actionId);
-        if (action.getOntologyBinding() == null || action.getOntologyBinding().isBlank()) {
+        Map<String, Object> binding = action.getOntologyBinding();
+        if (binding == null || binding.isEmpty()) {
             throw new ActionException(ErrorCode.NOT_FOUND, "Action 未绑定本体实体: " + actionId);
         }
         try {
-            Map<String, Object> binding = objectMapper.readValue(action.getOntologyBinding(), Map.class);
             Object mappings = binding.get("fieldMappings");
             List<OntologyBindingRequest.FieldMapping> fieldMappings = mappings == null
                     ? List.of()

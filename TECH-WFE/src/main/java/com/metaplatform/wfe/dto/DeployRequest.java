@@ -4,6 +4,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
+import java.util.Map;
+
 @Data
 public class DeployRequest {
 
@@ -16,5 +18,5 @@ public class DeployRequest {
     private String name;
 
     @NotBlank(message = "BPMN XML 不能为空")
-    private String bpmnXml;
+    private Map<String, Object> bpmnXml;
 }

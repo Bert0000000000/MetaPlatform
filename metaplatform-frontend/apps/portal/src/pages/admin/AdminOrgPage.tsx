@@ -67,7 +67,7 @@ export default function AdminOrgPage() {
   const toggleNode = (id: string) => setExpandedNodes((prev) => ({ ...prev, [id]: !prev[id] }));
 
   return (
-    <>
+    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
       <SubTabs items={ADMIN_TABS} activePath={location.pathname} />
 
       <style>{`
@@ -153,7 +153,7 @@ export default function AdminOrgPage() {
         .ao-page-btn:hover { background: var(--muted); color: var(--foreground); }
         .ao-page-btn.active { background: var(--foreground); color: var(--background); border-color: var(--foreground); }
       `}</style>
-      <div style={{ padding: '24px 0' }}>
+      <div style={{ padding: '24px 0', flex: 1, minHeight: 0, overflowY: 'auto' }}>
         {/* Page Header */}
         <div className="ao-page-header">
           <div>
@@ -461,6 +461,6 @@ export default function AdminOrgPage() {
           </Field>
         </FormSection>
       </FormDrawer>
-    </>
+    </div>
   );
 }

@@ -1,17 +1,14 @@
 package com.metaplatform.rule.testing.service;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.metaplatform.rule.common.ErrorCode;
 import com.metaplatform.rule.decisiontable.entity.DecisionTableEntity;
-import com.metaplatform.rule.decisiontable.entity.DecisionTableRowEntity;
-import com.metaplatform.rule.decisiontable.service.DecisionTableRowService;
+import com.metaplatform.rule.decisiontable.service.DecisionTableExecutionEngine;
 import com.metaplatform.rule.decisiontable.service.DecisionTableService;
 import com.metaplatform.rule.dto.RuleExecutionResult;
 import com.metaplatform.rule.entity.RuleDefinitionEntity;
 import com.metaplatform.rule.exception.RuleException;
 import com.metaplatform.rule.repository.RuleDefinitionRepository;
-import com.metaplatform.rule.service.RuleExecutionService;
+import com.metaplatform.rule.service.RuleEngineService;
 import com.metaplatform.rule.testing.dto.BatchTestRequest;
 import com.metaplatform.rule.testing.dto.BatchTestResult;
 import com.metaplatform.rule.testing.dto.DecisionTableTestResult;
@@ -25,19 +22,22 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 
+/**
+ * 规则测试服务（P1-RULE-09）。
+ *
+ * <p>P1-2：决策表测试改用 {@link DecisionTableExecutionEngine} 统一执行；
+ * P1-3：规则集测试改用 {@link RuleEngineService#executeReadOnly}，发 Outbox 事件与统计的写入路径不被触发。</p>
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class RuleTestingService {
 
-    private final RuleExecutionService ruleExecutionService;
+    private final RuleEngineService ruleEngineService;
     private final RuleDefinitionRepository ruleDefinitionRepository;
     private final DecisionTableService decisionTableService;
-    private final DecisionTableRowService decisionTableRowService;
-    private final ObjectMapper objectMapper;
+    private final DecisionTableExecutionEngine decisionTableExecutionEngine;
 
     @Transactional(readOnly = true)
     public RuleTestResult testRule(String ruleId, RuleTestRequest request) {
@@ -47,7 +47,7 @@ public class RuleTestingService {
         long start = System.currentTimeMillis();
         try {
             List<RuleExecutionResult> results =
-                    ruleExecutionService.execute(rule.getRulesetId(), request.getInputData());
+                    ruleEngineService.executeReadOnly(rule.getRulesetId(), request.getInputData());
 
             RuleExecutionResult matched = results.stream()
                     .filter(r -> ruleId.equals(r.getRuleId()))
@@ -90,7 +90,7 @@ public class RuleTestingService {
     @Transactional(readOnly = true)
     public RulesetTestResult testRuleset(String rulesetId, RuleTestRequest request) {
         long start = System.currentTimeMillis();
-        List<RuleExecutionResult> results = ruleExecutionService.execute(rulesetId, request.getInputData());
+        List<RuleExecutionResult> results = ruleEngineService.executeReadOnly(rulesetId, request.getInputData());
         long elapsed = System.currentTimeMillis() - start;
 
         List<RuleTestResult> testResults = results.stream()
@@ -113,31 +113,23 @@ public class RuleTestingService {
                 .build();
     }
 
+    /**
+     * P1-2：决策表测试改用 {@link DecisionTableExecutionEngine} 统一执行，
+     * 共享完整操作符匹配能力。
+     */
     @Transactional(readOnly = true)
     public DecisionTableTestResult testDecisionTable(String tableId, RuleTestRequest request) {
         DecisionTableEntity table = decisionTableService.getEntity(tableId);
-        List<DecisionTableRowEntity> rows = decisionTableRowService.getEnabledRows(tableId);
 
         long start = System.currentTimeMillis();
-        List<Map<String, Object>> matchedOutputs = new ArrayList<>();
-        String hitPolicy = table.getHitPolicy();
-
-        for (DecisionTableRowEntity row : rows) {
-            Map<String, Object> rowInputs = readMap(row.getInputValues());
-            if (matchesInput(request.getInputData(), rowInputs)) {
-                Map<String, Object> rowOutputs = readMap(row.getOutputValues());
-                matchedOutputs.add(rowOutputs);
-                if ("FIRST".equalsIgnoreCase(hitPolicy)) {
-                    break;
-                }
-            }
-        }
+        DecisionTableExecutionEngine.ExecutionOutcome outcome =
+                decisionTableExecutionEngine.execute(table, request.getInputData(), Boolean.TRUE);
         long elapsed = System.currentTimeMillis() - start;
 
         return DecisionTableTestResult.builder()
                 .tableId(tableId)
-                .matchedOutputs(matchedOutputs)
-                .matchedRowCount(matchedOutputs.size())
+                .matchedOutputs(outcome.outputs())
+                .matchedRowCount(outcome.outputs().size())
                 .executionTimeMs(elapsed)
                 .build();
     }
@@ -175,24 +167,5 @@ public class RuleTestingService {
                 .errorCount(errors)
                 .totalExecutionTimeMs(totalElapsed)
                 .build();
-    }
-
-    private boolean matchesInput(Map<String, Object> inputData, Map<String, Object> rowInputs) {
-        for (Map.Entry<String, Object> entry : rowInputs.entrySet()) {
-            Object inputValue = inputData.get(entry.getKey());
-            if (!Objects.equals(String.valueOf(entry.getValue()), String.valueOf(inputValue))) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    private Map<String, Object> readMap(String json) {
-        if (json == null || json.isBlank()) return Map.of();
-        try {
-            return objectMapper.readValue(json, new TypeReference<>() {});
-        } catch (Exception e) {
-            return Map.of();
-        }
     }
 }

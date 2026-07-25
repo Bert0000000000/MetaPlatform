@@ -1,65 +1,73 @@
 package com.metaplatform.ont.entity;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.metaplatform.ont.common.OntStatus;
 import jakarta.persistence.*;
-import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
 
+import com.metaplatform.ont.common.OntStatus;
+
 @Entity
 @Table(name = "ont_relation_instance")
-@Getter
-@Setter
+@Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 public class RelationInstanceEntity {
 
     @Id
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "relation_instance_id", nullable = false, length = 64)
     private String relationInstanceId;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "tenant_id", nullable = false, length = 64)
     private String tenantId;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "relation_type_id", nullable = false, length = 64)
     private String relationTypeId;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "source_entity_id", nullable = false, length = 64)
     private String sourceEntityId;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "target_entity_id", nullable = false, length = 64)
     private String targetEntityId;
 
-    @JdbcTypeCode(SqlTypes.JSON)
+    @Lob
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     @Column(name = "attributes", columnDefinition = "jsonb")
-    private JsonNode attributes;
+    private com.fasterxml.jackson.databind.JsonNode attributes;
 
-    @JdbcTypeCode(SqlTypes.JSON)
+    @Lob
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     @Column(name = "metadata", columnDefinition = "jsonb")
-    private JsonNode metadata;
+    private com.fasterxml.jackson.databind.JsonNode metadata;
 
-    @Column(name = "status", nullable = false, length = 32)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Enumerated(EnumType.STRING)
-    @Builder.Default
-    private OntStatus status = OntStatus.ACTIVE;
+    @Column(name = "status", nullable = false, length = 32)
+    private OntStatus status;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "created_by", length = 64)
     private String createdBy;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "updated_by", length = 64)
     private String updatedBy;
 
-    @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
-    @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
+
 }

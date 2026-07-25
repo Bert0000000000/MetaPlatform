@@ -27,6 +27,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Slf4j
@@ -60,7 +62,7 @@ public class ActionTriggerService {
                 .triggerType(request.getTriggerType())
                 .eventTopic(request.getEventTopic())
                 .cronExpression(request.getCronExpression())
-                .config(normalizeJson(request.getConfig(), "{}"))
+                .config(normalizeMap(request.getConfig(), new java.util.HashMap<>()))
                 .enabled(Boolean.TRUE)
                 .createdBy(operator)
                 .updatedBy(operator)
@@ -110,7 +112,7 @@ public class ActionTriggerService {
         }
         if (request.getConfig() != null) {
             validateJson(request.getConfig(), "config");
-            entity.setConfig(normalizeJson(request.getConfig(), "{}"));
+            entity.setConfig(normalizeMap(request.getConfig(), new java.util.HashMap<>()));
         }
         entity.setUpdatedBy(currentOperator());
         entity.setUpdatedAt(Instant.now());
@@ -153,10 +155,39 @@ public class ActionTriggerService {
     @Transactional
     public SyncExecutionResponse fire(String triggerId) {
         ActionTriggerEntity entity = findByTriggerId(triggerId);
-        return fire(entity);
+        return fire(entity, null);
+    }
+
+    /**
+     * 按事件主题触发：查找当前租户下所有绑定到该 eventTopic 的启用 EVENT 触发器并依次执行。
+     * 由 {@link com.metaplatform.action.trigger.service.EventTriggerConsumer} 在收到 Kafka 消息后调用。
+     * 调用方需在调用前将 tenantId 设置到 {@link TenantContext}（从 Kafka 消息头提取）。
+     */
+    public void fireByEventTopic(String eventTopic, Object eventData) {
+        String tenantId = TenantContext.getOrDefault();
+        List<ActionTriggerEntity> triggers = actionTriggerRepository
+                .findByTenantIdAndTriggerTypeAndEventTopicAndEnabledTrueAndDeletedAtIsNull(
+                        tenantId, ActionTriggerEntity.TYPE_EVENT, eventTopic);
+        if (triggers.isEmpty()) {
+            log.debug("No enabled EVENT triggers for tenantId={}, eventTopic={}", tenantId, eventTopic);
+            return;
+        }
+        log.info("Firing {} EVENT trigger(s) for tenantId={}, eventTopic={}",
+                triggers.size(), tenantId, eventTopic);
+        for (ActionTriggerEntity trigger : triggers) {
+            try {
+                fire(trigger, eventData);
+            } catch (Exception e) {
+                log.error("Failed to fire EVENT trigger {} for topic {}", trigger.getTriggerId(), eventTopic, e);
+            }
+        }
     }
 
     SyncExecutionResponse fire(ActionTriggerEntity trigger) {
+        return fire(trigger, null);
+    }
+
+    SyncExecutionResponse fire(ActionTriggerEntity trigger, Object eventData) {
         String previousTenant = TenantContext.get();
         try {
             TenantContext.set(trigger.getTenantId());
@@ -167,6 +198,7 @@ public class ActionTriggerService {
                             "Action 不存在: " + trigger.getActionId()));
             SyncExecutionRequest request = new SyncExecutionRequest();
             request.setActionCode(action.getCode());
+            request.setInput(eventData);
             return httpExecutionService.executeSync(request);
         } finally {
             if (previousTenant == null) {
@@ -214,19 +246,19 @@ public class ActionTriggerService {
                 .orElseThrow(() -> new ActionException(ErrorCode.ACTION_NOT_FOUND, "Action 不存在: " + actionId));
     }
 
-    private void validateJson(String value, String field) {
-        if (value == null || value.isBlank()) {
+    private void validateJson(Map<String, Object> value, String field) {
+        if (value == null || value.isEmpty()) {
             return;
         }
         try {
-            objectMapper.readTree(value);
+            objectMapper.writeValueAsString(value);
         } catch (Exception e) {
             throw new ActionException(ErrorCode.INVALID_PARAM, field + " 不是合法的 JSON");
         }
     }
 
-    private String normalizeJson(String value, String defaultValue) {
-        if (value == null || value.isBlank()) {
+    private Map<String, Object> normalizeMap(Map<String, Object> value, Map<String, Object> defaultValue) {
+        if (value == null || value.isEmpty()) {
             return defaultValue;
         }
         return value;

@@ -49,7 +49,7 @@ public class AuditLogService {
                     .description(description)
                     .traceId(TraceContext.getOrCreate())
                     .status(status == null ? IamAuditLogEntity.Status.SUCCESS : status)
-                    .metadata(metadata == null ? null : objectMapper.writeValueAsString(metadata))
+                    .metadata(metadata)
                     .build();
             auditLogRepository.save(entity);
         } catch (Exception e) {

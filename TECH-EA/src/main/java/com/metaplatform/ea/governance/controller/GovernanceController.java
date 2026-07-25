@@ -4,13 +4,8 @@ import com.metaplatform.ea.common.ApiResponse;
 import com.metaplatform.ea.governance.principle.dto.*;
 import com.metaplatform.ea.governance.principle.service.ArchitecturePrincipleService;
 import com.metaplatform.ea.governance.principle.service.PrincipleCategoryService;
-import com.metaplatform.ea.debt.dto.CreateTechDebtRequest;
-import com.metaplatform.ea.debt.dto.TechDebtResponse;
-import com.metaplatform.ea.debt.dto.UpdateTechDebtRequest;
-import com.metaplatform.ea.debt.service.TechDebtService;
 import com.metaplatform.ea.governance.review.dto.*;
 import com.metaplatform.ea.governance.review.service.ReviewTemplateService;
-import com.metaplatform.ea.governance.review.service.ReviewTicketService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -18,6 +13,11 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * 治理控制器：仅保留原则分类、架构原则、评审模板。
+ * 技术债务已迁入 TechDebtController（/tech-debts + /governance/tech-debts），
+ * 评审工单已迁入 ArchitectureReviewController（/architecture-reviews + /governance/review-tickets）。
+ */
 @RestController
 @RequestMapping("/api/v1/ea/governance")
 @RequiredArgsConstructor
@@ -26,8 +26,6 @@ public class GovernanceController {
     private final PrincipleCategoryService categoryService;
     private final ArchitecturePrincipleService principleService;
     private final ReviewTemplateService templateService;
-    private final ReviewTicketService ticketService;
-    private final TechDebtService techDebtService;
 
     // ---------- 原则分类 ----------
     @PostMapping("/principle-categories")
@@ -111,89 +109,6 @@ public class GovernanceController {
     @DeleteMapping("/review-templates/{id}")
     public ApiResponse<Void> deleteTemplate(@PathVariable UUID id) {
         templateService.delete(id);
-        return ApiResponse.success();
-    }
-
-    // ---------- 评审工单 ----------
-    @PostMapping("/review-tickets")
-    public ApiResponse<ReviewTicketResponse> createTicket(@Valid @RequestBody CreateReviewTicketRequest request) {
-        return ApiResponse.success(ticketService.create(request));
-    }
-
-    @GetMapping("/review-tickets")
-    public ApiResponse<List<ReviewTicketResponse>> listTickets(@RequestParam(required = false) String status) {
-        return ApiResponse.success(ticketService.list(status));
-    }
-
-    @GetMapping("/review-tickets/{id}")
-    public ApiResponse<ReviewTicketResponse> getTicket(@PathVariable UUID id) {
-        return ApiResponse.success(ticketService.get(id));
-    }
-
-    @PutMapping("/review-tickets/{id}")
-    public ApiResponse<ReviewTicketResponse> updateTicket(@PathVariable UUID id,
-                                                           @Valid @RequestBody UpdateReviewTicketRequest request) {
-        return ApiResponse.success(ticketService.update(id, request));
-    }
-
-    @DeleteMapping("/review-tickets/{id}")
-    public ApiResponse<Void> deleteTicket(@PathVariable UUID id) {
-        ticketService.delete(id);
-        return ApiResponse.success();
-    }
-
-    @PostMapping("/review-tickets/{id}/start")
-    public ApiResponse<ReviewTicketResponse> startReview(@PathVariable UUID id,
-                                                          @RequestParam(required = false) String reviewer) {
-        return ApiResponse.success(ticketService.startReview(id, reviewer));
-    }
-
-    @PostMapping("/review-tickets/{id}/approve")
-    public ApiResponse<ReviewTicketResponse> approveTicket(@PathVariable UUID id,
-                                                            @Valid @RequestBody ReviewTicketScoreRequest request) {
-        return ApiResponse.success(ticketService.approve(id, request));
-    }
-
-    @PostMapping("/review-tickets/{id}/reject")
-    public ApiResponse<ReviewTicketResponse> rejectTicket(@PathVariable UUID id,
-                                                           @Valid @RequestBody ReviewTicketScoreRequest request) {
-        return ApiResponse.success(ticketService.reject(id, request));
-    }
-
-    @PostMapping("/review-tickets/{id}/comments")
-    public ApiResponse<ReviewTicketResponse> addTicketComment(@PathVariable UUID id,
-                                                               @RequestParam String reviewer,
-                                                               @RequestParam String comment) {
-        return ApiResponse.success(ticketService.addComment(id, reviewer, comment));
-    }
-
-    // ---------- 技术债务（治理视图） ----------
-    @PostMapping("/tech-debts")
-    public ApiResponse<TechDebtResponse> createTechDebt(@Valid @RequestBody CreateTechDebtRequest request) {
-        return ApiResponse.success(techDebtService.create(request));
-    }
-
-    @GetMapping("/tech-debts")
-    public ApiResponse<List<TechDebtResponse>> listTechDebt(
-            @RequestParam(required = false) String level,
-            @RequestParam(required = false) String status) {
-        return ApiResponse.success(techDebtService.listByLevelAndStatus(level, status));
-    }
-
-    @GetMapping("/tech-debts/{id}")
-    public ApiResponse<TechDebtResponse> getTechDebt(@PathVariable UUID id) {
-        return ApiResponse.success(techDebtService.get(id));
-    }
-
-    @PutMapping("/tech-debts/{id}")
-    public ApiResponse<TechDebtResponse> updateTechDebt(@PathVariable UUID id,
-                                                         @Valid @RequestBody UpdateTechDebtRequest request) {
-        return ApiResponse.success(techDebtService.update(id, request));
-    }
-
-    @DeleteMapping("/tech-debts/{id}")
-    public ApiResponse<Void> deleteTechDebt(@PathVariable UUID id) {
-        techDebtService.delete(id);
         return ApiResponse.success();
     }
 }

@@ -4,15 +4,11 @@ import com.metaplatform.wfe.common.PageResponse;
 import com.metaplatform.wfe.common.TenantContext;
 import com.metaplatform.wfe.dto.DeployRequest;
 import com.metaplatform.wfe.dto.ProcessDefinitionResponse;
+import com.metaplatform.wfe.engine.converter.BpmnToFlowGramConverter;
 import com.metaplatform.wfe.entity.ProcessDefinitionEntity;
 import com.metaplatform.wfe.entity.ProcessDefinitionStatus;
 import com.metaplatform.wfe.exception.WfeException;
 import com.metaplatform.wfe.repository.ProcessDefinitionRepository;
-import org.flowable.engine.RepositoryService;
-import org.flowable.engine.repository.Deployment;
-import org.flowable.engine.repository.DeploymentBuilder;
-import org.flowable.engine.repository.ProcessDefinition;
-import org.flowable.engine.repository.ProcessDefinitionQuery;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -25,12 +21,12 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
@@ -38,11 +34,13 @@ import static org.mockito.Mockito.*;
 @MockitoSettings(strictness = Strictness.LENIENT)
 class ProcessDefinitionServiceTest {
 
+    private static final String BPMN_XML = "<?xml version=\"1.0\"?><bpmn:definitions xmlns:bpmn=\"http://www.omg.org/spec/BPMN/20100524/MODEL\"></bpmn:definitions>";
+
     @Mock
     private ProcessDefinitionRepository processDefinitionRepository;
 
     @Mock
-    private RepositoryService repositoryService;
+    private BpmnToFlowGramConverter bpmnToFlowGramConverter;
 
     @InjectMocks
     private ProcessDefinitionService processDefinitionService;
@@ -57,19 +55,8 @@ class ProcessDefinitionServiceTest {
         DeployRequest request = new DeployRequest();
         request.setProcessKey("purchase_approval");
         request.setName("采购审批流程");
-        request.setBpmnXml("<?xml version=\"1.0\"?><bpmn:definitions xmlns:bpmn=\"http://www.omg.org/spec/BPMN/20100524/MODEL\"></bpmn:definitions>");
+        request.setBpmnXml(Map.of("xml", BPMN_XML));
         return request;
-    }
-
-    private DeploymentBuilder mockDeploymentBuilder() {
-        DeploymentBuilder builder = mock(DeploymentBuilder.class);
-        Deployment deployment = mock(Deployment.class);
-        when(deployment.getId()).thenReturn("dep-001");
-        when(deployment.getName()).thenReturn("采购审批流程");
-        when(builder.name(anyString())).thenReturn(builder);
-        when(builder.addString(anyString(), anyString())).thenReturn(builder);
-        when(builder.deploy()).thenReturn(deployment);
-        return builder;
     }
 
     @Test
@@ -83,9 +70,8 @@ class ProcessDefinitionServiceTest {
         when(processDefinitionRepository.existsByTenantIdAndProcessKeyAndVersion(
                 TenantContext.DEFAULT_TENANT_ID, "purchase_approval", 1))
                 .thenReturn(false);
-
-        DeploymentBuilder builder = mockDeploymentBuilder();
-        when(repositoryService.createDeployment()).thenReturn(builder);
+        when(bpmnToFlowGramConverter.convert(BPMN_XML))
+                .thenReturn(Map.of("nodes", List.of()));
 
         ProcessDefinitionEntity saved = ProcessDefinitionEntity.builder()
                 .id("pd-001")
@@ -94,6 +80,7 @@ class ProcessDefinitionServiceTest {
                 .name("采购审批流程")
                 .version(1)
                 .bpmnXml(request.getBpmnXml())
+                .flowgramJson(Map.of("nodes", List.of()))
                 .status(ProcessDefinitionStatus.DEPLOYED)
                 .build();
         when(processDefinitionRepository.save(any(ProcessDefinitionEntity.class))).thenReturn(saved);
@@ -105,8 +92,8 @@ class ProcessDefinitionServiceTest {
         assertThat(response.getName()).isEqualTo("采购审批流程");
         assertThat(response.getVersion()).isEqualTo(1);
         assertThat(response.getStatus()).isEqualTo("DEPLOYED");
-        verify(repositoryService).createDeployment();
-        verify(builder).deploy();
+        verify(bpmnToFlowGramConverter).convert(BPMN_XML);
+        verify(processDefinitionRepository).save(any(ProcessDefinitionEntity.class));
     }
 
     @Test
@@ -119,7 +106,7 @@ class ProcessDefinitionServiceTest {
                 .processKey("purchase_approval")
                 .name("旧版本")
                 .version(1)
-                .bpmnXml("<xml/>")
+                .bpmnXml(Map.of("xml", "<xml/>"))
                 .status(ProcessDefinitionStatus.DEPLOYED)
                 .build();
 
@@ -135,7 +122,8 @@ class ProcessDefinitionServiceTest {
                 .isInstanceOf(WfeException.class)
                 .hasMessageContaining("已存在");
 
-        verify(repositoryService, never()).createDeployment();
+        verify(bpmnToFlowGramConverter, never()).convert(any());
+        verify(processDefinitionRepository, never()).save(any(ProcessDefinitionEntity.class));
     }
 
     @Test
@@ -143,11 +131,13 @@ class ProcessDefinitionServiceTest {
         ProcessDefinitionEntity entity1 = ProcessDefinitionEntity.builder()
                 .id("pd-001").tenantId(TenantContext.DEFAULT_TENANT_ID)
                 .processKey("process_a").name("流程A").version(1)
-                .bpmnXml("<xml/>").status(ProcessDefinitionStatus.DEPLOYED).build();
+                .bpmnXml(Map.of("xml", "<xml/>"))
+                .status(ProcessDefinitionStatus.DEPLOYED).build();
         ProcessDefinitionEntity entity2 = ProcessDefinitionEntity.builder()
                 .id("pd-002").tenantId(TenantContext.DEFAULT_TENANT_ID)
                 .processKey("process_b").name("流程B").version(1)
-                .bpmnXml("<xml/>").status(ProcessDefinitionStatus.SUSPENDED).build();
+                .bpmnXml(Map.of("xml", "<xml/>"))
+                .status(ProcessDefinitionStatus.SUSPENDED).build();
 
         PageImpl<ProcessDefinitionEntity> page = new PageImpl<>(
                 List.of(entity1, entity2),
@@ -175,7 +165,8 @@ class ProcessDefinitionServiceTest {
         ProcessDefinitionEntity entity = ProcessDefinitionEntity.builder()
                 .id("pd-001").tenantId(TenantContext.DEFAULT_TENANT_ID)
                 .processKey("purchase_approval").name("采购审批流程").version(1)
-                .bpmnXml("<bpmn/>").status(ProcessDefinitionStatus.DEPLOYED).build();
+                .bpmnXml(Map.of("xml", "<bpmn/>"))
+                .status(ProcessDefinitionStatus.DEPLOYED).build();
 
         when(processDefinitionRepository.findByIdAndStatusNot(
                 "pd-001", ProcessDefinitionStatus.DELETED))
@@ -185,7 +176,7 @@ class ProcessDefinitionServiceTest {
 
         assertThat(response.getId()).isEqualTo("pd-001");
         assertThat(response.getProcessKey()).isEqualTo("purchase_approval");
-        assertThat(response.getBpmnXml()).isEqualTo("<bpmn/>");
+        assertThat(response.getBpmnXml()).isEqualTo(Map.of("xml", "<bpmn/>"));
     }
 
     @Test
@@ -204,26 +195,20 @@ class ProcessDefinitionServiceTest {
         ProcessDefinitionEntity entity = ProcessDefinitionEntity.builder()
                 .id("pd-001").tenantId(TenantContext.DEFAULT_TENANT_ID)
                 .processKey("purchase_approval").name("采购审批流程").version(1)
-                .bpmnXml("<bpmn/>").status(ProcessDefinitionStatus.DEPLOYED).build();
+                .bpmnXml(Map.of("xml", "<bpmn/>"))
+                .status(ProcessDefinitionStatus.DEPLOYED).build();
 
         when(processDefinitionRepository.findByIdAndStatusNot(
                 "pd-001", ProcessDefinitionStatus.DELETED))
                 .thenReturn(Optional.of(entity));
-
-        ProcessDefinitionQuery query = mock(ProcessDefinitionQuery.class);
-        ProcessDefinition flowablePd = mock(ProcessDefinition.class);
-        when(repositoryService.createProcessDefinitionQuery()).thenReturn(query);
-        when(query.processDefinitionKey(anyString())).thenReturn(query);
-        when(query.latestVersion()).thenReturn(query);
-        when(query.singleResult()).thenReturn(flowablePd);
-        when(flowablePd.getId()).thenReturn("flowable-pd-001");
 
         when(processDefinitionRepository.save(any(ProcessDefinitionEntity.class))).thenReturn(entity);
 
         ProcessDefinitionResponse response = processDefinitionService.suspend("pd-001");
 
         assertThat(response.getStatus()).isEqualTo("SUSPENDED");
-        verify(repositoryService).suspendProcessDefinitionById("flowable-pd-001");
+        assertThat(entity.getStatus()).isEqualTo(ProcessDefinitionStatus.SUSPENDED);
+        verify(processDefinitionRepository).save(entity);
     }
 
     @Test
@@ -231,26 +216,20 @@ class ProcessDefinitionServiceTest {
         ProcessDefinitionEntity entity = ProcessDefinitionEntity.builder()
                 .id("pd-001").tenantId(TenantContext.DEFAULT_TENANT_ID)
                 .processKey("purchase_approval").name("采购审批流程").version(1)
-                .bpmnXml("<bpmn/>").status(ProcessDefinitionStatus.SUSPENDED).build();
+                .bpmnXml(Map.of("xml", "<bpmn/>"))
+                .status(ProcessDefinitionStatus.SUSPENDED).build();
 
         when(processDefinitionRepository.findByIdAndStatusNot(
                 "pd-001", ProcessDefinitionStatus.DELETED))
                 .thenReturn(Optional.of(entity));
-
-        ProcessDefinitionQuery query = mock(ProcessDefinitionQuery.class);
-        ProcessDefinition flowablePd = mock(ProcessDefinition.class);
-        when(repositoryService.createProcessDefinitionQuery()).thenReturn(query);
-        when(query.processDefinitionKey(anyString())).thenReturn(query);
-        when(query.latestVersion()).thenReturn(query);
-        when(query.singleResult()).thenReturn(flowablePd);
-        when(flowablePd.getId()).thenReturn("flowable-pd-001");
 
         when(processDefinitionRepository.save(any(ProcessDefinitionEntity.class))).thenReturn(entity);
 
         ProcessDefinitionResponse response = processDefinitionService.activate("pd-001");
 
         assertThat(response.getStatus()).isEqualTo("DEPLOYED");
-        verify(repositoryService).activateProcessDefinitionById("flowable-pd-001");
+        assertThat(entity.getStatus()).isEqualTo(ProcessDefinitionStatus.DEPLOYED);
+        verify(processDefinitionRepository).save(entity);
     }
 
     @Test
@@ -258,36 +237,23 @@ class ProcessDefinitionServiceTest {
         ProcessDefinitionEntity entity = ProcessDefinitionEntity.builder()
                 .id("pd-001").tenantId(TenantContext.DEFAULT_TENANT_ID)
                 .processKey("purchase_approval").name("采购审批流程").version(1)
-                .bpmnXml("<bpmn/>").status(ProcessDefinitionStatus.DEPLOYED).build();
+                .bpmnXml(Map.of("xml", "<bpmn/>"))
+                .status(ProcessDefinitionStatus.DEPLOYED).build();
 
         when(processDefinitionRepository.findByIdAndStatusNot(
                 "pd-001", ProcessDefinitionStatus.DELETED))
                 .thenReturn(Optional.of(entity));
-
-        ProcessDefinitionQuery query = mock(ProcessDefinitionQuery.class);
-        ProcessDefinition flowablePd = mock(ProcessDefinition.class);
-        when(repositoryService.createProcessDefinitionQuery()).thenReturn(query);
-        when(query.processDefinitionKey(anyString())).thenReturn(query);
-        when(query.latestVersion()).thenReturn(query);
-        when(query.singleResult()).thenReturn(flowablePd);
-        when(flowablePd.getDeploymentId()).thenReturn("dep-001");
 
         when(processDefinitionRepository.save(any(ProcessDefinitionEntity.class))).thenReturn(entity);
 
         processDefinitionService.delete("pd-001");
 
         assertThat(entity.getStatus()).isEqualTo(ProcessDefinitionStatus.DELETED);
-        verify(repositoryService).deleteDeployment("dep-001");
         verify(processDefinitionRepository).save(entity);
     }
 
     @Test
-    void delete_shouldThrow409_whenAlreadyDeleted() {
-        ProcessDefinitionEntity entity = ProcessDefinitionEntity.builder()
-                .id("pd-001").tenantId(TenantContext.DEFAULT_TENANT_ID)
-                .processKey("purchase_approval").name("采购审批流程").version(1)
-                .bpmnXml("<bpmn/>").status(ProcessDefinitionStatus.DELETED).build();
-
+    void delete_shouldThrow404_whenAlreadyDeleted() {
         when(processDefinitionRepository.findByIdAndStatusNot(
                 "pd-001", ProcessDefinitionStatus.DELETED))
                 .thenReturn(Optional.empty());

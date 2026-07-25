@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
 import org.springframework.context.annotation.Import;
@@ -40,7 +40,7 @@ class CurrentUserControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @MockBean
+    @MockitoBean
     private CurrentUserService currentUserService;
 
     @AfterEach
@@ -114,7 +114,7 @@ class CurrentUserControllerTest {
                         .roleId("role-001")
                         .roleCode("DEVELOPER")
                         .roleName("开发者")
-                        .dataScope("DEPT")
+                        .dataScope("DEPARTMENT")
                         .build()))
                 .build();
         when(currentUserService.currentPermissions()).thenReturn(response);
@@ -128,7 +128,7 @@ class CurrentUserControllerTest {
                 .andExpect(jsonPath("$.data.permissions[0].actions[0]").value("READ"))
                 .andExpect(jsonPath("$.data.permissions[1].actions.length()").value(2))
                 .andExpect(jsonPath("$.data.roles[0].roleCode").value("DEVELOPER"))
-                .andExpect(jsonPath("$.data.roles[0].dataScope").value("DEPT"));
+                .andExpect(jsonPath("$.data.roles[0].dataScope").value("DEPARTMENT"));
     }
 
     @Test

@@ -5,13 +5,25 @@ import { listProcesses, createProcess, updateProcess, deleteProcess, linkProcess
 import { listCapabilities } from '@/api/capabilities';
 import { listApplications } from '@/api/applications';
 import { listRoles } from '@/api/roles';
-import type { BusinessProcess, Capability, ArchApplication, ArchRole } from '@/types';
+import type { BusinessProcess, Capability, ArchApplication, ArchRole, BusinessProcessCreateRequest, BusinessProcessUpdateRequest } from '@/types';
 
 const STATUS_TAG: Record<string, { color: string; label: string }> = {
-  active: { color: 'green', label: '生效' },
-  draft: { color: 'default', label: '草稿' },
-  deprecated: { color: 'red', label: '废弃' },
+  ACTIVE: { color: 'green', label: '生效' },
+  DRAFT: { color: 'default', label: '草稿' },
+  DEPRECATED: { color: 'red', label: '废弃' },
 };
+
+interface ProcessFormValues {
+  name: string;
+  code: string;
+  description?: string;
+  processType?: 'MAIN' | 'SUB';
+  frequency?: 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY' | 'ONCE' | 'CONTINUOUS';
+  capabilityIds?: string[];
+  applicationIds?: string[];
+  bpmnXml?: string;
+  status?: 'active' | 'draft' | 'deprecated';
+}
 
 export default function BusinessProcessPage() {
   const [list, setList] = useState<BusinessProcess[]>([]);
@@ -24,7 +36,7 @@ export default function BusinessProcessPage() {
   const [editing, setEditing] = useState<BusinessProcess | null>(null);
   const [detail, setDetail] = useState<BusinessProcess | null>(null);
   const [selectedProcess, setSelectedProcess] = useState<BusinessProcess | null>(null);
-  const [form] = Form.useForm<Partial<BusinessProcess>>();
+  const [form] = Form.useForm<ProcessFormValues>();
   const [roleForm] = Form.useForm<{ roleIds: string[]; relationship?: string }>();
 
   const load = async () => {
@@ -46,11 +58,30 @@ export default function BusinessProcessPage() {
 
   const handleSubmit = async () => {
     const values = await form.validateFields();
-    const payload = { ...values, processType: values.processType || 'MAIN', frequency: values.frequency || 'DAILY' };
     if (editing) {
+      const payload: BusinessProcessUpdateRequest = {
+        name: values.name,
+        description: values.description,
+        processType: values.processType || 'MAIN',
+        frequency: values.frequency || 'DAILY',
+        capabilities: values.capabilityIds,
+        applicationIds: values.applicationIds,
+        bpmnXml: values.bpmnXml,
+        status: typeof values.status === 'string' ? values.status.toUpperCase() : values.status,
+      };
       await updateProcess(editing.id, payload);
       message.success('更新成功');
     } else {
+      const payload: BusinessProcessCreateRequest = {
+        name: values.name,
+        code: values.code,
+        description: values.description,
+        processType: values.processType || 'MAIN',
+        frequency: values.frequency || 'DAILY',
+        capabilities: values.capabilityIds,
+        applicationIds: values.applicationIds,
+        bpmnXml: values.bpmnXml,
+      };
       await createProcess(payload);
       message.success('创建成功');
     }
@@ -79,12 +110,34 @@ export default function BusinessProcessPage() {
     { title: '流程类型', dataIndex: 'processType', key: 'processType' },
     { title: '频率', dataIndex: 'frequency', key: 'frequency' },
     { title: '关联能力', key: 'caps', render: (_: unknown, r: BusinessProcess) => (r.capabilities || r.capabilityIds || []).map((id) => <Tag key={id} color="blue">{caps.find((c) => c.capabilityId === id)?.name || id}</Tag>) },
-    { title: '状态', dataIndex: 'status', key: 'status', render: (s: string) => <Tag color={STATUS_TAG[s]?.color}>{STATUS_TAG[s]?.label}</Tag> },
+    { title: '状态', dataIndex: 'status', key: 'status', render: (s: string) => {
+        const upper = typeof s === 'string' ? s.toUpperCase() : s;
+        const meta = STATUS_TAG[upper as keyof typeof STATUS_TAG];
+        return <Tag color={meta?.color}>{meta?.label ?? upper}</Tag>;
+      } },
     {
       title: '操作', key: 'action',
       render: (_: unknown, r: BusinessProcess) => (
         <Space>
-          <Button type="link" size="small" icon={<EditOutlined />} onClick={() => { setEditing(r); form.setFieldsValue(r); setModalOpen(true); }}>编辑</Button>
+          <Button type="link" size="small" icon={<EditOutlined />} onClick={() => {
+            setEditing(r);
+            const pt = r.processType;
+            const statusUpper = typeof r.status === 'string' ? r.status.toUpperCase() : r.status;
+            form.setFieldsValue({
+              name: r.name,
+              code: r.code,
+              description: r.description,
+              processType: pt === 'main' || pt === 'sub' ? pt.toUpperCase() as 'MAIN' | 'SUB' : pt as 'MAIN' | 'SUB' | undefined,
+              frequency: r.frequency,
+              capabilityIds: r.capabilityIds ?? r.capabilities,
+              applicationIds: r.applicationIds,
+              bpmnXml: r.bpmnXml,
+              status: (statusUpper === 'ACTIVE' || statusUpper === 'DRAFT' || statusUpper === 'DEPRECATED'
+                ? (statusUpper === 'ACTIVE' ? 'active' : statusUpper === 'DRAFT' ? 'draft' : 'deprecated')
+                : undefined) as 'active' | 'draft' | 'deprecated' | undefined,
+            });
+            setModalOpen(true);
+          }}>编辑</Button>
           <Button type="link" size="small" onClick={() => openRoleModal(r)}>角色</Button>
           <Popconfirm title="确认删除？" onConfirm={async () => { await deleteProcess(r.id); message.success('已删除'); load(); }}><Button type="link" size="small" danger icon={<DeleteOutlined />}>删除</Button></Popconfirm>
         </Space>

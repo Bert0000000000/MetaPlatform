@@ -7,7 +7,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -19,7 +19,7 @@ public class AuditLogExportService {
     private final AuditLogService auditLogService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public ExportedDocument export(String format, String tenantId, LocalDateTime start, LocalDateTime end) {
+    public ExportedDocument export(String format, String tenantId, Instant start, Instant end) {
         List<AuditLogResponse> logs = auditLogService.exportRange(tenantId, start, end)
                 .block();
         return render(format, logs);

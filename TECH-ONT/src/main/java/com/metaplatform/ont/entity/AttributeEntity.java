@@ -21,6 +21,7 @@ public class AttributeEntity {
 
     @Id
     @Column(name = "attribute_id", nullable = false, length = 64)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String attributeId;
 
     @Column(name = "tenant_id", nullable = false, length = 64)

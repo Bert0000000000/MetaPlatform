@@ -9,6 +9,7 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
+import java.util.Map;
 import java.util.UUID;
 
 @Entity
@@ -24,6 +25,7 @@ public class ExecutionEntity {
     private UUID id;
 
     @Column(name = "tenant_id", nullable = false, length = 64)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String tenantId;
 
     @Column(name = "execution_id", nullable = false, length = 64, unique = true)
@@ -38,15 +40,13 @@ public class ExecutionEntity {
     @Column(nullable = false, length = 20)
     private String status;
 
-    @Lob
-    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb", nullable = false)
-    private String input;
+    private Map<String, Object> input;
 
-    @Lob
-    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
-    private String output;
+    private Map<String, Object> output;
 
     @Column(name = "error_code", length = 10)
     private String errorCode;
@@ -65,6 +65,19 @@ public class ExecutionEntity {
 
     @Column(name = "duration_ms")
     private Integer durationMs;
+
+    @Column(name = "aborted_at")
+    private Instant abortedAt;
+
+    @Column(name = "aborted_by", length = 64)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    private String abortedBy;
+
+    @Column(name = "retry_of", length = 64)
+    private String retryOf;
+
+    @Column(name = "retry_count")
+    private Integer retryCount;
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;

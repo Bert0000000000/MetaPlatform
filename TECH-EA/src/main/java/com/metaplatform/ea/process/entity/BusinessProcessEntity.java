@@ -8,12 +8,11 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
-import java.time.Instant;
 import java.util.UUID;
+import java.time.Instant;
 
 @Entity
-@Table(name = "ea_business_process",
-        uniqueConstraints = @UniqueConstraint(columnNames = {"tenant_id", "code"}))
+@Table(name = "ea_business_process")
 @Data
 @Builder
 @NoArgsConstructor
@@ -22,65 +21,42 @@ public class BusinessProcessEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(name = "id", nullable = false)
     private UUID id;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "tenant_id", nullable = false, length = 64)
     private String tenantId;
 
-    @Column(nullable = false, length = 256)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "name", nullable = false, length = 256)
     private String name;
 
-    @Column(nullable = false, length = 128)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "code", nullable = false, length = 128)
     private String code;
 
-    @Column(columnDefinition = "TEXT")
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 
     @Column(name = "value_stream_id")
     private UUID valueStreamId;
 
-    @Column(name = "process_type", length = 32)
-    @Builder.Default
-    private String processType = "MAIN";
-
-    @Column(name = "frequency", length = 32)
-    @Builder.Default
-    private String frequency = "DAILY";
-
-    @Lob
-    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "capabilities", columnDefinition = "jsonb")
-    @Builder.Default
-    private String capabilities = "[]";
+    private String capabilities;
 
-    @Lob
-    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    @Column(name = "application_ids", columnDefinition = "jsonb")
-    @Builder.Default
-    private String applicationIds = "[]";
-
-    @Lob
-    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    @Column(name = "responsible_role_ids", columnDefinition = "jsonb")
-    @Builder.Default
-    private String responsibleRoleIds = "[]";
-
-    @Lob
-    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "process_steps", columnDefinition = "jsonb")
-    @Builder.Default
-    private String processSteps = "[]";
+    private String processSteps;
 
-    @Column(name = "bpmn_xml", columnDefinition = "TEXT")
-    private String bpmnXml;
+    @Column(name = "version", nullable = false)
+    private Integer version;
 
-    @Column(nullable = false)
-    @Builder.Default
-    private Integer version = 1;
-
-    @Column(nullable = false, length = 32)
-    @Builder.Default
-    private String status = "DRAFT";
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "status", nullable = false, length = 32)
+    private String status;
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
@@ -90,4 +66,25 @@ public class BusinessProcessEntity {
 
     @Column(name = "deleted_at")
     private Instant deletedAt;
+
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "process_type", length = 32)
+    private String processType;
+
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "frequency", length = 32)
+    private String frequency;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "application_ids", columnDefinition = "jsonb")
+    private String applicationIds;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "responsible_role_ids", columnDefinition = "jsonb")
+    private String responsibleRoleIds;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "bpmn_xml", columnDefinition = "TEXT")
+    private String bpmnXml;
+
 }

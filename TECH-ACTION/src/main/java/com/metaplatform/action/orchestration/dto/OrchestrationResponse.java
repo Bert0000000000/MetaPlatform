@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.Instant;
+import java.util.Map;
 
 @Data
 @Builder
@@ -17,9 +18,9 @@ public class OrchestrationResponse {
     private String code;
     private String name;
     private String description;
-    private String nodes;
-    private String edges;
-    private String ruleIntegration;
+    private Map<String, Object> nodes;
+    private Map<String, Object> edges;
+    private Map<String, Object> ruleIntegration;
     private String status;
     private Integer version;
     private String createdBy;

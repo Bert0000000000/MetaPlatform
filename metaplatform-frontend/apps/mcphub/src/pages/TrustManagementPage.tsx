@@ -35,6 +35,10 @@ const TRUST_MAP: Record<AgentTrust['trustLevel'], { label: string; color: string
   BLOCKED: { label: '已屏蔽', color: 'red' },
 };
 
+type TrustFormValues = Omit<AgentTrustCreateRequest, 'expiresAt'> & {
+  expiresAt?: Dayjs;
+};
+
 export default function TrustManagementPage() {
   const [data, setData] = useState<PageResponse<AgentTrust> | null>(null);
   const [agents, setAgents] = useState<ExternalAgent[]>([]);
@@ -49,7 +53,7 @@ export default function TrustManagementPage() {
     page: 1,
     size: 10,
   });
-  const [form] = Form.useForm<AgentTrustCreateRequest & { expiresAt?: Dayjs }>();
+  const [form] = Form.useForm<TrustFormValues>();
 
   const loadAgents = async () => {
     try {
@@ -98,12 +102,11 @@ export default function TrustManagementPage() {
     setEditorOpen(true);
   };
 
-  const handleSubmit = async (
-    values: AgentTrustCreateRequest & { expiresAt?: Dayjs },
-  ) => {
+  const handleSubmit = async (values: TrustFormValues) => {
+    const { expiresAt, ...rest } = values;
     const payload: AgentTrustCreateRequest = {
-      ...values,
-      expiresAt: values.expiresAt?.toISOString(),
+      ...rest,
+      expiresAt: expiresAt?.toISOString(),
     };
     setSubmitting(true);
     try {

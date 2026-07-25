@@ -6,7 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 @Data
@@ -28,7 +28,7 @@ public class AuditLogResponse {
     private String clientIp;
     private String errorMessage;
     private Boolean isError;
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 
     public static AuditLogResponse fromEntity(GwAuditLogEntity entity) {
         return AuditLogResponse.builder()

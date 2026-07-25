@@ -1,0 +1,46 @@
+spring:
+  application:
+    name: app-dashboard
+  cloud:
+    nacos:
+      discovery:
+        server-addr: ${NACOS_ADDR:localhost:8848}
+        namespace: metaplatform
+      config:
+        server-addr: ${NACOS_ADDR:localhost:8848}
+        namespace: metaplatform
+        file-extension: yaml
+  config:
+    import:
+      - optional:nacos:${spring.application.name}.yaml
+  datasource:
+    url: jdbc:postgresql://localhost:5432/metaplatform_dashboard?stringtype=varchar
+    username: ${DB_USERNAME:meta}
+    password: ${DB_PASSWORD:meta}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        type:
+          preferred_jdbc_type_code_for_string: 12
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+server:
+  port: 9001
+
+# TECH-* 服务地址（通过 Nacos 发现，这里配置 fallback）
+mate:
+  dashboard:
+    iam-base-url: ${IAM_BASE_URL:http://localhost:8101}
+    obs-base-url: ${OBS_BASE_URL:http://localhost:8103}
+    wfe-base-url: ${WFE_BASE_URL:http://localhost:8202}
+    msg-base-url: ${MSG_BASE_URL:http://localhost:8102}
+    ont-base-url: ${ONT_BASE_URL:http://localhost:8201}
+    llmgw-base-url: ${LLMGW_BASE_URL:http://localhost:8203}
+    rag-base-url: ${RAG_BASE_URL:http://localhost:8204}

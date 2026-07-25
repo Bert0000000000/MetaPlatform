@@ -25,7 +25,7 @@ public interface McpServerRepository extends JpaRepository<McpServerEntity, UUID
     @Query("SELECT s FROM McpServerEntity s " +
            "WHERE s.tenantId = :tenantId AND s.deletedAt IS NULL " +
            "AND (:status IS NULL OR s.status = :status) " +
-           "AND (:keyword IS NULL OR LOWER(s.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(s.code) LIKE LOWER(CONCAT('%', :keyword, '%')))")
+           "AND (:keyword IS NULL OR LOWER(s.name) LIKE LOWER(CONCAT('%', cast(:keyword as string), '%'))) OR LOWER(s.code) LIKE LOWER(CONCAT('%', cast(:keyword as string), '%'))))")
     Page<McpServerEntity> search(@Param("tenantId") String tenantId,
                                   @Param("status") String status,
                                   @Param("keyword") String keyword,

@@ -1,5 +1,9 @@
 package com.metaplatform.mcp.tool.controller;
 
+import com.metaplatform.mcp.IamTestConfig;
+import org.springframework.context.annotation.Import;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+
 import com.metaplatform.mcp.tool.dto.McpToolCategoryResponse;
 import com.metaplatform.mcp.tool.service.McpToolCategoryService;
 import org.junit.jupiter.api.Test;
@@ -19,6 +23,8 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+@Import(IamTestConfig.class)
+@AutoConfigureMockMvc(addFilters = false)
 @WebMvcTest(McpToolCategoryController.class)
 class McpToolCategoryControllerTest {
 

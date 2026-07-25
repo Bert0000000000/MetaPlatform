@@ -8,8 +8,9 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
-import java.time.Instant;
+import java.util.Map;
 import java.util.UUID;
+import java.time.Instant;
 
 @Entity
 @Table(name = "ea_business_role")
@@ -21,34 +22,28 @@ public class BusinessRoleEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(name = "id", nullable = false)
     private UUID id;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "tenant_id", nullable = false, length = 64)
     private String tenantId;
 
-    @Column(nullable = false, length = 256)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "name", nullable = false, length = 256)
     private String name;
 
-    @Column(nullable = false, length = 128)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "code", nullable = false, length = 128)
     private String code;
 
-    @Column(columnDefinition = "TEXT")
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 
-    @Column(columnDefinition = "TEXT")
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "responsibility", columnDefinition = "TEXT")
     private String responsibility;
-
-    @Column(name = "org_unit_id")
-    private UUID orgUnitId;
-
-    @Column(name = "domain", length = 64)
-    private String domain;
-
-    @Lob
-    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    @Column(name = "iam_role_ids", columnDefinition = "jsonb")
-    @Builder.Default
-    private String iamRoleIds = "[]";
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
@@ -58,4 +53,16 @@ public class BusinessRoleEntity {
 
     @Column(name = "deleted_at")
     private Instant deletedAt;
+
+    @Column(name = "org_unit_id")
+    private UUID orgUnitId;
+
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "domain", length = 64)
+    private String domain;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "iam_role_ids", columnDefinition = "jsonb")
+    private String iamRoleIds;
+
 }

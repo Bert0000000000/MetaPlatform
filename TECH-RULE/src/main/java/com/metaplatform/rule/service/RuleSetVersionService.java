@@ -1,9 +1,6 @@
 package com.metaplatform.rule.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.metaplatform.rule.common.ErrorCode;
 import com.metaplatform.rule.common.PageResponse;
 import com.metaplatform.rule.common.TenantContext;
@@ -20,7 +17,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -48,7 +47,7 @@ public class RuleSetVersionService {
         List<RuleDefinitionEntity> rules = ruleDefinitionRepository
                 .findByTenantIdAndRulesetIdAndDeletedFalseAndEnabledTrueOrderByPriorityAscCreatedAtAsc(tenantId, rulesetId);
 
-        JsonNode snapshot = buildSnapshot(ruleset, rules);
+        Map<String, Object> snapshot = buildSnapshot(ruleset, rules);
 
         RuleSetVersionEntity version = RuleSetVersionEntity.builder()
                 .id(UUID.randomUUID().toString())
@@ -100,33 +99,33 @@ public class RuleSetVersionService {
         return toResponse(version);
     }
 
-    private JsonNode buildSnapshot(RuleSetEntity ruleset, List<RuleDefinitionEntity> rules) {
-        ObjectNode root = objectMapper.createObjectNode();
-        ObjectNode rsNode = objectMapper.createObjectNode();
+    private Map<String, Object> buildSnapshot(RuleSetEntity ruleset, List<RuleDefinitionEntity> rules) {
+        Map<String, Object> root = new LinkedHashMap<>();
+        Map<String, Object> rsNode = new LinkedHashMap<>();
         rsNode.put("id", ruleset.getId());
         rsNode.put("code", ruleset.getCode());
         rsNode.put("name", ruleset.getName());
         rsNode.put("description", ruleset.getDescription());
-        rsNode.put("status", ruleset.getStatus() != null ? ruleset.getStatus().name() : null);
+        rsNode.put("status", ruleset.getStatus());
         rsNode.put("priority", ruleset.getPriority());
         rsNode.put("enabled", ruleset.getEnabled());
-        root.set("ruleset", rsNode);
+        root.put("ruleset", rsNode);
 
-        ArrayNode rulesNode = objectMapper.createArrayNode();
+        List<Map<String, Object>> rulesList = new java.util.ArrayList<>();
         for (RuleDefinitionEntity rule : rules) {
-            ObjectNode r = objectMapper.createObjectNode();
+            Map<String, Object> r = new LinkedHashMap<>();
             r.put("id", rule.getId());
             r.put("code", rule.getCode());
             r.put("name", rule.getName());
             r.put("description", rule.getDescription());
             r.put("conditionExpr", rule.getConditionExpr());
-            r.put("actionType", rule.getActionType() != null ? rule.getActionType().name() : null);
-            r.set("actionConfig", rule.getActionConfig());
+            r.put("actionType", rule.getActionType());
+            r.put("actionConfig", rule.getActionConfig());
             r.put("priority", rule.getPriority());
             r.put("enabled", rule.getEnabled());
-            rulesNode.add(r);
+            rulesList.add(r);
         }
-        root.set("rules", rulesNode);
+        root.put("rules", rulesList);
         return root;
     }
 

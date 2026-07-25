@@ -19,11 +19,11 @@ import {
   DatePicker,
   Popconfirm,
 } from 'antd';
+import type { TreeSelectProps } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import type { DefaultOptionType } from 'antd/es/select';
 import { PlusOutlined, EditOutlined, DeleteOutlined, SafetyOutlined } from '@ant-design/icons';
 import Editor from '@monaco-editor/react';
-import dayjs from 'dayjs';
+import dayjs, { type Dayjs } from 'dayjs';
 import {
   listPolicies,
   createPolicy,
@@ -32,7 +32,7 @@ import {
   getConditionSyntax,
 } from '@/api/policies';
 import { listTools } from '@/api/tools';
-import type { Policy, PolicyCreateRequest, McpTool, ConditionSyntax } from '@/types';
+import type { Policy, PolicyCreateRequest, PolicyUpdateRequest, McpTool, ConditionSyntax } from '@/types';
 
 const SUBJECT_TYPE_OPTIONS = [
   { label: '用户', value: 'USER' },
@@ -52,6 +52,14 @@ const ACTION_OPTIONS = [
   { label: '管理 (admin)', value: 'admin' },
 ];
 
+type PolicyFormValues = Omit<PolicyCreateRequest, 'effectiveStartAt' | 'effectiveEndAt'> & {
+  version?: number;
+  effectiveStartAt?: Dayjs;
+  effectiveEndAt?: Dayjs;
+};
+
+type PolicyTreeSelectNode = NonNullable<TreeSelectProps['treeData']>[number];
+
 export default function PolicyManagementPage() {
   const [policies, setPolicies] = useState<Policy[]>([]);
   const [loading, setLoading] = useState(false);
@@ -59,10 +67,10 @@ export default function PolicyManagementPage() {
   const [editorOpen, setEditorOpen] = useState(false);
   const [editing, setEditing] = useState<Policy | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [form] = Form.useForm<PolicyCreateRequest>();
+  const [form] = Form.useForm<PolicyFormValues>();
   const [syntax, setSyntax] = useState<ConditionSyntax | null>(null);
 
-  const treeData = useMemo<DefaultOptionType[]>(() => {
+  const treeData = useMemo<PolicyTreeSelectNode[]>(() => {
     const grouped = tools.reduce<Record<string, McpTool[]>>((acc, t) => {
       if (!acc[t.category]) acc[t.category] = [];
       acc[t.category]!.push(t);
@@ -70,10 +78,12 @@ export default function PolicyManagementPage() {
     }, {});
     return Object.keys(grouped).map((cat) => ({
       title: `${cat} (${grouped[cat]!.length})`,
+      key: `cat-${cat}`,
       value: `cat-${cat}`,
       selectable: false,
       children: grouped[cat]!.map((t) => ({
         title: t.name,
+        key: t.id,
         value: t.id,
       })),
     }));
@@ -117,25 +127,31 @@ export default function PolicyManagementPage() {
     setEditing(record);
     form.setFieldsValue({
       ...record,
+      version: record.version,
       effectiveStartAt: record.effectiveStartAt ? dayjs(record.effectiveStartAt) : undefined,
       effectiveEndAt: record.effectiveEndAt ? dayjs(record.effectiveEndAt) : undefined,
     });
     setEditorOpen(true);
   };
 
-  const handleSubmit = async (values: PolicyCreateRequest & { effectiveStartAt?: dayjs.Dayjs; effectiveEndAt?: dayjs.Dayjs }) => {
-    const payload: PolicyCreateRequest = {
-      ...values,
-      effectiveStartAt: values.effectiveStartAt?.toISOString(),
-      effectiveEndAt: values.effectiveEndAt?.toISOString(),
+  const handleSubmit = async (values: PolicyFormValues) => {
+    const { effectiveStartAt, effectiveEndAt, version, ...rest } = values;
+    const basePayload: PolicyCreateRequest = {
+      ...rest,
+      effectiveStartAt: effectiveStartAt?.toISOString(),
+      effectiveEndAt: effectiveEndAt?.toISOString(),
     };
     setSubmitting(true);
     try {
       if (editing) {
+        const payload: PolicyUpdateRequest = {
+          ...basePayload,
+          version: version ?? editing.version,
+        };
         await updatePolicy(editing.id, payload);
         message.success('已更新');
       } else {
-        await createPolicy(payload);
+        await createPolicy(basePayload);
         message.success('已创建');
       }
       setEditorOpen(false);

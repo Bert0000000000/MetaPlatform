@@ -27,6 +27,9 @@ public class McpToolResponse {
     private String endpoint;
     private String beanClass;
     private Boolean enabled;
+    private String status;
+    private java.time.Instant publishedAt;
+    private String publishedBy;
     private java.util.List<String> tags;
     private Instant createdAt;
     private Instant updatedAt;

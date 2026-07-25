@@ -147,7 +147,7 @@ class StatisticsServiceTest {
                 .actionId(actionId)
                 .actionCode(actionCode)
                 .status(status)
-                .input("{}")
+                .input(java.util.Map.of())
                 .traceId("trace-1")
                 .durationMs(durationMs)
                 .startedAt(createdAt)

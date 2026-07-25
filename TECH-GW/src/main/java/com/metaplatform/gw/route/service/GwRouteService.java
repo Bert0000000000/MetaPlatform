@@ -20,7 +20,7 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -53,8 +53,8 @@ public class GwRouteService {
                     .filters(toJson(request.getFilters()))
                     .priority(request.getPriority() != null ? request.getPriority() : 0)
                     .enabled(request.getEnabled() != null ? request.getEnabled() : true)
-                    .createdAt(LocalDateTime.now())
-                    .updatedAt(LocalDateTime.now())
+                    .createdAt(Instant.now())
+                    .updatedAt(Instant.now())
                     .build();
 
             entity = routeRepository.save(entity);
@@ -101,7 +101,7 @@ public class GwRouteService {
             if (request.getFilters() != null) entity.setFilters(toJson(request.getFilters()));
             if (request.getPriority() != null) entity.setPriority(request.getPriority());
             if (request.getEnabled() != null) entity.setEnabled(request.getEnabled());
-            entity.setUpdatedAt(LocalDateTime.now());
+            entity.setUpdatedAt(Instant.now());
 
             entity = routeRepository.save(entity);
             return RouteResponse.fromEntity(entity);

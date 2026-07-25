@@ -114,7 +114,11 @@ public class TechnologyRadarService {
     }
 
     private String toJson(List<?> value, List<?> defaultValue) {
-        return toJson(value != null && !value.isEmpty() ? value : defaultValue);
+        try {
+            return objectMapper.writeValueAsString(value != null && !value.isEmpty() ? value : defaultValue);
+        } catch (JsonProcessingException e) {
+            throw new EaException(ErrorCode.INVALID_PARAM, "雷达数据序列化失败");
+        }
     }
 
     private <T> List<T> fromJson(String json, TypeReference<List<T>> typeRef) {

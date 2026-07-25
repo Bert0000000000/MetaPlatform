@@ -1,34 +1,52 @@
 spring:
+  cloud:
+    compatibility-verifier:
+      enabled: false
+    nacos:
+      discovery:
+        enabled: false
+      config:
+        enabled: false
+  config:
+    import: []
+  autoconfigure:
+    exclude:
+      - com.alibaba.cloud.nacos.registry.NacosServiceRegistryAutoConfiguration
+      - com.alibaba.cloud.nacos.discovery.NacosDiscoveryAutoConfiguration
+      - com.alibaba.cloud.nacos.NacosConfigAutoConfiguration
+      - org.springframework.cloud.autoconfigure.RefreshAutoConfiguration
+      - org.springframework.cloud.context.refresh.ContextRefresherAutoConfiguration
+
+
   datasource:
     url: jdbc:postgresql://localhost:5432/metaplatform_action
-    username: ${DB_USERNAME:meta}
-    password: ${DB_PASSWORD:meta}
+    username: meta
+    password: meta
     driver-class-name: org.postgresql.Driver
+
   jpa:
     hibernate:
-      ddl-auto: validate
-    show-sql: true
+      ddl-auto: update
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
+
   flyway:
     enabled: true
     locations: classpath:db/migration
     baseline-on-migrate: true
-  kafka:
-    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
-    listener:
-      auto-startup: false
-    producer:
-      key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.apache.kafka.common.serialization.StringSerializer
-
 action:
   integration:
     ont:
       base-url: ${TECH_ONT_BASE_URL:http://localhost:8201}
+      binding:
+        input-entity-required: ${ONT_INPUT_ENTITY_REQUIRED:true}
+        output-entity-required: ${ONT_OUTPUT_ENTITY_REQUIRED:false}
     rule:
       base-url: ${TECH_RULE_BASE_URL:http://localhost:8501}
   outbox:
     relay-fixed-rate-ms: 5000
     relay-topic: ${ACTION_EVENTS_TOPIC:metaplatform-action-events}
+  trigger:
+    event:
+      enabled: ${EVENT_TRIGGER_ENABLED:true}

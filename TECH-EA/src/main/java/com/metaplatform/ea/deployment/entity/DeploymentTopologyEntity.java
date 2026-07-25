@@ -8,12 +8,11 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
-import java.time.Instant;
 import java.util.UUID;
+import java.time.Instant;
 
 @Entity
-@Table(name = "ea_deployment_topology",
-        uniqueConstraints = @UniqueConstraint(columnNames = {"tenant_id", "name"}))
+@Table(name = "ea_deployment_topology")
 @Data
 @Builder
 @NoArgsConstructor
@@ -22,32 +21,32 @@ public class DeploymentTopologyEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(name = "id", nullable = false)
     private UUID id;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "tenant_id", nullable = false, length = 64)
     private String tenantId;
 
-    @Column(nullable = false, length = 256)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "name", nullable = false, length = 256)
     private String name;
 
-    @Column(nullable = false, length = 64)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "environment", nullable = false, length = 64)
     private String environment;
 
-    @Lob
-    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    @Column(columnDefinition = "jsonb")
-    @Builder.Default
-    private String nodes = "[]";
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "nodes", columnDefinition = "jsonb")
+    private java.util.List<com.metaplatform.ea.deployment.dto.DeploymentNode> nodes;
 
-    @Lob
-    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    @Column(columnDefinition = "jsonb")
-    @Builder.Default
-    private String edges = "[]";
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "edges", columnDefinition = "jsonb")
+    private java.util.List<com.metaplatform.ea.deployment.dto.DeploymentEdge> edges;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "health_status", nullable = false, length = 32)
-    @Builder.Default
-    private String healthStatus = "healthy";
+    private String healthStatus;
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
@@ -57,4 +56,5 @@ public class DeploymentTopologyEntity {
 
     @Column(name = "deleted_at")
     private Instant deletedAt;
+
 }

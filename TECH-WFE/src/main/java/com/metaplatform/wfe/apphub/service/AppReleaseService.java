@@ -1,6 +1,5 @@
 package com.metaplatform.wfe.apphub.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.metaplatform.wfe.apphub.dto.AppReleaseCreateRequest;
@@ -23,7 +22,9 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Slf4j
@@ -31,11 +32,10 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class AppReleaseService {
 
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-
     private final AppReleaseRepository appReleaseRepository;
     private final AppReleaseLogRepository appReleaseLogRepository;
     private final ReleaseApprovalProcessService releaseApprovalProcessService;
+    private final ObjectMapper objectMapper;
 
     @Transactional
     public AppReleaseResponse create(AppReleaseCreateRequest request) {
@@ -54,11 +54,11 @@ public class AppReleaseService {
                 .tenantId(tenantId)
                 .appId(request.getAppId())
                 .version(request.getVersion())
-                .releaseNotes(request.getReleaseNotes())
+                .releaseNotes(serializeReleaseNotes(request.getReleaseNotes()))
                 .strategy(parseStrategy(request.getStrategy()))
                 .grayPercent(request.getGrayPercent())
-                .grayUsers(toJson(request.getGrayUsers()))
-                .grayDepts(toJson(request.getGrayDepts()))
+                .grayUsers(request.getGrayUsers())
+                .grayDepts(request.getGrayDepts())
                 .status(AppReleaseStatus.PENDING_APPROVAL)
                 .approvalStatus(ApprovalStatus.PENDING)
                 .createdBy(userId)
@@ -70,8 +70,9 @@ public class AppReleaseService {
         entity.setProcessInstanceId(processInstance.getId());
         appReleaseRepository.save(entity);
 
-        saveLog(releaseId, "提交发布申请", userId,
-                String.format("策略=%s, 灰度比例=%d%%", request.getStrategy(), request.getGrayPercent()));
+        Map<String, Object> remark = new HashMap<>();
+        remark.put("text", String.format("策略=%s, 灰度比例=%d%%", request.getStrategy(), request.getGrayPercent()));
+        saveLog(releaseId, "提交发布申请", userId, remark);
 
         log.info("App release created: releaseId={}, appId={}, version={}",
                 releaseId, request.getAppId(), request.getVersion());
@@ -136,30 +137,30 @@ public class AppReleaseService {
         }
     }
 
-    private String toJson(List<String> list) {
-        if (list == null || list.isEmpty()) {
+    private String serializeReleaseNotes(Map<String, Object> notes) {
+        if (notes == null) {
             return null;
         }
         try {
-            return OBJECT_MAPPER.writeValueAsString(list);
-        } catch (JsonProcessingException e) {
-            throw new WfeException(ErrorCode.INTERNAL_ERROR, "灰度配置序列化失败");
+            return objectMapper.writeValueAsString(notes);
+        } catch (Exception e) {
+            throw new WfeException(ErrorCode.INVALID_PARAM, "releaseNotes 序列化失败: " + e.getMessage());
         }
     }
 
-    private List<String> fromJson(String json) {
-        if (json == null || json.isBlank()) {
+    private Map<String, Object> deserializeReleaseNotes(String notes) {
+        if (notes == null || notes.isBlank()) {
             return null;
         }
         try {
-            return OBJECT_MAPPER.readValue(json, new TypeReference<>() {});
-        } catch (JsonProcessingException e) {
-            log.warn("Failed to deserialize gray config: {}", e.getMessage());
+            return objectMapper.readValue(notes, new TypeReference<>() {});
+        } catch (Exception e) {
+            log.warn("Failed to deserialize releaseNotes: {}", e.getMessage());
             return null;
         }
     }
 
-    private void saveLog(String releaseId, String action, String operator, String remark) {
+    private void saveLog(String releaseId, String action, String operator, Map<String, Object> remark) {
         AppReleaseLogEntity logEntity = AppReleaseLogEntity.builder()
                 .id(UUID.randomUUID().toString())
                 .releaseId(releaseId)
@@ -175,13 +176,13 @@ public class AppReleaseService {
                 .releaseId(entity.getId())
                 .appId(entity.getAppId())
                 .version(entity.getVersion())
-                .releaseNotes(entity.getReleaseNotes())
-                .strategy(entity.getStrategy().name())
+                .releaseNotes(deserializeReleaseNotes(entity.getReleaseNotes()))
+                .strategy(entity.getStrategy() == null ? null : entity.getStrategy().name())
                 .grayPercent(entity.getGrayPercent())
-                .grayUsers(fromJson(entity.getGrayUsers()))
-                .grayDepts(fromJson(entity.getGrayDepts()))
-                .status(entity.getStatus().name())
-                .approvalStatus(entity.getApprovalStatus().name())
+                .grayUsers(entity.getGrayUsers())
+                .grayDepts(entity.getGrayDepts())
+                .status(entity.getStatus() == null ? null : entity.getStatus().name())
+                .approvalStatus(entity.getApprovalStatus() == null ? null : entity.getApprovalStatus().name())
                 .processInstanceId(entity.getProcessInstanceId())
                 .createdBy(entity.getCreatedBy())
                 .createdAt(entity.getCreatedAt())

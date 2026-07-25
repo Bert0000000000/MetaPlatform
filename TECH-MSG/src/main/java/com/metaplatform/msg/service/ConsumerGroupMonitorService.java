@@ -30,7 +30,7 @@ public class ConsumerGroupMonitorService {
     @Scheduled(fixedDelayString = "${app.msg.consumer-group.monitor-interval-ms:30000}")
     public void refreshLag() {
         java.util.List<ConsumerGroupEntity> activeGroups = consumerGroupRepository.findAll().stream()
-                .filter(cg -> cg.getStatus() == ConsumerGroupEntity.ConsumerGroupStatus.ACTIVE)
+                .filter(cg -> ConsumerGroupEntity.ConsumerGroupStatus.ACTIVE.name().equals(cg.getStatus()))
                 .toList();
 
         for (ConsumerGroupEntity group : activeGroups) {

@@ -6,7 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.Instant;
-import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Data
@@ -22,8 +22,9 @@ public class ApplicationResponse {
     private String description;
     private String appType;
     private String status;
-    private List<String> techStack;
-    private List<String> dependencies;
+    private Map<String, Object> techStack;
+    private Map<String, Object> dependencies;
+    private Map<String, Object> capabilityIds;
     private Instant createdAt;
     private Instant updatedAt;
 }

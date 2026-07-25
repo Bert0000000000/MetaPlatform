@@ -2,7 +2,7 @@ package com.metaplatform.ea.application.dto;
 
 import lombok.Data;
 
-import java.util.List;
+import java.util.Map;
 
 @Data
 public class UpdateApplicationRequest {
@@ -11,6 +11,7 @@ public class UpdateApplicationRequest {
     private String description;
     private String appType;
     private String status;
-    private List<String> techStack;
-    private List<String> dependencies;
+    private Map<String, Object> techStack;
+    private Map<String, Object> dependencies;
+    private Map<String, Object> capabilityIds;
 }

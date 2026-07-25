@@ -14,11 +14,11 @@ export async function getAlertRule(id: string): Promise<AlertRule> {
 }
 
 export async function createAlertRule(req: AlertRuleCreateRequest): Promise<AlertRule> {
-  return post<AlertRule>('/v1/mcp/alert-rules', req as Record<string, unknown>);
+  return post<AlertRule>('/v1/mcp/alert-rules', req);
 }
 
 export async function updateAlertRule(id: string, req: AlertRuleCreateRequest): Promise<AlertRule> {
-  return put<AlertRule>(`/v1/mcp/alert-rules/${id}`, req as Record<string, unknown>);
+  return put<AlertRule>(`/v1/mcp/alert-rules/${id}`, req);
 }
 
 export async function deleteAlertRule(id: string): Promise<void> {

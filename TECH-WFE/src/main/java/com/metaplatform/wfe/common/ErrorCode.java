@@ -42,7 +42,12 @@ public enum ErrorCode {
     APP_RELEASE_NOT_FOUND(40411, HttpStatus.NOT_FOUND, "应用发布记录不存在"),
     FORM_VALIDATE_FAILED(42203, HttpStatus.UNPROCESSABLE_ENTITY, "表单校验失败"),
     FORM_SCRIPT_EXECUTION_FAILED(42204, HttpStatus.UNPROCESSABLE_ENTITY, "表单脚本执行失败"),
-    APP_RELEASE_STATUS_CONFLICT(40906, HttpStatus.CONFLICT, "应用发布状态冲突，操作与当前状态不兼容");
+    APP_RELEASE_STATUS_CONFLICT(40906, HttpStatus.CONFLICT, "应用发布状态冲突，操作与当前状态不兼容"),
+    NODE_NOT_FOUND(40412, HttpStatus.NOT_FOUND, "流程节点不存在"),
+    TASK_ALREADY_COMPLETED(40907, HttpStatus.CONFLICT, "任务已完成"),
+    PROCESS_INSTANCE_ALREADY_FINISHED(40908, HttpStatus.CONFLICT, "流程实例已结束"),
+    FLOWGRAM_JSON_INVALID(42205, HttpStatus.UNPROCESSABLE_ENTITY, "FlowGram.AI 流程定义 JSON 格式无效"),
+    NODE_TYPE_UNSUPPORTED(42206, HttpStatus.UNPROCESSABLE_ENTITY, "不支持的节点类型");
 
     private final int code;
     private final HttpStatus httpStatus;

@@ -1,7 +1,6 @@
 package com.metaplatform.rule.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.metaplatform.rule.common.ErrorCode;
 import com.metaplatform.rule.common.PageResponse;
 import com.metaplatform.rule.common.TenantContext;
@@ -24,6 +23,7 @@ import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -74,7 +74,7 @@ class RuleSetVersionServiceTest {
                 .code("vip_rule")
                 .name("VIP 规则")
                 .conditionExpr("amount >= 100000")
-                .actionType(ActionType.SET_FIELD)
+                .actionType(ActionType.SET_FIELD.name())
                 .priority(10)
                 .enabled(true)
                 .build();
@@ -96,7 +96,7 @@ class RuleSetVersionServiceTest {
         assertThat(response.getVersionNumber()).isEqualTo(2);
         assertThat(response.getRulesetId()).isEqualTo(rulesetId);
         assertThat(response.getSnapshot()).isNotNull();
-        assertThat(response.getSnapshot().get("rules").size()).isEqualTo(1);
+        assertThat((Iterable<?>) response.getSnapshot().get("rules")).hasSize(1);
         assertThat(ruleset.getVersion()).isEqualTo(2);
     }
 
@@ -140,7 +140,7 @@ class RuleSetVersionServiceTest {
                         .tenantId(TenantContext.DEFAULT_TENANT_ID)
                         .rulesetId("rs-001")
                         .versionNumber(3)
-                        .snapshot(objectMapper.createObjectNode())
+                        .snapshot(new java.util.LinkedHashMap<>())
                         .build();
 
         when(versionRepository.findByIdAndTenantId(versionId, TenantContext.DEFAULT_TENANT_ID))
@@ -162,7 +162,7 @@ class RuleSetVersionServiceTest {
     }
 
     private com.metaplatform.rule.entity.RuleSetVersionEntity version(String rulesetId, int number) {
-        ObjectNode snapshot = objectMapper.createObjectNode();
+        Map<String, Object> snapshot = new java.util.LinkedHashMap<>();
         snapshot.put("version", number);
         return com.metaplatform.rule.entity.RuleSetVersionEntity.builder()
                 .id(UUID.randomUUID().toString())

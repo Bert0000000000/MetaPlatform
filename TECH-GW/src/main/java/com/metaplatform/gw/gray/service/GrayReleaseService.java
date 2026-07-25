@@ -19,11 +19,10 @@ import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
 import java.security.MessageDigest;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
@@ -34,6 +33,7 @@ import java.util.UUID;
 public class GrayReleaseService {
 
     private final GwGrayReleaseRepository repository;
+    private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
 
     private static final Set<String> VALID_STRATEGIES = Set.of("PERCENTAGE", "HEADER", "IP", "USER");
     private static final Set<String> VALID_STATUSES = Set.of("DRAFT", "ACTIVE", "STOPPED", "COMPLETED");
@@ -43,7 +43,7 @@ public class GrayReleaseService {
     public Mono<GrayReleaseResponse> create(CreateGrayReleaseRequest request) {
         return Mono.fromCallable(() -> {
             validate(request);
-            LocalDateTime now = LocalDateTime.now();
+            Instant now = Instant.now();
             GwGrayReleaseEntity entity = GwGrayReleaseEntity.builder()
                     .id(UUID.randomUUID())
                     .tenantId(TenantContext.resolveOrDefault(request.getTenantId()))
@@ -108,7 +108,7 @@ public class GrayReleaseService {
             if (request.getOldVersion() != null) entity.setOldVersion(request.getOldVersion());
             if (request.getStartAt() != null) entity.setStartAt(request.getStartAt());
             if (request.getEndAt() != null) entity.setEndAt(request.getEndAt());
-            entity.setUpdatedAt(LocalDateTime.now());
+            entity.setUpdatedAt(Instant.now());
             entity = repository.save(entity);
             return GrayReleaseResponse.fromEntity(entity);
         }).subscribeOn(Schedulers.boundedElastic());
@@ -122,7 +122,7 @@ public class GrayReleaseService {
             GwGrayReleaseEntity entity = repository.findByIdAndDeletedAtIsNull(id)
                     .orElseThrow(() -> new GrayReleaseException(ErrorCode.NOT_FOUND));
             entity.setStatus(newStatus);
-            entity.setUpdatedAt(LocalDateTime.now());
+            entity.setUpdatedAt(Instant.now());
             entity = repository.save(entity);
             return GrayReleaseResponse.fromEntity(entity);
         }).subscribeOn(Schedulers.boundedElastic());
@@ -144,7 +144,7 @@ public class GrayReleaseService {
         return Mono.fromRunnable(() -> {
             GwGrayReleaseEntity entity = repository.findByIdAndDeletedAtIsNull(id)
                     .orElseThrow(() -> new GrayReleaseException(ErrorCode.NOT_FOUND));
-            entity.setDeletedAt(LocalDateTime.now());
+            entity.setDeletedAt(Instant.now());
             repository.save(entity);
         }).subscribeOn(Schedulers.boundedElastic()).then();
     }
@@ -159,7 +159,7 @@ public class GrayReleaseService {
         if (apiId == null) return java.util.Optional.empty();
         List<GwGrayReleaseEntity> activeReleases =
                 repository.findByApiIdAndStatusAndDeletedAtIsNull(apiId, "ACTIVE");
-        LocalDateTime now = LocalDateTime.now();
+        Instant now = Instant.now();
         for (GwGrayReleaseEntity release : activeReleases) {
             if (!isWithinWindow(release, now)) continue;
             if (matchesStrategy(release, request)) {
@@ -169,7 +169,7 @@ public class GrayReleaseService {
         return java.util.Optional.empty();
     }
 
-    private boolean isWithinWindow(GwGrayReleaseEntity release, LocalDateTime now) {
+    private boolean isWithinWindow(GwGrayReleaseEntity release, Instant now) {
         if (release.getStartAt() != null && now.isBefore(release.getStartAt())) return false;
         if (release.getEndAt() != null && now.isAfter(release.getEndAt())) return false;
         return true;
@@ -177,17 +177,17 @@ public class GrayReleaseService {
 
     private boolean matchesStrategy(GwGrayReleaseEntity release, ServerHttpRequest request) {
         String strategy = release.getStrategy();
-        Map<String, Object> config = release.getStrategyConfig() == null
+        Map<String, Object> configMap = release.getStrategyConfig() == null
                 ? Map.of() : release.getStrategyConfig();
         switch (strategy) {
             case "PERCENTAGE":
-                return matchesPercentage(config);
+                return matchesPercentage(configMap);
             case "HEADER":
-                return matchesHeader(config, request);
+                return matchesHeader(configMap, request);
             case "IP":
-                return matchesIp(config, request);
+                return matchesIp(configMap, request);
             case "USER":
-                return matchesUser(config, request);
+                return matchesUser(configMap, request);
             default:
                 return false;
         }

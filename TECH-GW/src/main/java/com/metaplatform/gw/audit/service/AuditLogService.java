@@ -18,7 +18,7 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -46,7 +46,7 @@ public class AuditLogService {
                     .clientIp(request.getClientIp())
                     .errorMessage(request.getErrorMessage())
                     .isError(Boolean.TRUE.equals(request.getIsError()))
-                    .createdAt(LocalDateTime.now())
+                    .createdAt(Instant.now())
                     .build();
             entity = auditLogRepository.save(entity);
             return AuditLogResponse.fromEntity(entity);
@@ -91,7 +91,7 @@ public class AuditLogService {
                 .toList()).subscribeOn(Schedulers.boundedElastic());
     }
 
-    public Mono<AuditLogStatistics> getStatistics(String tenantId, LocalDateTime start, LocalDateTime end) {
+    public Mono<AuditLogStatistics> getStatistics(String tenantId, Instant start, Instant end) {
         return Mono.fromCallable(() -> {
             Pageable pageable = PageRequest.of(0, 1000);
             List<Object[]> aggregates = auditLogRepository.aggregateLatency(
@@ -130,7 +130,7 @@ public class AuditLogService {
         }).subscribeOn(Schedulers.boundedElastic());
     }
 
-    public Mono<List<AuditLogResponse>> exportRange(String tenantId, LocalDateTime start, LocalDateTime end) {
+    public Mono<List<AuditLogResponse>> exportRange(String tenantId, Instant start, Instant end) {
         return Mono.fromCallable(() ->
                 auditLogRepository.exportRange(TenantContext.resolveOrDefault(tenantId), start, end)
                         .stream()

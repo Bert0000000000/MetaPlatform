@@ -1,5 +1,5 @@
 import { get, post, put, del } from './client';
-import type { ValueStream, ValueStreamStage, ValueStreamCreateRequest, ValueStreamStageCreateRequest, ValueStreamStageUpdateRequest } from '@/types';
+import type { ValueStream, ValueStreamStage, ValueStreamCreateRequest, ValueStreamUpdateRequest, ValueStreamStageCreateRequest, ValueStreamStageUpdateRequest } from '@/types';
 
 export async function listValueStreams(): Promise<ValueStream[]> {
   return get<ValueStream[]>('/v1/ea/value-streams');
@@ -9,7 +9,7 @@ export async function createValueStream(req: ValueStreamCreateRequest): Promise<
   return post<ValueStream>('/v1/ea/value-streams', req);
 }
 
-export async function updateValueStream(id: string, req: Partial<ValueStreamCreateRequest>): Promise<ValueStream> {
+export async function updateValueStream(id: string, req: ValueStreamUpdateRequest): Promise<ValueStream> {
   return put<ValueStream>(`/v1/ea/value-streams/${id}`, req);
 }
 

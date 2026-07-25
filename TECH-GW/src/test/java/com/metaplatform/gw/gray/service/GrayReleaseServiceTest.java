@@ -14,7 +14,7 @@ import org.springframework.mock.http.server.reactive.MockServerHttpRequest;
 import reactor.test.StepVerifier;
 
 import java.net.InetSocketAddress;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -170,8 +170,8 @@ class GrayReleaseServiceTest {
         GwGrayReleaseEntity release = activeRelease("PERCENTAGE");
         release.setApiId(apiId);
         release.setStrategyConfig(Map.of("percentage", 100.0));
-        release.setStartAt(LocalDateTime.now().plusDays(1));
-        release.setEndAt(LocalDateTime.now().plusDays(2));
+        release.setStartAt(Instant.now().plusSeconds(86400));
+        release.setEndAt(Instant.now().plusSeconds(172800));
         when(repository.findByApiIdAndStatusAndDeletedAtIsNull(apiId, "ACTIVE"))
                 .thenReturn(List.of(release));
 
@@ -201,8 +201,8 @@ class GrayReleaseServiceTest {
                 .strategyConfig(Map.of("percentage", 100.0))
                 .newVersion("v2")
                 .oldVersion("v1")
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
+                .createdAt(Instant.now())
+                .updatedAt(Instant.now())
                 .build();
     }
 }
