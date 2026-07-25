@@ -6,6 +6,8 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.Instant;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 /**
  * 记录每次本体自动发现任务
@@ -21,6 +23,7 @@ public class OntologyDiscoveryEntity {
 
     @Id
     @Column(name = "id", nullable = false, length = 64)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String id;
 
     @Column(name = "tenant_id", length = 64)
@@ -37,6 +40,7 @@ public class OntologyDiscoveryEntity {
     private String status = "PENDING"; // PENDING / RUNNING / COMPLETED / FAILED
 
     @Column(name = "result_json", columnDefinition = "TEXT")
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String resultJson;
 
     @Column(name = "error_message", length = 2048)

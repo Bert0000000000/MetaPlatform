@@ -22,6 +22,7 @@ public class ConceptEntity {
 
     @Id
     @Column(name = "concept_id", nullable = false, length = 64)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String conceptId;
 
     @Column(name = "tenant_id", nullable = false, length = 64)
@@ -42,7 +43,7 @@ public class ConceptEntity {
     @Column(name = "icon", length = 64)
     private String icon;
 
-    @JdbcTypeCode(SqlTypes.JSON)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "metadata", columnDefinition = "jsonb")
     private JsonNode metadata;
 
@@ -55,6 +56,7 @@ public class ConceptEntity {
     private Integer level = 1;
 
     @Column(name = "path", length = 1024)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String path;
 
     @Column(name = "status", nullable = false, length = 32)
@@ -62,7 +64,12 @@ public class ConceptEntity {
     @Builder.Default
     private OntStatus status = OntStatus.ACTIVE;
 
+    @Column(name = "enabled", nullable = false)
+    @Builder.Default
+    private Boolean enabled = true;
+
     @Column(name = "created_by", length = 64)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String createdBy;
 
     @Column(name = "updated_by", length = 64)

@@ -23,6 +23,7 @@ public class EntityAttributeValueEntity {
     private Long id;
 
     @Column(name = "tenant_id", nullable = false, length = 64)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String tenantId;
 
     @Column(name = "entity_id", nullable = false, length = 64)
@@ -31,7 +32,7 @@ public class EntityAttributeValueEntity {
     @Column(name = "attribute_id", nullable = false, length = 64)
     private String attributeId;
 
-    @JdbcTypeCode(SqlTypes.JSON)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "value", columnDefinition = "jsonb")
     private JsonNode value;
 
@@ -40,6 +41,7 @@ public class EntityAttributeValueEntity {
     private Boolean valid = true;
 
     @Column(name = "updated_by", length = 64)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String updatedBy;
 
     @UpdateTimestamp

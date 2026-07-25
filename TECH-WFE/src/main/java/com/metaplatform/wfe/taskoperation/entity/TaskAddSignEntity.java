@@ -5,8 +5,10 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "wfe_task_addsign")
@@ -17,27 +19,35 @@ import java.time.Instant;
 public class TaskAddSignEntity {
 
     @Id
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "id", nullable = false, length = 64)
     private String id;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "tenant_id", nullable = false, length = 64)
     private String tenantId;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "task_id", nullable = false, length = 64)
     private String taskId;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "addsign_user", nullable = false, length = 64)
     private String addsignUser;
 
-    @Column(columnDefinition = "TEXT")
+    @Lob
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+    @Column(name = "reason", columnDefinition = "TEXT")
     private String reason;
 
-    @Column(nullable = false, length = 32)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "status", nullable = false, length = 32)
     private String status;
 
     @Column(name = "created_at", nullable = false)
-    private Instant createdAt;
+    private LocalDateTime createdAt;
 
     @Column(name = "updated_at", nullable = false)
-    private Instant updatedAt;
+    private LocalDateTime updatedAt;
+
 }

@@ -20,6 +20,7 @@ public class OntologyVersionEntity {
 
     @Id
     @Column(name = "version_id", nullable = false, length = 64)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String versionId;
 
     @Column(name = "tenant_id", nullable = false, length = 64)
@@ -29,6 +30,7 @@ public class OntologyVersionEntity {
     private Integer versionNumber;
 
     @Column(name = "name", nullable = false, length = 256)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String name;
 
     @Column(name = "description", columnDefinition = "TEXT")
@@ -50,6 +52,7 @@ public class OntologyVersionEntity {
     private Instant publishedAt;
 
     @Column(name = "created_by", length = 64)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String createdBy;
 
     @CreationTimestamp

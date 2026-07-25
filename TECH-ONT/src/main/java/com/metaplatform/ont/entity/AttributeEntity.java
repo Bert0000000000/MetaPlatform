@@ -21,6 +21,7 @@ public class AttributeEntity {
 
     @Id
     @Column(name = "attribute_id", nullable = false, length = 64)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String attributeId;
 
     @Column(name = "tenant_id", nullable = false, length = 64)
@@ -43,6 +44,7 @@ public class AttributeEntity {
     private Boolean required = false;
 
     @Column(name = "unique_value", nullable = false)
+    private String uniqueValue;
     @Builder.Default
     private Boolean unique = false;
 
