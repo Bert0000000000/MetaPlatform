@@ -136,18 +136,22 @@ a {
   font-weight: 500;
   background: var(--primary);
   color: var(--primary-foreground);
-  border: none;
+  border: 1px solid var(--border);
   display: inline-flex;
   align-items: center;
   gap: 6px;
   cursor: pointer;
   font-family: var(--font-sans);
   white-space: nowrap;
-  transition: opacity 0.15s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  transition: opacity 0.15s ease, box-shadow 0.15s ease, transform 0.05s ease;
 }
-
 .v-btn-primary:hover {
-  opacity: 0.9;
+  opacity: 0.92;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+.v-btn-primary:active {
+  transform: translateY(1px);
 }
 
 .v-btn-primary svg {
@@ -205,6 +209,39 @@ a {
 
 .v-btn-danger:hover {
   background: var(--destructive-subtle);
+}
+/* ===== Action Link (表格行内 ghost 按钮) ===== */
+.au-action-link {
+  font-size: 12px;
+  color: var(--muted-foreground);
+  cursor: pointer;
+  border: 1px solid transparent;
+  background: transparent;
+  padding: 4px 8px;
+  border-radius: var(--radius);
+  font-family: var(--font-sans);
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+}
+.au-action-link:hover {
+  color: var(--foreground);
+  background: var(--muted);
+  border-color: var(--border);
+}
+.au-action-link.danger {
+  color: var(--destructive);
+}
+.au-action-link.danger:hover {
+  color: var(--destructive);
+  background: var(--destructive-subtle);
+  border-color: var(--destructive);
+}
+.au-action-link svg {
+  width: 12px;
+  height: 12px;
 }
 
 /* ===== Table ===== */
