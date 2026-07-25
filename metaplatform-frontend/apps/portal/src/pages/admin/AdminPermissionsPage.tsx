@@ -194,7 +194,11 @@ export default function AdminPermissionsPage() {
   const saveInfo = async () => {
     if (!selected) return;
     try {
-      await Api.updateRole(selected.roleId, { roleName: editingName, description: editingDesc });
+      await Api.updateRole(selected.roleId, {
+        roleName: editingName,
+        description: editingDesc,
+        version: selected.version,  // 乐观锁必需
+      });
       setInfoDirty(false);
       setEditingInfo(false);
       await load();
@@ -335,7 +339,7 @@ export default function AdminPermissionsPage() {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                       <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>角色名称</span>
                       {editingInfo ? (
-                        <input className="v-input" style={{ height: 32, fontSize: 13 }} value={editingName} onChange={(e) => setEditingName(e.target.value)} />
+                        <input className="v-input" style={{ height: 32, fontSize: 13 }} value={editingName} onChange={(e) => { setEditingName(e.target.value); setInfoDirty(true); }} />
                       ) : (
                         <span style={{ fontSize: 14, fontWeight: 500, display: 'flex', alignItems: 'center', gap: 8 }}>
                           <SelectedIcon size={16} style={{ color: 'var(--muted-foreground)' }} />
@@ -358,7 +362,7 @@ export default function AdminPermissionsPage() {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 4, gridColumn: '1 / -1' }}>
                       <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>描述</span>
                       {editingInfo ? (
-                        <textarea className="v-input" style={{ minHeight: 60, fontSize: 13 }} value={editingDesc} onChange={(e) => setEditingDesc(e.target.value)} />
+                        <textarea className="v-input" style={{ minHeight: 60, fontSize: 13 }} value={editingDesc} onChange={(e) => { setEditingDesc(e.target.value); setInfoDirty(true); }} />
                       ) : (
                         <span style={{ fontSize: 13, fontWeight: 400, color: 'var(--muted-foreground)' }}>{selected.description || '—'}</span>
                       )}

@@ -42,6 +42,7 @@ export interface UpdateRoleRequest {
   description?: string;
   dataScope?: DataScope;
   enabled?: boolean;
+  version?: number;
 }
 
 export interface AssignPermissionsRequest {
