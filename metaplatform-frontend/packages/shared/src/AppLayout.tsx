@@ -4,6 +4,7 @@ import { Outlet } from 'react-router-dom';
 import { User, LogOut, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import PlatformMenu from './PlatformMenu';
 import { useAuth } from './auth/AuthProvider';
+import MateLogo from './components/MateLogo';
 
 const { Content } = Layout;
 
@@ -42,15 +43,21 @@ export default function AppLayout({ children }: AppLayoutProps) {
           transition: 'width 0.2s ease, padding 0.2s ease',
         }}
       >
-        {/* Logo */}
+        {/* Logo — 品牌图标（六边形+条形图） */}
         <div
           className="v-sidebar-logo"
           style={{ display: 'flex', alignItems: 'center', justifyContent: collapsed ? 'center' : 'flex-start', marginBottom: 16, gap: 8 }}
         >
           {collapsed ? (
-            <span className="v-sidebar-logo-badge" style={{ padding: '4px 8px' }}>M</span>
+            <MateLogo size={26} variant="light" />
           ) : (
-            <span className="v-sidebar-logo-badge">Mate</span>
+            <span
+              className="v-sidebar-logo-badge"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '4px 10px 4px 6px' }}
+            >
+              <MateLogo size={20} variant="light" />
+              <span style={{ fontWeight: 700 }}>Mate</span>
+            </span>
           )}
         </div>
 

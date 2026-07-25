@@ -1,7 +1,7 @@
 ﻿import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Hexagon, Loader2 } from 'lucide-react';
-import { useAuth, Api, type AuthUser } from '@mate/shared';
+import { Loader2 } from 'lucide-react';
+import { useAuth, Api, MateBrand, type AuthUser } from '@mate/shared';
 import { matchPreset, type SsoProvider } from '@mate/shared/api';
 
 export default function LoginPage() {
@@ -150,12 +150,9 @@ export default function LoginPage() {
             padding: '36px 32px 28px',
           }}
         >
-          {/* Logo */}
-          <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 24, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Hexagon style={{ width: 24, height: 24, strokeWidth: 1.5 }} />
-            <span style={{ background: 'var(--primary)', color: 'var(--primary-foreground)', padding: '3px 10px', borderRadius: 'var(--radius)' }}>
-              Mate
-            </span>
+          {/* Logo — 品牌图标（六边形 + 内嵌条形图） */}
+          <div style={{ marginBottom: 24 }}>
+            <MateBrand iconSize={26} badgeSize="md" />
           </div>
 
           <h1 style={{ fontSize: 18, fontWeight: 600, marginBottom: 4, color: 'var(--foreground)' }}>
@@ -289,6 +286,7 @@ export default function LoginPage() {
     </div>
   );
 }
+
 
 
 
