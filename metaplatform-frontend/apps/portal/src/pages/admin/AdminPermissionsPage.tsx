@@ -346,7 +346,7 @@ export default function AdminPermissionsPage() {
                     <thead>
                       <tr>
                         <th style={{ textAlign: 'left', padding: '8px 12px', fontSize: 11, fontWeight: 500, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.04em', borderBottom: '1px solid var(--border)', background: 'var(--muted)', width: '36%' }}>模块</th>
-                        <th colSpan={3} style={{ padding: '8px 12px', fontSize: 11, fontWeight: 500, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.04em', borderBottom: '1px solid var(--border)', borderLeft: '1px solid var(--border)', background: 'var(--muted)', textAlign: 'center' }}>查看 / 编辑</th>
+                        <th colSpan={2} style={{ padding: '8px 12px', fontSize: 11, fontWeight: 500, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.04em', borderBottom: '1px solid var(--border)', borderLeft: '1px solid var(--border)', background: 'var(--muted)', textAlign: 'center' }}>查看 / 编辑</th>
                         <th style={{ padding: '8px 12px', fontSize: 11, fontWeight: 500, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.04em', borderBottom: '1px solid var(--border)', borderLeft: '1px solid var(--border)', background: 'var(--muted)', textAlign: 'center' }}>管理</th>
                         <th style={{ padding: '8px 12px', fontSize: 11, fontWeight: 500, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.04em', borderBottom: '1px solid var(--border)', borderLeft: '1px solid var(--border)', background: 'var(--muted)', textAlign: 'center' }}>发布</th>
                         <th style={{ padding: '8px 12px', fontSize: 11, fontWeight: 500, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.04em', borderBottom: '1px solid var(--border)', borderLeft: '1px solid var(--border)', background: 'var(--muted)', textAlign: 'center' }}>执行</th>
@@ -392,9 +392,7 @@ export default function AdminPermissionsPage() {
                               </div>
                             </td>
                             <Cell id={viewId} />
-                            <Cell id={editId} />
-                            <td style={{ padding: '8px 12px', textAlign: 'center', borderBottom: '1px solid var(--border)', borderLeft: '1px solid var(--border)', color: 'var(--muted-foreground)' }}></td>
-                            <Cell id={manageId} />
+                            <Cell id={editId} />                            <Cell id={manageId} />
                             <Cell id={publishId} />
                             <Cell id={runId} />
                             <Cell id={systemId} />
