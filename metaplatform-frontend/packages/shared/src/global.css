@@ -605,9 +605,9 @@ a {
 }
 
 .v-sidebar-logo-badge {
-  background: var(--sidebar-primary);
-  color: var(--sidebar-primary-foreground);
-  padding: 2px 10px;
+  background: transparent;
+  color: #fff;
+  padding: 2px 4px;
   border-radius: var(--radius);
   font-family: var(--font-sans);
 }

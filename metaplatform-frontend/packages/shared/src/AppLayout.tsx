@@ -49,14 +49,14 @@ export default function AppLayout({ children }: AppLayoutProps) {
           style={{ display: 'flex', alignItems: 'center', justifyContent: collapsed ? 'center' : 'flex-start', marginBottom: 16, gap: 8 }}
         >
           {collapsed ? (
-            <MateLogo size={26} variant="light" />
+            <MateLogo size={26} variant="color" />
           ) : (
             <span
               className="v-sidebar-logo-badge"
-              style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '4px 10px 4px 6px' }}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '4px 4px 4px 4px' }}
             >
-              <MateLogo size={20} variant="light" />
-              <span style={{ fontWeight: 700 }}>Mate</span>
+              <MateLogo size={22} variant="color" />
+              <span style={{ fontWeight: 700, color: '#fff' }}>Mate</span>
             </span>
           )}
         </div>
