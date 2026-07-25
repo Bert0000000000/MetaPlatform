@@ -12,5 +12,11 @@ export * from './types';
 export * from './client';
 export * from './auth';
 export * from './users';
+export * from './departments';
+export * from './roles';
+export * from './permissions';
+export * from './audit-logs';
+export * from './api-keys';
+export * from './sso';
 
 export { SERVICES, API_BASE, apiPath, type ServiceRoute } from '../config/apiConfig';
