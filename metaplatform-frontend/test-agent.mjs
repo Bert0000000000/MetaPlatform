@@ -1,0 +1,21 @@
+import { chromium } from 'playwright';
+const browser = await chromium.launch({ headless: true });
+const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 } });
+const page = await ctx.newPage();
+const errs = [];
+page.on('pageerror', (err) => errs.push(err.message));
+page.on('console', (msg) => { if (msg.type() === 'error' && !msg.text().includes('deprecated')) errs.push('CONSOLE: ' + msg.text()); });
+await page.goto('http://localhost:9201/login', { waitUntil: 'networkidle' });
+await page.locator('input[placeholder*="用户"]').fill('admin');
+await page.locator('input[type="password"]').fill('Admin@12345');
+await page.locator('button:has-text("登录"):not(:has-text("登录中"))').first().click();
+await page.waitForURL('**/dashboard', { timeout: 10000 });
+// Click on 数字员工 menu item
+await page.locator('a.v-sidebar-item:has-text("数字员工")').click();
+await page.waitForTimeout(2000);
+console.log('Final URL:', page.url());
+const heading = await page.locator('h1').first().innerText().catch(() => 'NO H1');
+console.log('Heading:', heading);
+console.log('Errors:', errs.slice(0, 5));
+await page.screenshot({ path: 'C:/Users/houuu/AppData/Local/Temp/agent-page.png' });
+await browser.close();

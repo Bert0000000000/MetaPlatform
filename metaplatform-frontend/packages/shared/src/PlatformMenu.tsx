@@ -29,7 +29,7 @@ export const NAV_ITEMS: NavItem[] = [
   { key: 'ontology', label: '本体引擎', icon: Database, path: '/ontology' },
   { key: 'knowledge', label: '知识库', icon: BookOpen, path: '/knowledge' },
   { key: 'mcp', label: 'MCP 中心', icon: Plug, path: '/mcp' },
-  { key: 'agent', label: '数字员工', icon: Bot, path: '/agent' },
+  { key: 'agent', label: '数字员工', icon: Bot, path: '/agents' },
   { key: 'admin', label: '后台管理', icon: Settings, path: '/admin' },
 ];
 
