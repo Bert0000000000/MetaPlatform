@@ -1,69 +1,87 @@
 package com.metaplatform.iam.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
-import jakarta.persistence.Version;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
-import lombok.Getter;
+import lombok.Builder;
+import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
-import lombok.experimental.SuperBuilder;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
+import java.time.Instant;
 
 @Entity
 @Table(name = "iam_permission")
-@Getter
-@Setter
+@Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@SuperBuilder
-public class PermissionEntity extends AuditEntity {
+public class PermissionEntity {
 
-    public enum Effect {
-        ALLOW,
-        DENY
-    }
+    public enum Effect { ALLOW, DENY }
 
-    @Id
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "id", nullable = false, length = 64)
     private String id;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "tenant_id", nullable = false, length = 64)
+    private String tenantId;
+
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "permission_code", nullable = false, length = 256)
     private String permissionCode;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "permission_name", nullable = false, length = 256)
     private String permissionName;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "resource_type", nullable = false, length = 64)
     private String resourceType;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "resource_id", length = 64)
     private String resourceId;
 
-    /**
-     * 操作列表：JSON 数组字符串（["READ","CREATE",...]）。
-     * Phase 2 简化：使用 TEXT 存储 JSON 字符串，避免引入 Hypersistence Utils。
-     */
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "actions", nullable = false, columnDefinition = "TEXT")
     private String actions;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Enumerated(EnumType.STRING)
     @Column(name = "effect", nullable = false, length = 16)
     private Effect effect;
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 
-    /**
-     * ABAC 条件表达式：JSON 字符串。
-     */
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "conditions", columnDefinition = "TEXT")
     private String conditions;
 
-    @Version
     @Column(name = "version", nullable = false)
     private Integer version;
+
+    @Column(name = "deleted", nullable = false)
+    private Boolean deleted;
+
+    @Column(name = "deleted_at")
+    private Instant deletedAt;
+
+    @Column(name = "created_at", nullable = false)
+    private Instant createdAt;
+
+    @Column(name = "updated_at", nullable = false)
+    private Instant updatedAt;
+
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "created_by", length = 64)
+    private String createdBy;
+
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "updated_by", length = 64)
+    private String updatedBy;
+
 }

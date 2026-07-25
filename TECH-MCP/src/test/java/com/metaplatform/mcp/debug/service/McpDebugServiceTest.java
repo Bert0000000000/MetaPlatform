@@ -3,9 +3,13 @@ package com.metaplatform.mcp.debug.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.metaplatform.mcp.common.ErrorCode;
 import com.metaplatform.mcp.common.PageResponse;
+import com.metaplatform.mcp.debug.dto.BreakpointResponse;
+import com.metaplatform.mcp.debug.dto.CreateBreakpointRequest;
 import com.metaplatform.mcp.debug.dto.DebugExecuteRequest;
 import com.metaplatform.mcp.debug.dto.DebugSessionResponse;
+import com.metaplatform.mcp.debug.entity.McpDebugBreakpointEntity;
 import com.metaplatform.mcp.debug.entity.McpDebugSessionEntity;
+import com.metaplatform.mcp.debug.repository.McpDebugBreakpointRepository;
 import com.metaplatform.mcp.debug.repository.McpDebugSessionRepository;
 import com.metaplatform.mcp.exception.McpException;
 import com.metaplatform.mcp.jsonrpc.JsonRpcController;
@@ -34,6 +38,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -47,6 +52,8 @@ class McpDebugServiceTest {
     private McpServerRepository serverRepository;
     @Mock
     private JsonRpcController jsonRpcController;
+    @Mock
+    private McpDebugBreakpointRepository debugBreakpointRepository;
 
     private ObjectMapper objectMapper;
     private McpDebugService mcpDebugService;
@@ -55,7 +62,7 @@ class McpDebugServiceTest {
     void setUp() {
         objectMapper = new ObjectMapper();
         mcpDebugService = new McpDebugService(
-                debugSessionRepository, toolRepository, serverRepository, jsonRpcController, objectMapper);
+                debugSessionRepository, toolRepository, serverRepository, jsonRpcController, objectMapper, debugBreakpointRepository);
     }
 
     private McpToolEntity tool(UUID id) {
@@ -278,5 +285,96 @@ class McpDebugServiceTest {
         var result = mcpDebugService.compare(leftId, rightId);
 
         assertThat(result.getDifferences()).contains("method", "requestPayload", "responsePayload", "status", "durationMs");
+    }
+
+    @Test
+    void add_breakpoint_success() {
+        UUID sessionId = UUID.randomUUID();
+        UUID toolId = UUID.randomUUID();
+        McpDebugSessionEntity session = savedEntity(sessionId);
+        when(debugSessionRepository.findByIdAndTenantId(sessionId, "tenant-default"))
+                .thenReturn(Optional.of(session));
+        when(debugBreakpointRepository.save(any(McpDebugBreakpointEntity.class))).thenAnswer(inv -> {
+            McpDebugBreakpointEntity e = inv.getArgument(0);
+            e.setId(UUID.randomUUID());
+            return e;
+        });
+
+        CreateBreakpointRequest request = new CreateBreakpointRequest();
+        request.setToolId(toolId);
+        request.setCondition("args.q > 10");
+        request.setEnabled(true);
+
+        BreakpointResponse response = mcpDebugService.addBreakpoint(sessionId, request);
+
+        assertThat(response.getToolId()).isEqualTo(toolId);
+        assertThat(response.getCondition()).isEqualTo("args.q > 10");
+        assertThat(response.getEnabled()).isTrue();
+    }
+
+    @Test
+    void add_breakpoint_session_not_found_throws() {
+        UUID sessionId = UUID.randomUUID();
+        when(debugSessionRepository.findByIdAndTenantId(sessionId, "tenant-default"))
+                .thenReturn(Optional.empty());
+
+        CreateBreakpointRequest request = new CreateBreakpointRequest();
+        assertThatThrownBy(() -> mcpDebugService.addBreakpoint(sessionId, request))
+                .isInstanceOf(McpException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.DEBUG_SESSION_NOT_FOUND);
+    }
+
+    @Test
+    void remove_breakpoint_success() {
+        UUID sessionId = UUID.randomUUID();
+        UUID breakpointId = UUID.randomUUID();
+        McpDebugSessionEntity session = savedEntity(sessionId);
+        McpDebugBreakpointEntity breakpoint = McpDebugBreakpointEntity.builder()
+                .id(breakpointId).tenantId("tenant-default").sessionId(sessionId)
+                .enabled(true).createdAt(Instant.now()).updatedAt(Instant.now()).build();
+        when(debugSessionRepository.findByIdAndTenantId(sessionId, "tenant-default"))
+                .thenReturn(Optional.of(session));
+        when(debugBreakpointRepository.findByIdAndTenantId(breakpointId, "tenant-default"))
+                .thenReturn(Optional.of(breakpoint));
+
+        mcpDebugService.removeBreakpoint(sessionId, breakpointId);
+
+        verify(debugBreakpointRepository).delete(breakpoint);
+    }
+
+    @Test
+    void remove_breakpoint_not_found_throws() {
+        UUID sessionId = UUID.randomUUID();
+        UUID breakpointId = UUID.randomUUID();
+        McpDebugSessionEntity session = savedEntity(sessionId);
+        when(debugSessionRepository.findByIdAndTenantId(sessionId, "tenant-default"))
+                .thenReturn(Optional.of(session));
+        when(debugBreakpointRepository.findByIdAndTenantId(breakpointId, "tenant-default"))
+                .thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> mcpDebugService.removeBreakpoint(sessionId, breakpointId))
+                .isInstanceOf(McpException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.BREAKPOINT_NOT_FOUND);
+    }
+
+    @Test
+    void list_breakpoints_returns_list() {
+        UUID sessionId = UUID.randomUUID();
+        McpDebugSessionEntity session = savedEntity(sessionId);
+        when(debugSessionRepository.findByIdAndTenantId(sessionId, "tenant-default"))
+                .thenReturn(Optional.of(session));
+        McpDebugBreakpointEntity bp = McpDebugBreakpointEntity.builder()
+                .id(UUID.randomUUID()).tenantId("tenant-default").sessionId(sessionId)
+                .condition("args.q > 5").enabled(true)
+                .createdAt(Instant.now()).updatedAt(Instant.now()).build();
+        when(debugBreakpointRepository.findBySessionIdAndTenantIdOrderByCreatedAtAsc(sessionId, "tenant-default"))
+                .thenReturn(List.of(bp));
+
+        List<BreakpointResponse> result = mcpDebugService.listBreakpoints(sessionId);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getCondition()).isEqualTo("args.q > 5");
     }
 }

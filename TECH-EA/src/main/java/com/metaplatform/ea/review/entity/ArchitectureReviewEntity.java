@@ -8,8 +8,9 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
-import java.time.Instant;
+import java.util.Map;
 import java.util.UUID;
+import java.time.Instant;
 
 @Entity
 @Table(name = "ea_architecture_review")
@@ -21,49 +22,54 @@ public class ArchitectureReviewEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(name = "id", nullable = false)
     private UUID id;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "tenant_id", nullable = false, length = 64)
     private String tenantId;
 
-    @Column(nullable = false, length = 256)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "title", nullable = false, length = 256)
     private String title;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "review_type", nullable = false, length = 64)
     private String reviewType;
 
     @Column(name = "target_id")
     private UUID targetId;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "target_type", length = 64)
     private String targetType;
 
-    @Column(nullable = false, length = 32)
-    @Builder.Default
-    private String status = "DRAFT";
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "status", nullable = false, length = 32)
+    private String status;
 
-    @Column(columnDefinition = "TEXT")
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "summary", columnDefinition = "TEXT")
     private String summary;
 
-    @Column(columnDefinition = "TEXT")
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "decision", columnDefinition = "TEXT")
     private String decision;
 
-    @Lob
-    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "comments", columnDefinition = "jsonb")
-    @Builder.Default
-    private String comments = "[]";
+    private String comments;
 
-    @Lob
-    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "attachments", columnDefinition = "jsonb")
-    @Builder.Default
-    private String attachments = "[]";
+    private String attachments;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "created_by", length = 128)
     private String createdBy;
 
-    @Column(length = 128)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "reviewer", length = 128)
     private String reviewer;
 
     @Column(name = "submitted_at")
@@ -72,11 +78,9 @@ public class ArchitectureReviewEntity {
     @Column(name = "decided_at")
     private Instant decidedAt;
 
-    @Lob
-    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "metadata", columnDefinition = "jsonb")
-    @Builder.Default
-    private String metadata = "{}";
+    private String metadata;
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
@@ -86,4 +90,5 @@ public class ArchitectureReviewEntity {
 
     @Column(name = "deleted_at")
     private Instant deletedAt;
+
 }

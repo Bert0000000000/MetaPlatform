@@ -3,6 +3,8 @@ package com.metaplatform.action.orchestration.dto;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
+import java.util.Map;
+
 @Data
 public class CreateOrchestrationRequest {
 
@@ -14,7 +16,7 @@ public class CreateOrchestrationRequest {
 
     private String description;
 
-    private String nodes = "[]";
+    private Map<String, Object> nodes;
 
-    private String edges = "[]";
+    private Map<String, Object> edges;
 }

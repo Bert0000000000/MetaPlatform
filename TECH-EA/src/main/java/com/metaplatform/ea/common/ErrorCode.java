@@ -17,6 +17,8 @@ public enum ErrorCode {
     CAPABILITY_NOT_FOUND(40402, HttpStatus.NOT_FOUND, "业务能力不存在"),
     ROLE_NOT_FOUND(40403, HttpStatus.NOT_FOUND, "业务角色不存在"),
     MAPPING_NOT_FOUND(40404, HttpStatus.NOT_FOUND, "能力概念映射不存在"),
+    CAPABILITY_MAP_NOT_FOUND(40405, HttpStatus.NOT_FOUND, "能力地图不存在"),
+    MAP_VERSION_NOT_FOUND(40406, HttpStatus.NOT_FOUND, "能力地图版本不存在"),
     STATE_CONFLICT(40901, HttpStatus.CONFLICT, "状态冲突"),
     ALREADY_EXISTS(40902, HttpStatus.CONFLICT, "资源已存在"),
     CIRCULAR_REFERENCE(40903, HttpStatus.CONFLICT, "循环引用检测到"),

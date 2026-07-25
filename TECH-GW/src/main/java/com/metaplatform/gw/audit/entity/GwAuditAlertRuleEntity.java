@@ -1,9 +1,6 @@
 package com.metaplatform.gw.audit.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -11,9 +8,9 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
-import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.UUID;
+import java.time.Instant;
 
 @Entity
 @Table(name = "gw_audit_alert_rule")
@@ -24,16 +21,20 @@ import java.util.UUID;
 public class GwAuditAlertRuleEntity {
 
     @Id
-    @Column(name = "id")
+    @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(name = "id", nullable = false)
     private UUID id;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "tenant_id", length = 64)
     private String tenantId;
 
-    @Column(name = "name", length = 256, nullable = false)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "name", nullable = false, length = 256)
     private String name;
 
-    @Column(name = "condition_type", length = 32, nullable = false)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "condition_type", nullable = false, length = 32)
     private String conditionType;
 
     @Column(name = "threshold_ms")
@@ -52,12 +53,13 @@ public class GwAuditAlertRuleEntity {
     @Column(name = "notification_config", columnDefinition = "jsonb")
     private Map<String, Object> notificationConfig;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+    @Column(name = "created_at", nullable = false)
+    private Instant createdAt;
 
     @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
+    private Instant updatedAt;
 
     @Column(name = "deleted_at")
-    private LocalDateTime deletedAt;
+    private Instant deletedAt;
+
 }

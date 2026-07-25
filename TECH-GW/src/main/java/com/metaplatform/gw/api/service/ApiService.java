@@ -19,7 +19,7 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -49,7 +49,7 @@ public class ApiService {
                 throw new ApiException(ErrorCode.ROUTE_ALREADY_EXISTS);
             }
 
-            LocalDateTime now = LocalDateTime.now();
+            Instant now = Instant.now();
             GwApiEntity entity = GwApiEntity.builder()
                     .id(UUID.randomUUID())
                     .tenantId(tenantId)
@@ -155,7 +155,7 @@ public class ApiService {
             if (request.getResponseSchema() != null) entity.setResponseSchema(request.getResponseSchema());
             if (request.getParameters() != null) entity.setParameters(request.getParameters());
             if (request.getExamples() != null) entity.setExamples(request.getExamples());
-            entity.setUpdatedAt(LocalDateTime.now());
+            entity.setUpdatedAt(Instant.now());
 
             entity = apiRepository.save(entity);
             return ApiResponse.fromEntity(entity);
@@ -166,7 +166,7 @@ public class ApiService {
         return Mono.fromRunnable(() -> {
             GwApiEntity entity = apiRepository.findByIdAndDeletedAtIsNull(id)
                     .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));
-            entity.setDeletedAt(LocalDateTime.now());
+            entity.setDeletedAt(Instant.now());
             apiRepository.save(entity);
         }).subscribeOn(Schedulers.boundedElastic()).then();
     }

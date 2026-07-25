@@ -20,6 +20,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -54,7 +56,7 @@ public class ActionDefinitionService {
                 .description(request.getDescription())
                 .method(request.getMethod().toUpperCase())
                 .url(request.getUrl())
-                .headers(normalizeJson(request.getHeaders(), "{}"))
+                .headers(normalizeMap(request.getHeaders(), new HashMap<>()))
                 .inputSchema(request.getInputSchema())
                 .outputSchema(request.getOutputSchema())
                 .status(STATUS_DRAFT)
@@ -114,7 +116,7 @@ public class ActionDefinitionService {
         }
         if (request.getHeaders() != null) {
             validateJson(request.getHeaders(), "headers");
-            entity.setHeaders(normalizeJson(request.getHeaders(), "{}"));
+            entity.setHeaders(request.getHeaders());
         }
         if (request.getInputSchema() != null) {
             validateJson(request.getInputSchema(), "inputSchema");
@@ -222,19 +224,19 @@ public class ActionDefinitionService {
         return "system";
     }
 
-    private void validateJson(String value, String field) {
-        if (value == null || value.isBlank()) {
+    private void validateJson(Map<String, Object> value, String field) {
+        if (value == null || value.isEmpty()) {
             return;
         }
         try {
-            objectMapper.readTree(value);
+            objectMapper.writeValueAsString(value);
         } catch (Exception e) {
             throw new ActionException(ErrorCode.INVALID_PARAM, field + " 不是合法的 JSON");
         }
     }
 
-    private String normalizeJson(String value, String defaultValue) {
-        if (value == null || value.isBlank()) {
+    private Map<String, Object> normalizeMap(Map<String, Object> value, Map<String, Object> defaultValue) {
+        if (value == null || value.isEmpty()) {
             return defaultValue;
         }
         return value;

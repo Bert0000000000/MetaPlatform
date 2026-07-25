@@ -1,5 +1,9 @@
 package com.metaplatform.mcp.jsonrpc;
 
+import com.metaplatform.mcp.IamTestConfig;
+import org.springframework.context.annotation.Import;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+
 import com.metaplatform.mcp.tool.dto.ToolExecutionResponse;
 import com.metaplatform.mcp.tool.entity.McpToolEntity;
 import com.metaplatform.mcp.tool.service.McpToolService;
@@ -21,6 +25,8 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+@Import(IamTestConfig.class)
+@AutoConfigureMockMvc(addFilters = false)
 @WebMvcTest(JsonRpcController.class)
 class JsonRpcControllerTest {
 

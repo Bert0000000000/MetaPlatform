@@ -1,0 +1,48 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:test_data;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;MODE=PostgreSQL
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+  flyway:
+    enabled: false
+  batch:
+    job:
+      enabled: false
+  kafka:
+    bootstrap-servers: localhost:9092
+    listener:
+      auto-startup: false
+  cloud:
+    nacos:
+      discovery:
+        enabled: false
+      config:
+        enabled: false
+        import-check:
+          enabled: false
+    compatibility-verifier:
+      enabled: false
+  config:
+    import: []
+  autoconfigure:
+    exclude:
+      - com.alibaba.cloud.nacos.NacosConfigAutoConfiguration
+      - com.alibaba.cloud.nacos.NacosConfigSpringCloudAutoConfiguration
+      - com.alibaba.cloud.nacos.NacosDiscoveryAutoConfiguration
+      - com.alibaba.cloud.nacos.discovery.NacosDiscoveryClientConfiguration
+      - org.springframework.cloud.autoconfigure.RefreshAutoConfiguration
+      - org.springframework.cloud.endpoint.event.RefreshEventListenerAutoConfiguration
+
+mate:
+  data:
+    data-encryption-key: test-encryption-key
+    connection-test-timeout: 5s
+    query-max-rows: 10000
+    kafka-topic: data-integration-events

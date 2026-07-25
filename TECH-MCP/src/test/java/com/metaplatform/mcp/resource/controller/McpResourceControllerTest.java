@@ -1,5 +1,9 @@
 package com.metaplatform.mcp.resource.controller;
 
+import com.metaplatform.mcp.IamTestConfig;
+import org.springframework.context.annotation.Import;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+
 import com.metaplatform.mcp.common.PageResponse;
 import com.metaplatform.mcp.resource.dto.ResourceListItem;
 import com.metaplatform.mcp.resource.dto.ResourceResponse;
@@ -21,6 +25,8 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+@Import(IamTestConfig.class)
+@AutoConfigureMockMvc(addFilters = false)
 @WebMvcTest(McpResourceController.class)
 class McpResourceControllerTest {
 

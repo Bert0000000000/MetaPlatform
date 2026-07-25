@@ -8,12 +8,11 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
-import java.time.Instant;
 import java.util.UUID;
+import java.time.Instant;
 
 @Entity
-@Table(name = "ea_data_entity",
-        uniqueConstraints = @UniqueConstraint(columnNames = {"tenant_id", "code"}))
+@Table(name = "ea_data_entity")
 @Data
 @Builder
 @NoArgsConstructor
@@ -22,31 +21,35 @@ public class DataEntityEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(name = "id", nullable = false)
     private UUID id;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "tenant_id", nullable = false, length = 64)
     private String tenantId;
 
     @Column(name = "domain_id")
     private UUID domainId;
 
-    @Column(nullable = false, length = 256)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "name", nullable = false, length = 256)
     private String name;
 
-    @Column(nullable = false, length = 128)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "code", nullable = false, length = 128)
     private String code;
 
-    @Column(columnDefinition = "TEXT")
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "entity_type", length = 64)
     private String entityType;
 
-    @Lob
-    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    @Column(columnDefinition = "jsonb")
-    @Builder.Default
-    private String attributes = "[]";
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "attributes", columnDefinition = "jsonb")
+    private String attributes;
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
@@ -56,4 +59,5 @@ public class DataEntityEntity {
 
     @Column(name = "deleted_at")
     private Instant deletedAt;
+
 }

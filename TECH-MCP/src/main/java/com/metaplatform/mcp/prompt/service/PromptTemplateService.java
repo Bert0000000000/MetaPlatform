@@ -157,7 +157,7 @@ public class PromptTemplateService {
         return samples;
     }
 
-    String renderTemplate(String template, Map<String, Object> variables) {
+    public String renderTemplate(String template, Map<String, Object> variables) {
         if (template == null) {
             return "";
         }

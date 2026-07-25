@@ -24,7 +24,7 @@ public interface McpResourceRepository extends JpaRepository<McpResourceEntity, 
     @Query("SELECT r FROM McpResourceEntity r " +
            "WHERE r.tenantId = :tenantId AND r.deletedAt IS NULL " +
            "AND (:conceptId IS NULL OR r.relatedConceptId = :conceptId) " +
-           "AND (:keyword IS NULL OR LOWER(r.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(r.uri) LIKE LOWER(CONCAT('%', :keyword, '%')))")
+           "AND (:keyword IS NULL OR LOWER(r.name) LIKE LOWER(CONCAT('%', cast(:keyword as string), '%'))) OR LOWER(r.uri) LIKE LOWER(CONCAT('%', cast(:keyword as string), '%'))))")
     List<McpResourceEntity> search(@Param("tenantId") String tenantId,
                                    @Param("conceptId") String conceptId,
                                    @Param("keyword") String keyword);

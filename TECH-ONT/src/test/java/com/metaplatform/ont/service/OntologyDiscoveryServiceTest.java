@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.document.Document;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -19,11 +20,13 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.testcontainers.DockerClientFactory;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -44,8 +47,8 @@ import static org.mockito.Mockito.when;
         "spring.autoconfigure.exclude=" +
                 "org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration," +
                 "org.springframework.boot.autoconfigure.data.neo4j.Neo4jAutoConfiguration," +
-                "org.springframework.ai.model.chat.client.autoconfigure.ChatClientAutoConfiguration," +
                 "org.springframework.ai.mcp.server.common.autoconfigure.McpServerAutoConfiguration",
+        "spring.ai.alibaba.dashscope.api-key=sk-test",
         "spring.flyway.enabled=true",
         "spring.jpa.hibernate.ddl-auto=validate"
 })
@@ -100,6 +103,9 @@ class OntologyDiscoveryServiceTest {
 
     @Autowired
     private ChatClient.Builder chatClientBuilder;
+
+    @MockitoBean
+    private ConceptEmbeddingService conceptEmbeddingService;
 
     @Test
     void getDataSources_returnsMockCatalog() {
@@ -181,17 +187,29 @@ class OntologyDiscoveryServiceTest {
                 .contains("owns");
     }
 
+    @Test
+    void recommendSimilarConcepts_returnsConceptIdsAndFiltersMissingMetadata() {
+        when(conceptEmbeddingService.searchSimilarConcepts("客户", 3)).thenReturn(List.of(
+                new Document("doc-1", "Customer", Map.of("conceptId", "customer")),
+                new Document("doc-2", "Client", Map.of("conceptId", "client")),
+                new Document("doc-3", "Unknown", Map.of("name", "Unknown"))
+        ));
+
+        List<String> result = service.recommendSimilarConcepts("客户", 3);
+
+        assertThat(result).containsExactly("customer", "client");
+    }
+
     /**
      * 测试专用配置：提供 singleton 作用域的 ChatClient.Builder 与 ConfigService mock，
-     * 避免 Spring AI ChatClientAutoConfiguration 原型作用域 bean 无法被 @MockitoBean 覆盖的问题，
-     * 同时绕过 NacosConfig 对真实 Nacos 服务的连接。
+     * 避免测试触发真实 DashScope 与 Nacos 调用。
      */
     @TestConfiguration
     static class TestConfig {
 
         @Bean
         @Primary
-        public ChatClient.Builder chatClientBuilder() {
+        public ChatClient.Builder mockChatClientBuilder() {
             return mock(ChatClient.Builder.class);
         }
 

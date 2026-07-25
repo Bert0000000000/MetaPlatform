@@ -8,13 +8,19 @@ import com.metaplatform.ea.debt.dto.UpdateTechDebtRequest;
 import com.metaplatform.ea.debt.service.TechDebtService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * 技术债务统一入口。
+ * 原 GovernanceController 中的 /governance/tech-debts 端点已迁入此处，
+ * /governance/tech-debts 作为兼容路径保留。
+ */
 @RestController
-@RequestMapping("/api/v1/ea/tech-debts")
+@RequestMapping({"/api/v1/ea/tech-debts", "/api/v1/ea/governance/tech-debts"})
 @RequiredArgsConstructor
 public class TechDebtController {
 
@@ -29,7 +35,12 @@ public class TechDebtController {
     public ApiResponse<List<TechDebtResponse>> list(
             @RequestParam(required = false) String severity,
             @RequestParam(required = false) String scopeType,
-            @RequestParam(required = false) UUID scopeId) {
+            @RequestParam(required = false) UUID scopeId,
+            @RequestParam(required = false) String level,
+            @RequestParam(required = false) String status) {
+        if (StringUtils.hasText(level) || StringUtils.hasText(status)) {
+            return ApiResponse.success(service.listByLevelAndStatus(level, status));
+        }
         return ApiResponse.success(service.list(severity, scopeType, scopeId));
     }
 

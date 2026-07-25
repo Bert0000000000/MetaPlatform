@@ -1,136 +1,91 @@
 package com.metaplatform.mcp.jsonrpc;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.metaplatform.mcp.tool.dto.ToolExecutionResponse;
-import com.metaplatform.mcp.tool.entity.McpToolEntity;
-import com.metaplatform.mcp.tool.service.McpToolService;
-import com.metaplatform.mcp.tool.service.ToolExecutionService;
+import com.metaplatform.mcp.common.TenantContext;
+import com.metaplatform.mcp.server.entity.McpServerEntity;
+import com.metaplatform.mcp.server.repository.McpServerRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.UUID;
 
+/**
+ * JSON-RPC 2.0 entry points for the MCP server.
+ *
+ * <ul>
+ *   <li>{@code POST /api/v1/mcp/jsonrpc} — standard MCP endpoint, single shared protocol
+ *       dispatcher</li>
+ *   <li>{@code POST /api/v1/mcp/servers/{serverId}/rpc} — multi-tenant routing: the request
+ *       is only honoured if the {@code serverId} exists and is owned by the current tenant</li>
+ * </ul>
+ *
+ * <p>All dispatching logic lives in {@link McpProtocolService}; this controller is a thin
+ * HTTP shell. The raw {@link #handle(JsonRpcRequest)} entry point is preserved so that
+ * internal callers (e.g. {@code McpDebugService}) can reuse it without HTTP semantics.</p>
+ */
 @Slf4j
 @RestController
-@RequestMapping("/api/v1/mcp/jsonrpc")
+@RequestMapping("/api/v1/mcp")
 @RequiredArgsConstructor
 public class JsonRpcController {
 
-    private static final String PROTOCOL_VERSION = "2024-11-05";
+    private final McpProtocolService mcpProtocolService;
+    private final McpServerRepository mcpServerRepository;
 
-    private static final int CODE_METHOD_NOT_FOUND = -32601;
-    private static final int CODE_INVALID_PARAMS = -32602;
-    private static final int CODE_INTERNAL_ERROR = -32603;
+    /**
+     * Raw dispatch — returns the JSON-RPC response directly. Used by HTTP handlers and by
+     * internal service callers (e.g. debug tools) that want to invoke the protocol without
+     * going through Spring MVC.
+     *
+     * <p>Returns {@code null} for notifications (no {@code id}); callers must handle that
+     * case (HTTP layer writes 204, internal callers simply drop it).</p>
+     */
+    public JsonRpcResponse handle(JsonRpcRequest request) {
+        return mcpProtocolService.handle(request);
+    }
 
-    private final McpToolService mcpToolService;
-    private final ToolExecutionService toolExecutionService;
-    private final ObjectMapper objectMapper;
-
-    @PostMapping
-    public JsonRpcResponse handle(@RequestBody JsonRpcRequest request) {
-        if (request.getMethod() == null || request.getMethod().isBlank()) {
-            return JsonRpcResponse.error(request.getId(), CODE_METHOD_NOT_FOUND, "Method not found");
+    /**
+     * Standard MCP JSON-RPC endpoint. Returns HTTP 204 No Content for notifications.
+     */
+    @PostMapping(value = "/jsonrpc")
+    public ResponseEntity<JsonRpcResponse> handleHttp(@RequestBody JsonRpcRequest request) {
+        JsonRpcResponse response = mcpProtocolService.handle(request);
+        if (response == null) {
+            return ResponseEntity.noContent().build();
         }
-        try {
-            return switch (request.getMethod()) {
-                case "initialize" -> initialize(request);
-                case "tools/list" -> listTools(request);
-                case "tools/call" -> callTool(request);
-                case "resources/list" -> listResources(request);
-                default -> JsonRpcResponse.error(request.getId(), CODE_METHOD_NOT_FOUND,
-                        "Method not found: " + request.getMethod());
-            };
-        } catch (Exception e) {
-            log.error("JSON-RPC handling failed for method={}, id={}", request.getMethod(), request.getId(), e);
-            return JsonRpcResponse.error(request.getId(), CODE_INTERNAL_ERROR, e.getMessage());
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Multi-tenant routing. Validates that the supplied {@code serverId} belongs to the
+     * current tenant and is not soft-deleted; rejects with 404 otherwise.
+     */
+    @PostMapping(value = "/servers/{serverId}/rpc")
+    public ResponseEntity<JsonRpcResponse> handleForServer(@PathVariable("serverId") UUID serverId,
+                                                           @RequestBody JsonRpcRequest request) {
+        validateServer(serverId);
+        JsonRpcResponse response = mcpProtocolService.handle(request);
+        if (response == null) {
+            return ResponseEntity.noContent().build();
         }
+        return ResponseEntity.ok(response);
     }
 
-    private JsonRpcResponse initialize(JsonRpcRequest request) {
-        Map<String, Object> result = new LinkedHashMap<>();
-        result.put("protocolVersion", PROTOCOL_VERSION);
-        result.put("capabilities", Map.of(
-                "tools", Map.of(),
-                "resources", Map.of()
-        ));
-        result.put("serverInfo", Map.of(
-                "name", "tech-mcp",
-                "version", "0.0.1"
-        ));
-        return JsonRpcResponse.success(request.getId(), result);
-    }
-
-    private JsonRpcResponse listTools(JsonRpcRequest request) {
-        List<McpToolEntity> tools = mcpToolService.listEnabled();
-        List<Map<String, Object>> toolList = tools.stream()
-                .map(this::toToolDescriptor)
-                .toList();
-        return JsonRpcResponse.success(request.getId(), Map.of("tools", toolList));
-    }
-
-    private JsonRpcResponse callTool(JsonRpcRequest request) {
-        Map<String, Object> params = request.getParams();
-        if (params == null || params.get("name") == null) {
-            return JsonRpcResponse.error(request.getId(), CODE_INVALID_PARAMS,
-                    "Missing required param: name");
-        }
-        String name = String.valueOf(params.get("name"));
-        McpToolEntity tool = mcpToolService.findByCode(name);
-        Object arguments = params.get("arguments");
-        String input = serializeArguments(arguments);
-        ToolExecutionResponse exec = toolExecutionService.executeTool(tool.getId(), input);
-
-        boolean isError = !"SUCCESS".equals(exec.getStatus());
-        String text = isError
-                ? (exec.getErrorMessage() == null ? "execution failed" : exec.getErrorMessage())
-                : (exec.getOutput() == null ? "" : exec.getOutput());
-        Map<String, Object> contentItem = Map.of("type", "text", "text", text);
-        Map<String, Object> result = new LinkedHashMap<>();
-        result.put("content", List.of(contentItem));
-        result.put("isError", isError);
-        return JsonRpcResponse.success(request.getId(), result);
-    }
-
-    private JsonRpcResponse listResources(JsonRpcRequest request) {
-        return JsonRpcResponse.success(request.getId(), Map.of("resources", List.of()));
-    }
-
-    private Map<String, Object> toToolDescriptor(McpToolEntity tool) {
-        Map<String, Object> descriptor = new LinkedHashMap<>();
-        descriptor.put("name", tool.getCode());
-        descriptor.put("title", tool.getName());
-        descriptor.put("description", tool.getDescription() == null ? "" : tool.getDescription());
-        descriptor.put("inputSchema", parseJson(tool.getInputSchema()));
-        return descriptor;
-    }
-
-    private Object parseJson(String value) {
-        if (value == null || value.isBlank()) {
-            return Map.of();
-        }
-        try {
-            JsonNode node = objectMapper.readTree(value);
-            return objectMapper.treeToValue(node, Object.class);
-        } catch (Exception e) {
-            return Map.of();
-        }
-    }
-
-    private String serializeArguments(Object arguments) {
-        if (arguments == null) {
-            return "{}";
-        }
-        try {
-            return objectMapper.writeValueAsString(arguments);
-        } catch (Exception e) {
-            return "{}";
+    private void validateServer(UUID serverId) {
+        McpServerEntity entity = mcpServerRepository.findByIdAndDeletedAtIsNull(serverId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "MCP Server not found: " + serverId));
+        String tenantId = TenantContext.getOrDefault();
+        if (!entity.getTenantId().equals(tenantId)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                    "MCP Server not found in current tenant: " + serverId);
         }
     }
 }

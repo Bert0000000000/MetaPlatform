@@ -2,6 +2,8 @@ package com.metaplatform.action.definition.dto;
 
 import lombok.Data;
 
+import java.util.Map;
+
 @Data
 public class UpdateActionDefinitionRequest {
 
@@ -9,7 +11,7 @@ public class UpdateActionDefinitionRequest {
     private String description;
     private String method;
     private String url;
-    private String headers;
-    private String inputSchema;
-    private String outputSchema;
+    private Map<String, Object> headers;
+    private Map<String, Object> inputSchema;
+    private Map<String, Object> outputSchema;
 }

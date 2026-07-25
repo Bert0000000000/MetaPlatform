@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.Instant;
+import java.util.Map;
 
 @Data
 @Builder
@@ -17,6 +18,6 @@ public class ReleaseLogResponse {
     private String releaseId;
     private String action;
     private String operator;
-    private String remark;
+    private Map<String, Object> remark;
     private Instant createdAt;
 }

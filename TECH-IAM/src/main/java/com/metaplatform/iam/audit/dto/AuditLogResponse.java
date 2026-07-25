@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.Instant;
+import java.util.Map;
 
 @Data
 @Builder
@@ -25,6 +26,6 @@ public class AuditLogResponse {
     private String userAgent;
     private String traceId;
     private IamAuditLogEntity.Status status;
-    private String metadata;
+    private Map<String, Object> metadata;
     private Instant createdAt;
 }

@@ -1,6 +1,11 @@
 package com.metaplatform.mcp.debug.controller;
 
+import com.metaplatform.mcp.IamTestConfig;
+import org.springframework.context.annotation.Import;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+
 import com.metaplatform.mcp.common.PageResponse;
+import com.metaplatform.mcp.debug.dto.BreakpointResponse;
 import com.metaplatform.mcp.debug.dto.DebugCompareResponse;
 import com.metaplatform.mcp.debug.dto.DebugSessionResponse;
 import com.metaplatform.mcp.debug.service.McpDebugService;
@@ -18,12 +23,16 @@ import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+@Import(IamTestConfig.class)
+@AutoConfigureMockMvc(addFilters = false)
 @WebMvcTest(McpDebugController.class)
 class McpDebugControllerTest {
 
@@ -116,5 +125,47 @@ class McpDebugControllerTest {
                         .content("{\"leftId\":\"" + left + "\",\"rightId\":\"" + right + "\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.differences[0]").value("requestPayload"));
+    }
+
+    @Test
+    void add_breakpoint_returns_breakpoint() throws Exception {
+        UUID sessionId = UUID.randomUUID();
+        BreakpointResponse bp = BreakpointResponse.builder()
+                .id(UUID.randomUUID()).sessionId(sessionId)
+                .toolId(UUID.randomUUID()).condition("args.q > 10").enabled(true)
+                .createdAt(Instant.now()).updatedAt(Instant.now()).build();
+        when(mcpDebugService.addBreakpoint(eq(sessionId), any())).thenReturn(bp);
+
+        mockMvc.perform(post("/api/v1/mcp/debug/sessions/{sessionId}/breakpoints", sessionId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"toolId\":\"" + UUID.randomUUID() + "\",\"condition\":\"args.q > 10\",\"enabled\":true}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.condition").value("args.q > 10"))
+                .andExpect(jsonPath("$.data.enabled").value(true));
+    }
+
+    @Test
+    void remove_breakpoint_returns_success() throws Exception {
+        UUID sessionId = UUID.randomUUID();
+        UUID breakpointId = UUID.randomUUID();
+        doNothing().when(mcpDebugService).removeBreakpoint(sessionId, breakpointId);
+
+        mockMvc.perform(delete("/api/v1/mcp/debug/sessions/{sessionId}/breakpoints/{breakpointId}", sessionId, breakpointId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(0));
+    }
+
+    @Test
+    void list_breakpoints_returns_list() throws Exception {
+        UUID sessionId = UUID.randomUUID();
+        BreakpointResponse bp = BreakpointResponse.builder()
+                .id(UUID.randomUUID()).sessionId(sessionId)
+                .condition("args.q > 5").enabled(true)
+                .createdAt(Instant.now()).updatedAt(Instant.now()).build();
+        when(mcpDebugService.listBreakpoints(sessionId)).thenReturn(List.of(bp));
+
+        mockMvc.perform(get("/api/v1/mcp/debug/sessions/{sessionId}/breakpoints", sessionId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].condition").value("args.q > 5"));
     }
 }

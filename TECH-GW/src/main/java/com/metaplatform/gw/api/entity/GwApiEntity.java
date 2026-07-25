@@ -1,9 +1,6 @@
 package com.metaplatform.gw.api.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -11,9 +8,9 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
-import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.UUID;
+import java.time.Instant;
 
 @Entity
 @Table(name = "gw_api")
@@ -24,34 +21,44 @@ import java.util.UUID;
 public class GwApiEntity {
 
     @Id
-    @Column(name = "id")
+    @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(name = "id", nullable = false)
     private UUID id;
 
-    @Column(name = "tenant_id", length = 64, nullable = false)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "tenant_id", nullable = false, length = 64)
     private String tenantId;
 
-    @Column(name = "name", length = 256, nullable = false)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "name", nullable = false, length = 256)
     private String name;
 
-    @Column(name = "path", length = 512, nullable = false)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "path", nullable = false, length = 512)
     private String path;
 
-    @Column(name = "method", length = 16, nullable = false)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "method", nullable = false, length = 16)
     private String method;
 
-    @Column(name = "group_name", length = 128, nullable = false)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "group_name", nullable = false, length = 128)
     private String groupName;
 
-    @Column(name = "version", length = 32, nullable = false)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "version", nullable = false, length = 32)
     private String version;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "target_service", length = 128)
     private String targetService;
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 
-    @Column(name = "status", length = 32, nullable = false)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "status", nullable = false, length = 32)
     private String status;
 
     @JdbcTypeCode(SqlTypes.JSON)
@@ -74,12 +81,13 @@ public class GwApiEntity {
     @Column(name = "examples", columnDefinition = "jsonb")
     private Map<String, Object> examples;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+    @Column(name = "created_at", nullable = false)
+    private Instant createdAt;
 
     @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
+    private Instant updatedAt;
 
     @Column(name = "deleted_at")
-    private LocalDateTime deletedAt;
+    private Instant deletedAt;
+
 }

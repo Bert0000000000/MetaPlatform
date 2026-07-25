@@ -80,7 +80,7 @@ export default function AdminPermissionsPage() {
   const [editDrawerOpen, setEditDrawerOpen] = useState(false);
 
   return (
-    <>
+    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
       <SubTabs items={ADMIN_TABS} activePath={location.pathname} />
 
       <style>{`
@@ -160,7 +160,7 @@ export default function AdminPermissionsPage() {
         .ap-masking-toggle.on::after { transform: translateX(16px); }
         .ap-save-bar { display: flex; justify-content: flex-end; gap: 10px; padding-top: 4px; }
       `}</style>
-      <div style={{ padding: '24px 0' }}>
+      <div style={{ padding: '24px 0', flex: 1, minHeight: 0, overflowY: 'auto' }}>
         {/* Page Header */}
         <div className="ap-page-header">
           <h1>权限管理</h1>
@@ -382,6 +382,6 @@ export default function AdminPermissionsPage() {
           </Field>
         </FormSection>
       </FormDrawer>
-    </>
+    </div>
   );
 }

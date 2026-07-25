@@ -1,14 +1,11 @@
 package com.metaplatform.rule.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.metaplatform.rule.common.ErrorCode;
 import com.metaplatform.rule.common.PageResponse;
 import com.metaplatform.rule.common.TenantContext;
 import com.metaplatform.rule.dto.RuleDefinitionCreateRequest;
 import com.metaplatform.rule.dto.RuleDefinitionResponse;
 import com.metaplatform.rule.dto.RuleDefinitionUpdateRequest;
-import com.metaplatform.rule.entity.ActionType;
 import com.metaplatform.rule.entity.RuleDefinitionEntity;
 import com.metaplatform.rule.entity.RuleSetEntity;
 import com.metaplatform.rule.exception.RuleException;
@@ -32,7 +29,6 @@ public class RuleDefinitionService {
     private final RuleDefinitionRepository ruleDefinitionRepository;
     private final RuleSetRepository ruleSetRepository;
     private final OntologyReferenceValidator ontologyReferenceValidator;
-    private final ObjectMapper objectMapper;
 
     @Transactional
     public RuleDefinitionResponse create(RuleDefinitionCreateRequest request) {
@@ -62,8 +58,8 @@ public class RuleDefinitionService {
                 .name(request.getName())
                 .description(request.getDescription())
                 .conditionExpr(request.getConditionExpr())
-                .actionType(request.getActionType())
-                .actionConfig(toJsonNode(request.getActionConfig()))
+                .actionType(request.getActionType() != null ? request.getActionType().name() : null)
+                .actionConfig(request.getActionConfig())
                 .priority(request.getPriority() != null ? request.getPriority() : 0)
                 .enabled(request.getEnabled() != null ? request.getEnabled() : true)
                 .createdBy(TenantContext.getUserId())
@@ -112,10 +108,10 @@ public class RuleDefinitionService {
             entity.setConditionExpr(request.getConditionExpr());
         }
         if (request.getActionType() != null) {
-            entity.setActionType(request.getActionType());
+            entity.setActionType(request.getActionType().name());
         }
         if (request.getActionConfig() != null) {
-            entity.setActionConfig(toJsonNode(request.getActionConfig()));
+            entity.setActionConfig(request.getActionConfig());
         }
         if (request.getPriority() != null) {
             entity.setPriority(request.getPriority());
@@ -183,8 +179,8 @@ public class RuleDefinitionService {
                 .name(entity.getName())
                 .description(entity.getDescription())
                 .conditionExpr(entity.getConditionExpr())
-                .actionType(entity.getActionType().name())
-                .actionConfig(toMap(entity.getActionConfig()))
+                .actionType(entity.getActionType())
+                .actionConfig(entity.getActionConfig())
                 .priority(entity.getPriority())
                 .enabled(entity.getEnabled())
                 .createdAt(entity.getCreatedAt())
@@ -192,20 +188,5 @@ public class RuleDefinitionService {
                 .createdBy(entity.getCreatedBy())
                 .updatedBy(entity.getUpdatedBy())
                 .build();
-    }
-
-    private JsonNode toJsonNode(Object value) {
-        if (value == null) {
-            return null;
-        }
-        return objectMapper.valueToTree(value);
-    }
-
-    @SuppressWarnings("unchecked")
-    private Map<String, Object> toMap(JsonNode jsonNode) {
-        if (jsonNode == null) {
-            return null;
-        }
-        return objectMapper.convertValue(jsonNode, Map.class);
     }
 }

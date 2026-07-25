@@ -8,7 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -51,8 +51,8 @@ public interface GwAuditLogRepository extends JpaRepository<GwAuditLogEntity, UU
            "ORDER BY a.createdAt DESC")
     List<GwAuditLogEntity> exportRange(
             @Param("tenantId") String tenantId,
-            @Param("start") LocalDateTime start,
-            @Param("end") LocalDateTime end);
+            @Param("start") Instant start,
+            @Param("end") Instant end);
 
     @Query("SELECT a.path, COUNT(a), AVG(a.durationMs), MAX(a.durationMs), " +
            "SUM(CASE WHEN a.isError = TRUE THEN 1L ELSE 0L END) " +
@@ -64,7 +64,7 @@ public interface GwAuditLogRepository extends JpaRepository<GwAuditLogEntity, UU
            "ORDER BY COUNT(a) DESC")
     List<Object[]> aggregateLatency(
             @Param("tenantId") String tenantId,
-            @Param("start") LocalDateTime start,
-            @Param("end") LocalDateTime end,
+            @Param("start") Instant start,
+            @Param("end") Instant end,
             Pageable pageable);
 }

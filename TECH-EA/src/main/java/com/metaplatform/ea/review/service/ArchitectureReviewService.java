@@ -189,7 +189,7 @@ public class ArchitectureReviewService {
             if (StringUtils.hasText(author)) node.put("author", author);
             node.put("createdAt", Instant.now().toString());
             array.add(node);
-            entity.setComments(objectMapper.writeValueAsString(array));
+            entity.setComments(array.toString());
         } catch (EaException e) {
             throw e;
         } catch (Exception e) {

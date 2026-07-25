@@ -8,6 +8,8 @@ import lombok.NoArgsConstructor;
 
 import java.time.Instant;
 import java.util.UUID;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "mcp_alert_rule")
@@ -22,6 +24,7 @@ public class McpAlertRuleEntity {
     private UUID id;
 
     @Column(name = "tenant_id", nullable = false, length = 64)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String tenantId;
 
     @Column(nullable = false, length = 128)
@@ -40,6 +43,7 @@ public class McpAlertRuleEntity {
     private Boolean enabled;
 
     @Column(name = "notify_channels", columnDefinition = "TEXT")
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String notifyChannels;
 
     @Column(name = "created_at", nullable = false)

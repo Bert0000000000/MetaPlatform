@@ -10,4 +10,6 @@ import java.util.List;
 public interface UserSessionRepository extends JpaRepository<UserSessionEntity, String> {
 
     List<UserSessionEntity> findByUserIdOrderByLastActiveAtDesc(String userId);
+
+    void deleteByUserId(String userId);
 }

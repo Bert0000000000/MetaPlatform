@@ -248,4 +248,28 @@ class McpClientServiceTest {
         assertThat(tools).hasSize(1);
         assertThat(tools.get(0).getCode()).isEqualTo("remote_tool");
     }
+
+    @Test
+    void sync_calls_discover_returns_tools() {
+        UUID id = UUID.randomUUID();
+        McpClientConnectionEntity entity = clientEntity(id, "http://remote:8080/jsonrpc", "DISCONNECTED");
+        when(clientRepository.findByIdAndDeletedAtIsNull(id)).thenReturn(Optional.of(entity));
+        stubWebClient("{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{\"tools\":[{\"name\":\"synced_tool\",\"description\":\"synced\",\"inputSchema\":{\"type\":\"object\"}}]}}");
+        when(mcpToolRepository.findByTenantIdAndCodeAndDeletedAtIsNull("tenant-default", "synced_tool"))
+                .thenReturn(Optional.empty());
+        when(mcpToolRepository.save(any(McpToolEntity.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(clientRepository.save(any(McpClientConnectionEntity.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        McpToolEntity synced = McpToolEntity.builder()
+                .id(UUID.randomUUID()).tenantId("tenant-default").serverId(id)
+                .name("synced_tool").code("synced_tool").toolType("MCP").enabled(true)
+                .createdAt(Instant.now()).updatedAt(Instant.now()).build();
+        when(mcpToolRepository.findByTenantIdAndServerIdAndDeletedAtIsNull("tenant-default", id))
+                .thenReturn(List.of(synced));
+
+        List<McpToolListItem> tools = mcpClientService.sync(id);
+
+        assertThat(tools).hasSize(1);
+        assertThat(tools.get(0).getCode()).isEqualTo("synced_tool");
+    }
 }

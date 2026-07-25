@@ -24,18 +24,23 @@ public class McpResourceEntity {
     private UUID id;
 
     @Column(name = "tenant_id", nullable = false, length = 64)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String tenantId;
 
     @Column(nullable = false, length = 256)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String name;
 
     @Column(nullable = false, length = 512)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String uri;
 
     @Column(columnDefinition = "TEXT")
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     private String description;
 
     @Column(name = "mime_type", length = 128)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String mimeType;
 
     @Lob
@@ -49,6 +54,7 @@ public class McpResourceEntity {
     private String metadata;
 
     @Column(name = "related_concept_id", length = 128)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String relatedConceptId;
 
     @Column(name = "created_at", nullable = false)

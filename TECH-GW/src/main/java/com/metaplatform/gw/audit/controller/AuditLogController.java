@@ -14,7 +14,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 
 @RestController
@@ -86,12 +88,16 @@ public class AuditLogController {
                         .body(doc.getContent()));
     }
 
-    private LocalDateTime parseTime(String value) {
+    private Instant parseTime(String value) {
         if (value == null || value.isBlank()) return null;
         try {
-            return LocalDateTime.parse(value);
+            return LocalDateTime.parse(value).atZone(ZoneId.systemDefault()).toInstant();
         } catch (Exception ex) {
-            return null;
+            try {
+                return Instant.parse(value);
+            } catch (Exception e) {
+                return null;
+            }
         }
     }
 }

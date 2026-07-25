@@ -9,6 +9,7 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
+import java.util.Map;
 import java.util.UUID;
 
 @Entity
@@ -30,6 +31,7 @@ public class OutboxMessageEntity {
     private UUID id;
 
     @Column(name = "tenant_id", nullable = false, length = 64)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String tenantId;
 
     @Column(name = "aggregate_id", nullable = false, length = 64)
@@ -38,10 +40,9 @@ public class OutboxMessageEntity {
     @Column(name = "event_type", nullable = false, length = 64)
     private String eventType;
 
-    @Lob
-    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb", nullable = false)
-    private String payload;
+    private Map<String, Object> payload;
 
     @Column(nullable = false, length = 20)
     private String status;
@@ -56,6 +57,7 @@ public class OutboxMessageEntity {
     private Instant nextRetryAt;
 
     @Column(name = "error_message", columnDefinition = "TEXT")
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String errorMessage;
 
     @Column(name = "trace_id", length = 64)

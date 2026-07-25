@@ -5,7 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 
 @Data
@@ -36,7 +36,7 @@ public class RateLimitRuleStatsResponse {
         private Long maxQps;
         private Long avgQps;
         private Long triggeredCount;
-        private LocalDateTime lastTriggeredAt;
+        private Instant lastTriggeredAt;
     }
 
     @Data
@@ -44,7 +44,7 @@ public class RateLimitRuleStatsResponse {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class TimelinePoint {
-        private LocalDateTime timestamp;
+        private Instant timestamp;
         private Long totalRequests;
         private Long blockedRequests;
         private Long maxQps;

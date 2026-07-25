@@ -24,6 +24,7 @@ public class McpToolExecutionEntity {
     private UUID id;
 
     @Column(name = "tenant_id", nullable = false, length = 64)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String tenantId;
 
     @Column(name = "tool_id", nullable = false)
@@ -40,15 +41,18 @@ public class McpToolExecutionEntity {
     private String output;
 
     @Column(nullable = false, length = 20)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String status;
 
     @Column(name = "duration_ms")
     private Long durationMs;
 
     @Column(name = "error_message", columnDefinition = "TEXT")
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     private String errorMessage;
 
     @Column(name = "trace_id", nullable = false, length = 64)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String traceId;
 
     @Column(name = "started_at")

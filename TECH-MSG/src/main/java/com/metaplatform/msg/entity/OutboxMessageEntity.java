@@ -21,6 +21,7 @@ public class OutboxMessageEntity {
 
     @Id
     @Column(name = "id", nullable = false, length = 64)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String id;
 
     @Column(name = "tenant_id", nullable = false, length = 64)
@@ -28,6 +29,7 @@ public class OutboxMessageEntity {
     private String tenantId = "tenant-default";
 
     @Column(name = "aggregate_type", nullable = false, length = 100)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String aggregateType;
 
     @Column(name = "aggregate_id", nullable = false, length = 255)
@@ -64,6 +66,10 @@ public class OutboxMessageEntity {
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
+
+    @UpdateTimestamp
+    @Column(name = "updated_at")
+    private Instant updatedAt;
 
     @Column(name = "sent_at")
     private Instant sentAt;

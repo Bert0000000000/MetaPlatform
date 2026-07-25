@@ -1,5 +1,9 @@
 package com.metaplatform.mcp.alert.controller;
 
+import com.metaplatform.mcp.IamTestConfig;
+import org.springframework.context.annotation.Import;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.metaplatform.mcp.alert.dto.AlertRuleResponse;
 import com.metaplatform.mcp.alert.dto.CreateAlertRuleRequest;
@@ -23,6 +27,8 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+@Import(IamTestConfig.class)
+@AutoConfigureMockMvc(addFilters = false)
 @WebMvcTest(McpAlertRuleController.class)
 class McpAlertRuleControllerTest {
 

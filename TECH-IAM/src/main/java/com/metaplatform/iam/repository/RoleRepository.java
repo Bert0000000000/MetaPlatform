@@ -20,8 +20,8 @@ public interface RoleRepository extends JpaRepository<RoleEntity, String> {
     Page<RoleEntity> findByTenantIdAndDeletedFalse(String tenantId, Pageable pageable);
 
     @Query("SELECT r FROM RoleEntity r WHERE r.tenantId = :tenantId AND r.deleted = false " +
-            "AND (LOWER(r.roleName) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
-            "OR LOWER(r.roleCode) LIKE LOWER(CONCAT('%', :keyword, '%')))")
+            "AND (LOWER(r.roleName) LIKE LOWER(CONCAT('%', cast(:keyword as string), '%'))) " +
+            "OR LOWER(r.roleCode) LIKE LOWER(CONCAT('%', cast(:keyword as string), '%'))))")
     Page<RoleEntity> searchByKeyword(@Param("tenantId") String tenantId,
                                      @Param("keyword") String keyword,
                                      Pageable pageable);

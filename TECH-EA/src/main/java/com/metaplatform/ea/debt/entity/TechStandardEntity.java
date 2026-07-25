@@ -8,8 +8,8 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
-import java.time.Instant;
 import java.util.UUID;
+import java.time.Instant;
 
 @Entity
 @Table(name = "ea_tech_standard")
@@ -21,35 +21,39 @@ public class TechStandardEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(name = "id", nullable = false)
     private UUID id;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "tenant_id", nullable = false, length = 64)
     private String tenantId;
 
-    @Column(nullable = false, length = 256)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "name", nullable = false, length = 256)
     private String name;
 
-    @Column(nullable = false, length = 128)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "code", nullable = false, length = 128)
     private String code;
 
-    @Column(length = 64)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "category", length = 64)
     private String category;
 
-    @Column(length = 64)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "version", length = 64)
     private String version;
 
-    @Column(columnDefinition = "TEXT")
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 
-    @Column(nullable = false)
-    @Builder.Default
-    private Boolean mandatory = Boolean.TRUE;
+    @Column(name = "mandatory", nullable = false)
+    private Boolean mandatory;
 
-    @Lob
-    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "metadata", columnDefinition = "jsonb")
-    @Builder.Default
-    private String metadata = "{}";
+    private String metadata;
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
@@ -59,4 +63,5 @@ public class TechStandardEntity {
 
     @Column(name = "deleted_at")
     private Instant deletedAt;
+
 }

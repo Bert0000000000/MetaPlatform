@@ -24,27 +24,34 @@ public class McpToolEntity {
     private UUID id;
 
     @Column(name = "tenant_id", nullable = false, length = 64)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String tenantId;
 
     @Column(name = "server_id")
     private UUID serverId;
 
     @Column(nullable = false, length = 256)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String name;
 
     @Column(nullable = false, length = 128)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String code;
 
     @Column(length = 128)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String category;
 
     @Column(length = 32)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String version;
 
     @Column(columnDefinition = "TEXT")
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     private String tags;
 
     @Column(columnDefinition = "TEXT")
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     private String description;
 
     @Lob
@@ -58,23 +65,38 @@ public class McpToolEntity {
     private String outputSchema;
 
     @Column(name = "tool_type", nullable = false, length = 20)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String toolType;
 
     @Column(length = 2048)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String endpoint;
 
     @Column(name = "bean_class", length = 512)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String beanClass;
 
     @Column(nullable = false)
     private Boolean enabled;
 
-    @Column(name = "created_at", nullable = false)
+    @Column(nullable = false, length = 20)
+    @Builder.Default
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    private String status = "DRAFT";
+
+    @Column(name = "published_at")
+    private Instant publishedAt;
+
+    @Column(name = "published_by", length = 100)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    private String publishedBy;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
-    @Column(name = "deleted_at")
+    @Column
     private Instant deletedAt;
 }

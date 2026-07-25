@@ -1,7 +1,5 @@
 package com.metaplatform.ea.application.service;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.metaplatform.ea.common.ErrorCode;
 import com.metaplatform.ea.common.TenantContext;
 import com.metaplatform.ea.exception.EaException;
@@ -34,7 +32,7 @@ import java.util.stream.Collectors;
 public class ApplicationService {
 
     private final ApplicationRepository repository;
-    private final ObjectMapper objectMapper;
+    private final ApplicationTechComponentService linkService;
 
     @Transactional
     public ApplicationResponse create(CreateApplicationRequest request) {
@@ -50,8 +48,9 @@ public class ApplicationService {
                 .description(request.getDescription())
                 .appType(request.getAppType())
                 .status("ACTIVE")
-                .techStack(writeJson(request.getTechStack() != null ? request.getTechStack() : List.of()))
-                .dependencies(writeJson(request.getDependencies() != null ? request.getDependencies() : List.of()))
+                .techStack(request.getTechStack())
+                .dependencies(request.getDependencies())
+                .capabilityIds(request.getCapabilityIds())
                 .createdAt(now)
                 .updatedAt(now)
                 .build();
@@ -76,8 +75,9 @@ public class ApplicationService {
         if (request.getDescription() != null) entity.setDescription(request.getDescription());
         if (request.getAppType() != null) entity.setAppType(request.getAppType());
         if (StringUtils.hasText(request.getStatus())) entity.setStatus(request.getStatus().toUpperCase());
-        if (request.getTechStack() != null) entity.setTechStack(writeJson(request.getTechStack()));
-        if (request.getDependencies() != null) entity.setDependencies(writeJson(request.getDependencies()));
+        if (request.getTechStack() != null) entity.setTechStack(request.getTechStack());
+        if (request.getDependencies() != null) entity.setDependencies(request.getDependencies());
+        if (request.getCapabilityIds() != null) entity.setCapabilityIds(request.getCapabilityIds());
         entity.setUpdatedAt(Instant.now());
         return toResponse(repository.save(entity));
     }
@@ -97,12 +97,12 @@ public class ApplicationService {
         repository.findByIdAndDeletedAtIsNull(request.getDependencyId())
                 .orElseThrow(() -> new EaException(ErrorCode.NOT_FOUND, "依赖应用不存在: " + request.getDependencyId()));
 
-        List<String> deps = readStringList(entity.getDependencies());
+        Map<String, Object> deps = entity.getDependencies() != null
+                ? new HashMap<>(entity.getDependencies())
+                : new HashMap<>();
         String depIdStr = request.getDependencyId().toString();
-        if (!deps.contains(depIdStr)) {
-            deps.add(depIdStr);
-        }
-        entity.setDependencies(writeJson(deps));
+        deps.put(depIdStr, request.getDependencyType() != null ? request.getDependencyType() : "DEPENDS_ON");
+        entity.setDependencies(deps);
         entity.setUpdatedAt(Instant.now());
         return toResponse(repository.save(entity));
     }
@@ -143,19 +143,24 @@ public class ApplicationService {
         appMap.put(root.getId(), root);
         collectDependencies(root, appMap, visited, edges);
 
-        // Group nodes by app type for impact categorization
+        Set<UUID> affectedTechComponents = new HashSet<>();
+        for (ApplicationEntity affectedApp : appMap.values()) {
+            affectedTechComponents.addAll(linkService.findTechComponentIdsByApplicationId(affectedApp.getId()));
+        }
+
         Map<String, Long> byType = appMap.values().stream()
                 .collect(Collectors.groupingBy(
                         e -> e.getAppType() == null ? "unknown" : e.getAppType(),
                         Collectors.counting()));
 
-        return Map.of(
-                "applicationId", root.getId(),
-                "totalNodes", (long) appMap.size(),
-                "totalEdges", (long) edges.size(),
-                "byType", byType,
-                "dependentIds", appMap.keySet().stream().map(UUID::toString).toList()
-        );
+        Map<String, Object> result = new HashMap<>();
+        result.put("applicationId", root.getId());
+        result.put("totalNodes", (long) appMap.size());
+        result.put("totalEdges", (long) edges.size());
+        result.put("byType", byType);
+        result.put("dependentIds", appMap.keySet().stream().map(UUID::toString).toList());
+        result.put("affectedTechComponents", affectedTechComponents.stream().map(UUID::toString).toList());
+        return result;
     }
 
     private void collectDependencies(ApplicationEntity app, Map<UUID, ApplicationEntity> appMap,
@@ -163,16 +168,18 @@ public class ApplicationService {
         if (visited.contains(app.getId())) return;
         visited.add(app.getId());
 
-        List<String> depIds = readStringList(app.getDependencies());
-        for (String depIdStr : depIds) {
+        Map<String, Object> depMap = app.getDependencies();
+        if (depMap == null) return;
+        for (String depIdStr : depMap.keySet()) {
             try {
                 UUID depId = UUID.fromString(depIdStr);
                 repository.findByIdAndDeletedAtIsNull(depId).ifPresent(dep -> {
                     appMap.putIfAbsent(depId, dep);
+                    Object depType = depMap.get(depIdStr);
                     edges.add(DependencyGraph.GraphEdge.builder()
                             .from(app.getId())
                             .to(depId)
-                            .dependencyType("DEPENDS_ON")
+                            .dependencyType(depType != null ? depType.toString() : "DEPENDS_ON")
                             .build());
                     collectDependencies(dep, appMap, visited, edges);
                 });
@@ -188,23 +195,6 @@ public class ApplicationService {
                 .orElseThrow(() -> new EaException(ErrorCode.NOT_FOUND, "应用不存在"));
     }
 
-    private List<String> readStringList(String json) {
-        if (json == null || json.isBlank()) return new ArrayList<>();
-        try {
-            return objectMapper.readValue(json, new TypeReference<>() {});
-        } catch (Exception e) {
-            return new ArrayList<>();
-        }
-    }
-
-    private String writeJson(Object value) {
-        try {
-            return objectMapper.writeValueAsString(value);
-        } catch (Exception e) {
-            throw new EaException(ErrorCode.INTERNAL_ERROR, "JSON 序列化失败");
-        }
-    }
-
     private ApplicationResponse toResponse(ApplicationEntity entity) {
         return ApplicationResponse.builder()
                 .id(entity.getId())
@@ -214,8 +204,9 @@ public class ApplicationService {
                 .description(entity.getDescription())
                 .appType(entity.getAppType())
                 .status(entity.getStatus())
-                .techStack(readStringList(entity.getTechStack()))
-                .dependencies(readStringList(entity.getDependencies()))
+                .techStack(entity.getTechStack())
+                .dependencies(entity.getDependencies())
+                .capabilityIds(entity.getCapabilityIds())
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())
                 .build();

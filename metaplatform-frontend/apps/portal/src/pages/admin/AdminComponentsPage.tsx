@@ -5,8 +5,7 @@
  *
  * 严格按 metaplatform-design-draft/pages/components.html 原型 1:1 还原：
  *  - Sidebar 顶部导航 + 高亮"后台管理"
- *  - Breadcrumb：后台管理 / 组件库
- *  - Page Header：标题"组件库" + 操作按钮（导出 / 查看仓库 / 新建组件）
+ *  - Page Header：标题"组件库" + 操作按钮（导出 / 查看仓库 / 新建组件，与其他 admin 子页面样式一致）
  *  - Tab Bar：全部 / UI 组件 / 流程节点 / 插件 / 文档
  *  - 4 个 Section：UI 组件 / 流程节点（含 palette + dropzone + 节点目录） / 插件 / 文档
  *
@@ -16,50 +15,17 @@
  *  - 颜色变量、间距、圆角与原型完全一致（var(--background)/var(--foreground)/…）。
  *  - 图标统一使用 lucide-react，与 portal 其他页面风格保持一致。
  */
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import {
-  Sparkles,
-  Database,
-  BookOpen,
-  Settings,
-  User,
-  Download,
   Github,
   Plus,
   LayoutGrid,
   MousePointerClick,
-  Workflow,
   PlugZap,
   BookText,
   ChevronDown,
-  Search,
-  Circle,
-  CircleDot,
-  UserCheck,
-  Diamond,
-  PlusSquare,
-  Layers,
-  FileText,
-  Wrench,
-  Bot as BotIcon,
-  Code,
-  Bell,
-  Mail,
-  MessageSquare,
-  Link,
-  Globe,
-  Radio,
-  Folder,
-  RefreshCcw,
-  Clock,
-  Zap,
-  FileInput,
-  Link2,
-  GitBranch as GitBranchIcon,
-  Repeat,
-  Combine,
-  Hourglass,
+  Settings,
   Star,
   Save,
   History,
@@ -68,7 +34,6 @@ import {
   Image,
   FileJson,
   Users,
-  Trash2,
   Check,
   X,
   Tag,
@@ -77,20 +42,17 @@ import {
   SquareStack,
   CheckCircle,
   AlertCircle,
-  Library,
   Box,
   Cog,
   ArrowRight,
-  MousePointer2,
+  Download,
+  Search,
+  Clock,
+  User,
+  Wrench,
+  Link2,
 } from 'lucide-react';
-import { Breadcrumb, PageHeader, SubTabs, type SubTabItem } from '@mate/shared';
-import {
-  ALL_NODE_REGISTRIES,
-  flowDataToFlowgram,
-  type FlowData,
-} from '@mate/shared/flow';
-import { ACFlowgramEditor } from './flowgram-editor';
-import { AC_NODE_CARD_CSS, AC_NODE_RENDER_REGISTRIES } from './node-render';
+import { SubTabs, type SubTabItem } from '@mate/shared';
 
 const ADMIN_TABS: SubTabItem[] = [
   { label: '用户管理', path: '/admin' },
@@ -102,251 +64,9 @@ const ADMIN_TABS: SubTabItem[] = [
   { label: '运营数据', path: '/admin/operations' },
 ];
 
-// ---------------- 节点类型定义 ---------------- //
-type NodeCategory = 'bpmn' | 'ai' | 'business' | 'data' | 'trigger' | 'control';
-
-interface PaletteNodeDef {
-  key: string;
-  name: string;
-  sub: string;
-  cat: NodeCategory;
-  /** 节点英文标题（如 Start Event / LLM ...） */
-  titleEn: string;
-  /** 端口描述（如 1/1、N/1、0/1） */
-  ports: string;
-  Icon: typeof Circle;
-}
-
-const NODE_TITLE_EN: Record<string, string> = {
-  start: 'Start Event',
-  end: 'End Event',
-  'user-task': 'User Task',
-  'service-task': 'Service Task',
-  exclusive: 'Exclusive Gateway',
-  parallel: 'Parallel Gateway',
-  inclusive: 'Inclusive Gateway',
-  subprocess: 'Sub-Process',
-  llm: 'LLM',
-  prompt: 'Prompt Template',
-  tool: 'Tool Use',
-  rag: 'RAG Retrieval',
-  'agent-decision': 'Agent Decision',
-  'code-exec': 'Code Exec',
-  'form-collect': 'Form Collect',
-  'data-query': 'Data Query',
-  'data-write': 'Data Write',
-  notify: 'Notification',
-  email: 'Email',
-  sms: 'SMS',
-  webhook: 'Webhook',
-  'manual-task': 'Manual Task',
-  'db-connect': 'DB Connect',
-  http: 'HTTP Request',
-  mq: 'MQ',
-  'file-storage': 'File Storage',
-  etl: 'ETL',
-  schedule: 'Schedule',
-  'event-trigger': 'Event Trigger',
-  'form-submit': 'Form Submit',
-  'webhook-trigger': 'Webhook Trigger',
-  condition: 'Condition',
-  loop: 'Loop',
-  'parallel-control': 'Parallel',
-  merge: 'Merge',
-  wait: 'Wait',
-};
-
-const NODE_PORTS: Record<string, string> = {
-  start: '1/0',
-  end: '0/1',
-  'user-task': '1/1',
-  'service-task': '1/1',
-  exclusive: '2/1',
-  parallel: 'N/1',
-  inclusive: 'N/1',
-  subprocess: '1/1',
-  llm: '1/1',
-  prompt: '1/1',
-  tool: '1/1',
-  rag: '1/1',
-  'agent-decision': '3/1',
-  'code-exec': '1/1',
-  'form-collect': '1/1',
-  'data-query': '1/1',
-  'data-write': '1/1',
-  notify: '1/1',
-  email: '1/1',
-  sms: '1/1',
-  webhook: '1/1',
-  'manual-task': '1/1',
-  'db-connect': '1/1',
-  http: '1/1',
-  mq: '1/1',
-  'file-storage': '1/1',
-  etl: '1/1',
-  schedule: '1/0',
-  'event-trigger': '1/0',
-  'form-submit': '1/0',
-  'webhook-trigger': '1/0',
-  condition: '2/1',
-  loop: '1/1',
-  'parallel-control': 'N/1',
-  merge: '1/N',
-  wait: '1/1',
-};
-
-function buildPaletteNode(
-  key: string,
-  name: string,
-  sub: string,
-  cat: NodeCategory,
-  Icon: typeof Circle
-): PaletteNodeDef {
-  return {
-    key,
-    name,
-    sub,
-    cat,
-    titleEn: NODE_TITLE_EN[key] ?? key,
-    ports: NODE_PORTS[key] ?? '1/1',
-    Icon,
-  };
-}
-
-const PALETTE_NODES: PaletteNodeDef[] = [
-  // BPMN
-  buildPaletteNode('start', '开始事件', '流程起点', 'bpmn', Circle),
-  buildPaletteNode('end', '结束事件', '流程终点', 'bpmn', CircleDot),
-  buildPaletteNode('user-task', '审批节点', '人工审批任务', 'bpmn', UserCheck),
-  buildPaletteNode('service-task', '服务任务', '系统自动执行', 'bpmn', Settings),
-  buildPaletteNode('exclusive', '排他网关', '单分支条件', 'bpmn', Diamond),
-  buildPaletteNode('parallel', '并行网关', '并发分支', 'bpmn', PlusSquare),
-  buildPaletteNode('inclusive', '包容网关', '多分支汇聚', 'bpmn', CircleDot),
-  buildPaletteNode('subprocess', '子流程', '嵌套流程', 'bpmn', Layers),
-  // AI
-  buildPaletteNode('llm', 'LLM 调用', '模型推理入口', 'ai', Sparkles),
-  buildPaletteNode('prompt', 'Prompt 模板', '变量化模板', 'ai', FileText),
-  buildPaletteNode('tool', '工具调用', 'Function Calling', 'ai', Wrench),
-  buildPaletteNode('rag', 'RAG 检索', '知识库增强', 'ai', BookOpen),
-  buildPaletteNode('agent-decision', 'Agent 决策', '智能路由', 'ai', BotIcon),
-  buildPaletteNode('code-exec', 'Code 执行', '沙箱运行', 'ai', Code),
-  // Business
-  buildPaletteNode('form-collect', '表单收集', '用户填报表单', 'business', FileText),
-  buildPaletteNode('data-query', '数据查询', '本体查询', 'business', Search),
-  buildPaletteNode('data-write', '数据写入', '持久化数据', 'business', Database),
-  buildPaletteNode('notify', '通知发送', '站内消息', 'business', Bell),
-  buildPaletteNode('email', '邮件发送', 'SMTP 发送', 'business', Mail),
-  buildPaletteNode('sms', '短信发送', '短信网关', 'business', MessageSquare),
-  buildPaletteNode('webhook', 'Webhook', 'HTTP 回调', 'business', Link),
-  buildPaletteNode('manual-task', '人工任务', '线下执行', 'business', User),
-  // Data
-  buildPaletteNode('db-connect', '数据库连接', 'JDBC 接入', 'data', Database),
-  buildPaletteNode('http', 'API 调用', 'HTTP Request', 'data', Globe),
-  buildPaletteNode('mq', '消息队列', 'Kafka/MQ', 'data', Radio),
-  buildPaletteNode('file-storage', '文件存储', '对象存储', 'data', Folder),
-  buildPaletteNode('etl', 'ETL 任务', '数据抽取转换', 'data', RefreshCcw),
-  // Trigger
-  buildPaletteNode('schedule', '定时触发', 'Cron 表达式', 'trigger', Clock),
-  buildPaletteNode('event-trigger', '事件触发', 'MQ 事件源', 'trigger', Zap),
-  buildPaletteNode('form-submit', '表单提交', '用户主动提交', 'trigger', FileInput),
-  buildPaletteNode('webhook-trigger', 'Webhook 触发', '外部回调', 'trigger', Link2),
-  // Control
-  buildPaletteNode('condition', '条件分支', 'If/Else', 'control', GitBranchIcon),
-  buildPaletteNode('loop', '循环', '遍历迭代', 'control', Repeat),
-  buildPaletteNode('parallel-control', '并行', '并发执行', 'control', Layers),
-  buildPaletteNode('merge', '合并', '汇聚结果', 'control', Combine),
-  buildPaletteNode('wait', '等待', '延迟/挂起', 'control', Hourglass),
-];
-
-const PALETTE_GROUPS: Array<{ key: NodeCategory; label: string; count: number }> = [
-  { key: 'bpmn', label: 'BPMN 节点', count: 8 },
-  { key: 'ai', label: 'AI Agent 节点', count: 6 },
-  { key: 'business', label: '业务节点', count: 8 },
-  { key: 'data', label: '数据集成', count: 5 },
-  { key: 'trigger', label: '触发器', count: 4 },
-  { key: 'control', label: '控制流', count: 5 },
-];
-
-// 合并节点注册：先用 ALL_NODE_REGISTRIES，再用 AC_NODE_RENDER_REGISTRIES 覆盖同 type 的 formMeta.render
-type Registry = (typeof ALL_NODE_REGISTRIES)[number];
-const AC_MERGED_REGISTRIES: Registry[] = (() => {
-  const byType: Record<string, Registry> = {};
-  for (const r of ALL_NODE_REGISTRIES) byType[r.type] = r;
-  for (const r of AC_NODE_RENDER_REGISTRIES) {
-    const prev = byType[r.type];
-    byType[r.type] = (prev ? { ...prev, ...r } : r) as Registry;
-  }
-  return Object.values(byType);
-})();
-
-/** 真正带 formMeta.render 的 registry（用于覆盖默认 input 渲染） */
-const AC_CUSTOM_REGISTRIES: Registry[] = AC_NODE_RENDER_REGISTRIES;
-
-// FlowGram 初始数据：覆盖页面节点库 6 类节点（BPMN / Agent / 业务 / 数据 / 触发 / 控制）
-// 的完整流程图，节点卡片按 BaseNode + title/content 渲染。
-const AC_COMPONENTS_FLOW: FlowData = {
-  nodes: [
-    // 触发
-    { id: 't1', type: 'business_trigger', name: '定时触发', x: 40, y: 60, width: 150, height: 70, data: { title: '触发器', content: 'Cron · 每日 09:00' } },
-    // BPMN
-    { id: 's1', type: 'bpmnStart', name: '开始', x: 210, y: 60, width: 150, height: 70, data: { title: '开始事件', content: '流程入口' } },
-    { id: 'ut1', type: 'bpmnUserTask', name: '员工提交', x: 380, y: 60, width: 150, height: 70, data: { title: '员工提交', content: '请假申请单' } },
-    { id: 'gw1', type: 'bpmnGatewayExclusive', name: '天数判断', x: 550, y: 60, width: 150, height: 70, data: { title: '排他网关', content: '天数 ≥ 3 ?' } },
-    { id: 'ut2', type: 'bpmnUserTask', name: '主管审批', x: 720, y: 0, width: 150, height: 70, data: { title: '主管审批', content: '≤ 3 天直接通过' } },
-    { id: 'ut3', type: 'bpmnUserTask', name: 'HR 审批', x: 720, y: 130, width: 150, height: 70, data: { title: 'HR 审批', content: '> 3 天需 HR 复核' } },
-    { id: 'pg1', type: 'bpmnGatewayParallel', name: '并行合并', x: 890, y: 60, width: 150, height: 70, data: { title: '并行网关', content: '审批流汇聚' } },
-    { id: 'st1', type: 'bpmnServiceTask', name: '同步考勤', x: 1060, y: 60, width: 150, height: 70, data: { title: '服务任务', content: '调用后端 API 同步考勤' } },
-    // 结束
-    { id: 'e1', type: 'bpmnEnd', name: '结束', x: 1230, y: 60, width: 150, height: 70, data: { title: '结束事件', content: '流程出口' } },
-    // Agent (AI)
-    { id: 'ai1', type: 'agent_llm', name: 'AI 摘要', x: 40, y: 230, width: 150, height: 70, data: { title: 'LLM 调用', content: '生成请假说明摘要' } },
-    { id: 'ai2', type: 'agent_knowledge', name: '知识检索', x: 210, y: 230, width: 150, height: 70, data: { title: '知识检索', content: '查询公司请假制度' } },
-    { id: 'ai3', type: 'agent_tool', name: 'MCP 工具', x: 380, y: 230, width: 150, height: 70, data: { title: 'MCP 工具', content: '调用企业微信通知工具' } },
-    // 业务
-    { id: 'n1', type: 'business_notify', name: '通知抄送', x: 1060, y: 230, width: 150, height: 70, data: { title: '通知抄送', content: '抄送 HRBP（不阻塞）' } },
-    { id: 'dl1', type: 'business_delay', name: '延时等待', x: 1230, y: 230, width: 150, height: 70, data: { title: '定时器', content: '等待 1 天未申诉则结案' } },
-    // 数据集成
-    { id: 'db1', type: 'business_delay', name: '数据库', x: 40, y: 350, width: 150, height: 70, data: { title: '数据库', content: '写入请假记录到 PG' } },
-    { id: 'ai4', type: 'agent_output', name: '数据写入', x: 210, y: 350, width: 150, height: 70, data: { title: '数据写入', content: '持久化到本体引擎' } },
-  ],
-  edges: [
-    { id: 'e_t1_s1', source: 't1', target: 's1' },
-    { id: 'e_s1_ut1', source: 's1', target: 'ut1' },
-    { id: 'e_ut1_gw1', source: 'ut1', target: 'gw1' },
-    { id: 'e_gw1_ut2', source: 'gw1', target: 'ut2', label: '≤ 3' },
-    { id: 'e_gw1_ut3', source: 'gw1', target: 'ut3', label: '> 3' },
-    { id: 'e_ut2_pg1', source: 'ut2', target: 'pg1' },
-    { id: 'e_ut3_pg1', source: 'ut3', target: 'pg1' },
-    { id: 'e_pg1_st1', source: 'pg1', target: 'st1' },
-    { id: 'e_st1_n1', source: 'st1', target: 'n1' },
-    { id: 'e_st1_dl1', source: 'st1', target: 'dl1' },
-    { id: 'e_n1_dl1', source: 'n1', target: 'dl1' },
-    { id: 'e_dl1_e1', source: 'dl1', target: 'e1' },
-    { id: 'e_ai1_ai2', source: 'ai1', target: 'ai2' },
-    { id: 'e_ai2_ai3', source: 'ai2', target: 'ai3' },
-    { id: 'e_ai3_db1', source: 'ai3', target: 'db1' },
-    { id: 'e_db1_ai4', source: 'db1', target: 'ai4' },
-  ],
-};
-const AC_FLOWGRAM_INITIAL_DATA = flowDataToFlowgram(AC_COMPONENTS_FLOW) as never;
-
-const PALETTE_CATEGORY_BG: Record<NodeCategory, string> = {
-  bpmn: 'bg-bpmn',
-  ai: 'bg-ai',
-  business: 'bg-business',
-  data: 'bg-data',
-  trigger: 'bg-trigger',
-  control: 'bg-control',
-};
-
-const PALETTE_CATEGORY_BADGE: Record<NodeCategory, { label: string; cls: string }> = {
-  bpmn: { label: 'BPMN', cls: 'v-badge-info' },
-  ai: { label: 'AI', cls: 'v-badge-purple' },
-  business: { label: 'Business', cls: 'v-badge-success' },
-  data: { label: 'Data', cls: 'v-badge-warning' },
-  trigger: { label: 'Trigger', cls: 'v-badge-trigger' },
-  control: { label: 'Control', cls: 'v-badge-neutral' },
-};
+// v1.4 R1.5.4：流程组件 section 已移除，36 节点 palette 相关常量（PALETTE_NODES /
+// buildPaletteNode 等）一并清理。文件 node-render-v2.tsx / flowgram-editor.tsx
+// 保留方便后续恢复。
 
 // ---------------- 插件数据 ---------------- //
 interface PluginDef {
@@ -446,22 +166,7 @@ export default function AdminComponentsPage() {
   const location = useLocation();
 
   // 顶部 Tab
-  const [activeTab, setActiveTab] = useState<'all' | 'ui' | 'flow' | 'plugin' | 'doc'>('all');
-
-  // Palette
-  const [paletteCat, setPaletteCat] = useState<'all' | NodeCategory>('all');
-  const [paletteQuery, setPaletteQuery] = useState('');
-  const [paletteCollapsed, setPaletteCollapsed] = useState<Record<NodeCategory, boolean>>({
-    bpmn: false,
-    ai: false,
-    business: false,
-    data: false,
-    trigger: false,
-    control: false,
-  });
-
-  // Dropzone（画布由 FlowgramEditor 提供，状态由其内部维护）
-  const [dragOver, setDragOver] = useState(false);
+  const [activeTab, setActiveTab] = useState<'all' | 'ui' | 'plugin' | 'doc'>('all');
 
   // 插件
   const [plugins, setPlugins] = useState<PluginDef[]>(PLUGINS);
@@ -469,26 +174,7 @@ export default function AdminComponentsPage() {
   // 注入样式（只一次）
   useEffect(() => {
     ensureCompsStyle();
-    ensureNodeCardStyle();
   }, []);
-
-  const filteredPaletteGroups = useMemo(() => {
-    return PALETTE_GROUPS.map((g) => ({
-      ...g,
-      nodes: PALETTE_NODES.filter(
-        (n) =>
-          n.cat === g.key &&
-          (paletteCat === 'all' || paletteCat === g.key) &&
-          (paletteQuery === '' || n.name.toLowerCase().includes(paletteQuery.toLowerCase()))
-      ),
-    })).filter((g) => g.nodes.length > 0);
-  }, [paletteCat, paletteQuery]);
-
-  // 拖拽到画布（FlowgramEditor 自带拖拽面板；这里只保留 dragOver 高亮）
-  const handleNodeDragStart = (e: React.DragEvent<HTMLDivElement>, node: PaletteNodeDef) => {
-    e.dataTransfer.setData('text/plain', node.name);
-    e.dataTransfer.effectAllowed = 'copy';
-  };
 
   const togglePlugin = (key: string) => {
     setPlugins((prev) =>
@@ -497,41 +183,33 @@ export default function AdminComponentsPage() {
   };
 
   // 顶部 Tab
-  const isSectionVisible = (key: 'ui' | 'flow' | 'plugin' | 'doc') => activeTab === 'all' || activeTab === key;
+  const isSectionVisible = (key: 'ui' | 'plugin' | 'doc') => activeTab === 'all' || activeTab === key;
 
   return (
-    <>
-      <SubTabs items={ADMIN_TABS} activePath={location.pathname} embedded />
+    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
+      <SubTabs items={ADMIN_TABS} activePath={location.pathname} />
 
       <div className="acp-page">
         {/* Main */}
         <div className="acp-main">
-          {/* Breadcrumb */}
-          <Breadcrumb
-            items={[{ label: '后台管理', href: '/admin' }, { label: '组件库' }]}
-            showHome={false}
-            padding="0 0 20px"
-            fontSize={12}
-          />
-
-          {/* Page Header */}
-          <PageHeader
-            title="组件库"
-            subtitle="UI 组件、流程节点、插件、API 文档一站式参考"
-            extra={
-              <div className="acp-page-header-actions">
-                <button className="acp-btn">
-                  <Download /> 导出
-                </button>
-                <button className="acp-btn">
-                  <Github /> 查看仓库
-                </button>
-                <button className="acp-btn-primary">
-                  <Plus /> 新建组件
-                </button>
-              </div>
-            }
-          />
+          {/* Page Header —— 与其他 admin 子页保持一致（标题 + 描述 + 右侧操作），不再用 antd PageHeader/Breadcrumb */}
+          <div className="acp-page-header">
+            <div>
+              <h1>组件库</h1>
+              <p>UI 组件、流程节点、插件、API 文档一站式参考</p>
+            </div>
+            <div className="acp-page-header-actions">
+              <button className="acp-btn">
+                <Download /> 导出
+              </button>
+              <button className="acp-btn">
+                <Github /> 查看仓库
+              </button>
+              <button className="acp-btn-primary">
+                <Plus /> 新建组件
+              </button>
+            </div>
+          </div>
 
           {/* Tab Bar */}
           <div className="acp-tab-bar">
@@ -539,7 +217,6 @@ export default function AdminComponentsPage() {
               [
                 { key: 'all', label: '全部', Icon: LayoutGrid },
                 { key: 'ui', label: 'UI 组件', Icon: MousePointerClick },
-                { key: 'flow', label: '流程节点', Icon: Workflow },
                 { key: 'plugin', label: '插件', Icon: PlugZap },
                 { key: 'doc', label: '文档', Icon: BookText },
               ] as const
@@ -727,179 +404,7 @@ export default function AdminComponentsPage() {
           )}
 
           {/* ============ 流程节点 ============ */}
-          {isSectionVisible('flow') && (
-            <section className="acp-section">
-              <div className="acp-section-title">
-                <Workflow /> 流程节点
-              </div>
-              <p className="acp-section-desc">
-                FlowGram.AI 双布局节点库，从左侧拖拽节点至画布构建 BPMN、AI、业务流程
-              </p>
-
-              <div className="acp-flow-layout">
-                {/* Palette */}
-                <aside className="acp-flow-palette">
-                  <div className="acp-palette-header">
-                    <div className="acp-palette-search">
-                      <Search />
-                      <input
-                        type="text"
-                        placeholder="搜索节点…"
-                        value={paletteQuery}
-                        onChange={(e) => setPaletteQuery(e.target.value)}
-                      />
-                    </div>
-                  </div>
-                  <div className="acp-palette-categories">
-                    {(['all', 'bpmn', 'ai', 'business', 'data'] as const).map((c) => (
-                      <button
-                        key={c}
-                        className={`acp-cat-pill${paletteCat === c ? ' active' : ''}`}
-                        onClick={() => setPaletteCat(c)}
-                      >
-                        {c === 'all'
-                          ? '全部'
-                          : c === 'bpmn'
-                          ? 'BPMN'
-                          : c === 'ai'
-                          ? 'AI'
-                          : c === 'business'
-                          ? '业务'
-                          : '数据'}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="acp-palette-body">
-                    {filteredPaletteGroups.map((g) => (
-                      <div
-                        key={g.key}
-                        className={`acp-palette-group${paletteCollapsed[g.key] ? ' collapsed' : ''}`}
-                      >
-                        <div
-                          className="acp-palette-group-header"
-                          onClick={() =>
-                            setPaletteCollapsed((prev) => ({ ...prev, [g.key]: !prev[g.key] }))
-                          }
-                        >
-                          <span className="acp-palette-group-title">
-                            <ChevronDown className="acp-palette-group-chevron" /> {g.label}
-                          </span>
-                          <span className="acp-palette-group-count">{g.count}</span>
-                        </div>
-                        <div className="acp-palette-group-items">
-                          {g.nodes.map((node) => {
-                            const Icon = node.Icon;
-                            return (
-                              <div
-                                key={node.key}
-                                className="acp-palette-item"
-                                draggable
-                                onDragStart={(e) => handleNodeDragStart(e, node)}
-                              >
-                                <div className={`acp-palette-icon ${PALETTE_CATEGORY_BG[node.cat]}`}>
-                                  <Icon />
-                                </div>
-                                <div className="acp-palette-info">
-                                  <div className="acp-palette-label">{node.name}</div>
-                                  <div className="acp-palette-sub">{node.sub}</div>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </aside>
-
-                {/* Canvas */}
-                <div className="acp-flow-canvas-area">
-                  <div className="acp-canvas-toolbar">
-                    <div className="acp-canvas-toolbar-left">
-                      <span className="acp-canvas-toolbar-title">流程画布</span>
-                      <div className="acp-canvas-toggle">
-                        <button className="active">固定布局</button>
-                        <button>自由布局</button>
-                      </div>
-                    </div>
-                    <div className="acp-canvas-toolbar-actions">
-                      <button className="acp-btn acp-btn-sm">
-                        <Download /> 导出
-                      </button>
-                      <button className="acp-btn-primary acp-btn-sm">
-                        <Save /> 保存
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className={`acp-dropzone${dragOver ? ' dragover' : ''}`}>
-                    <ACFlowgramEditor
-                      initialData={AC_FLOWGRAM_INITIAL_DATA}
-                      nodeRegistries={AC_MERGED_REGISTRIES}
-                      customRegistries={AC_CUSTOM_REGISTRIES}
-                      hidePalette
-                    />
-                  </div>
-
-                  {/* Node Catalog */}
-                  <div className="acp-node-catalog">
-                    <div className="acp-node-catalog-title">
-                      <Library /> 节点完整目录
-                    </div>
-                    <p className="acp-node-catalog-desc">
-                      所有可用节点的完整清单，按类别分组，点击可查看详情
-                    </p>
-
-                    {PALETTE_GROUPS.map((g) => {
-                      const nodes = PALETTE_NODES.filter((n) => n.cat === g.key);
-                      const badge = PALETTE_CATEGORY_BADGE[g.key];
-                      return (
-                        <div key={g.key} className="acp-node-group">
-                          <div className="acp-node-group-header">
-                            <span className="acp-node-group-name">{g.label}</span>
-                            <span className="acp-node-group-count">{g.count}</span>
-                            <span className={`v-badge ${badge.cls}`}>{badge.label}</span>
-                          </div>
-                          <div className="acp-node-grid">
-                            {nodes.map((node) => {
-                              const Icon = node.Icon;
-                              return (
-                                <div
-                                  key={node.key}
-                                  className="acp-node-card"
-                                  draggable
-                                  onDragStart={(e) => handleNodeDragStart(e, node)}
-                                >
-                                  <div className="acp-node-card-top">
-                                    <div className={`acp-node-icon ${PALETTE_CATEGORY_BG[node.cat]}`}>
-                                      <Icon />
-                                    </div>
-                                    <div className="acp-node-meta">
-                                      <div className="acp-node-title">{node.name}</div>
-                                      <div className="acp-node-desc">
-                                        {node.titleEn} · {node.sub}
-                                      </div>
-                                    </div>
-                                  </div>
-                                  <div className="acp-node-card-bottom">
-                                    <span className={`v-badge ${badge.cls}`}>{badge.label}</span>
-                                    <div className="acp-ports">
-                                      <span className="acp-port out"></span>
-                                      <span className="acp-ports-text">{node.ports}</span>
-                                    </div>
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-            </section>
-          )}
+          {/* v1.4 R1.5.4：临时移除流程节点 section（保留 node-render-v2.tsx 等文件方便恢复） */}
 
           {/* ============ 插件 ============ */}
           {isSectionVisible('plugin') && (
@@ -984,7 +489,7 @@ export default function AdminComponentsPage() {
           )}
         </div>
       </div>
-    </>
+    </div>
   );
 }
 
@@ -1033,7 +538,41 @@ function UICard({
 const COMPS_PAGE_STYLE_ID = 'admin-components-page-style-v1';
 const COMPS_PAGE_STYLE = `
   /* Layout shell */
-  .acp-page { display: flex; flex-direction: column; min-height: calc(100vh - 56px); background: var(--background); }
+  .acp-page { display: flex; flex-direction: column; flex: 1; min-height: 0; background: var(--background); }
+  /* Page Header（与其他 admin 子页面保持一致：h1 + 描述 + 右侧操作按钮） */
+  .acp-page-header { margin-bottom: 24px; display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+  .acp-page-header h1 { font-size: 22px; font-weight: 600; margin-bottom: 4px; color: var(--foreground); }
+  .acp-page-header p { font-size: 14px; color: var(--muted-foreground); }
+  /* 全屏编辑模式：隐藏页面其他内容，只留画布占满屏幕 */
+  body.acp-fullscreen .mate-subtabs,
+  body.acp-fullscreen .acp-page-header,
+  body.acp-fullscreen .acp-breadcrumb,
+  body.acp-fullscreen .acp-aside,
+  body.acp-fullscreen .acp-page > nav,
+  body.acp-fullscreen .acp-main > nav,
+  body.acp-fullscreen .acp-main > header,
+  body.acp-fullscreen .acp-main > .acp-section:not(.acp-flow-section),
+  body.acp-fullscreen .acp-node-catalog,
+  body.acp-fullscreen .acp-marketplace,
+  body.acp-fullscreen .acp-config,
+  body.acp-fullscreen .acp-logs,
+  body.acp-fullscreen .acp-org,
+  body.acp-fullscreen .acp-ops,
+  body.acp-fullscreen .acp-permissions,
+  body.acp-fullscreen .acp-users { display: none !important; }
+  /* 全屏下隐藏 acp-flow-section 的标题与说明，只保留画布 */
+  body.acp-fullscreen .acp-flow-section > .acp-section-title,
+  body.acp-fullscreen .acp-flow-section > .acp-section-desc { display: none !important; }
+  body.acp-fullscreen .acp-page { min-height: 100vh; height: 100vh; }
+  body.acp-fullscreen .acp-main { padding: 0; max-width: none; width: 100%; overflow: hidden; }
+  body.acp-fullscreen .acp-flow-canvas-area {
+    position: fixed; inset: 0; z-index: 100000;
+    border-radius: 0; border: none;
+    padding: 12px;
+    background: var(--background);
+  }
+  body.acp-fullscreen .acp-flow-canvas-area .acp-dropzone { min-height: 0; height: calc(100vh - 80px); }
+  body.acp-fullscreen .acp-flow-canvas-wrap { height: 100%; }
 
   /* Main */
   .acp-main { flex: 1; min-height: 0; width: 100%; padding: 24px 32px; overflow-y: auto; }
@@ -1099,7 +638,7 @@ const COMPS_PAGE_STYLE = `
   .acp-comp-desc { font-size: 12px; color: var(--muted-foreground); line-height: 1.5; }
 
   /* Flow layout */
-  .acp-flow-layout { display: grid; grid-template-columns: 300px 1fr; gap: 16px; }
+  .acp-flow-layout { display: flex; flex-direction: column; gap: 16px; }
   .acp-flow-palette { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); display: flex; flex-direction: column; overflow: hidden; }
   .acp-palette-header { padding: 14px; border-bottom: 1px solid var(--border); }
   .acp-palette-search { position: relative; }
@@ -1110,27 +649,59 @@ const COMPS_PAGE_STYLE = `
   .acp-cat-pill { font-size: 11px; padding: 4px 10px; border-radius: 9999px; border: 1px solid var(--border); background: transparent; color: var(--muted-foreground); cursor: pointer; white-space: nowrap; font-family: var(--font-sans); transition: all .15s; }
   .acp-cat-pill.active { background: var(--foreground); color: var(--background); border-color: var(--foreground); }
   .acp-cat-pill:hover:not(.active) { color: var(--foreground); border-color: #3a3a3a; }
-  .acp-palette-body { flex: 1; overflow-y: auto; padding: 8px; max-height: 640px; }
-  .acp-palette-group { margin-bottom: 6px; }
-  .acp-palette-group-header { display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; cursor: pointer; border-radius: var(--radius); transition: background .15s; user-select: none; }
-  .acp-palette-group-header:hover { background: var(--muted); }
-  .acp-palette-group-title { font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
-  .acp-palette-group-chevron { width: 14px; height: 14px; transition: transform .15s; }
-  .acp-palette-group.collapsed .acp-palette-group-chevron { transform: rotate(-90deg); }
-  .acp-palette-group-count { font-size: 11px; color: var(--muted-foreground); background: var(--muted); padding: 1px 6px; border-radius: 9999px; font-family: var(--font-mono); }
-  .acp-palette-group.collapsed .acp-palette-group-items { display: none; }
-  .acp-palette-group-items { padding: 4px 6px 8px; display: flex; flex-direction: column; gap: 2px; }
-  .acp-palette-item { display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: var(--radius); cursor: grab; transition: background .15s; border: 1px dashed transparent; }
-  .acp-palette-item:hover { background: var(--muted); border-color: var(--border); }
-  .acp-palette-item:active { cursor: grabbing; }
-  .acp-palette-icon { width: 32px; height: 32px; border-radius: var(--radius); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-  .acp-palette-icon svg { width: 16px; height: 16px; }
-  .acp-palette-info { flex: 1; min-width: 0; }
-  .acp-palette-label { font-size: 12px; font-weight: 500; color: var(--foreground); line-height: 1.3; }
-  .acp-palette-sub { font-size: 11px; color: var(--muted-foreground); line-height: 1.3; margin-top: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  /* === v1.4 R1.5: 36 节点 palette（嵌入 ACFlowgramEditor 内置） === */
+  .acp-palette-panel {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    overflow-y: auto;
+    padding: 8px 6px;
+    width: 220px;
+    flex-shrink: 0;
+    min-height: 0;
+    max-height: 100%;
+  }
+  .acp-palette-group { margin-bottom: 4px; }
+  .acp-palette-group-title {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--muted-foreground);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 6px 6px 4px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 6px;
+  }
+  .acp-palette-items {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 0 4px 4px;
+  }
+  .acp-palette-card {
+    cursor: grab;
+    transition: transform .15s;
+  }
+  .acp-palette-card:hover { transform: translateY(-1px); }
+  .acp-palette-card:active { cursor: grabbing; transform: scale(0.97); }
 
   /* Canvas area */
-  .acp-flow-canvas-area { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; display: flex; flex-direction: column; min-width: 0; }
+  .acp-flow-canvas-area { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; display: flex; flex-direction: column; min-width: 0; position: relative; }
+  /* 全屏编辑模式（覆盖式兜底，不依赖浏览器原生 Fullscreen API） */
+  .acp-flow-canvas-area.is-fullscreen {
+    position: fixed; inset: 0; z-index: 9999;
+    border-radius: 0; border: none;
+    padding: 12px;
+    background: var(--background);
+  }
+  .acp-flow-canvas-area.is-fullscreen .acp-dropzone { min-height: 0; height: calc(100vh - 80px); }
+  .acp-flow-canvas-area.is-fullscreen + #acp-fullscreen-close-mask { display: block; }
+  #acp-fullscreen-close-mask { display: none; }
+  /* 退出全屏按钮 */
+  .acp-flow-fullscreen-close { position: fixed; top: 14px; right: 18px; z-index: 10001; background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 6px 12px; font-size: 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
   .acp-canvas-toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 10px; }
   .acp-canvas-toolbar-left { display: flex; align-items: center; gap: 8px; }
   .acp-canvas-toolbar-title { font-size: 13px; font-weight: 600; }
@@ -1145,6 +716,9 @@ const COMPS_PAGE_STYLE = `
   .acp-dropzone .demo-fixed-editor { width: 100%; height: 100%; min-height: 0; }
   .acp-dropzone .demo-fixed-layout { grid-template-columns: 0 1fr; }
   .acp-dropzone .demo-fixed-container > .demo-fixed-tools { display: none; }
+  /* FlowGram 网格背景层跟随画布容器占满 */
+  .acp-dropzone .gedit-flow-background-layer { position: absolute !important; inset: 0 !important; left: 0 !important; top: 0 !important; width: 100% !important; height: 100% !important; }
+  .acp-dropzone .gedit-grid-svg { position: absolute !important; inset: 0 !important; width: 100% !important; height: 100% !important; left: 0 !important; top: 0 !important; }
 
   /* Node catalog */
   .acp-node-catalog { margin-top: 24px; }
@@ -1237,11 +811,6 @@ function ensureCompsStyle(): void {
   document.head.appendChild(node);
 }
 
-function ensureNodeCardStyle(): void {
-  if (typeof document === 'undefined') return;
-  if (document.getElementById('ac-node-card-style-v1')) return;
-  const node = document.createElement('style');
-  node.id = 'ac-node-card-style-v1';
-  node.textContent = AC_NODE_CARD_CSS;
-  document.head.appendChild(node);
-}
+// v1.4 R1.5.4：ensureNodeCardStyle / AC_NODE_CARD_CSS（17 节点 v1 卡片样式）随流程组件一并移除。
+// 新版 36 节点样式见 node-render-v2.tsx（按需恢复时启用）。
+

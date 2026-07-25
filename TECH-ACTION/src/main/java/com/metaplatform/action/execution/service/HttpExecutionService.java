@@ -1,6 +1,5 @@
 package com.metaplatform.action.execution.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.metaplatform.action.common.ErrorCode;
 import com.metaplatform.action.common.TenantContext;
@@ -56,7 +55,7 @@ public class HttpExecutionService {
 
         String executionId = "exec-" + UUID.randomUUID();
         Instant startedAt = Instant.now();
-        String inputJson = writeValueAsString(request.getInput());
+        Map<String, Object> inputMap = toMap(request.getInput());
         String traceId = TraceContext.getOrCreate();
 
         ExecutionEntity execution = ExecutionEntity.builder()
@@ -65,7 +64,7 @@ public class HttpExecutionService {
                 .actionId(action.getActionId())
                 .actionCode(action.getCode())
                 .status(STATUS_PENDING)
-                .input(inputJson)
+                .input(inputMap)
                 .traceId(traceId)
                 .startedAt(startedAt)
                 .createdAt(startedAt)
@@ -75,7 +74,7 @@ public class HttpExecutionService {
 
         Object output;
         try {
-            output = performHttpCall(action, request.getInput());
+            output = performHttpCall(action, inputMap);
         } catch (ActionException e) {
             Instant failedAt = Instant.now();
             execution.setStatus(STATUS_FAILED);
@@ -101,9 +100,9 @@ public class HttpExecutionService {
         }
 
         Instant completedAt = Instant.now();
-        String outputJson = writeValueAsString(output);
+        Map<String, Object> outputMap = toMap(output);
         execution.setStatus(STATUS_COMPLETED);
-        execution.setOutput(outputJson);
+        execution.setOutput(outputMap);
         execution.setCompletedAt(completedAt);
         execution.setDurationMs((int) (completedAt.toEpochMilli() - startedAt.toEpochMilli()));
         execution.setUpdatedAt(completedAt);
@@ -145,27 +144,29 @@ public class HttpExecutionService {
         }
     }
 
-    @SuppressWarnings("unchecked")
-    private void addActionHeaders(org.springframework.http.HttpHeaders headers, String headersJson) {
-        if (headersJson == null || headersJson.isBlank()) {
+    private void addActionHeaders(org.springframework.http.HttpHeaders headers, Map<String, Object> actionHeaders) {
+        if (actionHeaders == null || actionHeaders.isEmpty()) {
             return;
         }
-        try {
-            Map<String, String> map = objectMapper.readValue(headersJson, Map.class);
-            map.forEach(headers::add);
-        } catch (JsonProcessingException e) {
-            log.warn("Action headers 解析失败: {}", headersJson, e);
-        }
+        actionHeaders.forEach((k, v) -> {
+            if (k != null && v != null) {
+                headers.add(k, v.toString());
+            }
+        });
     }
 
-    private String writeValueAsString(Object value) {
-        if (value == null) {
-            return "{}";
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> toMap(Object input) {
+        if (input == null) {
+            return new LinkedHashMap<>();
+        }
+        if (input instanceof Map<?, ?> map) {
+            return (Map<String, Object>) map;
         }
         try {
-            return objectMapper.writeValueAsString(value);
-        } catch (JsonProcessingException e) {
-            throw new ActionException(ErrorCode.INVALID_PARAM, "输入数据序列化失败");
+            return objectMapper.readValue(objectMapper.writeValueAsString(input), Map.class);
+        } catch (Exception e) {
+            return new LinkedHashMap<>();
         }
     }
 

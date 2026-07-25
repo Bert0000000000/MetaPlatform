@@ -1,136 +1,41 @@
 package com.metaplatform.rule.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.metaplatform.rule.common.ErrorCode;
-import com.metaplatform.rule.common.TenantContext;
 import com.metaplatform.rule.dto.RuleExecutionResult;
-import com.metaplatform.rule.entity.RuleDefinitionEntity;
-import com.metaplatform.rule.entity.RuleSetEntity;
-import com.metaplatform.rule.exception.RuleException;
-import com.metaplatform.rule.repository.RuleDefinitionRepository;
-import com.metaplatform.rule.repository.RuleSetRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.expression.EvaluationContext;
-import org.springframework.expression.ExpressionParser;
-import org.springframework.expression.PropertyAccessor;
-import org.springframework.expression.TypedValue;
-import org.springframework.expression.spel.standard.SpelExpressionParser;
-import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 规则执行只读服务（P1-RULE-02 旧入口）。
+ *
+ * <p>P1-3：合并改造——保留类名以维持向后兼容，但实现完全委托给
+ * {@link RuleEngineService#executeReadOnly}，避免两份 evaluateRule + MapPropertyAccessor
+ * 维护漂移。原 @Transactional(readOnly=true) 语义由被委托方保证。</p>
+ *
+ * <p>调用方：{@link com.metaplatform.rule.testing.service.RuleTestingService} 已切换到
+ * {@link RuleEngineService#executeReadOnly} 直连；本类仅作为旧 Controller/外部
+ * 调用入口保留，不再承载独立执行逻辑。</p>
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class RuleExecutionService {
 
-    private final RuleSetRepository ruleSetRepository;
-    private final RuleDefinitionRepository ruleDefinitionRepository;
-    private final ObjectMapper objectMapper;
-
-    private final ExpressionParser parser = new SpelExpressionParser();
-
-    @Transactional(readOnly = true)
-    public List<RuleExecutionResult> execute(String rulesetId, Map<String, Object> inputData) {
-        String tenantId = TenantContext.get();
-
-        // 验证规则集存在
-        RuleSetEntity ruleSet = ruleSetRepository.findByIdAndDeletedFalse(rulesetId)
-                .orElseThrow(() -> new RuleException(ErrorCode.RULESET_NOT_FOUND));
-        if (!tenantId.equals(ruleSet.getTenantId())) {
-            throw new RuleException(ErrorCode.TENANT_MISMATCH);
-        }
-
-        // 规则集禁用时直接返回空结果
-        if (Boolean.FALSE.equals(ruleSet.getEnabled())) {
-            return Collections.emptyList();
-        }
-
-        // 加载所有 enabled 且未删除的规则，按 priority 升序
-        List<RuleDefinitionEntity> rules =
-                ruleDefinitionRepository.findByTenantIdAndRulesetIdAndDeletedFalseAndEnabledTrueOrderByPriorityAscCreatedAtAsc(
-                        tenantId, rulesetId);
-
-        // 创建 SpEL 求值上下文
-        EvaluationContext context = createEvaluationContext(inputData);
-
-        // 逐条求值
-        return rules.stream()
-                .map(rule -> evaluateRule(rule, context))
-                .toList();
-    }
-
-    private RuleExecutionResult evaluateRule(RuleDefinitionEntity rule, EvaluationContext context) {
-        boolean matched = false;
-        try {
-            Boolean result = parser.parseExpression(rule.getConditionExpr()).getValue(context, Boolean.class);
-            matched = Boolean.TRUE.equals(result);
-        } catch (Exception e) {
-            log.warn("Rule evaluation failed for rule {}: {}", rule.getId(), e.getMessage());
-        }
-
-        return RuleExecutionResult.builder()
-                .ruleId(rule.getId())
-                .ruleCode(rule.getCode())
-                .ruleName(rule.getName())
-                .matched(matched)
-                .action(RuleExecutionResult.ActionInfo.builder()
-                        .type(rule.getActionType().name())
-                        .config(toMap(rule.getActionConfig()))
-                        .build())
-                .build();
-    }
-
-    private EvaluationContext createEvaluationContext(Map<String, Object> inputData) {
-        StandardEvaluationContext context = new StandardEvaluationContext(inputData);
-        context.addPropertyAccessor(new MapPropertyAccessor());
-        return context;
-    }
-
-    @SuppressWarnings("unchecked")
-    private Map<String, Object> toMap(JsonNode jsonNode) {
-        if (jsonNode == null) {
-            return null;
-        }
-        return objectMapper.convertValue(jsonNode, Map.class);
-    }
+    private final RuleEngineService ruleEngineService;
 
     /**
-     * 自定义 SpEL PropertyAccessor，支持从 Map 中按 key 读取属性。
-     * 使得表达式 "amount >= 100000" 能作用于 Map root object {amount: 120000}。
+     * 只读执行规则集（不发 Outbox、不写统计/日志）。
+     *
+     * @param rulesetId 规则集 ID
+     * @param inputData 输入数据
+     * @return 规则执行结果列表
      */
-    private static class MapPropertyAccessor implements PropertyAccessor {
-
-        @Override
-        public Class<?>[] getSpecificTargetClasses() {
-            return new Class<?>[] { Map.class };
-        }
-
-        @Override
-        public boolean canRead(EvaluationContext context, Object target, String name) {
-            return target instanceof Map<?, ?> map && map.containsKey(name);
-        }
-
-        @Override
-        public TypedValue read(EvaluationContext context, Object target, String name) {
-            return new TypedValue(((Map<?, ?>) target).get(name));
-        }
-
-        @Override
-        public boolean canWrite(EvaluationContext context, Object target, String name) {
-            return true;
-        }
-
-        @Override
-        @SuppressWarnings("unchecked")
-        public void write(EvaluationContext context, Object target, String name, Object newValue) {
-            ((Map<String, Object>) target).put(name, newValue);
-        }
+    @Transactional(readOnly = true)
+    public List<RuleExecutionResult> execute(String rulesetId, Map<String, Object> inputData) {
+        return ruleEngineService.executeReadOnly(rulesetId, inputData);
     }
 }

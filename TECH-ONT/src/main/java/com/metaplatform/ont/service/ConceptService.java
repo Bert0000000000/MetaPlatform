@@ -9,11 +9,15 @@ import com.metaplatform.ont.dto.ConceptCreateRequest;
 import com.metaplatform.ont.dto.ConceptHierarchyNode;
 import com.metaplatform.ont.dto.ConceptHierarchyResponse;
 import com.metaplatform.ont.dto.ConceptResponse;
+import com.metaplatform.ont.dto.ConceptTestRequest;
+import com.metaplatform.ont.dto.ConceptTestResponse;
 import com.metaplatform.ont.dto.ConceptUpdateRequest;
 import com.metaplatform.ont.dto.PageResponse;
+import com.metaplatform.ont.entity.AttributeEntity;
 import com.metaplatform.ont.entity.ConceptAttributeEntity;
 import com.metaplatform.ont.entity.ConceptEntity;
 import com.metaplatform.ont.exception.OntException;
+import com.metaplatform.ont.repository.AttributeRepository;
 import com.metaplatform.ont.repository.ConceptAttributeRepository;
 import com.metaplatform.ont.repository.ConceptRepository;
 import com.metaplatform.ont.repository.EntityRepository;
@@ -32,6 +36,7 @@ public class ConceptService {
 
     private final ConceptRepository conceptRepository;
     private final ConceptAttributeRepository conceptAttributeRepository;
+    private final AttributeRepository attributeRepository;
     private final EntityRepository entityRepository;
     private final ObjectMapper objectMapper;
     private final OntSyncService ontSyncService;
@@ -180,6 +185,86 @@ public class ConceptService {
 
         conceptAttributeRepository.deleteByTenantIdAndConceptId(tenantId, conceptId);
         conceptRepository.delete(concept);
+    }
+
+    /**
+     * 启用概念（P1-ONT：概念启用端点）。
+     */
+    @Transactional
+    public ConceptResponse enable(String conceptId) {
+        ConceptEntity concept = findConcept(conceptId);
+        concept.setEnabled(true);
+        concept.setUpdatedBy(TenantContext.getUserId());
+        ConceptEntity saved = conceptRepository.save(concept);
+        eaWebhookService.notifyConceptChange(
+                saved.getConceptId(), saved.getCode(), saved.getName(),
+                "ENABLED", buildChangePayload("enabled", true));
+        return toResponse(saved, null);
+    }
+
+    /**
+     * 禁用概念（P1-ONT：概念禁用端点）。
+     */
+    @Transactional
+    public ConceptResponse disable(String conceptId) {
+        ConceptEntity concept = findConcept(conceptId);
+        concept.setEnabled(false);
+        concept.setUpdatedBy(TenantContext.getUserId());
+        ConceptEntity saved = conceptRepository.save(concept);
+        eaWebhookService.notifyConceptChange(
+                saved.getConceptId(), saved.getCode(), saved.getName(),
+                "DISABLED", buildChangePayload("enabled", false));
+        return toResponse(saved, null);
+    }
+
+    /**
+     * 概念测试推理（P1-ONT：概念测试推理端点）。
+     * <p>
+     * 简化实现：加载概念关联属性，将输入 key 与属性 code（大小写不敏感）匹配；
+     * 也支持直接以概念 code 作为 key 匹配。命中任一即 matched=true。
+     */
+    @Transactional(readOnly = true)
+    public ConceptTestResponse testInference(String conceptId, ConceptTestRequest request) {
+        ConceptEntity concept = findConcept(conceptId);
+        Map<String, Object> input = request.getInput() != null ? request.getInput() : Map.of();
+
+        List<ConceptAttributeEntity> associations = conceptAttributeRepository
+                .findByTenantIdAndConceptId(concept.getTenantId(), conceptId);
+        List<String> attributeIds = associations.stream()
+                .map(ConceptAttributeEntity::getAttributeId)
+                .toList();
+        List<AttributeEntity> attributes = attributeIds.isEmpty()
+                ? List.of()
+                : attributeRepository.findAllById(attributeIds);
+
+        Map<String, Object> resolved = new LinkedHashMap<>();
+        List<String> matchedNames = new ArrayList<>();
+        for (AttributeEntity attr : attributes) {
+            for (Map.Entry<String, Object> entry : input.entrySet()) {
+                if (attr.getCode() != null && attr.getCode().equalsIgnoreCase(entry.getKey())) {
+                    resolved.put(attr.getCode(), entry.getValue());
+                    matchedNames.add(attr.getCode() + "(" + attr.getName() + ")");
+                }
+            }
+        }
+
+        boolean codeMatched = concept.getCode() != null && input.containsKey(concept.getCode());
+        if (codeMatched && resolved.isEmpty()) {
+            resolved.put(concept.getCode(), input.get(concept.getCode()));
+            matchedNames.add(concept.getCode() + "(概念编码)");
+        }
+
+        boolean matched = !matchedNames.isEmpty();
+        Object resolvedValue = matched ? resolved : null;
+        String explanation = matched
+                ? String.format("概念[%s]匹配成功，命中: %s", concept.getName(), String.join(", ", matchedNames))
+                : String.format("概念[%s]匹配失败，输入未命中任何关联属性或概念编码", concept.getName());
+
+        return ConceptTestResponse.builder()
+                .matched(matched)
+                .resolvedValue(resolvedValue)
+                .explanation(explanation)
+                .build();
     }
 
     @Transactional
@@ -412,6 +497,7 @@ public class ConceptService {
                 .level(concept.getLevel())
                 .path(concept.getPath())
                 .status(concept.getStatus().name())
+                .enabled(concept.getEnabled())
                 .attributeIds(attrs)
                 .entityCount(entityCount)
                 .childCount(childCount)

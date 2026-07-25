@@ -1,22 +1,49 @@
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/metaplatform_msg
-    username: meta
-    password: meta
-    driver-class-name: org.postgresql.Driver
+    url: jdbc:h2:mem:test_msg;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;MODE=PostgreSQL
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: create-drop
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
+        dialect: org.hibernate.dialect.H2Dialect
   flyway:
     enabled: false
   kafka:
     bootstrap-servers: localhost:9092
+    listener:
+      auto-startup: false
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+    consumer:
+      group-id: tech-msg-test
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      auto-offset-reset: latest
+  cloud:
+    nacos:
+      discovery:
+        enabled: false
+      config:
+        enabled: false
+        import-check:
+          enabled: false
+    compatibility-verifier:
+      enabled: false
+  config:
+    import: []
+  autoconfigure:
+    exclude:
+      - com.alibaba.cloud.nacos.NacosConfigAutoConfiguration
+      - com.alibaba.cloud.nacos.NacosConfigSpringCloudAutoConfiguration
+      - com.alibaba.cloud.nacos.NacosDiscoveryAutoConfiguration
+      - com.alibaba.cloud.nacos.discovery.NacosDiscoveryClientConfiguration
+      - org.springframework.cloud.autoconfigure.RefreshAutoConfiguration
+      - org.springframework.cloud.endpoint.event.RefreshEventListenerAutoConfiguration
 
 app:
   msg:
@@ -30,3 +57,8 @@ app:
       dlq-topic: metaplatform.dlq
     consumer-group:
       monitor-interval-ms: 30000
+    realtime:
+      topics:
+        metrics: metaplatform.dashboard.metrics
+        notifications: metaplatform.dashboard.notifications
+        deliverables: metaplatform.dashboard.deliverables

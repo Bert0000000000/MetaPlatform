@@ -4,6 +4,8 @@ import com.metaplatform.ont.common.ApiResponse;
 import com.metaplatform.ont.dto.ConceptCreateRequest;
 import com.metaplatform.ont.dto.ConceptHierarchyResponse;
 import com.metaplatform.ont.dto.ConceptResponse;
+import com.metaplatform.ont.dto.ConceptTestRequest;
+import com.metaplatform.ont.dto.ConceptTestResponse;
 import com.metaplatform.ont.dto.ConceptUpdateRequest;
 import com.metaplatform.ont.dto.MoveConceptRequest;
 import com.metaplatform.ont.dto.OntologyConceptDto;
@@ -96,5 +98,30 @@ public class ConceptController {
     @GetMapping("/{conceptId}/detail")
     public ApiResponse<OntologyConceptDto> detail(@PathVariable String conceptId) {
         return ApiResponse.success(ontologyExploreService.getDetail(conceptId));
+    }
+
+    /**
+     * 启用概念（P1-ONT）。
+     */
+    @PostMapping("/{conceptId}/enable")
+    public ApiResponse<ConceptResponse> enable(@PathVariable String conceptId) {
+        return ApiResponse.success(conceptService.enable(conceptId));
+    }
+
+    /**
+     * 禁用概念（P1-ONT）。
+     */
+    @PostMapping("/{conceptId}/disable")
+    public ApiResponse<ConceptResponse> disable(@PathVariable String conceptId) {
+        return ApiResponse.success(conceptService.disable(conceptId));
+    }
+
+    /**
+     * 概念测试推理（P1-ONT）：用输入数据测试是否命中该概念的关联属性或概念编码。
+     */
+    @PostMapping("/{conceptId}/test")
+    public ApiResponse<ConceptTestResponse> test(@PathVariable String conceptId,
+                                                 @Valid @RequestBody ConceptTestRequest request) {
+        return ApiResponse.success(conceptService.testInference(conceptId, request));
     }
 }

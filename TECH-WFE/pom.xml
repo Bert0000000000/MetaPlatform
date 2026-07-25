@@ -8,7 +8,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.4.0</version>
+        <version>3.5.0</version>
         <relativePath/>
     </parent>
 
@@ -19,11 +19,31 @@
     <description>Mate Platform - Workflow Engine Service</description>
 
     <properties>
-        <java.version>21</java.version>
+        <java.version>25</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <flowable.version>7.1.0</flowable.version>
         <lombok.version>1.18.46</lombok.version>
+        <spring-cloud.version>2025.1.2</spring-cloud.version>
+        <spring-cloud-alibaba.version>2025.0.0.0</spring-cloud-alibaba.version>
     </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-dependencies</artifactId>
+                <version>${spring-cloud.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>com.alibaba.cloud</groupId>
+                <artifactId>spring-cloud-alibaba-dependencies</artifactId>
+                <version>${spring-cloud-alibaba.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <dependencies>
         <dependency>
@@ -52,11 +72,14 @@
             <artifactId>spring-boot-starter-webflux</artifactId>
         </dependency>
 
-        <!-- Flowable BPMN 引擎 -->
+        <!-- Nacos Discovery + Config (SCA 2025.0.0.0) -->
         <dependency>
-            <groupId>org.flowable</groupId>
-            <artifactId>flowable-spring-boot-starter</artifactId>
-            <version>${flowable.version}</version>
+            <groupId>com.alibaba.cloud</groupId>
+            <artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.alibaba.cloud</groupId>
+            <artifactId>spring-cloud-starter-alibaba-nacos-config</artifactId>
         </dependency>
 
         <dependency>
@@ -97,6 +120,13 @@
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-database-postgresql</artifactId>
         </dependency>
+
+        <!--
+            Flowable BPMN 引擎已移除（v1.3 Phase 9）。
+            TECH-WFE 现使用「自研状态机引擎 + FlowGram.AI fixed-layout JSON」驱动审批流。
+            引擎实现见 com.metaplatform.wfe.engine.WfeStateMachineEngine。
+            BpmnToFlowGramConverter 提供向后兼容的 BPMN XML → FlowGram JSON 转换。
+        -->
 
         <!-- Nashorn JS 引擎（受限沙箱执行表单脚本） -->
         <dependency>

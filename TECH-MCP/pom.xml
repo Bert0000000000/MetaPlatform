@@ -8,7 +8,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.4.0</version>
+        <version>3.5.0</version>
         <relativePath/>
     </parent>
 
@@ -19,10 +19,47 @@
     <description>Mate Platform - MCP Protocol Adapter Service</description>
 
     <properties>
-        <java.version>21</java.version>
+        <java.version>25</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <lombok.version>1.18.46</lombok.version>
+        <spring-cloud.version>2025.1.2</spring-cloud.version>
+        <spring-cloud-alibaba.version>2025.0.0.0</spring-cloud-alibaba.version>
+        <spring-ai.version>1.1.2</spring-ai.version>
+        <spring-ai-alibaba.version>1.1.2.2</spring-ai-alibaba.version>
     </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-dependencies</artifactId>
+                <version>${spring-cloud.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>com.alibaba.cloud</groupId>
+                <artifactId>spring-cloud-alibaba-dependencies</artifactId>
+                <version>${spring-cloud-alibaba.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>com.alibaba.cloud.ai</groupId>
+                <artifactId>spring-ai-alibaba-bom</artifactId>
+                <version>${spring-ai-alibaba.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-bom</artifactId>
+                <version>${spring-ai.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <dependencies>
         <dependency>
@@ -43,6 +80,89 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-validation</artifactId>
+        </dependency>
+
+        <!-- Nacos Discovery + Config (SCA 2025.0.0.0) -->
+        <dependency>
+            <groupId>com.alibaba.cloud</groupId>
+            <artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.alibaba.cloud</groupId>
+            <artifactId>spring-cloud-starter-alibaba-nacos-config</artifactId>
+        </dependency>
+
+        <!-- Spring AI MCP SDK（Server 端 3 种传输 + Client 端） -->
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-starter-mcp-server-webmvc</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-starter-mcp-client</artifactId>
+        </dependency>
+
+        <!-- Spring AI Alibaba（v1.3 强约束：@Tool/@ToolParam 注解 + A2A 互通）
+             验证结果：SAA 1.1.2.2 BOM 仅管理 agentscope / a2a-nacos / config-nacos / graph-observation /
+             agent-framework / graph-core / studio / sandbox 八个 starter。
+             ◆ spring-ai-alibaba-starter-nacos-mcp-registry → BOM 未收录，aliyun 镜像验证 404，待 SAA 1.2.0+ 引入；
+             ◆ spring-ai-alibaba-starter-dashscope          → BOM 未收录但本地仓库 1.1.2.2 可用，显式版本引入；
+             本期同时引入 a2a-nacos + dashscope；Nacos MCP Registry 由自研 McpServerNacosRegistry 承担。 -->
+        <dependency>
+            <groupId>com.alibaba.cloud.ai</groupId>
+            <artifactId>spring-ai-alibaba-starter-a2a-nacos</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.alibaba.cloud.ai</groupId>
+            <artifactId>spring-ai-alibaba-starter-dashscope</artifactId>
+            <version>${spring-ai-alibaba.version}</version>
+        </dependency>
+
+        <!-- MCP stdio 传输：Spring AI 1.1.2 未发布 spring-ai-starter-mcp-server-stdio（预计 1.2.0+）。
+             平台内部 MCP Hub 采用 SSE/Streamable HTTP；stdio 由 Claude Desktop 等本地客户端使用，
+             需 stdio 时通过自定义 MCP-Server 进程包装器实现（见 mcp.transport.stdio.McpStdioServerLauncher）。 -->
+
+        <!-- Spring Security + OAuth2 Resource Server（IAM JWT 鉴权） -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
+        </dependency>
+
+        <!-- Redis（Tool 配置缓存 + maxConcurrentCalls 信号量限流） -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
+        </dependency>
+
+        <!-- Kafka（审计 outbox + 告警事件投递） -->
+        <dependency>
+            <groupId>org.springframework.kafka</groupId>
+            <artifactId>spring-kafka</artifactId>
+        </dependency>
+
+        <!-- OpenTelemetry（@WithSpan 注解 + Trace 透传） -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-tracing-bridge-otel</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.opentelemetry</groupId>
+            <artifactId>opentelemetry-exporter-otlp</artifactId>
+        </dependency>
+
+        <!-- JSON Schema 校验（Tool 参数校验） -->
+        <dependency>
+            <groupId>com.networknt</groupId>
+            <artifactId>json-schema-validator</artifactId>
+            <version>1.5.3</version>
         </dependency>
 
         <dependency>
@@ -119,6 +239,13 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <argLine>-Dnet.bytebuddy.experimental=true --add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED</argLine>
+                    <!-- 排除 nacos-config：其 NacosConfigDataMissingEnvironmentPostProcessor 引用了
+                         Spring Boot 1.x 的 org.springframework.boot.EnvironmentPostProcessor（3.x 已移至
+                         org.springframework.boot.env.EnvironmentPostProcessor），导致 @WebMvcTest 上下文加载
+                         抛出 NoClassDefFoundError。测试不需要 Nacos 配置中心能力。 -->
+                    <classpathDependencyExcludes>
+                        <classpathDependencyExclude>com.alibaba.cloud:spring-cloud-starter-alibaba-nacos-config</classpathDependencyExclude>
+                    </classpathDependencyExcludes>
                 </configuration>
             </plugin>
             <plugin>

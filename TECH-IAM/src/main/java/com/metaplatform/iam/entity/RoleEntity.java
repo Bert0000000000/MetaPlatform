@@ -1,57 +1,53 @@
 package com.metaplatform.iam.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
-import jakarta.persistence.Version;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
-import lombok.Getter;
+import lombok.Builder;
+import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
-import lombok.experimental.SuperBuilder;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
+import java.time.Instant;
 
 @Entity
 @Table(name = "iam_role")
-@Getter
-@Setter
+@Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@SuperBuilder
-public class RoleEntity extends AuditEntity {
+public class RoleEntity {
 
-    public enum RoleType {
-        SYSTEM,
-        CUSTOM
-    }
+    public enum RoleType { SYSTEM, CUSTOM, BUILTIN, EXTERNAL }
 
-    public enum DataScope {
-        ALL,
-        DEPT,
-        DEPT_AND_SUB,
-        SELF,
-        CUSTOM
-    }
+    public enum DataScope { SELF, DEPARTMENT, DEPARTMENT_TREE, ALL, CUSTOM }
 
-    @Id
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "id", nullable = false, length = 64)
     private String id;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "tenant_id", nullable = false, length = 64)
+    private String tenantId;
+
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "role_code", nullable = false, length = 128)
     private String roleCode;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "role_name", nullable = false, length = 256)
     private String roleName;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Enumerated(EnumType.STRING)
     @Column(name = "role_type", nullable = false, length = 32)
     private RoleType roleType;
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Enumerated(EnumType.STRING)
     @Column(name = "data_scope", nullable = false, length = 32)
     private DataScope dataScope;
@@ -59,7 +55,27 @@ public class RoleEntity extends AuditEntity {
     @Column(name = "enabled", nullable = false)
     private Boolean enabled;
 
-    @Version
     @Column(name = "version", nullable = false)
     private Integer version;
+
+    @Column(name = "deleted", nullable = false)
+    private Boolean deleted;
+
+    @Column(name = "deleted_at")
+    private Instant deletedAt;
+
+    @Column(name = "created_at", nullable = false)
+    private Instant createdAt;
+
+    @Column(name = "updated_at", nullable = false)
+    private Instant updatedAt;
+
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "created_by", length = 64)
+    private String createdBy;
+
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "updated_by", length = 64)
+    private String updatedBy;
+
 }

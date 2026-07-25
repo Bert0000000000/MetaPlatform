@@ -6,6 +6,7 @@ import com.metaplatform.ont.dto.ConceptCreateRequest;
 import com.metaplatform.ont.dto.ConceptResponse;
 import com.metaplatform.ont.entity.ConceptEntity;
 import com.metaplatform.ont.exception.OntException;
+import com.metaplatform.ont.repository.AttributeRepository;
 import com.metaplatform.ont.repository.ConceptAttributeRepository;
 import com.metaplatform.ont.repository.ConceptRepository;
 import com.metaplatform.ont.repository.EntityRepository;
@@ -33,6 +34,9 @@ class ConceptServiceTest {
 
     @Mock
     private ConceptAttributeRepository conceptAttributeRepository;
+
+    @Mock
+    private AttributeRepository attributeRepository;
 
     @Mock
     private EntityRepository entityRepository;

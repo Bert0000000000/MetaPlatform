@@ -1,7 +1,5 @@
 package com.metaplatform.rule.monitoring.service;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.metaplatform.rule.common.PageResponse;
 import com.metaplatform.rule.common.TenantContext;
 import com.metaplatform.rule.monitoring.dto.ExecutionHistoryItem;
@@ -13,15 +11,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -29,8 +24,11 @@ import java.util.stream.Collectors;
 public class MonitoringService {
 
     private final ExecutionLogRepository executionLogRepository;
-    private final ObjectMapper objectMapper;
 
+    /**
+     * P1-1 修复：avgExecutionTimeMs 取自全部日志的 AVG(executionTimeMs)，
+     * 而非原来的 findByTenantIdAndErrorMessageIsNotNull（仅取错误日志）。
+     */
     @Transactional(readOnly = true)
     public MonitoringOverview overview() {
         String tenantId = TenantContext.get();
@@ -41,11 +39,8 @@ public class MonitoringService {
         double matchRate = total > 0 ? (double) matched / total * 100 : 0;
         double errorRate = total > 0 ? (double) errors / total * 100 : 0;
 
-        double avgTime = executionLogRepository.findByTenantIdAndErrorMessageIsNotNullOrderByCreatedAtDesc(
-                        tenantId, PageRequest.of(0, 1)).stream()
-                .findFirst()
-                .map(e -> e.getExecutionTimeMs() != null ? (double) e.getExecutionTimeMs() : 0.0)
-                .orElse(0.0);
+        Double avgTimeRaw = executionLogRepository.findAvgExecutionTimeByTenantId(tenantId);
+        double avgTime = avgTimeRaw != null ? avgTimeRaw : 0.0;
 
         return MonitoringOverview.builder()
                 .totalExecutions(total)
@@ -57,31 +52,26 @@ public class MonitoringService {
                 .build();
     }
 
+    /**
+     * P1-1 修复：原实现 findAll() 跨租户全表扫描后内存过滤，
+     * 改为按租户查询 distinct ruleId 后逐规则聚合（数据库侧过滤 + 聚合）。
+     */
     @Transactional(readOnly = true)
     public List<RuleStats> byRule() {
         String tenantId = TenantContext.get();
-        List<ExecutionLogEntity> all = executionLogRepository.findAll(Sort.by(Sort.Direction.DESC, "createdAt"))
-                .stream()
-                .filter(e -> tenantId.equals(e.getTenantId()))
-                .toList();
-
-        Map<String, List<ExecutionLogEntity>> byRule = all.stream()
-                .filter(e -> e.getRuleId() != null)
-                .collect(Collectors.groupingBy(ExecutionLogEntity::getRuleId));
-
+        List<String> ruleIds = executionLogRepository.findDistinctRuleIdsByTenantId(tenantId);
         List<RuleStats> stats = new ArrayList<>();
-        for (Map.Entry<String, List<ExecutionLogEntity>> entry : byRule.entrySet()) {
-            List<ExecutionLogEntity> logs = entry.getValue();
-            long total = logs.size();
-            long matched = logs.stream().filter(l -> Boolean.TRUE.equals(l.getMatched())).count();
-            long errors = logs.stream().filter(l -> l.getErrorMessage() != null).count();
-            double avgTime = logs.stream()
-                    .filter(l -> l.getExecutionTimeMs() != null)
-                    .mapToLong(ExecutionLogEntity::getExecutionTimeMs)
-                    .average()
-                    .orElse(0);
+        for (String ruleId : ruleIds) {
+            Object[] row = executionLogRepository.aggregateByTenantIdAndRuleId(tenantId, ruleId);
+            if (row == null || row.length < 4) {
+                continue;
+            }
+            long total = ((Number) row[0]).longValue();
+            long matched = ((Number) row[1]).longValue();
+            long errors = ((Number) row[2]).longValue();
+            double avgTime = ((Number) row[3]).doubleValue();
             stats.add(RuleStats.builder()
-                    .ruleId(entry.getKey())
+                    .ruleId(ruleId)
                     .totalExecutions(total)
                     .matchedExecutions(matched)
                     .errorExecutions(errors)
@@ -129,21 +119,27 @@ public class MonitoringService {
                 .build();
     }
 
+    /**
+     * P1-1：单规则统计也走数据库聚合（替代原 1000 条内存平均）。
+     */
     @Transactional(readOnly = true)
     public RuleStats singleRuleStats(String ruleId) {
         String tenantId = TenantContext.get();
-        List<ExecutionLogEntity> logs =
-                executionLogRepository.findByTenantIdAndRuleIdOrderByCreatedAtDesc(tenantId, ruleId, PageRequest.of(0, 1000));
-
-        long total = logs.size();
-        long matched = logs.stream().filter(l -> Boolean.TRUE.equals(l.getMatched())).count();
-        long errors = logs.stream().filter(l -> l.getErrorMessage() != null).count();
-        double avgTime = logs.stream()
-                .filter(l -> l.getExecutionTimeMs() != null)
-                .mapToLong(ExecutionLogEntity::getExecutionTimeMs)
-                .average()
-                .orElse(0);
-
+        Object[] row = executionLogRepository.aggregateByTenantIdAndRuleId(tenantId, ruleId);
+        if (row == null || row.length < 4) {
+            return RuleStats.builder()
+                    .ruleId(ruleId)
+                    .totalExecutions(0)
+                    .matchedExecutions(0)
+                    .errorExecutions(0)
+                    .matchRate(0)
+                    .avgExecutionTimeMs(0)
+                    .build();
+        }
+        long total = ((Number) row[0]).longValue();
+        long matched = ((Number) row[1]).longValue();
+        long errors = ((Number) row[2]).longValue();
+        double avgTime = ((Number) row[3]).doubleValue();
         return RuleStats.builder()
                 .ruleId(ruleId)
                 .totalExecutions(total)
@@ -164,17 +160,8 @@ public class MonitoringService {
                 .errorMessage(entity.getErrorMessage())
                 .traceId(entity.getTraceId())
                 .createdAt(entity.getCreatedAt())
-                .input(readMap(entity.getInput()))
-                .output(readMap(entity.getOutput()))
+                .input(entity.getInput())
+                .output(entity.getOutput())
                 .build();
-    }
-
-    private Map<String, Object> readMap(String json) {
-        if (json == null || json.isBlank()) return null;
-        try {
-            return objectMapper.readValue(json, new TypeReference<>() {});
-        } catch (Exception e) {
-            return null;
-        }
     }
 }

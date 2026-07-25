@@ -24,9 +24,11 @@ public class McpBatchExecutionEntity {
     private UUID id;
 
     @Column(name = "tenant_id", nullable = false, length = 64)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String tenantId;
 
     @Column(name = "batch_id", nullable = false, length = 64)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String batchId;
 
     @Column(name = "tool_id", nullable = false)
@@ -43,9 +45,11 @@ public class McpBatchExecutionEntity {
     private String output;
 
     @Column(nullable = false, length = 20)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String status;
 
     @Column(name = "error_message", columnDefinition = "TEXT")
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     private String errorMessage;
 
     @Column(name = "started_at")

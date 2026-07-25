@@ -4,6 +4,7 @@ import com.metaplatform.iam.common.ApiResponse;
 import com.metaplatform.iam.dto.AuthResponse;
 import com.metaplatform.iam.dto.LoginRequest;
 import com.metaplatform.iam.dto.RegisterRequest;
+import com.metaplatform.iam.dto.auth.RefreshTokenRequest;
 import com.metaplatform.iam.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -24,5 +25,16 @@ public class AuthController {
     @PostMapping("/login")
     public ApiResponse<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
         return ApiResponse.success(authService.login(request));
+    }
+
+    @PostMapping("/logout")
+    public ApiResponse<Void> logout() {
+        authService.logout();
+        return ApiResponse.success();
+    }
+
+    @PostMapping("/refresh")
+    public ApiResponse<AuthResponse> refresh(@Valid @RequestBody RefreshTokenRequest request) {
+        return ApiResponse.success(authService.refresh(request));
     }
 }

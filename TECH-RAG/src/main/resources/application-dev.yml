@@ -1,0 +1,43 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/metaplatform_rag
+    username: meta
+    password: meta
+  data:
+    redis:
+      host: localhost
+      port: 6379
+  kafka:
+    bootstrap-servers: localhost:9092
+  cloud:
+    compatibility-verifier:
+      enabled: false
+    nacos:
+      discovery:
+        enabled: false
+      config:
+        enabled: false
+  config:
+    import: []
+  autoconfigure:
+    exclude:
+      - com.alibaba.cloud.nacos.registry.NacosServiceRegistryAutoConfiguration
+      - com.alibaba.cloud.nacos.discovery.NacosDiscoveryAutoConfiguration
+      - com.alibaba.cloud.nacos.NacosConfigAutoConfiguration
+      - org.springframework.cloud.autoconfigure.RefreshAutoConfiguration
+      - org.springframework.cloud.context.refresh.ContextRefresherAutoConfiguration
+      - com.alibaba.cloud.ai.agent.nacos.config.NacosAgentConfig
+      - com.alibaba.cloud.ai.autoconfigure.nacosconfig.NacosConfigAutoConfiguration
+      - com.alibaba.cloud.ai.autoconfigure.nacos.NacosMcServerAutoConfiguration
+      - org.springframework.ai.vectorstore.milvus.autoconfigure.MilvusVectorStoreAutoConfiguration
+      - org.springframework.ai.mcp.server.common.autoconfigure.McpServerAutoConfiguration
+      - org.springframework.ai.mcp.server.common.autoconfigure.annotations.McpServerSpecificationFactoryAutoConfiguration
+      - org.springframework.ai.mcp.server.common.autoconfigure.annotations.McpServerAnnotationScannerAutoConfiguration
+      - org.springframework.ai.mcp.client.autoconfigure.McpClientAutoConfiguration
+  ai:
+    dashscope:
+      api-key: ${DASHSCOPE_API_KEY:sk-placeholder-for-dev-only-not-real}
+
+logging:
+  level:
+    com.metaplatform.rag: DEBUG

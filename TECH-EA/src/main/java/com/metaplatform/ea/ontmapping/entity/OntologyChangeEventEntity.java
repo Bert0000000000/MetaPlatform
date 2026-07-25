@@ -8,8 +8,8 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
-import java.time.Instant;
 import java.util.UUID;
+import java.time.Instant;
 
 @Entity
 @Table(name = "ea_ontology_change_event")
@@ -21,41 +21,47 @@ public class OntologyChangeEventEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(name = "id", nullable = false)
     private UUID id;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "tenant_id", nullable = false, length = 64)
     private String tenantId;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "concept_id", nullable = false, length = 128)
     private String conceptId;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "concept_code", length = 128)
     private String conceptCode;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "concept_name", length = 256)
     private String conceptName;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "change_type", nullable = false, length = 64)
     private String changeType;
 
     @Column(name = "rule_id")
     private UUID ruleId;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "asset_type", length = 64)
     private String assetType;
 
     @Column(name = "asset_id")
     private UUID assetId;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "status", nullable = false, length = 32)
-    @Builder.Default
-    private String status = "PENDING";
+    private String status;
 
     @Column(name = "review_ticket_id")
     private UUID reviewTicketId;
 
-    @Lob
-    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "payload", columnDefinition = "jsonb")
     private String payload;
 
@@ -64,4 +70,5 @@ public class OntologyChangeEventEntity {
 
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
+
 }

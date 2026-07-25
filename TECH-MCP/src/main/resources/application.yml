@@ -6,13 +6,53 @@ spring:
     name: tech-mcp
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:dev}
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/metaplatform_mcp?stringtype=varchar
+    username: ${DB_USER:meta}
+    password: ${DB_PASSWORD:meta}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        type:
+          preferred_jdbc_type_code_for_string: 12
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: false
+    open-in-view: false
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+  cloud:
+    nacos:
+      discovery:
+        server-addr: ${NACOS_ADDR:localhost:8848}
+        namespace: metaplatform
+        # Nacos 3.0+ gRPC 端口
+        grpc-port: 9848
+      config:
+        server-addr: ${NACOS_ADDR:localhost:8848}
+        # Nacos 3.0+ Config 走 9849
+        grpc-port: 9849
+        namespace: metaplatform
+        file-extension: yaml
+  config:
+    import:
+      - optional:nacos:${spring.application.name}.yaml
 
 logging:
   level:
     root: INFO
+    com.metaplatform.mcp: DEBUG
 
 management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,metrics

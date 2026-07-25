@@ -2,7 +2,6 @@ package com.metaplatform.action.orchestration.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.metaplatform.action.common.ErrorCode;
 import com.metaplatform.action.common.TenantContext;
 import com.metaplatform.action.common.TraceContext;
@@ -22,10 +21,13 @@ import com.metaplatform.action.outbox.service.ActionEventType;
 import com.metaplatform.action.outbox.service.ActionOutboxService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -51,7 +53,7 @@ public class OrchestrationExecutionService {
     public static final String COMP_FAILED = "FAILED";
     public static final String COMP_SKIPPED = "SKIPPED";
 
-    private static final TypeReference<List<NodeStateDto>> NODE_STATE_TYPE = new TypeReference<>() {};
+    private static final String ITEMS_KEY = "items";
 
     private final OrchestrationExecutionRepository executionRepository;
     private final OrchestrationService orchestrationService;
@@ -59,6 +61,10 @@ public class OrchestrationExecutionService {
     private final ActionOutboxService actionOutboxService;
     private final RuleIntegrationService ruleIntegrationService;
     private final ObjectMapper objectMapper;
+
+    @Autowired
+    @Lazy
+    private OrchestrationAsyncRunner orchestrationAsyncRunner;
 
     public String startExecution(String orchestrationId, StartOrchestrationRequest request) {
         String tenantId = TenantContext.getOrDefault();
@@ -70,16 +76,17 @@ public class OrchestrationExecutionService {
         String executionId = "orch-exec-" + UUID.randomUUID();
         String traceId = TraceContext.getOrCreate();
         Instant now = Instant.now();
-        List<NodeStateDto> initialStates = initNodeStates(orchestration.getNodes());
+        Map<String, Object> initialStates = wrapList(initNodeStates(orchestration.getNodes()));
+        Map<String, Object> input = toMap(request == null ? null : request.getInput());
 
         OrchestrationExecutionEntity execution = OrchestrationExecutionEntity.builder()
                 .tenantId(tenantId)
                 .executionId(executionId)
                 .orchestrationId(orchestrationId)
                 .status(STATUS_RUNNING)
-                .nodeStates(writeJson(initialStates))
-                .input(writeJson(request == null ? null : request.getInput()))
-                .compensationActions("[]")
+                .nodeStates(initialStates)
+                .input(input)
+                .compensationActions(wrapList(new ArrayList<>()))
                 .traceId(traceId)
                 .startedAt(now)
                 .createdAt(now)
@@ -89,6 +96,8 @@ public class OrchestrationExecutionService {
 
         actionOutboxService.publish(tenantId, executionId, ActionEventType.ORCHESTRATION_STARTED,
                 Map.of("orchestrationId", orchestrationId, "executionId", executionId), traceId);
+
+        orchestrationAsyncRunner.run(executionId, tenantId, traceId);
 
         return executionId;
     }
@@ -118,14 +127,14 @@ public class OrchestrationExecutionService {
             TraceContext.set(execution.getTraceId());
             OrchestrationEntity orchestration = orchestrationService.findByOrchestrationId(execution.getOrchestrationId());
             Map<String, NodeStateDto> states = toStateMap(execution.getNodeStates());
-            JsonNode nodes = parseJson(orchestration.getNodes());
-            JsonNode edges = parseJson(orchestration.getEdges());
+            List<Map<String, Object>> nodes = nodesList(orchestration.getNodes());
+            List<Map<String, Object>> edges = edgesList(orchestration.getEdges());
 
-            Map<String, JsonNode> nodeById = indexNodes(nodes);
+            Map<String, Map<String, Object>> nodeById = indexNodes(nodes);
             Set<String> targets = collectTargets(edges);
             List<String> entryNodes = new ArrayList<>();
-            for (JsonNode node : nodes) {
-                String id = node.get("id").asText();
+            for (Map<String, Object> node : nodes) {
+                String id = textField(node, "id");
                 if (!targets.contains(id)) {
                     entryNodes.add(id);
                 }
@@ -135,7 +144,7 @@ public class OrchestrationExecutionService {
             Set<String> visited = new HashSet<>();
             List<String> worklist = new ArrayList<>(entryNodes);
             List<String> completedOrder = new ArrayList<>();
-            Object input = readValue(execution.getInput());
+            Object input = execution.getInput();
 
             while (!worklist.isEmpty()) {
                 String nodeId = worklist.remove(0);
@@ -143,18 +152,23 @@ public class OrchestrationExecutionService {
                     continue;
                 }
                 visited.add(nodeId);
-                JsonNode node = nodeById.get(nodeId);
+                Map<String, Object> node = nodeById.get(nodeId);
                 if (node == null) {
                     continue;
                 }
-                NodeStateDto state = states.computeIfAbsent(nodeId, k -> NodeStateDto.builder()
-                        .nodeId(nodeId).status(STATUS_PENDING).compensationStatus(COMP_NONE).build());
+                NodeStateDto state = states.computeIfAbsent(nodeId, k -> {
+                    NodeStateDto s = NodeStateDto.builder().build();
+                    s.setNodeId(nodeId);
+                    s.setStatus(STATUS_PENDING);
+                    s.setCompensationStatus(COMP_NONE);
+                    return s;
+                });
                 state.setActionCode(textField(node, "actionCode"));
 
                 Instant started = Instant.now();
                 state.setStatus(STATUS_RUNNING);
                 state.setStartedAt(started);
-                execution.setNodeStates(writeJson(new ArrayList<>(states.values())));
+                execution.setNodeStates(wrapList(stateList(states)));
                 executionRepository.save(execution);
 
                 try {
@@ -186,11 +200,11 @@ public class OrchestrationExecutionService {
                     state.setStatus(STATUS_FAILED);
                     state.setCompletedAt(Instant.now());
                     state.setError(e.getMessage());
-                    execution.setNodeStates(writeJson(new ArrayList<>(states.values())));
+                    execution.setNodeStates(wrapList(stateList(states)));
                     failExecution(execution, e.getMessage(), states, completedOrder, nodeById, orchestration);
                     return;
                 }
-                execution.setNodeStates(writeJson(new ArrayList<>(states.values())));
+                execution.setNodeStates(wrapList(stateList(states)));
                 executionRepository.save(execution);
             }
 
@@ -202,8 +216,8 @@ public class OrchestrationExecutionService {
 
             Instant completedAt = Instant.now();
             execution.setStatus(STATUS_COMPLETED);
-            execution.setNodeStates(writeJson(new ArrayList<>(states.values())));
-            execution.setOutput(writeJson(input));
+            execution.setNodeStates(wrapList(stateList(states)));
+            execution.setOutput(toMap(input));
             execution.setCompletedAt(completedAt);
             execution.setDurationMs(durationMs(execution.getStartedAt(), completedAt));
             execution.setUpdatedAt(completedAt);
@@ -234,8 +248,8 @@ public class OrchestrationExecutionService {
         try {
             TraceContext.set(execution.getTraceId());
             Map<String, NodeStateDto> states = toStateMap(execution.getNodeStates());
-            JsonNode nodes = parseJson(orchestration.getNodes());
-            Map<String, JsonNode> nodeById = indexNodes(nodes);
+            List<Map<String, Object>> nodes = nodesList(orchestration.getNodes());
+            Map<String, Map<String, Object>> nodeById = indexNodes(nodes);
 
             List<NodeStateDto> completed = new ArrayList<>();
             for (NodeStateDto s : states.values()) {
@@ -243,14 +257,14 @@ public class OrchestrationExecutionService {
                     completed.add(s);
                 }
             }
-            java.util.Collections.reverse(completed);
+            Collections.reverse(completed);
 
             List<NodeStateDto> compensated = new ArrayList<>();
             for (NodeStateDto s : completed) {
-                JsonNode node = nodeById.get(s.getNodeId());
+                Map<String, Object> node = nodeById.get(s.getNodeId());
                 String compAction = node == null ? null : textField(node, "compensationActionCode");
                 s.setCompensationStatus(COMP_RUNNING);
-                execution.setNodeStates(writeJson(new ArrayList<>(states.values())));
+                execution.setNodeStates(wrapList(stateList(states)));
                 executionRepository.save(execution);
                 if (compAction == null || compAction.isBlank()) {
                     s.setCompensationStatus(COMP_SKIPPED);
@@ -260,7 +274,7 @@ public class OrchestrationExecutionService {
                 try {
                     SyncExecutionRequest req = new SyncExecutionRequest();
                     req.setActionCode(compAction);
-                    req.setInput(readValue(execution.getInput()));
+                    req.setInput(execution.getInput());
                     httpExecutionService.executeSync(req);
                     s.setCompensationStatus(COMP_COMPLETED);
                 } catch (Exception e) {
@@ -269,11 +283,11 @@ public class OrchestrationExecutionService {
                     s.setError(e.getMessage());
                 }
                 compensated.add(copy(s));
-                execution.setNodeStates(writeJson(new ArrayList<>(states.values())));
+                execution.setNodeStates(wrapList(stateList(states)));
                 executionRepository.save(execution);
             }
 
-            execution.setCompensationActions(writeJson(compensated));
+            execution.setCompensationActions(wrapList(toStateMapList(compensated)));
             execution.setUpdatedAt(Instant.now());
             executionRepository.save(execution);
 
@@ -291,7 +305,7 @@ public class OrchestrationExecutionService {
 
     private void failExecution(OrchestrationExecutionEntity execution, String errorMessage,
                                Map<String, NodeStateDto> states, List<String> completedOrder,
-                               Map<String, JsonNode> nodeById, OrchestrationEntity orchestration) {
+                               Map<String, Map<String, Object>> nodeById, OrchestrationEntity orchestration) {
         Instant failedAt = Instant.now();
         execution.setStatus(STATUS_FAILED);
         execution.setErrorMessage(errorMessage);
@@ -331,12 +345,12 @@ public class OrchestrationExecutionService {
 
     private void runAutoCompensation(OrchestrationExecutionEntity execution,
                                      Map<String, NodeStateDto> states, List<String> completedOrder,
-                                     Map<String, JsonNode> nodeById) {
+                                     Map<String, Map<String, Object>> nodeById) {
         List<NodeStateDto> compensated = new ArrayList<>();
         for (int i = completedOrder.size() - 1; i >= 0; i--) {
             String nodeId = completedOrder.get(i);
             NodeStateDto state = states.get(nodeId);
-            JsonNode node = nodeById.get(nodeId);
+            Map<String, Object> node = nodeById.get(nodeId);
             String compAction = node == null ? null : textField(node, "compensationActionCode");
             if (compAction == null || compAction.isBlank()) {
                 state.setCompensationStatus(COMP_SKIPPED);
@@ -355,21 +369,29 @@ public class OrchestrationExecutionService {
             }
             compensated.add(copy(state));
         }
-        execution.setNodeStates(writeJson(new ArrayList<>(states.values())));
-        execution.setCompensationActions(writeJson(compensated));
+        execution.setNodeStates(wrapList(stateList(states)));
+        execution.setCompensationActions(wrapList(toStateMapList(compensated)));
         execution.setUpdatedAt(Instant.now());
         executionRepository.save(execution);
     }
 
     private String resolveConditionalTarget(String nodeId, OrchestrationEntity orchestration, Object input) {
-        JsonNode ruleIntegration = parseJson(orchestration.getRuleIntegration());
-        JsonNode nodeRule = ruleIntegration.get(nodeId);
-        if (nodeRule == null || nodeRule.isNull()) {
+        Map<String, Object> ruleIntegration = orchestration.getRuleIntegration();
+        if (ruleIntegration == null) {
+            ruleIntegration = new HashMap<>();
+        }
+        Object nodeRule = ruleIntegration.get(nodeId);
+        if (nodeRule == null) {
             throw new ActionException(ErrorCode.RULE_EVALUATION_ERROR,
                     "条件节点缺少规则配置: " + nodeId);
         }
-        String rulesetId = textField(nodeRule, "rulesetId");
-        String resultKey = textField(nodeRule, "resultKey");
+        if (!(nodeRule instanceof Map<?, ?>)) {
+            throw new ActionException(ErrorCode.RULE_EVALUATION_ERROR,
+                    "条件节点规则配置非法: " + nodeId);
+        }
+        Map<String, Object> ruleMap = (Map<String, Object>) nodeRule;
+        String rulesetId = textField(ruleMap, "rulesetId");
+        String resultKey = textField(ruleMap, "resultKey");
         if (rulesetId == null || rulesetId.isBlank()) {
             throw new ActionException(ErrorCode.RULE_EVALUATION_ERROR,
                     "条件节点缺少 rulesetId: " + nodeId);
@@ -379,16 +401,21 @@ public class OrchestrationExecutionService {
     }
 
     private void markSkipped(Map<String, NodeStateDto> states, String nodeId,
-                             Map<String, JsonNode> nodeById, Map<String, List<String>> adjacency,
+                             Map<String, Map<String, Object>> nodeById, Map<String, List<String>> adjacency,
                              Set<String> visited) {
         if (visited.contains(nodeId)) {
             return;
         }
         visited.add(nodeId);
-        NodeStateDto state = states.computeIfAbsent(nodeId, k -> NodeStateDto.builder()
-                .nodeId(nodeId).status(STATUS_SKIPPED).compensationStatus(COMP_NONE).build());
+        NodeStateDto state = states.computeIfAbsent(nodeId, k -> {
+            NodeStateDto s = NodeStateDto.builder().build();
+            s.setNodeId(nodeId);
+            s.setStatus(STATUS_SKIPPED);
+            s.setCompensationStatus(COMP_NONE);
+            return s;
+        });
         state.setStatus(STATUS_SKIPPED);
-        JsonNode node = nodeById.get(nodeId);
+        Map<String, Object> node = nodeById.get(nodeId);
         if (node != null) {
             state.setActionCode(textField(node, "actionCode"));
         }
@@ -397,82 +424,176 @@ public class OrchestrationExecutionService {
         }
     }
 
-    private List<NodeStateDto> initNodeStates(String nodesJson) {
-        JsonNode nodes = parseJson(nodesJson);
-        List<NodeStateDto> states = new ArrayList<>();
-        for (JsonNode node : nodes) {
-            states.add(NodeStateDto.builder()
-                    .nodeId(node.get("id").asText())
-                    .actionCode(textField(node, "actionCode"))
-                    .status(STATUS_PENDING)
-                    .compensationStatus(COMP_NONE)
-                    .build());
+    private List<Map<String, Object>> initNodeStates(Map<String, Object> nodesContainer) {
+        List<Map<String, Object>> states = new ArrayList<>();
+        if (nodesContainer == null) {
+            return states;
+        }
+        Object nodesObj = nodesContainer.get("nodes");
+        if (!(nodesObj instanceof List<?> list)) {
+            return states;
+        }
+        for (Object o : list) {
+            if (o instanceof Map<?, ?> m) {
+                Map<String, Object> node = (Map<String, Object>) m;
+                Map<String, Object> state = new LinkedHashMap<>();
+                state.put("nodeId", textField(node, "id"));
+                state.put("actionCode", textField(node, "actionCode"));
+                state.put("status", STATUS_PENDING);
+                state.put("compensationStatus", COMP_NONE);
+                states.add(state);
+            }
         }
         return states;
     }
 
-    private Map<String, NodeStateDto> toStateMap(String nodeStatesJson) {
-        try {
-            List<NodeStateDto> list = objectMapper.readValue(
-                    nodeStatesJson == null || nodeStatesJson.isBlank() ? "[]" : nodeStatesJson, NODE_STATE_TYPE);
-            Map<String, NodeStateDto> map = new LinkedHashMap<>();
-            for (NodeStateDto s : list) {
-                map.put(s.getNodeId(), s);
-            }
+    private Map<String, NodeStateDto> toStateMap(Map<String, Object> nodeStates) {
+        Map<String, NodeStateDto> map = new LinkedHashMap<>();
+        if (nodeStates == null) {
             return map;
-        } catch (Exception e) {
-            throw new ActionException(ErrorCode.INTERNAL_ERROR, "node_states 解析失败");
         }
-    }
-
-    private Map<String, JsonNode> indexNodes(JsonNode nodes) {
-        Map<String, JsonNode> map = new HashMap<>();
-        for (JsonNode node : nodes) {
-            map.put(node.get("id").asText(), node);
+        List<Map<String, Object>> list = unwrapList(nodeStates);
+        for (Map<String, Object> s : list) {
+            NodeStateDto dto = mapOfState(s);
+            if (dto != null) {
+                map.put(dto.getNodeId(), dto);
+            }
         }
         return map;
     }
 
-    private Set<String> collectTargets(JsonNode edges) {
+    private NodeStateDto mapOfState(Map<String, Object> s) {
+        if (s == null) {
+            return null;
+        }
+        NodeStateDto dto = NodeStateDto.builder().build();
+        dto.setNodeId(textField(s, "nodeId"));
+        dto.setActionCode(textField(s, "actionCode"));
+        dto.setStatus(textField(s, "status"));
+        dto.setStartedAt(toInstant(s.get("startedAt")));
+        dto.setCompletedAt(toInstant(s.get("completedAt")));
+        dto.setError(textField(s, "error"));
+        dto.setCompensationStatus(textField(s, "compensationStatus"));
+        return dto;
+    }
+
+    private List<Map<String, Object>> stateList(Map<String, NodeStateDto> states) {
+        List<Map<String, Object>> list = new ArrayList<>();
+        for (NodeStateDto dto : states.values()) {
+            list.add(stateToMap(dto));
+        }
+        return list;
+    }
+
+    private Map<String, Object> stateToMap(NodeStateDto dto) {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("nodeId", dto.getNodeId());
+        m.put("actionCode", dto.getActionCode());
+        m.put("status", dto.getStatus());
+        m.put("startedAt", dto.getStartedAt());
+        m.put("completedAt", dto.getCompletedAt());
+        m.put("error", dto.getError());
+        m.put("compensationStatus", dto.getCompensationStatus());
+        return m;
+    }
+
+    private List<Map<String, Object>> toStateMapList(List<NodeStateDto> states) {
+        List<Map<String, Object>> list = new ArrayList<>();
+        for (NodeStateDto dto : states) {
+            list.add(stateToMap(dto));
+        }
+        return list;
+    }
+
+    private Map<String, Map<String, Object>> indexNodes(List<Map<String, Object>> nodes) {
+        Map<String, Map<String, Object>> map = new HashMap<>();
+        for (Map<String, Object> node : nodes) {
+            map.put(textField(node, "id"), node);
+        }
+        return map;
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<Map<String, Object>> nodesList(Map<String, Object> container) {
+        if (container == null) {
+            return List.of();
+        }
+        Object nodes = container.get("nodes");
+        if (nodes instanceof List<?> list) {
+            List<Map<String, Object>> result = new ArrayList<>();
+            for (Object o : list) {
+                if (o instanceof Map<?, ?>) {
+                    result.add((Map<String, Object>) o);
+                }
+            }
+            return result;
+        }
+        return List.of();
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<Map<String, Object>> edgesList(Map<String, Object> container) {
+        if (container == null) {
+            return List.of();
+        }
+        Object edges = container.get("edges");
+        if (edges instanceof List<?> list) {
+            List<Map<String, Object>> result = new ArrayList<>();
+            for (Object o : list) {
+                if (o instanceof Map<?, ?>) {
+                    result.add((Map<String, Object>) o);
+                }
+            }
+            return result;
+        }
+        return List.of();
+    }
+
+    private Set<String> collectTargets(List<Map<String, Object>> edges) {
         Set<String> targets = new HashSet<>();
-        for (JsonNode edge : edges) {
-            targets.add(edge.get("target").asText());
+        for (Map<String, Object> edge : edges) {
+            String target = textField(edge, "target");
+            if (target != null) {
+                targets.add(target);
+            }
         }
         return targets;
     }
 
-    private Map<String, List<String>> buildAdjacency(JsonNode edges) {
+    private Map<String, List<String>> buildAdjacency(List<Map<String, Object>> edges) {
         Map<String, List<String>> adjacency = new HashMap<>();
-        for (JsonNode edge : edges) {
-            String source = edge.get("source").asText();
-            String target = edge.get("target").asText();
-            adjacency.computeIfAbsent(source, k -> new ArrayList<>()).add(target);
+        for (Map<String, Object> edge : edges) {
+            String source = textField(edge, "source");
+            String target = textField(edge, "target");
+            if (source != null && target != null) {
+                adjacency.computeIfAbsent(source, k -> new ArrayList<>()).add(target);
+            }
         }
         return adjacency;
     }
 
     private NodeStateDto copy(NodeStateDto s) {
-        return NodeStateDto.builder()
-                .nodeId(s.getNodeId())
-                .actionCode(s.getActionCode())
-                .status(s.getStatus())
-                .startedAt(s.getStartedAt())
-                .completedAt(s.getCompletedAt())
-                .error(s.getError())
-                .compensationStatus(s.getCompensationStatus())
-                .build();
+        NodeStateDto copy = NodeStateDto.builder().build();
+        copy.setNodeId(s.getNodeId());
+        copy.setActionCode(s.getActionCode());
+        copy.setStatus(s.getStatus());
+        copy.setStartedAt(s.getStartedAt());
+        copy.setCompletedAt(s.getCompletedAt());
+        copy.setError(s.getError());
+        copy.setCompensationStatus(s.getCompensationStatus());
+        return copy;
     }
 
     private OrchestrationExecutionResponse toResponse(OrchestrationExecutionEntity execution) {
-        List<NodeStateDto> nodeStates = toStateList(execution.getNodeStates());
-        List<NodeStateDto> compensation = toStateList(execution.getCompensationActions());
+        List<NodeStateDto> nodeStates = statesList(execution.getNodeStates());
+        List<NodeStateDto> compensation = statesList(execution.getCompensationActions());
         return OrchestrationExecutionResponse.builder()
                 .executionId(execution.getExecutionId())
                 .orchestrationId(execution.getOrchestrationId())
                 .status(execution.getStatus())
                 .nodeStates(nodeStates)
-                .input(readValue(execution.getInput()))
-                .output(readValue(execution.getOutput()))
+                .input(execution.getInput())
+                .output(execution.getOutput())
                 .errorMessage(execution.getErrorMessage())
                 .traceId(execution.getTraceId())
                 .startedAt(execution.getStartedAt())
@@ -482,47 +603,83 @@ public class OrchestrationExecutionService {
                 .build();
     }
 
-    private List<NodeStateDto> toStateList(String json) {
-        try {
-            return objectMapper.readValue(json == null || json.isBlank() ? "[]" : json, NODE_STATE_TYPE);
-        } catch (Exception e) {
+    private List<NodeStateDto> statesList(Map<String, Object> container) {
+        List<NodeStateDto> result = new ArrayList<>();
+        if (container == null) {
+            return result;
+        }
+        List<Map<String, Object>> list = unwrapList(container);
+        for (Map<String, Object> s : list) {
+            NodeStateDto dto = mapOfState(s);
+            if (dto != null) {
+                result.add(dto);
+            }
+        }
+        return result;
+    }
+
+    private Map<String, Object> wrapList(List<Map<String, Object>> list) {
+        Map<String, Object> wrapper = new LinkedHashMap<>();
+        wrapper.put(ITEMS_KEY, list == null ? new ArrayList<>() : list);
+        return wrapper;
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<Map<String, Object>> unwrapList(Map<String, Object> wrapper) {
+        if (wrapper == null) {
             return List.of();
         }
-    }
-
-    private JsonNode parseJson(String json) {
-        try {
-            return objectMapper.readTree(json == null || json.isBlank() ? "[]" : json);
-        } catch (Exception e) {
-            throw new ActionException(ErrorCode.INVALID_PARAM, "JSON 解析失败");
+        Object items = wrapper.get(ITEMS_KEY);
+        if (items instanceof List<?> list) {
+            List<Map<String, Object>> result = new ArrayList<>();
+            for (Object o : list) {
+                if (o instanceof Map<?, ?>) {
+                    result.add((Map<String, Object>) o);
+                }
+            }
+            return result;
         }
+        return List.of();
     }
 
-    private String writeJson(Object value) {
-        if (value == null) {
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> toMap(Object input) {
+        if (input == null) {
             return null;
         }
-        try {
-            return objectMapper.writeValueAsString(value);
-        } catch (Exception e) {
-            throw new ActionException(ErrorCode.INTERNAL_ERROR, "JSON 序列化失败");
+        if (input instanceof Map<?, ?> map) {
+            return (Map<String, Object>) map;
         }
-    }
-
-    private Object readValue(String json) {
-        if (json == null || json.isBlank()) {
+        try {
+            return objectMapper.readValue(objectMapper.writeValueAsString(input), Map.class);
+        } catch (Exception e) {
             return null;
         }
-        try {
-            return objectMapper.readValue(json, Object.class);
-        } catch (Exception e) {
-            return json;
-        }
     }
 
-    private String textField(JsonNode node, String field) {
-        JsonNode value = node.get(field);
-        return value == null || value.isNull() ? null : value.asText();
+    private Instant toInstant(Object o) {
+        if (o == null) {
+            return null;
+        }
+        if (o instanceof Instant inst) {
+            return inst;
+        }
+        if (o instanceof Number n) {
+            return Instant.ofEpochMilli(n.longValue());
+        }
+        if (o instanceof String s) {
+            try {
+                return Instant.parse(s);
+            } catch (Exception e) {
+                return null;
+            }
+        }
+        return null;
+    }
+
+    private String textField(Map<String, Object> node, String field) {
+        Object value = node == null ? null : node.get(field);
+        return value == null ? null : value.toString();
     }
 
     private Integer durationMs(Instant started, Instant end) {

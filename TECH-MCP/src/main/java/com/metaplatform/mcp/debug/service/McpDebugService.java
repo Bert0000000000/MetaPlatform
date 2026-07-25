@@ -6,10 +6,14 @@ import com.metaplatform.mcp.common.ErrorCode;
 import com.metaplatform.mcp.common.PageResponse;
 import com.metaplatform.mcp.common.TenantContext;
 import com.metaplatform.mcp.common.TraceContext;
+import com.metaplatform.mcp.debug.dto.BreakpointResponse;
+import com.metaplatform.mcp.debug.dto.CreateBreakpointRequest;
 import com.metaplatform.mcp.debug.dto.DebugCompareResponse;
 import com.metaplatform.mcp.debug.dto.DebugExecuteRequest;
 import com.metaplatform.mcp.debug.dto.DebugSessionResponse;
+import com.metaplatform.mcp.debug.entity.McpDebugBreakpointEntity;
 import com.metaplatform.mcp.debug.entity.McpDebugSessionEntity;
+import com.metaplatform.mcp.debug.repository.McpDebugBreakpointRepository;
 import com.metaplatform.mcp.debug.repository.McpDebugSessionRepository;
 import com.metaplatform.mcp.exception.McpException;
 import com.metaplatform.mcp.jsonrpc.JsonRpcController;
@@ -51,6 +55,7 @@ public class McpDebugService {
     private final McpServerRepository serverRepository;
     private final JsonRpcController jsonRpcController;
     private final ObjectMapper objectMapper;
+    private final McpDebugBreakpointRepository debugBreakpointRepository;
 
     @Transactional
     public DebugSessionResponse execute(DebugExecuteRequest request) {
@@ -150,6 +155,48 @@ public class McpDebugService {
                 .build();
     }
 
+    @Transactional
+    public BreakpointResponse addBreakpoint(UUID sessionId, CreateBreakpointRequest request) {
+        String tenantId = TenantContext.getOrDefault();
+        debugSessionRepository.findByIdAndTenantId(sessionId, tenantId)
+                .orElseThrow(() -> new McpException(ErrorCode.DEBUG_SESSION_NOT_FOUND, "调试会话不存在"));
+
+        Instant now = Instant.now();
+        McpDebugBreakpointEntity entity = McpDebugBreakpointEntity.builder()
+                .tenantId(tenantId)
+                .sessionId(sessionId)
+                .toolId(request.getToolId())
+                .condition(request.getCondition())
+                .enabled(request.getEnabled() == null ? Boolean.TRUE : request.getEnabled())
+                .createdAt(now)
+                .updatedAt(now)
+                .build();
+        return toBreakpointResponse(debugBreakpointRepository.save(entity));
+    }
+
+    @Transactional
+    public void removeBreakpoint(UUID sessionId, UUID breakpointId) {
+        String tenantId = TenantContext.getOrDefault();
+        debugSessionRepository.findByIdAndTenantId(sessionId, tenantId)
+                .orElseThrow(() -> new McpException(ErrorCode.DEBUG_SESSION_NOT_FOUND, "调试会话不存在"));
+        McpDebugBreakpointEntity breakpoint = debugBreakpointRepository.findByIdAndTenantId(breakpointId, tenantId)
+                .orElseThrow(() -> new McpException(ErrorCode.BREAKPOINT_NOT_FOUND, "调试断点不存在"));
+        if (!breakpoint.getSessionId().equals(sessionId)) {
+            throw new McpException(ErrorCode.BREAKPOINT_NOT_FOUND, "断点不属于该调试会话");
+        }
+        debugBreakpointRepository.delete(breakpoint);
+    }
+
+    @Transactional(readOnly = true)
+    public List<BreakpointResponse> listBreakpoints(UUID sessionId) {
+        String tenantId = TenantContext.getOrDefault();
+        debugSessionRepository.findByIdAndTenantId(sessionId, tenantId)
+                .orElseThrow(() -> new McpException(ErrorCode.DEBUG_SESSION_NOT_FOUND, "调试会话不存在"));
+        return debugBreakpointRepository
+                .findBySessionIdAndTenantIdOrderByCreatedAtAsc(sessionId, tenantId)
+                .stream().map(this::toBreakpointResponse).toList();
+    }
+
     private void validateResources(DebugExecuteRequest request, String tenantId) {
         if (request.getToolId() != null) {
             McpToolEntity tool = toolRepository.findByIdAndDeletedAtIsNull(request.getToolId())
@@ -240,6 +287,18 @@ public class McpDebugService {
                 .errorMessage(entity.getErrorMessage())
                 .breakpoint(entity.getBreakpoint())
                 .traceId(entity.getTraceId())
+                .createdAt(entity.getCreatedAt())
+                .updatedAt(entity.getUpdatedAt())
+                .build();
+    }
+
+    private BreakpointResponse toBreakpointResponse(McpDebugBreakpointEntity entity) {
+        return BreakpointResponse.builder()
+                .id(entity.getId())
+                .sessionId(entity.getSessionId())
+                .toolId(entity.getToolId())
+                .condition(entity.getCondition())
+                .enabled(entity.getEnabled())
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())
                 .build();

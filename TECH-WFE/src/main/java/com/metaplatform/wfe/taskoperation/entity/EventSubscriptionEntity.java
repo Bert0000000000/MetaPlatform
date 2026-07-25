@@ -18,25 +18,27 @@ import java.time.Instant;
 @AllArgsConstructor
 public class EventSubscriptionEntity {
 
-    @Id
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "id", nullable = false, length = 64)
     private String id;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "tenant_id", nullable = false, length = 64)
     private String tenantId;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "user_id", nullable = false, length = 64)
     private String userId;
 
-    @Lob
-    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "event_types", nullable = false, columnDefinition = "jsonb")
     private String eventTypes;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "callback_url", nullable = false, length = 2048)
     private String callbackUrl;
 
-    @Column(nullable = false)
+    @Column(name = "enabled", nullable = false)
     private Boolean enabled;
 
     @Column(name = "created_at", nullable = false)
@@ -44,4 +46,5 @@ public class EventSubscriptionEntity {
 
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
+
 }

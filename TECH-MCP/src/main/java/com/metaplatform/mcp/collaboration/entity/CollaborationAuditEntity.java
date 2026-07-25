@@ -8,6 +8,8 @@ import lombok.NoArgsConstructor;
 
 import java.time.Instant;
 import java.util.UUID;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "mcp_collaboration_audit")
@@ -22,6 +24,7 @@ public class CollaborationAuditEntity {
     private UUID id;
 
     @Column(name = "tenant_id", nullable = false, length = 64)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String tenantId;
 
     @Column(name = "caller_id", nullable = false, length = 256)
@@ -49,6 +52,7 @@ public class CollaborationAuditEntity {
     private Long durationMs;
 
     @Column(name = "request_payload", columnDefinition = "TEXT")
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String requestPayload;
 
     @Column(name = "response_payload", columnDefinition = "TEXT")

@@ -4,6 +4,11 @@
  *
  * Mate 内部封装 - 基于 FlowGram.AI 官方 fixed-layout-simple demo。
  * 把 editor.tsx 抽出来作为一个简单的 `<FlowgramEditor />` 容器。
+ *
+ * v1.4 R1.5 Sprint 1 升级：
+ * - 在 mount 时调用 ensureFlowgramThemeStyle() 注入 9 个 --g-* CSS 变量覆盖
+ *
+ * 注：Semi 2.80 的 ConfigProvider 没有 `theme` prop，所以只通过 CSS 变量控制。
  */
 import React from 'react';
 import {
@@ -21,6 +26,8 @@ import { Tools } from './components/tools';
 import { NodeAddPanel } from './components/node-add-panel';
 import { Minimap } from './components/minimap';
 import { FlowSelect } from './components/flow-select';
+import { ensureFlowgramThemeStyle } from './theme-injector';
+import { FlowgramErrorBoundary } from './flowgram-error-boundary';
 
 export interface FlowgramEditorProps {
   initialData: FlowDocumentJSON;
@@ -85,6 +92,12 @@ export const FlowgramEditor: React.FC<FlowgramEditorProps> = (props) => {
     hidePalette,
     onChange,
   } = props;
+
+  // v1.4 R1.5 Sprint 1: mount 时幂等注入 9 个 --g-* CSS 变量覆盖层
+  React.useEffect(() => {
+    ensureFlowgramThemeStyle();
+  }, []);
+
   const editorProps = React.useMemo(
     () => buildEditorProps(initialData, nodeRegistries, onChange),
     [initialData, nodeRegistries, onChange]
@@ -97,25 +110,27 @@ export const FlowgramEditor: React.FC<FlowgramEditorProps> = (props) => {
     [paletteGroups, nodeRegistries]
   );
   return (
-    <FixedLayoutEditorProvider {...editorProps}>
-      <div className="demo-fixed-container">
-        <div className="demo-fixed-layout">
-          {!hidePalette && !hideTools ? (
-            <NodeAddPanel categories={groups} />
-          ) : null}
-          <EditorRenderer className="demo-fixed-editor">{/* 子级面板位置 */}</EditorRenderer>
+    <FlowgramErrorBoundary>
+      <FixedLayoutEditorProvider {...editorProps}>
+        <div className="demo-fixed-container">
+          <div className="demo-fixed-layout">
+            {!hidePalette && !hideTools ? (
+              <NodeAddPanel categories={groups} />
+            ) : null}
+            <EditorRenderer className="demo-fixed-editor">{/* 子级面板位置 */}</EditorRenderer>
+          </div>
         </div>
-      </div>
-      {!hideTools ? (
-        <>
-          <Tools />
-          {props.flowSelectOptions && props.flowSelectOptions.length > 0 ? (
-            <FlowSelect options={props.flowSelectOptions} />
-          ) : null}
-          <Minimap />
-        </>
-      ) : null}
-    </FixedLayoutEditorProvider>
+        {!hideTools ? (
+          <>
+            <Tools />
+            {props.flowSelectOptions && props.flowSelectOptions.length > 0 ? (
+              <FlowSelect options={props.flowSelectOptions} />
+            ) : null}
+            <Minimap />
+          </>
+        ) : null}
+      </FixedLayoutEditorProvider>
+    </FlowgramErrorBoundary>
   );
 };
 

@@ -1,43 +1,45 @@
 package com.metaplatform.wfe.apphub.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
-import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
+import java.util.Map;
 
-/**
- * 应用发布操作日志实体（V14-05）：记录每次发布变更的时间、操作人、动作与备注。
- */
 @Entity
 @Table(name = "wfe_app_release_log")
-@Getter
-@Setter
+@Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 public class AppReleaseLogEntity {
 
-    @Id
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "id", nullable = false, length = 64)
     private String id;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "release_id", nullable = false, length = 64)
     private String releaseId;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "action", nullable = false, length = 64)
     private String action;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "operator", length = 64)
     private String operator;
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "remark", columnDefinition = "TEXT")
-    private String remark;
+    private Map<String, Object> remark;
 
-    @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @Column(name = "created_at", nullable = false)
     private Instant createdAt;
+
 }

@@ -4,6 +4,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
+import java.util.Map;
+
 @Data
 public class CreateActionDefinitionRequest {
 
@@ -21,11 +23,11 @@ public class CreateActionDefinitionRequest {
     @NotBlank(message = "url 不能为空")
     private String url;
 
-    private String headers;
+    private Map<String, Object> headers;
 
     @NotNull(message = "inputSchema 不能为空")
-    private String inputSchema;
+    private Map<String, Object> inputSchema;
 
     @NotNull(message = "outputSchema 不能为空")
-    private String outputSchema;
+    private Map<String, Object> outputSchema;
 }

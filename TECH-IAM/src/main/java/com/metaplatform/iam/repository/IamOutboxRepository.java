@@ -12,5 +12,5 @@ public interface IamOutboxRepository extends JpaRepository<IamOutboxEntity, Stri
     /**
      * 查询所有指定状态的消息，按创建时间升序排列（FIFO 投递）。
      */
-    List<IamOutboxEntity> findByStatusOrderByCreatedAtAsc(String status);
+    List<IamOutboxEntity> findByStatusOrderByCreatedAtAsc(IamOutboxEntity.Status status);
 }

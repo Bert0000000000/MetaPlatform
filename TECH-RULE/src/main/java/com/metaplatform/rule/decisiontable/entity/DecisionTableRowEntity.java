@@ -5,11 +5,10 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.type.SqlTypes;
 
+import java.util.Map;
 import java.time.Instant;
 
 @Entity
@@ -20,39 +19,36 @@ import java.time.Instant;
 @AllArgsConstructor
 public class DecisionTableRowEntity {
 
-    @Id
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "id", nullable = false, length = 64)
     private String id;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "table_id", nullable = false, length = 64)
     private String tableId;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "tenant_id", nullable = false, length = 64)
     private String tenantId;
 
-    @Column(name = "row_order")
-    @Builder.Default
-    private Integer rowOrder = 0;
+    @Column(name = "row_order", nullable = false)
+    private Integer rowOrder;
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "input_values", columnDefinition = "jsonb")
-    @Builder.Default
-    private String inputValues = "{}";
+    @Column(name = "input_values", nullable = false, columnDefinition = "jsonb")
+    private Map<String, Object> inputValues;
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "output_values", columnDefinition = "jsonb")
-    @Builder.Default
-    private String outputValues = "{}";
+    @Column(name = "output_values", nullable = false, columnDefinition = "jsonb")
+    private Map<String, Object> outputValues;
 
     @Column(name = "enabled", nullable = false)
-    @Builder.Default
-    private Boolean enabled = true;
+    private Boolean enabled;
 
-    @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
-    @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
+
 }

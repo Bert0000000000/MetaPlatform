@@ -1,6 +1,5 @@
 package com.metaplatform.wfe.apphub.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.metaplatform.wfe.apphub.dto.ReleaseApprovalCompleteRequest;
 import com.metaplatform.wfe.apphub.dto.ReleaseApprovalStartRequest;
 import com.metaplatform.wfe.apphub.entity.*;
@@ -16,16 +15,18 @@ import com.metaplatform.wfe.dto.TaskActionResponse;
 import com.metaplatform.wfe.dto.TaskResponse;
 import com.metaplatform.wfe.entity.ProcessDefinitionEntity;
 import com.metaplatform.wfe.entity.ProcessDefinitionStatus;
+import com.metaplatform.wfe.entity.ProcessInstanceEntity;
+import com.metaplatform.wfe.entity.ProcessInstanceStatus;
+import com.metaplatform.wfe.entity.WfeTaskEntity;
 import com.metaplatform.wfe.exception.WfeException;
 import com.metaplatform.wfe.repository.ProcessDefinitionRepository;
+import com.metaplatform.wfe.repository.ProcessInstanceRepository;
+import com.metaplatform.wfe.repository.WfeTaskRepository;
 import com.metaplatform.wfe.service.ProcessDefinitionService;
 import com.metaplatform.wfe.service.ProcessInstanceService;
 import com.metaplatform.wfe.service.WfeTaskService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.flowable.engine.HistoryService;
-import org.flowable.engine.history.HistoricProcessInstance;
-import org.flowable.task.api.history.HistoricTaskInstance;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -50,7 +51,8 @@ public class ReleaseApprovalProcessService {
     private final ProcessDefinitionRepository processDefinitionRepository;
     private final ProcessInstanceService processInstanceService;
     private final WfeTaskService wfeTaskService;
-    private final HistoryService historyService;
+    private final WfeTaskRepository wfeTaskRepository;
+    private final ProcessInstanceRepository processInstanceRepository;
     private final AppReleaseRepository appReleaseRepository;
     private final AppReleaseLogRepository appReleaseLogRepository;
 
@@ -118,7 +120,7 @@ public class ReleaseApprovalProcessService {
         DeployRequest deployRequest = new DeployRequest();
         deployRequest.setProcessKey(PROCESS_KEY);
         deployRequest.setName(PROCESS_NAME);
-        deployRequest.setBpmnXml(bpmnXml);
+        deployRequest.setBpmnXml(java.util.Map.of("xml", bpmnXml));
         return processDefinitionService.deploy(deployRequest).getId();
     }
 
@@ -142,15 +144,20 @@ public class ReleaseApprovalProcessService {
     }
 
     private void finishReleaseIfProcessEnded(String processInstanceId, boolean approved, String comment) {
-        HistoricProcessInstance hpi = historyService.createHistoricProcessInstanceQuery()
-                .processInstanceId(processInstanceId)
-                .singleResult();
-        if (hpi == null || hpi.getEndTime() == null) {
+        // 改用自研状态机的 ProcessInstanceRepository 检查流程是否结束
+        Optional<ProcessInstanceEntity> instanceOpt = processInstanceRepository.findById(processInstanceId);
+        if (instanceOpt.isEmpty()) {
+            return;
+        }
+        ProcessInstanceStatus status = instanceOpt.get().getStatus();
+        // 流程仍在运行（还有后续审批节点），不更新发布状态
+        if (status == ProcessInstanceStatus.RUNNING) {
             return;
         }
 
-        boolean reallyApproved = approved
-                && (hpi.getDeleteReason() == null || !hpi.getDeleteReason().startsWith("REJECTED"));
+        // 流程正常完成（COMPLETED）且 approved 为真 → 真正批准
+        // 流程被终止（TERMINATED，REJECT 触发）→ 发布已驳回
+        boolean reallyApproved = approved && status == ProcessInstanceStatus.COMPLETED;
 
         appReleaseRepository.findByProcessInstanceId(processInstanceId).ifPresent(release -> {
             if (release.getStatus() != AppReleaseStatus.PENDING_APPROVAL) {
@@ -170,20 +177,22 @@ public class ReleaseApprovalProcessService {
     }
 
     private String resolveTaskName(String taskId) {
-        HistoricTaskInstance hti = historyService.createHistoricTaskInstanceQuery()
-                .taskId(taskId)
-                .singleResult();
-        return hti != null ? hti.getName() : "审批任务";
+        // 从自研任务表查询任务名
+        return wfeTaskRepository.findById(taskId)
+                .map(WfeTaskEntity::getName)
+                .orElse("审批任务");
     }
 
     private void saveLog(String releaseId, String action, String operator, String remark) {
+        Map<String, Object> remarkMap = new HashMap<>();
+        remarkMap.put("text", remark == null ? "" : remark);
         try {
             AppReleaseLogEntity logEntity = AppReleaseLogEntity.builder()
                     .id(java.util.UUID.randomUUID().toString())
                     .releaseId(releaseId)
                     .action(action)
                     .operator(operator)
-                    .remark(remark)
+                    .remark(remarkMap)
                     .build();
             appReleaseLogRepository.save(logEntity);
         } catch (Exception e) {

@@ -1,23 +1,136 @@
 spring:
+  cloud:
+    compatibility-verifier:
+      enabled: false
+    nacos:
+      discovery:
+        enabled: false
+      config:
+        enabled: false
+  config:
+    import: []
+  autoconfigure:
+    exclude:
+      - com.alibaba.cloud.nacos.registry.NacosServiceRegistryAutoConfiguration
+      - com.alibaba.cloud.nacos.discovery.NacosDiscoveryAutoConfiguration
+      - com.alibaba.cloud.nacos.NacosConfigAutoConfiguration
+      - org.springframework.cloud.autoconfigure.RefreshAutoConfiguration
+      - org.springframework.cloud.context.refresh.ContextRefresherAutoConfiguration
+      - com.alibaba.cloud.ai.agent.nacos.config.NacosAgentConfig
+      - com.alibaba.cloud.ai.autoconfigure.nacosconfig.NacosConfigAutoConfiguration
+      - com.alibaba.cloud.ai.autoconfigure.nacos.NacosMcServerAutoConfiguration
+      - com.alibaba.cloud.ai.a2a.autoconfigure.nacos.NacosA2aDiscoveryAutoConfiguration
+      - com.alibaba.cloud.ai.a2a.autoconfigure.nacos.NacosA2aRegistryAutoConfiguration
+      - org.springframework.ai.vectorstore.milvus.autoconfigure.MilvusVectorStoreAutoConfiguration
+      - org.springframework.ai.mcp.server.common.autoconfigure.McpServerAutoConfiguration
+      - org.springframework.ai.mcp.server.common.autoconfigure.annotations.McpServerSpecificationFactoryAutoConfiguration
+      - org.springframework.ai.mcp.server.common.autoconfigure.annotations.McpServerAnnotationScannerAutoConfiguration
+      - org.springframework.ai.mcp.client.autoconfigure.McpClientAutoConfiguration
+  ai:
+    dashscope:
+      api-key: ${DASHSCOPE_API_KEY:sk-placeholder-for-dev-only-not-real}
+
   datasource:
     url: jdbc:postgresql://localhost:5432/metaplatform_mcp
-    username: ${DB_USERNAME:meta}
-    password: ${DB_PASSWORD:meta}
+    username: meta
+    password: meta
     driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 4
+      minimum-idle: 0
+      connection-timeout: 5000
+      initialization-fail-timeout: -1
+
   jpa:
     hibernate:
       ddl-auto: validate
-    show-sql: true
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
-  flyway:
-    enabled: true
-    locations: classpath:db/migration
-    baseline-on-migrate: true
 
+  flyway:
+    enabled: false
+
+# 开发环境跳过内置角色种子（permissions JSON 字段由生产化迁移负责）
 mcp:
-  builtin:
-    ont-base-url: ${ONT_BASE_URL:http://localhost:8201}
-    rag-base-url: ${RAG_BASE_URL:http://localhost:8901}
-    action-base-url: ${ACTION_BASE_URL:http://localhost:8104}
+  init:
+    builtin-roles:
+      skip: true
+
+server:
+  port: 8105
+
+# ─── Spring AI MCP SDK ───
+spring.ai.mcp:
+  server:
+    enabled: false
+  client:
+    enabled: false
+
+# ─── Spring Boot Actuator + OTel ───
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  endpoint:
+    health:
+      show-details: always
+  tracing:
+    sampling:
+      probability: 1.0
+  otlp:
+    tracing:
+      endpoint: ${OTLP_ENDPOINT:http://localhost:4318/v1/traces}
+  metrics:
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+        mcp.tool.execute: true
+
+# ─── Mate Platform 自定义配置 ───
+mate:
+  data:
+    data-encryption-key: ${DATA_ENCRYPTION_KEY:metaplatform-data-key-2026-must-be-32bytes!}
+  mcp:
+    builtin:
+      ont-base-url: ${ONT_BASE_URL:http://localhost:8201}
+      rag-base-url: ${RAG_BASE_URL:http://localhost:8901}
+      action-base-url: ${ACTION_BASE_URL:http://localhost:8104}
+    # MCP Nacos 3.0+ Registry（自研封装）
+    nacos:
+      registry-enabled: ${MCP_NACOS_REGISTRY_ENABLED:true}
+      namespace: metaplatform
+      mcp-server-group: mcp-servers
+      mcp-tool-group: mcp-tools
+    # JSON-RPC 协议
+    protocol:
+      version: "2025-03-26"
+      max-message-size: 10485760  # 10MB
+      request-timeout-seconds: 30
+    # Tool 配置缓存（Redis）
+    cache:
+      tool-config-ttl-seconds: 300
+    # Tool 并发限流（Redis 分布式信号量）
+    rate-limit:
+      enabled: true
+    # Alert 评估调度
+    alert:
+      enabled: true
+      scan-interval-ms: 60000
+    # 健康检查调度
+    health-check:
+      enabled: true
+      interval-seconds: 30
+      timeout-ms: 5000
+    # 审计
+    audit:
+      aop-enabled: true
+      kafka-outbox-enabled: true
+      outbox-topic: ${MCP_AUDIT_TOPIC:mcp-audit-events}
+    # IAM 鉴权
+    iam:
+      enabled: ${IAM_ENABLED:false}
+      base-url: ${IAM_BASE_URL:http://localhost:8101}
+      api-key-header: X-API-Key
+      tenant-header: X-Tenant-Id

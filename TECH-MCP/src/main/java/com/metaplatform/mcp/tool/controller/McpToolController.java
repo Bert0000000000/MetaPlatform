@@ -7,6 +7,7 @@ import com.metaplatform.mcp.tool.dto.McpToolListItem;
 import com.metaplatform.mcp.tool.dto.McpToolResponse;
 import com.metaplatform.mcp.tool.dto.McpToolVersionCompareResponse;
 import com.metaplatform.mcp.tool.dto.McpToolVersionResponse;
+import com.metaplatform.mcp.tool.dto.ToolStatsResponse;
 import com.metaplatform.mcp.tool.dto.UpdateMcpToolRequest;
 import com.metaplatform.mcp.tool.service.McpToolService;
 import jakarta.validation.Valid;
@@ -65,6 +66,16 @@ public class McpToolController {
     @PostMapping("/{id}/disable")
     public ApiResponse<McpToolResponse> disable(@PathVariable UUID id) {
         return ApiResponse.success(mcpToolService.disable(id));
+    }
+
+    @PostMapping("/{id}/publish")
+    public ApiResponse<McpToolResponse> publish(@PathVariable UUID id) {
+        return ApiResponse.success(mcpToolService.publish(id));
+    }
+
+    @GetMapping("/stats")
+    public ApiResponse<ToolStatsResponse> stats() {
+        return ApiResponse.success(mcpToolService.stats());
     }
 
     @GetMapping("/{id}/versions")

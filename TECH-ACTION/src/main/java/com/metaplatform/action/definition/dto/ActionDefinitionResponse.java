@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.Instant;
+import java.util.Map;
 
 @Data
 @Builder
@@ -19,9 +20,9 @@ public class ActionDefinitionResponse {
     private String description;
     private String method;
     private String url;
-    private String headers;
-    private String inputSchema;
-    private String outputSchema;
+    private Map<String, Object> headers;
+    private Map<String, Object> inputSchema;
+    private Map<String, Object> outputSchema;
     private String status;
     private Integer version;
     private String createdBy;

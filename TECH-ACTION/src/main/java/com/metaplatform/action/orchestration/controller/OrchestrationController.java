@@ -1,6 +1,7 @@
 package com.metaplatform.action.orchestration.controller;
 
 import com.metaplatform.action.common.ApiResponse;
+import java.util.Map;
 import com.metaplatform.action.common.PageResponse;
 import com.metaplatform.action.orchestration.dto.CreateOrchestrationRequest;
 import com.metaplatform.action.orchestration.dto.OrchestrationExecutionResponse;
@@ -73,7 +74,7 @@ public class OrchestrationController {
 
     @PostMapping("/{id}/condition-rules")
     public ApiResponse<OrchestrationResponse> configureConditionRules(@PathVariable String id,
-                                                                      @RequestBody String ruleIntegration) {
+                                                                      @RequestBody Map<String, Object> ruleIntegration) {
         return ApiResponse.success(orchestrationService.configureConditionRules(id, ruleIntegration));
     }
 

@@ -5,13 +5,14 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
-import java.time.Instant;
 import java.util.UUID;
+import java.time.Instant;
 
 @Entity
-@Table(name = "ea_capability_role",
-        uniqueConstraints = @UniqueConstraint(columnNames = {"tenant_id", "capability_id", "role_id"}))
+@Table(name = "ea_capability_role")
 @Data
 @Builder
 @NoArgsConstructor
@@ -20,8 +21,10 @@ public class CapabilityRoleEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(name = "id", nullable = false)
     private UUID id;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "tenant_id", nullable = false, length = 64)
     private String tenantId;
 
@@ -31,9 +34,11 @@ public class CapabilityRoleEntity {
     @Column(name = "role_id", nullable = false)
     private UUID roleId;
 
-    @Column(nullable = false, length = 64)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "relationship", nullable = false, length = 64)
     private String relationship;
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
+
 }

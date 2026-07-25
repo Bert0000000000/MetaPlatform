@@ -9,14 +9,21 @@
  *   import { ALL_NODE_REGISTRIES, BPMN_REGISTRIES, AGENT_REGISTRIES } from '@mate/shared/components/flow';
  *
  *   <FlowgramEditor initialData={initialData} nodeRegistries={ALL_NODE_REGISTRIES} />
+ *
+ *   # 三场景统一编辑器（2026-07-24 R1 UI 优化）
+ *   import { FlowDesigner } from '@mate/shared/components/flow';
+ *   <FlowDesigner mode="bpmn" storageKey="process-bpmn-2026-q3" />
  */
 
 export { FlowgramEditor, type FlowgramEditorProps } from './flowgram-demo/editor';
 export { Tools as DemoTools } from './flowgram-demo/components/tools';
 export { Minimap as DemoMinimap } from './flowgram-demo/components/minimap';
 export { FlowSelect as DemoFlowSelect, type FlowSelectProps } from './flowgram-demo/components/flow-select';
-export { buildEditorProps } from './flowgram-demo/hooks/use-editor-props';
+export { buildEditorProps, buildEditorPropsWith, type BuildEditorPropsOptions } from './flowgram-demo/hooks/use-editor-props';
 export { useAddNode } from './flowgram-demo/hooks/use-add-node';
+export { ensureFlowgramThemeStyle, removeFlowgramThemeStyle } from './flowgram-demo/theme-injector';
+export { getSemiProviderProps, getMateSemiTheme, type SemiThemeMode } from './flowgram-demo/semi-theme';
+export { FlowgramErrorBoundary } from './flowgram-demo/flowgram-error-boundary';
 export {
   BPMN_NODE_REGISTRIES,
   AGENT_NODE_REGISTRIES,
@@ -42,5 +49,16 @@ export type {
   ThemeModeSetting,
   ResolvedThemeMode,
 } from './flow-types';
+
+// 三场景统一编辑器（2026-07-24 R1 UI 优化）
+export { FlowDesigner, type FlowDesignerProps } from './FlowDesigner';
+export {
+  BPMN_LEAVE_PRESET,
+  AGENT_REACT_PRESET,
+  BUSINESS_ORDER_AFTERSALE_PRESET,
+  FLOW_MODE_PRESETS,
+  FLOW_MODE_META,
+  type FlowMode,
+} from './presets';
 
 import './flowgram-demo/index.css';

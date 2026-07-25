@@ -18,6 +18,8 @@ public class RuleExecutionResult {
     private String ruleName;
     private boolean matched;
     private ActionInfo action;
+    /** 求值过程中的错误信息（非空表示规则表达式异常，matched 视为 false）。 */
+    private String errorMessage;
 
     @Data
     @Builder

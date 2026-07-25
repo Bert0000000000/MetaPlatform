@@ -1,30 +1,49 @@
 spring:
+  cloud:
+    compatibility-verifier:
+      enabled: false
+    nacos:
+      discovery:
+        enabled: false
+      config:
+        enabled: false
+  config:
+    import: []
+  autoconfigure:
+    exclude:
+      - com.alibaba.cloud.nacos.registry.NacosServiceRegistryAutoConfiguration
+      - com.alibaba.cloud.nacos.discovery.NacosDiscoveryAutoConfiguration
+      - com.alibaba.cloud.nacos.NacosConfigAutoConfiguration
+      - org.springframework.cloud.autoconfigure.RefreshAutoConfiguration
+      - org.springframework.cloud.context.refresh.ContextRefresherAutoConfiguration
+
+
   datasource:
     url: jdbc:postgresql://localhost:5432/metaplatform_msg
-    username: ${DB_USERNAME:meta}
-    password: ${DB_PASSWORD:meta}
+    username: meta
+    password: meta
     driver-class-name: org.postgresql.Driver
+
   jpa:
     hibernate:
-      ddl-auto: validate
-    show-sql: true
+      ddl-auto: update
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
+
   flyway:
     enabled: true
     locations: classpath:db/migration
     baseline-on-migrate: true
+  data:
+    redis:
+      host: localhost
+      port: 6379
   kafka:
-    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    bootstrap-servers: localhost:9092
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
-      retries: 3
-      acks: all
-    admin:
-      auto-create-topics: false
-
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
 app:
   msg:
     outbox:
@@ -37,3 +56,8 @@ app:
       dlq-topic: metaplatform.dlq
     consumer-group:
       monitor-interval-ms: 30000
+    realtime:
+      topics:
+        metrics: metaplatform.dashboard.metrics
+        notifications: metaplatform.dashboard.notifications
+        deliverables: metaplatform.dashboard.deliverables

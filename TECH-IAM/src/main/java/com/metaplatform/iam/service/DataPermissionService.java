@@ -205,20 +205,21 @@ public class DataPermissionService {
         return switch (dataScope) {
             case ALL -> "";
             case SELF -> "created_by = '" + userId + "'";
-            case DEPT -> {
+            case DEPARTMENT -> {
                 List<String> deptIds = getUserDeptIds(userId);
                 if (deptIds.isEmpty()) {
                     yield "created_by = '" + userId + "'";
                 }
                 yield "dept_id IN ('" + String.join("','", deptIds) + "')";
             }
-            case DEPT_AND_SUB -> {
+            case DEPARTMENT_TREE -> {
                 List<String> deptIds = getUserDeptAndSubDeptIds(userId);
                 if (deptIds.isEmpty()) {
                     yield "created_by = '" + userId + "'";
                 }
                 yield "dept_id IN ('" + String.join("','", deptIds) + "')";
             }
+            case CUSTOM -> "1=1";
         };
     }
 
@@ -250,9 +251,10 @@ public class DataPermissionService {
     private int rank(DataPermissionEntity.DataScope scope) {
         return switch (scope) {
             case ALL -> 4;
-            case DEPT_AND_SUB -> 3;
-            case DEPT -> 2;
+            case DEPARTMENT_TREE -> 3;
+            case DEPARTMENT -> 2;
             case SELF -> 1;
+            case CUSTOM -> 0;
         };
     }
 

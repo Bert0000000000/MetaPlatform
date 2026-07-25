@@ -4,15 +4,11 @@ import com.metaplatform.wfe.common.PageResponse;
 import com.metaplatform.wfe.common.TenantContext;
 import com.metaplatform.wfe.dto.DeployRequest;
 import com.metaplatform.wfe.dto.ProcessDefinitionResponse;
+import com.metaplatform.wfe.engine.converter.BpmnToFlowGramConverter;
 import com.metaplatform.wfe.entity.ProcessDefinitionEntity;
 import com.metaplatform.wfe.entity.ProcessDefinitionStatus;
 import com.metaplatform.wfe.exception.WfeException;
 import com.metaplatform.wfe.repository.ProcessDefinitionRepository;
-import org.flowable.engine.RepositoryService;
-import org.flowable.engine.repository.Deployment;
-import org.flowable.engine.repository.DeploymentBuilder;
-import org.flowable.engine.repository.ProcessDefinition;
-import org.flowable.engine.repository.ProcessDefinitionQuery;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -30,7 +26,6 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
@@ -42,7 +37,7 @@ class ProcessDefinitionServiceTest {
     private ProcessDefinitionRepository processDefinitionRepository;
 
     @Mock
-    private RepositoryService repositoryService;
+    private BpmnToFlowGramConverter bpmnToFlowGramConverter;
 
     @InjectMocks
     private ProcessDefinitionService processDefinitionService;
@@ -61,17 +56,6 @@ class ProcessDefinitionServiceTest {
         return request;
     }
 
-    private DeploymentBuilder mockDeploymentBuilder() {
-        DeploymentBuilder builder = mock(DeploymentBuilder.class);
-        Deployment deployment = mock(Deployment.class);
-        when(deployment.getId()).thenReturn("dep-001");
-        when(deployment.getName()).thenReturn("采购审批流程");
-        when(builder.name(anyString())).thenReturn(builder);
-        when(builder.addString(anyString(), anyString())).thenReturn(builder);
-        when(builder.deploy()).thenReturn(deployment);
-        return builder;
-    }
-
     @Test
     void deploy_shouldReturnDefinition_whenSuccess() {
         DeployRequest request = buildDeployRequest();
@@ -83,9 +67,8 @@ class ProcessDefinitionServiceTest {
         when(processDefinitionRepository.existsByTenantIdAndProcessKeyAndVersion(
                 TenantContext.DEFAULT_TENANT_ID, "purchase_approval", 1))
                 .thenReturn(false);
-
-        DeploymentBuilder builder = mockDeploymentBuilder();
-        when(repositoryService.createDeployment()).thenReturn(builder);
+        when(bpmnToFlowGramConverter.convert(request.getBpmnXml()))
+                .thenReturn("{\"nodes\":[]}");
 
         ProcessDefinitionEntity saved = ProcessDefinitionEntity.builder()
                 .id("pd-001")
@@ -94,6 +77,7 @@ class ProcessDefinitionServiceTest {
                 .name("采购审批流程")
                 .version(1)
                 .bpmnXml(request.getBpmnXml())
+                .flowgramJson("{\"nodes\":[]}")
                 .status(ProcessDefinitionStatus.DEPLOYED)
                 .build();
         when(processDefinitionRepository.save(any(ProcessDefinitionEntity.class))).thenReturn(saved);
@@ -105,8 +89,8 @@ class ProcessDefinitionServiceTest {
         assertThat(response.getName()).isEqualTo("采购审批流程");
         assertThat(response.getVersion()).isEqualTo(1);
         assertThat(response.getStatus()).isEqualTo("DEPLOYED");
-        verify(repositoryService).createDeployment();
-        verify(builder).deploy();
+        verify(bpmnToFlowGramConverter).convert(request.getBpmnXml());
+        verify(processDefinitionRepository).save(any(ProcessDefinitionEntity.class));
     }
 
     @Test
@@ -135,7 +119,8 @@ class ProcessDefinitionServiceTest {
                 .isInstanceOf(WfeException.class)
                 .hasMessageContaining("已存在");
 
-        verify(repositoryService, never()).createDeployment();
+        verify(bpmnToFlowGramConverter, never()).convert(anyString());
+        verify(processDefinitionRepository, never()).save(any(ProcessDefinitionEntity.class));
     }
 
     @Test
@@ -210,20 +195,13 @@ class ProcessDefinitionServiceTest {
                 "pd-001", ProcessDefinitionStatus.DELETED))
                 .thenReturn(Optional.of(entity));
 
-        ProcessDefinitionQuery query = mock(ProcessDefinitionQuery.class);
-        ProcessDefinition flowablePd = mock(ProcessDefinition.class);
-        when(repositoryService.createProcessDefinitionQuery()).thenReturn(query);
-        when(query.processDefinitionKey(anyString())).thenReturn(query);
-        when(query.latestVersion()).thenReturn(query);
-        when(query.singleResult()).thenReturn(flowablePd);
-        when(flowablePd.getId()).thenReturn("flowable-pd-001");
-
         when(processDefinitionRepository.save(any(ProcessDefinitionEntity.class))).thenReturn(entity);
 
         ProcessDefinitionResponse response = processDefinitionService.suspend("pd-001");
 
         assertThat(response.getStatus()).isEqualTo("SUSPENDED");
-        verify(repositoryService).suspendProcessDefinitionById("flowable-pd-001");
+        assertThat(entity.getStatus()).isEqualTo(ProcessDefinitionStatus.SUSPENDED);
+        verify(processDefinitionRepository).save(entity);
     }
 
     @Test
@@ -237,20 +215,13 @@ class ProcessDefinitionServiceTest {
                 "pd-001", ProcessDefinitionStatus.DELETED))
                 .thenReturn(Optional.of(entity));
 
-        ProcessDefinitionQuery query = mock(ProcessDefinitionQuery.class);
-        ProcessDefinition flowablePd = mock(ProcessDefinition.class);
-        when(repositoryService.createProcessDefinitionQuery()).thenReturn(query);
-        when(query.processDefinitionKey(anyString())).thenReturn(query);
-        when(query.latestVersion()).thenReturn(query);
-        when(query.singleResult()).thenReturn(flowablePd);
-        when(flowablePd.getId()).thenReturn("flowable-pd-001");
-
         when(processDefinitionRepository.save(any(ProcessDefinitionEntity.class))).thenReturn(entity);
 
         ProcessDefinitionResponse response = processDefinitionService.activate("pd-001");
 
         assertThat(response.getStatus()).isEqualTo("DEPLOYED");
-        verify(repositoryService).activateProcessDefinitionById("flowable-pd-001");
+        assertThat(entity.getStatus()).isEqualTo(ProcessDefinitionStatus.DEPLOYED);
+        verify(processDefinitionRepository).save(entity);
     }
 
     @Test
@@ -264,30 +235,16 @@ class ProcessDefinitionServiceTest {
                 "pd-001", ProcessDefinitionStatus.DELETED))
                 .thenReturn(Optional.of(entity));
 
-        ProcessDefinitionQuery query = mock(ProcessDefinitionQuery.class);
-        ProcessDefinition flowablePd = mock(ProcessDefinition.class);
-        when(repositoryService.createProcessDefinitionQuery()).thenReturn(query);
-        when(query.processDefinitionKey(anyString())).thenReturn(query);
-        when(query.latestVersion()).thenReturn(query);
-        when(query.singleResult()).thenReturn(flowablePd);
-        when(flowablePd.getDeploymentId()).thenReturn("dep-001");
-
         when(processDefinitionRepository.save(any(ProcessDefinitionEntity.class))).thenReturn(entity);
 
         processDefinitionService.delete("pd-001");
 
         assertThat(entity.getStatus()).isEqualTo(ProcessDefinitionStatus.DELETED);
-        verify(repositoryService).deleteDeployment("dep-001");
         verify(processDefinitionRepository).save(entity);
     }
 
     @Test
-    void delete_shouldThrow409_whenAlreadyDeleted() {
-        ProcessDefinitionEntity entity = ProcessDefinitionEntity.builder()
-                .id("pd-001").tenantId(TenantContext.DEFAULT_TENANT_ID)
-                .processKey("purchase_approval").name("采购审批流程").version(1)
-                .bpmnXml("<bpmn/>").status(ProcessDefinitionStatus.DELETED).build();
-
+    void delete_shouldThrow404_whenAlreadyDeleted() {
         when(processDefinitionRepository.findByIdAndStatusNot(
                 "pd-001", ProcessDefinitionStatus.DELETED))
                 .thenReturn(Optional.empty());

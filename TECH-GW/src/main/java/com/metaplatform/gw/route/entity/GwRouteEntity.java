@@ -1,15 +1,14 @@
 package com.metaplatform.gw.route.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Entity
 @Table(name = "gw_route")
@@ -19,25 +18,31 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class GwRouteEntity {
 
-    @Id
-    @Column(name = "id", length = 64)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "id", nullable = false, length = 64)
     private String id;
 
-    @Column(name = "tenant_id", length = 64, nullable = false)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "tenant_id", nullable = false, length = 64)
     private String tenantId;
 
-    @Column(name = "route_id", length = 128, nullable = false)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "route_id", nullable = false, length = 128)
     private String routeId;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "name", length = 128)
     private String name;
 
-    @Column(name = "uri", length = 256, nullable = false)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "uri", nullable = false, length = 256)
     private String uri;
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "predicates", columnDefinition = "TEXT")
     private String predicates;
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "filters", columnDefinition = "TEXT")
     private String filters;
 
@@ -47,9 +52,10 @@ public class GwRouteEntity {
     @Column(name = "enabled")
     private Boolean enabled;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+    @Column(name = "created_at", nullable = false)
+    private Instant createdAt;
 
     @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
+    private Instant updatedAt;
+
 }

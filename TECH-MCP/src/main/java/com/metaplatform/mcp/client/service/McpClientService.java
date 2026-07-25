@@ -232,6 +232,18 @@ public class McpClientService {
         return getDiscoveredTools(id);
     }
 
+    @Transactional
+    public McpClientResponse refresh(UUID id) {
+        testConnection(id);
+        discoverTools(id);
+        return toResponse(findById(id));
+    }
+
+    @Transactional
+    public List<McpToolListItem> sync(UUID id) {
+        return discoverTools(id);
+    }
+
     McpClientConnectionEntity findById(UUID id) {
         String tenantId = TenantContext.getOrDefault();
         return clientRepository.findByIdAndDeletedAtIsNull(id)

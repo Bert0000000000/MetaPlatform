@@ -1,0 +1,46 @@
+package com.metaplatform.data.repository;
+
+import com.metaplatform.data.entity.EtlTaskEntity;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import java.util.Optional;
+
+/**
+ * ETL 任务仓储。
+ */
+@Repository
+public interface EtlTaskRepository extends JpaRepository<EtlTaskEntity, String> {
+
+    /**
+     * 按租户 + ID 查询。
+     */
+    Optional<EtlTaskEntity> findByIdAndTenantId(String id, String tenantId);
+
+    /**
+     * 按租户分页查询。
+     */
+    Page<EtlTaskEntity> findByTenantId(String tenantId, Pageable pageable);
+
+    /**
+     * 按租户 + 状态分页查询。
+     */
+    Page<EtlTaskEntity> findByTenantIdAndStatus(String tenantId, String status, Pageable pageable);
+
+    /**
+     * 按租户 + 引擎分页查询。
+     */
+    Page<EtlTaskEntity> findByTenantIdAndEngine(String tenantId, String engine, Pageable pageable);
+
+    /**
+     * 按租户 + 创建时间倒序分页查询。
+     */
+    Page<EtlTaskEntity> findByTenantIdOrderByCreatedAtDesc(String tenantId, Pageable pageable);
+
+    /**
+     * 校验唯一性：(tenant_id, name) 是否已存在。
+     */
+    boolean existsByTenantIdAndName(String tenantId, String name);
+}

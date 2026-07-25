@@ -1,17 +1,18 @@
 package com.metaplatform.wfe.service;
 
 import com.metaplatform.wfe.common.PageResponse;
+import com.metaplatform.wfe.common.TenantContext;
 import com.metaplatform.wfe.dto.TaskActionRequest;
 import com.metaplatform.wfe.dto.TaskActionResponse;
 import com.metaplatform.wfe.dto.TaskResponse;
+import com.metaplatform.wfe.engine.WfeStateMachineEngine;
+import com.metaplatform.wfe.entity.WfeTaskEntity;
+import com.metaplatform.wfe.entity.WfeTaskHistoryEntity;
 import com.metaplatform.wfe.exception.WfeException;
-import org.flowable.engine.HistoryService;
-import org.flowable.engine.RuntimeService;
-import org.flowable.engine.TaskService;
-import org.flowable.task.api.Task;
-import org.flowable.task.api.TaskQuery;
-import org.flowable.task.api.history.HistoricTaskInstance;
-import org.flowable.task.api.history.HistoricTaskInstanceQuery;
+import com.metaplatform.wfe.repository.WfeTaskCommentRepository;
+import com.metaplatform.wfe.repository.WfeTaskHistoryRepository;
+import com.metaplatform.wfe.repository.WfeTaskRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -19,17 +20,20 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 
-import java.util.Date;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.Mockito.*;
 
@@ -38,13 +42,16 @@ import static org.mockito.Mockito.*;
 class WfeTaskServiceTest {
 
     @Mock
-    private TaskService taskService;
+    private WfeTaskRepository wfeTaskRepository;
 
     @Mock
-    private HistoryService historyService;
+    private WfeTaskHistoryRepository wfeTaskHistoryRepository;
 
     @Mock
-    private RuntimeService runtimeService;
+    private WfeTaskCommentRepository wfeTaskCommentRepository;
+
+    @Mock
+    private WfeStateMachineEngine wfeStateMachineEngine;
 
     @Mock
     private IamIntegrationService iamIntegrationService;
@@ -55,8 +62,10 @@ class WfeTaskServiceTest {
     @InjectMocks
     private WfeTaskService wfeTaskService;
 
-    @org.junit.jupiter.api.BeforeEach
+    @BeforeEach
     void setUp() {
+        TenantContext.clear();
+        TenantContext.set(TenantContext.DEFAULT_TENANT_ID);
         // P1-WFE-06: APPROVE 操作默认允许审批（userId 在测试上下文中可能为 null）
         when(iamIntegrationService.checkPermission(
                 anyString(), nullable(String.class), anyString(), anyString()))
@@ -69,31 +78,27 @@ class WfeTaskServiceTest {
 
     @Test
     void getTodoTasks_shouldReturnPage_whenUserHasTasks() {
-        Date now = new Date();
-        Task task1 = mock(Task.class);
-        when(task1.getId()).thenReturn("task-001");
-        when(task1.getName()).thenReturn("经理审批");
-        when(task1.getAssignee()).thenReturn("user-001");
-        when(task1.getProcessInstanceId()).thenReturn("pi-001");
-        when(task1.getProcessDefinitionId()).thenReturn("pd-001");
-        when(task1.getCreateTime()).thenReturn(now);
+        Instant now = Instant.now();
+        WfeTaskEntity task1 = WfeTaskEntity.builder()
+                .id("task-001").tenantId(TenantContext.DEFAULT_TENANT_ID)
+                .processInstanceId("pi-001").processDefinitionId("pd-001")
+                .nodeId("node-1").name("经理审批").assignee("user-001")
+                .status("ACTIVE").createdAt(now)
+                .build();
+        WfeTaskEntity task2 = WfeTaskEntity.builder()
+                .id("task-002").tenantId(TenantContext.DEFAULT_TENANT_ID)
+                .processInstanceId("pi-002").processDefinitionId("pd-001")
+                .nodeId("node-2").name("总监审批").assignee("user-001")
+                .status("ACTIVE").createdAt(now)
+                .build();
 
-        Task task2 = mock(Task.class);
-        when(task2.getId()).thenReturn("task-002");
-        when(task2.getName()).thenReturn("总监审批");
-        when(task2.getAssignee()).thenReturn("user-001");
-        when(task2.getProcessInstanceId()).thenReturn("pi-002");
-        when(task2.getProcessDefinitionId()).thenReturn("pd-001");
-        when(task2.getCreateTime()).thenReturn(now);
+        PageImpl<WfeTaskEntity> page = new PageImpl<>(
+                List.of(task1, task2), PageRequest.of(0, 20), 2);
 
-        TaskQuery query = mock(TaskQuery.class);
-        when(taskService.createTaskQuery()).thenReturn(query);
-        when(query.taskAssignee("user-001")).thenReturn(query);
-        when(query.active()).thenReturn(query);
-        when(query.orderByTaskCreateTime()).thenReturn(query);
-        when(query.desc()).thenReturn(query);
-        when(query.count()).thenReturn(2L);
-        when(query.listPage(0, 20)).thenReturn(List.of(task1, task2));
+        when(wfeTaskRepository.findByTenantIdAndAssigneeAndStatus(
+                eq(TenantContext.DEFAULT_TENANT_ID), eq("user-001"),
+                eq("ACTIVE"), any(PageRequest.class)))
+                .thenReturn(page);
 
         PageResponse<TaskResponse> result = wfeTaskService.getTodoTasks("user-001", 1, 20);
 
@@ -109,50 +114,45 @@ class WfeTaskServiceTest {
 
     @Test
     void getDoneTasks_shouldReturnPage_whenUserHasFinishedTasks() {
-        Date now = new Date();
-        HistoricTaskInstance histTask = mock(HistoricTaskInstance.class);
-        when(histTask.getId()).thenReturn("task-001");
-        when(histTask.getName()).thenReturn("经理审批");
-        when(histTask.getAssignee()).thenReturn("user-001");
-        when(histTask.getProcessInstanceId()).thenReturn("pi-001");
-        when(histTask.getProcessDefinitionId()).thenReturn("pd-001");
-        when(histTask.getCreateTime()).thenReturn(now);
-        when(histTask.getEndTime()).thenReturn(now);
+        Instant now = Instant.now();
+        WfeTaskHistoryEntity history = WfeTaskHistoryEntity.builder()
+                .id("hist-001").tenantId(TenantContext.DEFAULT_TENANT_ID)
+                .taskId("task-001").processInstanceId("pi-001")
+                .nodeId("node-1").name("经理审批").assignee("user-001")
+                .action("APPROVE").operator("user-001")
+                .comment("同意").createdAt(now)
+                .build();
 
-        HistoricTaskInstanceQuery query = mock(HistoricTaskInstanceQuery.class);
-        when(historyService.createHistoricTaskInstanceQuery()).thenReturn(query);
-        when(query.taskAssignee("user-001")).thenReturn(query);
-        when(query.finished()).thenReturn(query);
-        when(query.orderByHistoricTaskInstanceEndTime()).thenReturn(query);
-        when(query.desc()).thenReturn(query);
-        when(query.count()).thenReturn(1L);
-        when(query.listPage(0, 20)).thenReturn(List.of(histTask));
+        PageImpl<WfeTaskHistoryEntity> page = new PageImpl<>(
+                List.of(history), PageRequest.of(0, 20), 1);
+
+        when(wfeTaskHistoryRepository.findByTenantIdAndAssigneeAndActionIn(
+                eq(TenantContext.DEFAULT_TENANT_ID), eq("user-001"),
+                any(List.class), any(PageRequest.class)))
+                .thenReturn(page);
 
         PageResponse<TaskResponse> result = wfeTaskService.getDoneTasks("user-001", 1, 20);
 
         assertThat(result.getItems()).hasSize(1);
         assertThat(result.getTotal()).isEqualTo(1);
         assertThat(result.getItems().get(0).getId()).isEqualTo("task-001");
+        assertThat(result.getItems().get(0).getName()).isEqualTo("经理审批");
+        assertThat(result.getItems().get(0).getAssignee()).isEqualTo("user-001");
         assertThat(result.getItems().get(0).getStatus()).isEqualTo("COMPLETED");
         assertThat(result.getItems().get(0).getEndTime()).isNotNull();
     }
 
     @Test
-    void getTaskById_shouldReturnTask_whenExists() {
-        Date now = new Date();
-        HistoricTaskInstance histTask = mock(HistoricTaskInstance.class);
-        when(histTask.getId()).thenReturn("task-001");
-        when(histTask.getName()).thenReturn("经理审批");
-        when(histTask.getAssignee()).thenReturn("user-001");
-        when(histTask.getProcessInstanceId()).thenReturn("pi-001");
-        when(histTask.getProcessDefinitionId()).thenReturn("pd-001");
-        when(histTask.getCreateTime()).thenReturn(now);
-        when(histTask.getEndTime()).thenReturn(null);
+    void getTaskById_shouldReturnTask_whenExistsInTaskRepository() {
+        Instant now = Instant.now();
+        WfeTaskEntity task = WfeTaskEntity.builder()
+                .id("task-001").tenantId(TenantContext.DEFAULT_TENANT_ID)
+                .processInstanceId("pi-001").processDefinitionId("pd-001")
+                .nodeId("node-1").name("经理审批").assignee("user-001")
+                .status("ACTIVE").createdAt(now)
+                .build();
 
-        HistoricTaskInstanceQuery query = mock(HistoricTaskInstanceQuery.class);
-        when(historyService.createHistoricTaskInstanceQuery()).thenReturn(query);
-        when(query.taskId("task-001")).thenReturn(query);
-        when(query.singleResult()).thenReturn(histTask);
+        when(wfeTaskRepository.findById("task-001")).thenReturn(Optional.of(task));
 
         TaskResponse response = wfeTaskService.getTaskById("task-001");
 
@@ -161,14 +161,44 @@ class WfeTaskServiceTest {
         assertThat(response.getAssignee()).isEqualTo("user-001");
         assertThat(response.getProcessInstanceId()).isEqualTo("pi-001");
         assertThat(response.getStatus()).isEqualTo("ACTIVE");
+        assertThat(response.getEndTime()).isNull();
+
+        // 当活动任务表中能查到时，不应访问历史表
+        verify(wfeTaskHistoryRepository, never())
+                .findByTenantIdAndTaskIdOrderByCreatedAtDesc(anyString(), anyString());
+    }
+
+    @Test
+    void getTaskById_shouldReturnTask_whenFallbackToHistoryRepository() {
+        Instant now = Instant.now();
+        WfeTaskHistoryEntity history = WfeTaskHistoryEntity.builder()
+                .id("hist-001").tenantId(TenantContext.DEFAULT_TENANT_ID)
+                .taskId("task-001").processInstanceId("pi-001")
+                .nodeId("node-1").name("经理审批").assignee("user-001")
+                .action("APPROVE").operator("user-001")
+                .comment("同意").createdAt(now)
+                .build();
+
+        when(wfeTaskRepository.findById("task-001")).thenReturn(Optional.empty());
+        when(wfeTaskHistoryRepository.findByTenantIdAndTaskIdOrderByCreatedAtDesc(
+                TenantContext.DEFAULT_TENANT_ID, "task-001"))
+                .thenReturn(List.of(history));
+
+        TaskResponse response = wfeTaskService.getTaskById("task-001");
+
+        assertThat(response.getId()).isEqualTo("task-001");
+        assertThat(response.getName()).isEqualTo("经理审批");
+        // 历史记录统一标记为 COMPLETED
+        assertThat(response.getStatus()).isEqualTo("COMPLETED");
+        assertThat(response.getEndTime()).isNotNull();
     }
 
     @Test
     void getTaskById_shouldThrow404_whenNotFound() {
-        HistoricTaskInstanceQuery query = mock(HistoricTaskInstanceQuery.class);
-        when(historyService.createHistoricTaskInstanceQuery()).thenReturn(query);
-        when(query.taskId("nonexistent")).thenReturn(query);
-        when(query.singleResult()).thenReturn(null);
+        when(wfeTaskRepository.findById("nonexistent")).thenReturn(Optional.empty());
+        when(wfeTaskHistoryRepository.findByTenantIdAndTaskIdOrderByCreatedAtDesc(
+                TenantContext.DEFAULT_TENANT_ID, "nonexistent"))
+                .thenReturn(List.of());
 
         assertThatThrownBy(() -> wfeTaskService.getTaskById("nonexistent"))
                 .isInstanceOf(WfeException.class)
@@ -177,31 +207,23 @@ class WfeTaskServiceTest {
 
     @Test
     void getTasksByProcessInstance_shouldReturnAllTasks() {
-        Date now = new Date();
-        HistoricTaskInstance task1 = mock(HistoricTaskInstance.class);
-        when(task1.getId()).thenReturn("task-001");
-        when(task1.getName()).thenReturn("经理审批");
-        when(task1.getAssignee()).thenReturn("user-001");
-        when(task1.getProcessInstanceId()).thenReturn("pi-001");
-        when(task1.getProcessDefinitionId()).thenReturn("pd-001");
-        when(task1.getCreateTime()).thenReturn(now);
-        when(task1.getEndTime()).thenReturn(now);
+        Instant now = Instant.now();
+        WfeTaskEntity task1 = WfeTaskEntity.builder()
+                .id("task-001").tenantId(TenantContext.DEFAULT_TENANT_ID)
+                .processInstanceId("pi-001").processDefinitionId("pd-001")
+                .nodeId("node-1").name("经理审批").assignee("user-001")
+                .status("COMPLETED").createdAt(now).completedAt(now)
+                .build();
+        WfeTaskEntity task2 = WfeTaskEntity.builder()
+                .id("task-002").tenantId(TenantContext.DEFAULT_TENANT_ID)
+                .processInstanceId("pi-001").processDefinitionId("pd-001")
+                .nodeId("node-2").name("总监审批").assignee("user-002")
+                .status("ACTIVE").createdAt(now)
+                .build();
 
-        HistoricTaskInstance task2 = mock(HistoricTaskInstance.class);
-        when(task2.getId()).thenReturn("task-002");
-        when(task2.getName()).thenReturn("总监审批");
-        when(task2.getAssignee()).thenReturn("user-002");
-        when(task2.getProcessInstanceId()).thenReturn("pi-001");
-        when(task2.getProcessDefinitionId()).thenReturn("pd-001");
-        when(task2.getCreateTime()).thenReturn(now);
-        when(task2.getEndTime()).thenReturn(null);
-
-        HistoricTaskInstanceQuery query = mock(HistoricTaskInstanceQuery.class);
-        when(historyService.createHistoricTaskInstanceQuery()).thenReturn(query);
-        when(query.processInstanceId("pi-001")).thenReturn(query);
-        when(query.orderByTaskCreateTime()).thenReturn(query);
-        when(query.desc()).thenReturn(query);
-        when(query.list()).thenReturn(List.of(task1, task2));
+        when(wfeTaskRepository.findByTenantIdAndProcessInstanceIdOrderByCreatedAtDesc(
+                TenantContext.DEFAULT_TENANT_ID, "pi-001"))
+                .thenReturn(List.of(task1, task2));
 
         List<TaskResponse> result = wfeTaskService.getTasksByProcessInstance("pi-001");
 
@@ -216,16 +238,13 @@ class WfeTaskServiceTest {
     // P1-WFE-05: 审批操作测试
     // ════════════════════════════════════════════
 
-    private Task mockTask(String taskId, String processInstanceId) {
-        Task task = mock(Task.class);
-        when(task.getId()).thenReturn(taskId);
-        when(task.getProcessInstanceId()).thenReturn(processInstanceId);
-
-        TaskQuery query = mock(TaskQuery.class);
-        when(taskService.createTaskQuery()).thenReturn(query);
-        when(query.taskId(taskId)).thenReturn(query);
-        when(query.singleResult()).thenReturn(task);
-        return task;
+    private WfeTaskEntity buildActiveTask() {
+        return WfeTaskEntity.builder()
+                .id("task-001").tenantId(TenantContext.DEFAULT_TENANT_ID)
+                .processInstanceId("pi-001").processDefinitionId("pd-001")
+                .nodeId("node-1").name("经理审批").assignee("user-001")
+                .status("ACTIVE")
+                .build();
     }
 
     @Test
@@ -234,15 +253,17 @@ class WfeTaskServiceTest {
         request.setAction("APPROVE");
         request.setComment("同意");
 
-        mockTask("task-001", "pi-001");
+        when(wfeTaskRepository.findByIdAndStatus("task-001", "ACTIVE"))
+                .thenReturn(Optional.of(buildActiveTask()));
 
         TaskActionResponse response = wfeTaskService.executeAction("task-001", request);
 
         assertThat(response.getTaskId()).isEqualTo("task-001");
         assertThat(response.getAction()).isEqualTo("APPROVE");
         assertThat(response.getStatus()).isEqualTo("SUCCESS");
-        verify(taskService).addComment("task-001", "pi-001", "同意");
-        verify(taskService).complete("task-001");
+        // 自研状态机引擎内部负责保存评论与历史，并推进流程
+        verify(wfeStateMachineEngine).completeTask(
+                eq("task-001"), eq("APPROVE"), nullable(String.class), eq("同意"), isNull());
     }
 
     @Test
@@ -251,14 +272,15 @@ class WfeTaskServiceTest {
         request.setAction("REJECT");
         request.setComment("金额超限");
 
-        mockTask("task-001", "pi-001");
+        when(wfeTaskRepository.findByIdAndStatus("task-001", "ACTIVE"))
+                .thenReturn(Optional.of(buildActiveTask()));
 
         TaskActionResponse response = wfeTaskService.executeAction("task-001", request);
 
         assertThat(response.getAction()).isEqualTo("REJECT");
         assertThat(response.getStatus()).isEqualTo("SUCCESS");
-        verify(taskService).addComment("task-001", "pi-001", "金额超限");
-        verify(runtimeService).deleteProcessInstance("pi-001", "REJECTED: 金额超限");
+        verify(wfeStateMachineEngine).completeTask(
+                eq("task-001"), eq("REJECT"), nullable(String.class), eq("金额超限"), isNull());
     }
 
     @Test
@@ -268,14 +290,20 @@ class WfeTaskServiceTest {
         request.setComment("请代为审批");
         request.setTransferTo("user-002");
 
-        mockTask("task-001", "pi-001");
+        WfeTaskEntity task = buildActiveTask();
+        when(wfeTaskRepository.findByIdAndStatus("task-001", "ACTIVE"))
+                .thenReturn(Optional.of(task));
 
         TaskActionResponse response = wfeTaskService.executeAction("task-001", request);
 
         assertThat(response.getAction()).isEqualTo("TRANSFER");
         assertThat(response.getStatus()).isEqualTo("SUCCESS");
-        verify(taskService).addComment("task-001", "pi-001", "请代为审批");
-        verify(taskService).setAssignee("task-001", "user-002");
+        // 转交不推进流程，只更新 assignee
+        verify(wfeTaskRepository).save(task);
+        assertThat(task.getAssignee()).isEqualTo("user-002");
+        // 状态机不应被调用（不推进流程）
+        verify(wfeStateMachineEngine, never()).completeTask(
+                anyString(), anyString(), anyString(), anyString(), any());
     }
 
     @Test
@@ -284,14 +312,17 @@ class WfeTaskServiceTest {
         request.setAction("RETURN");
         request.setComment("信息不完整");
 
-        mockTask("task-001", "pi-001");
+        when(wfeTaskRepository.findByIdAndStatus("task-001", "ACTIVE"))
+                .thenReturn(Optional.of(buildActiveTask()));
 
         TaskActionResponse response = wfeTaskService.executeAction("task-001", request);
 
         assertThat(response.getAction()).isEqualTo("RETURN");
         assertThat(response.getStatus()).isEqualTo("SUCCESS");
-        verify(taskService).addComment("task-001", "pi-001", "信息不完整");
-        verify(taskService).complete(eq("task-001"), any(Map.class));
+        // RETURN 通过 formData 携带 RETURN 标记推进流程
+        verify(wfeStateMachineEngine).completeTask(
+                eq("task-001"), eq("RETURN"), nullable(String.class),
+                eq("信息不完整"), eq(Map.of("action", "RETURN")));
     }
 
     @Test
@@ -304,7 +335,10 @@ class WfeTaskServiceTest {
                 .isInstanceOf(WfeException.class)
                 .hasMessageContaining("transferTo");
 
-        verify(taskService, never()).createTaskQuery();
+        // 参数校验失败前不应访问数据库
+        verify(wfeTaskRepository, never()).findByIdAndStatus(anyString(), anyString());
+        verify(wfeStateMachineEngine, never()).completeTask(
+                anyString(), anyString(), anyString(), anyString(), any());
     }
 
     @Test
@@ -313,14 +347,15 @@ class WfeTaskServiceTest {
         request.setAction("APPROVE");
         request.setComment("同意");
 
-        TaskQuery query = mock(TaskQuery.class);
-        when(taskService.createTaskQuery()).thenReturn(query);
-        when(query.taskId("nonexistent")).thenReturn(query);
-        when(query.singleResult()).thenReturn(null);
+        when(wfeTaskRepository.findByIdAndStatus("nonexistent", "ACTIVE"))
+                .thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> wfeTaskService.executeAction("nonexistent", request))
                 .isInstanceOf(WfeException.class)
                 .hasMessageContaining("任务不存在");
+
+        verify(wfeStateMachineEngine, never()).completeTask(
+                anyString(), anyString(), anyString(), anyString(), any());
     }
 
     @Test
@@ -348,13 +383,15 @@ class WfeTaskServiceTest {
         request.setAction("APPROVE");
         request.setComment("同意");
 
-        mockTask("task-001", "pi-001");
+        when(wfeTaskRepository.findByIdAndStatus("task-001", "ACTIVE"))
+                .thenReturn(Optional.of(buildActiveTask()));
 
         assertThatThrownBy(() -> wfeTaskService.executeAction("task-001", request))
                 .isInstanceOf(WfeException.class)
                 .hasMessageContaining("无审批权限");
 
-        verify(taskService, never()).complete(anyString());
+        verify(wfeStateMachineEngine, never()).completeTask(
+                anyString(), anyString(), anyString(), anyString(), any());
     }
 
     @Test
@@ -363,7 +400,8 @@ class WfeTaskServiceTest {
         request.setAction("APPROVE");
         request.setComment("同意");
 
-        mockTask("task-001", "pi-001");
+        when(wfeTaskRepository.findByIdAndStatus("task-001", "ACTIVE"))
+                .thenReturn(Optional.of(buildActiveTask()));
 
         wfeTaskService.executeAction("task-001", request);
 
@@ -377,7 +415,8 @@ class WfeTaskServiceTest {
         request.setAction("REJECT");
         request.setComment("拒绝");
 
-        mockTask("task-001", "pi-001");
+        when(wfeTaskRepository.findByIdAndStatus("task-001", "ACTIVE"))
+                .thenReturn(Optional.of(buildActiveTask()));
 
         wfeTaskService.executeAction("task-001", request);
 

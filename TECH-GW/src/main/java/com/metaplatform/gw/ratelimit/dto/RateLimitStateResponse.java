@@ -5,7 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Data
 @Builder
@@ -16,6 +16,6 @@ public class RateLimitStateResponse {
     private String ruleId;
     private String previousStatus;
     private String currentStatus;
-    private LocalDateTime updatedAt;
+    private Instant updatedAt;
     private String updatedBy;
 }

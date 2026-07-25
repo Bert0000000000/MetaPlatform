@@ -17,7 +17,7 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -37,7 +37,7 @@ public class AlertRuleService {
                 throw new AlertRuleException(ErrorCode.INVALID_FIELD_VALUE);
             }
 
-            LocalDateTime now = LocalDateTime.now();
+            Instant now = Instant.now();
             GwAuditAlertRuleEntity entity = GwAuditAlertRuleEntity.builder()
                     .id(UUID.randomUUID())
                     .tenantId(TenantContext.resolveOrDefault(request.getTenantId()))
@@ -97,7 +97,7 @@ public class AlertRuleService {
             if (request.getThresholdRps() != null) entity.setThresholdRps(request.getThresholdRps());
             if (request.getEnabled() != null) entity.setEnabled(request.getEnabled());
             if (request.getNotificationConfig() != null) entity.setNotificationConfig(request.getNotificationConfig());
-            entity.setUpdatedAt(LocalDateTime.now());
+            entity.setUpdatedAt(Instant.now());
             entity = repository.save(entity);
             return AlertRuleResponse.fromEntity(entity);
         }).subscribeOn(Schedulers.boundedElastic());
@@ -107,7 +107,7 @@ public class AlertRuleService {
         return Mono.fromRunnable(() -> {
             GwAuditAlertRuleEntity entity = repository.findByIdAndDeletedAtIsNull(id)
                     .orElseThrow(() -> new AlertRuleException(ErrorCode.NOT_FOUND));
-            entity.setDeletedAt(LocalDateTime.now());
+            entity.setDeletedAt(Instant.now());
             repository.save(entity);
         }).subscribeOn(Schedulers.boundedElastic()).then();
     }

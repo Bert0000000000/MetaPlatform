@@ -11,6 +11,15 @@
       href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap"
       rel="stylesheet"
     />
+    <!--
+      @ant-design/x@2.8.0 (antd 6 的传递依赖) 的 CodeHighlighter 在模块顶层
+      同步读取 `Prism` 全局；react-syntax-highlighter 用的是 refractor（Prism 兼容）
+      而非 prismjs。注入一个空对象兜底，避免 Uncaught ReferenceError。
+    -->
+    <script>
+      window.Prism = window.Prism || {};
+      window.Prism.manual = true;
+    </script>
   </head>
   <body>
     <div id="root"></div>

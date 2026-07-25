@@ -1,16 +1,15 @@
 package com.metaplatform.gw.audit.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
-import java.time.LocalDateTime;
 import java.util.UUID;
+import java.time.Instant;
 
 @Entity
 @Table(name = "gw_audit_log")
@@ -21,18 +20,22 @@ import java.util.UUID;
 public class GwAuditLogEntity {
 
     @Id
-    @Column(name = "id")
+    @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(name = "id", nullable = false)
     private UUID id;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "tenant_id", length = 64)
     private String tenantId;
 
     @Column(name = "api_id")
     private UUID apiId;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "path", length = 512)
     private String path;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "method", length = 16)
     private String method;
 
@@ -48,21 +51,26 @@ public class GwAuditLogEntity {
     @Column(name = "duration_ms", nullable = false)
     private Long durationMs;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "user_id", length = 64)
     private String userId;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "trace_id", length = 64)
     private String traceId;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "client_ip", length = 64)
     private String clientIp;
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "error_message", columnDefinition = "TEXT")
     private String errorMessage;
 
     @Column(name = "is_error")
     private Boolean isError;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+    @Column(name = "created_at", nullable = false)
+    private Instant createdAt;
+
 }

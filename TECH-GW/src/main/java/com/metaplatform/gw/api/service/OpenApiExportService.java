@@ -87,8 +87,8 @@ public class OpenApiExportService {
             if (entity.getDescription() != null) {
                 operation.put("description", entity.getDescription());
             }
-            if (entity.getParameters() != null && !entity.getParameters().isEmpty()) {
-                operation.put("parameters", entity.getParameters());
+            if (entity.getParameters().toString() != null && !entity.getParameters().toString().isEmpty()) {
+                operation.put("parameters", entity.getParameters().toString());
             }
             Map<String, Object> requestBody = buildRequestBody(entity);
             if (requestBody != null) {
@@ -111,16 +111,16 @@ public class OpenApiExportService {
 
     @SuppressWarnings("unchecked")
     private Map<String, Object> buildRequestBody(GwApiEntity entity) {
-        if (entity.getRequestSchema() == null || entity.getRequestSchema().isEmpty()) {
+        if (entity.getRequestSchema().toString() == null || entity.getRequestSchema().toString().isEmpty()) {
             return null;
         }
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("required", true);
         Map<String, Object> content = new LinkedHashMap<>();
         Map<String, Object> schema = new LinkedHashMap<>();
-        schema.put("schema", entity.getRequestSchema());
-        if (entity.getExamples() != null && !entity.getExamples().isEmpty()) {
-            schema.put("examples", entity.getExamples());
+        schema.put("schema", entity.getRequestSchema().toString());
+        if (entity.getExamples().toString() != null && !entity.getExamples().toString().isEmpty()) {
+            schema.put("examples", entity.getExamples().toString());
         }
         content.put("application/json", schema);
         body.put("content", content);
@@ -131,15 +131,15 @@ public class OpenApiExportService {
         Map<String, Object> responses = new LinkedHashMap<>();
         Map<String, Object> ok = new LinkedHashMap<>();
         ok.put("description", "Successful operation");
-        if (entity.getResponseSchema() != null && !entity.getResponseSchema().isEmpty()) {
+        if (entity.getResponseSchema().toString() != null && !entity.getResponseSchema().toString().isEmpty()) {
             Map<String, Object> content = new LinkedHashMap<>();
-            content.put("application/json", Map.of("schema", entity.getResponseSchema()));
+            content.put("application/json", Map.of("schema", entity.getResponseSchema().toString()));
             ok.put("content", content);
-            schemas.put(safeId(entity) + "Response", entity.getResponseSchema());
+            schemas.put(safeId(entity) + "Response", entity.getResponseSchema().toString());
         }
         responses.put("200", ok);
-        if (entity.getRequestSchema() != null && !entity.getRequestSchema().isEmpty()) {
-            schemas.put(safeId(entity) + "Request", entity.getRequestSchema());
+        if (entity.getRequestSchema().toString() != null && !entity.getRequestSchema().toString().isEmpty()) {
+            schemas.put(safeId(entity) + "Request", entity.getRequestSchema().toString());
         }
         return responses;
     }

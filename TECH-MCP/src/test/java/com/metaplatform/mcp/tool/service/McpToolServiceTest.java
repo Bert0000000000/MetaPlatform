@@ -1,6 +1,7 @@
 package com.metaplatform.mcp.tool.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.metaplatform.mcp.audit.repository.McpAuditLogRepository;
 import com.metaplatform.mcp.common.ErrorCode;
 import com.metaplatform.mcp.common.PageResponse;
 import com.metaplatform.mcp.exception.McpException;
@@ -9,6 +10,7 @@ import com.metaplatform.mcp.tool.dto.McpToolListItem;
 import com.metaplatform.mcp.tool.dto.McpToolResponse;
 import com.metaplatform.mcp.tool.dto.McpToolVersionCompareResponse;
 import com.metaplatform.mcp.tool.dto.McpToolVersionResponse;
+import com.metaplatform.mcp.tool.dto.ToolStatsResponse;
 import com.metaplatform.mcp.tool.dto.UpdateMcpToolRequest;
 import com.metaplatform.mcp.tool.entity.McpToolEntity;
 import com.metaplatform.mcp.tool.entity.McpToolVersionEntity;
@@ -29,6 +31,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -40,13 +43,15 @@ class McpToolServiceTest {
     private McpToolVersionRepository mcpToolVersionRepository;
     @Mock
     private McpToolCategoryRepository mcpToolCategoryRepository;
+    @Mock
+    private McpAuditLogRepository mcpAuditLogRepository;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
     private McpToolService mcpToolService;
 
     @BeforeEach
     void setUp() {
-        mcpToolService = new McpToolService(mcpToolRepository, mcpToolVersionRepository, mcpToolCategoryRepository, objectMapper);
+        mcpToolService = new McpToolService(mcpToolRepository, mcpToolVersionRepository, mcpToolCategoryRepository, mcpAuditLogRepository, objectMapper);
     }
 
     private McpToolEntity toolEntity(String code, String toolType, boolean enabled) {
@@ -65,6 +70,7 @@ class McpToolServiceTest {
                 .endpoint("http://example.com")
                 .beanClass(null)
                 .enabled(enabled)
+                .status("DRAFT")
                 .createdAt(now)
                 .updatedAt(now)
                 .build();
@@ -306,5 +312,67 @@ class McpToolServiceTest {
         McpToolVersionCompareResponse compare = mcpToolService.compareVersions(toolId, leftId, rightId);
 
         assertThat(compare.getDifferences()).contains("description", "schema");
+    }
+
+    @Test
+    void publish_tool_success() {
+        UUID id = UUID.randomUUID();
+        McpToolEntity entity = toolEntity("t1", "HTTP", true);
+        when(mcpToolRepository.findByIdAndDeletedAtIsNull(id)).thenReturn(Optional.of(entity));
+        when(mcpToolRepository.save(any(McpToolEntity.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        McpToolResponse response = mcpToolService.publish(id);
+
+        assertThat(response.getStatus()).isEqualTo("PUBLISHED");
+        assertThat(response.getPublishedAt()).isNotNull();
+    }
+
+    @Test
+    void publish_already_published_throws() {
+        UUID id = UUID.randomUUID();
+        McpToolEntity entity = toolEntity("t1", "HTTP", true);
+        entity.setStatus("PUBLISHED");
+        when(mcpToolRepository.findByIdAndDeletedAtIsNull(id)).thenReturn(Optional.of(entity));
+
+        assertThatThrownBy(() -> mcpToolService.publish(id))
+                .isInstanceOf(McpException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.STATE_CONFLICT);
+    }
+
+    @Test
+    void publish_disabled_tool_throws() {
+        UUID id = UUID.randomUUID();
+        McpToolEntity entity = toolEntity("t1", "HTTP", false);
+        when(mcpToolRepository.findByIdAndDeletedAtIsNull(id)).thenReturn(Optional.of(entity));
+
+        assertThatThrownBy(() -> mcpToolService.publish(id))
+                .isInstanceOf(McpException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.TOOL_NOT_ENABLED);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void stats_returns_aggregated_data() {
+        when(mcpToolRepository.countByTenantIdAndDeletedAtIsNull("tenant-default")).thenReturn(10L);
+        when(mcpToolRepository.countByTenantIdAndEnabledTrueAndDeletedAtIsNull("tenant-default")).thenReturn(7L);
+        when(mcpToolRepository.countByTenantIdAndEnabledFalseAndDeletedAtIsNull("tenant-default")).thenReturn(3L);
+        when(mcpToolRepository.countByStatus("tenant-default"))
+                .thenReturn(List.of(new Object[]{"DRAFT", 5L}, new Object[]{"PUBLISHED", 5L}));
+        when(mcpToolRepository.countByCategory("tenant-default"))
+                .thenReturn(List.of(new Object[]{"default", 8L}, new Object[]{"advanced", 2L}));
+        when(mcpAuditLogRepository.countByTool(eq("tenant-default"), any(), any()))
+                .thenReturn(List.of(new Object[]{"tool_a", 100L}, new Object[]{"tool_b", 50L}));
+
+        ToolStatsResponse stats = mcpToolService.stats();
+
+        assertThat(stats.getTotal()).isEqualTo(10L);
+        assertThat(stats.getEnabledCount()).isEqualTo(7L);
+        assertThat(stats.getDisabledCount()).isEqualTo(3L);
+        assertThat(stats.getByStatus()).containsEntry("DRAFT", 5L).containsEntry("PUBLISHED", 5L);
+        assertThat(stats.getByCategory()).containsEntry("default", 8L);
+        assertThat(stats.getTopToolsByCalls7d()).hasSize(2);
+        assertThat(stats.getTopToolsByCalls7d().get(0).getToolCode()).isEqualTo("tool_a");
     }
 }

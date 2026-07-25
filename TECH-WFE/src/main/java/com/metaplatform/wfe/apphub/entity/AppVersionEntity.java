@@ -1,72 +1,73 @@
 package com.metaplatform.wfe.apphub.entity;
 
 import jakarta.persistence.*;
-import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
 
-/**
- * 应用版本实体（V11-08）：记录 APP-APPHUB 中每个应用的版本快照、变更日志与生命周期状态。
- * 状态流转：DRAFT -> PUBLISHED -> OFFLINE；ROLLBACK 用于标识因回滚产生的版本。
- */
 @Entity
-@Table(name = "wfe_app_version",
-        uniqueConstraints = @UniqueConstraint(
-                name = "uk_wfe_appv_tenant_app_version",
-                columnNames = {"tenant_id", "app_id", "version"}))
-@Getter
-@Setter
+@Table(name = "wfe_app_version")
+@Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 public class AppVersionEntity {
 
-    @Id
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "id", nullable = false, length = 64)
     private String id;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "tenant_id", nullable = false, length = 64)
     private String tenantId;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "app_id", nullable = false, length = 64)
     private String appId;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "version", nullable = false, length = 64)
     private String version;
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "change_log", columnDefinition = "TEXT")
     private String changeLog;
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "snapshot", nullable = false, columnDefinition = "TEXT")
     private String snapshot;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "status", nullable = false, length = 32)
-    @Enumerated(EnumType.STRING)
-    @Builder.Default
-    private AppVersionStatus status = AppVersionStatus.DRAFT;
+    private AppVersionStatus status;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "published_by", length = 64)
     private String publishedBy;
 
     @Column(name = "published_at")
     private Instant publishedAt;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "rolled_back_by", length = 64)
     private String rolledBackBy;
 
     @Column(name = "rolled_back_at")
     private Instant rolledBackAt;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "created_by", length = 64)
     private String createdBy;
 
-    @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
-    @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
+
 }

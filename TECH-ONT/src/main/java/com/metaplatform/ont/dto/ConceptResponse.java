@@ -27,6 +27,7 @@ public class ConceptResponse {
     private Integer level;
     private String path;
     private String status;
+    private Boolean enabled;
     private List<String> attributeIds;
     private Long entityCount;
     private Long childCount;

@@ -8,12 +8,11 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
-import java.time.Instant;
 import java.util.UUID;
+import java.time.Instant;
 
 @Entity
-@Table(name = "ea_data_asset",
-        uniqueConstraints = @UniqueConstraint(columnNames = {"tenant_id", "code"}))
+@Table(name = "ea_data_asset")
 @Data
 @Builder
 @NoArgsConstructor
@@ -22,40 +21,39 @@ public class DataAssetEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(name = "id", nullable = false)
     private UUID id;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "tenant_id", nullable = false, length = 64)
     private String tenantId;
 
-    @Column(nullable = false, length = 256)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "name", nullable = false, length = 256)
     private String name;
 
-    @Column(nullable = false, length = 128)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "code", nullable = false, length = 128)
     private String code;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "asset_type", nullable = false, length = 64)
     private String assetType;
 
-    @Column(columnDefinition = "TEXT")
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 
     @Column(name = "entity_id")
     private UUID entityId;
 
-    @Column(length = 64)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "classification", length = 64)
     private String classification;
 
-    @Lob
-    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    @Column(columnDefinition = "jsonb")
-    @Builder.Default
-    private String metadata = "{}";
-
-    @Lob
-    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    @Column(columnDefinition = "jsonb")
-    @Builder.Default
-    private String tags = "[]";
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "metadata", columnDefinition = "jsonb")
+    private String metadata;
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
@@ -65,4 +63,9 @@ public class DataAssetEntity {
 
     @Column(name = "deleted_at")
     private Instant deletedAt;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "tags", columnDefinition = "jsonb")
+    private String tags;
+
 }

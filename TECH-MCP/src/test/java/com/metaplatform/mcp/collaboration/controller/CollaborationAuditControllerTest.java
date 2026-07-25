@@ -1,5 +1,9 @@
 package com.metaplatform.mcp.collaboration.controller;
 
+import com.metaplatform.mcp.IamTestConfig;
+import org.springframework.context.annotation.Import;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+
 import com.metaplatform.mcp.collaboration.dto.CollaborationAuditResponse;
 import com.metaplatform.mcp.collaboration.service.CollaborationAuditService;
 import com.metaplatform.mcp.common.PageResponse;
@@ -21,6 +25,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+@Import(IamTestConfig.class)
+@AutoConfigureMockMvc(addFilters = false)
 @WebMvcTest(CollaborationAuditController.class)
 class CollaborationAuditControllerTest {
 

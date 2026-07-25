@@ -1,0 +1,89 @@
+server:
+  port: 8502
+
+spring:
+  application:
+    name: mate-a2a-server
+
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/metaplatform_a2a?stringtype=varchar
+    username: ${DB_USER:meta}
+    password: ${DB_PASSWORD:meta}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        type:
+          preferred_jdbc_type_code_for_string: 12
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: false
+    open-in-view: false
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+
+  cloud:
+    nacos:
+      discovery:
+        server-addr: ${NACOS_ADDR:localhost:8848}
+        namespace: metaplatform
+        # Nacos 3.0+ gRPC 端口
+        grpc-port: 9848
+      config:
+        server-addr: ${NACOS_ADDR:localhost:8848}
+        # Nacos 3.0+ Config 走 9849
+        grpc-port: 9849
+        namespace: metaplatform
+        file-extension: yaml
+  config:
+    import:
+      - optional:nacos:${spring.application.name}.yaml
+
+  ai:
+    alibaba:
+      a2a:
+        nacos:
+          enabled: true
+          server-addr: ${NACOS_ADDR:localhost:8848}
+          namespace: metaplatform
+          username: ${NACOS_USERNAME:nacos}
+          password: ${NACOS_PASSWORD:nacos}
+          registry:
+            group: a2a-agents
+            agent-card-ttl: 30000
+
+  kafka:
+    bootstrap-servers: ${KAFKA_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+    consumer:
+      group-id: mate-a2a-server
+      auto-offset-reset: latest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+
+# 上游服务地址（空字符串启用 mock 模式）
+mate:
+  a2a:
+    # 外部 A2A Agent 基础地址（JSON-RPC tasks/send 调用）
+    agent-base-url: ${AGENT_BASE_URL:http://localhost:8501}
+    agent-timeout: 30s
+    # TECH-AGENT 服务基础地址（路由到 Agent 执行）
+    agent-service-base-url: ${AGENT_SERVICE_BASE_URL:http://localhost:8511}
+    agent-service-timeout: 30s
+    # TECH-WFE 服务基础地址（路由到工作流执行）
+    wfe-base-url: ${WFE_BASE_URL:http://localhost:8801}
+    wfe-timeout: 30s
+    # JWT 配置
+    jwt-secret: ${JWT_SECRET:metaplatform-jwt-secret-key-2026}
+    jwt-algorithm: HS256
+    # 心跳超时秒数
+    heartbeat-timeout-seconds: 60
+    # Kafka topic：A2A 协议事件发布
+    kafka-topic: a2a-protocol-events

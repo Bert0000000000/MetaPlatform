@@ -21,7 +21,9 @@ import reactor.core.scheduler.Schedulers;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -70,7 +72,7 @@ public class RateLimitRuleService {
                 throw new RateLimitException(ErrorCode.RATE_LIMIT_ALREADY_EXISTS);
             }
 
-            LocalDateTime now = LocalDateTime.now();
+            Instant now = Instant.now();
             GwRateLimitRuleEntity entity = GwRateLimitRuleEntity.builder()
                     .id(UUID.randomUUID().toString())
                     .tenantId(tenantId)
@@ -188,7 +190,7 @@ public class RateLimitRuleService {
                     ? resolveQuotaAlertThreshold(request.getQuotaAlertThreshold())
                     : entity.getQuotaAlertThreshold());
             entity.setVersion(entity.getVersion() + 1);
-            entity.setUpdatedAt(LocalDateTime.now());
+            entity.setUpdatedAt(Instant.now());
             entity.setUpdatedBy(currentUser);
 
             entity = rateLimitRepository.save(entity);
@@ -200,7 +202,7 @@ public class RateLimitRuleService {
         return Mono.fromCallable(() -> {
             GwRateLimitRuleEntity entity = findActiveRule(ruleId);
             String currentUser = getCurrentUser();
-            LocalDateTime now = LocalDateTime.now();
+            Instant now = Instant.now();
 
             entity.setDeletedAt(now);
             entity.setUpdatedAt(now);
@@ -229,17 +231,18 @@ public class RateLimitRuleService {
             String previousStatus = entity.getStatus();
 
             entity.setStatus(request.getStatus());
-            entity.setUpdatedAt(LocalDateTime.now());
+            entity.setUpdatedAt(Instant.now());
             entity.setUpdatedBy(currentUser);
             rateLimitRepository.save(entity);
 
-            return RateLimitStateResponse.builder()
+            RateLimitStateResponse response = RateLimitStateResponse.builder()
                     .ruleId(entity.getRuleId())
                     .previousStatus(previousStatus)
                     .currentStatus(entity.getStatus())
                     .updatedAt(entity.getUpdatedAt())
                     .updatedBy(currentUser)
                     .build();
+            return response;
         }).subscribeOn(Schedulers.boundedElastic());
     }
 
@@ -252,7 +255,7 @@ public class RateLimitRuleService {
             }
 
             String currentUser = getCurrentUser();
-            LocalDateTime now = LocalDateTime.now();
+            Instant now = Instant.now();
 
             clearRedisCounters(entity.getRuleId(), resetType, request.getScopeId());
 
@@ -269,8 +272,8 @@ public class RateLimitRuleService {
     public Mono<RateLimitStatsResponse> getStats(String startTime, String endTime, String routeId,
                                                   String scope, String limitType, String granularity) {
         return Mono.fromCallable(() -> {
-            LocalDateTime start = parseIsoTime(startTime);
-            LocalDateTime end = parseIsoTime(endTime);
+            Instant start = parseIsoTime(startTime);
+            Instant end = parseIsoTime(endTime);
             if (start == null || end == null) {
                 throw new RateLimitException(ErrorCode.INVALID_PARAM);
             }
@@ -295,8 +298,8 @@ public class RateLimitRuleService {
     public Mono<RateLimitRuleStatsResponse> getRuleStats(String ruleId, String startTime, String endTime, String granularity) {
         return Mono.fromCallable(() -> {
             GwRateLimitRuleEntity entity = findActiveRule(ruleId);
-            LocalDateTime start = startTime != null ? parseIsoTime(startTime) : LocalDateTime.now().minusHours(24);
-            LocalDateTime end = endTime != null ? parseIsoTime(endTime) : LocalDateTime.now();
+            Instant start = startTime != null ? parseIsoTime(startTime) : Instant.now().minusSeconds(24 * 60 * 60);
+            Instant end = endTime != null ? parseIsoTime(endTime) : Instant.now();
             if (start == null || end == null || end.isBefore(start)) {
                 throw new RateLimitException(ErrorCode.INVALID_FIELD_VALUE);
             }
@@ -446,15 +449,15 @@ public class RateLimitRuleService {
         return Sort.by(direction, field);
     }
 
-    private LocalDateTime parseIsoTime(String time) {
+    private Instant parseIsoTime(String time) {
         if (time == null || time.isBlank()) {
             return null;
         }
         try {
-            return java.time.Instant.parse(time).atZone(java.time.ZoneId.systemDefault()).toLocalDateTime();
+            return Instant.parse(time);
         } catch (Exception e) {
             try {
-                return LocalDateTime.parse(time);
+                return LocalDateTime.parse(time).atZone(ZoneId.systemDefault()).toInstant();
             } catch (Exception ex) {
                 return null;
             }

@@ -8,12 +8,11 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
-import java.time.Instant;
 import java.util.UUID;
+import java.time.Instant;
 
 @Entity
-@Table(name = "ea_value_stream",
-        uniqueConstraints = @UniqueConstraint(columnNames = {"tenant_id", "code"}))
+@Table(name = "ea_value_stream")
 @Data
 @Builder
 @NoArgsConstructor
@@ -22,35 +21,32 @@ public class ValueStreamEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(name = "id", nullable = false)
     private UUID id;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "tenant_id", nullable = false, length = 64)
     private String tenantId;
 
-    @Column(nullable = false, length = 256)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "name", nullable = false, length = 256)
     private String name;
 
-    @Column(nullable = false, length = 128)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "code", nullable = false, length = 128)
     private String code;
 
-    @Column(columnDefinition = "TEXT")
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 
-    @Column(name = "trigger_event", length = 256)
-    private String triggerEvent;
-
-    @Column(name = "termination_event", length = 256)
-    private String terminationEvent;
-
-    @Lob
-    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "stages", columnDefinition = "jsonb")
-    @Builder.Default
-    private String stages = "[]";
+    private String stages;
 
-    @Column(nullable = false, length = 32)
-    @Builder.Default
-    private String status = "ACTIVE";
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "status", nullable = false, length = 32)
+    private String status;
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
@@ -60,4 +56,13 @@ public class ValueStreamEntity {
 
     @Column(name = "deleted_at")
     private Instant deletedAt;
+
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "trigger_event", length = 256)
+    private String triggerEvent;
+
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "termination_event", length = 256)
+    private String terminationEvent;
+
 }

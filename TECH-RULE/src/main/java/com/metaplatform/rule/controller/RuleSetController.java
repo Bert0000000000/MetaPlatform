@@ -5,7 +5,6 @@ import com.metaplatform.rule.common.PageResponse;
 import com.metaplatform.rule.dto.*;
 import com.metaplatform.rule.entity.RuleStatus;
 import com.metaplatform.rule.service.RuleEngineService;
-import com.metaplatform.rule.service.RuleExecutionService;
 import com.metaplatform.rule.service.RuleSetService;
 import com.metaplatform.rule.service.RuleSetVersionService;
 import jakarta.validation.Valid;
@@ -21,7 +20,6 @@ import java.util.Map;
 public class RuleSetController {
 
     private final RuleSetService ruleSetService;
-    private final RuleExecutionService ruleExecutionService;
     private final RuleEngineService ruleEngineService;
     private final RuleSetVersionService ruleSetVersionService;
 

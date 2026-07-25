@@ -8,13 +8,9 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
-import java.time.Instant;
 import java.util.UUID;
+import java.time.Instant;
 
-/**
- * Immutable snapshot of a business process. New revisions are inserted;
- * existing rows are never mutated.
- */
 @Entity
 @Table(name = "ea_business_process_version")
 @Data
@@ -25,8 +21,10 @@ public class BusinessProcessVersionEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(name = "id", nullable = false)
     private UUID id;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "tenant_id", nullable = false, length = 64)
     private String tenantId;
 
@@ -36,24 +34,23 @@ public class BusinessProcessVersionEntity {
     @Column(name = "version", nullable = false)
     private Integer version;
 
-    @Lob
-    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "process_steps", columnDefinition = "jsonb")
-    @Builder.Default
-    private String processSteps = "[]";
+    private String processSteps;
 
-    @Lob
-    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "flowchart", columnDefinition = "jsonb")
-    @Builder.Default
-    private String flowchart = "{}";
+    private String flowchart;
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "change_note", columnDefinition = "TEXT")
     private String changeNote;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "created_by", length = 128)
     private String createdBy;
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
+
 }

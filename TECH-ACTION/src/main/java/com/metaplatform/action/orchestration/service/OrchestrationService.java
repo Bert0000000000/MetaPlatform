@@ -20,6 +20,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -40,8 +42,8 @@ public class OrchestrationService {
         if (orchestrationRepository.existsByTenantIdAndCodeAndDeletedAtIsNull(tenantId, request.getCode())) {
             throw new ActionException(ErrorCode.ALREADY_EXISTS, "编排 code 在该租户下已存在");
         }
-        String nodes = normalizeJson(request.getNodes(), "[]");
-        String edges = normalizeJson(request.getEdges(), "[]");
+        Map<String, Object> nodes = normalizeMap(request.getNodes(), new HashMap<>());
+        Map<String, Object> edges = normalizeMap(request.getEdges(), new HashMap<>());
         graphValidator.validate(nodes, edges);
 
         String orchestrationId = "orch-" + UUID.randomUUID();
@@ -55,7 +57,7 @@ public class OrchestrationService {
                 .description(request.getDescription())
                 .nodes(nodes)
                 .edges(edges)
-                .ruleIntegration("{}")
+                .ruleIntegration(new HashMap<>())
                 .status(STATUS_DRAFT)
                 .version(1)
                 .createdBy(operator)
@@ -100,8 +102,8 @@ public class OrchestrationService {
             entity.setDescription(request.getDescription());
         }
         if (request.getNodes() != null || request.getEdges() != null) {
-            String nodes = normalizeJson(request.getNodes(), entity.getNodes());
-            String edges = normalizeJson(request.getEdges(), entity.getEdges());
+            Map<String, Object> nodes = request.getNodes() != null ? request.getNodes() : entity.getNodes();
+            Map<String, Object> edges = request.getEdges() != null ? request.getEdges() : entity.getEdges();
             graphValidator.validate(nodes, edges);
             entity.setNodes(nodes);
             entity.setEdges(edges);
@@ -155,10 +157,9 @@ public class OrchestrationService {
     }
 
     @Transactional
-    public OrchestrationResponse configureConditionRules(String id, String ruleIntegrationJson) {
+    public OrchestrationResponse configureConditionRules(String id, Map<String, Object> ruleIntegration) {
         OrchestrationEntity entity = findByOrchestrationId(id);
-        validateJson(ruleIntegrationJson, "ruleIntegration");
-        entity.setRuleIntegration(normalizeJson(ruleIntegrationJson, "{}"));
+        entity.setRuleIntegration(ruleIntegration != null ? ruleIntegration : new HashMap<>());
         entity.setVersion(entity.getVersion() + 1);
         entity.setUpdatedBy(currentOperator());
         entity.setUpdatedAt(Instant.now());
@@ -205,19 +206,8 @@ public class OrchestrationService {
         return "system";
     }
 
-    private void validateJson(String value, String field) {
-        if (value == null || value.isBlank()) {
-            return;
-        }
-        try {
-            objectMapper.readTree(value);
-        } catch (Exception e) {
-            throw new ActionException(ErrorCode.INVALID_PARAM, field + " 不是合法的 JSON");
-        }
-    }
-
-    private String normalizeJson(String value, String defaultValue) {
-        if (value == null || value.isBlank()) {
+    private Map<String, Object> normalizeMap(Map<String, Object> value, Map<String, Object> defaultValue) {
+        if (value == null || value.isEmpty()) {
             return defaultValue;
         }
         return value;

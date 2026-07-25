@@ -10,16 +10,29 @@ spring:
     show-sql: false
     properties:
       hibernate:
+        type:
+          preferred_jdbc_type_code_for_string: 12
         dialect: org.hibernate.dialect.PostgreSQLDialect
   flyway:
     enabled: true
     locations: classpath:db/migration
     baseline-on-migrate: true
   cloud:
+    nacos:
+      discovery:
+        server-addr: ${NACOS_ADDR:localhost:8848}
+        namespace: metaplatform
+      config:
+        server-addr: ${NACOS_ADDR:localhost:8848}
+        namespace: metaplatform
+        file-extension: yaml
     gateway:
       discovery:
         locator:
           enabled: false
+  config:
+    import:
+      - optional:nacos:${spring.application.name}.yaml
 
 app:
   jwt:

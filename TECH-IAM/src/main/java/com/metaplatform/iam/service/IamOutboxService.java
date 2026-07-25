@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.metaplatform.iam.entity.IamOutboxEntity;
+import com.metaplatform.iam.entity.IamOutboxEntity.Status;
 import com.metaplatform.iam.repository.IamOutboxRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,9 +39,6 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class IamOutboxService {
 
-    private static final String STATUS_PENDING = "PENDING";
-    private static final String STATUS_SENT = "SENT";
-    private static final String STATUS_FAILED = "FAILED";
     private static final String TOPIC_PREFIX = "metaplatform.";
     private static final String TRACE_ID_HEADER = "X-Trace-Id";
 
@@ -50,13 +48,6 @@ public class IamOutboxService {
 
     /**
      * 将事件写入 outbox 表（在调用方的业务事务内执行）。
-     *
-     * @param tenantId      租户 ID
-     * @param aggregateType 聚合根类型（如 "User"）
-     * @param aggregateId   聚合根 ID
-     * @param eventType     事件类型（如 "USER_REGISTERED"）
-     * @param payload       事件载荷（包含 userId、username、tenantId 等）
-     * @param headers       消息头（至少包含 X-Trace-Id）
      */
     @Transactional
     public void publishEvent(
@@ -67,41 +58,31 @@ public class IamOutboxService {
             Map<String, Object> payload,
             Map<String, String> headers) {
 
-        try {
-            String payloadJson = objectMapper.writeValueAsString(payload);
-            String headersJson = headers != null ? objectMapper.writeValueAsString(headers) : null;
+        IamOutboxEntity entity = IamOutboxEntity.builder()
+                .id(UUID.randomUUID().toString())
+                .tenantId(tenantId)
+                .aggregateType(aggregateType)
+                .aggregateId(aggregateId)
+                .eventType(eventType)
+                .payload(payload)
+                .headers(headers == null ? null : new java.util.HashMap<>(headers))
+                .status(Status.PENDING)
+                .retryCount(0)
+                .maxRetries(3)
+                .build();
 
-            IamOutboxEntity entity = IamOutboxEntity.builder()
-                    .id(UUID.randomUUID().toString())
-                    .tenantId(tenantId)
-                    .aggregateType(aggregateType)
-                    .aggregateId(aggregateId)
-                    .eventType(eventType)
-                    .payload(payloadJson)
-                    .headers(headersJson)
-                    .status(STATUS_PENDING)
-                    .retryCount(0)
-                    .maxRetries(3)
-                    .build();
-
-            outboxRepository.save(entity);
-            log.debug("Outbox event saved: aggregateType={}, aggregateId={}, eventType={}",
-                    aggregateType, aggregateId, eventType);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException("Failed to serialize outbox event", e);
-        }
+        outboxRepository.save(entity);
+        log.debug("Outbox event saved: aggregateType={}, aggregateId={}, eventType={}",
+                aggregateType, aggregateId, eventType);
     }
 
     /**
      * 定时轮询 PENDING 消息投递到 Kafka（每 5 秒执行一次）。
-     *
-     * <p>投递成功 status=SENT；投递失败 retry_count++，超过 max_retries 则
-     * status=FAILED。</p>
      */
     @Scheduled(fixedDelay = 5000)
     @Transactional
     public void relay() {
-        List<IamOutboxEntity> pending = outboxRepository.findByStatusOrderByCreatedAtAsc(STATUS_PENDING);
+        List<IamOutboxEntity> pending = outboxRepository.findByStatusOrderByCreatedAtAsc(Status.PENDING);
         if (pending.isEmpty()) {
             return;
         }
@@ -111,11 +92,11 @@ public class IamOutboxService {
         for (IamOutboxEntity msg : pending) {
             try {
                 String topic = TOPIC_PREFIX + msg.getAggregateType() + "." + msg.getEventType();
+                String payloadJson = serializeJson(msg.getPayload());
 
                 ProducerRecord<String, String> record = new ProducerRecord<>(
-                        topic, null, null, msg.getAggregateId(), msg.getPayload());
+                        topic, null, null, msg.getAggregateId(), payloadJson);
 
-                // 从存储的 headers 中提取 traceId 并写入 Kafka 消息头
                 String traceId = extractTraceId(msg.getHeaders());
                 if (traceId != null) {
                     record.headers().add(TRACE_ID_HEADER, traceId.getBytes(StandardCharsets.UTF_8));
@@ -123,7 +104,7 @@ public class IamOutboxService {
 
                 kafkaTemplate.send(record).get(10, java.util.concurrent.TimeUnit.SECONDS);
 
-                msg.setStatus(STATUS_SENT);
+                msg.setStatus(Status.SENT);
                 msg.setSentAt(Instant.now());
                 outboxRepository.save(msg);
 
@@ -132,7 +113,7 @@ public class IamOutboxService {
                 log.warn("Failed to relay outbox message: id={}, error={}", msg.getId(), e.getMessage());
                 msg.setRetryCount(msg.getRetryCount() + 1);
                 if (msg.getRetryCount() >= msg.getMaxRetries()) {
-                    msg.setStatus(STATUS_FAILED);
+                    msg.setStatus(Status.FAILED);
                 } else {
                     msg.setNextRetryAt(Instant.now().plusSeconds(60));
                 }
@@ -141,16 +122,23 @@ public class IamOutboxService {
         }
     }
 
-    private String extractTraceId(String headersJson) {
-        if (headersJson == null || headersJson.isBlank()) {
+    private String serializeJson(Object value) {
+        if (value == null) {
             return null;
         }
         try {
-            Map<String, String> headers = objectMapper.readValue(headersJson, new TypeReference<>() {});
-            return headers.get(TRACE_ID_HEADER);
+            return objectMapper.writeValueAsString(value);
         } catch (JsonProcessingException e) {
-            log.warn("Failed to parse outbox headers: {}", e.getMessage());
+            log.warn("Failed to serialize outbox payload: {}", e.getMessage());
             return null;
         }
+    }
+
+    private String extractTraceId(Map<String, Object> headers) {
+        if (headers == null || headers.isEmpty()) {
+            return null;
+        }
+        Object value = headers.get(TRACE_ID_HEADER);
+        return value == null ? null : String.valueOf(value);
     }
 }

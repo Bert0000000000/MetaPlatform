@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 import java.util.List;
+import java.util.Map;
 
 @Data
 public class ReleaseApprovalStartRequest {
@@ -15,7 +16,7 @@ public class ReleaseApprovalStartRequest {
     @NotBlank(message = "版本号不能为空")
     private String version;
 
-    private String releaseNotes;
+    private Map<String, Object> releaseNotes;
 
     @NotBlank(message = "发布策略不能为空")
     private String strategy;

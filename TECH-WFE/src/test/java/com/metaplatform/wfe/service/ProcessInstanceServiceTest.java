@@ -4,18 +4,18 @@ import com.metaplatform.wfe.common.PageResponse;
 import com.metaplatform.wfe.common.TenantContext;
 import com.metaplatform.wfe.dto.ProcessInstanceResponse;
 import com.metaplatform.wfe.dto.StartProcessInstanceRequest;
+import com.metaplatform.wfe.engine.WfeStateMachineEngine;
+import com.metaplatform.wfe.engine.converter.BpmnToFlowGramConverter;
 import com.metaplatform.wfe.entity.ProcessDefinitionEntity;
 import com.metaplatform.wfe.entity.ProcessDefinitionStatus;
 import com.metaplatform.wfe.entity.ProcessInstanceEntity;
 import com.metaplatform.wfe.entity.ProcessInstanceStatus;
+import com.metaplatform.wfe.entity.WfeTaskEntity;
 import com.metaplatform.wfe.exception.WfeException;
 import com.metaplatform.wfe.repository.ProcessDefinitionRepository;
 import com.metaplatform.wfe.repository.ProcessInstanceRepository;
-import org.flowable.engine.RepositoryService;
-import org.flowable.engine.RuntimeService;
-import org.flowable.engine.repository.ProcessDefinition;
-import org.flowable.engine.repository.ProcessDefinitionQuery;
-import org.flowable.engine.runtime.ProcessInstance;
+import com.metaplatform.wfe.repository.WfeProcessVariableRepository;
+import com.metaplatform.wfe.repository.WfeTaskRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -36,6 +36,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -49,13 +50,16 @@ class ProcessInstanceServiceTest {
     private ProcessDefinitionRepository processDefinitionRepository;
 
     @Mock
-    private RuntimeService runtimeService;
+    private WfeStateMachineEngine wfeStateMachineEngine;
 
     @Mock
-    private RepositoryService repositoryService;
+    private WfeTaskRepository wfeTaskRepository;
 
     @Mock
-    private org.flowable.engine.TaskService taskService;
+    private BpmnToFlowGramConverter bpmnToFlowGramConverter;
+
+    @Mock
+    private WfeProcessVariableRepository wfeProcessVariableRepository;
 
     @Mock
     private RuleIntegrationService ruleIntegrationService;
@@ -91,18 +95,9 @@ class ProcessInstanceServiceTest {
                 .name("采购审批流程")
                 .version(1)
                 .bpmnXml("<bpmn/>")
+                .flowgramJson("{\"nodes\":[]}")
                 .status(ProcessDefinitionStatus.DEPLOYED)
                 .build();
-    }
-
-    private void mockFlowablePdQuery(String flowablePdId) {
-        ProcessDefinitionQuery pdQuery = mock(ProcessDefinitionQuery.class);
-        ProcessDefinition flowablePd = mock(ProcessDefinition.class);
-        when(repositoryService.createProcessDefinitionQuery()).thenReturn(pdQuery);
-        when(pdQuery.processDefinitionKey(anyString())).thenReturn(pdQuery);
-        when(pdQuery.latestVersion()).thenReturn(pdQuery);
-        when(pdQuery.singleResult()).thenReturn(flowablePd);
-        when(flowablePd.getId()).thenReturn(flowablePdId);
     }
 
     @Test
@@ -113,27 +108,79 @@ class ProcessInstanceServiceTest {
                 "pd-001", ProcessDefinitionStatus.DELETED))
                 .thenReturn(Optional.of(buildPdEntity()));
 
-        mockFlowablePdQuery("flowable-pd-001");
-
-        ProcessInstance flowableInstance = mock(ProcessInstance.class);
-        when(flowableInstance.getId()).thenReturn("pi-001");
-        when(runtimeService.startProcessInstanceById(
-                eq("flowable-pd-001"), eq("biz-001"), any(Map.class)))
-                .thenReturn(flowableInstance);
-
         when(processInstanceRepository.save(any(ProcessInstanceEntity.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
+        when(processInstanceRepository.findById(anyString()))
+                .thenAnswer(invocation -> {
+                    ProcessInstanceEntity e = ProcessInstanceEntity.builder()
+                            .id(invocation.getArgument(0))
+                            .tenantId(TenantContext.DEFAULT_TENANT_ID)
+                            .processDefinitionId("pd-001")
+                            .processKey("purchase_approval")
+                            .businessKey("biz-001")
+                            .status(ProcessInstanceStatus.RUNNING)
+                            .variables("{\"amount\":1000}")
+                            .build();
+                    return Optional.of(e);
+                });
+
+        when(wfeTaskRepository.findByTenantIdAndProcessInstanceIdOrderByCreatedAtDesc(
+                anyString(), anyString()))
+                .thenReturn(List.of());
+
         ProcessInstanceResponse response = processInstanceService.start(request);
 
-        assertThat(response.getId()).isEqualTo("pi-001");
+        assertThat(response.getId()).isNotBlank();
         assertThat(response.getProcessKey()).isEqualTo("purchase_approval");
         assertThat(response.getBusinessKey()).isEqualTo("biz-001");
         assertThat(response.getStatus()).isEqualTo("RUNNING");
         assertThat(response.getProcessDefinitionId()).isEqualTo("pd-001");
         assertThat(response.getVariables()).containsEntry("amount", 1000);
-        verify(runtimeService).startProcessInstanceById(
-                eq("flowable-pd-001"), eq("biz-001"), any(Map.class));
+        verify(wfeStateMachineEngine).startProcess(
+                eq(TenantContext.DEFAULT_TENANT_ID), anyString(),
+                eq("{\"nodes\":[]}"), nullable(String.class), any(Map.class));
+    }
+
+    @Test
+    void start_shouldConvertBpmn_whenFlowgramJsonMissing() {
+        StartProcessInstanceRequest request = buildStartRequest();
+
+        ProcessDefinitionEntity pdEntity = ProcessDefinitionEntity.builder()
+                .id("pd-001")
+                .tenantId(TenantContext.DEFAULT_TENANT_ID)
+                .processKey("purchase_approval")
+                .name("采购审批流程")
+                .version(1)
+                .bpmnXml("<bpmn/>")
+                .status(ProcessDefinitionStatus.DEPLOYED)
+                .build();
+        when(processDefinitionRepository.findByIdAndStatusNot(
+                "pd-001", ProcessDefinitionStatus.DELETED))
+                .thenReturn(Optional.of(pdEntity));
+        when(bpmnToFlowGramConverter.convert("<bpmn/>"))
+                .thenReturn("{\"nodes\":[\"start\"]}");
+
+        when(processInstanceRepository.save(any(ProcessInstanceEntity.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+        when(processInstanceRepository.findById(anyString()))
+                .thenAnswer(inv -> Optional.of(ProcessInstanceEntity.builder()
+                        .id(inv.getArgument(0))
+                        .tenantId(TenantContext.DEFAULT_TENANT_ID)
+                        .processDefinitionId("pd-001")
+                        .processKey("purchase_approval")
+                        .status(ProcessInstanceStatus.RUNNING)
+                        .build()));
+        when(wfeTaskRepository.findByTenantIdAndProcessInstanceIdOrderByCreatedAtDesc(
+                anyString(), anyString()))
+                .thenReturn(List.of());
+
+        processInstanceService.start(request);
+
+        verify(bpmnToFlowGramConverter).convert("<bpmn/>");
+        verify(wfeStateMachineEngine).startProcess(
+                anyString(), anyString(), eq("{\"nodes\":[\"start\"]}"),
+                nullable(String.class), any(Map.class));
     }
 
     @Test
@@ -149,8 +196,8 @@ class ProcessInstanceServiceTest {
                 .isInstanceOf(WfeException.class)
                 .hasMessageContaining("流程定义不存在");
 
-        verify(runtimeService, never()).startProcessInstanceById(
-                anyString(), any(), any());
+        verify(wfeStateMachineEngine, never()).startProcess(
+                anyString(), anyString(), anyString(), nullable(String.class), any(Map.class));
     }
 
     @Test
@@ -243,7 +290,7 @@ class ProcessInstanceServiceTest {
     }
 
     @Test
-    void terminate_shouldUpdateStatus_whenRunning() {
+    void terminate_shouldInvokeStateMachine_whenRunning() {
         ProcessInstanceEntity entity = ProcessInstanceEntity.builder()
                 .id("pi-001").tenantId(TenantContext.DEFAULT_TENANT_ID)
                 .processDefinitionId("pd-001").processKey("purchase_approval")
@@ -253,14 +300,10 @@ class ProcessInstanceServiceTest {
         when(processInstanceRepository.findByIdAndTenantId(
                 "pi-001", TenantContext.DEFAULT_TENANT_ID))
                 .thenReturn(Optional.of(entity));
-        when(processInstanceRepository.save(any(ProcessInstanceEntity.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
 
         processInstanceService.terminate("pi-001");
 
-        assertThat(entity.getStatus()).isEqualTo(ProcessInstanceStatus.TERMINATED);
-        verify(runtimeService).deleteProcessInstance("pi-001", "TERMINATED");
-        verify(processInstanceRepository).save(entity);
+        verify(wfeStateMachineEngine).terminateProcess("pi-001", "TERMINATED");
     }
 
     @Test
@@ -279,6 +322,6 @@ class ProcessInstanceServiceTest {
                 .isInstanceOf(WfeException.class)
                 .hasMessageContaining("已终止");
 
-        verify(runtimeService, never()).deleteProcessInstance(anyString(), anyString());
+        verify(wfeStateMachineEngine, never()).terminateProcess(anyString(), anyString());
     }
 }

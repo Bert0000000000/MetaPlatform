@@ -6,8 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
-import java.util.Collections;
+import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
 
@@ -32,8 +31,8 @@ public class ApiResponse {
     private Map<String, Object> responseSchema;
     private Map<String, Object> parameters;
     private Map<String, Object> examples;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
+    private Instant createdAt;
+    private Instant updatedAt;
 
     public static ApiResponse fromEntity(GwApiEntity entity) {
         return ApiResponse.builder()
@@ -47,11 +46,11 @@ public class ApiResponse {
                 .targetService(entity.getTargetService())
                 .description(entity.getDescription())
                 .status(entity.getStatus())
-                .metadata(safeMap(entity.getMetadata()))
-                .requestSchema(safeMap(entity.getRequestSchema()))
-                .responseSchema(safeMap(entity.getResponseSchema()))
-                .parameters(safeMap(entity.getParameters()))
-                .examples(safeMap(entity.getExamples()))
+                .metadata(entity.getMetadata())
+                .requestSchema(entity.getRequestSchema())
+                .responseSchema(entity.getResponseSchema())
+                .parameters(entity.getParameters())
+                .examples(entity.getExamples())
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())
                 .build();
@@ -72,9 +71,5 @@ public class ApiResponse {
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())
                 .build();
-    }
-
-    private static Map<String, Object> safeMap(Map<String, Object> map) {
-        return map == null ? Collections.emptyMap() : map;
     }
 }

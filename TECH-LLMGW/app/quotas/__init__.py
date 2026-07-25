@@ -1,1 +1,0 @@
-"""Quota configuration domain."""

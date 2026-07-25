@@ -15,6 +15,8 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.Instant;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 /**
  * API Key 实体。
@@ -31,13 +33,13 @@ import java.time.Instant;
 @Builder
 public class ApiKeyEntity {
 
-    public enum Status {
-        ACTIVE,
-        REVOKED
-    }
+    public enum Status { SUCCESS, FAILURE, PARTIAL, ACTIVE, REVOKED, INACTIVE, DEPRECATED, ENABLED, DISABLED, PENDING, APPROVED, REJECTED, EXPIRED, ARCHIVED }
+
+
 
     @Id
     @Column(name = "id", nullable = false, length = 64)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String id;
 
     @Column(name = "tenant_id", nullable = false, length = 64)
@@ -60,6 +62,7 @@ public class ApiKeyEntity {
      * 保留向后兼容；细粒度权限见 {@link #permissions}。
      */
     @Column(name = "scopes", columnDefinition = "TEXT")
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String scopes;
 
     /**
@@ -67,6 +70,7 @@ public class ApiKeyEntity {
      * 表达资源 + 操作的细粒度权限范围。
      */
     @Column(name = "permissions", columnDefinition = "TEXT")
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String permissions;
 
     @Enumerated(EnumType.STRING)
@@ -83,6 +87,7 @@ public class ApiKeyEntity {
      * 吊销原因（可空，仅 status=REVOKED 时有值）。
      */
     @Column(name = "revoked_reason", length = 256)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String revokedReason;
 
     /**

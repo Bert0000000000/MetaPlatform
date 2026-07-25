@@ -8,12 +8,11 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
-import java.time.Instant;
 import java.util.UUID;
+import java.time.Instant;
 
 @Entity
-@Table(name = "ea_infrastructure",
-        uniqueConstraints = @UniqueConstraint(columnNames = {"tenant_id", "code"}))
+@Table(name = "ea_infrastructure")
 @Data
 @Builder
 @NoArgsConstructor
@@ -22,31 +21,36 @@ public class InfrastructureEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(name = "id", nullable = false)
     private UUID id;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "tenant_id", nullable = false, length = 64)
     private String tenantId;
 
-    @Column(nullable = false, length = 256)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "name", nullable = false, length = 256)
     private String name;
 
-    @Column(nullable = false, length = 128)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "code", nullable = false, length = 128)
     private String code;
 
-    @Column(length = 64)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "environment", length = 64)
     private String environment;
 
-    @Column(length = 64)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "region", length = 64)
     private String region;
 
-    @Column(columnDefinition = "TEXT")
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 
-    @Lob
-    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "metadata", columnDefinition = "jsonb")
-    @Builder.Default
-    private String metadata = "{}";
+    private String metadata;
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
@@ -56,4 +60,5 @@ public class InfrastructureEntity {
 
     @Column(name = "deleted_at")
     private Instant deletedAt;
+
 }

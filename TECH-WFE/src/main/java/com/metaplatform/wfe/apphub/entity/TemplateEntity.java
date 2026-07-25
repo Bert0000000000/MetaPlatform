@@ -6,6 +6,8 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.Instant;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 /**
  * 市场模板实体（V11-08）：可被安装到租户应用列表的预置模板。
@@ -24,6 +26,7 @@ public class TemplateEntity {
 
     @Id
     @Column(name = "id", nullable = false, length = 64)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String id;
 
     @Column(name = "tenant_id", nullable = false, length = 64)

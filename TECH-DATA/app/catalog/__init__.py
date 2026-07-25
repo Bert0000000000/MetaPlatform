@@ -1,1 +1,0 @@
-"""Data asset catalog domain."""

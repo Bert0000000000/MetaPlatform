@@ -3,7 +3,7 @@ package com.metaplatform.ea.application.dto;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
-import java.util.List;
+import java.util.Map;
 
 @Data
 public class CreateApplicationRequest {
@@ -16,6 +16,7 @@ public class CreateApplicationRequest {
 
     private String description;
     private String appType;
-    private List<String> techStack;
-    private List<String> dependencies;
+    private Map<String, Object> techStack;
+    private Map<String, Object> dependencies;
+    private Map<String, Object> capabilityIds;
 }

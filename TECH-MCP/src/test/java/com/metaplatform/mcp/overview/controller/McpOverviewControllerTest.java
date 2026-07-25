@@ -1,5 +1,9 @@
 package com.metaplatform.mcp.overview.controller;
 
+import com.metaplatform.mcp.IamTestConfig;
+import org.springframework.context.annotation.Import;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+
 import com.metaplatform.mcp.overview.dto.OverviewResponse;
 import com.metaplatform.mcp.overview.service.McpOverviewService;
 import org.junit.jupiter.api.Test;
@@ -15,6 +19,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+@Import(IamTestConfig.class)
+@AutoConfigureMockMvc(addFilters = false)
 @WebMvcTest(McpOverviewController.class)
 class McpOverviewControllerTest {
 

@@ -29,6 +29,9 @@ class ApplicationImpactTest {
     @Mock
     private ApplicationRepository repository;
 
+    @Mock
+    private ApplicationTechComponentService linkService;
+
     @Spy
     private ObjectMapper objectMapper = new ObjectMapper();
 

@@ -190,24 +190,80 @@ public class BusinessProcessService {
         Map<String, Object> flowchart = new LinkedHashMap<>();
         flowchart.put("processId", entity.getId());
         flowchart.put("version", entity.getVersion());
+
         List<Map<String, Object>> nodes = new ArrayList<>();
         List<Map<String, Object>> edges = new ArrayList<>();
+
+        // 第一遍：建节点（按 id 索引以支持网关分支引用）
         for (int i = 0; i < steps.size(); i++) {
             Map<String, Object> step = steps.get(i);
-            String stepId = step.getOrDefault("id", "step-" + (i + 1)).toString();
-            nodes.add(Map.of(
-                    "id", stepId,
-                    "label", step.getOrDefault("name", "Step " + (i + 1)),
-                    "type", step.getOrDefault("type", "task")
-            ));
-            if (i > 0) {
-                String prevId = steps.get(i - 1).getOrDefault("id", "step-" + i).toString();
-                edges.add(Map.of("source", prevId, "target", stepId));
+            String stepId = String.valueOf(step.getOrDefault("id", "step-" + (i + 1)));
+            String type = String.valueOf(step.getOrDefault("type", "task"));
+            Map<String, Object> node = new LinkedHashMap<>();
+            node.put("id", stepId);
+            node.put("label", step.getOrDefault("name", "Step " + (i + 1)));
+            node.put("type", type);
+            if ("gateway".equalsIgnoreCase(type)) {
+                node.put("gatewayType", String.valueOf(step.getOrDefault("gatewayType", "EXCLUSIVE")));
+            }
+            nodes.add(node);
+        }
+
+        // 第二遍：建边，按 step 类型生成不同语义的输出边
+        for (int i = 0; i < steps.size(); i++) {
+            Map<String, Object> step = steps.get(i);
+            String stepId = String.valueOf(step.getOrDefault("id", "step-" + (i + 1)));
+            String type = String.valueOf(step.getOrDefault("type", "task"));
+
+            if ("gateway".equalsIgnoreCase(type)) {
+                // 网关节点：从 branches 显式输出边
+                Object branchesRaw = step.get("branches");
+                List<?> branches = toList(branchesRaw);
+                for (Object b : branches) {
+                    if (!(b instanceof Map<?, ?> branch)) continue;
+                    Object target = branch.get("targetStepId");
+                    if (target == null) continue;
+                    Map<String, Object> edge = new LinkedHashMap<>();
+                    edge.put("source", stepId);
+                    edge.put("target", String.valueOf(target));
+                    edge.put("gatewayType", String.valueOf(step.getOrDefault("gatewayType", "EXCLUSIVE")));
+                    if (branch.get("condition") != null) {
+                        edge.put("condition", String.valueOf(branch.get("condition")));
+                    }
+                    edges.add(edge);
+                }
+                // 若网关无 branches，则回退到顺序连接下一个 step
+                if (branches.isEmpty() && i + 1 < steps.size()) {
+                    String nextId = String.valueOf(steps.get(i + 1).getOrDefault("id", "step-" + (i + 2)));
+                    Map<String, Object> edge = new LinkedHashMap<>();
+                    edge.put("source", stepId);
+                    edge.put("target", nextId);
+                    edge.put("gatewayType", String.valueOf(step.getOrDefault("gatewayType", "EXCLUSIVE")));
+                    edges.add(edge);
+                }
+            } else {
+                // 普通节点：连接到下一个 step（最后一个节点除外）
+                if (i + 1 < steps.size()) {
+                    Map<String, Object> next = steps.get(i + 1);
+                    String nextId = String.valueOf(next.getOrDefault("id", "step-" + (i + 2)));
+                    Map<String, Object> edge = new LinkedHashMap<>();
+                    edge.put("source", stepId);
+                    edge.put("target", nextId);
+                    edges.add(edge);
+                }
             }
         }
+
         flowchart.put("nodes", nodes);
         flowchart.put("edges", edges);
         return flowchart;
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<?> toList(Object raw) {
+        if (raw instanceof List<?> list) return list;
+        if (raw instanceof Map<?, ?> map) return List.of(map);
+        return List.of();
     }
 
     private BusinessProcessVersionResponse toVersionResponse(BusinessProcessVersionEntity v) {

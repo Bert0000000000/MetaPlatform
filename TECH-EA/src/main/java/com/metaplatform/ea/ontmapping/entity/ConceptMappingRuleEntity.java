@@ -1,5 +1,7 @@
 package com.metaplatform.ea.ontmapping.entity;
 
+import com.fasterxml.jackson.databind.JsonNode;
+
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,6 +11,7 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
+import java.util.Map;
 import java.util.UUID;
 
 @Entity
@@ -25,6 +28,7 @@ public class ConceptMappingRuleEntity {
     private UUID id;
 
     @Column(name = "tenant_id", nullable = false, length = 64)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String tenantId;
 
     @Column(name = "asset_type", nullable = false, length = 64)
@@ -34,6 +38,7 @@ public class ConceptMappingRuleEntity {
     private UUID assetId;
 
     @Column(name = "asset_name", length = 256)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String assetName;
 
     @Column(name = "concept_id", nullable = false, length = 128)
@@ -48,8 +53,8 @@ public class ConceptMappingRuleEntity {
     @Column(name = "description", length = 1024)
     private String description;
 
-    @Lob
-    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "metadata", columnDefinition = "jsonb")
     private String metadata;
 

@@ -1,41 +1,48 @@
 package com.metaplatform.iam.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
-import jakarta.persistence.Version;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
-import lombok.Getter;
+import lombok.Builder;
+import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
-import lombok.experimental.SuperBuilder;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
+import java.time.Instant;
 
 @Entity
 @Table(name = "iam_department")
-@Getter
-@Setter
+@Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@SuperBuilder
-public class DepartmentEntity extends AuditEntity {
+public class DepartmentEntity {
 
-    @Id
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "id", nullable = false, length = 64)
     private String id;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "tenant_id", nullable = false, length = 64)
+    private String tenantId;
+
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "dept_code", nullable = false, length = 128)
     private String deptCode;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "dept_name", nullable = false, length = 256)
     private String deptName;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "parent_id", length = 64)
     private String parentId;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "parent_path", length = 1024)
     private String parentPath;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "full_path", nullable = false, length = 1024)
     private String fullPath;
 
@@ -45,13 +52,35 @@ public class DepartmentEntity extends AuditEntity {
     @Column(name = "sort_order", nullable = false)
     private Integer sortOrder;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "leader_id", length = 64)
     private String leaderId;
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 
-    @Version
     @Column(name = "version", nullable = false)
     private Integer version;
+
+    @Column(name = "deleted", nullable = false)
+    private Boolean deleted;
+
+    @Column(name = "deleted_at")
+    private Instant deletedAt;
+
+    @Column(name = "created_at", nullable = false)
+    private Instant createdAt;
+
+    @Column(name = "updated_at", nullable = false)
+    private Instant updatedAt;
+
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "created_by", length = 64)
+    private String createdBy;
+
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "updated_by", length = 64)
+    private String updatedBy;
+
 }

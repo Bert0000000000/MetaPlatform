@@ -5,7 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Data
 @Builder
@@ -16,6 +16,6 @@ public class RateLimitResetResponse {
     private String ruleId;
     private String resetType;
     private String scopeId;
-    private LocalDateTime resetAt;
+    private Instant resetAt;
     private String resetBy;
 }

@@ -5,6 +5,8 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.Instant;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "rule_outbox_messages")
@@ -17,6 +19,7 @@ public class RuleOutboxMessageEntity {
 
     @Id
     @Column(name = "id", nullable = false, length = 64)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String id;
 
     @Column(name = "tenant_id", nullable = false, length = 64)

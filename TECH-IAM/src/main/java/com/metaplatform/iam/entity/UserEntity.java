@@ -1,9 +1,15 @@
 package com.metaplatform.iam.entity;
 
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
 
@@ -16,40 +22,47 @@ import java.time.Instant;
 @Builder
 public class UserEntity {
 
+    public enum UserStatus { ACTIVE, ENABLED, DISABLED, LOCKED, PENDING, ARCHIVED }
+
     @Id
     @Column(name = "id", nullable = false, length = 64)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String id;
 
     @Column(name = "tenant_id", nullable = false, length = 64)
-    @Builder.Default
-    private String tenantId = "tenant-default";
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    private String tenantId;
 
-    @Column(name = "username", nullable = false, unique = true, length = 64)
+    @Column(name = "username", nullable = false, length = 128)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String username;
 
-    @Column(name = "email", nullable = false, unique = true, length = 128)
+    @Column(name = "email", nullable = false, length = 256)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String email;
 
-    @Column(name = "password_hash", nullable = false, length = 255)
+    @Column(name = "password_hash", nullable = false, length = 256)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String passwordHash;
 
-    @Column(name = "real_name", length = 64)
+    @Column(name = "real_name", length = 256)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String realName;
 
     @Column(name = "phone", length = 32)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String phone;
 
-    @Column(name = "avatar_url", length = 255)
+    @Column(name = "avatar_url", length = 512)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String avatarUrl;
 
-    @Column(name = "status", nullable = false, length = 16)
     @Enumerated(EnumType.STRING)
-    @Builder.Default
-    private UserStatus status = UserStatus.ENABLED;
+    @Column(name = "status", nullable = false, length = 32)
+    private UserStatus status;
 
     @Column(name = "require_password_reset", nullable = false)
-    @Builder.Default
-    private Boolean requirePasswordReset = true;
+    private Boolean requirePasswordReset;
 
     @Column(name = "last_login_at")
     private Instant lastLoginAt;
@@ -61,10 +74,4 @@ public class UserEntity {
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
-
-    public enum UserStatus {
-        ENABLED,
-        DISABLED,
-        LOCKED
-    }
 }

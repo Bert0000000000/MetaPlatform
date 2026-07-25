@@ -1,0 +1,91 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/metaplatform_data
+    username: ${DB_USERNAME:meta}
+    password: ${DB_PASSWORD:meta}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+    show-sql: false
+
+  batch:
+    job:
+      enabled: false
+    jdbc:
+      initialize-schema: embedded
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+  cloud:
+    compatibility-verifier:
+      enabled: false
+    nacos:
+      discovery:
+        enabled: false
+      config:
+        enabled: false
+  config:
+    import: []
+  autoconfigure:
+    exclude:
+      - com.alibaba.cloud.nacos.registry.NacosServiceRegistryAutoConfiguration
+      - com.alibaba.cloud.nacos.discovery.NacosDiscoveryAutoConfiguration
+      - com.alibaba.cloud.nacos.NacosConfigAutoConfiguration
+      - org.springframework.cloud.autoconfigure.RefreshAutoConfiguration
+      - org.springframework.cloud.context.refresh.ContextRefresherAutoConfiguration
+      - com.alibaba.cloud.ai.agent.nacos.config.NacosAgentConfig
+      - com.alibaba.cloud.ai.autoconfigure.nacosconfig.NacosConfigAutoConfiguration
+      - com.alibaba.cloud.ai.autoconfigure.nacos.NacosMcServerAutoConfiguration
+      - org.springframework.ai.vectorstore.milvus.autoconfigure.MilvusVectorStoreAutoConfiguration
+      - org.springframework.ai.mcp.server.autoconfigure.McpServerAutoConfiguration
+      - org.springframework.ai.mcp.client.autoconfigure.McpClientAutoConfiguration
+
+# 提供一个虚拟的 DashScope API key 以避免启动失败
+spring.ai.dashscope:
+  api-key: ${DASHSCOPE_API_KEY:sk-placeholder-for-dev-only-not-real}
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+
+# ─── Mate Platform 自定义配置 ───
+mate:
+  data:
+    data-encryption-key: ${DATA_ENCRYPTION_KEY:metaplatform-data-key-2026-must-be-32bytes!}
+    connection-test-timeout: ${CONNECTION_TEST_TIMEOUT:5s}
+    query-max-rows: ${QUERY_MAX_ROWS:10000}
+    query-timeout-seconds: ${QUERY_TIMEOUT_SECONDS:30}
+    kafka-topic: ${DATA_KAFKA_TOPIC:data-integration-events}
+  neo4j:
+    uri: ${NEO4J_URI:bolt://localhost:7687}
+    username: ${NEO4J_USERNAME:neo4j}
+    password: ${NEO4J_PASSWORD:neo4j}
+    max-connection-pool-size: 10
+  minio:
+    endpoint: ${MINIO_ENDPOINT:http://localhost:9000}
+    access-key: ${MINIO_ACCESS_KEY:minioadmin}
+    secret-key: ${MINIO_SECRET_KEY:minioadmin}
+    bucket: ${MINIO_BUCKET:metaplatform-deliverables}
+  flink:
+    rest-url: ${FLINK_REST_URL:http://localhost:8081}
+    enabled: ${FLINK_ENABLED:false}
+
+iam:
+  base-url: ${IAM_BASE_URL:http://localhost:8101}
+
+ont:
+  base-url: ${ONT_BASE_URL:http://localhost:8201}

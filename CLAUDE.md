@@ -1,7 +1,7 @@
 # CLAUDE.md
 
 > 本文件供 Claude Code 读取，提供项目上下文、架构约束与开发规范。
-> 最近更新：2026-07-24（v1.3 重构期·admin/components 流程画布接入完成）
+> 最近更新：2026-07-25（v1.4 重构期·FlowGram 全能力补齐 Sprint 1 完成）
 
 ## 项目概述
 
@@ -255,6 +255,9 @@ TECH-IAM     ← 所有服务（MCP / A2A 调用鉴权）
 - **FlowGram.AI 接入**：官方对外暴露的 `nodeRegistries` 并不能自动应用每个 registry 的 `formMeta`，必须在自己包一层 Provider 时覆盖 `getNodeDefaultRegistry`，把 `formMeta` 显式塞进 registry；否则所有节点都会退化成统一的 input 卡片
 - **FlowGram.AI 拖拽**：自定义节点外壳时务必绑定 `onMouseDown → nodeRender.startDrag(e) + stopPropagation`，否则卡片既无法拖动也无法选中连线
 - **FlowGram.AI fitView**：编辑器自带 `pg.config.fitView(doc.root.bounds.pad(30))` 对 `initialData` 时机敏感，常常不生效；兜底方案是 `<ForceFitViewport>`：用 demo 数据已知的**逻辑坐标常量**计算 `scale` + 居中 offset，挂到 `pg.style.transform`，并用 `ResizeObserver` 在容器变化时重算；**绝对不要用已被 transform 的 `.gedit-flow-background-layer` DOM rect**，会因父级 transform 引起的视口错位产生循环计算，背景层尺寸越算越大
+- **FlowGram.AI 官方 9 个 CSS 主题变量**：`fixed-layout-editor/index.css` L6-17 暴露 `--g-selection-background / --g-editor-background / --g-playground-{select,hover,line,blur,selectBox-outline,selectBox-background,select-hover-background,select-control-size}`。覆盖时**必须挂到 `.gedit-playground` 作用域**，禁止打到 `:root`（会污染全局）。详见 [`docs/superpowers/specs/flowgram-usage-specification.md`](docs/superpowers/specs/flowgram-usage-specification.md) §2
+- **FlowGram.AI 47 个官方包**：当前 `@mate/shared` 已声明依赖 47 个，但业务侧只用到 2.5 个。新增节点 / 场景前必须查阅 [`docs/superpowers/specs/flowgram-usage-specification.md`](docs/superpowers/specs/flowgram-usage-specification.md) §1.2 的"已接入 / 待接入"矩阵，避免重复造轮子
+- **FlowGram.AI 节点注册位置强制三处**：(1) `packages/shared/src/components/flow/node-registries.ts` — Mate 17 标准节点；(2) `apps/portal/src/pages/admin/node-render.tsx` — 节点库 17 专属卡片；(3) 业务页面通过 `nodeRegistries/customRegistries` 参数注入。**禁止**业务页面直接 `import FixedLayoutEditorProvider`，必须经 `@mate/shared/flow` 的 `FlowgramEditor` / `FlowDesigner`
 - **GitHub 推送失败排查**：本地 ping / Test-NetConnection TCP 443 都通，但 `git push` 报 `Recv failure: Connection was reset` —— 这是 GFW 针对 git 协议的特征指纹。处理顺序：(1) `git remote -v` 确认 origin URL 与本地路径一致；(2) 多 retries；(3) GitHub MCP (`push_files`) 作为最终兜底
 - **PowerShell git commit -m**：Heredoc `<<'EOF'` 在 PowerShell 中会被误解析为重定向；改用临时文件 `git commit -F file.txt` 最稳
 
@@ -271,9 +274,27 @@ TECH-IAM     ← 所有服务（MCP / A2A 调用鉴权）
     - 覆盖 `getNodeDefaultRegistry` 让 FlowGram 真正使用各节点的 `formMeta`
     - 替换 `materials.renderDefaultNode` 让节点支持拖拽 / hover / 删除
     - `ForceFitViewport` 用逻辑坐标常量 + ResizeObserver 计算居中 fit
-    - 画布工具栏（缩放 / 撤销 / 锁定 / minimap 等）+ 全屏编辑模式（含 Esc / 退出按钮 / 浏览器原生 Fullscreen API 兜底）
+    - 画布工具条（缩放 / 撤销 / 锁定 / minimap 等）+ 全屏编辑模式（含 Esc / 退出按钮 / 浏览器原生 Fullscreen API 兜底）
     - 本地 commit：`60ec60b1 feat(portal/admin): 组件库流程节点画布接入真实 FlowGram editor 与节点库专属卡片`（推送 GitHub 失败：本地网络 TCP 443 正常但 git HTTPS 长连接被重置，且 origin 指向的远端 `Bert0000000000/MetaPlatform` 内容与本地前端不匹配，需用户确认正确远端 URL）
   - [~] Nacos 3.0+、IAM→ONT→RULE 底层链路
+
+**v1.4 重构期（2026-07-25 起）·FlowGram 全能力补齐**：
+- **新增规范**：[`docs/superpowers/specs/flowgram-usage-specification.md`](docs/superpowers/specs/flowgram-usage-specification.md) — 强制参考，覆盖 47 个官方包、9 个 CSS 主题变量、3 个官方坑、双布局范式、节点 / 表单 / 物料体系、模块对接路径、版本兼容矩阵
+- **阶段 R1.5 Sprint 1（已完成）**：组件库流程画布全能力落地
+  - [x] 主题色：新建 `packages/shared/src/components/flow/styles/flowgram-theme.css`，覆盖 9 个 `--g-*` 变量 + 3 处硬编码兜底，与项目 `--primary / --background / --border / --muted-foreground` token 打通
+  - [x] 网格背景：接入 `@flowgram.ai/background-plugin`，gridSize=20 / dotColor=var(--border) / Logo=可选
+  - [x] 导出能力：接入 `@flowgram.ai/export-plugin`，支持 JSON / PNG / JPEG / SVG 四种格式
+  - [x] 快捷键：接入 `@flowgram.ai/shortcuts-plugin`，注册 Cmd/Ctrl+C/V/Z/Y/S/Delete/Backspace
+  - [x] 对齐辅助线：接入 `@flowgram.ai/free-snap-plugin`，拖拽时显示 top/bottom/left/right/mid/spacing
+  - [x] Semi ConfigProvider：覆盖默认 `@douyinfe/semi-ui` 主题色
+  - [x] 全屏编辑：浏览器原生 Fullscreen API + Esc + 自定义关闭按钮 + Portal 兜底
+- **阶段 R1.5 Sprint 2（待启动）**：free-layout 落地
+  - [ ] 集成 `@flowgram.ai/free-layout-editor` + `free-history-plugin` + `free-lines-plugin` + `free-stack-plugin` + `free-hover-plugin` + `free-node-panel-plugin` + `free-auto-layout-plugin`
+- **阶段 R1.5 Sprint 3（待启动）**：form-materials 全部接入
+  - [ ] `VariableSelector` / `PromptEditor` / `ConditionRow` / `JsonSchemaEditor` / `CodeEditor` / `SQLCodeEditor` 等 40+ 组件
+- **阶段 R1.5 Sprint 4（待启动）**：增强补齐
+  - [ ] `group-plugin`（分组）/ `panel-manager-plugin`（多面板）/ `i18n-plugin`（国际化）/ `redux-devtool-plugin`（调试）
+
 - **阶段 R2**：6 服务骨架 + Nacos（MCP/A2A/LLMGW/AGENT/RAG/DATA）
 - **阶段 R3**：核心服务 Java + SAA 重写（含 TECH-ONT 收敛）
 - **阶段 R4**：MCP / A2A 协议层
@@ -292,3 +313,7 @@ TECH-IAM     ← 所有服务（MCP / A2A 调用鉴权）
 | 设计稿 | `metaplatform-design-draft/` |
 | 前端 monorepo | [`metaplatform-frontend/`](metaplatform-frontend/)（pnpm workspaces） |
 | 组件库流程画布 | [`metaplatform-frontend/apps/portal/src/pages/admin/`](metaplatform-frontend/apps/portal/src/pages/admin/) |
+| **FlowGram 使用规范** | **[`docs/superpowers/specs/flowgram-usage-specification.md`](docs/superpowers/specs/flowgram-usage-specification.md)** — 强制参考 |
+| 流程画布架构 | [`docs/superpowers/specs/2026-07-23-flow-canvas-design.md`](docs/superpowers/specs/2026-07-23-flow-canvas-design.md) |
+| 组件库节点目录 | [`docs/flow-component-catalog.md`](docs/flow-component-catalog.md) |
+| 节点分组色族 | [`docs/flow-sidebar-group-accent.md`](docs/flow-sidebar-group-accent.md) |

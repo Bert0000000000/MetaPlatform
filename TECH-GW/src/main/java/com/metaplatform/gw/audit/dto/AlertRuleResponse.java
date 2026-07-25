@@ -6,7 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
 
@@ -25,8 +25,8 @@ public class AlertRuleResponse {
     private Long thresholdRps;
     private Boolean enabled;
     private Map<String, Object> notificationConfig;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
+    private Instant createdAt;
+    private Instant updatedAt;
 
     public static AlertRuleResponse fromEntity(GwAuditAlertRuleEntity entity) {
         return AlertRuleResponse.builder()

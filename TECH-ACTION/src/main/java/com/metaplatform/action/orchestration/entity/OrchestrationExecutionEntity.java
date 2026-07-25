@@ -8,8 +8,9 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
-import java.time.Instant;
+import java.util.Map;
 import java.util.UUID;
+import java.time.Instant;
 
 @Entity
 @Table(name = "action_orchestration_execution")
@@ -21,43 +22,42 @@ public class OrchestrationExecutionEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(name = "id", nullable = false)
     private UUID id;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "tenant_id", nullable = false, length = 64)
     private String tenantId;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "execution_id", nullable = false, length = 64)
     private String executionId;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "orchestration_id", nullable = false, length = 64)
     private String orchestrationId;
 
-    @Column(nullable = false, length = 20)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "status", nullable = false, length = 20)
     private String status;
 
-    @Lob
-    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    @Column(name = "node_states", columnDefinition = "jsonb", nullable = false)
-    private String nodeStates;
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "node_states", nullable = false, columnDefinition = "jsonb")
+    private Map<String, Object> nodeStates;
 
-    @Lob
-    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    @Column(columnDefinition = "jsonb")
-    private String input;
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "input", columnDefinition = "jsonb")
+    private Map<String, Object> input;
 
-    @Lob
-    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    @Column(columnDefinition = "jsonb")
-    private String output;
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "output", columnDefinition = "jsonb")
+    private Map<String, Object> output;
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "error_message", columnDefinition = "TEXT")
     private String errorMessage;
 
-    @Lob
-    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    @Column(name = "compensation_actions", columnDefinition = "jsonb")
-    private String compensationActions;
-
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "trace_id", nullable = false, length = 64)
     private String traceId;
 
@@ -75,4 +75,9 @@ public class OrchestrationExecutionEntity {
 
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "compensation_actions", columnDefinition = "jsonb")
+    private Map<String, Object> compensationActions;
+
 }

@@ -5,13 +5,14 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
-import java.time.Instant;
 import java.util.UUID;
+import java.time.Instant;
 
 @Entity
-@Table(name = "ea_data_standard",
-        uniqueConstraints = @UniqueConstraint(columnNames = {"tenant_id", "code"}))
+@Table(name = "ea_data_standard")
 @Data
 @Builder
 @NoArgsConstructor
@@ -20,24 +21,31 @@ public class DataStandardEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(name = "id", nullable = false)
     private UUID id;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "tenant_id", nullable = false, length = 64)
     private String tenantId;
 
-    @Column(nullable = false, length = 128)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "code", nullable = false, length = 128)
     private String code;
 
-    @Column(nullable = false, length = 256)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "name", nullable = false, length = 256)
     private String name;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "standard_type", nullable = false, length = 64)
     private String standardType;
 
-    @Column(columnDefinition = "TEXT")
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "rule", columnDefinition = "TEXT")
     private String rule;
 
-    @Column(columnDefinition = "TEXT")
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 
     @Column(name = "created_at", nullable = false)
@@ -48,4 +56,5 @@ public class DataStandardEntity {
 
     @Column(name = "deleted_at")
     private Instant deletedAt;
+
 }

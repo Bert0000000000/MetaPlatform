@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -40,6 +41,7 @@ public class OntologyDiscoveryService {
     private final OntologyDiscoveryRepository repository;
     private final ChatClient.Builder chatClientBuilder;
     private final LlmGwProperties llmGwProperties;
+    private final ConceptEmbeddingService conceptEmbeddingService;
 
     /**
      * 4 个固定数据源（mock_catalog）。使用 setter 显式构造，避免双括号初始化 anti-pattern。
@@ -140,6 +142,16 @@ public class OntologyDiscoveryService {
 
         return new DiscoveryResponse(UUID.randomUUID().toString(), "COMPLETED",
                 suggestions, "Suggestions generated");
+    }
+
+    /**
+     * 基于向量相似度的概念推荐。
+     */
+    public List<String> recommendSimilarConcepts(String query, int topK) {
+        return conceptEmbeddingService.searchSimilarConcepts(query, topK).stream()
+                .map(doc -> (String) doc.getMetadata().get("conceptId"))
+                .filter(Objects::nonNull)
+                .toList();
     }
 
     /**

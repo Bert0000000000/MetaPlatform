@@ -1,7 +1,5 @@
 package com.metaplatform.rule.testcase.service;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.metaplatform.rule.common.ErrorCode;
 import com.metaplatform.rule.common.TenantContext;
 import com.metaplatform.rule.dto.RuleExecutionResult;
@@ -36,7 +34,6 @@ public class TestCaseService {
     private final TestCaseRepository testCaseRepository;
     private final RuleExecutionService ruleExecutionService;
     private final RuleDefinitionRepository ruleDefinitionRepository;
-    private final ObjectMapper objectMapper;
 
     @Transactional
     public TestCaseResponse create(CreateTestCaseRequest request) {
@@ -55,8 +52,8 @@ public class TestCaseService {
                 .targetType(request.getTargetType())
                 .targetId(request.getTargetId())
                 .name(request.getName())
-                .input(writeJson(request.getInput()))
-                .expectedOutput(writeJson(request.getExpectedOutput()))
+                .input(request.getInput())
+                .expectedOutput(request.getExpectedOutput())
                 .status("PENDING")
                 .build();
 
@@ -122,8 +119,8 @@ public class TestCaseService {
         if (request.getName() != null) entity.setName(request.getName());
         if (request.getTargetType() != null) entity.setTargetType(request.getTargetType());
         if (request.getTargetId() != null) entity.setTargetId(request.getTargetId());
-        if (request.getInput() != null) entity.setInput(writeJson(request.getInput()));
-        if (request.getExpectedOutput() != null) entity.setExpectedOutput(writeJson(request.getExpectedOutput()));
+        if (request.getInput() != null) entity.setInput(request.getInput());
+        if (request.getExpectedOutput() != null) entity.setExpectedOutput(request.getExpectedOutput());
         entity.setStatus("PENDING");
         return toResponse(testCaseRepository.save(entity));
     }
@@ -137,8 +134,8 @@ public class TestCaseService {
     @Transactional
     public TestCaseResponse run(String id) {
         TestCaseEntity entity = findById(id);
-        Map<String, Object> input = readMap(entity.getInput());
-        Map<String, Object> expected = readMap(entity.getExpectedOutput());
+        Map<String, Object> input = entity.getInput() != null ? entity.getInput() : Map.of();
+        Map<String, Object> expected = entity.getExpectedOutput();
 
         try {
             List<RuleExecutionResult> results = ruleExecutionService.execute(entity.getRulesetId(), input);
@@ -156,12 +153,12 @@ public class TestCaseService {
                         .toList());
             }
 
-            entity.setActualOutput(writeJson(actual));
+            entity.setActualOutput(actual);
             boolean pass = expected == null || expected.isEmpty() || compareOutput(expected, actual);
             entity.setStatus(pass ? "PASS" : "FAIL");
         } catch (Exception e) {
             log.warn("Test case run failed: id={}, error={}", id, e.getMessage());
-            entity.setActualOutput(writeJson(Map.of("error", e.getMessage())));
+            entity.setActualOutput(Map.of("error", e.getMessage()));
             entity.setStatus("FAIL");
         }
 
@@ -273,24 +270,6 @@ public class TestCaseService {
         return true;
     }
 
-    private String writeJson(Object value) {
-        if (value == null) return null;
-        try {
-            return objectMapper.writeValueAsString(value);
-        } catch (Exception e) {
-            throw new RuleException(ErrorCode.INTERNAL_ERROR, "JSON 序列化失败: " + e.getMessage());
-        }
-    }
-
-    private Map<String, Object> readMap(String json) {
-        if (json == null || json.isBlank()) return Map.of();
-        try {
-            return objectMapper.readValue(json, new TypeReference<>() {});
-        } catch (Exception e) {
-            return Map.of();
-        }
-    }
-
     private TestCaseResponse toResponse(TestCaseEntity entity) {
         return TestCaseResponse.builder()
                 .id(entity.getId())
@@ -300,9 +279,9 @@ public class TestCaseService {
                 .targetType(entity.getTargetType())
                 .targetId(entity.getTargetId())
                 .name(entity.getName())
-                .input(readMap(entity.getInput()))
-                .expectedOutput(readMap(entity.getExpectedOutput()))
-                .actualOutput(readMap(entity.getActualOutput()))
+                .input(entity.getInput())
+                .expectedOutput(entity.getExpectedOutput())
+                .actualOutput(entity.getActualOutput())
                 .status(entity.getStatus())
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())

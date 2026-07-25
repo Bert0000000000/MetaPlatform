@@ -211,6 +211,10 @@ export default function ArchAppPage() {
         active: false,
       });
     });
+  };
+
+  // 节点 kind → 颜色配置
+  const colorOf = (kind: NodeKind) => {
     switch (kind) {
       case 'gw': return { border: '#22c55e', bg: '#14241a', text: '#22c55e' };
       case 'app': return { border: '#60a5fa', bg: '#141824', text: '#60a5fa' };

@@ -1,10 +1,17 @@
 package com.metaplatform.iam.entity;
 
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
+import java.util.Map;
 
 /**
  * Outbox 消息实体（S-IAM-05）。
@@ -22,39 +29,58 @@ import java.time.Instant;
 @Builder
 public class IamOutboxEntity {
 
+    public enum Status { PENDING, SENT, FAILED }
+
     @Id
     @Column(name = "id", nullable = false, length = 64)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String id;
 
-    @Column(name = "tenant_id", nullable = false, length = 64)
+    @Column(name = "tenant_id", length = 64)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String tenantId;
 
     @Column(name = "aggregate_type", nullable = false, length = 64)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String aggregateType;
 
     @Column(name = "aggregate_id", nullable = false, length = 64)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String aggregateId;
 
     @Column(name = "event_type", nullable = false, length = 128)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String eventType;
 
-    @Column(name = "payload", nullable = false, columnDefinition = "TEXT")
-    private String payload;
+    @Column(name = "topic", nullable = false, length = 256)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    private String topic;
 
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "payload", columnDefinition = "TEXT")
+    private Map<String, Object> payload;
+
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "headers", columnDefinition = "TEXT")
-    private String headers;
+    private Map<String, Object> headers;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 16)
-    @Builder.Default
-    private String status = "PENDING";
+    private Status status;
 
     @Column(name = "retry_count", nullable = false)
-    @Builder.Default
-    private Integer retryCount = 0;
+    private Integer retryCount;
 
     @Column(name = "max_retries", nullable = false)
-    @Builder.Default
-    private Integer maxRetries = 3;
+    private Integer maxRetries;
+
+    @Column(name = "trace_id", length = 64)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    private String traceId;
+
+    @Column(name = "last_error", length = 1024)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    private String lastError;
 
     @Column(name = "next_retry_at")
     private Instant nextRetryAt;

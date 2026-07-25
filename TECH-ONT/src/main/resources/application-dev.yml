@@ -1,13 +1,40 @@
 spring:
+  cloud:
+    compatibility-verifier:
+      enabled: false
+    nacos:
+      discovery:
+        enabled: false
+      config:
+        enabled: false
+  config:
+    import: []
+  autoconfigure:
+    exclude:
+      - com.alibaba.cloud.nacos.registry.NacosServiceRegistryAutoConfiguration
+      - com.alibaba.cloud.nacos.discovery.NacosDiscoveryAutoConfiguration
+      - com.alibaba.cloud.nacos.NacosConfigAutoConfiguration
+      - org.springframework.cloud.autoconfigure.RefreshAutoConfiguration
+      - org.springframework.cloud.context.refresh.ContextRefresherAutoConfiguration
+      - com.alibaba.cloud.ai.agent.nacos.config.NacosAgentConfig
+      - com.alibaba.cloud.ai.autoconfigure.nacosconfig.NacosConfigAutoConfiguration
+      - com.alibaba.cloud.ai.autoconfigure.nacos.NacosMcServerAutoConfiguration
+      - org.springframework.ai.mcp.server.common.autoconfigure.McpServerAutoConfiguration
+      - org.springframework.ai.mcp.server.common.autoconfigure.annotations.McpServerSpecificationFactoryAutoConfiguration
+      - org.springframework.ai.mcp.server.common.autoconfigure.annotations.McpServerAnnotationScannerAutoConfiguration
+      - org.springframework.ai.mcp.client.autoconfigure.McpClientAutoConfiguration
+  # 提供一个虚拟的 DashScope API key 以避免启动失败
+  ai:
+    dashscope:
+      api-key: ${DASHSCOPE_API_KEY:sk-placeholder-for-dev-only-not-real}
   datasource:
     url: jdbc:postgresql://localhost:5432/metaplatform_ont
-    username: ${DB_USERNAME:meta}
-    password: ${DB_PASSWORD:meta}
+    username: meta
+    password: meta
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
       ddl-auto: update
-    show-sql: true
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
@@ -15,34 +42,6 @@ spring:
     enabled: true
     locations: classpath:db/migration
     baseline-on-migrate: true
-    schemas: public
-  data:
-    redis:
-      host: ${REDIS_HOST:localhost}
-      port: ${REDIS_PORT:6379}
-      password: ${REDIS_PASSWORD:meta}
-      database: 0
-  neo4j:
-    uri: ${NEO4J_URI:bolt://localhost:7687}
-    authentication:
-      username: ${NEO4J_USERNAME:neo4j}
-      password: ${NEO4J_PASSWORD:metaplatform}
-  ai:
-    dashscope:
-      # dev 环境下允许使用占位/默认值启动；真实 key 通过环境变量 DASHSCOPE_API_KEY 注入，禁止提交真实 key
-      api-key: ${DASHSCOPE_API_KEY:dummy-for-dev-only}
-      chat:
-        api-key: ${DASHSCOPE_API_KEY:dummy-for-dev-only}
-    alibaba:
-      agent:
-        proxy:
-          nacos:
-            enabled: true
-            serverAddr: ${NACOS_SERVER_ADDR:localhost:8848}
-            namespace: ${NACOS_NAMESPACE:metaplatform}
-            username: ${NACOS_USERNAME:}
-            password: ${NACOS_PASSWORD:}
-            agentName: ${NACOS_AGENT_NAME:tech-ont}
 
 app:
   jwt:

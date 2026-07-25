@@ -1,73 +1,99 @@
 package com.metaplatform.iam.entity.sso;
 
-import com.metaplatform.iam.entity.AuditEntity;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
-import jakarta.persistence.Version;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
-import lombok.Getter;
+import lombok.Builder;
+import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
-import lombok.experimental.SuperBuilder;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
+import java.util.Map;
+import java.time.Instant;
 
 @Entity
 @Table(name = "iam_sso_provider")
-@Getter
-@Setter
+@Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@SuperBuilder
-public class SsoProviderEntity extends AuditEntity {
+public class SsoProviderEntity {
 
-    public enum ProviderType {
-        OAUTH2,
-        OIDC,
-        SAML
-    }
+    public enum ProviderType { OAUTH2, OIDC, SAML, LDAP, CUSTOM }
 
-    @Id
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "id", nullable = false, length = 64)
     private String id;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "provider_type", nullable = false, length = 16)
-    private ProviderType providerType;
+    @Column(name = "created_at", nullable = false)
+    private Instant createdAt;
 
-    @Column(name = "name", nullable = false, length = 128)
-    private String name;
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "created_by", length = 64)
+    private String createdBy;
 
-    @Column(name = "client_id", length = 256)
-    private String clientId;
+    @Column(name = "deleted", nullable = false)
+    private Boolean deleted;
 
-    @Column(name = "client_secret", length = 512)
-    private String clientSecret;
+    @Column(name = "deleted_at")
+    private Instant deletedAt;
 
-    @Column(name = "issuer_url", length = 512)
-    private String issuerUrl;
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "tenant_id", nullable = false, length = 64)
+    private String tenantId;
 
+    @Column(name = "updated_at", nullable = false)
+    private Instant updatedAt;
+
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "updated_by", length = 64)
+    private String updatedBy;
+
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "authorization_endpoint", length = 512)
     private String authorizationEndpoint;
 
-    @Column(name = "token_endpoint", length = 512)
-    private String tokenEndpoint;
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "client_id", length = 256)
+    private String clientId;
 
-    @Column(name = "user_info_endpoint", length = 512)
-    private String userInfoEndpoint;
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "client_secret", length = 512)
+    private String clientSecret;
 
-    @Column(name = "scopes", length = 512)
-    private String scopes;
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "config", columnDefinition = "jsonb")
+    private Map<String, Object> config;
 
     @Column(name = "enabled", nullable = false)
     private Boolean enabled;
 
-    @Column(name = "config", columnDefinition = "jsonb")
-    private String config;
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "issuer_url", length = 512)
+    private String issuerUrl;
 
-    @Version
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "name", nullable = false, length = 128)
+    private String name;
+
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Enumerated(EnumType.STRING)
+    @Column(name = "provider_type", nullable = false, length = 16)
+    private ProviderType providerType;
+
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "scopes", length = 512)
+    private String scopes;
+
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "token_endpoint", length = 512)
+    private String tokenEndpoint;
+
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "user_info_endpoint", length = 512)
+    private String userInfoEndpoint;
+
     @Column(name = "version", nullable = false)
     private Integer version;
+
 }

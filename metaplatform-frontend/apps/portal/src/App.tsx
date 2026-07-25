@@ -42,6 +42,9 @@ const OntologyActionPage = lazy(() => import('./pages/ontology/OntologyActionPag
 const OntologyGraphPage = lazy(() => import('./pages/ontology/OntologyGraphPage'));
 
 const KnowledgeBasePage = lazy(() => import('./pages/knowledge/KnowledgeBasePage'));
+const KnowledgeDocsPage = lazy(() => import('./pages/knowledge/KnowledgeDocsPage'));
+const KnowledgeTestPage = lazy(() => import('./pages/knowledge/KnowledgeTestPage'));
+const KnowledgeConfigPage = lazy(() => import('./pages/knowledge/KnowledgeConfigPage'));
 
 const McpToolsPage = lazy(() => import('./pages/mcp/McpToolsPage'));
 const McpServerPage = lazy(() => import('./pages/mcp/McpServerPage'));
@@ -124,6 +127,9 @@ function AppRoutes() {
 
           {/* 知识库 */}
           <Route path="knowledge" element={<KnowledgeBasePage />} />
+          <Route path="knowledge/docs" element={<KnowledgeDocsPage />} />
+          <Route path="knowledge/test" element={<KnowledgeTestPage />} />
+          <Route path="knowledge/config" element={<KnowledgeConfigPage />} />
 
           {/* MCP 中心 */}
           <Route path="mcp" element={<McpToolsPage />} />

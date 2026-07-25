@@ -59,7 +59,7 @@ export default function AdminConfigPage() {
   const toggle = (key: string) => setToggles((prev) => ({ ...prev, [key]: !prev[key] }));
 
   return (
-    <>
+    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
       <SubTabs items={ADMIN_TABS} activePath={location.pathname} />
 
       <style>{`
@@ -122,7 +122,7 @@ export default function AdminConfigPage() {
         .ac-event-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 24px; max-width: 480px; }
         .ac-v-select { background: var(--muted); border: 1px solid var(--border); border-radius: var(--radius); color: var(--foreground); font-size: 13px; padding: 8px 30px 8px 12px; outline: none; font-family: var(--font-sans); appearance: none; cursor: pointer; width: 100%; max-width: 480px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23a1a1aa' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; }
       `}</style>
-      <div style={{ padding: '24px 0' }}>
+      <div style={{ padding: '24px 0', flex: 1, minHeight: 0, overflowY: 'auto' }}>
         {/* Page Header */}
         <div className="ac-page-header">
           <h1>系统配置</h1>
@@ -422,6 +422,6 @@ export default function AdminConfigPage() {
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }

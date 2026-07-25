@@ -3,7 +3,11 @@ package com.metaplatform.wfe.taskoperation.service;
 import com.metaplatform.wfe.common.ErrorCode;
 import com.metaplatform.wfe.common.TenantContext;
 import com.metaplatform.wfe.common.TraceContext;
+import com.metaplatform.wfe.entity.WfeTaskCommentEntity;
+import com.metaplatform.wfe.entity.WfeTaskEntity;
 import com.metaplatform.wfe.exception.WfeException;
+import com.metaplatform.wfe.repository.WfeTaskCommentRepository;
+import com.metaplatform.wfe.repository.WfeTaskRepository;
 import com.metaplatform.wfe.service.WfeOutboxService;
 import com.metaplatform.wfe.taskoperation.dto.AddSignRequest;
 import com.metaplatform.wfe.taskoperation.dto.DelegateRequest;
@@ -17,9 +21,6 @@ import com.metaplatform.wfe.taskoperation.repository.TaskDelegationRepository;
 import com.metaplatform.wfe.taskoperation.repository.TaskUrgeRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.flowable.engine.TaskService;
-import org.flowable.task.api.Task;
-import org.flowable.task.api.TaskQuery;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,8 +35,10 @@ import java.util.UUID;
 public class TaskOperationService {
 
     private static final String STATUS_PENDING = "PENDING";
+    private static final String STATUS_ACTIVE = "ACTIVE";
 
-    private final TaskService taskService;
+    private final WfeTaskRepository wfeTaskRepository;
+    private final WfeTaskCommentRepository wfeTaskCommentRepository;
     private final TaskDelegationRepository delegationRepository;
     private final TaskAddSignRepository addSignRepository;
     private final TaskUrgeRepository urgeRepository;
@@ -43,7 +46,7 @@ public class TaskOperationService {
 
     @Transactional
     public TaskOperationResponse addSign(String taskId, AddSignRequest request) {
-        Task task = findActiveTask(taskId);
+        WfeTaskEntity task = findActiveTask(taskId);
         String tenantId = TenantContext.get();
         String fromUser = task.getAssignee() != null ? task.getAssignee() : TenantContext.getUserId();
         Instant now = Instant.now();
@@ -58,14 +61,15 @@ public class TaskOperationService {
                 .updatedAt(now)
                 .build();
         TaskAddSignEntity saved = addSignRepository.save(entity);
-        // 当前 assignee 同步包含加签人，以便 Flowable 推进后续
+        // 当前 assignee 同步包含加签人，便于后续推进
         try {
             String currentAssignee = task.getAssignee();
             String nextAssignee = currentAssignee == null || currentAssignee.isBlank()
                     ? request.getAddsignUser()
                     : currentAssignee + "," + request.getAddsignUser();
-            taskService.setAssignee(taskId, nextAssignee);
-            taskService.addComment(taskId, task.getProcessInstanceId(),
+            task.setAssignee(nextAssignee);
+            wfeTaskRepository.save(task);
+            saveComment(tenantId, taskId, task.getProcessInstanceId(), fromUser,
                     "ADDSIGN by " + fromUser + " -> " + request.getAddsignUser()
                             + (request.getReason() != null ? " | " + request.getReason() : ""));
         } catch (Exception e) {
@@ -77,7 +81,7 @@ public class TaskOperationService {
 
     @Transactional
     public TaskOperationResponse delegate(String taskId, DelegateRequest request) {
-        Task task = findActiveTask(taskId);
+        WfeTaskEntity task = findActiveTask(taskId);
         String tenantId = TenantContext.get();
         String fromUser = task.getAssignee() != null ? task.getAssignee() : TenantContext.getUserId();
         Instant now = Instant.now();
@@ -92,8 +96,9 @@ public class TaskOperationService {
                 .build();
         TaskDelegationEntity saved = delegationRepository.save(entity);
         try {
-            taskService.setAssignee(taskId, request.getToUser());
-            taskService.addComment(taskId, task.getProcessInstanceId(),
+            task.setAssignee(request.getToUser());
+            wfeTaskRepository.save(task);
+            saveComment(tenantId, taskId, task.getProcessInstanceId(), fromUser,
                     "DELEGATE from " + fromUser + " -> " + request.getToUser()
                             + (request.getReason() != null ? " | " + request.getReason() : ""));
         } catch (Exception e) {
@@ -105,7 +110,7 @@ public class TaskOperationService {
 
     @Transactional
     public TaskOperationResponse urge(String taskId, UrgeRequest request) {
-        Task task = findActiveTask(taskId);
+        WfeTaskEntity task = findActiveTask(taskId);
         String tenantId = TenantContext.get();
         String operator = TenantContext.getUserId() != null ? TenantContext.getUserId() : "system";
         Instant now = Instant.now();
@@ -119,7 +124,7 @@ public class TaskOperationService {
                 .build();
         TaskUrgeEntity saved = urgeRepository.save(entity);
         try {
-            taskService.addComment(taskId, task.getProcessInstanceId(),
+            saveComment(tenantId, taskId, task.getProcessInstanceId(), operator,
                     "URGE by " + operator + " -> " + request.getUrgedUser()
                             + (request.getMessage() != null ? " | " + request.getMessage() : ""));
         } catch (Exception e) {
@@ -129,13 +134,27 @@ public class TaskOperationService {
         return toResponse(saved, "URGE", operator);
     }
 
-    private Task findActiveTask(String taskId) {
-        TaskQuery query = taskService.createTaskQuery().taskId(taskId);
-        Task task = query.singleResult();
-        if (task == null) {
-            throw new WfeException(ErrorCode.TASK_NOT_FOUND, "任务不存在或已完成: " + taskId);
+    private WfeTaskEntity findActiveTask(String taskId) {
+        return wfeTaskRepository.findByIdAndStatus(taskId, STATUS_ACTIVE)
+                .orElseThrow(() -> new WfeException(ErrorCode.TASK_NOT_FOUND, "任务不存在或已完成: " + taskId));
+    }
+
+    private void saveComment(String tenantId, String taskId, String processInstanceId,
+                             String userId, String content) {
+        try {
+            WfeTaskCommentEntity comment = WfeTaskCommentEntity.builder()
+                    .id(UUID.randomUUID().toString())
+                    .tenantId(tenantId)
+                    .taskId(taskId)
+                    .processInstanceId(processInstanceId)
+                    .userId(userId)
+                    .content(content)
+                    .build();
+            wfeTaskCommentRepository.save(comment);
+        } catch (Exception e) {
+            log.warn("Failed to save task comment (non-blocking): taskId={}, error={}",
+                    taskId, e.getMessage());
         }
-        return task;
     }
 
     private TaskOperationResponse toResponse(TaskDelegationEntity e, String type, String operator) {

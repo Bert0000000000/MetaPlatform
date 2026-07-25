@@ -8,12 +8,13 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
-import java.time.Instant;
+import java.util.Map;
+import java.util.List;
 import java.util.UUID;
+import java.time.Instant;
 
 @Entity
-@Table(name = "ea_technology_radar",
-        uniqueConstraints = @UniqueConstraint(columnNames = {"tenant_id", "name"}))
+@Table(name = "ea_technology_radar")
 @Data
 @Builder
 @NoArgsConstructor
@@ -22,35 +23,32 @@ public class TechnologyRadarEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(name = "id", nullable = false)
     private UUID id;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "tenant_id", nullable = false, length = 64)
     private String tenantId;
 
-    @Column(nullable = false, length = 256)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "name", nullable = false, length = 256)
     private String name;
 
-    @Lob
-    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    @Column(columnDefinition = "jsonb")
-    @Builder.Default
-    private String quadrants = "[\"语言与框架\",\"数据与存储\",\"平台与基础设施\",\"工具与流程\"]";
+    @Column(name = "quadrants", columnDefinition = "jsonb")
+    @JdbcTypeCode(SqlTypes.JSON)
+    private String quadrants;
 
-    @Lob
-    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    @Column(columnDefinition = "jsonb")
-    @Builder.Default
-    private String rings = "[\"采纳\",\"试用\",\"评估\",\"暂缓\"]";
+    @Column(name = "rings", columnDefinition = "jsonb")
+    @JdbcTypeCode(SqlTypes.JSON)
+    private String rings;
 
-    @Lob
-    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    @Column(columnDefinition = "jsonb")
-    @Builder.Default
-    private String items = "[]";
+    @Column(name = "items", columnDefinition = "jsonb")
+    @JdbcTypeCode(SqlTypes.JSON)
+    private String items;
 
-    @Column(nullable = false, length = 32)
-    @Builder.Default
-    private String status = "active";
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "status", nullable = false, length = 32)
+    private String status;
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
@@ -60,4 +58,5 @@ public class TechnologyRadarEntity {
 
     @Column(name = "deleted_at")
     private Instant deletedAt;
+
 }

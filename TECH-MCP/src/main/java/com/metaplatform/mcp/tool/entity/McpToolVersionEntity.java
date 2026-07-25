@@ -24,24 +24,35 @@ public class McpToolVersionEntity {
     private UUID id;
 
     @Column(name = "tenant_id", nullable = false, length = 64)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String tenantId;
 
     @Column(name = "tool_id", nullable = false)
     private UUID toolId;
 
     @Column(nullable = false, length = 32)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String version;
 
     @Lob
     @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     @Column(columnDefinition = "TEXT")
-    private String schema;
-
-    @Column(columnDefinition = "TEXT")
     private String description;
 
-    @Column(name = "change_log", columnDefinition = "TEXT")
+    @Lob
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+    @Column(name = "schema", columnDefinition = "jsonb")
+    private String schema;
+
+    @Lob
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+    @Column(columnDefinition = "TEXT")
     private String changeLog;
+
+    @Lob
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+    @Column(name = "snapshot", columnDefinition = "jsonb")
+    private String snapshot;
 
     @Column(name = "is_current", nullable = false)
     private Boolean isCurrent;
@@ -49,6 +60,7 @@ public class McpToolVersionEntity {
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
-    @Column(name = "created_by", length = 128)
+    @Column(name = "created_by", length = 100)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String createdBy;
 }

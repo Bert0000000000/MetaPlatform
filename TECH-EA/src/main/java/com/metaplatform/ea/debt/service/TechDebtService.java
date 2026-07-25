@@ -13,17 +13,22 @@ import com.metaplatform.ea.debt.dto.UpdateTechDebtRequest;
 import com.metaplatform.ea.debt.entity.TechDebtEntity;
 import com.metaplatform.ea.debt.repository.TechDebtRepository;
 import com.metaplatform.ea.exception.EaException;
+import com.metaplatform.ea.ontmapping.service.ConceptMappingRuleService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class TechDebtService {
@@ -34,6 +39,7 @@ public class TechDebtService {
 
     private final TechDebtRepository repository;
     private final ApplicationRepository applicationRepository;
+    private final ConceptMappingRuleService conceptMappingRuleService;
     private final ObjectMapper objectMapper;
 
     @Transactional
@@ -150,17 +156,31 @@ public class TechDebtService {
     public TechDebtImpactResponse analyzeImpact(UUID id) {
         TechDebtEntity entity = findById(id);
         List<UUID> affectedApps = new ArrayList<>();
+        Set<String> relatedConcepts = new HashSet<>();
+
         if ("APPLICATION".equalsIgnoreCase(entity.getScopeType()) && entity.getScopeId() != null) {
             applicationRepository.findByIdAndDeletedAtIsNull(entity.getScopeId()).ifPresent(app -> {
                 affectedApps.add(app.getId());
                 affectedApps.addAll(collectDependents(app));
+                relatedConcepts.addAll(
+                        conceptMappingRuleService.findConceptIdsByAsset("APPLICATION", app.getId()));
             });
         } else if ("TECH_STACK".equalsIgnoreCase(entity.getScopeType()) && entity.getScopeId() != null) {
-            // Look for applications that reference this tech stack
+            // 通过关联表精确反查使用该技术栈的应用（避免误判字符串包含）
             String tenantId = TenantContext.getOrDefault();
             for (ApplicationEntity app : applicationRepository.findByTenantIdAndDeletedAtIsNull(tenantId)) {
-                affectedApps.add(app.getId());
+                if (containsUuid(app.getTechStack(), entity.getScopeId())) {
+                    affectedApps.add(app.getId());
+                }
             }
+            relatedConcepts.addAll(
+                    conceptMappingRuleService.findConceptIdsByAsset("TECH_STACK", entity.getScopeId()));
+        } else if ("INFRASTRUCTURE".equalsIgnoreCase(entity.getScopeType()) && entity.getScopeId() != null) {
+            relatedConcepts.addAll(
+                    conceptMappingRuleService.findConceptIdsByAsset("INFRASTRUCTURE", entity.getScopeId()));
+        } else if ("DATA_ENTITY".equalsIgnoreCase(entity.getScopeType()) && entity.getScopeId() != null) {
+            relatedConcepts.addAll(
+                    conceptMappingRuleService.findConceptIdsByAsset("DATA_ENTITY", entity.getScopeId()));
         }
 
         List<String> recommendations = new ArrayList<>();
@@ -181,24 +201,43 @@ public class TechDebtService {
                 .code(entity.getCode())
                 .severity(entity.getSeverity())
                 .impactScore(entity.getImpactScore())
-                .relatedOntologyConcepts(List.of())
+                .relatedOntologyConcepts(new ArrayList<>(relatedConcepts))
                 .affectedApplications(affectedApps)
                 .recommendations(recommendations)
-                .summary(String.format("技术债 [%s] 影响 %d 个应用", entity.getCode(), affectedApps.size()))
+                .summary(String.format("技术债 [%s] 影响 %d 个应用，关联本体概念 %d 个",
+                        entity.getCode(), affectedApps.size(), relatedConcepts.size()))
                 .build();
     }
 
     private List<UUID> collectDependents(ApplicationEntity root) {
         String tenantId = TenantContext.getOrDefault();
-        List<ApplicationEntity> all = applicationRepository.findByTenantIdAndDeletedAtIsNull(tenantId);
+        UUID rootId = root.getId();
         List<UUID> deps = new ArrayList<>();
-        for (ApplicationEntity app : all) {
-            String json = app.getDependencies();
-            if (json != null && json.contains(root.getId().toString())) {
+        for (ApplicationEntity app : applicationRepository.findByTenantIdAndDeletedAtIsNull(tenantId)) {
+            if (app.getId().equals(rootId)) continue;
+            if (containsUuid(app.getDependencies(), rootId)) {
                 deps.add(app.getId());
             }
         }
         return deps;
+    }
+
+    /**
+     * 在 JSONB Map（键或值）中精确匹配指定 UUID（避免子字符串误判）。
+     */
+    private boolean containsUuid(Map<String, Object> map, UUID target) {
+        if (map == null || map.isEmpty() || target == null) return false;
+        String t = target.toString();
+        for (Map.Entry<String, Object> e : map.entrySet()) {
+            if (t.equalsIgnoreCase(e.getKey() == null ? null : e.getKey().trim())) {
+                return true;
+            }
+            Object v = e.getValue();
+            if (v != null && t.equalsIgnoreCase(v.toString().trim())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public TechDebtEntity findById(UUID id) {

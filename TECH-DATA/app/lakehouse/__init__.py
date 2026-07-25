@@ -1,1 +1,0 @@
-"""Lakehouse (Hudi/Iceberg) management domain."""

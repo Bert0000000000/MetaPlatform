@@ -5,13 +5,14 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
-import java.time.Instant;
 import java.util.UUID;
+import java.time.Instant;
 
 @Entity
-@Table(name = "ea_technology_component",
-        uniqueConstraints = @UniqueConstraint(columnNames = {"tenant_id", "name", "type"}))
+@Table(name = "ea_technology_component")
 @Data
 @Builder
 @NoArgsConstructor
@@ -20,29 +21,36 @@ public class TechnologyComponentEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(name = "id", nullable = false)
     private UUID id;
 
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "tenant_id", nullable = false, length = 64)
     private String tenantId;
 
-    @Column(nullable = false, length = 256)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "name", nullable = false, length = 256)
     private String name;
 
-    @Column(nullable = false, length = 64)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "type", nullable = false, length = 64)
     private String type;
 
-    @Column(length = 64)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "version", length = 64)
     private String version;
 
-    @Column(columnDefinition = "TEXT")
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 
-    @Column(length = 128)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "owner", length = 128)
     private String owner;
 
-    @Column(nullable = false, length = 32)
-    @Builder.Default
-    private String status = "active";
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "status", nullable = false, length = 32)
+    private String status;
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
@@ -52,4 +60,5 @@ public class TechnologyComponentEntity {
 
     @Column(name = "deleted_at")
     private Instant deletedAt;
+
 }

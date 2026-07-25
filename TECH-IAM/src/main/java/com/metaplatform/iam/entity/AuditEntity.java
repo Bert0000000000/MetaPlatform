@@ -10,6 +10,8 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.Instant;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 /**
  * 审计字段基类：被所有需要审计的实体继承。
@@ -26,6 +28,7 @@ import java.time.Instant;
 public abstract class AuditEntity {
 
     @Column(name = "tenant_id", nullable = false, length = 64)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String tenantId;
 
     @Column(name = "deleted", nullable = false)
@@ -43,6 +46,7 @@ public abstract class AuditEntity {
     private Instant updatedAt;
 
     @Column(name = "created_by", length = 64, updatable = false)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String createdBy;
 
     @Column(name = "updated_by", length = 64)
