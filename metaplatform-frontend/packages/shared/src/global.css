@@ -301,6 +301,7 @@ a {
 
 .v-input:focus {
   border-color: var(--foreground);
+    box-shadow: 0 0 0 1px var(--foreground);
 }
 
 .v-input-icon-wrap {
@@ -733,4 +734,12 @@ a {
 
 ::-webkit-scrollbar-thumb:hover {
   background: #404040;
+}
+
+
+/* 显式压制浏览器默认 focus outline 蓝色 ring */
+input.v-input:focus,
+textarea.v-input:focus,
+select.v-input:focus {
+  outline: none !important;
 }

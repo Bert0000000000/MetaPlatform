@@ -4,18 +4,21 @@ import type { ReactNode } from 'react';
 const inputStyle: React.CSSProperties = {
   width: '100%',
   height: 36,
-  background: 'var(--card)',
+  background: 'var(--muted)',
   border: '1px solid var(--border)',
   borderRadius: 'var(--radius)',
   padding: '0 12px',
   fontSize: 13,
   color: 'var(--foreground)',
   outline: 'none',
+  fontFamily: 'inherit',
+  transition: 'border-color 0.15s ease',
 };
 
 const textareaStyle: React.CSSProperties = {
   width: '100%',
-  background: 'var(--card)',
+  minHeight: 80,
+  background: 'var(--muted)',
   border: '1px solid var(--border)',
   borderRadius: 'var(--radius)',
   padding: '8px 12px',
@@ -24,6 +27,7 @@ const textareaStyle: React.CSSProperties = {
   outline: 'none',
   resize: 'vertical',
   fontFamily: 'inherit',
+  transition: 'border-color 0.15s ease',
 };
 
 const labelStyle: React.CSSProperties = {
@@ -52,12 +56,12 @@ export function Field({ label, children, required }: { label: string; children: 
 
 /** 文本输入 */
 export function TextInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
-  return <input type="text" style={inputStyle} {...props} />;
+  return <input className="v-input" type="text" style={inputStyle} {...props} />;
 }
 
 /** 文本域 */
 export function TextArea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
-  return <textarea style={textareaStyle} {...props} />;
+  return <textarea className="v-input" style={textareaStyle} {...props} />;
 }
 
 /** 下拉选择 */
