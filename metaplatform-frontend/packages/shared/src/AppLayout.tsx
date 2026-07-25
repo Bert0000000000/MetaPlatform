@@ -43,21 +43,40 @@ export default function AppLayout({ children }: AppLayoutProps) {
           transition: 'width 0.2s ease, padding 0.2s ease',
         }}
       >
-        {/* Logo — 品牌图标（六边形+条形图） */}
+        {/* Logo — 侧边栏品牌：放大六边形 + MetaPlatform / Ontology 双行标题 */}
         <div
           className="v-sidebar-logo"
-          style={{ display: 'flex', alignItems: 'center', justifyContent: collapsed ? 'center' : 'flex-start', marginBottom: 16, gap: 8 }}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: collapsed ? 'center' : 'flex-start',
+            marginBottom: 20,
+            padding: collapsed ? '0' : '0 4px',
+            gap: 10,
+          }}
         >
           {collapsed ? (
-            <MateLogo size={26} variant="color" />
+            <MateLogo size={32} variant="color" />
           ) : (
-            <span
-              className="v-sidebar-logo-badge"
-              style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '4px 4px 4px 4px' }}
-            >
-              <MateLogo size={22} variant="color" />
-              <span style={{ fontWeight: 700, color: '#fff' }}>Mate</span>
-            </span>
+            <>
+              <MateLogo size={34} variant="color" />
+              <span
+                className="v-sidebar-logo-badge"
+                style={{
+                  display: 'inline-flex',
+                  flexDirection: 'column',
+                  alignItems: 'flex-start',
+                  justifyContent: 'center',
+                  lineHeight: 1.15,
+                  padding: 0,
+                  background: 'transparent',
+                  border: 'none',
+                }}
+              >
+                <span style={{ fontSize: 16, fontWeight: 700, color: '#fff', letterSpacing: '0.01em' }}>MetaPlatform</span>
+                <span style={{ fontSize: 11, fontWeight: 500, color: 'var(--muted-foreground)', letterSpacing: '0.04em', marginTop: 2 }}>Ontology</span>
+              </span>
+            </>
           )}
         </div>
 
