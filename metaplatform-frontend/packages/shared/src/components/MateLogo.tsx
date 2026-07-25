@@ -1,16 +1,11 @@
 ﻿/**
- * Mate Platform 品牌图标
+ * Mate Platform 品牌图标（纯六边形）
  *
- * 设计语义：
- *   - 六边形外框：象征"多边、聚合、生态" — 与平台多服务/多租户的形态契合
- *   - 内嵌三条升序条形图：象征"数据驱动 + AI 增长"
- *   - 右上角小节点：象征"连接、节点网络"
- *
- * 用于：登录页左上角、侧边栏顶部（与 sidebar-logo-badge 配合）。
+ * 六边形线框，可选填充。用于登录页 / 侧边栏顶部。
  *
  * 用法：
  *   <MateLogo size={28} />
- *   <MateLogo size={20} variant="light" />  // 反色版，用于深色徽章背景
+ *   <MateLogo size={20} variant="light" />  // 反色版，用于主色背景徽章
  */
 
 import type { CSSProperties } from 'react';
@@ -29,42 +24,24 @@ export interface MateLogoProps {
   className?: string;
 }
 
-// 六边形顶点（中心为 24x24，r=10）— 平顶六边形
-const HEX_POINTS = [
-  [6.5, 2],
-  [17.5, 2],
-  [23, 12],
-  [17.5, 22],
-  [6.5, 22],
-  [1, 12],
-];
+// 平顶六边形顶点（中心 12,12，半径 10）
+const HEX_POINTS = '6.5,2 17.5,2 23,12 17.5,22 6.5,22 1,12';
 
-const PALETTE: Record<MateLogoVariant, {
-  fill: string;
-  stroke: string;
-  bar: string;
-  node: string;
-}> = {
-  // 默认彩色：透明背景 + 白边 + 蓝色条形图（用于浅色背景）
+const PALETTE: Record<MateLogoVariant, { fill: string; stroke: string }> = {
+  // 默认：透明填充 + 前景色边框（用于深色背景）
   color: {
     fill: 'transparent',
     stroke: 'var(--foreground, #fafafa)',
-    bar: '#60a5fa',
-    node: '#62d178',
   },
-  // 反色：填充深色 + 白色条形图（用于 primary 背景徽章）
+  // 反色：半透明白色填充 + 白色边框（用于 primary 徽章背景）
   light: {
-    fill: 'rgba(255,255,255,0.06)',
+    fill: 'rgba(255,255,255,0.10)',
     stroke: 'rgba(255,255,255,0.95)',
-    bar: '#ffffff',
-    node: '#62d178',
   },
   // 单色：仅边框（用于 sidebar 折叠态等）
   mono: {
     fill: 'transparent',
     stroke: 'currentColor',
-    bar: 'currentColor',
-    node: 'currentColor',
   },
 };
 
@@ -83,11 +60,9 @@ export default function MateLogo({
     width: size,
     height: size,
     flexShrink: 0,
-    position: 'relative',
-    filter: glow ? `drop-shadow(0 0 8px rgba(96,165,250,0.45))` : undefined,
+    filter: glow ? 'drop-shadow(0 0 6px rgba(96,165,250,0.4))' : undefined,
     ...style,
   };
-  const half = size / 2;
   return (
     <span style={wrapperStyle} className={className} aria-label="Mate Platform logo">
       <svg
@@ -97,21 +72,14 @@ export default function MateLogo({
         xmlns="http://www.w3.org/2000/svg"
         style={{ display: 'block' }}
       >
-        {/* 六边形外框 */}
         <polygon
-          points={HEX_POINTS.map((p) => p.join(',')).join(' ')}
+          points={HEX_POINTS}
           fill={palette.fill}
           stroke={palette.stroke}
-          strokeWidth="1.4"
+          strokeWidth="1.5"
           strokeLinejoin="round"
+          strokeLinecap="round"
         />
-        {/* 内嵌升序条形图 — 三条柱子，从低到高 */}
-        <rect x="6.6"  y="13.5" width="2.2" height="3"   rx="0.4" fill={palette.bar} />
-        <rect x="10.9" y="10.5" width="2.2" height="6"   rx="0.4" fill={palette.bar} />
-        <rect x="15.2" y="7"    width="2.2" height="9.5" rx="0.4" fill={palette.bar} />
-        {/* 右上角小节点 + 连接线 — 象征生态节点 */}
-        <circle cx="18" cy="5" r="1.6" fill={palette.node} />
-        <line x1="17.5" y1="7" x2="18" y2="5.8" stroke={palette.node} strokeWidth="0.7" strokeLinecap="round" />
       </svg>
     </span>
   );
