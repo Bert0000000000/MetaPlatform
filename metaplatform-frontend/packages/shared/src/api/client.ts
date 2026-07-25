@@ -24,7 +24,7 @@ function genTraceId(): string {
 
 export function createApiClient(opts: { baseURL?: string } = {}): AxiosInstance {
   const instance = axios.create({
-    baseURL: opts.baseURL ?? API_BASE,
+    baseURL: opts.baseURL ?? '/',
     timeout: 30000,
     headers: { 'Content-Type': 'application/json' },
   });
@@ -100,7 +100,7 @@ async function tryRefreshToken(): Promise<boolean> {
   if (!refreshToken) return false;
   _refreshInflight = (async () => {
     try {
-      const resp = await axios.post(API_BASE + '/iam/auth/refresh', { refreshToken }, {
+      const resp = await axios.post('/api/v1/iam/auth/refresh', { refreshToken }, {
         headers: { 'Content-Type': 'application/json' },
         timeout: 10000,
       });
