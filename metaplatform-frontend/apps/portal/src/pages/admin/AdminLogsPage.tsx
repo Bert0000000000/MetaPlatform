@@ -35,6 +35,8 @@ export default function AdminLogsPage() {
   const [logs, setLogs] = useState<AuditLogResponse[]>([]);
   const [stats, setStats] = useState<AuditLogStatistics | null>(null);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
   const [error, setError] = useState<string | null>(null);
   const [total, setTotal] = useState(0);
   const [filters, setFilters] = useState<{ action: string; status: string; keyword: string }>({ action: '', status: '', keyword: '' });
@@ -45,7 +47,7 @@ export default function AdminLogsPage() {
     try {
       const [r, s] = await Promise.all([
         Api.listAuditLogs({
-          page: 1, size: 100,
+          page, size: pageSize,
           action: filters.action || undefined,
           status: (filters.status as AuditStatus) || undefined,
         }),
@@ -60,7 +62,10 @@ export default function AdminLogsPage() {
       setLoading(false);
     }
   };
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, [filters.action, filters.status]);
+  useEffect(() => { setPage(1); /* eslint-disable-next-line */ }, [filters.action, filters.status]);
+  useEffect(() => { load(); /* eslint-disable-next-line */ }, [filters.action, filters.status, page, pageSize]);
+
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   const filtered = useMemo(() => {
     if (!filters.keyword) return logs;
@@ -153,9 +158,19 @@ export default function AdminLogsPage() {
                 })}
               </tbody>
             </table>
-            <div style={{ padding: '8px 16px', fontSize: 12, color: 'var(--muted-foreground)', borderTop: '1px solid var(--border)' }}>
-              共 {total} 条记录
-            </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 16px', fontSize: 12, color: 'var(--muted-foreground)', borderTop: '1px solid var(--border)' }}>
+                <span>共 <strong style={{ color: 'var(--foreground)' }}>{total}</strong> 条记录</span>
+                <span style={{ marginLeft: 8 }}>每页</span>
+                <select className="v-input" style={{ height: 28, padding: '0 8px', fontSize: 12 }} value={pageSize} onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}>
+                  {[10, 20, 50, 100].map((n) => (<option key={n} value={n}>{n}</option>))}
+                </select>
+                <div style={{ flex: 1 }} />
+                <button className="v-btn" disabled={page <= 1} onClick={() => setPage(1)} title="第一页" style={{ opacity: page <= 1 ? 0.4 : 1, cursor: page <= 1 ? 'not-allowed' : 'pointer', height: 28, padding: '0 10px', fontSize: 12 }}>{'«'}</button>
+                <button className="v-btn" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))} title="上一页" style={{ opacity: page <= 1 ? 0.4 : 1, cursor: page <= 1 ? 'not-allowed' : 'pointer', height: 28, padding: '0 10px', fontSize: 12 }}>{'‹'}</button>
+                <span style={{ fontSize: 12, color: 'var(--foreground)', padding: '0 8px' }}><strong>{page}</strong> / {totalPages}</span>
+                <button className="v-btn" disabled={page >= totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))} title="下一页" style={{ opacity: page >= totalPages ? 0.4 : 1, cursor: page >= totalPages ? 'not-allowed' : 'pointer', height: 28, padding: '0 10px', fontSize: 12 }}>{'›'}</button>
+                <button className="v-btn" disabled={page >= totalPages} onClick={() => setPage(totalPages)} title="最后一页" style={{ opacity: page >= totalPages ? 0.4 : 1, cursor: page >= totalPages ? 'not-allowed' : 'pointer', height: 28, padding: '0 10px', fontSize: 12 }}>{'»'}</button>
+              </div>
           </div>
         )}
       </div>
