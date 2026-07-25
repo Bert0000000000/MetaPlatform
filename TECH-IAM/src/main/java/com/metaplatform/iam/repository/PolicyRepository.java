@@ -22,7 +22,7 @@ public interface PolicyRepository extends JpaRepository<PolicyEntity, String> {
             "AND (:subjectType IS NULL OR p.subjectType = :subjectType) " +
             "AND (:subjectId IS NULL OR p.subjectId = :subjectId) " +
             "AND (:resourceType IS NULL OR p.resourceType = :resourceType) " +
-            "AND (:keyword IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', cast(:keyword as string), '%')))) ")
+            "AND (:keyword IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', cast(:keyword as string), '%')))")
     Page<PolicyEntity> search(@Param("tenantId") String tenantId,
                               @Param("keyword") String keyword,
                               @Param("subjectType") PolicyEntity.SubjectType subjectType,

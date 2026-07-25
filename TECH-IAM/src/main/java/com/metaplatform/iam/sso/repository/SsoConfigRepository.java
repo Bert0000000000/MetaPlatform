@@ -22,7 +22,7 @@ public interface SsoConfigRepository extends JpaRepository<SsoConfigEntity, Stri
     Page<SsoConfigEntity> findByTenantIdAndDeletedFalse(String tenantId, Pageable pageable);
 
     @Query("SELECT s FROM SsoConfigEntity s WHERE s.tenantId = :tenantId AND s.deleted = false " +
-            "AND (LOWER(s.providerName) LIKE LOWER(CONCAT('%', cast(:keyword as string), '%'))))")
+            "AND LOWER(s.providerName) LIKE LOWER(CONCAT('%', cast(:keyword as string), '%'))")
     Page<SsoConfigEntity> searchByKeyword(@Param("tenantId") String tenantId,
                                           @Param("keyword") String keyword,
                                           Pageable pageable);

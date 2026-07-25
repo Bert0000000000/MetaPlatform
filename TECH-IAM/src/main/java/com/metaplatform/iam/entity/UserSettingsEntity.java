@@ -1,4 +1,4 @@
-package com.metaplatform.iam.entity;
+﻿package com.metaplatform.iam.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -18,6 +18,7 @@ import java.time.Instant;
 @AllArgsConstructor
 public class UserSettingsEntity {
 
+    @Id
     @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "id", nullable = false, length = 64)
     private String id;

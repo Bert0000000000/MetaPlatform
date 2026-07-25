@@ -20,8 +20,8 @@ public interface PositionRepository extends JpaRepository<PositionEntity, String
     Page<PositionEntity> findByTenantIdAndDeletedFalse(String tenantId, Pageable pageable);
 
     @Query("SELECT p FROM PositionEntity p WHERE p.tenantId = :tenantId AND p.deleted = false " +
-            "AND (LOWER(p.name) LIKE LOWER(CONCAT('%', cast(:keyword as string), '%'))) " +
-            "OR LOWER(p.code) LIKE LOWER(CONCAT('%', cast(:keyword as string), '%'))))")
+            "AND (LOWER(p.name) LIKE LOWER(CONCAT('%', cast(:keyword as string), '%')) " +
+            "OR LOWER(p.code) LIKE LOWER(CONCAT('%', cast(:keyword as string), '%')))")
     Page<PositionEntity> searchByKeyword(@Param("tenantId") String tenantId,
                                         @Param("keyword") String keyword,
                                         Pageable pageable);

@@ -22,8 +22,8 @@ public interface SsoProviderRepository extends JpaRepository<SsoProviderEntity, 
     Optional<SsoProviderEntity> findByTenantIdAndNameAndDeletedFalse(String tenantId, String name);
 
     @Query("SELECT s FROM SsoProviderEntity s WHERE s.tenantId = :tenantId AND s.deleted = false " +
-            "AND (LOWER(s.name) LIKE LOWER(CONCAT('%', cast(:keyword as string), '%'))) " +
-            "OR LOWER(s.clientId) LIKE LOWER(CONCAT('%', cast(:keyword as string), '%')))) ")
+            "AND (LOWER(s.name) LIKE LOWER(CONCAT('%', cast(:keyword as string), '%')) " +
+            "OR LOWER(s.clientId) LIKE LOWER(CONCAT('%', cast(:keyword as string), '%')))")
     Page<SsoProviderEntity> searchByKeyword(@Param("tenantId") String tenantId,
                                             @Param("keyword") String keyword,
                                             Pageable pageable);

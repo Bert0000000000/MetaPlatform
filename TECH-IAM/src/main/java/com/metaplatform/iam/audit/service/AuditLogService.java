@@ -49,6 +49,7 @@ public class AuditLogService {
                     .description(description)
                     .traceId(TraceContext.getOrCreate())
                     .status(status == null ? IamAuditLogEntity.Status.SUCCESS : status)
+                    .createdAt(Instant.now())
                     .metadata(metadata)
                     .build();
             auditLogRepository.save(entity);

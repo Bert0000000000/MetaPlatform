@@ -1,4 +1,4 @@
-spring:
+﻿spring:
   cloud:
     nacos:
       discovery:
@@ -23,7 +23,7 @@ spring:
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
     show-sql: true
     properties:
       hibernate:
@@ -52,3 +52,4 @@ app:
     secret: ${JWT_SECRET:mate-platform-default-secret-key-must-be-over-32-bytes}
     expiration-ms: ${JWT_EXPIRATION_MS:7200000}
     refresh-expiration-ms: ${JWT_REFRESH_EXPIRATION_MS:604800000}
+

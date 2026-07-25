@@ -560,6 +560,9 @@ importers:
       antd:
         specifier: ^6.0.0
         version: 6.5.1(date-fns@2.29.3)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      axios:
+        specifier: ^1.18.1
+        version: 1.18.1(debug@4.4.3)
       lucide-react:
         specifier: ^0.468.0
         version: 0.468.0(react@19.2.7)

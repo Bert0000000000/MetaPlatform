@@ -1,4 +1,4 @@
-package com.metaplatform.iam.audit.entity;
+﻿package com.metaplatform.iam.audit.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -33,6 +33,7 @@ public class IamAuditLogEntity {
 
     public enum Status { SUCCESS, FAILURE, FAILED, PARTIAL }
 
+    @Id
     @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "id", nullable = false, length = 255)
     private String id;

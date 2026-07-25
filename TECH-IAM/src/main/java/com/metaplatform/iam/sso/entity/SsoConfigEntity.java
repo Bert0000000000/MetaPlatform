@@ -1,4 +1,4 @@
-package com.metaplatform.iam.sso.entity;
+﻿package com.metaplatform.iam.sso.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -20,6 +20,7 @@ public class SsoConfigEntity {
 
     public enum ProviderType { OAUTH2, OIDC, SAML, LDAP, CUSTOM }
 
+    @Id
     @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "id", nullable = false, length = 64)
     private String id;

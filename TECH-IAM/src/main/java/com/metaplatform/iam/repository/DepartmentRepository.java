@@ -23,16 +23,16 @@ public interface DepartmentRepository extends JpaRepository<DepartmentEntity, St
     Page<DepartmentEntity> findByTenantIdAndParentIdAndDeletedFalse(String tenantId, String parentId, Pageable pageable);
 
     @Query("SELECT d FROM DepartmentEntity d WHERE d.tenantId = :tenantId AND d.deleted = false " +
-            "AND (LOWER(d.deptName) LIKE LOWER(CONCAT('%', cast(:keyword as string), '%'))) " +
-            "OR LOWER(d.deptCode) LIKE LOWER(CONCAT('%', cast(:keyword as string), '%'))))")
+            "AND (LOWER(d.deptName) LIKE LOWER(CONCAT('%', cast(:keyword as string), '%')) " +
+            "OR LOWER(d.deptCode) LIKE LOWER(CONCAT('%', cast(:keyword as string), '%')))")
     Page<DepartmentEntity> searchByKeyword(@Param("tenantId") String tenantId,
                                            @Param("keyword") String keyword,
                                            Pageable pageable);
 
     @Query("SELECT d FROM DepartmentEntity d WHERE d.tenantId = :tenantId AND d.deleted = false " +
             "AND d.parentId = :parentId " +
-            "AND (LOWER(d.deptName) LIKE LOWER(CONCAT('%', cast(:keyword as string), '%'))) " +
-            "OR LOWER(d.deptCode) LIKE LOWER(CONCAT('%', cast(:keyword as string), '%'))))")
+            "AND (LOWER(d.deptName) LIKE LOWER(CONCAT('%', cast(:keyword as string), '%')) " +
+            "OR LOWER(d.deptCode) LIKE LOWER(CONCAT('%', cast(:keyword as string), '%')))")
     Page<DepartmentEntity> searchByParentAndKeyword(@Param("tenantId") String tenantId,
                                                     @Param("parentId") String parentId,
                                                     @Param("keyword") String keyword,

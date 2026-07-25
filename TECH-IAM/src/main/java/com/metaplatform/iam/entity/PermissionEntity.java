@@ -1,4 +1,4 @@
-package com.metaplatform.iam.entity;
+﻿package com.metaplatform.iam.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -20,6 +20,7 @@ public class PermissionEntity {
 
     public enum Effect { ALLOW, DENY }
 
+    @Id
     @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "id", nullable = false, length = 64)
     private String id;

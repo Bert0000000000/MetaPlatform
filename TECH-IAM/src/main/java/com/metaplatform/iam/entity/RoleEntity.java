@@ -1,4 +1,4 @@
-package com.metaplatform.iam.entity;
+﻿package com.metaplatform.iam.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -22,6 +22,7 @@ public class RoleEntity {
 
     public enum DataScope { SELF, DEPARTMENT, DEPARTMENT_TREE, ALL, CUSTOM }
 
+    @Id
     @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "id", nullable = false, length = 64)
     private String id;

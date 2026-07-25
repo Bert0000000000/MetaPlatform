@@ -1,4 +1,4 @@
-export { default as ErrorBoundary } from './ErrorBoundary';
+﻿export { default as ErrorBoundary } from './ErrorBoundary';
 export { default as PlatformMenu, NAV_ITEMS, type NavItem } from './PlatformMenu';
 export { default as AppLayout } from './AppLayout';
 export { AuthProvider, useAuth, type AuthContextValue } from './auth/AuthProvider';
@@ -37,6 +37,7 @@ export { default as Breadcrumb, type BreadcrumbItem, type BreadcrumbProps } from
 
 export { useThemeMode, getAntdTheme } from './theme';
 export * as FlowCanvas from './components/flow';
+export * as Api from './api';
 export { useAsyncError } from './errors';
 export { useAsync } from './hooks/useAsync';
 export { useLoadingState } from './hooks/useLoadingState';

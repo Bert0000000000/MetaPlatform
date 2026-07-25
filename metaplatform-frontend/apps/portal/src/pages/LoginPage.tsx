@@ -1,21 +1,46 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Hexagon } from 'lucide-react';
-import { useAuth } from '@mate/shared';
-import { MOCK_LOGIN } from '@/mock'; // MOCK
+import { useAuth, Api, type AuthUser } from '@mate/shared';
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const { login } = useAuth();
+  const [username, setUsername] = useState('admin');
+  const [password, setPassword] = useState('Admin@12345');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
+    if (!username || !password) {
+      setError('请输入用户名和密码');
+      return;
+    }
     setLoading(true);
-    // MOCK: 模拟登录延迟
-    setTimeout(() => {
-      login(MOCK_LOGIN.user, MOCK_LOGIN.accessToken, MOCK_LOGIN.refreshToken);
+    setError(null);
+    try {
+      const resp = await Api.login({ username, password, tenantId: 'tenant-default' });
+      // 后端响应已通过拦截器解包，resp 直接是 AuthResponse
+      const authedUser: AuthUser = {
+        id: resp.userId ?? resp.user?.id ?? '',
+        username: resp.username ?? resp.user?.username ?? username,
+        tenantId: 'tenant-default',
+        realName: resp.realName ?? resp.user?.realName,
+        email: resp.user?.email,
+        roles: ['USER'],
+      };
+      login(authedUser, resp.accessToken, resp.refreshToken);
       navigate('/dashboard');
-    }, 500);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : '登录失败，请重试';
+      setError(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') handleLogin();
   };
 
   return (
@@ -73,7 +98,7 @@ export default function LoginPage() {
 
           <div style={{ height: 1, background: 'var(--border)', marginBottom: 22 }} />
 
-          {/* SSO 登录 */}
+          {/* SSO 登录（演示用，跟账号密码等价） */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
             <button
               className="v-btn"
@@ -98,15 +123,33 @@ export default function LoginPage() {
               className="v-input"
               style={{ height: 42 }}
               placeholder="用户名"
-              defaultValue="admin"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              onKeyDown={handleKeyDown}
             />
             <input
               className="v-input"
               type="password"
               style={{ height: 42 }}
               placeholder="密码"
-              defaultValue="admin123"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              onKeyDown={handleKeyDown}
             />
+            {error && (
+              <div
+                style={{
+                  fontSize: 12,
+                  color: 'var(--destructive)',
+                  background: 'rgba(220, 38, 38, 0.08)',
+                  border: '1px solid rgba(220, 38, 38, 0.2)',
+                  borderRadius: 'var(--radius)',
+                  padding: '8px 12px',
+                }}
+              >
+                {error}
+              </div>
+            )}
             <button
               className="v-btn-primary"
               style={{ width: '100%', justifyContent: 'center', height: 42 }}
@@ -118,7 +161,7 @@ export default function LoginPage() {
           </div>
 
           <p style={{ fontSize: 12, color: 'var(--muted-foreground)', textAlign: 'center', marginTop: 20 }}>
-            MOCK 模式：点击任意登录按钮即可进入
+            默认账号：admin / Admin@12345（租户：tenant-default）
           </p>
         </div>
       </div>

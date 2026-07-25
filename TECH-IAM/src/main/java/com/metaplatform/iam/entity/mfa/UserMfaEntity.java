@@ -1,4 +1,4 @@
-package com.metaplatform.iam.entity.mfa;
+﻿package com.metaplatform.iam.entity.mfa;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -20,6 +20,7 @@ public class UserMfaEntity {
 
     public enum MfaType { TOTP, SMS, EMAIL, BACKUP_CODE, FIDO2 }
 
+    @Id
     @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "id", nullable = false, length = 64)
     private String id;
