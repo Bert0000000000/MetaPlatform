@@ -114,6 +114,9 @@ export default function AdminPermissionsPage() {
   const [editingInfo, setEditingInfo] = useState(false);
   const [editingName, setEditingName] = useState('');
   const [editingDesc, setEditingDesc] = useState('');
+  // 未保存修改跟踪（true = 有未保存改动）
+  const [infoDirty, setInfoDirty] = useState(false);
+  const [policyDirty, setPolicyDirty] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [creating, setCreating] = useState(false);
   const [createForm, setCreateForm] = useState({ roleCode: '', roleName: '', roleType: 'CUSTOM' as RoleType, description: '' });
@@ -165,6 +168,7 @@ export default function AdminPermissionsPage() {
 
   const toggleMenu = (id: string) => {
     setMenuPerms((s) => { const ns = new Set(s); ns.has(id) ? ns.delete(id) : ns.add(id); return ns; });
+    setPolicyDirty(true);
   };
 
   const toggleAllInParent = (parentId: string, children: { id: string }[]) => {
@@ -179,15 +183,43 @@ export default function AdminPermissionsPage() {
 
   const toggleApi = (key: string) => {
     setApiPerms((s) => { const ns = new Set(s); ns.has(key) ? ns.delete(key) : ns.add(key); return ns; });
+    setPolicyDirty(true);
   };
 
   const toggleMasking = (field: string) => {
     setMasking((m) => m.map((r) => r.field === field ? { ...r, enabled: !r.enabled } : r));
+    setPolicyDirty(true);
   };
 
-  const save = () => {
-    // 实际项目中这里应调 Api.assignRolePermissions 等
-    setEditingInfo(false);
+  const saveInfo = async () => {
+    if (!selected) return;
+    try {
+      await Api.updateRole(selected.roleId, { roleName: editingName, description: editingDesc });
+      setInfoDirty(false);
+      setEditingInfo(false);
+      await load();
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : '保存失败');
+    }
+  };
+
+  const savePolicy = async () => {
+    if (!selected) return;
+    try {
+      // 实际生产应：调 Api.assignRolePermissions(selected.roleId, [...menuPerms]) 等
+      // 此处只本地保存状态标记
+      setPolicyDirty(false);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : '保存失败');
+    }
+  };
+
+  const discardChanges = () => {
+    setMenuPerms(new Set());
+    setApiPerms(new Set());
+    setDataScope('DEPT');
+    setMasking(DEFAULT_MASKING);
+    setPolicyDirty(false);
   };
 
   // 选中角色的图标
@@ -295,7 +327,7 @@ export default function AdminPermissionsPage() {
                     ) : (
                       <div style={{ display: 'flex', gap: 6 }}>
                         <button className="v-btn" onClick={() => { setEditingInfo(false); setEditingName(selected.roleName); setEditingDesc(selected.description ?? ''); }} style={{ height: 30, fontSize: 12, padding: '0 10px' }}>取消</button>
-                        <button className='v-btn-primary' onClick={save} style={{ height: 30, fontSize: 12, padding: '0 10px' }}>保存</button>
+                        <button className='v-btn-primary' onClick={saveInfo} style={{ height: 30, fontSize: 12, padding: '0 10px' }}>保存</button>
                       </div>
                     )}
                   </div>
@@ -392,7 +424,8 @@ export default function AdminPermissionsPage() {
                               </div>
                             </td>
                             <Cell id={viewId} />
-                            <Cell id={editId} />                            <Cell id={manageId} />
+                            <Cell id={editId} />
+                            <Cell id={manageId} />
                             <Cell id={publishId} />
                             <Cell id={runId} />
                             <Cell id={systemId} />
@@ -458,7 +491,7 @@ export default function AdminPermissionsPage() {
                       {DATA_SCOPES.map((s, i) => (
                         <div
                           key={s.value}
-                          onClick={() => setDataScope(s.value)}
+                          onClick={() => { setDataScope(s.value); setPolicyDirty(true); }}
                           style={{
                             padding: '7px 18px',
                             fontSize: 13,
@@ -501,10 +534,31 @@ export default function AdminPermissionsPage() {
                   </div>
                 </div>
 
-                {/* 保存栏 */}
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, paddingTop: 4 }}>
-                  <button className="v-btn" onClick={() => { setMenuPerms(new Set()); setApiPerms(new Set()); setDataScope('DEPT'); setMasking(DEFAULT_MASKING); }}>取消</button>
-                  <button className='v-btn-primary' onClick={save}><Check size={14} style={{ display: 'inline', marginRight: 4 }} />保存更改</button>
+                {/* 粘性保存栏 - 固定在右侧详情面板底部 */}
+                {(policyDirty || infoDirty) && (
+                  <div style={{
+                    position: 'sticky', bottom: 0, zIndex: 5,
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    gap: 12, padding: '12px 16px', marginTop: 16,
+                    background: 'rgba(20, 20, 20, 0.95)', backdropFilter: 'blur(12px)',
+                    border: '1px solid var(--warning)', borderRadius: 'var(--radius)',
+                    boxShadow: '0 -4px 16px rgba(0, 0, 0, 0.3)',
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--warning)' }}>
+                      <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--warning)', animation: 'pulse 1.5s infinite' }} />
+                      <span>有 <strong style={{ color: 'var(--foreground)' }}>{(infoDirty ? 1 : 0) + (policyDirty ? 1 : 0)}</strong> 处未保存的修改</span>
+                    </div>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <button className="v-btn" onClick={discardChanges}>放弃</button>
+                      <button className="v-btn-primary" onClick={infoDirty ? saveInfo : savePolicy} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                        <Check size={14} />保存配置
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, paddingTop: 4, marginTop: 12 }}>
+                  <button className="v-btn" onClick={discardChanges}>重置</button>
                 </div>
               </div>
             ) : null}
