@@ -1,8 +1,9 @@
 ﻿import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Loader2 } from 'lucide-react';
-import { useAuth, Api, MateBrand, type AuthUser } from '@mate/shared';
-import { matchPreset, type SsoProvider } from '@mate/shared/api';
+import { Loader2, Sparkles, ShieldCheck } from 'lucide-react';
+import { useAuth, Api, MateBrand, MateLogo, type AuthUser } from '@mate/shared';
+import { matchPreset } from '@mate/shared/api';
+import type { SsoProvider } from '@mate/shared/api';
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -118,44 +119,95 @@ export default function LoginPage() {
         minHeight: '100vh',
         background: 'var(--background)',
         display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
         position: 'relative',
         overflow: 'hidden',
       }}
     >
-      {/* 背景光效 */}
+      {/* 左侧品牌面板背景光效 */}
       <div
         style={{
-          position: 'fixed',
+          position: 'absolute',
+          left: '8%',
           top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          width: 600,
-          height: 600,
-          background: 'radial-gradient(circle, rgba(250,250,250,0.018) 0%, transparent 70%)',
+          transform: 'translateY(-50%)',
+          width: 520,
+          height: 520,
+          background: 'radial-gradient(circle, rgba(96,165,250,0.08) 0%, transparent 65%)',
           zIndex: 0,
           pointerEvents: 'none',
         }}
       />
 
-      <div style={{ position: 'relative', zIndex: 1, width: '100%', maxWidth: 400, padding: '0 20px' }}>
+      {/* 左右分布局 */}
+      <div
+        style={{
+          position: 'relative',
+          zIndex: 1,
+          width: '100%',
+          minHeight: '100vh',
+          display: 'grid',
+          gridTemplateColumns: 'minmax(0, 1fr) minmax(420px, 560px)',
+        }}
+      >
+        {/* ===== 左侧：品牌面板 ===== */}
         <div
-          className="v-card"
           style={{
-            background: 'rgba(17, 17, 17, 0.72)',
-            backdropFilter: 'blur(28px) saturate(1.3)',
-            border: '1px solid var(--border)',
-            borderRadius: 'var(--radius)',
-            padding: '36px 32px 28px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            padding: '48px 56px',
           }}
         >
-          {/* Logo — 品牌图标（六边形 + 内嵌条形图） */}
-          <div style={{ marginBottom: 24 }}>
-            <MateBrand iconSize={26} badgeSize="md" />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 28 }}>
+            <MateLogo size={44} variant="color" />
+            <span style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.15 }}>
+              <span style={{ fontSize: 22, fontWeight: 700, color: '#fff', letterSpacing: '0.01em' }}>MetaPlatform</span>
+              <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--muted-foreground)', letterSpacing: '0.04em', marginTop: 4 }}>Ontology</span>
+            </span>
           </div>
+          <h1 style={{ fontSize: 32, fontWeight: 600, color: 'var(--foreground)', marginBottom: 12, lineHeight: 1.25, letterSpacing: '-0.02em' }}>
+            企业级 AI 协作中台
+          </h1>
+          <p style={{ fontSize: 15, color: 'var(--muted-foreground)', lineHeight: 1.6, maxWidth: 480 }}>
+            整合企业本体、知识库、数字员工与生成式 AI，
+            为团队提供统一的智能作业与决策支撑。
+          </p>
+          <div style={{ display: 'flex', gap: 12, marginTop: 28, flexWrap: 'wrap' }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 999, background: 'var(--muted)', color: 'var(--muted-foreground)', fontSize: 12 }}>
+              <Sparkles size={12} />本体驱动
+            </span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 999, background: 'var(--muted)', color: 'var(--muted-foreground)', fontSize: 12 }}>
+              <ShieldCheck size={12} />SSO 登陆
+            </span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 999, background: 'var(--muted)', color: 'var(--muted-foreground)', fontSize: 12 }}>
+              数字员工
+            </span>
+          </div>
+        </div>
 
-          <h1 style={{ fontSize: 18, fontWeight: 600, marginBottom: 4, color: 'var(--foreground)' }}>
+        {/* ===== 右侧：登陆面板 ===== */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '48px 40px',
+            borderLeft: '1px solid var(--border)',
+          }}
+        >
+          <div
+            className="v-card"
+            style={{
+              width: '100%',
+              maxWidth: 420,
+              background: 'rgba(17, 17, 17, 0.72)',
+              backdropFilter: 'blur(28px) saturate(1.3)',
+              border: '1px solid var(--border)',
+              borderRadius: 'var(--radius)',
+              padding: '36px 32px 28px',
+            }}
+          >
+          <h1 style={{ fontSize: 20, fontWeight: 600, marginBottom: 4, color: 'var(--foreground)' }}>
             欢迎回来
           </h1>
           <p style={{ fontSize: 13, color: 'var(--muted-foreground)', marginBottom: 24, lineHeight: 1.5 }}>
@@ -164,73 +216,84 @@ export default function LoginPage() {
 
           <div style={{ height: 1, background: 'var(--border)', marginBottom: 22 }} />
 
-          {/* SSO 登录：显示后端已启用的提供方 */}
-          {ssoProviders.length > 0 && (
-            <>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
-                {ssoProviders.map((p) => {
-                  const preset = matchPreset(p);
-                  const brandColor = preset?.color || 'var(--muted-foreground)';
-                  const brandLabel = (preset?.brand?.[0] || 'S').toUpperCase();
-                  const isLoading = !!ssoLoading[p.providerId];
-                  return (
-                    <button
-                      key={p.providerId}
-                      onClick={() => handleSsoLogin(p)}
-                      disabled={loading || isLoading}
-                      style={{
-                        width: '100%',
-                        justifyContent: 'center',
-                        height: 42,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 10,
-                        background: 'var(--card)',
-                        border: '1px solid var(--border)',
-                        borderRadius: 'var(--radius)',
-                        color: 'var(--foreground)',
-                        cursor: loading || isLoading ? 'not-allowed' : 'pointer',
-                        opacity: loading || isLoading ? 0.6 : 1,
-                        fontSize: 13,
-                        fontWeight: 500,
-                        fontFamily: 'inherit',
-                      }}
-                      onMouseEnter={(e) => { if (!loading && !isLoading) e.currentTarget.style.borderColor = brandColor; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--border)'; }}
-                    >
-                      <span style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        width: 22,
-                        height: 22,
-                        borderRadius: 4,
-                        background: brandColor,
-                        color: '#fff',
-                        fontSize: 12,
-                        fontWeight: 700,
-                      }}>{brandLabel}</span>
-                      {isLoading ? (
-                        <>
-                          <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />
-                          正在跳转…
-                        </>
-                      ) : (
-                        <>使用 {p.name} 登录</>
-                      )}
-                    </button>
-                  );
-                })}
+          {/* SSO 登录：始终显示该区（未配置时给出空态提示） */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
+            {ssoProviders.length === 0 && (
+              <div
+                style={{
+                  padding: '10px 12px',
+                  borderRadius: 'var(--radius)',
+                  border: '1px dashed var(--border)',
+                  background: 'transparent',
+                  color: 'var(--muted-foreground)',
+                  fontSize: 12,
+                  textAlign: 'center',
+                }}
+              >
+                暂未配置 SSO 提供方，请到 <strong style={{ color: 'var(--foreground)' }}>系统配置</strong> 中开启企业微信/微信/飞书登录
               </div>
+            )}
+            {ssoProviders.map((p) => {
+              const preset = matchPreset(p);
+              const brandColor = preset?.color || 'var(--muted-foreground)';
+              const brandLabel = (preset?.brand?.[0] || 'S').toUpperCase();
+              const isLoading = !!ssoLoading[p.providerId];
+              return (
+                <button
+                  key={p.providerId}
+                  onClick={() => handleSsoLogin(p)}
+                  disabled={loading || isLoading}
+                  style={{
+                    width: '100%',
+                    justifyContent: 'center',
+                    height: 42,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10,
+                    background: 'var(--card)',
+                    border: '1px solid var(--border)',
+                    borderRadius: 'var(--radius)',
+                    color: 'var(--foreground)',
+                    cursor: loading || isLoading ? 'not-allowed' : 'pointer',
+                    opacity: loading || isLoading ? 0.6 : 1,
+                    fontSize: 13,
+                    fontWeight: 500,
+                    fontFamily: 'inherit',
+                  }}
+                  onMouseEnter={(e) => { if (!loading && !isLoading) e.currentTarget.style.borderColor = brandColor; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--border)'; }}
+                >
+                  <span style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: 22,
+                    height: 22,
+                    borderRadius: 4,
+                    background: brandColor,
+                    color: '#fff',
+                    fontSize: 12,
+                    fontWeight: 700,
+                  }}>{brandLabel}</span>
+                  {isLoading ? (
+                    <>
+                      <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />
+                      正在跳转…
+                    </>
+                  ) : (
+                    <>使用 {p.name} 登录</>
+                  )}
+                </button>
+              );
+            })}
+          </div>
 
-              {/* 分隔线 */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-                <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
-                <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>或</span>
-                <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
-              </div>
-            </>
-          )}
+          {/* 分隔线 */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+            <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+            <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>或使用账号密码</span>
+            <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+          </div>
 
           {/* 账号密码 */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -278,6 +341,7 @@ export default function LoginPage() {
           <p style={{ fontSize: 12, color: 'var(--muted-foreground)', textAlign: 'center', marginTop: 20 }}>
             默认账号：admin / Admin@12345（租户：tenant-default）
           </p>
+          </div>
         </div>
       </div>
 
@@ -286,6 +350,9 @@ export default function LoginPage() {
     </div>
   );
 }
+
+
+
 
 
 
