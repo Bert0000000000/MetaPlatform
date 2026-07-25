@@ -158,11 +158,11 @@ export default function LoginPage() {
             padding: '48px 56px',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 28 }}>
-            <MateLogo size={44} variant="color" />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 24, marginBottom: 40 }}>
+            <MateLogo size={132} variant="color" />
             <span style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.15 }}>
-              <span style={{ fontSize: 22, fontWeight: 700, color: '#fff', letterSpacing: '0.01em' }}>MetaPlatform</span>
-              <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--muted-foreground)', letterSpacing: '0.04em', marginTop: 4 }}>Ontology</span>
+              <span style={{ fontSize: 66, fontWeight: 700, color: '#fff', letterSpacing: '-0.02em' }}>MetaPlatform</span>
+              <span style={{ fontSize: 39, fontWeight: 500, color: 'var(--muted-foreground)', letterSpacing: '0.04em', marginTop: 8 }}>Ontology</span>
             </span>
           </div>
           <h1 style={{ fontSize: 32, fontWeight: 600, color: 'var(--foreground)', marginBottom: 12, lineHeight: 1.25, letterSpacing: '-0.02em' }}>
