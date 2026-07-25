@@ -1,4 +1,4 @@
-﻿package com.metaplatform.iam.entity;
+package com.metaplatform.iam.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -54,11 +54,9 @@ public class PermissionEntity {
     @Column(name = "effect", nullable = false, length = 16)
     private Effect effect;
 
-    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 
-    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "conditions", columnDefinition = "TEXT")
     private String conditions;
 
@@ -85,4 +83,10 @@ public class PermissionEntity {
     @Column(name = "updated_by", length = 64)
     private String updatedBy;
 
+    @PrePersist
+    public void prePersist() {
+        Instant now = Instant.now();
+        if (createdAt == null) createdAt = now;
+        if (updatedAt == null) updatedAt = now;
+    }
 }

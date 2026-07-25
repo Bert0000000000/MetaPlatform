@@ -1,4 +1,4 @@
-﻿package com.metaplatform.iam.audit.entity;
+package com.metaplatform.iam.audit.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;

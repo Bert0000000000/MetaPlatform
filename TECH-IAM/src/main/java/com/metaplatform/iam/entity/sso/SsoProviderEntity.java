@@ -1,4 +1,4 @@
-﻿package com.metaplatform.iam.entity.sso;
+package com.metaplatform.iam.entity.sso;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -96,5 +96,12 @@ public class SsoProviderEntity {
 
     @Column(name = "version", nullable = false)
     private Integer version;
+
+    @PrePersist
+    public void prePersist() {
+        Instant now = Instant.now();
+        if (createdAt == null) createdAt = now;
+        if (updatedAt == null) updatedAt = now;
+    }
 
 }

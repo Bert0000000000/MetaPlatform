@@ -1,4 +1,4 @@
-﻿package com.metaplatform.iam.entity.mfa;
+package com.metaplatform.iam.entity.mfa;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -54,4 +54,11 @@ public class UserMfaEntity {
     @Column(name = "verified", nullable = false)
     private Boolean verified;
 
+
+    @PrePersist
+    public void prePersist() {
+        Instant now = Instant.now();
+        if (createdAt == null) createdAt = now;
+        if (updatedAt == null) updatedAt = now;
+    }
 }

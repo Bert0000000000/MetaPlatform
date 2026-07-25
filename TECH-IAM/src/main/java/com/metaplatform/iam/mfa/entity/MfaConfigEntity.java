@@ -1,4 +1,4 @@
-﻿package com.metaplatform.iam.mfa.entity;
+package com.metaplatform.iam.mfa.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;

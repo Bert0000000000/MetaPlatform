@@ -1,12 +1,13 @@
-﻿/**
+/**
  * 系统配置页
  * 数据源：TECH-IAM /api/v1/iam/api-keys, /api/v1/iam/sso-providers
  */
 import { useEffect, useState, type ReactNode } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Plus, RefreshCw, Key, ShieldCheck, Cloud, Copy, Trash2 } from 'lucide-react';
+import { Plus, RefreshCw, Key, ShieldCheck, Cloud, Copy, Trash2, Pencil } from 'lucide-react';
 import {
-  SubTabs, PageLoading, EmptyState, type SubTabItem,
+  SubTabs, PageLoading, EmptyState, FormDrawer, FormSection, Field, TextInput, Select,
+  type SubTabItem,
   Api,
 } from '@mate/shared';
 import type { ApiKeyResponse, SsoProvider } from '@mate/shared/api';
@@ -40,6 +41,12 @@ export default function AdminConfigPage() {
   const [error, setError] = useState<string | null>(null);
   const [creatingKey, setCreatingKey] = useState(false);
   const [newKeyName, setNewKeyName] = useState('');
+
+  // SSO CRUD state
+  const [ssoFormOpen, setSsoFormOpen] = useState(false);
+  const [editingSso, setEditingSso] = useState<SsoProvider | null>(null);
+  const [savingSso, setSavingSso] = useState(false);
+  const [ssoForm, setSsoForm] = useState({ name: '', type: 'OIDC' as SsoProvider['type'], clientId: '', clientSecret: '', issuer: '', enabled: true });
 
   const load = async () => {
     setLoading(true);
@@ -77,6 +84,33 @@ export default function AdminConfigPage() {
     if (!window.confirm('确定吊销 API Key「' + k.name + '」？')) return;
     try { await Api.revokeApiKey(k.apiKeyId); await load(); }
     catch (e: unknown) { setError(e instanceof Error ? e.message : '吊销失败'); }
+  };
+
+  // === SSO CRUD ===
+  const submitSso = async () => {
+    setSavingSso(true);
+    try {
+      if (editingSso) {
+        await Api.updateSsoProvider(editingSso.providerId, {
+          name: ssoForm.name, type: ssoForm.type, clientId: ssoForm.clientId, issuer: ssoForm.issuer, enabled: ssoForm.enabled,
+        });
+      } else {
+        await Api.createSsoProvider({ ...ssoForm });
+      }
+      setSsoFormOpen(false); setEditingSso(null);
+      setSsoForm({ name: '', type: 'OIDC', clientId: '', clientSecret: '', issuer: '', enabled: true });
+      await load();
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : '保存失败');
+    } finally {
+      setSavingSso(false);
+    }
+  };
+
+  const handleDeleteSso = async (p: SsoProvider) => {
+    if (!window.confirm('确定删除 SSO 提供方「' + p.name + '」？')) return;
+    try { await Api.deleteSsoProvider(p.providerId); await load(); }
+    catch (e: unknown) { setError(e instanceof Error ? e.message : '删除失败'); }
   };
 
   return (
@@ -146,30 +180,46 @@ export default function AdminConfigPage() {
             )}
           </>
         ) : tab === 'sso' ? (
-          sso.length === 0 ? <EmptyState description="尚未配置 SSO 提供方" /> : (
-            <div className="v-card" style={{ overflow: 'hidden' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr>
-                    {['名称', '类型', 'Client ID', '状态', '创建时间'].map((h) => (
-                      <th key={h} style={{ textAlign: 'left', padding: '10px 12px', fontSize: 11, fontWeight: 500, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid var(--border)' }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {sso.map((p) => (
-                    <tr key={p.providerId}>
-                      <td style={{ padding: '10px 12px', fontSize: 13, borderBottom: '1px solid var(--border)' }}>{p.name}</td>
-                      <td style={{ padding: '10px 12px', fontSize: 12, borderBottom: '1px solid var(--border)' }}><span className="v-badge v-badge-info">{p.type}</span></td>
-                      <td style={{ padding: '10px 12px', fontSize: 12, fontFamily: 'var(--font-mono)', color: 'var(--muted-foreground)', borderBottom: '1px solid var(--border)' }}>{p.clientId}</td>
-                      <td style={{ padding: '10px 12px', borderBottom: '1px solid var(--border)' }}><span className={p.enabled ? 'v-badge v-badge-success' : 'v-badge v-badge-neutral'}>{p.enabled ? '已启用' : '已禁用'}</span></td>
-                      <td style={{ padding: '10px 12px', fontSize: 12, color: 'var(--muted-foreground)', borderBottom: '1px solid var(--border)' }}>{fmtTime(p.createdAt)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          <>
+            <div style={{ marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>已配置 {sso.length} 个 SSO 提供方</span>
+              <div style={{ flex: 1 }} />
+              <button className="v-btn-primary" onClick={() => { setEditingSso(null); setSsoForm({ name: '', type: 'OIDC', clientId: '', clientSecret: '', issuer: '', enabled: true }); setSsoFormOpen(true); }}>
+                <Plus style={{ width: 14, height: 14 }} />新建 SSO
+              </button>
             </div>
-          )
+            {sso.length === 0 ? <EmptyState description="尚未配置 SSO 提供方" /> : (
+              <div className="v-card" style={{ overflow: 'hidden' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr>
+                      {['名称', '类型', 'Client ID', 'Issuer', '状态', '创建时间', ''].map((h) => (
+                        <th key={h} style={{ textAlign: 'left', padding: '10px 12px', fontSize: 11, fontWeight: 500, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid var(--border)' }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sso.map((p) => (
+                      <tr key={p.providerId}>
+                        <td style={{ padding: '10px 12px', fontSize: 13, borderBottom: '1px solid var(--border)' }}>{p.name}</td>
+                        <td style={{ padding: '10px 12px', fontSize: 12, borderBottom: '1px solid var(--border)' }}><span className="v-badge v-badge-info">{p.type}</span></td>
+                        <td style={{ padding: '10px 12px', fontSize: 12, fontFamily: 'var(--font-mono)', color: 'var(--muted-foreground)', borderBottom: '1px solid var(--border)' }}>{p.clientId}</td>
+                        <td style={{ padding: '10px 12px', fontSize: 12, fontFamily: 'var(--font-mono)', color: 'var(--muted-foreground)', borderBottom: '1px solid var(--border)' }}>{p.issuer ?? '-'}</td>
+                        <td style={{ padding: '10px 12px', borderBottom: '1px solid var(--border)' }}><span className={p.enabled ? 'v-badge v-badge-success' : 'v-badge v-badge-neutral'}>{p.enabled ? '已启用' : '已禁用'}</span></td>
+                        <td style={{ padding: '10px 12px', fontSize: 12, color: 'var(--muted-foreground)', borderBottom: '1px solid var(--border)' }}>{fmtTime(p.createdAt)}</td>
+                        <td style={{ padding: '10px 12px', borderBottom: '1px solid var(--border)' }}>
+                          <div style={{ display: 'flex', gap: 4 }}>
+                            <button className="au-action-link" onClick={() => { setEditingSso(p); setSsoForm({ name: p.name, type: p.type, clientId: p.clientId, clientSecret: '', issuer: p.issuer ?? '', enabled: p.enabled }); setSsoFormOpen(true); }}><Pencil style={{ width: 12, height: 12 }} /></button>
+                            <button className="au-action-link danger" onClick={() => handleDeleteSso(p)}><Trash2 style={{ width: 12, height: 12 }} /></button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </>
         ) : (
           <div className="v-card" style={{ padding: 24 }}>
             <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 16 }}>安全策略</h3>
@@ -198,13 +248,13 @@ export default function AdminConfigPage() {
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 12, borderBottom: '1px solid var(--border)' }}>
                 <div>
                   <div style={{ fontSize: 14, fontWeight: 500 }}>JWT Refresh Token 有效期</div>
-                  <div style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>当前配置：7 天</div>
+                  <div style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>当前配置：7 day</div>
                 </div>
                 <span className="v-badge v-badge-info">604800s</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div>
-                  <div style={{ fontSize: 14, fontWeight: 500 }}>审计日志</div>
+                  <div style={{ fontSize: 14, fontWeight: 500 }}>Audit Log</div>
                   <div style={{ fontSize: 12, color: 'var(--muted-foreground)' }}>记录所有用户操作与状态变更</div>
                 </div>
                 <span className="v-badge v-badge-success">已启用</span>
@@ -216,6 +266,51 @@ export default function AdminConfigPage() {
           </div>
         )}
       </div>
+
+      {/* SSO Drawer */}
+      <FormDrawer
+        open={ssoFormOpen}
+        title={editingSso ? '编辑 SSO 提供方' : '新建 SSO 提供方'}
+        onCancel={() => { setSsoFormOpen(false); setEditingSso(null); }}
+        onOk={submitSso}
+        confirmLoading={savingSso}
+        okText="保存"
+      >
+        <FormSection title="基本信息">
+          <Field label="名称" required>
+            <TextInput value={ssoForm.name} onChange={(e) => setSsoForm({ ...ssoForm, name: e.target.value })} placeholder="如：企业微信" />
+          </Field>
+          <Field label="类型" required>
+            <Select value={ssoForm.type} onChange={(e) => setSsoForm({ ...ssoForm, type: e.target.value as SsoProvider['type'] })} disabled={!!editingSso}>
+              <option value="OIDC">OIDC</option>
+              <option value="OAUTH2">OAuth 2.0</option>
+              <option value="SAML">SAML</option>
+              <option value="LDAP">LDAP</option>
+            </Select>
+          </Field>
+          <Field label="Client ID" required>
+            <TextInput value={ssoForm.clientId} onChange={(e) => setSsoForm({ ...ssoForm, clientId: e.target.value })} placeholder="OAuth Client ID" />
+          </Field>
+          <Field label="Client Secret" required={!editingSso}>
+            <TextInput type="password" value={ssoForm.clientSecret} onChange={(e) => setSsoForm({ ...ssoForm, clientSecret: e.target.value })} placeholder={editingSso ? '留空则不修改' : 'OAuth Client Secret'} />
+          </Field>
+          <Field label="Issuer / Metadata URL">
+            <TextInput value={ssoForm.issuer} onChange={(e) => setSsoForm({ ...ssoForm, issuer: e.target.value })} placeholder="如：https://login.work.weixin.qq.com" />
+          </Field>
+          <Field label="启用">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <button
+                type="button"
+                onClick={() => setSsoForm({ ...ssoForm, enabled: !ssoForm.enabled })}
+                style={{ width: 36, height: 20, borderRadius: 10, border: 'none', cursor: 'pointer', background: ssoForm.enabled ? 'var(--success)' : 'var(--border)', position: 'relative', transition: 'background 0.2s' }}
+              >
+                <span style={{ position: 'absolute', top: 2, left: 2, width: 16, height: 16, borderRadius: '50%', background: '#fff', transition: 'transform 0.2s', transform: ssoForm.enabled ? 'translateX(16px)' : 'translateX(0)' }} />
+              </button>
+              <span style={{ fontSize: 13, color: 'var(--muted-foreground)' }}>{ssoForm.enabled ? '已启用' : '已禁用'}</span>
+            </div>
+          </Field>
+        </FormSection>
+      </FormDrawer>
     </div>
   );
 }

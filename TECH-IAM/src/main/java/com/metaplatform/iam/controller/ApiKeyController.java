@@ -10,6 +10,7 @@ import com.metaplatform.iam.dto.apikey.RevokeRequest;
 import com.metaplatform.iam.dto.apikey.UpdatePermissionsRequest;
 import com.metaplatform.iam.dto.apikey.ValidateRequest;
 import com.metaplatform.iam.dto.apikey.ValidateResponse;
+import com.metaplatform.iam.security.CurrentUserHolder;
 import com.metaplatform.iam.service.ApiKeyService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -33,11 +34,15 @@ public class ApiKeyController {
 
     @PostMapping
     public ApiResponse<ApiKeyCreatedResponse> create(@Valid @RequestBody CreateApiKeyRequest request) {
+        // 从 JWT 上下文自动获取当前用户
+        String userId = request.getUserId();
+        if (userId == null || userId.isBlank()) {
+            userId = CurrentUserHolder.requireUserId();
+        }
         return ApiResponse.success(apiKeyService.create(
-                request.getTenantId(), request.getName(), request.getUserId(),
+                request.getTenantId(), request.getName(), userId,
                 request.getScopes(), request.getExpiresAt()));
     }
-
     @GetMapping
     public ApiResponse<PageResponse<ApiKeyResponse>> list(
             @RequestParam(required = false) String tenantId,

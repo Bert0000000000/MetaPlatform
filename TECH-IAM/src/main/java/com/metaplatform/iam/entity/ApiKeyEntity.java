@@ -5,6 +5,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -19,10 +20,10 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 /**
- * API Key 实体。
- * - key_prefix：明文 Key 前 8 位，用于展示
- * - key_hash：SHA-256 哈希，用于验证
- * - status：ACTIVE / REVOKED
+ * API Key 瀹炰綋銆?
+ * - key_prefix锛氭槑鏂?Key 鍓?8 浣嶏紝鐢ㄤ簬灞曠ず
+ * - key_hash锛歋HA-256 鍝堝笇锛岀敤浜庨獙璇?
+ * - status锛欰CTIVE / REVOKED
  */
 @Entity
 @Table(name = "iam_api_keys")
@@ -58,16 +59,16 @@ public class ApiKeyEntity {
     private String userId;
 
     /**
-     * JSON 数组字符串，如 ["ont:read","iam:write"]。
-     * 保留向后兼容；细粒度权限见 {@link #permissions}。
+     * JSON 鏁扮粍瀛楃涓诧紝濡?["ont:read","iam:write"]銆?
+     * 淇濈暀鍚戝悗鍏煎锛涚粏绮掑害鏉冮檺瑙?{@link #permissions}銆?
      */
     @Column(name = "scopes", columnDefinition = "TEXT")
     @JdbcTypeCode(SqlTypes.VARCHAR)
     private String scopes;
 
     /**
-     * JSON 数组字符串，如 [{"resource":"ont:concepts","actions":["read","write"]}]。
-     * 表达资源 + 操作的细粒度权限范围。
+     * JSON 鏁扮粍瀛楃涓诧紝濡?[{"resource":"ont:concepts","actions":["read","write"]}]銆?
+     * 琛ㄨ揪璧勬簮 + 鎿嶄綔鐨勭粏绮掑害鏉冮檺鑼冨洿銆?
      */
     @Column(name = "permissions", columnDefinition = "TEXT")
     @JdbcTypeCode(SqlTypes.VARCHAR)
@@ -84,14 +85,14 @@ public class ApiKeyEntity {
     private Instant lastUsedAt;
 
     /**
-     * 吊销原因（可空，仅 status=REVOKED 时有值）。
+     * 鍚婇攢鍘熷洜锛堝彲绌猴紝浠?status=REVOKED 鏃舵湁鍊硷級銆?
      */
     @Column(name = "revoked_reason", length = 256)
     @JdbcTypeCode(SqlTypes.VARCHAR)
     private String revokedReason;
 
     /**
-     * 吊销时间（可空，仅 status=REVOKED 时有值）。
+     * 鍚婇攢鏃堕棿锛堝彲绌猴紝浠?status=REVOKED 鏃舵湁鍊硷級銆?
      */
     @Column(name = "revoked_at")
     private Instant revokedAt;
@@ -103,4 +104,11 @@ public class ApiKeyEntity {
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
+
+    @PrePersist
+    public void prePersist() {
+        Instant now = Instant.now();
+        if (createdAt == null) createdAt = now;
+        if (updatedAt == null) updatedAt = now;
+    }
 }

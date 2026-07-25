@@ -1,4 +1,4 @@
-﻿package com.metaplatform.iam.audit.repository;
+package com.metaplatform.iam.audit.repository;
 
 import com.metaplatform.iam.audit.entity.IamAuditLogEntity;
 import org.springframework.data.domain.Page;

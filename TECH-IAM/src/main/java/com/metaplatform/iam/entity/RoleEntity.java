@@ -1,4 +1,4 @@
-﻿package com.metaplatform.iam.entity;
+package com.metaplatform.iam.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -44,7 +44,6 @@ public class RoleEntity {
     @Column(name = "role_type", nullable = false, length = 32)
     private RoleType roleType;
 
-    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 
@@ -79,4 +78,11 @@ public class RoleEntity {
     @Column(name = "updated_by", length = 64)
     private String updatedBy;
 
+
+    @PrePersist
+    public void prePersist() {
+        Instant now = Instant.now();
+        if (createdAt == null) createdAt = now;
+        if (updatedAt == null) updatedAt = now;
+    }
 }

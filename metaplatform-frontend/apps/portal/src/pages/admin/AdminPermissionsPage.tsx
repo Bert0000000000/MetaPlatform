@@ -1,4 +1,4 @@
-﻿/**
+/**
  * 权限管理页
  * 数据源：TECH-IAM /api/v1/iam/roles, /api/v1/iam/permissions
  */
@@ -10,7 +10,7 @@ import {
   PageLoading, EmptyState, type SubTabItem,
   Api,
 } from '@mate/shared';
-import type { RoleResponse, RoleType, PermissionResponse } from '@mate/shared/api';
+import type { RoleResponse, RoleType, PermissionResponse, PermissionEffect } from '@mate/shared/api';
 
 const ADMIN_TABS: SubTabItem[] = [
   { label: '用户管理', path: '/admin' },
@@ -34,6 +34,22 @@ const EFFECT_LABEL: Record<string, { label: string; cls: string }> = {
   DENY:  { label: '拒绝', cls: 'v-badge v-badge-error' },
 };
 
+const ACTION_OPTIONS = ['READ', 'CREATE', 'UPDATE', 'DELETE', 'EXPORT', 'IMPORT', 'ADMIN'];
+const RESOURCE_TYPES = ['APP', 'AGENT', 'KB', 'MCP', 'IAM', 'ONT', 'EA', 'OBS', 'RAG', 'DASHBOARD', 'WORKFLOW'];
+
+interface RoleForm { roleCode: string; roleName: string; roleType: RoleType; description: string; }
+interface PermForm {
+  permissionCode: string;
+  permissionName: string;
+  resourceType: string;
+  actions: string[];
+  effect: PermissionEffect;
+  description: string;
+}
+
+const EMPTY_ROLE_FORM: RoleForm = { roleCode: '', roleName: '', roleType: 'CUSTOM', description: '' };
+const EMPTY_PERM_FORM: PermForm = { permissionCode: '', permissionName: '', resourceType: 'APP', actions: ['READ'], effect: 'ALLOW', description: '' };
+
 export default function AdminPermissionsPage() {
   const location = useLocation();
   const [tab, setTab] = useState<'role' | 'permission'>('role');
@@ -42,10 +58,13 @@ export default function AdminPermissionsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [keyword, setKeyword] = useState('');
-  const [createOpen, setCreateOpen] = useState(false);
-  const [editing, setEditing] = useState<RoleResponse | null>(null);
+  const [roleFormOpen, setRoleFormOpen] = useState(false);
+  const [editingRole, setEditingRole] = useState<RoleResponse | null>(null);
+  const [permFormOpen, setPermFormOpen] = useState(false);
+  const [editingPerm, setEditingPerm] = useState<PermissionResponse | null>(null);
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({ roleCode: '', roleName: '', roleType: 'CUSTOM' as RoleType, description: '' });
+  const [roleForm, setRoleForm] = useState<RoleForm>(EMPTY_ROLE_FORM);
+  const [permForm, setPermForm] = useState<PermForm>(EMPTY_PERM_FORM);
 
   const load = async () => {
     setLoading(true);
@@ -71,26 +90,32 @@ export default function AdminPermissionsPage() {
     return roles.filter((r) => [r.roleName, r.roleCode].some((s) => s?.toLowerCase().includes(k)));
   }, [roles, keyword]);
 
+  const filteredPerms = useMemo(() => {
+    if (!keyword) return perms;
+    const k = keyword.toLowerCase();
+    return perms.filter((p) => [p.permissionName, p.permissionCode, p.resourceType].some((s) => s?.toLowerCase().includes(k)));
+  }, [perms, keyword]);
+
   const permGroups = useMemo(() => {
     const m = new Map<string, PermissionResponse[]>();
-    for (const p of perms) {
+    for (const p of filteredPerms) {
       const k = p.resourceType || 'OTHER';
       if (!m.has(k)) m.set(k, []);
       m.get(k)!.push(p);
     }
     return Array.from(m.entries()).sort(([a], [b]) => a.localeCompare(b));
-  }, [perms]);
+  }, [filteredPerms]);
 
-  const submit = async () => {
+  // === Role CRUD ===
+  const submitRole = async () => {
     setSaving(true);
     try {
-      if (editing) {
-        await Api.updateRole(editing.roleId, { roleName: form.roleName, description: form.description });
+      if (editingRole) {
+        await Api.updateRole(editingRole.roleId, { roleName: roleForm.roleName, description: roleForm.description });
       } else {
-        await Api.createRole({ roleCode: form.roleCode, roleName: form.roleName, roleType: form.roleType, description: form.description });
+        await Api.createRole({ roleCode: roleForm.roleCode, roleName: roleForm.roleName, roleType: roleForm.roleType, description: roleForm.description });
       }
-      setCreateOpen(false); setEditing(null);
-      setForm({ roleCode: '', roleName: '', roleType: 'CUSTOM', description: '' });
+      setRoleFormOpen(false); setEditingRole(null); setRoleForm(EMPTY_ROLE_FORM);
       await load();
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : '保存失败');
@@ -99,10 +124,41 @@ export default function AdminPermissionsPage() {
     }
   };
 
-  const handleDelete = async (r: RoleResponse) => {
+  const handleDeleteRole = async (r: RoleResponse) => {
     if (!window.confirm('确定删除角色「' + r.roleName + '」？')) return;
     try { await Api.deleteRole(r.roleId); await load(); }
     catch (e: unknown) { setError(e instanceof Error ? e.message : '删除失败'); }
+  };
+
+  // === Permission CRUD ===
+  const submitPerm = async () => {
+    setSaving(true);
+    try {
+      if (editingPerm) {
+        await Api.updatePermission(editingPerm.permissionId, { permissionName: permForm.permissionName, actions: permForm.actions, effect: permForm.effect, description: permForm.description });
+      } else {
+        await Api.createPermission({ permissionCode: permForm.permissionCode, permissionName: permForm.permissionName, resourceType: permForm.resourceType, actions: permForm.actions, effect: permForm.effect, description: permForm.description });
+      }
+      setPermFormOpen(false); setEditingPerm(null); setPermForm(EMPTY_PERM_FORM);
+      await load();
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : '保存失败');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeletePerm = async (p: PermissionResponse) => {
+    if (!window.confirm('确定删除权限「' + p.permissionName + '」？')) return;
+    try { await Api.deletePermission(p.permissionId); await load(); }
+    catch (e: unknown) { setError(e instanceof Error ? e.message : '删除失败'); }
+  };
+
+  const toggleAction = (a: string) => {
+    setPermForm((f) => ({
+      ...f,
+      actions: f.actions.includes(a) ? f.actions.filter((x) => x !== a) : [...f.actions, a],
+    }));
   };
 
   return (
@@ -114,11 +170,19 @@ export default function AdminPermissionsPage() {
             <h1 style={{ fontSize: 22, fontWeight: 600, marginBottom: 4 }}>权限管理</h1>
             <p style={{ fontSize: 14, color: 'var(--muted-foreground)' }}>管理角色与细粒度权限（数据源：TECH-IAM）</p>
           </div>
-          {tab === 'role' && (
-            <button className="v-btn-primary" onClick={() => { setEditing(null); setForm({ roleCode: '', roleName: '', roleType: 'CUSTOM', description: '' }); setCreateOpen(true); }}>
-              <Plus style={{ width: 14, height: 14 }} />新建角色
-            </button>
-          )}
+          <button
+            className="v-btn-primary"
+            onClick={() => {
+              if (tab === 'role') {
+                setEditingRole(null); setRoleForm(EMPTY_ROLE_FORM); setRoleFormOpen(true);
+              } else {
+                setEditingPerm(null); setPermForm(EMPTY_PERM_FORM); setPermFormOpen(true);
+              }
+            }}
+          >
+            <Plus style={{ width: 14, height: 14 }} />
+            {tab === 'role' ? '新建角色' : '新建权限'}
+          </button>
         </div>
 
         {error && (
@@ -128,8 +192,12 @@ export default function AdminPermissionsPage() {
         )}
 
         <div style={{ display: 'flex', gap: 4, marginBottom: 16, borderBottom: '1px solid var(--border)' }}>
-          <button onClick={() => setTab('role')} style={{ padding: '8px 16px', border: 'none', background: 'none', borderBottom: tab === 'role' ? '2px solid var(--primary)' : '2px solid transparent', color: tab === 'role' ? 'var(--foreground)' : 'var(--muted-foreground)', cursor: 'pointer', fontSize: 14, fontWeight: 500 }}><Shield style={{ width: 14, height: 14, display: 'inline', marginRight: 6 }} />角色 ({roles.length})</button>
-          <button onClick={() => setTab('permission')} style={{ padding: '8px 16px', border: 'none', background: 'none', borderBottom: tab === 'permission' ? '2px solid var(--primary)' : '2px solid transparent', color: tab === 'permission' ? 'var(--foreground)' : 'var(--muted-foreground)', cursor: 'pointer', fontSize: 14, fontWeight: 500 }}><Key style={{ width: 14, height: 14, display: 'inline', marginRight: 6 }} />权限 ({perms.length})</button>
+          <button onClick={() => setTab('role')} style={{ padding: '8px 16px', border: 'none', background: 'none', borderBottom: tab === 'role' ? '2px solid var(--primary)' : '2px solid transparent', color: tab === 'role' ? 'var(--foreground)' : 'var(--muted-foreground)', cursor: 'pointer', fontSize: 14, fontWeight: 500 }}>
+            <Shield style={{ width: 14, height: 14, display: 'inline', marginRight: 6 }} />角色 ({roles.length})
+          </button>
+          <button onClick={() => setTab('permission')} style={{ padding: '8px 16px', border: 'none', background: 'none', borderBottom: tab === 'permission' ? '2px solid var(--primary)' : '2px solid transparent', color: tab === 'permission' ? 'var(--foreground)' : 'var(--muted-foreground)', cursor: 'pointer', fontSize: 14, fontWeight: 500 }}>
+            <Key style={{ width: 14, height: 14, display: 'inline', marginRight: 6 }} />权限 ({perms.length})
+          </button>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
@@ -157,8 +225,8 @@ export default function AdminPermissionsPage() {
                         <div style={{ fontSize: 12, color: 'var(--muted-foreground)', fontFamily: 'var(--font-mono)' }}>@{r.roleCode}</div>
                       </div>
                       <div style={{ display: 'flex', gap: 4 }}>
-                        <button className="v-btn" onClick={() => { setEditing(r); setForm({ roleCode: r.roleCode, roleName: r.roleName, roleType: r.roleType, description: r.description ?? '' }); setCreateOpen(true); }}><Pencil style={{ width: 12, height: 12 }} /></button>
-                        <button className="v-btn" onClick={() => handleDelete(r)} style={{ color: 'var(--destructive)' }}><Trash2 style={{ width: 12, height: 12 }} /></button>
+                        <button className="au-action-link" onClick={() => { setEditingRole(r); setRoleForm({ roleCode: r.roleCode, roleName: r.roleName, roleType: r.roleType, description: r.description ?? '' }); setRoleFormOpen(true); }}><Pencil style={{ width: 12, height: 12 }} /></button>
+                        <button className="au-action-link danger" onClick={() => handleDeleteRole(r)}><Trash2 style={{ width: 12, height: 12 }} /></button>
                       </div>
                     </div>
                     {r.description && <p style={{ fontSize: 12, color: 'var(--muted-foreground)', marginBottom: 12, minHeight: 32 }}>{r.description}</p>}
@@ -184,7 +252,7 @@ export default function AdminPermissionsPage() {
                   <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                     <thead>
                       <tr>
-                        {['权限名', '权限码', '操作', '效果', '关联角色'].map((h) => (
+                        {['权限名', '权限码', '操作', '效果', '关联角色', ''].map((h) => (
                           <th key={h} style={{ textAlign: 'left', padding: '8px 16px', fontSize: 11, fontWeight: 500, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid var(--border)' }}>{h}</th>
                         ))}
                       </tr>
@@ -201,6 +269,12 @@ export default function AdminPermissionsPage() {
                             </td>
                             <td style={{ padding: '8px 16px', fontSize: 12, borderBottom: '1px solid var(--border)' }}><span className={e.cls}>{e.label}</span></td>
                             <td style={{ padding: '8px 16px', fontSize: 12, color: 'var(--muted-foreground)', borderBottom: '1px solid var(--border)' }}>{p.roleCount ?? 0}</td>
+                            <td style={{ padding: '8px 16px', borderBottom: '1px solid var(--border)' }}>
+                              <div style={{ display: 'flex', gap: 4 }}>
+                                <button className="au-action-link" onClick={() => { setEditingPerm(p); setPermForm({ permissionCode: p.permissionCode, permissionName: p.permissionName, resourceType: p.resourceType, actions: p.actions ?? [], effect: p.effect, description: p.description ?? '' }); setPermFormOpen(true); }}><Pencil style={{ width: 12, height: 12 }} /></button>
+                                <button className="au-action-link danger" onClick={() => handleDeletePerm(p)}><Trash2 style={{ width: 12, height: 12 }} /></button>
+                              </div>
+                            </td>
                           </tr>
                         );
                       })}
@@ -213,23 +287,24 @@ export default function AdminPermissionsPage() {
         )}
       </div>
 
+      {/* Role Drawer */}
       <FormDrawer
-        open={createOpen}
-        title={editing ? '编辑角色' : '新建角色'}
-        onCancel={() => { setCreateOpen(false); setEditing(null); }}
-        onOk={submit}
+        open={roleFormOpen}
+        title={editingRole ? '编辑角色' : '新建角色'}
+        onCancel={() => { setRoleFormOpen(false); setEditingRole(null); }}
+        onOk={submitRole}
         confirmLoading={saving}
         okText="保存"
       >
         <FormSection title="基本信息">
-          <Field label="角色编码" required={!editing}>
-            <TextInput value={form.roleCode} onChange={(e) => setForm({ ...form, roleCode: e.target.value })} disabled={!!editing} placeholder="如：APP_ADMIN" />
+          <Field label="角色编码" required={!editingRole}>
+            <TextInput value={roleForm.roleCode} onChange={(e) => setRoleForm({ ...roleForm, roleCode: e.target.value })} disabled={!!editingRole} placeholder="如：APP_ADMIN" />
           </Field>
           <Field label="角色名称" required>
-            <TextInput value={form.roleName} onChange={(e) => setForm({ ...form, roleName: e.target.value })} placeholder="如：应用管理员" />
+            <TextInput value={roleForm.roleName} onChange={(e) => setRoleForm({ ...roleForm, roleName: e.target.value })} placeholder="如：应用管理员" />
           </Field>
           <Field label="类型">
-            <Select value={form.roleType} onChange={(e) => setForm({ ...form, roleType: e.target.value as RoleType })} disabled={!!editing}>
+            <Select value={roleForm.roleType} onChange={(e) => setRoleForm({ ...roleForm, roleType: e.target.value as RoleType })} disabled={!!editingRole}>
               <option value="CUSTOM">CUSTOM（自定义）</option>
               <option value="SYSTEM">SYSTEM（系统）</option>
               <option value="BUILTIN">BUILTIN（内置）</option>
@@ -237,8 +312,94 @@ export default function AdminPermissionsPage() {
             </Select>
           </Field>
           <Field label="描述">
-            <TextArea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3} />
+            <TextArea value={roleForm.description} onChange={(e) => setRoleForm({ ...roleForm, description: e.target.value })} rows={3} />
           </Field>
+        </FormSection>
+      </FormDrawer>
+
+      {/* Permission Drawer */}
+      <FormDrawer
+        open={permFormOpen}
+        title={editingPerm ? '编辑权限' : '新建权限'}
+        onCancel={() => { setPermFormOpen(false); setEditingPerm(null); }}
+        onOk={submitPerm}
+        confirmLoading={saving}
+        okText="保存"
+      >
+        <FormSection title="基本信息">
+          <Field label="权限编码" required={!editingPerm}>
+            <TextInput value={permForm.permissionCode} onChange={(e) => setPermForm({ ...permForm, permissionCode: e.target.value })} disabled={!!editingPerm} placeholder="如：app:read" style={{ fontFamily: 'var(--font-mono)' }} />
+          </Field>
+          <Field label="权限名称" required>
+            <TextInput value={permForm.permissionName} onChange={(e) => setPermForm({ ...permForm, permissionName: e.target.value })} placeholder="如：查看应用" />
+          </Field>
+          <Field label="资源类型" required>
+            <select
+              className="v-input"
+              style={{ height: 32, width: '100%' }}
+              value={permForm.resourceType}
+              onChange={(e) => setPermForm({ ...permForm, resourceType: e.target.value })}
+              disabled={!!editingPerm}
+            >
+              {RESOURCE_TYPES.map((rt) => <option key={rt} value={rt}>{rt}</option>)}
+              <option value="OTHER">OTHER（其它）</option>
+            </select>
+          </Field>
+        </FormSection>
+        <FormSection title="操作（可多选）">
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            {ACTION_OPTIONS.map((a) => {
+              const on = permForm.actions.includes(a);
+              return (
+                <button
+                  key={a}
+                  type="button"
+                  onClick={() => !editingPerm && toggleAction(a)}
+                  disabled={!!editingPerm}
+                  style={{
+                    padding: '4px 10px',
+                    borderRadius: 4,
+                    fontSize: 12,
+                    fontFamily: 'var(--font-mono)',
+                    cursor: editingPerm ? 'not-allowed' : 'pointer',
+                    border: '1px solid ' + (on ? 'var(--primary)' : 'var(--border)'),
+                    background: on ? 'var(--primary)' : 'transparent',
+                    color: on ? 'var(--primary-foreground)' : 'var(--muted-foreground)',
+                  }}
+                >
+                  {a}
+                </button>
+              );
+            })}
+          </div>
+        </FormSection>
+        <FormSection title="效果">
+          <div style={{ display: 'flex', gap: 8 }}>
+            {(['ALLOW', 'DENY'] as PermissionEffect[]).map((eff) => {
+              const on = permForm.effect === eff;
+              return (
+                <button
+                  key={eff}
+                  type="button"
+                  onClick={() => setPermForm({ ...permForm, effect: eff })}
+                  style={{
+                    padding: '6px 14px',
+                    borderRadius: 4,
+                    fontSize: 13,
+                    cursor: 'pointer',
+                    border: '1px solid ' + (on ? 'var(--primary)' : 'var(--border)'),
+                    background: on ? 'var(--primary)' : 'transparent',
+                    color: on ? 'var(--primary-foreground)' : 'var(--muted-foreground)',
+                  }}
+                >
+                  {eff === 'ALLOW' ? '允许' : '拒绝'}
+                </button>
+              );
+            })}
+          </div>
+        </FormSection>
+        <FormSection title="描述">
+          <TextArea value={permForm.description} onChange={(e) => setPermForm({ ...permForm, description: e.target.value })} rows={3} />
         </FormSection>
       </FormDrawer>
     </div>

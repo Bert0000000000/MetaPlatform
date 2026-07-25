@@ -1,4 +1,4 @@
-﻿package com.metaplatform.iam.position.entity;
+package com.metaplatform.iam.position.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;

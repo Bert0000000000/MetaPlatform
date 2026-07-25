@@ -1,4 +1,4 @@
-﻿package com.metaplatform.iam.entity;
+package com.metaplatform.iam.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -48,7 +48,6 @@ public class DataPermissionEntity {
     @Column(name = "data_scope", nullable = false, length = 16)
     private DataScope dataScope;
 
-    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "column_filter", columnDefinition = "TEXT")
     private String columnFilter;
 
@@ -80,4 +79,11 @@ public class DataPermissionEntity {
     @Column(name = "updated_by", length = 64)
     private String updatedBy;
 
+
+    @PrePersist
+    public void prePersist() {
+        Instant now = Instant.now();
+        if (createdAt == null) createdAt = now;
+        if (updatedAt == null) updatedAt = now;
+    }
 }
