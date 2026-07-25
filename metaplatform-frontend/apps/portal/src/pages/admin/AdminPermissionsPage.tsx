@@ -162,6 +162,32 @@ export default function AdminPermissionsPage() {
     setEditingInfo(false);
     setEditingName(r.roleName);
     setEditingDesc(r.description ?? '');
+    // 切换角色时：从 r.policy 加载该角色的策略，重置所有修改状态
+    loadPolicyFromRole(r);
+  };
+
+  // 从 role 加载策略到本地状态
+  const loadPolicyFromRole = (r: RoleResponse) => {
+    setPolicyDirty(false);
+    setInfoDirty(false);
+    // 尝试从 description 解析（policy 字段需要后端 schema 升级，先用 description 存）
+    const policyStr = r.policy || r.description;
+    if (policyStr && policyStr.startsWith('{') && policyStr.includes('"menuPerms"')) {
+      try {
+        const p = JSON.parse(policyStr);
+        setMenuPerms(new Set(Array.isArray(p.menuPerms) ? p.menuPerms : []));
+        setApiPerms(new Set(Array.isArray(p.apiPerms) ? p.apiPerms : []));
+        setDataScope(typeof p.dataScope === 'string' ? p.dataScope : 'DEPT');
+        setMasking(Array.isArray(p.masking) ? p.masking : DEFAULT_MASKING);
+        return;
+      } catch (e) {
+        // ignore parse error
+      }
+    }
+    setMenuPerms(new Set());
+    setApiPerms(new Set());
+    setDataScope('DEPT');
+    setMasking(DEFAULT_MASKING);
   };
 
   const selected = useMemo(() => roles.find((r) => r.roleId === selectedRoleId) ?? null, [roles, selectedRoleId]);
@@ -210,9 +236,19 @@ export default function AdminPermissionsPage() {
   const savePolicy = async () => {
     if (!selected) return;
     try {
-      // 实际生产应：调 Api.assignRolePermissions(selected.roleId, [...menuPerms]) 等
-      // 此处只本地保存状态标记
+      const policy = JSON.stringify({
+        menuPerms: [...menuPerms],
+        apiPerms: [...apiPerms],
+        dataScope,
+        masking,
+      });
+      // 存到 description 字段（policy 字段需要后端 schema 升级）
+      await Api.updateRole(selected.roleId, {
+        description: policy,
+        version: selected.version,
+      });
       setPolicyDirty(false);
+      await load();
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : '保存失败');
     }
