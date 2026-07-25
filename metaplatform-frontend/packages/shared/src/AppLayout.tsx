@@ -100,22 +100,22 @@ export default function AppLayout({ children }: AppLayoutProps) {
           {/* 用户信息（折叠后只显示头像） */}
           <div
             style={{
-              height: 40,
+              height: 36,
               display: 'flex',
               alignItems: 'center',
               justifyContent: collapsed ? 'center' : 'flex-start',
-              gap: 12,
-              padding: collapsed ? '0' : '0 12px',
+              gap: 8,
+              padding: '0 8px',
               borderRadius: 6,
               color: 'var(--sidebar-foreground)',
-              fontSize: 14,
+              fontSize: 13,
             }}
             title={user?.realName ?? user?.username ?? '当前用户'}
           >
             <div
               style={{
-                width: 24,
-                height: 24,
+                width: 28,
+                height: 28,
                 borderRadius: '50%',
                 display: 'flex',
                 alignItems: 'center',
@@ -124,7 +124,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
                 flexShrink: 0,
               }}
             >
-              <User style={{ width: 14, height: 14, color: 'var(--muted-foreground)', strokeWidth: 1.5 }} />
+              <User style={{ width: 16, height: 16, color: 'var(--muted-foreground)', strokeWidth: 1.5 }} />
             </div>
             {!collapsed && (
               <span
@@ -149,16 +149,20 @@ export default function AppLayout({ children }: AppLayoutProps) {
             title="退出登录"
             style={{
               width: '100%',
+              height: 36,
               background: 'transparent',
               border: 'none',
               cursor: 'pointer',
               textAlign: 'left',
               marginBottom: 0,
+              padding: '0 8px',
+              gap: 8,
+              display: 'flex',
+              alignItems: 'center',
               justifyContent: collapsed ? 'center' : 'flex-start',
-              padding: collapsed ? '8px' : '0 12px',
             }}
           >
-            <LogOut style={{ width: 18, height: 18, strokeWidth: 1.5 }} />
+            <LogOut style={{ width: 16, height: 16, strokeWidth: 1.5 }} />
             {!collapsed && <span>退出登录</span>}
           </button>
         </div>
