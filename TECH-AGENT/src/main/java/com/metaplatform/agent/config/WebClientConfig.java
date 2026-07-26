@@ -51,6 +51,16 @@ public class WebClientConfig {
     /**
      * 构建通用 WebClient：JSON 默认头 + 连接/读写超时。
      */
+    @Bean(name = "ontologyWebClient")
+    public WebClient ontologyWebClient(AgentProperties properties) {
+        return buildWebClient(properties.getOntologyBaseUrl(), properties.getOntologyTimeout());
+    }
+
+    @Bean(name = "iamWebClient")
+    public WebClient iamWebClient(AgentProperties properties) {
+        return buildWebClient(properties.getIamBaseUrl(), properties.getIamTimeout());
+    }
+
     private WebClient buildWebClient(String baseUrl, java.time.Duration timeout) {
         long timeoutMs = timeout.toMillis();
         HttpClient httpClient = HttpClient.create()
