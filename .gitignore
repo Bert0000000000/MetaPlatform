@@ -120,3 +120,7 @@ zoom-shots/
 # Codex / Claude session caches and uploads
 .cache/
 .uploads/
+
+# Local Maven classpath snapshots (machine-specific absolute paths)
+**/classpath.txt
+
