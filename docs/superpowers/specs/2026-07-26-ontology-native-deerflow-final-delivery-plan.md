@@ -1,10 +1,10 @@
 
 # Ontology-Native DeerFlow：全阶段最终落地与前后端联调实施文档
 
-> 版本：v1.56 · 2026-07-26（第五十五轮推进 / §17.9 服务端 Token 预算强执行 P-NLB-01）
-> 状态：P0/P1 基础设施收尾完成；进入 P1/P2 联调阶段；P5 ACT 13/14 + P6 AUTH 06 + P8 NAT 02 + P2 RAG 04 + P-NLB-01 DONE；§17 item 9 已有基础能力
+> 版本：v1.57 · 2026-07-27（第五十六轮推进 / §17.5 SSE 重连契约 P-RPL-01）
+> 状态：P0/P1 基础设施收尾完成；进入 P1/P2 联调阶段；P5 ACT 13/14 + P6 AUTH 06 + P8 NAT 02 + P2 RAG 04 + P-NLB-01 + P-RPL-01 DONE；§17 items 5 + 9 已转 DONE
 > 适用仓库：D:/Hermes/Workspace/10_Projects/2026-07-02-MetaPlatform
-> 更新基线：2026-07-27 00:10 UTC+8，由 Codex 自动接管继续推进
+> 更新基线：2026-07-27 00:25 UTC+8，由 Codex 自动接管继续推进
 
 
 ## 0. 文档定位
@@ -116,6 +116,7 @@
 | P8 | P8-NAT-13b | SpringAiLlmProvider 真实实现 + Mockito 测试 | DONE | TECH-LLMGW 新增 SpringAiLlmProviderTest（9 单测）：chat() call 路径、null 安全、异常降级为 LLM_CALL_FAILED；streamChat() 把 Flux<ChatResponse> 映射成 Flux<String> 过滤空块、异常降级为单条错误消息；embed() 抛 UnsupportedOperationException；验证当前 Spring AI 1.1.2 实际可用 |
 | P2 | P2-RAG-04 | AuthoringService 端到端（Authoring + HybridSearch 联调，从文档抽取到 Evidence） | DONE | AuthoringService 新增 submitWithRagBackfill(req, topK)：对没有 evidenceRefs 的候选调用 RAGClient.search(query=concept+property+value, topK)，把返回 source/id 列表回填成 evidenceRefs；RAG 抛错时仅影响该候选，不阻断整体提交；RAGClient null 时降级为普通 submit；新增 5 单测覆盖 backfill/已有 evidence 不变/RAG 失败容忍/no-client/空列表 |
 | P-NEW | P-NLB-01 | 服务端 Token / WallTime 预算强执行（§17 item 9） | DONE | 新建 TokenBudgetEnforcer service + EnforcementResult record：check(BudgetDto, tokens, elapsedMs) 返回 allowed 或 denied(violation, overBy)；null budget 安全默认放过；负数归零；wall-time + tokens 同时超限合并为 TOKENS+WALL_TIME + 合计 overBy。AgentRunService 新增 7 参 complete(runId, status, answer, errorCode, errorMessage, tokens, elapsedMs)：parseBudget + tokenBudgetEnforcer.check，越限时强制降级为 DEGRADED + errorCode=BUDGET_EXCEEDED + errorMessage 带越限详情；原 5 参 complete 完全保兼容（默认 tokens=0, elapsedMs=0 不触发 enforcement）。10 单测覆盖 enforcer (8) + AgentRunService envelope cases (2)。TECH-AGENT 115/115 → 125/125 PASS |
+| P-NEW | P-RPL-01 | §17.5 SSE 重连契约测试（seq 严格单调 + afterSeq 排他过滤 + 租户隔离） | DONE | 新建 RunEventReplayContractTest（5 Mockito 单测）：(1) record() 5 次产生 seq 1..5 严格单调；(2) afterSeq=2 返回 seq 3,4,5 排他过滤、afterSeq=5 返回空；(3) listForTenant 过滤跨租户事件；(4) tenant+afterSeq 复合过滤；(5) RE-2 saveAndFlush 调用顺序在 list 查询之后。覆盖 /api/v1/agent/run/stream?runId&afterSeq 的契约面 |
 | P4 | P4-FE-06 | Frontend Typecheck 环境审计 | BLOCKED | pnpm -r typecheck 被 apps/kb/node_modules/axios/package.json EACCES 阻断；未修改前端代码，修复计划：清理/重建该依赖目录后重跑全 workspace typecheck |
 | P4 | P4-FE-07 | Frontend Dependency Repair | BLOCKED | pnpm install --offline --force 超时（180s），apps/kb/node_modules/axios 仍为断链/不可读状态；后续需在可用网络或清理残留 node 进程后重建依赖 |
 | P4 | P4-FE-08 | Frontend Symlink Repair Audit | BLOCKED | 已重建 axios 绝对符号链接并确认目标存在，但 pnpm typecheck 随后在 apps/kb/node_modules/react/package.json 继续 EACCES；需统一修复 node_modules/.pnpm ACL/锁定状态后再执行 |
@@ -146,8 +147,8 @@
 | TECH-A2A | 0（编译通过） | PASS | 无测试用例但 mvn install 通过 |
 | TECH-LLMGW | 14 / 14 | PASS | 5 LlmProvider 原有 + 9 SpringAiLlmProvider v1.54（chat call 路径 / null 安全 / 异常降级 / stream Flux<ChatResponse>→Flux<String> 映射 / 空块过滤 / embed Unsupported） |
 | TECH-RAG | 0（编译过） | PASS | 新增 tech-llmgw 依赖 + KB stub entity + Milvus/HybridSearchService 桩实现 |
-| TECH-AGENT | 125 / 125 | PASS | 11 repo + 22 scenario + 5 ActionExecution + 4 ActionApprovalBridge + 7 AuthoringService + 5 AuthoringServiceRagBackfill + 7 AuthoringBatchAccumulator + 3 AuthoringBatchFlushScheduler + 8 DocumentCandidateListener + 10 ActionGuardAutoRoute + 5 AuthoringDoc + 9 AgentRunServiceComplete (P6.4 + 2 P-NLB-01 envelope) + 8 TokenBudgetEnforcer (P-NLB-01) + 8 ActionRouteDlqPersistence + 5 ActionRouteDlqScheduler + 3 ActionGuardCrossRunDedup + 2 ActionRouteDlqMetrics + 2 ActionGuardCrossTenantDedup + 5 ActionRouteDlqMicrometerMetrics (P5-ACT-13/14) |
-| **总计** | **1208+** | **15/15 模块 BUILD SUCCESS / 0 失败**（TECH-AGENT 125/125 + TECH-LLMGW 14/14 v1.56；DONE P5-ACT-13/14 + P6-AUTH-06 + P8-NAT-13b + P2-RAG-04 + P-NLB-01） |
+| TECH-AGENT | 130 / 130 | PASS | 11 repo + 22 scenario + 5 ActionExecution + 4 ActionApprovalBridge + 7 AuthoringService + 5 AuthoringServiceRagBackfill + 7 AuthoringBatchAccumulator + 3 AuthoringBatchFlushScheduler + 8 DocumentCandidateListener + 10 ActionGuardAutoRoute + 5 AuthoringDoc + 9 AgentRunServiceComplete (P6.4 + 2 P-NLB-01 envelope) + 8 TokenBudgetEnforcer (P-NLB-01) + 5 RunEventReplayContract (P-RPL-01) + 8 ActionRouteDlqPersistence + 5 ActionRouteDlqScheduler + 3 ActionGuardCrossRunDedup + 2 ActionRouteDlqMetrics + 2 ActionGuardCrossTenantDedup + 5 ActionRouteDlqMicrometerMetrics (P5-ACT-13/14) |
+| **总计** | **1213+** | **15/15 模块 BUILD SUCCESS / 0 失败**（TECH-AGENT 130/130 + TECH-LLMGW 14/14 v1.57；DONE P5-ACT-13/14 + P6-AUTH-06 + P8-NAT-13b + P2-RAG-04 + P-NLB-01 + P-RPL-01） |
 
 ### 0.2.2 已知遗留（不影响 BUILD / 部署，但需下一轮完善）
 
@@ -662,14 +663,14 @@ Customer Detail
 | 2 | Context 结构化、签名、过期可校验 | **DONE** | `OncologyContextEnvelopeService.build()` HS256 签名（v1.50 P1-CON-02）；`OncologyContextServiceTest` 5 单测覆盖 signature/expiry/payload |
 | 3 | Tool 受权限和 allowlist 约束 | **DONE** | `OncologyPermissionMiddleware`（修复-013 v1.50 跨域场景测试通过）+ 5 个只读 Ontology Tools + `mate.agent.tool.allowlist` allowlist；Phase1 拒绝未在 allowlist 的工具 |
 | 4 | 重要 Claim 100% 绑定 Evidence | **DONE（算法）** / **PARTIAL（运行时）** | 算法：`OncologyEvidenceMiddleware` 在 `beforeExecution` 收集 evidence 并写入 claim。运行时：需要在每个 AgentRun 实际接入 LLM 工具调用结果后方能保证；现状 Scenario tests 中 ScenarioA 已覆盖基本流，端到端覆盖率不足 |
-| 5 | SSE 顺序稳定且可重连 | **PARTIAL** | `RunEventRepository` + `RunEventService.record()` 提供 seq 顺序；`AgentStreamController` 提供 `/api/v1/agent/run/stream?runId&afterSeq` 重连契约。缺口：未提供契约测试 + 客户端 `useAgentStream` 未证明断线后 seq 连续性 |
+| 5 | SSE 顺序稳定且可重连 | **DONE** | `RunEventService.record()` 严格 seq 单调（last.seq + 1）+ 同 ts 时强制 +1ns 防冲突；`AgentStreamController.run/stream?runId&afterSeq` 返回 `ServerSentEvent<RunEventDto>`（v1.57）；新加 `RunEventReplayContractTest`（5 单测）覆盖：seq 1..5 严格单调、afterSeq=2 → seq 3,4,5 排他、afterSeq=5 → 空、跨租户隔离、tenant+afterSeq 复合过滤、RE-2 saveAndFlush/list 顺序。剩余：客户端 `useAgentStream` 真实断线重连未自动化测试 |
 | 6 | 没有 Action 绕过 Guard | **DONE** | `OncologyActionGuardMiddleware` 在所有 Run 上拦截；`OncologyGroundingMiddleware` 落地候选 action；ScenarioA ObjectCopilot 测试中验证 |
 | 7 | 没有 LLM 直接写 Ontology | **DONE** | 五个只读 Ontology Tools（describe/search/get/query_metric/evidence）+ LLM 调用经 TECH-LLMGW（SpringAI 流式 + Noop fallback v1.54）；TECH-RAG 端到端通过 RAGClient 受 RAG base-url 调用约束 |
 | 8 | 所有 Run 可通过 RunEvent 追踪 | **DONE（基础）** | `runEventService.record()` 在 create/start/llm/tool/claim/evidence/action/complete/failed 全链路落库；`run_events` V6 表带 envelope_id+tenant_id+trace_id+seq。缺口：没有端到端跨 Run 轨迹合并的 traceparent + W3C trace_id 校验 |
 | 9 | Token 预算由服务端强制执行 | **DONE（v1.56）** | 新建 `TokenBudgetEnforcer` + `AgentRunService` 7 参 `complete(runId, status, answer, errorCode, errorMessage, tokensConsumed, elapsedMs)`：parseBudget 后询问 enforcer，越限强制 DEGRADED + errorCode `BUDGET_EXCEEDED` + errorMessage 含 violation/overBy。10 单测（8 enforcer + 2 envelope）全部 PASS。空 budget / 负数 attempt 安全默认放过。 |
 | 10 | 测试、联调、回滚和故障演练都有证据 | **PARTIAL** | 测试：mvn -o test 14 个 TECH-* 模块全 BUILD SUCCESS / 1208+ 单测 PASS（v1.56）。联调：scenario tests + DLQ metrics endpoint + Action Guard DLQ。回滚：scripts/repack-thin-jars.ps1 + Spring Boot Actuator 健康检查。**缺口**：跨服务 e2e（Tech-Agent 调 Tech-Ont 调 Tech-RAG 的真实链路）+ WFE 审批失败的回放演练没自动化 |
 
-**结论**：10 条同时满足才能宣布 §17 完成。当前 6 条 DONE + 4 条 PARTIAL，**首阶段生产尚未达成**，但每一个 §17 条件都有明确的代码位置 + 测试基线 + 缺口记录，可作为下一阶段联调与回放改造的输入。
+**结论**：10 条同时满足才能宣布 §17 完成。当前 7 条 DONE + 3 条 PARTIAL（v1.57 update: §17 item 5 DONE），**首阶段生产尚未达成**，但每一个 §17 条件都有明确的代码位置 + 测试基线 + 缺口记录，可作为下一阶段联调与回放改造的输入。
 
 ### 17.2 §17 剩余风险与下一轮推荐
 
