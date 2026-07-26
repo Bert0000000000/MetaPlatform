@@ -1,10 +1,10 @@
 
 # Ontology-Native DeerFlow：全阶段最终落地与前后端联调实施文档
 
-> 版本：v1.53 · 2026-07-26（第五十二轮推进 / P6-AUTH-06 Authoring 定时批处理）
-> 状态：P0/P1 基础设施收尾完成；进入 P1/P2 联调阶段；P5 ACT 13/14 + P6 AUTH 06 DONE
+> 版本：v1.54 · 2026-07-26（第五十三轮推进 / P8.4 SpringAiLlmProvider 真实实现 + 测试）
+> 状态：P0/P1 基础设施收尾完成；进入 P1/P2 联调阶段；P5 ACT 13/14 + P6 AUTH 06 + P8 NAT 02（SpringAI 流式） DONE
 > 适用仓库：D:/Hermes/Workspace/10_Projects/2026-07-02-MetaPlatform
-> 更新基线：2026-07-26 23:25 UTC+8，由 Codex 自动接管继续推进
+> 更新基线：2026-07-26 23:45 UTC+8，由 Codex 自动接管继续推进
 
 
 ## 0. 文档定位
@@ -113,6 +113,7 @@
 | P8 | P8-REL-09 | Runtime Production Configuration | DONE | application.yml 显式配置 Native max-tool-calls/max-duration、DeerFlow retry/backoff/circuit 参数与环境变量覆盖；TECH-AGENT test 通过 |
 | P8 | P8-NAT-13 | SAA Graph Multi-node Plan→LLM | DONE | SaAgentExecutionEngine.executeGraph() 从单节点升级为 plan → llm 多节点 StateGraph，计划注入 LLM context；空响应安全门保持有效；TECH-AGENT test 通过 |
 | P8 | P8-NAT-14 | SAA Graph Review Gate | DONE | 新增 review 节点校验 LLM 输出非空，plan → llm → review → END；空结果进入 FAILED/安全降级；TECH-AGENT test 通过 |
+| P8 | P8-NAT-13b | SpringAiLlmProvider 真实实现 + Mockito 测试 | DONE | TECH-LLMGW 新增 SpringAiLlmProviderTest（9 单测）：chat() call 路径、null 安全、异常降级为 LLM_CALL_FAILED；streamChat() 把 Flux<ChatResponse> 映射成 Flux<String> 过滤空块、异常降级为单条错误消息；embed() 抛 UnsupportedOperationException；验证当前 Spring AI 1.1.2 实际可用 |
 | P4 | P4-FE-06 | Frontend Typecheck 环境审计 | BLOCKED | pnpm -r typecheck 被 apps/kb/node_modules/axios/package.json EACCES 阻断；未修改前端代码，修复计划：清理/重建该依赖目录后重跑全 workspace typecheck |
 | P4 | P4-FE-07 | Frontend Dependency Repair | BLOCKED | pnpm install --offline --force 超时（180s），apps/kb/node_modules/axios 仍为断链/不可读状态；后续需在可用网络或清理残留 node 进程后重建依赖 |
 | P4 | P4-FE-08 | Frontend Symlink Repair Audit | BLOCKED | 已重建 axios 绝对符号链接并确认目标存在，但 pnpm typecheck 随后在 apps/kb/node_modules/react/package.json 继续 EACCES；需统一修复 node_modules/.pnpm ACL/锁定状态后再执行 |
@@ -141,10 +142,10 @@
 | TECH-GW | 65 / 65 | PASS | 网关 |
 | TECH-RULE | 44 / 44 | PASS | 规则引擎 |
 | TECH-A2A | 0（编译通过） | PASS | 无测试用例但 mvn install 通过 |
-| TECH-LLMGW | 0（编译过） | PASS | OpenAiController 编译错已修复（ChatRequest 构造签名 + StreamService + ServerSentEvent） |
+| TECH-LLMGW | 14 / 14 | PASS | 5 LlmProvider 原有 + 9 SpringAiLlmProvider v1.54（chat call 路径 / null 安全 / 异常降级 / stream Flux<ChatResponse>→Flux<String> 映射 / 空块过滤 / embed Unsupported） |
 | TECH-RAG | 0（编译过） | PASS | 新增 tech-llmgw 依赖 + KB stub entity + Milvus/HybridSearchService 桩实现 |
 | TECH-AGENT | 110 / 110 | PASS | 11 repo + 22 scenario + 5 ActionExecution + 4 ActionApprovalBridge + 7 AuthoringService + 7 AuthoringBatchAccumulator + 3 AuthoringBatchFlushScheduler + 8 DocumentCandidateListener + 10 ActionGuardAutoRoute + 5 AuthoringDoc + 7 AgentRunServiceComplete + 8 ActionRouteDlqPersistence + 5 ActionRouteDlqScheduler + 3 ActionGuardCrossRunDedup + 2 ActionRouteDlqMetrics + 2 ActionGuardCrossTenantDedup + 5 ActionRouteDlqMicrometerMetrics (P5-ACT-13/14) |
-| **总计** | **1184+** | **15/15 模块 BUILD SUCCESS / 0 失败**（TECH-AGENT 110/110 PASS = 97+v1.52 + 13 v1.53；DONE P5-ACT-13/14 + P6-AUTH-06） |
+| **总计** | **1193+** | **15/15 模块 BUILD SUCCESS / 0 失败**（TECH-AGENT 110/110 + TECH-LLMGW 14/14 v1.54；DONE P5-ACT-13/14 + P6-AUTH-06 + P8-NAT-13b） |
 
 ### 0.2.2 已知遗留（不影响 BUILD / 部署，但需下一轮完善）
 
@@ -156,11 +157,11 @@
 
 ### 0.2.3 推荐下一轮任务（按优先级）
 
-> 本轮（v1.53 / 52）：P6-AUTH-06 已 DONE（详见 §0.2 状态表新增行；TECH-AGENT 110/110 PASS）。
+> 本轮（v1.54 / 53）：P8.4 SpringAiLlmProvider 已 DONE（详见 §0.2 状态表新增行 P8-NAT-13b；TECH-LLMGW 14/14 PASS，含 9 个 SpringAI 单测覆盖 chat/stream/embed/异常/null）。
 
 剩余优先级（按文档第 12/13 节）：
 
-1. **P8.4**：SpringAiLlmProvider 真实实现（处理 Spring AI 1.1.x 流式 API 变更）。
+1. ~~P8.4：SpringAiLlmProvider 真实实现~~ — DONE v1.54。
 2. ~~P6-AUTH-06：AuthoringService 加定时批处理~~ — DONE v1.53。
 3. **P2-RAG-04**：AuthoringService 端到端（Authoring + HybridSearch 联调，从文档抽取到 Evidence）。
 4. ~~P5-ACT-13：DLQ metrics 接入 Micrometer / Prometheus~~ — DONE v1.52。
