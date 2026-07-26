@@ -3,6 +3,7 @@ package com.metaplatform.agent.tools;
 import com.metaplatform.agent.api.Phase1Exception;
 import com.metaplatform.agent.context.OntologyContextEnvelopeSigner;
 import com.metaplatform.agent.context.OntologyContextRegistry;
+import com.metaplatform.agent.clients.OntologyClient;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import java.util.Map;
@@ -16,6 +17,7 @@ public class GroundToolService {
             "ontology.get_object_graph", "ontology.fetch_evidence");
     private final OntologyContextRegistry registry;
     private final OntologyContextEnvelopeSigner signer;
+    private final OntologyClient ontologyClient;
 
     public Map<String, Object> invoke(String toolName, GroundToolRequest request) {
         if (!SUPPORTED.contains(toolName))
@@ -28,8 +30,9 @@ public class GroundToolService {
             throw Phase1Exception.forbidden("TOOL_NOT_IN_ALLOWLIST", "Envelope does not allow tool: " + toolName);
         if (request.getInput().toString().length() > 16384)
             throw Phase1Exception.badRequest("TOOL_INPUT_TOO_LARGE", "Tool input exceeds 16KB");
+        Map<String, Object> data = ontologyClient.invokeGroundTool(toolName, envelope.envelopeId(), request.getInput(),
+                envelope.tenantId(), envelope.runId());
         return Map.of("toolName", toolName, "envelopeId", envelope.envelopeId(),
-                "ontologyVersion", envelope.ontologyVersion(), "input", request.getInput(),
-                "data", Map.of("status", "ONTOLOGY_CLIENT_PENDING"));
+                "ontologyVersion", envelope.ontologyVersion(), "data", data);
     }
 }

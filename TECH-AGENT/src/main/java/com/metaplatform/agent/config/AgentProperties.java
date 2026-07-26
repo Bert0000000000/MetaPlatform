@@ -36,6 +36,10 @@ public class AgentProperties {
     /** RAG 服务调用超时时间。 */
     private Duration ragTimeout = Duration.ofSeconds(30);
 
+    private String ontologyBaseUrl = "http://localhost:8201";
+
+    private Duration ontologyTimeout = Duration.ofSeconds(30);
+
     /** JWT 签名密钥（HS256/HS384/HS512 共用）。 */
     private String jwtSecret = "mate-platform-default-secret-key-must-be-over-32-bytes";
 
