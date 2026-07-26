@@ -2,6 +2,7 @@ package com.metaplatform.agent.verification;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.metaplatform.agent.trigger.TriggerEngine;
+import com.metaplatform.agent.trigger.TriggerRepository;
 import com.metaplatform.agent.trigger.TriggerEntity;
 import com.metaplatform.msg.consumer.EventEnvelope;
 import com.metaplatform.msg.topology.TopologyTopics;
@@ -9,6 +10,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -45,7 +48,7 @@ class ScenarioD_EventTriggerTest {
     @DisplayName("D2: TriggerEngine filter 必须按 tenantId + eventCode 匹配")
     void triggerEngineFilterMatches() throws Exception {
         // 用反射直接调用 match() 测试
-        var engine = new TriggerEngine();
+        var engine = new TriggerEngine(org.mockito.Mockito.mock(TriggerRepository.class), org.mockito.Mockito.mock(com.metaplatform.agent.deerflow.DeerFlowAdapter.class), org.mockito.Mockito.mock(org.springframework.kafka.core.KafkaTemplate.class));
         var matchMethod = TriggerEngine.class.getDeclaredMethod("match",
                 String.class, java.util.Map.class);
         matchMethod.setAccessible(true);

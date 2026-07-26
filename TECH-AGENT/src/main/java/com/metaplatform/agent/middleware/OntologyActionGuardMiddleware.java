@@ -29,14 +29,22 @@ public class OntologyActionGuardMiddleware implements AgentMiddleware {
     public void afterExecution(MiddlewareContext context) {
         if (context.isRejected()) return;
         if (context.getActionProposals() == null || context.getActionProposals().isEmpty()) return;
+        // Convert immutable Maps (e.g. Map.of) to LinkedHashMap so we can add validation fields
+        List<Map<String, Object>> mutableProposals = new ArrayList<>();
         for (Map<String, Object> proposal : context.getActionProposals()) {
+            if (!(proposal instanceof java.util.LinkedHashMap)) {
+                proposal = new java.util.LinkedHashMap<>(proposal);
+            }
             String actionCode = String.valueOf(proposal.getOrDefault("actionCode", ""));
             String riskLevel = String.valueOf(proposal.getOrDefault("riskLevel", "LOW"));
             boolean requiresApproval = "HIGH".equals(riskLevel) || "CRITICAL".equals(riskLevel);
             proposal.put("requiresApproval", requiresApproval);
             proposal.put("validatedAt", System.currentTimeMillis());
+            mutableProposals.add(proposal);
             log.info("[OntologyActionGuardMW] action={} risk={} requiresApproval={}",
                     actionCode, riskLevel, requiresApproval);
         }
+        context.getActionProposals().clear();
+        context.getActionProposals().addAll(mutableProposals);
     }
 }

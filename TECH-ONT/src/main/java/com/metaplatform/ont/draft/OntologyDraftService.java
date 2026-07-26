@@ -166,6 +166,7 @@ public class OntologyDraftService {
     @lombok.AllArgsConstructor
     public static class ProposeDraftRequest {
         private String tenantId;
+        private String runId;  // optional: 关联 agent run 产生的 draft
         private String baseVersion;
         private String targetVersion;
         private String draftKind;

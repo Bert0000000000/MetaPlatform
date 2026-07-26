@@ -43,7 +43,7 @@ public class OntologyContextEnvelope {
     }
 
     @Data @Builder @NoArgsConstructor @AllArgsConstructor
-    public static class Schema { private List<String> properties; private List<String> relationships; private List<String> metrics; }
+    public static class Schema { private List<String> properties; private List<String> relationships; private List<String> metrics; private List<String> availableActions; }
 
     @Data @Builder @NoArgsConstructor @AllArgsConstructor
     public static class DataScopes { private List<String> regions; private List<String> fieldsDenied; private List<String> objectDenied; }
