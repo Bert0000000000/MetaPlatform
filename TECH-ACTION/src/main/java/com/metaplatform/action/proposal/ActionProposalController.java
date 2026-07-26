@@ -16,7 +16,7 @@ public class ActionProposalController {
 
     @PostMapping
     public ApiResponse<ActionProposalEntity> propose(@RequestBody ActionProposalService.ProposeRequest req) {
-        if (req.getTenantId() == null) req.setTenantId(TenantContext.getTenantIdOrDefault());
+        if (req.getTenantId() == null) req.setTenantId(TenantContext.getOrDefault());
         return ApiResponse.success(service.propose(req));
     }
 
@@ -47,3 +47,4 @@ public class ActionProposalController {
         return ApiResponse.success(service.listByRun(runId));
     }
 }
+

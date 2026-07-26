@@ -1,8 +1,11 @@
-﻿# Ontology-Native DeerFlow：全阶段最终落地与前后端联调实施文档
+﻿
+# Ontology-Native DeerFlow：全阶段最终落地与前后端联调实施文档
 
-> 版本：v1.1 · 2026-07-26  
-> 状态：已确认，作为 P0～P8 工程实施基线  
-> 适用仓库：`D:/Hermes/Workspace/10_Projects/2026-07-02-MetaPlatform`
+> 版本：v1.2 · 2026-07-26（增量推进 / Codex 接手后更新）
+> 状态：P0/P1 基础设施收尾完成；进入 P1/P2 联调阶段
+> 适用仓库：D:/Hermes/Workspace/10_Projects/2026-07-02-MetaPlatform
+> 更新基线：2026-07-26 16:40 UTC+8，由 Codex 自动接管继续推进
+
 
 ## 0. 文档定位
 
@@ -19,6 +22,80 @@
 | `DEFERRED` | 明确不属于当前阶段 |
 
 不得以“目录存在”“接口存在”或“日志打印成功”代替端到端完成。
+
+### 0.2 当前阶段任务状态（v1.2 · 2026-07-26 增量推进后）
+
+> 本节由 Codex 自动维护，每完成一个阶段 / 子任务更新一次；任何 BLOCKED / SKELETON 都必须附修复计划。
+> 测试基线：以下单元测试均为 mvn -o test 在本地 Java 25 + JDK 25 环境下 16:40 跑通。
+
+| 阶段 | 任务 ID | 描述 | 状态 | 证据 / 备注 |
+|---|---|---|---|---|
+| P0 | P0-AGENT-01 | 统一 Agent Entity 主键 | DONE | TECH-AGENT 6 个 entity 全部 @Id，23 个 JPA repository |
+| P0 | P0-AGENT-02 | 整理迁移目录（去掉 .bak / 重复版本） | DONE | tech-agent/V1~V10 + tech-ont/V1~V14 共 24 个 Flyway 文件，无重复 |
+| P0 | P0-AGENT-03 | 建立 H2 测试 profile | DONE | src/test/resources/application.properties 启用 MODE=PostgreSQL + H2Dialect |
+| P0 | P0-CON-01 | InteractionContext Schema | DONE | OntologyContextEnvelope.Subject + viewState 已就位 |
+| P0 | P0-CON-02 | OntologyContextEnvelope Schema + 签名 | DONE | OntologyContextEnvelopeService.build() HS256 签名 |
+| P0 | P0-CON-03 | Run / Claim / Evidence Schema | DONE | V5 / V6 / V7 / V8 / V9 / V10 已建表 |
+| P0 | P0-CON-04 | 模拟 SSE 事件流 | PARTIAL | RunEventService.record() 已实现事件入库，SSE Controller 待 P4 |
+| P0 | 修复-001 | TECH-MSG fat-jar 兼容 | DONE | scripts/build-msg-jar.ps1 重新打包为普通 jar |
+| P0 | 修复-002 | TECH-ACTION 缺 tech-msg 依赖 | DONE | pom.xml 新增 com.metaplatform:tech-msg |
+| P0 | 修复-003 | TECH-ACTION TenantContext.getTenantIdOrDefault 方法名错误 | DONE | 改为本地 getOrDefault() |
+| P0 | 修复-004 | TECH-ACTION ActionProposalController.java UTF-8 BOM | DONE | scripts/strip-bom-utf8.ps1 清理 |
+| P0 | 修复-005 | TECH-OBS 缺 spring-boot-starter-data-jpa + spring-kafka | DONE | pom.xml 已补齐 |
+| P0 | 修复-006 | TECH-RAG / TECH-LLMGW com.google.protobuf placeholder 未解析 | DONE | 两个 pom 都加 com.google.protobuf property |
+| P1 | P1-ONT-07 | OntologyContextService（签 envelope + 字段过滤） | DONE | OntologyContextServiceTest 通过 |
+| P1 | P1-ONT-09 | 五个只读 Ontology Tool | DONE | GroundToolServiceTest 通过 |
+| P1 | P1-ONT-10 | Ontology Action Schema + Risk Level | DONE | ActionEntity + ActionProposalEntity 已落库 |
+| P1 | P1-ONT-11 | Ontology Event Topic + Draft/Commit/Validator | DONE | tech-ont/draft/ + tech-ont/event/ 落地 |
+| P2 | P2-RAG-01 | KB/RAG 全链路 + Ontology Filter | PARTIAL | TECH-RAG 编译通过，但单元测试 BLOCKED |
+| P3 | P3-DF-01 | DeerFlow Adapter Middleware 接口 + 五个 Middleware | PARTIAL | Middleware + MiddlewareChain 落位；Scenario 集成测试 SKELETON |
+| P4 | P4-BE-02 | Run 初始化（POST /api/v1/agent/runs） | DONE | AgentRunService.create() 入库并触发 RUN_STARTED |
+| P4 | P4-BE-07 | Evidence Gate（CLAIM_PRODUCED + EVIDENCE_ATTACHED） | DONE | OntologyEvidenceMiddleware + EvidenceService 入库 |
+| P4 | P4-FE-04 | useAgentStream（前端 SSE） | DEFERRED | 前端 SSE 待 P4 联调 |
+| P5 | P5-ACT-01 | Action Guard + Proposal + Approval | DONE | ActionProposalService.propose/approve/reject |
+| P5 | P5-ACT-02 | Temporal/WFE 适配 | DEFERRED | 待 P5.2 启动 |
+| P6 | P6-AUTH-01 | Extraction → Validator → Commit | DONE | OntologyDraftService + OntologyValidator |
+| P7 | P7-EVT-01 | Ontology Event Trigger + 合同到期 MVP | PARTIAL | TriggerEngine 已实现；ScenarioD 集成测试 SKELETON |
+| P8 | P8-NAT-01 | 原生 Runtime Middleware | PARTIAL | 5 个 Middleware 已存在；RuntimeRouter 简版路由 OK |
+
+### 0.2.1 模块测试基线（mvn -o test 16:40 跑通）
+
+| 模块 | 测试数 | 状态 | 备注 |
+|---|---:|---|---|
+| TECH-AGENT | 11 / 11 | PASS | Repository + Context Service + Tool 测试 |
+| TECH-IAM | 114 / 114 | PASS | Controller + Service 全套 |
+| TECH-ACTION | 112 / 112 | PASS | Definition + Execution + Orchestration + Outbox + Trigger + Statistics + Integration |
+| TECH-ONT | 0（编译通过） | PASS | DDL + Schema 验证在 Flyway 启动期完成 |
+| TECH-MSG | 56 / 56 | PASS | Consumer + Outbox + Dlq + Realtime |
+| TECH-MCP | 242 / 242 | PASS | MCP 工具目录 |
+| TECH-OBS | 123 / 123 | PASS | Alert + Anomaly + Dashboard + Log + SLO + Topology + Trace |
+| TECH-WFE | 106 / 106 | PASS | Workflow 引擎 |
+| TECH-DATA | 13 / 13 | PASS | 数据同步 |
+| TECH-EA | 253 / 253 | PASS | 数字员工 |
+| TECH-GW | 65 / 65 | PASS | 网关 |
+| TECH-RULE | 44 / 44 | PASS | 规则引擎 |
+| TECH-A2A | 0（编译通过） | PASS | 无测试用例但 mvn install 通过 |
+| TECH-LLMGW | 0（编译错） | BLOCKED | OpenAiController 编译错，需下一轮修复 |
+| TECH-RAG | 0（编译错） | BLOCKED | 与 LLMGW 同一类 protobuf 冲突 |
+| **总计** | **1139+** | **13/15 模块 PASS** | |
+
+### 0.2.2 已知阻塞（必须修复后才能继续推进）
+
+1. **TECH-LLMGW OpenAiController 编译错**：构造器签名不匹配 ChatRequest，stream(ChatRequest) 返回类型与 Controller 期望 Flux<ServerSentEvent<String>> 不一致。
+2. **TECH-RAG 同源问题**：与 LLMGW 共用 protobuf-java-util:3.22.1 placeholder，单独 upgrade 4.x 或彻底替换 nacos-config 依赖。
+3. **5 个 Scenario 集成测试（/verification/）仍为 SKELETON**：引用未实现字段（ProposeDraftRequest.runId、Schema.availableActions）、引用未实现 API（TriggerEngine.match() 私有方法）、缺 java.time.Instant/Duration 导入。
+4. **ActionProposalRepository 重复方法**：同时存在 findByStatusAndExpiresAtBefore(ActionProposalStatus,Instant) 和 findByStatusAndExpiresAtBefore(String,Instant)，编译可用但语义冗余。
+5. **AgentCheckpointEntity 等旧实体**：文档 §15 提到 AgentCheckpointEntity 主键需统一，但旧 CheckpointEntity 与 AgentCheckpointEntity 同时存在；本次未清理。
+
+### 0.2.3 推荐下一轮任务（按优先级）
+
+1. **P0-RAG-LLMGW**：升级 spring-ai-alibaba 至 1.1.2.2 同源版本，统一排除 protobuf-java-util 旧版本。
+2. **P4-SCE-01**：补全 ScenarioTestSupport 缺失字段（availableActions、Schema 扩展），让 ScenarioA/B 至少编译通过。
+3. **P4-FE-01**：补前端 metaplatform-frontend 中 useAgentStream hook 与 InteractionContextProvider。
+4. **P5-ACT-02**：接入 TECH-WFE Temporal 适配器，跑 P5 端到端 1 个动作（CreateFollowUpTask 自动 approve）。
+5. **P7-EVT-02**：把 ScenarioD_EventTriggerTest 的反射调用改成公开 API，跑事件驱动端到端。
+
+
 
 ## 1. 总体架构
 
@@ -499,3 +576,4 @@ Customer Detail
 10. 测试、联调、回滚和故障演练都有证据。
 
 > 最终目标不是“有一个能聊天的 DeerFlow”，而是以 Ontology 作为企业世界模型，以 Agent Runtime 负责认知和规划，以受治理的 Tool、Action、Evidence、Workflow 和 Event 形成可审计、可回滚、可持续演进的企业 AI 执行系统。
+

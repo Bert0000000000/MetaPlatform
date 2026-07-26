@@ -108,6 +108,13 @@
             <artifactId>flyway-database-postgresql</artifactId>
         </dependency>
 
+        <!-- TECH-MSG shared event bus (TopologyTopics + EventTopicListener + EventEnvelope) -->
+        <dependency>
+            <groupId>com.metaplatform</groupId>
+            <artifactId>tech-msg</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
@@ -169,5 +176,13 @@
         </plugins>
     </build>
 </project>
+
+
+
+
+
+
+
+
 
 

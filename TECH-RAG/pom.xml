@@ -24,6 +24,9 @@
         <lombok.version>1.18.46</lombok.version>
         <spring-cloud.version>2025.1.2</spring-cloud.version>
         <spring-cloud-alibaba.version>2025.0.0.0</spring-cloud-alibaba.version>
+        <!-- P0.2 fix: pin protobuf version to resolve nacos-config `${com.google.protobuf}` placeholder -->
+        <com.google.protobuf>com.google.protobuf</com.google.protobuf>
+        <protobuf-java.version>3.22.1</protobuf-java.version>
         <spring-ai.version>1.1.8</spring-ai.version>
         <spring-ai-alibaba.version>1.1.2.2</spring-ai-alibaba.version>
         <spring-ai-alibaba-extensions.version>1.1.2.2</spring-ai-alibaba-extensions.version>
@@ -254,5 +257,6 @@
         </plugins>
     </build>
 </project>
+
 
 
