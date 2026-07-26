@@ -1,0 +1,1 @@
+package com.metaplatform.agent.evidence; import org.springframework.data.jpa.repository.JpaRepository; import java.util.List; public interface ClaimRepository extends JpaRepository<ClaimEntity,String>{ List<ClaimEntity> findByRunIdOrderByCreatedAtAsc(String runId); }

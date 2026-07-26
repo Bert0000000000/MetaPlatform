@@ -3,6 +3,7 @@ package com.metaplatform.agent.sandbox;
 import io.fabric8.kubernetes.api.model.Pod;
 import io.fabric8.kubernetes.api.model.PodBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
+import io.fabric8.kubernetes.api.model.Quantity;
 import io.fabric8.kubernetes.client.KubernetesClientBuilder;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
@@ -97,10 +98,10 @@ public class K8sSandboxProvider implements SandboxProvider {
                             .withImagePullPolicy("IfNotPresent")
                             .withCommand(List.of("/bin/sh", "-c", "sleep infinity"))
                             .withNewResources()
-                                .addToLimits("cpu", (config == null ? 1000 : config.getCpuMilli()) + "m")
-                                .addToLimits("memory", (config == null ? 2048 : config.getMemoryMb()) + "Mi")
-                                .addToRequests("cpu", "100m")
-                                .addToRequests("memory", "128Mi")
+                                .addToLimits("cpu", new Quantity(((config == null ? 1000 : config.getCpuMilli())) + "m"))
+                                .addToLimits("memory", new Quantity(((config == null ? 2048 : config.getMemoryMb())) + "Mi"))
+                                .addToRequests("cpu", new Quantity("100m"))
+                                .addToRequests("memory", new Quantity("128Mi"))
                             .endResources()
                             .withNewSecurityContext()
                                 .withRunAsUser(1000L)
@@ -114,7 +115,7 @@ public class K8sSandboxProvider implements SandboxProvider {
                         .endContainer()
                         .addNewVolume()
                             .withName("user-data")
-                            .withNewEmptyDir().withSizeLimit((config == null ? 10 : config.getDiskMb()) + "Mi").endEmptyDir()
+                            .withNewEmptyDir().withSizeLimit(new Quantity(((config == null ? 10 : config.getDiskMb())) + "Mi")).endEmptyDir()
                         .endVolume()
                     .endSpec()
                     .build();

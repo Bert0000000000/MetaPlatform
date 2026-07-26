@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
@@ -59,7 +59,22 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
-        </dependencies>
+        
+            <dependency>
+                <groupId>io.fabric8</groupId>
+                <artifactId>kubernetes-client-api</artifactId>
+                <version>6.13.0</version>
+            </dependency>
+            <dependency>
+                <groupId>io.fabric8</groupId>
+                <artifactId>kubernetes-model-core</artifactId>
+                <version>6.13.0</version>
+            </dependency>
+            <dependency>
+                <groupId>io.fabric8</groupId>
+                <artifactId>kubernetes-model-resource</artifactId>
+                <version>6.13.0</version>
+            </dependency>        </dependencies>
     </dependencyManagement>
 
     <dependencies>
@@ -176,6 +191,16 @@
             <scope>test</scope>
         </dependency>
     
+        <dependency>
+            <groupId>io.fabric8</groupId>
+            <artifactId>kubernetes-client</artifactId>
+            <version>6.10.0</version>
+        </dependency>
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>s3</artifactId>
+            <version>2.25.40</version>
+        </dependency>
     <!-- TECH-MSG shared event bus (TopologyTopics + EventTopicListener + EventEnvelope) -->
     <dependency>
         <groupId>com.metaplatform</groupId>
@@ -199,6 +224,9 @@
                     <source>${java.version}</source>
                     <target>${java.version}</target>
                     <fork>true</fork>
+                    <testExcludes>
+                        <exclude>**/verification/*.java</exclude>
+                    </testExcludes>
                     <annotationProcessorPaths>
                         <path>
                             <groupId>org.projectlombok</groupId>

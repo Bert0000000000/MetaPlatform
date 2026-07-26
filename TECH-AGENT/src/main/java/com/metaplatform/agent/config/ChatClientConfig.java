@@ -15,7 +15,7 @@ public class ChatClientConfig {
     public ChatClient chatClient(ChatClient.Builder builder, List<ToolCallback> mcpToolCallbacks) {
         return builder
                 .defaultOptions(ChatOptions.builder().model("qwen-max").temperature(0.7).build())
-                .defaultTools(mcpToolCallbacks.toArray(ToolCallback[]::new))
+                .defaultTools(mcpToolCallbacks)
                 .build();
     }
 }

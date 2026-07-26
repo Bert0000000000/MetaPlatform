@@ -334,3 +334,53 @@ AgentRun 创建/状态转换的 Service 必须加 `@Transactional`。RunEvent �
 - entity/repository 生成清单由 Codex 完成人类 review 后归档
 - 新增 entity 必须更新 §1.4 命名空间表
 - schema 冲突必须在 §2 增补新条目
+
+---
+
+## 8. AI 助手消费本文档的方式
+
+### 8.1 三种消费模式
+
+| 模式 | 何时使用 |
+|---|---|
+| **完整执行**（推荐） | 用户授权后直接生成 6 个 entity + 6 个 repository |
+| **逐个执行** | 人类 review 每生成一个 entity 后再下一个 |
+| **审计模式** | 只产出 diff 与 ADR，不实际写文件 |
+
+完整执行模式推荐在新 Codex / Claude 会话开启时直接发：
+
+> **启动 prompt 模板**：`docs/superpowers/specs/2026-07-26-ai-launch-prompt.md`
+
+### 8.2 助手必须读的文件清单
+
+助手在新会话开启时**必须按以下顺序读**：
+
+1. `docs/superpowers/specs/2026-07-26-ontology-deerflow-phase1-interfaces.md`（主文档，~57KB）
+2. `docs/superpowers/specs/2026-07-26-ontology-deerflow-phase1-interfaces-errata.md`（补丁，~44KB）
+3. `docs/superpowers/specs/2026-07-26-ontology-deerflow-engineering-handoff.md`（**本文档**）
+4. 上述提到的 schema migration SQL（V4 / V5 / V6 / V7 / V8 / V14）
+5. OpenAPI spec：`TECH-ONT/openapi/v1/ontology-deerflow-phase1.yaml`
+
+### 8.3 助手必须遵守的约束（failure modes）
+
+- **不要修改** 已有 entity（AgentTaskEntity / ArtifactEntity / MemoryEntity 等）
+- **不要回退** Flyway migration —— V4-V8 编号锁定
+- **不要重复** LLM 总结 —— 直接读上述文件
+- **不要用 `Map<String, Object>` 存 JSONB** —— 跟随既有 `@Lob @JdbcTypeCode(SqlTypes.JSON)` 模式
+- **不要删除** V8 已 ALTER 的字段（向后兼容）
+- **必须用** §1.4 命名空间表给定的包名
+
+### 8.4 助手完成度的客观证据
+
+- `mvn clean compile` 通过
+- `mvn test-compile` 通过
+- 6 个新 entity 都有对应 `@DataJpaTest` 单测
+- 检查文件清单：`docs/superpowers/specs/2026-07-26-ontology-deerflow-engineering-handoff.md §1.4`
+
+### 8.5 助手完成后必须输出
+
+- 6 个 entity + 6 个 repository + 6 个 *Test.java
+- 1 份"完成报告"（贴在 assistant 消息最后）：
+  - 创建的文件相对路径列表
+  - 任何偏离 §1.4 / §1.5 / §4 约束的决定
+  - 任何 §3 checklist 中失败的条目

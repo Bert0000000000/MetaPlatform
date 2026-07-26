@@ -4,11 +4,11 @@ import com.metaplatform.agent.deerflow.DeerFlowAdapter;
 import com.metaplatform.agent.middleware.AgentMiddleware;
 import com.metaplatform.agent.middleware.MiddlewareChain;
 import com.metaplatform.agent.middleware.MiddlewareContext;
-import com.metaplatform.agent.middleware.OnboardingActionGuardMiddleware;
-import com.metaplatform.agent.middleware.OnboardingContextMiddleware;
-import com.metaplatform.agent.middleware.OnboardingEvidenceMiddleware;
-import com.metaplatform.agent.middleware.OnboardingGroundingMiddleware;
-import com.metaplatform.agent.middleware.OnboardingPermissionMiddleware;
+import com.metaplatform.agent.middleware.OntologyActionGuardMiddleware;
+import com.metaplatform.agent.middleware.OntologyContextMiddleware;
+import com.metaplatform.agent.middleware.OntologyEvidenceMiddleware;
+import com.metaplatform.agent.middleware.OntologyGroundingMiddleware;
+import com.metaplatform.agent.middleware.OntologyPermissionMiddleware;
 import com.metaplatform.agent.middleware.ToolCall;
 import com.metaplatform.agent.runtime.RuntimeRouter;
 import com.metaplatform.agent.runtime.RuntimeRouter.RouteDecision;
@@ -92,11 +92,11 @@ public final class ScenarioTestSupport {
 
     public static List<AgentMiddleware> defaultOntologyMiddlewares() {
         return List.of(
-                new OnboardingContextMiddleware(),
-                new OnboardingGroundingMiddleware(),
-                new OnboardingPermissionMiddleware(),
-                new OnboardingEvidenceMiddleware(),
-                new OnboardingActionGuardMiddleware()
+                new OntologyContextMiddleware(),
+                new OntologyGroundingMiddleware(),
+                new OntologyPermissionMiddleware(),
+                new OntologyEvidenceMiddleware(),
+                new OntologyActionGuardMiddleware()
         );
     }
 

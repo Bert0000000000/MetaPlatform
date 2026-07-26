@@ -106,3 +106,15 @@ management:
     enabled: true
     sampling:
       probability: ${TRACING_SAMPLING_PROBABILITY:1.0}
+
+# ---------------------------------------------------------------------------
+# DeerFlow Gateway (本地 docker compose，本会话文档见 2026-07-26-deerflow-local-deploy-guide.md)
+# ---------------------------------------------------------------------------
+deerflow:
+  gateway-url: ${DEER_FLOW_GATEWAY_URL:http://host.docker.internal:2026/api}
+  internal-token: ${DEER_FLOW_INTERNAL_TOKEN:meta-platform-dev-internal-token-2026}
+  owner-user-id: ${DEER_FLOW_OWNER_USER_ID:deerflow-internal-owner}
+  request-timeout-ms: ${DEER_FLOW_REQUEST_TIMEOUT_MS:30000}
+  stream-timeout-ms: ${DEER_FLOW_STREAM_TIMEOUT_MS:60000}
+  reconnect-timeout-ms: ${DEER_FLOW_RECONNECT_TIMEOUT_MS:60000}
+  enabled: ${DEER_FLOW_ENABLED:true}

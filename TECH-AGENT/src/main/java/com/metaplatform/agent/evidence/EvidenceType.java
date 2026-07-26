@@ -1,0 +1,1 @@
+package com.metaplatform.agent.evidence; public enum EvidenceType { ONTOLOGY_OBJECT,ONTOLOGY_METRIC,ONTOLOGY_RELATION,DOCUMENT,KB_CHUNK,EXTERNAL,MODEL_DERIVED }

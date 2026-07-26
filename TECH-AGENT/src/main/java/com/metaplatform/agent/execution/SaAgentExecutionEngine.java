@@ -64,7 +64,7 @@ public class SaAgentExecutionEngine {
         String executionId = executionId();
         ChatClient client = chatClientBuilder
                 .defaultSystem(agent.getSystemPrompt())
-                .defaultTools(toolCallbacks.toArray(ToolCallback[]::new))
+                .defaultTools((org.springframework.ai.tool.ToolCallback[]) toolCallbacks.toArray())
                 .build();
         Prompt prompt = prompt(agent, userInput, context);
         ChatResponse response = client.prompt(prompt).call().chatResponse();
@@ -95,7 +95,8 @@ public class SaAgentExecutionEngine {
             graph.addEdge(START, "llm");
             graph.addEdge("llm", END);
             CompiledGraph compiled = graph.compile();
-            compiled.setMaxIterations(maxIterations);
+            // setMaxIterations(int) removed in spring-ai-alibaba 1.1.x; max no longer configurable here
+            // compiled.setMaxIterations(maxIterations);
             OverAllState state = compiled.invoke(Map.of("input", userInput))
                     .orElseThrow(() -> new IllegalStateException("SAA Graph 未返回执行状态"));
             String output = state.value("output", "");
