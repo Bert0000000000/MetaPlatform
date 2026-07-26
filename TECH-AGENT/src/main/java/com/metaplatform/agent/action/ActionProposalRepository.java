@@ -22,6 +22,13 @@ public interface ActionProposalRepository extends JpaRepository<ActionProposalEn
     @org.springframework.data.jpa.repository.Query("select a from ActionProposalEntity a where a.runId = :runId and a.actionCode = :actionCode and a.targetObjects = :targetObjects order by a.createdAt desc")
     java.util.List<ActionProposalEntity> findRecentForDedup(@Param("runId") String runId, @Param("actionCode") String actionCode, @Param("targetObjects") String targetObjects);
 
+    /**
+     * P5.12: cross-tenant dedup - find existing proposal for (tenantId + runId + actionCode + targetObjects).
+     * Used when the run is shared across tenants (templates, impersonation).
+     */
+    @org.springframework.data.jpa.repository.Query("select a from ActionProposalEntity a where a.tenantId = :tenantId and a.runId = :runId and a.actionCode = :actionCode and a.targetObjects = :targetObjects order by a.createdAt desc")
+    java.util.List<ActionProposalEntity> findRecentForTenantDedup(@Param("tenantId") String tenantId, @Param("runId") String runId, @Param("actionCode") String actionCode, @Param("targetObjects") String targetObjects);
+
 
     /**
      * 扫描已过期但仍 PROPOSED 的 Action 提案，触发自动 EXPIRED。

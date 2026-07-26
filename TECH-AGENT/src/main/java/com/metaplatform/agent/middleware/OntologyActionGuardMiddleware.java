@@ -74,10 +74,28 @@ public class OntologyActionGuardMiddleware implements AgentMiddleware {
             if (requiresApproval && context.getRunId() != null) {
                 String persistedProposalId = null;
                 try {
+                    // P5.12: cross-tenant dedup - skip if same (tenant + run + action + target) exists
+                    boolean crossTenantDedupHit = false;
                     // P5.10: cross-run dedup - skip if an existing proposal exists for same (runId, actionCode, targetObjects)
                     boolean crossRunDedupHit = false;
                     String targetObjectsJson = toJson(proposal.get("targetObjects"));
                     if (proposalRepository != null && targetObjectsJson != null) {
+                        try {
+                            // P5.12: try cross-tenant first (more strict)
+                            String tenantIdForDedup = context.getTenantId() != null ? context.getTenantId() : "tenant-default";
+                            var tenantExisting = proposalRepository.findRecentForTenantDedup(tenantIdForDedup, context.getRunId(), actionCode, targetObjectsJson);
+                            if (tenantExisting != null && !tenantExisting.isEmpty()) {
+                                ActionProposalEntity firstTenant = tenantExisting.get(0);
+                                proposal.put("proposalId", firstTenant.getProposalId());
+                                proposal.put("wfeTaskId", "tenant-reused");
+                                proposal.put("crossTenantDedupHit", true);
+                                log.info("[OntologyActionGuardMW] cross-tenant dedup hit tenant={} action={} reusing proposal={}",
+                                        tenantIdForDedup, actionCode, firstTenant.getProposalId());
+                                crossTenantDedupHit = true;
+                            }
+                        } catch (Exception dbEx) {
+                            log.debug("[OntologyActionGuardMW] cross-tenant dedup DB query failed: {}", dbEx.getMessage());
+                        }
                         try {
                             var existing = proposalRepository.findRecentForDedup(context.getRunId(), actionCode, targetObjectsJson);
                             if (existing != null && !existing.isEmpty()) {
@@ -94,7 +112,7 @@ public class OntologyActionGuardMiddleware implements AgentMiddleware {
                         }
                     }
 
-                    if (!crossRunDedupHit) {
+                    if (!crossRunDedupHit && !crossTenantDedupHit) {
                         ActionProposalCreateRequest createReq = new ActionProposalCreateRequest();
                         createReq.setRunId(context.getRunId());
                         createReq.setActionCode(actionCode);
