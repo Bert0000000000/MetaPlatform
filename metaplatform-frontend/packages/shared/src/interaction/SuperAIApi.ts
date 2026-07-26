@@ -136,6 +136,37 @@ export async function fetchRunEvents(opts: {
  * <p>调用方传入 onEvent 回调，每次拉到新事件即触发；事件流尾终止以收到
  * type === 'RUN_COMPLETED' 或 'RUN_FAILED' 为信号。</p>
  */
+async function streamRunEventsSse(opts: {
+  runId: string;
+  afterSeq: number;
+  onEvent: (event: RunEvent) => void;
+  signal?: AbortSignal;
+}): Promise<number> {
+  const response = await fetch(`/api/v1/agent/runs/${opts.runId}/events/stream?afterSeq=${opts.afterSeq}`, {
+    headers: { Accept: 'text/event-stream' }, signal: opts.signal,
+  });
+  if (!response.ok || !response.body) throw new Error(`Run SSE unavailable (${response.status})`);
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = ''; let lastSeq = opts.afterSeq; let eventName = '';
+  while (true) {
+    const part = await reader.read();
+    if (part.done) break;
+    buffer += decoder.decode(part.value, { stream: true });
+    const lines = buffer.split(/\r?\n/); buffer = lines.pop() ?? '';
+    for (const line of lines) {
+      if (line.startsWith('event:')) eventName = line.slice(6).trim();
+      if (!line.startsWith('data:')) continue;
+      const raw = line.slice(5).trim(); if (!raw) continue;
+      const parsed = JSON.parse(raw) as RunEvent;
+      const event = { ...parsed, type: parsed.type || eventName };
+      opts.onEvent(event); lastSeq = Math.max(lastSeq, event.seq ?? lastSeq);
+      if (event.type === 'RUN_COMPLETED' || event.type === 'RUN_FAILED') return lastSeq;
+    }
+  }
+  return lastSeq;
+}
+
 export async function streamAgentRun(opts: {
   agentId: string;
   request: InteractionContextRequest;
@@ -153,26 +184,16 @@ export async function streamAgentRun(opts: {
     });
 
     let afterSeq = 0;
-    let done = false;
-    while (!done) {
-      if (opts.signal?.aborted) {
-        await cancelAgentRun(run.runId).catch(() => undefined);
-        return;
-      }
-      const events = await fetchRunEvents({
-        runId: run.runId,
-        afterSeq,
-        signal: opts.signal,
-      });
-      for (const ev of events) {
-        opts.onEvent(ev);
-        afterSeq = Math.max(afterSeq, ev.seq);
-        if (ev.type === 'RUN_COMPLETED' || ev.type === 'RUN_FAILED') {
-          done = true;
-        }
-      }
-      if (!done) {
-        await new Promise((r) => setTimeout(r, opts.pollIntervalMs ?? 500));
+    try {
+      await streamRunEventsSse({ runId: run.runId, afterSeq, onEvent: (ev) => { afterSeq = Math.max(afterSeq, ev.seq); opts.onEvent(ev); }, signal: opts.signal });
+    } catch (sseError) {
+      // Development proxies and older gateways may not expose SSE yet; preserve polling fallback.
+      let done = false;
+      while (!done) {
+        if (opts.signal?.aborted) { await cancelAgentRun(run.runId).catch(() => undefined); return; }
+        const events = await fetchRunEvents({ runId: run.runId, afterSeq, signal: opts.signal });
+        for (const ev of events) { opts.onEvent(ev); afterSeq = Math.max(afterSeq, ev.seq); if (ev.type === 'RUN_COMPLETED' || ev.type === 'RUN_FAILED') done = true; }
+        if (!done) await new Promise((r) => setTimeout(r, opts.pollIntervalMs ?? 500));
       }
     }
   } catch (e) {
