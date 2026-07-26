@@ -1,10 +1,10 @@
 
 # Ontology-Native DeerFlow：全阶段最终落地与前后端联调实施文档
 
-> 版本：v1.55 · 2026-07-26（第五十四轮推进 / P2-RAG-04 AuthoringService 端到端 + RAG 回填）
-> 状态：P0/P1 基础设施收尾完成；进入 P1/P2 联调阶段；P5 ACT 13/14 + P6 AUTH 06 + P8 NAT 02 + P2 RAG 04 DONE
+> 版本：v1.56 · 2026-07-26（第五十五轮推进 / §17.9 服务端 Token 预算强执行 P-NLB-01）
+> 状态：P0/P1 基础设施收尾完成；进入 P1/P2 联调阶段；P5 ACT 13/14 + P6 AUTH 06 + P8 NAT 02 + P2 RAG 04 + P-NLB-01 DONE；§17 item 9 已有基础能力
 > 适用仓库：D:/Hermes/Workspace/10_Projects/2026-07-02-MetaPlatform
-> 更新基线：2026-07-26 23:55 UTC+8，由 Codex 自动接管继续推进
+> 更新基线：2026-07-27 00:10 UTC+8，由 Codex 自动接管继续推进
 
 
 ## 0. 文档定位
@@ -115,6 +115,7 @@
 | P8 | P8-NAT-14 | SAA Graph Review Gate | DONE | 新增 review 节点校验 LLM 输出非空，plan → llm → review → END；空结果进入 FAILED/安全降级；TECH-AGENT test 通过 |
 | P8 | P8-NAT-13b | SpringAiLlmProvider 真实实现 + Mockito 测试 | DONE | TECH-LLMGW 新增 SpringAiLlmProviderTest（9 单测）：chat() call 路径、null 安全、异常降级为 LLM_CALL_FAILED；streamChat() 把 Flux<ChatResponse> 映射成 Flux<String> 过滤空块、异常降级为单条错误消息；embed() 抛 UnsupportedOperationException；验证当前 Spring AI 1.1.2 实际可用 |
 | P2 | P2-RAG-04 | AuthoringService 端到端（Authoring + HybridSearch 联调，从文档抽取到 Evidence） | DONE | AuthoringService 新增 submitWithRagBackfill(req, topK)：对没有 evidenceRefs 的候选调用 RAGClient.search(query=concept+property+value, topK)，把返回 source/id 列表回填成 evidenceRefs；RAG 抛错时仅影响该候选，不阻断整体提交；RAGClient null 时降级为普通 submit；新增 5 单测覆盖 backfill/已有 evidence 不变/RAG 失败容忍/no-client/空列表 |
+| P-NEW | P-NLB-01 | 服务端 Token / WallTime 预算强执行（§17 item 9） | DONE | 新建 TokenBudgetEnforcer service + EnforcementResult record：check(BudgetDto, tokens, elapsedMs) 返回 allowed 或 denied(violation, overBy)；null budget 安全默认放过；负数归零；wall-time + tokens 同时超限合并为 TOKENS+WALL_TIME + 合计 overBy。AgentRunService 新增 7 参 complete(runId, status, answer, errorCode, errorMessage, tokens, elapsedMs)：parseBudget + tokenBudgetEnforcer.check，越限时强制降级为 DEGRADED + errorCode=BUDGET_EXCEEDED + errorMessage 带越限详情；原 5 参 complete 完全保兼容（默认 tokens=0, elapsedMs=0 不触发 enforcement）。10 单测覆盖 enforcer (8) + AgentRunService envelope cases (2)。TECH-AGENT 115/115 → 125/125 PASS |
 | P4 | P4-FE-06 | Frontend Typecheck 环境审计 | BLOCKED | pnpm -r typecheck 被 apps/kb/node_modules/axios/package.json EACCES 阻断；未修改前端代码，修复计划：清理/重建该依赖目录后重跑全 workspace typecheck |
 | P4 | P4-FE-07 | Frontend Dependency Repair | BLOCKED | pnpm install --offline --force 超时（180s），apps/kb/node_modules/axios 仍为断链/不可读状态；后续需在可用网络或清理残留 node 进程后重建依赖 |
 | P4 | P4-FE-08 | Frontend Symlink Repair Audit | BLOCKED | 已重建 axios 绝对符号链接并确认目标存在，但 pnpm typecheck 随后在 apps/kb/node_modules/react/package.json 继续 EACCES；需统一修复 node_modules/.pnpm ACL/锁定状态后再执行 |
@@ -145,8 +146,8 @@
 | TECH-A2A | 0（编译通过） | PASS | 无测试用例但 mvn install 通过 |
 | TECH-LLMGW | 14 / 14 | PASS | 5 LlmProvider 原有 + 9 SpringAiLlmProvider v1.54（chat call 路径 / null 安全 / 异常降级 / stream Flux<ChatResponse>→Flux<String> 映射 / 空块过滤 / embed Unsupported） |
 | TECH-RAG | 0（编译过） | PASS | 新增 tech-llmgw 依赖 + KB stub entity + Milvus/HybridSearchService 桩实现 |
-| TECH-AGENT | 115 / 115 | PASS | 11 repo + 22 scenario + 5 ActionExecution + 4 ActionApprovalBridge + 7 AuthoringService + 5 AuthoringServiceRagBackfill + 7 AuthoringBatchAccumulator + 3 AuthoringBatchFlushScheduler + 8 DocumentCandidateListener + 10 ActionGuardAutoRoute + 5 AuthoringDoc + 7 AgentRunServiceComplete + 8 ActionRouteDlqPersistence + 5 ActionRouteDlqScheduler + 3 ActionGuardCrossRunDedup + 2 ActionRouteDlqMetrics + 2 ActionGuardCrossTenantDedup + 5 ActionRouteDlqMicrometerMetrics (P5-ACT-13/14) |
-| **总计** | **1198+** | **15/15 模块 BUILD SUCCESS / 0 失败**（TECH-AGENT 115/115 + TECH-LLMGW 14/14 v1.55；DONE P5-ACT-13/14 + P6-AUTH-06 + P8-NAT-13b + P2-RAG-04） |
+| TECH-AGENT | 125 / 125 | PASS | 11 repo + 22 scenario + 5 ActionExecution + 4 ActionApprovalBridge + 7 AuthoringService + 5 AuthoringServiceRagBackfill + 7 AuthoringBatchAccumulator + 3 AuthoringBatchFlushScheduler + 8 DocumentCandidateListener + 10 ActionGuardAutoRoute + 5 AuthoringDoc + 9 AgentRunServiceComplete (P6.4 + 2 P-NLB-01 envelope) + 8 TokenBudgetEnforcer (P-NLB-01) + 8 ActionRouteDlqPersistence + 5 ActionRouteDlqScheduler + 3 ActionGuardCrossRunDedup + 2 ActionRouteDlqMetrics + 2 ActionGuardCrossTenantDedup + 5 ActionRouteDlqMicrometerMetrics (P5-ACT-13/14) |
+| **总计** | **1208+** | **15/15 模块 BUILD SUCCESS / 0 失败**（TECH-AGENT 125/125 + TECH-LLMGW 14/14 v1.56；DONE P5-ACT-13/14 + P6-AUTH-06 + P8-NAT-13b + P2-RAG-04 + P-NLB-01） |
 
 ### 0.2.2 已知遗留（不影响 BUILD / 部署，但需下一轮完善）
 

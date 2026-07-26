@@ -26,6 +26,7 @@ public class AgentRunService {
     private final ObjectMapper objectMapper;
     private final RunEventService runEventService;
     private final AuthoringService authoringService;
+    private final TokenBudgetEnforcer tokenBudgetEnforcer;
 
     @Transactional
     public AgentRunDto create(CreateAgentRunRequest request) {
@@ -89,6 +90,29 @@ public class AgentRunService {
      *  1. RUN_COMPLETED (or RUN_FAILED) event recording
      *  2. AuthoringService hook: if answer contains KB extraction candidates, persists as Ontology Draft.
      */
+    /**
+     * P-NLB-01 server-enforced overload: requires explicit tokens + elapsedMs counters and
+     * consults {@link TokenBudgetEnforcer}. If the budget is exceeded, the run is forced
+     * to {@code DEGRADED} with errorCode BUDGET_EXCEEDED.
+     */
+    @Transactional
+    public AgentRunDto complete(String runId, String status, String answer,
+                                String errorCode, String errorMessage,
+                                int tokensConsumed, long elapsedMs) {
+        AgentRunEntity run = require(runId);
+        com.metaplatform.agent.runs.dto.BudgetDto budget;
+        try { budget = parseBudget(run.getBudget()); } catch (Exception e) { budget = null; }
+        TokenBudgetEnforcer.EnforcementResult er = tokenBudgetEnforcer.check(budget, tokensConsumed, elapsedMs);
+        if (!er.isAllowed()) {
+            log.warn("[AgentRunService] budget exceeded run={} violation={} overBy={}; forcing DEGRADED",
+                    runId, er.getViolation(), er.getOverBy());
+            return complete(runId, "DEGRADED", answer,
+                    "BUDGET_EXCEEDED",
+                    er.getViolation() + " over by " + er.getOverBy());
+        }
+        return complete(runId, status, answer, errorCode, errorMessage);
+    }
+
     @Transactional
     public AgentRunDto complete(String runId, String status, String answer, String errorCode, String errorMessage) {
         if (!Set.of("COMPLETED", "FAILED", "DEGRADED").contains(status)) {
