@@ -9,6 +9,7 @@ import com.metaplatform.msg.topology.TopologyTopics;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.*;
 
@@ -20,10 +21,12 @@ import java.util.*;
  */
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class DocumentCandidateListener {
 
     private final OntologyDraftService draftService;
+
+    @Autowired
+    public DocumentCandidateListener(@Autowired(required = false) OntologyDraftService draftService) { this.draftService = draftService; }
 
     @EventTopicListener(
             topics = TopologyTopics.DOCUMENT_CANDIDATE_READY,
