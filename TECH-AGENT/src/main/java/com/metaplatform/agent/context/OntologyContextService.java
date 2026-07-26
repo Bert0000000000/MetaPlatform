@@ -19,6 +19,16 @@ public class OntologyContextService {
 
     public OntologyContextEnvelope build(String tenantId, String userId, String runId,
                                          InteractionContext interaction, String ontologyVersion,
+                                         PermissionSnapshot permissions, Map<String, Object> schema,
+                                         List<String> metrics, Duration ttl) {
+        if (permissions == null) throw new IllegalArgumentException("permission snapshot is required");
+        return build(tenantId, userId, runId, interaction, ontologyVersion, permissions.snapshotId(), schema,
+                metrics, permissions.allowedTools(), permissions.allowedActions(),
+                Map.of("scopes", permissions.dataScopes(), "fieldsDenied", permissions.fieldsDenied()), ttl);
+    }
+
+    public OntologyContextEnvelope build(String tenantId, String userId, String runId,
+                                         InteractionContext interaction, String ontologyVersion,
                                          String permissionSnapshotId, Map<String, Object> schema,
                                          List<String> metrics, List<String> allowedTools,
                                          List<String> allowedActions, Map<String, Object> dataScopes,
