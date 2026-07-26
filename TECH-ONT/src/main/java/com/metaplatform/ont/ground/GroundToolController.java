@@ -5,6 +5,7 @@ import com.metaplatform.ont.context.ContextException;
 import com.metaplatform.ont.context.OntologyContextService;
 import com.metaplatform.ont.metric.MetricService;
 import com.metaplatform.ont.repository.EntityRepository;
+import com.metaplatform.ont.repository.RelationInstanceRepository;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -17,6 +18,7 @@ public class GroundToolController {
     private final OntologyContextService contextService;
     private final MetricService metricService;
     private final EntityRepository entityRepository;
+    private final RelationInstanceRepository relationRepository;
 
     @PostMapping("/{toolName}")
     public Map<String,Object> invoke(@PathVariable String toolName, @RequestBody GroundToolRequest request) {
@@ -30,8 +32,27 @@ public class GroundToolController {
             case "ontology.query_metric" -> queryMetric(envelope.getTenantId(), request.getInput());
             case "ontology.search_objects" -> searchObjects(envelope.getTenantId(), request.getInput());
             case "ontology.fetch_evidence" -> fetchEvidence(envelope.getTenantId(), request.getInput(), envelope.getEnvelopeId());
+            case "ontology.get_object_graph" -> getObjectGraph(envelope.getTenantId(), request.getInput());
             default -> throw ContextException.bad("TOOL_NOT_IMPLEMENTED", "Tool is not implemented: " + toolName);
         };
+    }
+
+    private Map<String,Object> getObjectGraph(String tenantId, Map<String,Object> input) {
+        String objectId = required(input, "objectId");
+        entityRepository.findById(objectId).filter(e -> tenantId.equals(e.getTenantId()))
+                .orElseThrow(() -> ContextException.notFound("OBJECT_NOT_FOUND", "Object not found: " + objectId));
+        var outgoing = relationRepository.findByTenantIdAndSourceEntityId(tenantId, objectId);
+        var incoming = relationRepository.findByTenantIdAndTargetEntityId(tenantId, objectId);
+        var edges = java.util.stream.Stream.concat(outgoing.stream(), incoming.stream()).limit(100)
+                .map(r -> Map.<String,Object>of("relationId", r.getRelationInstanceId(), "relationTypeId", r.getRelationTypeId(),
+                        "sourceObjectId", r.getSourceEntityId(), "targetObjectId", r.getTargetEntityId()))
+                .toList();
+        var nodeIds = edges.stream().flatMap(e -> java.util.stream.Stream.of(String.valueOf(e.get("sourceObjectId")), String.valueOf(e.get("targetObjectId"))))
+                .distinct().limit(101).toList();
+        var nodes = entityRepository.findAllById(nodeIds).stream().filter(e -> tenantId.equals(e.getTenantId()))
+                .map(e -> Map.<String,Object>of("objectId", e.getEntityId(), "conceptId", e.getConceptId(), "name", e.getName()==null?"":e.getName()))
+                .toList();
+        return Map.of("rootObjectId", objectId, "depth", 1, "nodes", nodes, "edges", edges);
     }
 
     private Map<String,Object> fetchEvidence(String tenantId, Map<String,Object> input, String envelopeId) {
