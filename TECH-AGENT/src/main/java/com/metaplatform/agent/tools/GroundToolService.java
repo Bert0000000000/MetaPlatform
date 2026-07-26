@@ -6,6 +6,8 @@ import com.metaplatform.agent.context.OntologyContextRegistry;
 import com.metaplatform.agent.clients.OntologyClient;
 import com.metaplatform.agent.evidence.EvidenceService;
 import com.metaplatform.agent.evidence.ClaimService;
+import com.metaplatform.agent.events.RunEventService;
+import com.metaplatform.agent.runs.AgentRunService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import java.util.Map;
@@ -22,6 +24,8 @@ public class GroundToolService {
     private final OntologyClient ontologyClient;
     private final EvidenceService evidenceService;
     private final ClaimService claimService;
+    private final AgentRunService agentRunService;
+    private final RunEventService runEventService;
 
     public Map<String, Object> invoke(String toolName, GroundToolRequest request) {
         if (!SUPPORTED.contains(toolName))
@@ -34,11 +38,22 @@ public class GroundToolService {
             throw Phase1Exception.forbidden("TOOL_NOT_IN_ALLOWLIST", "Envelope does not allow tool: " + toolName);
         if (request.getInput().toString().length() > 16384)
             throw Phase1Exception.badRequest("TOOL_INPUT_TOO_LARGE", "Tool input exceeds 16KB");
-        Map<String, Object> data = ontologyClient.invokeGroundTool(toolName, envelope.envelopeId(), request.getInput(),
-                envelope.tenantId(), envelope.runId());
+        var run = agentRunService.require(envelope.runId());
+        runEventService.record(run, "TOOL_STARTED", Map.of("toolName", toolName, "envelopeId", envelope.envelopeId()));
+        Map<String, Object> data;
+        try {
+            data = ontologyClient.invokeGroundTool(toolName, envelope.envelopeId(), request.getInput(),
+                    envelope.tenantId(), envelope.runId());
+        } catch (RuntimeException ex) {
+            runEventService.record(run, "ACTION_FAILED", Map.of("toolName", toolName, "error", ex.getMessage() == null ? "tool failed" : ex.getMessage()));
+            throw ex;
+        }
+        runEventService.record(run, "TOOL_COMPLETED", Map.of("toolName", toolName));
         var evidence = evidenceService.captureToolResult(envelope.runId(), envelope.envelopeId(), toolName, request.getInput(), data);
+        runEventService.record(run, "EVIDENCE_ATTACHED", Map.of("evidenceId", evidence.getEvidenceId(), "toolName", toolName));
         var claim = claimService.createToolClaim(envelope.runId(), toolName, evidence.getEvidenceId(),
                 "Ontology tool result: " + toolName);
+        runEventService.record(run, "CLAIM_PRODUCED", Map.of("claimId", claim.getClaimId(), "evidenceId", evidence.getEvidenceId()));
         return Map.of("toolName", toolName, "envelopeId", envelope.envelopeId(),
                 "ontologyVersion", envelope.ontologyVersion(), "evidenceId", evidence.getEvidenceId(),
                 "claimId", claim.getClaimId(), "data", data);
