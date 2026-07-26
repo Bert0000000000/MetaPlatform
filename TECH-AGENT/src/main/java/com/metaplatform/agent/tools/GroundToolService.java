@@ -45,7 +45,7 @@ public class GroundToolService {
             data = ontologyClient.invokeGroundTool(toolName, envelope.envelopeId(), request.getInput(),
                     envelope.tenantId(), envelope.runId());
         } catch (RuntimeException ex) {
-            runEventService.record(run, "ACTION_FAILED", Map.of("toolName", toolName, "error", ex.getMessage() == null ? "tool failed" : ex.getMessage()));
+            runEventService.record(run, "TOOL_FAILED", Map.of("toolName", toolName, "error", ex.getMessage() == null ? "tool failed" : ex.getMessage()));
             throw ex;
         }
         runEventService.record(run, "TOOL_COMPLETED", Map.of("toolName", toolName));
