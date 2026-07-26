@@ -36,7 +36,7 @@ class ActionGuardAutoRouteTest {
         proposalService = Mockito.mock(ActionProposalService.class);
         approvalBridge = Mockito.mock(ActionApprovalBridgeService.class);
         dlqService = Mockito.mock(ActionRouteDlqService.class);
-        guard = new OntologyActionGuardMiddleware(proposalService, approvalBridge, dlqService);
+        guard = new OntologyActionGuardMiddleware(proposalService, approvalBridge, dlqService, null);
 
         when(proposalService.create(any())).thenAnswer(inv -> {
             ActionProposalCreateRequest req = inv.getArgument(0);
@@ -224,7 +224,7 @@ class ActionGuardAutoRouteTest {
     @Test
     @DisplayName("no-arg constructor (test compat): does not throw")
     void noArgConstructorCompat() {
-        OntologyActionGuardMiddleware bareGuard = new OntologyActionGuardMiddleware(null, null, null);
+        OntologyActionGuardMiddleware bareGuard = new OntologyActionGuardMiddleware(null, null, null, null);
         MiddlewareContext ctx = baseCtx("run-1005");
         ctx.getActionProposals().add(new java.util.LinkedHashMap<>(Map.of(
                 "actionCode", "RequestDiscount",

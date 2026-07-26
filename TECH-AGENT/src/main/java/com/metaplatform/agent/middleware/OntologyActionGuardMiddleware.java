@@ -5,6 +5,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import com.metaplatform.agent.action.ActionApprovalBridgeService;
+import com.metaplatform.agent.action.ActionProposalRepository;
+import com.metaplatform.agent.action.ActionProposalEntity;
 import com.metaplatform.agent.action.dto.ActionProposalCreateRequest;
 import com.metaplatform.agent.action.ActionProposalService;
 import com.metaplatform.agent.action.RiskLevel;
@@ -15,14 +17,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.*;
 
 /**
- * Ontology Action Guard Middleware（P3.1.6 + P5.1 复用）。
+ * Ontology Action Guard Middleware闁挎稑婀?.1.6 + P5.1 濠㈣泛绉堕弫銈夋晬婢跺牃鍋?
  *
- * <p>Agent 提交 ActionProposal 时强制校验：</p>
+ * <p>Agent 闁圭粯鍔掑?ActionProposal 闁哄啳娉涘閬嶅礆閼哥數澧″Δ鐘茬焿缁?/p>
  * <ol>
- *   <li>actionCode ∈ allowedActions</li>
- *   <li>对象权限（已由 Permission Snapshot 校验）</li>
- *   <li>参数 Schema 合法（粗校验）</li>
- *   <li>风险等级：HIGH/CRITICAL 进入 Temporal/WFE 审批</li>
+ *   <li>actionCode 闁?allowedActions</li>
+ *   <li>閻庣數顢婇挅鍕级閸愵喗顎欓柨娑樼墕閸戯繝鎮?Permission Snapshot 闁哄稄绻濋悰娆撴晬?/li>
+ *   <li>闁告瑥鍊归弳?Schema 闁告艾鐗婄涵鍫曟晬閸垻鐓愰柡宥忕節閻涙瑩鏁?/li>
+ *   <li>濡炲閰ｅ▍鎾剁驳婢跺矂鐛撻柨娑欘儢IGH/CRITICAL 閺夆晜绋戦崣?Temporal/WFE 閻庡厜鍓濇竟?/li>
  * </ol>
  */
 @Slf4j
@@ -33,10 +35,11 @@ public class OntologyActionGuardMiddleware implements AgentMiddleware {
     private final ActionProposalService proposalService;
     private final ActionApprovalBridgeService approvalBridge;
     private final ActionRouteDlqService dlqService;
+    private final ActionProposalRepository proposalRepository;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     /** P5.5 Convenience no-arg constructor for unit tests (ActionGuard only does in-memory mark here). */
-    public OntologyActionGuardMiddleware() { this(null, null, null); }
+    public OntologyActionGuardMiddleware() { this(null, null, null, null); }
 
     @Override
     public int order() { return 500; }
@@ -71,21 +74,43 @@ public class OntologyActionGuardMiddleware implements AgentMiddleware {
             if (requiresApproval && context.getRunId() != null) {
                 String persistedProposalId = null;
                 try {
-                    ActionProposalCreateRequest createReq = new ActionProposalCreateRequest();
-                    createReq.setRunId(context.getRunId());
-                    createReq.setActionCode(actionCode);
-                    createReq.setRiskLevel(riskLevel);
-                    createReq.setTargetObjects(toList(proposal.get("targetObjects")));
-                    createReq.setParameters(toMap(proposal.get("parameters")));
-                    createReq.setReason(String.valueOf(proposal.getOrDefault("reason", "Action Guard: " + actionCode)));
-                    createReq.setEvidenceRefs(toList(proposal.get("evidenceRefs")));
-                    var dto = proposalService.create(createReq);
-                    persistedProposalId = dto.getProposalId();
-                    String wfeTaskId = approvalBridge.submitForApproval(dto.getProposalId(), TenantContext.getUserId());
-                    proposal.put("proposalId", dto.getProposalId());
-                    proposal.put("wfeTaskId", wfeTaskId == null ? "n/a" : wfeTaskId);
-                    log.info("[OntologyActionGuardMW] HIGH risk action {} auto-persisted as proposal={} routed to WFE task={}",
-                            actionCode, dto.getProposalId(), wfeTaskId);
+                    // P5.10: cross-run dedup - skip if an existing proposal exists for same (runId, actionCode, targetObjects)
+                    boolean crossRunDedupHit = false;
+                    String targetObjectsJson = toJson(proposal.get("targetObjects"));
+                    if (proposalRepository != null && targetObjectsJson != null) {
+                        try {
+                            var existing = proposalRepository.findRecentForDedup(context.getRunId(), actionCode, targetObjectsJson);
+                            if (existing != null && !existing.isEmpty()) {
+                                ActionProposalEntity firstExisting = existing.get(0);
+                                proposal.put("proposalId", firstExisting.getProposalId());
+                                proposal.put("wfeTaskId", "reused");
+                                proposal.put("crossRunDedupHit", true);
+                                log.info("[OntologyActionGuardMW] cross-run dedup hit action={} reusing proposal={} from run={}",
+                                        actionCode, firstExisting.getProposalId(), firstExisting.getRunId());
+                                crossRunDedupHit = true;
+                            }
+                        } catch (Exception dbEx) {
+                            log.debug("[OntologyActionGuardMW] cross-run dedup DB query failed: {}", dbEx.getMessage());
+                        }
+                    }
+
+                    if (!crossRunDedupHit) {
+                        ActionProposalCreateRequest createReq = new ActionProposalCreateRequest();
+                        createReq.setRunId(context.getRunId());
+                        createReq.setActionCode(actionCode);
+                        createReq.setRiskLevel(riskLevel);
+                        createReq.setTargetObjects(toList(proposal.get("targetObjects")));
+                        createReq.setParameters(toMap(proposal.get("parameters")));
+                        createReq.setReason(String.valueOf(proposal.getOrDefault("reason", "Action Guard: " + actionCode)));
+                        createReq.setEvidenceRefs(toList(proposal.get("evidenceRefs")));
+                        var dto = proposalService.create(createReq);
+                        persistedProposalId = dto.getProposalId();
+                        String wfeTaskId = approvalBridge.submitForApproval(dto.getProposalId(), TenantContext.getUserId());
+                        proposal.put("proposalId", dto.getProposalId());
+                        proposal.put("wfeTaskId", wfeTaskId == null ? "n/a" : wfeTaskId);
+                        log.info("[OntologyActionGuardMW] HIGH risk action {} auto-persisted as proposal={} routed to WFE task={}",
+                                actionCode, dto.getProposalId(), wfeTaskId);
+                    }
                 } catch (Exception e) {
                     log.error("[OntologyActionGuardMW] HIGH risk auto-route failed action={}: {}", actionCode, e.getMessage());
                     proposal.put("autoRouteError", e.getMessage());
@@ -106,6 +131,11 @@ public class OntologyActionGuardMiddleware implements AgentMiddleware {
         }
         context.getActionProposals().clear();
         context.getActionProposals().addAll(mutableProposals);
+    }
+
+    private String toJson(Object o) {
+        try { return objectMapper.writeValueAsString(o); }
+        catch (Exception e) { return null; }
     }
 
     private List<String> toList(Object o) {
@@ -136,3 +166,6 @@ public class OntologyActionGuardMiddleware implements AgentMiddleware {
         return Map.of();
     }
 }
+
+
+
