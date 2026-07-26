@@ -38,6 +38,10 @@ public class AgentProperties {
 
     private String ontologyBaseUrl = "http://localhost:8201";
 
+    private String iamBaseUrl = "";
+
+    private Duration iamTimeout = Duration.ofSeconds(10);
+
     private Duration ontologyTimeout = Duration.ofSeconds(30);
 
     /** JWT 签名密钥（HS256/HS384/HS512 共用）。 */

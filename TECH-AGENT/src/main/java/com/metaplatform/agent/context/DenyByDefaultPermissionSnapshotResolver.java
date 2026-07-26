@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 /** Temporary local resolver used until the TECH-IAM client contract is wired. Deny by default. */
-@Component
+@Component("denyByDefaultPermissionSnapshotResolver")
 public class DenyByDefaultPermissionSnapshotResolver implements PermissionSnapshotResolver {
     @Override
     public PermissionSnapshot resolve(String tenantId, String userId, InteractionContext.Subject subject) {
