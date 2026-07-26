@@ -3,6 +3,7 @@ package com.metaplatform.agent.tools;
 import com.metaplatform.agent.api.Phase1Exception;
 import com.metaplatform.agent.context.*;
 import com.metaplatform.agent.clients.OntologyClient;
+import com.metaplatform.agent.evidence.*;
 import static org.mockito.Mockito.*;
 import org.junit.jupiter.api.Test;
 import java.time.OffsetDateTime;
@@ -21,7 +22,10 @@ class GroundToolServiceTest {
         var client = mock(OntologyClient.class);
         when(client.invokeGroundTool(anyString(), anyString(), anyMap(), anyString(), anyString()))
                 .thenReturn(Map.of("value", 42));
-        var service = new GroundToolService(registry, signer, client);
+        var evidenceService = mock(EvidenceService.class);
+        when(evidenceService.captureToolResult(anyString(), anyString(), anyString(), anyMap(), anyMap()))
+                .thenReturn(EvidenceEntity.builder().evidenceId("EVD-1").build());
+        var service = new GroundToolService(registry, signer, client, evidenceService);
         var result = service.invoke("ontology.query_metric", new GroundToolRequest("env-1", Map.of("metric", "revenue")));
         assertEquals("v1", result.get("ontologyVersion"));
         assertThrows(Phase1Exception.class, () -> service.invoke("ontology.fetch_evidence",

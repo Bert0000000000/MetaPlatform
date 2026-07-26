@@ -23,6 +23,25 @@ public class EvidenceService {
         if (run.getContextEnvelopeId() == null) return List.of();
         return repository.findByEnvelopeId(run.getContextEnvelopeId()).stream().map(this::toDto).toList();
     }
+    @Transactional
+    public EvidenceEntity captureToolResult(String runId, String envelopeId, String toolName,
+                                            Map<String, Object> input, Map<String, Object> result) {
+        EvidenceType type = switch (toolName) {
+            case "ontology.query_metric" -> EvidenceType.ONTOLOGY_METRIC;
+            case "ontology.get_object_graph" -> EvidenceType.ONTOLOGY_RELATION;
+            default -> EvidenceType.ONTOLOGY_OBJECT;
+        };
+        String objectId = input != null && input.get("objectId") != null ? String.valueOf(input.get("objectId")) : null;
+        String fragment = String.valueOf(result);
+        if (fragment.length() > 4096) fragment = fragment.substring(0, 4096);
+        return repository.save(EvidenceEntity.builder()
+                .evidenceId("EVD-" + UUID.randomUUID().toString().replace("-", ""))
+                .type(type).ref("ontology://tool/" + toolName).fragment(fragment)
+                .sourceUri("ontology://run/" + runId).capturedAt(java.time.Instant.now())
+                .capturedBy("agent." + runId).objectId(objectId).toolCallId(toolName)
+                .envelopeId(envelopeId).build());
+    }
+
     private EvidenceDto toDto(EvidenceEntity e) { return EvidenceDto.builder().evidenceId(e.getEvidenceId()).type(e.getType().name())
             .ref(e.getRef()).fragment(e.getFragment()).sourceUri(e.getSourceUri()).capturedAt(e.getCapturedAt())
             .capturedBy(e.getCapturedBy()).concept(e.getConcept()).objectId(e.getObjectId()).toolCallId(e.getToolCallId())

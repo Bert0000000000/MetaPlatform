@@ -4,6 +4,7 @@ import com.metaplatform.agent.api.Phase1Exception;
 import com.metaplatform.agent.context.OntologyContextEnvelopeSigner;
 import com.metaplatform.agent.context.OntologyContextRegistry;
 import com.metaplatform.agent.clients.OntologyClient;
+import com.metaplatform.agent.evidence.EvidenceService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import java.util.Map;
@@ -18,6 +19,7 @@ public class GroundToolService {
     private final OntologyContextRegistry registry;
     private final OntologyContextEnvelopeSigner signer;
     private final OntologyClient ontologyClient;
+    private final EvidenceService evidenceService;
 
     public Map<String, Object> invoke(String toolName, GroundToolRequest request) {
         if (!SUPPORTED.contains(toolName))
@@ -32,7 +34,8 @@ public class GroundToolService {
             throw Phase1Exception.badRequest("TOOL_INPUT_TOO_LARGE", "Tool input exceeds 16KB");
         Map<String, Object> data = ontologyClient.invokeGroundTool(toolName, envelope.envelopeId(), request.getInput(),
                 envelope.tenantId(), envelope.runId());
+        var evidence = evidenceService.captureToolResult(envelope.runId(), envelope.envelopeId(), toolName, request.getInput(), data);
         return Map.of("toolName", toolName, "envelopeId", envelope.envelopeId(),
-                "ontologyVersion", envelope.ontologyVersion(), "data", data);
+                "ontologyVersion", envelope.ontologyVersion(), "evidenceId", evidence.getEvidenceId(), "data", data);
     }
 }
