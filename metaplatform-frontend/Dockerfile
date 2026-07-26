@@ -4,7 +4,7 @@
 FROM node:22-alpine AS dev
 WORKDIR /app
 RUN corepack enable && corepack prepare pnpm@latest --activate
-COPY pnpm-workspace.yaml package.json .npmrc ./
+COPY pnpm-workspace.yaml pnpm-lock.yaml package.json .npmrc ./
 COPY packages/shared/package.json packages/shared/
 COPY apps/portal/package.json apps/portal/
 COPY apps/dashboard/package.json apps/dashboard/
@@ -13,7 +13,7 @@ COPY apps/apphub/package.json apps/apphub/
 COPY apps/arch/package.json apps/arch/
 COPY apps/dw/package.json apps/dw/
 COPY apps/mcphub/package.json apps/mcphub/
-RUN pnpm install
+RUN pnpm install --frozen-lockfile
 EXPOSE 9200
 
 # ── Build stage ─────────────────────────────────────────────

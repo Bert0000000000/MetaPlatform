@@ -1,0 +1,32 @@
+﻿{
+  "contracts": [
+    {
+      "contractNo": "CONTRACT-2025-018",
+      "customerId": "CUST-10086",
+      "signDate": "2025-08-01",
+      "expiryDate": "2026-08-15",
+      "amount": 12000000,
+      "daysToExpiry": 21,
+      "status": "EXPIRING_SOON",
+      "renewalProbability": 0.42
+    },
+    {
+      "contractNo": "CONTRACT-2026-027",
+      "customerId": "CUST-10086",
+      "signDate": "2026-02-01",
+      "expiryDate": "2027-02-01",
+      "amount": 4800000,
+      "daysToExpiry": 196,
+      "status": "ACTIVE",
+      "renewalProbability": 0.88
+    }
+  ],
+  "expiringIn45Days": ["CONTRACT-2025-018"],
+  "renewalPipeline": [
+    { "stage": "Initial Discussion", "probability": 0.20 },
+    { "stage": "Terms Negotiation", "probability": 0.35 },
+    { "stage": "Proposal Review", "probability": 0.55 },
+    { "stage": "Final Approval", "probability": 0.75 },
+    { "stage": "Signed", "probability": 0.95 }
+  ]
+}

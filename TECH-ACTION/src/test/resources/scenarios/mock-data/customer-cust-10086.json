@@ -1,0 +1,33 @@
+﻿{
+  "conceptCode": "Customer",
+  "objectId": "CUST-10086",
+  "tenantId": "TENANT-01",
+  "displayName": "上海汇川贸易有限公司",
+  "attributes": {
+    "name": "上海汇川贸易有限公司",
+    "customerLevel": "KEY_ACCOUNT",
+    "region": "EAST_CHINA",
+    "industry": "MANUFACTURING",
+    "establishedAt": "2018-03-15",
+    "annualRevenue": 48000000,
+    "creditRating": "AAA"
+  },
+  "relatedObjects": {
+    "HAS_ORDER": ["ORD-2026-Q2-0001", "ORD-2026-Q2-0042", "ORD-2026-Q3-0115"],
+    "HAS_CONTRACT": ["CONTRACT-2025-018", "CONTRACT-2026-027"],
+    "HAS_TICKET": ["TKT-2026-0512", "TKT-2026-0588", "TKT-2026-0612"],
+    "OWNED_BY": ["EMP-021"]
+  },
+  "metrics": {
+    "customer.revenue_12m": 48200000,
+    "customer.order_decline_rate": -0.32,
+    "customer.ticket_sentiment": -0.45,
+    "customer.payment_delay_days": 18,
+    "customer.churn_risk_score": 0.78
+  },
+  "recentEvents": [
+    { "date": "2026-07-15", "type": "Order.cancelled", "ref": "ORD-2026-Q3-0115", "amount": 1200000 },
+    { "date": "2026-07-10", "type": "Ticket.escalated", "ref": "TKT-2026-0612", "reason": "未解决的售后投诉" },
+    { "date": "2026-07-02", "type": "Contract.renewal_pending", "ref": "CONTRACT-2025-018", "dueInDays": 42 }
+  ]
+}

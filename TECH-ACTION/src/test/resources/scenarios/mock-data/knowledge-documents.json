@@ -1,0 +1,34 @@
+﻿{
+  "documents": [
+    {
+      "documentId": "DOC-CONTRACT-2026",
+      "title": "上海汇川贸易 2026 年度合作合同",
+      "mimeType": "application/pdf",
+      "storageKey": "kb-docs/contracts/CONTRACT-2026-027.pdf",
+      "size": 524288,
+      "concept": "Contract",
+      "uploadedAt": "2026-07-20T10:15:00+08:00",
+      "rawContent": "甲方：上海汇川贸易有限公司（统一社会信用代码 91310115MA1K3X9P7N）\n乙方：MatePlatform 科技有限公司\n\n第一条 合作内容\n1.1 乙方向甲方提供 MatePlatform 企业 AI 平台 SaaS 服务，包括但不限于：Ontology 引擎、知识库、数字员工、SuperAI 对话能力。\n1.2 服务期限：2026 年 2 月 1 日至 2027 年 2 月 1 日。\n\n第二条 服务费用\n2.1 年度服务费：人民币 480 万元整（含税）。\n2.2 付款方式：季度付款，每季度初 10 个工作日内支付 120 万元。\n\n第三条 关键联系人\n3.1 甲方联系人：王小伟（法务总监），电话 138****8888，邮箱 wang.****@huicun.com\n3.2 乙方对接人：李静（客户成功经理）\n\n第四条 违约金\n4.1 任一方提前解约需支付未履行部分 30% 作为违约金。\n4.2 逾期付款违约金：日万分之五。\n\n签署：北京，2026 年 1 月 25 日"
+    },
+    {
+      "documentId": "DOC-MINUTES-Q2-001",
+      "title": "Q2 业务复盘会议纪要 2026-06-28",
+      "mimeType": "application/pdf",
+      "storageKey": "kb-docs/minutes/q2-2026-06-28.pdf",
+      "size": 204800,
+      "concept": "MeetingMinutes",
+      "uploadedAt": "2026-07-01T09:00:00+08:00",
+      "rawContent": "时间：2026-06-28 14:00-16:30\n参会：王小伟（汇川法务）、李静（Mate CSM）、赵峰（Mate 产品总监）\n\n议题 1：Q2 服务复盘\n- 王小伟反馈：Q2 知识库检索准确率有所下降，最近 3 次查询返回了过时文档。\n- 李静承诺：本周内启动 KB 重建计划，引入 Ontology Filter。\n\n议题 2：续约意向\n- 王小伟表示：原合同 2026-08-15 到期，倾向续签但需评估 Q3 产品路线图。\n- 赵峰分享：Q3 将发布 Native Agent Runtime、事件触发型数字员工。\n\n议题 3：服务投诉\n- TKT-2026-0612：客户对售后响应时长不满意（>48h）。\n- 决议：升级 SLA 至 24h，由 Mate CSM 团队兜底。\n\n结论：续约可能性 65%，需在 7 月底前完成 Q3 路线图沟通。"
+    },
+    {
+      "documentId": "DOC-MINUTES-Q3-002",
+      "title": "Q3 续约谈判会议纪要 2026-07-15",
+      "mimeType": "application/pdf",
+      "storageKey": "kb-docs/minutes/q3-2026-07-15.pdf",
+      "size": 153600,
+      "concept": "MeetingMinutes",
+      "uploadedAt": "2026-07-16T08:30:00+08:00",
+      "rawContent": "时间：2026-07-15 10:00-12:00\n参会：王小伟（汇川法务总监）、李静（Mate CSM）、孙昊（Mate 销售总监）\n\n议题：2026 续约条款\n- 王小伟要求：续约价格不高于原合同 480 万，并赠送 Q3 Native Agent 试用。\n- 孙昊提议：可给 10% 折扣（432 万），但需经销售 VP 审批。\n\n行动计划：\n1. 孙昊 7 月 18 日前提交折扣审批单。\n2. 李静 7 月 20 日前发送 Q3 Native Agent 试用邀请。\n3. 王小伟 7 月 25 日前回复最终决定。\n\n风险：竞品（阿里钉钉 + 通义）报价 380 万，存在替换风险。"
+    }
+  ]
+}

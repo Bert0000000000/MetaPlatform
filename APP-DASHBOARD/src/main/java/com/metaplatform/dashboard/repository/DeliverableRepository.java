@@ -16,12 +16,15 @@ public interface DeliverableRepository extends JpaRepository<DeliverableEntity, 
 
     Optional<DeliverableEntity> findByShareToken(String shareToken);
 
-    @Query("SELECT d FROM DeliverableEntity d WHERE d.userId = :userId AND d.status != 'DELETED' AND "
+    // 修复：原 query 在 :tag 段多了一个 ) 且 keyword 的 OR 组没包在括号里，导致 HQL 解析失败。
+    @Query("SELECT d FROM DeliverableEntity d WHERE d.userId = :userId AND d.status <> 'DELETED' AND "
             + "(:type IS NULL OR d.type = :type) AND "
-            + "(:tag IS NULL OR LOWER(COALESCE(d.tags, '')) LIKE LOWER(CONCAT('%', cast(:tag as string), '%')))) AND "
-            + "(:keyword IS NULL OR LOWER(d.title) LIKE LOWER(CONCAT('%', cast(:keyword as string), '%'))) "
-            + "  OR LOWER(COALESCE(d.description, '')) LIKE LOWER(CONCAT('%', cast(:keyword as string), '%'))) "
-            + "  OR LOWER(COALESCE(d.tags, '')) LIKE LOWER(CONCAT('%', cast(:keyword as string), '%'))))")
+            + "(:tag IS NULL OR LOWER(COALESCE(d.tags, '')) LIKE LOWER(CONCAT('%', cast(:tag as string), '%'))) AND "
+            + "(:keyword IS NULL OR ("
+            + "    LOWER(d.title) LIKE LOWER(CONCAT('%', cast(:keyword as string), '%')) "
+            + "    OR LOWER(COALESCE(d.description, '')) LIKE LOWER(CONCAT('%', cast(:keyword as string), '%')) "
+            + "    OR LOWER(COALESCE(d.tags, '')) LIKE LOWER(CONCAT('%', cast(:keyword as string), '%'))"
+            + "))")
     Page<DeliverableEntity> search(@Param("userId") String userId,
                                    @Param("type") String type,
                                    @Param("tag") String tag,

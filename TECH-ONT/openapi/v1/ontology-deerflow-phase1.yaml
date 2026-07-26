@@ -1,0 +1,853 @@
+openapi: 3.1.0
+
+info:
+  title: MetaPlatform Ontology-Native DeerFlow Phase 1 API
+  version: 1.0.0
+  description: |
+    Phase 1 MVP 的核心 API 契约。
+
+    本规范基于以下两份设计文档：
+    - `docs/superpowers/specs/2026-07-26-ontology-deerflow-phase1-interfaces.md`
+    - `docs/superpowers/specs/2026-07-26-ontology-deerflow-phase1-interfaces-errata.md`
+
+    涵盖：
+    - 契约 A OntologyContextEnvelope 构建 / 校验 / 销毁
+    - 契约 B Tool 调用（4 个只读 Ground Tool）
+    - 契约 C Evidence / Claim / Artifact 持久化与查询
+    - 契约 D Sub-Agent 派生 Envelope
+    - 契约 E Memory Gate 决策
+    - ERR-2 RunEvent 21 事件
+    - ERR-3 AgentRun / Task 实体
+    - ERR-4 ActionProposal Phase 1 stub
+    - ERR-6 Phase 1 仅支持 DEERFLOW + FAST_QUERY runtime
+
+    实施助手落点：
+    - TECH-ONT 服务：path 路径 /ontology/* 与 /agent/proposals/*
+    - TECH-AGENT 服务：path 路径 /agent/runs/* 与 /agent/events/*
+  contact:
+    name: MetaPlatform Ontology Agent Team
+  license:
+    name: Internal use only
+    identifier: proprietary
+
+servers:
+  - url: https://api.metaplatform.local/ontology
+    description: TECH-ONT service
+  - url: https://api.metaplatform.local/agent
+    description: TECH-AGENT service
+
+tags:
+  - name: context
+    description: Envelope 构建与校验（契约 A）
+  - name: agent-runs
+    description: AgentRun 与 Task 生命周期（ERR-3）
+  - name: run-events
+    description: RunEvent 持久化与查询（ERR-2）
+  - name: claims
+    description: Claim 记录（契约 C）
+  - name: evidence
+    description: Evidence 记录（契约 C）
+  - name: artifacts
+    description: Artifact 归属与签名 URL（契约 C）
+  - name: action-proposals
+    description: ActionProposal 占位（ERR-4）
+  - name: ground-tools
+    description: 4 个只读 Ground Tool（契约 B）
+
+paths:
+
+  /ontology/context/build:
+    post:
+      tags: [context]
+      operationId: buildEnvelope
+      summary: 构建并签名 OntologyContextEnvelope
+      description: |
+        由前端携带 InteractionContext + JWT 调用。服务端组装 Envelope 并签名，写入 envelopeStore。
+        与 ERR-1 InteractionContext Schema 一致；与 ERR-1"服务端二次校验"一致。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BuildEnvelopeRequest'
+      responses:
+        '201':
+          description: 创建成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnvelopeHandle'
+        '400':
+          description: InteractionContext 校验失败（IC-1 / IC-2）
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '403':
+          description: 权限不足（OBJECT_ACCESS_DENIED）
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  /ontology/context/{envelopeId}:
+    get:
+      tags: [context]
+      operationId: getEnvelope
+      summary: 读取 Envelope（仅 Middleware 验签时使用）
+      parameters:
+        - name: envelopeId
+          in: path
+          required: true
+          schema: { type: string, pattern: '^ENV-[A-Za-z0-9_-]{8,32}$' }
+      responses:
+        '200':
+          description: Envelope 详情
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OntologyContextEnvelope' }
+        '404': { description: 'ENVELOPE_NOT_FOUND', content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+        '410': { description: 'ENVELOPE_EXPIRED', content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+
+  /agent/runs:
+    post:
+      tags: [agent-runs]
+      operationId: createAgentRun
+      summary: 创建 AgentRun
+      description: 创建 RUN-XXX 记录（status=PENDING），准备发起 DeerFlow 调用。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateAgentRunRequest' }
+      responses:
+        '201':
+          description: AgentRun 已创建
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AgentRun' }
+
+    get:
+      tags: [agent-runs]
+      operationId: listAgentRuns
+      summary: 列出 AgentRun（按 user / tenant / status 过滤）
+      parameters:
+        - name: tenantId
+          in: query
+          required: true
+          schema: { type: string }
+        - name: status
+          in: query
+          schema: { $ref: '#/components/schemas/AgentRunStatus' }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 50, maximum: 200 }
+      responses:
+        '200':
+          description: AgentRun 列表（按 createdAt DESC）
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/AgentRun' }
+
+  /agent/runs/{runId}:
+    parameters:
+      - name: runId
+        in: path
+        required: true
+        schema: { type: string, pattern: '^RUN-[A-Za-z0-9_-]{8,32}$' }
+    get:
+      tags: [agent-runs]
+      operationId: getAgentRun
+      summary: 读取 AgentRun
+      responses:
+        '200':
+          description: AgentRun 详情
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AgentRun' }
+        '404': { description: RUN 不存在, content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+
+  /agent/runs/{runId}/cancel:
+    parameters:
+      - name: runId
+        in: path
+        required: true
+        schema: { type: string, pattern: '^RUN-[A-Za-z0-9_-]{8,32}$' }
+    post:
+      tags: [agent-runs]
+      operationId: cancelAgentRun
+      summary: 取消 AgentRun
+      description: 状态由 RUNNING 转为 CANCELED；DEERFLOW 子流程同步收到 cancel 信号
+      responses:
+        '202':
+          description: 取消请求已接受
+        '409':
+          description: 状态不允许取消（终态）
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  /agent/runs/{runId}/events:
+    parameters:
+      - name: runId
+        in: path
+        required: true
+        schema: { type: string, pattern: '^RUN-[A-Za-z0-9_-]{8,32}$' }
+    get:
+      tags: [run-events]
+      operationId: listRunEvents
+      summary: 列出 RunEvent 流（按 ts ASC）
+      parameters:
+        - name: afterSeq
+          in: query
+          schema: { type: integer, description: '增量游标（大于此 seq 的事件）' }
+        - name: types
+          in: query
+          schema:
+            type: array
+            items: { $ref: '#/components/schemas/RunEventType' }
+      responses:
+        '200':
+          description: 事件流
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/RunEvent' }
+
+  /agent/runs/{runId}/claims:
+    parameters:
+      - name: runId
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      tags: [claims]
+      operationId: listClaims
+      summary: 列出 Run 的所有 Claim
+      responses:
+        '200':
+          description: Claim 列表
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/ClaimRecord' }
+
+  /agent/runs/{runId}/evidence:
+    parameters:
+      - name: runId
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      tags: [evidence]
+      operationId: listEvidence
+      summary: 列出 Run 的所有 Evidence
+      responses:
+        '200':
+          description: Evidence 列表
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Evidence' }
+
+  /agent/runs/{runId}/artifacts:
+    parameters:
+      - name: runId
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      tags: [artifacts]
+      operationId: listArtifacts
+      summary: 列出 Run 的所有 Artifact
+      responses:
+        '200':
+          description: Artifact 列表（含短期签名 URL）
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/AgentArtifact' }
+
+  /agent/artifacts/{artifactId}/signed-url:
+    parameters:
+      - name: artifactId
+        in: path
+        required: true
+        schema: { type: string }
+    post:
+      tags: [artifacts]
+      operationId: signArtifactUrl
+      summary: 重新签发短期签名 URL
+      description: 默认 1 小时 TTL；revoked 的 artifact 返回 410
+      responses:
+        '200':
+          description: 新签名 URL
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  signedUrl: { type: string, format: uri }
+                  expiresAt: { type: string, format: date-time }
+        '410': { description: ARTIFACT_REVOKED }
+
+  /agent/action-proposals:
+    post:
+      tags: [action-proposals]
+      operationId: createActionProposal
+      summary: 创建 ActionProposal 占位
+      description: Phase 1 MVP 只写 DDL 不发 ACTION_PROPOSED 事件
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ActionProposalCreateRequest' }
+      responses:
+        '201':
+          description: Proposal 已创建（status=PROPOSED）
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ActionProposal' }
+
+  /agent/action-proposals/{proposalId}:
+    parameters:
+      - name: proposalId
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      tags: [action-proposals]
+      operationId: getActionProposal
+      summary: 读取 ActionProposal
+      responses:
+        '200':
+          description: Proposal 详情
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ActionProposal' }
+
+  /agent/ground-tools/{toolName}:
+    parameters:
+      - name: toolName
+        in: path
+        required: true
+        schema:
+          type: string
+          enum: [ontology.search_objects, ontology.query_metric, ontology.get_object_graph, ontology.fetch_evidence]
+    post:
+      tags: [ground-tools]
+      operationId: invokeGroundTool
+      summary: 调用只读 Ground Tool（仅技术授权路径）
+      description: |
+        正常路径不暴露此端点；DeerFlow 中间件通过 OntologyToolProvider 内部调用。
+        前端调用会被 TOOL_NOT_IN_ALLOWLIST 拒绝（主文档 §3.7）。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [envelopeId, input]
+              properties:
+                envelopeId: { type: string }
+                input: { type: object, additionalProperties: true }
+      responses:
+        '200':
+          description: Tool 出参（已被 redact_fields 处理过）
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+        '403': { description: TOOL_NOT_IN_ALLOWLIST / OBJECT_ACCESS_DENIED }
+components:
+
+  schemas:
+
+    # ========== ERR-1 InteractionContext ==========
+
+    InteractionContext:
+      type: object
+      required: [message, interaction]
+      additionalProperties: false
+      properties:
+        message:
+          type: string
+          minLength: 1
+          maxLength: 4096
+        interaction:
+          type: object
+          required: [appCode, pageCode, pageUrl]
+          properties:
+            appCode:     { type: string, pattern: '^[a-z][a-z0-9_-]{2,32}$' }
+            pageCode:    { type: string, pattern: '^[a-z][a-z0-9_.-]{2,64}$' }
+            pageUrl:     { type: string, format: uri-reference, maxLength: 2048 }
+            selectedText: { type: [string, 'null'], maxLength: 8192 }
+            tenantId:    { type: string }
+        subject:
+          type: [object, 'null']
+          required: [conceptCode, objectId]
+          properties:
+            conceptCode: { type: string }
+            objectId:    { type: string }
+        viewState:
+          type: object
+          properties:
+            activeTab:       { type: string }
+            filters:         { type: object, additionalProperties: true }
+            selectedMetrics: { type: array, items: { type: string } }
+        clientHints:
+          type: object
+          properties:
+            supportsStreaming: { type: boolean }
+            supportsArtifacts: { type: boolean }
+            uiLocale:          { type: string, pattern: '^[a-z]{2}(-[A-Z]{2})?$' }
+
+    # ========== 主文档 §3.2 OntologyContextEnvelope ==========
+
+    OntologyContextEnvelope:
+      type: object
+      required:
+        - envelopeId
+        - tenantId
+        - userId
+        - runId
+        - principal
+        - subject
+        - schema
+        - allowedTools
+        - allowedActions
+        - permissionSnapshotId
+        - expiresAt
+        - signature
+      properties:
+        envelopeId: { type: string, pattern: '^ENV-[A-Za-z0-9_-]{8,32}$' }
+        tenantId:   { type: string }
+        userId:     { type: string }
+        runId:      { type: string, pattern: '^RUN-[A-Za-z0-9_-]{8,32}$' }
+        principal:
+          type: object
+          required: [tenantId, userId, roles]
+          properties:
+            tenantId: { type: string }
+            userId:   { type: string }
+            roles:    { type: array, items: { type: string } }
+        subject:
+          type: object
+          required: [concept, objectId]
+          properties:
+            concept:  { type: string, description: 'Ontology ConceptCode' }
+            objectId: { type: string }
+        schema:
+          type: object
+          properties:
+            properties:     { type: array, items: { type: string } }
+            relationships:  { type: array, items: { type: string } }
+            metrics:        { type: array, items: { type: string } }
+        allowedTools:
+          type: array
+          description: 白名单
+          items: { type: string, pattern: '^ontology\.[a-z_]+$' }
+        allowedActions:
+          type: array
+          items: { type: string }
+        approvalRequiredActions:
+          type: array
+          items: { type: string }
+        dataScopes:
+          type: object
+          properties:
+            regions:     { type: array, items: { type: string } }
+            fieldsDenied: { type: array, items: { type: string } }
+            objectDenied: { type: array, items: { type: string } }
+        permissionSnapshotId: { type: string, pattern: '^PERM-[A-Za-z0-9_-]+$' }
+        expiresAt: { type: string, format: date-time }
+        signature:
+          type: object
+          required: [alg, kid, value]
+          properties:
+            alg:   { type: string, enum: [HS256, RS256] }
+            kid:   { type: string }
+            value: { type: string }
+
+    BuildEnvelopeRequest:
+      type: object
+      required: [interactionContext, userJwt]
+      properties:
+        interactionContext: { $ref: '#/components/schemas/InteractionContext' }
+        userJwt:            { type: string, description: 用于 tenantId / userId / roles 推断的 JWT }
+
+    EnvelopeHandle:
+      type: object
+      required: [envelopeId, signature, expiresAt]
+      properties:
+        envelopeId: { type: string }
+        signature:  { $ref: '#/components/schemas/EnvelopeSignature' }
+        expiresAt:  { type: string, format: date-time }
+
+    EnvelopeSignature:
+      type: object
+      required: [alg, kid, value]
+      properties:
+        alg:   { type: string, enum: [HS256, RS256] }
+        kid:   { type: string }
+        value: { type: string }
+
+    # ========== ERR-3 AgentRun / Task ==========
+
+    AgentRunStatus:
+      type: string
+      enum: [PENDING, RUNNING, PAUSED, COMPLETED, FAILED, CANCELED, DEGRADED]
+
+    RuntimeType:
+      type: string
+      description: Phase 1 仅支持 DEERFLOW + FAST_QUERY
+      enum: [DEERFLOW, FAST_QUERY]
+
+    Budget:
+      type: object
+      properties:
+        tokens:     { type: integer }
+        cost:       { type: number, format: decimal }
+        wallTimeMs: { type: integer }
+
+    AgentRun:
+      type: object
+      required: [runId, tenantId, userId, agentId, runtimeType, contextEnvelopeId, status, goal, budget, traceId, startedAt, createdAt, updatedAt]
+      properties:
+        runId:             { type: string, pattern: '^RUN-[A-Za-z0-9_-]{8,32}$' }
+        tenantId:          { type: string }
+        userId:            { type: string }
+        agentId:           { type: string, example: 'superai.object_copilot' }
+        runtimeType:       { $ref: '#/components/schemas/RuntimeType' }
+        contextEnvelopeId: { type: string, pattern: '^ENV-[A-Za-z0-9_-]{8,32}$' }
+        status:            { $ref: '#/components/schemas/AgentRunStatus' }
+        goal:              { type: string, maxLength: 4096 }
+        parentRunId:       { type: [string, 'null'], pattern: '^RUN-[A-Za-z0-9_-]{8,32}$' }
+        budget:            { $ref: '#/components/schemas/Budget' }
+        traceId:           { type: string }
+        deerflowThreadId:  { type: [string, 'null'] }
+        deerflowRunId:     { type: [string, 'null'] }
+        startedAt:         { type: [string, 'null'], format: date-time }
+        finishedAt:        { type: [string, 'null'], format: date-time }
+        errorCode:         { type: [string, 'null'] }
+        errorMessage:      { type: [string, 'null'], maxLength: 1024 }
+        createdAt:         { type: string, format: date-time }
+        updatedAt:         { type: string, format: date-time }
+
+    CreateAgentRunRequest:
+      type: object
+      required: [agentId, goal, envelopeId]
+      properties:
+        agentId:          { type: string }
+        goal:             { type: string, maxLength: 4096 }
+        envelopeId:       { type: string }
+        runtimeType:      { $ref: '#/components/schemas/RuntimeType' }
+        parentRunId:      { type: string, pattern: '^RUN-[A-Za-z0-9_-]{8,32}$' }
+        budget:           { $ref: '#/components/schemas/Budget' }
+
+    TaskStatus:
+      type: string
+      enum: [PENDING, RUNNING, COMPLETED, FAILED]
+
+    Task:
+      type: object
+      required: [taskId, runId, assigneeAgent, objective, input, permissionsRef, budget, status, createdAt, updatedAt]
+      properties:
+        taskId:         { type: string, pattern: '^TSK-[A-Za-z0-9_-]{8,32}$' }
+        runId:          { type: string, pattern: '^RUN-[A-Za-z0-9_-]{8,32}$' }
+        parentTaskId:   { type: [string, 'null'] }
+        assigneeAgent:  { type: string }
+        objective:      { type: string }
+        input:          { type: object, additionalProperties: true }
+        outputSchema:   { type: [object, 'null'], additionalProperties: true }
+        permissionsRef: { type: string, pattern: '^PERM-[A-Za-z0-9_-]+$' }
+        budget:         { $ref: '#/components/schemas/Budget' }
+        status:         { $ref: '#/components/schemas/TaskStatus' }
+        createdAt:      { type: string, format: date-time }
+        updatedAt:      { type: string, format: date-time }
+
+    # ========== ERR-2 RunEvent ==========
+
+    RunEventType:
+      type: string
+      enum:
+        - RUN_STARTED
+        - RUN_PAUSED
+        - RUN_RESUMED
+        - RUN_FAILED
+        - RUN_COMPLETED
+        - PLAN_CREATED
+        - TASK_CREATED
+        - CHECKPOINT_SAVED
+        - SUBAGENT_STARTED
+        - MODEL_STARTED
+        - MODEL_COMPLETED
+        - TOOL_STARTED
+        - TOOL_COMPLETED
+        - EVIDENCE_ATTACHED
+        - CLAIM_PRODUCED
+        - ARTIFACT_CREATED
+        - APPROVAL_REQUIRED
+        - ACTION_PROPOSED
+        - ACTION_GUARD_DECIDED
+        - ACTION_EXECUTED
+        - ACTION_FAILED
+        - ONTOLOGY_EVENT_RECEIVED
+
+    RunEvent:
+      type: object
+      required: [eventId, runId, type, ts, traceId, tenantId, seq, payload]
+      properties:
+        eventId:      { type: string, pattern: '^EVT-[A-Za-z0-9_-]+$' }
+        runId:        { type: string }
+        taskId:       { type: [string, 'null'] }
+        subAgentId:   { type: [string, 'null'] }
+        parentRunId:  { type: [string, 'null'] }
+        type:         { $ref: '#/components/schemas/RunEventType' }
+        ts:           { type: string, format: date-time }
+        traceId:      { type: string }
+        tenantId:     { type: string }
+        envelopeId:   { type: [string, 'null'] }
+        seq:          { type: integer, description: '单调递增序号（同 run 下）' }
+        payload:      { type: object, additionalProperties: true }
+
+    ClaimType:
+      type: string
+      enum: [FACT, INFERENCE, RECOMMENDATION]
+
+    EvidenceType:
+      type: string
+      enum:
+        - ONTOLOGY_OBJECT
+        - ONTOLOGY_METRIC
+        - ONTOLOGY_RELATION
+        - DOCUMENT
+        - KB_CHUNK
+        - EXTERNAL
+        - MODEL_DERIVED
+
+    RiskLevel:
+      type: string
+      enum: [LOW, MEDIUM, HIGH, CRITICAL]
+
+    # ========== 契约 C Claim / Evidence / Artifact ==========
+
+    ClaimRecord:
+      type: object
+      required: [claimId, runId, type, content, confidence, evidenceRefs, generatedBy, createdAt]
+      properties:
+        claimId:        { type: string, pattern: '^CLAIM-[A-Za-z0-9_-]+$' }
+        runId:          { type: string }
+        taskId:         { type: [string, 'null'] }
+        type:           { $ref: '#/components/schemas/ClaimType' }
+        content:        { type: string }
+        confidence:     { type: number, format: float, minimum: 0, maximum: 1 }
+        evidenceRefs:   { type: array, minItems: 1, items: { type: string } }
+        generatedBy:
+          type: object
+          required: [agentId, model]
+          properties:
+            agentId: { type: string }
+            model:   { type: string }
+        createdAt:      { type: string, format: date-time }
+        toolCallIds:    { type: array, items: { type: string } }
+        promptSnapshotId: { type: [string, 'null'] }
+
+    Evidence:
+      type: object
+      required: [evidenceId, type, ref, capturedAt, capturedBy, envelopeId]
+      properties:
+        evidenceId:   { type: string, pattern: '^EVD-[A-Za-z0-9_-]+$' }
+        type:         { $ref: '#/components/schemas/EvidenceType' }
+        ref:          { type: string, example: 'order:1234' }
+        fragment:     { type: [string, 'null'] }
+        sourceUri:    { type: [string, 'null'] }
+        capturedAt:   { type: string, format: date-time }
+        capturedBy:   { type: string, example: 'agent.runId' }
+        concept:      { type: [string, 'null'] }
+        objectId:     { type: [string, 'null'] }
+        toolCallId:   { type: [string, 'null'] }
+        envelopeId:   { type: string }
+
+    ScanStatus:
+      type: string
+      enum: [CLEAN, FLAGGED, BLOCKED]
+
+    AgentArtifact:
+      type: object
+      required: [artifactId, runId, tenantId, filename, contentType, sizeBytes, sha256, scanStatus, createdAt]
+      properties:
+        artifactId:    { type: string, pattern: '^ART-[A-Za-z0-9_-]+$' }
+        runId:         { type: string }
+        tenantId:      { type: string }
+        filename:      { type: string }
+        contentType:   { type: string, example: 'application/pdf' }
+        sizeBytes:     { type: integer }
+        sha256:        { type: string }
+        minioKey:      { type: [string, 'null'] }
+        scanStatus:    { $ref: '#/components/schemas/ScanStatus' }
+        flaggedReasons: { type: [array, 'null'], items: { type: string } }
+        producedBy:
+          type: object
+          properties:
+            agentId:    { type: string }
+            skillId:    { type: [string, 'null'] }
+            toolCallId: { type: [string, 'null'] }
+        evidenceRefs:  { type: array, items: { type: string } }
+        createdAt:     { type: string, format: date-time }
+        expiresAt:     { type: string, format: date-time }
+        signedUrl:     { type: [string, 'null'], description: '当前可用签名 URL（1 小时 TTL）' }
+        revoked:       { type: boolean }
+
+    # ========== ERR-4 ActionProposal ==========
+
+    ActionProposalStatus:
+      type: string
+      enum: [PROPOSED, APPROVED, REJECTED, EXECUTED, FAILED, EXPIRED]
+
+    ActionProposal:
+      type: object
+      required:
+        - proposalId
+        - runId
+        - actionCode
+        - targetObjects
+        - parameters
+        - reason
+        - evidenceRefs
+        - riskLevel
+        - approvalRequired
+        - idempotencyKey
+        - status
+        - proposedAt
+        - expiresAt
+      properties:
+        proposalId:        { type: string, pattern: '^PROP-[A-Za-z0-9_-]+$' }
+        runId:             { type: string }
+        taskId:            { type: [string, 'null'] }
+        actionCode:        { type: string, description: '引用 OntologyAction.actionCode 的全局命名空间' }
+        targetObjects:     { type: array, minItems: 1, items: { type: string } }
+        parameters:        { type: object, additionalProperties: true }
+        reason:            { type: string, maxLength: 1024 }
+        evidenceRefs:      { type: array, minItems: 1, items: { type: string } }
+        riskLevel:         { $ref: '#/components/schemas/RiskLevel' }
+        approvalRequired:  { type: boolean }
+        idempotencyKey:    { type: string, description: '由 runId + actionCode + targetObjects + parameters 哈希派生' }
+        status:            { $ref: '#/components/schemas/ActionProposalStatus' }
+        decidedBy:         { type: [string, 'null'] }
+        decisionAt:        { type: [string, 'null'], format: date-time }
+        decisionReason:    { type: [string, 'null'] }
+        proposedAt:        { type: string, format: date-time }
+        expiresAt:         { type: string, format: date-time }
+
+    ActionProposalCreateRequest:
+      type: object
+      required: [runId, actionCode, targetObjects, parameters, reason, evidenceRefs]
+      properties:
+        runId:          { type: string }
+        taskId:         { type: string }
+        actionCode:     { type: string }
+        targetObjects:  { type: array, minItems: 1, items: { type: string } }
+        parameters:     { type: object, additionalProperties: true }
+        reason:         { type: string, maxLength: 1024 }
+        evidenceRefs:   { type: array, minItems: 1, items: { type: string } }
+        riskLevel:      { $ref: '#/components/schemas/RiskLevel' }
+
+    # ========== 错误响应 ==========
+
+    ErrorResponse:
+      type: object
+      required: [errorCode, errorMessage]
+      properties:
+        errorCode:        { type: string, description: '见附录 A 错误码速查表' }
+        errorMessage:     { type: string }
+        retryAfterSeconds: { type: [integer, 'null'] }
+        userActionHint:   { type: [string, 'null'] }
+        metadata:         { type: [object, 'null'], additionalProperties: true }
+
+  # ========== 主文档附录 A：错误码速查表 ==========
+
+  responses:
+    NotFound:
+      description: 资源未找到
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+    Unauthorized:
+      description: 鉴权失败
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+    CarrierUnavailable:
+      description: ENVELOPE_CARRIER_UNAVAILABLE（ERR-6，DeerFlow 不可用）
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  securitySchemes:
+    bearerJwt:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+security:
+  - bearerJwt: []
+
+x-meta-invariants:
+  description: |
+    主文档与 errata 合计 75 条不变量，覆盖 Phase 1 MVP 全部边界。
+    本规范不重复完整列出，仅在 schema 中以 enum / pattern / minItems 等形式体现关键约束：
+  bindings:
+    - id: A1-A7
+      source: 'docs/superpowers/specs/2026-07-26-ontology-deerflow-phase1-interfaces.md §3.8'
+      enforcedBy:
+        - envelope-signature schema
+        - fieldsDenied redaction
+    - id: B1-B7
+      source: '主文档 §4.10'
+      enforcedBy:
+        - allowedTools whitelist
+        - ToolDefinition.redactFields
+    - id: C1-C8
+      source: '主文档 §5.8'
+      enforcedBy:
+        - ClaimType FACT 必带 evidenceRefs（minItems: 1）
+        - AgentArtifact.scanStatus BLOCKED 阻断上传
+    - id: D1-D10
+      source: '主文档 §6.7'
+      enforcedBy:
+        - SubAgentEnvelope 派生约束
+        - ActionProposal.targetObjects 必填
+    - id: E1-E7
+      source: '主文档 §7.9'
+      enforcedBy:
+        - MemoryGate route 决策表
+        - candidate.sourceAgentRunId 必填
+    - id: IC-1 ~ IC-6
+      source: 'errata ERR-1'
+      enforcedBy:
+        - InteractionContext 严格 schema
+    - id: RE-1 ~ RE-8
+      source: 'errata ERR-2'
+      enforcedBy:
+        - RunEvent Type enum（21 种）
+    - id: AR-1 ~ AR-5 / TSK-1 ~ TSK-3
+      source: 'errata ERR-3'
+      enforcedBy:
+        - AgentRun / Task 表 CHECK 约束
+    - id: AP-1 ~ AP-7
+      source: 'errata ERR-4'
+      enforcedBy:
+        - action_proposals 表 CHECK 约束 + evidenceRefs minItems
+    - id: MW-1 ~ MW-3
+      source: 'errata ERR-5'
+      enforcedBy:
+        - Middleware ↔ 新组件对应矩阵（设计参考）
+    - id: FB-1 ~ FB-5
+      source: 'errata ERR-6'
+      enforcedBy:
+        - RuntimeType enum 仅 DEERFLOW / FAST_QUERY
+        - ErrorResponse.errorCode 含 ENVELOPE_CARRIER_UNAVAILABLE

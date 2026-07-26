@@ -33,6 +33,7 @@
     "@flowgram.ai/shortcuts-plugin": "^1.0.12",
     "@mate/shared": "workspace:*",
     "antd": "^6.0.0",
+    "axios": "^1.18.1",
     "lucide-react": "^0.468.0",
     "nanoid": "^6.0.0",
     "prismjs": "^1.30.0",

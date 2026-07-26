@@ -1,0 +1,27 @@
+﻿{
+  "eventSource": "ONTOLOGY_DOMAIN_EVENT",
+  "eventId": "EVT-CONTRACT-EXPIRING-001",
+  "eventCode": "Contract.expiring",
+  "conceptCode": "Contract",
+  "objectId": "CONTRACT-2025-018",
+  "occurredAt": "2026-07-25T08:00:00+08:00",
+  "payload": {
+    "contractNo": "CONTRACT-2025-018",
+    "customerId": "CUST-10086",
+    "customerName": "上海汇川贸易有限公司",
+    "expiryDate": "2026-08-15",
+    "daysToExpiry": 21,
+    "leadDays": 45,
+    "annualAmount": 12000000,
+    "riskLevel": "HIGH"
+  },
+  "expectedTrigger": {
+    "triggerCode": "contract-expiring-handler",
+    "agentId": "renewal-risk-analyst",
+    "expectedActions": [
+      "CreateFollowUpTask (auto)",
+      "GenerateRetentionBrief (auto)",
+      "NotifyOwner (auto)"
+    ]
+  }
+}

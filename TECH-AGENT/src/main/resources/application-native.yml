@@ -1,0 +1,20 @@
+﻿# =============================================================================
+# Native Agent Runtime 配置（P8.1）
+# =============================================================================
+mate:
+  runtime:
+    # mode: native | deerflow | hybrid
+    #   native — 完全用 Java + SAA Graph 跑（推荐）
+    #   deerflow — 全部走 DeerFlow Adapter
+    #   hybrid  — 简单 Agent 走 native，深度任务走 DeerFlow
+    mode: native
+
+  deerflow:
+    base-url: http://localhost:8001
+    api-key: ${DEERFLOW_API_KEY:dev-placeholder}
+
+  runtime-toggles:
+    use-middleware: true
+    use-sandbox: true
+    use-memory: true
+    use-triggers: true

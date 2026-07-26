@@ -11,7 +11,7 @@ import {
   Bot,
   Settings,
   type LucideIcon,
-} from 'lucide-react';
+} from './icons';
 
 export interface NavItem {
   key: string;

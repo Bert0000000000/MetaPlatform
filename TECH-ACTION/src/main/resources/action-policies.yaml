@@ -1,0 +1,40 @@
+﻿# =============================================================================
+# Action Policy（Phase 5.1）
+# -----------------------------------------------------------------------------
+# 按 ActionCode × Role × RiskLevel 三维决定是否可直接执行 / 需审批 / 拒绝。
+# 由 OntologyActionGuardService 加载并执行。
+# =============================================================================
+
+defaultPolicy:
+  low: auto          # LOW 直接执行
+  medium: approval   # MEDIUM 默认需审批
+  high: approval     # HIGH 强制审批
+  critical: reject   # CRITICAL 默认拒绝
+
+# 显式覆盖（按 ActionCode 优先匹配）
+overrides:
+  - actionCode: CreateFollowUpTask
+    riskLevel: LOW
+    defaultDecision: auto
+  - actionCode: NotifyOwner
+    riskLevel: LOW
+    defaultDecision: auto
+  - actionCode: RequestDiscount
+    riskLevel: HIGH
+    defaultDecision: approval
+  - actionCode: SendOfficialOffer
+    riskLevel: HIGH
+    defaultDecision: approval
+  - actionCode: ModifyContract
+    riskLevel: CRITICAL
+    defaultDecision: reject
+  - actionCode: ChangeCustomerRiskLevel
+    riskLevel: HIGH
+    defaultDecision: approval
+
+# 按角色的额外限制
+roleRestrictions:
+  - role: GUEST
+    forbiddenActions: [ChangeDiscount, ModifyContract, SendOfficialOffer]
+  - role: VIEWER
+    forbiddenActions: [ChangeDiscount, ModifyContract, SendOfficialOffer]

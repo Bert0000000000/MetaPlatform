@@ -1,7 +1,7 @@
-import { useState, type ReactNode } from 'react';
+﻿import { useState, type ReactNode } from 'react';
 import { Layout } from 'antd';
 import { Outlet } from 'react-router-dom';
-import { User, LogOut, ChevronsLeft, ChevronsRight } from 'lucide-react';
+import { User, LogOut, ChevronsLeft, ChevronsRight } from './icons';
 import PlatformMenu from './PlatformMenu';
 import { useAuth } from './auth/AuthProvider';
 import MateLogo from './components/MateLogo';

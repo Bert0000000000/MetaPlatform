@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
@@ -175,14 +175,29 @@
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
-    </dependencies>
+    
+    <!-- TECH-MSG shared event bus (TopologyTopics + EventTopicListener + EventEnvelope) -->
+    <dependency>
+        <groupId>com.metaplatform</groupId>
+        <artifactId>tech-msg</artifactId>
+        <version>${project.version}</version>
+    </dependency>
 
-    <build>
+    <!-- TECH-ONT shared ontology domain types (used by Authoring pipeline) -->
+    <dependency>
+        <groupId>com.metaplatform</groupId>
+        <artifactId>tech-ont</artifactId>
+        <version>${project.version}</version>
+    </dependency></dependencies>
+<build>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
+                    <encoding>UTF-8</encoding>
+                    <source>${java.version}</source>
+                    <target>${java.version}</target>
                     <fork>true</fork>
                     <annotationProcessorPaths>
                         <path>
@@ -228,3 +243,6 @@
         </plugins>
     </build>
 </project>
+
+
+

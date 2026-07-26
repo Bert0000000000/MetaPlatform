@@ -1,0 +1,22 @@
+﻿{
+  "scenario": "B",
+  "userQuery": "分析华东区销售下降原因",
+  "region": "EAST_CHINA",
+  "timeRange": "last_6_months",
+  "expectedGroundedConcepts": ["Customer", "Order", "SalesMetric"],
+  "expectedSubAgents": ["sales-analyst", "customer-analyst", "service-analyst"],
+  "expectedMetrics": [
+    {"code": "sales.revenue_total", "region": "EAST_CHINA", "expectedTrend": "decline", "expectedDeclinePct": -0.18},
+    {"code": "customer.churn_rate", "region": "EAST_CHINA", "expectedTrend": "increase", "expectedIncreasePct": 0.22},
+    {"code": "ticket.avg_resolution_hours", "region": "EAST_CHINA", "expectedTrend": "increase", "expectedValue": 36.5}
+  ],
+  "expectedRiskCustomers": [
+    {"customerId": "CUST-10086", "name": "上海汇川贸易", "riskScore": 0.78, "reason": "订单下降 + 续约不确定"},
+    {"customerId": "CUST-10233", "name": "杭州蓝海电子", "riskScore": 0.71, "reason": "连续 3 月订单为 0"},
+    {"customerId": "CUST-10519", "name": "南京明远物流", "riskScore": 0.65, "reason": "服务投诉激增"}
+  ],
+  "expectedReportArtifacts": [
+    {"name": "华东区销售下降分析报告.md", "format": "MARKDOWN"},
+    {"name": "风险客户明细.csv", "format": "CSV"}
+  ]
+}

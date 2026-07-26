@@ -17,7 +17,7 @@ public class TenantContext {
         CURRENT_TENANT.remove();
     }
 
-    public static String get() {
+    public static String tenantIdOrDefault() {
         String tenantId = CURRENT_TENANT.get();
         if (tenantId != null && !tenantId.isBlank()) {
             return tenantId;

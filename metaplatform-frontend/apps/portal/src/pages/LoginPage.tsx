@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Loader2, Sparkles, ShieldCheck } from 'lucide-react';
 import { useAuth, Api, MateBrand, MateLogo, type AuthUser } from '@mate/shared';
@@ -166,11 +166,10 @@ export default function LoginPage() {
             </span>
           </div>
           <h1 style={{ fontSize: 32, fontWeight: 600, color: 'var(--foreground)', marginBottom: 12, lineHeight: 1.25, letterSpacing: '-0.02em' }}>
-            企业级 AI 协作中台
+            企业AI AgentOS
           </h1>
           <p style={{ fontSize: 15, color: 'var(--muted-foreground)', lineHeight: 1.6, maxWidth: 480 }}>
-            整合企业本体、知识库、数字员工与生成式 AI，
-            为团队提供统一的智能作业与决策支撑。
+            基于本体论（Ontology）构建的企业 AI AgentOS — 把企业知识、业务流程与数字员工装进同一个可解释的运行时，让智能从对话走向执行。
           </p>
           <div style={{ display: 'flex', gap: 12, marginTop: 28, flexWrap: 'wrap' }}>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 999, background: 'var(--muted)', color: 'var(--muted-foreground)', fontSize: 12 }}>
@@ -211,7 +210,7 @@ export default function LoginPage() {
             欢迎回来
           </h1>
           <p style={{ fontSize: 13, color: 'var(--muted-foreground)', marginBottom: 24, lineHeight: 1.5 }}>
-            登录 Mate Platform，开启企业级 AI 协作
+            登录 Mate Platform，开启企业 AI AgentOS 协作
           </p>
 
           <div style={{ height: 1, background: 'var(--border)', marginBottom: 22 }} />
@@ -299,7 +298,7 @@ export default function LoginPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <input
               className="v-input"
-              style={{ height: 42 }}
+              style={{ height: 42, width: '100%' }}
               placeholder="用户名"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
@@ -308,7 +307,7 @@ export default function LoginPage() {
             <input
               className="v-input"
               type="password"
-              style={{ height: 42 }}
+              style={{ height: 42, width: '100%' }}
               placeholder="密码"
               value={password}
               onChange={(e) => setPassword(e.target.value)}

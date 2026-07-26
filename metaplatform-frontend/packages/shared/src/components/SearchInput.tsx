@@ -1,6 +1,6 @@
-import { Input } from 'antd';
+﻿import { Input } from 'antd';
 import { useState, useEffect, useRef } from 'react';
-import { Search } from 'lucide-react';
+import { Search } from '../icons';
 
 interface SearchInputProps {
   placeholder?: string;
@@ -46,3 +46,4 @@ export default function SearchInput({
     />
   );
 }
+

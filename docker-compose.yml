@@ -1,4 +1,22 @@
-version: '3.8'
+﻿version: '3.8'
+
+# =============================================================================
+# MetaPlatform 基础设施栈（Phase 0.1）
+# -----------------------------------------------------------------------------
+# 容器清单：
+#   - postgres       主库（PostgreSQL 16，自动创建 metaplatform* 库）
+#   - redis          缓存 + 分布式锁
+#   - nacos          注册中心 / 配置中心（v2.4.3-slim，3.0 POC 进行中）
+#   - minio          对象存储（KB 文档原文件、Agent Artifact、DeerFlow workspace）
+#   - milvus         向量库（standalone + 内部 etcd/minio）
+#   - kafka          事件总线（Ontology Event、Document Event）
+#   - rabbitmq       任务队列（异步任务、Saga 补偿）
+#   - loki           日志聚合（TECH-OBS P0）
+#   - promtail       日志收集 sidecar（可选）
+#
+# Phase 0.1.1 目标：Nacos 3.0+ POC；本栈当前保留 v2.4.3-slim 作为最后稳定版。
+# 待 NACOS-3.0-POC-CHECKLIST.md 全部勾选后切换。
+# =============================================================================
 
 services:
   postgres:
@@ -8,10 +26,14 @@ services:
       POSTGRES_USER: meta
       POSTGRES_PASSWORD: meta
       POSTGRES_DB: metaplatform
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=en_US.UTF-8"
+      TZ: Asia/Shanghai
     ports:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+      # P0.1.3 多库初始化：首次启动自动创建 6 个业务库
+      - ./infra/init-multiple-databases.sql:/docker-entrypoint-initdb.d/01-init-databases.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U meta"]
       interval: 5s
@@ -21,8 +43,11 @@ services:
   redis:
     image: redis:7-alpine
     container_name: mate-redis
+    command: ["redis-server", "--appendonly", "yes"]
     ports:
       - "6379:6379"
+    volumes:
+      - redisdata:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -35,7 +60,7 @@ services:
     #             按 CLAUDE.md 教训"**Nacos 3.0 引入需先做 POC**"，
     #             本期回退到 2.4.3-slim（最后稳定版），3.0 POC 进度见
     #             docs/NACOS-3.0-POC-CHECKLIST.md。
-    # TODO(R2.1)：3.0.2+ 重新做 POC，验证 v3 API 完整可用后再升级。
+    # TODO(P0.1.1 / Phase 0)：3.0.2+ 重新做 POC，验证 v3 API 完整可用后再升级。
     image: nacos/nacos-server:v2.4.3-slim
     container_name: mate-nacos
     environment:
@@ -49,6 +74,8 @@ services:
     ports:
       - "8848:8848"   # HTTP Console
       - "9848:9848"   # gRPC Client RPC
+    volumes:
+      - nacosdata:/home/nacos/data
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:8848/nacos/v1/console/health/readiness || exit 1"]
       interval: 10s
@@ -56,5 +83,128 @@ services:
       retries: 30
       start_period: 60s
 
+  # P0.1.2 - 对象存储（KB 文档原文件 / Agent Artifact / DeerFlow workspace）
+  minio:
+    image: minio/minio:RELEASE.2024-10-13T13-34-11Z
+    container_name: mate-minio
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: meta
+      MINIO_ROOT_PASSWORD: meta-secret-key
+    ports:
+      - "9000:9000"   # S3 API
+      - "9001:9001"   # Console
+    volumes:
+      - miniodata:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # P0.1.2 - 向量库（standalone + 内部 etcd + 内部 MinIO）
+  milvus:
+    image: milvusdb/milvus:v2.5.0
+    container_name: mate-milvus
+    command: ["milvus", "run", "standalone"]
+    environment:
+      DEPLOY_MODE: standalone
+      ETCD_USE_EMBED: true
+      MINIO_USE_EMBED: true
+      COMMON_STORAGETYPE: local
+      COMMON_SECURITY_ENABLED: "false"
+      TZ: Asia/Shanghai
+    ports:
+      - "19530:19530"   # gRPC
+      - "9091:9091"     # Metrics
+    volumes:
+      - milvusdata:/var/lib/milvus
+    depends_on:
+      - postgres
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9091/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # P0.1.2 - 事件总线（Ontology Event / Document Event / CDC）
+  kafka:
+    image: bitnami/kafka:3.9
+    container_name: mate-kafka
+    environment:
+      KAFKA_CFG_NODE_ID: "0"
+      KAFKA_CFG_PROCESS_ROLES: "controller,broker"
+      KAFKA_CFG_LISTENERS: "PLAINTEXT://:9092,CONTROLLER://:9093"
+      KAFKA_CFG_ADVERTISED_LISTENERS: "PLAINTEXT://localhost:9092"
+      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
+      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: "CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT"
+      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: "0@localhost:9093"
+      KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: "true"
+      ALLOW_PLAINTEXT_LISTENER: "yes"
+      KAFKA_KRAFT_CLUSTER_ID: "MkU3OEVBNTcwNTJENDM2Qk"
+    ports:
+      - "9092:9092"
+    volumes:
+      - kafkadata:/bitnami/kafka
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-broker-api-versions.sh --bootstrap-server localhost:9092 >/dev/null 2>&1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
+  # P0.1.2 - 任务队列（异步任务、Saga 补偿）
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: mate-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: meta
+      RABBITMQ_DEFAULT_PASS: meta-secret
+    ports:
+      - "5672:5672"     # AMQP
+      - "15672:15672"   # Management UI
+    volumes:
+      - rabbitmqdata:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+
+  # P0.1.2 - 日志聚合（TECH-OBS P0）
+  loki:
+    image: grafana/loki:3.3.2
+    container_name: mate-loki
+    command: ["-config.file=/etc/loki/local-config.yaml"]
+    ports:
+      - "3100:3100"
+    volumes:
+      - lokidata:/loki
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:3100/ready || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+
+  # P0.1.2 - 日志收集（sidecar 模式，按需启动）
+  promtail:
+    image: grafana/promtail:3.3.2
+    container_name: mate-promtail
+    command: ["-config.file=/etc/promtail/config.yml"]
+    volumes:
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - ./infra/promtail-config.yml:/etc/promtail/config.yml:ro
+    ports:
+      - "9080:9080"
+    profiles: ["logging"]   # 默认不启动，docker compose --profile logging up
+
 volumes:
   pgdata:
+  redisdata:
+  nacosdata:
+  miniodata:
+  milvusdata:
+  kafkadata:
+  rabbitmqdata:
+  lokidata:

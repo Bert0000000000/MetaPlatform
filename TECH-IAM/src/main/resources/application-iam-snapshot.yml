@@ -1,0 +1,18 @@
+﻿# =============================================================================
+# TECH-IAM Snapshot 配置（P0.2）
+# -----------------------------------------------------------------------------
+# PermissionSnapshot 签名密钥 + TTL。
+# 生产环境必须通过 KMS/Vault 注入覆盖以下默认值。
+# =============================================================================
+mate:
+  iam:
+    snapshot:
+      secret: ${MATE_IAM_SNAPSHOT_SECRET:metaplatform-dev-snapshot-secret-2026}
+      ttl-seconds: ${MATE_IAM_SNAPSHOT_TTL:300}
+
+spring:
+  jpa:
+    properties:
+      hibernate:
+        jdbc:
+          batch_size: 50

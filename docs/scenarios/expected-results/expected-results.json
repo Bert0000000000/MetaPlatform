@@ -1,0 +1,103 @@
+﻿{
+  "scenarios": [
+    {
+      "id": "A_object_copilot",
+      "name": "客户详情 Object Copilot",
+      "acceptanceCriteria": {
+        "must_call_endpoints": [
+          "POST /api/v1/iam/permission-snapshots/build",
+          "POST /api/v1/ont/context/build",
+          "POST /api/v1/agent/skills/list (or static)",
+          "POST /api/v1/agent/agents/{agentId}/execute (or run)"
+        ],
+        "must_produce_run_events": [
+          "RUN_STARTED",
+          "CLAIM_PRODUCED (>= 3)",
+          "EVIDENCE_ATTACHED (>= 3)",
+          "RUN_COMPLETED"
+        ],
+        "must_obey_ontology_envelope_ttl": true,
+        "must_filter_denied_fields": ["bankAccount", "legalIdentityNumber"],
+        "must_bind_evidence_to_every_claim": true,
+        "expected_claims_min": 3,
+        "expected_evidence_min": 3,
+        "first_response_p95_ms": 1500,
+        "total_response_p95_ms": 30000
+      },
+      "must_NOT": [
+        "直接写 Ontology 表",
+        "执行 Action（首期 MVP 只读）",
+        "暴露 bankAccount 等敏感字段"
+      ]
+    },
+    {
+      "id": "B_cross_domain_analysis",
+      "name": "跨域深度分析",
+      "acceptanceCriteria": {
+        "must_trigger_subagents": ["sales-analyst", "customer-analyst", "service-analyst"],
+        "must_call_grounding": true,
+        "must_call_metrics": ["sales.revenue_total", "customer.churn_rate"],
+        "must_aggregate_claims_with_evidence": true,
+        "must_produce_artifact_metadata": true,
+        "artifact_min": 1,
+        "deep_task_p95_ms": 30000
+      },
+      "must_NOT": [
+        "跳过 Grounding 直接调 LLM",
+        "跨域 Sub-Agent 共享全量上下文（应裁剪）"
+      ]
+    },
+    {
+      "id": "C_controlled_action",
+      "name": "受控 Action 执行",
+      "acceptanceCriteria": {
+        "must_route_through_action_policy": true,
+        "low_risk_action_auto_execute": true,
+        "high_risk_action_requires_approval": true,
+        "critical_risk_action_default_reject": true,
+        "must_check_idempotency_key": true,
+        "must_record_audit": true,
+        "must_emit_ontology_action_executed_event": true
+      },
+      "must_NOT": [
+        "绕过 ActionPolicy.yaml 直接执行",
+        "高风险 Action 自动执行",
+        "重复执行（未做幂等检查）"
+      ]
+    },
+    {
+      "id": "D_event_trigger",
+      "name": "Ontology Event 主动触发",
+      "acceptanceCriteria": {
+        "must_publish_domain_event": true,
+        "must_route_through_trigger_engine": true,
+        "must_check_cooldown": true,
+        "must_enforce_budget": true,
+        "must_inject_ontology_context": true,
+        "must_call_action_for_followup": true
+      },
+      "must_NOT": [
+        "绕过 TriggerEngine 直接触发 Agent",
+        "忽略 cooldown 触发风暴"
+      ]
+    },
+    {
+      "id": "E_authoring",
+      "name": "文档 → Ontology 抽取",
+      "acceptanceCriteria": {
+        "must_subscribe_kb_document_uploaded": true,
+        "must_extract_candidate_facts": true,
+        "must_run_validator": true,
+        "must_create_draft_not_direct_commit": true,
+        "high_conflict_requires_human_approval": true,
+        "must_record_provenance_per_fact": true,
+        "must_publish_ontology_commit_published_event": true
+      },
+      "must_NOT": [
+        "LLM 直接写 Ontology 真实表",
+        "跳过 Validator 直接 Commit",
+        "丢失 evidence 引用"
+      ]
+    }
+  ]
+}

@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   Plus,
   Bug,
@@ -11,8 +11,42 @@ import {
   Clock,
 } from 'lucide-react';
 import { SubTabs, StepDrawer, FormDrawer, Field, TextInput, TextArea, Select, FormSection } from '@mate/shared';
-import { MOCK_MY_AGENTS } from '@/mock'; // MOCK
+import { getMyAgents, getAgentExecLogs, type MyAgentItem, type AgentExecLogItem } from '@/api/dashboard';
 
+import { ShieldCheck, FileText, Receipt, Headphones, BarChart3, type LucideIcon } from 'lucide-react';
+
+const AGENT_ICON_MAP: Record<string, LucideIcon> = {
+  ShieldCheck, Activity, FileText, BookOpen, Receipt, Headphones, BarChart3,
+};
+const getAgentIcon = (name: string): LucideIcon => AGENT_ICON_MAP[name] ?? Activity;
+
+const FALLBACK_AGENT_CARDS: MyAgentItem[] = [
+  { name: '数据质量巡检员', type: 'inspection', type_label: '质检型', status: 'running', status_class: 'status-running', description: '定时巡检数据库表，自动修复常见数据问题', tasks: 1024, success_rate: 88.3, icon: 'ShieldCheck' },
+  { name: '供应链监控员', type: 'monitor', type_label: '监控型', status: 'running', status_class: 'status-running', description: '实时监控供应链异常，自动通知采购与销售', tasks: 512, success_rate: 92.1, icon: 'Activity' },
+  { name: '合同审核员', type: 'review', type_label: '审核型', status: 'running', status_class: 'status-running', description: 'AI 智能识别合同条款风险，支持多版本对比', tasks: 89, success_rate: 91.5, icon: 'FileText' },
+  { name: '知识库管理员', type: 'maintain', type_label: '维护型', status: 'running', status_class: 'status-running', description: '知识库索引重建与版本管理', tasks: 156, success_rate: 96.4, icon: 'BookOpen' },
+  { name: '财务对账员', type: 'finance', type_label: '财务型', status: 'error', status_class: 'status-error', description: '订单与财务流水对账，标记差异并生成报告', tasks: 78, success_rate: 85.2, icon: 'Receipt' },
+  { name: '客服助手', type: 'service', type_label: '服务型', status: 'running', status_class: 'status-running', description: '基于知识库的多轮对话客服，支持人工接管', tasks: 128, success_rate: 96.8, icon: 'Headphones' },
+  { name: '数据分析师', type: 'analysis', type_label: '分析型', status: 'running', status_class: 'status-running', description: '根据问题自动选择数据集进行多维分析', tasks: 56, success_rate: 98.2, icon: 'BarChart3' },
+  { name: '文档摘要助手', type: 'generation', type_label: '生成型', status: 'idle', status_class: 'status-idle', description: '长文档摘要与结构化提取', tasks: 342, success_rate: 94.1, icon: 'FileText' },
+];
+const FALLBACK_EXEC_LOGS: AgentExecLogItem[] = [
+  { log_id: 'l01', agent: '数据质量巡检员', agent_id: 'data-quality', exec_time: '07-22 14:32:08', duration: '1.8s', status: '成功', status_class: 'v-badge-success', dot_class: 'dot-success', trigger: '定时触发', tokens: '2,340' },
+  { log_id: 'l02', agent: '供应链监控员', agent_id: 'supply-chain', exec_time: '07-22 14:28:45', duration: '4.2s', status: '成功', status_class: 'v-badge-success', dot_class: 'dot-success', trigger: '事件触发', tokens: '5,120' },
+  { log_id: 'l03', agent: '合同审核员', agent_id: 'contract-review', exec_time: '07-22 14:15:22', duration: '12.6s', status: '成功', status_class: 'v-badge-success', dot_class: 'dot-success', trigger: '手动触发', tokens: '18,740' },
+  { log_id: 'l04', agent: '知识库管理员', agent_id: 'kb-admin', exec_time: '07-22 14:02:11', duration: '6.3s', status: '成功', status_class: 'v-badge-success', dot_class: 'dot-success', trigger: '定时触发', tokens: '8,960' },
+  { log_id: 'l05', agent: '财务对账员', agent_id: 'finance-recon', exec_time: '07-22 13:48:37', duration: '7.1s', status: '失败', status_class: 'v-badge-destructive', dot_class: 'dot-destructive', trigger: '定时触发', tokens: '10,280' },
+  { log_id: 'l06', agent: '数据质量巡检员', agent_id: 'data-quality', exec_time: '07-22 13:30:00', duration: '2.4s', status: '成功', status_class: 'v-badge-success', dot_class: 'dot-success', trigger: '定时触发', tokens: '3,100' },
+  { log_id: 'l07', agent: '供应链监控员', agent_id: 'supply-chain', exec_time: '07-22 12:55:19', duration: '3.8s', status: '超时', status_class: 'v-badge-warning', dot_class: 'dot-warning', trigger: '事件触发', tokens: '4,620' },
+  { log_id: 'l08', agent: '知识库管理员', agent_id: 'kb-admin', exec_time: '07-22 12:30:05', duration: '4.5s', status: '成功', status_class: 'v-badge-success', dot_class: 'dot-success', trigger: '定时触发', tokens: '6,530' },
+  { log_id: 'l09', agent: '客服助手', agent_id: 'service-bot', exec_time: '07-22 12:10:44', duration: '1.2s', status: '成功', status_class: 'v-badge-success', dot_class: 'dot-success', trigger: '用户提问', tokens: '1,870' },
+  { log_id: 'l10', agent: '数据分析师', agent_id: 'analyst', exec_time: '07-22 11:45:22', duration: '8.7s', status: '成功', status_class: 'v-badge-success', dot_class: 'dot-success', trigger: '手动触发', tokens: '14,200' },
+  { log_id: 'l11', agent: '合同审核员', agent_id: 'contract-review', exec_time: '07-22 11:20:08', duration: '15.3s', status: '成功', status_class: 'v-badge-success', dot_class: 'dot-success', trigger: '上传触发', tokens: '21,540' },
+  { log_id: 'l12', agent: '财务对账员', agent_id: 'finance-recon', exec_time: '07-22 10:55:33', duration: '6.8s', status: '失败', status_class: 'v-badge-destructive', dot_class: 'dot-destructive', trigger: '定时触发', tokens: '9,840' },
+  { log_id: 'l13', agent: '知识库管理员', agent_id: 'kb-admin', exec_time: '07-22 10:30:00', duration: '5.2s', status: '成功', status_class: 'v-badge-success', dot_class: 'dot-success', trigger: '定时触发', tokens: '7,210' },
+  { log_id: 'l14', agent: '数据质量巡检员', agent_id: 'data-quality', exec_time: '07-22 10:00:00', duration: '1.9s', status: '成功', status_class: 'v-badge-success', dot_class: 'dot-success', trigger: '定时触发', tokens: '2,580' },
+  { log_id: 'l15', agent: '客服助手', agent_id: 'service-bot', exec_time: '07-22 09:42:17', duration: '0.8s', status: '成功', status_class: 'v-badge-success', dot_class: 'dot-success', trigger: '用户提问', tokens: '1,120' },
+];
 const DASHBOARD_TABS = [
   { label: '工作台', path: '/dashboard' },
   { label: '我的应用', path: '/dashboard/my-apps' },
@@ -122,10 +156,48 @@ export default function MyAgentsPage() {
   const [execDrawerOpen, setExecDrawerOpen] = useState(false);
   const [execPage, setExecPage] = useState(1);
   const execPageSize = 10;
-  const execPageTotal = Math.ceil(execLogs.length / execPageSize);
+
+  // 数据状态
+  const [agents, setAgents] = useState<MyAgentItem[]>(FALLBACK_AGENT_CARDS);
+  const [execLogs, setExecLogs] = useState<AgentExecLogItem[]>(FALLBACK_EXEC_LOGS);
+  const [loading, setLoading] = useState(true);
+  const [source, setSource] = useState<'api' | 'fallback'>('fallback');
+
+  // API icon 字符串 → lucide 组件
+  const AGENT_ICON_MAP: Record<string, React.ComponentType<{ style?: React.CSSProperties }>> = {
+    ShieldCheck, Activity, FileText, BookOpen, Receipt, Headphones, BarChart3,
+  };
+  const getAgentIcon = (name: string) => AGENT_ICON_MAP[name] ?? Activity;
+
+
+
+
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    Promise.all([getMyAgents(), getAgentExecLogs()])
+      .then(([a, l]) => {
+        if (cancelled) return;
+        setAgents(a);
+        setExecLogs(l);
+        setSource('api');
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setSource('fallback');
+      })
+      .finally(() => {
+        if (cancelled) return;
+        setLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, []);
+
+  const execPageTotal = useMemo(() => Math.max(1, Math.ceil(execLogs.length / execPageSize)), [execLogs.length]);
   const pagedExecLogs = useMemo(
     () => execLogs.slice((execPage - 1) * execPageSize, execPage * execPageSize),
-    [execPage]
+    [execLogs, execPage]
   );
   const [form, setForm] = useState({
     name: '',
@@ -153,6 +225,9 @@ export default function MyAgentsPage() {
         <div>
           <h1 style={{ fontSize: 22, fontWeight: 600, marginBottom: 4 }}>我的数字员工</h1>
           <p style={{ fontSize: 14, color: 'var(--muted-foreground)' }}>你创建和管理的数字员工</p>
+          {source === 'fallback' && !loading && (
+            <span title="API 不可达，使用本地兜底数据" style={{ fontSize: 10, padding: '1px 6px', borderRadius: 9999, background: 'var(--warning-subtle)', color: 'var(--warning)' }}>本地数据</span>
+          )}
         </div>
         <button className="v-btn-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }} onClick={() => setDrawerOpen(true)}>
           <Plus style={{ width: 14, height: 14 }} />创建数字员工
@@ -259,11 +334,11 @@ export default function MyAgentsPage() {
                   {execLogs.slice(0, 10).map((log, i) => (
                     <tr key={i} style={{ borderBottom: '1px solid var(--border)' }}>
                       <td style={{ padding: '8px 12px', whiteSpace: 'nowrap', fontWeight: 500 }}>{log.agent}</td>
-                      <td style={{ padding: '8px 12px', whiteSpace: 'nowrap', fontFamily: 'var(--font-mono)', fontSize: 12 }}>{log.time}</td>
+                      <td style={{ padding: '8px 12px', whiteSpace: 'nowrap', fontFamily: 'var(--font-mono)', fontSize: 12 }}>{log.exec_time}</td>
                       <td style={{ padding: '8px 12px', whiteSpace: 'nowrap', fontFamily: 'var(--font-mono)', fontSize: 12 }}>{log.duration}</td>
                       <td style={{ padding: '8px 12px', whiteSpace: 'nowrap' }}>
-                        <span style={{ borderRadius: 9999, padding: '2px 8px', fontSize: 11, fontWeight: 500, display: 'inline-flex', alignItems: 'center', gap: 4, background: badgeBgMap[log.statusClass], color: badgeColorMap[log.statusClass] }}>
-                          <span style={{ width: 5, height: 5, borderRadius: '50%', display: 'inline-block', flexShrink: 0, background: dotColorMap[log.dotClass] }} />
+                        <span style={{ borderRadius: 9999, padding: '2px 8px', fontSize: 11, fontWeight: 500, display: 'inline-flex', alignItems: 'center', gap: 4, background: badgeBgMap[log.status_class], color: badgeColorMap[log.status_class] }}>
+                          <span style={{ width: 5, height: 5, borderRadius: '50%', display: 'inline-block', flexShrink: 0, background: dotColorMap[log.dot_class] }} />
                           {log.status}
                         </span>
                       </td>
@@ -464,14 +539,14 @@ export default function MyAgentsPage() {
             </thead>
             <tbody>
               {pagedExecLogs.map((log, i) => (
-                <tr key={log.id} style={{ borderBottom: '1px solid var(--border)' }}>
+                <tr key={log.log_id} style={{ borderBottom: '1px solid var(--border)' }}>
                   <td style={{ padding: '10px 12px', color: 'var(--muted-foreground)', fontFamily: 'var(--font-mono)', fontSize: 12 }}>{(execPage - 1) * execPageSize + i + 1}</td>
                   <td style={{ padding: '10px 12px', whiteSpace: 'nowrap', fontWeight: 500 }}>{log.agent}</td>
-                  <td style={{ padding: '10px 12px', whiteSpace: 'nowrap', fontFamily: 'var(--font-mono)', fontSize: 12 }}>{log.time}</td>
+                  <td style={{ padding: '10px 12px', whiteSpace: 'nowrap', fontFamily: 'var(--font-mono)', fontSize: 12 }}>{log.exec_time}</td>
                   <td style={{ padding: '10px 12px', whiteSpace: 'nowrap', fontFamily: 'var(--font-mono)', fontSize: 12 }}>{log.duration}</td>
                   <td style={{ padding: '10px 12px', whiteSpace: 'nowrap' }}>
-                    <span style={{ borderRadius: 9999, padding: '2px 8px', fontSize: 11, fontWeight: 500, display: 'inline-flex', alignItems: 'center', gap: 4, background: badgeBgMap[log.statusClass], color: badgeColorMap[log.statusClass] }}>
-                      <span style={{ width: 5, height: 5, borderRadius: '50%', display: 'inline-block', flexShrink: 0, background: dotColorMap[log.dotClass] }} />
+                    <span style={{ borderRadius: 9999, padding: '2px 8px', fontSize: 11, fontWeight: 500, display: 'inline-flex', alignItems: 'center', gap: 4, background: badgeBgMap[log.status_class], color: badgeColorMap[log.status_class] }}>
+                      <span style={{ width: 5, height: 5, borderRadius: '50%', display: 'inline-block', flexShrink: 0, background: dotColorMap[log.dot_class] }} />
                       {log.status}
                     </span>
                   </td>

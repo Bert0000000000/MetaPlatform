@@ -1,4 +1,12 @@
-﻿export { default as ErrorBoundary } from './ErrorBoundary';
+// P4 interaction, renderer, and built-in icon APIs.
+export * from './interaction/InteractionContextProvider';
+export * from './renderers/ClaimRenderer';
+export * from './renderers/EvidenceRenderer';
+export * from './renderers/ArtifactViewer';
+export * from './interaction/SuperAIApi';
+export * from './icons';
+
+export { default as ErrorBoundary } from './ErrorBoundary';
 export { default as PlatformMenu, NAV_ITEMS, type NavItem } from './PlatformMenu';
 export { default as AppLayout } from './AppLayout';
 export { AuthProvider, useAuth, type AuthContextValue } from './auth/AuthProvider';
@@ -51,4 +59,3 @@ export {
 } from './utils/datetime';
 
 import './global.css';
-

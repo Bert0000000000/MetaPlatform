@@ -1,0 +1,36 @@
+﻿# =============================================================================
+# Promtail 配置（Phase 0.1.2 · 日志收集 sidecar）
+# -----------------------------------------------------------------------------
+# 收集宿主机上所有 Docker 容器的 stdout/stderr 日志并推送到 Loki。
+# 仅在 --profile logging 启动时生效。
+# =============================================================================
+
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+  log_level: info
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://mate-loki:3100/loki/api/v1/push
+
+scrape_configs:
+  - job_name: docker
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 5s
+        filters:
+          - name: status
+            values: [running]
+    relabel_configs:
+      - source_labels: [__meta_docker_container_name]
+        regex: /(.*)
+        target_label: container
+      - source_labels: [__meta_docker_compose_service]
+        target_label: service
+      - source_labels: [__meta_docker_container_log_stream]
+        target_label: stream
+    pipeline_stages:
+      - docker: {}

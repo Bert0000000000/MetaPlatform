@@ -16,6 +16,12 @@ x-app-base: &app-base
     context: .
     dockerfile: Dockerfile
     target: dev
+  # Keep anonymous node_modules volumes synchronized with the bind-mounted manifests.
+  entrypoint:
+    - /bin/sh
+    - -c
+    - 'pnpm install --frozen-lockfile && exec "$@"'
+    - --
   volumes:
     - .:/app
     - pnpm-store:/app/.pnpm-store
@@ -33,6 +39,8 @@ x-app-base: &app-base
   environment:
     NODE_ENV: development
     CI: "true"
+    # Vite runs in Docker; backend services run on the Windows host.
+    VITE_PROXY_HOST: host.docker.internal
   restart: unless-stopped
 
 x-prod-base: &prod-base
