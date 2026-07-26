@@ -108,11 +108,11 @@ function SuperAIInner() {
                     <div style={{ background: '#fafafa', padding: 12, borderRadius: 6, marginBottom: 8 }}>{msg.content}</div>
                   )}
                   {msg.claims?.map((c: any, k: number) => <ClaimRenderer key={k} claim={c} />)}
-                  {msg.evidences?.length > 0 && (
+                  {(msg.evidences ?? []).length > 0 && (
                     <div style={{ marginTop: 8 }}>
                       <strong>证据：</strong>
                       <div style={{ marginTop: 4 }}>
-                        {msg.evidences.map((e: any, k: number) => <EvidenceRenderer key={k} evidence={e} />)}
+                        {(msg.evidences ?? []).map((e: any, k: number) => <EvidenceRenderer key={k} evidence={e} />)}
                       </div>
                     </div>
                   )}

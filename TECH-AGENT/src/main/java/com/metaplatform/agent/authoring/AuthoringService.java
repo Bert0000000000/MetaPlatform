@@ -1,0 +1,105 @@
+package com.metaplatform.agent.authoring;
+
+import com.metaplatform.ont.draft.OntologyDraftEntity;
+import com.metaplatform.ont.draft.OntologyDraftService;
+import com.metaplatform.ont.draft.OntologyDraftService.ProposeDraftRequest;
+import com.metaplatform.ont.draft.OntologyDraftService.ProposeDraftRequest.CandidateInput;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.util.*;
+
+/**
+ * P6.2 AuthoringService - TECH-AGENT -> TECH-ONT Authoring pipeline glue.
+ */
+@Slf4j
+@Service
+public class AuthoringService {
+
+    private final OntologyDraftService draftService;
+
+    @Autowired
+    public AuthoringService(@Autowired(required = false) OntologyDraftService draftService) {
+        this.draftService = draftService;
+    }
+
+    public ProposeDraftRequest buildDraft(String tenantId, String runId, String source,
+                                          String baseVersion, String targetVersion, String summary,
+                                          List<CandidateInput> candidates) {
+        return ProposeDraftRequest.builder()
+                .tenantId(tenantId == null ? "tenant-default" : tenantId)
+                .runId(runId)
+                .source(source == null ? "AGENT" : source)
+                .baseVersion(baseVersion == null ? "v1" : baseVersion)
+                .targetVersion(targetVersion == null ? "v2" : targetVersion)
+                .summary(summary == null ? "Agent Run extraction" : summary)
+                .candidates(candidates == null ? List.of() : candidates)
+                .build();
+    }
+
+    @SuppressWarnings("unchecked")
+    public ProposeDraftRequest buildFromExtraction(String tenantId, String runId, String baseVersion,
+                                                  String targetVersion, String summary,
+                                                  Map<String, Object> extraction) {
+        if (extraction == null) return buildDraft(tenantId, runId, "AGENT", baseVersion, targetVersion, summary, List.of());
+        Object raw = extraction.get("candidates");
+        if (!(raw instanceof List<?> rawList)) {
+            return buildDraft(tenantId, runId, "AGENT", baseVersion, targetVersion, summary, List.of());
+        }
+        List<CandidateInput> inputs = new ArrayList<>();
+        for (Object o : rawList) {
+            if (!(o instanceof Map<?, ?> m)) continue;
+            CandidateInput c = new CandidateInput();
+            c.setConceptCode(stringOr(m.get("conceptCode"), null));
+            c.setObjectId(stringOr(m.get("objectId"), null));
+            c.setProperty(stringOr(m.get("property"), null));
+            c.setProposedValue(m.get("value"));
+            Object refs = m.get("evidenceRef");
+            if (refs == null) refs = m.get("evidenceRefs");
+            if (refs instanceof List<?> refList) {
+                List<String> refStrs = new ArrayList<>();
+                for (Object r : refList) refStrs.add(String.valueOf(r));
+                c.setEvidenceRefs(refStrs);
+            } else if (refs instanceof String refStr) {
+                c.setEvidenceRefs(List.of(refStr));
+            } else {
+                c.setEvidenceRefs(List.of());
+            }
+            c.setConfidence(numberOr(m.get("confidence"), 0.5));
+            c.setConflictLevel(stringOr(m.get("conflictLevel"), "NONE"));
+            inputs.add(c);
+        }
+        return buildDraft(tenantId, runId, "AGENT", baseVersion, targetVersion, summary, inputs);
+    }
+
+    public OntologyDraftEntity submit(ProposeDraftRequest request) {
+        if (draftService == null) {
+            log.warn("[AuthoringService] OntologyDraftService unavailable; skipping submit run={}", request.getRunId());
+            return null;
+        }
+        try {
+            OntologyDraftEntity draft = draftService.proposeDraft(request);
+            log.info("[AuthoringService] submitted draft={} for run={} source={} candidates={}",
+                    draft.getId(), request.getRunId(), request.getSource(),
+                    request.getCandidates() == null ? 0 : request.getCandidates().size());
+            return draft;
+        } catch (Exception e) {
+            log.error("[AuthoringService] submit failed run={}: {}", request.getRunId(), e.getMessage());
+            throw e;
+        }
+    }
+
+    private static String stringOr(Object o, String def) {
+        return o == null ? def : String.valueOf(o);
+    }
+
+    private static double numberOr(Object o, double def) {
+        if (o instanceof Number n) return n.doubleValue();
+        if (o instanceof String s) {
+            try { return Double.parseDouble(s); } catch (NumberFormatException ignored) { return def; }
+        }
+        return def;
+    }
+}

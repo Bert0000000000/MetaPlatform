@@ -63,4 +63,29 @@ public class TaskController {
         return ApiResponse.success(wfeTaskService.createDirectApprovalTask(
                 tenantId, requester, summary, externalId, actionCode, riskLevel));
     }
+
+    /**
+     * P5.4 Approve an external Action Proposal (called by the WFE UI when manager approves).
+     * Forwards to TECH-AGENT via HTTP so the original proposal can be EXECUTED.
+     */
+    @PostMapping("/approve-external")
+    public ApiResponse<java.util.Map<String, Object>> approveExternal(
+            @RequestBody java.util.Map<String, Object> body) {
+        String taskId = body.get("taskId") == null ? null : String.valueOf(body.get("taskId"));
+        String approver = body.get("approver") == null ? "wfe-manager" : String.valueOf(body.get("approver"));
+        String reason = body.get("reason") == null ? "WFE approved" : String.valueOf(body.get("reason"));
+        return ApiResponse.success(wfeTaskService.approveExternalAction(taskId, approver, reason));
+    }
+
+    /**
+     * P5.4 Reject an external Action Proposal (called by the WFE UI when manager rejects).
+     */
+    @PostMapping("/reject-external")
+    public ApiResponse<java.util.Map<String, Object>> rejectExternal(
+            @RequestBody java.util.Map<String, Object> body) {
+        String taskId = body.get("taskId") == null ? null : String.valueOf(body.get("taskId"));
+        String approver = body.get("approver") == null ? "wfe-manager" : String.valueOf(body.get("approver"));
+        String reason = body.get("reason") == null ? "WFE rejected" : String.valueOf(body.get("reason"));
+        return ApiResponse.success(wfeTaskService.rejectExternalAction(taskId, approver, reason));
+    }
 }

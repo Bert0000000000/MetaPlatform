@@ -20,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.web.client.RestClient;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -297,6 +298,80 @@ public class WfeTaskService {
         result.put("assignee", task.getAssignee());
         result.put("status", task.getStatus());
         return result;
+    }
+
+    /**
+     * P5.4 Approve external Action Proposal - look up formData.externalActionProposalId,
+     * mark WFE task APPROVED, then call TECH-AGENT ActionApprovalBridge.onWfeApproved.
+     */
+    @org.springframework.transaction.annotation.Transactional
+    public java.util.Map<String, Object> approveExternalAction(String taskId, String approver, String reason) {
+        WfeTaskEntity task = wfeTaskRepository.findById(taskId)
+                .orElseThrow(() -> new com.metaplatform.wfe.exception.WfeException(
+                        com.metaplatform.wfe.common.ErrorCode.TASK_NOT_FOUND, "WFE task not found: " + taskId));
+        java.util.Map<String, Object> formData = task.getFormData() == null ? java.util.Collections.emptyMap() : task.getFormData();
+        String externalActionProposalId = formData.get("externalActionProposalId") == null ? null : String.valueOf(formData.get("externalActionProposalId"));
+        if (externalActionProposalId == null || externalActionProposalId.isBlank()) {
+            throw new com.metaplatform.wfe.exception.WfeException(
+                    com.metaplatform.wfe.common.ErrorCode.INVALID_PARAM,
+                    "Task " + taskId + " has no externalActionProposalId in formData");
+        }
+        task.setStatus("COMPLETED");
+        task.setAction("APPROVE");
+        task.setCompletedAt(java.time.Instant.now());
+        task.setUpdatedAt(java.time.Instant.now());
+        wfeTaskRepository.save(task);
+        log.info("[WfeTaskService] approved external proposal={} by approver={}", externalActionProposalId, approver);
+
+        java.util.Map<String, Object> result = new java.util.HashMap<>();
+        result.put("wfeTaskId", taskId);
+        result.put("externalActionProposalId", externalActionProposalId);
+        result.put("agentResponse", forwardToAgent("/api/v1/agent/internal/wfe-approved", approver, reason, externalActionProposalId));
+        return result;
+    }
+
+    /**
+     * P5.4 Reject external Action Proposal.
+     */
+    @org.springframework.transaction.annotation.Transactional
+    public java.util.Map<String, Object> rejectExternalAction(String taskId, String approver, String reason) {
+        WfeTaskEntity task = wfeTaskRepository.findById(taskId)
+                .orElseThrow(() -> new com.metaplatform.wfe.exception.WfeException(
+                        com.metaplatform.wfe.common.ErrorCode.TASK_NOT_FOUND, "WFE task not found: " + taskId));
+        java.util.Map<String, Object> formData = task.getFormData() == null ? java.util.Collections.emptyMap() : task.getFormData();
+        String externalActionProposalId = formData.get("externalActionProposalId") == null ? null : String.valueOf(formData.get("externalActionProposalId"));
+        task.setStatus("COMPLETED");
+        task.setAction("REJECT");
+        task.setCompletedAt(java.time.Instant.now());
+        task.setUpdatedAt(java.time.Instant.now());
+        wfeTaskRepository.save(task);
+        log.info("[WfeTaskService] rejected external proposal={} by approver={}", externalActionProposalId, approver);
+        java.util.Map<String, Object> result = new java.util.HashMap<>();
+        result.put("wfeTaskId", taskId);
+        result.put("externalActionProposalId", externalActionProposalId);
+        if (externalActionProposalId != null && !externalActionProposalId.isBlank()) {
+            result.put("agentResponse", forwardToAgent("/api/v1/agent/internal/wfe-rejected", approver, reason, externalActionProposalId));
+        }
+        return result;
+    }
+
+    /**
+     * P5.4 Forward callback to TECH-AGENT via HTTP.
+     */
+    private Object forwardToAgent(String path, String approver, String reason, String externalActionProposalId) {
+        try {
+            org.springframework.web.client.RestClient client = org.springframework.web.client.RestClient.builder()
+                    .baseUrl("http://localhost:8511")
+                    .build();
+            java.util.Map<String, Object> body = new java.util.HashMap<>();
+            body.put("proposalId", externalActionProposalId);
+            body.put("approver", approver);
+            body.put("reason", reason);
+            return client.post().uri(path).body(body).retrieve().toEntity(Object.class).getBody();
+        } catch (Exception e) {
+            log.warn("[WfeTaskService] agent forward failed path={} proposal={} err={}", path, externalActionProposalId, e.getMessage());
+            return java.util.Map.of("error", e.getMessage());
+        }
     }
 
     private TaskResponse toResponse(WfeTaskEntity task) {
