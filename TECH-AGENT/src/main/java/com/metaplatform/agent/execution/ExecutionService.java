@@ -3,6 +3,8 @@ package com.metaplatform.agent.execution;
 import com.metaplatform.agent.common.ErrorCode;
 import com.metaplatform.agent.entity.AgentDefinitionEntity;
 import com.metaplatform.agent.exception.AgentException;
+import com.metaplatform.agent.context.OntologyContextEnvelope;
+import com.metaplatform.agent.context.OntologyExecutionContextFactory;
 import com.metaplatform.agent.repository.AgentDefinitionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,6 +28,7 @@ public class ExecutionService {
     private final AgentDefinitionRepository agentDefinitionRepository;
     private final SaAgentExecutionEngine saEngine;
     private final ExecutionEngine engine;
+    private final OntologyExecutionContextFactory ontologyContextFactory;
 
     /**
      * 同步执行。
@@ -34,6 +37,11 @@ public class ExecutionService {
     public ExecuteResponse execute(String tenantId, String agentId, ExecuteRequest request, String traceId) {
         AgentDefinitionEntity agent = ensureActiveAgent(tenantId, agentId);
         java.time.OffsetDateTime startedAt = java.time.OffsetDateTime.now();
+        OntologyContextEnvelope ontologyContext = ontologyContextFactory.build(tenantId,
+                request.getContext() != null && request.getContext().getTaskId() != null
+                        ? request.getContext().getTaskId() : java.util.UUID.randomUUID().toString(),
+                request.getContext());
+        String executionContext = buildContextString(request.getContext(), ontologyContext);
 
         ExecutionResult result;
         try {
@@ -41,7 +49,7 @@ public class ExecutionService {
                     agent,
                     tenantId,
                     request.getInput(),
-                    buildContextString(request.getContext()),
+                    executionContext,
                     DEFAULT_MAX_ITERATIONS,
                     traceId);
         } catch (Exception exception) {
@@ -50,7 +58,7 @@ public class ExecutionService {
                     agent,
                     tenantId,
                     request.getInput(),
-                    buildContextString(request.getContext()),
+                    executionContext,
                     DEFAULT_MAX_ITERATIONS,
                     traceId);
         }
@@ -63,11 +71,15 @@ public class ExecutionService {
      */
     public List<Map<String, Object>> stream(String tenantId, String agentId, ExecuteRequest request, String traceId) {
         AgentDefinitionEntity agent = ensureActiveAgent(tenantId, agentId);
+        OntologyContextEnvelope ontologyContext = ontologyContextFactory.build(tenantId,
+                request.getContext() != null && request.getContext().getTaskId() != null
+                        ? request.getContext().getTaskId() : java.util.UUID.randomUUID().toString(),
+                request.getContext());
         return engine.stream(
                 agent,
                 tenantId,
                 request.getInput(),
-                buildContextString(request.getContext()),
+                buildContextString(request.getContext(), ontologyContext),
                 DEFAULT_MAX_ITERATIONS,
                 traceId);
     }
@@ -92,6 +104,10 @@ public class ExecutionService {
     }
 
     private String buildContextString(ExecuteContext context) {
+        return buildContextString(context, null);
+    }
+
+    private String buildContextString(ExecuteContext context, OntologyContextEnvelope ontologyContext) {
         if (context == null) {
             return "";
         }
@@ -116,6 +132,10 @@ public class ExecutionService {
                 sb.append("\n");
             }
             sb.append("上下文变量: ").append(context.getVariables());
+        }
+        if (ontologyContext != null) {
+            if (!sb.isEmpty()) sb.append("\n");
+            sb.append("OntologyContextEnvelope: ").append(ontologyContext);
         }
         return sb.toString();
     }
