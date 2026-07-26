@@ -1,7 +1,7 @@
 ﻿
 # Ontology-Native DeerFlow：全阶段最终落地与前后端联调实施文档
 
-> 版本：v1.4 · 2026-07-26（第三轮推进 / 0 测试失败 + P4/P5 集成完成）
+> 版本：v1.5 · 2026-07-26（第四轮推进 / TECH-AGENT 42/42 + TECH-WFE 108/108 + Agent Copilot 端到端）
 > 状态：P0/P1 基础设施收尾完成；进入 P1/P2 联调阶段
 > 适用仓库：D:/Hermes/Workspace/10_Projects/2026-07-02-MetaPlatform
 > 更新基线：2026-07-26 16:40 UTC+8，由 Codex 自动接管继续推进
@@ -23,7 +23,7 @@
 
 不得以“目录存在”“接口存在”或“日志打印成功”代替端到端完成。
 
-### 0.2 当前阶段任务状态（v1.4 · 2026-07-26 第三轮推进后）
+### 0.2 当前阶段任务状态（v1.5 · 2026-07-26 第四轮推进后）
 
 > 本节由 Codex 自动维护，每完成一个阶段 / 子任务更新一次；任何 BLOCKED / SKELETON 都必须附修复计划。
 > 测试基线：以下单元测试均为 mvn -o test 在本地 Java 25 + JDK 25 环境下 16:40 跑通。
@@ -52,6 +52,9 @@
 | P0 | 修复-013 | ScenarioB.groundingMultiConcept 失败（业务语义 gap） | DONE | 升级 GroundingMiddleware：增加"下降/原因"等关键词 + 跨域 metric 推断 + 跨域 action 候选 |
 | P0 | 修复-014 | P4 前端缺 useAgentStream + InteractionContextProvider | DONE | 新建 src/hooks/{useAgentStream,InteractionContextProvider,index}.{ts,tsx} + ClaimRenderer + EvidenceRenderer；typecheck 仅剩 pre-existing 错误 |
 | P0 | 修复-015 | P5 缺 ActionExecutionService.execute/approveAndExecute/reject | DONE | 新建 ActionExecutionService + 5 个单测；扩展 EvidenceService.recordExecution + ClaimService.recordExecution |
+| P0 | 修复-016 | P5 缺 TECH-AGENT ↔ TECH-WFE 审批桥 | DONE | 新建 ActionApprovalBridgeService + 4 个单测（onWfeApproved/onWfeRejected/lowRisk/missingProposal）；TECH-WFE 新增 /from-proposal endpoint + createDirectApprovalTask + 2 个单测 |
+| P0 | 修复-017 | 缺 P4.2 Agent Copilot 端到端页面 | DONE | 新建 AgentChatPanel + AgentCopilotPage + 注册 /agent-copilot 路由 + typecheck 0 错误（仅剩 pre-existing SuperAIChatPage 错误）|
+| P0 | 修复-018 | 缺统一的 fat-jar → thin-jar 重打包脚本 | DONE | scripts/repack-thin-jars.ps1（单模块）+ scripts/repack-all-thin-jars.ps1（6 个核心模块批量）；jar.exe + install:install-file 完整 CI 流程 |
 | P1 | P1-ONT-07 | OntologyContextService（签 envelope + 字段过滤） | DONE | OntologyContextServiceTest 通过 |
 | P1 | P1-ONT-09 | 五个只读 Ontology Tool | DONE | GroundToolServiceTest 通过 |
 | P1 | P1-ONT-10 | Ontology Action Schema + Risk Level | DONE | ActionEntity + ActionProposalEntity 已落库 |
@@ -78,7 +81,7 @@
 | TECH-MSG | 56 / 56 | PASS | Consumer + Outbox + Dlq + Realtime |
 | TECH-MCP | 242 / 242 | PASS | MCP 工具目录 |
 | TECH-OBS | 123 / 123 | PASS | Alert + Anomaly + Dashboard + Log + SLO + Topology + Trace |
-| TECH-WFE | 106 / 106 | PASS | Workflow 引擎 |
+| TECH-WFE | 108 / 108 | PASS | Workflow 引擎 + 2 DirectApprovalTask |
 | TECH-DATA | 13 / 13 | PASS | 数据同步 |
 | TECH-EA | 253 / 253 | PASS | 数字员工 |
 | TECH-GW | 65 / 65 | PASS | 网关 |
@@ -86,7 +89,7 @@
 | TECH-A2A | 0（编译通过） | PASS | 无测试用例但 mvn install 通过 |
 | TECH-LLMGW | 0（编译过） | PASS | OpenAiController 编译错已修复（ChatRequest 构造签名 + StreamService + ServerSentEvent） |
 | TECH-RAG | 0（编译过） | PASS | 新增 tech-llmgw 依赖 + KB stub entity + Milvus/HybridSearchService 桩实现 |
-| TECH-AGENT | 38 / 38 | PASS | 11 repo + 22 scenario + 5 ActionExecution |
+| TECH-AGENT | 42 / 42 | PASS | 11 repo + 22 scenario + 5 ActionExecution + 4 ActionApprovalBridge |
 | **总计** | **1166+** | **15/15 模块 BUILD SUCCESS / 0 失败** |
 
 ### 0.2.2 已知遗留（不影响 BUILD / 部署，但需下一轮完善）
@@ -99,11 +102,11 @@
 
 ### 0.2.3 推荐下一轮任务（按优先级）
 
-1. **P5-ACT-03**：把 TECH-WFE ApprovalNodeExecutor 接入 ActionExecutionService，HIGH risk Action 触发审批流。
+1. **P5-ACT-04**：WFE → Agent Run callback HTTP endpoint（接收审批决策后回调到 ActionApprovalBridgeService）。
 2. **P2-RAG-02**：把 MilvusAdapter / HybridSearchService 从 stub 升级为真实实现（Milvus 2.5 + Hybrid Search + Ontology Filter）。
-3. **P4-FE-02**：用 useAgentStream + InteractionContextProvider 重写 AnalysisPanel 实际接 SSE。
-4. **P0-CI-01**：CI 脚本里加 -DskipFatJar 强制所有模块都用 jar.exe 重打包，避免 fat-jar 污染下游。
-5. **P6-AUTH-02**：把 OntologyDraftService.proposeDraft 接入 AgentRun 流程，实现 KB→Candidate Fact→Draft 自动生成。
+3. **P6-AUTH-02**：把 OntologyDraftService.proposeDraft 接入 AgentRun 流程，实现 KB→Candidate Fact→Draft 自动生成。
+4. **P7-EVT-02**：把 ScenarioD_EventTriggerTest 的反射调用改成公开 API，跑事件驱动端到端。
+5. **P4-FE-03**：把 SuperAIChatPage 里 msg.evidences 可选 undefined 修掉，统一用 ClaimRenderer / EvidenceRenderer。
 
 
 

@@ -257,6 +257,48 @@ public class WfeTaskService {
     // DTO 转换
     // ════════════════════════════════════════════
 
+    /**
+     * P5.3 Direct approval task creation from external Action Proposal.
+     * No BPMN template required; default assignee = requester manager.
+     */
+    @org.springframework.transaction.annotation.Transactional
+    public java.util.Map<String, Object> createDirectApprovalTask(
+            String tenantId, String requester, String summary,
+            String externalActionProposalId, String actionCode, String riskLevel) {
+        String taskId = UUID.randomUUID().toString();
+        String processInstanceId = "PROC-" + UUID.randomUUID().toString().replace("-", "").substring(0, 16);
+        java.time.Instant now = java.time.Instant.now();
+        WfeTaskEntity task = WfeTaskEntity.builder()
+                .id(taskId)
+                .tenantId(tenantId == null ? "tenant-default" : tenantId)
+                .processInstanceId(processInstanceId)
+                .processDefinitionId("agent-action-approval")
+                .nodeId("manager-approval")
+                .nodeName(summary == null ? "Action approval: " + actionCode : summary)
+                .name(summary == null ? "Action approval: " + actionCode : summary)
+                .assignee("manager@" + (tenantId == null ? "tenant-default" : tenantId))
+                .status(STATUS_ACTIVE)
+                .action("PENDING")
+                .formData(java.util.Map.of(
+                        "externalActionProposalId", externalActionProposalId == null ? "" : externalActionProposalId,
+                        "actionCode", actionCode == null ? "" : actionCode,
+                        "riskLevel", riskLevel == null ? "HIGH" : riskLevel,
+                        "requester", requester == null ? "system" : requester
+                ))
+                .createdAt(now)
+                .updatedAt(now)
+                .build();
+        wfeTaskRepository.save(task);
+        log.info("[WfeTaskService] created direct approval task={} for proposal={} action={}",
+                taskId, externalActionProposalId, actionCode);
+        java.util.Map<String, Object> result = new java.util.HashMap<>();
+        result.put("taskId", taskId);
+        result.put("processInstanceId", processInstanceId);
+        result.put("assignee", task.getAssignee());
+        result.put("status", task.getStatus());
+        return result;
+    }
+
     private TaskResponse toResponse(WfeTaskEntity task) {
         String status = task.getStatus();
         // 完成时间：ACTIVE 为 null；COMPLETED/REJECTED/TERMINATED 取 completedAt
