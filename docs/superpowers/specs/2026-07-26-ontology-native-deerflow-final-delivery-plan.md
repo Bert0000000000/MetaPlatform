@@ -1,7 +1,7 @@
 ﻿
 # Ontology-Native DeerFlow：全阶段最终落地与前后端联调实施文档
 
-> 版本：v1.13 · 2026-07-26（第十二轮推进 / P5.12 cross-tenant 去重 + V12 migration + 1225+ 测试 0 失败）
+> 版本：v1.14 · 2026-07-26（第十三轮推进 / P8.2 LlmProvider 接口 + NoopLlmProvider fallback + 1230+ 测试 0 失败）
 > 状态：P0/P1 基础设施收尾完成；进入 P1/P2 联调阶段
 > 适用仓库：D:/Hermes/Workspace/10_Projects/2026-07-02-MetaPlatform
 > 更新基线：2026-07-26 16:40 UTC+8，由 Codex 自动接管继续推进
@@ -23,7 +23,7 @@
 
 不得以“目录存在”“接口存在”或“日志打印成功”代替端到端完成。
 
-### 0.2 当前阶段任务状态（v1.13 · 2026-07-26 第十二轮推进后）
+### 0.2 当前阶段任务状态（v1.14 · 2026-07-26 第十三轮推进后）
 
 > 本节由 Codex 自动维护，每完成一个阶段 / 子任务更新一次；任何 BLOCKED / SKELETON 都必须附修复计划。
 > 测试基线：以下单元测试均为 mvn -o test 在本地 Java 25 + JDK 25 环境下 16:40 跑通。
@@ -71,6 +71,7 @@
 | P0 | 修复-032 | HybridSearchService.search() 是 noop stub | DONE | 重写为真路径：pseudoEmbed(query, 1024) → vectorStore.hybridSearch() → 命中 KB chunk 时 Evidence.fromChunk()，未命中时 Evidence.synthetic()；新增 5 个端到端单测覆盖 ingest / KB 命中 / 空查询 / topK 配置 / pseudoEmbed 确定性 |
 | P0 | 修复-033 | ActionRouteDLQ 没有 ops 监控端点 | DONE | 新建 ActionRouteDlqMetricsEndpoint（GET /api/v1/agent/dlq/metrics），返回 pending_count + scheduler_present + 完整 pending 列表；2 个新单测覆盖正常/null 路径 |
 | P0 | 修复-034 | ActionGuardMiddleware 只在单 run 内去重，不去重跨 run/跨租户 | DONE | ActionProposalEntity 加 tenant_id 字段 + V12__add_tenant_id_to_action_proposals.sql migration；ActionProposalRepository 新增 findRecentForTenantDedup(tenantId, runId, actionCode, targetObjects)；middleware 在自动持久化前先查跨租户（更严格）+ 跨 run 两级；2 个新单测覆盖跨租户命中 + 跨 run 命中未命中 |
+| P0 | 修复-035 | TECH-LLMGW 缺少 LlmProvider 抽象，后端切换困难 | DONE | 新建 LlmProvider 接口（chat / streamChat / embed / isHealthy / name）；NoopLlmProvider fallback（无 ChatModel 时返回明确错误）；5 个新单测覆盖 chat/stream/embed/health/name；SpringAiLlmProvider 真实实现因 Spring AI 1.1.x 流式 API 变更延后到 P8.4 |
 | P1 | P1-ONT-07 | OntologyContextService（签 envelope + 字段过滤） | DONE | OntologyContextServiceTest 通过 |
 | P1 | P1-ONT-09 | 五个只读 Ontology Tool | DONE | GroundToolServiceTest 通过 |
 | P1 | P1-ONT-10 | Ontology Action Schema + Risk Level | DONE | ActionEntity + ActionProposalEntity 已落库 |
@@ -118,10 +119,10 @@
 
 ### 0.2.3 推荐下一轮任务（按优先级）
 
-1. **P8-NAT-02**：TECH-LLMGW 真实 OpenAI 兼容端点补完（Llama/Ollama 适配器）。
+1. **P8.4**：SpringAiLlmProvider 真实实现（处理 Spring AI 1.1.x 流式 API 变更）。
 2. **P6-AUTH-06**：AuthoringService 加定时批处理（把同一 documentId 的候选 fact 合并提交）。
 3. **P2-RAG-04**：AuthoringService 端到端（Authoring + HybridSearch 联调，从文档抽取到 Evidence）。
-4. **P5-ACT-13**：DLQ metrics 接入 Micrometer / Prometheus（actuator 集成；actuator dep 已加但 P5.13 因 SDK 限制延后）。
+4. **P5-ACT-13**：DLQ metrics 接入 Micrometer / Prometheus（actuator 集成）。
 5. **P5-ACT-14**：ActionGuard DLQ metrics 通过 Micrometer 暴露到 /actuator/prometheus。
 
 
