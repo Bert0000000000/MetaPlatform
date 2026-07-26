@@ -6,7 +6,7 @@ import com.metaplatform.kb.entity.KbRetrievalConfigEntity;
 import com.metaplatform.kb.entity.KbRetrievalConfigRepository;
 import com.metaplatform.llmgw.openai.OpenAiDtos;
 import com.metaplatform.rag.evidence.Evidence;
-import com.metaplatform.rag.milvus.MilvusAdapter;
+import com.metaplatform.rag.milvus.VectorStoreClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -18,7 +18,7 @@ import java.util.*;
 public class HybridSearchService {
     private final KbChunkRepository chunkRepository;
     private final KbRetrievalConfigRepository configRepository;
-    private final MilvusAdapter milvusAdapter;
+    private final VectorStoreClient vectorStore;
 
     public List<Evidence> search(String tenantId, String query, KbRetrievalConfigEntity cfg) {
         log.info("[HybridSearchService] STUB - full hybrid search deferred to P2.2.2; tenant={} config={}", tenantId, cfg == null ? "default" : cfg.getConfigId());

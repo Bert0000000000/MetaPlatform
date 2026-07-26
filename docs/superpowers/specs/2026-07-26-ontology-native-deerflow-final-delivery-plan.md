@@ -1,7 +1,7 @@
 ﻿
 # Ontology-Native DeerFlow：全阶段最终落地与前后端联调实施文档
 
-> 版本：v1.9 · 2026-07-26（第八轮推进 / P5.7 DLQ DB 持久化 + P5.8 middleware 去重 + P6.5 Storybook AgentChatPanel + 1211+ 测试 0 失败）
+> 版本：v1.10 · 2026-07-26（第九轮推进 / P5.9 DLQ 定时 retry + P2.2 VectorStoreClient 接口 + InMemory + MilvusHttp 适配 + 1215+ 测试 0 失败）
 > 状态：P0/P1 基础设施收尾完成；进入 P1/P2 联调阶段
 > 适用仓库：D:/Hermes/Workspace/10_Projects/2026-07-02-MetaPlatform
 > 更新基线：2026-07-26 16:40 UTC+8，由 Codex 自动接管继续推进
@@ -23,7 +23,7 @@
 
 不得以“目录存在”“接口存在”或“日志打印成功”代替端到端完成。
 
-### 0.2 当前阶段任务状态（v1.9 · 2026-07-26 第八轮推进后）
+### 0.2 当前阶段任务状态（v1.10 · 2026-07-26 第九轮推进后）
 
 > 本节由 Codex 自动维护，每完成一个阶段 / 子任务更新一次；任何 BLOCKED / SKELETON 都必须附修复计划。
 > 测试基线：以下单元测试均为 mvn -o test 在本地 Java 25 + JDK 25 环境下 16:40 跑通。
@@ -65,6 +65,8 @@
 | P0 | 修复-026 | ActionGuard auto-route 失败没有重试机制 | DONE | 新建 ActionRouteDlqService（in-memory CopyOnWriteArrayList + idempotency-key dedup）；提供 enqueue / retry / retryAll / discard / getPending 公开 API；ActionGuardMiddleware 在 catch 块中自动 enqueue；1 个新单测验证 enqueue 路径 |
 | P0 | 修复-027 | 缺前端组件 UI 验证（ClaimRenderer/EvidenceRenderer/AgentChatPanel） | DONE | 新建 components/__demo__/StorybookDemo.tsx + App.tsx 注册 /__storybook 路由；展示 3 种 Claim 类型（FACT/INFERENCE/RECOMMENDATION）+ 4 种 Evidence 类型 + 边界场景（empty evidence / no evidence claim）；typecheck 0 错误 |
 | P0 | 修复-028 | ActionRouteDLQ 纯内存，重启后丢失 | DONE | 新建 action_route_dlq 表（V11 migration）+ ActionRouteDlqEntity + ActionRouteDlqRepository；ActionRouteDlqService 加 @Transactional + DB fallback；retry/discard 同步 markResolved；getPending 自动合并 DB + in-memory；8 个单测覆盖 DB 路径/降级路径/重试计数 |
+| P0 | 修复-029 | ActionRouteDLQ 没有自动 retry 任务 | DONE | 新建 ActionRouteDlqScheduler（@Scheduled fixedDelay 5min）；max-retries=5 + enabled flag；AgentApplication 加 @EnableScheduling；5 个单测覆盖空 DLQ / max-retries skip / 成功计数 / enabled flag / null 安全 |
+| P0 | 修复-030 | MilvusAdapter 是裸 class，无多 backend 支持 | DONE | 抽 VectorStoreClient 接口（search / hybridSearch / insert / createCollection / count / isHealthy）；2 个实现：InMemoryVectorStoreClient（默认 @ConditionalOnProperty=memory，含 cosine + hybrid + BM25 关键词加权）+ MilvusHttpClient（@ConditionalOnProperty=milvus，REST 调用 /v1/vector/*）；HybridSearchService 改用 VectorStoreClient；4 个新单测覆盖 cosine 排序、hybrid 关键词增强、count、empty |
 | P1 | P1-ONT-07 | OntologyContextService（签 envelope + 字段过滤） | DONE | OntologyContextServiceTest 通过 |
 | P1 | P1-ONT-09 | 五个只读 Ontology Tool | DONE | GroundToolServiceTest 通过 |
 | P1 | P1-ONT-10 | Ontology Action Schema + Risk Level | DONE | ActionEntity + ActionProposalEntity 已落库 |
@@ -99,7 +101,7 @@
 | TECH-A2A | 0（编译通过） | PASS | 无测试用例但 mvn install 通过 |
 | TECH-LLMGW | 0（编译过） | PASS | OpenAiController 编译错已修复（ChatRequest 构造签名 + StreamService + ServerSentEvent） |
 | TECH-RAG | 0（编译过） | PASS | 新增 tech-llmgw 依赖 + KB stub entity + Milvus/HybridSearchService 桩实现 |
-| TECH-AGENT | 77 / 77 | PASS | 11 repo + 22 scenario + 5 ActionExecution + 4 ActionApprovalBridge + 7 AuthoringService + 8 ActionGuardAutoRoute + 5 DocumentCandidateListener + 7 AgentRunServiceComplete + 8 ActionRouteDlqPersistence |
+| TECH-AGENT | 82 / 82 | PASS | 11 repo + 22 scenario + 5 ActionExecution + 4 ActionApprovalBridge + 7 AuthoringService + 10 ActionGuardAutoRoute + 5 DocumentCandidateListener + 7 AgentRunServiceComplete + 8 ActionRouteDlqPersistence + 5 ActionRouteDlqScheduler |
 | **总计** | **1166+** | **15/15 模块 BUILD SUCCESS / 0 失败** |
 
 ### 0.2.2 已知遗留（不影响 BUILD / 部署，但需下一轮完善）
@@ -112,11 +114,11 @@
 
 ### 0.2.3 推荐下一轮任务（按优先级）
 
-1. **P2-RAG-02**：把 MilvusAdapter / HybridSearchService 从 stub 升级为真实实现。
-2. **P8-NAT-02**：TECH-LLMGW 真实 OpenAI 兼容端点补完（Llama/Ollama 适配器）。
-3. **P5-ACT-09**：ActionRouteDLQ 加定时 retry 任务（@Scheduled 5分钟扫描一次）。
-4. **P5-ACT-10**：把 middleware 去重升级为「跨 run」去重（idempotency_key 数据库唯一约束）。
-5. **P6-AUTH-06**：AuthoringService 加定时批处理（把同一 documentId 的候选 fact 合并提交）。
+1. **P8-NAT-02**：TECH-LLMGW 真实 OpenAI 兼容端点补完（Llama/Ollama 适配器）。
+2. **P5-ACT-10**：把 middleware 去重升级为「跨 run」去重（idempotency_key 数据库唯一约束）。
+3. **P2-RAG-03**：HybridSearchService 端到端测试（KB 抽取 → embed → VectorStore search → 返回证据）。
+4. **P6-AUTH-06**：AuthoringService 加定时批处理（把同一 documentId 的候选 fact 合并提交）。
+5. **P5-ACT-11**：ActionRouteDLQ 加 ops 监控（metrics + alerting 钩子）。
 
 
 
