@@ -30,6 +30,7 @@
         dialect: org.hibernate.dialect.PostgreSQLDialect
   flyway:
     enabled: true
+    validate-on-migrate: false
     locations: classpath:db/migration
     baseline-on-migrate: true
   data:
