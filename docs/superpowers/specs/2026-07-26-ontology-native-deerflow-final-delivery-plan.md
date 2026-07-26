@@ -1,10 +1,10 @@
 
 # Ontology-Native DeerFlow：全阶段最终落地与前后端联调实施文档
 
-> 版本：v1.58 · 2026-07-27（第五十七轮推进 / §17.4 Claim-Evidence 运行时绑定 P-SCEN-F-01）
-> 状态：P0/P1 基础设施收尾完成；进入 P1/P2 联调阶段；P5 ACT 13/14 + P6 AUTH 06 + P8 NAT 02 + P2 RAG 04 + P-NLB-01 + P-RPL-01 + P-SCEN-F-01 DONE；§17 items 4 + 5 + 9 已转 DONE
+> 版本：v1.59 · 2026-07-27（第五十八轮推进 / §17.10 Flyway 重复 V 修复 + MigrationDirectoryAuditTest）
+> 状态：P0/P1 基础设施收尾完成；进入 P1/P2 联调阶段；累计 9 个 P-NEW/P-* 项 DONE；§17 items 4 + 5 + 9 已转 DONE；本轮修复了 §17.10 真实证据短板（两份重复 V1）
 > 适用仓库：D:/Hermes/Workspace/10_Projects/2026-07-02-MetaPlatform
-> 更新基线：2026-07-27 00:45 UTC+8，由 Codex 自动接管继续推进
+> 更新基线：2026-07-27 01:00 UTC+8，由 Codex 自动接管继续推进
 
 
 ## 0. 文档定位
@@ -118,6 +118,7 @@
 | P-NEW | P-NLB-01 | 服务端 Token / WallTime 预算强执行（§17 item 9） | DONE | 新建 TokenBudgetEnforcer service + EnforcementResult record：check(BudgetDto, tokens, elapsedMs) 返回 allowed 或 denied(violation, overBy)；null budget 安全默认放过；负数归零；wall-time + tokens 同时超限合并为 TOKENS+WALL_TIME + 合计 overBy。AgentRunService 新增 7 参 complete(runId, status, answer, errorCode, errorMessage, tokens, elapsedMs)：parseBudget + tokenBudgetEnforcer.check，越限时强制降级为 DEGRADED + errorCode=BUDGET_EXCEEDED + errorMessage 带越限详情；原 5 参 complete 完全保兼容（默认 tokens=0, elapsedMs=0 不触发 enforcement）。10 单测覆盖 enforcer (8) + AgentRunService envelope cases (2)。TECH-AGENT 115/115 → 125/125 PASS |
 | P-NEW | P-RPL-01 | §17.5 SSE 重连契约测试（seq 严格单调 + afterSeq 排他过滤 + 租户隔离） | DONE | 新建 RunEventReplayContractTest（5 Mockito 单测）：(1) record() 5 次产生 seq 1..5 严格单调；(2) afterSeq=2 返回 seq 3,4,5 排他过滤、afterSeq=5 返回空；(3) listForTenant 过滤跨租户事件；(4) tenant+afterSeq 复合过滤；(5) RE-2 saveAndFlush 调用顺序在 list 查询之后。覆盖 /api/v1/agent/run/stream?runId&afterSeq 的契约面 |
 | P-NEW | P-SCEN-F-01 | §17.4 Claim 100% 绑定 Evidence（运行时）：通过 MiddlewareChain.runAfterToolCall 真链测试 ontology.* 工具的 claim→evidence 绑定 | DONE | 新建 ScenarioF_ClaimEvidenceBindingTest（6 单测），驱动完整 MiddlewareChain（Context+Grounding+Permission+Evidence+ActionGuard 5 段）走 afterToolCall 路径：(F1) ontology.search_objects 双结果 -> Claim 必有 >=1 Evidence；(F2) ontology.query_metric 单结果 -> 同上；(F3) rag.search 非 ontology.* 前缀 -> 中间件不自动绑（按设计）；(F4) 空 data 列表 -> 不构造空 Claim（避免假绑）；(F5) 连续 3 次 ontology.* 调用累积 3 个 Claim 且每个都带 Evidence；(F6) context.rejected=true 时 afterToolCall 短路 -> 无 Claim。覆盖 §17.4 运行时证明面 |
+| P-NEW | P-MIG-AUDIT-01 | §17.10 rollback preconditions：清理历史 Flyway 重复 V1 并加 MigrationDirectoryAuditTest 锁定 clean-migrations 不变量 | DONE | 修复：TECH-ACTION/V1__init_action_schema.sql 重命名为 V12__init_action_definitions_and_executions.sql；TECH-OBS/V1__init_obs_run_event.sql 重命名为 V11__init_obs_run_event.sql（两份旧 V1 会让 Flyway 静默跳过 action_definitions/executions/obs_run_event 三个表，造成数据库表不存在但生产 schema 校验通过；是 rollback + 故障演练的真实风险）。新增 MigrationDirectoryAuditTest（4 单测）：(1) 全 monorepo 任意 TECH-*/APP-* 没有 .bak / ~ 文件；(2) 同一模块内无重复 V__；(3) 版本号严格单调；(4) TECH-ACTION + TECH-OBS 两条已修复的旧 V1 已不再出现。TECH-AGENT 136 → 140 PASS |
 | P4 | P4-FE-06 | Frontend Typecheck 环境审计 | BLOCKED | pnpm -r typecheck 被 apps/kb/node_modules/axios/package.json EACCES 阻断；未修改前端代码，修复计划：清理/重建该依赖目录后重跑全 workspace typecheck |
 | P4 | P4-FE-07 | Frontend Dependency Repair | BLOCKED | pnpm install --offline --force 超时（180s），apps/kb/node_modules/axios 仍为断链/不可读状态；后续需在可用网络或清理残留 node 进程后重建依赖 |
 | P4 | P4-FE-08 | Frontend Symlink Repair Audit | BLOCKED | 已重建 axios 绝对符号链接并确认目标存在，但 pnpm typecheck 随后在 apps/kb/node_modules/react/package.json 继续 EACCES；需统一修复 node_modules/.pnpm ACL/锁定状态后再执行 |
@@ -148,8 +149,8 @@
 | TECH-A2A | 0（编译通过） | PASS | 无测试用例但 mvn install 通过 |
 | TECH-LLMGW | 14 / 14 | PASS | 5 LlmProvider 原有 + 9 SpringAiLlmProvider v1.54（chat call 路径 / null 安全 / 异常降级 / stream Flux<ChatResponse>→Flux<String> 映射 / 空块过滤 / embed Unsupported） |
 | TECH-RAG | 0（编译过） | PASS | 新增 tech-llmgw 依赖 + KB stub entity + Milvus/HybridSearchService 桩实现 |
-| TECH-AGENT | 136 / 136 | PASS | 11 repo + 28 scenario (22 A/B/D/E + 6 F) + 5 ActionExecution + 4 ActionApprovalBridge + 7 AuthoringService + 5 AuthoringServiceRagBackfill + 7 AuthoringBatchAccumulator + 3 AuthoringBatchFlushScheduler + 8 DocumentCandidateListener + 10 ActionGuardAutoRoute + 5 AuthoringDoc + 9 AgentRunServiceComplete + 8 TokenBudgetEnforcer + 5 RunEventReplayContract + 8 ActionRouteDlqPersistence + 5 ActionRouteDlqScheduler + 3 ActionGuardCrossRunDedup + 2 ActionRouteDlqMetrics + 2 ActionGuardCrossTenantDedup + 5 ActionRouteDlqMicrometerMetrics |
-| **总计** | **1219+** | **15/15 模块 BUILD SUCCESS / 0 失败**（TECH-AGENT 136/136 + TECH-LLMGW 14/14 v1.58；DONE P5-ACT-13/14 + P6-AUTH-06 + P8-NAT-13b + P2-RAG-04 + P-NLB-01 + P-RPL-01 + P-SCEN-F-01） |
+| TECH-AGENT | 140 / 140 | PASS | 11 repo + 28 scenario (22 A/B/D/E + 6 F) + 5 ActionExecution + 4 ActionApprovalBridge + 7 AuthoringService + 5 AuthoringServiceRagBackfill + 7 AuthoringBatchAccumulator + 3 AuthoringBatchFlushScheduler + 8 DocumentCandidateListener + 10 ActionGuardAutoRoute + 5 AuthoringDoc + 9 AgentRunServiceComplete + 8 TokenBudgetEnforcer + 5 RunEventReplayContract + 4 MigrationDirectoryAudit (P-MIG-AUDIT-01) + 8 ActionRouteDlqPersistence + 5 ActionRouteDlqScheduler + 3 ActionGuardCrossRunDedup + 2 ActionRouteDlqMetrics + 2 ActionGuardCrossTenantDedup + 5 ActionRouteDlqMicrometerMetrics |
+| **总计** | **1223+** | **15/15 模块 BUILD SUCCESS / 0 失败**（TECH-AGENT 140/140 + TECH-LLMGW 14/14 v1.59；DONE P5-ACT-13/14 + P6-AUTH-06 + P8-NAT-13b + P2-RAG-04 + P-NLB-01 + P-RPL-01 + P-SCEN-F-01 + P-MIG-AUDIT-01） |
 
 ### 0.2.2 已知遗留（不影响 BUILD / 部署，但需下一轮完善）
 
@@ -669,7 +670,7 @@ Customer Detail
 | 7 | 没有 LLM 直接写 Ontology | **DONE** | 五个只读 Ontology Tools（describe/search/get/query_metric/evidence）+ LLM 调用经 TECH-LLMGW（SpringAI 流式 + Noop fallback v1.54）；TECH-RAG 端到端通过 RAGClient 受 RAG base-url 调用约束 |
 | 8 | 所有 Run 可通过 RunEvent 追踪 | **DONE（基础）** | `runEventService.record()` 在 create/start/llm/tool/claim/evidence/action/complete/failed 全链路落库；`run_events` V6 表带 envelope_id+tenant_id+trace_id+seq。缺口：没有端到端跨 Run 轨迹合并的 traceparent + W3C trace_id 校验 |
 | 9 | Token 预算由服务端强制执行 | **DONE（v1.56）** | 新建 `TokenBudgetEnforcer` + `AgentRunService` 7 参 `complete(runId, status, answer, errorCode, errorMessage, tokensConsumed, elapsedMs)`：parseBudget 后询问 enforcer，越限强制 DEGRADED + errorCode `BUDGET_EXCEEDED` + errorMessage 含 violation/overBy。10 单测（8 enforcer + 2 envelope）全部 PASS。空 budget / 负数 attempt 安全默认放过。 |
-| 10 | 测试、联调、回滚和故障演练都有证据 | **PARTIAL** | 测试：mvn -o test 14 个 TECH-* 模块全 BUILD SUCCESS / 1208+ 单测 PASS（v1.56）。联调：scenario tests + DLQ metrics endpoint + Action Guard DLQ。回滚：scripts/repack-thin-jars.ps1 + Spring Boot Actuator 健康检查。**缺口**：跨服务 e2e（Tech-Agent 调 Tech-Ont 调 Tech-RAG 的真实链路）+ WFE 审批失败的回放演练没自动化 |
+| 10 | 测试、联调、回滚和故障演练都有证据 | **PARTIAL → 改善中** | v1.59 起：发现并修复两份历史 Flyway 重复 V1（TECH-ACTION V12 + TECH-OBS V11）—— 这是显性的回滚阻断（Flyway 静默跳过同名 V，导致 action_definitions/executions/obs_run_event 三个表在生产不创建但本地 ddl-auto=validate 通过）。新增 MigrationDirectoryAuditTest 锁定 clean-migrations 不变量，从代码层面防止再次出现。测试基线：mvn -o test 140/140 PASS（v1.59）。**剩余缺口**：跨服务 e2e + WFE 审批失败回放演练仍需要 Testcontainers / tests/replay/ 框架 |
 
 **结论**：10 条同时满足才能宣布 §17 完成。当前 8 条 DONE + 2 条 PARTIAL（v1.58 update: §17 item 4 运行时绑定 DONE），**首阶段生产尚未达成**，但每一个 §17 条件都有明确的代码位置 + 测试基线 + 缺口记录，可作为下一阶段联调与回放改造的输入。
 
