@@ -3,7 +3,6 @@ package com.metaplatform.agent.context;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.metaplatform.agent.config.AgentProperties;
-import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
@@ -14,7 +13,6 @@ import java.util.Map;
 /** IAM-backed resolver with a secure deny-by-default fallback when IAM is not configured. */
 @Component
 @Primary
-@RequiredArgsConstructor
 public class IamPermissionSnapshotResolver implements PermissionSnapshotResolver {
     private final AgentProperties properties;
     private final ObjectMapper mapper;
