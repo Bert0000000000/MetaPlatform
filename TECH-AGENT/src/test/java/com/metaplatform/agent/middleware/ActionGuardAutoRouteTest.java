@@ -1,6 +1,7 @@
 package com.metaplatform.agent.middleware;
 
 import com.metaplatform.agent.action.ActionApprovalBridgeService;
+import com.metaplatform.agent.middleware.ActionRouteDlqService;
 import com.metaplatform.agent.action.ActionProposalService;
 import com.metaplatform.agent.action.dto.ActionProposalCreateRequest;
 import com.metaplatform.agent.action.dto.ActionProposalDto;
@@ -27,13 +28,15 @@ class ActionGuardAutoRouteTest {
 
     private ActionProposalService proposalService;
     private ActionApprovalBridgeService approvalBridge;
+    private ActionRouteDlqService dlqService;
     private OntologyActionGuardMiddleware guard;
 
     @BeforeEach
     void setUp() {
         proposalService = Mockito.mock(ActionProposalService.class);
         approvalBridge = Mockito.mock(ActionApprovalBridgeService.class);
-        guard = new OntologyActionGuardMiddleware(proposalService, approvalBridge);
+        dlqService = Mockito.mock(ActionRouteDlqService.class);
+        guard = new OntologyActionGuardMiddleware(proposalService, approvalBridge, dlqService);
 
         when(proposalService.create(any())).thenAnswer(inv -> {
             ActionProposalCreateRequest req = inv.getArgument(0);
@@ -130,9 +133,34 @@ class ActionGuardAutoRouteTest {
     }
 
     @Test
+    @DisplayName("submitForApproval failure: enqueues to DLQ")
+    void submitFailureEnqueuesToDlq() {
+        when(approvalBridge.submitForApproval(any(), any())).thenThrow(new RuntimeException("WFE down"));
+        MiddlewareContext ctx = baseCtx("run-DLQ");
+        ctx.getActionProposals().add(new java.util.LinkedHashMap<>(Map.of(
+                "actionCode", "RequestDiscount",
+                "riskLevel", "HIGH",
+                "targetObjects", List.of("CUST-1"),
+                "parameters", Map.of(),
+                "reason", "test",
+                "evidenceRefs", List.of("EVD-1")
+        )));
+
+        guard.afterExecution(ctx);
+
+        // DLQ should have been enqueued
+        verify(dlqService).enqueue(
+                org.mockito.ArgumentMatchers.eq("run-DLQ"),
+                org.mockito.ArgumentMatchers.eq("PROP-auto"),
+                org.mockito.ArgumentMatchers.eq("RequestDiscount"),
+                org.mockito.ArgumentMatchers.eq("HIGH"),
+                org.mockito.ArgumentMatchers.contains("WFE down"));
+    }
+
+    @Test
     @DisplayName("no-arg constructor (test compat): does not throw")
     void noArgConstructorCompat() {
-        OntologyActionGuardMiddleware bareGuard = new OntologyActionGuardMiddleware();
+        OntologyActionGuardMiddleware bareGuard = new OntologyActionGuardMiddleware(null, null, null);
         MiddlewareContext ctx = baseCtx("run-1005");
         ctx.getActionProposals().add(new java.util.LinkedHashMap<>(Map.of(
                 "actionCode", "RequestDiscount",

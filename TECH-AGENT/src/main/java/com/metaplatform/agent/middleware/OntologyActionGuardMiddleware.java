@@ -32,10 +32,11 @@ public class OntologyActionGuardMiddleware implements AgentMiddleware {
 
     private final ActionProposalService proposalService;
     private final ActionApprovalBridgeService approvalBridge;
+    private final ActionRouteDlqService dlqService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     /** P5.5 Convenience no-arg constructor for unit tests (ActionGuard only does in-memory mark here). */
-    public OntologyActionGuardMiddleware() { this(null, null); }
+    public OntologyActionGuardMiddleware() { this(null, null, null); }
 
     @Override
     public int order() { return 500; }
@@ -58,6 +59,7 @@ public class OntologyActionGuardMiddleware implements AgentMiddleware {
 
             // P5.5: auto-persist HIGH/CRITICAL risk proposals and submit to WFE
             if (requiresApproval && context.getRunId() != null) {
+                String persistedProposalId = null;
                 try {
                     ActionProposalCreateRequest createReq = new ActionProposalCreateRequest();
                     createReq.setRunId(context.getRunId());
@@ -68,6 +70,7 @@ public class OntologyActionGuardMiddleware implements AgentMiddleware {
                     createReq.setReason(String.valueOf(proposal.getOrDefault("reason", "Action Guard: " + actionCode)));
                     createReq.setEvidenceRefs(toList(proposal.get("evidenceRefs")));
                     var dto = proposalService.create(createReq);
+                    persistedProposalId = dto.getProposalId();
                     String wfeTaskId = approvalBridge.submitForApproval(dto.getProposalId(), TenantContext.getUserId());
                     proposal.put("proposalId", dto.getProposalId());
                     proposal.put("wfeTaskId", wfeTaskId == null ? "n/a" : wfeTaskId);
@@ -76,6 +79,14 @@ public class OntologyActionGuardMiddleware implements AgentMiddleware {
                 } catch (Exception e) {
                     log.error("[OntologyActionGuardMW] HIGH risk auto-route failed action={}: {}", actionCode, e.getMessage());
                     proposal.put("autoRouteError", e.getMessage());
+                    // P5.6 enqueue to DLQ for later retry
+                    if (dlqService != null) {
+                        try {
+                            dlqService.enqueue(context.getRunId(), persistedProposalId, actionCode, riskLevel, e.getMessage());
+                        } catch (Exception dlqEx) {
+                            log.error("[OntologyActionGuardMW] DLQ enqueue also failed: {}", dlqEx.getMessage());
+                        }
+                    }
                 }
             }
 

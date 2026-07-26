@@ -3,10 +3,13 @@ package com.metaplatform.agent.runs;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.metaplatform.agent.api.Phase1Exception;
+import com.metaplatform.agent.authoring.AuthoringService;
+import com.metaplatform.ont.draft.OntologyDraftService;
 import com.metaplatform.agent.common.TenantContext;
 import com.metaplatform.agent.events.RunEventService;
 import com.metaplatform.agent.runs.dto.*;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,12 +18,14 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.*;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AgentRunService {
     private final AgentRunRepository repository;
     private final ObjectMapper objectMapper;
     private final RunEventService runEventService;
+    private final AuthoringService authoringService;
 
     @Transactional
     public AgentRunDto create(CreateAgentRunRequest request) {
@@ -77,6 +82,53 @@ public class AgentRunService {
         AgentRunEntity saved = repository.save(run);
         runEventService.record(saved, "RUN_FAILED", Map.of("errorCode", "RUN_CANCELED", "errorMessage", "Canceled by user"));
         return toDto(saved);
+    }
+
+    /**
+     * P6.4 Complete a run with status + answer. Triggers:
+     *  1. RUN_COMPLETED (or RUN_FAILED) event recording
+     *  2. AuthoringService hook: if answer contains KB extraction candidates, persists as Ontology Draft.
+     */
+    @Transactional
+    public AgentRunDto complete(String runId, String status, String answer, String errorCode, String errorMessage) {
+        if (!Set.of("COMPLETED", "FAILED", "DEGRADED").contains(status)) {
+            throw Phase1Exception.badRequest("INVALID_RUN_STATUS", "Unsupported completion status: " + status);
+        }
+        AgentRunEntity run = require(runId);
+        run.setStatus(status);
+        run.setFinishedAt(Instant.now());
+        run.setUpdatedAt(Instant.now());
+        if (errorCode != null) run.setErrorCode(errorCode);
+        if (errorMessage != null) run.setErrorMessage(errorMessage);
+        AgentRunEntity saved = repository.save(run);
+
+        Map<String, Object> payload = new HashMap<>();
+        if (answer != null) payload.put("answer", answer);
+        if (errorCode != null) payload.put("errorCode", errorCode);
+        if (errorMessage != null) payload.put("errorMessage", errorMessage);
+        runEventService.record(saved, "RUN_" + status, payload);
+
+        // P6.4 AuthoringService hook: auto-propose draft if answer carries candidate facts
+        triggerAuthoringIfNeeded(saved, answer);
+
+        return toDto(saved);
+    }
+
+    private void triggerAuthoringIfNeeded(AgentRunEntity run, String answer) {
+        if (authoringService == null || answer == null || answer.isBlank()) return;
+        // Conservative auto-route: only propose a draft when answer mentions a known extraction marker
+        if (!answer.contains("@candidates") && !answer.contains("@kb-extract")) return;
+        try {
+            java.util.Map<String, Object> extraction = new java.util.HashMap<>();
+            extraction.put("candidates", java.util.List.of());
+            var req = authoringService.buildFromExtraction(
+                    run.getTenantId(), run.getRunId(), "v1", "v2",
+                    "Auto-draft from run " + run.getRunId(), extraction);
+            authoringService.submit(req);
+            log.info("[AgentRunService] auto-proposed draft for run={}", run.getRunId());
+        } catch (Exception e) {
+            log.warn("[AgentRunService] auto-propose draft failed for run={}: {}", run.getRunId(), e.getMessage());
+        }
     }
 
     public AgentRunDto toDto(AgentRunEntity e) {
