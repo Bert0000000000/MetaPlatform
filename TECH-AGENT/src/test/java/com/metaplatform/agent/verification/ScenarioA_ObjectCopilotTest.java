@@ -163,4 +163,54 @@ class ScenarioA_ObjectCopilotTest {
         assertTrue(metrics.get("customer.churn_risk_score").asDouble() > 0.5,
                 "流失风险分应 > 0.5 才算高风险客户");
     }
+    @Test
+    @DisplayName("A-fullstack: Customer Detail Object Copilot chain (Envelope -> Grounding -> Permission -> Evidence -> ActionGuard)")
+    void objectCopilotFullStackFlow() {
+        var envelope = ScenarioTestSupport.sampleEnvelope("TENANT-01", "USER-1001", "Customer", "CUST-10086");
+        var ctx = ScenarioTestSupport.baseCtx("USER-1001",
+                "分析最近为什么销售下降",
+                envelope);
+
+        MiddlewareChain chain = ScenarioTestSupport.buildChainWith(ScenarioTestSupport.defaultOntologyMiddlewares());
+        chain.runBeforeExecution(ctx);
+        assertFalse(ctx.isRejected(), "valid envelope + valid query -> not rejected");
+        @SuppressWarnings("unchecked")
+        java.util.List<String> concepts = (java.util.List<String>) ctx.getGrounding().get("concepts");
+        @SuppressWarnings("unchecked")
+        java.util.List<String> metrics = (java.util.List<String>) ctx.getGrounding().get("metrics");
+        assertFalse(concepts.isEmpty(), "grounding must surface at least one Concept");
+        assertFalse(metrics.isEmpty(), "grounding must surface at least one Metric");
+
+        chain.runAfterToolCall(ctx,
+                com.metaplatform.agent.middleware.ToolCall.builder()
+                        .toolName("ontology.search_objects").arguments(java.util.Map.of()).build(),
+                java.util.Map.of("data", java.util.List.of(
+                        java.util.Map.of("objectId", "CUST-10086", "concept", "Customer"),
+                        java.util.Map.of("objectId", "ORD-2026-Q3-0115", "concept", "Order"))));
+        assertFalse(ctx.getClaims().isEmpty(), "evidence MW produces Claim for ontology.* result");
+        @SuppressWarnings("unchecked")
+        java.util.List<java.util.Map<String, Object>> evidenceList = (java.util.List<java.util.Map<String, Object>>) ctx.getClaims().get(0).get("evidence");
+        assertNotNull(evidenceList, "claim carries an evidence list");
+        assertFalse(evidenceList.isEmpty(), "evidence list non-empty (100% Claim<->Evidence)");
+
+        ctx.getActionProposals().add(java.util.Map.of(
+                "actionCode", "RequestDiscount",
+                "riskLevel", "HIGH",
+                "targetObjectId", "CUST-10086",
+                "reason", "consider churn risk"));
+        chain.runAfterExecution(ctx);
+        @SuppressWarnings("unchecked")
+        var proposals = ctx.getActionProposals();
+        java.util.Map<String, Object> proposal = proposals.get(proposals.size() - 1);
+        assertEquals(Boolean.TRUE, proposal.get("requiresApproval"),
+                "HIGH-risk Action must be flagged requiresApproval=true (no bypass)");
+
+        assertTrue(ctx.getClaims().size() >= 1, "at least one Claim collected");
+        for (var c : ctx.getClaims()) {
+            @SuppressWarnings("unchecked")
+            var ev = (java.util.List<java.util.Map<String, Object>>) c.get("evidence");
+            assertNotNull(ev, "every Claim has an evidence field");
+            assertFalse(ev.isEmpty(), "every Claim has >=1 Evidence");
+        }
+    }
 }

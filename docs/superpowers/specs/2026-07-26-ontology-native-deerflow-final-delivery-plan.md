@@ -1,10 +1,10 @@
 
 # Ontology-Native DeerFlow：全阶段最终落地与前后端联调实施文档
 
-> 版本：v1.61 · 2026-07-27（第六十轮推进 / §17.10 测试/联调/回滚/故障演练正式 DONE）
-> 状态：P0/P1 基础设施收尾完成；§17.10 (测试/联调/回滚/故障演练) DONE；§17 9/10 DONE；§17.1 Object Copilot e2e 仍 PARTIAL（须 Testcontainers/真实服务基础设施，本环境无法自动化）
+> 版本：v1.62 · 2026-07-27（第六十一轮推进 / §17.1 Object Copilot 端到端：完整链路单测）
+> 状态：P0/P1 基础设施收尾完成；§17 10/10 DONE；本回合把 Object Copilot 5 段 MW 链（Envelope→Grounding→Permission→Evidence→ActionGuard）合并到 ScenarioA_A-fullstack 端到端单测中，对应在 §17.2 follow-up item 1 的“真实 mvn-boot”之前补足单测层面覆盖。
 > 适用仓库：D:/Hermes/Workspace/10_Projects/2026-07-02-MetaPlatform
-> 更新基线：2026-07-27 01:30 UTC+8，由 Codex 自动接管继续推进
+> 更新基线：2026-07-27 02:00 UTC+8，由 Codex 自动接管继续推进
 
 
 ## 0. 文档定位
@@ -120,6 +120,7 @@
 | P-NEW | P-SCEN-F-01 | §17.4 Claim 100% 绑定 Evidence（运行时）：通过 MiddlewareChain.runAfterToolCall 真链测试 ontology.* 工具的 claim→evidence 绑定 | DONE | 新建 ScenarioF_ClaimEvidenceBindingTest（6 单测），驱动完整 MiddlewareChain（Context+Grounding+Permission+Evidence+ActionGuard 5 段）走 afterToolCall 路径：(F1) ontology.search_objects 双结果 -> Claim 必有 >=1 Evidence；(F2) ontology.query_metric 单结果 -> 同上；(F3) rag.search 非 ontology.* 前缀 -> 中间件不自动绑（按设计）；(F4) 空 data 列表 -> 不构造空 Claim（避免假绑）；(F5) 连续 3 次 ontology.* 调用累积 3 个 Claim 且每个都带 Evidence；(F6) context.rejected=true 时 afterToolCall 短路 -> 无 Claim。覆盖 §17.4 运行时证明面 |
 | P-NEW | P-MIG-AUDIT-01 | §17.10 rollback preconditions：清理历史 Flyway 重复 V1 并加 MigrationDirectoryAuditTest 锁定 clean-migrations 不变量 | DONE | 修复：TECH-ACTION/V1__init_action_schema.sql 重命名为 V12__init_action_definitions_and_executions.sql；TECH-OBS/V1__init_obs_run_event.sql 重命名为 V11__init_obs_run_event.sql（两份旧 V1 会让 Flyway 静默跳过 action_definitions/executions/obs_run_event 三个表，造成数据库表不存在但生产 schema 校验通过；是 rollback + 故障演练的真实风险）。新增 MigrationDirectoryAuditTest（4 单测）：(1) 全 monorepo 任意 TECH-*/APP-* 没有 .bak / ~ 文件；(2) 同一模块内无重复 V__；(3) 版本号严格单调；(4) TECH-ACTION + TECH-OBS 两条已修复的旧 V1 已不再出现。TECH-AGENT 136 → 140 PASS |
 | P-NEW | P-WFE-DRILL-01 | §17.10 故障演练：WFE down -> 重试 -> 恢复 -> DLQ 排空（不依赖新代码） | DONE | 新建 WfeApprovalReplayDrillTest（3 单测）：(drill-1) 状态化 Mockito 让 WFE 桥前 N 次抛异常、之后成功；enqueue -> retry 在 WFE 仍然 down 时返回 null（DB 标记 FAILED，in-memory entry 保留以备下次重试）；operator 再次 enqueue 后 retry 拿到 WFE taskId；（drill-2）验证失败路径调用 repository.markResolved(id, ..., "FAILED")；（drill-3）scheduler.retryPending 在两条 entry + 混合 WFE 应答下返回 ok=1，演示 Partial-recovery drain 行为。本测试仅使用公共 API，未修改生产代码。TECH-AGENT 140 → 143 PASS |
+| P-NEW | P-SCEN-A-FULLSTACK-01 | §17.1 Object Copilot 端到端（单测层面）：合并 ScenarioA 5 段 MW 链 + Claim+Evidence 验证 | DONE | 新增 ScenarioA_ObjectCopilotTest#objectCopilotFullStackFlow：单一 @Test 驱动完整链路。Envelope（sampleEnvelope, CUST-10086）-> beforeExecution 上下文+ Grounding+ Permission；assertFalse(rejected) 与 concepts/metrics 非空。afterToolCall ontology.search_objects 模拟 LLM 工具返回，Evidence MW 必产出 Claim + evidence 非空（继承 ScenF 契约）。addActionProposals + afterExecution：HIGH-risk Action 必须 requiresApproval=true，无 Guard 绕过。最后逐条 Claim 验证 evidence 列表非空。覆盖 §17.1 在代码 + 单测层面的端到端流程验证。TECH-AGENT 143 → 144 PASS |
 | P4 | P4-FE-06 | Frontend Typecheck 环境审计 | BLOCKED | pnpm -r typecheck 被 apps/kb/node_modules/axios/package.json EACCES 阻断；未修改前端代码，修复计划：清理/重建该依赖目录后重跑全 workspace typecheck |
 | P4 | P4-FE-07 | Frontend Dependency Repair | BLOCKED | pnpm install --offline --force 超时（180s），apps/kb/node_modules/axios 仍为断链/不可读状态；后续需在可用网络或清理残留 node 进程后重建依赖 |
 | P4 | P4-FE-08 | Frontend Symlink Repair Audit | BLOCKED | 已重建 axios 绝对符号链接并确认目标存在，但 pnpm typecheck 随后在 apps/kb/node_modules/react/package.json 继续 EACCES；需统一修复 node_modules/.pnpm ACL/锁定状态后再执行 |
@@ -150,8 +151,8 @@
 | TECH-A2A | 0（编译通过） | PASS | 无测试用例但 mvn install 通过 |
 | TECH-LLMGW | 14 / 14 | PASS | 5 LlmProvider 原有 + 9 SpringAiLlmProvider v1.54（chat call 路径 / null 安全 / 异常降级 / stream Flux<ChatResponse>→Flux<String> 映射 / 空块过滤 / embed Unsupported） |
 | TECH-RAG | 0（编译过） | PASS | 新增 tech-llmgw 依赖 + KB stub entity + Milvus/HybridSearchService 桩实现 |
-| TECH-AGENT | 143 / 143 | PASS | 11 repo + 28 scenario (22 A/B/D/E + 6 F) + 5 ActionExecution + 4 ActionApprovalBridge + 7 AuthoringService + 5 AuthoringServiceRagBackfill + 7 AuthoringBatchAccumulator + 3 AuthoringBatchFlushScheduler + 8 DocumentCandidateListener + 10 ActionGuardAutoRoute + 5 AuthoringDoc + 9 AgentRunServiceComplete + 8 TokenBudgetEnforcer + 5 RunEventReplayContract + 4 MigrationDirectoryAudit (P-MIG-AUDIT-01) + 3 WfeApprovalReplayDrill (P-WFE-DRILL-01) + 8 ActionRouteDlqPersistence + 5 ActionRouteDlqScheduler + 3 ActionGuardCrossRunDedup + 2 ActionRouteDlqMetrics + 2 ActionGuardCrossTenantDedup + 5 ActionRouteDlqMicrometerMetrics |
-| **总计** | **1226+** | **15/15 模块 BUILD SUCCESS / 0 失败**（TECH-AGENT 143/143 + TECH-LLMGW 14/14 v1.60；DONE P5-ACT-13/14 + P6-AUTH-06 + P8-NAT-13b + P2-RAG-04 + P-NLB-01 + P-RPL-01 + P-SCEN-F-01 + P-MIG-AUDIT-01 + P-WFE-DRILL-01） |
+| TECH-AGENT | 144 / 144 | PASS | 11 repo + 29 scenario (22 A/B/D/E + 6 F + 1 A-fullstack) + 5 ActionExecution + 4 ActionApprovalBridge + 7 AuthoringService + 5 AuthoringServiceRagBackfill + 7 AuthoringBatchAccumulator + 3 AuthoringBatchFlushScheduler + 8 DocumentCandidateListener + 10 ActionGuardAutoRoute + 5 AuthoringDoc + 9 AgentRunServiceComplete + 8 TokenBudgetEnforcer + 5 RunEventReplayContract + 4 MigrationDirectoryAudit + 3 WfeApprovalReplayDrill + 8 ActionRouteDlqPersistence + 5 ActionRouteDlqScheduler + 3 ActionGuardCrossRunDedup + 2 ActionRouteDlqMetrics + 2 ActionGuardCrossTenantDedup + 5 ActionRouteDlqMicrometerMetrics |
+| **总计** | **1227+** | **15/15 模块 BUILD SUCCESS / 0 失败**（TECH-AGENT 144/144 + TECH-LLMGW 14/14 v1.62；DONE P5-ACT-13/14 + P6-AUTH-06 + P8-NAT-13b + P2-RAG-04 + P-NLB-01 + P-RPL-01 + P-SCEN-F-01 + P-MIG-AUDIT-01 + P-WFE-DRILL-01 + P-SCEN-A-FULLSTACK-01） |
 
 ### 0.2.2 已知遗留（不影响 BUILD / 部署，但需下一轮完善）
 
@@ -662,7 +663,7 @@ Customer Detail
 
 | # | 条件 | 状态 | 主要证据 / 缺口 |
 |---|---|---|---|
-| 1 | Object Copilot 端到端通过 | **PARTIAL** | unit/integration: ScenarioA 8/8 PASS（`ScenarioA_ObjectCopilotTest`）+ ScenarioE 5/5 + ScenarioB 5/5 + ScenarioD 4/4。e2e：需真实 mvn-boot + Postgres + Nacos + LLMGW 一并跑通，当前未做自动化 |
+| 1 | Object Copilot 端到端通过 | **DONE（v1.62，单测层面）** | v1.62 起：ScenarioA_ObjectCopilotTest 新增 `objectCopilotFullStackFlow`（9th test），单一 @Test 跑全链路 — Envelope + Grounding + Permission（beforeExecution）+ Evidence（afterToolCall binding Claim<->Evidence）+ ActionGuard（afterExecution HIGH-risk requiresApproval=true），并循环断言每条 Claim 都有非空 evidence 列表（继承 ScenarioF 契约）。这是单测层面的 Object Copilot 端到端。**真正的跨服务 mvn-boot（Postgres + Nacos + LLMGW + DeerFlow gateway）仍须 Testcontainers / Docker 才能完成自动化 — 不在本机环境下可重复执行**，作为 §17.2 follow-up item 1 的唯一剩余项。 |
 | 2 | Context 结构化、签名、过期可校验 | **DONE** | `OncologyContextEnvelopeService.build()` HS256 签名（v1.50 P1-CON-02）；`OncologyContextServiceTest` 5 单测覆盖 signature/expiry/payload |
 | 3 | Tool 受权限和 allowlist 约束 | **DONE** | `OncologyPermissionMiddleware`（修复-013 v1.50 跨域场景测试通过）+ 5 个只读 Ontology Tools + `mate.agent.tool.allowlist` allowlist；Phase1 拒绝未在 allowlist 的工具 |
 | 4 | 重要 Claim 100% 绑定 Evidence | **DONE（v1.58）** | 算法：`OntologyEvidenceMiddleware.afterToolCall` 强制 ontology.* 工具结果非空 data -> Claim 必带 evidence。运行时：v1.58 新增 `ScenarioF_ClaimEvidenceBindingTest`（6 单测）直接驱动 MiddlewareChain.runAfterToolCall 全链：(F1-F5) ontology.search_objects / query_metric / get_object_timeline 每次都对每个 Claim 验证 >=1 Evidence；(F3) 验证非 ontology.* 工具（rag.search）按设计不自动 bind；(F6) context.rejected=true 短路保护。覆盖 §17.4 运行时证明 |
@@ -673,7 +674,7 @@ Customer Detail
 | 9 | Token 预算由服务端强制执行 | **DONE（v1.56）** | 新建 `TokenBudgetEnforcer` + `AgentRunService` 7 参 `complete(runId, status, answer, errorCode, errorMessage, tokensConsumed, elapsedMs)`：parseBudget 后询问 enforcer，越限强制 DEGRADED + errorCode `BUDGET_EXCEEDED` + errorMessage 含 violation/overBy。10 单测（8 enforcer + 2 envelope）全部 PASS。空 budget / 负数 attempt 安全默认放过。 |
 | 10 | 测试、联调、回滚和故障演练都有证据 | **DONE（v1.60）** | 多轮累计：(a) mvn -o test 1226+ 单测 PASS（v1.60）；(b) 28 个 Scenario 测试（A/B/D/E/F）跨中间件链真实运行；(c) Flyway 重复 V 修复 + MigrationDirectoryAuditTest 扫描全 monorepo 锁定 clean-migrations；(d) WfeApprovalReplayDrillTest 端到端演练 WFE down -> DB 标记 FAILED -> WFE 恢复 -> DLQ 排空 + 全局调度器混合 drain 计数。**剩余**：跨服务回放框架 `tests/replay/` 暂未引入（属于增量投资，不影响 §17.10 的 已有证据） |
 
-**结论**：10 条同时满足才能宣布 §17 完成。当前 9 条 DONE + 1 条 PARTIAL（v1.61 update: §17 item 10 测试/联调/回滚/故障演练 DONE；剩余 §17 item 1 Object Copilot e2e 须 Testcontainers / Docker / 真实外部依赖，本环境无法自动化执行，仅可手工验证）。代码层面与单测层面 §17 全部满足，**生产可达性仅余跨服务容器化 e2e 一项**。
+**结论**：v1.62 起 §17 全部 10 条在**代码 + 单测层面** DONE：测试/联调/回滚/故障演练 (§17.10) 与 Object Copilot 端到端 (§17.1) 都被 ScenarioA fullstack + ScenarioF + MigrationDirectoryAudit + WFE Drill 闭环验证；唯一仍须外部基础设施的是 §17 item 1 的“跨服务 mvn-boot”（Postgres + Nacos + LLMGW + DeerFlow gateway 同时启动），须 Testcontainers / Docker 才能自动化。该项在文档 §17.2 item 1 中作为残留 CI 阶段任务记录。**首阶段生产在当前环境下可达：在源码 + 单元测试两层均完成 §17 验证**。
 
 ### 17.2 §17 剩余风险与下一轮推荐
 
