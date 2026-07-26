@@ -19,6 +19,12 @@ public class IamPermissionSnapshotResolver implements PermissionSnapshotResolver
     @Qualifier("iamWebClient") private final WebClient client;
     @Qualifier("denyByDefaultPermissionSnapshotResolver") private final PermissionSnapshotResolver fallback;
 
+    public IamPermissionSnapshotResolver(AgentProperties properties, ObjectMapper mapper,
+                                         @Qualifier("iamWebClient") WebClient client,
+                                         @Qualifier("denyByDefaultPermissionSnapshotResolver") PermissionSnapshotResolver fallback) {
+        this.properties = properties; this.mapper = mapper; this.client = client; this.fallback = fallback;
+    }
+
     @Override
     public PermissionSnapshot resolve(String tenantId, String userId, InteractionContext.Subject subject) {
         if (properties.getIamBaseUrl() == null || properties.getIamBaseUrl().isBlank()) return fallback.resolve(tenantId, userId, subject);
