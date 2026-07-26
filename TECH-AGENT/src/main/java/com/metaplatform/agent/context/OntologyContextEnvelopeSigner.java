@@ -1,6 +1,7 @@
 package com.metaplatform.agent.context;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.Mac;
@@ -18,6 +19,7 @@ public class OntologyContextEnvelopeSigner {
     private final byte[] secret;
     private final Clock clock;
 
+    @Autowired
     public OntologyContextEnvelopeSigner(
             @Value("${mate.agent.context-signing-secret:${mate.agent.jwt-secret:change-me-in-production}}") String secret) {
         this(secret, Clock.systemUTC());
