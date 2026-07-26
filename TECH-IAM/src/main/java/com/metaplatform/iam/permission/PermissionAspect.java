@@ -54,7 +54,7 @@ public class PermissionAspect {
         if (!allowed) {
             log.warn("[PermissionAspect] DENY user={} action={}.{} objectId={}",
                     userId, perm.resource(), perm.action(), objectId);
-            throw new IamException(ErrorCode.FORBIDDEN,
+            throw new IamException(ErrorCode.PERMISSION_DENIED,
                     "用户 " + userId + " 没有执行 " + perm.resource() + "." + perm.action() + " 的权限");
         }
         log.debug("[PermissionAspect] ALLOW user={} action={}.{} objectId={}",

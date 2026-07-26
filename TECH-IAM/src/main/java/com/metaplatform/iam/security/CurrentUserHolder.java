@@ -32,6 +32,12 @@ public final class CurrentUserHolder {
         return credentials.toString();
     }
 
+    public static String tenantIdOrDefault() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getDetails() instanceof java.util.Map<?, ?> details && details.get("tenantId") != null) return String.valueOf(details.get("tenantId"));
+        return "default";
+    }
+
     public static String getUsernameOrNull() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || auth.getName() == null || "anonymousUser".equals(auth.getName())) {
