@@ -30,6 +30,20 @@ public class ClaimService {
         } catch (Exception ex) { throw new IllegalStateException("unable to persist tool claim", ex); }
     }
 
+    @Transactional
+    public ClaimEntity recordExecution(com.metaplatform.agent.action.ActionProposalEntity proposal, String envelopeId) {
+        try {
+            String refs = objectMapper.writeValueAsString(List.of("EVD-exec-" + proposal.getProposalId()));
+            return repository.save(ClaimEntity.builder().claimId("CLM-" + UUID.randomUUID().toString().replace("-", ""))
+                    .runId(proposal.getRunId()).type(ClaimType.FACT)
+                    .content("Action executed: " + proposal.getActionCode() + " (idempotency=" + proposal.getIdempotencyKey() + ")")
+                    .confidence(java.math.BigDecimal.valueOf(0.95)).evidenceRefs(refs)
+                    .generatedByAgentId("action-executor").generatedByModel("tech-action")
+                    .toolCallIds(objectMapper.writeValueAsString(List.of(proposal.getActionCode())))
+                    .createdAt(java.time.Instant.now()).build());
+        } catch (Exception ex) { throw new IllegalStateException("unable to persist execution claim", ex); }
+    }
+
     private ClaimDto toDto(ClaimEntity e) {
         Map<String,String> generatedBy = new LinkedHashMap<>();
         generatedBy.put("agentId", e.getGeneratedByAgentId()); generatedBy.put("model", e.getGeneratedByModel());

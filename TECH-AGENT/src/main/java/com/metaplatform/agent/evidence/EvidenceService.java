@@ -42,6 +42,22 @@ public class EvidenceService {
                 .envelopeId(envelopeId).build());
     }
 
+    @Transactional
+    public EvidenceEntity recordExecution(com.metaplatform.agent.action.ActionProposalEntity proposal, String envelopeId, String actor) {
+        EvidenceEntity e = EvidenceEntity.builder()
+                .evidenceId("EVD-" + UUID.randomUUID().toString().replace("-", ""))
+                .type(EvidenceType.ONTOLOGY_OBJECT)
+                .ref("action://executed/" + proposal.getActionCode() + "/" + proposal.getProposalId())
+                .fragment("Action executed: " + proposal.getActionCode() + " status=" + proposal.getStatus() + " idempotency=" + proposal.getIdempotencyKey())
+                .sourceUri("action://proposal/" + proposal.getProposalId())
+                .capturedAt(java.time.Instant.now())
+                .capturedBy(actor == null ? "system" : actor)
+                .toolCallId(proposal.getActionCode())
+                .envelopeId(envelopeId)
+                .build();
+        return repository.save(e);
+    }
+
     private EvidenceDto toDto(EvidenceEntity e) { return EvidenceDto.builder().evidenceId(e.getEvidenceId()).type(e.getType().name())
             .ref(e.getRef()).fragment(e.getFragment()).sourceUri(e.getSourceUri()).capturedAt(e.getCapturedAt())
             .capturedBy(e.getCapturedBy()).concept(e.getConcept()).objectId(e.getObjectId()).toolCallId(e.getToolCallId())

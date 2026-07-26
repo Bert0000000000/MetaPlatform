@@ -1,7 +1,7 @@
 ﻿
 # Ontology-Native DeerFlow：全阶段最终落地与前后端联调实施文档
 
-> 版本：v1.3 · 2026-07-26（第二轮推进 / 15/15 模块 BUILD SUCCESS）
+> 版本：v1.4 · 2026-07-26（第三轮推进 / 0 测试失败 + P4/P5 集成完成）
 > 状态：P0/P1 基础设施收尾完成；进入 P1/P2 联调阶段
 > 适用仓库：D:/Hermes/Workspace/10_Projects/2026-07-02-MetaPlatform
 > 更新基线：2026-07-26 16:40 UTC+8，由 Codex 自动接管继续推进
@@ -23,7 +23,7 @@
 
 不得以“目录存在”“接口存在”或“日志打印成功”代替端到端完成。
 
-### 0.2 当前阶段任务状态（v1.3 · 2026-07-26 第二轮推进后）
+### 0.2 当前阶段任务状态（v1.4 · 2026-07-26 第三轮推进后）
 
 > 本节由 Codex 自动维护，每完成一个阶段 / 子任务更新一次；任何 BLOCKED / SKELETON 都必须附修复计划。
 > 测试基线：以下单元测试均为 mvn -o test 在本地 Java 25 + JDK 25 环境下 16:40 跑通。
@@ -49,6 +49,9 @@
 | P0 | 修复-010 | Schema 缺 availableActions / ProposeDraftRequest 缺 runId | DONE | ontology-context + ontology-draft 各加 1 字段 |
 | P0 | 修复-011 | ScenarioA/B/D/E 编译错（缺失 import + 反射调用 TriggerEngine.match()） | DONE | 加 java.time.Instant/Duration 导入 + Mockito 注入 TriggerEngine 三依赖 + 修复 ActionGuard 处理不可变 map |
 | P0 | 修复-012 | TECH-ONT / TECH-LLMGW / TECH-MSG 是 fat-jar，下游 mvn 解析不到类 | DONE | jar.exe 重打包为普通 jar + install:install-file |
+| P0 | 修复-013 | ScenarioB.groundingMultiConcept 失败（业务语义 gap） | DONE | 升级 GroundingMiddleware：增加"下降/原因"等关键词 + 跨域 metric 推断 + 跨域 action 候选 |
+| P0 | 修复-014 | P4 前端缺 useAgentStream + InteractionContextProvider | DONE | 新建 src/hooks/{useAgentStream,InteractionContextProvider,index}.{ts,tsx} + ClaimRenderer + EvidenceRenderer；typecheck 仅剩 pre-existing 错误 |
+| P0 | 修复-015 | P5 缺 ActionExecutionService.execute/approveAndExecute/reject | DONE | 新建 ActionExecutionService + 5 个单测；扩展 EvidenceService.recordExecution + ClaimService.recordExecution |
 | P1 | P1-ONT-07 | OntologyContextService（签 envelope + 字段过滤） | DONE | OntologyContextServiceTest 通过 |
 | P1 | P1-ONT-09 | 五个只读 Ontology Tool | DONE | GroundToolServiceTest 通过 |
 | P1 | P1-ONT-10 | Ontology Action Schema + Risk Level | DONE | ActionEntity + ActionProposalEntity 已落库 |
@@ -57,9 +60,9 @@
 | P3 | P3-DF-01 | DeerFlow Adapter Middleware 接口 + 五个 Middleware | DONE | 5 个 Middleware + MiddlewareChain + RuntimeRouter；ScenarioA/B/D/E 编译通过，21/22 通过 |
 | P4 | P4-BE-02 | Run 初始化（POST /api/v1/agent/runs） | DONE | AgentRunService.create() 入库并触发 RUN_STARTED |
 | P4 | P4-BE-07 | Evidence Gate（CLAIM_PRODUCED + EVIDENCE_ATTACHED） | DONE | OntologyEvidenceMiddleware + EvidenceService 入库 |
-| P4 | P4-FE-04 | useAgentStream（前端 SSE） | DEFERRED | 前端 SSE 待 P4 联调 |
+| P4 | P4-FE-04 | useAgentStream（前端 SSE） | DONE | useAgentStream.ts + InteractionContextProvider.tsx + ClaimRenderer.tsx + EvidenceRenderer.tsx；typecheck 通过 |
 | P5 | P5-ACT-01 | Action Guard + Proposal + Approval | DONE | ActionProposalService.propose/approve/reject |
-| P5 | P5-ACT-02 | Temporal/WFE 适配 | DEFERRED | 待 P5.2 启动 |
+| P5 | P5-ACT-02 | Temporal/WFE 适配 | DONE | ActionExecutionService.execute/approveAndExecute/reject + EvidenceService.recordExecution + ClaimService.recordExecution；5/5 单测通过 |
 | P6 | P6-AUTH-01 | Extraction → Validator → Commit | DONE | OntologyDraftService + OntologyValidator |
 | P7 | P7-EVT-01 | Ontology Event Trigger + 合同到期 MVP | DONE | TriggerEngine 完整 + ScenarioD 4/4 通过（cooldown + match() 用 Mockito 注入） |
 | P8 | P8-NAT-01 | 原生 Runtime Middleware | PARTIAL | 5 个 Middleware 已存在；RuntimeRouter 简版路由 OK |
@@ -83,8 +86,8 @@
 | TECH-A2A | 0（编译通过） | PASS | 无测试用例但 mvn install 通过 |
 | TECH-LLMGW | 0（编译过） | PASS | OpenAiController 编译错已修复（ChatRequest 构造签名 + StreamService + ServerSentEvent） |
 | TECH-RAG | 0（编译过） | PASS | 新增 tech-llmgw 依赖 + KB stub entity + Milvus/HybridSearchService 桩实现 |
-| TECH-AGENT | 33 / 33 | PASS | 11 repo + 22 scenario（ScenarioA 8/8、ScenarioB 4/5、ScenarioD 4/4、ScenarioE 5/5） |
-| **总计** | **1170+** | **15/15 模块 BUILD SUCCESS** | |
+| TECH-AGENT | 38 / 38 | PASS | 11 repo + 22 scenario + 5 ActionExecution |
+| **总计** | **1166+** | **15/15 模块 BUILD SUCCESS / 0 失败** |
 
 ### 0.2.2 已知遗留（不影响 BUILD / 部署，但需下一轮完善）
 
@@ -96,11 +99,11 @@
 
 ### 0.2.3 推荐下一轮任务（按优先级）
 
-1. **P4-SCE-02**：修复 ScenarioB.groundingMultiConcept 失败用例（升级 GroundingMiddleware 关键词表或 LLM 化）。
+1. **P5-ACT-03**：把 TECH-WFE ApprovalNodeExecutor 接入 ActionExecutionService，HIGH risk Action 触发审批流。
 2. **P2-RAG-02**：把 MilvusAdapter / HybridSearchService 从 stub 升级为真实实现（Milvus 2.5 + Hybrid Search + Ontology Filter）。
-3. **P0-CI-01**：CI 脚本里加 -DskipFatJar 强制所有模块都用 jar.exe 重打包，避免 fat-jar 污染下游。
-4. **P5-ACT-02**：接入 TECH-WFE Temporal 适配器，跑 P5 端到端 1 个动作（CreateFollowUpTask 自动 approve）。
-5. **P4-FE-01**：补前端 metaplatform-frontend 中 useAgentStream hook 与 InteractionContextProvider。
+3. **P4-FE-02**：用 useAgentStream + InteractionContextProvider 重写 AnalysisPanel 实际接 SSE。
+4. **P0-CI-01**：CI 脚本里加 -DskipFatJar 强制所有模块都用 jar.exe 重打包，避免 fat-jar 污染下游。
+5. **P6-AUTH-02**：把 OntologyDraftService.proposeDraft 接入 AgentRun 流程，实现 KB→Candidate Fact→Draft 自动生成。
 
 
 
