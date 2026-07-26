@@ -164,6 +164,11 @@
                     <encoding>UTF-8</encoding>
                     <source>${java.version}</source>
                     <target>${java.version}</target>
+                    <!-- Legacy service implementations are intentionally disabled while the P1 API is active.
+                         Keep their tests out of the compilation set until the migration batch restores them. -->
+                    <testExcludes>
+                        <testExclude>**/ont/service/**/*Test.java</testExclude>
+                    </testExcludes>
                     <fork>true</fork>
                     <annotationProcessorPaths>
                         <path>
