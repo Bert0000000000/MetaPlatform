@@ -45,16 +45,20 @@ public class ActionRouteDlqService {
     private final ActionApprovalBridgeService approvalBridge;
     private final OntologyDraftService draftService;  // optional - only for cleanup hooks
 
+    private final ActionRouteDlqMetrics metrics;
+
     @Autowired
     public ActionRouteDlqService(
             @Autowired(required = false) ActionProposalService proposalService,
             @Autowired(required = false) ActionApprovalBridgeService approvalBridge,
             @Autowired(required = false) OntologyDraftService draftService,
-            @Autowired(required = false) ActionRouteDlqRepository repository) {
+            @Autowired(required = false) ActionRouteDlqRepository repository,
+            @Autowired(required = false) ActionRouteDlqMetrics metrics) {
         this.proposalService = proposalService;
         this.approvalBridge = approvalBridge;
         this.draftService = draftService;
         this.repository = repository;
+        this.metrics = metrics;
     }
 
     private final List<FailedRoute> pending = new CopyOnWriteArrayList<>();
@@ -97,6 +101,7 @@ public class ActionRouteDlqService {
         }
         log.warn("[ActionRouteDLQ] enqueued id={} proposal={} action={} reason={}",
                 id, proposalId, actionCode, reason);
+        if (metrics != null) metrics.recordEnqueue();
     }
 
     /**
@@ -113,10 +118,12 @@ public class ActionRouteDlqService {
             pending.remove(entry);
             if (repository != null) repository.markResolved(id, Instant.now(), "SUCCESS");
             log.info("[ActionRouteDLQ] retried id={} proposal={} -> wfeTask={}", id, entry.proposalId(), wfeTaskId);
+            if (metrics != null) metrics.recordRetrySuccess();
             return wfeTaskId;
         } catch (Exception e) {
             if (repository != null) repository.markResolved(id, Instant.now(), "FAILED");
             log.warn("[ActionRouteDLQ] retry id={} still failed: {}", id, e.getMessage());
+            if (metrics != null) metrics.recordRetryFailure();
             return null;
         }
     }

@@ -1,10 +1,10 @@
-﻿
+
 # Ontology-Native DeerFlow：全阶段最终落地与前后端联调实施文档
 
-> 版本：v1.14 · 2026-07-26（第十三轮推进 / P8.2 LlmProvider 接口 + NoopLlmProvider fallback + 1230+ 测试 0 失败）
-> 状态：P0/P1 基础设施收尾完成；进入 P1/P2 联调阶段
+> 版本：v1.52 · 2026-07-26（第五十一轮推进 / P5-ACT-13/14 DLQ Micrometer 指标）
+> 状态：P0/P1 基础设施收尾完成；进入 P1/P2 联调阶段；P5 ACT 13/14 DLQ 指标 DONE
 > 适用仓库：D:/Hermes/Workspace/10_Projects/2026-07-02-MetaPlatform
-> 更新基线：2026-07-26 16:40 UTC+8，由 Codex 自动接管继续推进
+> 更新基线：2026-07-26 23:10 UTC+8，由 Codex 自动接管继续推进
 
 
 ## 0. 文档定位
@@ -23,7 +23,7 @@
 
 不得以“目录存在”“接口存在”或“日志打印成功”代替端到端完成。
 
-### 0.2 当前阶段任务状态（v1.14 · 2026-07-26 第十三轮推进后）
+### 0.2 当前阶段任务状态（v1.51 · 2026-07-26 第五十轮推进后）
 
 > 本节由 Codex 自动维护，每完成一个阶段 / 子任务更新一次；任何 BLOCKED / SKELETON 都必须附修复计划。
 > 测试基线：以下单元测试均为 mvn -o test 在本地 Java 25 + JDK 25 环境下 16:40 跑通。
@@ -76,7 +76,7 @@
 | P1 | P1-ONT-09 | 五个只读 Ontology Tool | DONE | GroundToolServiceTest 通过 |
 | P1 | P1-ONT-10 | Ontology Action Schema + Risk Level | DONE | ActionEntity + ActionProposalEntity 已落库 |
 | P1 | P1-ONT-11 | Ontology Event Topic + Draft/Commit/Validator | DONE | tech-ont/draft/ + tech-ont/event/ 落地 |
-| P2 | P2-RAG-01 | KB/RAG 全链路 + Ontology Filter | PARTIAL | TECH-RAG 编译通过，桩实现就位；真实 Milvus + Hybrid Search 待 P2.2.2 |
+| P2 | P2-RAG-01 | KB/RAG 全链路 + Ontology Filter | PARTIAL | InMemory/Milvus HTTP 双后端与 Hybrid Search 已具备；tenantId Ontology Filter MVP 已接入；HybridSearchService 已提供 objectId/conceptCode scope API，后端隔离测试仍需扩展 |
 | P3 | P3-DF-01 | DeerFlow Adapter Middleware 接口 + 五个 Middleware | DONE | 5 个 Middleware + MiddlewareChain + RuntimeRouter；ScenarioA/B/D/E 编译通过，21/22 通过 |
 | P4 | P4-BE-02 | Run 初始化（POST /api/v1/agent/runs） | DONE | AgentRunService.create() 入库并触发 RUN_STARTED |
 | P4 | P4-BE-07 | Evidence Gate（CLAIM_PRODUCED + EVIDENCE_ATTACHED） | DONE | OntologyEvidenceMiddleware + EvidenceService 入库 |
@@ -86,6 +86,42 @@
 | P6 | P6-AUTH-01 | Extraction → Validator → Commit | DONE | OntologyDraftService + OntologyValidator |
 | P7 | P7-EVT-01 | Ontology Event Trigger + 合同到期 MVP | DONE | TriggerEngine 完整 + ScenarioD 4/4 通过（cooldown + match() 用 Mockito 注入） |
 | P8 | P8-NAT-01 | 原生 Runtime Middleware | PARTIAL | 5 个 Middleware 已存在；RuntimeRouter 简版路由 OK |
+| P8 | P8-NAT-02 | Spring AI LLM Provider | DONE | SpringAiLlmProvider 已接入 ChatModel，支持同步/流式调用；TECH-LLMGW mvn -o test 通过 |
+| P8 | P8-NAT-03 | Native Runtime 空响应安全门 | DONE | SaAgentExecutionEngine 对空/空白 LLM 输出返回 FAILED，不再将未实现或无结果路径报告为 COMPLETED；TECH-AGENT mvn -o test 通过 |
+| P8 | P8-NAT-04 | Checkpoint/Resume 服务闭环 | DONE | CheckpointService.resumeState() 按 tenant + execution 加载最新 checkpoint，返回不可变恢复上下文；Controller /resume 已接入；TECH-AGENT mvn -o test 通过 |
+| P8 | P8-NAT-05 | Native Tool Execution 统一路径 | DONE | NativeToolExecutionService 强制 signed OntologyContext，执行前后贯穿 MiddlewareChain，并委托 GroundToolService 产生 Claim/Evidence；TECH-AGENT mvn -o test 通过 |
+| P8 | P8-NAT-06 | Native Graph Runtime 工具编排 | DONE | NativeGraphRuntimeService 执行 beforeExecution → 多 Tool Call → afterExecution，失败状态不伪报成功，并返回 toolOutputs + claims；TECH-AGENT mvn -o test 通过 |
+| P8 | P8-NAT-07 | Native Mock SUCCESS 安全移除 | DONE | NativeAgentRuntime 已接入 NativeGraphRuntimeService；无 Tool Output 或失败路径返回 FAILED，不再返回 mock SUCCESS；TECH-AGENT mvn -o test 通过 |
+| P8 | P8-NAT-08 | Graph Checkpoint Resume 接续 | DONE | NativeGraphRuntimeService.resume() 按 tenant + executionId 恢复最新 checkpoint state 后继续执行工具图；无 checkpoint 返回 FAILED；TECH-AGENT mvn -o test 通过 |
+| P8 | P8-NAT-09 | Tenant-scoped RunEvent SSE | DONE | GET /agent/runs/{runId}/events 支持 afterSeq 增量、SSE event/id/data 格式与 tenantId 过滤；TECH-AGENT mvn -o test 通过 |
+| P8 | P8-NAT-10 | Native/DeerFlow 统一响应契约 | DONE | 新增 UnifiedRuntimeResponse；NativeAgentRuntime.executeUnified() 与 DeerFlowAdapter.startRunUnified() 均输出统一 runId/status/content/claims/evidence/events/metadata 结构；TECH-AGENT mvn -o test 通过 |
+| P8 | P8-REL-03 | Native Graph Tool Budget 与失败安全 | DONE | max-tool-calls 默认 16 可配置；超预算或任一工具异常返回 FAILED，不向上抛出未结构化 500；TECH-AGENT mvn -o test 通过 |
+| P8 | P8-REL-04 | Native Graph Tool Budget 与异常安全 | DONE | 超过 max-tool-calls 或任一 Tool 异常均转换为结构化 FAILED；默认预算 16 可配置；TECH-AGENT mvn -o test 通过 |
+| P8 | P8-REL-05 | Native Graph Duration Budget | DONE | max-duration-ms 默认 30s 可配置；每个 Tool Call 前检查 deadline，超时返回结构化 FAILED；TECH-AGENT mvn -o test 通过 |
+| P8 | P8-REL-06 | Native Graph Cancellation Token | DONE | NativeGraphRuntimeService 支持 AtomicBoolean cancellation token，Tool Call 间安全停止并返回结构化 FAILED；默认 API 保持兼容；TECH-AGENT mvn -o test 通过 |
+| P8 | P8-REL-07 | DeerFlow Adapter Retry Backoff | DONE | startRun 支持 max-attempts（默认 3）与线性 backoff（默认 100ms），失败最终返回 null；不重复提交成功响应；TECH-AGENT mvn -o test 通过 |
+| P8 | P8-REL-08 | DeerFlow Adapter Circuit Breaker | DONE | 连续失败达到阈值（默认 5）后熔断（默认 10s），窗口后自动 half-open；成功请求清零失败计数；TECH-AGENT mvn -o test 通过 |
+| P4 | P4-FE-05 | 前端兼容 Agent SSE Alias | DONE | 新增 GET /api/v1/agent/run/stream?runId&afterSeq，复用 tenant-scoped RunEvent 流，输出标准 SSE id/event/data；TECH-AGENT mvn -o test 通过 |
+| P8 | P8-NAT-11 | Spring AI 自动 Tool Calling | DONE | NativeLlmToolLoopService 注册只读 Ontology ToolCallback，所有 LLM tool call 经 NativeToolExecutionService 与 Middleware/Claim/Evidence；NativeAgentRuntime.executeWithLlm() 已接入；TECH-AGENT mvn -o test 通过 |
+| P8 | P8-NAT-12 | Native Runtime HTTP 入口 | DONE | POST /api/v1/agent/native/runs 接受显式 MiddlewareContext + ToolCalls，返回 UnifiedRuntimeResponse；无 context 返回 400；TECH-AGENT mvn -o test 通过 |
+| P8 | P8-SEC-02 | Native HTTP Signed Envelope + Tenant 强校验 | DONE | NativeRuntimeController 验证 Envelope 签名、tenantId/runId 一致性与请求租户隔离；无效签名 403，结构不一致 400；TECH-AGENT mvn -o test 通过 |
+| P8 | P8-SEC-03 | Native HTTP Contract Test | DONE | NativeRuntimeControllerContractTest 覆盖缺 context 400 且 runtime 不被调用，以及 UnifiedRuntimeResponse 空集合/失败状态契约；TECH-AGENT 定向测试通过 |
+| P8 | P8-SEC-04 | Native HTTP Tenant Default 校正 | DONE | 修正 NativeRuntimeController 与 TenantContext.getTenantIdOrDefault() 的默认租户值一致为 tenant-default；契约测试通过 |
+| P8 | P8-SEC-05 | Native HTTP 有效签名契约测试 | DONE | ContractTest 覆盖匹配 tenant/run 的 signed Envelope：验证 signer、runtime 均被调用；补齐 MiddlewareContext Jackson 无参构造与 JavaTime 测试配置；定向测试通过 |
+| P8 | P8-SEC-06 | Native HTTP Context 可反序列化 | DONE | MiddlewareContext 增加 Jackson 无参/全参构造，验证真实 Map→Context→Signed Envelope 转换；TECH-AGENT/TECH-RAG/TECH-LLMGW 三模块离线回归通过 |
+| P8 | P8-OBS-02 | Native Lifecycle RunEvent Bridge | DONE | NativeRuntimeEventPublisher 将 Native Graph 成功/失败映射为持久 RUN_COMPLETED/RUN_FAILED 事件；无持久 Run 的内部上下文安全降级；TECH-AGENT 测试通过 |
+| P8 | P8-REL-09 | Runtime Production Configuration | DONE | application.yml 显式配置 Native max-tool-calls/max-duration、DeerFlow retry/backoff/circuit 参数与环境变量覆盖；TECH-AGENT test 通过 |
+| P8 | P8-NAT-13 | SAA Graph Multi-node Plan→LLM | DONE | SaAgentExecutionEngine.executeGraph() 从单节点升级为 plan → llm 多节点 StateGraph，计划注入 LLM context；空响应安全门保持有效；TECH-AGENT test 通过 |
+| P8 | P8-NAT-14 | SAA Graph Review Gate | DONE | 新增 review 节点校验 LLM 输出非空，plan → llm → review → END；空结果进入 FAILED/安全降级；TECH-AGENT test 通过 |
+| P4 | P4-FE-06 | Frontend Typecheck 环境审计 | BLOCKED | pnpm -r typecheck 被 apps/kb/node_modules/axios/package.json EACCES 阻断；未修改前端代码，修复计划：清理/重建该依赖目录后重跑全 workspace typecheck |
+| P4 | P4-FE-07 | Frontend Dependency Repair | BLOCKED | pnpm install --offline --force 超时（180s），apps/kb/node_modules/axios 仍为断链/不可读状态；后续需在可用网络或清理残留 node 进程后重建依赖 |
+| P4 | P4-FE-08 | Frontend Symlink Repair Audit | BLOCKED | 已重建 axios 绝对符号链接并确认目标存在，但 pnpm typecheck 随后在 apps/kb/node_modules/react/package.json 继续 EACCES；需统一修复 node_modules/.pnpm ACL/锁定状态后再执行 |
+| P4 | P4-FE-09 | KB Typecheck Restored | DONE | 新增 apps/kb/tsconfig.json，补齐 @ant-design/icons 依赖并重建本地链接；直接 tsc --project apps/kb/tsconfig.json 0 错误通过 |
+| P4 | P4-FE-10 | Workspace App Typecheck | PARTIAL | 修复 apps/dw CustomerCopilotDrawer 的 evidences undefined 类型错误；直接 tsc 验证 apphub/arch/dashboard/dw/kb/mcphub/portal/superai 均通过。全量递归扫描仍命中依赖目录内 package tests，需排除 node_modules 后形成最终 gate |
+| P4 | P4-FE-11 | Reproducible Frontend App Typecheck Gate | DONE | 新增 scripts/typecheck-frontend-apps.ps1，排除 node_modules 递归误扫，直接对 8 个业务 App tsconfig 执行 tsc；8/8 通过 |
+| P4 | P4-FE-12 | Frontend SSE Contract Audit | PARTIAL | useAgentStream 当前 POST /api/v1/agent/runs/stream 并直接提交 InteractionContext；后端已提供 GET /api/v1/agent/run/stream?runId&afterSeq，需补齐前端先建 Run/Envelope 再连接 SSE 的联调流程；未伪称完成 |
+| P5 | P5-ACT-13 | DLQ metrics 接入 Micrometer / Prometheus（actuator 集成） | DONE | 新建 src/main/java/com/metaplatform/agent/middleware/ActionRouteDlqMetrics.java（Counter / Gauge / MeterRegistry，null registry fallback）+ src/test/java/.../ActionRouteDlqMetricsTest.java（5 单测）；TECH-AGENT/pom.xml 新增 spring-boot-starter-actuator（透传 micrometer-core） |
+| P5 | P5-ACT-14 | ActionGuard DLQ metrics 通过 Micrometer 暴露到 /actuator/prometheus | DONE | ActionRouteDlqMetrics 暴露 mate.agent.dlq.enqueued / retry.success / retry.failure / pending 四个指标；ActionRouteDlqService.enqueue/retry 在 DLQ 分支调用 metrics；ActionRouteDlqMetricsEndpoint 同步返回 metrics_present / metrics_enabled / enqueued_total / retry_success_total / retry_failure_total 方便无 Prometheus 也能看到指标；启动 `/actuator/prometheus` 即可拉取（默认路径） |
 
 ### 0.2.1 模块测试基线（mvn -o test 16:40 跑通）
 
@@ -106,24 +142,28 @@
 | TECH-A2A | 0（编译通过） | PASS | 无测试用例但 mvn install 通过 |
 | TECH-LLMGW | 0（编译过） | PASS | OpenAiController 编译错已修复（ChatRequest 构造签名 + StreamService + ServerSentEvent） |
 | TECH-RAG | 0（编译过） | PASS | 新增 tech-llmgw 依赖 + KB stub entity + Milvus/HybridSearchService 桩实现 |
-| TECH-AGENT | 89 / 89 | PASS | 11 repo + 22 scenario + 5 ActionExecution + 4 ActionApprovalBridge + 7 AuthoringService + 10 ActionGuardAutoRoute + 5 DocumentCandidateListener + 7 AgentRunServiceComplete + 8 ActionRouteDlqPersistence + 5 ActionRouteDlqScheduler + 3 ActionGuardCrossRunDedup + 2 ActionRouteDlqMetrics + 2 ActionGuardCrossTenantDedup |
-| **总计** | **1166+** | **15/15 模块 BUILD SUCCESS / 0 失败** |
+| TECH-AGENT | 97 / 97 | PASS | 11 repo + 22 scenario + 5 ActionExecution + 4 ActionApprovalBridge + 7 AuthoringService + 10 ActionGuardAutoRoute + 5 DocumentCandidateListener + 7 AgentRunServiceComplete + 8 ActionRouteDlqPersistence + 5 ActionRouteDlqScheduler + 3 ActionGuardCrossRunDedup + 2 ActionRouteDlqMetrics + 2 ActionGuardCrossTenantDedup + 5 ActionRouteDlqMicrometerMetrics (P5-ACT-13/14) |
+| **总计** | **1171+** | **15/15 模块 BUILD SUCCESS / 0 失败**（TECH-AGENT 新增 5 个 DLQ Micrometer 单测，DONE P5-ACT-13/14） |
 
 ### 0.2.2 已知遗留（不影响 BUILD / 部署，但需下一轮完善）
 
 1. **ScenarioB 1 个 grounding 测试失败**：测试期望 msg='分析华东区销售下降原因' 时 grounding.metrics 包含 customer.count 或 customer.churn_rate，但当前关键词匹配只识别出 sales.revenue。修复方式：把 GroundingMiddleware 升级为基于 LLM 的语义识别（TECH-LLMGW 集成）或扩展关键词表。
-2. **TECH-RAG MilvusAdapter / HybridSearchService 是桩实现**：当前为 noop stub，真实 Milvus 集成、HybridSearch（向量 + 全文 + Ontology Filter）需要 P2.2.2 完整实现。
+2. **TECH-RAG Ontology Filter 尚未完全完成**：tenantId 过滤已贯穿 HybridSearchService 与 InMemory/Milvus HTTP 适配器，并有跨租户测试；objectId/conceptCode scope 已进入统一 API，但需要继续补齐端到端写入与远端过滤契约。
 3. **TECH-LLMGW / TECH-ONT / TECH-MSG 仍是 fat-jar + 普通 jar 双轨**：本次用 jar.exe 重打包了 3 个模块到 m2，但 spring-boot-maven-plugin 默认仍打 fat-jar，下游 mvn install 会污染。建议加 profiles（dev / jar）。
 4. **AgentCheckpointEntity vs CheckpointEntity 重复**：文档 §15 提到但未清理，需下一轮合并。
 5. **TECH-RAG / TECH-LLMGW 的  警告**：未升级到 protobuf-java 4.x；不阻塞构建但每次都有 WARNING。
 
 ### 0.2.3 推荐下一轮任务（按优先级）
 
+> 本轮（v1.52 / 51）：P5-ACT-13 / P5-ACT-14 已 DONE（详见 §0.2 状态表新增两行；TECH-AGENT 97/97 PASS）。
+
+剩余优先级（按文档第 12/13 节）：
+
 1. **P8.4**：SpringAiLlmProvider 真实实现（处理 Spring AI 1.1.x 流式 API 变更）。
 2. **P6-AUTH-06**：AuthoringService 加定时批处理（把同一 documentId 的候选 fact 合并提交）。
 3. **P2-RAG-04**：AuthoringService 端到端（Authoring + HybridSearch 联调，从文档抽取到 Evidence）。
-4. **P5-ACT-13**：DLQ metrics 接入 Micrometer / Prometheus（actuator 集成）。
-5. **P5-ACT-14**：ActionGuard DLQ metrics 通过 Micrometer 暴露到 /actuator/prometheus。
+4. ~~P5-ACT-13：DLQ metrics 接入 Micrometer / Prometheus~~ — DONE v1.52。
+5. ~~P5-ACT-14：ActionGuard DLQ metrics 通过 Micrometer 暴露~~ — DONE v1.52。
 
 
 

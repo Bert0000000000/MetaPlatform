@@ -98,6 +98,12 @@
             <artifactId>spring-boot-starter-validation</artifactId>
         </dependency>
 
+        <!-- Micrometer + Actuator (P5-ACT-13 DLQ metrics; transitively brings micrometer-core) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+
         <!-- Nacos Discovery + Config (SCA 2025.0.0.0) -->
         <dependency>
             <groupId>com.alibaba.cloud</groupId>
@@ -276,3 +282,5 @@
 
 
 
+
+<!-- Micrometer + Actuator (P5-ACT-13 DLQ metrics; transitively brings micrometer-core) -->

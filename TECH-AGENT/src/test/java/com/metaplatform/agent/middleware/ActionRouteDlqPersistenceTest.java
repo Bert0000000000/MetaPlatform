@@ -38,7 +38,7 @@ class ActionRouteDlqPersistenceTest {
         proposalService = Mockito.mock(ActionProposalService.class);
         approvalBridge = Mockito.mock(ActionApprovalBridgeService.class);
         repository = Mockito.mock(ActionRouteDlqRepository.class);
-        service = new ActionRouteDlqService(proposalService, approvalBridge, null, repository);
+        service = new ActionRouteDlqService(proposalService, approvalBridge, null, repository, null);
         savedEntities.clear();
         when(repository.save(any())).thenAnswer(inv -> {
             Object arg = inv.getArgument(0);
@@ -144,7 +144,7 @@ class ActionRouteDlqPersistenceTest {
     @Test
     @DisplayName("without repository: still works in-memory only")
     void noRepositoryFallback() {
-        ActionRouteDlqService bareService = new ActionRouteDlqService(proposalService, approvalBridge, null, null);
+        ActionRouteDlqService bareService = new ActionRouteDlqService(proposalService, approvalBridge, null, null, null);
         bareService.enqueue("run-8", "PROP-8", "X", "LOW", "err");
         assertEquals(1, bareService.size());
     }

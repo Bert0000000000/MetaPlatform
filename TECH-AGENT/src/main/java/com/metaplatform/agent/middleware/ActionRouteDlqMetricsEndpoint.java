@@ -16,13 +16,16 @@ public class ActionRouteDlqMetricsEndpoint {
 
     private ActionRouteDlqService dlqService;
     private ActionRouteDlqScheduler scheduler;
+    private ActionRouteDlqMetrics metrics;
 
     @Autowired
     public ActionRouteDlqMetricsEndpoint(
             @Autowired(required = false) ActionRouteDlqService dlqService,
-            @Autowired(required = false) ActionRouteDlqScheduler scheduler) {
+            @Autowired(required = false) ActionRouteDlqScheduler scheduler,
+            @Autowired(required = false) ActionRouteDlqMetrics metrics) {
         this.dlqService = dlqService;
         this.scheduler = scheduler;
+        this.metrics = metrics;
     }
 
     @GetMapping
@@ -43,6 +46,17 @@ public class ActionRouteDlqMetricsEndpoint {
             result.put("scheduler_present", true);
         } else {
             result.put("scheduler_present", false);
+        }
+        // P5-ACT-13/14: also surface Micrometer counters so operators can confirm
+        // whether scraping integrations (Prometheus / actuator) will see data.
+        if (metrics != null) {
+            result.put("metrics_present", true);
+            result.put("metrics_enabled", metrics.isEnabled());
+            result.put("enqueued_total", metrics.getEnqueuedCount());
+            result.put("retry_success_total", metrics.getRetrySuccessCount());
+            result.put("retry_failure_total", metrics.getRetryFailureCount());
+        } else {
+            result.put("metrics_present", false);
         }
         return result;
     }
