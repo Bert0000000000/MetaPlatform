@@ -4,6 +4,7 @@ import com.metaplatform.ont.event.DomainEventService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -18,10 +19,12 @@ import java.time.Instant;
  */
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class ContractExpiringTrigger {
 
     private final DomainEventService domainEventService;
+
+    @Autowired
+    public ContractExpiringTrigger(@Autowired(required = false) DomainEventService domainEventService) { this.domainEventService = domainEventService; }
 
     @Value("${mate.trigger.contract.lead-days:45}")
     private int leadDays;
@@ -35,6 +38,7 @@ public class ContractExpiringTrigger {
         // P7.2 占位：实际应通过 OntologyQueryMetric / ontology.search_objects 查询 Contract 对象
         // 此处仅 mock：发布一条 demo 事件
         log.info("[ContractExpiringTrigger] scanning expiring contracts leadDays={}", leadDays);
+        if (domainEventService == null) { log.warn("[ContractExpiringTrigger] DomainEventService unavailable; skipping publish"); return; }
         domainEventService.publish(
                 "tenant-default",
                 "Contract.expiring",
