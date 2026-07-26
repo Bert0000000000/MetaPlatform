@@ -52,7 +52,8 @@ public class TriggerEngine {
         }
     }
 
-    private boolean match(String filterJson, Map<String, Object> payload) {
+    /** P7.2 Public API for unit tests + event-bus filter evaluation. */
+    public boolean match(String filterJson, Map<String, Object> payload) {
         if (filterJson == null || filterJson.isBlank()) return true;
         // 简化：直接 JSON 对比
         try {

@@ -1,7 +1,7 @@
 ﻿
 # Ontology-Native DeerFlow：全阶段最终落地与前后端联调实施文档
 
-> 版本：v1.6 · 2026-07-26（第五轮推进 / P5.4 WFE<->Agent 闭环 + P6.2 Authoring 接入 + 1183+ 测试 0 失败）
+> 版本：v1.7 · 2026-07-26（第六轮推进 / P5.5 ActionGuard 自动路由 + P6.3 DocumentCandidateListener 真实实现 + P7.2 TriggerEngine public API）
 > 状态：P0/P1 基础设施收尾完成；进入 P1/P2 联调阶段
 > 适用仓库：D:/Hermes/Workspace/10_Projects/2026-07-02-MetaPlatform
 > 更新基线：2026-07-26 16:40 UTC+8，由 Codex 自动接管继续推进
@@ -23,7 +23,7 @@
 
 不得以“目录存在”“接口存在”或“日志打印成功”代替端到端完成。
 
-### 0.2 当前阶段任务状态（v1.6 · 2026-07-26 第五轮推进后）
+### 0.2 当前阶段任务状态（v1.7 · 2026-07-26 第六轮推进后）
 
 > 本节由 Codex 自动维护，每完成一个阶段 / 子任务更新一次；任何 BLOCKED / SKELETON 都必须附修复计划。
 > 测试基线：以下单元测试均为 mvn -o test 在本地 Java 25 + JDK 25 环境下 16:40 跑通。
@@ -58,6 +58,9 @@
 | P0 | 修复-019 | P5 缺 WFE→Agent 审批回调闭环 | DONE | TECH-WFE /approve-external + /reject-external 端点 + WfeTaskService.approveExternalAction/rejectExternalAction + forwardToAgent HTTP；TECH-AGENT /internal/wfe-approved + /internal/wfe-rejected；4+2 个单测 |
 | P0 | 修复-020 | P6 缺 Authoring pipeline（KB→Candidate Fact→Draft） | DONE | AuthoringService.buildDraft/buildFromExtraction/submit + 7 个单测（覆盖 buildDraft minimal / safe defaults / buildFromExtraction single / evidenceRefs list / empty / submit forwards / submit no-draft-service）|
 | P0 | 修复-021 | SuperAIChatPage msg.evidences 可能 undefined | DONE | typecheck 0 错误（msg.evidences ?? [] + 还原用 @mate/shared 的 EvidenceRenderer per-evidence 接口）|
+| P0 | 修复-022 | ActionGuardMiddleware 不自动持久化 + 路由 HIGH risk Action | DONE | 在 afterExecution 调 proposalService.create + approvalBridge.submitForApproval；5 个单测（HIGH/LOW/empty/fail-resilient/no-arg compat）|
+| P0 | 修复-023 | DocumentCandidateListener 是占位实现，不触发 Authoring pipeline | DONE | 重写为完整实现：订阅 kb.document.candidate.ready → AuthoringService.buildFromExtraction → submit；5 个单测（happy path/empty payload/missing candidates/no author service/non-List candidates）|
+| P0 | 修复-024 | TriggerEngine.match() 是 private，ScenarioD 用反射调用 | DONE | 改为 public + 重写 ScenarioD 直接调用，去掉反射；4/4 ScenarioD 单测全过 |
 | P1 | P1-ONT-07 | OntologyContextService（签 envelope + 字段过滤） | DONE | OntologyContextServiceTest 通过 |
 | P1 | P1-ONT-09 | 五个只读 Ontology Tool | DONE | GroundToolServiceTest 通过 |
 | P1 | P1-ONT-10 | Ontology Action Schema + Risk Level | DONE | ActionEntity + ActionProposalEntity 已落库 |
@@ -92,7 +95,7 @@
 | TECH-A2A | 0（编译通过） | PASS | 无测试用例但 mvn install 通过 |
 | TECH-LLMGW | 0（编译过） | PASS | OpenAiController 编译错已修复（ChatRequest 构造签名 + StreamService + ServerSentEvent） |
 | TECH-RAG | 0（编译过） | PASS | 新增 tech-llmgw 依赖 + KB stub entity + Milvus/HybridSearchService 桩实现 |
-| TECH-AGENT | 49 / 49 | PASS | 11 repo + 22 scenario + 5 ActionExecution + 4 ActionApprovalBridge + 7 AuthoringService |
+| TECH-AGENT | 59 / 59 | PASS | 11 repo + 22 scenario + 5 ActionExecution + 4 ActionApprovalBridge + 7 AuthoringService + 5 ActionGuardAutoRoute + 5 DocumentCandidateListener |
 | **总计** | **1166+** | **15/15 模块 BUILD SUCCESS / 0 失败** |
 
 ### 0.2.2 已知遗留（不影响 BUILD / 部署，但需下一轮完善）
@@ -106,10 +109,10 @@
 ### 0.2.3 推荐下一轮任务（按优先级）
 
 1. **P2-RAG-02**：把 MilvusAdapter / HybridSearchService 从 stub 升级为真实实现（Milvus 2.5 + Hybrid Search + Ontology Filter）。
-2. **P7-EVT-02**：把 ScenarioD_EventTriggerTest 的反射调用改成公开 API，跑事件驱动端到端。
-3. **P6-AUTH-03**：把 DocumentCandidateListener 从占位升级为真实实现（订阅 kb.document.candidate.ready → AuthoringService → OntologyDraft）。
-4. **P5-ACT-05**：把 ActionApprovalBridgeService.submitForApproval 接到 ActionGuardMiddleware（currently guard only marks requiresApproval=true，没有自动提交到 WFE）。
-5. **P8-NAT-02**：TECH-LLMGW 真实 OpenAI 兼容端点补完（Llama/Ollama 适配器）。
+2. **P8-NAT-02**：TECH-LLMGW 真实 OpenAI 兼容端点补完（Llama/Ollama 适配器）。
+3. **P5-ACT-06**：把 ActionGuard 的 auto-route 错误处理增强（DLQ + retry + 监控告警）。
+4. **P6-AUTH-04**：把 AuthoringService 接到 AgentRun 结束事件（runId 关闭时自动 proposeDraft）。
+5. **P4-FE-04**：写一个 Storybook 验证 ClaimRenderer / EvidenceRenderer / AgentChatPanel UI。
 
 
 
