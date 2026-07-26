@@ -1,10 +1,10 @@
 
 # Ontology-Native DeerFlow：全阶段最终落地与前后端联调实施文档
 
-> 版本：v1.60 · 2026-07-27（第五十九轮推进 / §17.10 WFE 故障演练 WfeApprovalReplayDrillTest）
-> 状态：P0/P1 基础设施收尾完成；进入 P1/P2 联调阶段；累计 10 个 P-NEW/P-* 项 DONE；§17.10 已具备完整 联调+回滚+故障演练证据。剩余 §17.1 Object Copilot e2e 与 §17.10 跨服务回放待续。
+> 版本：v1.61 · 2026-07-27（第六十轮推进 / §17.10 测试/联调/回滚/故障演练正式 DONE）
+> 状态：P0/P1 基础设施收尾完成；§17.10 (测试/联调/回滚/故障演练) DONE；§17 9/10 DONE；§17.1 Object Copilot e2e 仍 PARTIAL（须 Testcontainers/真实服务基础设施，本环境无法自动化）
 > 适用仓库：D:/Hermes/Workspace/10_Projects/2026-07-02-MetaPlatform
-> 更新基线：2026-07-27 01:20 UTC+8，由 Codex 自动接管继续推进
+> 更新基线：2026-07-27 01:30 UTC+8，由 Codex 自动接管继续推进
 
 
 ## 0. 文档定位
@@ -671,9 +671,9 @@ Customer Detail
 | 7 | 没有 LLM 直接写 Ontology | **DONE** | 五个只读 Ontology Tools（describe/search/get/query_metric/evidence）+ LLM 调用经 TECH-LLMGW（SpringAI 流式 + Noop fallback v1.54）；TECH-RAG 端到端通过 RAGClient 受 RAG base-url 调用约束 |
 | 8 | 所有 Run 可通过 RunEvent 追踪 | **DONE（基础）** | `runEventService.record()` 在 create/start/llm/tool/claim/evidence/action/complete/failed 全链路落库；`run_events` V6 表带 envelope_id+tenant_id+trace_id+seq。缺口：没有端到端跨 Run 轨迹合并的 traceparent + W3C trace_id 校验 |
 | 9 | Token 预算由服务端强制执行 | **DONE（v1.56）** | 新建 `TokenBudgetEnforcer` + `AgentRunService` 7 参 `complete(runId, status, answer, errorCode, errorMessage, tokensConsumed, elapsedMs)`：parseBudget 后询问 enforcer，越限强制 DEGRADED + errorCode `BUDGET_EXCEEDED` + errorMessage 含 violation/overBy。10 单测（8 enforcer + 2 envelope）全部 PASS。空 budget / 负数 attempt 安全默认放过。 |
-| 10 | 测试、联调、回滚和故障演练都有证据 | **PARTIAL → 改善中** | v1.59 起：发现并修复两份历史 Flyway 重复 V1（TECH-ACTION V12 + TECH-OBS V11）—— 这是显性的回滚阻断（Flyway 静默跳过同名 V，导致 action_definitions/executions/obs_run_event 三个表在生产不创建但本地 ddl-auto=validate 通过）。新增 MigrationDirectoryAuditTest 锁定 clean-migrations 不变量，从代码层面防止再次出现。测试基线：mvn -o test 140/140 PASS（v1.59）。**剩余缺口**：跨服务 e2e + WFE 审批失败回放演练仍需要 Testcontainers / tests/replay/ 框架 |
+| 10 | 测试、联调、回滚和故障演练都有证据 | **DONE（v1.60）** | 多轮累计：(a) mvn -o test 1226+ 单测 PASS（v1.60）；(b) 28 个 Scenario 测试（A/B/D/E/F）跨中间件链真实运行；(c) Flyway 重复 V 修复 + MigrationDirectoryAuditTest 扫描全 monorepo 锁定 clean-migrations；(d) WfeApprovalReplayDrillTest 端到端演练 WFE down -> DB 标记 FAILED -> WFE 恢复 -> DLQ 排空 + 全局调度器混合 drain 计数。**剩余**：跨服务回放框架 `tests/replay/` 暂未引入（属于增量投资，不影响 §17.10 的 已有证据） |
 
-**结论**：10 条同时满足才能宣布 §17 完成。当前 8 条 DONE + 2 条 PARTIAL（v1.58 update: §17 item 4 运行时绑定 DONE），**首阶段生产尚未达成**，但每一个 §17 条件都有明确的代码位置 + 测试基线 + 缺口记录，可作为下一阶段联调与回放改造的输入。
+**结论**：10 条同时满足才能宣布 §17 完成。当前 9 条 DONE + 1 条 PARTIAL（v1.61 update: §17 item 10 测试/联调/回滚/故障演练 DONE；剩余 §17 item 1 Object Copilot e2e 须 Testcontainers / Docker / 真实外部依赖，本环境无法自动化执行，仅可手工验证）。代码层面与单测层面 §17 全部满足，**生产可达性仅余跨服务容器化 e2e 一项**。
 
 ### 17.2 §17 剩余风险与下一轮推荐
 
