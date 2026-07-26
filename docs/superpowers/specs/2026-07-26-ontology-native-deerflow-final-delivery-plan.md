@@ -651,3 +651,33 @@ Customer Detail
 
 > 最终目标不是“有一个能聊天的 DeerFlow”，而是以 Ontology 作为企业世界模型，以 Agent Runtime 负责认知和规划，以受治理的 Tool、Action、Evidence、Workflow 和 Event 形成可审计、可回滚、可持续演进的企业 AI 执行系统。
 
+
+### 17.1 §17 完成度审计（v1.56 · 2026-07-27 00:10）
+
+> 本节由 Codex 自动维护。结论不等于完成 —— 见每项的证据指针与剩余风险。
+
+| # | 条件 | 状态 | 主要证据 / 缺口 |
+|---|---|---|---|
+| 1 | Object Copilot 端到端通过 | **PARTIAL** | unit/integration: ScenarioA 8/8 PASS（`ScenarioA_ObjectCopilotTest`）+ ScenarioE 5/5 + ScenarioB 5/5 + ScenarioD 4/4。e2e：需真实 mvn-boot + Postgres + Nacos + LLMGW 一并跑通，当前未做自动化 |
+| 2 | Context 结构化、签名、过期可校验 | **DONE** | `OncologyContextEnvelopeService.build()` HS256 签名（v1.50 P1-CON-02）；`OncologyContextServiceTest` 5 单测覆盖 signature/expiry/payload |
+| 3 | Tool 受权限和 allowlist 约束 | **DONE** | `OncologyPermissionMiddleware`（修复-013 v1.50 跨域场景测试通过）+ 5 个只读 Ontology Tools + `mate.agent.tool.allowlist` allowlist；Phase1 拒绝未在 allowlist 的工具 |
+| 4 | 重要 Claim 100% 绑定 Evidence | **DONE（算法）** / **PARTIAL（运行时）** | 算法：`OncologyEvidenceMiddleware` 在 `beforeExecution` 收集 evidence 并写入 claim。运行时：需要在每个 AgentRun 实际接入 LLM 工具调用结果后方能保证；现状 Scenario tests 中 ScenarioA 已覆盖基本流，端到端覆盖率不足 |
+| 5 | SSE 顺序稳定且可重连 | **PARTIAL** | `RunEventRepository` + `RunEventService.record()` 提供 seq 顺序；`AgentStreamController` 提供 `/api/v1/agent/run/stream?runId&afterSeq` 重连契约。缺口：未提供契约测试 + 客户端 `useAgentStream` 未证明断线后 seq 连续性 |
+| 6 | 没有 Action 绕过 Guard | **DONE** | `OncologyActionGuardMiddleware` 在所有 Run 上拦截；`OncologyGroundingMiddleware` 落地候选 action；ScenarioA ObjectCopilot 测试中验证 |
+| 7 | 没有 LLM 直接写 Ontology | **DONE** | 五个只读 Ontology Tools（describe/search/get/query_metric/evidence）+ LLM 调用经 TECH-LLMGW（SpringAI 流式 + Noop fallback v1.54）；TECH-RAG 端到端通过 RAGClient 受 RAG base-url 调用约束 |
+| 8 | 所有 Run 可通过 RunEvent 追踪 | **DONE（基础）** | `runEventService.record()` 在 create/start/llm/tool/claim/evidence/action/complete/failed 全链路落库；`run_events` V6 表带 envelope_id+tenant_id+trace_id+seq。缺口：没有端到端跨 Run 轨迹合并的 traceparent + W3C trace_id 校验 |
+| 9 | Token 预算由服务端强制执行 | **DONE（v1.56）** | 新建 `TokenBudgetEnforcer` + `AgentRunService` 7 参 `complete(runId, status, answer, errorCode, errorMessage, tokensConsumed, elapsedMs)`：parseBudget 后询问 enforcer，越限强制 DEGRADED + errorCode `BUDGET_EXCEEDED` + errorMessage 含 violation/overBy。10 单测（8 enforcer + 2 envelope）全部 PASS。空 budget / 负数 attempt 安全默认放过。 |
+| 10 | 测试、联调、回滚和故障演练都有证据 | **PARTIAL** | 测试：mvn -o test 14 个 TECH-* 模块全 BUILD SUCCESS / 1208+ 单测 PASS（v1.56）。联调：scenario tests + DLQ metrics endpoint + Action Guard DLQ。回滚：scripts/repack-thin-jars.ps1 + Spring Boot Actuator 健康检查。**缺口**：跨服务 e2e（Tech-Agent 调 Tech-Ont 调 Tech-RAG 的真实链路）+ WFE 审批失败的回放演练没自动化 |
+
+**结论**：10 条同时满足才能宣布 §17 完成。当前 6 条 DONE + 4 条 PARTIAL，**首阶段生产尚未达成**，但每一个 §17 条件都有明确的代码位置 + 测试基线 + 缺口记录，可作为下一阶段联调与回放改造的输入。
+
+### 17.2 §17 剩余风险与下一轮推荐
+
+本节列出对应每条 PARTIAL 状态的最低成本收口方案，作为下几轮的入口。
+
+1. **Object Copilot 端到端** —— 缺：跨服务 boot 测试（Testcontainers 启动 Postgres + Nacos + 各 TECH-* 模块，然后 POST /api/v1/agent/runs → 完成 ScenarioA 期望的 Claim/Evidence 输出）。引入 `tests/integration/agent-copilot-e2e/` Maven 子模块，CI 跑通即可认为达成。
+2. **重要 Claim 100% 绑定 Evidence (运行时)** —— 缺：真实 LLM 调用结果的 Evidence 注入。当前 Scenario 测试均为 mock。需要做类似 `ScenarioF_LlmRealE2E` 的混合测试（mock ChatModel 但走完 MW 链路）以验证 claim.output.evidenceRefs 非空严格 >= 1。
+3. **SSE 重连 + seq 连续性** —— 缺：契约测试。新增 `SseReplayContractTest`：模拟 client 断开 + afterSeq=N 重连，断言 seq 单调递增 + no gaps。
+4. **跨服务 e2e + 回放演练** —— 缺：mvn-boot + POST → response 录制 → 重新引导 Scenario 的录放/回放基础设施。可引入 `tests/replay/` 目录，JSON 快照。
+
+> 推荐下一轮：先做 (3) SSE 重连契约测试，是最便宜的 Bounded work，能直接让 §17.5 转 DONE；其次 (2) ScenarioF；最后 (1) + (4) 启动 cross-module Testcontainers。
