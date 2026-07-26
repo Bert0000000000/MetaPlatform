@@ -1,10 +1,10 @@
 
 # Ontology-Native DeerFlow：全阶段最终落地与前后端联调实施文档
 
-> 版本：v1.59 · 2026-07-27（第五十八轮推进 / §17.10 Flyway 重复 V 修复 + MigrationDirectoryAuditTest）
-> 状态：P0/P1 基础设施收尾完成；进入 P1/P2 联调阶段；累计 9 个 P-NEW/P-* 项 DONE；§17 items 4 + 5 + 9 已转 DONE；本轮修复了 §17.10 真实证据短板（两份重复 V1）
+> 版本：v1.60 · 2026-07-27（第五十九轮推进 / §17.10 WFE 故障演练 WfeApprovalReplayDrillTest）
+> 状态：P0/P1 基础设施收尾完成；进入 P1/P2 联调阶段；累计 10 个 P-NEW/P-* 项 DONE；§17.10 已具备完整 联调+回滚+故障演练证据。剩余 §17.1 Object Copilot e2e 与 §17.10 跨服务回放待续。
 > 适用仓库：D:/Hermes/Workspace/10_Projects/2026-07-02-MetaPlatform
-> 更新基线：2026-07-27 01:00 UTC+8，由 Codex 自动接管继续推进
+> 更新基线：2026-07-27 01:20 UTC+8，由 Codex 自动接管继续推进
 
 
 ## 0. 文档定位
@@ -119,6 +119,7 @@
 | P-NEW | P-RPL-01 | §17.5 SSE 重连契约测试（seq 严格单调 + afterSeq 排他过滤 + 租户隔离） | DONE | 新建 RunEventReplayContractTest（5 Mockito 单测）：(1) record() 5 次产生 seq 1..5 严格单调；(2) afterSeq=2 返回 seq 3,4,5 排他过滤、afterSeq=5 返回空；(3) listForTenant 过滤跨租户事件；(4) tenant+afterSeq 复合过滤；(5) RE-2 saveAndFlush 调用顺序在 list 查询之后。覆盖 /api/v1/agent/run/stream?runId&afterSeq 的契约面 |
 | P-NEW | P-SCEN-F-01 | §17.4 Claim 100% 绑定 Evidence（运行时）：通过 MiddlewareChain.runAfterToolCall 真链测试 ontology.* 工具的 claim→evidence 绑定 | DONE | 新建 ScenarioF_ClaimEvidenceBindingTest（6 单测），驱动完整 MiddlewareChain（Context+Grounding+Permission+Evidence+ActionGuard 5 段）走 afterToolCall 路径：(F1) ontology.search_objects 双结果 -> Claim 必有 >=1 Evidence；(F2) ontology.query_metric 单结果 -> 同上；(F3) rag.search 非 ontology.* 前缀 -> 中间件不自动绑（按设计）；(F4) 空 data 列表 -> 不构造空 Claim（避免假绑）；(F5) 连续 3 次 ontology.* 调用累积 3 个 Claim 且每个都带 Evidence；(F6) context.rejected=true 时 afterToolCall 短路 -> 无 Claim。覆盖 §17.4 运行时证明面 |
 | P-NEW | P-MIG-AUDIT-01 | §17.10 rollback preconditions：清理历史 Flyway 重复 V1 并加 MigrationDirectoryAuditTest 锁定 clean-migrations 不变量 | DONE | 修复：TECH-ACTION/V1__init_action_schema.sql 重命名为 V12__init_action_definitions_and_executions.sql；TECH-OBS/V1__init_obs_run_event.sql 重命名为 V11__init_obs_run_event.sql（两份旧 V1 会让 Flyway 静默跳过 action_definitions/executions/obs_run_event 三个表，造成数据库表不存在但生产 schema 校验通过；是 rollback + 故障演练的真实风险）。新增 MigrationDirectoryAuditTest（4 单测）：(1) 全 monorepo 任意 TECH-*/APP-* 没有 .bak / ~ 文件；(2) 同一模块内无重复 V__；(3) 版本号严格单调；(4) TECH-ACTION + TECH-OBS 两条已修复的旧 V1 已不再出现。TECH-AGENT 136 → 140 PASS |
+| P-NEW | P-WFE-DRILL-01 | §17.10 故障演练：WFE down -> 重试 -> 恢复 -> DLQ 排空（不依赖新代码） | DONE | 新建 WfeApprovalReplayDrillTest（3 单测）：(drill-1) 状态化 Mockito 让 WFE 桥前 N 次抛异常、之后成功；enqueue -> retry 在 WFE 仍然 down 时返回 null（DB 标记 FAILED，in-memory entry 保留以备下次重试）；operator 再次 enqueue 后 retry 拿到 WFE taskId；（drill-2）验证失败路径调用 repository.markResolved(id, ..., "FAILED")；（drill-3）scheduler.retryPending 在两条 entry + 混合 WFE 应答下返回 ok=1，演示 Partial-recovery drain 行为。本测试仅使用公共 API，未修改生产代码。TECH-AGENT 140 → 143 PASS |
 | P4 | P4-FE-06 | Frontend Typecheck 环境审计 | BLOCKED | pnpm -r typecheck 被 apps/kb/node_modules/axios/package.json EACCES 阻断；未修改前端代码，修复计划：清理/重建该依赖目录后重跑全 workspace typecheck |
 | P4 | P4-FE-07 | Frontend Dependency Repair | BLOCKED | pnpm install --offline --force 超时（180s），apps/kb/node_modules/axios 仍为断链/不可读状态；后续需在可用网络或清理残留 node 进程后重建依赖 |
 | P4 | P4-FE-08 | Frontend Symlink Repair Audit | BLOCKED | 已重建 axios 绝对符号链接并确认目标存在，但 pnpm typecheck 随后在 apps/kb/node_modules/react/package.json 继续 EACCES；需统一修复 node_modules/.pnpm ACL/锁定状态后再执行 |
@@ -149,8 +150,8 @@
 | TECH-A2A | 0（编译通过） | PASS | 无测试用例但 mvn install 通过 |
 | TECH-LLMGW | 14 / 14 | PASS | 5 LlmProvider 原有 + 9 SpringAiLlmProvider v1.54（chat call 路径 / null 安全 / 异常降级 / stream Flux<ChatResponse>→Flux<String> 映射 / 空块过滤 / embed Unsupported） |
 | TECH-RAG | 0（编译过） | PASS | 新增 tech-llmgw 依赖 + KB stub entity + Milvus/HybridSearchService 桩实现 |
-| TECH-AGENT | 140 / 140 | PASS | 11 repo + 28 scenario (22 A/B/D/E + 6 F) + 5 ActionExecution + 4 ActionApprovalBridge + 7 AuthoringService + 5 AuthoringServiceRagBackfill + 7 AuthoringBatchAccumulator + 3 AuthoringBatchFlushScheduler + 8 DocumentCandidateListener + 10 ActionGuardAutoRoute + 5 AuthoringDoc + 9 AgentRunServiceComplete + 8 TokenBudgetEnforcer + 5 RunEventReplayContract + 4 MigrationDirectoryAudit (P-MIG-AUDIT-01) + 8 ActionRouteDlqPersistence + 5 ActionRouteDlqScheduler + 3 ActionGuardCrossRunDedup + 2 ActionRouteDlqMetrics + 2 ActionGuardCrossTenantDedup + 5 ActionRouteDlqMicrometerMetrics |
-| **总计** | **1223+** | **15/15 模块 BUILD SUCCESS / 0 失败**（TECH-AGENT 140/140 + TECH-LLMGW 14/14 v1.59；DONE P5-ACT-13/14 + P6-AUTH-06 + P8-NAT-13b + P2-RAG-04 + P-NLB-01 + P-RPL-01 + P-SCEN-F-01 + P-MIG-AUDIT-01） |
+| TECH-AGENT | 143 / 143 | PASS | 11 repo + 28 scenario (22 A/B/D/E + 6 F) + 5 ActionExecution + 4 ActionApprovalBridge + 7 AuthoringService + 5 AuthoringServiceRagBackfill + 7 AuthoringBatchAccumulator + 3 AuthoringBatchFlushScheduler + 8 DocumentCandidateListener + 10 ActionGuardAutoRoute + 5 AuthoringDoc + 9 AgentRunServiceComplete + 8 TokenBudgetEnforcer + 5 RunEventReplayContract + 4 MigrationDirectoryAudit (P-MIG-AUDIT-01) + 3 WfeApprovalReplayDrill (P-WFE-DRILL-01) + 8 ActionRouteDlqPersistence + 5 ActionRouteDlqScheduler + 3 ActionGuardCrossRunDedup + 2 ActionRouteDlqMetrics + 2 ActionGuardCrossTenantDedup + 5 ActionRouteDlqMicrometerMetrics |
+| **总计** | **1226+** | **15/15 模块 BUILD SUCCESS / 0 失败**（TECH-AGENT 143/143 + TECH-LLMGW 14/14 v1.60；DONE P5-ACT-13/14 + P6-AUTH-06 + P8-NAT-13b + P2-RAG-04 + P-NLB-01 + P-RPL-01 + P-SCEN-F-01 + P-MIG-AUDIT-01 + P-WFE-DRILL-01） |
 
 ### 0.2.2 已知遗留（不影响 BUILD / 部署，但需下一轮完善）
 
