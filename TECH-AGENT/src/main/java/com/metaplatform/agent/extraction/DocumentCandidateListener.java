@@ -1,5 +1,6 @@
 package com.metaplatform.agent.extraction;
 
+import com.metaplatform.agent.authoring.AuthoringBatchAccumulator;
 import com.metaplatform.agent.authoring.AuthoringService;
 import com.metaplatform.ont.draft.OntologyDraftEntity;
 import com.metaplatform.ont.draft.OntologyDraftService;
@@ -38,13 +39,34 @@ public class DocumentCandidateListener {
 
     private final OntologyDraftService draftService;
     private final AuthoringService authoringService;
+    private final AuthoringBatchAccumulator batchAccumulator;
+    private final FlushMode flushMode;
+
+    /**
+     * Flush strategy for candidate fact events.
+     * IMMEDIATE: each event triggers a draft submit (default).
+     * BATCHED: enqueue into accumulator; flushAll on every event (still synchronous)
+     * and also picked up by AuthoringBatchFlushScheduler on a schedule.
+     */
+    public enum FlushMode { IMMEDIATE, BATCHED }
 
     @Autowired
     public DocumentCandidateListener(
             @Autowired(required = false) OntologyDraftService draftService,
             @Autowired(required = false) AuthoringService authoringService) {
+        this(draftService, authoringService, null, FlushMode.IMMEDIATE);
+    }
+
+    @Autowired
+    public DocumentCandidateListener(
+            @Autowired(required = false) OntologyDraftService draftService,
+            @Autowired(required = false) AuthoringService authoringService,
+            @Autowired(required = false) AuthoringBatchAccumulator batchAccumulator,
+            @Autowired(required = false) FlushMode flushMode) {
         this.draftService = draftService;
         this.authoringService = authoringService;
+        this.batchAccumulator = batchAccumulator;
+        this.flushMode = flushMode == null ? FlushMode.IMMEDIATE : flushMode;
     }
 
     @EventTopicListener(
@@ -78,6 +100,21 @@ public class DocumentCandidateListener {
             log.warn("[DocumentCandidateListener] AuthoringService unavailable, documentId={} not submitted", documentId);
             return;
         }
+        // P6-AUTH-06: in BATCHED mode, route through accumulator for coalesced submits.
+        if (flushMode == FlushMode.BATCHED && batchAccumulator != null) {
+            int buffered = 0;
+            for (Object o : ((List<?>) candidatesRaw)) {
+                if (!(o instanceof Map<?, ?> m)) continue;
+                CandidateInput ci = toCandidate(m);
+                if (ci == null) continue;
+                batchAccumulator.enqueue(tenantId, documentId, runId, ci);
+                buffered++;
+            }
+            int flushed = batchAccumulator.flushAll(authoringService);
+            log.info("[DocumentCandidateListener] BATCHED mode documentId={} buffered={} flushed={}",
+                    documentId, buffered, flushed);
+            return;
+        }
         ProposeDraftRequest req = authoringService.buildFromExtraction(
                 tenantId, runId, "v1", "v2",
                 "Document extraction: " + documentId + " (" + size + " candidates)",
@@ -88,6 +125,47 @@ public class DocumentCandidateListener {
                     documentId, draft.getId(), runId);
         }
     }
+
+    /** Convert a Map payload row into a CandidateInput, mirroring AuthoringService.buildFromExtraction. */
+    @SuppressWarnings("unchecked")
+    private static CandidateInput toCandidate(Map<?, ?> m) {
+        CandidateInput c = new CandidateInput();
+        c.setConceptCode(m.get("conceptCode") == null ? null : String.valueOf(m.get("conceptCode")));
+        c.setObjectId(m.get("objectId") == null ? null : String.valueOf(m.get("objectId")));
+        c.setProperty(m.get("property") == null ? null : String.valueOf(m.get("property")));
+        c.setProposedValue(m.get("value"));
+        Object refs = m.get("evidenceRef");
+        if (refs == null) refs = m.get("evidenceRefs");
+        if (refs instanceof java.util.List<?> refList) {
+            java.util.List<String> refStrs = new java.util.ArrayList<>();
+            for (Object r : refList) refStrs.add(String.valueOf(r));
+            c.setEvidenceRefs(refStrs);
+        } else if (refs instanceof String refStr) {
+            c.setEvidenceRefs(java.util.List.of(refStr));
+        } else {
+            c.setEvidenceRefs(java.util.List.of());
+        }
+        Object conf = m.get("confidence");
+        double cd = 0.5d;
+        if (conf instanceof Number n) cd = n.doubleValue();
+        else if (conf instanceof String s) {
+            try { cd = Double.parseDouble(s); } catch (NumberFormatException ignored) {}
+        }
+        c.setConfidence(cd);
+        Object cl = m.get("conflictLevel");
+        c.setConflictLevel(cl == null ? "NONE" : String.valueOf(cl));
+        return c;
+    }
+
+    /** Static accessor so an integration test or external wiring can supply a FlushMode by name. */
+    public static FlushMode flushMode(String name) {
+        if (name == null) return FlushMode.IMMEDIATE;
+        try { return FlushMode.valueOf(name.trim().toUpperCase()); }
+        catch (IllegalArgumentException e) { return FlushMode.IMMEDIATE; }
+    }
+
+    /** Test-friendly accessor. */
+    public FlushMode getFlushMode() { return flushMode; }
 
     private static String stringOr(Object o, String def) {
         return o == null ? def : String.valueOf(o);

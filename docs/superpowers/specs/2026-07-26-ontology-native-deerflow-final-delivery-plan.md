@@ -1,10 +1,10 @@
 
 # Ontology-Native DeerFlow：全阶段最终落地与前后端联调实施文档
 
-> 版本：v1.52 · 2026-07-26（第五十一轮推进 / P5-ACT-13/14 DLQ Micrometer 指标）
-> 状态：P0/P1 基础设施收尾完成；进入 P1/P2 联调阶段；P5 ACT 13/14 DLQ 指标 DONE
+> 版本：v1.53 · 2026-07-26（第五十二轮推进 / P6-AUTH-06 Authoring 定时批处理）
+> 状态：P0/P1 基础设施收尾完成；进入 P1/P2 联调阶段；P5 ACT 13/14 + P6 AUTH 06 DONE
 > 适用仓库：D:/Hermes/Workspace/10_Projects/2026-07-02-MetaPlatform
-> 更新基线：2026-07-26 23:10 UTC+8，由 Codex 自动接管继续推进
+> 更新基线：2026-07-26 23:25 UTC+8，由 Codex 自动接管继续推进
 
 
 ## 0. 文档定位
@@ -122,6 +122,7 @@
 | P4 | P4-FE-12 | Frontend SSE Contract Audit | PARTIAL | useAgentStream 当前 POST /api/v1/agent/runs/stream 并直接提交 InteractionContext；后端已提供 GET /api/v1/agent/run/stream?runId&afterSeq，需补齐前端先建 Run/Envelope 再连接 SSE 的联调流程；未伪称完成 |
 | P5 | P5-ACT-13 | DLQ metrics 接入 Micrometer / Prometheus（actuator 集成） | DONE | 新建 src/main/java/com/metaplatform/agent/middleware/ActionRouteDlqMetrics.java（Counter / Gauge / MeterRegistry，null registry fallback）+ src/test/java/.../ActionRouteDlqMetricsTest.java（5 单测）；TECH-AGENT/pom.xml 新增 spring-boot-starter-actuator（透传 micrometer-core） |
 | P5 | P5-ACT-14 | ActionGuard DLQ metrics 通过 Micrometer 暴露到 /actuator/prometheus | DONE | ActionRouteDlqMetrics 暴露 mate.agent.dlq.enqueued / retry.success / retry.failure / pending 四个指标；ActionRouteDlqService.enqueue/retry 在 DLQ 分支调用 metrics；ActionRouteDlqMetricsEndpoint 同步返回 metrics_present / metrics_enabled / enqueued_total / retry_success_total / retry_failure_total 方便无 Prometheus 也能看到指标；启动 `/actuator/prometheus` 即可拉取（默认路径） |
+| P6 | P6-AUTH-06 | AuthoringService 加定时批处理（把同一 documentId 的候选 fact 合并提交） | DONE | 新建 src/main/java/.../authoring/AuthoringBatchAccumulator.java（ConcurrentHashMap<(tenant, documentId), BufferedDraft> 缓冲 + enqueue / flushDue(maxAge) / flushAll / size / keys）+ AuthoringBatchFlushScheduler.java（@Scheduled fixedDelay，@ConditionalOnProperty 默认关闭）；DocumentCandidateListener 增加 FlushMode {IMMEDIATE, BATCHED} + 4 参 ctor（默认 IMMEDIATE，保留原 2 参 ctor 不破坏现有测试）；BATCHED 模式 enqueue 后立即 flushAll；13 个新增单测覆盖合并 / 跨 key / 年龄窗口 / null AuthoringService / 立即 vs 批处理分流 |
 
 ### 0.2.1 模块测试基线（mvn -o test 16:40 跑通）
 
@@ -142,8 +143,8 @@
 | TECH-A2A | 0（编译通过） | PASS | 无测试用例但 mvn install 通过 |
 | TECH-LLMGW | 0（编译过） | PASS | OpenAiController 编译错已修复（ChatRequest 构造签名 + StreamService + ServerSentEvent） |
 | TECH-RAG | 0（编译过） | PASS | 新增 tech-llmgw 依赖 + KB stub entity + Milvus/HybridSearchService 桩实现 |
-| TECH-AGENT | 97 / 97 | PASS | 11 repo + 22 scenario + 5 ActionExecution + 4 ActionApprovalBridge + 7 AuthoringService + 10 ActionGuardAutoRoute + 5 DocumentCandidateListener + 7 AgentRunServiceComplete + 8 ActionRouteDlqPersistence + 5 ActionRouteDlqScheduler + 3 ActionGuardCrossRunDedup + 2 ActionRouteDlqMetrics + 2 ActionGuardCrossTenantDedup + 5 ActionRouteDlqMicrometerMetrics (P5-ACT-13/14) |
-| **总计** | **1171+** | **15/15 模块 BUILD SUCCESS / 0 失败**（TECH-AGENT 新增 5 个 DLQ Micrometer 单测，DONE P5-ACT-13/14） |
+| TECH-AGENT | 110 / 110 | PASS | 11 repo + 22 scenario + 5 ActionExecution + 4 ActionApprovalBridge + 7 AuthoringService + 7 AuthoringBatchAccumulator + 3 AuthoringBatchFlushScheduler + 8 DocumentCandidateListener + 10 ActionGuardAutoRoute + 5 AuthoringDoc + 7 AgentRunServiceComplete + 8 ActionRouteDlqPersistence + 5 ActionRouteDlqScheduler + 3 ActionGuardCrossRunDedup + 2 ActionRouteDlqMetrics + 2 ActionGuardCrossTenantDedup + 5 ActionRouteDlqMicrometerMetrics (P5-ACT-13/14) |
+| **总计** | **1184+** | **15/15 模块 BUILD SUCCESS / 0 失败**（TECH-AGENT 110/110 PASS = 97+v1.52 + 13 v1.53；DONE P5-ACT-13/14 + P6-AUTH-06） |
 
 ### 0.2.2 已知遗留（不影响 BUILD / 部署，但需下一轮完善）
 
@@ -155,12 +156,12 @@
 
 ### 0.2.3 推荐下一轮任务（按优先级）
 
-> 本轮（v1.52 / 51）：P5-ACT-13 / P5-ACT-14 已 DONE（详见 §0.2 状态表新增两行；TECH-AGENT 97/97 PASS）。
+> 本轮（v1.53 / 52）：P6-AUTH-06 已 DONE（详见 §0.2 状态表新增行；TECH-AGENT 110/110 PASS）。
 
 剩余优先级（按文档第 12/13 节）：
 
 1. **P8.4**：SpringAiLlmProvider 真实实现（处理 Spring AI 1.1.x 流式 API 变更）。
-2. **P6-AUTH-06**：AuthoringService 加定时批处理（把同一 documentId 的候选 fact 合并提交）。
+2. ~~P6-AUTH-06：AuthoringService 加定时批处理~~ — DONE v1.53。
 3. **P2-RAG-04**：AuthoringService 端到端（Authoring + HybridSearch 联调，从文档抽取到 Evidence）。
 4. ~~P5-ACT-13：DLQ metrics 接入 Micrometer / Prometheus~~ — DONE v1.52。
 5. ~~P5-ACT-14：ActionGuard DLQ metrics 通过 Micrometer 暴露~~ — DONE v1.52。

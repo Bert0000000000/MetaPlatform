@@ -1,5 +1,6 @@
 package com.metaplatform.agent.extraction;
 
+import com.metaplatform.agent.authoring.AuthoringBatchAccumulator;
 import com.metaplatform.agent.authoring.AuthoringService;
 import com.metaplatform.msg.consumer.EventEnvelope;
 import com.metaplatform.ont.draft.OntologyDraftService;
@@ -98,6 +99,61 @@ class DocumentCandidateListenerTest {
                 Map.of("tenantId", "T1", "candidates", "not a list"));
         listener.onCandidateReady(env);
         verify(authoringService, never()).submit(any());
+    }
+
+    @Test
+    @DisplayName("P6-AUTH-06 BATCHED mode: enqueues + flushes via accumulator (no immediate submit)")
+    void batchedModeRoutesThroughAccumulator() {
+        AuthoringBatchAccumulator acc = Mockito.mock(AuthoringBatchAccumulator.class);
+        Mockito.when(acc.flushAll(authoringService)).thenReturn(1);
+        DocumentCandidateListener batched = new DocumentCandidateListener(
+                null, authoringService, acc, DocumentCandidateListener.FlushMode.BATCHED);
+        EventEnvelope<Map<String, Object>> env = envelope("EVT-9", Map.of(
+                "tenantId", "TENANT-09",
+                "runId", "RUN-BATCH-1",
+                "documentId", "DOC-BATCH-9",
+                "candidates", List.of(
+                        Map.of("conceptCode", "Contract", "objectId", "C-9", "property", "amount",
+                                "value", "4800000", "evidenceRef", "DOC-BATCH-9", "confidence", 0.95)
+                )
+        ));
+        batched.onCandidateReady(env);
+        // Immediate submit is bypassed.
+        Mockito.verify(authoringService, Mockito.never()).submit(Mockito.any());
+        // BATCHED path delegated to accumulator.
+        Mockito.verify(acc).enqueue(Mockito.eq("TENANT-09"), Mockito.eq("DOC-BATCH-9"),
+                Mockito.eq("RUN-BATCH-1"), Mockito.any());
+        Mockito.verify(acc).flushAll(authoringService);
+    }
+
+    @Test
+    @DisplayName("P6-AUTH-06 IMMEDIATE mode (default): still submits inline; accumulator untouched")
+    void immediateModeBypassesAccumulator() {
+        AuthoringBatchAccumulator acc = Mockito.mock(AuthoringBatchAccumulator.class);
+        // Even with an accumulator injected, IMMEDIATE mode must NOT use it.
+        DocumentCandidateListener immediate = new DocumentCandidateListener(
+                null, authoringService, acc, DocumentCandidateListener.FlushMode.IMMEDIATE);
+        EventEnvelope<Map<String, Object>> env = envelope("EVT-10", Map.of(
+                "tenantId", "TENANT-10",
+                "runId", "RUN-IMMEDIATE-1",
+                "documentId", "DOC-IMMEDIATE-10",
+                "candidates", List.of(
+                        Map.of("conceptCode", "Contract", "objectId", "C-10", "property", "amount",
+                                "value", "12000", "evidenceRef", "DOC-IMMEDIATE-10", "confidence", 0.95)
+                )
+        ));
+        immediate.onCandidateReady(env);
+        verify(authoringService, Mockito.times(1)).submit(Mockito.any());
+        Mockito.verifyNoInteractions(acc);
+    }
+
+    @Test
+    @DisplayName("flushMode(String): parses names case-insensitively; null -> IMMEDIATE")
+    void flushModeStaticAccessor() {
+        assertEquals(DocumentCandidateListener.FlushMode.IMMEDIATE, DocumentCandidateListener.flushMode(null));
+        assertEquals(DocumentCandidateListener.FlushMode.IMMEDIATE, DocumentCandidateListener.flushMode("unknown"));
+        assertEquals(DocumentCandidateListener.FlushMode.BATCHED, DocumentCandidateListener.flushMode("batched"));
+        assertEquals(DocumentCandidateListener.FlushMode.BATCHED, DocumentCandidateListener.flushMode("BATCHED"));
     }
 
     private EventEnvelope<Map<String, Object>> envelope(String id, Map<String, Object> payload) {
