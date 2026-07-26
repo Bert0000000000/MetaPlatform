@@ -29,8 +29,30 @@ public class GroundToolController {
         return switch (toolName) {
             case "ontology.query_metric" -> queryMetric(envelope.getTenantId(), request.getInput());
             case "ontology.search_objects" -> searchObjects(envelope.getTenantId(), request.getInput());
+            case "ontology.fetch_evidence" -> fetchEvidence(envelope.getTenantId(), request.getInput(), envelope.getEnvelopeId());
             default -> throw ContextException.bad("TOOL_NOT_IMPLEMENTED", "Tool is not implemented: " + toolName);
         };
+    }
+
+    private Map<String,Object> fetchEvidence(String tenantId, Map<String,Object> input, String envelopeId) {
+        String objectId = required(input, "objectId");
+        var entity = entityRepository.findById(objectId)
+                .filter(e -> tenantId.equals(e.getTenantId()))
+                .orElseThrow(() -> ContextException.notFound("OBJECT_NOT_FOUND", "Object not found: " + objectId));
+        String field = input.get("field") == null ? "summary" : String.valueOf(input.get("field"));
+        Object fragment = switch (field) {
+            case "name" -> entity.getName() == null ? "" : entity.getName();
+            case "code" -> entity.getCode() == null ? "" : entity.getCode();
+            case "description" -> entity.getDescription() == null ? "" : entity.getDescription();
+            case "summary" -> Map.of("code", entity.getCode()==null?"":entity.getCode(),
+                    "name", entity.getName()==null?"":entity.getName(),
+                    "description", entity.getDescription()==null?"":entity.getDescription());
+            default -> throw ContextException.forbidden("FIELD_NOT_ALLOWED", "Evidence field is not allowed: " + field);
+        };
+        return Map.of("evidenceId", "EVD-" + java.util.UUID.randomUUID().toString().replace("-", ""),
+                "type", "ONTOLOGY_OBJECT", "ref", "ontology://object/" + objectId + "/" + field,
+                "objectId", objectId, "field", field, "fragment", fragment, "envelopeId", envelopeId,
+                "capturedAt", java.time.Instant.now().toString());
     }
 
     private Map<String,Object> searchObjects(String tenantId, Map<String,Object> input) {
