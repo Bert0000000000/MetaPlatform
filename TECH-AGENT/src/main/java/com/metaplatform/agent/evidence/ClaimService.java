@@ -16,6 +16,20 @@ public class ClaimService {
 
     @Transactional(readOnly = true)
     public List<ClaimDto> list(String runId) { return repository.findByRunIdOrderByCreatedAtAsc(runId).stream().map(this::toDto).toList(); }
+    @Transactional
+    public ClaimEntity createToolClaim(String runId, String toolName, String evidenceId, String content) {
+        if (runId == null || runId.isBlank() || evidenceId == null || evidenceId.isBlank())
+            throw new IllegalArgumentException("runId and evidenceId are required");
+        try {
+            String refs = objectMapper.writeValueAsString(List.of(evidenceId));
+            return repository.save(ClaimEntity.builder().claimId("CLM-" + UUID.randomUUID().toString().replace("-", ""))
+                    .runId(runId).type(ClaimType.FACT).content(content == null ? toolName : content)
+                    .confidence(java.math.BigDecimal.valueOf(0.9)).evidenceRefs(refs)
+                    .generatedByAgentId("ontology-tool").generatedByModel("ontology")
+                    .toolCallIds(objectMapper.writeValueAsString(List.of(toolName))).createdAt(java.time.Instant.now()).build());
+        } catch (Exception ex) { throw new IllegalStateException("unable to persist tool claim", ex); }
+    }
+
     private ClaimDto toDto(ClaimEntity e) {
         Map<String,String> generatedBy = new LinkedHashMap<>();
         generatedBy.put("agentId", e.getGeneratedByAgentId()); generatedBy.put("model", e.getGeneratedByModel());

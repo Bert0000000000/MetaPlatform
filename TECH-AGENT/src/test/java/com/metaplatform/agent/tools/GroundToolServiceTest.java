@@ -23,9 +23,12 @@ class GroundToolServiceTest {
         when(client.invokeGroundTool(anyString(), anyString(), anyMap(), anyString(), anyString()))
                 .thenReturn(Map.of("value", 42));
         var evidenceService = mock(EvidenceService.class);
+        var claimService = mock(com.metaplatform.agent.evidence.ClaimService.class);
         when(evidenceService.captureToolResult(anyString(), anyString(), anyString(), anyMap(), anyMap()))
                 .thenReturn(EvidenceEntity.builder().evidenceId("EVD-1").build());
-        var service = new GroundToolService(registry, signer, client, evidenceService);
+        when(claimService.createToolClaim(anyString(), anyString(), anyString(), anyString()))
+                .thenReturn(com.metaplatform.agent.evidence.ClaimEntity.builder().claimId("CLM-1").build());
+        var service = new GroundToolService(registry, signer, client, evidenceService, claimService);
         var result = service.invoke("ontology.query_metric", new GroundToolRequest("env-1", Map.of("metric", "revenue")));
         assertEquals("v1", result.get("ontologyVersion"));
         assertThrows(Phase1Exception.class, () -> service.invoke("ontology.fetch_evidence",

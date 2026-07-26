@@ -5,6 +5,7 @@ import com.metaplatform.agent.context.OntologyContextEnvelopeSigner;
 import com.metaplatform.agent.context.OntologyContextRegistry;
 import com.metaplatform.agent.clients.OntologyClient;
 import com.metaplatform.agent.evidence.EvidenceService;
+import com.metaplatform.agent.evidence.ClaimService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import java.util.Map;
@@ -20,6 +21,7 @@ public class GroundToolService {
     private final OntologyContextEnvelopeSigner signer;
     private final OntologyClient ontologyClient;
     private final EvidenceService evidenceService;
+    private final ClaimService claimService;
 
     public Map<String, Object> invoke(String toolName, GroundToolRequest request) {
         if (!SUPPORTED.contains(toolName))
@@ -35,7 +37,10 @@ public class GroundToolService {
         Map<String, Object> data = ontologyClient.invokeGroundTool(toolName, envelope.envelopeId(), request.getInput(),
                 envelope.tenantId(), envelope.runId());
         var evidence = evidenceService.captureToolResult(envelope.runId(), envelope.envelopeId(), toolName, request.getInput(), data);
+        var claim = claimService.createToolClaim(envelope.runId(), toolName, evidence.getEvidenceId(),
+                "Ontology tool result: " + toolName);
         return Map.of("toolName", toolName, "envelopeId", envelope.envelopeId(),
-                "ontologyVersion", envelope.ontologyVersion(), "evidenceId", evidence.getEvidenceId(), "data", data);
+                "ontologyVersion", envelope.ontologyVersion(), "evidenceId", evidence.getEvidenceId(),
+                "claimId", claim.getClaimId(), "data", data);
     }
 }
