@@ -37,6 +37,8 @@ export interface RunEvent {
   envelopeId?: string | null;
   seq: number;                          // 单 run 单调递增
   payload: Record<string, unknown>;
+  /** Backward-compatible alias used by existing renderers. */
+  data?: Record<string, unknown>;
 }
 
 /**
