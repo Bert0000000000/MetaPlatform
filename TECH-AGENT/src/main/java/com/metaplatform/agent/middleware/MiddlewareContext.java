@@ -1,5 +1,7 @@
 package com.metaplatform.agent.middleware;
 
+import com.metaplatform.agent.context.OntologyContextEnvelope;
+
 import lombok.Data;
 import lombok.Builder;
 
@@ -25,6 +27,9 @@ public class MiddlewareContext {
 
     /** Ontology Context Envelope（来自 TECH-ONT /ont/context/build） */
     private Map<String, Object> ontologyEnvelope;
+
+    /** Server-built, signed ontology context used by every runtime/tool. */
+    private OntologyContextEnvelope ontologyContext;
 
     /** Allowed Tools */
     private List<String> allowedTools;
