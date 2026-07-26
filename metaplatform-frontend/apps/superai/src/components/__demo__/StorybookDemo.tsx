@@ -1,7 +1,9 @@
 import React from 'react';
-import { Card, Col, Row, Typography, Space, Divider } from 'antd';
+import { Card, Col, Row, Typography, Space, Divider, Alert, Tag } from 'antd';
 import { ClaimRenderer } from '../ClaimRenderer';
 import { EvidenceRenderer } from '../EvidenceRenderer';
+import AgentChatPanel from '../AgentChatPanel';
+import { InteractionContextProvider } from '@/hooks';
 import type { Claim, Evidence } from '@/hooks';
 
 const { Title, Paragraph } = Typography;
@@ -117,6 +119,24 @@ export function StorybookDemo() {
                     />
                 </Card>
             </Space>
+
+            <Divider titlePlacement="left">AgentChatPanel (with InteractionContextProvider)</Divider>
+            <Alert
+                type="info"
+                showIcon
+                message="P6.5 流式 UI 演示"
+                description="实际接 SSE 需要 TECH-AGENT 在 8511 端口运行；此处仅展示控件布局"
+                style={{ marginBottom: 16 }}
+            />
+            <Card>
+                <InteractionContextProvider
+                    appCode="DW"
+                    pageCode="agent-copilot"
+                    pageUrl="/agent-copilot"
+                >
+                    <AgentChatPanel placeholder="演示：输入任意问题查看 UI 反馈（无后端时为空事件）" />
+                </InteractionContextProvider>
+            </Card>
         </div>
     );
 }

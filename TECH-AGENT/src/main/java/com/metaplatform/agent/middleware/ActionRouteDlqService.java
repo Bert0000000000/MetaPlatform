@@ -6,13 +6,17 @@ import com.metaplatform.agent.action.dto.ActionProposalCreateRequest;
 import com.metaplatform.agent.action.dto.ActionProposalDto;
 import com.metaplatform.ont.draft.OntologyDraftService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.stream.Collectors;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -37,6 +41,7 @@ import java.util.concurrent.atomic.AtomicLong;
 public class ActionRouteDlqService {
 
     private final ActionProposalService proposalService;
+    private final ActionRouteDlqRepository repository;
     private final ActionApprovalBridgeService approvalBridge;
     private final OntologyDraftService draftService;  // optional - only for cleanup hooks
 
@@ -44,10 +49,12 @@ public class ActionRouteDlqService {
     public ActionRouteDlqService(
             @Autowired(required = false) ActionProposalService proposalService,
             @Autowired(required = false) ActionApprovalBridgeService approvalBridge,
-            @Autowired(required = false) OntologyDraftService draftService) {
+            @Autowired(required = false) OntologyDraftService draftService,
+            @Autowired(required = false) ActionRouteDlqRepository repository) {
         this.proposalService = proposalService;
         this.approvalBridge = approvalBridge;
         this.draftService = draftService;
+        this.repository = repository;
     }
 
     private final List<FailedRoute> pending = new CopyOnWriteArrayList<>();
@@ -67,12 +74,27 @@ public class ActionRouteDlqService {
     /**
      * Enqueue a failed auto-route for later retry.
      */
+    @Transactional
     public void enqueue(String runId, String proposalId, String actionCode,
                         String riskLevel, String reason) {
         long id = nextId.getAndIncrement();
         FailedRoute entry = new FailedRoute(id, runId, proposalId, actionCode, riskLevel,
                 reason, System.currentTimeMillis(), 0);
         pending.add(entry);
+        if (repository != null) {
+            try {
+                ActionRouteDlqEntity entity = ActionRouteDlqEntity.builder()
+                        .id(entry.id()).tenantId(extractTenant(runId))
+                        .runId(runId).proposalId(proposalId)
+                        .actionCode(actionCode).riskLevel(riskLevel)
+                        .reason(reason).failedAt(Instant.ofEpochMilli(entry.failedAtEpochMs()))
+                        .retryCount(0).createdAt(Instant.now()).updatedAt(Instant.now())
+                        .build();
+                repository.save(entity);
+            } catch (Exception e) {
+                log.warn("[ActionRouteDLQ] DB persist failed (in-memory still kept): {}", e.getMessage());
+            }
+        }
         log.warn("[ActionRouteDLQ] enqueued id={} proposal={} action={} reason={}",
                 id, proposalId, actionCode, reason);
     }
@@ -81,15 +103,19 @@ public class ActionRouteDlqService {
      * Retry a specific entry by id.
      * @return the new WFE task id, or null if still failed
      */
+    @Transactional
     public String retry(long id) {
         FailedRoute entry = findById(id);
         if (entry == null) return null;
+        if (repository != null) repository.incrementRetryCount(id, Instant.now());
         try {
             String wfeTaskId = approvalBridge.submitForApproval(entry.proposalId(), null);
             pending.remove(entry);
+            if (repository != null) repository.markResolved(id, Instant.now(), "SUCCESS");
             log.info("[ActionRouteDLQ] retried id={} proposal={} -> wfeTask={}", id, entry.proposalId(), wfeTaskId);
             return wfeTaskId;
         } catch (Exception e) {
+            if (repository != null) repository.markResolved(id, Instant.now(), "FAILED");
             log.warn("[ActionRouteDLQ] retry id={} still failed: {}", id, e.getMessage());
             return null;
         }
@@ -109,15 +135,29 @@ public class ActionRouteDlqService {
     /**
      * Discard a failed route (after manual intervention).
      */
+    @Transactional
     public boolean discard(long id) {
         FailedRoute entry = findById(id);
         if (entry == null) return false;
         pending.remove(entry);
+        if (repository != null) repository.markResolved(id, Instant.now(), "DISCARDED");
         log.info("[ActionRouteDLQ] discarded id={} proposal={}", id, entry.proposalId());
         return true;
     }
 
     public List<FailedRoute> getPending() {
+        if (repository != null) {
+            try {
+                return repository.findAll().stream()
+                        .filter(e -> e.getResolvedAt() == null)
+                        .map(e -> new FailedRoute(e.getId(), e.getRunId(), e.getProposalId(),
+                                e.getActionCode(), e.getRiskLevel(), e.getReason(),
+                                e.getFailedAt().toEpochMilli(), e.getRetryCount() == null ? 0 : e.getRetryCount()))
+                        .collect(Collectors.toList());
+            } catch (Exception e) {
+                log.warn("[ActionRouteDLQ] DB read failed, falling back to in-memory: {}", e.getMessage());
+            }
+        }
         return List.copyOf(pending);
     }
 
@@ -128,5 +168,10 @@ public class ActionRouteDlqService {
     private FailedRoute findById(long id) {
         for (FailedRoute e : pending) if (e.id() == id) return e;
         return null;
+    }
+
+    /** Stub: in production, derive from TenantContext or Run. */
+    private String extractTenant(String runId) {
+        return com.metaplatform.agent.common.TenantContext.getTenantIdOrDefault();
     }
 }

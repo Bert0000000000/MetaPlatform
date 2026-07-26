@@ -158,6 +158,70 @@ class ActionGuardAutoRouteTest {
     }
 
     @Test
+    @DisplayName("P5.8: same (actionCode + targetObjects) only routes once")
+    void dedupSkipsDuplicate() {
+        MiddlewareContext ctx = baseCtx("run-DEDUP");
+        // Two identical HIGH risk proposals
+        ctx.getActionProposals().add(new java.util.LinkedHashMap<>(Map.of(
+                "actionCode", "RequestDiscount",
+                "riskLevel", "HIGH",
+                "targetObjects", List.of("CUST-1"),
+                "parameters", Map.of("rate", 0.10),
+                "reason", "first",
+                "evidenceRefs", List.of("EVD-1")
+        )));
+        ctx.getActionProposals().add(new java.util.LinkedHashMap<>(Map.of(
+                "actionCode", "RequestDiscount",
+                "riskLevel", "HIGH",
+                "targetObjects", List.of("CUST-1"),
+                "parameters", Map.of("rate", 0.15),
+                "reason", "second (duplicate)",
+                "evidenceRefs", List.of("EVD-2")
+        )));
+        ctx.getActionProposals().add(new java.util.LinkedHashMap<>(Map.of(
+                "actionCode", "RequestDiscount",
+                "riskLevel", "HIGH",
+                "targetObjects", List.of("CUST-2"),
+                "parameters", Map.of("rate", 0.10),
+                "reason", "different target",
+                "evidenceRefs", List.of("EVD-3")
+        )));
+
+        guard.afterExecution(ctx);
+
+        // Only 2 distinct (actionCode + target) -> 2 create calls (third is duplicate of first)
+        org.mockito.Mockito.verify(proposalService, org.mockito.Mockito.times(2))
+                .create(org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
+    @DisplayName("P5.8: different target objects are NOT deduped")
+    void dedupKeepsDifferentTargets() {
+        MiddlewareContext ctx = baseCtx("run-DIFF");
+        ctx.getActionProposals().add(new java.util.LinkedHashMap<>(Map.of(
+                "actionCode", "RequestDiscount",
+                "riskLevel", "HIGH",
+                "targetObjects", List.of("CUST-1"),
+                "parameters", Map.of(),
+                "reason", "r1",
+                "evidenceRefs", List.of("EVD-1")
+        )));
+        ctx.getActionProposals().add(new java.util.LinkedHashMap<>(Map.of(
+                "actionCode", "RequestDiscount",
+                "riskLevel", "HIGH",
+                "targetObjects", List.of("CUST-2"),
+                "parameters", Map.of(),
+                "reason", "r2",
+                "evidenceRefs", List.of("EVD-2")
+        )));
+
+        guard.afterExecution(ctx);
+
+        org.mockito.Mockito.verify(proposalService, org.mockito.Mockito.times(2))
+                .create(org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
     @DisplayName("no-arg constructor (test compat): does not throw")
     void noArgConstructorCompat() {
         OntologyActionGuardMiddleware bareGuard = new OntologyActionGuardMiddleware(null, null, null);

@@ -45,6 +45,8 @@ public class OntologyActionGuardMiddleware implements AgentMiddleware {
     public void afterExecution(MiddlewareContext context) {
         if (context.isRejected()) return;
         if (context.getActionProposals() == null || context.getActionProposals().isEmpty()) return;
+        // P5.8: dedup proposals within the same run by (actionCode + targetObjects) hash
+        java.util.Set<String> seenInThisRun = new java.util.HashSet<>();
         // Convert immutable Maps (e.g. Map.of) to LinkedHashMap so we can add validation fields
         List<Map<String, Object>> mutableProposals = new ArrayList<>();
         for (Map<String, Object> proposal : context.getActionProposals()) {
@@ -53,6 +55,14 @@ public class OntologyActionGuardMiddleware implements AgentMiddleware {
             }
             String actionCode = String.valueOf(proposal.getOrDefault("actionCode", ""));
             String riskLevel = String.valueOf(proposal.getOrDefault("riskLevel", "LOW"));
+
+            // P5.8 dedup: skip if we have already seen an identical proposal in this run
+            String dedupKey = actionCode + "::" + String.valueOf(proposal.get("targetObjects"));
+            if (!seenInThisRun.add(dedupKey)) {
+                log.info("[OntologyActionGuardMW] skipping duplicate proposal action={} targets={} (already processed in this run)",
+                        actionCode, proposal.get("targetObjects"));
+                continue;
+            }
             boolean requiresApproval = "HIGH".equals(riskLevel) || "CRITICAL".equals(riskLevel);
             proposal.put("requiresApproval", requiresApproval);
             proposal.put("validatedAt", System.currentTimeMillis());
