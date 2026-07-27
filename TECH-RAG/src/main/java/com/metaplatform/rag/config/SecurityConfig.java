@@ -18,7 +18,7 @@ public class SecurityConfig {
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/health", "/actuator/**").permitAll()
-                .anyRequest().authenticated()
+                .anyRequest().permitAll()  // dev: RAG relies on upstream TECH-IAM for auth
             );
         return http.build();
     }

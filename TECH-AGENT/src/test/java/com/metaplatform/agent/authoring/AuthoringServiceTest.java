@@ -37,7 +37,7 @@ class AuthoringServiceTest {
                     .status("DRAFT")
                     .build();
         });
-        service = new AuthoringService(draftService);
+        service = new AuthoringService(draftService, null);
     }
 
     @Test
@@ -129,7 +129,7 @@ class AuthoringServiceTest {
     @Test
     @DisplayName("submit: returns null when OntologyDraftService unavailable")
     void submitWithoutDraftService() {
-        AuthoringService bareService = new AuthoringService(null);
+        AuthoringService bareService = new AuthoringService(null, null);
         ProposeDraftRequest req = service.buildDraft("T1", "R1", "AGENT", "v1", "v2", "s", List.of());
         assertNull(bareService.submit(req));
     }

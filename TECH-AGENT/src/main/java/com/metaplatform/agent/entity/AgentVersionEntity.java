@@ -41,7 +41,7 @@ public class AgentVersionEntity {
 
     @Lob
     @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    @Column(name = "snapshot", columnDefinition = "jsonb")
+    @Column(name = "snapshot", columnDefinition = "TEXT")
     private String snapshot;
 
     @JdbcTypeCode(SqlTypes.VARCHAR)

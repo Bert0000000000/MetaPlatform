@@ -8,6 +8,7 @@ import {
   AuthGuard,
   useThemeMode,
   getAntdTheme,
+   ScrollbarAutoHide,
 } from '@mate/shared';
 import LoginPage from './pages/LoginPage';
 
@@ -79,6 +80,8 @@ function Loading() {
 
 function AppRoutes() {
   return (
+    <>
+      <ScrollbarAutoHide />
     <Suspense fallback={<Loading />}>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
@@ -159,6 +162,7 @@ function AppRoutes() {
         </Route>
       </Routes>
     </Suspense>
+    </>
   );
 }
 

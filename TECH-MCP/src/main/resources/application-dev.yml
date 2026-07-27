@@ -11,21 +11,24 @@ spring:
     import: []
   autoconfigure:
     exclude:
+      - org.springframework.cloud.context.refresh.ContextRefresherAutoConfiguration
+      - org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration
+      - org.springframework.cloud.autoconfigure.RefreshAutoConfiguration
+      - com.alibaba.cloud.ai.a2a.autoconfigure.nacos.NacosA2aDiscoveryAutoConfiguration
       - com.alibaba.cloud.nacos.registry.NacosServiceRegistryAutoConfiguration
+      - org.springframework.ai.mcp.server.common.autoconfigure.annotations.McpServerSpecificationFactoryAutoConfiguration
+      - org.springframework.ai.vectorstore.milvus.autoconfigure.MilvusVectorStoreAutoConfiguration
+      - org.springframework.ai.mcp.client.autoconfigure.McpClientAutoConfiguration
+      - com.alibaba.cloud.ai.agent.nacos.config.NacosAgentConfig
+      - org.springframework.boot.actuate.autoconfigure.security.servlet.ManagementWebSecurityAutoConfiguration
+      - com.alibaba.cloud.ai.a2a.autoconfigure.nacos.NacosA2aRegistryAutoConfiguration
       - com.alibaba.cloud.nacos.discovery.NacosDiscoveryAutoConfiguration
       - com.alibaba.cloud.nacos.NacosConfigAutoConfiguration
-      - org.springframework.cloud.autoconfigure.RefreshAutoConfiguration
-      - org.springframework.cloud.context.refresh.ContextRefresherAutoConfiguration
-      - com.alibaba.cloud.ai.agent.nacos.config.NacosAgentConfig
       - com.alibaba.cloud.ai.autoconfigure.nacosconfig.NacosConfigAutoConfiguration
-      - com.alibaba.cloud.ai.autoconfigure.nacos.NacosMcServerAutoConfiguration
-      - com.alibaba.cloud.ai.a2a.autoconfigure.nacos.NacosA2aDiscoveryAutoConfiguration
-      - com.alibaba.cloud.ai.a2a.autoconfigure.nacos.NacosA2aRegistryAutoConfiguration
-      - org.springframework.ai.vectorstore.milvus.autoconfigure.MilvusVectorStoreAutoConfiguration
-      - org.springframework.ai.mcp.server.common.autoconfigure.McpServerAutoConfiguration
-      - org.springframework.ai.mcp.server.common.autoconfigure.annotations.McpServerSpecificationFactoryAutoConfiguration
       - org.springframework.ai.mcp.server.common.autoconfigure.annotations.McpServerAnnotationScannerAutoConfiguration
-      - org.springframework.ai.mcp.client.autoconfigure.McpClientAutoConfiguration
+      - org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration
+      - com.alibaba.cloud.ai.autoconfigure.nacos.NacosMcServerAutoConfiguration
+      - org.springframework.ai.mcp.server.common.autoconfigure.McpServerAutoConfiguration
   ai:
     dashscope:
       api-key: ${DASHSCOPE_API_KEY:sk-placeholder-for-dev-only-not-real}
@@ -43,13 +46,15 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: update
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
   flyway:
     enabled: false
+    baseline-on-migrate: true
+    locations: classpath:db/migration
 
 # 开发环境跳过内置角色种子（permissions JSON 字段由生产化迁移负责）
 mcp:

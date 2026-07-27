@@ -89,11 +89,11 @@ function CustomerCopilotInner({ customerId, customerName }: { customerId: string
                   </div>
                 )}
                 {msg.claims?.map((c: any, i: number) => <ClaimRenderer key={i} claim={c} />)}
-                {msg.evidences?.length > 0 && (
+                {(msg.evidences ?? []).length > 0 && (
                   <div style={{ marginTop: 8 }}>
                     <strong>证据：</strong>
                     <div style={{ marginTop: 4 }}>
-                      {msg.evidences.map((e: any, i: number) => (
+                      {(msg.evidences ?? []).map((e: any, i: number) => (
                         <EvidenceRenderer key={i} evidence={e} />
                       ))}
                     </div>
@@ -145,3 +145,4 @@ export function CustomerCopilotDrawer(props: CustomerCopilotDrawerProps) {
     </Drawer>
   );
 }
+

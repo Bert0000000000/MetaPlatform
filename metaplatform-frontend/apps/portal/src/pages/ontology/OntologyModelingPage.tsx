@@ -78,7 +78,7 @@ export default function OntologyModelingPage() {
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   return (
-    <div>
+    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
       <style>{`
         .om-tree-item{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:6px;cursor:pointer;font-size:13px;color:var(--muted-foreground);margin-bottom:2px}
         .om-tree-item:hover{background:var(--muted);color:var(--foreground)}
@@ -109,6 +109,7 @@ export default function OntologyModelingPage() {
       `}</style>
 
       <SubTabs items={ONTOLOGY_TABS} activePath={location.pathname} />
+      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', paddingBottom: 24 }}>
 
       {/* Page Header */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginTop: 24, marginBottom: 24 }}>
@@ -350,6 +351,7 @@ export default function OntologyModelingPage() {
           </Field>
         </FormSection>
       </FormDrawer>
+      </div>
     </div>
   );
 }

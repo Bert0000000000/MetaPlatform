@@ -15,7 +15,7 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 /**
- * Agent 记忆消息 — 对应 agent_memory_messages 表。
+ * Agent 璁板繂娑堟伅 鈥?瀵瑰簲 agent_memory_messages 琛ㄣ€?
  */
 @Entity
 @Table(name = "agent_memory_messages")
@@ -45,7 +45,7 @@ public class MemoryMessageEntity {
     @Column(name = "content", length = 16384, nullable = false)
     private String content;
 
-    @Column(name = "metadata", columnDefinition = "jsonb")
+    @Column(name = "metadata", columnDefinition = "TEXT")
     @JdbcTypeCode(SqlTypes.JSON)
     private String metadata;
 

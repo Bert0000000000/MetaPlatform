@@ -41,6 +41,7 @@ export { default as EmptyState } from './components/EmptyState';
 export { default as MateLogo, MateBrand, type MateLogoProps, type MateBrandProps, type MateLogoVariant } from './components/MateLogo';
 export { default as StateContainer } from './components/StateContainer';
 export { default as PageHeader } from './components/PageHeader';
+export { default as ScrollbarAutoHide } from './components/ScrollbarAutoHide';
 export { default as SubTabs, type SubTabItem } from './components/SubTabs';
 export { default as Breadcrumb, type BreadcrumbItem, type BreadcrumbProps } from './components/Breadcrumb';
 

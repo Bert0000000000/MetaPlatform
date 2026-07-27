@@ -24,7 +24,7 @@ spring:
       initialize-schema: embedded
 
   flyway:
-    enabled: true
+    enabled: false
     locations: classpath:db/migration
     baseline-on-migrate: true
 
@@ -40,20 +40,20 @@ spring:
     import: []
   autoconfigure:
     exclude:
-      - com.alibaba.cloud.nacos.registry.NacosServiceRegistryAutoConfiguration
-      - com.alibaba.cloud.nacos.discovery.NacosDiscoveryAutoConfiguration
-      - com.alibaba.cloud.nacos.NacosConfigAutoConfiguration
-      - org.springframework.cloud.autoconfigure.RefreshAutoConfiguration
+      - org.springframework.boot.actuate.autoconfigure.security.servlet.ManagementWebSecurityAutoConfiguration
       - org.springframework.cloud.context.refresh.ContextRefresherAutoConfiguration
       - com.alibaba.cloud.ai.agent.nacos.config.NacosAgentConfig
+      - org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration
+      - org.springframework.cloud.autoconfigure.RefreshAutoConfiguration
+      - com.alibaba.cloud.nacos.discovery.NacosDiscoveryAutoConfiguration
+      - com.alibaba.cloud.nacos.NacosConfigAutoConfiguration
       - com.alibaba.cloud.ai.autoconfigure.nacosconfig.NacosConfigAutoConfiguration
-      - com.alibaba.cloud.ai.autoconfigure.nacos.NacosMcServerAutoConfiguration
+      - com.alibaba.cloud.nacos.registry.NacosServiceRegistryAutoConfiguration
       - org.springframework.ai.vectorstore.milvus.autoconfigure.MilvusVectorStoreAutoConfiguration
       - org.springframework.ai.mcp.server.autoconfigure.McpServerAutoConfiguration
+      - org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration
+      - com.alibaba.cloud.ai.autoconfigure.nacos.NacosMcServerAutoConfiguration
       - org.springframework.ai.mcp.client.autoconfigure.McpClientAutoConfiguration
-
-# 提供一个虚拟的 DashScope API key 以避免启动失败
-spring.ai.dashscope:
   api-key: ${DASHSCOPE_API_KEY:sk-placeholder-for-dev-only-not-real}
 
   kafka:

@@ -48,6 +48,7 @@ public class AgentTaskEntity {
     @Column(name = "errorMessage", columnDefinition = "TEXT")
     private String errorMessage;
 
+    @Id
     @Lob
     @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     @Column(name = "id", columnDefinition = "TEXT")
@@ -55,12 +56,12 @@ public class AgentTaskEntity {
 
     @Lob
     @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    @Column(name = "input", nullable = false, columnDefinition = "jsonb")
+    @Column(name = "input", nullable = false, columnDefinition = "TEXT")
     private String input;
 
     @Lob
     @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    @Column(name = "output", nullable = false, columnDefinition = "jsonb")
+    @Column(name = "output", nullable = false, columnDefinition = "TEXT")
     private String output;
 
     @Lob

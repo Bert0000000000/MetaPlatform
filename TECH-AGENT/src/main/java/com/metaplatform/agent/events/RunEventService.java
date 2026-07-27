@@ -42,6 +42,13 @@ public class RunEventService {
         return events.stream().map(this::toDto).toList();
     }
 
+    @Transactional(readOnly = true)
+    public List<RunEventDto> listForTenant(String tenantId, String runId, Long afterSeq) {
+        return list(runId, afterSeq, null).stream()
+                .filter(event -> java.util.Objects.equals(tenantId, event.getTenantId()))
+                .toList();
+    }
+
     private RunEventDto toDto(RunEventEntity e) {
         return RunEventDto.builder().eventId(e.getEventId()).runId(e.getRunId()).taskId(e.getTaskId())
                 .subAgentId(e.getSubAgentId()).parentRunId(e.getParentRunId()).type(e.getType().name())

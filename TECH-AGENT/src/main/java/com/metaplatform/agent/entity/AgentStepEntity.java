@@ -48,6 +48,7 @@ public class AgentStepEntity {
     @Column(name = "executionId", columnDefinition = "TEXT")
     private String executionId;
 
+    @Id
     @Lob
     @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     @Column(name = "id", columnDefinition = "TEXT")
@@ -55,16 +56,13 @@ public class AgentStepEntity {
 
     @Lob
     @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    @Column(name = "metadata", nullable = false, columnDefinition = "jsonb")
+    @Column(name = "metadata", nullable = false, columnDefinition = "TEXT")
     private String metadata;
 
     @Lob
     @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    @Column(name = "sortOrder", columnDefinition = "TEXT")
+    @Column(name = "sort_order", columnDefinition = "TEXT")
     private Integer sortOrder;
-
-    @Column(name = "sort_order", nullable = false)
-    private Integer sort_order;
 
     @Lob
     @JdbcTypeCode(SqlTypes.LONGVARCHAR)

@@ -23,6 +23,7 @@ public class AgentCheckpointEntity {
     @Column(name = "agentId", columnDefinition = "TEXT")
     private String agentId;
 
+    @Id
     @Lob
     @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     @Column(name = "checkpointId", columnDefinition = "TEXT")

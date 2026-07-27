@@ -149,7 +149,8 @@ public class ChatService {
             auditLog.setOutputTokens(response.usage().completionTokens());
             auditLog.setTotalTokens(response.usage().totalTokens());
         }
-        auditLogRepository.save(auditLog);
+        auditLog.setCreatedAt(java.time.LocalDateTime.now());
+        try { auditLogRepository.save(auditLog); } catch (Exception ignore) { /* audit log must not break the API response */ }
     }
 
     private void saveCostRecord(String requestId, String traceId, String userId, String appId, String model,

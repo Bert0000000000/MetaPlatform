@@ -31,7 +31,7 @@ class ActionRouteDlqMetricsTest {
         registry = new SimpleMeterRegistry();
         dlqService = Mockito.mock(ActionRouteDlqService.class);
         Mockito.when(dlqService.size()).thenReturn(0);
-        metrics = new ActionRouteDlqMetrics(registry, dlqService);
+        metrics = new ActionRouteDlqMetrics(registry); metrics.bindService(dlqService);
     }
 
     @Test
@@ -78,7 +78,7 @@ class ActionRouteDlqMetricsTest {
     @Test
     @DisplayName("Null MeterRegistry -> isEnabled() == false, record*() does not throw")
     void nullRegistryIsNoop() {
-        ActionRouteDlqMetrics nullMetrics = new ActionRouteDlqMetrics(null, null);
+        ActionRouteDlqMetrics nullMetrics = new ActionRouteDlqMetrics(null);
         assertFalse(nullMetrics.isEnabled());
         // Should not throw even though no real registry is wired:
         nullMetrics.recordEnqueue();

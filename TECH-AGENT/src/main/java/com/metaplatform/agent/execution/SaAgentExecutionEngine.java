@@ -64,7 +64,7 @@ public class SaAgentExecutionEngine {
         String executionId = executionId();
         ChatClient client = chatClientBuilder
                 .defaultSystem(agent.getSystemPrompt())
-                .defaultTools((org.springframework.ai.tool.ToolCallback[]) toolCallbacks.toArray())
+                .defaultToolCallbacks(toolCallbacks)
                 .build();
         Prompt prompt = prompt(agent, userInput, context);
         ChatResponse response = client.prompt(prompt).call().chatResponse();
@@ -86,14 +86,27 @@ public class SaAgentExecutionEngine {
         String executionId = executionId();
         try {
             StateGraph graph = new StateGraph();
+            graph.addNode("plan", AsyncNodeAction.node_async(state -> {
+                String input = state.value("input", userInput);
+                return Map.of("plan", "Analyze ontology context and answer the request: " + input);
+            }));
             graph.addNode("llm", AsyncNodeAction.node_async(state -> {
-                Prompt prompt = prompt(agent, state.value("input", userInput), context);
+                String input = state.value("input", userInput);
+                String plan = state.value("plan", "");
+                Prompt prompt = prompt(agent, input, context + "\n\nExecution plan: " + plan);
                 ChatResponse response = chatModel.call(prompt);
-                String output = response.getResult().getOutput().getText();
+                String output = response == null || response.getResult() == null ? "" : response.getResult().getOutput().getText();
                 return Map.of("output", output);
             }));
-            graph.addEdge(START, "llm");
-            graph.addEdge("llm", END);
+            graph.addNode("review", AsyncNodeAction.node_async(state -> {
+                String output = state.value("output", "");
+                if (output == null || output.isBlank()) throw new IllegalStateException("graph review rejected empty output");
+                return Map.of("validated", true);
+            }));
+            graph.addEdge(START, "plan");
+            graph.addEdge("plan", "llm");
+            graph.addEdge("llm", "review");
+            graph.addEdge("review", END);
             CompiledGraph compiled = graph.compile();
             // setMaxIterations(int) removed in spring-ai-alibaba 1.1.x; max no longer configurable here
             // compiled.setMaxIterations(maxIterations);

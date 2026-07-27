@@ -97,8 +97,9 @@ export default function McpDebuggerPage() {
   const [activeTool, setActiveTool] = useState('ont_query_concept');
 
   return (
-    <div>
+    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
       <SubTabs items={MCP_TABS} activePath={location.pathname} />
+      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', paddingBottom: 24 }}>
 
       {/* Page header */}
       <div style={{ marginTop: 24, marginBottom: 20 }}>
@@ -332,6 +333,7 @@ export default function McpDebuggerPage() {
             </table>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

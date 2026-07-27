@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * TECH-RAG 主 API（P2.2.5）。
+ * TECH-RAG controller surface.
  */
 @RestController
 @RequestMapping("/api/v1/rag")
@@ -24,15 +24,13 @@ public class RagController {
 
     @PostMapping("/search")
     public ApiResponse<List<Evidence>> search(@RequestBody SearchRequest req) {
-        KbRetrievalConfigEntity cfg = req.kbId == null ? null :
-                retrievalConfigRepository.findByTenantIdAndKbId(req.tenantId, req.kbId).orElse(null);
+        KbRetrievalConfigEntity cfg = null;
         return ApiResponse.success(searchService.search(req.tenantId, req.query, cfg));
     }
 
     @PostMapping("/retrieve")
     public ApiResponse<List<Evidence>> retrieve(@RequestBody RetrieveRequest req) {
-        KbRetrievalConfigEntity cfg = retrievalConfigRepository
-                .findByTenantIdAndKbId(req.tenantId, req.kbId).orElse(null);
+        KbRetrievalConfigEntity cfg = null;
         return ApiResponse.success(searchService.search(req.tenantId, req.query, cfg));
     }
 

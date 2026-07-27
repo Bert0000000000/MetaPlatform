@@ -44,27 +44,60 @@ public class InMemoryVectorStoreClient implements VectorStoreClient {
     }
 
     @Override
+    public List<SearchResult> hybridSearch(String collection, List<Float> vector, String text, int topK,
+                                            Map<String, Object> ontologyFilter) {
+        return hybridSearchInternal(collection, vector, text, topK, ontologyFilter);
+    }
+
+    @Override
     public List<SearchResult> hybridSearch(String collection, List<Float> vector, String text, int topK) {
-        // Simple hybrid: 0.7 * vector_score + 0.3 * bm25_score
-        List<SearchResult> vectorResults = search(collection, vector, topK * 2);
-        if (text == null || text.isBlank()) return vectorResults.stream().limit(topK).toList();
-        String[] terms = text.toLowerCase().split("\s+");
-        return vectorResults.stream()
-                .filter(r -> {
-                    String t2 = String.valueOf(r.metadata().getOrDefault("text", "")).toLowerCase();
-                    for (String term : terms) if (t2.contains(term)) return true;
-                    return false;
-                })
-                .map(r -> {
-                    String text2 = String.valueOf(r.metadata().getOrDefault("text", "")).toLowerCase();
-                    long matchCount = Arrays.stream(terms).filter(text2::contains).count();
-                    float bm25 = (float) matchCount / Math.max(terms.length, 1);
-                    float combined = 0.7f * r.score() + 0.3f * bm25;
-                    return new SearchResult(r.recordId(), combined, r.metadata());
-                })
-                .sorted((a, b) -> Float.compare(b.score(), a.score()))
-                .limit(topK)
-                .toList();
+        return hybridSearchInternal(collection, vector, text, topK, Map.of());
+    }
+
+    private List<SearchResult> hybridSearchInternal(String collection, List<Float> vector, String text, int topK, Map<String, Object> ontologyFilter) {
+        // Score every record so lexical matches cannot be lost behind the vector top-K.
+        List<Map<String, Object>> records = recordsByCollection.getOrDefault(collection, Map.of())
+                .values().stream().toList();
+        Set<String> terms = tokenize(text);
+        return records.stream().filter(r -> matchesFilter(r, ontologyFilter)).map(r -> {
+            List<Float> stored = (List<Float>) r.get("vector");
+            float vectorScore = stored == null ? 0f : cosineSimilarity(vector, stored);
+            String body = String.valueOf(r.getOrDefault("text", "")).toLowerCase(Locale.ROOT);
+            long matched = terms.stream().filter(body::contains).count();
+            float lexicalScore = terms.isEmpty() ? 0f : (float) matched / terms.size();
+            String id = String.valueOf(r.getOrDefault("id", r.getOrDefault("chunk_id", "unknown")));
+            return new SearchResult(id, 0.7f * vectorScore + 0.3f * lexicalScore, metadata(r));
+        }).filter(r -> terms.isEmpty() || terms.stream().anyMatch(t -> String.valueOf(r.metadata().getOrDefault("text", "")).toLowerCase(Locale.ROOT).contains(t)))
+          .sorted((a, b) -> Float.compare(b.score(), a.score())).limit(Math.max(0, topK)).toList();
+    }
+
+
+    private static boolean matchesFilter(Map<String, Object> record, Map<String, Object> filter) {
+        if (filter == null || filter.isEmpty()) return true;
+        Object raw = record.get("metadata");
+        Map<?, ?> metadata = raw instanceof Map<?, ?> m ? m : Map.of();
+        // Legacy records without scope metadata remain searchable; new ingesters should always set it.
+        if (metadata.isEmpty() && filter.keySet().stream().noneMatch(record::containsKey)) return true;
+        return filter.entrySet().stream().allMatch(e -> {
+            Object actual = metadata.containsKey(e.getKey()) ? metadata.get(e.getKey()) : record.get(e.getKey());
+            return Objects.equals(String.valueOf(actual), String.valueOf(e.getValue()));
+        });
+    }
+
+    private static Set<String> tokenize(String text) {
+        if (text == null || text.isBlank()) return Set.of();
+        return new LinkedHashSet<>(Arrays.stream(text.toLowerCase(Locale.ROOT).split("\\s+")
+                ).filter(t -> !t.isBlank()).toList());
+    }
+
+    private static Map<String, Object> metadata(Map<String, Object> record) {
+        Map<String, Object> metadata = new HashMap<>();
+        if (record.get("metadata") instanceof Map<?, ?> m) {
+            m.forEach((k, v) -> metadata.put(String.valueOf(k), v));
+        }
+        if (record.get("text") != null) metadata.put("text", record.get("text"));
+        if (record.get("id") != null) metadata.put("id", record.get("id"));
+        return metadata;
     }
 
     @Override

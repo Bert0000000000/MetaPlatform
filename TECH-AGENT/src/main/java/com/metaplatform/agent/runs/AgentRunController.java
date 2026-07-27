@@ -6,6 +6,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import com.metaplatform.agent.common.TenantContext;
+import com.metaplatform.agent.events.RunEventService;
+import com.metaplatform.agent.events.dto.RunEventDto;
+import org.springframework.http.MediaType;
+import org.springframework.http.codec.ServerSentEvent;
+import reactor.core.publisher.Flux;
 
 import java.util.List;
 
@@ -15,6 +21,7 @@ import java.util.List;
 @Validated
 public class AgentRunController {
     private final AgentRunService service;
+    private final RunEventService runEventService;
 
     @PostMapping
     public ResponseEntity<AgentRunDto> create(@Valid @RequestBody CreateAgentRunRequest request) {
@@ -31,4 +38,13 @@ public class AgentRunController {
     public ResponseEntity<AgentRunDto> cancel(@PathVariable String runId) {
         return ResponseEntity.status(202).body(service.cancel(runId));
     }
+    @GetMapping(value = "/{runId}/events", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public Flux<ServerSentEvent<RunEventDto>> events(@PathVariable String runId,
+                                                      @RequestParam(required = false) Long afterSeq) {
+        String tenantId = TenantContext.getTenantIdOrDefault();
+        return Flux.fromIterable(runEventService.listForTenant(tenantId, runId, afterSeq))
+                .map(event -> ServerSentEvent.<RunEventDto>builder()
+                        .id(event.getEventId()).event(event.getType()).data(event).build());
+    }
+
 }

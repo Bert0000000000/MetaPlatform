@@ -37,7 +37,7 @@ public interface McpToolRepository extends JpaRepository<McpToolEntity, UUID> {
            "AND (:toolType IS NULL OR t.toolType = :toolType) " +
            "AND (:enabled IS NULL OR t.enabled = :enabled) " +
            "AND (:category IS NULL OR t.category = :category) " +
-           "AND (:keyword IS NULL OR LOWER(t.name) LIKE LOWER(CONCAT('%', cast(:keyword as string), '%'))) OR LOWER(t.code) LIKE LOWER(CONCAT('%', cast(:keyword as string), '%'))))")
+           "AND (:keyword IS NULL OR (LOWER(t.name) LIKE LOWER(CONCAT('%', cast(:keyword as string), '%')) OR LOWER(t.code) LIKE LOWER(CONCAT('%', cast(:keyword as string), '%'))))")
     List<McpToolEntity> search(@Param("tenantId") String tenantId,
                                 @Param("serverId") UUID serverId,
                                 @Param("toolType") String toolType,

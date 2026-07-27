@@ -42,7 +42,7 @@ public interface DataSourceRepository extends JpaRepository<DataSourceEntity, St
     @Query("SELECT d FROM DataSourceEntity d " +
             "WHERE d.tenantId = :tenantId " +
             "AND (LOWER(d.name) LIKE LOWER(CONCAT('%', cast(:keyword as string), '%'))) " +
-            "     OR LOWER(d.sourceType) LIKE LOWER(CONCAT('%', cast(:keyword as string), '%'))))")
+            "     OR LOWER(d.sourceType) LIKE LOWER(CONCAT('%', cast(:keyword as string), '%'))")
     Page<DataSourceEntity> searchByKeyword(@Param("tenantId") String tenantId,
                                             @Param("keyword") String keyword,
                                             Pageable pageable);

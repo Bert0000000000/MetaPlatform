@@ -35,17 +35,17 @@ public class ActionRouteDlqScheduler {
         this.dlqService = dlqService;
     }
 
-    @Value("")
+    @Value("${mate.dlq.scheduler-enabled:true}")
     private boolean enabled;
 
-    @Value("")
+    @Value("${mate.dlq.scheduler-max-retries:5}")
     private int maxRetries;
 
     /**
      * Scheduled job: every 5 minutes scan pending DLQ and retry.
      * Returns the count of successful retries for monitoring.
      */
-    @Scheduled(fixedDelayString = "", initialDelayString = "")
+    @Scheduled(fixedDelayString = "${mate.dlq.scheduler-interval-ms:30000}", initialDelayString = "${mate.dlq.scheduler-initial-delay-ms:30000}")
     public int retryPending() {
         if (!enabled) {
             log.debug("[ActionRouteDlqScheduler] disabled, skipping");

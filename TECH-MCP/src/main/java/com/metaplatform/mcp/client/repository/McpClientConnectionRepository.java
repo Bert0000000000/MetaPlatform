@@ -23,7 +23,7 @@ public interface McpClientConnectionRepository extends JpaRepository<McpClientCo
     @Query("SELECT c FROM McpClientConnectionEntity c " +
            "WHERE c.tenantId = :tenantId AND c.deletedAt IS NULL " +
            "AND (:status IS NULL OR c.status = :status) " +
-           "AND (:keyword IS NULL OR LOWER(c.name) LIKE LOWER(CONCAT('%', cast(:keyword as string), '%'))))")
+           "AND (:keyword IS NULL OR LOWER(c.name) LIKE LOWER(CONCAT('%', cast(:keyword as string), '%')))")
     Page<McpClientConnectionEntity> search(@Param("tenantId") String tenantId,
                                            @Param("status") String status,
                                            @Param("keyword") String keyword,

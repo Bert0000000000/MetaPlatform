@@ -38,6 +38,12 @@ public interface VectorStoreClient {
      */
     List<SearchResult> hybridSearch(String collection, List<Float> vector, String text, int topK);
 
+    /** Ontology scope-aware variant; default preserves compatibility for remote clients. */
+    default List<SearchResult> hybridSearch(String collection, List<Float> vector, String text, int topK,
+                                             Map<String, Object> ontologyFilter) {
+        return hybridSearch(collection, vector, text, topK);
+    }
+
     /**
      * Insert a batch of records (each record must have a vector and an id).
      */

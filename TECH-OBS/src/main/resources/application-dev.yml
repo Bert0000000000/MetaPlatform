@@ -22,7 +22,7 @@ spring:
     password: ${DB_PASSWORD:meta}
     driver-class-name: org.postgresql.Driver
   flyway:
-    enabled: true
+    enabled: false
     locations: classpath:db/migration
     baseline-on-migrate: true
     schemas: public

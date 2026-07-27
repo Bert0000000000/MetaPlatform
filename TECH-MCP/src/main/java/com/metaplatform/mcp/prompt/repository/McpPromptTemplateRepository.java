@@ -19,7 +19,7 @@ public interface McpPromptTemplateRepository extends JpaRepository<McpPromptTemp
            "WHERE p.tenantId = :tenantId AND p.deletedAt IS NULL " +
            "AND (:status IS NULL OR p.status = :status) " +
            "AND (:category IS NULL OR p.category = :category) " +
-           "AND (:keyword IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', cast(:keyword as string), '%'))))")
+           "AND (:keyword IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', cast(:keyword as string), '%')))")
     List<McpPromptTemplateEntity> search(@Param("tenantId") String tenantId,
                                          @Param("status") String status,
                                          @Param("category") String category,

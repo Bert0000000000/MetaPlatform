@@ -23,11 +23,6 @@ public class AuthoringService {
     private final RAGClient ragClient;
 
     @Autowired
-    public AuthoringService(@Autowired(required = false) OntologyDraftService draftService) {
-        this(draftService, null);
-    }
-
-    @Autowired
     public AuthoringService(
             @Autowired(required = false) OntologyDraftService draftService,
             @Autowired(required = false) RAGClient ragClient) {

@@ -100,8 +100,9 @@ export default function AppDetailPage() {
   const pagedModels = MODELS.slice((modelsPage - 1) * PAGE_SIZE, modelsPage * PAGE_SIZE);
 
   return (
-    <div>
+    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
       <AppHeader appId={appId} appName={appName} subTabs={APP_SUB_TABS} />
+      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', paddingBottom: 24 }}>
 
       {/* App Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
@@ -433,6 +434,7 @@ export default function AppDetailPage() {
           </Field>
         </FormSection>
       </FormDrawer>
+      </div>
     </div>
   );
 }
