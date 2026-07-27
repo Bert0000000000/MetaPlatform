@@ -25,7 +25,7 @@ public class AgentToolEntity {
 
     @Lob
     @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    @Column(name = "config", nullable = false, columnDefinition = "jsonb")
+    @Column(name = "config", nullable = false, columnDefinition = "TEXT")
     private String config;
 
     @Lob
@@ -48,6 +48,7 @@ public class AgentToolEntity {
     @Column(name = "enabled", columnDefinition = "TEXT")
     private String enabled;
 
+    @Id
     @Lob
     @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     @Column(name = "id", columnDefinition = "TEXT")
@@ -55,13 +56,8 @@ public class AgentToolEntity {
 
     @Lob
     @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    @Column(name = "inputSchema", columnDefinition = "TEXT")
+    @Column(name = "input_schema", columnDefinition = "TEXT")
     private String inputSchema;
-
-    @Lob
-    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    @Column(name = "input_schema", nullable = false, columnDefinition = "jsonb")
-    private String input_schema;
 
     @Lob
     @JdbcTypeCode(SqlTypes.LONGVARCHAR)
@@ -70,13 +66,8 @@ public class AgentToolEntity {
 
     @Lob
     @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    @Column(name = "outputSchema", columnDefinition = "TEXT")
+    @Column(name = "output_schema", columnDefinition = "TEXT")
     private String outputSchema;
-
-    @Lob
-    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    @Column(name = "output_schema", nullable = false, columnDefinition = "jsonb")
-    private String output_schema;
 
     @Lob
     @JdbcTypeCode(SqlTypes.LONGVARCHAR)

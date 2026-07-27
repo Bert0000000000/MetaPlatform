@@ -20,8 +20,7 @@ public interface ExternalAgentRepository extends JpaRepository<ExternalAgentEnti
            "AND (:status IS NULL OR a.status = :status) " +
            "AND (:trustLevel IS NULL OR a.trustLevel = :trustLevel) " +
            "AND (:protocolType IS NULL OR a.protocolType = :protocolType) " +
-           "AND (:keyword IS NULL OR LOWER(a.name) LIKE LOWER(CONCAT('%', cast(:keyword as string), '%'))) " +
-           "     OR LOWER(a.endpoint) LIKE LOWER(CONCAT('%', cast(:keyword as string), '%'))))" +
+           "AND (:keyword IS NULL OR (LOWER(a.name) LIKE LOWER(CONCAT('%', cast(:keyword as string), '%')) OR LOWER(a.endpoint) LIKE LOWER(CONCAT('%', cast(:keyword as string), '%')))) " +
            "ORDER BY a.updatedAt DESC")
     Page<ExternalAgentEntity> search(@Param("tenantId") String tenantId,
                                      @Param("status") String status,

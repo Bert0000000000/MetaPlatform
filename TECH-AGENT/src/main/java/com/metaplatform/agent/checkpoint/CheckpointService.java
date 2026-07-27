@@ -63,6 +63,20 @@ public class CheckpointService {
     /**
      * 按 Agent 列出检查点。
      */
+    /** Restore latest checkpoint state without exposing mutable persistence objects. */
+    @Transactional(readOnly = true)
+    public Optional<Map<String, Object>> resumeState(String tenantId, String executionId) {
+        return load(tenantId, executionId).map(checkpoint -> {
+            Map<String, Object> resumed = new java.util.LinkedHashMap<>();
+            resumed.put("checkpointId", checkpoint.getCheckpointId());
+            resumed.put("executionId", checkpoint.getExecutionId());
+            resumed.put("agentId", checkpoint.getAgentId());
+            resumed.put("state", checkpoint.getState() == null ? Map.of() : checkpoint.getState());
+            resumed.put("resumedAt", java.time.OffsetDateTime.now().toString());
+            return java.util.Collections.unmodifiableMap(resumed);
+        });
+    }
+
     @Transactional(readOnly = true)
     public List<CheckpointResponse> listByAgent(String tenantId, String agentId) {
         return checkpointRepository.findByTenantIdAndAgentId(tenantId, agentId).stream()

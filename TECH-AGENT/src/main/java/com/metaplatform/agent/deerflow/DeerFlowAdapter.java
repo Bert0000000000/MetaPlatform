@@ -1,135 +1,117 @@
 package com.metaplatform.agent.deerflow;
 
-import lombok.RequiredArgsConstructor;
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatusCode;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.client.RestClient;
 
+import java.time.Duration;
 import java.util.*;
 
-/**
- * DeerFlow Adapter（P3.1.1）。
- *
- * <p>封装 DeerFlow Gateway HTTP API，让 TECH-AGENT 通过 Java 直接驱动 DeerFlow
- * 的 Run / SSE / Artifact。DeerFlow 内部仍用 LangGraph 运行 Agent Runtime，
- * 但 Adapter 统一了 MetaPlatform 的 Ontology Context / RunEvent / Evidence 协议。</p>
- *
- * <p>DeerFlow Gateway API：</p>
- * <ul>
- *   <li>POST /api/threads/{thread_id}/runs — 创建 Run</li>
- *   <li>POST /api/threads/{thread_id}/runs/stream — SSE 流</li>
- *   <li>GET  /api/runs/{run_id} — 状态</li>
- *   <li>POST /api/threads/{thread_id}/runs/{run_id}/cancel — 取消</li>
- *   <li>GET  /api/runs/{run_id}/artifact/{name} — Artifact</li>
- * </ul>
- */
+/** Typed client for the pinned DeerFlow Gateway contract. */
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class DeerFlowAdapter {
+    private final DeerFlowProperties properties;
+    private final RestClient client;
 
-    @Value("${mate.deerflow.base-url:http://localhost:8001}")
-    private String deerflowBaseUrl;
+    public DeerFlowAdapter() { this(new DeerFlowProperties()); }
 
-    @Value("${mate.deerflow.api-key:dev-placeholder}")
-    private String apiKey;
+    @Autowired
+    public DeerFlowAdapter(DeerFlowProperties properties) {
+        this.properties = Objects.requireNonNull(properties, "properties");
+        Duration timeout = properties.getRequestTimeout() == null ? Duration.ofSeconds(30) : properties.getRequestTimeout();
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(timeout);
+        factory.setReadTimeout(timeout);
+        this.client = RestClient.builder().baseUrl(stripTrailingSlash(properties.getGatewayUrl())).requestFactory(factory).build();
+    }
 
-    /**
-     * 启动 DeerFlow Run。
-     */
     public String startRun(StartRunRequest request) {
-        log.info("[DeerFlowAdapter] startRun tenant={} agent={} thread={}",
-                request.tenantId, request.agentId, request.threadId);
-        try {
-            RestClient client = RestClient.builder().baseUrl(deerflowBaseUrl).build();
-            Map<String, Object> resp = client.post()
-                    .uri("/api/threads/{tid}/runs", request.threadId)
-                    .header("Authorization", "Bearer " + apiKey)
-                    .header("X-Tenant-Id", request.tenantId)
-                    .header("X-User-Id", request.userId)
-                    .body(toPayload(request))
-                    .retrieve()
-                    .body(Map.class);
-            return resp == null ? null : String.valueOf(resp.get("run_id"));
-        } catch (Exception e) {
-            log.warn("[DeerFlowAdapter] startRun failed: {}", e.getMessage());
-            return null;
+        if (!properties.isEnabled()) throw DeerFlowException.disabled();
+        if (request == null || request.getThreadId() == null || request.getThreadId().isBlank()) {
+            throw new DeerFlowException("DEERFLOW_INVALID_REQUEST", "threadId is required", 400, null);
         }
+        Map<String,Object> payload = toPayload(request);
+        try {
+            ensureThread(request);
+            Map<?,?> response = client.post().uri("/threads/{tid}/runs", request.getThreadId())
+                    .headers(h -> addIdentityHeaders(h, request))
+                    .body(payload).retrieve()
+                    .onStatus(HttpStatusCode::is4xxClientError, (req,res) -> { throw upstream("DEERFLOW_UPSTREAM_4XX", res); })
+                    .onStatus(HttpStatusCode::is5xxServerError, (req,res) -> { throw upstream("DEERFLOW_UPSTREAM_5XX", res); })
+                    .body(Map.class);
+            String runId = response == null ? null : Objects.toString(response.get("run_id"), null);
+            if (runId == null || runId.isBlank()) throw new DeerFlowException("DEERFLOW_INVALID_RESPONSE", "Gateway returned no run_id", 502, null);
+            return runId;
+        } catch (DeerFlowException e) { throw e; }
+        catch (Exception e) { throw new DeerFlowException("DEERFLOW_UNAVAILABLE", "Gateway request failed", null, e); }
     }
 
-    /**
-     * 取消 Run。
-     */
-    public boolean cancelRun(String threadId, String runId) {
+    private void ensureThread(StartRunRequest request) {
         try {
-            RestClient client = RestClient.builder().baseUrl(deerflowBaseUrl).build();
-            client.post()
-                    .uri("/api/threads/{tid}/runs/{rid}/cancel", threadId, runId)
-                    .header("Authorization", "Bearer " + apiKey)
+            client.post().uri("/threads").headers(h -> addIdentityHeaders(h, request))
+                    .body(Map.of("thread_id", request.getThreadId(), "assistant_id", request.getAgentId(),
+                            "metadata", Map.of("tenant_id", Objects.toString(request.getTenantId(), ""),
+                                    "platform_run_id", Objects.toString(request.getPlatformRunId(), ""))))
                     .retrieve()
+                    .onStatus(status -> status.value() == 409, (req, res) -> { /* already exists */ })
                     .toBodilessEntity();
-            return true;
         } catch (Exception e) {
-            log.warn("[DeerFlowAdapter] cancelRun failed: {}", e.getMessage());
-            return false;
+            // Gateway's create endpoint is idempotent for an existing thread; a 404/5xx is
+            // a real dependency error and must not degrade into a null upstream run id.
+            if (e instanceof DeerFlowException de && de.getStatus() != null && de.getStatus() == 409) return;
+            throw new DeerFlowException("DEERFLOW_THREAD_CREATE_FAILED", "Unable to create DeerFlow thread", null, e);
         }
     }
 
-    /**
-     * 获取 Run 状态。
-     */
-    public Map<String, Object> getRunStatus(String runId) {
+    public Map<String,Object> getRunStatus(String threadId, String runId) {
+        if (!properties.isEnabled()) throw DeerFlowException.disabled();
         try {
-            RestClient client = RestClient.builder().baseUrl(deerflowBaseUrl).build();
-            return client.get()
-                    .uri("/api/runs/{rid}", runId)
-                    .header("Authorization", "Bearer " + apiKey)
-                    .retrieve()
-                    .body(Map.class);
-        } catch (Exception e) {
-            log.warn("[DeerFlowAdapter] getRunStatus failed: {}", e.getMessage());
-            return Map.of("status", "UNKNOWN");
-        }
+            Map<?,?> response = client.get().uri("/threads/{tid}/runs/{rid}", threadId, runId)
+                    .headers(h -> addIdentityHeaders(h, null)).retrieve().body(Map.class);
+            return response == null ? Map.of() : new LinkedHashMap<>((Map<String,Object>) response);
+        } catch (Exception e) { throw new DeerFlowException("DEERFLOW_STATUS_UNAVAILABLE", "Gateway status request failed", null, e); }
     }
 
-    /**
-     * 获取 Artifact URL。
-     */
-    public String getArtifactUrl(String runId, String name) {
-        return deerflowBaseUrl + "/api/runs/" + runId + "/artifact/" + name;
+    public boolean cancelRun(String threadId, String runId) {
+        if (!properties.isEnabled()) throw DeerFlowException.disabled();
+        try { client.post().uri("/threads/{tid}/runs/{rid}/cancel", threadId, runId).headers(h -> addIdentityHeaders(h, null)).retrieve().toBodilessEntity(); return true; }
+        catch (Exception e) { throw new DeerFlowException("DEERFLOW_CANCEL_FAILED", "Gateway cancellation failed", null, e); }
     }
 
-    private Map<String, Object> toPayload(StartRunRequest req) {
-        Map<String, Object> body = new LinkedHashMap<>();
-        body.put("assistant_id", req.agentId);
-        body.put("input", Map.of("messages", List.of(Map.of("role", "user", "content", req.message))));
-        body.put("config", Map.of(
-                "configurable", Map.of(
-                        "tenant_id", req.tenantId,
-                        "user_id", req.userId,
-                        "ontology_envelope", req.ontologyEnvelope,
-                        "allowed_tools", req.allowedTools
-                )
-        ));
-        body.put("stream_mode", "events");
+    public String getArtifactUrl(String threadId, String path) { return stripTrailingSlash(properties.getGatewayUrl()) + "/threads/" + threadId + "/artifacts/" + path; }
+
+    private Map<String,Object> toPayload(StartRunRequest req) {
+        Map<String,Object> body = new LinkedHashMap<>();
+        body.put("assistant_id", req.getAgentId());
+        body.put("input", Map.of("messages", List.of(Map.of("role", "user", "content", Objects.toString(req.getMessage(), "")) )));
+        body.put("config", Map.of("configurable", Map.of("tenant_id", Objects.toString(req.getTenantId(), ""), "user_id", Objects.toString(req.getUserId(), ""), "ontology_envelope", Optional.ofNullable(req.getOntologyEnvelope()).orElse(Map.of()), "allowed_tools", Optional.ofNullable(req.getAllowedTools()).orElse(List.of()))));
+        body.put("metadata", Map.of("platform_run_id", Objects.toString(req.getPlatformRunId(), ""), "tenant_id", Objects.toString(req.getTenantId(), ""), "trace_id", Objects.toString(req.getTraceId(), "")));
+        body.put("stream_mode", "updates"); body.put("on_disconnect", "continue"); body.put("if_not_exists", "create");
         return body;
     }
 
-    /**
-     * 入参。
-     */
-    @lombok.Data
-    @lombok.Builder
-    @lombok.NoArgsConstructor
-    @lombok.AllArgsConstructor
+    private void addIdentityHeaders(org.springframework.http.HttpHeaders h, StartRunRequest request) {
+        if (properties.getInternalToken() != null && !properties.getInternalToken().isBlank()) h.set("X-DeerFlow-Internal-Token", properties.getInternalToken());
+        String owner = properties.getOwnerUserId();
+        if (owner != null && !owner.isBlank()) h.set("X-DeerFlow-Owner-User-Id", owner);
+    }
+    private static DeerFlowException upstream(String code, org.springframework.http.client.ClientHttpResponse res) {
+        try {
+            String detail = new String(res.getBody().readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+            return new DeerFlowException(code, "DeerFlow returned " + res.getStatusCode() + ": " + detail, res.getStatusCode().value(), null);
+        } catch (Exception e) { return new DeerFlowException(code, "DeerFlow upstream error", null, e); }
+    }
+    private static String stripTrailingSlash(String value) { return value == null || value.isBlank() ? "http://localhost:2026/api" : value.replaceAll("/+$", ""); }
+
+    @Data @Builder @NoArgsConstructor @AllArgsConstructor
     public static class StartRunRequest {
-        private String tenantId;
-        private String userId;
-        private String agentId;
-        private String threadId;
-        private String message;
-        private Map<String, Object> ontologyEnvelope;
-        private java.util.List<String> allowedTools;
+        private String tenantId, userId, agentId, threadId, message, platformRunId, traceId;
+        private Map<String,Object> ontologyEnvelope;
+        private List<String> allowedTools;
     }
 }

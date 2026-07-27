@@ -91,8 +91,9 @@ export default function AppVersionPage() {
   const [basedOnCurrent, setBasedOnCurrent] = useState(true);
 
   return (
-    <div>
+    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
       <AppHeader appId={appId} appName={appName} subTabs={APP_SUB_TABS} />
+      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', paddingBottom: 24 }}>
 
       {/* Page Header */}
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginBottom: 24 }}>
@@ -275,6 +276,7 @@ export default function AppVersionPage() {
           </div>
         </Field>
       </FormDrawer>
+      </div>
     </div>
   );
 }

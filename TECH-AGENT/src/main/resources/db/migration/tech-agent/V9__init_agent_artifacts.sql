@@ -39,7 +39,7 @@ CREATE INDEX IF NOT EXISTS idx_agent_artifact_scan
 CREATE INDEX IF NOT EXISTS idx_agent_artifact_revoked
     ON agent_artifact(revoked) WHERE revoked = TRUE;
 CREATE INDEX IF NOT EXISTS idx_agent_artifact_evidence_refs
-    ON agent_artifact USING gin (evidence_refs::jsonb) WHERE evidence_refs IS NOT NULL;
+    ON agent_artifact USING gin ((evidence_refs::jsonb)) WHERE evidence_refs IS NOT NULL;
 
 COMMENT ON COLUMN agent_artifact.sha256 IS '主文档 §5.6 - Artifact SHA256 校验';
 COMMENT ON COLUMN agent_artifact.scan_status IS 'CLEAN / FLAGGED / BLOCKED；BLOCKED 必撤销（C4）';

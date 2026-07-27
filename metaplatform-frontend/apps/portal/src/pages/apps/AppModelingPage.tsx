@@ -88,8 +88,9 @@ export default function AppModelingPage() {
   const appName = active?.name ?? '订单管理系统';
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
       <AppHeader appId={appId} appName={appName} subTabs={APP_SUB_TABS} />
+      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', paddingBottom: 24 }}>
 
       {/* Page Header */}
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginBottom: 24 }}>
@@ -245,6 +246,7 @@ export default function AppModelingPage() {
       <div style={{ padding: '16px 0 0', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 16 }}>
         <button className="v-btn">取消</button>
         <button className="v-btn-primary"><Save style={{ width: 15, height: 15 }} />保存模型</button>
+      </div>
       </div>
     </div>
   );

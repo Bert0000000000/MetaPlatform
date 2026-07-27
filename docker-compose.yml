@@ -130,7 +130,7 @@ services:
 
   # P0.1.2 - 事件总线（Ontology Event / Document Event / CDC）
   kafka:
-    image: bitnami/kafka:3.9
+    image: confluentinc/cp-kafka:7.8.0
     container_name: mate-kafka
     environment:
       KAFKA_CFG_NODE_ID: "0"

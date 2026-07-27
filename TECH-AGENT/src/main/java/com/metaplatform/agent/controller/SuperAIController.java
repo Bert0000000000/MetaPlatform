@@ -2,6 +2,7 @@ package com.metaplatform.agent.controller;
 
 import com.metaplatform.agent.common.ApiResponse;
 import com.metaplatform.agent.deerflow.DeerFlowAdapter;
+import com.metaplatform.agent.deerflow.DeerFlowRunOrchestrator;
 import com.metaplatform.agent.runtime.RuntimeRouter;
 import com.metaplatform.agent.runtime.RuntimeRouter.RouteDecision;
 import lombok.RequiredArgsConstructor;
@@ -17,7 +18,7 @@ import java.util.Map;
 public class SuperAIController {
 
     private final RuntimeRouter router;
-    private final DeerFlowAdapter deerFlowAdapter;
+    private final DeerFlowRunOrchestrator deerFlowRunOrchestrator;
 
     @PostMapping("/route")
     public ApiResponse<Map<String, Object>> route(@RequestBody Map<String, Object> body) {
@@ -33,7 +34,10 @@ public class SuperAIController {
 
     @PostMapping("/run")
     public ApiResponse<Map<String, Object>> run(@RequestBody DeerFlowAdapter.StartRunRequest request) {
-        String runId = deerFlowAdapter.startRun(request);
-        return ApiResponse.success(Map.of("runId", runId));
+        DeerFlowRunOrchestrator.StartResult result = deerFlowRunOrchestrator.start(request);
+        return ApiResponse.success(Map.of(
+                "runId", result.platformRunId(), "deerFlowRunId", result.deerFlowRunId(),
+                "threadId", result.threadId(), "selectedRuntime", result.selectedRuntime(),
+                "traceId", result.traceId()));
     }
 }

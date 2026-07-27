@@ -53,13 +53,6 @@ public class DocumentCandidateListener {
     @Autowired
     public DocumentCandidateListener(
             @Autowired(required = false) OntologyDraftService draftService,
-            @Autowired(required = false) AuthoringService authoringService) {
-        this(draftService, authoringService, null, FlushMode.IMMEDIATE);
-    }
-
-    @Autowired
-    public DocumentCandidateListener(
-            @Autowired(required = false) OntologyDraftService draftService,
             @Autowired(required = false) AuthoringService authoringService,
             @Autowired(required = false) AuthoringBatchAccumulator batchAccumulator,
             @Autowired(required = false) FlushMode flushMode) {

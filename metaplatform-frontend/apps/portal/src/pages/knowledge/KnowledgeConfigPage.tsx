@@ -81,8 +81,9 @@ export default function KnowledgeConfigPage() {
   };
 
   return (
-    <div>
+    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
       <SubTabs items={KB_TABS} activePath={location.pathname} />
+      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', paddingBottom: 24 }}>
 
       {/* Page Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 24, marginBottom: 24 }}>
@@ -194,6 +195,7 @@ export default function KnowledgeConfigPage() {
             </div>
           </div>
         ))}
+      </div>
       </div>
     </div>
   );

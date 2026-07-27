@@ -77,6 +77,17 @@ public class MilvusHttpClient implements VectorStoreClient {
     }
 
     @Override
+    public List<SearchResult> hybridSearch(String collection, List<Float> vector, String text, int topK,
+                                            Map<String, Object> ontologyFilter) {
+        // Milvus REST filtering is deployment-version dependent; enforce scope again client-side.
+        return hybridSearch(collection, vector, text, Math.max(topK, topK * 4)).stream()
+                .filter(r -> ontologyFilter == null || ontologyFilter.isEmpty()
+                        || ontologyFilter.entrySet().stream().allMatch(e ->
+                        Objects.equals(String.valueOf(r.metadata().get(e.getKey())), String.valueOf(e.getValue()))))
+                .limit(topK).toList();
+    }
+
+    @Override
     public void insert(String collection, List<Map<String, Object>> records) {
         try {
             Map<String, Object> body = new HashMap<>();

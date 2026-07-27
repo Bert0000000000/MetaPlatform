@@ -717,25 +717,52 @@ a {
   }
 }
 
-/* ===== Scrollbar (dark) ===== */
+/* ===== Scrollbar (auto-hide, macOS-like) ===== */
+/* 默认隐藏；hover 容器 / hover 滚动条 / 滚动中 三种状态显示 */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--background);
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--border);
-  border-radius: 4px;
+  background-color: rgba(155, 155, 155, 0);
+  border-radius: 5px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  transition: background-color 0.25s ease;
 }
 
+/* Hover 在滚动条自身上：更明显 */
 ::-webkit-scrollbar-thumb:hover {
-  background: #404040;
+  background-color: rgba(180, 180, 180, 0.7);
 }
 
+/* Hover 在滚动容器上：中等可见（CSS Selectors L4 嵌套） */
+:hover::-webkit-scrollbar-thumb {
+  background-color: rgba(155, 155, 155, 0.45);
+}
+
+/* 全局正在滚动（由 ScrollbarAutoHide 添加 .mate-scrolling 到 <html>） */
+.mate-scrolling ::-webkit-scrollbar-thumb,
+.mate-scrolling::-webkit-scrollbar-thumb {
+  background-color: rgba(155, 155, 155, 0.45);
+}
+
+/* Firefox：原生滚动条样式 */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+.mate-scrolling,
+.mate-scrolling *,
+*:hover {
+  scrollbar-color: rgba(155, 155, 155, 0.5) transparent;
+}
 
 /* 显式压制浏览器默认 focus outline 蓝色 ring */
 input.v-input:focus,

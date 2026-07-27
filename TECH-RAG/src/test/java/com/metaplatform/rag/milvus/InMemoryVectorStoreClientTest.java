@@ -69,4 +69,16 @@ class InMemoryVectorStoreClientTest {
         client.createCollectionIfMissing("missing", 4);
         assertTrue(client.search("missing", List.of(1.0f, 0.0f), 5).isEmpty());
     }
+    @Test
+    @DisplayName("hybridSearch: ontology tenant filter excludes another tenant")
+    void hybridSearchHonorsOntologyTenantFilter() {
+        client.insert("docs", List.of(
+                Map.of("id", "T1-DOC", "vector", List.of(1.0f, 0.0f), "text", "shared policy", "metadata", Map.of("tenantId", "T1")),
+                Map.of("id", "T2-DOC", "vector", List.of(1.0f, 0.0f), "text", "shared policy", "metadata", Map.of("tenantId", "T2"))));
+
+        var results = client.hybridSearch("docs", List.of(1.0f, 0.0f), "shared", 10, Map.of("tenantId", "T1"));
+        assertEquals(1, results.size());
+        assertEquals("T1-DOC", results.get(0).recordId());
+    }
+
 }

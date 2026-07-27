@@ -6,5 +6,5 @@ import java.util.Optional;
 
 public interface KbRetrievalConfigRepository extends JpaRepository<KbRetrievalConfigEntity, String> {
     List<KbRetrievalConfigEntity> findByTenantId(String tenantId);
-    Optional<KbRetrievalConfigEntity> findByTenantIdAndKbId(String tenantId, String kbId);
+    
 }

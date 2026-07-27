@@ -3,6 +3,10 @@ package com.metaplatform.agent.native_;
 import com.metaplatform.agent.middleware.MiddlewareChain;
 import com.metaplatform.agent.middleware.MiddlewareContext;
 import com.metaplatform.agent.runtime.RuntimeRouter;
+import com.metaplatform.agent.runtime.NativeGraphRuntimeService;
+import com.metaplatform.agent.middleware.ToolCall;
+
+import java.util.List;
 import com.metaplatform.agent.runtime.RuntimeRouter.RouteDecision;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,31 +26,53 @@ public class NativeAgentRuntime {
 
     private final MiddlewareChain middlewareChain;
     private final RuntimeRouter router;
+    private final NativeGraphRuntimeService graphRuntime;
+    private final com.metaplatform.agent.runtime.NativeLlmToolLoopService llmToolLoop;
+    private final com.metaplatform.agent.runtime.NativeRuntimeEventPublisher eventPublisher;
 
     @Value("${mate.runtime.mode:native}")
     private String mode;
 
-    public RunOutcome execute(MiddlewareContext context) {
-        log.info("[NativeAgentRuntime] mode={} runId={} threadId={}",
-                mode, context.getRunId(), context.getThreadId());
-
-        // 1. 路由
-        RouteDecision decision = router.route(context);
-        log.info("[NativeAgentRuntime] decision={}", decision);
-
-        // 2. Middleware Chain（Before）
-        middlewareChain.runBeforeExecution(context);
-        if (context.isRejected()) {
-            return RunOutcome.rejected(context.getRejectionReason());
+    /** LLM-driven Native entry point; Spring AI tool calls are routed through ontology middleware. */
+    public RunOutcome executeWithLlm(MiddlewareContext context) {
+        try {
+            middlewareChain.runBeforeExecution(context);
+            if (context.isRejected()) return RunOutcome.rejected(context.getRejectionReason());
+            String content = llmToolLoop.execute(context);
+            middlewareChain.runAfterExecution(context);
+            if (content == null || content.isBlank()) return RunOutcome.failed("LLM produced no output");
+            return RunOutcome.success(content);
+        } catch (RuntimeException ex) {
+            return RunOutcome.failed("native LLM execution failed: " + ex.getMessage());
         }
+    }
 
-        // 3. 模拟工具调用循环（真实场景由 SAA Graph 执行）
-        // P8.1 占位：直接返回 mock 结果
-        return RunOutcome.success(
-                "Native runtime 处理完成。决策=" + decision
-                        + "，claims=" + context.getClaims().size()
-                        + "，proposals=" + context.getActionProposals().size()
-        );
+    public RunOutcome execute(MiddlewareContext context) {
+        return execute(context, List.of());
+    }
+
+    /** Execute an explicit native graph; no implicit mock success is permitted. */
+    public RunOutcome execute(MiddlewareContext context, List<ToolCall> toolCalls) {
+        log.info("[NativeAgentRuntime] mode={} runId={} threadId={}", mode, context.getRunId(), context.getThreadId());
+        RouteDecision decision = router.route(context);
+        NativeGraphRuntimeService.NativeGraphResult result = graphRuntime.execute(context, toolCalls);
+        if (!"COMPLETED".equals(result.status())) {
+            eventPublisher.publish(context.getRunId(), "RUN_FAILED", java.util.Map.of("error", result.error() == null ? "native graph failed" : result.error()));
+            return RunOutcome.failed(result.error() == null ? "native graph produced no successful result" : result.error());
+        }
+        if (result.toolOutputs().isEmpty()) {
+            return RunOutcome.failed("native graph has no executed tool outputs");
+        }
+        eventPublisher.publish(context.getRunId(), "RUN_COMPLETED", java.util.Map.of("route", decision.name(), "outputs", result.toolOutputs().size(), "claims", result.claims().size()));
+        return RunOutcome.success("Native runtime route=" + decision + ", outputs=" + result.toolOutputs().size()
+                + ", claims=" + result.claims().size());
+    }
+
+    public com.metaplatform.agent.runtime.UnifiedRuntimeResponse executeUnified(MiddlewareContext context, List<ToolCall> toolCalls) {
+        RunOutcome outcome = execute(context, toolCalls);
+        return new com.metaplatform.agent.runtime.UnifiedRuntimeResponse(
+                context.getRunId(), outcome.status(), outcome.content(), context.getClaims(), List.of(), List.of(),
+                java.util.Map.of("runtime", "native", "route", router.route(context).name()));
     }
 
     public record RunOutcome(String status, String content) {

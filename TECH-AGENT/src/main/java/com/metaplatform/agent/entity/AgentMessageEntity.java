@@ -33,6 +33,7 @@ public class AgentMessageEntity {
     @Column(name = "createdAt", columnDefinition = "TEXT")
     private OffsetDateTime createdAt;
 
+    @Id
     @Lob
     @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     @Column(name = "id", columnDefinition = "TEXT")
@@ -40,7 +41,7 @@ public class AgentMessageEntity {
 
     @Lob
     @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    @Column(name = "metadata", nullable = false, columnDefinition = "jsonb")
+    @Column(name = "metadata", nullable = false, columnDefinition = "TEXT")
     private String metadata;
 
     @Lob

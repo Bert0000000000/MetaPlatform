@@ -31,6 +31,7 @@ public class AgentConversationEntity {
     @Column(name = "favorite", nullable = false)
     private Boolean favorite;
 
+    @Id
     @Lob
     @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     @Column(name = "id", columnDefinition = "TEXT")
@@ -43,11 +44,8 @@ public class AgentConversationEntity {
 
     @Lob
     @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    @Column(name = "messageCount", columnDefinition = "TEXT")
+    @Column(name = "message_count", columnDefinition = "TEXT")
     private Integer messageCount;
-
-    @Column(name = "message_count", nullable = false)
-    private Integer message_count;
 
     @Lob
     @JdbcTypeCode(SqlTypes.LONGVARCHAR)

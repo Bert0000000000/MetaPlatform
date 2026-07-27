@@ -264,8 +264,9 @@ export default function OntologyGraphPage() {
   }, [selectedNode]);
 
   return (
-    <div>
+    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
       <SubTabs items={ONTOLOGY_TABS} activePath={location.pathname} />
+      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', paddingBottom: 24 }}>
 
       {/* Page Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 24, marginBottom: 20 }}>
@@ -442,6 +443,7 @@ export default function OntologyGraphPage() {
 
       {/* MOCK: 引用本体实体数据 */}
       <span style={{ display: 'none' }}>{MOCK_ONTOLOGY_ENTITIES.length}</span>
+      </div>
     </div>
   );
 }

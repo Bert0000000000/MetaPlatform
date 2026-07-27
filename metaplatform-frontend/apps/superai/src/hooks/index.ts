@@ -16,3 +16,5 @@ export type {
   InteractionContextValue,
   InteractionContextProviderProps,
 } from './InteractionContextProvider';
+
+export * from './useAgentRunEvents';

@@ -39,11 +39,13 @@ public class ActionRouteDlqMetrics {
     private final Counter retryFailureCounter;
 
     private final boolean enabled;
+    private final java.util.concurrent.atomic.AtomicReference<ActionRouteDlqService> dlqService = new java.util.concurrent.atomic.AtomicReference<>();
+    @Autowired
+    public void bindService(ActionRouteDlqService service) { this.dlqService.set(service); }
 
     @Autowired
     public ActionRouteDlqMetrics(
-            @Autowired(required = false) MeterRegistry meterRegistry,
-            @Autowired(required = false) ActionRouteDlqService dlqService) {
+            @Autowired(required = false) MeterRegistry meterRegistry) {
         if (meterRegistry != null) {
             this.enqueuedCounter = Counter.builder(METRIC_ENQUEUED)
                     .description("Total number of failed auto-routes enqueued into the DLQ")
@@ -54,7 +56,7 @@ public class ActionRouteDlqMetrics {
             this.retryFailureCounter = Counter.builder(METRIC_RETRY_FAILURE)
                     .description("Total number of DLQ retry attempts that still failed")
                     .register(meterRegistry);
-            Supplier<Number> pendingSupplier = () -> dlqService == null ? 0d : (double) dlqService.size();
+            Supplier<Number> pendingSupplier = () -> { ActionRouteDlqService d = dlqService.get(); return d == null ? 0d : (double) d.size(); };
             Gauge.builder(METRIC_PENDING, pendingSupplier)
                     .description("Current number of pending (unresolved) DLQ entries")
                     .register(meterRegistry);

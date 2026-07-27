@@ -14,7 +14,7 @@ CREATE TABLE mcp_debug_session (
     duration_ms         BIGINT,
     status              VARCHAR(20) NOT NULL,
     error_message       TEXT,
-    breakpoint          BOOLEAN NOT NULL DEFAULT FALSE,
+    is_breakpoint       BOOLEAN NOT NULL DEFAULT FALSE,
     trace_id            VARCHAR(64) NOT NULL,
     created_at          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP

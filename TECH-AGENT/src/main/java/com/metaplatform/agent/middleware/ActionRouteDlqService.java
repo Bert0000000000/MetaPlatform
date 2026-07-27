@@ -45,21 +45,21 @@ public class ActionRouteDlqService {
     private final ActionApprovalBridgeService approvalBridge;
     private final OntologyDraftService draftService;  // optional - only for cleanup hooks
 
-    private final ActionRouteDlqMetrics metrics;
+    private ActionRouteDlqMetrics metrics;
 
     @Autowired
     public ActionRouteDlqService(
             @Autowired(required = false) ActionProposalService proposalService,
             @Autowired(required = false) ActionApprovalBridgeService approvalBridge,
             @Autowired(required = false) OntologyDraftService draftService,
-            @Autowired(required = false) ActionRouteDlqRepository repository,
-            @Autowired(required = false) ActionRouteDlqMetrics metrics) {
+            @Autowired(required = false) ActionRouteDlqRepository repository) {
         this.proposalService = proposalService;
         this.approvalBridge = approvalBridge;
         this.draftService = draftService;
         this.repository = repository;
-        this.metrics = metrics;
     }
+
+    public ActionRouteDlqMetrics getMetrics() { return metrics; }
 
     private final List<FailedRoute> pending = new CopyOnWriteArrayList<>();
     private final AtomicLong nextId = new AtomicLong(1);

@@ -49,12 +49,12 @@ public class AgentDefinitionEntity {
 
     @Lob
     @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    @Column(name = "tools", nullable = false, columnDefinition = "jsonb")
+    @Column(name = "tools", nullable = false, columnDefinition = "TEXT")
     private String tools;
 
     @Lob
     @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    @Column(name = "rag_scopes", nullable = false, columnDefinition = "jsonb")
+    @Column(name = "rag_scopes", nullable = false, columnDefinition = "TEXT")
     private String ragScopes;
 
     @JdbcTypeCode(SqlTypes.VARCHAR)

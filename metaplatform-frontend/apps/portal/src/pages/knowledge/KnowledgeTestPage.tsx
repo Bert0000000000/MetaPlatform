@@ -48,8 +48,9 @@ export default function KnowledgeTestPage() {
   const [selectedKB, setSelectedKB] = useState('all');
 
   return (
-    <div>
+    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
       <SubTabs items={KB_TABS} activePath={location.pathname} />
+      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', paddingBottom: 24 }}>
 
       {/* Page Header */}
       <div style={{ marginTop: 24, marginBottom: 24 }}>
@@ -163,6 +164,7 @@ export default function KnowledgeTestPage() {
             ))}
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

@@ -4,104 +4,41 @@ server:
 spring:
   application:
     name: mate-agent-server
-
   datasource:
     url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/metaplatform_agent?stringtype=varchar
     username: ${DB_USER:meta}
     password: ${DB_PASSWORD:meta}
     driver-class-name: org.postgresql.Driver
-
   jpa:
     hibernate:
       ddl-auto: validate
     properties:
       hibernate:
         type:
-          preferred_jdbc_type_code_for_string: 12
+          preferred_jdbc_type_for_string: 12
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: false
     open-in-view: false
-
   flyway:
     enabled: true
     baseline-on-migrate: true
-    locations: classpath:db/migration
-
-  cloud:
-    nacos:
-      discovery:
-        server-addr: ${NACOS_ADDR:localhost:8848}
-        namespace: metaplatform
-        # Nacos 3.0+ gRPC 端口
-        grpc-port: 9848
-      config:
-        server-addr: ${NACOS_ADDR:localhost:8848}
-        # Nacos 3.0+ Config 走 9849
-        grpc-port: 9849
-        namespace: metaplatform
-        file-extension: yaml
-  config:
-    import:
-      - optional:nacos:${spring.application.name}.yaml
-
-  ai:
-    alibaba:
-      dashscope:
-        api-key: ${DASHSCOPE_API_KEY:sk-test}
-        chat:
-          options:
-            model: qwen-max
-            temperature: 0.7
-        embedding:
-          options:
-            model: text-embedding-v3
-            dimensions: 1024
-    mcp:
-      client:
-        enabled: true
-        stdio:
-          enabled: false
-        sse:
-          connections:
-            mate-platform:
-              url: ${MCP_PLATFORM_URL:http://localhost:8080/api/v1/mcp/sse}
-
-  kafka:
-    bootstrap-servers: ${KAFKA_SERVERS:localhost:9092}
-    producer:
-      key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
-    consumer:
-      group-id: mate-agent-server
-      auto-offset-reset: latest
-      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
-
-# 上游服务地址（空字符串启用 mock 模式）
-mate:
-  agent:
-    # LLM Gateway（TECH-LLMGW）
-    llmgw-base-url: ${LLMGW_BASE_URL:http://localhost:8210}
-    llmgw-timeout: 30s
-    # Action 服务（TECH-ACTION）
-    action-base-url: ${ACTION_BASE_URL:http://localhost:8104}
-    action-timeout: 30s
-    # RAG 服务（TECH-RAG）
-    rag-base-url: ${RAG_BASE_URL:http://localhost:8901}
-    rag-timeout: 30s
-    # MCP SSE（TECH-MCP）
-    sse:
-      base-url: ${MCP_PLATFORM_URL:http://localhost:8080}
-    # JWT 配置
-    jwt-secret: ${JWT_SECRET:mate-platform-default-secret-key-must-be-over-32-bytes}
-    jwt-algorithm: HS384
-    # Agent 执行参数
-    max-concurrency: 16
-    max-steps: 50
-    execution-timeout: 10m
-    kafka-topic: agent-execution-events
-
+    locations: filesystem:src/main/resources/db/migration/tech-agent,filesystem:src/main/resources/db/migration/tech-agent-shared
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration
+      - org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration
+      - org.springframework.boot.actuate.autoconfigure.security.servlet.ManagementWebSecurityAutoConfiguration
 management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: never
+  health:
+    neo4j:
+      enabled: false
   tracing:
     enabled: true
     sampling:

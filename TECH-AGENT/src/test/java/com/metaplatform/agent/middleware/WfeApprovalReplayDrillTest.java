@@ -55,7 +55,7 @@ class WfeApprovalReplayDrillTest {
         Mockito.when(repository.incrementRetryCount(Mockito.any(Long.class), Mockito.any())).thenReturn(0);
         Mockito.when(repository.markResolved(Mockito.any(Long.class), Mockito.any(), Mockito.anyString())).thenReturn(0);
 
-        service = new ActionRouteDlqService(proposalService, approvalBridge, null, repository, null);
+        service = new ActionRouteDlqService(proposalService, approvalBridge, null, repository);
         scheduler = new ActionRouteDlqScheduler(service);
         org.springframework.test.util.ReflectionTestUtils.setField(scheduler, "enabled", true);
         org.springframework.test.util.ReflectionTestUtils.setField(scheduler, "maxRetries", 3);

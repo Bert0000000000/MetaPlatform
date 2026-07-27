@@ -1,0 +1,8 @@
+﻿$env:DB_USER='meta'
+$env:DB_PASSWORD='meta'
+$env:DEER_FLOW_GATEWAY_URL='http://127.0.0.1:8001/api'
+$env:DEER_FLOW_INTERNAL_TOKEN='meta-platform-dev-internal-token-2026'
+$env:DEER_FLOW_OWNER_USER_ID='metaplatform-agent'
+$env:MATE_AGENT_CONTEXT_SIGNING_SECRET='metaplatform-context-signing-secret-at-least-32-chars'
+Set-Location 'D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\TECH-AGENT'
+& mvn spring-boot:run '-Dspring-boot.run.profiles=dev' '-Dspring-boot.run.jvmArguments=-Dspring.cloud.compatibility-verifier.enabled=false' *> 'D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\TECH-AGENT\acceptance-service.log'

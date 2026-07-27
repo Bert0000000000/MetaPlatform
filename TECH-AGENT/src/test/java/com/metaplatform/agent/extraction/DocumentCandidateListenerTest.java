@@ -31,7 +31,7 @@ class DocumentCandidateListenerTest {
     void setUp() {
         draftService = Mockito.mock(OntologyDraftService.class);
         authoringService = Mockito.mock(AuthoringService.class);
-        listener = new DocumentCandidateListener(draftService, authoringService);
+        listener = new DocumentCandidateListener(draftService, authoringService, null, null);
         when(authoringService.buildFromExtraction(any(), any(), any(), any(), any(), any()))
                 .thenAnswer(inv -> ProposeDraftRequest.builder()
                         .tenantId(inv.getArgument(0))
@@ -84,7 +84,7 @@ class DocumentCandidateListenerTest {
     @Test
     @DisplayName("AuthoringService unavailable: log warning, no error")
     void authoringServiceUnavailable() {
-        DocumentCandidateListener bareListener = new DocumentCandidateListener(null, null);
+        DocumentCandidateListener bareListener = new DocumentCandidateListener(null, null, null, null);
         EventEnvelope<Map<String, Object>> env = envelope("EVT-4", Map.of(
                 "tenantId", "T1",
                 "documentId", "DOC-1",

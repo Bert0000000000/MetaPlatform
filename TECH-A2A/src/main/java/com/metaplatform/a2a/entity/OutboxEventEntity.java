@@ -18,6 +18,7 @@ import java.time.OffsetDateTime;
 @AllArgsConstructor
 public class OutboxEventEntity {
 
+    @Id
     @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "event_id", nullable = false, length = 64)
     private String eventId;

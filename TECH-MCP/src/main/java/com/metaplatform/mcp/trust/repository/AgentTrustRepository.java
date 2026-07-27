@@ -18,7 +18,7 @@ public interface AgentTrustRepository extends JpaRepository<AgentTrustEntity, UU
            "WHERE t.tenantId = :tenantId " +
            "AND (:agentId IS NULL OR t.agentId = :agentId) " +
            "AND (:trustLevel IS NULL OR t.trustLevel = :trustLevel) " +
-           "AND (:keyword IS NULL OR LOWER(t.reason) LIKE LOWER(CONCAT('%', cast(:keyword as string), '%'))))" +
+           "AND (:keyword IS NULL OR LOWER(t.reason) LIKE LOWER(CONCAT('%', cast(:keyword as string), '%')))" +
            "ORDER BY t.updatedAt DESC")
     Page<AgentTrustEntity> search(@Param("tenantId") String tenantId,
                                   @Param("agentId") UUID agentId,

@@ -3,16 +3,19 @@ package com.metaplatform.agent.middleware;
 import com.metaplatform.agent.context.OntologyContextEnvelope;
 
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 
 import java.util.*;
 
 /**
- * Middleware Context（P3.1）。
- *
- * <p>贯穿整条 Middleware Chain 的上下文对象。所有 Middleware 共享一个实例。</p>
+ * Middleware Context閿涘湧3.1閿涘鈧? *
+ * <p>鐠愵垳鈹涢弫瀛樻蒋 Middleware Chain 閻ㄥ嫪绗傛稉瀣瀮鐎电钖勯妴鍌涘閺?Middleware 閸忓彉闊╂稉鈧稉顏勭杽娓氬鈧?/p>
  */
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class MiddlewareContext {
 
@@ -22,10 +25,10 @@ public class MiddlewareContext {
     private String threadId;
     private String runId;
 
-    /** 原始用户消息 */
+    /** 閸樼喎顫愰悽銊﹀煕濞戝牊浼?*/
     private String userMessage;
 
-    /** Ontology Context Envelope（来自 TECH-ONT /ont/context/build） */
+    /** Ontology Context Envelope閿涘牊娼甸懛?TECH-ONT /ont/context/build閿?*/
     private Map<String, Object> ontologyEnvelope;
 
     /** Server-built, signed ontology context used by every runtime/tool. */
@@ -34,16 +37,16 @@ public class MiddlewareContext {
     /** Allowed Tools */
     private List<String> allowedTools;
 
-    /** 当前 Grounding 结果 */
+    /** 瑜版挸澧?Grounding 缂佹挻鐏?*/
     private Map<String, Object> grounding;
 
-    /** 已收集的 Claims 与 Evidence */
+    /** 瀹稿弶鏁归梿鍡欐畱 Claims 娑?Evidence */
     private List<Map<String, Object>> claims;
 
-    /** 待处理的 Action Proposals */
+    /** 瀵板懎顦╅悶鍡欐畱 Action Proposals */
     private List<Map<String, Object>> actionProposals;
 
-    /** 任何中间件可设置的拒绝原因 */
+    /** 娴犺缍嶆稉顓㈡？娴犺泛褰茬拋鍓х枂閻ㄥ嫭瀚嗙紒婵嗗斧閸?*/
     private String rejectionReason;
     private boolean rejected;
 }

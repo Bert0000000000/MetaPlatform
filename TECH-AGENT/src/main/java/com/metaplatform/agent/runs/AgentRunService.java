@@ -51,6 +51,20 @@ public class AgentRunService {
         return toDto(saved);
     }
 
+    @Transactional
+    public AgentRunDto bindDeerFlow(String runId, String threadId, String deerFlowRunId) {
+        if (deerFlowRunId == null || deerFlowRunId.isBlank()) {
+            throw new IllegalArgumentException("deerFlowRunId must not be blank");
+        }
+        AgentRunEntity run = require(runId);
+        run.setDeerflowThreadId(threadId);
+        run.setDeerflowRunId(deerFlowRunId);
+        run.setStatus("RUNNING");
+        run.setStartedAt(Instant.now());
+        run.setUpdatedAt(Instant.now());
+        return toDto(repository.saveAndFlush(run));
+    }
+
     @Transactional(readOnly = true)
     public List<AgentRunDto> list(String tenantId, String status, int limit) {
         int bounded = Math.max(1, Math.min(limit <= 0 ? 50 : limit, 200));

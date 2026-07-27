@@ -19,6 +19,7 @@ import java.time.OffsetDateTime;
 public class ApiKeyEntity {
 
     @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Id
     @Column(name = "key_id", nullable = false, length = 64)
     private String keyId;
 
