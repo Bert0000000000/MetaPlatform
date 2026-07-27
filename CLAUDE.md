@@ -1,319 +1,206 @@
-# CLAUDE.md
+﻿# CLAUDE.md
 
 > 本文件供 Claude Code 读取，提供项目上下文、架构约束与开发规范。
-> 最近更新：2026-07-25（v1.4 重构期·FlowGram 全能力补齐 Sprint 1 完成）
+> **最近更新**：2026-07-27（v3.0 Plan D Polyglot Microservice Architecture 正式版）
+>
+> **当前架构版本**：**v3.0**（替代 v2.0 / v2.1，详见 `docs/superpowers/specs/2026-07-27-mate-platform-technical-architecture.md`）
+>
+> **v1.2 / v2.0 / v2.1 状态**：已废止（v1.2）/ 已演进为 v3.0（v2.0 / v2.1 已归档）
 
 ## 项目概述
 
-**Mate Platform** 是基于 Ontology 本体论引擎的企业级决策与运营提效平台。
+**Mate Platform** 是基于 Ontology 本体引擎 + 多语言微服务架构的企业级 AI 平台。
 
-核心能力：
-- **Ontology 本体引擎**：统一语义建模与推理，业务对象（G2）为主要构建块
+### 核心能力
+- **Ontology 本体引擎**：统一语义建模与推理，业务对象为主要构建块
 - **低代码应用构建**：融合 BPMN 审批流（fixed-layout）与 AI Agent 编排流（free-layout）
 - **数字员工**：AI 驱动的自动化员工，制度提炼、流程访谈、任务执行
-- **企业级 RAG 知识库**：向量 + 非向量混合检索，文档版本与协同
+- **企业级 RAG 知识库**：深度文档解析 + GraphRAG 检索 + 智能问答
 - **MCP / A2A 协议**：对接外部 AI 工具（Cursor/Claude/Codex）与外部 Agent 系统
 - **数据治理**：CDC + 数据湖（Hudi/Iceberg）+ 数据仓库（StarRocks）
 
-## 仓库当前结构（2026-07-24）
+### 14 个核心业务场景
 
-仓库处于**精简 + 重建过渡期**：
-- 根级文件：`README.md`、`CLAUDE.md`、`agent.md`、`.gitignore`、`.env.example`、`.env`、`package.json`、`package-lock.json`
-- 设计稿：`metaplatform-design-draft/`
-- PRD 文档：`docs/prd/`（集中按 APP-* 分子目录 + `_top/` 放顶层 PRD 文档）
-- **前端 monorepo**：`metaplatform-frontend/`（pnpm workspaces，结构 `apps/portal + apps/admin + packages/shared`，已落地 admin/components 流程画布功能）
-- 环境/工具目录：`.git/`、`.github/`、`.vscode/`、`.venv/`、`.uploads/`、`.trae-html-share-packages/`、`node_modules/`
-
-**APP-* 与 TECH-* 后端模块目录当前不存在**，将在重建阶段按 v1.2 架构依次创建。详见"关键技术决策"与"模块上下游关系"。
-
-## 技术栈基线（v1.2 / 2026-07-21）
-
-### 后端（全量 Java + Spring AI Alibaba）
-
-| 类别 | 技术 | 版本 | 说明 |
-|---|---|---|---|
-| 语言 | **Java** | **25 LTS** | **唯一后端语言** |
-| 框架 | **Spring Boot** | **3.5.x** | 微服务基础 |
-| 框架 | Spring Framework | 6.2.x | 底层容器 |
-| 框架 | Spring Cloud | 2025.0.x | 微服务治理（对应 Spring Boot 3.5.x） |
-| 框架 | Spring Cloud Alibaba | 2025.0.0.0 | Nacos Config / Discovery（内置 Nacos client 3.0.3） |
-| AI | **Spring AI** | **1.1.2** | Java LLM 集成抽象 |
-| AI | **Spring AI Alibaba** | **1.1.2.0** | **AI 编排统一底座（BOM）** |
-| AI | Spring AI Alibaba Extensions | 1.1.2.1 | 扩展 |
-| 数据 | **Spring Data JPA** | 最新版 | **替换 SQLAlchemy** |
-| Web | **Spring WebFlux / MVC + 虚拟线程** | 最新版 | **替换 FastAPI async** |
-| 安全 | Spring Security | 6.4.x | OAuth2/JWT |
-| 协议 | **Nacos** | **3.0.1+** | **MCP / A2A Registry + Config** |
-| 数据库 | PostgreSQL | 17 | 主库 |
-| 图库 | Neo4j | 5.x | 知识图谱 |
-| 向量库 | Milvus（SAA VectorStore） | 2.5 | RAG 向量检索 |
-| 仓库 | StarRocks | 3.4 / 4.0 | OLAP |
-| 湖 | Hudi（主）/ Iceberg（备） | 1.x / 1.8 | 数据湖 |
-| ETL | Flink + Airflow + DBT | 1.20 / 2.10 / 1.9 | 实时 + 批量 |
-| 消息 | Kafka + RabbitMQ | 3.9 / 4.x | 事件 + 任务 |
-| 缓存 | Redis / Valkey | 7.4 / 8 | 缓存 + 锁 |
-| 测试 | JUnit 5 + Mockito + Testcontainers | 最新 | **替换 pytest** |
-
-### 前端
-
-- **React 19** + TypeScript 5.7 + Vite 6
-- **Ant Design 6.0** + Ant Design X 2.0
-- **FlowGram.AI**（fixed-layout 审批流 + free-layout Agent 编排）
-- **AntV X6**（知识图谱 / 架构图可视化）
-- pnpm monorepo（`metaplatform-frontend/`，按 apps/* + packages/* 划分）
-
-### 基础设施
-
-- **Kubernetes 1.32** + Istio 1.24
-- **OpenTelemetry 1.45** + Prometheus 3.x + Grafana 11.x + **SAA Graph Observation**
-- **MinIO**（对象存储）
-- **Nacos 3.0.1+**（MCP / A2A / Config 注册中心）
-
-## 命名规范
-
-### 模块命名
-- 应用模块：`APP-` + 大写缩写（例：`APP-DASHBOARD`、`APP-APPHUB`、`APP-COPILOT`）
-- 技术服务模块：`TECH-` + 大写缩写（例：`TECH-ONT`、`TECH-AGENT`）
-
-### 文档命名
-- 格式：`[类型]-[模块]-[主题]_v[版本]-[日期].md`
-- 类型前缀：`ARCH`（架构）、`TS`（技术选型）、`SPEC`（规范）、`PLAN`（计划）、`RD`（调研）、`GUIDE`（指南）、`PRD`（产品需求）
-- 例：`PRD-APP-COPILOT-超级AI_v1.0-20260716.md`
-
-### 代码命名
-- **Java 包名**：`com.metaplatform.[模块小写].*`（例：`com.metaplatform.agent.saa`）
-- **Java 类名**：PascalCase（例：`SaAgentReactService`、`MateLlmGwService`）
-- TypeScript 目录：kebab-case（例：`ontology-editor/`）
-- TypeScript 组件：PascalCase
-- **API 路径**：`/api/v1/[模块]/[资源]`（例：`/api/v1/agent/react`）
-- **Nacos 服务名**：`mate-{domain}-{service}`（例：`mate-mcp-server`、`mate-a2a-server`）
-
-## 架构约束
-
-### 核心原则
-1. **AI 是贯穿全栈的能力底座**，不是独立的一层
-2. **Ontology 引擎是唯一数据真相源**，所有模块通过 Ontology 访问数据语义
-3. **前端和业务模块使用平台自身的低代码能力自举构建**
-4. **业务对象（G2）为主要构建块**，G1/G3/G4 为辅助
-5. **架构遵循 P3 双向同步**，以 Ontology 为单一真相源
-6. **OLAP 引擎以 StarRocks 为主**，ClickHouse 为适配器
-
-### 后端语言统一（v1.2 重大约束）
-
-**核心约束**：Mate Platform 后端统一为 Java 25，**禁止新增 Python 后端服务**。
-
-| 范围 | 状态 |
-|---|---|
-| Java 后端服务 | 唯一允许的新增后端实现 |
-| Python 运维脚本 | 允许保留，但禁止承载业务逻辑 |
-| Python 测试代码 | 已重写为 JUnit 5，原 pytest 归档 |
-| Python FastAPI 服务 | **全部重写为 Java + SAA** |
-
-### AI 编排分层原则（v1.2 强化）
-
-1. **Java 侧 AI 编排基于 Spring AI Alibaba 1.1.2.0**：Agent Framework / Graph Core / Nacos MCP / A2A Nacos 提供工程基座，业务封装层自研。
-2. **AI 编排与 BPMN 工作流分工明确**：
-   - BPMN 业务审批流 → TECH-WFE（自研状态机 + FlowGram.AI fixed-layout）
-   - AI Agent 编排流 → TECH-AGENT（SAA Graph Core + FlowGram.AI free-layout）
-   - 两者通过自研「Action 节点」互通
-3. **LLM Gateway 自研层保留**：多模型路由 / 计费 / 审计 / Ontology 增强是核心差异化，底层用 SAA ChatModel 适配。
-4. **MCP / A2A 必须通过 Nacos 3.0+ Registry 注册与发现**，禁止单点实现。
-5. **Python LangChain / LangGraph 已退役**：禁止在新代码中使用，相关依赖从 pyproject.toml 中移除。
-
-### 工程约束
-
-- Kafka 消息发布必须使用 **Outbox 模式**
-- 事件消费必须支持 **DLQ**，重试 3 次
-- `trace_id` 必须在所有系统组件间传播，Kafka 消息头包含 `X-Trace-Id`
-- DLQ 记录必须包含 `traceId` 字段用于故障诊断
-- **Spring AI Alibaba 升级需通过 BOM 统一管理**
-- **MCP / A2A 调用必须经过 IAM 鉴权与审计**
-- **Spring Data JPA 替代 SQLAlchemy**，禁止在 Java 服务中使用 SQLAlchemy
-
-### 协议支持
-
-- **MCP（Model Context Protocol）**：
-  - 实现：`spring-ai-alibaba` Nacos MCP + Nacos 3.0+ Registry（v1.2）
-  - 平台作为 MCP Server 暴露 Tools / Resources / Prompts
-  - 平台作为 MCP Client 调用第三方 MCP Server
-
-- **A2A（Agent-to-Agent Protocol）**：
-  - 实现：`spring-ai-alibaba-starter-a2a-nacos`（v1.2）
-  - 与 Mate Workflow Engine 通过 Action 节点集成
-
-## 模块上下游关系（v1.2 全 Java·规划）
-
-```
-# 应用层
-APP-DASHBOARD  ← TECH-IAM, TECH-GW, TECH-MSG, TECH-OBS
-APP-COPILOT    ← TECH-LLMGW, TECH-RAG, TECH-ACTION, TECH-AGENT, TECH-ONT, TECH-MCP
-APP-DW         ← TECH-AGENT, TECH-RAG, TECH-ONT, TECH-LLMGW, TECH-A2A
-APP-APPHUB     ← TECH-ONT, TECH-WFE, TECH-ACTION, TECH-EA, TECH-RULE, TECH-AGENT, APP-COPILOT
-APP-ONTSTUDIO  ← TECH-ONT, TECH-ACTION, TECH-DATA, TECH-RAG, TECH-RULE
-APP-ARCH       ← TECH-EA, TECH-ONT, TECH-DATA
-APP-MCPHUB     ← TECH-MCP, TECH-ONT, TECH-RAG, TECH-ACTION, TECH-IAM
-
-# 自研核心层
-TECH-ONT     ← TECH-DATA, TECH-RAG
-TECH-WFE     ← TECH-ONT, TECH-RULE
-TECH-RULE    ← TECH-ONT
-TECH-ACTION  ← TECH-ONT, TECH-WFE, TECH-RULE
-
-# AI 中间层（Java + SAA）
-TECH-LLMGW   ← SAA ChatModel + SAA Nacos Config
-TECH-RAG     ← SAA Document/Embedding/VectorStore
-TECH-AGENT   ← SAA Agent Framework + Graph Core
-
-# 协议层（Java + SAA Nacos）
-TECH-MCP     ← SAA Nacos MCP + Nacos 3.0+
-TECH-A2A     ← SAA A2A Nacos + Nacos 3.0+
-
-# 数据集成
-TECH-DATA    ← 外部数据源, TECH-MSG
-
-# 基础设施
-TECH-IAM     ← 所有服务（MCP / A2A 调用鉴权）
-```
-
-> 说明：原 `APP-SUPERAI` 已更名为 `APP-COPILOT`（v1.3，2026-07-22）。重构阶段模块目录尚未重建，按规划执行。
-
-## 开发指引
-
-### 新建模块
-
-1. 在项目根目录创建 `APP-XXX` 或 `TECH-XXX` 目录
-2. **语言约束**：后端服务必须用 Java 25 + Spring Boot 3.5
-3. 编写 `README.md`：作用说明、上游依赖、下游消费、目录结构
-4. **Java 包名**：`com.metaplatform.[模块小写]`，TS 目录 `kebab-case`
-5. **API 路径**：`/api/v1/[模块]/[资源]`
-
-### AI 能力使用（v1.2 强制）
-
-1. **所有 LLM 调用必须通过 `TECH-LLMGW`**，内部使用 SAA ChatModel 作为适配器
-2. **RAG 检索通过 `TECH-RAG`**，底层使用 SAA Document / Embedding / VectorStore
-3. **Java 侧 Agent 任务通过 `TECH-AGENT`**，基于 SAA Agent Framework + Graph Core
-4. **对外暴露 MCP 能力必须注册到 Nacos 3.0+**
-5. **跨 Agent 协作通过 A2A Nacos Starter**
-6. **禁止使用 LangChain / LangGraph**（已退役）
-
-### 数据操作
-
-1. 数据语义通过 `TECH-ONT` 本体引擎定义
-2. 数据入湖使用 Hudi（CDC/upsert）或 Iceberg（追加）
-3. OLAP 查询通过 StarRocks
-4. **数据集成通过 `TECH-DATA`（Java + Spring Batch + Airflow Java Client）**
-
-### 前端开发
-
-1. UI 组件统一使用 Ant Design 6.0 + Ant Design X 2.0
-2. 流程设计器统一使用 FlowGram.AI
-3. 知识图谱/架构图使用 AntV X6
-4. **AI 编排工作流 JSON 需新增与 SAA Graph Core 的语义映射转换层**
-5. 前端 monorepo 结构：`metaplatform-frontend/{apps,packages}/`，统一由 pnpm 管理
-
-### PRD 文档管理
-
-- 所有 PRD 集中存放在 `docs/prd/`，按应用模块分子目录（`docs/prd/APP-XXX/`）
-- 顶层 PRD 计划/报告放入 `docs/prd/_top/`
-- PRD 文件名格式：`PRD-[模块]-[主题]_v[版本]-[日期].md`
-- 模块重命名时，PRD 目录与文件名同步更新（前缀必须与目录一致）
-
-## 关键技术决策
-
-| 决策点 | 选择 | 理由 |
+| ID | 场景 | 实现状态 |
 |---|---|---|
-| **后端语言** | **Java 25（唯一）** | **v1.3 升级至 LTS 25，统一栈消除双栈运维** |
-| **AI Copilot 模块名** | **`APP-COPILOT`**（原 `APP-SUPERAI`） | v1.3 更名，强调 AI 协作助手定位 |
-| 向量数据库 | Milvus 2.5（SAA 适配） | 十亿级向量、RaBitQ 量化 |
-| 数据湖格式 | Hudi 1.x（主）/ Iceberg 1.8（备） | Hudi 原生支持 CDC/upsert |
-| 流程设计器 | FlowGram.AI | 固定+自由双布局、字节背书 |
-| UI 组件库 | Ant Design 6.0 + X 2.0 | 企业级 + AI 组件 |
-| OLAP | StarRocks 3.4 | 实时 OLAP、多模型 |
-| 图数据库 | Neo4j 5.x | 知识图谱、Cypher |
-| **Java AI 编排底座** | **Spring AI Alibaba 1.1.2.0** | **BOM 统一、Graph/Nacos MCP/A2A 一站式** |
-| **AI 协议注册中心** | **Nacos 3.0+** | **MCP / A2A 原生支持、SAA 深度集成** |
-| **数据访问** | **Spring Data JPA** | **替换 SQLAlchemy** |
-| **Web 框架** | **Spring WebFlux / MVC + 虚拟线程** | **替换 FastAPI async** |
-| **前端 monorepo** | **pnpm workspaces** | 字节标配、原生 hoisting、按 apps 隔离构建 |
+| S1 | 知识库建立（文档上传 PPT/Word/PDF） | 🆕 P1 |
+| S2 | Ontology 抽象（内容抽取/对话抽取） | 🆕 P2 |
+| S3 | 知识问答（多 Agent 协同） | 🆕 P1-P3 |
+| S4 | 智能体编排生成 | 🆕 P4 |
+| S5 | 智能巡检（定期） | 🆕 P4 |
+| **S5b** | **实时阈值触发** | 🆕 P4 |
+| S6 | Ontology 演进与版本 | 🆕 P5 |
+| S7 | 知识反馈闭环 | 🆕 P3 |
+| S8 | 多模态文档解析 | 🆕 P1 |
+| S9 | 知识推荐与主动推送 | 🆕 P4 |
+| S10 | 企业级知识治理 | 🆕 P5 |
+| S11 | 跨组织知识共享 | 🆕 P5 |
+| S12 | 知识冲突解决 | 🆕 P3 |
+| S13 | 应急异常处理 | 🆕 持续 |
 
-## 教训与避坑
+**完整场景设计见**：`docs/superpowers/specs/2026-07-27-mate-platform-technical-architecture.md` §10
 
-- koa-connect wrapper 会导致 ctx 泄漏，需使用原生 Koa 中间件
-- `apache/kafka:3.6.1` 镜像已被移除，使用 `latest + asCompatibleSubstituteFor`
-- DaoCloud 公共镜像阻止了 Airbyte 拉取，改用阿里云加速器
-- 浏览器配套工具存在刷新限制，需要手动 F5/Ctrl+R
-- Pandoc 生成的 Markdown 图片路径需要修正为相对路径
-- **Spring Boot 3.4 → 3.5 升级需关注虚拟线程默认行为变更**
-- **Spring AI 1.0 → 1.1 API 兼容性需做完整回归测试**
-- **SAA 升级需锁定 BOM 主版本**
-- **Nacos 3.0 引入需先做 POC**
-- **Python → Java 迁移：FastAPI async 与 Spring WebFlux 异步模型不同，需注意请求生命周期**
-- **SQLAlchemy → JPA：注意 lazy loading 与事务边界差异**
-- **pytest → JUnit 5：异步测试改用 @SpringBootTest + WebTestClient**
-- **LangGraph → SAA Graph：注意 StateGraph 与 Graph DAG 的语义差异**
-- **仓库重构：删除模块目录前先 git commit 备份；Windows 文件锁导致的不可删除目录，git rm --cached 后手动在资源管理器中清理**
-- **FlowGram.AI 接入**：官方对外暴露的 `nodeRegistries` 并不能自动应用每个 registry 的 `formMeta`，必须在自己包一层 Provider 时覆盖 `getNodeDefaultRegistry`，把 `formMeta` 显式塞进 registry；否则所有节点都会退化成统一的 input 卡片
-- **FlowGram.AI 拖拽**：自定义节点外壳时务必绑定 `onMouseDown → nodeRender.startDrag(e) + stopPropagation`，否则卡片既无法拖动也无法选中连线
-- **FlowGram.AI fitView**：编辑器自带 `pg.config.fitView(doc.root.bounds.pad(30))` 对 `initialData` 时机敏感，常常不生效；兜底方案是 `<ForceFitViewport>`：用 demo 数据已知的**逻辑坐标常量**计算 `scale` + 居中 offset，挂到 `pg.style.transform`，并用 `ResizeObserver` 在容器变化时重算；**绝对不要用已被 transform 的 `.gedit-flow-background-layer` DOM rect**，会因父级 transform 引起的视口错位产生循环计算，背景层尺寸越算越大
-- **FlowGram.AI 官方 9 个 CSS 主题变量**：`fixed-layout-editor/index.css` L6-17 暴露 `--g-selection-background / --g-editor-background / --g-playground-{select,hover,line,blur,selectBox-outline,selectBox-background,select-hover-background,select-control-size}`。覆盖时**必须挂到 `.gedit-playground` 作用域**，禁止打到 `:root`（会污染全局）。详见 [`docs/superpowers/specs/flowgram-usage-specification.md`](docs/superpowers/specs/flowgram-usage-specification.md) §2
-- **FlowGram.AI 47 个官方包**：当前 `@mate/shared` 已声明依赖 47 个，但业务侧只用到 2.5 个。新增节点 / 场景前必须查阅 [`docs/superpowers/specs/flowgram-usage-specification.md`](docs/superpowers/specs/flowgram-usage-specification.md) §1.2 的"已接入 / 待接入"矩阵，避免重复造轮子
-- **FlowGram.AI 节点注册位置强制三处**：(1) `packages/shared/src/components/flow/node-registries.ts` — Mate 17 标准节点；(2) `apps/portal/src/pages/admin/node-render.tsx` — 节点库 17 专属卡片；(3) 业务页面通过 `nodeRegistries/customRegistries` 参数注入。**禁止**业务页面直接 `import FixedLayoutEditorProvider`，必须经 `@mate/shared/flow` 的 `FlowgramEditor` / `FlowDesigner`
-- **GitHub 推送失败排查**：本地 ping / Test-NetConnection TCP 443 都通，但 `git push` 报 `Recv failure: Connection was reset` —— 这是 GFW 针对 git 协议的特征指纹。处理顺序：(1) `git remote -v` 确认 origin URL 与本地路径一致；(2) 多 retries；(3) GitHub MCP (`push_files`) 作为最终兜底
-- **PowerShell git commit -m**：Heredoc `<<'EOF'` 在 PowerShell 中会被误解析为重定向；改用临时文件 `git commit -F file.txt` 最稳
+## 当前架构：v3.0 Plan D Polyglot Microservice
 
-## 版本计划与任务跟踪
+### 核心思想
+> **"语言退到实现层，服务显式化"**——Java 引擎服务化 + Python AI 生态，按需选最佳技术。
 
-> 当前版本计划详见历史归档：`docs/prd/_top/PLAN-Mate_Platform-APP模块PRD交叉验证与迭代版本计划_v1.0-20260718.md`
+### 技术栈基线（v3.0）
 
-**v1.3 重构期（2026-07-22 起）**：
-- **阶段 R0（已完成）**：仓库精简——删除 16+ 历史模块目录、保留根级文件 + 设计稿 + PRD，恢复全部 PRD 至 `docs/prd/`
-- **阶段 R1（进行中）**：
-  - [x] 前端 monorepo 脚手架落地（`metaplatform-frontend/{apps,packages}/`，pnpm workspaces）
-  - [x] **admin/components「流程节点」接入真实 FlowGram editor 与 17 种节点专属卡片**
-    - 新增 `apps/portal/src/pages/admin/flowgram-editor.tsx`、`custom-base-node.tsx`、`node-render.tsx`，并改造 `AdminComponentsPage.tsx`
-    - 覆盖 `getNodeDefaultRegistry` 让 FlowGram 真正使用各节点的 `formMeta`
-    - 替换 `materials.renderDefaultNode` 让节点支持拖拽 / hover / 删除
-    - `ForceFitViewport` 用逻辑坐标常量 + ResizeObserver 计算居中 fit
-    - 画布工具条（缩放 / 撤销 / 锁定 / minimap 等）+ 全屏编辑模式（含 Esc / 退出按钮 / 浏览器原生 Fullscreen API 兜底）
-    - 本地 commit：`60ec60b1 feat(portal/admin): 组件库流程节点画布接入真实 FlowGram editor 与节点库专属卡片`（推送 GitHub 失败：本地网络 TCP 443 正常但 git HTTPS 长连接被重置，且 origin 指向的远端 `Bert0000000000/MetaPlatform` 内容与本地前端不匹配，需用户确认正确远端 URL）
-  - [~] Nacos 3.0+、IAM→ONT→RULE 底层链路
+| 维度 | 选型 | 备注 |
+|---|---|---|
+| **主后端语言** | **Python 3.12+** | FastAPI + Pydantic + LangChain |
+| **AI 子域** | **Python** | RAGFlow / LightRAG / DeerFlow |
+| **企业引擎** | **Java 21** | Flowable / Drools / Keycloak 微服务 |
+| **关系数据库** | PostgreSQL 17 | 多 schema 隔离 |
+| **图数据库** | Neo4j 5.x | 3 database 隔离（tech-ont / lrag-graph / rag-graphrag） |
+| **向量数据库** | Milvus 2.5 | RAG 向量检索 |
+| **对象存储** | MinIO | 原始文件 |
+| **消息队列** | **Apache Kafka 3.9** | 跨服务事件流 + Outbox + Saga |
+| **缓存** | Redis 7.4 | 通用缓存 |
+| **服务发现** | Nacos 3.0+ | 注册/配置/MCP/A2A |
+| **可观测** | OpenTelemetry 1.45+ | TraceID 全链路 |
+| **前端** | React 19 + TypeScript 5.7+ | pnpm monorepo |
+| **容器** | Kubernetes 1.32 + Istio 1.24 | mTLS / 流量管理 |
 
-**v1.4 重构期（2026-07-25 起）·FlowGram 全能力补齐**：
-- **新增规范**：[`docs/superpowers/specs/flowgram-usage-specification.md`](docs/superpowers/specs/flowgram-usage-specification.md) — 强制参考，覆盖 47 个官方包、9 个 CSS 主题变量、3 个官方坑、双布局范式、节点 / 表单 / 物料体系、模块对接路径、版本兼容矩阵
-- **阶段 R1.5 Sprint 1（已完成）**：组件库流程画布全能力落地
-  - [x] 主题色：新建 `packages/shared/src/components/flow/styles/flowgram-theme.css`，覆盖 9 个 `--g-*` 变量 + 3 处硬编码兜底，与项目 `--primary / --background / --border / --muted-foreground` token 打通
-  - [x] 网格背景：接入 `@flowgram.ai/background-plugin`，gridSize=20 / dotColor=var(--border) / Logo=可选
-  - [x] 导出能力：接入 `@flowgram.ai/export-plugin`，支持 JSON / PNG / JPEG / SVG 四种格式
-  - [x] 快捷键：接入 `@flowgram.ai/shortcuts-plugin`，注册 Cmd/Ctrl+C/V/Z/Y/S/Delete/Backspace
-  - [x] 对齐辅助线：接入 `@flowgram.ai/free-snap-plugin`，拖拽时显示 top/bottom/left/right/mid/spacing
-  - [x] Semi ConfigProvider：覆盖默认 `@douyinfe/semi-ui` 主题色
-  - [x] 全屏编辑：浏览器原生 Fullscreen API + Esc + 自定义关闭按钮 + Portal 兜底
-- **阶段 R1.5 Sprint 2（待启动）**：free-layout 落地
-  - [ ] 集成 `@flowgram.ai/free-layout-editor` + `free-history-plugin` + `free-lines-plugin` + `free-stack-plugin` + `free-hover-plugin` + `free-node-panel-plugin` + `free-auto-layout-plugin`
-- **阶段 R1.5 Sprint 3（待启动）**：form-materials 全部接入
-  - [ ] `VariableSelector` / `PromptEditor` / `ConditionRow` / `JsonSchemaEditor` / `CodeEditor` / `SQLCodeEditor` 等 40+ 组件
-- **阶段 R1.5 Sprint 4（待启动）**：增强补齐
-  - [ ] `group-plugin`（分组）/ `panel-manager-plugin`（多面板）/ `i18n-plugin`（国际化）/ `redux-devtool-plugin`（调试）
+### 仓库结构（2026-07-27）
 
-- **阶段 R2**：6 服务骨架 + Nacos（MCP/A2A/LLMGW/AGENT/RAG/DATA）
-- **阶段 R3**：核心服务 Java + SAA 重写（含 TECH-ONT 收敛）
-- **阶段 R4**：MCP / A2A 协议层
-- **阶段 R5**：生产化与历史归档清理
+```
+D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\
+├── metaplatform-frontend/        # 前端 monorepo（已落地）
+├── docs/                          # 文档
+│   ├── prd/                       # APP-* PRD（已完成）
+│   ├── superpowers/specs/         # 架构规范（v3.0 在此）
+│   │   ├── 2026-07-27-mate-platform-technical-architecture.md  ⭐ THE ONE DOC
+│   │   ├── 2026-07-27-openviking-future-architecture-candidate.md
+│   │   └── archive/               # 历史文档（v1/v2 已归档）
+│   ├── legal/                     # 法务自评估
+│   └── reviews/                   # 评审报告
+├── TECH-A2A/                      # A2A 协议模块
+├── TECH-AGENT/                    # Agent 模块（已部分实现 DeerFlow 集成）
+├── TECH-IAM/                      # IAM 模块
+├── TECH-LLMGW/                    # LLM 路由模块
+├── TECH-MCP/                      # MCP 协议模块
+├── TECH-ONT/                      # Ontology 模块
+├── TECH-RAG/                      # RAG 模块（既有）
+├── metaplatform-design-draft/     # 设计稿
+└── agent.md / CLAUDE.md           # 本文件
+```
 
-任务状态标记规则：`[ ]` 未开始 / `[~]` 进行中 / `[x]` 已完成 / `[!]` 阻塞
+## 架构约束（v3.0 铁律）
 
-## 关键文档索引
+### 5 条 P0 原则
+1. **主力栈优先**：新项目默认 Python 3.12+ + FastAPI
+2. **AI 子域允许 Python**：RAG / Agent / OCR 等子域
+3. **核心业务后端必须 Java**（**P3**）：交易/订单/权限
+4. **法务合规是硬约束**：所有开源组件需过自评估
+5. **可观测性高于语言统一**：跨语言栈统一接 TECH-OBS
 
-| 文档 | 路径 |
-|---|---|
-| 项目总览 | [`README.md`](README.md) |
-| Claude Code 上下文 | [`CLAUDE.md`](CLAUDE.md) |
-| Agent 上下文 | `agent.md` |
-| **PRD 集合** | **[`docs/prd/`](docs/prd/)** |
-| 设计稿 | `metaplatform-design-draft/` |
-| 前端 monorepo | [`metaplatform-frontend/`](metaplatform-frontend/)（pnpm workspaces） |
-| 组件库流程画布 | [`metaplatform-frontend/apps/portal/src/pages/admin/`](metaplatform-frontend/apps/portal/src/pages/admin/) |
-| **FlowGram 使用规范** | **[`docs/superpowers/specs/flowgram-usage-specification.md`](docs/superpowers/specs/flowgram-usage-specification.md)** — 强制参考 |
-| 流程画布架构 | [`docs/superpowers/specs/2026-07-23-flow-canvas-design.md`](docs/superpowers/specs/2026-07-23-flow-canvas-design.md) |
-| 组件库节点目录 | [`docs/flow-component-catalog.md`](docs/flow-component-catalog.md) |
-| 节点分组色族 | [`docs/flow-sidebar-group-accent.md`](docs/flow-sidebar-group-accent.md) |
+### 6 大模块（v3.0 RAG 子系统）
+| 模块 | 职责 | 状态 |
+|---|---|---|
+| DeepParser | RAGFlow 文档解析 | 🆕 P1 |
+| Retrieval | Hybrid + Graph-Enhanced | ✅ 已有 |
+| LightRAG | GraphRAG 检索 | 🆕 P3 |
+| Knowledge Engineering | 抽取 + 审核 + Commit | 🆕 P2 |
+| Citation & Evidence | 多层引用 | ✅ 已有 |
+| RetrievalRouter | 统一入口 AUTO 路由 | 🆕 P1 |
+
+### 5 个 Java 微服务（v3.0 新增）
+| 服务 | 职责 | 阶段 |
+|---|---|---|
+| **Flowable Service** | BPMN 2.0 工作流 | P4 |
+| **Drools Service** | 企业规则引擎 | P4 |
+| **Keycloak Service** | IAM / SSO | P5 |
+| RAGFlow | DeepDoc 解析 | P1 |
+| LightRAG | GraphRAG 检索 | P3 |
+
+## 开发阶段规划（已就绪启动）
+
+| 阶段 | 周数 | 核心交付 | 涉及场景 |
+|---|---|---|---|
+| **P0 基础** | 1-2 周 | 基线评估 + 环境就绪 | — |
+| **P1 RAG MVP** | 4-6 周 | 文档上传 + 检索问答 | S1, S3 |
+| **P2 知识工程** | 3-4 周 | 抽取 + 审核 + Commit | S2 |
+| **P3 高级检索** | 3-4 周 | GraphRAG + Router | S3 增强 |
+| **P4 工作流** | 3-4 周 | Flowable + Drools | S4, S5, S5b |
+| **P5 企业级** | 3-4 周 | 版本/治理/多租户 | S6, S10, S11 |
+| **P6 打磨** | 2-3 周 | 性能优化 + 文档 | 全部 |
+
+**总计：19-27 周（5-7 个月）**
+
+## 关键技术决策（v3.0）
+
+### 决策 1：v2 决策已废止
+> v1.2 "去 Python"、v2 "主力 + 子域" 都已被 v3.0 "Polyglot" 替代
+> **新公理**："AI 作为技术专家" + 团队 + AI + 法务三重判断
+
+### 决策 2：RAGFlow + LightRAG 双引擎
+- **RAGFlow**（AGPL-3.0，自评估通过）：仅做 DeepDoc 文档解析
+- **LightRAG**（MIT）：GraphRAG 检索 + 实体抽取
+- **不**直接用其 RAG 引擎 / UI / 配置
+
+### 决策 3：服务间通过 Kafka 事件解耦
+- 9 个 Kafka 主题
+- Outbox 模式保证不丢
+- Saga 模式处理分布式事务
+
+### 决策 4：Neo4j 三库隔离
+- `tech-ont`：受治理 Ontology
+- `lrag-graph`：LightRAG 自动图
+- `rag-graphrag`：备用
+- 严格 label 前缀隔离
+
+## 开发规范
+
+### 代码规范
+- **Python**: Ruff + pyright + Pydantic v2
+- **Java**: Checkstyle + SpotBugs + Spring Boot 3.5
+
+### 测试规范
+- 单元测试覆盖率 ≥ 70%
+- 关键路径 100%
+- 集成测试用 Testcontainers
+
+### 提交规范
+- Conventional Commits（feat / fix / docs / refactor）
+- 中文 commit message 可接受
+- 重大变更需 Owner 签字
+
+### 文档规范
+- 所有规范在 `docs/superpowers/specs/`
+- 历史文档归档到 `archive/`
+- 主架构是 THE ONE DOC
+
+## 开发阶段 P0 立即启动
+
+按昨天讨论的 6 阶段路线图，**P0 基础是今天就启动的**：
+
+1. ✅ 评估现有 RAG 能力（Recall@10 baseline）
+2. ✅ 部署 RAGFlow / LightRAG 服务
+3. ✅ 准备 50 份评估语料
+4. ✅ 锁定各组件版本
+5. ✅ CI/CD 流水线
+
+**详细任务清单见**：下次出 `P0-tasks.md` 规范
+
+---
+
+## 相关文档
+
+- **主架构**：`docs/superpowers/specs/2026-07-27-mate-platform-technical-architecture.md` ⭐
+- **RAG 子系统**：主架构 §9
+- **14 业务场景**：主架构 §10
+- **软件设计模式**：主架构 §2
+- **GoF 23 个设计模式**：主架构 §2.10
+- **Flowable 集成**：`docs/superpowers/specs/2026-07-26-ontology-deerflow-final-delivery-plan.md`
+- **DeerFlow 部署**：`docs/superpowers/specs/2026-07-26-deerflow-production-integration-design.md`
+- **PRD 集合**：`docs/prd/`
+
+## 给 AI Agent 的关键提示
+
+> **当被问及架构决策时**：
+> 1. 先看 `docs/superpowers/specs/2026-07-27-mate-platform-technical-architecture.md`（THE ONE DOC）
+> 2. v3.0 是当前；v2 / v1 已废止
+> 3. 关键路径：Python 主后端 + Java 引擎服务 + Python AI 服务
+> 4. 14 业务场景是评估完整性的标准
