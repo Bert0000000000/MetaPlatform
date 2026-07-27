@@ -28,23 +28,23 @@ public class AuditLogEntity {
     private String traceId;
 
     @JdbcTypeCode(SqlTypes.VARCHAR)
-    @Column(name = "user_id", length = 100)
+    @Column(name = "user_id", length = 64)
     private String userId;
 
     @JdbcTypeCode(SqlTypes.VARCHAR)
-    @Column(name = "app_id", length = 100)
+    @Column(name = "app_id", length = 64)
     private String appId;
 
     @JdbcTypeCode(SqlTypes.VARCHAR)
-    @Column(name = "model_id", nullable = false, length = 100)
+    @Column(name = "model_id", length = 64)
     private String modelId;
 
     @JdbcTypeCode(SqlTypes.VARCHAR)
-    @Column(name = "endpoint", length = 200)
+    @Column(name = "endpoint", length = 128)
     private String endpoint;
 
     @JdbcTypeCode(SqlTypes.VARCHAR)
-    @Column(name = "method", length = 10)
+    @Column(name = "method", length = 16)
     private String method;
 
     @Column(name = "input_tokens")
@@ -62,27 +62,21 @@ public class AuditLogEntity {
     @Column(name = "status_code")
     private Integer statusCode;
 
-    @Lob
-    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    @Column(name = "error_message", columnDefinition = "TEXT")
+    @Column(name = "error_message", columnDefinition = "text")
     private String errorMessage;
 
-    @Lob
-    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "request_body", columnDefinition = "jsonb")
     private String requestBody;
 
-    @Lob
-    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "response_body", columnDefinition = "jsonb")
     private String responseBody;
 
-    @Lob
-    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "metadata", columnDefinition = "jsonb")
     private String metadata;
 
-    @Column(name = "created_at", nullable = false)
+    @Column(name = "created_at")
     private LocalDateTime createdAt;
-
 }
