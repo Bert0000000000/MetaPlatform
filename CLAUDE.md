@@ -3,7 +3,7 @@
 > 本文件供 Claude Code 读取，提供项目上下文、架构约束与开发规范。
 > **最近更新**：2026-07-27（v3.0 Plan D Polyglot Microservice Architecture 正式版）
 >
-> **当前架构版本**：**v3.0**（替代 v2.0 / v2.1，详见 `docs/superpowers/specs/2026-07-27-mate-platform-technical-architecture.md`）
+> **当前架构版本**：**v3.0**（替代 v2.0 / v2.1，详见 `docs/active/specs/2026-07-27-mate-platform-technical-architecture.md`）
 >
 > **v1.2 / v2.0 / v2.1 状态**：已废止（v1.2）/ 已演进为 v3.0（v2.0 / v2.1 已归档）
 
@@ -38,7 +38,7 @@
 | S12 | 知识冲突解决 | 🆕 P3 |
 | S13 | 应急异常处理 | 🆕 持续 |
 
-**完整场景设计见**：`docs/superpowers/specs/2026-07-27-mate-platform-technical-architecture.md` §10
+**完整场景设计见**：`docs/active/specs/2026-07-27-mate-platform-technical-architecture.md` §10
 
 ## 当前架构：v3.0 Plan D Polyglot Microservice
 
@@ -188,19 +188,19 @@ D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\
 
 ## 相关文档
 
-- **主架构**：`docs/superpowers/specs/2026-07-27-mate-platform-technical-architecture.md` ⭐
+- **主架构**：`docs/active/specs/2026-07-27-mate-platform-technical-architecture.md` ⭐
 - **RAG 子系统**：主架构 §9
 - **14 业务场景**：主架构 §10
 - **软件设计模式**：主架构 §2
 - **GoF 23 个设计模式**：主架构 §2.10
 - **Flowable 集成**：`docs/superpowers/specs/2026-07-26-ontology-deerflow-final-delivery-plan.md`
 - **DeerFlow 部署**：`docs/superpowers/specs/2026-07-26-deerflow-production-integration-design.md`
-- **PRD 集合**：`docs/prd/`
+- **PRD 集合**：`docs/active/prd/`
 
 ## 给 AI Agent 的关键提示
 
 > **当被问及架构决策时**：
-> 1. 先看 `docs/superpowers/specs/2026-07-27-mate-platform-technical-architecture.md`（THE ONE DOC）
+> 1. 先看 `docs/active/specs/2026-07-27-mate-platform-technical-architecture.md`（THE ONE DOC）
 > 2. v3.0 是当前；v2 / v1 已废止
 > 3. 关键路径：Python 主后端 + Java 引擎服务 + Python AI 服务
 > 4. 14 业务场景是评估完整性的标准

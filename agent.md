@@ -3,7 +3,7 @@
 > 本文件供 AI Agent（Cursor、Claude Code、Copilot、Codex、Windsurf 等）读取，提供项目上下文、架构约束与开发规范。
 > **最近更新**：2026-07-27（v3.0 Plan D Polyglot Microservice Architecture 正式版）
 >
-> **当前架构版本**：**v3.0**（详见 `docs/superpowers/specs/2026-07-27-mate-platform-technical-architecture.md`）
+> **当前架构版本**：**v3.0**（详见 `docs/active/specs/2026-07-27-mate-platform-technical-architecture.md`）
 >
 > **v1.2 / v2.0 / v2.1 状态**：已废止 / 已演进为 v3.0（已归档）
 
@@ -38,7 +38,7 @@
 | S12 | 知识冲突解决 | P3 |
 | S13 | 应急异常处理 | 持续 |
 
-**完整场景设计**：`docs/superpowers/specs/2026-07-27-mate-platform-technical-architecture.md` §10
+**完整场景设计**：`docs/active/specs/2026-07-27-mate-platform-technical-architecture.md` §10
 
 ## 当前架构：v3.0 Plan D Polyglot Microservice
 
@@ -129,7 +129,7 @@ D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\
 | **Structural** | Adapter / Decorator / Facade / Proxy | 外部服务包装、HTTP 增强、复杂系统简化 |
 | **Behavioral** | Observer / Strategy / Mediator / Chain of Responsibility | 事件订阅、算法切换、Router、中间件 |
 
-**详细应用**：`docs/superpowers/specs/2026-07-27-mate-platform-technical-architecture.md` §2.10
+**详细应用**：`docs/active/specs/2026-07-27-mate-platform-technical-architecture.md` §2.10
 
 ### 数据归属规则
 - **PG**：8 schema 隔离（rag / rag_parser / rag_ke / rag_lightrag / rag_citation / rag_router / rag_bridge_*）
@@ -169,9 +169,9 @@ D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\
 - 重大变更需 Owner 签字
 
 ### 文档规范
-- 主架构 → `docs/superpowers/specs/2026-07-27-mate-platform-technical-architecture.md`
+- 主架构 → `docs/active/specs/2026-07-27-mate-platform-technical-architecture.md`
 - 历史 → `docs/superpowers/specs/archive/`
-- PRD → `docs/prd/`
+- PRD → `docs/active/prd/`
 - 修改本文件前请 review 一次主架构
 
 ## 关键技术决策（v3.0）
@@ -183,7 +183,7 @@ D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\
 ### 决策 2：RAGFlow + LightRAG 双引擎
 - **RAGFlow**（AGPL-3.0）：仅用 DeepDoc 文档解析
 - **LightRAG**（MIT）：GraphRAG 检索 + 实体抽取
-- 自评估：`docs/legal/LEGAL_CLEARANCE-ragflow-2026-07-27.md`
+- 自评估：`docs/active/legal/LEGAL_CLEARANCE-ragflow-2026-07-27.md`
 
 ### 决策 3：Java 引擎服务化
 - **Flowable**：BPMN 2.0
@@ -218,19 +218,19 @@ D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\
 
 ## 相关文档
 
-- **主架构**：`docs/superpowers/specs/2026-07-27-mate-platform-technical-architecture.md` ⭐
+- **主架构**：`docs/active/specs/2026-07-27-mate-platform-technical-architecture.md` ⭐
 - **RAG 子系统**：主架构 §9
 - **14 业务场景**：主架构 §10
 - **软件设计模式**：主架构 §2
 - **GoF 23 个设计模式**：主架构 §2.10
 - **Flowable + DeerFlow 集成**：主架构 §3.1 / §3.2
-- **PRD 集合**：`docs/prd/`
-- **OpenViking 候选**：`docs/superpowers/specs/2026-07-27-openviking-future-architecture-candidate.md`
+- **PRD 集合**：`docs/active/prd/`
+- **OpenViking 候选**：`docs/active/specs/2026-07-27-openviking-future-architecture-candidate.md`
 
 ## 给 AI Agent 的关键提示
 
 > **当被问及架构决策时**：
-> 1. **第一参考**：`docs/superpowers/specs/2026-07-27-mate-platform-technical-architecture.md`（THE ONE DOC）
+> 1. **第一参考**：`docs/active/specs/2026-07-27-mate-platform-technical-architecture.md`（THE ONE DOC）
 > 2. **当前版本**：v3.0（v1.2 / v2 / v2.1 已废止）
 > 3. **关键路径**：Python 主后端 + Java 引擎服务 + Python AI 服务
 > 4. **14 业务场景**：评估完整性的标准

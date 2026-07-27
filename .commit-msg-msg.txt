@@ -1,0 +1,1 @@
+﻿chore: restructure docs into active/ and legacy/ folders
