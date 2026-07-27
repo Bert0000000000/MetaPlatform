@@ -1,12 +1,12 @@
-# Ontology-Native DeerFlow 鈥?Final Acceptance Evidence
+# Ontology-Native DeerFlow 閳?Final Acceptance Evidence
 Date: 2026-07-27 11:15 UTC+8
 
 ## Live backend ports (verified)
 - 8101 TECH-IAM         (login, /me verified 200)
-- 8201 TECH-ONT         (actuator 500 鈥?debug in progress)
-- 8210 TECH-LLMGW       (chat 403 鈥?auth filter still active)
+- 8201 TECH-ONT         (actuator 500 閳?debug in progress)
+- 8210 TECH-LLMGW       (chat 403 閳?auth filter still active)
 - 8511 TECH-AGENT      (superai/run verified 200, deerFlowRunId returned)
-- 8105/8301/8401/8502/8701/8901 鈥?not running (MCP/OBS/DATA/A2A/RAG)
+- 8105/8301/8401/8502/8701/8901 閳?not running (MCP/OBS/DATA/A2A/RAG)
 
 ## Acceptance evidence files
 - `acceptance/evidence/login/20260727-111422-iam-login.json` (200, JWT issued)
@@ -17,7 +17,7 @@ Date: 2026-07-27 11:15 UTC+8
 - `acceptance/evidence/ontology/20260727-111422-ont-health.json` (500)
 
 ## Acceptance script
-- `acceptance/scripts/e2e_smoke.ps1` (login 鈫?me 鈫?superai-run 鈫?LLMGW chat 鈫?ONT health)
+- `acceptance/scripts/e2e_smoke.ps1` (login 閳?me 閳?superai-run 閳?LLMGW chat 閳?ONT health)
 
 ## Round 64 changes committed
 - `TECH-RAG/pom.xml`, `application.yml` (Flyway off, ddl-auto update)
@@ -27,13 +27,13 @@ Date: 2026-07-27 11:15 UTC+8
 - 8 additional HQL fixes in TECH-MCP repositories (McpClientConnectionRepository, McpResourceRepository, McpToolRepository, McpServerRepository, AgentTrustRepository, ExternalAgentRepository, McpPromptTemplateRepository)
 - New scripts:
   - `acceptance/scripts/e2e_smoke.ps1`
-  - `scripts/restart-r2-iam.ps1` (in scratch 鈥?will be removed in cleanup)
+  - `scripts/restart-r2-iam.ps1` (in scratch 閳?will be removed in cleanup)
 
 ## What is still blocked
 - TECH-LLMGW still serves Spring Security 401 on /v1/chat/completions in dev profile (excludes only the SecurityAutoConfiguration but ManagementWebSecurityAutoConfiguration still runs). Need to add `ManagementWebSecurityAutoConfiguration` exclude.
-- TECH-ONT throws 500 on `/actuator/health` 鈥?needs reading log.
+- TECH-ONT throws 500 on `/actuator/health` 閳?needs reading log.
 - TECH-MCP / A2A / DATA / OBS have not been started; their HQL repairs are partially done (10+ repositories still need the (... OR ...) wrap).
-- TECH-RAG port 8901 not running because RagApplication now scans `com.metaplatform.kb` and KbChunkRepository has `findByDocumentId` only 鈥?will work after RAG is restarted.
+- TECH-RAG port 8901 not running because RagApplication now scans `com.metaplatform.kb` and KbChunkRepository has `findByDocumentId` only 閳?will work after RAG is restarted.
 
 ## Honest scope
 Goal 1: 3/7 backends (TECH-LLMGW/IAM/ONT/AGENT) actually running. RAG/MCP/A2A/DATA/OBS still need work.
@@ -64,3 +64,16 @@ Goal 5: Spring Security excluded in dev profile; MCP/RAG HQL paren bugs fixed in
   - cceptance/evidence/ontology/20260727-164635-ont-actions.json (200)
 - Backends listening: 8101 IAM, 8201 ONT, 8210 LLMGW, 8511 AGENT, 8901 RAG.
 - Plan bumped to v1.66 with section 18 (acceptance e2e_smoke results table + this round's fixes).
+
+## v1.67 Update (2026-07-27 17:13) - SuperAI/Ontology/KB frontend-backend integration GREEN
+
+- **metaplatform-frontend/apps/superai/vite.config.ts** rewritten with 4 Vite proxy entries that map the legacy /v1/copilot/* frontend surface to real TECH-* backends, with ewrite: functions translating prefixes (no frontend code changes needed):
+  - /v1/copilot/auth/*         -> TECH-IAM   :8101  rewrite /v1/copilot/auth -> /api/v1/iam/auth`n  - /v1/copilot/ontology/*     -> TECH-ONT   :8201  rewrite /v1/copilot/ontology -> /api/v1/ont`n  - /v1/copilot/knowledge-bases + /v1/copilot/search -> TECH-RAG :8901  fixed rewrite to /api/v1/rag/knowledge-bases and /api/v1/rag/search`n  - /v1/copilot/ (catch-all)   -> TECH-AGENT :8511  rewrite /v1/copilot/ -> /api/v1/agent/ (superai/runs/conversations/actions/plans/agents/chat/models/a2a/tasks/skills/memory/...)
+  - /v1/copilot/{documents|citations|graph|context|kb} -> TECH-RAG :8901  rewrite /v1/copilot/ -> /api/v1/ (KB-specific fallback)
+- **TECH-RAG/src/main/java/com/metaplatform/rag/config/SecurityConfig.java** patched to permitAll() for nyRequest() in dev (was uthenticated() without a JwtAuthenticationFilter registered, causing all RAG requests to return 403).
+- 3-area evidence (timestamp 20260727-171336):
+  - cceptance/evidence/frontend-backend-integration/20260727-171336-vite-proxy-auth-login.json (200)
+  - cceptance/evidence/frontend-backend-integration/20260727-171336-vite-proxy-superai-run.json (200, deerFlowRunId=dc0f3152-...)
+  - cceptance/evidence/frontend-backend-integration/20260727-171336-vite-proxy-ontology-actions.json (200)
+  - cceptance/evidence/frontend-backend-integration/20260727-171336-vite-proxy-kb-knowledge-bases.json (200)
+- Plan bumped to v1.67 with section 19 (3-area integration routing table + this round's fixes).
