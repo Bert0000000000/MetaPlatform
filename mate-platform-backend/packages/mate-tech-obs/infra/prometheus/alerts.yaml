@@ -1,0 +1,85 @@
+groups:
+  - name: mate-platform
+    interval: 30s
+    rules:
+      - alert: Http5xxRate
+        expr: 'sum(rate(http_requests_total{status=~"5.."}[5m])) / sum(rate(http_requests_total[5m])) > 0.01'
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: HTTP 5xx rate over 1% for 5 minutes
+          description: '5xx ratio exceeded threshold'
+          runbook: 'Check upstream services and logs'
+
+      - alert: HttpP95Latency
+        expr: 'histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket[5m]))) > 1'
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: p95 latency > 1s for 5 minutes
+
+      - alert: PgConnectionPoolFull
+        expr: 'pg_stat_activity_count / pg_settings_max_connections > 0.9'
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: PG connection pool nearly exhausted
+
+      - alert: MilvusP99Latency
+        expr: 'histogram_quantile(0.99, milvus_search_latency_seconds_bucket) > 0.1'
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: Milvus search p99 over 100ms
+
+      - alert: KafkaConsumerLag
+        expr: 'kafka_consumer_lag > 10000'
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: Kafka consumer lag > 10000
+
+      - alert: AppDown
+        expr: 'up{job="mate-apps"} == 0'
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: App unreachable for 1 minute
+
+      - alert: LlmErrorRate
+        expr: 'sum(rate(llm_requests_total{status=~"error"}[5m])) / sum(rate(llm_requests_total[5m])) > 0.05'
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: LLM error rate over 5%
+
+      - alert: RagRecallFailure
+        expr: 'sum(rate(rag_search_failed_total[10m])) > 0.1'
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: RAG search failure rate abnormal
+
+      - alert: DiskSpaceLow
+        expr: '(node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) < 0.1'
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: Disk space below 10%
+
+      - alert: MemoryHigh
+        expr: '(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) > 0.9'
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: Memory usage over 90%

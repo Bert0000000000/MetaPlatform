@@ -1,0 +1,102 @@
+# ST-7.1.2: docker-compose.staging.yml — 本地 staging 模拟
+# 用不同 project name 跑一套完整链路
+version: "3.9"
+
+# 使用：docker compose -p mate-staging -f docker-compose.staging.yml up -d
+networks:
+  mate-staging-net:
+    driver: bridge
+
+volumes:
+  mate-pg-staging-data:
+  mate-redis-staging-data:
+  mate-kafka-staging-data:
+  mate-minio-staging-data:
+
+services:
+  pg-staging:
+    image: postgres:16-alpine
+    container_name: mate-pg-staging
+    environment:
+      POSTGRES_USER: mate
+      POSTGRES_PASSWORD: mate-pass
+      POSTGRES_DB: mate_staging
+    ports:
+      - "5433:5432"  # 避 dev 5432
+    volumes:
+      - mate-pg-staging-data:/var/lib/postgresql/data
+    networks:
+      - mate-staging-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mate"]
+      interval: 10s
+
+  redis-staging:
+    image: redis:7-alpine
+    container_name: mate-redis-staging
+    command: redis-server --appendonly yes
+    ports:
+      - "6380:6379"  # 避 dev 6379
+    volumes:
+      - mate-redis-staging-data:/data
+    networks:
+      - mate-staging-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+
+  kafka-staging:
+    image: bitnami/kafka:3.7
+    container_name: mate-kafka-staging
+    environment:
+      KAFKA_CFG_NODE_ID: "1"
+      KAFKA_CFG_PROCESS_ROLES: "controller,broker"
+      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: "1@kafka-staging:9093"
+      KAFKA_CFG_LISTENERS: "PLAINTEXT://:9092"
+      KAFKA_CFG_ADVERTISED_LISTENERS: "PLAINTEXT://localhost:9094"
+      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
+      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: "CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT"
+      KAFKA_CFG_INTER_BROKER_LISTENER_NAME: "PLAINTEXT"
+    ports:
+      - "9094:9092"
+    volumes:
+      - mate-kafka-staging-data:/bitnami/kafka
+    networks:
+      - mate-staging-net
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-broker-api-versions.sh --bootstrap-server localhost:9092"]
+      interval: 30s
+
+  minio-staging:
+    image: minio/minio:RELEASE.2024-08-17T01-24-54Z
+    container_name: mate-minio-staging
+    environment:
+      MINIO_ROOT_USER: mate
+      MINIO_ROOT_PASSWORD: mate-pass
+    command: server /data --console-address ":9001"
+    ports:
+      - "9100:9000"  # 避 dev 9000
+      - "9101:9001"
+    volumes:
+      - mate-minio-staging-data:/data
+    networks:
+      - mate-staging-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+
+  # 9 个 tech-* + app-* 服务都镜像部署 v_n
+  tech-msg-staging:
+    image: ghcr.io/mate/tech-msg:latest
+    container_name: mate-tech-msg-staging
+    environment:
+      LOG_LEVEL: INFO
+      KAFKA_BOOTSTRAP: kafka-staging:9092
+      REDIS_URL: redis://redis-staging:6379/0
+    ports:
+      - "8083:8082"
+    depends_on:
+      kafka-staging: { condition: service_healthy }
+      redis-staging: { condition: service_healthy }
+    networks:
+      - mate-staging-net

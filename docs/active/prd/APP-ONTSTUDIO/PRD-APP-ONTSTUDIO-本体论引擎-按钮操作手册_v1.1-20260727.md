@@ -367,3 +367,400 @@
 - **P0 按钮**：需前后端并行实现，前端先用 Mock 兜底
 - **P1 按钮**：后端 P1 端点就绪后接入
 - **P2 按钮**：留待 v2.0+ 实现
+
+
+
+## 11. 大数据相关操作（v1.2 新增）
+
+> **触发决策**: 2026-07-28 增加大数据相关技术后补充
+> **关联技术栈**: Hive / HBase / ClickHouse / Doris / StarRocks / Iceberg / Hudi / Delta / Flink / Spark / Debezium / Kafka
+> **关联主 PRD**: §12.1 - §12.5
+
+---
+
+### 11.1 【新建大数据源】按钮
+
+**触发位置**:
+- APP-ONTSTUDIO 数据中心页（`/ontology/datacenter`）→「大数据源」Tab → 「+ 新建大数据源」按钮
+
+**支持的数据源类型**（12 种）:
+| 图标 | 类型 | 适用场景 |
+|---|---|---|
+| 🐝 | HIVE | 数据仓库（SQL on Hadoop） |
+| 🗄️ | HBASE | 宽表存储（NoSQL 列式） |
+| ⚡ | CLICKHOUSE | OLAP 列式分析 |
+| 🚀 | DORIS | 实时 OLAP |
+| ⭐ | STARROCKS | 高性能 OLAP |
+| 🧊 | ICEBERG | 数据湖表格式 |
+| 🌊 | HUDI | 数据湖（Hudi 表） |
+| Δ | DELTA | 数据湖（Delta Lake） |
+| 🔍 | PRESTO | 分布式查询引擎 |
+| 🔍 | TRINO | 分布式查询（Presto 升级） |
+| 📨 | KAFKA | 实时消息流 |
+| 📡 | PULSAR | 实时消息流 |
+| 📁 | HDFS | 分布式文件存储 |
+
+**操作流程**:
+
+#### 步骤 1/5：基本信息
+1. 用户点击「+ 新建大数据源」→ 弹出向导 Drawer
+2. 系统加载已有数据源分组（GET /v1/data/sources/groups）
+3. 用户填写：
+   | 字段 | 类型 | 必填 | 默认 | 校验规则 | 说明 |
+   |---|---|---|---|---|---|
+   | 数据源名 | string | 是 | - | 1-64 字符，租户内唯一 | 显示名 |
+   | 数据源类型 | radio | 是 | - | 12 种类型之一 | 决定后续连接配置 |
+   | 描述 | string | 否 | - | 0-512 字符 | 用途说明 |
+   | 标签 | tags | 否 | [] | 每项 0-32 字符 | |
+   | 业务域 | select | 否 | - | 财务/营销/技术 | 分类 |
+
+**实时校验**:
+- 数据源名：blur 时校验非空 + 唯一性
+- 数据源类型：必选（影响后续步骤）
+
+#### 步骤 2/5：连接配置
+1. 系统根据选择的类型动态展示连接字段
+2. 用户填写（以 ClickHouse 为例）：
+   | 字段 | 类型 | 必填 | 校验 | 说明 |
+   |---|---|---|---|---|
+   | 主机 | string | 是 | URL/IP 格式 | |
+   | 端口 | number | 是 | 1-65535 | 默认 8123 |
+   | 数据库 | string | 是 | 1-64 字符 | 默认 default |
+   | Schema | string | 否 | - |  |
+   | 认证类型 | radio | 是 | NONE/USER_PASSWORD | |
+   | 用户名 | string | 条件 | 启用认证时 | 加密存储 |
+   | 密码 | string | 条件 | 启用认证时 | 加密存储 |
+   | SSL | boolean | 否 | false | |
+   | 额外参数 | json | 否 | {} | JDBC URL 参数 |
+
+3. 不同数据源差异：
+   - **HIVE/HBASE**: 需要 Metastore 地址
+   - **KAFKA/PULSAR**: 需要 Bootstrap Servers + SASL
+   - **HDFS**: 需要 Namenode + HA 配置
+
+#### 步骤 3/5：性能配置
+| 字段 | 类型 | 默认 | 校验 | 说明 |
+|---|---|---|---|---|
+| 连接池大小 | number | 10 | 1-100 | 连接池 |
+| 查询超时 | number | 60 | 1-3600 秒 | |
+| 批量大小 | number | 1000 | 1-100000 | 写入批次 |
+| 采样率 | number | 0.1 | 0-1 | schema 发现采样 |
+
+#### 步骤 4/5：测试连接
+1. 用户点击「测试连接」
+2. 系统建立真实连接
+3. 展示测试结果：
+   - ✅ 成功：显示版本、集群信息（如 ClickHouse "v23.8.2.7"）
+   - ❌ 失败：具体错误（如"网络不可达"）
+
+#### 步骤 5/5：保存
+1. 用户点击「保存」→ POST /v1/data/sources
+2. 成功后数据源加入列表
+3. 可选：自动列出 schema
+
+**结果反馈**:
+- 成功：toast "数据源创建成功"
+- 失败：toast 显示具体错误
+- 测试中：loading 状态
+
+**关联 API**:
+- GET /v1/data/sources/groups
+- POST /v1/data/sources
+- POST /v1/data/sources/{id}/test
+
+---
+
+### 11.2 【新建 CDC 任务】按钮
+
+**触发位置**:
+- APP-ONTSTUDIO 数据中心 → 「实时同步」Tab → 「+ 新建 CDC 任务」按钮
+
+**前置条件**:
+- 已注册 MySQL/PostgreSQL/Oracle 数据源
+- Kafka 集群可用
+- 用户拥有 `cdc.create` 权限
+
+**操作流程**:
+
+#### 步骤 1/6：选择数据源
+1. 弹出向导 Drawer
+2. 选择源数据库（仅显示关系型数据源）
+3. 系统自动检测 CDC 可行性（版本/权限/binlog 配置）
+
+#### 步骤 2/6：选择表
+- 系统自动列出所有表（含 schema/行数预估）
+- 用户勾选要同步的表
+- 可设置表过滤条件（如 WHERE create_time > '2020-01-01'）
+
+#### 步骤 3/6：选择字段
+- 显示每张表的字段
+- 用户可排除敏感字段（如密码、手机号）
+- 系统自动标记主键
+
+#### 步骤 4/6：配置同步
+| 字段 | 类型 | 必填 | 默认 | 校验 | 说明 |
+|---|---|---|---|---|---|
+| 同步模式 | radio | 是 | "FULL_INCREMENTAL" | FULL_INCREMENTAL/INCREMENTAL_ONLY/SNAPSHOT_ONLY | 同步策略 |
+| 起始位点 | radio | 是 | "LATEST" | LATEST/CURRENT_TIMESTAMP/CUSTOM | |
+| 自定义位点 | string | 条件 | - | binlog 格式 | CUSTOM 必填 |
+| 目标存储 | radio | 是 | "KAFKA" | KAFKA/CLICKHOUSE/HUDI/ICEBERG | 写入目标 |
+| 目标 Topic/Table | string | 是 | - | 自动生成或自定义 | |
+| Schema 演化 | radio | 是 | "ADD_NEW_COLUMNS" | IGNORE/ADD_NEW_COLUMNS/RESTRICT | 源表加列时如何处理 |
+
+#### 步骤 5/6：高级配置
+| 字段 | 类型 | 默认 | 校验 | 说明 |
+|---|---|---|---|---|
+| 并发度 | number | 1 | 1-16 | 任务并行度 |
+| 批处理大小 | number | 1000 | 1-10000 | 每批处理记录数 |
+| 失败重试 | number | 3 | 0-10 | 失败后重试次数 |
+| 重试间隔 | number | 60 | 1-3600 秒 | |
+| 死信队列 | string | - | - | 失败消息存放 |
+
+#### 步骤 6/6：启动
+1. 用户点击「启动」
+2. 系统部署 Debezium/Flink CDC Connector
+3. 启动全量快照 → 进入 binlog 监听
+4. 实时同步到目标
+
+**结果反馈**:
+- 启动中：进度（snapshot 阶段、binlog 阶段）
+- 运行中：实时指标（QPS、Lag、当前位点）
+- 失败：告警 + DLQ 详情
+
+**监控指标**:
+- 同步延迟（ms）
+- 已同步记录数
+- 当前 binlog 位点
+- 反压状态
+- DLQ 数量
+
+**关联 API**:
+- POST /v1/data/cdc-tasks
+- GET /v1/data/cdc-tasks/{id}/status
+- POST /v1/data/cdc-tasks/{id}/pause
+- POST /v1/data/cdc-tasks/{id}/resume
+- POST /v1/data/cdc-tasks/{id}/stop
+
+---
+
+### 11.3 【新建 ETL 任务】按钮
+
+**触发位置**:
+- APP-ONTSTUDIO Action 编排页 → 「ETL 任务」Tab → 「+ 新建 ETL」按钮
+
+**前置条件**:
+- 至少 1 个数据源
+- 至少 1 个目标存储
+- Spark/Flink 集群可用
+- 用户拥有 `etl.create` 权限
+
+**ETL 模式**:
+| 图标 | 模式 | 引擎 | 适用 |
+|---|---|---|---|
+| 📊 | BATCH_SPARK | Spark | 批量数据处理 |
+| ⚡ | BATCH_FLINK | Flink | 批量数据处理 |
+| 🌊 | STREAMING_FLINK | Flink | 实时流处理 |
+| 📈 | STREAMING_SPARK | Spark Streaming | 实时流处理 |
+| 🔣 | SQL_TRANSFORM | Spark SQL | 纯 SQL 转换 |
+
+**操作流程**（7 步向导）:
+
+#### 步骤 1/7：基本信息
+| 字段 | 类型 | 必填 | 校验 | 说明 |
+|---|---|---|---|---|
+| 任务名 | string | 是 | 1-64 字符 | |
+| 描述 | string | 否 | 0-512 字符 | |
+| 模式 | radio | 是 | 上述 5 种 | |
+| 优先级 | radio | 是 | NORMAL | LOW/NORMAL/HIGH/URGENT |
+
+#### 步骤 2/7：数据源
+- 选择源（可多个）
+- 选择源表/Topic
+- 设置增量字段（如 update_time）
+
+#### 步骤 3/7：转换
+**两种方式**:
+1. **可视化 DAG**（拖拽）：
+   - 输入节点（Source）
+   - 转换节点（Filter/Join/Aggregate/SQL）
+   - 输出节点（Sink）
+2. **SQL 转换**：
+   ```sql
+   SELECT customer_id, SUM(amount) as total_amount
+   FROM source_table WHERE create_time >= '${start_time}'
+   GROUP BY customer_id
+   ```
+
+#### 步骤 4/7：目标
+- 选择目标存储（Hive/ClickHouse/Iceberg/Hudi/Delta）
+- 选择目标表
+- 配置写入模式（overwrite/append/upsert/merge）
+
+#### 步骤 5/7：调度
+| 字段 | 类型 | 默认 | 校验 | 说明 |
+|---|---|---|---|---|
+| 触发方式 | radio | MANUAL | MANUAL/SCHEDULED/EVENT | |
+| Cron | string | 条件 | 5 段标准 | SCHEDULED 必填 |
+| 重试 | number | 3 | 0-10 | |
+| 失败告警 | boolean | true | - | |
+
+#### 步骤 6/7：资源配置
+| 字段 | 类型 | 默认 | 校验 | 说明 |
+|---|---|---|---|---|
+| Executor 数量 | number | 2 | 1-100 | |
+| Executor 内存 | number | 4 | 1-64 GB | |
+| Driver 内存 | number | 2 | 1-16 GB | |
+| 队列 | string | "default" | - | YARN/K8s 队列 |
+
+#### 步骤 7/7：保存与启动
+1. 点击「保存」→ POST /v1/etl/tasks
+2. 选择「保存为草稿」或「立即运行」
+3. 提交到 Spark/Flink 集群
+
+**结果反馈**:
+- 启动中：进度
+- 完成：toast + 统计（处理行数、耗时）
+- 失败：toast + 错误日志链接
+
+**监控指标**:
+- 处理行数/秒
+- Shuffle 量
+- GC 时间
+- Executor 利用率
+
+**关联 API**:
+- POST /v1/etl/tasks
+- POST /v1/etl/tasks/{id}/run
+- GET /v1/etl/tasks/{id}/status
+- GET /v1/etl/tasks/{id}/logs
+- POST /v1/etl/tasks/{id}/stop
+
+---
+
+### 11.4 【新建调度任务】按钮
+
+**触发位置**:
+- APP-ONTSTUDIO 调度中心页 → 「+ 新建调度」按钮
+
+**前置条件**:
+- 至少 1 个可调度任务
+- 调度服务可用
+- 用户拥有 `scheduler.create` 权限
+
+**操作流程**:
+
+#### A. 选择任务类型
+- ETL 任务
+- CDC 同步任务
+- 数据质量检查
+- 自定义 Action
+
+#### B. 基本信息
+| 字段 | 类型 | 必填 | 校验 | 说明 |
+|---|---|---|---|---|
+| 调度名 | string | 是 | 1-64 字符 | |
+| 任务 | select | 是 | - | 已注册任务 |
+| 描述 | string | 否 | 0-512 字符 | |
+
+#### C. 触发配置
+| 字段 | 类型 | 必填 | 默认 | 校验 | 说明 |
+|---|---|---|---|---|---|
+| 触发方式 | radio | 是 | CRON | CRON/EVENT/MANUAL/DEPENDENCY | |
+| Cron 表达式 | string | 条件 | - | 5 段标准 | CRON 必填 |
+| 依赖任务 | multi-select | 条件 | - | - | DEPENDENCY 必填 |
+| 起始时间 | datetime | 是 | now | - | |
+| 结束时间 | datetime | 否 | - | - | 永久或截止 |
+
+#### D. 失败处理
+| 字段 | 类型 | 默认 | 说明 |
+|---|---|---|---|
+| 重试 | number | 3 | 0-10 |
+| 重试间隔 | number | 60 | 秒 |
+| 超时 | number | 3600 | 秒 |
+| 失败告警 | multi-checkbox | - | 失败/超时/成功 |
+
+#### E. 通知
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| 通知渠道 | multi-checkbox | 是 | 站内/邮件/IM/Webhook |
+| 通知对象 | multi-select | 是 | 用户/角色/部门 |
+| 通知时机 | multi-checkbox | - | 失败/超时/成功/开始/结束 |
+
+**结果反馈**:
+- 成功：toast "调度创建成功，立即生效"
+- 失败：toast 显示具体错误
+
+**关联 API**:
+- POST /v1/scheduler/tasks
+- GET /v1/scheduler/tasks
+- GET /v1/scheduler/dag（依赖图）
+
+---
+
+### 11.5 【新建数据指标】按钮
+
+**触发位置**:
+- APP-ONTSTUDIO 数据中心 → 「数据指标」Tab → 「+ 新建指标」按钮
+
+**前置条件**:
+- 已注册的指标目标（表/字段/Action）
+- 用户拥有 `metric.create` 权限
+
+**指标类型**:
+| 类型 | 适用 | 计算频率 | 存储 |
+|---|---|---|---|
+| ATOMIC | 基础指标（DAU、销售额） | 实时/分钟 | ClickHouse |
+| DERIVED | 派生指标（比率、增长率） | 分钟/小时 | ClickHouse |
+| COMPOSITE | 复合指标（多维交叉） | 小时/天 | ClickHouse |
+| REALTIME | 实时指标（监控大屏） | 秒级 | Redis + ClickHouse |
+
+**操作流程**（4 步向导）:
+
+#### 步骤 1/4：基本信息
+| 字段 | 类型 | 必填 | 校验 | 说明 |
+|---|---|---|---|---|
+| 指标名 | string | 是 | 1-64 字符 | |
+| 指标编码 | string | 是 | 正则 + 租户内唯一 | |
+| 类型 | radio | 是 | 上述 4 种 | |
+| 描述 | string | 否 | 0-512 字符 | |
+| 业务域 | select | 是 | 财务/营销/运营/技术 | |
+| 标签 | tags | 否 | - | |
+
+#### 步骤 2/4：定义
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| 数据源 | select | 是 | 已有数据源 |
+| 表/视图 | select | 是 | 自动列出 |
+| 计算字段 | string | 是 | SQL 表达式（如 `SUM(amount)`） |
+| 聚合方式 | radio | 是 | SUM/AVG/COUNT/MAX/MIN/LAST |
+| 过滤条件 | string | 否 | WHERE 子句 |
+| 维度字段 | multi-select | 否 | 用于下钻 |
+
+#### 步骤 3/4：调度与告警
+| 字段 | 类型 | 默认 | 说明 |
+|---|---|---|---|
+| 计算频率 | radio | HOURLY | REALTIME/MINUTELY/HOURLY/DAILY |
+| 告警阈值 | object | - | {min, max, changeRate} |
+| 告警对象 | multi-select | - | |
+| 通知渠道 | multi-checkbox | - | 站内/邮件/IM |
+
+#### 步骤 4/4：保存与生效
+1. 点击「保存」→ POST /v1/metrics
+2. 系统自动调度计算
+3. 指标值进入指标库
+4. 后续可在 BI 报表中使用
+
+**结果反馈**:
+- 创建成功：toast "指标创建成功"
+- 计算失败：toast 显示具体错误
+
+**指标血缘**:
+- 自动追踪：指标 → 表/视图 → 字段 → 源系统
+- 变更影响：修改源字段 → 列出受影响指标
+
+**关联 API**:
+- POST /v1/metrics
+- GET /v1/metrics
+- GET /v1/metrics/{id}/values
+- GET /v1/metrics/{id}/lineage
+- POST /v1/metrics/{id}/compute（手动触发）

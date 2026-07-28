@@ -1,0 +1,76 @@
+openapi: 3.1.0
+info:
+  title: mate-tech-agent
+  version: 0.1.0
+  description: Agent service (LangGraph + S1-S4 场景)
+paths:
+  /healthz:
+    get:
+      summary: 健康检查
+      tags: [meta]
+      responses:
+        "200":
+          description: OK
+  /api/v1/agent/chat:
+    post:
+      summary: Agent 对话
+      tags: [agent]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChatRequest"
+      responses:
+        "200":
+          description: OK
+  /api/v1/agent/chat/stream:
+    post:
+      summary: SSE 流式对话
+      tags: [agent]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChatRequest"
+      responses:
+        "200":
+          description: text/event-stream
+  /api/v1/agent/approve:
+    post:
+      summary: S3 HITL 审批
+      tags: [agent]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ApproveRequest"
+      responses:
+        "200":
+          description: OK
+components:
+  schemas:
+    ChatRequest:
+      type: object
+      required: [user_input]
+      properties:
+        user_input: {type: string}
+        session_id: {type: string, nullable: true}
+        scenario: {type: string, default: S1, enum: [S1, S2, S3, S4]}
+    ChatResponse:
+      type: object
+      properties:
+        answer: {type: string}
+        steps:
+          type: array
+          items: {type: object}
+        metadata: {type: object}
+    ApproveRequest:
+      type: object
+      required: [thread_id, decision]
+      properties:
+        thread_id: {type: string}
+        decision: {type: string, enum: [approve, reject]}
+        comment: {type: string, nullable: true}

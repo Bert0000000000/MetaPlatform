@@ -1,0 +1,54 @@
+# ST-7.1.1: K8s namespace for staging
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: mate-staging
+  labels:
+    purpose: blue-green-staging
+    app.kubernetes.io/part-of: mate-platform
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: mate-staging-quota
+  namespace: mate-staging
+spec:
+  hard:
+    pods: "20"
+    services: "30"
+    secrets: "30"
+    configmaps: "30"
+    requests.cpu: "10"
+    requests.memory: "20Gi"
+    limits.cpu: "20"
+    limits.memory: "40Gi"
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: mate-staging-sa
+  namespace: mate-staging
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: mate-staging-role
+  namespace: mate-staging
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "services", "configmaps", "secrets"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: mate-staging-rb
+  namespace: mate-staging
+subjects:
+  - kind: ServiceAccount
+    name: mate-staging-sa
+    namespace: mate-staging
+roleRef:
+  kind: Role
+  name: mate-staging-role
+  apiGroup: rbac.authorization.k8s.io

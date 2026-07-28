@@ -1,0 +1,8 @@
+﻿[
+  {
+    "id": 1,
+    "title": "PG Connections",
+    "type": "graph",
+    "targets": [{"expr": "pg_stat_activity_count"}]
+  }
+]

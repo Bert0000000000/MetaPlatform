@@ -61,6 +61,7 @@ export default defineConfig({
       '@flowgram.ai/free-hover-plugin',
       '@douyinfe/semi-ui',
       '@douyinfe/semi-icons',
+      '@antv/g6',
     ],
   },
   build: {

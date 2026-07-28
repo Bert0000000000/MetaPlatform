@@ -1,0 +1,107 @@
+openapi: 3.1.0
+info:
+  title: mate-tech-mcp
+  version: 0.1.0
+  description: |
+    MCP (Model Context Protocol) server — 工具/资源/提示统一桥接。
+    支持 stdio (本地) 与 SSE (远端) 两种 transport。
+paths:
+  /healthz:
+    get:
+      summary: 健康检查
+      tags: [meta]
+      responses:
+        "200":
+          description: OK
+  /api/v1/mcp/tools:
+    get:
+      summary: 列出所有已注册工具
+      tags: [mcp]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tools:
+                    type: array
+                    items: {$ref: "#/components/schemas/ToolSpec"}
+  /api/v1/mcp/tools/{name}:
+    post:
+      summary: HTTP 桥接 — 调工具
+      tags: [mcp]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema: {type: string}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arguments: {type: object}
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tool: {type: string}
+                  result: {}
+        "401": {description: 缺少或无效 JWT}
+        "404": {description: 工具不存在}
+        "429": {description: 触发限流}
+  /api/v1/mcp/resources:
+    get:
+      summary: 列出资源
+      tags: [mcp]
+      responses:
+        "200":
+          description: OK
+  /api/v1/mcp/prompts:
+    get:
+      summary: 列出 prompt 模板
+      tags: [mcp]
+      responses:
+        "200":
+          description: OK
+  /api/v1/mcp/prompts/{name}:
+    post:
+      summary: 渲染 prompt 模板
+      tags: [mcp]
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema: {type: string}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object}
+      responses:
+        "200":
+          description: OK
+        "404": {description: prompt 不存在}
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    ToolSpec:
+      type: object
+      properties:
+        name: {type: string}
+        description: {type: string}
+        inputSchema: {type: object}

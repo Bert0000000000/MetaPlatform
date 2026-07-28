@@ -1,0 +1,8 @@
+﻿[
+  {
+    "id": 1,
+    "title": "5xx Error Rate",
+    "type": "graph",
+    "targets": [{"expr": "sum(rate(http_requests_total{status=~'5..'}[5m])) / sum(rate(http_requests_total[5m]))"}]
+  }
+]

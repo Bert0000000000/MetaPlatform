@@ -1,0 +1,11 @@
+Mate Platform Architecture Overview
+====================================
+
+Section 1: Backend Services
+The Mate Platform backend is built with Python 3.12 and FastAPI framework. Key services include tech-rag, tech-agent, tech-ont, tech-kb, and tech-llmgw.
+
+Section 2: External AI Engines
+External AI engines include RAGFlow for document parsing, LightRAG for thematic retrieval, and Flowable for BPMN workflow orchestration. GraphRAG provides entity-based retrieval.
+
+Section 3: Infrastructure
+The infrastructure stack uses PostgreSQL for relational data, Neo4j for graph storage, Milvus for vector search, Redis for caching, and Kafka for event streaming.

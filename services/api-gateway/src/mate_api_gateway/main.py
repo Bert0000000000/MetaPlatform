@@ -1,0 +1,231 @@
+"""Mate Platform - API Gateway entry.
+
+L7 路由: path 前缀匹配 -> 上游服务
+聚合: 多服务结果组合 (后续可加)
+限流: Redis 令牌桶 (per-tenant per-minute)
+"""
+from __future__ import annotations
+
+import os
+import time
+from contextlib import asynccontextmanager
+from typing import Any
+
+import httpx
+import structlog
+from fastapi import FastAPI, Request, Response
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel, Field
+
+logger = structlog.get_logger(__name__)
+
+
+# ---- Service registry (env-overridable) ----
+SERVICES: dict[str, str] = {
+    "rag":    os.getenv("RAG_URL",    "http://mate-tech-rag:8001"),
+    "agent":  os.getenv("AGENT_URL",  "http://mate-tech-agent:8002"),
+    "app-kb": os.getenv("APP_KB_URL", "http://mate-app-kb:8003"),
+    "llmgw":  os.getenv("LLMGW_URL",  "http://mate-tech-llmgw:8008"),
+    "ont":    os.getenv("ONT_URL",    "http://mate-tech-ont:8007"),
+    "mcp":    os.getenv("MCP_URL",    "http://mate-tech-mcp:8081"),
+    "iam":    os.getenv("IAM_URL",    "http://mate-auth-service:8101"),
+}
+
+REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")
+RATE_LIMIT_PER_MIN = int(os.getenv("RATE_LIMIT_PER_MIN", "600"))
+UPSTREAM_TIMEOUT_SEC = float(os.getenv("UPSTREAM_TIMEOUT_SEC", "60"))
+
+# Path prefix -> upstream service name
+ROUTE_MAP: list[tuple[str, str]] = [
+    ("/api/v1/rag/",  "rag"),
+    ("/api/v1/agent/", "agent"),
+    ("/api/v1/llm/",  "llmgw"),
+    ("/api/v1/kb/",   "app-kb"),
+    ("/api/v1/ont/",  "ont"),
+    ("/api/v1/mcp/",  "mcp"),
+    ("/api/v1/iam/",  "iam"),
+]
+
+
+# ---- Lifespan: shared httpx.AsyncClient + Redis ----
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    log_level = os.getenv("LOG_LEVEL", "INFO").upper()
+    structlog.configure(
+        processors=[
+            structlog.processors.add_log_level,
+            structlog.processors.TimeStamper(fmt="iso"),
+            structlog.processors.JSONRenderer(),
+        ],
+        wrapper_class=structlog.make_filtering_bound_logger(
+            getattr(__import__("logging"), log_level)
+        ),
+    )
+    app.state.client = httpx.AsyncClient(
+        timeout=httpx.Timeout(UPSTREAM_TIMEOUT_SEC, connect=5.0),
+        limits=httpx.Limits(max_connections=200, max_keepalive_connections=50),
+    )
+    try:
+        import redis.asyncio as aioredis
+        app.state.redis = aioredis.from_url(REDIS_URL, decode_responses=True)
+        await app.state.redis.ping()
+        logger.info("redis.connected", url=REDIS_URL)
+    except Exception as exc:
+        logger.warning("redis.connect_failed", error=str(exc))
+        app.state.redis = None
+    logger.info("mate-api-gateway.startup", services=list(SERVICES.keys()))
+    yield
+    await app.state.client.aclose()
+    if app.state.redis is not None:
+        try:
+            await app.state.redis.aclose()
+        except Exception:
+            pass
+    logger.info("mate-api-gateway.shutdown")
+
+
+app = FastAPI(
+    title="mate-api-gateway",
+    version="0.1.0",
+    description="API Gateway: L7 routing + aggregation + rate limiting",
+    lifespan=lifespan,
+)
+
+
+# ---- Health ----
+@app.get("/healthz")
+async def healthz() -> dict[str, str]:
+    return {"status": "ok", "version": app.version}
+
+
+@app.get("/readyz")
+async def readyz() -> dict[str, Any]:
+    services_status: dict[str, str] = {}
+    overall_ok = True
+    for name, url in SERVICES.items():
+        try:
+            r = await app.state.client.get(f"{url}/healthz", timeout=2.0)
+            ok = r.status_code == 200
+            services_status[name] = "up" if ok else f"degraded:{r.status_code}"
+            overall_ok = overall_ok and ok
+        except Exception as exc:
+            services_status[name] = f"down:{type(exc).__name__}"
+            overall_ok = False
+    return {
+        "status": "ok" if overall_ok else "degraded",
+        "redis": "up" if app.state.redis else "down",
+        "services": services_status,
+    }
+
+
+# ---- Rate limit middleware (per-tenant, sliding minute bucket) ----
+@app.middleware("http")
+async def rate_limit_middleware(request: Request, call_next):
+    if app.state.redis is None or not request.url.path.startswith("/api/"):
+        return await call_next(request)
+    tenant = (
+        request.headers.get("X-Tenant-Id")
+        or (request.client.host if request.client else "anon")
+    )
+    minute_bucket = int(time.time()) // 60
+    bucket_key = f"rl:{tenant}:{minute_bucket}"
+    try:
+        n = await app.state.redis.incr(bucket_key)
+        if n == 1:
+            await app.state.redis.expire(bucket_key, 65)
+        if n > RATE_LIMIT_PER_MIN:
+            return JSONResponse(
+                status_code=429,
+                content={
+                    "code": "E429_RATE_LIMIT",
+                    "message": f"Rate limit {RATE_LIMIT_PER_MIN}/min exceeded for tenant '{tenant}'",
+                },
+                headers={"Retry-After": "60"},
+            )
+    except Exception as exc:
+        logger.warning("rate_limit.error", error=str(exc))
+    return await call_next(request)
+
+
+# ---- Catch-all proxy ----
+PROXY_METHODS = ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"]
+
+
+@app.api_route("/api/v1/{path:path}", methods=PROXY_METHODS)
+async def proxy(path: str, request: Request) -> Response:
+    """Match longest prefix in ROUTE_MAP and forward to upstream.
+
+    Injects X-Forwarded-* headers, preserves body and query string.
+    """
+    matched_service: str | None = None
+    for prefix, svc in sorted(ROUTE_MAP, key=lambda x: -len(x[0])):
+        if request.url.path.startswith(prefix):
+            matched_service = svc
+            break
+    if matched_service is None:
+        return JSONResponse(
+            status_code=404,
+            content={
+                "code": "E404_NO_ROUTE",
+                "message": f"No route matched {request.url.path}",
+            },
+        )
+
+    target_base = SERVICES[matched_service]
+    target_url = f"{target_base}{request.url.path}"
+
+    # Forward headers, drop hop-by-hop
+    skip = {"host", "content-length", "connection", "keep-alive",
+            "proxy-authenticate", "proxy-authorization", "te", "trailers",
+            "transfer-encoding", "upgrade"}
+    headers = {k: v for k, v in request.headers.items() if k.lower() not in skip}
+    headers["X-Forwarded-By"] = "mate-api-gateway"
+    headers["X-Forwarded-Host"] = request.headers.get("host", "")
+    headers["X-Real-IP"] = request.client.host if request.client else ""
+
+    body = await request.body()
+    start = time.perf_counter()
+    try:
+        upstream = await app.state.client.request(
+            method=request.method,
+            url=target_url,
+            params=request.url.query,
+            headers=headers,
+            content=body,
+        )
+        latency_ms = int((time.perf_counter() - start) * 1000)
+        logger.info(
+            "proxy.forward",
+            method=request.method,
+            path=request.url.path,
+            upstream=matched_service,
+            status=upstream.status_code,
+            latency_ms=latency_ms,
+        )
+        # Drop hop-by-hop from upstream response too
+        resp_headers = {
+            k: v for k, v in upstream.headers.items()
+            if k.lower() not in skip
+        }
+        return Response(
+            content=upstream.content,
+            status_code=upstream.status_code,
+            headers=resp_headers,
+        )
+    except httpx.TimeoutException:
+        logger.error("proxy.timeout", upstream=matched_service, url=target_url)
+        return JSONResponse(
+            status_code=504,
+            content={"code": "E504_TIMEOUT", "message": f"Upstream {matched_service} timeout"},
+        )
+    except Exception as exc:
+        logger.error("proxy.error", upstream=matched_service, url=target_url, error=str(exc))
+        return JSONResponse(
+            status_code=502,
+            content={"code": "E502_UPSTREAM", "message": f"Upstream {matched_service} error: {exc}"},
+        )
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("PORT", "8100")))

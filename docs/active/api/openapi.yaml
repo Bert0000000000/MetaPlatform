@@ -5,7 +5,7 @@ info:
   version: 1.0.0
   description: |
     Mate Platform 企业级 AI 中台统一 API 契约
-    共 141 个端点，覆盖 8 大业务模块
+    共 198 个端点（含 57 个大数据端点），覆盖 8 大业务模块 + 大数据
 
     ## 后端服务映射
     - /v1/iam/* -> TECH-IAM
@@ -22,6 +22,11 @@ info:
     - /v1/llmgw/* -> TECH-LLMGW
     - /v1/a2a/* -> MATE-A2A
     - /v1/dashboard/* -> TECH-IAM 扩展
+    - /v1/data/* -> MATE-DATA（大数据源/CDC/ETL）
+    - /v1/etl/* -> MATE-DATA
+    - /v1/scheduler/* -> MATE-DATA
+    - /v1/metrics/* -> MATE-DATA
+    
   contact:
     name: Mate Platform Team
     email: team@metaplatform.io
@@ -63,11 +68,264 @@ tags:
     description: LLM 网关 (TECH-LLMGW)
   - name: a2a
     description: A2A 协议 (MATE-A2A)
-  - name: dashboard
-    description: 工作台与后台管理
+  - name: data
+    description: 大数据源管理 (MATE-DATA)
+  - name: cdc
+    description: CDC 实时同步 (MATE-DATA)
+  - name: etl
+    description: 大数据 ETL 任务 (MATE-DATA)
+  - name: scheduler
+    description: 任务调度中心 (MATE-DATA)
+  - name: metrics
+    description: 数据指标平台 (MATE-DATA)
+    # ============= BigData =============
+    BigDataSource:
+      type: object
+      required: [sourceId, name, sourceType, host, port, authType, status]
+      properties:
+        sourceId:
+          type: string
+        tenantId:
+          type: string
+        name:
+          type: string
+          maxLength: 64
+        sourceType:
+          type: string
+          enum: [HIVE, HBASE, CLICKHOUSE, DORIS, STARROCKS, ICEBERG, HUDI, DELTA, PRESTO, TRINO, KAFKA, PULSAR, HDFS]
+        host:
+          type: string
+        port:
+          type: integer
+          minimum: 1
+          maximum: 65535
+        database:
+          type: string
+        schema:
+          type: string
+        authType:
+          type: string
+          enum: [NONE, USER_PASSWORD, KERBERY, LDAP]
+          default: NONE
+        authConfig:
+          type: object
+        sslEnabled:
+          type: boolean
+          default: false
+        poolSize:
+          type: integer
+          default: 10
+        queryTimeout:
+          type: integer
+          default: 60
+        batchSize:
+          type: integer
+          default: 1000
+        sampleRate:
+          type: number
+          default: 0.1
+        status:
+          type: string
+          enum: [DRAFT, ACTIVE, INACTIVE, ERROR, DELETED]
+        businessDomain:
+          type: string
+    CDCTask:
+      type: object
+      required: [taskId, name, sourceId, syncMode, targetType, targetName, status]
+      properties:
+        taskId:
+          type: string
+        name:
+          type: string
+        sourceId:
+          type: string
+        syncMode:
+          type: string
+          enum: [FULL_INCREMENTAL, INCREMENTAL_ONLY, SNAPSHOT_ONLY]
+        startPosition:
+          type: string
+          enum: [LATEST, CURRENT_TIMESTAMP, CUSTOM]
+        customPosition:
+          type: string
+        targetType:
+          type: string
+          enum: [KAFKA, CLICKHOUSE, HUDI, ICEBERG]
+        targetName:
+          type: string
+        schemaEvolution:
+          type: string
+          enum: [IGNORE, ADD_NEW_COLUMNS, RESTRICT]
+        tables:
+          type: array
+          items:
+            type: object
+        concurrency:
+          type: integer
+          default: 1
+        batchSize:
+          type: integer
+          default: 1000
+        status:
+          type: string
+          enum: [PENDING, SNAPSHOTTING, RUNNING, PAUSED, FAILED, STOPPED]
+        lagMs:
+          type: integer
+        totalRecords:
+          type: integer
+          format: int64
+    ETLTask:
+      type: object
+      required: [taskId, name, mode, sourceIds, targetType, targetTable, writeMode, status]
+      properties:
+        taskId:
+          type: string
+        name:
+          type: string
+        mode:
+          type: string
+          enum: [BATCH_SPARK, BATCH_FLINK, STREAMING_FLINK, STREAMING_SPARK, SQL_TRANSFORM]
+        priority:
+          type: string
+          enum: [LOW, NORMAL, HIGH, URGENT]
+        sourceIds:
+          type: array
+          items:
+            type: string
+        sourceTables:
+          type: array
+          items:
+            type: string
+        transformDag:
+          type: object
+        transformSql:
+          type: string
+        incrementalField:
+          type: string
+        targetType:
+          type: string
+          enum: [HIVE, CLICKHOUSE, ICEBERG, HUDI, DELTA, DORIS]
+        targetSourceId:
+          type: string
+        targetTable:
+          type: string
+        writeMode:
+          type: string
+          enum: [OVERWRITE, APPEND, UPSERT, MERGE]
+        triggerType:
+          type: string
+          enum: [MANUAL, SCHEDULED, EVENT]
+        cron:
+          type: string
+        status:
+          type: string
+          enum: [DRAFT, READY, RUNNING, SUCCESS, FAILED, CANCELLED, TIMEOUT]
+        executorNum:
+          type: integer
+        executorMemory:
+          type: integer
+        driverMemory:
+          type: integer
+        queue:
+          type: string
+    SchedulerTask:
+      type: object
+      required: [schedulerId, name, taskType, taskId, triggerType, status]
+      properties:
+        schedulerId:
+          type: string
+        name:
+          type: string
+        taskType:
+          type: string
+          enum: [ETL_TASK, CDC_TASK, QUALITY_CHECK, CUSTOM_ACTION]
+        taskId:
+          type: string
+        triggerType:
+          type: string
+          enum: [CRON, EVENT, MANUAL, DEPENDENCY]
+        cron:
+          type: string
+        dependsOn:
+          type: array
+          items:
+            type: string
+        startTime:
+          type: string
+          format: date-time
+        endTime:
+          type: string
+          format: date-time
+        retryCount:
+          type: integer
+        timeout:
+          type: integer
+        status:
+          type: string
+          enum: [ACTIVE, PAUSED, EXPIRED, DELETED]
+        notifyChannels:
+          type: array
+          items:
+            type: string
+        notifyTargets:
+          type: array
+          items:
+            type: string
+    Metric:
+      type: object
+      required: [metricId, name, code, type, sourceId, sourceTable, sourceField, aggregation, calculationFrequency, status]
+      properties:
+        metricId:
+          type: string
+        name:
+          type: string
+        code:
+          type: string
+        type:
+          type: string
+          enum: [ATOMIC, DERIVED, COMPOSITE, REALTIME]
+        sourceId:
+          type: string
+        sourceTable:
+          type: string
+        sourceField:
+          type: string
+        aggregation:
+          type: string
+          enum: [SUM, AVG, COUNT, MAX, MIN, LAST]
+        filter:
+          type: string
+        dimensions:
+          type: array
+          items:
+            type: string
+        formula:
+          type: string
+        calculationFrequency:
+          type: string
+          enum: [REALTIME, MINUTELY, HOURLY, DAILY]
+        alertMin:
+          type: number
+        alertMax:
+          type: number
+        alertChangeRate:
+          type: number
+        status:
+          type: string
+          enum: [DRAFT, ACTIVE, INACTIVE, ERROR]
+        lastValue:
+          type: number
 
+  - name: data
+    description: 大数据源管理 (MATE-DATA)
+  - name: cdc
+    description: CDC 实时同步 (MATE-DATA)
+  - name: etl
+    description: 大数据 ETL 任务 (MATE-DATA)
+  - name: scheduler
+    description: 任务调度中心 (MATE-DATA)
+  - name: metrics
+    description: 数据指标平台 (MATE-DATA)
 paths:
-
   /v1/a2a/agent-cards/search:
     get:
       tags:
@@ -4350,6 +4608,838 @@ paths:
 
 
 
+  /v1/data/sources:
+    get:
+      tags:
+        - data
+      summary: 列表 大数据源
+      operationId: list__v1_data_sources
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      tags:
+        - data
+      summary: 新建 大数据源
+      operationId: create__v1_data_sources
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/data/sources/{id}:
+    get:
+      tags:
+        - data
+      summary: 详情 大数据源
+      operationId: get__v1_data_sources_id
+      parameters:
+        - $ref: '#/components/parameters/Id'
+        - $ref: '#/components/parameters/TenantId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags:
+        - data
+      summary: 更新 大数据源
+      operationId: update__v1_data_sources_id
+      parameters:
+        - $ref: '#/components/parameters/Id'
+        - $ref: '#/components/parameters/TenantId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags:
+        - data
+      summary: 删除 大数据源
+      operationId: delete__v1_data_sources_id
+      parameters:
+        - $ref: '#/components/parameters/Id'
+        - $ref: '#/components/parameters/TenantId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/data/sources/{id}/test:
+    post:
+      tags:
+        - data
+      summary: 测试 测试连接
+      operationId: test__v1_data_sources_id_test
+      parameters:
+        - $ref: '#/components/parameters/Id'
+        - $ref: '#/components/parameters/TenantId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/data/sources/{id}/schema:
+    get:
+      tags:
+        - data
+      summary: 发现 发现schema
+      operationId: getSchema__v1_data_sources_id_schema
+      parameters:
+        - $ref: '#/components/parameters/Id'
+        - $ref: '#/components/parameters/TenantId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/data/cdc-tasks:
+    get:
+      tags:
+        - cdc
+      summary: 列表 CDC任务
+      operationId: list__v1_data_cdc-tasks
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      tags:
+        - cdc
+      summary: 新建 CDC任务
+      operationId: create__v1_data_cdc-tasks
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/data/cdc-tasks/{id}:
+    get:
+      tags:
+        - cdc
+      summary: 详情 CDC任务
+      operationId: get__v1_data_cdc-tasks_id
+      parameters:
+        - $ref: '#/components/parameters/Id'
+        - $ref: '#/components/parameters/TenantId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags:
+        - cdc
+      summary: 更新 CDC任务
+      operationId: update__v1_data_cdc-tasks_id
+      parameters:
+        - $ref: '#/components/parameters/Id'
+        - $ref: '#/components/parameters/TenantId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags:
+        - cdc
+      summary: 删除 CDC任务
+      operationId: delete__v1_data_cdc-tasks_id
+      parameters:
+        - $ref: '#/components/parameters/Id'
+        - $ref: '#/components/parameters/TenantId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/data/cdc-tasks/{id}/status:
+    get:
+      tags:
+        - cdc
+      summary: 状态 CDC状态
+      operationId: getStatus__v1_data_cdc-tasks_id_status
+      parameters:
+        - $ref: '#/components/parameters/Id'
+        - $ref: '#/components/parameters/TenantId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/data/cdc-tasks/{id}/pause:
+    post:
+      tags:
+        - cdc
+      summary: 暂停 暂停CDC
+      operationId: pause__v1_data_cdc-tasks_id_pause
+      parameters:
+        - $ref: '#/components/parameters/Id'
+        - $ref: '#/components/parameters/TenantId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/data/cdc-tasks/{id}/resume:
+    post:
+      tags:
+        - cdc
+      summary: 恢复 恢复CDC
+      operationId: resume__v1_data_cdc-tasks_id_resume
+      parameters:
+        - $ref: '#/components/parameters/Id'
+        - $ref: '#/components/parameters/TenantId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/etl/tasks:
+    get:
+      tags:
+        - etl
+      summary: 列表 ETL任务
+      operationId: list__v1_etl_tasks
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      tags:
+        - etl
+      summary: 新建 ETL任务
+      operationId: create__v1_etl_tasks
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/etl/tasks/{id}:
+    get:
+      tags:
+        - etl
+      summary: 详情 ETL任务
+      operationId: get__v1_etl_tasks_id
+      parameters:
+        - $ref: '#/components/parameters/Id'
+        - $ref: '#/components/parameters/TenantId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags:
+        - etl
+      summary: 更新 ETL任务
+      operationId: update__v1_etl_tasks_id
+      parameters:
+        - $ref: '#/components/parameters/Id'
+        - $ref: '#/components/parameters/TenantId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags:
+        - etl
+      summary: 删除 ETL任务
+      operationId: delete__v1_etl_tasks_id
+      parameters:
+        - $ref: '#/components/parameters/Id'
+        - $ref: '#/components/parameters/TenantId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/etl/tasks/{id}/run:
+    post:
+      tags:
+        - etl
+      summary: 运行 运行ETL
+      operationId: run__v1_etl_tasks_id_run
+      parameters:
+        - $ref: '#/components/parameters/Id'
+        - $ref: '#/components/parameters/TenantId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/etl/tasks/{id}/stop:
+    post:
+      tags:
+        - etl
+      summary: 停止 停止ETL
+      operationId: stop__v1_etl_tasks_id_stop
+      parameters:
+        - $ref: '#/components/parameters/Id'
+        - $ref: '#/components/parameters/TenantId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/etl/tasks/{id}/status:
+    get:
+      tags:
+        - etl
+      summary: 状态 ETL状态
+      operationId: getStatus__v1_etl_tasks_id_status
+      parameters:
+        - $ref: '#/components/parameters/Id'
+        - $ref: '#/components/parameters/TenantId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/scheduler/tasks:
+    get:
+      tags:
+        - scheduler
+      summary: 列表 调度任务
+      operationId: list__v1_scheduler_tasks
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      tags:
+        - scheduler
+      summary: 新建 调度任务
+      operationId: create__v1_scheduler_tasks
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/scheduler/tasks/{id}:
+    get:
+      tags:
+        - scheduler
+      summary: 详情 调度任务
+      operationId: get__v1_scheduler_tasks_id
+      parameters:
+        - $ref: '#/components/parameters/Id'
+        - $ref: '#/components/parameters/TenantId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags:
+        - scheduler
+      summary: 更新 调度任务
+      operationId: update__v1_scheduler_tasks_id
+      parameters:
+        - $ref: '#/components/parameters/Id'
+        - $ref: '#/components/parameters/TenantId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags:
+        - scheduler
+      summary: 删除 调度任务
+      operationId: delete__v1_scheduler_tasks_id
+      parameters:
+        - $ref: '#/components/parameters/Id'
+        - $ref: '#/components/parameters/TenantId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/scheduler/tasks/{id}/trigger:
+    post:
+      tags:
+        - scheduler
+      summary: 触发 触发调度
+      operationId: trigger__v1_scheduler_tasks_id_trigger
+      parameters:
+        - $ref: '#/components/parameters/Id'
+        - $ref: '#/components/parameters/TenantId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/scheduler/tasks/{id}/pause:
+    post:
+      tags:
+        - scheduler
+      summary: 暂停 暂停调度
+      operationId: pause__v1_scheduler_tasks_id_pause
+      parameters:
+        - $ref: '#/components/parameters/Id'
+        - $ref: '#/components/parameters/TenantId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/scheduler/dag:
+    get:
+      tags:
+        - scheduler
+      summary: DAG 调度DAG
+      operationId: getDag__v1_scheduler_dag
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/metrics:
+    get:
+      tags:
+        - metrics
+      summary: 列表 数据指标
+      operationId: list__v1_metrics
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      tags:
+        - metrics
+      summary: 新建 数据指标
+      operationId: create__v1_metrics
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/metrics/{id}:
+    get:
+      tags:
+        - metrics
+      summary: 详情 数据指标
+      operationId: get__v1_metrics_id
+      parameters:
+        - $ref: '#/components/parameters/Id'
+        - $ref: '#/components/parameters/TenantId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags:
+        - metrics
+      summary: 更新 数据指标
+      operationId: update__v1_metrics_id
+      parameters:
+        - $ref: '#/components/parameters/Id'
+        - $ref: '#/components/parameters/TenantId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags:
+        - metrics
+      summary: 删除 数据指标
+      operationId: delete__v1_metrics_id
+      parameters:
+        - $ref: '#/components/parameters/Id'
+        - $ref: '#/components/parameters/TenantId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/metrics/{id}/values:
+    get:
+      tags:
+        - metrics
+      summary: 值 指标值
+      operationId: getValues__v1_metrics_id_values
+      parameters:
+        - $ref: '#/components/parameters/Id'
+        - $ref: '#/components/parameters/TenantId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/metrics/{id}/lineage:
+    get:
+      tags:
+        - metrics
+      summary: 血缘 指标血缘
+      operationId: getLineage__v1_metrics_id_lineage
+      parameters:
+        - $ref: '#/components/parameters/Id'
+        - $ref: '#/components/parameters/TenantId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/metrics/{id}/compute:
+    post:
+      tags:
+        - metrics
+      summary: 计算 手动计算
+      operationId: compute__v1_metrics_id_compute
+      parameters:
+        - $ref: '#/components/parameters/Id'
+        - $ref: '#/components/parameters/TenantId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
 components:
   securitySchemes:
     BearerAuth:
@@ -4464,3 +5554,149 @@ components:
           type: integer
         pages:
           type: integer
+
+    BigDataSource:
+      type: object
+      required: [sourceId, name, sourceType, host, port, authType, status]
+      properties:
+        sourceId:
+          type: string
+        tenantId:
+          type: string
+        name:
+          type: string
+          maxLength: 64
+        sourceType:
+          type: string
+          enum: [HIVE, HBASE, CLICKHOUSE, DORIS, STARROCKS, ICEBERG, HUDI, DELTA, PRESTO, TRINO, KAFKA, PULSAR, HDFS]
+        host:
+          type: string
+        port:
+          type: integer
+          minimum: 1
+          maximum: 65535
+        database:
+          type: string
+        schema:
+          type: string
+        authType:
+          type: string
+          enum: [NONE, USER_PASSWORD, KERBERY, LDAP]
+          default: NONE
+        sslEnabled:
+          type: boolean
+          default: false
+        poolSize:
+          type: integer
+          default: 10
+        status:
+          type: string
+          enum: [DRAFT, ACTIVE, INACTIVE, ERROR, DELETED]
+    CDCTask:
+      type: object
+      required: [taskId, name, sourceId, syncMode, targetType, targetName, status]
+      properties:
+        taskId:
+          type: string
+        name:
+          type: string
+        sourceId:
+          type: string
+        syncMode:
+          type: string
+          enum: [FULL_INCREMENTAL, INCREMENTAL_ONLY, SNAPSHOT_ONLY]
+        targetType:
+          type: string
+          enum: [KAFKA, CLICKHOUSE, HUDI, ICEBERG]
+        targetName:
+          type: string
+        status:
+          type: string
+          enum: [PENDING, SNAPSHOTTING, RUNNING, PAUSED, FAILED, STOPPED]
+        lagMs:
+          type: integer
+        totalRecords:
+          type: integer
+          format: int64
+    ETLTask:
+      type: object
+      required: [taskId, name, mode, sourceIds, targetType, targetTable, writeMode, status]
+      properties:
+        taskId:
+          type: string
+        name:
+          type: string
+        mode:
+          type: string
+          enum: [BATCH_SPARK, BATCH_FLINK, STREAMING_FLINK, STREAMING_SPARK, SQL_TRANSFORM]
+        priority:
+          type: string
+          enum: [LOW, NORMAL, HIGH, URGENT]
+        sourceIds:
+          type: array
+          items:
+            type: string
+        transformDag:
+          type: object
+        transformSql:
+          type: string
+        targetType:
+          type: string
+          enum: [HIVE, CLICKHOUSE, ICEBERG, HUDI, DELTA, DORIS]
+        targetTable:
+          type: string
+        writeMode:
+          type: string
+          enum: [OVERWRITE, APPEND, UPSERT, MERGE]
+        status:
+          type: string
+          enum: [DRAFT, READY, RUNNING, SUCCESS, FAILED, CANCELLED, TIMEOUT]
+    SchedulerTask:
+      type: object
+      required: [schedulerId, name, taskType, taskId, triggerType, status]
+      properties:
+        schedulerId:
+          type: string
+        name:
+          type: string
+        taskType:
+          type: string
+          enum: [ETL_TASK, CDC_TASK, QUALITY_CHECK, CUSTOM_ACTION]
+        taskId:
+          type: string
+        triggerType:
+          type: string
+          enum: [CRON, EVENT, MANUAL, DEPENDENCY]
+        cron:
+          type: string
+        status:
+          type: string
+          enum: [ACTIVE, PAUSED, EXPIRED, DELETED]
+    Metric:
+      type: object
+      required: [metricId, name, code, type, sourceId, sourceTable, sourceField, aggregation, calculationFrequency, status]
+      properties:
+        metricId:
+          type: string
+        name:
+          type: string
+        code:
+          type: string
+        type:
+          type: string
+          enum: [ATOMIC, DERIVED, COMPOSITE, REALTIME]
+        sourceId:
+          type: string
+        sourceTable:
+          type: string
+        sourceField:
+          type: string
+        aggregation:
+          type: string
+          enum: [SUM, AVG, COUNT, MAX, MIN, LAST]
+        calculationFrequency:
+          type: string
+          enum: [REALTIME, MINUTELY, HOURLY, DAILY]
+        status:
+          type: string
+          enum: [DRAFT, ACTIVE, INACTIVE, ERROR]

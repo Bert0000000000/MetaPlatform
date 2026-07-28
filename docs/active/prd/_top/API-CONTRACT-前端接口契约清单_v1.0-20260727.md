@@ -494,3 +494,130 @@ code 业务码：0 成功 / 1001 参数错误 / 2001 资源不存在 / 2002 资�
 文档日期: 2026-07-27
 扫描范围: metaplatform-frontend/apps/*/src/api + packages/shared/src/api
 端点总数: 141 条独立 URL
+
+
+
+## 4. 大数据相关 API 端点（v1.1 增量）
+
+> **触发决策**: 2026-07-28 增加大数据相关技术后补充
+> **来源**: APP-ONTSTUDIO v2.2 §12 大数据相关页面
+> **归属后端服务**: MATE-DATA（建议新增）
+
+---
+
+### 4.1 大数据源管理（/v1/data/sources/*）
+
+| # | 方法 | 路径 | 说明 | 优先级 |
+|---|---|---|---|---|
+| 1 | GET | /v1/data/sources | 大数据源列表 | P0 |
+| 2 | POST | /v1/data/sources | 新建大数据源 | P0 |
+| 3 | GET | /v1/data/sources/{id} | 大数据源详情 | P0 |
+| 4 | PUT | /v1/data/sources/{id} | 更新大数据源 | P0 |
+| 5 | DELETE | /v1/data/sources/{id} | 删除大数据源 | P0 |
+| 6 | POST | /v1/data/sources/{id}/test | 测试连接 | P0 |
+| 7 | GET | /v1/data/sources/{id}/schema | 发现 schema | P1 |
+| 8 | GET | /v1/data/sources/{id}/health | 健康检查 | P1 |
+| 9 | GET | /v1/data/sources/groups | 数据源分组 | P1 |
+
+**支持 sourceType**: HIVE / HBASE / CLICKHOUSE / DORIS / STARROCKS / ICEBERG / HUDI / DELTA / PRESTO / TRINO / KAFKA / PULSAR / HDFS
+
+---
+
+### 4.2 CDC 同步任务（/v1/data/cdc-tasks/*）
+
+| # | 方法 | 路径 | 说明 | 优先级 |
+|---|---|---|---|---|
+| 1 | GET | /v1/data/cdc-tasks | CDC 任务列表 | P0 |
+| 2 | POST | /v1/data/cdc-tasks | 新建 CDC 任务 | P0 |
+| 3 | GET | /v1/data/cdc-tasks/{id} | CDC 任务详情 | P0 |
+| 4 | PUT | /v1/data/cdc-tasks/{id} | 更新 CDC 任务 | P0 |
+| 5 | DELETE | /v1/data/cdc-tasks/{id} | 删除 CDC 任务 | P0 |
+| 6 | GET | /v1/data/cdc-tasks/{id}/status | 实时状态 | P0 |
+| 7 | POST | /v1/data/cdc-tasks/{id}/pause | 暂停 | P1 |
+| 8 | POST | /v1/data/cdc-tasks/{id}/resume | 恢复 | P1 |
+| 9 | POST | /v1/data/cdc-tasks/{id}/stop | 停止 | P1 |
+| 10 | GET | /v1/data/cdc-tasks/{id}/logs | CDC 日志 | P1 |
+| 11 | GET | /v1/data/cdc-tasks/{id}/metrics | CDC 指标 | P1 |
+
+**枚举**: syncMode (FULL_INCREMENTAL/INCREMENTAL_ONLY/SNAPSHOT_ONLY) / startPosition (LATEST/CURRENT_TIMESTAMP/CUSTOM) / targetType (KAFKA/CLICKHOUSE/HUDI/ICEBERG) / schemaEvolution (IGNORE/ADD_NEW_COLUMNS/RESTRICT)
+
+---
+
+### 4.3 大数据 ETL 任务（/v1/etl/tasks/*）
+
+| # | 方法 | 路径 | 说明 | 优先级 |
+|---|---|---|---|---|
+| 1 | GET | /v1/etl/tasks | ETL 任务列表 | P0 |
+| 2 | POST | /v1/etl/tasks | 新建 ETL 任务 | P0 |
+| 3 | GET | /v1/etl/tasks/{id} | ETL 任务详情 | P0 |
+| 4 | PUT | /v1/etl/tasks/{id} | 更新 ETL 任务 | P0 |
+| 5 | DELETE | /v1/etl/tasks/{id} | 删除 ETL 任务 | P0 |
+| 6 | POST | /v1/etl/tasks/{id}/run | 触发运行 | P0 |
+| 7 | POST | /v1/etl/tasks/{id}/stop | 停止运行 | P1 |
+| 8 | GET | /v1/etl/tasks/{id}/status | 实时状态 | P0 |
+| 9 | GET | /v1/etl/tasks/{id}/logs | 执行日志 | P1 |
+| 10 | GET | /v1/etl/tasks/{id}/metrics | 执行指标 | P1 |
+| 11 | GET | /v1/etl/tasks/{id}/history | 历史运行 | P1 |
+| 12 | GET | /v1/etl/templates | ETL 模板列表 | P2 |
+| 13 | POST | /v1/etl/templates | 创建 ETL 模板 | P2 |
+
+**枚举**: mode (BATCH_SPARK/BATCH_FLINK/STREAMING_FLINK/STREAMING_SPARK/SQL_TRANSFORM) / writeMode (OVERWRITE/APPEND/UPSERT/MERGE) / triggerType (MANUAL/SCHEDULED/EVENT) / priority (LOW/NORMAL/HIGH/URGENT)
+
+---
+
+### 4.4 任务调度中心（/v1/scheduler/*）
+
+| # | 方法 | 路径 | 说明 | 优先级 |
+|---|---|---|---|---|
+| 1 | GET | /v1/scheduler/tasks | 调度任务列表 | P0 |
+| 2 | POST | /v1/scheduler/tasks | 新建调度 | P0 |
+| 3 | GET | /v1/scheduler/tasks/{id} | 调度详情 | P0 |
+| 4 | PUT | /v1/scheduler/tasks/{id} | 更新调度 | P0 |
+| 5 | DELETE | /v1/scheduler/tasks/{id} | 删除调度 | P0 |
+| 6 | POST | /v1/scheduler/tasks/{id}/trigger | 手动触发 | P0 |
+| 7 | POST | /v1/scheduler/tasks/{id}/pause | 暂停 | P1 |
+| 8 | POST | /v1/scheduler/tasks/{id}/resume | 恢复 | P1 |
+| 9 | POST | /v1/scheduler/tasks/{id}/rerun | 强制重跑 | P1 |
+| 10 | GET | /v1/scheduler/tasks/{id}/executions | 执行历史 | P0 |
+| 11 | GET | /v1/scheduler/executions/{id} | 单次执行详情 | P0 |
+| 12 | GET | /v1/scheduler/dag | 任务依赖图 | P1 |
+| 13 | GET | /v1/scheduler/dashboard | 调度仪表盘 | P1 |
+
+**枚举**: taskType (ETL_TASK/CDC_TASK/QUALITY_CHECK/CUSTOM_ACTION) / triggerType (CRON/EVENT/MANUAL/DEPENDENCY)
+
+---
+
+### 4.5 数据指标平台（/v1/metrics/*）
+
+| # | 方法 | 路径 | 说明 | 优先级 |
+|---|---|---|---|---|
+| 1 | GET | /v1/metrics | 指标列表 | P0 |
+| 2 | POST | /v1/metrics | 新建指标 | P0 |
+| 3 | GET | /v1/metrics/{id} | 指标详情 | P0 |
+| 4 | PUT | /v1/metrics/{id} | 更新指标 | P0 |
+| 5 | DELETE | /v1/metrics/{id} | 删除指标 | P0 |
+| 6 | GET | /v1/metrics/{id}/values | 指标值 | P0 |
+| 7 | GET | /v1/metrics/{id}/lineage | 指标血缘 | P1 |
+| 8 | POST | /v1/metrics/{id}/compute | 手动触发计算 | P1 |
+| 9 | GET | /v1/metrics/{id}/alerts | 告警历史 | P1 |
+| 10 | GET | /v1/metrics/categories | 指标分类 | P2 |
+| 11 | GET | /v1/metrics/dashboard | 指标仪表盘 | P1 |
+
+**枚举**: type (ATOMIC/DERIVED/COMPOSITE/REALTIME) / aggregation (SUM/AVG/COUNT/MAX/MIN/LAST) / calculationFrequency (REALTIME/MINUTELY/HOURLY/DAILY)
+
+---
+
+### 4.6 端点统计（增量）
+
+| 端点前缀 | 端点数 | 归属后端服务 |
+|---|---|---|
+| /v1/data/sources | 9 | MATE-DATA |
+| /v1/data/cdc-tasks | 11 | MATE-DATA |
+| /v1/etl/tasks | 13 | MATE-DATA |
+| /v1/scheduler | 13 | MATE-DATA |
+| /v1/metrics | 11 | MATE-DATA |
+| **小计** | **57** | MATE-DATA（建议） |
+
+**累计（含原 141 端点）**: 141 + 57 = **198 个端点**
+
+> **注意**: 按 Q2=B 决策，这些新端点可挂到 MATE-DATA 新服务或合并到 TECH-EA 扩展。

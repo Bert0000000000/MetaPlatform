@@ -1,0 +1,34 @@
+openapi: 3.1.0
+info:
+  title: mate-tech-obs
+  version: 0.1.0
+  description: Observability aggregation
+paths:
+  /healthz:
+    get:
+      summary: 健康检查
+      tags: [meta]
+      responses:
+        "200":
+          description: OK
+  /metrics:
+    get:
+      summary: Prometheus metrics
+      tags: [obs]
+      responses:
+        "200":
+          description: text/plain exposition format
+  /api/v1/obs/health:
+    get:
+      summary: 健康检查聚合
+      tags: [obs]
+      responses:
+        "200":
+          description: 9 apps + 7 infra
+  /api/v1/obs/instrument:
+    get:
+      summary: 自动 instrument 状态
+      tags: [obs]
+      responses:
+        "200":
+          description: OK

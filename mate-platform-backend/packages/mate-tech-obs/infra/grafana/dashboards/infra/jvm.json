@@ -1,0 +1,8 @@
+﻿[
+  {
+    "id": 1,
+    "title": "JVM Heap",
+    "type": "graph",
+    "targets": [{"expr": "jvm_memory_used_bytes{area='heap'} / jvm_memory_max_bytes{area='heap'}"}]
+  }
+]

@@ -1,0 +1,99 @@
+openapi: 3.1.0
+info:
+  title: mate-tech-ont
+  version: 0.1.0
+  description: Ontology service (Neo4j + OWL + SPARQL)
+paths:
+  /healthz:
+    get:
+      summary: 健康检查
+      tags: [meta]
+      responses:
+        "200":
+          description: OK
+  /api/v1/ont/ontologies:
+    post:
+      summary: 创建本体
+      tags: [ontology]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OntologyCreate"
+      responses:
+        "200": {description: OK}
+        "409": {description: 本体已存在}
+  /api/v1/ont/ontologies/{ontology_id}:
+    get:
+      summary: 读取本体
+      tags: [ontology]
+      parameters:
+        - name: ontology_id
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        "200": {description: OK}
+        "404": {description: not found}
+  /api/v1/ont/classes:
+    post:
+      summary: 创建类
+      tags: [ontology]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClassCreate"
+      responses:
+        "200": {description: OK}
+        "409": {description: 类已存在}
+  /api/v1/ont/classes/{class_id}:
+    get:
+      summary: 读取类
+      tags: [ontology]
+      parameters:
+        - name: class_id
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        "200": {description: OK}
+        "404": {description: not found}
+components:
+  schemas:
+    OntologyCreate:
+      type: object
+      required: [id]
+      properties:
+        id: {type: string}
+        namespace: {type: string, default: default}
+        description: {type: string}
+    Ontology:
+      type: object
+      properties:
+        id: {type: string}
+        namespace: {type: string}
+        description: {type: string}
+    ClassCreate:
+      type: object
+      required: [id]
+      properties:
+        id: {type: string}
+        namespace: {type: string, default: default}
+        label: {type: string}
+        parent: {type: string, nullable: true}
+        properties:
+          type: array
+          items: {type: object}
+    ClassResponse:
+      type: object
+      properties:
+        id: {type: string}
+        namespace: {type: string}
+        label: {type: string}
+        parent: {type: string, nullable: true}
+        properties:
+          type: array
+          items: {type: object}

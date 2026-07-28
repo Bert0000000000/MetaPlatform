@@ -1,99 +1,101 @@
-﻿version: '3.8'
-
 # =============================================================================
-# MetaPlatform 基础设施栈（Phase 0.1）
+# MetaPlatform 闂傚倸鍊搁崐鎼佸磹閹间礁纾归柟闂寸绾惧綊鏌ｉ幋锝呅撻柛銈呭閺屾盯骞橀懠顒€濡介梺绋跨箲缁捇寮诲☉銏╂晝闁挎繂妫涢ˇ銉╂⒑濮瑰洤鈧繄绮婚弽顓炶摕闁挎繂顦粻娑欍亜閹捐泛袨闁稿鍋ゅ娲传閸曢潧鍓扮紓浣割槸缂嶅﹤顕ｆ繝姘╅柕澶堝灪閺傗偓闂備胶纭跺褔寮插鍡椻偓鎾⒒閸屾瑧绐旈柍褜鍓涢崑娑㈡嚐椤栫偛鍌ㄩ柛婵勫劤绾惧ジ鏌ら梹鎰シ濠㈣锕㈤弻锝夋晲閸パ冨箣婵犵鍓濋幃鍌炲春閳╁啰绡€闁告劏鏅滈悵顐⑩攽閻樺灚鏆╅柛瀣仱瀹曞綊宕奸弴鐔告珖闂佸啿鎼幊搴ㄦ倿閸偁浜滈柟鍝勭Х閸忓本绻涢幓鎺旀憼闁逛究鍔嶇换婵嬪川椤曞懍鍝楃紓鍌欐祰妞村摜鏁幒鏇犱航闂備礁鎲＄换鍌溾偓姘嚇瀵挳濮€閳锯偓閹锋椽姊洪崨濠勨槈闁挎洏鍎虫禍鎼佸箥椤旂懓浜鹃柛蹇擃槸娴滈箖姊鸿ぐ鎺擄紵缂佲偓娴ｈ櫣涓?+ 闂傚倸鍊搁崐鎼佸磹閹间礁纾瑰瀣捣閻棗霉閿濆浜ら柤鏉挎健濮婃椽顢楅埀顒傜矓閹绢喖纾奸柕濞у嫬鏋戦梺鍝勫暙閻楀棛绮婚弽銊х鐎瑰壊鍠曠花濠氬箚閻斿吋鈷戦梻鍫熶緱濡牓鏌涢悩鎰佹畼缂佽京鍋為幆鏃堝閵忋垻妲囬梻浣圭湽閸ㄨ棄顭囪閻楀酣姊绘担鍝勫付缂傚秴锕︾划濠氬冀瑜滈崵鏇㈡煕濞戞﹫鍔熼柣鐔风秺閺屽秷顧侀柛鎾跺枎椤曪絾绻濆顒€宓嗛梺闈涚箳婵炩偓闁哥偠娉涢埞鎴︽偐閼碱兛绮甸梺鍛婃⒐閻楁粓鎮疯濮婄粯鎷呯粵瀣闁诲孩绋堥弲鐘诲箠濠靛洢鍋呴柛蹇ｅ灠濞差參寮婚崱妤婂悑闁告侗鍨版慨锔戒繆閻愵亜鈧牕顔忔繝姘；闁规儳澧庣壕濂告煟濡灝鐨洪弫鍫ユ倵鐟欏嫭绀冩繛鑼枛瀵宕卞Δ濠傛倯闂佸憡渚楅崹鎶藉几閸愵喗鈷戦柣鐔告緲閹垿鏌熼姘辩劯闁诡喒鍓濆鍕暆閳ь剛绮?缂傚倸鍊搁崐鎼佸磹閹间礁纾归柟闂寸绾惧綊鏌熼梻瀵割槮缁炬儳缍婇弻鐔兼⒒鐎靛壊妲紒鐐劤缂嶅﹪寮婚敐澶婄闁挎繂鎲涢幘缁樼厱闁靛牆鎳庨顓㈡煛鐏炲墽娲存い銏℃礋閺佹劙宕卞▎妯恍氱紓鍌氬€烽悞锕傚礉閺嶎厹鈧啴宕奸妷銉у姦濡炪倖宸婚崑鎾剁磼閻樿尙效鐎规洘娲熷畷锟犳倶缂佹ɑ銇濆┑鈩冩倐閸┾剝鎷呮笟顖涙暏濠电姵顔栭崰妤呪€﹂崼銉ユ槬闁哄稁鍘肩壕褰掓煟閵忕姵鍟為柍閿嬪浮閺屾盯顢曢妶鍛亖闂佹剚鍨卞ú鐔煎蓟閻旂厧绠甸柟鐑樻尰閸犳劙姊哄Ч鍥у姶濞存粠浜滈悾鐑芥晲婢跺á銊ф喐韫囨稒鍋傞柟鍓х帛閳锋垿鏌涘┑鍡楊仼妞わ富鍓熼弻宥堫檨闁告挻宀稿畷婊冾潩鐠洪缚袝闁诲函缍嗛崰妤呮偂閺囥垺鐓欓柟浣冩珪濞呭懎鈹戦垾鍐叉倯闁靛洤瀚伴、妤呭焵椤掑嫭鍋嬮煫鍥ㄦ礃椤?(v3.0 Plan D)
 # -----------------------------------------------------------------------------
-# 容器清单：
-#   - postgres       主库（PostgreSQL 16，自动创建 metaplatform* 库）
-#   - redis          缓存 + 分布式锁
-#   - nacos          注册中心 / 配置中心（v2.4.3-slim，3.0 POC 进行中）
-#   - minio          对象存储（KB 文档原文件、Agent Artifact、DeerFlow workspace）
-#   - milvus         向量库（standalone + 内部 etcd/minio）
-#   - kafka          事件总线（Ontology Event、Document Event）
-#   - rabbitmq       任务队列（异步任务、Saga 补偿）
-#   - loki           日志聚合（TECH-OBS P0）
-#   - promtail       日志收集 sidecar（可选）
+# 闂傚倸鍊搁崐鎼佸磹閹间礁纾归柟闂寸绾惧綊鏌ｉ幋锝呅撻柛濠傛健閺屻劑寮村Δ鈧禍鎯ь渻閵堝簼绨婚柛鐔告綑閻ｇ柉銇愰幒婵囨櫔闂佸憡渚楅崹鐗堟叏濞差亝鈷掑ù锝勮濞兼帡鏌涢弴鐐典粵闁伙絽澧庣槐鎾存媴閹绘帊澹曞┑鐘灱濞夋稒寰勯崶顒€纾婚柟鎹愬吹瀹撲線鏌涢…鎴濇灈濠殿喖楠搁埞鎴︽倷妫版繂娈濈紓浣哄У閹告悂鎮?
+#   cp .env.example .env       # 闂傚倸鍊搁崐鎼佸磹閹间礁纾归柟闂寸绾惧湱鈧懓瀚崳纾嬨亹閹烘垹鍊炲銈嗗坊閸嬫挻娼诲┑瀣拺闂侇偆鍋涢懟顖涙櫠閹绢喗鐓?OPENAI_API_KEY 缂?#   docker compose up -d       # 闂傚倸鍊搁崐鎼佸磹閹间礁纾归柟闂寸绾剧懓顪冪€ｎ亝鎹ｉ柣顓炴閵嗘帒顫濋敐鍛婵°倗濮烽崑娑⑺囬悽绋挎瀬闁瑰墽绮崑鎰版煠绾板崬澧绘俊鏌ヤ憾閺岋綁鎮㈤崫銉х厒婵犫拃鍕垫畼闁轰緡鍣ｉ獮鎺懳旈埀顒勫垂閸岀偞鐓曠€光偓閳ь剟宕戦悙鐑樺亗闁绘棃鏅茬换鍡涙煏閸繂鈧憡绂嶆ィ鍐┾拺缂備焦锕╁▓鏃堟煥閺囥劋绨婚柣锝囧厴閺佹劙宕奸姀銏℃緫婵犵數鍋為崹鍫曟偡瑜斿畷銏ゅ箻缂佹ǚ鎷洪梺鍛婄☉閿曪妇绮婚幘缁樺€垫慨妯煎帶瀵喚鈧娲樻繛濠傜暦閻戠瓔鏁囬柣妯碱暜缁辨煡姊绘笟鈧埀顒傚仜閼活垱鏅剁€电硶鍋撶憴鍕閻㈩垽绻濋獮鍐ㄢ枎閹存柨浜鹃柣銏☆問閻掗箖鎮介娑樺姢闁宠鍨块幃鈺呭垂椤愶絾鐦庨梻浣侯焾椤戝洭宕伴弽褏鏆﹂柟杈剧畱缁犲鏌￠崒妯哄姕闁诲孩妞藉娲川婵犲嫧妲堥梺瀹︽澘濮傞柟顕嗙節瀵挳濮€閿涘嫬骞愰梻浣侯焾閺堫剛鎹㈠澶婂惞婵炲棙鎸婚悡鏇㈡煛閸愶絽浜剧紒鐐緲缁夎淇婇悽绋跨妞ゆ牭绲鹃弲婵嬫⒑閹稿海绠撻悗娑掓櫊閹箖宕奸弴鐔叉嫼闁诲骸婀辨慨鐢杆夋径瀣ㄤ簻闁挎棁顕ч悘锕傛煕閳瑰灝鐏柟顖涙閸╁牓濡疯閺嬫盯鏌熼鐟板⒉闁诡垱妫冮崺宥夊箳濠靛懐鐩庨梺瀹狀潐閸ㄥ潡寮澶婄妞ゆ劏鍓濆鈧梻鍌欒兌椤牓鏁冮妷鈺傚亱闁绘宕靛畵渚€鏌熼悧鍫熺凡缂佺姷鎳撻湁闁挎繂妫涢妶鎾煕鐎ｎ偅宕岄柡浣稿暣閸┾偓妞ゆ帒瀚崑鈺呮煥閻斿搫校闁绘帊绮欓弻銊╁即濡も偓娴滄儳鈹戦悙鑼闁告梹鍨甸～蹇旂節濮橆剛锛滃┑顔矫畷顒劼烽埀顒€鈹戦悙瀛樺鞍缁炬澘绉归妴鍐╃節閸屾粍娈鹃梺闈涳紡閳ь剟宕戦幘缁樻櫜閹肩补鍓濋悘宥夋⒑缂佹ɑ灏版繛鍙夘焽閹广垹鈽夐姀鐘殿吅濠电娀娼уΛ婊堝春閻愮儤鍊垫繛鍫濈仢閺嬨倝鏌涚€ｎ偅灏甸柟?#   docker compose --profile edge up -d        # 闂?Traefik + Keycloak
+#   docker compose --profile monitoring up -d  # 闂?Grafana + Prometheus
+#   docker compose --profile java up -d        # 闂?Flowable + Drools
+#   docker compose --profile ai up -d          # 闂?RAGFlow + LightRAG
 #
-# Phase 0.1.1 目标：Nacos 3.0+ POC；本栈当前保留 v2.4.3-slim 作为最后稳定版。
-# 待 NACOS-3.0-POC-CHECKLIST.md 全部勾选后切换。
+# 缂傚倸鍊搁崐鎼佸磹閹间礁纾归柟闂寸绾惧綊鏌熼梻瀵割槮缁炬儳缍婇弻锝夊箣閿濆憛鎾绘煕婵犲倹鍋ラ柡灞诲姂瀵潙螖閳ь剚绂嶆ィ鍐╃叄闁煎鍊曟禒閬嶆煟閹垮啫浜扮€规洖鐖兼俊姝岊槷婵℃彃鐗撳娲箹閻愭彃顬堥梺绋匡工濞尖€愁嚕婵犳碍鍋勫瀣濞堟繈姊洪悷鏉挎Щ闁活厼鐗嗛…鍥嚋閻㈢數顔曢柣搴㈢⊕椤洭鎯屾惔顫簻妞ゆ劑鍩勫Σ娲煙楠炲灝鐏╅柍钘夘樀婵偓闁绘ɑ顔栭崥鍛節閻㈤潧浠滄俊顐ｎ殘閹广垽骞掗幘棰濇祫闂佸吋绁撮弲婵堝閽樺褰掓晲閸℃绁锋繛瀛樼矒缁犳牕顫忛搹鐟板闁哄洨鍋涢埛澶岀磽娴ｅ壊鍎愰悽顖ょ節楠炲啴鏁撻悩鎻掑祮闂侀潧楠忕槐鏇㈠储閹剧粯鈷戦悗鍦У閵嗗啰绱掗埀顒佺瑹閳ь剙顕ｉ幎鑺ュ亜闁稿繗鍋愰崢鎾绘⒑閼恒儍顏埶囬挊澹╃喖鍩€椤掑嫭鈷?(闂傚倸鍊搁崐鎼佸磹閹间礁纾归柟闂寸绾惧綊鏌熼梻瀵割槮缁惧墽鎳撻—鍐偓锝庝簻椤掋垺銇勯幇顏嗙煓闁哄被鍔戦幃銏ゅ传閸曟垯鍨荤槐鎺楀焵椤掑嫬閱囬柣鏃囨椤旀洟姊虹化鏇炲⒉閽冮亶鎮樿箛搴″祮闁哄本绋掔换婵嬪川椤撶姴甯跨紓鍌欒兌缁垳鎹㈤崼婢盯宕橀妸銏☆潔闂佸憡顨堥崑娑欑珶閸儲鈷掑ù锝勮閻掗箖鎮跺鐓庝喊鐎规洘绻堥獮瀣晝閳ь剟鎷戦悢鍏肩厸闁搞儯鍎遍悘鈺呮⒑閸楃偞澶勭紒缁樼箞瀹曞綊顢曢姀鐙€娼旂紓浣诡殕閸ㄥ湱妲愰幘璇茬＜婵炲棙甯╅崬褰掓⒑缁嬫鍎愰柟鐟版喘瀵鈽夐姀鐘电杸闂傚倸鐗婄粙鎺楁倶瀹ュ鈷戠紓浣股戠亸闈涒攽椤旀儳鍘撮柟顖楀亾濡炪倕绻愰悧鍡欑棯瑜旈弻娑⑩€﹂幋婵囩仌闂佺硶鏅濋崑鐐垫崲濠靛鐓曢柍褜鍓熷畷鐔碱敃椤愶綆妫嗛梻?:
+#   5432   postgres           9000/9001  minio
+#   6379   redis              19530      milvus
+#   7687/7474  neo4j          9092       kafka
+#   5672/15672  rabbitmq      8848/9848  nacos
+#   8001-8008 / 8081-8083  Python services
+#   80/443/8080  traefik      8180       keycloak
+#   8181   flowable           8280       kie-server
+#   9380   ragflow            9621       lightrag
+#   3000   grafana            9090       prometheus
+#   4317/4318  otel-collector 3100       loki
+#
+# 濠电姷鏁告慨鐑藉极閸涘﹥鍙忛柣鎴ｆ閺嬩線鏌熼梻瀵割槮缁炬儳娼￠弻鐔衡偓鐢殿焾瀛濈紓浣界堪閸婃繈寮婚敃鈧灒濞撴凹鍨遍敍鍡涙偡濠婂懎顣奸悽顖涘笧婢规洘绺介崨濠勫幗闂佸綊鍋婇崹浼存儍濞差亝鐓熸繛鎴炵墪閸旓附鎱ㄦ繝鍐┿仢鐎规洦鍋婂畷鐔碱敇濞戞瑧鈧亶姊绘担鍛婂暈閽冭鲸淇婇銏犳殭闁伙絿鍏樺畷濂稿即閵婏附娅岄梻渚€鈧偛鑻晶鎾煙闁垮鐏撮柟顔哄灲瀹曟鎳栭埡浣稿婵犵數濮伴崹濂稿春閺嶎偆鐭欓柟鍓х帛閸嬧晠姊洪鈧粔鐢告偂閺囥垺鐓欓柛顭戝枛閺嗘瑧鈧鍣崰妤呭箞閵婏妇绡€闁告劏鏂傛禒銏ゆ倵鐟欏嫭纾搁柛鏂跨Ф閹广垹鈹戠€ｎ亞顦ㄥ銈庡幗閸ㄦ儼鈪搁梻鍌氬€搁崐鐑芥嚄閸洍鈧箓宕奸妷顔芥櫈闂佸憡渚楅崹顏堝磻閹炬剚娼╅柣鎾虫捣娴犲憡绻濈喊澶岀？闁轰礁顭烽悰顕€宕堕浣镐罕闂佸壊鍋呯换鈧慨瑙勵殘缁辨捇宕掑顑藉亾閻戣姤鍊块柨鏇氱缂嶆棃姊?bug (闂傚倸鍊搁崐鎼佸磹閹间礁纾归柟闂寸绾惧綊鏌ｉ幋锝呅撻柛銈呭閺屾盯顢曢敐鍡欘槬缂佺偓鍎冲锟犲蓟閿濆顫呴柕蹇婃櫇閸旀悂姊哄Ч鍥р偓妤呭磻閹捐埖宕叉繝闈涱儐椤ュ牊绻涢幋婵嗚埞闁告搩鍓熷娲焻閻愯尪瀚板褍澧界槐鎺楁偐閾忣偄纰嶉梺浼欑秮閺€杈╃紦閻ｅ瞼鐭欓悹鍥﹀嫎閸斿秹濡甸崟顖氱睄闁搞儺鐏濋幘瀵哥闁告侗鍠楅埛鎰庨崶褝韬柟顔界懇椤㈡棃宕熼妸銉ゅ闂佸搫绋侀悘鎰板传閸曢潧鎮戞繝銏ｆ硾閿曪箓鏁嶅☉銏♀拺閻熸瑥瀚崝銈夋煟韫囨挾澧︾€规洘鍨块獮姗€寮妷锔句簴闂備礁澹婇悡鍫ュ窗濡ゅ懏鍋熸い鏇楀亾婵﹥妞藉畷顐﹀Ψ閵夋劧缍侀弻锝夊煛婵犲倻浠村┑鈽嗗亞閸犳牕顫忓ú顏勪紶闁告洖鐏氭晥闂備胶纭堕弲娑㈡偋閹捐绠?:
+#   - Kafka ADVERTISED_LISTENERS 闂傚倸鍊搁崐鎼佸磹閹间礁纾归柟闂寸绾惧湱鈧懓瀚崳纾嬨亹閹烘垹鍊炲銈嗗坊閸嬫挻娼诲┑瀣拺闂侇偆鍋涢懟顖涙櫠閹绢喗鐓?kafka:9092 (濠电姷鏁告慨鐑藉极閸涘﹥鍙忛柣鎴ｆ閺嬩線鏌熼梻瀵割槮缁炬儳顭烽弻锝夊箛椤掍焦鍎撻梺鎼炲妼閸婂潡寮诲☉銏╂晝闁挎繂妫涢ˇ銉х磽娴ｅ搫小闁告濞婂璇测槈濡攱鏂€闂佸憡娲﹂崑鍕叏閵忋倖鈷戞繛鑼额嚙楠炴鏌熼悷鐗堝枠鐎殿喖顭烽幃銏ゆ惞閸︻叏绱查梻渚€娼х换鎺撴叏閻㈠憡鍊堕柛顐犲劜閳锋垶鎱ㄩ悷鐗堟悙闁逞屽厵閸婃繂鐣烽幎鑺ユ櫜濠㈣泛锕ㄩ幗?localhost:9092)
+#   - PostgreSQL 闂傚倸鍊搁崐鎼佸磹閹间礁纾归柟闂寸绾剧懓顪冪€ｎ亝鎹ｉ柣顓炴閵嗘帒顫濋敐鍛婵°倗濮烽崑娑⑺囬悽绋挎瀬闁瑰墽绮崑鎰版煕濞嗗浚妲圭悮锝夋⒒閸屾瑧顦﹀鐟帮躬瀹曟垶绗熼埀顒€鐣烽弴銏＄劶鐎广儱鎳愰敍婊堟⒑闂堟单鍫ュ疾濠婂牊鍋傞柕蹇娾偓鑼畾濡炪倖鐗楅悷銊╊敆閻旈晲绻嗛柛娆忣槹閵囨繈鏌″畝瀣瘈鐎规洟浜堕獮鍥敄閽樺澹曢梺鍝勬储閸ㄨ櫣绮婚幒妤佲拻濞达絿鎳撻婊呯磼鐠囨彃鈧潡骞冭缁绘繈宕堕懜鍨珕闂備胶绮…鍥极缁嬭娑㈩敍閻愬鍘靛銈嗙墪濡梻绮堟担鍦浄妞ゆ洍鍋撴慨濠冩そ瀹曨偊宕熼鐘插Ы缂傚倸鍊哥粔宕囩矆娓氣偓椤㈡岸鏁愭径妯绘櫌闂佸憡娲﹂崑鍕倵椤撶儐娓婚柕鍫濇缁€鈧梺鐟板暱缁绘劙鍩㈤幘缁樺€绘俊顖氭贡缁犳岸姊虹紒妯哄Е濞存粍绮撻崺鈧い鎺嶇劍缁€鍫ユ煙楠炲灝鐏叉鐐叉喘椤㈡宕掑☉娆樺晭濠碉紕鍋戦崐鏍暜閹烘柡鍋撳鐓庡⒋闁?meta/meta (闂傚倸鍊搁崐鎼佸磹閹间礁纾归柟闂寸绾剧懓顪冪€ｎ亝鎹ｉ柣顓炴閵嗘帒顫濋敐鍛婵°倗濮烽崑鐐烘偋閻樻眹鈧線寮撮姀鈩冩珖闂侀€炲苯澧撮柟铏矎閵囨劙骞掗幘璺哄箰闂佽绻掗崑鐘活敋瑜斿畷婵嗩潩鏉堚晜锛忛梺璇″瀻閸愨晛鈧垶姊洪柅娑氣敀闁告柨鐭傞敐鐐差煥閸繂鑰垮┑掳鍊愰崑鎾剁磼閻樺弶鎯堥柍瑙勫灴閹瑩鎳犻鈧。鍫曟⒑閸涘﹥鈷愰柛銊ф暬閿濈偠绠涢弴鐘碉紲濠碘槅鍨甸褔顢撻幘缁樼厽闁绘柨鎽滈幊鍐倵濮樸儱濡界紒鍌涘笩椤﹁鎱ㄦ繝鍐┿仢鐎规洦鍋婃俊鐑藉Ψ閹板墎绋荤紒缁樼洴瀹曪絾寰勫畝鈧悡鍌炴⒑閸涘﹤绗氶悽顖椻偓宕囨殾濠靛倸鎲￠崑鍕煣韫囨凹娼愰柛銈呯焸濮婄粯绗熼埀顒勫焵椤掑倸浠滈柤娲诲灡閺呭爼顢氶埀顒勫蓟?mate/mate)
+#   - 闂傚倸鍊搁崐鎼佸磹閹间礁纾归柟闂寸绾惧湱鈧懓瀚崳纾嬨亹閹烘垹鍊為悷婊勭矊闇夐柡宥庡幗閻撳繐鈹戦悙闈涗壕婵炲懎妫濋弻娑㈠Χ閸涱収浼冮梺鍝勮閸婃鍒掑▎鎴炲磯闁靛鍊楁す铏節閻㈤潧浠滈柟铏姈閹便劑宕归銈傛敵婵犵數濮村ú銈呮纯闂備胶顭堥張顒勬儗椤旂晫鐝堕柡鍥ュ灪閳锋帒霉閿濆妫戝☉鎾瑰皺缁辨帡鐓鐘电厯闂佽鍠楅敋妞ゎ偅绻勯幑鍕惞鐠団€虫暩闂傚倷绀侀幉鈩冪瑹濡ゅ懎鍨傞梺顒€绉寸粣妤呮煕閳╁啰鈯曢柣鎾存礋閺岋繝宕堕妷銉ヮ瀳婵炲瓨绮嶇划宀勫煘閹达箑鐒洪柛鎰╁妷閺嬫瑥鈹戦纭峰姛缂侇噮鍨堕獮蹇涘川椤栨粓鈹忛柣搴秵閸嬪棛绮旈悜鑺ョ厽閹兼番鍊ゅ鎰箾閸欏鑰块柡浣割儔濮婅櫣鈧湱濯崵娆戠磼婢跺本鍤€妞ゆ洩缍侀獮姗€顢欑喊杈ㄧ秱闂備胶绮…鍥€傞鐐潟妞ゆ洍鍋撻柡宀嬬稻閹棃濡舵惔銏㈢Х婵犵數鍋涘鍫曟偋閺囩姴寮查梻渚€娼ц噹闁告劗鍋撻ˉ锟犳⒒娴ｈ棄袚闁挎碍銇勯妷锝呯伇闁靛洦鍔欓獮鎺楀箻鐎涙褰搁梻鍌欑閹测剝绗熷Δ鍛獥婵°倕鎳庣壕鍧楁煙閸撗呭笡闁抽攱鍨块弻娑樷攽閸℃浼岄梺绋块缁绘帞妲愰幒鎾崇窞濠电姴鍋嗛弳銏犫攽閳ュ啿绾ч柛鏃€鐟╅悰顕€骞掗幊铏閸┾偓妞ゆ巻鍋撻摶鐐存叏濡炶浜鹃梺璇″枛缂嶅﹪鐛笟鈧獮鎺楀箣濠垫劗鈧挳姊绘担渚敯閻忓浚浜畷鎴﹀箛椤旂瓔娼?metaplatform_* (闂傚倸鍊搁崐鎼佸磹閹间礁纾归柟闂寸绾剧懓顪冪€ｎ亝鎹ｉ柣顓炴閵嗘帒顫濋敐鍛婵°倗濮烽崑鐐烘偋閻樻眹鈧線寮撮姀鈩冩珖闂侀€炲苯澧撮柟铏矎閵囨劙骞掗幘璺哄箰闂佽绻掗崑鐘活敋瑜斿畷婵嗩潩鏉堚晜锛忛梺璇″瀻閸愨晛鈧垶姊洪柅娑氣敀闁告柨鐭傞敐鐐差煥閸繂鑰垮┑掳鍊愰崑鎾剁磼閻樺弶鎯堥柍瑙勫灴閹瑩鎳犻鈧。鍫曟⒑閸涘﹥鈷愰柛銊ф暬閿濈偠绠涢弴鐘碉紲濠碘槅鍨甸褔顢撻幘缁樼厽闁绘柨鎽滈幊鍐倵濮樸儱濡界紒鍌涘笩椤﹁鎱ㄦ繝鍐┿仢鐎规洦鍋婃俊鐑藉Ψ閹板墎绋荤紒缁樼洴瀹曪絾寰勫畝鈧悡鍌炴⒑閸涘﹤绗氶悽顖椻偓宕囨殾濠靛倸鎲￠崑鍕煣韫囨凹娼愰柛銈呯焸濮婄粯绗熼埀顒勫焵椤掑倸浠滈柤娲诲灡閺呭爼顢氶埀顒勫蓟?mate_kb / mate)
+#   - MILVUS_HOST 闂傚倸鍊搁崐鎼佸磹閹间礁纾归柟闂寸绾惧湱鈧懓瀚崳纾嬨亹閹烘垹鍊炲銈嗗坊閸嬫挻娼诲┑瀣拺闂侇偆鍋涢懟顖涙櫠閹绢喗鐓?milvus 闂傚倸鍊搁崐鎼佸磹閹间礁纾归柟闂寸绾剧懓顪冪€ｎ亝鎹ｉ柣顓炴閵嗘帒顫濋敐鍛婵°倗濮烽崑鐐烘偋閻樻眹鈧線寮撮姀鈩冩珕闂佽姤锚椤︻喚绱旈弴銏♀拻濞达綀娅ｉ妴濠囨煕閹惧绠為柟顔炬焿椤﹀綊鏌熼姘辩劯妤犵偞顭囩槐鎺懳熺悰鈥充壕闁割煈鍋嗙粻楣冩煙鐎电鍓卞ù鐓庢閺岀喐娼忛崜褏鏆犻梺娲诲幗椤ㄥ﹪鎮￠锕€鐐婇柕濞р偓婵洭姊虹紒妯诲暗闁哥姵鐗犲濠氭晸閻樿尙顦ㄩ梺闈涱焾閸庮噣宕戦幘璇蹭紶闁靛闄勫▓浼存⒑閸撴彃浜濇繛鍙夛耿瀹?(闂?host.docker.internal 濠?Mac/Win)
+#   - NEO4J_URI 闂傚倸鍊搁崐鎼佸磹閹间礁纾归柟闂寸绾惧湱鈧懓瀚崳纾嬨亹閹烘垹鍊炲銈嗗坊閸嬫挻娼诲┑瀣拺闂侇偆鍋涢懟顖涙櫠閹绢喗鐓?bolt://neo4j:7687 (闂?localhost)
 # =============================================================================
+
+name: metaplatform
+
+x-restart: &restart
+  restart: unless-stopped
+
+x-logging: &logging
+  logging:
+    driver: json-file
+    options:
+      max-size: "20m"
+      max-file: "5"
+
+x-pg-creds: &pg-creds
+  POSTGRES_USER: ${POSTGRES_USER:-meta}
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-meta}
 
 services:
+
+  # ===========================================================================
+  # 1. 闂傚倸鍊搁崐鎼佸磹閹间礁纾圭€瑰嫭鍣磋ぐ鎺戠倞妞ゆ帒顦伴弲顏堟偡濠婂啰绠婚柛鈹惧亾濡炪倖甯婇懗鍫曞煝閹剧粯鐓涢柛娑卞枤缁犳﹢鏌涢幒鎾崇瑨闁宠閰ｉ獮妯虹暦閸ヨ泛鏁藉┑鐘茬棄閺夊簱鍋撻幘缁樺€块柨鏇楀亾闁宠绉瑰顕€宕奸悢鍙夊闂備胶顭堥張顒勬偡閵娾晛绀傞悘鐐板嫎娴滄粍銇勯幘璺轰户濠⒀嶉檮閵囧嫰濮€閿涘嫬鈷岄悗瑙勬磸閸旀垿銆佸☉姗嗙叆闁告侗鍨扮敮顒勬⒒閸屾瑧鍔嶉柣顏勭秺瀹曡绻濆顒佺€梺褰掓？閻掞箓宕曞Δ浣虹闁糕剝顨嗙粋瀣煟閺傛寧顥㈤柟顔款潐濞碱亪骞忓畝濠傚Τ闂備胶顭堢€涒晠宕濆▎鎾宠摕婵炴垶鐟﹂崕鐔兼煥濠靛棙鍣洪柣蹇撶墦濮婃椽宕崟顒佹嫳濠电偛寮剁换鍕垝鐠囨祴妲堟繛鍡樺灩閻﹀牓姊洪崨濠傚闁告柨绉归、姗€宕稿Δ浣叉嫽婵炴挻鍩冮崑鎾寸箾娴ｅ啿娉氶崶顒夋晝闁挎洍鍋撻柣銈囧亾缁绘繃绻濋崒婊冾杸闂?(濠电姷鏁告慨鐑藉极閸涘﹥鍙忛柣銏犲閺佸﹪鏌″搴″箹缂佹劖顨嗘穱濠囧Χ閸涱厽娈查梺鍝勬缁秵绌辨繝鍥ч柛娑卞幗濞堝爼姊哄ú璇插箺闁荤啿鏅犲濠氭偄閸忕厧鈧粯淇婇鐐存珳缂侇喖鐖煎娲焻閻愯尪瀚板褍澧界槐鎺楁偐閾忣偄纰嶉梺浼欑秮閺€杈╃紦閻ｅ瞼鐭欓悹鍥﹀嫎閸斿秹濡甸崟顖氱睄闁搞儺鐏濋幘瀵哥闁告侗鍘惧瓭闂佸疇顫夐崹鍧楀箖閳哄懎鍨傛い鎰剁稻閻﹀骸鈹戦悩鎰佸晱闁哥姵宀稿顐ｇ節濮橆剛鐤囧┑鐘绘涧椤戝懐绮堥崼銏″枑閹兼番鍔岀粣妤呮煕閳╁啰鈯曢柣鎾卞劦閺岋繝宕掑☉鍗炲妼濠电偠鍋愰崰搴ㄦ箒濠电姴锕ょ€氼噣鎯岄幒妤佺厸閻忕偟纭堕崑鎾诲箛娴ｅ憡鍊梻浣告啞閸旀垿宕濆畝鍕剁稏闁告侗鍠氱弧鈧梺闈涢獜缂嶅棗顭囬幇顓滀簻妞ゆ挾鍋為崰妯活殽?
+  # ===========================================================================
+
   postgres:
+    <<: [*restart, *logging]
     image: postgres:16-alpine
     container_name: mate-postgres
     environment:
-      POSTGRES_USER: meta
-      POSTGRES_PASSWORD: meta
-      POSTGRES_DB: metaplatform
+      <<: *pg-creds
+      POSTGRES_DB: ${POSTGRES_DB:-metaplatform}
       POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=en_US.UTF-8"
       TZ: Asia/Shanghai
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
-      # P0.1.3 多库初始化：首次启动自动创建 6 个业务库
       - ./infra/init-multiple-databases.sql:/docker-entrypoint-initdb.d/01-init-databases.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U meta"]
-      interval: 5s
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-meta} -d ${POSTGRES_DB:-metaplatform}"]
+      interval: 10s
       timeout: 5s
       retries: 10
+      start_period: 30s
 
   redis:
+    <<: [*restart, *logging]
     image: redis:7-alpine
     container_name: mate-redis
-    command: ["redis-server", "--appendonly", "yes"]
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "1gb", "--maxmemory-policy", "allkeys-lru"]
     ports:
-      - "6379:6379"
+      - "${REDIS_PORT:-6379}:6379"
     volumes:
       - redisdata:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
+      interval: 10s
       timeout: 5s
       retries: 10
 
-  nacos:
-    # 2026-07-24：3.0.1 镜像 v3 API 端点大量返回 404（API 未完整实现），
-    #             且 2.x 客户端兼容层也返回 410 Gone + 500 Internal。
-    #             按 CLAUDE.md 教训"**Nacos 3.0 引入需先做 POC**"，
-    #             本期回退到 2.4.3-slim（最后稳定版），3.0 POC 进度见
-    #             docs/NACOS-3.0-POC-CHECKLIST.md。
-    # TODO(P0.1.1 / Phase 0)：3.0.2+ 重新做 POC，验证 v3 API 完整可用后再升级。
-    image: nacos/nacos-server:v2.4.3-slim
-    container_name: mate-nacos
-    environment:
-      MODE: standalone
-      JVM_XMS: 512m
-      JVM_XMX: 1g
-      NACOS_AUTH_ENABLE: "false"
-      NACOS_ADMIN_USER: nacos
-      NACOS_ADMIN_PASS: nacos
-      JAVA_OPT: "-XX:-UseContainerSupport -Dnacos.core.sys.basic.processors=8 -Dserver.tomcat.accept-count=1000"
-    ports:
-      - "8848:8848"   # HTTP Console
-      - "9848:9848"   # gRPC Client RPC
-    volumes:
-      - nacosdata:/home/nacos/data
-    healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:8848/nacos/v1/console/health/readiness || exit 1"]
-      interval: 10s
-      timeout: 10s
-      retries: 30
-      start_period: 60s
-
-  # P0.1.2 - 对象存储（KB 文档原文件 / Agent Artifact / DeerFlow workspace）
   minio:
+    <<: [*restart, *logging]
     image: minio/minio:RELEASE.2024-10-13T13-34-11Z
     container_name: mate-minio
     command: ["server", "/data", "--console-address", ":9001"]
     environment:
-      MINIO_ROOT_USER: meta
-      MINIO_ROOT_PASSWORD: meta-secret-key
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-meta}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-metasecretkey123}
     ports:
-      - "9000:9000"   # S3 API
-      - "9001:9001"   # Console
+      - "${MINIO_API_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
     volumes:
       - miniodata:/data
     healthcheck:
@@ -102,68 +104,106 @@ services:
       timeout: 5s
       retries: 10
 
-  # P0.1.2 - 向量库（standalone + 内部 etcd + 内部 MinIO）
   milvus:
+    <<: [*restart, *logging]
     image: milvusdb/milvus:v2.5.0
     container_name: mate-milvus
     command: ["milvus", "run", "standalone"]
     environment:
       DEPLOY_MODE: standalone
-      ETCD_USE_EMBED: true
-      MINIO_USE_EMBED: true
+      ETCD_USE_EMBED: "true"
+      MINIO_USE_EMBED: "true"
       COMMON_STORAGETYPE: local
       COMMON_SECURITY_ENABLED: "false"
       TZ: Asia/Shanghai
     ports:
-      - "19530:19530"   # gRPC
-      - "9091:9091"     # Metrics
+      - "${MILVUS_PORT:-19530}:19530"
+      - "9091:9091"
     volumes:
       - milvusdata:/var/lib/milvus
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9091/healthz"]
-      interval: 10s
+      interval: 15s
       timeout: 5s
       retries: 10
       start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 4G
 
-  # P0.1.2 - 事件总线（Ontology Event / Document Event / CDC）
+  neo4j:
+    <<: [*restart, *logging]
+    image: neo4j:5.20-community
+    container_name: mate-neo4j
+    environment:
+      NEO4J_AUTH: "${NEO4J_USER:-neo4j}/${NEO4J_PASSWORD:-mate-pass}"
+      NEO4J_PLUGINS: "[]"
+      NEO4J_dbms_security_procedures_unrestricted: apoc.*
+      NEO4J_server_memory_heap_initial__size: 512m
+      NEO4J_server_memory_heap_max__size: 1g
+      NEO4J_server_memory_pagecache_size: 512m
+      NEO4J_server_default__listen__address: "0.0.0.0"
+      TZ: Asia/Shanghai
+    ports:
+      - "${NEO4J_HTTP_PORT:-7474}:7474"
+      - "${NEO4J_BOLT_PORT:-7687}:7687"
+    volumes:
+      - neo4jdata:/data
+      - neo4jlogs:/logs
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:7474 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+
   kafka:
+    <<: [*restart, *logging]
     image: confluentinc/cp-kafka:7.8.0
     container_name: mate-kafka
     environment:
-      KAFKA_CFG_NODE_ID: "0"
-      KAFKA_CFG_PROCESS_ROLES: "controller,broker"
-      KAFKA_CFG_LISTENERS: "PLAINTEXT://:9092,CONTROLLER://:9093"
-      KAFKA_CFG_ADVERTISED_LISTENERS: "PLAINTEXT://localhost:9092"
-      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
-      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: "CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT"
-      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: "0@localhost:9093"
-      KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_NODE_ID: "0"
+      KAFKA_PROCESS_ROLES: "controller,broker"
+      # 濠电姷鏁告慨鐑藉极閸涘﹥鍙忛柣鎴ｆ閺嬩線鏌熼梻瀵割槮缁炬儳娼￠弻鐔衡偓鐢殿焾瀛濈紓浣界堪閸婃繈寮婚敃鈧灒濞撴凹鍨遍敍鍡涙偡濠婂懎顣奸悽顖涘笧婢规洘绺介崨濠勫幗闂佸綊鍋婇崹浼存儍濞差亝鐓熸繛鎴炵墪閸旓附鎱ㄦ繝鍐┿仢鐎规洦鍋婂畷鐔碱敇濞戞瑧鈧亶姊? advertised listener 闂傚倸鍊搁崐鎼佸磹閹间礁纾归柟闂寸绾惧綊鏌ｉ幋锝呅撻柛濠傛健閺屻劑寮村Δ鈧禍鎯ь渻閵堝簼绨婚柛鐔告綑閻ｇ柉銇愰幒婵囨櫔闂佸憡渚楅崹鐗堟叏濞差亝鈷掑ù锝勮濞兼帡鏌涢弴鐐典粵闁伙絽澧庣槐鎾存媴閹绘帊澹曞┑鐘灱濞夋稒寰勯崶顒€纾婚柟鎹愬吹瀹撲線鏌涢…鎴濇灈濠殿喖閰ｅ楦裤亹閹烘挻鏆犻梺鎼炲妼濞硷繝鐛繝鍥х閻犲洦鐓￠弫婊冣攽鎺抽崐鎾绘嚄閸洖鍌ㄩ梺顒€绉甸埛鎴︽⒒閸喍绶辨俊顖氱墦閺屾盯鎮╁畷鍥ь潷闂佸搫鎳庨悥濂搞€佸▎鎾崇鐟滃繘鏁嶅鍫熲拺闂侇偆鍋涢懟顖涙櫠椤栨壕鍋撻崹顐ｇ凡閻庢矮鍗抽悰顕€宕堕澶嬫櫍闂佺粯蓱瑜板啰绮鑸碘拻闁稿本鐟х粣鏃€绻涙担鍐叉硽閸ヮ剦鏁囬柕蹇曞Х椤︻噣鎮楅獮鍨姎妞わ缚鍗冲畷鎴︽偄閹肩偘绨婚棅顐㈡处閹哥偓鏅跺☉銏＄厽?(闂傚倸鍊搁崐鎼佸磹閹间礁纾归柟闂寸绾剧懓顪冪€ｎ亝鎹ｉ柣顓炴閵嗘帒顫濋敐鍛婵°倗濮烽崑鐐烘偋閻樻眹鈧線寮撮姀鈩冩珖闂侀€炲苯澧撮柟铏矎閵囨劙骞掗幘璺哄箰闂佽绻掗崑鐘活敋瑜斿畷婵嗩潩閹典礁浜鹃柣鐔哄閸熺偟绱掔拠鎻掓殻濠碉紕鏁诲畷鐔碱敍濮橀硸鍟嬫繝寰锋澘鈧劙宕戦幘缁樺€垫慨妯煎帶瀵噣鏌?localhost 闂傚倸鍊搁崐鎼佸磹閹间礁纾归柟闂寸绾剧懓顪冪€ｎ亜顒㈡い鎰Г閹便劌顫滈崱妤€鈷掗梺缁樺笂缁瑩寮婚妶鍡樺弿闁归偊鍏橀崑鎾诲冀椤愮喎浜炬慨姗嗗墻閻撳ジ鏌″畝瀣М鐎殿噮鍣ｅ畷鎺戭潩椤戣法甯涚紓鍌氬€风拋鏌ュ磻閹炬剚鐔嗛柤鎼佹涧婵鏌涘▎鎰磳闁哄本鐩俊鐑芥晲閸涱収鐎撮梺璇茬箰缁诲牓宕濋幋锕€钃熼柨娑樺閸嬫捇鏁愭惔鈥茬敖婵犫拃鍛毈闁哄备鈧磭鏆嗛悗锝庡墰閻﹀牓鎮楃憴鍕闁绘牕銈稿畷娲焺閸愨晛顎撻梺鎼炲劘閸斿骸煤閹绢喗鐓涢悘鐐插⒔閵嗘帡鏌嶈閸撱劎绱為崱娑樼；闁告侗鍘鹃弳锔锯偓鍏夊亾闁逞屽墴閸┾偓妞ゆ帒鍠氬鎰箾閸欏鐭掔€规洘顨呴～婊堝焵椤掑嫬违濞达絽澹婂銊╂煃瑜滈崜鐔肩嵁閸愵喖顫呴柕鍫濇閸欏棝鏌ｆ惔顖滅У闁告挻鑹鹃埢鎾活敊閻ｅ瞼鐦?闂傚倸鍊搁崐鎼佸磹閹间礁纾归柟闂寸绾惧綊鏌ｉ幋锝呅撻柛濠傛健閺屻劑寮撮悙娴嬪亾瑜版帒纾块柟瀵稿У閸犳劙鏌ｅΔ鈧悧鍡欑箔閹烘鐓曢柕濞垮劚閳ь剚鎮傞崺鐐哄箣閿旇棄浜归柣搴℃贡婵挳藟濠靛牏纾藉ù锝囨嚀婵牊銇勯妸銉уⅵ闁糕斁鍋撳銈嗗坊閸嬫挾绱掗悩鑼х€规洘娲熷畷锟犳倷瀹ュ棛娲存い銏★耿閹瑩鍩￠崒婊€绨存繝鐢靛仜椤曨厽鎱ㄩ幘顕呮晞闁糕剝绋掗崑鍌炴煛閸ャ儱鐏柣鎾崇箰椤潡鎳滈悽鐐光偓鎺楁煕閹烘挻绶查柍瑙勫灴閸ㄩ箖宕橀崣澶娾偓顖炴⒑闂堟稒鎼愰悗姘緲椤曪綁骞橀鑺ユ闂佺粯锚瀵爼骞婂▎鎾粹拻濞撴埃鍋撻柍褜鍓氱粙鎾诲煘閹烘鐓曢柡鍌濇硶閻掓悂鏌ㄥ┑鍫濅粶妞ゎ厹鍔戝畷鐓庘攽閸℃埃鍋撻崹顔规斀閹烘娊宕愰幇鏉跨；闁规儳澧庣壕濂告煟濡寧鐝柕鍥ㄧ箖閹?
+      KAFKA_LISTENERS: "PLAINTEXT://:9092,CONTROLLER://:9093"
+      KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://kafka:9092"
+      KAFKA_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT"
+      KAFKA_CONTROLLER_QUORUM_VOTERS: "0@kafka:9093"
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      CLUSTER_ID: "MkU3OEVBNTcwNTJENDM2Qk"
+      KAFKA_INTER_BROKER_LISTENER_NAME: "PLAINTEXT"
       ALLOW_PLAINTEXT_LISTENER: "yes"
-      KAFKA_KRAFT_CLUSTER_ID: "MkU3OEVBNTcwNTJENDM2Qk"
+      KAFKA_CLUSTER_ID: "MkU3OEVBNTcwNTJENDM2Qk"
     ports:
-      - "9092:9092"
+      - "${KAFKA_PORT:-9092}:9092"
     volumes:
       - kafkadata:/bitnami/kafka
     healthcheck:
-      test: ["CMD-SHELL", "kafka-broker-api-versions.sh --bootstrap-server localhost:9092 >/dev/null 2>&1"]
+      test: ["CMD-SHELL", "python3 -c \"import socket; s=socket.socket(); s.settimeout(2); s.connect(('localhost',9092)); s.close()\""]
       interval: 15s
       timeout: 10s
       retries: 10
       start_period: 30s
 
-  # P0.1.2 - 任务队列（异步任务、Saga 补偿）
   rabbitmq:
+    <<: [*restart, *logging]
     image: rabbitmq:3.13-management-alpine
     container_name: mate-rabbitmq
     environment:
-      RABBITMQ_DEFAULT_USER: meta
-      RABBITMQ_DEFAULT_PASS: meta-secret
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-meta}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-meta-secret}
     ports:
-      - "5672:5672"     # AMQP
-      - "15672:15672"   # Management UI
+      - "${RABBITMQ_AMQP_PORT:-5672}:5672"
+      - "${RABBITMQ_MGMT_PORT:-15672}:15672"
     volumes:
       - rabbitmqdata:/var/lib/rabbitmq
     healthcheck:
@@ -172,13 +212,400 @@ services:
       timeout: 10s
       retries: 10
 
-  # P0.1.2 - 日志聚合（TECH-OBS P0）
+  nacos:
+    <<: [*restart, *logging]
+    image: nacos/nacos-server:v2.4.3-slim
+    container_name: mate-nacos
+    environment:
+      MODE: standalone
+      JVM_XMS: 512m
+      JVM_XMX: 1g
+      NACOS_AUTH_ENABLE: "false"
+      NACOS_ADMIN_USER: ${NACOS_USER:-nacos}
+      NACOS_ADMIN_PASS: ${NACOS_PASSWORD:-nacos}
+      JAVA_OPT: "-XX:-UseContainerSupport -Dnacos.core.sys.basic.processors=8 -Dserver.tomcat.accept-count=1000"
+      TZ: Asia/Shanghai
+    ports:
+      - "${NACOS_HTTP_PORT:-8848}:8848"
+      - "${NACOS_GRPC_PORT:-9848}:9848"
+    volumes:
+      - nacosdata:/home/nacos/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8848/nacos/v1/console/health/readiness || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 30
+      start_period: 60s
+  # ===========================================================================
+  # 2. Python AI 闂傚倸鍊搁崐鎼佸磹閹间礁纾归柟闂寸绾剧懓顪冪€ｎ亝鎹ｉ柣顓炴閵嗘帒顫濋敐鍛婵°倗濮烽崑鐐烘偋閻樻眹鈧線寮撮姀鈩冩珕闂佽姤锚椤︻喚绱旈弴銏♀拻濞达綀娅ｉ妴濠囨煕閹惧绠為柟顔炬焿椤﹀綊鏌熼姘辩劯妤犵偞顭囩槐鎺懳熺悰鈥充壕闁割煈鍋嗙粻楣冩煙鐎电鍓卞ù鐓庢閺岀喐娼忛崜褏鏆犻梺?(profile: ai, 濠电姷鏁告慨鐑藉极閸涘﹥鍙忛柣銏犲閺佸﹪鏌″搴″箹缂佹劖顨嗘穱濠囧Χ閸涱厽娈查梺鍝勬缁秵绌辨繝鍥ч柛娑卞幗濞堝爼姊哄ú璇插箺闁荤啿鏅犲濠氭偄閸忕厧鈧粯淇婇鐐存珳缂侇喖鐖煎娲焻閻愯尪瀚板褍澧界槐鎺楁偐閾忣偄纰嶉梺浼欑秮閺€杈╃紦閻ｅ瞼鐭欓悹鍥﹀嫎閸斿秹濡甸崟顖氱睄闁搞儺鐏濋幘瀵哥闁告侗鍘捐倴缂備浇椴搁幑鍥х暦閹烘埈娼╂い鎴ｆ娴滈箖鏌ｉ幋锝呅撻柛濠傛健閺屻劑寮撮悙娴嬪亾閻㈢鐒垫い鎺戯功閻ｇ數鈧娲栭悥濂搞€佸Δ鍛劦妞ゆ帒瀚崑鍌涚節闂堟侗鍎愰柣鎾寸洴閺屾盯骞囬埡浣割瀳闂侀€炲苯澧伴柡浣筋嚙閻ｇ兘骞嬮敃鈧粻濠氭煠婵劕鈧洜绮婇敃鍌涒拺闁告捁灏欓崢娑㈡煕閻樺磭澧柟渚垮妽閹棃濡搁敂瑙勫缂備胶铏庨崢濂稿箠韫囨稒鍋熸い蹇撶墛閻撴洟鏌￠崘锝呬壕濡炪們鍔屽Λ娑氬垝?- 闂傚倸鍊搁崐鎼佸磹閹间礁纾归柟闂寸绾惧綊鏌熼梻瀵割槮缁炬儳缍婇弻锝夊箣閿濆憛鎾绘煕婵犲倹鍋ラ柡灞诲姂瀵潙顫濋懜娈库偓鏍ㄧ箾鐎涙鐭婄紓宥咃躬瀵鈽夐姀鐘电杸闂佺绻愰幗婊堝极閺嶎厽鈷戞繛鑼额嚙楠炴鏌熼崨濠冨€愰柍銉︽瀹曟﹢顢旀担闀愬闂佹寧绻傜花鑲╄姳婵傚憡鐓欓柣褍鎽滅粔顕€鏌″畝瀣М妞ゃ垺锕㈤幃娆撴濞戣鲸婢戦梻鍌欑窔濞佳兠洪妶鍥ｅ亾濮橆偄宓嗛柣娑卞櫍瀹曞爼顢楅埀顒佸劔闂備焦瀵уú宥夊磻閹惧绠鹃柛娑卞枛閸濈儤鎱ㄦ繝鍛仩闁诡喕鍗抽崹楣冨礂閸涱収妫?
+  # ===========================================================================
+
+  # RAGFlow - 闂傚倸鍊搁崐鎼佸磹閹间礁纾归柟闂寸绾剧懓顪冪€ｎ亝鎹ｉ柣顓炴閵嗘帒顫濋敐鍛婵°倗濮烽崑鐐烘偋閻樻眹鈧線寮撮姀鈩冩珖闂侀€炲苯澧板瑙勬礋瀹曠兘顢橀悩纰夌床闂佽鍑界紞鍡涘磻閹捐埖顫曢柍鍝勫€荤粻鍓р偓鐟板閸犳洜鑺辨總鍛婄厸闁告侗鍠氱粻鐐烘煛鐏炲墽銆掑ù鐙呭缁辨帡濮€閻樻剚鍟岄梻鍌欑窔濞佳囁囬锕€鐤炬繝濠傜墛閸嬪倿鏌￠崶銉ョ仾闁稿﹤鐖奸弻锝夊箛椤撶偟绁烽梺鎶芥敱濡啴寮婚敐澶樻晣闁绘垵妫楅崜鍫曟⒑閸濆嫭婀伴柣鈺婂灦楠炲啴鍩￠崨顓犵厬婵犮垼鍩栬摫闁挎稑妫濆缁樻媴閸涘﹥鍎撻柣鐐村嚬閸嬪﹤鐣峰┑鍡欐殕闁告洦鍋嗛崢鎾⒑绾懏褰х紒鐘冲灴閻涱噣濮€閳╁啫寮垮┑掳鍊愰崑鎾翠繆椤愶絿鎳囬柡浣规崌婵＄兘鍩￠崒妤佸?(DeepDoc 闂傚倸鍊搁崐鎼佸磹瀹勬噴褰掑炊椤掑鏅悷婊冪箻閸┾偓妞ゆ帊鑳堕埢鎾绘煛閸涱垰鈻堥柕鍡曠閳诲酣骞橀崘鎻掓暏婵＄偑鍊栭幐楣冨磻閻斿吋鍋橀柕澶堝劗閺€浠嬪箳閹惰棄纾归柟鐗堟緲绾惧鏌熼崜褏甯涢柛瀣€块弻鏇㈠醇濠靛浂妫￠梺鍛婄懃缁绘垶绌辨繝鍥ㄥ€峰Λ鐗堢箓濞堫厽绻涚€涙鐭嬮柛搴＄枃閻?
+  # 婵? 闂傚倸鍊搁崐鎼佸磹閹间礁纾圭€瑰嫭鍣磋ぐ鎺戠倞妞ゆ帒顦伴弲顏堟偡濠婂啰效闁挎繄鍋涢埞鎴犫偓锝庡亝濞呭洭姊虹粙璺ㄧ効濠碘€虫川缁瑨绠涢弮鍌滅槇闂侀潧楠忕徊鍓ф兜妤ｅ啯鍊垫繛鎴炲笚濞呭﹥顨ラ悙璇у伐闁伙絾绻堝畷鐔碱敄閼恒儱顏?docker 濠电姷鏁告慨鐑藉极閸涘﹥鍙忛柣鎴ｆ閺嬩線鏌涘☉姗堟敾闁告瑥绻愰湁闁稿繐鍚嬬紞鎴︽煕閵娿儱鈧潡寮婚敐澶婄鐎规洖娲ら崫娲⒑閸濆嫷鍎愰柣妤侇殘閹广垹鈽夐姀鐘殿吅闂佺粯鍔曢顓炩枔閵堝鈷戞繛鑼额嚙楠炴鏌熼悷鐗堟悙妞ゎ偄绻戠换婵嗩潩椤掑嫬鏁归梻浣虹帛閺屻劍鏅舵惔锝嗗床濞撴埃鍋撴慨?(闂?ES+MinIO+MySQL), 闂傚倸鍊搁崐鎼佸磹閹间礁纾瑰瀣捣閻棗銆掑锝呬壕濡ょ姷鍋為悧鐘汇€侀弴姘辩Т闂佹悶鍎洪崜锕傚极閸愵喗鐓ラ柡鍥殔娴滈箖姊哄Ч鍥р偓妤呭磻閹捐埖宕叉繝闈涙川缁♀偓闂佺鏈划宀劼烽埀顒勬⒒娴ｄ警鐒炬い鎴炲灩閹广垹鈹戠€ｎ亣鎽曢悗骞垮劚椤︻垱瀵奸悩缁樼厱闁哄洢鍔屾晶顔界箾閸滃啰绉慨濠傤煼瀹曟帒顫濋璺ㄦ晼闂備焦鎮堕崝宀勬偉閻撳寒鍤曞┑鐘崇閺呮彃顭跨捄鐚村姛妞ゆ挻妞藉娲箰鎼达絿鐣甸梺鐟板级閻╊垶鐛Ο鑲╃＜婵☆垳鍘ч獮鍫ユ⒑鐠囨彃鍤辩紒鎻掝煼瀹曟繄浠﹂悙顒€寮块梺绋跨灱閸嬬偤鎮″☉銏″€堕柣鎰版涧娴滃墽绱掗埀顒勫礃椤忓棛锛滅紓鍌欑劍椤洭鈥栭崗绗轰簻闁挎梻鏅崣鈧梺鍝勭灱閸犳牕鐣峰鈧幊鐘活敆閸屻倕鏁归梻鍌欑绾绢厾鍒掗鐐茬闁搞儜灞芥闂佸湱铏庨崰鏍綖閸涘瓨鐓冮梺娆惧灠娴滈箖姊鸿ぐ鎺撴暠婵＄偠妫勯～蹇撁洪鍕獩婵犵數濮寸€氀兾ｉ崼銉︹拺闁圭瀛╃粚鍧楁⒒閸曨偄顏€殿喗鐓″畷濂稿即閵婏附娅岄梻浣告啞濞诧箓宕滃☉銏犲偍闁芥ê顦弨浠嬪箳閹惰棄纾归柡鍥ュ灩閻ゎ喗銇勯幇鍓佺暠闁绘挻绻堥弻娑㈩敃閻旂娅氶梺绋款儐閹搁箖骞夐幘顔肩妞ゆ帒鍋婄槐顓㈡⒒娴ｈ鍋犻柛鏂跨箲閹便劑濡堕崱娆屾敵婵犵數濮村ú銈夋煁閸ヮ剚鐓涢柛銉㈡櫅娴犙囨煕婵犲嫬浠辨慨濠冩そ瀹曟﹢宕ｆ径瀣壍闂備礁鎽滄慨鐢电矙閹炬緞? 闂傚倸鍊搁崐鎼佸磹閹间礁纾归柟闂寸绾惧綊鏌ｉ幋锝呅撻柛濠傛健閺屻劑寮撮悙娴嬪亾瑜版帒纾块柟瀵稿У閸犳劙鏌ｅΔ鈧悧鍡欑箔閹烘鐓曢柕濞垮劚閳ь剚鎮傞崺鐐哄箣閿旇棄浜归柣搴℃贡婵挳藟濠靛牏纾藉ù锝囨嚀婵牊銇勯妸銉уⅵ闁糕斁鍋撳銈嗗坊閸嬫挾绱掗悩鑼х€规洘娲熷畷锟犳倷瀹ュ棛娲存い銏★耿閹瑩鍩￠崒婊€绨存繝鐢靛仜椤曨厽鎱ㄩ幘顕呮晞闁糕剝绋掗崑鍌炴煛閸ャ儱鐏柣鎾崇箰椤法鎹勬笟顖氬壈闂佽绻堥崕鐢稿蓟閵堝悿铏规嫚閼碱兛鍝楅梻浣哥－缁垶骞愬宀€浜介梺鑽ゅС缁€浣哄椤撶姷涓嶆慨妯垮煐閳锋垿姊婚崼鐔恒€掑褎娲滅槐鎺旂磼濡浚浜垾鏍ㄧ節閸ヨ埖鏅╂繝娈垮枟閸旀帞鑺辨繝姘拺闁荤喖鍋婇崵鐔兼煕鐎ｎ剙鏋涙鐐诧躬瀹曞爼鍩為幆褌澹曢柣鐔哥懃鐎氼厽寰勯崟顖涚厱闁规崘娉涢弸娑㈡煟濞戝崬鏋涙い顐ｇ矒閸┾偓妞ゆ帒瀚ㄩ埀顑跨閳诲酣骞橀弶鎴滄偅闂佽绻掗崑鐘参涢崟顓犱笉?https://github.com/infiniflow/ragflow
+  ragflow:
+    <<: [*restart, *logging]
+    image: infiniflow/ragflow:v0.13.0
+    container_name: mate-ragflow
+    environment:
+      MYSQL_HOST: mysql
+      MYSQL_PORT: "3306"
+      MYSQL_USER: ${MYSQL_USER:-ragflow}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-ragflow-pass}
+      MYSQL_DB: ragflow
+      MINIO_HOST: minio
+      MINIO_PORT: "9000"
+      MINIO_USER: ${MINIO_ROOT_USER:-meta}
+      MINIO_PASS: ${MINIO_ROOT_PASSWORD:-metasecretkey123}
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      TZ: Asia/Shanghai
+    ports:
+      - "${RAGFLOW_PORT:-9380}:9380"
+    volumes:
+      - ragflowdata:/ragflow/data
+    depends_on:
+      minio:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    profiles: ["ai"]
+    deploy:
+      resources:
+        limits:
+          memory: 8G
+
+  # LightRAG - THEMATIC 婵犵數濮烽弫鍛婃叏閻戣棄鏋侀柛娑橈攻閸欏繘鏌ｉ幋婵愭綗闁逞屽墮閸婂潡骞愭繝鍐彾闁冲搫顑囩粔顔锯偓瑙勬磸閸旀垵顕ｉ崼鏇炵婵犻潧鐗冮崑鎾活敇閻戝棙瀵岄梺闈涚墕閹虫劗绮绘导瀛樼厽婵°倐鍋撴俊顐ｇ箞楠炲啴鎮欓崫鍕€銈嗗姉婵磭鑺辨繝姘拺闁荤喓澧楅幆鍫熶繆椤愶綆娈曠紒鍌氱Ч瀹曟粏顦寸痪鎯с偢閺屾盯骞樺Δ鈧Λ娆擃敁濡ゅ懏鈷戦柛娑橆焵閹达箑纾块柟鎯版閻撯€愁熆閼搁潧濮堥柛瀣ㄥ妿缁辨帞鈧綆鍘界涵鍫曟煕閺冩挾鐣辨い顏勫暣婵″爼宕卞Δ鍐噯闂佽瀛╅崙褰掑矗閸愵喖鏄ユ繛鎴欏灩缁狅綁鏌ㄩ弮鍌涙珪闁告鏁诲娲礂閼测斂鍋為梺鍝勬噺缁嬫帞绮嬮幒鎴叆闁割偆鍠撻崢閬嶆⒑閸濆嫬鏆婇柛瀣尵缁辨帡顢欐總绋垮及闂佺硶鏂侀崑鎾愁渻閵堝棗绗掗柛鐘宠壘椤洭骞囬鐘殿啎闂佸憡鐟ラ¨鈧柤鏉挎健閺屸剝鎷呴崜鎻掑壈濡炪値浜滈崯瀛樹繆閼稿灚鍎熼柍銉ㄥ皺閸戝湱绱撻崒娆愮グ妞ゆ泦鍥ㄥ亱濠电姴鍟伴埞宥呪攽閻樺弶鎼愮紒鐘垫嚀闇夐柨婵嗙墕閳ь兛绮欐俊鎼佸煛娴ｄ警鍟囨繝鐢靛剳缂嶅棝宕滃▎鎾村€舵い鏃傛櫕缁犻箖鏌涘▎蹇ｆЧ閻忓骏绠撻弻锛勪沪閸撗勫垱闂佺硶鏅濋崑銈夌嵁閸℃凹妲烘繝銏ｎ潐濞叉牠鍩為幋锔芥櫖闁告洦鍋傞弶顓㈡⒑缁嬪尅鏀婚柣妤佺矒瀵偊顢氶埀顒勭嵁閹烘嚦鏃堝焵椤掑倸顥氶柛锔诲幗閸犳劙鏌ｅΔ鈧悧鍡涙煂濠婂懐纾?  # 婵? LightRAG 闂傚倸鍊搁崐鎼佸磹閹间礁纾圭€瑰嫭鍣磋ぐ鎺戠倞妞ゆ帒顦伴弲顏堟偡濠婂啰效闁挎繄鍋涢埞鎴犫偓锝庡亝濞呭洭姊虹粙璺ㄧ効濠碘€虫川缁瑨绠涢弮鍌滅槇闂侀潧楠忕徊鍓ф兜妤ｅ啯鍊垫繛鎴炲笚濞呭﹥顨ラ悙璇у伐闁伙絾绻堝畷鐔碱敄閼恒儱顏烘繝鐢靛仩閹活亞寰婃禒瀣疅闁跨喓濮寸粻姘舵煕椤愮姴鍔滈柣鎾跺枑閵囧嫰骞掗崱妞惧闂備線娼ч悧蹇涒€﹂崼銉﹀仼闂佸灝顑呴閬嶆煛婢跺鐏ラ柛鐐姂閹嘲顭ㄩ崟顓犵厜閻庤娲滈弫璇差嚕閹绢喗鍋勭紓鍫㈠Х閻╁酣姊绘担鍛婃儓婵炶绠撻妴鍐川椤旂虎娲告俊銈忕到閸燁垶鍩涢幋锔藉仯闁搞儻绲洪崑鎾绘惞椤愩倓绨梻鍌欑閹碱偊骞婇幇顓犵闁逞屽墴閺岋絽鈽夐崡鐐寸彎濡ょ姷鍋為…鍥箯閻樼粯鍤戞い鎺戭槸閺佷粙姊婚崒娆戭槮闁圭⒈鍋婂畷顖烆敍閻愭彃鐎梺鑲╊焾閻忔艾鈻嶈箛鎾斀闁绘ê鐏氶弳鈺佲攽椤旀儳鍘寸€殿噮鍋婇獮鏍ㄦ媴閸濄儻绱遍梻浣虹帛閸旀洟骞栭锕€鍨傞柛宀€鍋為悡鏇熴亜閹板墎绋荤紒鈧埀顒傜磽娴ｅ搫小闁告濞婂濠氭偄閾忓湱锛滈梺闈涚箳婵敻鎮橀崼銏㈢＜闁绘劦鍓欓崝銈嗐亜椤撶姴鍘寸€殿喖顭烽幃銏ゆ偂鎼达綆妲堕柣鐔哥矊缁绘帡寮灏栨闁靛骏绱曢崢鎾绘⒒娴ｅ摜浠㈡い鎴濇噹闇夋い鏇楀亾闁哄矉绱曟禒锕傛偩鐏炴縿鍎查妵鍕槺缂佽埖宀稿璇测槈閵忕姷顔掗柣搴ㄦ涧閹诧繝宕虫导瀛樷拺闁绘劘妫勯崝鐢电磼閻樿櫕灏板ǎ鍥э躬楠炴牗鎷呴崫銉ュ箰濠电偠鎻徊鑲╂媰閿曗偓鍗卞ù鐓庣摠閳锋帒銆掑锝呬壕濠电偘鍖犻崶锝傚亾閿曞倸閱囬柕澶堝劤閿涚喖姊绘笟鍥у闁? 闂?build 闂傚倸鍊搁崐鎼佸磹閹间礁纾归柟闂寸绾惧綊鏌ｉ幋锝呅撻柛銈呭閺屾盯顢曢敐鍡欘槬闂佺琚崝搴ㄥ箟閹间礁绫嶉柛顐ｆ儕閵夆晜鐓曢柟鑸妽濞呭棝鏌涙惔锝呮灈闁哄本娲濈粻娑氣偓锝庝簽閸旀潙鈹戦悙璺虹毢妞ゎ厼鐗撻崺鐐哄箣閿旇棄浜圭紓鍌欑劍钃遍梺娆惧幖椤啴濡堕崱妤冧淮濠碘槅鍋呯换鍌炴偩?(闂?./infra/lightrag/Dockerfile)
+  lightrag:
+    <<: [*restart, *logging]
+    build:
+      context: ./infra/lightrag
+      dockerfile: Dockerfile
+    container_name: mate-lightrag
+    environment:
+      LIGHTRAG_MODE: hybrid
+      OPENAI_API_KEY: ${OPENAI_API_KEY:?OPENAI_API_KEY required for LightRAG}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1}
+      LIGHTRAG_LLM_MODEL: ${LIGHTRAG_LLM_MODEL:-gpt-4o-mini}
+      LIGHTRAG_EMBED_MODEL: ${LIGHTRAG_EMBED_MODEL:-text-embedding-3-small}
+      LIGHTRAG_API_KEY: ${LIGHTRAG_API_KEY:-}
+      NEO4J_URI: bolt://${NEO4J_USER:-neo4j}:${NEO4J_PASSWORD:-mate-pass}@neo4j:7687
+      TZ: Asia/Shanghai
+    ports:
+      - "${LIGHTRAG_PORT:-9621}:9621"
+    volumes:
+      - lightragdata:/app/data
+    depends_on:
+      neo4j:
+        condition: service_healthy
+    profiles: ["ai"]
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+
+  # ===========================================================================
+  # 3. Python 闂傚倸鍊搁崐鎼佸磹閹间礁纾归柟闂寸绾剧懓顪冪€ｎ亝鎹ｉ柣顓炴閵嗘帒顫濋敐鍛婵°倗濮烽崑娑⑺囬悽绋挎瀬闁瑰墽绮崑鎰版煕閹邦剙绾ч柣銈呭濮婄粯鎷呯粵瀣異闂佹悶鍔岄妶鎼佸箖濮椻偓楠炲洭顢涘Ο瑙勭潖闂備礁婀遍崕銈夊箰閹间礁鐒垫い鎺戝暙閸氬湱绱掓潏銊ョ瑨闁宠棄顦～婊堝幢濡も偓婢瑰姊绘担鍛婃儓闁瑰啿绻掗崚鎺戠暆閸曘劉鍋撻弮鍫濈妞ゆ柨妲堣閺屾盯鍩勯崘鐐暭闂佽崵鍠嗛崝鎴﹀蓟閿濆棙鍎熼柕蹇曞Т濮ｅ牓姊洪崨濠冨鞍闁烩晩鍨跺畷娲焵椤掍降浜滈柟鍝勭У缁佹澘顭跨憴鍕嗘垿濡甸崟顖涙櫇闁稿本鐟﹂崰姘舵⒑缁洘鏉归柛瀣尭椤啴濡堕崱妤€娼戦梺绋款儐閹稿墽妲愰幒妤佸亹闁肩⒈鍎疯閳ь剝顫夊ú妯好洪悢鐓庤摕闁糕剝顨忛崥瀣煕濞戝崬鐏ｉ柡瀣暣濮婃椽鎮烽弶鎸庡€梺璇″灠閻倿骞冮埄鍐ㄧ窞鐎光偓閳ь剛绮?(濠电姷鏁告慨鐑藉极閸涘﹥鍙忛柣銏犲閺佸﹪鏌″搴″箹缂佹劖顨嗘穱濠囧Χ閸涱厽娈查梺鍝勬缁秵绌辨繝鍥ч柛娑卞幗濞堝爼姊哄ú璇插箺闁荤啿鏅犲濠氭偄閸忕厧鈧粯淇婇鐐存珳缂侇喖鐖煎娲焻閻愯尪瀚板褍澧界槐鎺楁偐閾忣偄纰嶉梺浼欑秮閺€杈╃紦閻ｅ瞼鐭欓悹鍥﹀嫎閸斿秹濡甸崟顖氱睄闁搞儺鐏濋幘瀵哥闁告侗鍘惧瓭闂佸疇顫夐崹鍧楀箖閳哄懎鍨傛い鎰剁稻閻﹀骸鈹戦悩鎰佸晱闁哥姵宀稿顐ｇ節濮橆剛鐤囧┑鐘绘涧椤戝懐绮堥崼銏″枑閹兼番鍔岀粣妤呮煕閳╁啰鈯曢柣鎾卞劦閺岋繝宕掑☉鍗炲妼濠电偠鍋愰崰搴ㄦ箒濠电姴锕ょ€氼噣鎯岄幒妤佺厸閻忕偟纭堕崑鎾诲箛娴ｅ憡鍊梻浣告啞閸旀垿宕濆畝鍕剁稏闁告侗鍠氱弧鈧梺闈涢獜缂嶅棗顭囬幇顓滀簻妞ゆ挾鍋為崰妯活殽?
+  # ===========================================================================
+
+  # mate-tech-rag: RAG 闂傚倸鍊搁崐鎼佸磹閹间礁纾归柟闂寸绾剧懓顪冪€ｎ亝鎹ｉ柣顓炴閵嗘帒顫濋敐鍛婵°倗濮烽崑鐐烘偋閻樻眹鈧線寮撮姀鐘栄囨煕閵夈垺娅囬柛妯煎█濮婄粯鎷呯粙娆炬闂佺顑呴幊搴ｅ弲閻庡箍鍎遍ˇ顖炴倿閸偁浜滈柟鐑樺煀閸旂喖鏌ｉ敐鍥ㄦ毄闁逞屽墲椤煤閺嶎厼围闁告稑锕ラ崣蹇涙煃瑜滈崜鐔煎蓟閺囷紕鐤€閻庯綆浜炴禒鐓庮渻?(RAGFlow parse + Milvus/Neo4j/LightRAG 婵犵數濮烽弫鍛婃叏閻戣棄鏋侀柛娑橈攻閸欏繘鏌ｉ幋婵愭綗闁逞屽墮閸婂潡骞愭繝鍐彾闁冲搫顑囩粔顔锯偓瑙勬磸閸旀垵顕ｉ崼鏇炵闁绘瑥鎳愰獮銏ゆ⒒閸屾瑧绐旈柍褜鍓涢崑娑㈡嚐椤栨稒娅犻柟缁㈠枟閻撴盯鎮橀悙鎻掆挃闁靛棙甯￠弻宥堫檨闁告挶鍔庣槐鐐哄幢濞戞锛涢梺鍛婁緱閸垶鎮炴繝鍥ㄧ厽闁靛繈鍨洪弳鈺冪棯?
+  mate-tech-rag:
+    <<: [*restart, *logging]
+    build:
+      context: ./mate-platform-backend
+      dockerfile: Dockerfile
+    image: mate-tech-rag:dev
+    container_name: mate-tech-rag
+    environment:
+      # === 濠电姷鏁告慨鐑藉极閸涘﹥鍙忛柣鎴ｆ閺嬩線鏌熼梻瀵割槮缁炬儳娼￠弻鐔衡偓鐢殿焾瀛濈紓浣界堪閸婃繈寮婚敃鈧灒濞撴凹鍨遍敍鍡涙偡濠婂懎顣奸悽顖涘笧婢规洘绺介崨濠勫幗闂佸綊鍋婇崹浼存儍濞差亝鐓熸繛鎴炵墪閸旓附鎱ㄦ繝鍐┿仢鐎规洦鍋婂畷鐔碱敇濞戞瑧鈧亶姊? 闂傚倸鍊搁崐鎼佸磹閹间礁纾归柟闂寸绾惧綊鏌ｉ幋锝呅撻柛銈呭閺屾盯顢曢敐鍡欙紩闂侀€炲苯澧剧紒鐘虫尭閻ｉ攱绺界粙娆炬綂闂佺偨鍎遍崯璺ㄨ姳閵夆晜鈷掑ù锝囶焾椤ュ繘鏌涚€ｂ晝绐旂€规洘娲樺蹇涘煛閸愵亞鍔跺┑鐘灱閸╂牠宕濋弽顓熷亗婵炲棙鎸哥痪褔鏌涢锝囩畵闁抽攱妫冮弻锝夋晲閸粌鎯堥梺姹囧労娴滎亪鐛崱姘兼Ъ闂佺顑冮崕鐢稿蓟閳ュ磭鏆嗛柍褜鍓熷畷浼村箻閼告娼熼梺鍦劋椤ㄥ懘锝為崨瀛樼厽婵☆垵娅ｉ敍宥吤瑰鍐煟婵﹦绮幏鍛瑹椤栨粌濮兼俊鐐€栭崹鐢稿疮閺夋垹鏆︽繝闈涱儏缁狅綁鏌ㄩ弴妤€浜鹃梺钘夊暟閸犳牠寮婚敓鐘茬倞闁宠桨鐒﹂悘浣虹磽娴ｅ弶顎嗛柛瀣崌濮婄粯绻濇惔鈥茬盎濠电偠顕滄俊鍥╁垝濞嗘挸绠虫俊銈咃攻閺呮盯鎮楅獮鍨姎婵炲眰鍔庢竟鏇㈡寠婢规繂缍婇弫鎰板川椤旇棄鍓甸梺鍝勭▌缁绘繂顫忓ú顏呭€婚柍鍝勫€归悵锕傛⒑閹肩偛濮€婵炲鐩、姘舵晲閸ャ劌鐝板┑鐐存綑椤戝棝锝炲澶嬧拺闂傚牊绋撶粻鍐测攽椤旂偓鏆挊鐔哥節闂堟侗鍎愰柣鎾跺枛閺岋綁骞囬澶婃闂佸磭绮幑鍥蓟瀹ュ牜妾ㄩ梺鍛婃尰閻熲晛鐣烽姀銈呭唨闁靛ě鍛獎闂備礁鎼ú銏ゅ垂濞差亜鐓曢柟杈鹃檮閻撴瑦銇勯弽褎顥滈悗姘煎櫍閵嗗懏瀵肩€涙ǚ鎷虹紓浣割儐椤戞瑩宕曡箛娑欏€垫慨姗嗗亜瀹撳棛鈧娲樺浠嬪春閳? 濠电姷鏁告慨鐑藉极閸涘﹥鍙忛柣鎴ｆ閺嬩線鏌熼梻瀵割槮缁炬儳顭烽弻锝夊箛椤掍焦鍎撻梺鎼炲妼閸婂潡寮诲☉銏╂晝闁挎繂妫涢ˇ銉х磽娴ｅ搫小闁告濞婂璇测槈濡攱鏂€闂佸憡娲﹂崑鍕叏閵忋倖鈷戞繛鑼额嚙楠炴鏌熼悷鐗堝枠鐎殿喖顭烽幃銏ゆ惞閸︻叏绱查梻渚€娼х换鎺撴叏閻㈠憡鍊堕柛顐犲劜閳锋垶鎱ㄩ悷鐗堟悙闁逞屽厵閸婃繂鐣烽幎鑺ユ櫜濠㈣泛锕ㄩ幗?host.docker.internal ===
+      RAG_MODE: ${RAG_MODE:-full}
+      EMBEDDER_PROVIDER: ${EMBEDDER_PROVIDER:-local}
+      MILVUS_HOST: milvus
+      MILVUS_PORT: "19530"
+      NEO4J_URI: bolt://neo4j:7687
+      NEO4J_USER: ${NEO4J_USER:-neo4j}
+      NEO4J_PASSWORD: ${NEO4J_PASSWORD:-mate-pass}
+      LIGHTRAG_URL: http://lightrag:9621
+      LIGHTRAG_API_KEY: ${LIGHTRAG_API_KEY:-}
+      RAGFLOW_URL: http://ragflow:9380
+      RAGFLOW_API_KEY: ${RAGFLOW_API_KEY:-}
+      PG_DSN: postgresql://${POSTGRES_USER:-meta}:${POSTGRES_PASSWORD:-meta}@postgres:5432/metaplatform_kb
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_EMBED_MODEL: ${OPENAI_EMBED_MODEL:-text-embedding-3-small}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4317}
+      OTEL_SERVICE_NAME: mate-tech-rag
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    ports:
+      - "${MATE_RAG_PORT:-8001}:8001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      milvus:
+        condition: service_healthy
+      neo4j:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8001/healthz || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  # mate-tech-agent: 濠?Agent (LangGraph)
+  mate-tech-agent:
+    <<: [*restart, *logging]
+    build:
+      context: ./mate-platform-backend
+      dockerfile: Dockerfile.agent
+    image: mate-tech-agent:dev
+    container_name: mate-tech-agent
+    environment:
+      RAG_URL: http://mate-tech-rag:8001
+      AGENT_PG_DSN: postgresql://${POSTGRES_USER:-meta}:${POSTGRES_PASSWORD:-meta}@postgres:5432/metaplatform_agent
+      LLM_PROVIDER: ${LLM_PROVIDER:-openai}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:?OPENAI_API_KEY required for agent}
+      OPENAI_CHAT_MODEL: ${OPENAI_CHAT_MODEL:-gpt-4o-mini}
+      FLOWABLE_URL: http://flowable:8181/flowable-rest
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4317}
+      OTEL_SERVICE_NAME: mate-tech-agent
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    ports:
+      - "${MATE_AGENT_PORT:-8002}:8002"
+    depends_on:
+      mate-tech-rag:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8002/healthz || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  # mate-app-kb: 濠电姷鏁告慨鐑藉极閸涘﹥鍙忛柣鎴ｆ閺嬩線鏌熼梻瀵割槮缁炬儳顭烽弻锝夊箛椤掍焦鍎撻梺鎼炲妼閸婂潡寮诲☉銏╂晝闁挎繂妫涢ˇ銉х磽娴ｅ搫校婵犮垺锕㈤崺鐐哄箣閿旇棄浜归悗瑙勬礀濞村倿寮抽敓鐘斥拺闁硅偐鍋涢埀顒佹礋閹矂宕掗悙鑼舵憰闂佹寧绻傞ˇ顖滅不濞戙垺鈷掗柛顐ゅ枔閳藉銇勯顐￠偗婵﹥妞藉畷銊︾節閸曨剙娅戠紓鍌欒兌缁垶鏁冮姀鐙€鍤曞┑鐘崇閺呮彃顭跨捄鐚存敾妞ゃ儲绻堝娲礈閼碱剙甯ラ梺鍝ュУ椤ㄥ﹤鐣烽幇閭︽晬闁绘劗琛ラ幏娲⒑绾懎浜归柛瀣洴閸┾偓妞ゆ帊鐒︾粈瀣偓瑙勬礃閸旀﹢濡甸幇鏉跨闁瑰濮烽弶浠嬫⒒娓氣偓濞佳団€﹂崼銉ョ？闁告繂瀚烽悞浠嬫煏婵炵偓娅嗛柣鎾存礋閺屽秹鍩℃担鍛婄亾濠电偛鐗婂褰掑Φ閸曨垼鏁冩い鎰剁節閸嬫鈹?facade
+  mate-app-kb:
+    <<: [*restart, *logging]
+    build:
+      context: ./mate-platform-backend
+      dockerfile: Dockerfile.app-kb
+    image: mate-app-kb:dev
+    container_name: mate-app-kb
+    environment:
+      RAG_URL: http://mate-tech-rag:8001
+      AGENT_URL: http://mate-tech-agent:8002
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4317}
+      OTEL_SERVICE_NAME: mate-app-kb
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    ports:
+      - "${MATE_APP_KB_PORT:-8003}:8003"
+    depends_on:
+      mate-tech-rag:
+        condition: service_healthy
+      mate-tech-agent:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8003/healthz || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  # mate-tech-llmgw: LLM 濠?provider 缂傚倸鍊搁崐鎼佸磹閹间礁纾归柟闂寸绾惧綊鏌熼梻瀵割槮缁炬儳缍婇弻鐔兼⒒鐎靛壊妲紒鐐劤缂嶅﹪寮婚悢鍏尖拻閻庨潧澹婂Σ顕€姊哄Ч鍥р偓銈夊窗濡ゅ懎桅闁告洦鍨伴崘鈧銈嗗姦濠⑩偓缂侇喖鐖煎娲箹閻愭彃顬堥梺绋匡工濞尖€愁嚕婵犳碍鏅插璺侯煬濞煎﹪姊洪棃娑氱畾闁哄懏绻堝畷婵嬪箹娴ｅ厜鎷?
+  mate-tech-llmgw:
+    <<: [*restart, *logging]
+    build:
+      context: ./mate-platform-backend
+      dockerfile: packages/mate-tech-llmgw/Dockerfile
+    image: mate-tech-llmgw:dev
+    container_name: mate-tech-llmgw
+    environment:
+      REDIS_URL: redis://redis:6379/0
+      PG_DSN: postgresql://${POSTGRES_USER:-meta}:${POSTGRES_PASSWORD:-meta}@postgres:5432/metaplatform_kb
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      ARK_API_KEY: ${ARK_API_KEY:-}
+      DASHSCOPE_API_KEY: ${DASHSCOPE_API_KEY:-}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4317}
+      OTEL_SERVICE_NAME: mate-tech-llmgw
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    ports:
+      - "${MATE_LLMGW_PORT:-8008}:8008"
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8008/healthz || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  # mate-tech-ont: 闂傚倸鍊搁崐鎼佸磹閹间礁纾归柟闂寸绾剧懓顪冪€ｎ亝鎹ｉ柣顓炴閵嗘帒顫濋敐鍛婵°倗濮烽崑鐐烘偋閻樻眹鈧線寮撮姀鈩冩珕闂佽姤锚椤︻喚绱旈弴鐔虹瘈闁汇垽娼у瓭闂佹寧娲忛崐婵嬪箖瑜斿畷鍗炩枎閹寸姷鍔堕梻浣侯焾閺堫剛绮欓幘鍓佷笉濡わ絽鍟悡娆撴倵閻㈡鐒惧ù鐙呯畵閺岋綁濡搁敃鈧悘鈺冪磼鏉堛劌娴柛鈹惧亾濡炪倖甯婇懗鍓佸姬閳ь剟姊洪幖鐐插姌闁告柨鐭傞崺鈧い鎺戝€归弳顒勬煛鐏炶濡奸柍瑙勫灴瀹曞崬鈻庤箛鎾寸槗闂傚倷娴囬～澶愭偂閿涘嫮涓嶉柡宥庡幖閽冪喐绻涢幋娆忕仼閸ユ挳姊虹化鏇炲⒉妞ゎ厼娲棟濞寸厧鐡ㄩ埛鎴︽煕濠靛棗顏柣鎺曟硶缁辨帞绱掑Ο鑲╃暤闂佷紮绲块崗妯虹暦婵傜鍗抽柣鎰版涧楠炴劕鈹戦悙鑸靛涧缂佽尪妫勯敃銏ゆ焼瀹ュ懐鍔﹀銈嗗笒鐎氼噣鎮鹃悜妯诲弿?(Neo4j backed)
+  mate-tech-ont:
+    <<: [*restart, *logging]
+    build:
+      context: ./mate-platform-backend
+      dockerfile: packages/mate-tech-ont/Dockerfile
+    image: mate-tech-ont:dev
+    container_name: mate-tech-ont
+    environment:
+      NEO4J_URI: bolt://neo4j:7687
+      NEO4J_USER: ${NEO4J_USER:-neo4j}
+      NEO4J_PASSWORD: ${NEO4J_PASSWORD:-mate-pass}
+      PG_DSN: postgresql://${POSTGRES_USER:-meta}:${POSTGRES_PASSWORD:-meta}@postgres:5432/metaplatform_ont
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4317}
+      OTEL_SERVICE_NAME: mate-tech-ont
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    ports:
+      - "${MATE_ONT_PORT:-8007}:8007"
+    depends_on:
+      neo4j:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8007/healthz || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  # mate-tech-msg: 婵犵數濮烽弫鍛婃叏閻戣棄鏋侀柛娑橈攻閸欏繘鏌ｉ幋锝嗩棄闁哄绶氶弻鐔兼⒒鐎靛壊妲紒鐐劤椤兘寮婚敐澶婄疀妞ゆ帊鐒﹂崕鎾绘⒑閹肩偛濡奸柛濠傛健瀵鏁愭径濠庢綂闂佺粯锚閸熷潡寮抽崼銉︹拺缂佸顑欓崕蹇斻亜閹存繃鍤囬柛鈺冨仱楠炲鏁傞挊澶夋睏闂備礁婀辩划顖滄暜濡も偓閳绘捇顢橀悜鍡樺瘜?濠电姷鏁告慨鐑藉极閸涘﹥鍙忛柣鎴ｆ閺嬩線鏌熼梻瀵割槮缁惧墽绮换娑㈠箣濞嗗繒浠鹃梺绋款儍閸婃繈寮婚弴鐔虹鐟滃秹宕锔藉€跺┑鐘叉处閸婄敻鏌涜箛鎿冩Ц濞存粓绠栧娲川婵犲啰顦ラ梺璇茬箲瀹€绋款嚕閺屻儲鍊烽柣鎴炃氶幏娲⒑閸涘﹦鈽夐柨鏇樺劜瀵板嫰宕熼娑氬幈闁诲函鎬ラ崘褍顥氶梻?(Kafka + Redis)
+  mate-tech-msg:
+    <<: [*restart, *logging]
+    build:
+      context: ./mate-platform-backend
+      dockerfile: packages/mate-tech-msg/Dockerfile
+    image: mate-tech-msg:dev
+    container_name: mate-tech-msg
+    environment:
+      REDIS_URL: redis://redis:6379/0
+      KAFKA_BOOTSTRAP: kafka:9092
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4317}
+      OTEL_SERVICE_NAME: mate-tech-msg
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    ports:
+      - "${MATE_MSG_PORT:-8082}:8082"
+    depends_on:
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8082/healthz || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  # mate-tech-mcp: MCP 闂傚倸鍊搁崐鎼佸磹閹间礁纾归柟闂寸绾剧懓顪冪€ｎ亝鎹ｉ柣顓炴閵嗘帒顫濋敐鍛婵°倗濮烽崑娑⑺囬悽绋挎瀬闁瑰墽绮崑鎰亜閺冨倹鍤€濞存粓绠栭弻娑㈠箛闂堟稒鐏堥悗鐟版啞缁诲啴濡甸崟顖氬唨闁靛ě鈧Σ鍫ユ煙閸忓吋缍戦柨鏇樺€濋崺鐐哄箣閻愯尙鐤囬梻浣侯焾閿曘儱煤閻旇偐宓侀煫鍥ㄦ磵閸嬫捇鏁愭惔鈩冪亪闂佸搫顑勭粈渚€鍩為幋锔藉亹闁告瑥顦ˇ鈺呮⒑缂佹ɑ灏版繛鍙夘焽閹广垹鈽夐姀鐘殿吅濠电娀娼уΛ婊堝春閻愮儤鈷戦悹鍥ㄧ叀閻涙粎绱掗幓鎺撳仴闁诡垪鍋撳銈呯箰閹冲矂宕戦崨瀛樼厱闁规澘鍚€缁ㄤ粙鏌￠崱鈺佷喊婵﹥妞藉畷顐﹀礋椤撶姳绱橀梻浣告憸婵敻骞戦崶顒€鏄ラ柍褜鍓氶妵鍕箳瀹ュ牆鍘￠梺鎰佸灡濞叉﹢濡甸崟顖ｆ晣闁绘劖娼欑粣娑氱磽娓氬洤鏋涙い顓犲厴閻涱喖顫滈埀顒勫箠濠婂牊顥堟繛鎴炵懅閳?(HTTP 婵犵數濮烽弫鍛婃叏閻戣棄鏋侀柛娑橈攻閸欏繘鏌ｉ幋婵愭綗闁逞屽墮閸婂潡骞愭繝鍐彾闁冲搫顑囩粔顔锯偓瑙勬磸閸旀垵顕ｉ崼鏇炵婵犻潧鐗冮崑鎾活敇閻戝棙瀵岄梺闈涚墕閹虫劗绮绘导瀛樼厽婵°倐鍋撴俊顐ｇ箞楠炲啴鎮欓崫鍕€銈嗗姉婵磭鑺辨繝姘拺闁荤喓澧楅幆鍫熶繆椤愶綆娈曠紒鍌氱Ч瀹曟粏顦寸痪鎯с偢閺屾盯骞樺Δ鈧Λ娆擃敁濡ゅ懏鈷戦柛娑橆焵閹达箑纾块柟鎯版閻撯€愁熆閼搁潧濮堥柛瀣ㄥ妿缁辨帞鈧綆鍘界涵鍫曟煕?
+  mate-tech-mcp:
+    <<: [*restart, *logging]
+    build:
+      context: ./mate-platform-backend
+      dockerfile: packages/mate-tech-mcp/Dockerfile
+    image: mate-tech-mcp:dev
+    container_name: mate-tech-mcp
+    environment:
+      MCP_TRANSPORT: ${MCP_TRANSPORT:-http}
+      MCP_SERVER_NAME: mate-tech-mcp
+      REDIS_URL: redis://redis:6379/0
+      ONTOLOGY_URL: http://mate-tech-ont:8007
+      RAG_URL: http://mate-tech-rag:8001
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4317}
+      OTEL_SERVICE_NAME: mate-tech-mcp
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    ports:
+      - "${MATE_MCP_PORT:-8081}:8081"
+    depends_on:
+      redis:
+        condition: service_healthy
+      mate-tech-ont:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8081/healthz || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  # mate-tech-obs: 闂傚倸鍊搁崐鎼佸磹閹间礁纾归柟闂寸绾剧懓顪冪€ｎ亝鎹ｉ柣顓炴閵嗘帒顫濋敐鍛婵°倗濮烽崑娑⑺囬悽绋挎瀬闁瑰墽绮崑鎰版煕閹邦垰绱﹂柣銏㈢帛娣囧﹪鎮欓鍕ㄥ亾閺嶎厽鍋嬫繝濠傜墕绾剧粯绻涢幋娆忕仼闁搞劌鍊块弻娑樼暆閳ь剟宕戦悙鐑樺亗闁绘柨鍚嬮悡蹇涚叓閸パ屽剰闁逞屽墯閻楁绮嬪澶娢ч柛銉㈡櫇閿涙繈鎮楅獮鍨姎婵☆偅绋掗弲鍫曟偨閸涘﹦鍘搁柣蹇曞仜婢ц棄煤閺夋垟鏀介柨娑樺閸樺瓨銇勯姀锛勬噰鐎规洩缍佹俊鐑芥晜閻愵剛绋侀梻鍌氬€搁崐椋庢濮橆剦鐒介柤濮愬€愰崑鎾绘濞戞氨鍔悗瑙勬磸閸ㄤ粙鐛弽銊﹀闁告縿鍎荤槐閬嶆⒒娴ｇ儤鍤€濠⒀呮櫕閸掓帡顢涢悙鑼煣闂佸搫琚崕杈╃不閸︻厾纾兼い鏃傚帶鐢劑鏌涚€ｎ偅宕岄柟宕囧█椤㈡宕掑鍗炲笚闂傚倸鍊搁崐鎼佸磹閻戣姤鍤勯柛顐ｆ磵閳ь剨绠撳畷濂稿Ψ椤旇姤娅堥梻浣虹《閸撴繄绮欓幋鐘典笉闁圭粯甯囬埀顒佸笒椤繈鏁愰崨顒€顥氶梻浣藉Г钃辩紒璇茬墦瀵鎮㈤悡搴ｇ暰闂佸搫顦弲婵嬪箻缂佹ê鈧?(Loki push + OTel collector)
+  mate-tech-obs:
+    <<: [*restart, *logging]
+    build:
+      context: ./mate-platform-backend
+      dockerfile: packages/mate-tech-obs/Dockerfile
+    image: mate-tech-obs:dev
+    container_name: mate-tech-obs
+    environment:
+      LOKI_ENDPOINT: http://loki:3100/loki/api/v1/push
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4317}
+      OTEL_SERVICE_NAME: mate-tech-obs
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    ports:
+      - "${MATE_OBS_PORT:-8083}:8083"
+    depends_on:
+      loki:
+        condition: service_healthy
+    profiles: ["monitoring"]
+
+  # ===========================================================================
+  # 4. Java 濠电姷鏁告慨鐑藉极閸涘﹥鍙忛柣鎴ｆ閺嬩線鏌涘☉姗堟敾闁告瑥绻愰湁闁稿繐鍚嬬紞鎴︽煕閵娿儱鈧悂鍩為幋锕€纾兼繝濠傛捣閸旀悂姊洪崫鍕仴闁稿海鏁诲濠氬灳閹颁礁鎮戦柟鑲╄ˉ閳ь剙纾鎴︽⒒娴ｄ警鐒炬い鎴濇嚇椤㈡牗寰勯幇顒冩憰闂佹寧绻傞幉姗€鎮㈢亸浣圭€婚梺璇″瀻閸曢潧鏁崇紓鍌氬€烽懗鍫曞磻閹捐纾块柛鎰▕閻掍粙鏌ㄩ悢鍝勑㈤柦鍐枛閺屽秹鍩℃担鍛婃缂備礁澧庨崑銈夊箖濡ゅ懏鏅查幖瀛樼箘閺佹牠姊洪崨濠冣拹闁诡喖鍊搁～蹇撁洪鍕啇闂佺粯鍔栫粊鎾磻閹捐鍐€妞ゎ兘鍓濆浠嬪箖閵忋倖鍋傞幖娣€栭幉浼存⒒娴ｈ姤纭堕柛鐘虫尰閹便劑骞橀钘夆偓宄扳攽閻樺弶澶勯柣鎾冲暣瀵爼鎮欓弶鎴闂佸憡鏌ㄧ粔褰掑蓟閿濆棙鍎熼柕濞у懏姣囨繝?(profile: java, 闂傚倸鍊搁崐鎼佸磹閹间礁纾瑰瀣捣閻棗銆掑锝呬壕濡ょ姷鍋為悧鐘汇€侀弴姘辩Т闂佹悶鍎洪崜锕傚极瀹ュ鐓熼柟閭﹀幗缂嶆垵霉濠婂牅鎲炬慨濠呮閸栨牠寮撮悙娴嬫嫟缂傚倷绀侀鍡涘垂閸ф绠栭柛褎顨忛弫瀣煃瑜滈崜鐔奉嚕婵犳碍鍋勯柧蹇撴贡閿涙粓姊洪棃娑氱濠殿喚鏁婚幃姗€宕奸妷锔规嫽? 濠电姷鏁告慨鐑藉极閸涘﹥鍙忛柣銏犲閺佸﹪鏌″搴″箹缂佹劖顨嗘穱濠囧Χ閸涱厽娈查梺鍝勬缁秵绌辨繝鍥ч柛娑卞幗濞堝爼姊哄ú璇插箺闁荤啿鏅犲濠氭偄閸忕厧鈧粯淇婇鐐存珳缂侇喖鐖煎娲焻閻愯尪瀚板褍澧界槐鎺楁偐閾忣偄纰嶉梺浼欑秮閺€杈╃紦閻ｅ瞼鐭欓悹鍥﹀嫎閸斿秹濡甸崟顖氱睄闁搞儺鐏濋幘瀵哥闁告侗鍘捐倴缂備浇椴搁幑鍥х暦閹烘埈娼╂い鎴ｆ娴滈箖鏌ｉ幋锝呅撻柛濠傛健閺屻劑寮撮悙娴嬪亾閻㈢鐒垫い鎺戯功閻ｇ數鈧娲栭悥濂搞€佸Δ鍛劦妞ゆ帒瀚崑鍌涚節闂堟侗鍎愰柣鎾寸洴閺屾盯骞囬埡浣割瀳闂侀€炲苯澧伴柡浣筋嚙閻ｇ兘骞嬮敃鈧粻濠氭煠婵劕鈧洜绮婇敃鍌涒拺闁告捁灏欓崢娑㈡煕閻樺磭澧柟渚垮妽閹棃濡搁敂瑙勫缂備胶铏庨崢濂稿箠韫囨稒鍋熸い蹇撶墛閻撴洟鏌￠崘锝呬壕濡炪們鍔屽Λ娑氬垝?
+  # ===========================================================================
+
+  # Flowable - BPMN 闂傚倸鍊搁崐鎼佸磹瀹勬噴褰掑炊椤掑鏅悷婊冪箻閸┾偓妞ゆ帊鑳堕埢鎾绘煛閸涱垰鈻堥柕鍡曠閳诲酣骞橀崘鎻掓暏婵＄偑鍊栭幐楣冨磻閻斿吋鍋橀柕澶堝劗閺€浠嬪箳閹惰棄纾归柟鐗堟緲绾惧鏌熼崜褏甯涢柛瀣€块弻鏇㈠醇濠靛浂妫￠梺鍛婄懃缁绘垶绌辨繝鍥ㄥ€峰Λ鐗堢箓濞堫厽绻涚€涙鐭嬮柛搴＄枃閻?
+  flowable:
+    <<: [*restart, *logging]
+    image: flowable/flowable-rest:6.8.0
+    container_name: mate-flowable
+    environment:
+      spring.datasource.url: jdbc:postgresql://postgres:5432/metaplatform_wfe
+      spring.datasource.username: ${POSTGRES_USER:-meta}
+      spring.datasource.password: ${POSTGRES_PASSWORD:-meta}
+      spring.datasource.driver-class-name: org.postgresql.Driver
+      flowable.database-schema-update: "true"
+    ports:
+      - "${FLOWABLE_PORT:-8181}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    profiles: ["java"]
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+
+  # KIE Server - Drools 闂傚倸鍊搁崐鎼佸磹閹间礁纾圭€瑰嫭鍣磋ぐ鎺戠倞鐟滃繘寮抽敃鍌涚厽闁靛繈鍩勯悞鍓х磼閹邦収娈滈柡宀€鍠栭獮宥夘敊绾拌鲸姣夐梻浣侯焾椤戞垹鎹㈠┑瀣摕闁哄洨鍠撻悵鑸点亜閺嶎煈娈斿ù婊堢畺濮婅櫣绮欏▎鎯у壉闂佺懓鎲￠幃鍌炴晲閻愭祴鏀介悗锝庡亜娴滄鏌熼懖鈺勊夋俊鐙欏洤绠い鎰堕檮閻撶喖骞栧ǎ顒€鈧倕顭囬幇顓犵闁告瑥顦辨晶杈╃磼鏉堚晛浠︾紒缁樼箞瀹曞爼濡烽姀鐘卞婵炶揪绲跨涵璺何ｉ崼鐔稿弿婵°倐鍋撴俊顐ｇ懇瀹曟捇鎮介崨濞炬嫼缂傚倷鐒﹁摫閻忓浚鍙冮幃妤€鈽夐幒鎾寸彋濡炪們鍨洪敃銏犵暦缁嬭鏃€鎷呴崣澶婎伜婵犵數鍋犻幓顏嗗緤娴犲绠熼柨鐔哄Т缁犳岸鏌涢銈呮灁缂佺娀绠栭幃姗€鎮欓幓鎺嗗亾閸涘﹥鍙忛柛灞惧閸嬫挾鎲撮崟顒傦紱闂佸憡顨嗘繛濠囨偘椤曗偓瀹曞爼顢楅埀顒傜棯瑜旈幃褰掑箒閹烘垵顬嬮梺?
+  kie-server:
+    <<: [*restart, *logging]
+    image: kiegroup/kie-server:7.74
+    container_name: mate-kie-server
+    environment:
+      KIE_SERVER_PROFILE: "prod"
+      KIE_SERVER_ID: "mate-kie-server"
+      KIE_SERVER_LOCATION: "http://kie-server:8280/kie-server/services/rest/server"
+      KIE_MAVEN_REPO: "http://repository.example.com/maven2"
+      JAVA_OPTS: "-Xms512m -Xmx1g"
+    ports:
+      - "${KIE_PORT:-8280}:8180"
+    profiles: ["java"]
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+
+  # ===========================================================================
+  # 5. 闂傚倸鍊搁崐鎼佸磹閹间礁纾归柟闂寸绾剧懓顪冪€ｎ亝鎹ｉ柣顓炴閵嗘帒顫濋敐鍛婵°倗濮烽崑娑⑺囬悽绋挎瀬闁瑰墽绮崑鎰版煕閹邦垰绱﹂柣銏㈢帛娣囧﹪鎮欓鍕ㄥ亾閺嶎厽鍋嬫繝濠傜墕绾剧粯绻涢幋娆忕仼闁搞劌鍊块弻娑樼暆閳ь剟宕戦悙鐑樺亗闁绘柨鍚嬮悡蹇涚叓閸パ屽剰闁逞屽墯閻楁绮嬪澶娢ч柛銉㈡櫇閿涙繈鎮楅獮鍨姎婵☆偅绋掗弲鍫曟偨閸涘﹦鍘搁柣蹇曞仜婢ц棄煤閺夋垟鏀介柨娑樺閸樺瓨銇勯姀锛勬噰鐎规洩缍佹俊鐑芥晜閻愵剛绋侀梻鍌氬€搁崐椋庢濮橆剦鐒介柤濮愬€愰崑鎾绘濞戞氨鍔悗瑙勬磸閸ㄤ粙鐛弽銊﹀闁告縿鍎荤槐閬嶆⒒娴ｇ儤鍤€濠⒀呮櫕閸掓帡顢涢悙鑼煣闂佸搫琚崕杈╃不閸︻厾纾兼い鏃傚帶鐢劑鏌涚€ｎ偅宕岄柟宕囧█椤㈡宕掑鍗炲笚闂傚倸鍊搁崐鎼佸磹閻戣姤鍤勯柛顐ｆ磵閳ь剨绠撳畷濂稿Ψ椤旇姤娅堥梻浣虹《閸撴繄绮欓幋鐘典笉闁圭粯甯囬埀顒佸笒椤繈鏁愰崨顒€顥氶梻浣藉Г钃辩紒璇茬墦瀵鎮㈤悡搴ｇ暰闂佸搫顦弲婵嬪箻缂佹鍘?(profile: monitoring, 濠电姷鏁告慨鐑藉极閸涘﹥鍙忛柣銏犲閺佸﹪鏌″搴″箹缂佹劖顨嗘穱濠囧Χ閸涱厽娈查梺鍝勬缁秵绌辨繝鍥ч柛娑卞幗濞堝爼姊哄ú璇插箺闁荤啿鏅犲濠氭偄閸忕厧鈧粯淇婇鐐存珳缂侇喖鐖煎娲焻閻愯尪瀚板褍澧界槐鎺楁偐閾忣偄纰嶉梺浼欑秮閺€杈╃紦閻ｅ瞼鐭欓悹鍥﹀嫎閸斿秹濡甸崟顖氱睄闁搞儺鐏濋幘瀵哥闁告侗鍘捐倴缂備浇椴搁幑鍥х暦閹烘埈娼╂い鎴ｆ娴滈箖鏌ｉ幋锝呅撻柛濠傛健閺屻劑寮撮悙娴嬪亾閻㈢鐒垫い鎺戯功閻ｇ數鈧娲栭悥濂搞€佸Δ鍛劦妞ゆ帒瀚崑鍌涚節闂堟侗鍎愰柣鎾寸洴閺屾盯骞囬埡浣割瀳闂侀€炲苯澧伴柡浣筋嚙閻ｇ兘骞嬮敃鈧粻濠氭煠婵劕鈧洜绮婇敃鍌涒拺闁告捁灏欓崢娑㈡煕閻樺磭澧柟渚垮妽閹棃濡搁敂瑙勫缂備胶铏庨崢濂稿箠韫囨稒鍋熸い蹇撶墛閻撴洟鏌￠崘锝呬壕濡炪們鍔屽Λ娑氬垝?
+  # ===========================================================================
+
   loki:
+    <<: [*restart, *logging]
     image: grafana/loki:3.3.2
     container_name: mate-loki
     command: ["-config.file=/etc/loki/local-config.yaml"]
     ports:
-      - "3100:3100"
+      - "${LOKI_PORT:-3100}:3100"
     volumes:
       - lokidata:/loki
     healthcheck:
@@ -186,25 +613,214 @@ services:
       interval: 15s
       timeout: 5s
       retries: 10
+    profiles: ["monitoring"]
 
-  # P0.1.2 - 日志收集（sidecar 模式，按需启动）
   promtail:
+    <<: [*restart, *logging]
     image: grafana/promtail:3.3.2
     container_name: mate-promtail
     command: ["-config.file=/etc/promtail/config.yml"]
     volumes:
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./infra/promtail-config.yml:/etc/promtail/config.yml:ro
+    profiles: ["monitoring"]
+    # 婵? Windows/Mac Docker Desktop 濠?/var/lib/docker 濠电姷鏁告慨鐑藉极閸涘﹥鍙忛柣鎴ｆ閺嬩線鏌熼梻瀵割槮缁炬儳顭烽弻锝夊箛椤掍焦鍎撻梺鎼炲妼閸婂潡寮诲☉銏╂晝闁挎繂妫涢ˇ銉х磽娴ｅ搫小闁告濞婂璇测槈濡攱鏂€闂佸憡娲﹂崑鍕叏閵忋倖鈷戞繛鑼额嚙楠炴鏌熼幖浣虹暫闁诡垪鍋撳銈呯箰閻楀棛绮诲杈ㄥ枑婵犲﹤鐗嗙壕璺ㄢ偓骞垮劚閹潡鎮烽柇锔惧弳闂佸憡鍔︽禍鐐搭殭闂傚倷绀侀幖顐︽儗婢跺本顫曢柡鍥╁枔椤╃兘鏌ㄩ弮鍌氫壕閻庢碍宀搁弻鐔虹磼濡櫣鐟ㄥ銈庡亝瀹€绋款潖? 闂?Loki 闂傚倸鍊搁崐鎼佸磹閹间礁纾归柟闂寸绾惧湱鈧懓瀚崳纾嬨亹閹烘垹鍊炲銈嗗笒閿曪妇绮欒箛鏃傜瘈闁靛骏绲剧涵鐐亜閹存繃鍠橀柕鍡楁嚇楠炴捇骞戝Δ鈧紞濠囧箖閳轰緡鍟呮い鏃傚帶婢瑰牏绱撻崒娆掝唹闁稿鎸搁…鍧楁嚋闂堟稑顫嶉梺缁樻尰閻熲晛顕ｉ崼鏇為唶婵犻潧妫岄幐鍐⒑娴兼瑧绉ù婊冪埣瀵?(闂傚倸鍊搁崐鎼佸磹閹间礁纾归柟闂寸绾剧懓顪冪€ｎ亝鎹ｉ柣顓炴閵嗘帒顫濋敐鍛婵°倗濮烽崑娑⑺囬悽绋挎瀬闁瑰墽绮崑鎰版煕閹邦剙绾ч柣銈呭濮婄粯鎷呴崨濠傛殘闂佸湱顭堝Λ婵嬪春閳ь剚銇勯幒鎴濐仼缁炬儳顭烽弻鐔兼倷椤掆偓婢ь垱绻涚亸鏍ㄦ珚闁哄矉缍侀獮姗€骞庣粵瀣у亾濡ゅ啰纾奸柣妯垮皺缁夌儤鎱ㄦ繝鍐┿仢妤犵偞鍔栭幆鏃堝椤喚鍠橀梻鍌欑劍閹爼宕濊箛鎾愭盯宕熼娑樹患闂佺粯鍨煎Λ鍕煁閸ヮ剚鐓涢柛銉ｅ劚婵′粙鏌￠崨顐㈢伈婵﹥妞介弻鍛存倷閼艰泛顏繝鈷€鍕棆缂?stdout 闂傚倸鍊搁崐鎼佸磹閹间礁纾归柟闂寸绾惧湱鈧懓瀚崳纾嬨亹閹烘垹鍊炲銈嗗坊閸嬫挻娼诲┑瀣拺闂侇偆鍋涢懟顖涙櫠閹绢喗鐓涢悘鐐插⒔閵嗘帡鏌嶈閸撱劎绱為崱娑樼；闁告侗鍘鹃弳锔锯偓鍏夊亾闁告洦鍓涢崢鎼佹煟韫囨洖浠滃褑妫勭叅閻庢稒菧娴滄粓鏌曡箛濠傚⒉缂佲偓鐎ｎ喗鐓涘ù锝囨嚀婵秶鈧娲栧畷顒勫煝鎼粹垾鐔煎箒瀹ュ洤浠辨慨?
+
+  grafana:
+    <<: [*restart, *logging]
+    image: grafana/grafana:11.3.0
+    container_name: mate-grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: "false"
     ports:
-      - "9080:9080"
-    profiles: ["logging"]   # 默认不启动，docker compose --profile logging up
+      - "${GRAFANA_PORT:-3000}:3000"
+    volumes:
+      - grafanadata:/var/lib/grafana
+      - ./infra/grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      loki:
+        condition: service_healthy
+      prometheus:
+        condition: service_healthy
+    profiles: ["monitoring"]
+
+  prometheus:
+    <<: [*restart, *logging]
+    image: prom/prometheus:v3.0.0
+    container_name: mate-prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=15d"
+      - "--web.enable-lifecycle"
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    volumes:
+      - promdata:/prometheus
+      - ./infra/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    profiles: ["monitoring"]
+
+  otel-collector:
+    <<: [*restart, *logging]
+    image: otel/opentelemetry-collector-contrib:0.110.0
+    container_name: mate-otel-collector
+    command: ["--config=/etc/otelcol-contrib/config.yaml"]
+    environment:
+      OTEL_RESOURCE_ATTRIBUTES: "service.namespace=metaplatform"
+    ports:
+      - "4317:4317"   # OTLP gRPC
+      - "4318:4318"   # OTLP HTTP
+    volumes:
+      - ./infra/otel/otel-collector.yaml:/etc/otelcol-contrib/config.yaml:ro
+    profiles: ["monitoring"]
+
+  # ===========================================================================
+  # 6. 闂傚倸鍊搁崐鎼佸磹閹间礁纾瑰瀣捣閻棗銆掑锝呬壕濡ょ姷鍋為悧鐘汇€侀弴姘辩Т闂佹悶鍎洪崜锕傚极瀹ュ鐓熼柟閭﹀幗缂嶆垵霉濠婂牅鎲炬慨濠呮閸栨牠寮撮悙娴嬫嫟婵＄偑鍊戦崝宥夊礉濞嗘挸绠犻柟鎹愵嚙闁裤倖淇婇妶鍌氫壕缂備胶瀚忛崶銊у幈濡炪倖鍔х徊鍧椼€傞崣澶岀闁告侗鍘藉婵堢磼鏉堛劌娴柛鈹惧亾濡炪倖甯婇懗鍓佸姬閳ь剟姊虹粙鑳潶闁稿﹥顨婂畷顒勬偨閸涘ň鎷洪梺绋跨箰閸氬宕愰幇顓犵濞达絽鍟跨€氼參宕ｈ箛娑欑厱闁靛鍨哄▍鍥╃棯閹佸仮闁?+ 闂傚倸鍊搁崐鎼佸磹閹间礁纾归柟闂寸绾惧綊鏌熼梻瀵割槮缁炬儳缍婇弻锝夊箣閿濆憛鎾绘煕婵犲倹鍋ラ柡灞诲姂瀵潙螖閳ь剚绂嶉幆褜娓婚柕鍫濋楠炴牗绻涚仦鍌氣偓婵嬪春閵忊剝鍎熼柕濞垮劤椤旀帡姊洪崫鍕垫Ч闁搞劌鍟垮嵄闁规壆澧楅埛鎺戙€掑锝呬壕濠电偘鍖犻崶锝傚亾閿曞倸閱囬柕澶堝劤閿涚喎鈹戦悙鍙夆枙濞存粍绻堝畷?(profile: edge, 闂傚倸鍊搁崐鎼佸磹閹间礁纾归柟闂寸绾惧綊鏌ｉ幋锝呅撻柛濠傛健閺屻劑寮撮悙娴嬪亾瑜版帒纾块柟瀵稿У閸犳劙鏌ｅΔ鈧悧鍡欑箔閹烘鐓曢柕濞垮劚閳ь剚鎮傞崺鐐哄箣閿旇棄浜归柣搴℃贡婵挳藟濠靛牏纾藉ù锝囨嚀婵牊銇勯妸銉уⅵ闁糕斁鍋撳銈嗗坊閸嬫挾绱掗悩鑼х€规洘娲熷畷锟犳倷瀹ュ棛娲存い銏★耿閹瑩鍩￠崒婊€绨存繝鐢靛仜椤曨厽鎱ㄩ幘顕呮晞闁糕剝绋掗崑鍌炴煛閸ャ儱鐏柣鎾崇箰椤潡鎳滃妤婁邯瀵鈻庨幋鐘碉紲闂侀潧顭堥崐妤呮儗濞嗘挻鐓涚€光偓鐎ｎ剛袦婵犵鈧磭鍩ｇ€规洘甯掗～婵嬵敃閵忊晜顥￠梻鍌氬€搁崐鎼佸磹閹间礁纾瑰瀣捣閻棗銆掑锝呬壕濡ょ姷鍋涢ˇ鐢稿春閸曨垰绀冩い蹇撴閸ゅ本绻濆閿嬫緲閳ь剚娲熼獮濠冩償閵娿儳锛滈梺闈浥堥弲婊堟偂閺囥垺鐓欓柣鎰靛墻濞堟棃鏌涢悩瀹犲閾? 濠电姷鏁告慨鐑藉极閸涘﹥鍙忛柣銏犲閺佸﹪鏌″搴″箹缂佹劖顨嗘穱濠囧Χ閸涱厽娈查梺鍝勬缁秵绌辨繝鍥ч柛娑卞幗濞堝爼姊哄ú璇插箺闁荤啿鏅犲濠氭偄閸忕厧鈧粯淇婇鐐存珳缂侇喖鐖煎娲焻閻愯尪瀚板褍澧界槐鎺楁偐閾忣偄纰嶉梺浼欑秮閺€杈╃紦閻ｅ瞼鐭欓悹鍥﹀嫎閸斿秹濡甸崟顖氱睄闁搞儺鐏濋幘瀵哥闁告侗鍘捐倴缂備浇椴搁幑鍥х暦閹烘埈娼╂い鎴ｆ娴滈箖鏌ｉ幋锝呅撻柛濠傛健閺屻劑寮撮悙娴嬪亾閻㈢鐒垫い鎺戯功閻ｇ數鈧娲栭悥濂搞€佸Δ鍛劦妞ゆ帒瀚崑鍌涚節闂堟侗鍎愰柣鎾寸洴閺屾盯骞囬埡浣割瀳闂侀€炲苯澧伴柡浣筋嚙閻ｇ兘骞嬮敃鈧粻濠氭煠婵劕鈧洜绮婇敃鍌涒拺闁告捁灏欓崢娑㈡煕閻樺磭澧柟渚垮妽閹棃濡搁敂瑙勫缂備胶铏庨崢濂稿箠韫囨稒鍋熸い蹇撶墛閻撴洟鏌￠崘锝呬壕濡炪們鍔屽Λ娑氬垝?
+  # ===========================================================================
+
+  traefik:
+    <<: *restart
+    image: traefik:v3.1
+    container_name: mate-traefik
+    command:
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--providers.docker.network=metaplatform_default"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
+      - "--api.dashboard=true"
+      - "--log.level=INFO"
+      - "--accesslog=true"
+    ports:
+      - "${TRAEFIK_HTTP_PORT:-80}:80"
+      - "${TRAEFIK_HTTPS_PORT:-443}:443"
+      - "${TRAEFIK_DASHBOARD_PORT:-8080}:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./infra/traefik/certs:/etc/traefik/certs:ro
+      - ./infra/traefik/dynamic.yml:/etc/traefik/dynamic.yml:ro
+    profiles: ["edge"]
+    healthcheck:
+      test: ["CMD", "traefik", "healthcheck"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  keycloak:
+    <<: [*restart, *logging]
+    image: quay.io/keycloak/keycloak:25.0
+    container_name: mate-keycloak
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+      KC_DB: dev-mem   # dev 闂傚倸鍊搁崐鎼佸磹閹间礁纾归柟闂寸绾惧綊鏌ｉ幋锝呅撻柛濠傛健閺屻劑寮村Δ鈧禍鎯ь渻閵堝簼绨婚柛鐔告綑閻ｇ柉銇愰幒婵囨櫔闂佸憡渚楅崹鐗堟叏濞差亝鈷掑ù锝勮濞兼帡鏌涢弴鐐典粵闁伙絽澧庣槐鎾存媴閹绘帊澹曞┑鐘灱濞夋稒寰勯崶顒€纾婚柟鎹愵嚙缁€鍌氼熆鐠虹尨姊楀瑙勬礋濮婄粯鎷呴崨濠傛殘濠电偠顕滅粻鎾崇暦閹寸偛绶為柟閭﹀墯濡差剟姊虹紒妯哄闁稿簺鍊濋幃锟犳偄閻撳海顔愰柡澶婄墕婢х晫绮欐繝姘厸闁糕€崇箲濞呭洭鏌ｉ妷顔婚偗妞ゃ垺锕㈤幃娆撴濞戞艾骞楅梺?DB, 闂傚倸鍊搁崐鎼佸磹閹间礁纾归柟闂寸绾惧綊鏌ｉ幋锝呅撻柛濠傛健閺屻劑寮撮悙娴嬪亾瑜版帒纾块柟瀵稿У閸犳劙鏌ｅΔ鈧悧鍡欑箔閹烘鐓曢柕濞垮劚閳ь剚鎮傞崺鐐哄箣閿旇棄浜归柣搴℃贡婵挳藟濠靛牏纾藉ù锝囨嚀婵牊銇勯妸銉уⅵ闁糕斁鍋撳銈嗗坊閸嬫挾绱掗悩鑼х€规洘娲熷畷锟犳倷瀹ュ棛娲存い銏★耿閹瑩鍩￠崒婊€绨存繝鐢靛仜椤曨厽鎱ㄩ幘顕呮晞闁糕剝绋掗崑鍌炴煛閸ャ儱鐏柣鎾崇箰椤潡鎳滃妤婁邯瀵鈽夊鍡欏數閻熸粍绮撳畷鏉款潩鏉堫煈娼?postgres
+      KC_HEALTH_ENABLED: "true"
+    ports:
+      - "${KEYCLOAK_PORT:-8180}:8080"
+    volumes:
+      - ./infra/keycloak/realm-mate.json:/opt/keycloak/data/import/realm-mate.json:ro
+
+  # ===========================================================================
+  # 7. 闂傚倸鍊搁崐鎼佸磹閹间礁纾归柟闂寸绾剧懓顪冪€ｎ亝鎹ｉ柣顓炴閵嗘帒顫濋敐鍛婵°倗濮烽崑娑⑺囬悽绋挎瀬闁瑰墽绮崑鎰亜閺冨倹鍤€濞存粓绠栭弻娑㈠箛闂堟稒鐏堥梻浣稿船濞差參寮婚敐澶婄睄闁稿被鍊楅崝鎼佹倵濞堝灝鏋涙繛纭风節楠炲啫螖閸愨晛鏋傞梺鍛婃处閸撴盯藝閵夈儮鏀介柣鎰皺濠€鎾煕閺傛寧鎹ｉ柛鎺撳浮瀹曞ジ鎮㈤搹鍦闂備焦鎮堕崕顖炲礉鎼淬劌鍌ㄩ柛妤冨亹閺€浠嬫煟閹邦厽缍戦柣蹇嬪劤閳ь剝顫夊ú锕傚礈閻旂厧绠栨慨妞诲亾闁轰焦鍔栧鍕偓锝庡墮楠炴淇婇悙顏勨偓鏍箰妤ｅ啫绐楅幖娣妼娴肩姵绻涘顔荤凹闁绘挻绋撻埀顒€鍘滈崑鎾绘倵閿濆骸澧扮悮锔戒繆閵堝洤啸闁稿鐩、鏍ㄥ緞閹邦剛鐣哄┑鐐叉閹告悂鐛姀鈥茬箚妞ゆ牗绻冮鐘裁归悩鍝勪汗缂佽鲸鎸荤粭鐔煎炊瑜庨悘鏇烆渻閵堝棙鑲犻柛銉戝懎寮ㄥ┑鐘灱閸╂牠宕濋弴顫稏闁告稑鐡ㄩ悡銉︾箾閹寸伝顏堫敂閳哄偆娈介柣鎰皺婢э附鎱ㄦ繝鍕笡闁瑰嘲鎳樺畷銊︾節閸愩劌澹嶉梻鍌欒兌椤牓鏁冮敐鍥у灊婵炲棙鍔掔换鍡涙煙缂併垹鏋涢柣鎺戠仛閵囧嫰骞掗幋婵愪痪闂佺粯鎸诲ú鐔煎箖濡ゅ懏鏅查幖绮光偓鑼嚬闂佽绻愮换鎺楀极閸濄儲顫曢柟鐑橆殢閺佸﹪鏌ｉ幇闈涘婵絽鐗撻幃妤冩喆閸曨剛顦梺绋跨箲閿曘垽濡存担鍓叉建闁逞屽墴楠炲啫顭ㄩ崼婵嗚€垮┑?(闂傚倸鍊搁崐鎼佸磹閹间礁纾归柟闂寸绾剧懓顪冪€ｎ亝鎹ｉ柣顓炴閵嗘帒顫濋敐鍛婵°倗濮烽崑鐐烘偋閻樻眹鈧線寮撮姀鈩冩珕闂佽姤锚椤︻喚绱旈弴鐔虹瘈闁汇垽娼у瓭闂佹寧娲忛崐妤呭焵椤掍礁鍤柛锝忕秮婵℃挳宕ㄩ弶鎴犵厬婵犮垼娉涢惉濂告儊閸喓绡€闁汇垽娼у瓭闂佺锕︾划顖炲疾鐠鸿　妲堥柕蹇ョ磿閸橀亶鏌ｆ惔顖滃埌闁告埃鍋撻梻渚囧弾閸ㄥ爼寮婚敍鍕勃闁告挆鍕灡闁诲孩顔栭崰妤呭箰閾忣偂绻嗛柟闂寸鍞悷婊冪焸閹姤绻濆顓涙嫽? 闂?services/api-gateway/, services/auth-service/)
+  # ===========================================================================
+  # 7. API 缂傚倸鍊搁崐鎼佸磹閹间礁纾归柟闂寸绾惧綊鏌熼梻瀵割槮闁汇値鍠楅妵鍕冀椤愵澀绮堕梺鎼炲妼閸婂潡寮婚敐澶婎潊闁靛繆鏅濋崝鎼佹⒑?+ 闂傚倸鍊搁崐鎼佸磹閹间礁纾归柣鎴ｅГ閸婂潡鏌ㄩ弴妤€浜惧銈庡幖濞层倝鍩㈡惔銊ョ闁哄鍨冲Σ鎰版⒒娓氣偓濞佳団€﹂崼銉ョ？婵炲樊浜濋崐鍨归悩宸剱闁绘挻娲橀妵鍕箛椤斿す銏ゆ煕閺冣偓瀹€鎼佸箖濡も偓椤繈顢楁径瀣撱劑姊洪柅鐐茶嫰婢ь喚绱掗悩鑼х€规洘娲熼弻鍡楊吋閸涱垳鏋冮梺鐟板悑閹矂鎮℃径宀€绀?(濠电姷鏁告慨鐢割敊閺嶎厼绐楁俊銈呭暞閺嗘粍淇婇妶鍛殶闁活厽鐟╅弻鐔兼倻濡晲绮堕梺閫炲苯澧剧紒鐘虫尭閻ｉ攱绺界粙璇俱劍銇勯弮鍥撴繛鍛Т閳规垿鎮╅崹顐ｆ瘎婵犳鍠氶弫濠氬箠濠靛绀堢憸搴ㄥ窗閸℃稒鐓ラ柡鍌涱儥濞肩喎霉濠婂嫮鐭掗柡灞糕偓鎰佸悑闁告劑鍔岄～鍛節閵忥綆娼愭い顓炴喘楠?
+  # ===========================================================================
+
+  # mate-api-gateway: L7 闂傚倸鍊搁崐宄懊归崶褏鏆﹂柛顭戝亝閸欏繒鈧娲栧ú锔藉垔娴煎瓨鐓ラ柡鍥╁仜閳ь剚鎮傚畷褰掑磼閻愬鍘甸梺璇″灣婢ф藟婢舵劖鐓?+ 闂傚倸鍊搁崐鎼佸磹瀹勬噴褰掑炊閵娧呭骄闂佸壊鍋嗛崰鍡樼閸儲鐓欓梻鍌氼嚟閸斿秹鏌涢妶鍛板閾绘牠鏌ㄥ┑鍡樺櫣闁哄棙鐟х槐?+ Redis 闂傚倸鍊搁崐鎼佸磹閹间礁纾归柟闂寸绾惧綊鏌涘┑鍕姉闁稿鎸搁～婵嬫偂鎼达紕鐫勯柣搴ゎ潐濞叉鎹㈤崼婵愬殨濞寸姴顑愰弫鍐煏閸繃宸濋柛?
+  mate-api-gateway:
+    <<: [*restart, *logging]
+    build:
+      context: ./mate-platform-backend
+      dockerfile: services/api-gateway/Dockerfile
+    image: mate-api-gateway:dev
+    container_name: mate-api-gateway
+    environment:
+      REDIS_URL: redis://redis:6379/0
+      RATE_LIMIT_PER_MIN: ${API_GW_RATE_LIMIT:-600}
+      UPSTREAM_TIMEOUT_SEC: ${API_GW_TIMEOUT:-60}
+      RAG_URL: http://mate-tech-rag:8001
+      AGENT_URL: http://mate-tech-agent:8002
+      APP_KB_URL: http://mate-app-kb:8003
+      LLMGW_URL: http://mate-tech-llmgw:8008
+      ONT_URL: http://mate-tech-ont:8007
+      MCP_URL: http://mate-tech-mcp:8081
+      IAM_URL: http://mate-auth-service:8101
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4317}
+      OTEL_SERVICE_NAME: mate-api-gateway
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    ports:
+      - "${API_GW_PORT:-8100}:8100"
+    depends_on:
+      redis:
+        condition: service_healthy
+      mate-tech-rag:
+        condition: service_healthy
+      mate-tech-agent:
+        condition: service_healthy
+      mate-tech-llmgw:
+        condition: service_healthy
+      mate-auth-service:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8100/healthz || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  # mate-auth-service: JWT 闂傚倸鍊搁崐鎼佸磹妞嬪海鐭嗗〒姘ｅ亾妤犵偞鐗犻、鏇㈠Χ閸モ晝鍘梻浣告啞濞诧箓宕㈤挊澶屾殾闁告瑥顦辩弧鈧梻鍌氱墛娓氭宕曢幇鐗堢厱?+ 缂傚倸鍊搁崐鎼佸磹閹间礁纾瑰瀣捣閻棗銆掑锝呬壕闁芥ɑ绻堝娲敆閳ь剛绮旂€靛摜鐜绘俊銈呮噺閻撴瑩鏌ｅΔ鈧悧濠勬閺屻儲鐓涢柛鏇楁櫅閸旀粎绱掔紒妯兼创妤犵偛顑夐幃娆忊枔閹稿孩顔愰梻浣筋嚙鐎涒晝鍠婂鍛殕闁归棿绀侀拑鐔哥箾閹存瑥鐏╅柣鎺撴そ閺屾盯骞囬闂村闂佷紮绲介悥鐓庮潖?(濠电姷鏁告慨鐑藉极閹间礁纾婚柣鎰惈缁犱即鏌ゆ慨鎰偓鏇㈠几閸懇鍋撻獮鍨姎婵炶绠戦悾鐑藉蓟閵夛妇鍘遍梺鏂ユ櫅閸熶即骞婇崨瀛樼厽?Keycloak, 闂?edge profile)
+  mate-auth-service:
+    <<: [*restart, *logging]
+    build:
+      context: ./mate-platform-backend
+      dockerfile: services/auth-service/Dockerfile
+    image: mate-auth-service:dev
+    container_name: mate-auth-service
+    environment:
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: ${KEYCLOAK_REALM:-metaplatform}
+      KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID:-metaplatform-backend}
+      KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET:?set this in .env}
+      REDIS_URL: redis://redis:6379/0
+      JWKS_REFRESH_SEC: ${JWKS_REFRESH_SEC:-300}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4317}
+      OTEL_SERVICE_NAME: mate-auth-service
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    ports:
+      - "${AUTH_SVC_PORT:-8101}:8101"
+    depends_on:
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8101/healthz || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+networks:
+  default:
+    name: metaplatform_default
 
 volumes:
   pgdata:
   redisdata:
-  nacosdata:
   miniodata:
   milvusdata:
+  neo4jdata:
+  neo4jlogs:
   kafkadata:
   rabbitmqdata:
+  nacosdata:
+  ragflowdata:
+  lightragdata:
   lokidata:
+  promdata:
+  grafanadata:

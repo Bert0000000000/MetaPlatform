@@ -1,0 +1,32 @@
+{
+    "include": [
+        "packages",
+        "services",
+        "rules"
+    ],
+    "exclude": [
+        "**/node_modules",
+        "**/__pycache__",
+        "**/.venv",
+        "**/dist",
+        "**/build"
+    ],
+    "pythonVersion": "3.12",
+    "typeCheckingMode": "strict",
+    "useLibraryCodeForTypes": true,
+    "reportMissingTypeStubs": false,
+    "reportUnknownMemberType": false,
+    "reportUnknownVariableType": false,
+    "reportUnknownArgumentType": false,
+    "reportUnknownLambdaType": false,
+    "reportUnknownParameterType": false,
+    "reportMissingTypeArgument": false,
+    "reportInvalidTypeForm": false,
+    "reportGeneralTypeIssues": "error",
+    "strictListInference": true,
+    "strictDictionaryInference": true,
+    "strictSetInference": true,
+    "strictParameterNoneValue": true,
+    "enableTypeIgnoreComments": true,
+    "reportUnnecessaryTypeIgnoreComment": "warning"
+}

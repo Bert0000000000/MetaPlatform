@@ -1,0 +1,36 @@
+# Ruff 配置（v3.0 Python 后端）
+target-version = "py312"
+line-length = 100
+extend-exclude = [".venv", "node_modules", "dist", "build"]
+
+[lint]
+select = [
+    "E", "W", "F", "I", "B", "C4", "UP", "N", "SIM", "PTH",
+    "ERA", "PL", "RUF", "ASYNC", "S", "TCH",
+]
+ignore = [
+    "E501",
+    "PLR0913",
+    "PLR2004",
+    "S101",
+    "TC001", "TC002", "TC003",
+    # 允许中文括号（项目文案以中文为主）
+    "RUF002", "RUF003",
+]
+
+[lint.per-file-ignores]
+"tests/**/*.py" = ["S101", "PLR2004", "ARG", "FBT"]
+"**/clients/*.py" = ["PLR0913"]
+"scripts/**/*.py" = ["T201", "S"]
+
+[lint.isort]
+known-first-party = [
+    "mate_common", "mate_tech_rag", "mate_tech_agent", "mate_tech_llmgw",
+    "mate_tech_msg", "mate_tech_obs", "mate_tech_ont", "mate_tech_mcp",
+    "mate_app_kb",
+]
+
+[format]
+quote-style = "double"
+indent-style = "space"
+docstring-code-format = true

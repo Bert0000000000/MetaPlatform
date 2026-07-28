@@ -124,3 +124,18 @@ zoom-shots/
 # Local Maven classpath snapshots (machine-specific absolute paths)
 **/classpath.txt
 
+.venv/
+.wheels/
+build-logs/
+*.bat
+.wheels-*
+.uv-cache/
+.coverage
+.coverage.*
+htmlcov/
+.DS_Store
+Thumbs.db
+# Trae AI agent caches
+.traae/
+# Backup
+*.orig

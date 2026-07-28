@@ -1,0 +1,32 @@
+# Traefik dynamic config (TLS certs, middlewares, etc.)
+http:
+  middlewares:
+    secure-headers:
+      headers:
+        frameDeny: true
+        sslRedirect: true
+        browserXssFilter: true
+        contentTypeNosniff: true
+        forceSTSHeader: true
+        stsIncludeSubdomains: true
+        stsPreload: true
+        stsSeconds: 31536000
+    rate-limit:
+      rateLimit:
+        average: 100
+        burst: 200
+    auth-keycloak:
+      forwardAuth:
+        address: http://keycloak:8080/realms/metaplatform/protocol/openid-connect/userinfo
+        trustForwardHeader: true
+
+tls:
+  stores:
+    default:
+      defaultCertificate:
+        certFile: /etc/traefik/certs/local.crt
+        keyFile: /etc/traefik/certs/local.key
+
+  certificates:
+    - certFile: /etc/traefik/certs/local.crt
+      keyFile: /etc/traefik/certs/local.key

@@ -1,0 +1,8 @@
+﻿[
+  {
+    "id": 1,
+    "title": "HTTP Latency p95",
+    "type": "graph",
+    "targets": [{"expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m]))"}]
+  }
+]
