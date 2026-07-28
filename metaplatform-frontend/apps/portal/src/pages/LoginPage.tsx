@@ -9,7 +9,7 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const { login } = useAuth();
   const [username, setUsername] = useState('admin');
-  const [password, setPassword] = useState('Admin@12345');
+  const [password, setPassword] = useState('admin123');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [ssoProviders, setSsoProviders] = useState<SsoProvider[]>([]);
@@ -338,7 +338,7 @@ export default function LoginPage() {
           </div>
 
           <p style={{ fontSize: 12, color: 'var(--muted-foreground)', textAlign: 'center', marginTop: 20 }}>
-            默认账号：admin / Admin@12345（租户：tenant-default）
+            默认账号：admin / admin123（租户：tenant-default）
           </p>
           </div>
         </div>

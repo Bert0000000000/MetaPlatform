@@ -11,7 +11,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from .api import configs_router, logs_router, orgs_router, permissions_router, users_router
+from .api import (auth_router, configs_router, logs_router, orgs_router, permissions_router, users_router)
 from .db import AsyncSessionMaker, db_health, init_db
 from .seed import seed
 
@@ -53,20 +53,19 @@ app.add_middleware(
 )
 
 
-@app.exception_handler(Exception)
-async def unhandled_exception_handler(request: Request, exc: Exception):
-    logger.error(
-        "iam.unhandled_exception",
-        path=request.url.path,
-        method=request.method,
-        error_type=type(exc).__name__,
-        error=str(exc),
-        traceback=traceback.format_exc(),
-    )
-    return JSONResponse(
-        status_code=500,
-        content={"code": "E500_INTERNAL", "message": f"Internal error: {type(exc).__name__}: {exc}"},
-    )
+from starlette.exceptions import HTTPException as StarletteHTTPException
+from fastapi.exceptions import RequestValidationError
+
+
+@app.exception_handler(StarletteHTTPException)
+async def http_exception_handler(request: Request, exc: StarletteHTTPException):
+    """Pass-through for HTTPException so 401/403/404 etc. return correctly under uvicorn."""
+    return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    return JSONResponse(status_code=422, content={"detail": exc.errors()})
 
 
 @app.get("/healthz")
@@ -79,6 +78,7 @@ async def readyz() -> dict[str, Any]:
     return {"status": "ok", "version": app.version, "database": await db_health()}
 
 
+app.include_router(auth_router)
 app.include_router(users_router)
 app.include_router(permissions_router)
 app.include_router(orgs_router)
