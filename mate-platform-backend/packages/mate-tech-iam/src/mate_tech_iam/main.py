@@ -86,6 +86,31 @@ app.include_router(logs_router)
 app.include_router(configs_router)
 
 
+# Portal compatibility shim: portal admin pages call /api/v1/iam/users, /api/v1/iam/orgs, etc.
+# (matching the old auth-service prefix). mate-tech-iam registers these at /api/v1/admin/*.
+# This middleware rewrites /api/v1/iam/<rest> -> /api/v1/admin/<rest> for non-auth paths.
+# Auth endpoints (e.g. /api/v1/iam/auth/login) are handled by auth_router directly.
+import re as _re
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request as _StRequest
+from starlette.types import ASGIApp as _ASGIApp
+
+class _PortalIamAliasMiddleware(BaseHTTPMiddleware):
+    def __init__(self, app: _ASGIApp):
+        super().__init__(app)
+        # Only rewrite admin-style paths, not auth/sso-providers
+        self._pattern = _re.compile(r"^/api/v1/iam/(admin|users|orgs|permissions|logs|configs)(/.*)?$")
+
+    async def dispatch(self, request: _StRequest, call_next):
+        m = self._pattern.match(request.url.path)
+        if m:
+            request.scope["path"] = "/api/v1/admin/" + m.group(1) + (m.group(2) or "")
+            request.scope["raw_path"] = request.scope["path"].encode("utf-8")
+        return await call_next(request)
+
+app.add_middleware(_PortalIamAliasMiddleware)
+
+
 if __name__ == "__main__":
     import uvicorn
 
