@@ -48,8 +48,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl && \
 COPY --from=builder /app /app
 COPY packages/mate-tech-obs/src/mate_tech_obs /app/src/mate_tech_obs
 
-RUN useradd --create-home --shell /bin/bash appuser && \
-    chown -R appuser:appuser /app
+RUN useradd --create-home --shell /bin/bash appuser || true
+# Skip chown -R /app: too slow
 USER appuser
 WORKDIR /app
 

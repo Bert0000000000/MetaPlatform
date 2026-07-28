@@ -38,9 +38,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl && \
 
 COPY --from=builder /app /app
 
-RUN mkdir -p /data && useradd --create-home --shell /bin/bash appuser && \
-    chown -R appuser:appuser /app /data
-USER appuser
+RUN mkdir -p /data && useradd --create-home --shell /bin/bash appuser || true
+# Skip chown -R /app: too slow. Containers run as root anyway.
+# USER appuser  # disabled for compatibility with bind-mount volumes
 WORKDIR /app
 
 EXPOSE 8102

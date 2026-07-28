@@ -21,11 +21,14 @@ from .tools.rate_limit import RateLimitConfig, ToolRateLimiter
 
 logger = structlog.get_logger(__name__)
 
-# 闂佺绻堥崝宀勬儑?MCP server 闁诲骸婀遍崑妯兼?mcp_server: MCPServer = create_server()
+# 闂佺绻堥崝宀勬儑?MCP server 闁诲骸婀遍崑妯兼?
+mcp_server: MCPServer = create_server()
 
-# 婵帗绋掗…鍫ヮ敇鐠囨祴鏋栭柕濞垮劚閺傗偓 kb_search 閻庤鎮堕崕閬嶅矗閸ф鏅柛锔惧竸-5.3.2.1闂?mcp_server.register_tool(build_kb_search_tool())
+# 婵帗绋掗…鍫ヮ敇鐠囨祴鏋栭柕濞垮劚閺傗偓 kb_search 閻庤鎮堕崕閬嶅矗閸ф鏅柛锔惧竸-5.3.2.1闂?
+mcp_server.register_tool(build_kb_search_tool())
 
-# ontology 闁荤姍鍐仾缂?_ontology: OntologyResource = build_ontology_resource()
+# ontology 闁荤姍鍐仾缂?
+_ontology: OntologyResource = build_ontology_resource()
 
 
 def _register_default_resources() -> None:
@@ -35,11 +38,12 @@ def _register_default_resources() -> None:
 
 _register_default_resources()
 
-# per-tenant per-tool 闂傚倸瀚崝鏍矈閿曞倸闂?_rate_limiter = ToolRateLimiter(config=RateLimitConfig(limit=50, window_sec=60))
+# per-tenant per-tool 闂傚倸瀚崝鏍矈閿曞倸闂?
+_rate_limiter = ToolRateLimiter(config=RateLimitConfig(limit=50, window_sec=60))
 
-# HTTP 濠碘剝銇滈崕鑼暜鐎靛憡宕夋い鏍ㄧ矋閺嗙娀鏌ㄥ☉妯荤astAPI 婵＄偛顑呯€涒晠鎮ч幖浣规櫖?http_bridge = APIRouter(prefix="/api/v1/mcp", tags=["mcp"])
-
+# HTTP 濠碘剝銇滈崕鑼暜鐎靛憡宕夋い鏍ㄧ矋閺嗙娀鏌ㄥ☉妯荤astAPI 婵＄偛顑呯€涒晠鎮ч幖浣规櫖?
 http_bridge = APIRouter(prefix="/api/v1/mcp", tags=["mcp"])
+
 
 app = FastAPI(
     title="mate-tech-mcp",

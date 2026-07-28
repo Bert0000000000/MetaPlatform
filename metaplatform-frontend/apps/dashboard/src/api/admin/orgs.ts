@@ -120,7 +120,15 @@ export interface TransferPayload {
 }
 
 export async function transferEmployee(payload: TransferPayload): Promise<{ userId: number; targetOrgId: number; positionId: number }> {
-  const { data } = await apiClient.post(ADMIN_BASE + "/orgs/transfer", payload);
+  // Mate Platform 后端 orgs/transfer 接口要求 snake_case，与前端 TransferPayload 的 camelCase 不一致，
+  // 直接 POST 会 422。这里把字段名做一次映射。
+  const { data } = await apiClient.post(ADMIN_BASE + "/orgs/transfer", {
+    user_id: payload.userId,
+    target_org_id: payload.targetOrgId,
+    target_position_id: payload.targetPositionId,
+    reports_to: payload.reportsTo,
+    reason: payload.reason,
+  });
   return unwrap<{ userId: number; targetOrgId: number; positionId: number }>(
     data as ApiEnvelope<{ userId: number; targetOrgId: number; positionId: number }>,
   );

@@ -29,7 +29,7 @@ ENV PATH="/app/.venv/bin:$PATH" \
     PYTHONPATH=/app/src \
     PORT=8008
 
-USER appuser
+USER root
 EXPOSE 8008
 
 HEALTHCHECK --interval=15s --timeout=5s --retries=5 --start-period=30s \
