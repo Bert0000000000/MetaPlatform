@@ -50,215 +50,49 @@
 
 ### 服务全景（30+ 服务）
 
-<table>
-  <thead>
-    <tr>
-      <th style="width:18%">层</th>
-      <th style="width:30%">服务</th>
-      <th style="width:10%">语言</th>
-      <th style="width:28%">关键镜像/版本</th>
-      <th style="width:14%">端口 / 职责</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td rowspan="2"><strong>网关</strong></td>
-      <td>Traefik</td>
-      <td>Go</td>
-      <td><code>traefik:v3.x</code></td>
-      <td>80 / 443 · 路由、TLS、限流</td>
-    </tr>
-    <tr>
-      <td>AuthService</td>
-      <td>Python</td>
-      <td><code>python:3.12</code></td>
-      <td>8000 · JWT 校验、租户识别</td>
-    </tr>
-    <tr>
-      <td rowspan="1"><strong>Python 主后端</strong></td>
-      <td>
-        mate-tech-rag / agent / llmgw / ont / msg / obs / mcp /<br>
-        <strong>data</strong>，mate-app-kb
-      </td>
-      <td>Python</td>
-      <td><code>python:3.12</code></td>
-      <td>8080 · 业务域（v3.1 新增 mate-tech-data）</td>
-    </tr>
-    <tr>
-      <td rowspan="3"><strong>外部引擎（Java 产品）</strong></td>
-      <td>Keycloak</td>
-      <td>Java</td>
-      <td><code>quay.io/keycloak/keycloak:25.0</code></td>
-      <td>8080 · IAM / SSO / OIDC</td>
-    </tr>
-    <tr>
-      <td>Flowable engine / task / rest</td>
-      <td>Java</td>
-      <td><code>flowable/flowable-*:8.0.0</code></td>
-      <td>8081–8083 · BPMN（分布式 3 服务）</td>
-    </tr>
-    <tr>
-      <td>Drools KIE Server</td>
-      <td>Java</td>
-      <td><code>jboss/kie-server:7.74</code></td>
-      <td>8180 · 规则引擎</td>
-    </tr>
-    <tr>
-      <td rowspan="2"><strong>AI 服务</strong></td>
-      <td>RAGFlow</td>
-      <td>Python</td>
-      <td><code>infiniflow/ragflow:v0.13</code></td>
-      <td>9621 · DeepDoc 文档解析</td>
-    </tr>
-    <tr>
-      <td>LightRAG</td>
-      <td>Python</td>
-      <td><code>hkuds/lightrag:latest</code></td>
-      <td>9622 · GraphRAG</td>
-    </tr>
-    <tr>
-      <td rowspan="8"><strong>基础设施</strong></td>
-      <td>PostgreSQL</td>
-      <td>C</td>
-      <td><code>postgres:16-alpine</code></td>
-      <td>5432 · 主库多 schema</td>
-    </tr>
-    <tr>
-      <td>Neo4j</td>
-      <td>Java</td>
-      <td><code>neo4j:5.x</code></td>
-      <td>7687 · 本体 / GraphRAG</td>
-    </tr>
-    <tr>
-      <td>Milvus</td>
-      <td>Go + C++</td>
-      <td><code>milvusdb/milvus:v2.5.0</code></td>
-      <td>19530 · 向量库</td>
-    </tr>
-    <tr>
-      <td>MinIO</td>
-      <td>Go</td>
-      <td><code>minio/minio:RELEASE.2024-10-13</code></td>
-      <td>9000 / 9001 · 对象存储</td>
-    </tr>
-    <tr>
-      <td>Redis</td>
-      <td>C</td>
-      <td><code>redis:7-alpine</code></td>
-      <td>6379 · 缓存 / 分布式锁</td>
-    </tr>
-    <tr>
-      <td>Kafka</td>
-      <td>Java + Scala (KRaft)</td>
-      <td><code>confluentinc/cp-kafka:7.8.0</code></td>
-      <td>9092 · 事件总线</td>
-    </tr>
-    <tr>
-      <td>RabbitMQ</td>
-      <td>Erlang</td>
-      <td><code>rabbitmq:3.13-management-alpine</code></td>
-      <td>5672 / 15672 · 任务队列</td>
-    </tr>
-    <tr>
-      <td>Nacos</td>
-      <td>Java</td>
-      <td><code>nacos/nacos-server:v2.4.3-slim</code></td>
-      <td>8848 / 9848 · 服务发现 / 配置</td>
-    </tr>
-    <tr>
-      <td rowspan="1"><strong>可观测</strong></td>
-      <td>Loki</td>
-      <td>Go</td>
-      <td><code>grafana/loki:3.3.2</code></td>
-      <td>3100 · 日志聚合</td>
-    </tr>
-    <tr>
-      <td rowspan="12"><strong>数据平台（v3.1 增量）</strong></td>
-      <td>Flink JobManager</td>
-      <td>Java + Scala</td>
-      <td><code>flink:1.19</code></td>
-      <td>8081 · 批流统一计算</td>
-    </tr>
-    <tr>
-      <td>Flink Kubernetes Operator</td>
-      <td>Java</td>
-      <td><code>flink-operator:1.10</code></td>
-      <td>— · Flink 生命周期</td>
-    </tr>
-    <tr>
-      <td>Airflow 3.x</td>
-      <td>Python</td>
-      <td><code>apache/airflow:3.0-python3.12</code></td>
-      <td>8082 · 数据 DAG、调度、补数</td>
-    </tr>
-    <tr>
-      <td>Apache Paimon</td>
-      <td>Java</td>
-      <td><code>apache/paimon:0.9</code></td>
-      <td>— · ODS/DWD 实时主键表</td>
-    </tr>
-    <tr>
-      <td>Apache Iceberg REST</td>
-      <td>Java</td>
-      <td><code>apache/iceberg-rest:1.5</code></td>
-      <td>— · DWS/ADS 共享数据产品</td>
-    </tr>
-    <tr>
-      <td>Trino</td>
-      <td>Java</td>
-      <td><code>trinodb/trino:455</code></td>
-      <td>8083 · 即席 / 联邦 SQL</td>
-    </tr>
-    <tr>
-      <td>StarRocks</td>
-      <td>C++</td>
-      <td><code>starrocks/fe-ubuntu:3.3</code></td>
-      <td>9030 / 8040 · 高并发 Serving</td>
-    </tr>
-    <tr>
-      <td>Apache Gravitino</td>
-      <td>Java</td>
-      <td><code>apache/gravitino:0.7</code></td>
-      <td>8090 · 运行时多 Catalog</td>
-    </tr>
-    <tr>
-      <td>OpenMetadata</td>
-      <td>Java</td>
-      <td><code>openmetadata/server:1.4</code></td>
-      <td>8585 · 治理目录</td>
-    </tr>
-    <tr>
-      <td>OpenLineage</td>
-      <td>Java</td>
-      <td><code>openlineage/java:0.50</code></td>
-      <td>— · 运行时血缘事件</td>
-    </tr>
-    <tr>
-      <td>Marquez</td>
-      <td>Java</td>
-      <td><code>marquezproject/marquez:0.50</code></td>
-      <td>— · 血缘元数据后端</td>
-    </tr>
-    <tr>
-      <td>Great Expectations</td>
-      <td>Python</td>
-      <td><code>great-expectations/great_expectations:0.18</code></td>
-      <td>— · 批量质量与对账</td>
-    </tr>
-    <tr>
-      <td>Apache Ranger</td>
-      <td>Java</td>
-      <td><code>apache/ranger:2.4</code></td>
-      <td>6080 · 行列权限 / 脱敏</td>
-    </tr>
-    <tr>
-      <td>OpenBao</td>
-      <td>Go</td>
-      <td><code>openbao/openbao:1.15</code></td>
-      <td>8200 · 密钥 / 动态凭证</td>
-    </tr>
-  </tbody>
-</table>
+| 层          | 服务                        | 语言           | 关键镜像/版本                                      | 端口 / 职责                   |
+| ---        | ---                       | ---          | ---                                          | ---                       |
+| 网关         | Traefik                   | Go           | `traefik:v3.x`                               | 80 / 443 · 路由、TLS、限流      |
+| 网关         | AuthService               | Python       | `python:3.12`                                | 8000 · JWT 校验、租户识别        |
+| Python 主后端 | mate-tech-rag             | Python       | `python:3.12`                                | 8080 · RAG 检索             |
+| Python 主后端 | mate-tech-agent           | Python       | `python:3.12`                                | 8080 · Agent 编排           |
+| Python 主后端 | mate-tech-llmgw           | Python       | `python:3.12`                                | 8080 · LLM 路由             |
+| Python 主后端 | mate-tech-ont             | Python       | `python:3.12`                                | 8080 · 本体引擎               |
+| Python 主后端 | mate-tech-msg             | Python       | `python:3.12`                                | 8080 · 消息中心               |
+| Python 主后端 | mate-tech-obs             | Python       | `python:3.12`                                | 8080 · 可观测                |
+| Python 主后端 | mate-tech-mcp             | Python       | `python:3.12`                                | 8080 · MCP 协议             |
+| Python 主后端 | mate-tech-data            | Python       | `python:3.12`                                | 8080 · 数据平台控制面（v3.1 新增）   |
+| Python 主后端 | mate-app-kb               | Python       | `python:3.12`                                | 8080 · 知识库业务聚合            |
+| 外部引擎       | Keycloak                  | Java         | `quay.io/keycloak/keycloak:25.0`             | 8080 · IAM / SSO / OIDC   |
+| 外部引擎       | Flowable engine           | Java         | `flowable/flowable-engine:8.0.0`             | 8081 · BPMN 引擎            |
+| 外部引擎       | Flowable task             | Java         | `flowable/flowable-task:8.0.0`               | 8082 · BPMN 任务            |
+| 外部引擎       | Flowable rest             | Java         | `flowable/flowable-rest:8.0.0`               | 8083 · BPMN 接口            |
+| 外部引擎       | Drools KIE Server         | Java         | `jboss/kie-server:7.74`                      | 8180 · 规则引擎               |
+| AI 服务      | RAGFlow                   | Python       | `infiniflow/ragflow:v0.13`                   | 9621 · DeepDoc 文档解析       |
+| AI 服务      | LightRAG                  | Python       | `hkuds/lightrag:latest`                      | 9622 · GraphRAG           |
+| 基础设施       | PostgreSQL                | C            | `postgres:16-alpine`                         | 5432 · 主库多 schema         |
+| 基础设施       | Neo4j                     | Java         | `neo4j:5.x`                                  | 7687 · 本体 / GraphRAG      |
+| 基础设施       | Milvus                    | Go + C++     | `milvusdb/milvus:v2.5.0`                     | 19530 · 向量库               |
+| 基础设施       | MinIO                     | Go           | `minio/minio:RELEASE.2024-10-13`             | 9000 / 9001 · 对象存储        |
+| 基础设施       | Redis                     | C            | `redis:7-alpine`                             | 6379 · 缓存 / 分布式锁          |
+| 基础设施       | Kafka                     | Java + Scala | `confluentinc/cp-kafka:7.8.0`                | 9092 · 事件总线（KRaft）        |
+| 基础设施       | RabbitMQ                  | Erlang       | `rabbitmq:3.13-management-alpine`            | 5672 / 15672 · 任务队列       |
+| 基础设施       | Nacos                     | Java         | `nacos/nacos-server:v2.4.3-slim`             | 8848 / 9848 · 服务发现 / 配置   |
+| 可观测        | Loki                      | Go           | `grafana/loki:3.3.2`                         | 3100 · 日志聚合               |
+| 数据平台       | Flink JobManager          | Java + Scala | `flink:1.19`                                 | 8081 · 批流统一计算             |
+| 数据平台       | Flink Kubernetes Operator | Java         | `flink-kubernetes-operator:1.10`             | — · Flink 生命周期            |
+| 数据平台       | Airflow 3.x               | Python       | `apache/airflow:3.0-python3.12`              | 8082 · 数据 DAG / 调度 / 补数   |
+| 数据平台       | Apache Paimon             | Java         | `apache/paimon:0.9`                          | — · ODS / DWD 实时主键表       |
+| 数据平台       | Apache Iceberg REST       | Java         | `apache/iceberg-rest:1.5`                    | — · DWS / ADS 共享数据产品      |
+| 数据平台       | Trino                     | Java         | `trinodb/trino:455`                          | 8083 · 即席 / 联邦 SQL        |
+| 数据平台       | StarRocks                 | C++          | `starrocks/fe-ubuntu:3.3`                    | 9030 / 8040 · 高并发 Serving |
+| 数据平台       | Apache Gravitino          | Java         | `apache/gravitino:0.7`                       | 8090 · 运行时多 Catalog       |
+| 数据平台       | OpenMetadata              | Java         | `openmetadata/server:1.4`                    | 8585 · 治理目录               |
+| 数据平台       | OpenLineage               | Java         | `openlineage/java:0.50`                      | — · 运行时血缘事件               |
+| 数据平台       | Marquez                   | Java         | `marquezproject/marquez:0.50`                | — · 血缘元数据后端               |
+| 数据平台       | Great Expectations        | Python       | `great-expectations/great_expectations:0.18` | — · 批量质量与对账               |
+| 数据平台       | Apache Ranger             | Java         | `apache/ranger:2.4`                          | 6080 · 行列权限 / 脱敏          |
+| 数据平台       | OpenBao                   | Go           | `openbao/openbao:1.15`                       | 8200 · 密钥 / 动态凭证          |
 
 
 ### 技术栈（明确）
@@ -443,4 +277,5 @@ D0–D8 合计约 35 周；与 W1–W7 同步推进，Data Squad 建议独立编
 - 不允许出现 Paimon/Iceberg 全量双写、Paimon/Iceberg 之外的湖表格式、Java 业务服务或新增独立 APP `APP-DATA`。
 - 数据平台是 v1.0 GA 硬前置，不延期到 v1.1。
 - 任何架构调整必须同时同步 `agent.md`、`CLAUDE.md`、主架构、技术栈、交付路线与设计规格。
+
 
