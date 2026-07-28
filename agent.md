@@ -48,6 +48,40 @@
 ### 核心思想
 **"语言退到实现层，服务显式化"**——Python 主后端 + Java 外部引擎（成熟产品）+ Python AI 服务 + 多语言基础设施栈。每个组件用各自领域最优语言。
 
+### 服务全景（30+ 服务）
+
+| 层                 | 服务                                                            | 语言                   | 关键镜像/版本                                      |
+| ----------------- | ------------------------------------------------------------- | -------------------- | -------------------------------------------- |
+| **网关**            | Traefik                                                       | Go                   | `traefik:v3.x`                               |
+|                   | AuthService                                                   | Python               | `python:3.12`                                |
+| **Python 主后端**    | mate-tech-{rag,agent,llmgw,ont,msg,obs,mcp,data}, mate-app-kb | Python               | `python:3.12`                                |
+| **外部引擎（Java 产品）** | Keycloak                                                      | Java                 | `quay.io/keycloak/keycloak:25.0`             |
+|                   | Flowable engine/task/rest                                     | Java                 | `flowable/flowable-*:8.0.0`（分布式 3 服务）        |
+|                   | Drools KIE Server                                             | Java                 | `jboss/kie-server:7.74`                      |
+| **AI 服务**         | RAGFlow                                                       | Python               | `infiniflow/ragflow:v0.13`                   |
+|                   | LightRAG                                                      | Python               | `hkuds/lightrag:latest`                      |
+| **基础设施**          | PostgreSQL                                                    | C                    | `postgres:16-alpine`                         |
+|                   | Neo4j                                                         | Java                 | `neo4j:5.x`                                  |
+|                   | Milvus                                                        | Go + C++             | `milvusdb/milvus:v2.5.0`                     |
+|                   | MinIO                                                         | Go                   | `minio/minio:RELEASE.2024-10-13`             |
+|                   | Redis                                                         | C                    | `redis:7-alpine`                             |
+|                   | Kafka                                                         | Java + Scala (KRaft) | `confluentinc/cp-kafka:7.8.0`                |
+|                   | RabbitMQ                                                      | Erlang               | `rabbitmq:3.13-management-alpine`            |
+|                   | Nacos                                                         | Java                 | `nacos/nacos-server:v2.4.3-slim`             |
+|                   | Loki                                                          | Go                   | `grafana/loki:3.3.2`                         |
+| **数据平台（v3.1 增量）** | Flink + Flink K8s Operator                                    | Java + Scala         | `flink:1.19`                                 |
+|                   | Airflow 3.x                                                   | Python               | `apache/airflow:3.0-python3.12`              |
+|                   | Apache Paimon                                                 | Java                 | `apache/paimon:0.9`                          |
+|                   | Apache Iceberg                                                | Java                 | `apache/iceberg-rest:1.5`                    |
+|                   | Trino                                                         | Java                 | `trinodb/trino:455`                          |
+|                   | StarRocks                                                     | C++                  | `starrocks/fe-ubuntu:3.3`                    |
+|                   | Apache Gravitino                                              | Java                 | `apache/gravitino:0.7`                       |
+|                   | OpenMetadata                                                  | Java                 | `openmetadata/server:1.4`                    |
+|                   | OpenLineage + Marquez                                         | Java                 | `openlineage/marquez:0.50`                   |
+|                   | Great Expectations                                            | Python               | `great-expectations/great_expectations:0.18` |
+|                   | Apache Ranger                                                 | Java                 | `apache/ranger:2.4`                          |
+|                   | OpenBao                                                       | Go                   | `openbao/openbao:1.15`                       |
+
 ### 技术栈（明确）
 
 #### Python 主后端
