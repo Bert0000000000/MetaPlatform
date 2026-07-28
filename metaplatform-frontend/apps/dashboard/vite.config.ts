@@ -21,7 +21,8 @@ export default defineConfig({
       '/api/v1/iam': {
         target: 'http://localhost:8102',
         changeOrigin: true,
-      },  # mate-tech-iam
+      },
+      // mate-tech-iam
       '/api/v1/admin': {
         target: 'http://localhost:8102',
         changeOrigin: true,
@@ -34,4 +35,5 @@ export default defineConfig({
     sourcemap: false,
   },
 });
+
 

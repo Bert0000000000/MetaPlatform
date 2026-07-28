@@ -1,0 +1,160 @@
+# =============================================================================
+# Dev overlay - 绑定本地源码 + 启用 uvicorn --reload + 暴露 debugpy
+# -----------------------------------------------------------------------------
+# 用法:
+#   docker compose -f docker-compose.yml -f docker-compose.mate-rag.yml up -d
+#
+# 工作原理:
+#   1. 把 host 源码 bind 到 /app/dev/<pkg> (新路径)
+#   2. PYTHONPATH=/app/dev 让 Python 优先从 host 加载 (override venv 内版本)
+#   3. uvicorn --reload-dir /app/dev/<pkg> 监听 host 修改
+#   4. 关闭 restart, 关闭 resource limits, debugpy 5678
+# =============================================================================
+
+services:
+  # ---------- 三个原有 app 服务 (rag/agent/app-kb) ----------
+  mate-tech-rag:
+    volumes:
+      - ./mate-platform-backend/packages/mate-tech-rag/src/mate_tech_rag:/app/dev/mate_tech_rag:rw
+      - ./mate-platform-backend/packages/mate-common/src/mate_common:/app/dev/mate_common:rw
+    environment:
+      PYTHONPATH: /app/dev
+    command: >
+      uvicorn mate_tech_rag.api.app:app
+        --host 0.0.0.0 --port 8001
+        --reload --reload-dir /app/dev/mate_tech_rag
+    ports:
+      - "5678:5678"
+    restart: "no"
+    deploy: { resources: { limits: {} } }
+
+  mate-tech-agent:
+    volumes:
+      - ./mate-platform-backend/packages/mate-tech-agent/src/mate_tech_agent:/app/dev/mate_tech_agent:rw
+      - ./mate-platform-backend/packages/mate-common/src/mate_common:/app/dev/mate_common:rw
+    environment:
+      PYTHONPATH: /app/dev
+    command: >
+      uvicorn mate_tech_agent.api.app:app
+        --host 0.0.0.0 --port 8002
+        --reload --reload-dir /app/dev/mate_tech_agent
+    ports:
+      - "5679:5678"
+    restart: "no"
+    deploy: { resources: { limits: {} } }
+
+  mate-app-kb:
+    volumes:
+      - ./mate-platform-backend/packages/mate-app-kb/src/mate_app_kb:/app/dev/mate_app_kb:rw
+      - ./mate-platform-backend/packages/mate-common/src/mate_common:/app/dev/mate_common:rw
+    environment:
+      PYTHONPATH: /app/dev
+    command: >
+      uvicorn mate_app_kb.api.app:app
+        --host 0.0.0.0 --port 8003
+        --reload --reload-dir /app/dev/mate_app_kb
+    ports:
+      - "5680:5678"
+    restart: "no"
+    deploy: { resources: { limits: {} } }
+
+  # ---------- 5 个 tech 服务 (新增 dev 支持) ----------
+  mate-tech-llmgw:
+    volumes:
+      - ./mate-platform-backend/packages/mate-tech-llmgw/src/mate_tech_llmgw:/app/dev/mate_tech_llmgw:rw
+    environment:
+      PYTHONPATH: /app/dev
+    command: >
+      uvicorn mate_tech_llmgw.main:app
+        --host 0.0.0.0 --port 8008
+        --reload --reload-dir /app/dev/mate_tech_llmgw
+    ports:
+      - "5681:5678"
+    restart: "no"
+    deploy: { resources: { limits: {} } }
+
+  mate-tech-ont:
+    volumes:
+      - ./mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont:/app/dev/mate_tech_ont:rw
+    environment:
+      PYTHONPATH: /app/dev
+    command: >
+      uvicorn mate_tech_ont.main:app
+        --host 0.0.0.0 --port 8007
+        --reload --reload-dir /app/dev/mate_tech_ont
+    ports:
+      - "5682:5678"
+    restart: "no"
+    deploy: { resources: { limits: {} } }
+
+  mate-tech-msg:
+    volumes:
+      - ./mate-platform-backend/packages/mate-tech-msg/src/mate_tech_msg:/app/dev/mate_tech_msg:rw
+    environment:
+      PYTHONPATH: /app/dev
+    command: >
+      uvicorn mate_tech_msg.main:app
+        --host 0.0.0.0 --port 8082
+        --reload --reload-dir /app/dev/mate_tech_msg
+    ports:
+      - "5683:5678"
+    restart: "no"
+    deploy: { resources: { limits: {} } }
+
+  mate-tech-mcp:
+    volumes:
+      - ./mate-platform-backend/packages/mate-tech-mcp/src/mate_tech_mcp:/app/dev/mate_tech_mcp:rw
+    environment:
+      PYTHONPATH: /app/dev
+    command: >
+      uvicorn mate_tech_mcp.main:app
+        --host 0.0.0.0 --port 8081
+        --reload --reload-dir /app/dev/mate_tech_mcp
+    ports:
+      - "5684:5678"
+    restart: "no"
+    deploy: { resources: { limits: {} } }
+
+  mate-tech-obs:
+    volumes:
+      - ./mate-platform-backend/packages/mate-tech-obs/src/mate_tech_obs:/app/dev/mate_tech_obs:rw
+    environment:
+      PYTHONPATH: /app/dev
+    command: >
+      uvicorn mate_tech_obs.main:app
+        --host 0.0.0.0 --port 8083
+        --reload --reload-dir /app/dev/mate_tech_obs
+    profiles: ["monitoring"]
+    ports:
+      - "5685:5678"
+    restart: "no"
+    deploy: { resources: { limits: {} } }
+  # ---------- API Gateway + Auth Service (新增 dev 支持) ----------
+  mate-api-gateway:
+    volumes:
+      - ./services/api-gateway/src/mate_api_gateway:/app/dev/mate_api_gateway:rw
+    environment:
+      PYTHONPATH: /app/dev
+    command: >
+      uvicorn mate_api_gateway.main:app
+        --host 0.0.0.0 --port 8100
+        --reload --reload-dir /app/dev/mate_api_gateway
+    ports:
+      - "5686:5678"
+    restart: "no"
+    deploy: { resources: { limits: {} } }
+
+  mate-auth-service:
+    volumes:
+      - ./services/auth-service/src/mate_auth_service:/app/dev/mate_auth_service:rw
+    environment:
+      PYTHONPATH: /app/dev
+    command: >
+      uvicorn mate_auth_service.main:app
+        --host 0.0.0.0 --port 8101
+        --reload --reload-dir /app/dev/mate_auth_service
+    profiles: ["edge"]
+    ports:
+      - "5687:5678"
+    restart: "no"
+    deploy: { resources: { limits: {} } }

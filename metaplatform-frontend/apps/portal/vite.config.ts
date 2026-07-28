@@ -18,7 +18,8 @@ export default defineConfig({
     port: 9200,
     proxy: {
       // === TECH-IAM ===
-      '/api/v1/iam':    { target: proxyTarget(8102), changeOrigin: true },  # mate-tech-iam
+      '/api/v1/iam':    { target: proxyTarget(8102), changeOrigin: true },
+      // mate-tech-iam
       // === APP-DASHBOARD (workbench BFF) ===
       '/api/v1/dashboard': { target: proxyTarget(9001), changeOrigin: true },
       // === TECH-AGENT ===
@@ -70,3 +71,5 @@ export default defineConfig({
     sourcemap: false,
   },
 });
+
+

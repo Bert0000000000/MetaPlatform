@@ -152,7 +152,7 @@ export default function OntologyDatacenterPage() {
           </div>
 
           {/* SubTab 导航 */}
-          <div style={{ display: 'flex', gap: 4, borderBottom: '1px solid var(--border)', marginBottom: 20, overflowX: 'auto' }}>
+          <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', borderBottom: '1px solid var(--border)', marginBottom: 20, rowGap: 4 }}>
             {DATACENTER_SUBTABS.map((tab) => {
               const Icon = tab.icon;
               const isActive = activeSubTab === tab.id;
