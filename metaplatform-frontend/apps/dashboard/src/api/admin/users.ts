@@ -58,7 +58,8 @@ function params(p?: ListUsersParams): Record<string, unknown> | undefined {
   if (p.keyword) out.keyword = p.keyword;
   if (p.status) out.status = p.status;
   if (p.department) out.department = p.department;
-  if (p.roleId) out.roleId = p.roleId;
+  // 后端 list users 查询参数 roleId 实际期望 snake_case role_id
+  if (p.roleId) out.role_id = p.roleId;
   if (p.page) out.page = p.page;
   if (p.pageSize) out.pageSize = p.pageSize;
   return Object.keys(out).length ? out : undefined;
@@ -75,12 +76,34 @@ export async function getUser(id: number): Promise<AdminUser> {
 }
 
 export async function createUser(payload: CreateUserPayload): Promise<CreateUserResponse> {
-  const { data } = await apiClient.post(ADMIN_BASE + "/users", payload);
+  // Pydantic silently drops unknown fields, so snake_case explicitly
+  const { data } = await apiClient.post(ADMIN_BASE + "/users", {
+    username: payload.username,
+    real_name: payload.realName,
+    email: payload.email,
+    phone: payload.phone,
+    department: payload.department,
+    position: payload.position,
+    password: payload.password,
+    status: payload.status,
+    is_super_admin: payload.isSuperAdmin,
+    role_ids: payload.roleIds,
+  });
   return unwrap<CreateUserResponse>(data as ApiEnvelope<CreateUserResponse>);
 }
 
 export async function updateUser(id: number, payload: UpdateUserPayload): Promise<AdminUser> {
-  const { data } = await apiClient.put(ADMIN_BASE + "/users/" + id, payload);
+  const body = {};
+  if (payload.realName !== undefined) body.real_name = payload.realName;
+  if (payload.email !== undefined) body.email = payload.email;
+  if (payload.phone !== undefined) body.phone = payload.phone;
+  if (payload.department !== undefined) body.department = payload.department;
+  if (payload.position !== undefined) body.position = payload.position;
+  if (payload.avatar !== undefined) body.avatar = payload.avatar;
+  if (payload.status !== undefined) body.status = payload.status;
+  if (payload.isSuperAdmin !== undefined) body.is_super_admin = payload.isSuperAdmin;
+  if (payload.roleIds !== undefined) body.role_ids = payload.roleIds;
+  const { data } = await apiClient.put(ADMIN_BASE + "/users/" + id, body);
   return unwrap<AdminUser>(data as ApiEnvelope<AdminUser>);
 }
 

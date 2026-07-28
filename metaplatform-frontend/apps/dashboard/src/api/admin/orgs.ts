@@ -42,7 +42,17 @@ export interface CreateOrgPayload {
 }
 
 export async function createOrg(payload: CreateOrgPayload): Promise<{ id: number; code: string; name: string }> {
-  const { data } = await apiClient.post(ADMIN_BASE + "/orgs", payload);
+  // Mate Platform 后端 OrgCreate/OrgUpdate 是 snake_case (parent_id / leader_id / sort_order)
+  // 前端 CreateOrgPayload 是 camelCase，这里做一次显式映射
+  const { data } = await apiClient.post(ADMIN_BASE + "/orgs", {
+    parent_id: payload.parentId ?? null,
+    code: payload.code,
+    name: payload.name,
+    type: payload.type,
+    leader_id: payload.leaderId ?? null,
+    sort_order: payload.sortOrder,
+    description: payload.description,
+  });
   return unwrap<{ id: number; code: string; name: string }>(data as ApiEnvelope<{ id: number; code: string; name: string }>);
 }
 
@@ -56,7 +66,15 @@ export interface UpdateOrgPayload {
 }
 
 export async function updateOrg(id: number, payload: UpdateOrgPayload): Promise<{ id: number; name: string }> {
-  const { data } = await apiClient.put(ADMIN_BASE + "/orgs/" + id, payload);
+  // 后端 OrgUpdate 同样是 snake_case，这里做一次显式映射
+  const body: Record<string, unknown> = {};
+  if (payload.parentId !== undefined) body.parent_id = payload.parentId;
+  if (payload.name !== undefined) body.name = payload.name;
+  if (payload.type !== undefined) body.type = payload.type;
+  if (payload.leaderId !== undefined) body.leader_id = payload.leaderId;
+  if (payload.sortOrder !== undefined) body.sort_order = payload.sortOrder;
+  if (payload.description !== undefined) body.description = payload.description;
+  const { data } = await apiClient.put(ADMIN_BASE + "/orgs/" + id, body);
   return unwrap<{ id: number; name: string }>(data as ApiEnvelope<{ id: number; name: string }>);
 }
 
@@ -74,7 +92,8 @@ export interface ListPositionsParams {
 
 export async function listPositions(p?: ListPositionsParams): Promise<PageResult<AdminPosition>> {
   const params: Record<string, unknown> = {};
-  if (p?.orgId) params.orgId = p.orgId;
+  // 后端 /orgs/positions 查询参数 orgId 实际期望 snake_case org_id
+  if (p?.orgId) params.org_id = p.orgId;
   if (p?.keyword) params.keyword = p.keyword;
   if (p?.page) params.page = p.page;
   if (p?.pageSize) params.pageSize = p.pageSize;
@@ -91,7 +110,15 @@ export interface CreatePositionPayload {
 }
 
 export async function createPosition(payload: CreatePositionPayload): Promise<{ id: number; name: string }> {
-  const { data } = await apiClient.post(ADMIN_BASE + "/orgs/positions", payload);
+  // Mate Platform 后端 PositionCreate 要求 snake_case，前端 CreatePositionPayload 是 camelCase；
+  // 这里把字段做一次显式映射，否则接口返回 422
+  const { data } = await apiClient.post(ADMIN_BASE + "/orgs/positions", {
+    org_id: payload.orgId,
+    code: payload.code,
+    name: payload.name,
+    level: payload.level,
+    description: payload.description,
+  });
   return unwrap<{ id: number; name: string }>(data as ApiEnvelope<{ id: number; name: string }>);
 }
 
