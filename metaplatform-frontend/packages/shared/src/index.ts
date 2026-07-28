@@ -60,3 +60,4 @@ export {
 } from './utils/datetime';
 
 import './global.css';
+export * from './components/assistant';
