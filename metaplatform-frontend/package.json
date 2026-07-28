@@ -18,6 +18,7 @@
     "install:clean": "rimraf node_modules **/node_modules pnpm-lock.yaml && pnpm install"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.1",
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
