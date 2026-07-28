@@ -1,0 +1,36 @@
+﻿# Dependabot: weekly update PRs for GitHub Actions, Python (via pip), and Docker base images
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    groups:
+      minor:
+        patterns: ["*"]
+      patch:
+        patterns: ["*"]
+    labels: ["dependencies", "ci"]
+
+  - package-ecosystem: "pip"
+    directory: "/mate-platform-backend"
+    schedule:
+      interval: "weekly"
+      day: "tuesday"
+    open-pull-requests-limit: 5
+    labels: ["dependencies", "python"]
+    groups:
+      minor:
+        patterns: ["*"]
+      patch:
+        patterns: ["*"]
+
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+    open-pull-requests-limit: 3
+    labels: ["dependencies", "docker"]
