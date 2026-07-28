@@ -29,10 +29,9 @@ test.describe('page-level AI assistant', () => {
     await expect(panel).toHaveAttribute('data-employee-id', 'architecture-planner');
 
     const panelBox = await panel.boundingBox();
-    const after = await content.boundingBox();
     expect(panelBox?.width).toBeGreaterThanOrEqual(380);
     expect(panelBox?.width).toBeLessThanOrEqual(400);
-    expect(after!.width).toBeLessThan(before!.width - 350);
+    await expect.poll(async () => (await content.boundingBox())?.width).toBeLessThan(before!.width - 350);
 
     const composer = page.getByLabel('向架构规划数字员工发送消息');
     await composer.fill('帮我分析当前业务架构');

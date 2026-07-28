@@ -2,12 +2,12 @@ import { useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Drawer } from 'antd';
 import {
-  ChevronDown, UnfoldVertical, BarChart3, Zap, Sparkles, Check, Minus, Circle,
+  UnfoldVertical, BarChart3, Zap, Sparkles, Check, Minus, Circle,
   ArrowRight, Users, Receipt, Link2, Landmark, UserCheck, BookOpen,
   FilePlus, ShieldCheck, Truck, TrendingUp, ChevronRight, FileText, User,
   Package, CheckSquare, Banknote, Maximize2, Minimize2,
 } from 'lucide-react';
-import { SubTabs } from '@mate/shared';
+import { AIAssistantTrigger, AIAssistantWorkspace, SubTabs, usePageAssistant } from '@mate/shared';
 
 // MOCK
 const capabilities = [
@@ -134,8 +134,18 @@ export default function ArchBusinessPage() {
   const [selectedProc, setSelectedProc] = useState(1);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerExpanded, setDrawerExpanded] = useState(false);
+  const assistant = usePageAssistant({
+    employeeId: 'architecture-planner',
+    employeeName: '架构规划数字员工',
+    employeeDescription: '协助分析业务能力、流程分层与架构演进关系。',
+    moduleLabel: '业务架构',
+    welcomeMessage: '你好，我是架构规划数字员工。可以帮你分析 L1-L4 业务架构及其演进关系。',
+    suggestions: ['分析当前业务能力短板', '梳理 L1 到 L4 的依赖关系', '给出下一阶段架构演进建议'],
+    createReply: (content) => `我会结合当前业务架构视图分析“${content}”。当前为模拟回复，重点会覆盖能力、流程和业务对象之间的关系。`,
+  });
 
   return (
+    <AIAssistantWorkspace assistant={assistant}>
     <>
       <style>{`
         :root { --l1-color:#a78bfa; --l1-bg:rgba(167,139,250,0.08); --l1-border:rgba(167,139,250,0.25); --l2-color:#60a5fa; --l2-bg:rgba(96,165,250,0.08); --l2-border:rgba(96,165,250,0.25); --l3-color:#62d178; --l3-bg:rgba(98,209,120,0.08); --l3-border:rgba(98,209,120,0.25); --l4-color:#eab308; --l4-bg:rgba(234,179,8,0.08); --l4-border:rgba(234,179,8,0.25); }
@@ -249,11 +259,7 @@ export default function ArchBusinessPage() {
             <div className="desc">L1-L4 分层架构视图</div>
           </div>
           <div className="actions">
-            <button className="v-btn" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'var(--success-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 600, color: 'var(--success)' }}>AI</div>
-              <span style={{ fontSize: 13 }}>AI 助手</span>
-              <ChevronDown style={{ width: 14, height: 14, color: 'var(--muted-foreground)' }} />
-            </button>
+            <AIAssistantTrigger open={assistant.isOpen} onClick={assistant.toggle} />
             <button className="v-btn"><UnfoldVertical style={{ width: 16, height: 16 }} />展开全部</button>
           </div>
         </div>
@@ -552,5 +558,6 @@ export default function ArchBusinessPage() {
         </div>
       </Drawer>
     </>
+    </AIAssistantWorkspace>
   );
 }
