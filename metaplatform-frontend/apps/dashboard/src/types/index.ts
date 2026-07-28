@@ -1,4 +1,4 @@
-export interface PageResponse<T> {
+﻿export interface PageResponse<T> {
   items: T[];
   total: number;
   page: number;
@@ -273,3 +273,6 @@ export interface UserPermissions {
   permissions: UserPermissionDetail[];
   roles: UserRoleSummary[];
 }
+
+export type * from './admin';
+

@@ -22,6 +22,10 @@ export default defineConfig({
         target: 'http://localhost:8101',
         changeOrigin: true,
       },
+      '/api/v1/admin': {
+        target: 'http://localhost:8102',
+        changeOrigin: true,
+      },
     },
   },
   build: {

@@ -6,6 +6,7 @@ import os
 import structlog
 from fastapi import FastAPI, Response
 
+from .admin import router as admin_router
 from .health.aggregator import aggregate_health
 from .metrics.prom import render_metrics
 from .tracing.instrument import auto_instrument
@@ -47,6 +48,8 @@ async def health_aggregate() -> dict[str, object]:
 async def instrument_status() -> dict[str, object]:
     return {"instrumented": _INSTRUMENT_RESULT}
 
+
+app.include_router(admin_router)
 
 @app.on_event("startup")
 async def on_startup() -> None:

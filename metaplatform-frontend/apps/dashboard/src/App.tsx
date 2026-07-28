@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+﻿import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ConfigProvider, App as AntApp } from 'antd';
 import zhCN from 'antd/locale/zh_CN';
 import enUS from 'antd/locale/en_US';
@@ -10,6 +10,13 @@ import NotificationsPage from '@/pages/NotificationsPage';
 import DeliverablesPage from '@/pages/DeliverablesPage';
 import AiOpsPage from '@/pages/AiOpsPage';
 import SettingsPage from '@/pages/SettingsPage';
+import OverviewPage from '@/pages/admin/OverviewPage';
+import UsersPage from '@/pages/admin/UsersPage';
+import PermissionsPage from '@/pages/admin/PermissionsPage';
+import OrgsPage from '@/pages/admin/OrgsPage';
+import LogsPage from '@/pages/admin/LogsPage';
+import ConfigsPage from '@/pages/admin/ConfigsPage';
+import OperationsPage from '@/pages/admin/OperationsPage';
 import { isLoggedIn } from '@/utils/auth';
 import { SettingsProvider, useSettings } from '@/contexts/SettingsContext';
 
@@ -45,6 +52,13 @@ function ThemedApp() {
                 <Route path="deliverables" element={<DeliverablesPage />} />
                 <Route path="aiops" element={<AiOpsPage />} />
                 <Route path="settings" element={<SettingsPage />} />
+                <Route path="admin" element={<OverviewPage />} />
+                <Route path="admin/users" element={<UsersPage />} />
+                <Route path="admin/permissions" element={<PermissionsPage />} />
+                <Route path="admin/orgs" element={<OrgsPage />} />
+                <Route path="admin/logs" element={<LogsPage />} />
+                <Route path="admin/configs" element={<ConfigsPage />} />
+                <Route path="admin/operations" element={<OperationsPage />} />
               </Route>
             </Routes>
           </BrowserRouter>
@@ -61,3 +75,4 @@ export default function App() {
     </SettingsProvider>
   );
 }
+
