@@ -1,15 +1,16 @@
 # agent.md
 
 > 本文件供 AI Agent（Cursor、Claude Code、Copilot、Codex、Windsurf 等）读取，提供项目上下文、架构约束与开发规范。
-> **最近更新**：2026-07-27（v3.0 Plan D 实施版定稿）
+> **最近更新**：2026-07-28（v3.1 Data-Ready Baseline 同步）；上一版 2026-07-27（v3.0 Plan D 实施版定稿）
 >
-> **当前架构版本**：**v3.0（Plan D - Polyglot Microservice）**
+> **当前架构版本**：**v3.0（Plan D - Polyglot Microservice）**，v3.1 Data-Ready Baseline 同步中（详见附录 A）
 >
 > **配套文档（实施版）**：
 > - 主架构（实施版）：`docs/active/specs/2026-07-27-mate-platform-architecture-implementation.md` ⭐ THE ONE DOC
 > - 技术栈定稿：`docs/active/specs/2026-07-27-mate-platform-tech-stack-confirmed.md`
 > - 交付版本计划：`docs/active/specs/2026-07-27-mate-platform-delivery-roadmap.md`
 > - 历史决策（已归档）：`docs/active/specs/2026-07-27-mate-platform-technical-architecture.md`
+- v3.1 大数据设计规格：`docs/superpowers/specs/2026-07-28-mate-platform-big-data-etl-design.md`
 
 ## 项目概述
 
@@ -202,3 +203,30 @@ D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\
 > 6. **接口契约**：Swagger/OpenAPI 3.1
 > 7. **开发节奏**：W1-W7 并行（共 22 周），关键路径见上
 > 8. **修改主架构前**：必须同步更新本文件和 agent.md / CLAUDE.md
+9. **数据平台铁律（v3.1）**：Flink 唯一主引擎、Paimon+Iceberg 分层、Airflow 调度 / Flowable 审批、Python mate-tech-data 控制面；旧 Java TECH-DATA 不恢复上线
+
+## v3.1 增量任务（Data Track）
+
+> 本节同步自 `CLAUDE.md` 与 `docs/superpowers/specs/2026-07-28-mate-platform-big-data-etl-design.md`，禁止在主架构未同步的情况下单独推进。
+
+| 阶段 | 工期 | 主要产出 | 关键门禁 |
+|---|---:|---|---|
+| D0 | 2 周 | Flink CDC→Paimon→Iceberg→Trino/StarRocks Spike、容量模型 | 关键链路可运行 |
+| D1 | 4 周 | K8s 数据平面（Kafka、MinIO、Flink Operator、Airflow、Trino） | 故障恢复验证 |
+| D2 | 4 周 | Python mate-tech-data 骨架、领域模型、OpenAPI、Outbox、Engine ACL | 契约 + 类型检查 |
+| D3 | 5 周 | CDC/事件/批量 Connector、Paimon ODS/DWD、Schema Evolution | 回放 + Upsert/Delete + 断点恢复 |
+| D4 | 5 周 | Pipeline Spec、Canvas、Flink 编译、Airflow DAG Bundle、发布状态机 | SQL/Java/PyFlink 三类作业 |
+| D5 | 4 周 | Iceberg 数据产品发布、Trino、StarRocks、SQL Gateway | BI/AI 可消费认证产品 |
+| D6 | 4 周 | Gravitino、OpenMetadata、OpenLineage、质量、Ranger、OpenBao | 质量/权限/血缘门禁 |
+| D7 | 5 周 | 现有 Ontology Data Center 原位增强、语义映射、E2E | 现有四大页签不回归 |
+| D8 | 4 周 | 压测、混沌、RPO/RTO、回滚、文档、GA | 全部 GA 验收门禁通过 |
+
+D0–D8 合计约 35 周；与 W1–W7 同步推进，Data Squad 建议独立编排。
+
+## 给 AI Agent 的关键提示（v3.1 增量）
+
+- 当被问及数据接入、湖仓、SQL、血缘或 Pipeline 时，第一参考为 `docs/superpowers/specs/2026-07-28-mate-platform-big-data-etl-design.md` 与主架构附录 A。
+- `mate-tech-data` 是唯一数据控制面；前端 Ontology Data Center 通过 `/v1/data/*` 调用。
+- 不允许出现 Paimon/Iceberg 全量双写、Paimon/Iceberg 之外的湖表格式、Java 业务服务或新增独立 APP `APP-DATA`。
+- 数据平台是 v1.0 GA 硬前置，不延期到 v1.1。
+- 任何架构调整必须同时同步 `agent.md`、`CLAUDE.md`、主架构、技术栈、交付路线与设计规格。
