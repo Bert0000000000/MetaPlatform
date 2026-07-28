@@ -31,7 +31,7 @@ RUN rm -rf .venv && \
       uv sync --frozen --no-dev && break || \
       echo "=== uv sync attempt $i failed, retrying in 10s ===" && sleep 10; \
     done && \
-    uv pip install --python .venv/bin/python --no-index --find-links /app/wheels/ structlog
+    uv pip install --python .venv/bin/python structlog prometheus-client prometheus-fastapi-instrumentator
 
 FROM python:3.12 AS runtime
 

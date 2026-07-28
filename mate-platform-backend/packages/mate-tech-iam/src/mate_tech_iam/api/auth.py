@@ -34,7 +34,8 @@ from .response import ok
 logger = structlog.get_logger(__name__)
 router = APIRouter(prefix="/api/v1/iam", tags=["iam-auth"])
 
-JWT_SECRET = os.getenv("IAM_DEV_JWT_SECRET", "mate-dev-secret-do-not-use-in-prod-pad-pad-pad-pad")
+# Must match services.deps.JWT_SECRET — both ends of JWT sign/verify must share the same secret
+JWT_SECRET = os.getenv("IAM_DEV_JWT_SECRET", "mate-dev-secret-do-not-use-in-prod")
 JWT_ALG = os.getenv("IAM_DEV_JWT_ALG", "HS256")
 ACCESS_TOKEN_TTL_SEC = int(os.getenv("IAM_ACCESS_TOKEN_TTL", "3600"))
 REFRESH_TOKEN_TTL_SEC = int(os.getenv("IAM_REFRESH_TOKEN_TTL", "2592000"))

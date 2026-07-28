@@ -17,6 +17,9 @@ COPY pyproject.toml uv.lock ./
 COPY packages/ packages/
 
 RUN uv sync --frozen --no-dev
+# Workaround: root pyproject has package=false so uv sync by default does not materialize
+# workspace member runtime deps into the venv. Reinstall IAM-specific runtime deps.
+RUN uv pip install --python .venv/bin/python structlog aiosqlite redis pydantic-settings "pyjwt[crypto]" "passlib[bcrypt]" httpx tenacity python-multipart "uvicorn[standard]" opentelemetry-api opentelemetry-sdk opentelemetry-exporter-otlp-proto-grpc opentelemetry-instrumentation-fastapi
 
 RUN mkdir -p /app/.venv/lib/python3.12/site-packages
 RUN SITE=/app/.venv/lib/python3.12/site-packages && cp -r packages/mate-tech-iam/src/mate_tech_iam "$SITE/"

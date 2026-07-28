@@ -1,4 +1,4 @@
-"""Mate Platform - API Gateway entry.
+﻿"""Mate Platform - API Gateway entry.
 
 L7 路由: path 前缀匹配 -> 上游服务
 聚合: 多服务结果组合 (后续可加)
@@ -29,6 +29,8 @@ SERVICES: dict[str, str] = {
     "ont":    os.getenv("ONT_URL",    "http://mate-tech-ont:8007"),
     "mcp":    os.getenv("MCP_URL",    "http://mate-tech-mcp:8081"),
     "iam":    os.getenv("IAM_URL",    "http://mate-auth-service:8101"),
+    "iam-admin": os.getenv("IAM_ADMIN_URL", "http://mate-tech-iam:8102"),
+    "obs":     os.getenv("OBS_URL",     "http://mate-tech-obs:8083"),
 }
 
 REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")
@@ -43,7 +45,9 @@ ROUTE_MAP: list[tuple[str, str]] = [
     ("/api/v1/kb/",   "app-kb"),
     ("/api/v1/ont/",  "ont"),
     ("/api/v1/mcp/",  "mcp"),
-    ("/api/v1/iam/",  "iam"),
+    ("/api/v1/admin/operations/", "obs"),
+    ("/api/v1/admin/", "iam-admin"),
+    ("/api/v1/iam/",  "iam-admin"),  # TECH-IAM owns all /api/v1/iam/* (login, sso, users, roles...)
 ]
 
 
@@ -121,7 +125,9 @@ async def readyz() -> dict[str, Any]:
 # ---- Rate limit middleware (per-tenant, sliding minute bucket) ----
 @app.middleware("http")
 async def rate_limit_middleware(request: Request, call_next):
-    if app.state.redis is None or not request.url.path.startswith("/api/"):
+    # Use getattr so the middleware does not crash if redis was never initialized
+    # (e.g. local dev without Redis). In that case it acts as a no-op pass-through.
+    if getattr(app.state, "redis", None) is None or not request.url.path.startswith("/api/"):
         return await call_next(request)
     tenant = (
         request.headers.get("X-Tenant-Id")
@@ -154,6 +160,8 @@ PROXY_METHODS = ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"]
 @app.api_route("/api/v1/{path:path}", methods=PROXY_METHODS)
 async def proxy(path: str, request: Request) -> Response:
     """Match longest prefix in ROUTE_MAP and forward to upstream.
+    with open('D:/Hermes/Workspace/10_Projects/2026-07-02-MetaPlatform/.tmp-gw-debug.log', "a") as f:
+        f.write(f"[PROXY] HIT path={path} url={request.url.path} method={request.method}\n")
 
     Injects X-Forwarded-* headers, preserves body and query string.
     """
@@ -185,8 +193,15 @@ async def proxy(path: str, request: Request) -> Response:
 
     body = await request.body()
     start = time.perf_counter()
+    # Build a client on-demand if lifespan did not run (tests / fresh import).
+    client = getattr(app.state, 'client', None)
+    if client is None:
+        client = httpx.AsyncClient(
+            timeout=httpx.Timeout(UPSTREAM_TIMEOUT_SEC, connect=5.0),
+            limits=httpx.Limits(max_connections=200, max_keepalive_connections=50),
+        )
     try:
-        upstream = await app.state.client.request(
+        upstream = await client.request(
             method=request.method,
             url=target_url,
             params=request.url.query,
@@ -229,3 +244,6 @@ async def proxy(path: str, request: Request) -> Response:
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("PORT", "8100")))
+
+
+
