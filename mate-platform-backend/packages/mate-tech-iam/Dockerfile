@@ -1,9 +1,6 @@
-﻿# syntax=docker/dockerfile:1.7
-# =============================================================================
-# mate-tech-iam : 后台管理服务（用户/角色/权限/组织/审计/配置）
-# 基线: python:3.12 完整镜像
+# syntax=docker/dockerfile:1.7
+# mate-tech-iam: 后台管理服务 (用户/角色/权限/组织/审计/配置)
 # Build context: monorepo 根 (./mate-platform-backend)
-# =============================================================================
 
 FROM python:3.12 AS builder
 
@@ -21,15 +18,15 @@ COPY packages/ packages/
 
 RUN uv sync --frozen --no-dev
 
-RUN SITE=/app/.venv/lib/python3.12/site-packages && \
-    cp -r packages/mate-tech-iam/src/mate_tech_iam "/" && \
-    cp -r packages/mate-common/src/mate_common "/"
+RUN mkdir -p /app/.venv/lib/python3.12/site-packages
+RUN SITE=/app/.venv/lib/python3.12/site-packages && cp -r packages/mate-tech-iam/src/mate_tech_iam "$SITE/"
+RUN SITE=/app/.venv/lib/python3.12/site-packages && cp -r packages/mate-common/src/mate_common "$SITE/"
 
 FROM python:3.12 AS runtime
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PATH="/app/.venv/bin:\" \
+    PATH=/app/.venv/bin:$PATH \
     PORT=8102 \
     IAM_DATA_DIR=/data
 
