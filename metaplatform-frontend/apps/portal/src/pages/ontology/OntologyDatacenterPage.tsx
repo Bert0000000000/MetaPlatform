@@ -1,10 +1,10 @@
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
-  ChevronDown, RefreshCw, GitBranch, Plus, Activity, PlugZap, Layers,
+  RefreshCw, GitBranch, Plus, Activity, PlugZap, Layers,
   ShieldCheck, Database, Globe, Radio, HardDrive, Settings2, MoreHorizontal,
   Pause,
 } from 'lucide-react';
-import { SubTabs } from '@mate/shared';
+import { AIAssistantTrigger, AIAssistantWorkspace, SubTabs, usePageAssistant } from '@mate/shared';
 
 const ONTOLOGY_TABS = [
   { label: '本体论管理', path: '/ontology' },
@@ -59,8 +59,18 @@ const badgeColor = (type: string) =>
 export default function OntologyDatacenterPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const assistant = usePageAssistant({
+    employeeId: 'ontology-data-steward',
+    employeeName: '本体数据数字员工',
+    employeeDescription: '协助监控实体质量、关系完整性和数据源同步状态。',
+    moduleLabel: 'Ontology 数据中心',
+    welcomeMessage: '你好，我是本体数据数字员工。可以协助你分析数据源、同步任务和质量问题。',
+    suggestions: ['分析实体数据质量', '检查关系完整性', '诊断数据同步异常'],
+    createReply: (content) => `我会结合数据源连接、同步状态和质量指标分析“${content}”。当前为数据中心的模拟回复。`,
+  });
 
   return (
+    <AIAssistantWorkspace assistant={assistant}>
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
       <SubTabs items={ONTOLOGY_TABS} activePath={location.pathname} />
       <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', paddingBottom: 24 }}>
@@ -72,11 +82,7 @@ export default function OntologyDatacenterPage() {
           <div style={{ fontSize: 13, color: 'var(--muted-foreground)', marginTop: 4 }}>数据源管理、数据湖监控与数据质量治理</div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          <button className="v-btn" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(98,209,120,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 600, color: 'var(--success)' }}>AI</div>
-            <span style={{ fontSize: 13 }}>AI 助手</span>
-            <ChevronDown style={{ width: 14, height: 14, color: 'var(--muted-foreground)' }} />
-          </button>
+          <AIAssistantTrigger open={assistant.isOpen} onClick={assistant.toggle} />
           <button className="v-btn"><RefreshCw style={{ width: 16, height: 16 }} />全量同步</button>
           <button className="v-btn"><GitBranch style={{ width: 16, height: 16 }} />血缘分析</button>
           <button className="v-btn-primary"><Plus style={{ width: 16, height: 16 }} />接入数据源</button>
@@ -249,5 +255,6 @@ export default function OntologyDatacenterPage() {
       </div>
       </div>
     </div>
+    </AIAssistantWorkspace>
   );
 }

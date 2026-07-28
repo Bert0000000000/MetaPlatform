@@ -1,14 +1,14 @@
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
-  Plus, Upload, ChevronDown, Search, List, LayoutGrid,
+  Plus, Upload, Search, List, LayoutGrid,
   Eye, Pencil, Rocket, MoreHorizontal, Zap,
   FilePlus, Table2, GitPullRequest, MessageSquare,
   Users, GitBranch, BarChart3, FileSearch, PenTool,
   Warehouse, ShieldCheck, MessageCircleQuestion,
   Briefcase, Database, Sparkles,
 } from 'lucide-react';
-import { SubTabs, FormDrawer, Field, TextInput, TextArea, Select, FormSection } from '@mate/shared';
+import { AIAssistantTrigger, AIAssistantWorkspace, SubTabs, FormDrawer, Field, TextInput, TextArea, Select, FormSection, usePageAssistant } from '@mate/shared';
 import { openAppTab } from '@/store/appTabs';
 import { MOCK_APPS } from '@/mock'; // MOCK
 
@@ -50,6 +50,15 @@ export default function AppsListPage() {
   const [createDrawerOpen, setCreateDrawerOpen] = useState(false);
   const [editDrawerOpen, setEditDrawerOpen] = useState(false);
   const [createAppType, setCreateAppType] = useState('业务应用');
+  const assistant = usePageAssistant({
+    employeeId: 'application-designer',
+    employeeName: '应用设计数字员工',
+    employeeDescription: '协助规划应用类型、数据模型、流程和发布方案。',
+    moduleLabel: '应用中心',
+    welcomeMessage: '你好，我是应用设计数字员工。可以从业务需求出发协助你规划应用。',
+    suggestions: ['根据业务需求推荐应用类型', '梳理应用发布前检查项', '分析现有应用组合'],
+    createReply: (content) => `我会从应用类型、模型、流程和发布方案几个方面分析“${content}”。当前为应用中心的模拟回复。`,
+  });
 
   const openApp = (app: { id: string; name: string }) => {
     openAppTab({ id: app.id, name: app.name });
@@ -57,17 +66,14 @@ export default function AppsListPage() {
   };
 
   return (
+    <AIAssistantWorkspace assistant={assistant}>
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
       <SubTabs items={APP_TABS} activePath={location.pathname} />
       <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', paddingBottom: 24 }}>
 
       {/* Page Header */}
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginBottom: 24, paddingTop: 16, borderTop: '1px solid var(--border)' }}>
-        <button className="v-btn" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'var(--success-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 600, color: 'var(--success)' }}>AI</div>
-          <span style={{ fontSize: 13 }}>AI 助手</span>
-          <ChevronDown style={{ width: 14, height: 14, color: 'var(--muted-foreground)' }} />
-        </button>
+        <AIAssistantTrigger open={assistant.isOpen} onClick={assistant.toggle} />
         <button className="v-btn"><Upload style={{ width: 16, height: 16 }} />导入应用</button>
         <button className="v-btn-primary" onClick={() => setCreateDrawerOpen(true)}><Plus style={{ width: 16, height: 16 }} />新建应用</button>
       </div>
@@ -351,5 +357,6 @@ export default function AppsListPage() {
       </FormDrawer>
       </div>
     </div>
+    </AIAssistantWorkspace>
   );
 }

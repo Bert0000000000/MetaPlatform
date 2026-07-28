@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
-  Hexagon, Search, Upload, Plus, ChevronDown, User, FileText, Package,
+  Hexagon, Search, Upload, Plus, User, FileText, Package,
   ScrollText, Building, Users, Truck, Warehouse, Receipt, Columns3,
   Link as LinkIcon, ArrowUpRight, ArrowDownLeft, ArrowRight, ArrowLeft,
 } from 'lucide-react';
-import { SubTabs, FormDrawer, Field, TextInput, TextArea, Select, FormSection } from '@mate/shared';
+import { AIAssistantTrigger, AIAssistantWorkspace, SubTabs, FormDrawer, Field, TextInput, TextArea, Select, FormSection, usePageAssistant } from '@mate/shared';
 import { MOCK_ONTOLOGY_ENTITIES } from '@/mock'; // MOCK
 
 const ONTOLOGY_TABS = [
@@ -76,8 +76,18 @@ export default function OntologyModelingPage() {
   const [selectedOntology, setSelectedOntology] = useState(0);
   const [selectedConcept, setSelectedConcept] = useState(0);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const assistant = usePageAssistant({
+    employeeId: 'ontology-modeler',
+    employeeName: '本体建模数字员工',
+    employeeDescription: '协助设计概念、属性、关系并检查本体模型一致性。',
+    moduleLabel: 'Ontology 建模',
+    welcomeMessage: '你好，我是本体建模数字员工。可以协助你把业务语义整理为清晰的本体模型。',
+    suggestions: ['设计新的业务概念', '检查概念关系是否完整', '给出本体模型校验建议'],
+    createReply: (content) => `我会结合当前概念、属性和关系设计分析“${content}”。当前为本体建模模块的模拟回复。`,
+  });
 
   return (
+    <AIAssistantWorkspace assistant={assistant}>
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
       <style>{`
         .om-tree-item{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:6px;cursor:pointer;font-size:13px;color:var(--muted-foreground);margin-bottom:2px}
@@ -118,11 +128,7 @@ export default function OntologyModelingPage() {
           <div style={{ fontSize: 13, color: 'var(--muted-foreground)', marginTop: 4 }}>统一语义建模与推理引擎</div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          <button className="v-btn" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(98,209,120,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 600, color: 'var(--success)' }}>AI</div>
-            <span style={{ fontSize: 13 }}>AI 助手</span>
-            <ChevronDown style={{ width: 14, height: 14, color: 'var(--muted-foreground)' }} />
-          </button>
+          <AIAssistantTrigger open={assistant.isOpen} onClick={assistant.toggle} />
           <button className="v-btn"><Upload style={{ width: 16, height: 16 }} />导入</button>
           <button className="v-btn-primary" onClick={() => setDrawerOpen(true)}><Plus style={{ width: 16, height: 16 }} />新建本体</button>
         </div>
@@ -353,5 +359,6 @@ export default function OntologyModelingPage() {
       </FormDrawer>
       </div>
     </div>
+    </AIAssistantWorkspace>
   );
 }

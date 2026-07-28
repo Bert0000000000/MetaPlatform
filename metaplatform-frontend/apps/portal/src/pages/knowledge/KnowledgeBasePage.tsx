@@ -1,10 +1,10 @@
 import {
-  ChevronDown, Upload, RefreshCw, Plus, TrendingUp, HardDrive,
+  Upload, RefreshCw, Plus, TrendingUp, HardDrive,
   Library, BookOpen, MessageCircle, FileText, Server, Blocks,
   Code, GraduationCap, BarChart3, Search, Settings, MoreHorizontal,
   FileUp,
 } from 'lucide-react';
-import { SubTabs, type SubTabItem, FormDrawer, Field, TextInput, TextArea, Select, FormSection } from '@mate/shared';
+import { AIAssistantTrigger, AIAssistantWorkspace, SubTabs, type SubTabItem, FormDrawer, Field, TextInput, TextArea, Select, FormSection, usePageAssistant } from '@mate/shared';
 import { useLocation } from 'react-router-dom';
 import { useState } from 'react';
 import { MOCK_KNOWLEDGE_BASES } from '@/mock'; // MOCK
@@ -57,8 +57,18 @@ const KB_TABS: SubTabItem[] = [
 export default function KnowledgeBasePage() {
   const location = useLocation();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const assistant = usePageAssistant({
+    employeeId: 'knowledge-governor',
+    employeeName: '知识治理数字员工',
+    employeeDescription: '协助知识入库、检索质量分析和索引维护。',
+    moduleLabel: '知识库',
+    welcomeMessage: '你好，我是知识治理数字员工。可以协助你提升知识入库与检索效果。',
+    suggestions: ['规划文档入库策略', '分析检索准确率', '检查索引维护状态'],
+    createReply: (content) => `我会从文档入库、切片、索引和检索效果几个方面分析“${content}”。当前为知识库模块的模拟回复。`,
+  });
 
   return (
+    <AIAssistantWorkspace assistant={assistant}>
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
       <SubTabs items={KB_TABS} activePath={location.pathname} />
       <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', paddingBottom: 24 }}>
@@ -70,11 +80,7 @@ export default function KnowledgeBasePage() {
           <div style={{ fontSize: 13, color: 'var(--muted-foreground)', marginTop: 4 }}>企业级 RAG 知识库管理，统一文档索引与语义检索</div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          <button className="v-btn" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(98,209,120,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 600, color: 'var(--success)' }}>AI</div>
-            <span style={{ fontSize: 13 }}>AI 助手</span>
-            <ChevronDown style={{ width: 14, height: 14, color: 'var(--muted-foreground)' }} />
-          </button>
+          <AIAssistantTrigger open={assistant.isOpen} onClick={assistant.toggle} />
           <button className="v-btn"><Upload style={{ width: 16, height: 16 }} />批量导入</button>
           <button className="v-btn"><RefreshCw style={{ width: 16, height: 16 }} />重建索引</button>
           <button className="v-btn-primary" onClick={() => setDrawerOpen(true)}><Plus style={{ width: 16, height: 16 }} />新建知识库</button>
@@ -306,5 +312,6 @@ export default function KnowledgeBasePage() {
     </FormDrawer>
       </div>
     </div>
+    </AIAssistantWorkspace>
   );
 }

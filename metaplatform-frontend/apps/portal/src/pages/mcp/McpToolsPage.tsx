@@ -6,9 +6,8 @@ import {
   Copy,
   MoreHorizontal,
   X,
-  ChevronDown,
 } from 'lucide-react';
-import { SubTabs, StepDrawer, Field, TextInput, TextArea, Select, FormSection, type SubTabItem } from '@mate/shared';
+import { AIAssistantTrigger, AIAssistantWorkspace, SubTabs, StepDrawer, Field, TextInput, TextArea, Select, FormSection, type SubTabItem, usePageAssistant } from '@mate/shared';
 import { useLocation } from 'react-router-dom';
 import { MOCK_MCP_TOOLS } from '@/mock'; // MOCK
 
@@ -72,6 +71,15 @@ export default function McpToolsPage() {
   const [registerDrawerOpen, setRegisterDrawerOpen] = useState(false);
   const [autoPublish, setAutoPublish] = useState(false);
   const [testRun, setTestRun] = useState<'idle' | 'running' | 'done'>('idle');
+  const assistant = usePageAssistant({
+    employeeId: 'mcp-tool-specialist',
+    employeeName: 'MCP 工具数字员工',
+    employeeDescription: '协助定义工具 Schema、权限策略并诊断调用问题。',
+    moduleLabel: 'MCP 工具注册',
+    welcomeMessage: '你好，我是 MCP 工具数字员工。可以协助你注册、配置和调试 MCP 工具。',
+    suggestions: ['设计工具输入输出 Schema', '检查工具权限配置', '诊断工具调用失败'],
+    createReply: (content) => `我会从工具契约、Server 路由、权限和调试信息几个方面分析“${content}”。当前为 MCP 工具模块的模拟回复。`,
+  });
 
   const registerSteps = [
     {
@@ -212,6 +220,7 @@ export default function McpToolsPage() {
   const selectedTool = MOCK_TOOLS.find((t) => t.id === selectedId) ?? MOCK_TOOLS[0];
 
   return (
+    <AIAssistantWorkspace assistant={assistant}>
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
       <SubTabs items={MCP_TABS} activePath={location.pathname} />
       <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', paddingBottom: 24 }}>
@@ -225,26 +234,7 @@ export default function McpToolsPage() {
           </p>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          <button className="v-btn" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div
-              style={{
-                width: 28,
-                height: 28,
-                borderRadius: '50%',
-                background: 'var(--success-subtle)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 12,
-                fontWeight: 600,
-                color: 'var(--success)',
-              }}
-            >
-              AI
-            </div>
-            <span style={{ fontSize: 13 }}>AI 助手</span>
-            <ChevronDown style={{ width: 14, height: 14, color: 'var(--muted-foreground)' }} />
-          </button>
+          <AIAssistantTrigger open={assistant.isOpen} onClick={assistant.toggle} />
         </div>
       </div>
 
@@ -508,5 +498,6 @@ export default function McpToolsPage() {
       />
       </div>
     </div>
+    </AIAssistantWorkspace>
   );
 }
