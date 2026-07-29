@@ -58,7 +58,8 @@ class Publisher:
                     idempotency_hit=True,
                 )
 
-        # 2. 璁＄畻 partition key锛堥粯璁?tenantId锛?        partition_key = req.partition_key
+        # 2. Compute partition key (default: tenantId)
+        partition_key = req.partition_key
         if partition_key is None:
             payload_dict = req.payload if isinstance(req.payload, dict) else {}
             partition_key = str(
