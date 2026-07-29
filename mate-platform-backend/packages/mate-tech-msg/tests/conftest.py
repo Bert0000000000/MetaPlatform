@@ -10,9 +10,17 @@ from mate_tech_msg.kafka_client import KafkaClient
 
 
 @pytest.fixture
-def kafka_mock() -> KafkaClient:
+def kafka_client_with_mock_producer() -> KafkaClient:
+    """KafkaClient whose producer.send_and_wait returns a fresh
+    metadata-like object on every call. Tests can read .partition,
+    ".offset" and assert .send_and_wait was called."""
     client = KafkaClient(bootstrap_servers="mock://localhost:9092")
-    client._producer = AsyncMock()
+    producer_mock = AsyncMock()
+    # Return a value with .partition/.offset attributes; AsyncMock
+    # set as return_value gets unwrapped once at await time.
+    meta = type("Meta", (), {"partition": 0, "offset": 0})()
+    producer_mock.send_and_wait = AsyncMock(return_value=meta)
+    client._producer = producer_mock
     return client
 
 
