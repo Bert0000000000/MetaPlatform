@@ -28,14 +28,21 @@ const ArchDataPage = lazy(() => import('./pages/arch/ArchDataPage'));
 const ArchTechPage = lazy(() => import('./pages/arch/ArchTechPage'));
 const ArchGovernancePage = lazy(() => import('./pages/arch/ArchGovernancePage'));
 
-const AppsListPage = lazy(() => import('./pages/apps/AppsListPage'));
-const AppDetailPage = lazy(() => import('./pages/apps/AppDetailPage'));
-const AppModelingPage = lazy(() => import('./pages/apps/AppModelingPage'));
-const FormDesignerPage = lazy(() => import('./pages/apps/FormDesignerPage'));
-const ProcessDesignerPage = lazy(() => import('./pages/apps/ProcessDesignerPage'));
-const AppConfigPage = lazy(() => import('./pages/apps/AppConfigPage'));
-const AppPublishPage = lazy(() => import('./pages/apps/AppPublishPage'));
-const AppVersionPage = lazy(() => import('./pages/apps/AppVersionPage'));
+const ApphubAppListPage = lazy(() => import('./pages/apphub/AppListPage'));
+const ApphubAppDetailPage = lazy(() => import('./pages/apphub/AppDetailPage'));
+const ApphubAppLifecyclePage = lazy(() => import('./pages/apphub/AppLifecyclePage'));
+const ApphubVersionManagementPage = lazy(() => import('./pages/apphub/VersionManagementPage'));
+const ApphubReleaseRecordPage = lazy(() => import('./pages/apphub/ReleaseRecordPage'));
+const ApphubFormDesignerPage = lazy(() => import('./pages/apphub/FormDesignerPage'));
+const ApphubFlowDesignerPage = lazy(() => import('./pages/apphub/FlowDesignerPage'));
+const ApphubPageDesignerPage = lazy(() => import('./pages/apphub/PageDesignerPage'));
+const ApphubMarketplacePage = lazy(() => import('./pages/apphub/MarketplacePage'));
+const ApphubMarketplaceDetailPage = lazy(() => import('./pages/apphub/MarketplaceDetailPage'));
+const ApphubMarketPage = lazy(() => import('./pages/apphub/MarketPage'));
+const ApphubTemplateDetailPage = lazy(() => import('./pages/apphub/TemplateDetailPage'));
+const ApphubMyTemplatesPage = lazy(() => import('./pages/apphub/MyTemplatesPage'));
+const ApphubTemplateSubmitPage = lazy(() => import('./pages/apphub/TemplateSubmitPage'));
+const ApphubAIDesignerPage = lazy(() => import('./pages/apphub/AIDesignerPage'));
 
 const OntologyModelingPage = lazy(() => import('./pages/ontology/OntologyModelingPage'));
 const OntologyDatacenterPage = lazy(() => import('./pages/ontology/OntologyDatacenterPage'));
@@ -112,15 +119,22 @@ function AppRoutes() {
           <Route path="arch/tech" element={<ArchTechPage />} />
           <Route path="arch/governance" element={<ArchGovernancePage />} />
 
-          {/* 应用中心 */}
-          <Route path="apps" element={<AppsListPage />} />
-          <Route path="apps/detail" element={<AppDetailPage />} />
-          <Route path="apps/modeling" element={<AppModelingPage />} />
-          <Route path="apps/formdesigner" element={<FormDesignerPage />} />
-          <Route path="apps/processdesigner" element={<ProcessDesignerPage />} />
-          <Route path="apps/config" element={<AppConfigPage />} />
-          <Route path="apps/publish" element={<AppPublishPage />} />
-          <Route path="apps/version" element={<AppVersionPage />} />
+          {/* 搴旂敤涓績(Phase 2: from apps/apphub) */}
+          <Route path="apps" element={<ApphubAppListPage />} />
+          <Route path="apps/:appId" element={<ApphubAppDetailPage />} />
+          <Route path="apps/:appId/lifecycle" element={<ApphubAppLifecyclePage />} />
+          <Route path="apps/:appId/versions" element={<ApphubVersionManagementPage />} />
+          <Route path="apps/:appId/versions/:versionId" element={<ApphubReleaseRecordPage />} />
+          <Route path="apps/:appId/modules/:moduleId/form-designer" element={<ApphubFormDesignerPage />} />
+          <Route path="apps/:appId/modules/:moduleId/flow-designer" element={<ApphubFlowDesignerPage />} />
+          <Route path="pages/:pageId" element={<ApphubPageDesignerPage />} />
+          <Route path="marketplace" element={<ApphubMarketplacePage />} />
+          <Route path="marketplace/:templateId" element={<ApphubMarketplaceDetailPage />} />
+          <Route path="market" element={<ApphubMarketPage />} />
+          <Route path="market/:templateId" element={<ApphubTemplateDetailPage />} />
+          <Route path="my-templates" element={<ApphubMyTemplatesPage />} />
+          <Route path="my-templates/submit" element={<ApphubTemplateSubmitPage />} />
+          <Route path="ai-designer" element={<ApphubAIDesignerPage />} />
 
           {/* 本体引擎 */}
           <Route path="ontology" element={<OntologyModelingPage />} />
