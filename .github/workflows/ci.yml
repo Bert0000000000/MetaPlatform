@@ -1,4 +1,4 @@
-name: CI
+﻿name: CI
 
 on:
   push:
@@ -56,10 +56,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          # version from packageManager in root package.json
+      - name: Install pnpm
+        run: npm install -g pnpm@11.15.1
       - name: Cache pnpm store
         uses: actions/cache@v4
         with:
@@ -76,4 +74,5 @@ jobs:
       - name: Build
         working-directory: ./metaplatform-frontend
         run: pnpm build
+
 
