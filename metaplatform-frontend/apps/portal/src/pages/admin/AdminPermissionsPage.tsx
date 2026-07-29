@@ -128,7 +128,7 @@ export default function AdminPermissionsPage() {
       setCreateOpen(false);
       setCreateForm({ roleCode: '', roleName: '', roleType: 'CUSTOM', description: '' });
       await load();
-      if (created?.roleId) selectRole(created);
+      if (created?.id !== undefined) selectRole(created);
     } catch (e) {
       setError(e instanceof Error ? e.message : '创建失败');
     } finally {
@@ -158,7 +158,7 @@ export default function AdminPermissionsPage() {
   useEffect(() => { load(); /* eslint-disable-next-line */ }, []);
 
   const selectRole = (r: RoleResponse) => {
-    setSelectedRoleId(r.roleId);
+    setSelectedRoleId(String(r.id));
     setEditingInfo(false);
     setEditingName(r.roleName);
     setEditingDesc(r.description ?? '');
@@ -203,7 +203,7 @@ export default function AdminPermissionsPage() {
     return r.description;
   };
 
-  const selected = useMemo(() => roles.find((r) => r.roleId === selectedRoleId) ?? null, [roles, selectedRoleId]);
+  const selected = useMemo(() => roles.find((r) => String(r.id) === selectedRoleId) ?? null, [roles, selectedRoleId]);
 
   const toggleMenu = (id: string) => {
     setMenuPerms((s) => { const ns = new Set(s); ns.has(id) ? ns.delete(id) : ns.add(id); return ns; });
@@ -242,9 +242,9 @@ export default function AdminPermissionsPage() {
       setEditingInfo(false);
       // 不调用 load() 以免跳到第一个角色，改为刷新当前角色
       const updated = await Api.getRole(selected.roleId);
-      if (updated?.roleId === selected.roleId) {
+      if (updated?.id && String(updated.id) === selected.roleId) {
         setSelectedRoleId(null);  // force re-render
-        setTimeout(() => setSelectedRoleId(updated.roleId), 0);
+        setTimeout(() => setSelectedRoleId(String(updated.id)), 0);
       }
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : '保存失败');
@@ -268,9 +268,9 @@ export default function AdminPermissionsPage() {
       setPolicyDirty(false);
       // 重新拉取当前角色以更新本地版本号，避免跳到第一个角色
       const updated = await Api.getRole(selected.roleId);
-      if (updated?.roleId === selected.roleId) {
+      if (updated?.id && String(updated.id) === selected.roleId) {
         setSelectedRoleId(null);
-        setTimeout(() => setSelectedRoleId(updated.roleId), 0);
+        setTimeout(() => setSelectedRoleId(String(updated.id)), 0);
       }
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : '保存失败');
@@ -343,10 +343,10 @@ export default function AdminPermissionsPage() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                   {roles.map((r) => {
                     const Icon = ROLE_ICON[r.roleCode] || ROLE_ICON[r.roleType] || Shield;
-                    const isActive = r.roleId === selectedRoleId;
+                    const isActive = String(r.id) === selectedRoleId;
                     return (
                       <div
-                        key={r.roleId}
+                        key={String(r.id)}
                         onClick={() => selectRole(r)}
                         style={{
                           padding: '12px 14px',
