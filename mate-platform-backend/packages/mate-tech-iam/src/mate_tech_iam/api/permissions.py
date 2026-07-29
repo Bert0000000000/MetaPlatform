@@ -6,7 +6,7 @@ from typing import Any
 
 import structlog
 from fastapi import APIRouter, HTTPException, Query, Request, status
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -31,11 +31,31 @@ class RoleOut(BaseModel):
     name: str
     description: str | None = None
     data_scope: str
-    is_builtin: bool
+    # The portal AdminOperationsPage logic keys off role_type to bucket
+    # roles into SYSTEM / BUILTIN / CUSTOM groups. PLATFORM_* codes are
+    # SYSTEM, is_builtin roles (the three built-in role templates) are
+    # BUILTIN, everything else is CUSTOM.
+    role_type: str = "CUSTOM"
+    is_system: bool = False
+    is_builtin: bool = False
+    # Roles are not soft-disabled in the current model, but expose an
+    # explicit flag so the frontend can drop or grey out rows when added.
+    enabled: bool = True
     created_at: datetime
     updated_at: datetime
     permission_count: int = 0
     user_count: int = 0
+
+    @model_validator(mode="after")
+    def _derive_role_type(self) -> "RoleOut":
+        # PLATFORM_* codes are SYSTEM; is_builtin (without PLATFORM_ prefix)
+        # is BUILTIN; everything else is CUSTOM.
+        if self.code and self.code.startswith("PLATFORM_"):
+            object.__setattr__(self, "role_type", "SYSTEM")
+            object.__setattr__(self, "is_system", True)
+        elif self.is_builtin:
+            object.__setattr__(self, "role_type", "BUILTIN")
+        return self
 
 
 class RoleCreate(BaseModel):
