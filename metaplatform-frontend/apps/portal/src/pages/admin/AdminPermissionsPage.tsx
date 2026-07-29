@@ -160,7 +160,7 @@ export default function AdminPermissionsPage() {
   const selectRole = (r: RoleResponse) => {
     setSelectedRoleId(String(r.id));
     setEditingInfo(false);
-    setEditingName(r.roleName);
+    setEditingName(r.name);
     setEditingDesc(r.description ?? '');
     // 切换角色时：从 r.policy 加载该角色的策略，重置所有修改状态
     loadPolicyFromRole(r);
@@ -361,8 +361,8 @@ export default function AdminPermissionsPage() {
                           <div style={{ width: 32, height: 32, borderRadius: 'var(--radius)', background: 'var(--muted)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                             <Icon size={16} style={{ color: r.roleType === 'SYSTEM' ? 'var(--warning)' : r.roleType === 'BUILTIN' ? '#60a5fa' : 'var(--foreground)' }} />
                           </div>
-                          <span style={{ fontSize: 13, fontWeight: 500, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.roleName}</span>
-                          <span style={{ fontSize: 11, color: 'var(--muted-foreground)', background: 'var(--muted)', border: '1px solid var(--border)', borderRadius: 9999, padding: '1px 7px', flexShrink: 0 }}>{r.memberCount ?? 0}</span>
+                          <span style={{ fontSize: 13, fontWeight: 500, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.name}</span>
+                          <span style={{ fontSize: 11, color: 'var(--muted-foreground)', background: 'var(--muted)', border: '1px solid var(--border)', borderRadius: 9999, padding: '1px 7px', flexShrink: 0 }}>{r.userCount ?? 0}</span>
                         </div>
                         <div style={{ fontSize: 12, color: 'var(--muted-foreground)', lineHeight: 1.5, paddingLeft: 40, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                           {getDisplayDescription(r) || '暂无描述'}
