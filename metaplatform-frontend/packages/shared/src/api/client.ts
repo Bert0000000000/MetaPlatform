@@ -53,8 +53,11 @@ export function createApiClient(opts: { baseURL?: string } = {}): AxiosInstance 
       const data = resp.data;
       if (data && typeof data === 'object' && 'code' in data && 'data' in data) {
         const wrapped = data as ApiResponse<unknown>;
-        if (wrapped.code === 0) {
-          resp.data = wrapped.data;
+          if (wrapped.code === 0) {
+          // Backend returns snake_case; provide camelCase aliases + map
+          // IAM-specific status (ACTIVE/INACTIVE/PLATFORM_*) onto the legacy
+          // ENABLED/DISABLED/SYSTEM/BUILTIN tokens the portal uses.
+          resp.data = remapUserStatus(normalizeKeys(wrapped.data));
           return resp;
         }
         throw new BizError(wrapped.code, wrapped.message || '业务错误', wrapped.traceId, wrapped);
@@ -121,4 +124,48 @@ async function tryRefreshToken(): Promise<boolean> {
 }
 
 /** 默认客户端实例 */
+/**
+ * Recursively mirror snake_case keys to camelCase so the rest of the
+ * portal can keep reading .realName / .lastLoginAt / .roleIds while the
+ * backend (Mate Platform IAM) still returns the canonical snake_case
+ * fields (real_name, last_login_at, role_ids, ...). The original keys
+ * are preserved alongside the camelCase aliases.
+ */
+function snakeToCamelKey(k: string): string {
+  return k.replace(/_([a-z0-9])/g, (_, c) => c.toUpperCase());
+}
+function normalizeKeys<T = unknown>(input: T): T {
+  if (Array.isArray(input)) return input.map((v) => normalizeKeys(v)) as unknown as T;
+  if (input && typeof input === 'object') {
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(input as Record<string, unknown>)) {
+      const camel = snakeToCamelKey(k);
+      out[camel] = normalizeKeys(v as unknown);
+      if (camel !== k) out[k] = out[camel];
+    }
+    return out as T;
+  }
+  return input;
+}
+/**
+ * Map IAM's status / roleType values onto the legacy tokens the
+ * portal pages still hardcode (e.g. `u.status === 'ENABLED'`,
+ * `r.roleType === 'SYSTEM'`).
+ */
+function remapUserStatus<T = unknown>(input: T): T {
+  if (Array.isArray(input)) {
+    (input as unknown[]).forEach((v) => remapUserStatus(v));
+    return input;
+  }
+  if (input && typeof input === 'object') {
+    const obj = input as Record<string, unknown>;
+    if (obj.status === 'ACTIVE') obj.status = 'ENABLED';
+    else if (obj.status === 'INACTIVE') obj.status = 'DISABLED';
+    if (obj.roleType === 'PLATFORM_SUPER_ADMIN') obj.roleType = 'SYSTEM';
+    else if (obj.roleType === 'PLATFORM_ADMIN') obj.roleType = 'SYSTEM';
+    else if (obj.roleType === 'PLATFORM_ADMIN_VIEWER') obj.roleType = 'BUILTIN';
+  }
+  return input;
+}
+
 export const apiClient: AxiosInstance = createApiClient();

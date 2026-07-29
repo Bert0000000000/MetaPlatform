@@ -9,7 +9,7 @@ import {
   SubTabs, PageLoading, type SubTabItem,
   Api,
 } from '@mate/shared';
-import type { UserResponse, RoleResponse, PermissionResponse, AuditLogStatistics } from '@mate/shared/api';
+import type { UserResponse, RoleResponse, PermissionResponse, AuditLogStatistics, AuditLogCount } from '@mate/shared/api';
 
 const ADMIN_TABS: SubTabItem[] = [
   { label: '用户管理', path: '/admin' },
@@ -54,17 +54,27 @@ export default function AdminOperationsPage() {
   };
   useEffect(() => { load(); /* eslint-disable-next-line */ }, []);
 
-  const userEnabled = users.filter((u) => u.status === 'ENABLED').length;
+  // Mate Platform IAM normalises status to ENABLED/DISABLED on the wire
+  // and roles carry the new roleType tokens; the page logic below is the
+  // single place those rules are encoded.
+  const userEnabled = users.filter((u) => u.status === 'ENABLED' || u.status === 'ACTIVE').length;
   const userLocked = users.filter((u) => u.status === 'LOCKED').length;
   const userRecent = users.filter((u) => u.lastLoginAt && Date.now() - new Date(u.lastLoginAt).getTime() < 7 * 86400 * 1000).length;
-  const roleEnabled = roles.filter((r) => r.enabled).length;
-  const systemRoles = roles.filter((r) => r.roleType === 'SYSTEM' || r.roleType === 'BUILTIN').length;
+  const roleEnabled = roles.filter((r) => r.enabled ?? r.isEnabled).length;
+  const systemRoles = roles.filter((r) => ['SYSTEM', 'BUILTIN', 'PLATFORM_SUPER_ADMIN', 'PLATFORM_ADMIN', 'PLATFORM_ADMIN_VIEWER'].includes(r.roleType as string)).length;
   const customRoles = roles.filter((r) => r.roleType === 'CUSTOM').length;
-  const allowPerms = perms.filter((p) => p.effect === 'ALLOW').length;
-  const denyPerms = perms.filter((p) => p.effect === 'DENY').length;
+  // The permissions/catalog handler omits the per-row `effect` field
+  // (effect is on the role-binding, not the catalog row). The page
+  // therefore cannot count ALLOW/DENY rows reliably and skips the metric.
   const resourceTypes = new Set(perms.map((p) => p.resourceType)).size;
-  const totalLogins = stats?.byAction?.LOGIN ?? 0;
-  const totalLoginsFailed = stats?.byAction?.LOGIN_FAILED ?? 0;
+  // Convert the backend's actions: [{value, count}] into a byAction map
+  // the existing template expects.
+  const byAction: Record<string, number> = (stats?.actions ?? []).reduce(
+    (acc, a) => { if (a && typeof a === 'object' && 'value' in a && 'count' in a) acc[(a as {value:string}).value] = (a as {count:number}).count; return acc; },
+    {} as Record<string, number>,
+  );
+  const totalLogins = byAction['LOGIN'] ?? 0;
+  const totalLoginsFailed = byAction['LOGIN_FAILED'] ?? 0;
 
   const metrics: Metric[] = [
     { label: '总用户数', value: users.length, sub: '本租户', icon: <Users size={16} />, tone: 'default' },
@@ -72,7 +82,7 @@ export default function AdminOperationsPage() {
     { label: '7 日登录', value: userRecent, sub: '曾登录用户', icon: <Clock size={16} />, tone: 'default' },
     { label: '总角色数', value: roles.length, sub: '系统 ' + systemRoles + ' / 自定义 ' + customRoles, icon: <Shield size={16} />, tone: 'default' },
     { label: '启用角色', value: roleEnabled, sub: '共 ' + roles.length + ' 个', icon: <Shield size={16} />, tone: 'success' },
-    { label: '权限数', value: perms.length, sub: '覆盖 ' + resourceTypes + ' 类资源 / 允许 ' + allowPerms + ' / 拒绝 ' + denyPerms, icon: <Key size={16} />, tone: 'default' },
+    { label: '权限数', value: perms.length, sub: '覆盖 ' + resourceTypes + ' 类资源', icon: <Key size={16} />, tone: 'default' },
     { label: '登录尝试', value: totalLogins, sub: '失败 ' + totalLoginsFailed, icon: <LogIn size={16} />, tone: 'default' },
     { label: '审计日志', value: stats?.totalCount ?? '-', sub: '成功 ' + (stats?.successCount ?? 0) + ' / 失败 ' + (stats?.failureCount ?? 0), icon: <Activity size={16} />, tone: 'default' },
   ];

@@ -26,10 +26,21 @@ export interface AuditLogResponse {
   createdAt: string;
 }
 
+// Mate Platform IAM admin /api/v1/admin/logs/modules returns:
+//   { modules: [{value:string, count:number}], actions: [{value:string, count:number}] }
+// The portal OperationsPage uses byAction/byUser counts; we expose the raw
+// `actions`/`modules` here and the page derives counts from those.
+export interface AuditLogCount {
+  value: string;
+  count: number;
+}
+
 export interface AuditLogStatistics {
-  totalCount: number;
-  successCount: number;
-  failureCount: number;
+  modules?: AuditLogCount[];
+  actions?: AuditLogCount[];
+  totalCount?: number;
+  successCount?: number;
+  failureCount?: number;
   byAction?: Record<string, number>;
   byUser?: Record<string, number>;
   byResourceType?: Record<string, number>;

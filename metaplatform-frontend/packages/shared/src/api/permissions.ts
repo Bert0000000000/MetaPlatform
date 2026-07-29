@@ -10,17 +10,26 @@ import type { PageResponse } from './types';
 
 export type PermissionEffect = 'ALLOW' | 'DENY';
 
+// Mate Platform IAM admin catalog returns: id:number, code, name,
+// resource_type, actions[], description (effect is on the role-binding,
+// not on the catalog row). After normalizer, both naming styles exist.
 export interface PermissionResponse {
-  permissionId: string;
-  permissionCode: string;
-  permissionName: string;
+  id: number;
+  permissionId?: number;
+  code: string;
+  permissionCode?: string;
+  name: string;
+  permissionName?: string;
   resourceType: string;
-  resourceId?: string;
+  resource_type?: string;
+  resourceId?: string | null;
+  resource_id?: string | null;
   actions: string[];
-  effect: PermissionEffect;
-  description?: string;
+  effect?: PermissionEffect;
+  description?: string | null;
   version?: number;
   roleCount?: number;
+  role_count?: number;
   createdAt?: string;
   updatedAt?: string;
 }

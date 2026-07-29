@@ -10,19 +10,40 @@ import type { PageResponse } from './types';
 
 // === DTO 类型对齐 ===
 
-export type UserStatus = 'ENABLED' | 'DISABLED' | 'LOCKED' | 'PENDING';
+export type UserStatus = 'ACTIVE' | 'INACTIVE' | 'LOCKED' | 'PENDING';
+// Display-friendly status used by the portal (legacy). Backend ACTIVE maps to ENABLED.
+export type UserStatusDisplay = 'ENABLED' | 'DISABLED' | 'LOCKED' | 'PENDING';
 
+// Mate Platform IAM admin returns snake_case fields with numeric id.
+// After client.ts response normalizer, the camelCase aliases below are also
+// available so existing portal code that reads u.realName / u.lastLoginAt
+// keeps working.
 export interface UserResponse {
-  id: string;
-  tenantId: string;
+  id: number;
+  tenantId?: string;
+  tenant_id?: string;
   username: string;
-  email: string;
-  realName?: string;
-  phone?: string;
-  avatarUrl?: string;
+  email: string | null;
+  realName?: string | null;
+  real_name?: string | null;
+  phone?: string | null;
+  avatarUrl?: string | null;
+  avatar?: string | null;
+  department?: string | null;
+  position?: string | null;
+  isSuperAdmin?: boolean;
+  is_super_admin?: boolean;
   status: UserStatus;
   requirePasswordReset?: boolean;
-  lastLoginAt?: string;
+  require_password_reset?: boolean;
+  lastLoginAt?: string | null;
+  last_login_at?: string | null;
+  lastLoginIp?: string | null;
+  last_login_ip?: string | null;
+  roleIds?: number[];
+  role_ids?: number[];
+  roleCodes?: string[];
+  role_codes?: string[];
   createdAt?: string;
   updatedAt?: string;
 }

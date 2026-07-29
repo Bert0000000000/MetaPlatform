@@ -8,16 +8,36 @@ import { apiClient } from './client';
 import { apiPath } from '../config/apiConfig';
 import type { PageResponse } from './types';
 
-export type RoleType = 'SYSTEM' | 'CUSTOM' | 'BUILTIN' | 'EXTERNAL';
+// Mate Platform IAM admin uses additional role codes:
+// PLATFORM_SUPER_ADMIN, PLATFORM_ADMIN, PLATFORM_ADMIN_VIEWER.
+export type RoleType = 'SYSTEM' | 'CUSTOM' | 'BUILTIN' | 'EXTERNAL' | 'PLATFORM_SUPER_ADMIN' | 'PLATFORM_ADMIN' | 'PLATFORM_ADMIN_VIEWER' | string;
 export type DataScope = 'SELF' | 'DEPARTMENT' | 'DEPARTMENT_TREE' | 'ALL' | 'CUSTOM';
 
+// Mate Platform IAM admin returns: id:number, code, name, is_builtin, role_type
+// (e.g. PLATFORM_ADMIN), data_scope, user_count, permission_count. After
+// normalizer, both snake_case and camelCase aliases are available.
 export interface RoleResponse {
-  roleId: string;
-  roleCode: string;
-  roleName: string;
+  id: number;
+  roleId?: number;
+  code: string;
+  roleCode?: string;
+  name: string;
+  roleName?: string;
   roleType: RoleType;
-  description?: string;
+  description?: string | null;
   dataScope?: DataScope;
+  data_scope?: DataScope;
+  isBuiltin?: boolean;
+  is_builtin?: boolean;
+  isSystem?: boolean;
+  is_system?: boolean;
+  isEnabled?: boolean;
+  enabled?: boolean;
+  userCount?: number;
+  user_count?: number;
+  permissionCount?: number;
+  permission_count?: number;
+  version?: number;
   enabled: boolean;
   version?: number;
   permissionCount?: number;
