@@ -15,7 +15,7 @@ export default defineConfig({
     port: 9230,
     proxy: {
       '/api/v1/dashboard': {
-        target: 'http://localhost:9001',
+        target: 'http://localhost:8102',
         changeOrigin: true,
       },
       '/api/v1/iam': {
@@ -35,5 +35,6 @@ export default defineConfig({
     sourcemap: false,
   },
 });
+
 
 
