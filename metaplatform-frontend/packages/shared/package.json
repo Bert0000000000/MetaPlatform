@@ -11,7 +11,8 @@
     "./global.css": "./src/global.css",
     "./flow": "./src/components/flow/index.ts",
     "./flow/styles.css": "./src/components/flow/flow-canvas.css",
-    "./api": "./src/api/index.ts"
+    "./api": "./src/api/index.ts",
+    "./components/SharedLoginPage": "./src/components/SharedLoginPage.tsx"
   },
   "peerDependencies": {
     "antd": "^6.0.0",

@@ -38,6 +38,7 @@ export { default as CardSkeleton } from './components/CardSkeleton';
 export { default as InlineLoading } from './components/InlineLoading';
 export { default as ErrorState } from './components/ErrorState';
 export { default as EmptyState } from './components/EmptyState';
+export { default as SharedLoginPage } from './components/SharedLoginPage';
 export { default as MateLogo, MateBrand, type MateLogoProps, type MateBrandProps, type MateLogoVariant } from './components/MateLogo';
 export { default as StateContainer } from './components/StateContainer';
 export { default as PageHeader } from './components/PageHeader';
