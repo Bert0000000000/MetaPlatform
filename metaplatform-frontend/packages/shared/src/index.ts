@@ -1,4 +1,4 @@
-// P4 interaction, renderer, and built-in icon APIs.
+﻿// P4 interaction, renderer, and built-in icon APIs.
 export * from './interaction/InteractionContextProvider';
 export * from './renderers/ClaimRenderer';
 export * from './renderers/EvidenceRenderer';
@@ -51,6 +51,7 @@ export * as FlowCanvas from './components/flow';
 export * as Api from './api';
 export { useAsyncError } from './errors';
 export { useAsync } from './hooks/useAsync';
+export { useWebSocket, type UseWebSocketOptions, type UseWebSocketResult, type WsMessage } from './hooks/useWebSocket';
 export { useLoadingState } from './hooks/useLoadingState';
 export {
   formatDateTime,
@@ -62,3 +63,4 @@ export {
 
 import './global.css';
 export * from './components/assistant';
+
