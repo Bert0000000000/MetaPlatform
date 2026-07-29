@@ -30,6 +30,7 @@ dependencies = [
     "opentelemetry-instrumentation-fastapi>=0.48b0",
     "opentelemetry-instrumentation-httpx>=0.48b0",
     "mate-common",
+    "rdflib>=7.0",
 ]
 
 

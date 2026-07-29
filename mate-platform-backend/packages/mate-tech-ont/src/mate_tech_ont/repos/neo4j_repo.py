@@ -27,7 +27,7 @@ class GraphEdge:
     type: str
     src_id: str
     dst_id: str
-    properties: dict[str, Any]
+    properties: dict[str, Any] = None
 
 
 class Neo4jGraphRepository:
