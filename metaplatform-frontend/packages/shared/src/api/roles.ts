@@ -94,13 +94,26 @@ export async function getRole(roleId: string): Promise<RoleResponse> {
 
 export async function createRole(payload: CreateRoleRequest): Promise<RoleResponse> {
   const url = apiPath('iam', '/roles');
-  const resp = await apiClient.post<RoleResponse>(url, payload);
+  // Backend RoleCreate expects snake_case (code, name, data_scope,
+  // permission_ids). Map the legacy camelCase interface onto that.
+  const resp = await apiClient.post<RoleResponse>(url, {
+    code: payload.roleCode,
+    name: payload.roleName,
+    description: payload.description,
+    data_scope: payload.dataScope,
+    permission_ids: [],
+  });
   return resp.data;
 }
 
 export async function updateRole(roleId: string, payload: UpdateRoleRequest): Promise<RoleResponse> {
   const url = apiPath('iam', '/roles/' + roleId);
-  const resp = await apiClient.put<RoleResponse>(url, payload);
+  // Backend RoleUpdate expects snake_case; map the legacy fields.
+  const body: Record<string, unknown> = {};
+  if (payload.roleName !== undefined) body.name = payload.roleName;
+  if (payload.description !== undefined) body.description = payload.description;
+  if (payload.dataScope !== undefined) body.data_scope = payload.dataScope;
+  const resp = await apiClient.put<RoleResponse>(url, body);
   return resp.data;
 }
 
@@ -111,5 +124,8 @@ export async function deleteRole(roleId: string): Promise<void> {
 
 export async function assignRolePermissions(roleId: string, permissionIds: string[]): Promise<void> {
   const url = apiPath('iam', '/roles/' + roleId + '/permissions');
-  await apiClient.put(url, { permissionIds });
+  // Backend expects snake_case permission_ids and numeric ids (the role-
+  // permission link table uses int). Coerce string ids to numbers where possible.
+  const ids = permissionIds.map((p) => Number(p)).filter((n) => Number.isFinite(n));
+  await apiClient.put(url, { permission_ids: ids });
 }

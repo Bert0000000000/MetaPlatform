@@ -95,13 +95,30 @@ export async function getUser(userId: string): Promise<UserResponse> {
 
 export async function createUser(payload: CreateUserRequest): Promise<UserResponse> {
   const url = apiPath('iam', '/users');
-  const resp = await apiClient.post<UserResponse>(url, payload);
+  // Backend UserCreate expects snake_case; map the legacy camelCase
+  // interface fields onto the current admin router contract.
+  const resp = await apiClient.post<UserResponse>(url, {
+    username: payload.username,
+    real_name: payload.realName,
+    email: payload.email,
+    phone: payload.phone,
+    status: payload.status,
+  });
   return resp.data;
 }
 
 export async function updateUser(userId: string, payload: UpdateUserRequest): Promise<UserResponse> {
   const url = apiPath('iam', '/users/' + userId);
-  const resp = await apiClient.put<UserResponse>(url, payload);
+  // Backend UserUpdate expects snake_case; map the legacy camelCase
+  // fields and drop any keys the model does not accept.
+  const body: Record<string, unknown> = {};
+  if (payload.email !== undefined) body.email = payload.email;
+  if (payload.realName !== undefined) body.real_name = payload.realName;
+  if (payload.phone !== undefined) body.phone = payload.phone;
+  if (payload.avatarUrl !== undefined) body.avatar = payload.avatarUrl;
+  if (payload.status !== undefined) body.status = payload.status;
+  if (payload.requirePasswordReset !== undefined) body.require_password_reset = payload.requirePasswordReset;
+  const resp = await apiClient.put<UserResponse>(url, body);
   return resp.data;
 }
 
@@ -111,17 +128,20 @@ export async function deleteUser(userId: string): Promise<void> {
 }
 
 export async function updateUserStatus(userId: string, status: UserStatus): Promise<UserResponse> {
+  // Backend POST /api/v1/admin/users/{id}/status expects { status } (POST not PATCH).
   const url = apiPath('iam', '/users/' + userId + '/status');
-  const resp = await apiClient.patch<UserResponse>(url, { status });
+  const resp = await apiClient.post<UserResponse>(url, { status });
   return resp.data;
 }
 
 export async function resetUserPassword(userId: string, newPassword: string): Promise<void> {
-  const url = apiPath('iam', '/users/' + userId + '/password/reset');
-  await apiClient.post(url, { newPassword });
+  // Backend /api/v1/admin/users/{id}/reset-password expects POST with { new_password }
+  const url = apiPath('iam', '/users/' + userId + '/reset-password');
+  await apiClient.post(url, { new_password: newPassword });
 }
 
 export async function changePassword(oldPassword: string, newPassword: string): Promise<void> {
+  // Backend POST /api/v1/admin/users/me/password expects { old_password, new_password }
   const url = apiPath('iam', '/users/me/password');
-  await apiClient.post(url, { oldPassword, newPassword });
+  await apiClient.post(url, { old_password: oldPassword, new_password: newPassword });
 }

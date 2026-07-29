@@ -9,7 +9,7 @@ from typing import Any
 import structlog
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 
 from .api import (auth_router, configs_router, logs_router, orgs_router, permissions_router, users_router)
 from .db import AsyncSessionMaker, db_health, init_db
@@ -111,6 +111,7 @@ class _PortalIamAliasMiddleware(BaseHTTPMiddleware):
             r"roles(?:/[^/]+)?|/role/[^/]+|/roles/[^/]+/permissions|"
             r"permissions(?:/[^/]+)?|/permission/[^/]+|"
             r"logs(?:/[^/]+)?|/logs/audit|/logs/audit/\d+|/logs/audit/export|/logs/modules|"
+            r"operations(?:/[^/]+)?|"
             r"audit-logs(?:/[^/]+)?|/audit-logs/[^/]+|/audit-logs/statistics|/audit-logs/export|"
             r"departments(?:/[^/]+)?|/departments/[^/]+|/departments/tree|"
             r"api-keys(?:/[^/]+)?|/api-keys/[^/]+|/api-keys/[^/]+/revoke|"
@@ -124,9 +125,27 @@ class _PortalIamAliasMiddleware(BaseHTTPMiddleware):
             "audit-logs/statistics": "logs/modules",
             "departments": "orgs/tree",
             "departments/tree": "orgs/tree",
+            # For segments that map 1:1 between the portal and admin routers
+            # (users / orgs / roles / permissions / logs), we use identity
+            # aliases so the captured <sub>-path stays intact: e.g.
+            #   /api/v1/iam/permissions/roles   -> /api/v1/admin/permissions/roles
+            #   /api/v1/iam/permissions/catalog  -> /api/v1/admin/permissions/catalog
+            #   /api/v1/iam/users/1/departments -> /api/v1/admin/users/1/departments
+            # The original aliases that pointed permissions -> permissions/catalog
+            # broke these calls; drop them and use identity instead.
+            "users": "users",
+            "user/[^/]+/departments": "users",
+            "orgs": "orgs",
+            "org/[^/]+": "orgs",
+            "orgs/positions": "orgs/positions",
+            "orgs/transfer": "orgs/transfer",
+            "orgs/[^/]+": "orgs",
             "roles": "permissions/roles",
-            "permissions": "permissions/catalog",
+            "role/[^/]+/permissions": "roles",
+            "role/[^/]+": "roles",
+            "permissions": "permissions",
             "logs": "logs/audit",
+            "operations": "operations",
             "logs/audit": "logs/audit",          # identity (alias already has trailing segment)
             "logs/modules": "logs/modules",
             "logs/audit/export": "logs/audit/export",
@@ -162,7 +181,43 @@ class _PortalIamAliasMiddleware(BaseHTTPMiddleware):
             new_path = "/api/v1/admin/" + legacy_svc + tail
         request.scope["path"] = new_path
         request.scope["raw_path"] = new_path.encode("utf-8")
+        # When the rewritten path is an operations endpoint and the IAM
+        # router does not have a matching handler, forward to the local
+        # obs service. In the Docker compose setup the API gateway does
+        # this forwarding, but in bare-Python local dev we do not run
+        # the gateway so the middleware has to handle it.
+        if new_path.startswith("/api/v1/admin/operations/"):
+            return await self._forward_to_obs(request, new_path)
         return await call_next(request)
+
+    async def _forward_to_obs(self, request, new_path: str):
+        import httpx
+        obs_base = "http://127.0.0.1:8083"
+        target_url = obs_base + new_path
+        body = await request.body()
+        skip = {"host", "content-length", "connection", "keep-alive",
+                "proxy-authenticate", "proxy-authorization", "te", "trailers",
+                "transfer-encoding", "upgrade"}
+        headers = {k: v for k, v in request.headers.items() if k.lower() not in skip}
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            try:
+                upstream = await client.request(
+                    method=request.method,
+                    url=target_url,
+                    params=request.url.query,
+                    headers=headers,
+                    content=body,
+                )
+            except httpx.RequestError as exc:
+                return JSONResponse(
+                    status_code=502,
+                    content={"code": "E502_UPSTREAM", "message": f"obs upstream error: {exc}"},
+                )
+        return Response(
+            content=upstream.content,
+            status_code=upstream.status_code,
+            headers={k: v for k, v in upstream.headers.items() if k.lower() not in skip},
+        )
 
 app.add_middleware(_PortalIamAliasMiddleware)
 

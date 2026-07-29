@@ -82,19 +82,35 @@ export async function getDepartment(deptId: string): Promise<DepartmentResponse>
 }
 
 export async function createDepartment(payload: CreateDepartmentRequest): Promise<DepartmentResponse> {
-  const url = apiPath('iam', '/departments');
-  const resp = await apiClient.post<DepartmentResponse>(url, payload);
+  // portal CreateDepartmentRequest uses deptCode/deptName/parentId/leaderId/sortOrder;
+  // IAM admin /api/v1/admin/orgs expects snake_case (code/name/parent_id/leader_id/sort_order).
+  const url = apiPath('iam', '/orgs');
+  const resp = await apiClient.post<DepartmentResponse>(url, {
+    code: payload.deptCode,
+    name: payload.deptName,
+    parent_id: payload.parentId ? Number(payload.parentId) : null,
+    leader_id: payload.leaderId ? Number(payload.leaderId) : null,
+    sort_order: payload.sortOrder,
+    description: payload.description,
+  });
   return resp.data;
 }
 
 export async function updateDepartment(deptId: string, payload: UpdateDepartmentRequest): Promise<DepartmentResponse> {
-  const url = apiPath('iam', '/departments/' + deptId);
-  const resp = await apiClient.put<DepartmentResponse>(url, payload);
+  // /departments/{id} admin path is not implemented; admin endpoint is /orgs/{id}.
+  const url = apiPath('iam', '/orgs/' + deptId);
+  const body: Record<string, unknown> = {};
+  if (payload.deptName !== undefined) body.name = payload.deptName;
+  if (payload.parentId !== undefined) body.parent_id = payload.parentId ? Number(payload.parentId) : null;
+  if (payload.leaderId !== undefined) body.leader_id = payload.leaderId ? Number(payload.leaderId) : null;
+  if (payload.sortOrder !== undefined) body.sort_order = payload.sortOrder;
+  if (payload.description !== undefined) body.description = payload.description;
+  const resp = await apiClient.put<DepartmentResponse>(url, body);
   return resp.data;
 }
 
 export async function deleteDepartment(deptId: string): Promise<void> {
-  const url = apiPath('iam', '/departments/' + deptId);
+  const url = apiPath('iam', '/orgs/' + deptId);
   await apiClient.delete(url);
 }
 

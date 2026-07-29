@@ -60,12 +60,11 @@ export interface ListPermissionParams {
 }
 
 export async function listPermissions(params: ListPermissionParams = {}): Promise<PageResponse<PermissionResponse>> {
-  const url = apiPath('iam', '/permissions');
-  // The /api/v1/admin/permissions/catalog handler returns a flat JSON
-  // array under data (not a paginated wrapper). Normalise that into
-  // the PageResponse shape so callers (AdminOperationsPage etc.) can
-  // read .items / .total directly without crashing.
-  const resp = await apiClient.get<PageResponse<PermissionResponse> | PermissionResponse[]>(url, { params });
+  // The /api/v1/admin/permissions/catalog handler returns a flat JSON array
+  // under data. Normalise that into the PageResponse shape so callers
+  // (AdminOperationsPage etc.) can read .items / .total directly.
+  const url = apiPath('iam', '/permissions/catalog');
+  const resp = await apiClient.get<PermissionResponse[] | PageResponse<PermissionResponse>>(url, { params });
   const data = resp.data;
   if (Array.isArray(data)) {
     return {
@@ -85,14 +84,29 @@ export async function getPermission(permissionId: string): Promise<PermissionRes
 }
 
 export async function createPermission(payload: CreatePermissionRequest): Promise<PermissionResponse> {
+  // Backend expects snake_case: code, name, resource_type, resource_id?, actions[], effect?, description?
   const url = apiPath('iam', '/permissions');
-  const resp = await apiClient.post<PermissionResponse>(url, payload);
+  const resp = await apiClient.post<PermissionResponse>(url, {
+    code: payload.permissionCode,
+    name: payload.permissionName,
+    resource_type: payload.resourceType,
+    resource_id: payload.resourceId,
+    actions: payload.actions,
+    effect: payload.effect,
+    description: payload.description,
+  });
   return resp.data;
 }
 
 export async function updatePermission(permissionId: string, payload: UpdatePermissionRequest): Promise<PermissionResponse> {
   const url = apiPath('iam', '/permissions/' + permissionId);
-  const resp = await apiClient.put<PermissionResponse>(url, payload);
+  // Backend expects snake_case; map optional fields.
+  const body: Record<string, unknown> = {};
+  if (payload.permissionName !== undefined) body.name = payload.permissionName;
+  if (payload.actions !== undefined) body.actions = payload.actions;
+  if (payload.effect !== undefined) body.effect = payload.effect;
+  if (payload.description !== undefined) body.description = payload.description;
+  const resp = await apiClient.put<PermissionResponse>(url, body);
   return resp.data;
 }
 

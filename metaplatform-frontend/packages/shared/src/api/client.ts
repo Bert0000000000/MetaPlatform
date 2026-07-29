@@ -10,6 +10,7 @@
 import axios, { AxiosError, type AxiosInstance, type AxiosRequestConfig, type InternalAxiosRequestConfig } from 'axios';
 import { API_BASE } from '../config/apiConfig';
 import { BizError, HttpError, type ApiResponse } from './types';
+import { message as messageApi } from 'antd';
 import { getToken, getRefreshToken, getTenantId, setToken, setRefreshToken, removeToken } from '../auth/token';
 
 function genTraceId(): string {
@@ -89,6 +90,11 @@ export function createApiClient(opts: { baseURL?: string } = {}): AxiosInstance 
         }
       }
 
+      // Show a toast for every non-401 error so users see what went wrong.
+      // For 401 we don'"'"'t toast (the page will redirect to /login).
+      if (status !== 401 && message) {
+        try { messageApi.error(message); } catch { /* antd not loaded */ }
+      }
       throw new HttpError(status, message, traceId, payload);
     }
   );
