@@ -11,7 +11,7 @@ import {
   Clock,
 } from 'lucide-react';
 import { SubTabs, StepDrawer, FormDrawer, Field, TextInput, TextArea, Select, FormSection } from '@mate/shared';
-import { getMyAgents, getAgentExecLogs, type MyAgentItem, type AgentExecLogItem } from '@/api/dashboard';
+import { getMyAgents, getAgentExecLogs, type MyAgentItem, type AgentExecLogItem } from '@/api/dashboard/workbench';
 
 import { ShieldCheck, FileText, Receipt, Headphones, BarChart3, type LucideIcon } from 'lucide-react';
 

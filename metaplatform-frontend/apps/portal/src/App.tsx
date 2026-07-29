@@ -13,20 +13,9 @@ import {
 import LoginPage from './pages/LoginPage';
 
 // 懒加载各模块页面
-const DashboardPage = lazy(() => import('./pages/dashboard/DashboardPage'));
-const MyAppsPage = lazy(() => import('./pages/dashboard/MyAppsPage'));
-const MyAgentsPage = lazy(() => import('./pages/dashboard/MyAgentsPage'));
-const MessagesPage = lazy(() => import('./pages/dashboard/MessagesPage'));
-const PortalPage = lazy(() => import('./pages/dashboard/PortalPage'));
-const DeliverablesPage = lazy(() => import('./pages/dashboard/DeliverablesPage'));
 
 const SuperAIPage = lazy(() => import('./pages/superai/SuperAIPage'));
 
-const ArchBusinessPage = lazy(() => import('./pages/arch/ArchBusinessPage'));
-const ArchAppPage = lazy(() => import('./pages/arch/ArchAppPage'));
-const ArchDataPage = lazy(() => import('./pages/arch/ArchDataPage'));
-const ArchTechPage = lazy(() => import('./pages/arch/ArchTechPage'));
-const ArchGovernancePage = lazy(() => import('./pages/arch/ArchGovernancePage'));
 
 const ApphubAppListPage = lazy(() => import('./pages/apphub/AppListPage'));
 const ApphubAppDetailPage = lazy(() => import('./pages/apphub/AppDetailPage'));
@@ -49,6 +38,18 @@ const OntologyDatacenterPage = lazy(() => import('./pages/ontology/OntologyDatac
 const OntologyActionPage = lazy(() => import('./pages/ontology/OntologyActionPage'));
 const OntologyGraphPage = lazy(() => import('./pages/ontology/OntologyGraphPage'));
 
+const DashboardDashboardPage = lazy(() => import('./pages/dashboard/DashboardPage'));
+const DashboardNotificationsPage = lazy(() => import('./pages/dashboard/NotificationsPage'));
+const DashboardAiOpsPage = lazy(() => import('./pages/dashboard/AiOpsPage'));
+const DashboardSettingsPage = lazy(() => import('./pages/dashboard/SettingsPage'));
+const DashboardAdminOverviewPage = lazy(() => import('./pages/dashboard/admin/OverviewPage'));
+const DashboardAdminUsersPage = lazy(() => import('./pages/dashboard/admin/UsersPage'));
+const DashboardAdminPermissionsPage = lazy(() => import('./pages/dashboard/admin/PermissionsPage'));
+const DashboardAdminOrgsPage = lazy(() => import('./pages/dashboard/admin/OrgsPage'));
+const DashboardAdminLogsPage = lazy(() => import('./pages/dashboard/admin/LogsPage'));
+const DashboardAdminConfigsPage = lazy(() => import('./pages/dashboard/admin/ConfigsPage'));
+const DashboardAdminOperationsPage = lazy(() => import('./pages/dashboard/admin/OperationsPage'));
+const DashboardDeliverablesPage = lazy(() => import('./pages/dashboard/DeliverablesPage'));
 const ArchBusinessArchPage = lazy(() => import('./pages/arch/BusinessArchPage'));
 const ArchApplicationManagementPage = lazy(() => import('./pages/arch/ApplicationManagementPage'));
 const ArchCapabilityManagementPage = lazy(() => import('./pages/arch/CapabilityManagementPage'));
@@ -90,13 +91,6 @@ const AgentsTasksPage = lazy(() => import('./pages/agents/AgentsTasksPage'));
 const AgentsCollabPage = lazy(() => import('./pages/agents/AgentsCollabPage'));
 const AgentsEvaluationPage = lazy(() => import('./pages/agents/AgentsEvaluationPage'));
 
-const AdminUsersPage = lazy(() => import('./pages/admin/AdminUsersPage'));
-const AdminPermissionsPage = lazy(() => import('./pages/admin/AdminPermissionsPage'));
-const AdminOrgPage = lazy(() => import('./pages/admin/AdminOrgPage'));
-const AdminLogsPage = lazy(() => import('./pages/admin/AdminLogsPage'));
-const AdminConfigPage = lazy(() => import('./pages/admin/AdminConfigPage'));
-const AdminComponentsPage = lazy(() => import('./pages/admin/AdminComponentsPage'));
-const AdminOperationsPage = lazy(() => import('./pages/admin/AdminOperationsPage'));
 
 function Loading() {
   return (
@@ -121,16 +115,22 @@ function AppRoutes() {
             </AuthGuard>
           }
         >
-          {/* 工作台 */}
+          {/* 工作台(Phase 4.2: from apps/dashboard) */}
           <Route index element={<Navigate to="/dashboard" replace />} />
-          <Route path="dashboard" element={<DashboardPage />} />
-          <Route path="dashboard/my-apps" element={<MyAppsPage />} />
-          <Route path="dashboard/my-agents" element={<MyAgentsPage />} />
-          <Route path="dashboard/messages" element={<MessagesPage />} />
-          <Route path="dashboard/portal" element={<PortalPage />} />
-          <Route path="dashboard/deliverables" element={<DeliverablesPage />} />
+          <Route path="dashboard" element={<DashboardDashboardPage />} />
+          <Route path="dashboard/notifications" element={<DashboardNotificationsPage />} />
+          <Route path="dashboard/deliverables" element={<DashboardDeliverablesPage />} />
+          <Route path="dashboard/aiops" element={<DashboardAiOpsPage />} />
+          <Route path="dashboard/settings" element={<DashboardSettingsPage />} />
 
-          {/* SuperAI */}
+          {/* 后台管理(Phase 4.2: from apps/dashboard) */}
+          <Route path="admin" element={<DashboardAdminOverviewPage />} />
+          <Route path="admin/users" element={<DashboardAdminUsersPage />} />
+          <Route path="admin/permissions" element={<DashboardAdminPermissionsPage />} />
+          <Route path="admin/orgs" element={<DashboardAdminOrgsPage />} />
+          <Route path="admin/logs" element={<DashboardAdminLogsPage />} />
+          <Route path="admin/configs" element={<DashboardAdminConfigsPage />} />
+          <Route path="admin/operations" element={<DashboardAdminOperationsPage />} />
           <Route path="superai" element={<SuperAIPage />} />
 
           {/* 架构中心(Phase 4: from apps/arch) */}

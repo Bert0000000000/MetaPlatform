@@ -21,7 +21,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { SubTabs } from '@mate/shared';
-import { getPortals, type PortalItem } from '@/api/dashboard';
+import { getPortals, type PortalItem } from '@/api/dashboard/workbench';
 
 const DASHBOARD_TABS = [
   { label: '工作台', path: '/dashboard' },

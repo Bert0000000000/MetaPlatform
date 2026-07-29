@@ -22,7 +22,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { SubTabs, FormDrawer, Field, TextInput, TextArea, Select } from '@mate/shared';
-import { getMyApps, type MyAppItem } from '@/api/dashboard';
+import { getMyApps, type MyAppItem } from '@/api/dashboard/workbench';
 
 const DASHBOARD_TABS = [
   { label: '工作台', path: '/dashboard' },

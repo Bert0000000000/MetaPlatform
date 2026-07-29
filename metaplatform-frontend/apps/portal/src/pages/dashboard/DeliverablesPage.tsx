@@ -5,7 +5,7 @@ import {
   Database, Activity, Eye, Download, Trash2, Bot, User, type LucideIcon,
 } from 'lucide-react';
 import { SubTabs } from '@mate/shared';
-import { getDeliverablesSummary, type DeliverableItem, type DeliverableTimelineItem } from '@/api/dashboard';
+import { getDeliverablesSummary, type DeliverableItem, type DeliverableTimelineItem } from '@/api/dashboard/workbench';
 
 const DASHBOARD_TABS = [
   { label: '工作台', path: '/dashboard' },

@@ -12,7 +12,7 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { SubTabs, FormDrawer, Field, TextInput, TextArea, Select } from '@mate/shared';
-import { getDashboardSummary, type DashboardSummary, type DashboardStat, type RecentTask, type SystemHealthItem, type ActiveAgent } from '@/api/dashboard';
+import { getDashboardSummary, type DashboardSummary, type DashboardStat, type RecentTask, type SystemHealthItem, type ActiveAgent } from '@/api/dashboard/workbench';
 
 // 子标签页
 const DASHBOARD_TABS = [

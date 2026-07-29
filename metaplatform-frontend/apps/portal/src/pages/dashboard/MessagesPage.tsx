@@ -7,7 +7,7 @@ import {
   GitMerge, Zap, Sparkles, type LucideIcon,
 } from 'lucide-react';
 import { SubTabs } from '@mate/shared';
-import { getMessages, type MessageItem } from '@/api/dashboard';
+import { getMessages, type MessageItem } from '@/api/dashboard/workbench';
 
 const DASHBOARD_TABS = [
   { label: '工作台', path: '/dashboard' },
