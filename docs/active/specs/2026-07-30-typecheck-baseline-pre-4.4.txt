@@ -1,0 +1,779 @@
+﻿
+src/api/dw/evaluations.ts(10,3): error TS2305: Module '"./types"' has no exported member 'AutoScoreResult'.
+src/api/dw/evaluations.ts(11,3): error TS2305: Module '"./types"' has no exported member 'DimensionScore'.
+src/api/dw/evaluations.ts(12,3): error TS2305: Module '"./types"' has no exported member 'EvaluationReportDetail'.
+src/api/dw/evaluations.ts(13,3): error TS2305: Module '"./types"' has no exported member 'GenerateSuggestionsRequest'.
+src/api/dw/evaluations.ts(14,3): error TS2305: Module '"./types"' has no exported member 'GenerateSuggestionsResponse'.
+src/api/dw/evaluations.ts(15,3): error TS2305: Module '"./types"' has no exported member 'OptimizationSuggestion'.
+src/api/dw/evaluations.ts(16,3): error TS2305: Module '"./types"' has no exported member 'ScoringRubric'.
+src/api/dw/types/index.ts(85,15): error TS2307: Cannot find module './evaluation' or its corresponding type declaration
+s.
+src/api/ontology-bigdata.ts(42,42): error TS7006: Parameter 'params' implicitly has an 'any' type.
+src/api/ontology-bigdata.ts(59,40): error TS7006: Parameter 'sourceId' implicitly has an 'any' type.
+src/api/ontology-bigdata.ts(68,43): error TS7006: Parameter 'data' implicitly has an 'any' type.
+src/api/ontology-bigdata.ts(93,31): error TS2345: Argument of type '{ sourceId: string; tenantId: string; name: any; so
+urceType: any; host: any; port: any; database: any; schema: any; authType: any; sslEnabled: any; poolSize: any; queryTi
+meout: any; batchSize: any; status: string; ownerOrgId: string; ownerUserId: string; createdAt: string; updatedAt: stri
+ng; }' is not assignable to parameter of type 'BigDataSource'.
+src/api/ontology-bigdata.ts(98,43): error TS7006: Parameter 'sourceId' implicitly has an 'any' type.
+src/api/ontology-bigdata.ts(98,53): error TS7006: Parameter 'data' implicitly has an 'any' type.
+src/api/ontology-bigdata.ts(109,43): error TS7006: Parameter 'sourceId' implicitly has an 'any' type.
+src/api/ontology-bigdata.ts(119,51): error TS7006: Parameter 'sourceId' implicitly has an 'any' type.
+src/api/ontology-bigdata.ts(128,45): error TS7006: Parameter 'sourceId' implicitly has an 'any' type.
+src/api/ontology-bigdata.ts(145,36): error TS7006: Parameter 'params' implicitly has an 'any' type.
+src/api/ontology-bigdata.ts(160,34): error TS7006: Parameter 'taskId' implicitly has an 'any' type.
+src/api/ontology-bigdata.ts(169,37): error TS7006: Parameter 'data' implicitly has an 'any' type.
+src/api/ontology-bigdata.ts(196,25): error TS2345: Argument of type '{ taskId: string; tenantId: string; name: any; sou
+rceId: any; syncMode: any; startPosition: any; targetType: any; targetName: any; schemaEvolution: any; tables: any; con
+currency: any; batchSize: any; ... 7 more ...; updatedAt: string; }' is not assignable to parameter of type 'CDCTask'.
+src/api/ontology-bigdata.ts(201,36): error TS7006: Parameter 'taskId' implicitly has an 'any' type.
+src/api/ontology-bigdata.ts(210,37): error TS7006: Parameter 'taskId' implicitly has an 'any' type.
+src/api/ontology-bigdata.ts(219,40): error TS7006: Parameter 'taskId' implicitly has an 'any' type.
+src/api/ontology-bigdata.ts(229,36): error TS7006: Parameter 'params' implicitly has an 'any' type.
+src/api/ontology-bigdata.ts(245,34): error TS7006: Parameter 'taskId' implicitly has an 'any' type.
+src/api/ontology-bigdata.ts(254,37): error TS7006: Parameter 'data' implicitly has an 'any' type.
+src/api/ontology-bigdata.ts(285,25): error TS2345: Argument of type '{ taskId: string; tenantId: string; name: any; mod
+e: any; priority: any; status: string; sourceIds: any; sourceTables: any; targetType: any; targetSourceId: any; targetT
+able: any; writeMode: any; triggerType: any; ... 10 more ...; updatedAt: string; }' is not assignable to parameter of t
+ype 'ETLTask'.
+src/api/ontology-bigdata.ts(290,34): error TS7006: Parameter 'taskId' implicitly has an 'any' type.
+src/api/ontology-bigdata.ts(299,35): error TS7006: Parameter 'taskId' implicitly has an 'any' type.
+src/api/ontology-bigdata.ts(308,40): error TS7006: Parameter 'taskId' implicitly has an 'any' type.
+src/api/ontology-bigdata.ts(318,42): error TS7006: Parameter 'params' implicitly has an 'any' type.
+src/api/ontology-bigdata.ts(333,43): error TS7006: Parameter 'data' implicitly has an 'any' type.
+src/api/ontology-bigdata.ts(364,31): error TS2345: Argument of type '{ schedulerId: string; tenantId: string; name: any
+; taskType: any; taskId: any; triggerType: any; cron: any; startTime: any; endTime: any; retryCount: any; retryInterval
+: any; timeout: any; status: string; ... 10 more ...; updatedAt: string; }' is not assignable to parameter of type 'Sch
+edulerTask'.
+src/api/ontology-bigdata.ts(369,40): error TS7006: Parameter 'schedulerId' implicitly has an 'any' type.
+src/api/ontology-bigdata.ts(382,38): error TS7006: Parameter 'schedulerId' implicitly has an 'any' type.
+src/api/ontology-bigdata.ts(391,39): error TS7006: Parameter 'schedulerId' implicitly has an 'any' type.
+src/api/ontology-bigdata.ts(401,35): error TS7006: Parameter 'params' implicitly has an 'any' type.
+src/api/ontology-bigdata.ts(417,36): error TS7006: Parameter 'data' implicitly has an 'any' type.
+src/api/ontology-bigdata.ts(439,23): error TS2345: Argument of type '{ metricId: string; tenantId: string; name: any; c
+ode: any; type: any; sourceId: any; sourceTable: any; sourceField: any; aggregation: any; calculationFrequency: any; bu
+sinessDomain: any; status: string; ownerUserId: string; createdAt: string; updatedAt: string; }' is not assignable to p
+arameter of type 'Metric'.
+src/api/ontology-bigdata.ts(444,37): error TS7006: Parameter 'metricId' implicitly has an 'any' type.
+src/api/ontology-bigdata.ts(453,34): error TS2304: Cannot find name 'm'.
+src/api/ontology-bigdata.ts(456,40): error TS7006: Parameter 'metricId' implicitly has an 'any' type.
+src/App.tsx(164,67): error TS2741: Property 'appId' is missing in type '{}' but required in type 'ReleaseRecordPageProp
+s'.
+src/App.tsx(206,41): error TS2304: Cannot find name 'AdminUsersPage'.
+src/App.tsx(207,53): error TS2552: Cannot find name 'AdminPermissionsPage'. Did you mean 'McpPermissionsPage'?
+src/App.tsx(208,45): error TS2304: Cannot find name 'AdminOrgPage'.
+src/App.tsx(209,46): error TS2304: Cannot find name 'AdminLogsPage'.
+src/App.tsx(210,48): error TS2304: Cannot find name 'AdminConfigPage'.
+src/App.tsx(211,52): error TS2304: Cannot find name 'AdminComponentsPage'.
+src/App.tsx(212,52): error TS2304: Cannot find name 'AdminOperationsPage'.
+src/mock/ontology-bigdata.ts(130,5): error TS2322: Type '"OAUTH2"' is not assignable to type 'AuthType'.
+src/pages/agents/components/AutoScorePanel.tsx(18,10): error TS2305: Module '"@/api/dw/types"' has no exported member '
+DIMENSION_META'.
+src/pages/agents/components/AutoScorePanel.tsx(19,15): error TS2305: Module '"@/api/dw/types"' has no exported member '
+AutoScoreResult'.
+src/pages/agents/components/AutoScorePanel.tsx(175,49): error TS7006: Parameter 'd' implicitly has an 'any' type.
+src/pages/agents/components/AutoScorePanel.tsx(200,48): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/pages/agents/components/AutoScorePanel.tsx(200,51): error TS7006: Parameter 'i' implicitly has an 'any' type.
+src/pages/agents/components/AutoScorePanel.tsx(243,57): error TS7006: Parameter 'd' implicitly has an 'any' type.
+src/pages/agents/components/AutoScorePanel.tsx(256,50): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/pages/agents/components/AutoScorePanel.tsx(256,53): error TS7006: Parameter 'i' implicitly has an 'any' type.
+src/pages/agents/components/DimensionScoreChart.tsx(3,10): error TS2305: Module '"@/api/dw/types"' has no exported memb
+er 'DIMENSION_META'.
+src/pages/agents/components/DimensionScoreChart.tsx(4,15): error TS2305: Module '"@/api/dw/types"' has no exported memb
+er 'DimensionScore'.
+src/pages/agents/components/DimensionScoreChart.tsx(4,31): error TS2305: Module '"@/api/dw/types"' has no exported memb
+er 'EvaluationDimension'.
+src/pages/agents/components/EvaluationReport.tsx(12,3): error TS2305: Module '"@/api/dw/types"' has no exported member 
+'DIMENSION_META'.
+src/pages/agents/components/EvaluationReport.tsx(13,3): error TS2305: Module '"@/api/dw/types"' has no exported member 
+'SUGGESTION_CATEGORY_META'.
+src/pages/agents/components/EvaluationReport.tsx(14,3): error TS2305: Module '"@/api/dw/types"' has no exported member 
+'SUGGESTION_PRIORITY_META'.
+src/pages/agents/components/EvaluationReport.tsx(16,15): error TS2305: Module '"@/api/dw/types"' has no exported member
+ 'EvaluationReportDetail'.
+src/pages/agents/components/EvaluationReport.tsx(16,39): error TS2305: Module '"@/api/dw/types"' has no exported member
+ 'OptimizationSuggestion'.
+src/pages/agents/components/EvaluationReport.tsx(126,43): error TS7006: Parameter 'h' implicitly has an 'any' type.
+src/pages/agents/components/EvaluationReport.tsx(126,46): error TS7006: Parameter 'i' implicitly has an 'any' type.
+src/pages/agents/components/EvaluationReport.tsx(136,39): error TS7006: Parameter 'it' implicitly has an 'any' type.
+src/pages/agents/components/EvaluationReport.tsx(136,43): error TS7006: Parameter 'i' implicitly has an 'any' type.
+src/pages/agents/components/EvaluationReport.tsx(151,42): error TS7006: Parameter 'd' implicitly has an 'any' type.
+src/pages/agents/components/OptimizationSuggestionsCard.tsx(16,3): error TS2305: Module '"@/api/dw/types"' has no expor
+ted member 'SUGGESTION_CATEGORY_META'.
+src/pages/agents/components/OptimizationSuggestionsCard.tsx(17,3): error TS2305: Module '"@/api/dw/types"' has no expor
+ted member 'SUGGESTION_PRIORITY_META'.
+src/pages/agents/components/OptimizationSuggestionsCard.tsx(20,3): error TS2305: Module '"@/api/dw/types"' has no expor
+ted member 'OptimizationSuggestion'.
+src/pages/agents/components/OptimizationSuggestionsCard.tsx(21,3): error TS2305: Module '"@/api/dw/types"' has no expor
+ted member 'SuggestionPriority'.
+src/pages/agents/components/OptimizationSuggestionsCard.tsx(131,41): error TS7006: Parameter 'e' implicitly has an 'any
+' type.
+src/pages/agents/components/OptimizationSuggestionsCard.tsx(131,44): error TS7006: Parameter 'i' implicitly has an 'any
+' type.
+src/pages/dashboard/admin/ConfigsPage.tsx(21,8): error TS2307: Cannot find module '@/api/admin/configs' or its correspo
+nding type declarations.
+src/pages/dashboard/admin/ConfigsPage.tsx(22,56): error TS2307: Cannot find module '@/types' or its corresponding type 
+declarations.
+src/pages/dashboard/admin/ConfigsPage.tsx(23,29): error TS2307: Cannot find module './__AdminLayout' or its correspondi
+ng type declarations.
+src/pages/dashboard/admin/ConfigsPage.tsx(24,32): error TS2307: Cannot find module '@/utils/datetime' or its correspond
+ing type declarations.
+src/pages/dashboard/admin/ConfigsPage.tsx(25,29): error TS2307: Cannot find module '@/contexts/SettingsContext' or its 
+corresponding type declarations.
+src/pages/dashboard/admin/ConfigsPage.tsx(171,122): error TS7006: Parameter 'o' implicitly has an 'any' type.
+src/pages/dashboard/admin/LogsPage.tsx(21,8): error TS2307: Cannot find module '@/api/admin/logs' or its corresponding 
+type declarations.
+src/pages/dashboard/admin/LogsPage.tsx(22,49): error TS2307: Cannot find module '@/types' or its corresponding type dec
+larations.
+src/pages/dashboard/admin/LogsPage.tsx(23,29): error TS2307: Cannot find module './__AdminLayout' or its corresponding 
+type declarations.
+src/pages/dashboard/admin/LogsPage.tsx(24,32): error TS2307: Cannot find module '@/utils/datetime' or its corresponding
+ type declarations.
+src/pages/dashboard/admin/LogsPage.tsx(25,29): error TS2307: Cannot find module '@/contexts/SettingsContext' or its cor
+responding type declarations.
+src/pages/dashboard/admin/LogsPage.tsx(26,27): error TS2307: Cannot find module '@/api/client' or its corresponding typ
+e declarations.
+src/pages/dashboard/admin/OperationsPage.tsx(10,8): error TS2307: Cannot find module '@/api/admin/operations' or its co
+rresponding type declarations.
+src/pages/dashboard/admin/OperationsPage.tsx(11,89): error TS2307: Cannot find module '@/types' or its corresponding ty
+pe declarations.
+src/pages/dashboard/admin/OperationsPage.tsx(12,29): error TS2307: Cannot find module './__AdminLayout' or its correspo
+nding type declarations.
+src/pages/dashboard/admin/OrgsPage.tsx(34,8): error TS2307: Cannot find module '@/api/admin/orgs' or its corresponding 
+type declarations.
+src/pages/dashboard/admin/OrgsPage.tsx(40,8): error TS2307: Cannot find module '@/types' or its corresponding type decl
+arations.
+src/pages/dashboard/admin/OrgsPage.tsx(41,29): error TS2307: Cannot find module './__AdminLayout' or its corresponding 
+type declarations.
+src/pages/dashboard/admin/OverviewPage.tsx(12,27): error TS2307: Cannot find module '@/api/admin' or its corresponding 
+type declarations.
+src/pages/dashboard/admin/OverviewPage.tsx(13,27): error TS2307: Cannot find module '@/api/admin/permissions' or its co
+rresponding type declarations.
+src/pages/dashboard/admin/OverviewPage.tsx(14,29): error TS2307: Cannot find module '@/api/admin/configs' or its corres
+ponding type declarations.
+src/pages/dashboard/admin/OverviewPage.tsx(15,31): error TS2307: Cannot find module '@/api/admin/logs' or its correspon
+ding type declarations.
+src/pages/dashboard/admin/OverviewPage.tsx(16,29): error TS2307: Cannot find module './__AdminLayout' or its correspond
+ing type declarations.
+src/pages/dashboard/admin/PermissionsPage.tsx(34,8): error TS2307: Cannot find module '@/api/admin/permissions' or its 
+corresponding type declarations.
+src/pages/dashboard/admin/PermissionsPage.tsx(40,8): error TS2307: Cannot find module '@/types' or its corresponding ty
+pe declarations.
+src/pages/dashboard/admin/PermissionsPage.tsx(41,29): error TS2307: Cannot find module './__AdminLayout' or its corresp
+onding type declarations.
+src/pages/dashboard/admin/PermissionsPage.tsx(42,32): error TS2307: Cannot find module '@/utils/datetime' or its corres
+ponding type declarations.
+src/pages/dashboard/admin/PermissionsPage.tsx(43,29): error TS2307: Cannot find module '@/contexts/SettingsContext' or 
+its corresponding type declarations.
+src/pages/dashboard/admin/PermissionsPage.tsx(129,51): error TS7006: Parameter 'p' implicitly has an 'any' type.
+src/pages/dashboard/admin/PermissionsPage.tsx(416,50): error TS7006: Parameter 'p' implicitly has an 'any' type.
+src/pages/dashboard/admin/PermissionsPage.tsx(434,42): error TS7006: Parameter 'r' implicitly has an 'any' type.
+src/pages/dashboard/admin/PermissionsPage.tsx(453,52): error TS7006: Parameter 'p' implicitly has an 'any' type.
+src/pages/dashboard/admin/PermissionsPage.tsx(582,45): error TS7006: Parameter 'p' implicitly has an 'any' type.
+src/pages/dashboard/admin/UsersPage.tsx(42,8): error TS2307: Cannot find module '@/api/admin' or its corresponding type
+ declarations.
+src/pages/dashboard/admin/UsersPage.tsx(43,59): error TS2307: Cannot find module '@/api/admin' or its corresponding typ
+e declarations.
+src/pages/dashboard/admin/UsersPage.tsx(44,55): error TS2307: Cannot find module '@/types' or its corresponding type de
+clarations.
+src/pages/dashboard/admin/UsersPage.tsx(45,27): error TS2307: Cannot find module '@/api/admin/permissions' or its corre
+sponding type declarations.
+src/pages/dashboard/admin/UsersPage.tsx(46,27): error TS2307: Cannot find module '@/api/client' or its corresponding ty
+pe declarations.
+src/pages/dashboard/admin/UsersPage.tsx(47,29): error TS2307: Cannot find module './__AdminLayout' or its corresponding
+ type declarations.
+src/pages/dashboard/admin/UsersPage.tsx(48,32): error TS2307: Cannot find module '@/utils/datetime' or its correspondin
+g type declarations.
+src/pages/dashboard/admin/UsersPage.tsx(49,29): error TS2307: Cannot find module '@/contexts/SettingsContext' or its co
+rresponding type declarations.
+src/pages/dashboard/admin/UsersPage.tsx(475,51): error TS7006: Parameter 'c' implicitly has an 'any' type.
+src/pages/dashboard/AiOpsPage.tsx(40,8): error TS2307: Cannot find module '@/api/anomaly' or its corresponding type dec
+larations.
+src/pages/dashboard/AiOpsPage.tsx(48,8): error TS2307: Cannot find module '@/types' or its corresponding type declarati
+ons.
+src/pages/dashboard/AiOpsPage.tsx(49,44): error TS2307: Cannot find module '@/components/common' or its corresponding t
+ype declarations.
+src/pages/dashboard/AiOpsPage.tsx(50,29): error TS2307: Cannot find module '@/contexts/SettingsContext' or its correspo
+nding type declarations.
+src/pages/dashboard/AiOpsPage.tsx(51,32): error TS2307: Cannot find module '@/utils/datetime' or its corresponding type
+ declarations.
+src/pages/dashboard/AiOpsPage.tsx(398,56): error TS7006: Parameter 'log' implicitly has an 'any' type.
+src/pages/dashboard/NotificationsPage.tsx(11,8): error TS2307: Cannot find module '@/api/notifications' or its correspo
+nding type declarations.
+src/pages/dashboard/NotificationsPage.tsx(12,103): error TS2307: Cannot find module '@/types' or its corresponding type
+ declarations.
+src/pages/dashboard/NotificationsPage.tsx(13,29): error TS2307: Cannot find module '@/contexts/SettingsContext' or its 
+corresponding type declarations.
+src/pages/dashboard/NotificationsPage.tsx(14,26): error TS2307: Cannot find module '@/hooks/useAsync' or its correspond
+ing type declarations.
+src/pages/dashboard/NotificationsPage.tsx(15,44): error TS2307: Cannot find module '@/components/common' or its corresp
+onding type declarations.
+src/pages/dashboard/NotificationsPage.tsx(16,32): error TS2307: Cannot find module '@/utils/datetime' or its correspond
+ing type declarations.
+src/pages/dashboard/SettingsPage.tsx(45,8): error TS2307: Cannot find module '@/api/settings' or its corresponding type
+ declarations.
+src/pages/dashboard/SettingsPage.tsx(46,59): error TS2307: Cannot find module '@/api/user' or its corresponding type de
+clarations.
+src/pages/dashboard/SettingsPage.tsx(55,8): error TS2307: Cannot find module '@/types' or its corresponding type declar
+ations.
+src/pages/dashboard/SettingsPage.tsx(56,29): error TS2307: Cannot find module '@/contexts/SettingsContext' or its corre
+sponding type declarations.
+src/pages/dashboard/SettingsPage.tsx(57,32): error TS2307: Cannot find module '@/utils/datetime' or its corresponding t
+ype declarations.
+src/pages/dashboard/SettingsPage.tsx(295,53): error TS7006: Parameter 'r' implicitly has an 'any' type.
+src/pages/dashboard/SettingsPage.tsx(310,59): error TS7006: Parameter 'd' implicitly has an 'any' type.
+src/pages/dashboard/SettingsPage.tsx(448,57): error TS7006: Parameter 'r' implicitly has an 'any' type.
+src/pages/ontology/components/BigDataSourceView.tsx(9,3): error TS2724: '"../../../api/ontology-bigdata"' has no export
+ed member named 'BigDataSource'. Did you mean 'getBigDataSource'?
+src/pages/ontology/components/BigDataSourceView.tsx(9,18): error TS2459: Module '"../../../api/ontology-bigdata"' decla
+res 'SourceType' locally, but it is not exported.
+src/pages/ontology/components/BigDataSourceView.tsx(155,28): error TS7053: Element implicitly has an 'any' type because
+ expression of type 'any' can't be used to index type '{ ACTIVE: { label: string; color: string; bg: string; icon: Forw
+ardRefExoticComponent<Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>>; }; INACTIVE: { ...; }; ERROR: { ...; };
+ DRAFT: { ...; }; DELETED: { ...; }; }'.
+src/pages/ontology/components/BigDataSourceView.tsx(156,28): error TS7053: Element implicitly has an 'any' type because
+ expression of type 'any' can't be used to index type 'Record<SourceType, { label: string; color: string; icon: string;
+ }>'.
+src/pages/ontology/components/BigDataSourceView.tsx(229,30): error TS7031: Binding element 'onClose' implicitly has an 
+'any' type.
+src/pages/ontology/components/BigDataSourceView.tsx(229,39): error TS7031: Binding element 'onSuccess' implicitly has a
+n 'any' type.
+src/pages/ontology/components/BigDataSourceView.tsx(241,15): error TS2339: Property 'name' does not exist on type '{ so
+urceType: string; authType: string; sslEnabled: boolean; poolSize: number; queryTimeout: number; batchSize: number; }'.
+src/pages/ontology/components/BigDataSourceView.tsx(241,29): error TS2339: Property 'host' does not exist on type '{ so
+urceType: string; authType: string; sslEnabled: boolean; poolSize: number; queryTimeout: number; batchSize: number; }'.
+src/pages/ontology/components/BigDataSourceView.tsx(241,43): error TS2339: Property 'port' does not exist on type '{ so
+urceType: string; authType: string; sslEnabled: boolean; poolSize: number; queryTimeout: number; batchSize: number; }'.
+src/pages/ontology/components/BigDataSourceView.tsx(263,32): error TS2339: Property 'name' does not exist on type '{ so
+urceType: string; authType: string; sslEnabled: boolean; poolSize: number; queryTimeout: number; batchSize: number; }'.
+src/pages/ontology/components/BigDataSourceView.tsx(263,80): error TS2353: Object literal may only specify known proper
+ties, and 'name' does not exist in type 'SetStateAction<{ sourceType: string; authType: string; sslEnabled: boolean; po
+olSize: number; queryTimeout: number; batchSize: number; }>'.
+src/pages/ontology/components/BigDataSourceView.tsx(274,34): error TS2339: Property 'host' does not exist on type '{ so
+urceType: string; authType: string; sslEnabled: boolean; poolSize: number; queryTimeout: number; batchSize: number; }'.
+src/pages/ontology/components/BigDataSourceView.tsx(274,82): error TS2353: Object literal may only specify known proper
+ties, and 'host' does not exist in type 'SetStateAction<{ sourceType: string; authType: string; sslEnabled: boolean; po
+olSize: number; queryTimeout: number; batchSize: number; }>'.
+src/pages/ontology/components/BigDataSourceView.tsx(277,48): error TS2339: Property 'port' does not exist on type '{ so
+urceType: string; authType: string; sslEnabled: boolean; poolSize: number; queryTimeout: number; batchSize: number; }'.
+src/pages/ontology/components/BigDataSourceView.tsx(277,96): error TS2353: Object literal may only specify known proper
+ties, and 'port' does not exist in type 'SetStateAction<{ sourceType: string; authType: string; sslEnabled: boolean; po
+olSize: number; queryTimeout: number; batchSize: number; }>'.
+src/pages/ontology/components/BigDataSourceView.tsx(281,14): error TS2741: Property 'required' is missing in type '{ ch
+ildren: Element; label: string; }' but required in type '{ label: any; children: any; required: any; }'.
+src/pages/ontology/components/BigDataSourceView.tsx(282,34): error TS2339: Property 'database' does not exist on type '
+{ sourceType: string; authType: string; sslEnabled: boolean; poolSize: number; queryTimeout: number; batchSize: number;
+ }'.
+src/pages/ontology/components/BigDataSourceView.tsx(282,86): error TS2353: Object literal may only specify known proper
+ties, and 'database' does not exist in type 'SetStateAction<{ sourceType: string; authType: string; sslEnabled: boolean
+; poolSize: number; queryTimeout: number; batchSize: number; }>'.
+src/pages/ontology/components/BigDataSourceView.tsx(284,14): error TS2741: Property 'required' is missing in type '{ ch
+ildren: Element; label: string; }' but required in type '{ label: any; children: any; required: any; }'.
+src/pages/ontology/components/BigDataSourceView.tsx(285,34): error TS2339: Property 'schema' does not exist on type '{ 
+sourceType: string; authType: string; sslEnabled: boolean; poolSize: number; queryTimeout: number; batchSize: number; }
+'.
+src/pages/ontology/components/BigDataSourceView.tsx(285,84): error TS2353: Object literal may only specify known proper
+ties, and 'schema' does not exist in type 'SetStateAction<{ sourceType: string; authType: string; sslEnabled: boolean; 
+poolSize: number; queryTimeout: number; batchSize: number; }>'.
+src/pages/ontology/components/BigDataSourceView.tsx(288,12): error TS2741: Property 'required' is missing in type '{ ch
+ildren: Element; label: string; }' but required in type '{ label: any; children: any; required: any; }'.
+src/pages/ontology/components/BigDataSourceView.tsx(298,16): error TS2741: Property 'required' is missing in type '{ ch
+ildren: Element; label: string; }' but required in type '{ label: any; children: any; required: any; }'.
+src/pages/ontology/components/BigDataSourceView.tsx(301,16): error TS2741: Property 'required' is missing in type '{ ch
+ildren: Element; label: string; }' but required in type '{ label: any; children: any; required: any; }'.
+src/pages/ontology/components/BigDataSourceView.tsx(327,18): error TS7031: Binding element 'label' implicitly has an 'a
+ny' type.
+src/pages/ontology/components/BigDataSourceView.tsx(327,25): error TS7031: Binding element 'children' implicitly has an
+ 'any' type.
+src/pages/ontology/components/BigDataSourceView.tsx(327,35): error TS7031: Binding element 'required' implicitly has an
+ 'any' type.
+src/pages/ontology/components/CDCView.tsx(8,3): error TS2459: Module '"../../../api/ontology-bigdata"' declares 'CDCTas
+k' locally, but it is not exported.
+src/pages/ontology/components/CDCView.tsx(8,12): error TS2459: Module '"../../../api/ontology-bigdata"' declares 'Sourc
+eType' locally, but it is not exported.
+src/pages/ontology/components/CDCView.tsx(8,24): error TS2724: '"../../../api/ontology-bigdata"' has no exported member
+ named 'BigDataSource'. Did you mean 'getBigDataSource'?
+src/pages/ontology/components/CDCView.tsx(38,9): error TS2554: Expected 1 arguments, but got 0.
+src/pages/ontology/components/CDCView.tsx(39,9): error TS2554: Expected 1 arguments, but got 0.
+src/pages/ontology/components/CDCView.tsx(50,30): error TS7006: Parameter 'id' implicitly has an 'any' type.
+src/pages/ontology/components/CDCView.tsx(55,31): error TS7006: Parameter 'id' implicitly has an 'any' type.
+src/pages/ontology/components/CDCView.tsx(107,24): error TS7053: Element implicitly has an 'any' type because expressio
+n of type 'any' can't be used to index type '{ RUNNING: { label: string; color: string; bg: string; icon: ForwardRefExo
+ticComponent<Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>>; }; ... 4 more ...; STOPPED: { ...; }; }'.
+src/pages/ontology/components/CDCView.tsx(123,24): error TS7053: Element implicitly has an 'any' type because expressio
+n of type 'any' can't be used to index type '{ FULL_INCREMENTAL: string; INCREMENTAL_ONLY: string; SNAPSHOT_ONLY: strin
+g; }'.
+src/pages/ontology/components/CDCView.tsx(173,38): error TS7006: Parameter 'tb' implicitly has an 'any' type.
+src/pages/ontology/components/CDCView.tsx(186,28): error TS7031: Binding element 'sources' implicitly has an 'any' type
+.
+src/pages/ontology/components/CDCView.tsx(186,37): error TS7031: Binding element 'onClose' implicitly has an 'any' type
+.
+src/pages/ontology/components/CDCView.tsx(186,46): error TS7031: Binding element 'onSuccess' implicitly has an 'any' ty
+pe.
+src/pages/ontology/components/CDCView.tsx(201,15): error TS2339: Property 'name' does not exist on type '{ syncMode: st
+ring; startPosition: string; targetType: string; schemaEvolution: string; concurrency: number; batchSize: number; retry
+Count: number; retryInterval: number; tables: never[]; }'.
+src/pages/ontology/components/CDCView.tsx(201,29): error TS2339: Property 'sourceId' does not exist on type '{ syncMode
+: string; startPosition: string; targetType: string; schemaEvolution: string; concurrency: number; batchSize: number; r
+etryCount: number; retryInterval: number; tables: never[]; }'.
+src/pages/ontology/components/CDCView.tsx(201,47): error TS2339: Property 'targetName' does not exist on type '{ syncMo
+de: string; startPosition: string; targetType: string; schemaEvolution: string; concurrency: number; batchSize: number;
+ retryCount: number; retryInterval: number; tables: never[]; }'.
+src/pages/ontology/components/CDCView.tsx(210,42): error TS7006: Parameter 's' implicitly has an 'any' type.
+src/pages/ontology/components/CDCView.tsx(221,32): error TS2339: Property 'name' does not exist on type '{ syncMode: st
+ring; startPosition: string; targetType: string; schemaEvolution: string; concurrency: number; batchSize: number; retry
+Count: number; retryInterval: number; tables: never[]; }'.
+src/pages/ontology/components/CDCView.tsx(221,80): error TS2353: Object literal may only specify known properties, and 
+'name' does not exist in type 'SetStateAction<{ syncMode: string; startPosition: string; targetType: string; schemaEvol
+ution: string; concurrency: number; batchSize: number; retryCount: number; retryInterval: number; tables: never[]; }>'.
+src/pages/ontology/components/CDCView.tsx(224,33): error TS2339: Property 'sourceId' does not exist on type '{ syncMode
+: string; startPosition: string; targetType: string; schemaEvolution: string; concurrency: number; batchSize: number; r
+etryCount: number; retryInterval: number; tables: never[]; }'.
+src/pages/ontology/components/CDCView.tsx(224,85): error TS2353: Object literal may only specify known properties, and 
+'sourceId' does not exist in type 'SetStateAction<{ syncMode: string; startPosition: string; targetType: string; schema
+Evolution: string; concurrency: number; batchSize: number; retryCount: number; retryInterval: number; tables: never[]; 
+}>'.
+src/pages/ontology/components/CDCView.tsx(226,36): error TS7006: Parameter 's' implicitly has an 'any' type.
+src/pages/ontology/components/CDCView.tsx(238,14): error TS2741: Property 'required' is missing in type '{ children: El
+ement; label: string; }' but required in type '{ label: any; children: any; required: any; }'.
+src/pages/ontology/components/CDCView.tsx(256,34): error TS2339: Property 'targetName' does not exist on type '{ syncMo
+de: string; startPosition: string; targetType: string; schemaEvolution: string; concurrency: number; batchSize: number;
+ retryCount: number; retryInterval: number; tables: never[]; }'.
+src/pages/ontology/components/CDCView.tsx(256,88): error TS2353: Object literal may only specify known properties, and 
+'targetName' does not exist in type 'SetStateAction<{ syncMode: string; startPosition: string; targetType: string; sche
+maEvolution: string; concurrency: number; batchSize: number; retryCount: number; retryInterval: number; tables: never[]
+; }>'.
+src/pages/ontology/components/CDCView.tsx(259,12): error TS2741: Property 'required' is missing in type '{ children: El
+ement; label: string; }' but required in type '{ label: any; children: any; required: any; }'.
+src/pages/ontology/components/CDCView.tsx(261,53): error TS2339: Property 'tableName' does not exist on type 'never'.
+src/pages/ontology/components/CDCView.tsx(262,51): error TS2322: Type '{ tableName: string; }[]' is not assignable to t
+ype 'never[]'.
+src/pages/ontology/components/CDCView.tsx(284,22): error TS7031: Binding element 'label' implicitly has an 'any' type.
+src/pages/ontology/components/CDCView.tsx(284,29): error TS7031: Binding element 'children' implicitly has an 'any' typ
+e.
+src/pages/ontology/components/CDCView.tsx(284,39): error TS7031: Binding element 'required' implicitly has an 'any' typ
+e.
+src/pages/ontology/components/ETLView.tsx(8,3): error TS2459: Module '"../../../api/ontology-bigdata"' declares 'ETLTas
+k' locally, but it is not exported.
+src/pages/ontology/components/ETLView.tsx(8,12): error TS2459: Module '"../../../api/ontology-bigdata"' declares 'ETLMo
+de' locally, but it is not exported.
+src/pages/ontology/components/ETLView.tsx(40,57): error TS2554: Expected 1 arguments, but got 0.
+src/pages/ontology/components/ETLView.tsx(40,73): error TS2554: Expected 1 arguments, but got 0.
+src/pages/ontology/components/ETLView.tsx(48,28): error TS7006: Parameter 'id' implicitly has an 'any' type.
+src/pages/ontology/components/ETLView.tsx(53,29): error TS7006: Parameter 'id' implicitly has an 'any' type.
+src/pages/ontology/components/ETLView.tsx(76,54): error TS2339: Property 'status' does not exist on type 'never'.
+src/pages/ontology/components/ETLView.tsx(77,53): error TS2339: Property 'status' does not exist on type 'never'.
+src/pages/ontology/components/ETLView.tsx(78,53): error TS2339: Property 'status' does not exist on type 'never'.
+src/pages/ontology/components/ETLView.tsx(110,28): error TS7053: Element implicitly has an 'any' type because expressio
+n of type 'any' can't be used to index type '{ SUCCESS: { label: string; color: string; bg: string; icon: ForwardRefExo
+ticComponent<Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>>; }; ... 5 more ...; TIMEOUT: { ...; }; }'.
+src/pages/ontology/components/ETLView.tsx(110,42): error TS2339: Property 'status' does not exist on type 'never'.
+src/pages/ontology/components/ETLView.tsx(112,28): error TS7053: Element implicitly has an 'any' type because expressio
+n of type 'any' can't be used to index type 'Record<ETLMode, { label: string; color: string; icon: string; }>'.
+src/pages/ontology/components/ETLView.tsx(112,44): error TS2339: Property 'mode' does not exist on type 'never'.
+src/pages/ontology/components/ETLView.tsx(112,64): error TS2339: Property 'mode' does not exist on type 'never'.
+src/pages/ontology/components/ETLView.tsx(113,28): error TS7053: Element implicitly has an 'any' type because expressio
+n of type 'any' can't be used to index type '{ LOW: { label: string; color: string; }; NORMAL: { label: string; color: 
+string; }; HIGH: { label: string; color: string; }; URGENT: { label: string; color: string; }; }'.
+src/pages/ontology/components/ETLView.tsx(113,44): error TS2339: Property 'priority' does not exist on type 'never'.
+src/pages/ontology/components/ETLView.tsx(115,30): error TS2339: Property 'taskId' does not exist on type 'never'.
+src/pages/ontology/components/ETLView.tsx(134,63): error TS2339: Property 'name' does not exist on type 'never'.
+src/pages/ontology/components/ETLView.tsx(135,30): error TS2339: Property 'description' does not exist on type 'never'.
+src/pages/ontology/components/ETLView.tsx(135,112): error TS2339: Property 'description' does not exist on type 'never'
+.
+src/pages/ontology/components/ETLView.tsx(141,88): error TS2339: Property 'sourceIds' does not exist on type 'never'.
+src/pages/ontology/components/ETLView.tsx(142,53): error TS2339: Property 'targetType' does not exist on type 'never'.
+src/pages/ontology/components/ETLView.tsx(142,68): error TS2339: Property 'targetTable' does not exist on type 'never'.
+src/pages/ontology/components/ETLView.tsx(145,115): error TS2339: Property 'status' does not exist on type 'never'.
+src/pages/ontology/components/ETLView.tsx(149,85): error TS2339: Property 'lastRunDuration' does not exist on type 'nev
+er'.
+src/pages/ontology/components/ETLView.tsx(149,120): error TS2339: Property 'lastRunDuration' does not exist on type 'ne
+ver'.
+src/pages/ontology/components/ETLView.tsx(150,98): error TS2339: Property 'totalProcessed' does not exist on type 'neve
+r'.
+src/pages/ontology/components/ETLView.tsx(153,28): error TS2339: Property 'status' does not exist on type 'never'.
+src/pages/ontology/components/ETLView.tsx(154,63): error TS2339: Property 'taskId' does not exist on type 'never'.
+src/pages/ontology/components/ETLView.tsx(154,102): error TS2339: Property 'taskId' does not exist on type 'never'.
+src/pages/ontology/components/ETLView.tsx(155,50): error TS2339: Property 'taskId' does not exist on type 'never'.
+src/pages/ontology/components/ETLView.tsx(158,62): error TS2339: Property 'taskId' does not exist on type 'never'.
+src/pages/ontology/components/ETLView.tsx(158,101): error TS2339: Property 'taskId' does not exist on type 'never'.
+src/pages/ontology/components/ETLView.tsx(159,50): error TS2339: Property 'taskId' does not exist on type 'never'.
+src/pages/ontology/components/ETLView.tsx(177,28): error TS7031: Binding element 'sources' implicitly has an 'any' type
+.
+src/pages/ontology/components/ETLView.tsx(177,37): error TS7031: Binding element 'onClose' implicitly has an 'any' type
+.
+src/pages/ontology/components/ETLView.tsx(177,46): error TS7031: Binding element 'onSuccess' implicitly has an 'any' ty
+pe.
+src/pages/ontology/components/ETLView.tsx(186,15): error TS2339: Property 'name' does not exist on type '{ mode: string
+; priority: string; triggerType: string; writeMode: string; targetType: string; executorNum: number; executorMemory: nu
+mber; driverMemory: number; queue: string; retryCount: number; timeout: number; alertOnFailure: boolean; }'.
+src/pages/ontology/components/ETLView.tsx(186,29): error TS2339: Property 'targetSourceId' does not exist on type '{ mo
+de: string; priority: string; triggerType: string; writeMode: string; targetType: string; executorNum: number; executor
+Memory: number; driverMemory: number; queue: string; retryCount: number; timeout: number; alertOnFailure: boolean; }'.
+src/pages/ontology/components/ETLView.tsx(186,53): error TS2339: Property 'targetTable' does not exist on type '{ mode:
+ string; priority: string; triggerType: string; writeMode: string; targetType: string; executorNum: number; executorMem
+ory: number; driverMemory: number; queue: string; retryCount: number; timeout: number; alertOnFailure: boolean; }'.
+src/pages/ontology/components/ETLView.tsx(204,34): error TS2339: Property 'name' does not exist on type '{ mode: string
+; priority: string; triggerType: string; writeMode: string; targetType: string; executorNum: number; executorMemory: nu
+mber; driverMemory: number; queue: string; retryCount: number; timeout: number; alertOnFailure: boolean; }'.
+src/pages/ontology/components/ETLView.tsx(204,82): error TS2353: Object literal may only specify known properties, and 
+'name' does not exist in type 'SetStateAction<{ mode: string; priority: string; triggerType: string; writeMode: string;
+ targetType: string; executorNum: number; executorMemory: number; driverMemory: number; queue: string; retryCount: numb
+er; timeout: number; alertOnFailure: boolean; }>'.
+src/pages/ontology/components/ETLView.tsx(213,14): error TS2741: Property 'required' is missing in type '{ children: El
+ement; label: string; }' but required in type '{ label: any; children: any; required: any; }'.
+src/pages/ontology/components/ETLView.tsx(218,14): error TS2741: Property 'required' is missing in type '{ children: El
+ement; label: string; }' but required in type '{ label: any; children: any; required: any; }'.
+src/pages/ontology/components/ETLView.tsx(225,33): error TS2339: Property 'targetSourceId' does not exist on type '{ mo
+de: string; priority: string; triggerType: string; writeMode: string; targetType: string; executorNum: number; executor
+Memory: number; driverMemory: number; queue: string; retryCount: number; timeout: number; alertOnFailure: boolean; }'.
+src/pages/ontology/components/ETLView.tsx(225,91): error TS2353: Object literal may only specify known properties, and 
+'targetSourceId' does not exist in type 'SetStateAction<{ mode: string; priority: string; triggerType: string; writeMod
+e: string; targetType: string; executorNum: number; executorMemory: number; driverMemory: number; queue: string; retryC
+ount: number; timeout: number; alertOnFailure: boolean; }>'.
+src/pages/ontology/components/ETLView.tsx(227,28): error TS7006: Parameter 's' implicitly has an 'any' type.
+src/pages/ontology/components/ETLView.tsx(231,32): error TS2339: Property 'targetTable' does not exist on type '{ mode:
+ string; priority: string; triggerType: string; writeMode: string; targetType: string; executorNum: number; executorMem
+ory: number; driverMemory: number; queue: string; retryCount: number; timeout: number; alertOnFailure: boolean; }'.
+src/pages/ontology/components/ETLView.tsx(231,87): error TS2353: Object literal may only specify known properties, and 
+'targetTable' does not exist in type 'SetStateAction<{ mode: string; priority: string; triggerType: string; writeMode: 
+string; targetType: string; executorNum: number; executorMemory: number; driverMemory: number; queue: string; retryCoun
+t: number; timeout: number; alertOnFailure: boolean; }>'.
+src/pages/ontology/components/ETLView.tsx(234,14): error TS2741: Property 'required' is missing in type '{ children: El
+ement; label: string; }' but required in type '{ label: any; children: any; required: any; }'.
+src/pages/ontology/components/ETLView.tsx(235,14): error TS2741: Property 'required' is missing in type '{ children: El
+ement; label: string; }' but required in type '{ label: any; children: any; required: any; }'.
+src/pages/ontology/components/ETLView.tsx(236,14): error TS2741: Property 'required' is missing in type '{ children: El
+ement; label: string; }' but required in type '{ label: any; children: any; required: any; }'.
+src/pages/ontology/components/ETLView.tsx(250,15): error TS7031: Binding element 'label' implicitly has an 'any' type.
+src/pages/ontology/components/ETLView.tsx(250,22): error TS7031: Binding element 'children' implicitly has an 'any' typ
+e.
+src/pages/ontology/components/ETLView.tsx(250,32): error TS7031: Binding element 'required' implicitly has an 'any' typ
+e.
+src/pages/ontology/components/LineageFullView.tsx(79,25): error TS7006: Parameter 'nodes' implicitly has an 'any' type.
+src/pages/ontology/components/LineageFullView.tsx(79,32): error TS7006: Parameter 'edges' implicitly has an 'any' type.
+src/pages/ontology/components/LineageFullView.tsx(79,39): error TS7006: Parameter 'width' implicitly has an 'any' type.
+src/pages/ontology/components/LineageFullView.tsx(79,46): error TS7006: Parameter 'height' implicitly has an 'any' type
+.
+src/pages/ontology/components/LineageFullView.tsx(85,18): error TS7006: Parameter 'n' implicitly has an 'any' type.
+src/pages/ontology/components/LineageFullView.tsx(85,21): error TS7006: Parameter 'i' implicitly has an 'any' type.
+src/pages/ontology/components/LineageFullView.tsx(87,5): error TS7053: Element implicitly has an 'any' type because exp
+ression of type 'any' can't be used to index type '{}'.
+src/pages/ontology/components/LineageFullView.tsx(97,17): error TS7006: Parameter 'n' implicitly has an 'any' type.
+src/pages/ontology/components/LineageFullView.tsx(97,24): error TS7053: Element implicitly has an 'any' type because ex
+pression of type 'any' can't be used to index type '{}'.
+src/pages/ontology/components/LineageFullView.tsx(98,17): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/pages/ontology/components/LineageFullView.tsx(99,9): error TS7053: Element implicitly has an 'any' type because exp
+ression of type 'any' can't be used to index type '{}'.
+src/pages/ontology/components/LineageFullView.tsx(99,24): error TS7053: Element implicitly has an 'any' type because ex
+pression of type 'any' can't be used to index type '{}'.
+src/pages/ontology/components/LineageFullView.tsx(100,7): error TS7053: Element implicitly has an 'any' type because ex
+pression of type 'any' can't be used to index type '{}'.
+src/pages/ontology/components/LineageFullView.tsx(101,7): error TS7053: Element implicitly has an 'any' type because ex
+pression of type 'any' can't be used to index type '{}'.
+src/pages/ontology/components/LineageFullView.tsx(111,20): error TS7053: Element implicitly has an 'any' type because e
+xpression of type 'any' can't be used to index type '{}'.
+src/pages/ontology/components/LineageFullView.tsx(111,36): error TS7053: Element implicitly has an 'any' type because e
+xpression of type 'any' can't be used to index type '{}'.
+src/pages/ontology/components/LineageFullView.tsx(124,19): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/pages/ontology/components/LineageFullView.tsx(125,18): error TS7053: Element implicitly has an 'any' type because e
+xpression of type 'any' can't be used to index type '{}'.
+src/pages/ontology/components/LineageFullView.tsx(125,36): error TS7053: Element implicitly has an 'any' type because e
+xpression of type 'any' can't be used to index type '{}'.
+src/pages/ontology/components/LineageFullView.tsx(137,19): error TS7006: Parameter 'n' implicitly has an 'any' type.
+src/pages/ontology/components/LineageFullView.tsx(138,17): error TS7053: Element implicitly has an 'any' type because e
+xpression of type 'any' can't be used to index type '{}'.
+src/pages/ontology/components/LineageFullView.tsx(143,19): error TS7006: Parameter 'n' implicitly has an 'any' type.
+src/pages/ontology/components/LineageFullView.tsx(144,17): error TS7053: Element implicitly has an 'any' type because e
+xpression of type 'any' can't be used to index type '{}'.
+src/pages/ontology/components/LineageFullView.tsx(213,25): error TS7006: Parameter 'id' implicitly has an 'any' type.
+src/pages/ontology/components/LineageFullView.tsx(213,29): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/pages/ontology/components/LineageFullView.tsx(221,24): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/pages/ontology/components/LineageFullView.tsx(221,27): error TS7006: Parameter 'nodeId' implicitly has an 'any' typ
+e.
+src/pages/ontology/components/LineageFullView.tsx(228,24): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/pages/ontology/components/LineageFullView.tsx(231,20): error TS18047: 'svgRef.current' is possibly 'null'.
+src/pages/ontology/components/LineageFullView.tsx(235,29): error TS2339: Property 'x' does not exist on type 'never'.
+src/pages/ontology/components/LineageFullView.tsx(236,29): error TS2339: Property 'y' does not exist on type 'never'.
+src/pages/ontology/components/LineageFullView.tsx(252,20): error TS7053: Element implicitly has an 'any' type because e
+xpression of type 'string' can't be used to index type '{}'.
+src/pages/ontology/components/LineageFullView.tsx(253,7): error TS7053: Element implicitly has an 'any' type because ex
+pression of type 'string' can't be used to index type '{}'.
+src/pages/ontology/components/LineageFullView.tsx(253,22): error TS7053: Element implicitly has an 'any' type because e
+xpression of type 'string' can't be used to index type '{}'.
+src/pages/ontology/components/LineageFullView.tsx(277,60): error TS7053: Element implicitly has an 'any' type because e
+xpression of type 'string' can't be used to index type '{ source: string; cdc: string; ods: string; dwd: string; dws: s
+tring; ads: string; metric: string; }'.
+src/pages/ontology/components/LineageFullView.tsx(342,27): error TS7006: Parameter 'w' implicitly has an 'any' type.
+src/pages/ontology/components/LineageFullView.tsx(342,30): error TS7006: Parameter 'h' implicitly has an 'any' type.
+src/pages/ontology/components/LineageFullView.tsx(355,50): error TS7053: Element implicitly has an 'any' type because e
+xpression of type 'string' can't be used to index type '{ source: { label: string; color: string; }; cdc: { label: stri
+ng; color: string; }; ods: { label: string; color: string; }; dwd: { label: string; color: string; }; dws: { label: str
+ing; color: string; }; ads: { label: string; color: string; }; metric: { ...; }; }'.
+src/pages/ontology/components/LineageFullView.tsx(356,28): error TS7053: Element implicitly has an 'any' type because e
+xpression of type 'string' can't be used to index type '{ source: { label: string; color: string; }; cdc: { label: stri
+ng; color: string; }; ods: { label: string; color: string; }; dwd: { label: string; color: string; }; dws: { label: str
+ing; color: string; }; ads: { label: string; color: string; }; metric: { ...; }; }'.
+src/pages/ontology/components/LineageFullView.tsx(357,23): error TS7053: Element implicitly has an 'any' type because e
+xpression of type 'string' can't be used to index type '{ source: string; cdc: string; ods: string; dwd: string; dws: s
+tring; ads: string; metric: string; }'.
+src/pages/ontology/components/LineageFullView.tsx(363,67): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/pages/ontology/components/LineageFullView.tsx(379,68): error TS2339: Property 'id' does not exist on type 'never'.
+src/pages/ontology/components/LineageFullView.tsx(379,96): error TS2339: Property 'id' does not exist on type 'never'.
+src/pages/ontology/components/LineageFullView.tsx(389,105): error TS7053: Element implicitly has an 'any' type because 
+expression of type 'string' can't be used to index type '{ source: { label: string; color: string; }; cdc: { label: str
+ing; color: string; }; ods: { label: string; color: string; }; dwd: { label: string; color: string; }; dws: { label: st
+ring; color: string; }; ads: { label: string; color: string; }; metric: { ...; }; }'.
+src/pages/ontology/components/LineageFullView.tsx(390,14): error TS7053: Element implicitly has an 'any' type because e
+xpression of type 'string' can't be used to index type '{ source: string; cdc: string; ods: string; dwd: string; dws: s
+tring; ads: string; metric: string; }'.
+src/pages/ontology/components/LineageFullView.tsx(403,3): error TS7031: Binding element 'nodes' implicitly has an 'any'
+ type.
+src/pages/ontology/components/LineageFullView.tsx(403,10): error TS7031: Binding element 'edges' implicitly has an 'any
+' type.
+src/pages/ontology/components/LineageFullView.tsx(403,17): error TS7031: Binding element 'positions' implicitly has an 
+'any' type.
+src/pages/ontology/components/LineageFullView.tsx(403,28): error TS7031: Binding element 'zoom' implicitly has an 'any'
+ type.
+src/pages/ontology/components/LineageFullView.tsx(403,34): error TS7031: Binding element 'pan' implicitly has an 'any' 
+type.
+src/pages/ontology/components/LineageFullView.tsx(403,39): error TS7031: Binding element 'expanded' implicitly has an '
+any' type.
+src/pages/ontology/components/LineageFullView.tsx(403,49): error TS7031: Binding element 'toggleExpand' implicitly has 
+an 'any' type.
+src/pages/ontology/components/LineageFullView.tsx(403,63): error TS7031: Binding element 'selectedNode' implicitly has 
+an 'any' type.
+src/pages/ontology/components/LineageFullView.tsx(403,77): error TS7031: Binding element 'setSelectedNode' implicitly h
+as an 'any' type.
+src/pages/ontology/components/LineageFullView.tsx(404,3): error TS7031: Binding element 'svgRef' implicitly has an 'any
+' type.
+src/pages/ontology/components/LineageFullView.tsx(404,11): error TS7031: Binding element 'canvasWidth' implicitly has a
+n 'any' type.
+src/pages/ontology/components/LineageFullView.tsx(404,24): error TS7031: Binding element 'canvasHeight' implicitly has 
+an 'any' type.
+src/pages/ontology/components/LineageFullView.tsx(404,38): error TS7031: Binding element 'setCanvasSize' implicitly has
+ an 'any' type.
+src/pages/ontology/components/LineageFullView.tsx(404,53): error TS7031: Binding element 'onNodeDrag' implicitly has an
+ 'any' type.
+src/pages/ontology/components/LineageFullView.tsx(404,65): error TS7031: Binding element 'onSvgMouseMove' implicitly ha
+s an 'any' type.
+src/pages/ontology/components/LineageFullView.tsx(404,81): error TS7031: Binding element 'onSvgMouseUp' implicitly has 
+an 'any' type.
+src/pages/ontology/components/LineageFullView.tsx(421,32): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/pages/ontology/components/LineageFullView.tsx(421,35): error TS7006: Parameter 'i' implicitly has an 'any' type.
+src/pages/ontology/components/LineageFullView.tsx(458,26): error TS7006: Parameter 'p' implicitly has an 'any' type.
+src/pages/ontology/components/LineageFullView.tsx(465,22): error TS7006: Parameter 'node' implicitly has an 'any' type.
+src/pages/ontology/components/LineageFullView.tsx(468,26): error TS7053: Element implicitly has an 'any' type because e
+xpression of type 'any' can't be used to index type '{ source: { label: string; color: string; }; cdc: { label: string;
+ color: string; }; ods: { label: string; color: string; }; dwd: { label: string; color: string; }; dws: { label: string
+; color: string; }; ads: { label: string; color: string; }; metric: { ...; }; }'.
+src/pages/ontology/components/LineageFullView.tsx(471,41): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/pages/ontology/components/LineageFullView.tsx(481,60): error TS2304: Cannot find name 'e'.
+src/pages/ontology/components/LineageFullView.tsx(514,21): error TS7031: Binding element 'node' implicitly has an 'any'
+ type.
+src/pages/ontology/components/LineageFullView.tsx(514,27): error TS7031: Binding element 'edges' implicitly has an 'any
+' type.
+src/pages/ontology/components/LineageFullView.tsx(514,34): error TS7031: Binding element 'expanded' implicitly has an '
+any' type.
+src/pages/ontology/components/LineageFullView.tsx(514,44): error TS7031: Binding element 'onToggle' implicitly has an '
+any' type.
+src/pages/ontology/components/LineageFullView.tsx(515,16): error TS7053: Element implicitly has an 'any' type because e
+xpression of type 'any' can't be used to index type '{ source: { label: string; color: string; }; cdc: { label: string;
+ color: string; }; ods: { label: string; color: string; }; dwd: { label: string; color: string; }; dws: { label: string
+; color: string; }; ads: { label: string; color: string; }; metric: { ...; }; }'.
+src/pages/ontology/components/LineageFullView.tsx(516,33): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/pages/ontology/components/LineageFullView.tsx(517,32): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/pages/ontology/components/LineageFullView.tsx(547,28): error TS7031: Binding element 'node' implicitly has an 'any'
+ type.
+src/pages/ontology/components/LineageFullView.tsx(547,34): error TS7031: Binding element 'edges' implicitly has an 'any
+' type.
+src/pages/ontology/components/LineageFullView.tsx(547,41): error TS7031: Binding element 'onClose' implicitly has an 'a
+ny' type.
+src/pages/ontology/components/LineageFullView.tsx(548,33): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/pages/ontology/components/LineageFullView.tsx(549,32): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/pages/ontology/components/LineageFullView.tsx(550,16): error TS7053: Element implicitly has an 'any' type because e
+xpression of type 'any' can't be used to index type '{ source: { label: string; color: string; }; cdc: { label: string;
+ color: string; }; ods: { label: string; color: string; }; dwd: { label: string; color: string; }; dws: { label: string
+; color: string; }; ads: { label: string; color: string; }; metric: { ...; }; }'.
+src/pages/ontology/components/LineageFullView.tsx(557,78): error TS7053: Element implicitly has an 'any' type because e
+xpression of type 'any' can't be used to index type '{ source: string; cdc: string; ods: string; dwd: string; dws: stri
+ng; ads: string; metric: string; }'.
+src/pages/ontology/components/LineageFullView.tsx(564,78): error TS7053: Element implicitly has an 'any' type because e
+xpression of type 'any' can't be used to index type '{ source: string; cdc: string; ods: string; dwd: string; dws: stri
+ng; ads: string; metric: string; }'.
+src/pages/ontology/components/LineageFullView.tsx(569,38): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/pages/ontology/components/LineageFullView.tsx(569,41): error TS7006: Parameter 'i' implicitly has an 'any' type.
+src/pages/ontology/components/LineageFullView.tsx(577,37): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/pages/ontology/components/LineageFullView.tsx(577,40): error TS7006: Parameter 'i' implicitly has an 'any' type.
+src/pages/ontology/components/MetricView.tsx(8,3): error TS2459: Module '"../../../api/ontology-bigdata"' declares 'Met
+ric' locally, but it is not exported.
+src/pages/ontology/components/MetricView.tsx(8,11): error TS2459: Module '"../../../api/ontology-bigdata"' declares 'Me
+tricType' locally, but it is not exported.
+src/pages/ontology/components/MetricView.tsx(38,59): error TS2554: Expected 1 arguments, but got 0.
+src/pages/ontology/components/MetricView.tsx(38,74): error TS2554: Expected 1 arguments, but got 0.
+src/pages/ontology/components/MetricView.tsx(46,32): error TS7006: Parameter 'id' implicitly has an 'any' type.
+src/pages/ontology/components/MetricView.tsx(51,36): error TS7006: Parameter 'm' implicitly has an 'any' type.
+src/pages/ontology/components/MetricView.tsx(73,56): error TS2339: Property 'status' does not exist on type 'never'.
+src/pages/ontology/components/MetricView.tsx(74,55): error TS2339: Property 'type' does not exist on type 'never'.
+src/pages/ontology/components/MetricView.tsx(75,55): error TS2339: Property 'type' does not exist on type 'never'.
+src/pages/ontology/components/MetricView.tsx(89,24): error TS7053: Element implicitly has an 'any' type because express
+ion of type 'any' can't be used to index type 'Record<MetricType, { label: string; color: string; }>'.
+src/pages/ontology/components/MetricView.tsx(89,43): error TS2339: Property 'type' does not exist on type 'never'.
+src/pages/ontology/components/MetricView.tsx(90,24): error TS7053: Element implicitly has an 'any' type because express
+ion of type 'any' can't be used to index type '{ ACTIVE: { label: string; color: string; bg: string; }; INACTIVE: { lab
+el: string; color: string; bg: string; }; ERROR: { label: string; color: string; bg: string; }; DRAFT: { label: string;
+ color: string; bg: string; }; }'.
+src/pages/ontology/components/MetricView.tsx(90,39): error TS2339: Property 'status' does not exist on type 'never'.
+src/pages/ontology/components/MetricView.tsx(91,30): error TS2339: Property 'lastValue' does not exist on type 'never'.
+src/pages/ontology/components/MetricView.tsx(94,27): error TS2339: Property 'metricId' does not exist on type 'never'.
+src/pages/ontology/components/MetricView.tsx(99,74): error TS2339: Property 'name' does not exist on type 'never'.
+src/pages/ontology/components/MetricView.tsx(101,24): error TS2339: Property 'description' does not exist on type 'neve
+r'.
+src/pages/ontology/components/MetricView.tsx(101,123): error TS2339: Property 'description' does not exist on type 'nev
+er'.
+src/pages/ontology/components/MetricView.tsx(105,137): error TS7053: Element implicitly has an 'any' type because expre
+ssion of type 'any' can't be used to index type '{ REALTIME: string; MINUTELY: string; HOURLY: string; DAILY: string; }
+'.
+src/pages/ontology/components/MetricView.tsx(105,149): error TS2339: Property 'calculationFrequency' does not exist on 
+type 'never'.
+src/pages/ontology/components/MetricView.tsx(112,60): error TS2339: Property 'metricId' does not exist on type 'never'.
+src/pages/ontology/components/MetricView.tsx(112,101): error TS2339: Property 'metricId' does not exist on type 'never'
+.
+src/pages/ontology/components/MetricView.tsx(113,44): error TS2339: Property 'metricId' does not exist on type 'never'.
+src/pages/ontology/components/MetricView.tsx(120,24): error TS2339: Property 'lastValue' does not exist on type 'never'
+.
+src/pages/ontology/components/MetricView.tsx(120,65): error TS2339: Property 'lastValue' does not exist on type 'never'
+.
+src/pages/ontology/components/MetricView.tsx(134,32): error TS2339: Property 'aggregation' does not exist on type 'neve
+r'.
+src/pages/ontology/components/MetricView.tsx(134,48): error TS2339: Property 'sourceField' does not exist on type 'neve
+r'.
+src/pages/ontology/components/MetricView.tsx(135,48): error TS2339: Property 'lastComputedAt' does not exist on type 'n
+ever'.
+src/pages/ontology/components/MetricView.tsx(138,20): error TS2339: Property 'alertMin' does not exist on type 'never'.
+src/pages/ontology/components/MetricView.tsx(138,48): error TS2339: Property 'alertMax' does not exist on type 'never'.
+src/pages/ontology/components/MetricView.tsx(140,30): error TS2339: Property 'alertMin' does not exist on type 'never'.
+src/pages/ontology/components/MetricView.tsx(140,52): error TS2339: Property 'alertMax' does not exist on type 'never'.
+src/pages/ontology/components/MetricView.tsx(155,31): error TS7031: Binding element 'sources' implicitly has an 'any' t
+ype.
+src/pages/ontology/components/MetricView.tsx(155,40): error TS7031: Binding element 'onClose' implicitly has an 'any' t
+ype.
+src/pages/ontology/components/MetricView.tsx(155,49): error TS7031: Binding element 'onSuccess' implicitly has an 'any'
+ type.
+src/pages/ontology/components/MetricView.tsx(162,15): error TS2339: Property 'name' does not exist on type '{ type: str
+ing; aggregation: string; calculationFrequency: string; businessDomain: string; }'.
+src/pages/ontology/components/MetricView.tsx(162,29): error TS2339: Property 'code' does not exist on type '{ type: str
+ing; aggregation: string; calculationFrequency: string; businessDomain: string; }'.
+src/pages/ontology/components/MetricView.tsx(162,43): error TS2339: Property 'sourceId' does not exist on type '{ type:
+ string; aggregation: string; calculationFrequency: string; businessDomain: string; }'.
+src/pages/ontology/components/MetricView.tsx(162,61): error TS2339: Property 'sourceTable' does not exist on type '{ ty
+pe: string; aggregation: string; calculationFrequency: string; businessDomain: string; }'.
+src/pages/ontology/components/MetricView.tsx(162,82): error TS2339: Property 'sourceField' does not exist on type '{ ty
+pe: string; aggregation: string; calculationFrequency: string; businessDomain: string; }'.
+src/pages/ontology/components/MetricView.tsx(180,34): error TS2339: Property 'name' does not exist on type '{ type: str
+ing; aggregation: string; calculationFrequency: string; businessDomain: string; }'.
+src/pages/ontology/components/MetricView.tsx(180,82): error TS2353: Object literal may only specify known properties, a
+nd 'name' does not exist in type 'SetStateAction<{ type: string; aggregation: string; calculationFrequency: string; bus
+inessDomain: string; }>'.
+src/pages/ontology/components/MetricView.tsx(183,34): error TS2339: Property 'code' does not exist on type '{ type: str
+ing; aggregation: string; calculationFrequency: string; businessDomain: string; }'.
+src/pages/ontology/components/MetricView.tsx(183,82): error TS2353: Object literal may only specify known properties, a
+nd 'code' does not exist in type 'SetStateAction<{ type: string; aggregation: string; calculationFrequency: string; bus
+inessDomain: string; }>'.
+src/pages/ontology/components/MetricView.tsx(199,33): error TS2339: Property 'sourceId' does not exist on type '{ type:
+ string; aggregation: string; calculationFrequency: string; businessDomain: string; }'.
+src/pages/ontology/components/MetricView.tsx(199,85): error TS2353: Object literal may only specify known properties, a
+nd 'sourceId' does not exist in type 'SetStateAction<{ type: string; aggregation: string; calculationFrequency: string;
+ businessDomain: string; }>'.
+src/pages/ontology/components/MetricView.tsx(201,28): error TS7006: Parameter 's' implicitly has an 'any' type.
+src/pages/ontology/components/MetricView.tsx(206,34): error TS2339: Property 'sourceTable' does not exist on type '{ ty
+pe: string; aggregation: string; calculationFrequency: string; businessDomain: string; }'.
+src/pages/ontology/components/MetricView.tsx(206,89): error TS2353: Object literal may only specify known properties, a
+nd 'sourceTable' does not exist in type 'SetStateAction<{ type: string; aggregation: string; calculationFrequency: stri
+ng; businessDomain: string; }>'.
+src/pages/ontology/components/MetricView.tsx(209,34): error TS2339: Property 'sourceField' does not exist on type '{ ty
+pe: string; aggregation: string; calculationFrequency: string; businessDomain: string; }'.
+src/pages/ontology/components/MetricView.tsx(209,89): error TS2353: Object literal may only specify known properties, a
+nd 'sourceField' does not exist in type 'SetStateAction<{ type: string; aggregation: string; calculationFrequency: stri
+ng; businessDomain: string; }>'.
+src/pages/ontology/components/MetricView.tsx(212,12): error TS2741: Property 'required' is missing in type '{ children:
+ Element; label: string; }' but required in type '{ label: any; children: any; required: any; }'.
+src/pages/ontology/components/MetricView.tsx(227,26): error TS7031: Binding element 'metric' implicitly has an 'any' ty
+pe.
+src/pages/ontology/components/MetricView.tsx(227,34): error TS7031: Binding element 'onClose' implicitly has an 'any' t
+ype.
+src/pages/ontology/components/MetricView.tsx(251,16): error TS7031: Binding element 'label' implicitly has an 'any' typ
+e.
+src/pages/ontology/components/MetricView.tsx(251,23): error TS7031: Binding element 'children' implicitly has an 'any' 
+type.
+src/pages/ontology/components/MetricView.tsx(251,33): error TS7031: Binding element 'required' implicitly has an 'any' 
+type.
+src/pages/ontology/components/SchedulerView.tsx(8,3): error TS2459: Module '"../../../api/ontology-bigdata"' declares '
+SchedulerTask' locally, but it is not exported.
+src/pages/ontology/components/SchedulerView.tsx(41,26): error TS2554: Expected 1 arguments, but got 0.
+src/pages/ontology/components/SchedulerView.tsx(48,32): error TS7006: Parameter 'id' implicitly has an 'any' type.
+src/pages/ontology/components/SchedulerView.tsx(53,30): error TS7006: Parameter 'id' implicitly has an 'any' type.
+src/pages/ontology/components/SchedulerView.tsx(58,31): error TS7006: Parameter 'id' implicitly has an 'any' type.
+src/pages/ontology/components/SchedulerView.tsx(80,54): error TS2339: Property 'status' does not exist on type 'never'.
+src/pages/ontology/components/SchedulerView.tsx(81,54): error TS2339: Property 'status' does not exist on type 'never'.
+src/pages/ontology/components/SchedulerView.tsx(82,64): error TS2339: Property 'totalTriggers' does not exist on type '
+never'.
+src/pages/ontology/components/SchedulerView.tsx(96,24): error TS7053: Element implicitly has an 'any' type because expr
+ession of type 'any' can't be used to index type '{ ACTIVE: { label: string; color: string; bg: string; icon: ForwardRe
+fExoticComponent<Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>>; }; PAUSED: { ...; }; EXPIRED: { ...; }; DELE
+TED: { ...; }; }'.
+src/pages/ontology/components/SchedulerView.tsx(96,38): error TS2339: Property 'status' does not exist on type 'never'.
+src/pages/ontology/components/SchedulerView.tsx(98,24): error TS7053: Element implicitly has an 'any' type because expr
+ession of type 'any' can't be used to index type '{ ETL_TASK: { label: string; color: string; bg: string; icon: Forward
+RefExoticComponent<Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>>; }; CDC_TASK: { ...; }; QUALITY_CHECK: { ..
+.; }; CUSTOM_ACTION: { ...; }; }'.
+src/pages/ontology/components/SchedulerView.tsx(98,36): error TS2339: Property 'taskType' does not exist on type 'never
+'.
+src/pages/ontology/components/SchedulerView.tsx(100,25): error TS7053: Element implicitly has an 'any' type because exp
+ression of type 'any' can't be used to index type '{ CRON: { label: string; icon: ForwardRefExoticComponent<Omit<Lucide
+Props, "ref"> & RefAttributes<SVGSVGElement>>; }; EVENT: { ...; }; MANUAL: { ...; }; DEPENDENCY: { ...; }; }'.
+src/pages/ontology/components/SchedulerView.tsx(100,40): error TS2339: Property 'triggerType' does not exist on type 'n
+ever'.
+src/pages/ontology/components/SchedulerView.tsx(103,27): error TS2339: Property 'schedulerId' does not exist on type 'n
+ever'.
+src/pages/ontology/components/SchedulerView.tsx(108,74): error TS2339: Property 'name' does not exist on type 'never'.
+src/pages/ontology/components/SchedulerView.tsx(123,24): error TS2339: Property 'status' does not exist on type 'never'
+.
+src/pages/ontology/components/SchedulerView.tsx(124,60): error TS2339: Property 'schedulerId' does not exist on type 'n
+ever'.
+src/pages/ontology/components/SchedulerView.tsx(124,104): error TS2339: Property 'schedulerId' does not exist on type '
+never'.
+src/pages/ontology/components/SchedulerView.tsx(125,46): error TS2339: Property 'schedulerId' does not exist on type 'n
+ever'.
+src/pages/ontology/components/SchedulerView.tsx(128,61): error TS2339: Property 'schedulerId' does not exist on type 'n
+ever'.
+src/pages/ontology/components/SchedulerView.tsx(128,105): error TS2339: Property 'schedulerId' does not exist on type '
+never'.
+src/pages/ontology/components/SchedulerView.tsx(129,46): error TS2339: Property 'schedulerId' does not exist on type 'n
+ever'.
+src/pages/ontology/components/SchedulerView.tsx(132,60): error TS2339: Property 'schedulerId' does not exist on type 'n
+ever'.
+src/pages/ontology/components/SchedulerView.tsx(132,104): error TS2339: Property 'schedulerId' does not exist on type '
+never'.
+src/pages/ontology/components/SchedulerView.tsx(133,44): error TS2339: Property 'schedulerId' does not exist on type 'n
+ever'.
+src/pages/ontology/components/SchedulerView.tsx(138,20): error TS2339: Property 'cron' does not exist on type 'never'.
+src/pages/ontology/components/SchedulerView.tsx(140,24): error TS2339: Property 'cron' does not exist on type 'never'.
+src/pages/ontology/components/SchedulerView.tsx(147,89): error TS2339: Property 'totalTriggers' does not exist on type 
+'never'.
+src/pages/ontology/components/SchedulerView.tsx(151,107): error TS2339: Property 'totalSuccess' does not exist on type 
+'never'.
+src/pages/ontology/components/SchedulerView.tsx(155,107): error TS2339: Property 'totalFailure' does not exist on type 
+'never'.
+src/pages/ontology/components/SchedulerView.tsx(160,48): error TS2339: Property 'lastTriggerAt' does not exist on type 
+'never'.
+src/pages/ontology/components/SchedulerView.tsx(161,48): error TS2339: Property 'nextTriggerAt' does not exist on type 
+'never'.
+src/pages/ontology/OntologyDatacenterPage.tsx(97,21): error TS7006: Parameter 'type' implicitly has an 'any' type.
+src/pages/ontology/OntologyDatacenterPage.tsx(114,18): error TS7006: Parameter 'node' implicitly has an 'any' type.
+src/pages/ontology/OntologyDatacenterPage.tsx(150,35): error TS2322: Type '{ assistant: PageAssistantController; label:
+ string; }' is not assignable to type 'IntrinsicAttributes & AIAssistantTriggerProps'.
+src/pages/ontology/OntologyDatacenterPage.tsx(298,29): error TS7031: Binding element 'name' implicitly has an 'any' typ
+e.
+
+
