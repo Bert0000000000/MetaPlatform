@@ -49,6 +49,27 @@ const OntologyDatacenterPage = lazy(() => import('./pages/ontology/OntologyDatac
 const OntologyActionPage = lazy(() => import('./pages/ontology/OntologyActionPage'));
 const OntologyGraphPage = lazy(() => import('./pages/ontology/OntologyGraphPage'));
 
+const ArchBusinessArchPage = lazy(() => import('./pages/arch/BusinessArchPage'));
+const ArchApplicationManagementPage = lazy(() => import('./pages/arch/ApplicationManagementPage'));
+const ArchCapabilityManagementPage = lazy(() => import('./pages/arch/CapabilityManagementPage'));
+const ArchValueStreamPage = lazy(() => import('./pages/arch/ValueStreamPage'));
+const ArchBusinessProcessPage = lazy(() => import('./pages/arch/BusinessProcessPage'));
+const ArchOrgRolePage = lazy(() => import('./pages/arch/OrgRolePage'));
+const ArchDataArchPage = lazy(() => import('./pages/arch/DataArchPage'));
+const ArchDataEntityDetailPage = lazy(() => import('./pages/arch/DataEntityDetailPage'));
+const ArchDataFlowPage = lazy(() => import('./pages/arch/DataFlowPage'));
+const ArchDataStandardPage = lazy(() => import('./pages/arch/DataStandardPage'));
+const ArchDataAssetCatalogPage = lazy(() => import('./pages/arch/DataAssetCatalogPage'));
+const ArchTechArchPage = lazy(() => import('./pages/arch/TechArchPage'));
+const ArchTechComponentPage = lazy(() => import('./pages/arch/TechComponentPage'));
+const ArchTechStackPage = lazy(() => import('./pages/arch/TechStackPage'));
+const ArchDeploymentTopologyPage = lazy(() => import('./pages/arch/DeploymentTopologyPage'));
+const ArchTechRadarPage = lazy(() => import('./pages/arch/TechRadarPage'));
+const ArchPrinciplesPage = lazy(() => import('./pages/arch/PrinciplesPage'));
+const ArchReviewTemplatePage = lazy(() => import('./pages/arch/ReviewTemplatePage'));
+const ArchReviewPage = lazy(() => import('./pages/arch/ReviewPage'));
+const ArchTechDebtPage = lazy(() => import('./pages/arch/TechDebtPage'));
+const ArchOntologyMappingPage = lazy(() => import('./pages/arch/OntologyMappingPage'));
 const KnowledgeBasePage = lazy(() => import('./pages/knowledge/KnowledgeBasePage'));
 const KnowledgeDocsPage = lazy(() => import('./pages/knowledge/KnowledgeDocsPage'));
 const KnowledgeTestPage = lazy(() => import('./pages/knowledge/KnowledgeTestPage'));
@@ -112,12 +133,28 @@ function AppRoutes() {
           {/* SuperAI */}
           <Route path="superai" element={<SuperAIPage />} />
 
-          {/* 架构中心 */}
-          <Route path="arch" element={<ArchBusinessPage />} />
-          <Route path="arch/app" element={<ArchAppPage />} />
-          <Route path="arch/data" element={<ArchDataPage />} />
-          <Route path="arch/tech" element={<ArchTechPage />} />
-          <Route path="arch/governance" element={<ArchGovernancePage />} />
+          {/* 架构中心(Phase 4: from apps/arch) */}
+          <Route path="arch" element={<ArchBusinessArchPage />} />
+          <Route path="arch/capabilities" element={<ArchCapabilityManagementPage />} />
+          <Route path="arch/applications" element={<ArchApplicationManagementPage />} />
+          <Route path="arch/value-streams" element={<ArchValueStreamPage />} />
+          <Route path="arch/processes" element={<ArchBusinessProcessPage />} />
+          <Route path="arch/org-roles" element={<ArchOrgRolePage />} />
+          <Route path="arch/data" element={<ArchDataArchPage />} />
+          <Route path="arch/data/entities/:id" element={<ArchDataEntityDetailPage />} />
+          <Route path="arch/data/flows" element={<ArchDataFlowPage />} />
+          <Route path="arch/data/standards" element={<ArchDataStandardPage />} />
+          <Route path="arch/data/assets" element={<ArchDataAssetCatalogPage />} />
+          <Route path="arch/tech" element={<ArchTechArchPage />} />
+          <Route path="arch/tech-components" element={<ArchTechComponentPage />} />
+          <Route path="arch/tech-stacks" element={<ArchTechStackPage />} />
+          <Route path="arch/deployment-topologies" element={<ArchDeploymentTopologyPage />} />
+          <Route path="arch/tech-radar" element={<ArchTechRadarPage />} />
+          <Route path="arch/principles" element={<ArchPrinciplesPage />} />
+          <Route path="arch/review-templates" element={<ArchReviewTemplatePage />} />
+          <Route path="arch/reviews" element={<ArchReviewPage />} />
+          <Route path="arch/tech-debt" element={<ArchTechDebtPage />} />
+          <Route path="arch/ontology-mapping" element={<ArchOntologyMappingPage />} />
 
           {/* 搴旂敤涓績(Phase 2: from apps/apphub) */}
           <Route path="apps" element={<ApphubAppListPage />} />
