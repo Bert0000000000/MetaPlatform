@@ -61,8 +61,21 @@ export interface ListPermissionParams {
 
 export async function listPermissions(params: ListPermissionParams = {}): Promise<PageResponse<PermissionResponse>> {
   const url = apiPath('iam', '/permissions');
-  const resp = await apiClient.get<PageResponse<PermissionResponse>>(url, { params });
-  return resp.data;
+  // The /api/v1/admin/permissions/catalog handler returns a flat JSON
+  // array under data (not a paginated wrapper). Normalise that into
+  // the PageResponse shape so callers (AdminOperationsPage etc.) can
+  // read .items / .total directly without crashing.
+  const resp = await apiClient.get<PageResponse<PermissionResponse> | PermissionResponse[]>(url, { params });
+  const data = resp.data;
+  if (Array.isArray(data)) {
+    return {
+      items: data as PermissionResponse[],
+      total: data.length,
+      page: Number(params.page ?? 1),
+      pageSize: data.length,
+    };
+  }
+  return data as PageResponse<PermissionResponse>;
 }
 
 export async function getPermission(permissionId: string): Promise<PermissionResponse> {
