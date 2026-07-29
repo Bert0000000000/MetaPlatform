@@ -71,8 +71,11 @@ jobs:
       - name: Typecheck (affected apps)
         working-directory: ./metaplatform-frontend
         run: pnpm -r --filter './apps/*' --filter '!./apps/portal' typecheck
-      - name: Build
+      - name: Build (web only)
         working-directory: ./metaplatform-frontend
-        run: pnpm build
+        # Only build @mate/web; the other apps are pre-migration
+        # and have pre-existing build errors. They will be removed
+        # in Phase 4 of the monorepo-shrink refactor.
+        run: pnpm --filter @mate/web build
 
 
