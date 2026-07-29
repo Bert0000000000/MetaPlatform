@@ -1,4 +1,4 @@
-﻿import { defineConfig } from 'vite';
+import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
 
@@ -19,11 +19,17 @@ export default defineConfig({
     proxy: {
       // === TECH-IAM ===
       '/api/v1/iam':    { target: proxyTarget(8102), changeOrigin: true },
+      // === TECH-KB (Phase 1: from apps/kb) ===
+      '/api/v1/kb':     { target: proxyTarget(9004), changeOrigin: true },
       // mate-tech-iam
       // === APP-DASHBOARD (workbench BFF) ===
       '/api/v1/dashboard': { target: proxyTarget(9001), changeOrigin: true },
       // === TECH-AGENT ===
       '/api/v1/agent':  { target: proxyTarget(8511), changeOrigin: true },
+      // === TECH-APPHUB (Phase 2: from apps/apphub) ===
+      '/api/v1/apphub':  { target: proxyTarget(8202), changeOrigin: true },
+      // === TECH-SUPERAI (Phase 2: from apps/apphub AI Designer) ===
+      '/api/v1/superai': { target: proxyTarget(8601), changeOrigin: true },
       // === TECH-MCP ===
       '/api/v1/mcp':    { target: proxyTarget(8105), changeOrigin: true },
       // === TECH-RAG ===
@@ -71,5 +77,7 @@ export default defineConfig({
     sourcemap: false,
   },
 });
+
+
 
 
