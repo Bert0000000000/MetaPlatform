@@ -83,7 +83,23 @@ const McpDebuggerPage = lazy(() => import('./pages/mcp/McpDebuggerPage'));
 const McpPermissionsPage = lazy(() => import('./pages/mcp/McpPermissionsPage'));
 const McpExternalPage = lazy(() => import('./pages/mcp/McpExternalPage'));
 const McpAuditPage = lazy(() => import('./pages/mcp/McpAuditPage'));
-
+const McpOverviewPage = lazy(() => import('./pages/mcp/OverviewPage'));
+const McpConnectionMonitorPage = lazy(() => import('./pages/mcp/ConnectionMonitorPage'));
+const McpToolDetailPage = lazy(() => import('./pages/mcp/ToolDetailPage'));
+const McpToolEditPage = lazy(() => import('./pages/mcp/ToolEditPage'));
+const McpServerDetailPage = lazy(() => import('./pages/mcp/ServerDetailPage'));
+const McpClientDetailPage = lazy(() => import('./pages/mcp/ClientDetailPage'));
+const McpClientFormPage = lazy(() => import('./pages/mcp/ClientFormPage'));
+const McpResourceListPage = lazy(() => import('./pages/mcp/ResourceListPage'));
+const McpResourceEditPage = lazy(() => import('./pages/mcp/ResourceEditPage'));
+const McpPromptTemplatePage = lazy(() => import('./pages/mcp/PromptTemplatePage'));
+const McpPermissionRulePage = lazy(() => import('./pages/mcp/PermissionRulePage'));
+const McpPolicyManagementPage = lazy(() => import('./pages/mcp/PolicyManagementPage'));
+const McpIdeConfigPage = lazy(() => import('./pages/mcp/IdeConfigPage'));
+const McpExternalAgentListPage = lazy(() => import('./pages/mcp/ExternalAgentListPage'));
+const McpTrustManagementPage = lazy(() => import('./pages/mcp/TrustManagementPage'));
+const McpAuditDetailPage = lazy(() => import('./pages/mcp/AuditDetailPage'));
+const McpAuditStatisticsPage = lazy(() => import('./pages/mcp/AuditStatisticsPage'));
 const AgentsListPage = lazy(() => import('./pages/agents/AgentsListPage'));
 const AgentsDetailPage = lazy(() => import('./pages/agents/AgentsDetailPage'));
 const AgentsKnowledgePage = lazy(() => import('./pages/agents/AgentsKnowledgePage'));
@@ -193,7 +209,24 @@ function AppRoutes() {
           <Route path="mcp/permissions" element={<McpPermissionsPage />} />
           <Route path="mcp/external" element={<McpExternalPage />} />
           <Route path="mcp/audit" element={<McpAuditPage />} />
-
+          <Route path="mcp/audit/detail/:id" element={<McpAuditDetailPage />} />
+          <Route path="mcp/audit/stats" element={<McpAuditStatisticsPage />} />
+          <Route path="mcp/overview" element={<McpOverviewPage />} />
+          <Route path="mcp/connection-monitor" element={<McpConnectionMonitorPage />} />
+          <Route path="mcp/tools/:id" element={<McpToolDetailPage />} />
+          <Route path="mcp/tools/:id/edit" element={<McpToolEditPage />} />
+          <Route path="mcp/servers/:id" element={<McpServerDetailPage />} />
+          <Route path="mcp/clients" element={<McpClientPage />} />
+          <Route path="mcp/clients/new" element={<McpClientFormPage />} />
+          <Route path="mcp/clients/:id" element={<McpClientDetailPage />} />
+          <Route path="mcp/resources" element={<McpResourceListPage />} />
+          <Route path="mcp/resources/:id" element={<McpResourceEditPage />} />
+          <Route path="mcp/prompts" element={<McpPromptTemplatePage />} />
+          <Route path="mcp/permissions/rules" element={<McpPermissionRulePage />} />
+          <Route path="mcp/policies" element={<McpPolicyManagementPage />} />
+          <Route path="mcp/ide-config" element={<McpIdeConfigPage />} />
+          <Route path="mcp/external-agents" element={<McpExternalAgentListPage />} />
+          <Route path="mcp/trusts" element={<McpTrustManagementPage />} />
           {/* 数字员工 */}
           <Route path="agents" element={<AgentsListPage />} />
           <Route path="agents/detail" element={<AgentsDetailPage />} />
