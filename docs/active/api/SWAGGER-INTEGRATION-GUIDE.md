@@ -79,7 +79,7 @@ export default defineConfig({
   },
 });
 
-// 在 apps/portal 中挂载 Swagger UI
+// 在 apps/web 中挂载 Swagger UI
 // pnpm add swagger-ui-dist
 // 在某个路由下渲染 Swagger UI
 ```

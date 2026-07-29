@@ -9,7 +9,7 @@
  *  - 不依赖后端 API：保存到 localStorage，加载时自动恢复
  *  - 高级用法：传 customRegistries 注入专属卡片（参见 admin/components/node-render.tsx）
  *
- * 用法（apps/portal 内）：
+ * 用法（apps/web 内）：
  *
  *   import { FlowDesigner } from '@mate/shared/flow';
  *

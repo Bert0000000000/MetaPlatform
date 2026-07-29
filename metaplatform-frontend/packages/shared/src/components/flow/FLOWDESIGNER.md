@@ -42,8 +42,8 @@ import { FlowDesigner, type FlowMode } from '@mate/shared/flow';
 
 | 页面 | 路径 | mode 默认值 |
 |---|---|---|
-| `apps/portal/src/pages/apps/ProcessDesignerPage.tsx` | `/apps/processdesigner` | URL `?mode=` → localStorage → 默认 `bpmn` |
-| `apps/portal/src/pages/admin/AdminComponentsPage.tsx` | `/admin/components` | 直接用 `FlowgramEditor`（catalog 演示页，未走 FlowDesigner） |
+| `apps/web/src/pages/apps/ProcessDesignerPage.tsx` | `/apps/processdesigner` | URL `?mode=` → localStorage → 默认 `bpmn` |
+| `apps/web/src/pages/admin/AdminComponentsPage.tsx` | `/admin/components` | 直接用 `FlowgramEditor`（catalog 演示页，未走 FlowDesigner） |
 
 ## 工具条交互
 

@@ -1,7 +1,7 @@
 /**
  * Re-export the get/post/put/del helpers for components that need them
  * (e.g. DashboardCanvas, which manages its own data fetching outside
- * the typed API functions in apps/portal/src/api/apphub/*.ts).
+ * the typed API functions in apps/web/src/api/apphub/*.ts).
  *
  * All routes are bound to the apphub service; for other services use
  * @mate/shared/api's createApiClient directly.

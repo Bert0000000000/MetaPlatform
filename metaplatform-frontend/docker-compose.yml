@@ -28,7 +28,7 @@ x-app-base: &app-base
     # Anonymous volumes so the in-container node_modules is not
     # overwritten by a host directory that doesn't exist.
     - /app/node_modules
-    - /app/apps/portal/node_modules
+    - /app/apps/web/node_modules
     - /app/apps/dashboard/node_modules
     - /app/apps/superai/node_modules
     - /app/apps/apphub/node_modules

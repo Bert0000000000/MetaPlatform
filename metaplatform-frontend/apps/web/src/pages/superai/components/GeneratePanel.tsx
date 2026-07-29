@@ -40,7 +40,7 @@ import type {
   GenerateType,
   GeneratedConfig,
   CodeSnippet,
-} from '@/api/superai/types';
+} from '@/types';
 
 const { TextArea } = Input;
 
@@ -54,11 +54,11 @@ interface GeneratePanelProps {
 }
 
 const GEN_MODES: { value: GenMode; label: string; icon: React.ReactNode }[] = [
-  { value: 'form', label: '琛ㄥ崟鐢熸垚', icon: <FormOutlined /> },
-  { value: 'process', label: '娴佺▼鐢熸垚', icon: <NodeIndexOutlined /> },
-  { value: 'code', label: '浠ｇ爜鐢熸垚', icon: <CodeOutlined /> },
-  { value: 'explain', label: '浠ｇ爜瑙ｉ噴', icon: <CodeOutlined /> },
-  { value: 'review', label: '浠ｇ爜瀹℃煡', icon: <SafetyOutlined /> },
+  { value: 'form', label: '表单生成', icon: <FormOutlined /> },
+  { value: 'process', label: '流程生成', icon: <NodeIndexOutlined /> },
+  { value: 'code', label: '代码生成', icon: <CodeOutlined /> },
+  { value: 'explain', label: '代码解释', icon: <CodeOutlined /> },
+  { value: 'review', label: '代码审查', icon: <SafetyOutlined /> },
   { value: 'dashboard', label: '仪表盘生成', icon: <DashboardOutlined /> },
 ];
 
@@ -107,7 +107,7 @@ export default function GeneratePanel({ query, onQueryChange, onResult, onImport
         case 'review': {
           const result = await reviewCode(codeInput);
           setReviewResult(result);
-          onResult({ generatedConfig: { type: 'review' as GenerateType, title: '浠ｇ爜瀹℃煡鎶ュ憡', content: JSON.stringify(result, null, 2) }, codeReview: result });
+          onResult({ generatedConfig: { type: 'review' as GenerateType, title: '代码审查报告', content: JSON.stringify(result, null, 2) }, codeReview: result });
           break;
         }
         case 'dashboard': {
@@ -139,10 +139,10 @@ export default function GeneratePanel({ query, onQueryChange, onResult, onImport
           size="small"
           dataSource={formResult.fields.map((f, i) => ({ ...f, key: i }))}
           columns={[
-            { title: '鏍囩', dataIndex: 'label', key: 'label' },
-            { title: '绫诲瀷', dataIndex: 'type', key: 'type', render: (v: string) => <Tag>{v}</Tag> },
-            { title: '瀛楁鏍囪瘑', dataIndex: 'fieldKey', key: 'fieldKey' },
-            { title: '蹇呭～', dataIndex: 'required', key: 'required', render: (v: boolean) => v ? <Tag color="red">蹇呭～</Tag> : <Tag>鍙€?/Tag> },
+            { title: '标签', dataIndex: 'label', key: 'label' },
+            { title: '类型', dataIndex: 'type', key: 'type', render: (v: string) => <Tag>{v}</Tag> },
+            { title: '字段标识', dataIndex: 'fieldKey', key: 'fieldKey' },
+            { title: '必填', dataIndex: 'required', key: 'required', render: (v: boolean) => v ? <Tag color="red">必填</Tag> : <Tag>可选</Tag> },
           ]}
           pagination={false}
          scroll={{ x: 'max-content' }}/>
@@ -170,12 +170,12 @@ export default function GeneratePanel({ query, onQueryChange, onResult, onImport
               })
             }
           >
-            搴旂敤鍒拌璁″櫒
+            应用到设计器
           </Button>
         }
       >
         <Typography.Paragraph type="secondary">{processResult.description}</Typography.Paragraph>
-        <Typography.Title level={5}>娴佺▼鑺傜偣</Typography.Title>
+        <Typography.Title level={5}>流程节点</Typography.Title>
         {processResult.nodes.map((node, i) => (
           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
             <Tag color={node.type === 'startEvent' ? 'green' : node.type === 'endEvent' ? 'red' : 'blue'}>
@@ -218,45 +218,45 @@ export default function GeneratePanel({ query, onQueryChange, onResult, onImport
   const renderReviewResult = () => {
     if (!reviewResult) return null;
     return (
-      <Card size="small" title="浠ｇ爜瀹℃煡鎶ュ憡">
+      <Card size="small" title="代码审查报告">
         <Space direction="vertical" style={{ width: '100%' }} size="small">
           <Alert
             type={reviewResult.overallScore >= 80 ? 'success' : reviewResult.overallScore >= 50 ? 'warning' : 'error'}
-            message={`缁煎悎璇勫垎锛?{reviewResult.overallScore}/100`}
+            message={`综合评分：${reviewResult.overallScore}/100`}
             showIcon
           />
           {reviewResult.securityIssues.length > 0 && (
-            <Card size="small" title={<Typography.Text type="danger">瀹夊叏闂</Typography.Text>}>
+            <Card size="small" title={<Typography.Text type="danger">安全问题</Typography.Text>}>
               <Table
                 size="small"
                 dataSource={reviewResult.securityIssues.map((i, idx) => ({ ...i, key: idx }))}
                 columns={[
-                  { title: '琛?, dataIndex: 'line', key: 'line', width: 60 },
-                  { title: '涓ラ噸搴?, dataIndex: 'severity', key: 'severity', render: (v: string) => <Tag color={v === 'critical' ? 'red' : v === 'warning' ? 'orange' : 'blue'}>{v}</Tag> },
-                  { title: '闂', dataIndex: 'message', key: 'message' },
-                  { title: '瑙勫垯', dataIndex: 'rule', key: 'rule' },
+                  { title: '行', dataIndex: 'line', key: 'line', width: 60 },
+                  { title: '严重度', dataIndex: 'severity', key: 'severity', render: (v: string) => <Tag color={v === 'critical' ? 'red' : v === 'warning' ? 'orange' : 'blue'}>{v}</Tag> },
+                  { title: '问题', dataIndex: 'message', key: 'message' },
+                  { title: '规则', dataIndex: 'rule', key: 'rule' },
                 ]}
                 pagination={false}
                scroll={{ x: 'max-content' }}/>
             </Card>
           )}
           {reviewResult.qualityIssues.length > 0 && (
-            <Card size="small" title={<Typography.Text type="warning">璐ㄩ噺闂</Typography.Text>}>
+            <Card size="small" title={<Typography.Text type="warning">质量问题</Typography.Text>}>
               <Table
                 size="small"
                 dataSource={reviewResult.qualityIssues.map((i, idx) => ({ ...i, key: idx }))}
                 columns={[
-                  { title: '琛?, dataIndex: 'line', key: 'line', width: 60 },
-                  { title: '涓ラ噸搴?, dataIndex: 'severity', key: 'severity', render: (v: string) => <Tag color={v === 'critical' ? 'red' : v === 'warning' ? 'orange' : 'blue'}>{v}</Tag> },
-                  { title: '闂', dataIndex: 'message', key: 'message' },
-                  { title: '瑙勫垯', dataIndex: 'rule', key: 'rule' },
+                  { title: '行', dataIndex: 'line', key: 'line', width: 60 },
+                  { title: '严重度', dataIndex: 'severity', key: 'severity', render: (v: string) => <Tag color={v === 'critical' ? 'red' : v === 'warning' ? 'orange' : 'blue'}>{v}</Tag> },
+                  { title: '问题', dataIndex: 'message', key: 'message' },
+                  { title: '规则', dataIndex: 'rule', key: 'rule' },
                 ]}
                 pagination={false}
                scroll={{ x: 'max-content' }}/>
             </Card>
           )}
           {reviewResult.suggestions.length > 0 && (
-            <Card size="small" title="鏀硅繘寤鸿">
+            <Card size="small" title="改进建议">
               <ul style={{ margin: 0, paddingLeft: 20 }}>
                 {reviewResult.suggestions.map((s, i) => (
                   <li key={i}>{s}</li>
@@ -289,20 +289,20 @@ export default function GeneratePanel({ query, onQueryChange, onResult, onImport
               })
             }
           >
-            搴旂敤鍒拌璁″櫒
+            应用到设计器
           </Button>
         }
       >
         <Typography.Paragraph type="secondary">{dashboardResult.description}</Typography.Paragraph>
-        <Typography.Title level={5}>浠〃鐩樼粍浠?/Typography.Title>
+        <Typography.Title level={5}>仪表盘组件</Typography.Title>
         {dashboardResult.widgets.map((w) => (
           <Descriptions key={w.id} size="small" bordered column={1} style={{ marginBottom: 8 }}>
-            <Descriptions.Item label="鏍囬">{w.title}</Descriptions.Item>
-            <Descriptions.Item label="绫诲瀷"><Tag color="blue">{w.type}</Tag></Descriptions.Item>
-            <Descriptions.Item label="鏁版嵁婧?>{w.dataSource}</Descriptions.Item>
+            <Descriptions.Item label="标题">{w.title}</Descriptions.Item>
+            <Descriptions.Item label="类型"><Tag color="blue">{w.type}</Tag></Descriptions.Item>
+            <Descriptions.Item label="数据源">{w.dataSource}</Descriptions.Item>
           </Descriptions>
         ))}
-        <Typography.Title level={5}>API 绀轰緥</Typography.Title>
+        <Typography.Title level={5}>API 示例</Typography.Title>
         {dashboardResult.apiExamples.map((api, i) => (
           <Card key={i} size="small" style={{ marginBottom: 8 }}>
             <Space>
@@ -336,7 +336,7 @@ export default function GeneratePanel({ query, onQueryChange, onResult, onImport
           <TextArea
             value={codeInput}
             onChange={(e) => setCodeInput(e.target.value)}
-            placeholder="绮樿创瑕佽В閲婃垨瀹℃煡鐨勪唬鐮?.."
+            placeholder="粘贴要解释或审查的代码..."
             rows={4}
             style={{ fontFamily: 'monospace', fontSize: 13 }}
           />
@@ -346,11 +346,11 @@ export default function GeneratePanel({ query, onQueryChange, onResult, onImport
               value={query}
               onChange={(e) => onQueryChange(e.target.value)}
               placeholder={
-                mode === 'form' ? '鎻忚堪鎮ㄦ兂鐢熸垚鐨勮〃鍗曪紝濡傦細瀹㈡埛淇℃伅鐧昏琛ㄥ崟' :
-                mode === 'process' ? '鎻忚堪瀹℃壒娴佺▼锛屽锛氳垂鐢ㄦ姤閿€瀹℃壒娴佺▼' :
-                mode === 'code' ? '鎻忚堪浠ｇ爜闇€姹傦紝濡傦細璁＄畻鏂愭尝閭ｅ鏁板垪鍓?10 椤? :
-                mode === 'dashboard' ? '鎻忚堪浠〃鐩橀渶姹傦紝濡傦細閿€鍞暟鎹垎鏋愪华琛ㄧ洏' :
-                '璇疯緭鍏ユ弿杩?
+                mode === 'form' ? '描述您想生成的表单，如：客户信息登记表单' :
+                mode === 'process' ? '描述审批流程，如：费用报销审批流程' :
+                mode === 'code' ? '描述代码需求，如：计算斐波那契数列前 10 项' :
+                mode === 'dashboard' ? '描述仪表盘需求，如：销售数据分析仪表盘' :
+                '请输入描述'
               }
               rows={2}
             />
@@ -370,7 +370,7 @@ export default function GeneratePanel({ query, onQueryChange, onResult, onImport
         )}
 
         <Button type="primary" icon={<PlayCircleOutlined />} loading={loading} onClick={handleGenerate}>
-          鐢熸垚
+          生成
         </Button>
 
         {formResult && renderFormResult()}

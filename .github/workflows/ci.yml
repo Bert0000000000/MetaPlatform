@@ -70,7 +70,7 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Typecheck (affected apps)
         working-directory: ./metaplatform-frontend
-        run: pnpm -r --filter './apps/*' --filter '!./apps/portal' typecheck
-      # Build step disabled: apps/portal has 359 pre-existing errors in pages/ontology/* + pages/admin/* that predate the monorepo-shrink PR. Will be re-enabled in Phase 4.
+        run: pnpm -r --filter './apps/*' --filter '!./apps/web' typecheck
+      # Build step disabled: apps/web has 359 pre-existing errors in pages/ontology/* + pages/admin/* that predate the monorepo-shrink PR. Will be re-enabled in Phase 4.
 
 

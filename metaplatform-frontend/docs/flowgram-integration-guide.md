@@ -516,8 +516,8 @@ const palette = themeMode === 'dark'
 
 | 文件 | 作用 |
 |---|---|
-| `apps/portal/src/pages/ontology/OntologyActionPage.tsx` | 完整示例：子 tab + 全屏 + 拖拽 + 主题色 |
-| `apps/portal/src/App.css` | FlowGram 暗色覆盖 CSS（`.gedit-*` 选择器） |
+| `apps/web/src/pages/ontology/OntologyActionPage.tsx` | 完整示例：子 tab + 全屏 + 拖拽 + 主题色 |
+| `apps/web/src/App.css` | FlowGram 暗色覆盖 CSS（`.gedit-*` 选择器） |
 
 ---
 
@@ -547,5 +547,5 @@ document.querySelectorAll('.gedit-flow-activity-edge').length
 - [FlowGram.AI 官方文档](https://flowgram.ai/guide/getting-started/introduction.html)
 - [快速开始（free-layout）](https://flowgram.ai/guide/getting-started/free-layout.html)
 - [物料库](https://flowgram.ai/materials/introduction.html)
-- 项目内：`apps/portal/src/pages/ontology/OntologyActionPage.tsx` 完整代码
+- 项目内：`apps/web/src/pages/ontology/OntologyActionPage.tsx` 完整代码
 - node_modules: `@flowgram.ai/free-layout-editor/dist/index.d.ts`

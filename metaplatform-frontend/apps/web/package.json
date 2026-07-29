@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "_comment": "Mate Platform 鍞竴鍓嶇鍏ュ彛(SPA),鏁村悎 9 涓竴绾ц彍鍗曟ā鍧椼€傚師鐩綍鍚?apps/portal 宸查€€褰?閫氳繃 scripts/refactor/2026-07-29-monorepo-shrink.sh 鏀瑰悕涓?apps/web",
+  "_comment": "Mate Platform 鍞竴鍓嶇鍏ュ彛(SPA),鏁村悎 9 涓竴绾ц彍鍗曟ā鍧椼€傚師鐩綍鍚?apps/web 宸查€€褰?閫氳繃 scripts/refactor/2026-07-29-monorepo-shrink.sh 鏀瑰悕涓?apps/web",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",

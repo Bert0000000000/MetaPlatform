@@ -40,7 +40,7 @@ API_MODE=live UPSTREAM_BASE=http://localhost:8000 pnpm --filter @mate/bff dev
 
 ## MSW
 
-`apps/portal/src/mock/index.ts` — 浏览器层 Mock。
+`apps/web/src/mock/index.ts` — 浏览器层 Mock。
 
 Codegen: `pnpm tsx scripts/msw-codegen.ts <openapi.yaml>`
 

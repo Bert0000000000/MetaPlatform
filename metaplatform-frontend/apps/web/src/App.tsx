@@ -14,8 +14,25 @@ import LoginPage from './pages/LoginPage';
 
 // 懒加载各模块页面
 
-const SuperAIPage = lazy(() => import('./pages/superai/SuperAIPage'));
-
+const SuperaiOverviewPage = lazy(() => import('./pages/superai/ChatPage'));
+const SuperaiChatPage = lazy(() => import('./pages/superai/SuperAIChatPage'));
+const SuperaiA2ACollaborationPage = lazy(() => import('./pages/superai/A2ACollaborationPage'));
+const SuperaiAgentCopilotPage = lazy(() => import('./pages/superai/AgentCopilotPage'));
+const SuperaiCostOptimizationPage = lazy(() => import('./pages/superai/CostOptimizationPage'));
+const SuperaiDataAnalysisPage = lazy(() => import('./pages/superai/DataAnalysisPage'));
+const SuperaiEmployeeMatchingPage = lazy(() => import('./pages/superai/EmployeeMatchingPage'));
+const SuperaiExecutionDetailPage = lazy(() => import('./pages/superai/ExecutionDetailPage'));
+const SuperaiExecutionPlanPage = lazy(() => import('./pages/superai/ExecutionPlanPage'));
+const SuperaiManualSelectEmployeePage = lazy(() => import('./pages/superai/ManualSelectEmployeePage'));
+const SuperaiParallelExecutionPage = lazy(() => import('./pages/superai/ParallelExecutionPage'));
+const SuperaiReportExportPage = lazy(() => import('./pages/superai/ReportExportPage'));
+const SuperaiResultAggregationPage = lazy(() => import('./pages/superai/ResultAggregationPage'));
+const SuperaiResultSummaryPage = lazy(() => import('./pages/superai/ResultSummaryPage'));
+const SuperaiScheduleExecutionPage = lazy(() => import('./pages/superai/ScheduleExecutionPage'));
+const SuperaiScheduleIntentPage = lazy(() => import('./pages/superai/ScheduleIntentPage'));
+const SuperaiSchedulePlanCardPage = lazy(() => import('./pages/superai/SchedulePlanCardPage'));
+const SuperaiTaskOrchestrationPage = lazy(() => import('./pages/superai/TaskOrchestrationPage'));
+const SuperaiTaskTemplatePage = lazy(() => import('./pages/superai/TaskTemplatePage'));
 
 const ApphubAppListPage = lazy(() => import('./pages/apphub/AppListPage'));
 const ApphubAppDetailPage = lazy(() => import('./pages/apphub/AppDetailPage'));
@@ -147,8 +164,26 @@ function AppRoutes() {
           <Route path="admin/logs" element={<DashboardAdminLogsPage />} />
           <Route path="admin/configs" element={<DashboardAdminConfigsPage />} />
           <Route path="admin/operations" element={<DashboardAdminOperationsPage />} />
-          <Route path="superai" element={<SuperAIPage />} />
-
+          {/* SuperAI 对话中心(Phase 4.5: from apps/superai) */}
+          <Route path="superai" element={<SuperaiOverviewPage />} />
+          <Route path="superai/chat" element={<SuperaiChatPage />} />
+          <Route path="superai/a2a" element={<SuperaiA2ACollaborationPage />} />
+          <Route path="superai/copilot" element={<SuperaiAgentCopilotPage />} />
+          <Route path="superai/cost" element={<SuperaiCostOptimizationPage />} />
+          <Route path="superai/data" element={<SuperaiDataAnalysisPage />} />
+          <Route path="superai/employee-match" element={<SuperaiEmployeeMatchingPage />} />
+          <Route path="superai/execution" element={<SuperaiExecutionPlanPage />} />
+          <Route path="superai/execution/:id" element={<SuperaiExecutionDetailPage />} />
+          <Route path="superai/manual-select" element={<SuperaiManualSelectEmployeePage />} />
+          <Route path="superai/parallel" element={<SuperaiParallelExecutionPage />} />
+          <Route path="superai/report" element={<SuperaiReportExportPage />} />
+          <Route path="superai/result-aggregation" element={<SuperaiResultAggregationPage />} />
+          <Route path="superai/result-summary" element={<SuperaiResultSummaryPage />} />
+          <Route path="superai/schedule" element={<SuperaiScheduleIntentPage />} />
+          <Route path="superai/schedule/execute" element={<SuperaiScheduleExecutionPage />} />
+          <Route path="superai/schedule/plan" element={<SuperaiSchedulePlanCardPage />} />
+          <Route path="superai/tasks" element={<SuperaiTaskOrchestrationPage />} />
+          <Route path="superai/templates" element={<SuperaiTaskTemplatePage />} />
           {/* 架构中心(Phase 4: from apps/arch) */}
           <Route path="arch" element={<ArchBusinessArchPage />} />
           <Route path="arch/capabilities" element={<ArchCapabilityManagementPage />} />

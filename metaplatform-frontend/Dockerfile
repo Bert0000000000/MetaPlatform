@@ -6,7 +6,7 @@ WORKDIR /app
 RUN corepack enable && corepack prepare pnpm@latest --activate
 COPY pnpm-workspace.yaml pnpm-lock.yaml package.json .npmrc ./
 COPY packages/shared/package.json packages/shared/
-COPY apps/portal/package.json apps/portal/
+COPY apps/web/package.json apps/web/
 COPY apps/dashboard/package.json apps/dashboard/
 COPY apps/superai/package.json apps/superai/
 COPY apps/apphub/package.json apps/apphub/
