@@ -99,13 +99,69 @@ class _PortalIamAliasMiddleware(BaseHTTPMiddleware):
     def __init__(self, app: _ASGIApp):
         super().__init__(app)
         # Only rewrite admin-style paths, not auth/sso-providers
-        self._pattern = _re.compile(r"^/api/v1/iam/(admin|users|orgs|permissions|logs|configs)(/.*)?$")
+                # Portal admin pages call /api/v1/iam/<svc>/<rest>; rewrite to
+        # /api/v1/admin/<svc>/<rest>. The portal also uses legacy service
+        # names the new admin router exposes under different prefixes
+        # (e.g. audit-logs -> logs/audit, departments -> orgs/tree); the
+        # _svc_aliases mapping handles those.
+        self._pattern = _re.compile(
+            r"^/api/v1/iam/("
+            r"users(?:/[^/]+)?|/users/[^/]+/departments|/users/me/password|"
+            r"orgs(?:/[^/]+)?|/orgs/positions|/orgs/transfer|/orgs/[^/]+|/org/[^/]+|"
+            r"roles(?:/[^/]+)?|/role/[^/]+|/roles/[^/]+/permissions|"
+            r"permissions(?:/[^/]+)?|/permission/[^/]+|"
+            r"logs(?:/[^/]+)?|/logs/audit|/logs/audit/\d+|/logs/audit/export|/logs/modules|"
+            r"audit-logs(?:/[^/]+)?|/audit-logs/[^/]+|/audit-logs/statistics|/audit-logs/export|"
+            r"departments(?:/[^/]+)?|/departments/[^/]+|/departments/tree|"
+            r"api-keys(?:/[^/]+)?|/api-keys/[^/]+|/api-keys/[^/]+/revoke|"
+            r"sso(?:/.*)?|/sso-providers(?:/[^/]+)?|/sso-providers/[^/]+/authorize|/sso-providers/[^/]+/callback|"
+            r"configs(?:/[^/]+)?"
+            r")(/.*)?$",
+        )
+        # legacy_iam_segment -> current_admin_segment
+        self._svc_aliases = {
+            "audit-logs": "logs/audit",
+            "audit-logs/statistics": "logs/modules",
+            "departments": "orgs/tree",
+            "departments/tree": "orgs/tree",
+            "roles": "permissions/roles",
+            "permissions": "permissions/catalog",
+            "logs": "logs/audit",
+            "logs/audit": "logs/audit",          # identity (alias already has trailing segment)
+            "logs/modules": "logs/modules",
+            "logs/audit/export": "logs/audit/export",
+            "orgs/positions": "orgs/positions",
+            "orgs/transfer": "orgs/transfer",
+            "orgs/[^/]+": "orgs",
+            "api-keys": "api-keys",
+            "sso": "sso",
+            "sso-providers": "sso-providers",
+        }
 
     async def dispatch(self, request: _StRequest, call_next):
         m = self._pattern.match(request.url.path)
-        if m:
-            request.scope["path"] = "/api/v1/admin/" + m.group(1) + (m.group(2) or "")
-            request.scope["raw_path"] = request.scope["path"].encode("utf-8")
+        if not m:
+            return await call_next(request)
+        legacy_svc = m.group(1)
+        tail = m.group(2) or ""
+        # Longest-prefix alias lookup so detail paths fall back correctly:
+        #   "audit-logs/statistics" -> alias key "audit-logs/statistics" -> "logs/modules"
+        #   "audit-logs/123"       -> alias key "audit-logs"          -> "logs/audit/123"
+        #   "roles/3"               -> alias key "roles"              -> "permissions/roles/3"
+        alias_key = None
+        for k in sorted(self._svc_aliases.keys(), key=len, reverse=True):
+            if legacy_svc == k or legacy_svc.startswith(k + "/"):
+                alias_key = k
+                break
+        if alias_key is not None:
+            admin_prefix = self._svc_aliases[alias_key]
+            remainder = legacy_svc[len(alias_key):]
+            new_path = "/api/v1/admin/" + admin_prefix + remainder + tail
+        else:
+            # No alias matched: keep the legacy segment as-is.
+            new_path = "/api/v1/admin/" + legacy_svc + tail
+        request.scope["path"] = new_path
+        request.scope["raw_path"] = new_path.encode("utf-8")
         return await call_next(request)
 
 app.add_middleware(_PortalIamAliasMiddleware)

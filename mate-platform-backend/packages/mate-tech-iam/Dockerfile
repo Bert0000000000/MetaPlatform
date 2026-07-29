@@ -16,6 +16,7 @@ WORKDIR /app
 COPY pyproject.toml uv.lock ./
 COPY packages/ packages/
 
+ENV UV_HTTP_TIMEOUT=300 UV_INDEX_URL=https://mirrors.aliyun.com/pypi/simple/
 RUN uv sync --frozen --no-dev
 # Workaround: root pyproject has package=false so uv sync by default does not materialize
 # workspace member runtime deps into the venv. Reinstall IAM-specific runtime deps.

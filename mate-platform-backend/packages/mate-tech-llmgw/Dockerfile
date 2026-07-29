@@ -1,7 +1,7 @@
-# syntax=docker/dockerfile:1.7
+﻿# syntax=docker/dockerfile:1.7
 # =============================================================================
 # mate-tech-llmgw : LLM Gateway (multi-provider routing)
-# Base: mate-api-gateway (monorepo .venv ?? fastapi/uvicorn/structlog/httpx)
+# Base: mate-api-gateway (pip-installed globally to /usr/local/lib/...)
 # Build context: ./mate-platform-backend
 # =============================================================================
 FROM mate-api-gateway:dev
@@ -9,11 +9,11 @@ FROM mate-api-gateway:dev
 USER root
 WORKDIR /app
 
-# ?? llmgw + mate-common ??
+# Copy llmgw + mate-common source
 COPY packages/mate-tech-llmgw/ /tmp/build/packages/mate-tech-llmgw/
 COPY packages/mate-common/ /tmp/build/packages/mate-common/
 
-# ? llmgw ???????LLM SDKs + ?? + ????
+# Install llmgw-specific runtime deps (LLM SDKs + redis + pybreaker)
 ENV PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple/
 RUN pip install --no-cache-dir \
         langchain langchain-core langchain-openai langchain-anthropic \
@@ -21,15 +21,17 @@ RUN pip install --no-cache-dir \
         redis pybreaker sse-starlette \
         tiktoken
 
-# ? llmgw ?? venv site-packages
-RUN SITE=/app/.venv/lib/python3.12/site-packages && \
-    cp -r /tmp/build/packages/mate-tech-llmgw/src/mate_tech_llmgw "$SITE/"
+# Install llmgw source into the SAME global site-packages the base image uses
+# (api-gateway installs to /usr/local/lib/python3.12/site-packages, NOT a venv)
+RUN SITE=/usr/local/lib/python3.12/site-packages && \
+    cp -r /tmp/build/packages/mate-tech-llmgw/src/mate_tech_llmgw "$SITE/" && \
+    cp -r /tmp/build/packages/mate-common/src/mate_common "$SITE/" && \
+    rm -rf /tmp/build
 
-ENV PATH="/app/.venv/bin:$PATH" \
+ENV PATH="/usr/local/bin:$PATH" \
     PYTHONPATH=/app/src \
     PORT=8008
 
-USER root
 EXPOSE 8008
 
 HEALTHCHECK --interval=15s --timeout=5s --retries=5 --start-period=30s \
