@@ -1,4 +1,4 @@
-"""Mate Platform - TECH-IAM main entry."""
+﻿"""Mate Platform - TECH-IAM main entry."""
 from __future__ import annotations
 
 import os
@@ -11,7 +11,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
 
-from .api import (auth_router, configs_router, logs_router, orgs_router, permissions_router, users_router)
+from .api import (auth_router, configs_router, dashboard_router, logs_router, orgs_router, permissions_router, users_router)
 from .db import AsyncSessionMaker, db_health, init_db
 from .seed import seed
 
@@ -84,6 +84,7 @@ app.include_router(permissions_router)
 app.include_router(orgs_router)
 app.include_router(logs_router)
 app.include_router(configs_router)
+app.include_router(dashboard_router)
 
 
 # Portal compatibility shim: portal admin pages call /api/v1/iam/users, /api/v1/iam/orgs, etc.
@@ -226,3 +227,4 @@ if __name__ == "__main__":
     import uvicorn
 
     uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("PORT", "8102")))
+
