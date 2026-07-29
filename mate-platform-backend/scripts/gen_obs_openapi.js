@@ -1,4 +1,8 @@
-openapi: 3.1.0
+﻿const fs = require('fs');
+const path = require('path');
+const out = process.argv[2] || path.join(__dirname, '..', 'packages', 'mate-tech-obs', 'openapi', 'obs.yaml');
+const P = [];
+P.push(`openapi: 3.1.0
 info:
   title: mate-tech-obs
   version: 0.1.0
@@ -16,7 +20,8 @@ tags:
   - name: obs
   - name: admin-operations
   - name: meta
-paths:
+`);
+P.push(`paths:
   /healthz:
     get:
       summary: Liveness probe
@@ -74,3 +79,10 @@ paths:
       tags: [admin-operations]
       responses:
         "200": {description: OK}
+`);
+
+let raw = P.join('');
+fs.mkdirSync(path.dirname(out), { recursive: true });
+fs.writeFileSync(out, raw, 'utf8');
+if (raw.charCodeAt(0) === 0xFEFF) { fs.writeFileSync(out, raw.slice(1)); }
+console.log('wrote', out, 'bytes', fs.statSync(out).size);

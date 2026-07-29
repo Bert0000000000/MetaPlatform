@@ -2,98 +2,409 @@ openapi: 3.1.0
 info:
   title: mate-tech-ont
   version: 0.1.0
-  description: Ontology service (Neo4j + OWL + SPARQL)
+  description: |
+    Ontology service (Neo4j + OWL + SPARQL).
+    Backed by in-memory dicts in the default dev build; Neo4j wiring is
+    out of scope for ST-5.4.x and arrives in a later sprint.
+servers:
+  - url: http://localhost:8007
+    description: local dev
+  - url: http://mate-tech-ont:8007
+    description: docker compose
+tags:
+  - name: ontology
+  - name: instances
+  - name: sparql
+  - name: meta
 paths:
   /healthz:
     get:
-      summary: 健康检查
-      tags: [meta]
+      summary: Liveness probe
+      tags:
+        - meta
       responses:
-        "200":
+        '200':
           description: OK
   /api/v1/ont/ontologies:
     post:
-      summary: 创建本体
-      tags: [ontology]
+      summary: Create ontology
+      tags:
+        - ontology
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/OntologyCreate"
+              $ref: '#/components/schemas/OntologyCreate'
       responses:
-        "200": {description: OK}
-        "409": {description: 本体已存在}
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ontology'
+        '409':
+          description: Ontology already exists
   /api/v1/ont/ontologies/{ontology_id}:
+    parameters:
+      - in: path
+        name: ontology_id
+        required: true
+        schema:
+          type: string
     get:
-      summary: 读取本体
-      tags: [ontology]
-      parameters:
-        - name: ontology_id
-          in: path
-          required: true
-          schema: {type: string}
+      summary: Read ontology
+      tags:
+        - ontology
       responses:
-        "200": {description: OK}
-        "404": {description: not found}
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ontology'
+        '404':
+          description: not found
   /api/v1/ont/classes:
     post:
-      summary: 创建类
-      tags: [ontology]
+      summary: Create class
+      tags:
+        - ontology
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/ClassCreate"
+              $ref: '#/components/schemas/ClassCreate'
       responses:
-        "200": {description: OK}
-        "409": {description: 类已存在}
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClassResponse'
+        '409':
+          description: Class already exists
   /api/v1/ont/classes/{class_id}:
+    parameters:
+      - in: path
+        name: class_id
+        required: true
+        schema:
+          type: string
     get:
-      summary: 读取类
-      tags: [ontology]
-      parameters:
-        - name: class_id
-          in: path
-          required: true
-          schema: {type: string}
+      summary: Read class
+      tags:
+        - ontology
       responses:
-        "200": {description: OK}
-        "404": {description: not found}
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClassResponse'
+        '404':
+          description: not found
+  /api/v1/ont/instances:
+    get:
+      summary: List instances (optional class_id filter)
+      tags:
+        - instances
+      parameters:
+        - in: query
+          name: class_id
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/InstanceResponse'
+    post:
+      summary: Create instance
+      tags:
+        - instances
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InstanceCreate'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InstanceResponse'
+  /api/v1/ont/instances/{iid}:
+    parameters:
+      - in: path
+        name: iid
+        required: true
+        schema:
+          type: string
+    get:
+      summary: Read instance
+      tags:
+        - instances
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InstanceResponse'
+        '404':
+          description: not found
+    delete:
+      summary: Delete instance
+      tags:
+        - instances
+      responses:
+        '200':
+          description: OK
+  /api/v1/ont/instances/relations:
+    get:
+      summary: List relations
+      tags:
+        - instances
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RelationResponse'
+    post:
+      summary: Create relation
+      tags:
+        - instances
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RelationCreate'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RelationResponse'
+        '400':
+          description: Bad payload
+  /api/v1/ont/sparql:
+    post:
+      summary: SPARQL -> Cypher -> execute
+      tags:
+        - sparql
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SparqlRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SparqlResponse'
+        '400':
+          description: SPARQL parse / transpile failure
+  /api/v1/ont/explain:
+    post:
+      summary: SPARQL EXPLAIN (parse + transpile only)
+      tags:
+        - sparql
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - query
+              properties:
+                query:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  cypher:
+                    type: string
+                  plan:
+                    type: string
+                  estimated_rows:
+                    type: integer
+                  variables:
+                    type: array
+                    items:
+                      type: string
 components:
   schemas:
     OntologyCreate:
       type: object
-      required: [id]
+      required:
+        - id
       properties:
-        id: {type: string}
-        namespace: {type: string, default: default}
-        description: {type: string}
+        id:
+          type: string
+        namespace:
+          type: string
+          default: default
+        description:
+          type: string
     Ontology:
       type: object
+      required:
+        - id
+        - namespace
+        - description
       properties:
-        id: {type: string}
-        namespace: {type: string}
-        description: {type: string}
+        id:
+          type: string
+        namespace:
+          type: string
+        description:
+          type: string
     ClassCreate:
       type: object
-      required: [id]
+      required:
+        - id
       properties:
-        id: {type: string}
-        namespace: {type: string, default: default}
-        label: {type: string}
-        parent: {type: string, nullable: true}
+        id:
+          type: string
+        namespace:
+          type: string
+          default: default
+        label:
+          type: string
+        parent:
+          type: string
+          nullable: true
         properties:
           type: array
-          items: {type: object}
+          items:
+            type: object
     ClassResponse:
       type: object
+      required:
+        - id
+        - namespace
+        - label
       properties:
-        id: {type: string}
-        namespace: {type: string}
-        label: {type: string}
-        parent: {type: string, nullable: true}
+        id:
+          type: string
+        namespace:
+          type: string
+        label:
+          type: string
+        parent:
+          type: string
+          nullable: true
         properties:
           type: array
-          items: {type: object}
+          items:
+            type: object
+    InstanceCreate:
+      type: object
+      required:
+        - class_id
+      properties:
+        class_id:
+          type: string
+        properties:
+          type: object
+        namespace:
+          type: string
+          default: default
+    InstanceResponse:
+      type: object
+      required:
+        - id
+        - class_id
+        - namespace
+      properties:
+        id:
+          type: string
+        class_id:
+          type: string
+        namespace:
+          type: string
+        properties:
+          type: object
+    RelationCreate:
+      type: object
+      required:
+        - type
+        - src_id
+        - dst_id
+      properties:
+        type:
+          type: string
+        src_id:
+          type: string
+        dst_id:
+          type: string
+        properties:
+          type: object
+    RelationResponse:
+      type: object
+      required:
+        - id
+        - type
+        - src_id
+        - dst_id
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+        src_id:
+          type: string
+        dst_id:
+          type: string
+        properties:
+          type: object
+    SparqlRequest:
+      type: object
+      required:
+        - query
+      properties:
+        query:
+          type: string
+        format:
+          type: string
+          default: json
+          enum:
+            - json
+            - xml
+            - csv
+    SparqlResponse:
+      type: object
+      required:
+        - cypher
+      properties:
+        cypher:
+          type: string
+        bindings:
+          type: array
+          items:
+            type: object
+        took_ms:
+          type: number

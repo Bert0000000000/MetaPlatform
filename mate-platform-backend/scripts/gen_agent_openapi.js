@@ -1,4 +1,8 @@
-openapi: 3.1.0
+﻿const fs = require('fs');
+const path = require('path');
+const out = process.argv[2] || path.join(__dirname, '..', 'packages', 'mate-tech-agent', 'openapi', 'agent.yaml');
+const P = [];
+P.push(`openapi: 3.1.0
 info:
   title: mate-tech-agent
   version: 0.1.0
@@ -17,7 +21,8 @@ servers:
 tags:
   - name: agent
   - name: meta
-paths:
+`);
+P.push(`paths:
   /healthz:
     get:
       summary: Liveness probe
@@ -99,7 +104,8 @@ paths:
       responses:
         "200": {description: OK}
         "404": {description: thread not found}
-components:
+`);
+P.push(`components:
   schemas:
     HealthResponse:
       type: object
@@ -143,3 +149,10 @@ components:
         thread_id: {type: string}
         status: {type: string, enum: [approved, aborted, no_pending]}
         message: {type: string, nullable: true}
+`);
+
+let raw = P.join('');
+fs.mkdirSync(path.dirname(out), { recursive: true });
+fs.writeFileSync(out, raw, 'utf8');
+if (raw.charCodeAt(0) === 0xFEFF) { fs.writeFileSync(out, raw.slice(1)); }
+console.log('wrote', out, 'bytes', fs.statSync(out).size);

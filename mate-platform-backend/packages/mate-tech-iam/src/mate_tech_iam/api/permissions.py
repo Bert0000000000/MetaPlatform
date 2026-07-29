@@ -47,7 +47,7 @@ class RoleOut(BaseModel):
     user_count: int = 0
 
     @model_validator(mode="after")
-    def _derive_role_type(self) -> "RoleOut":
+    def _derive_role_type(self) -> RoleOut:
         # PLATFORM_* codes are SYSTEM; is_builtin (without PLATFORM_ prefix)
         # is BUILTIN; everything else is CUSTOM.
         if self.code and self.code.startswith("PLATFORM_"):
@@ -68,7 +68,11 @@ class RoleCreate(BaseModel):
 
 class RoleUpdate(BaseModel):
     name: str | None = Field(default=None, max_length=128)
-    description: str | None = Field(default=None, max_length=512)
+    # description stores either the free-form role description OR a policy
+    # JSON blob prefixed with __METAPLATFORM_POLICY__: (a hand-rolled
+    # workaround until the backend schema gains a real `policy` column).
+    # 8192 is enough for ~50 menu perms + ~30 API perms + masking list.
+    description: str | None = Field(default=None, max_length=8192)
     data_scope: str | None = Field(default=None, pattern="^(ALL|DEPT|DEPT_AND_SUB|SELF|CUSTOM)$")
     permission_ids: list[int] | None = None
 
@@ -495,7 +499,7 @@ async def permission_matrix(
     rp_rows = (
         await session.execute(select(RolePermission.role_id, RolePermission.permission_id))
     ).all()
-    rp_set = {(r, p) for r, p in rp_rows}
+    {(r, p) for r, p in rp_rows}
 
     return ok({
         "roles": [

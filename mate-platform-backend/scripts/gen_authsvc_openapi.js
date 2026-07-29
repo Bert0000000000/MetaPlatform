@@ -1,0 +1,203 @@
+﻿const fs = require('fs');
+const path = require('path');
+const out = process.argv[2] || path.join(__dirname, '..', 'services', 'auth-service', 'openapi', 'auth-service.yaml');
+const P = [];
+P.push(`openapi: 3.1.0
+info:
+  title: mate-auth-service
+  version: 0.1.0
+  description: |
+    JWT validation / tenant identification service.
+    Responsibilities (per agent.md "gateway split"):
+      - JWT verify (RS256, Keycloak JWKS, Redis-cached, 300s refresh)
+      - Tenant from claims (tenant_id)
+      - Token blacklist (Redis, on logout / revoke)
+    NOT in scope:
+      - Cutover / policy (Traefik does that)
+      - Token issuance (Keycloak)
+      - User / role write (Keycloak admin API)
+servers:
+  - url: http://localhost:8101
+    description: local dev
+  - url: http://mate-auth-service:8101
+    description: docker compose
+tags:
+  - name: auth
+  - name: meta
+`);
+P.push(`paths:
+  /healthz:
+    get:
+      summary: Liveness probe
+      tags: [meta]
+      responses:
+        "200": {description: OK}
+  /readyz:
+    get:
+      summary: Readiness (JWKS reachable + Redis ping)
+      tags: [meta]
+      responses:
+        "200": {description: OK}
+  /api/v1/iam/auth/login:
+    post:
+      summary: Resource Owner Password (Keycloak grant) -> access + refresh
+      tags: [auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IamLoginRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IamAuthResponse"
+        "500":
+          description: Keycloak timeout / login error
+        "503":
+          description: KEYCLOAK_CLIENT_SECRET not configured
+  /api/v1/iam/auth/refresh:
+    post:
+      summary: Refresh-token grant to Keycloak
+      tags: [auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IamRefreshRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IamAuthResponse"
+        "500":
+          description: Refresh failure
+        "503":
+          description: KEYCLOAK_CLIENT_SECRET not configured
+  /api/v1/iam/auth/logout:
+    post:
+      summary: Blacklist current JTI in Redis; best-effort Keycloak end_session
+      tags: [auth]
+      parameters:
+        - {in: header, name: Authorization, required: true, schema: {type: string}, description: "Bearer <JWT>"}
+      responses:
+        "200": {description: OK}
+        "401": {description: Missing Bearer token}
+  /api/v1/auth/verify:
+    post:
+      summary: Verify a JWT (used by sidecars / BFF)
+      tags: [auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VerifyRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VerifyResponse"
+        "401": {description: Bad signature / expired / unknown kid}
+  /api/v1/auth/revoke:
+    post:
+      summary: Revoke (blacklist) a JTI
+      tags: [auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RevokeRequest"
+      responses:
+        "200": {description: OK}
+  /api/v1/auth/userinfo:
+    get:
+      summary: Proxy to Keycloak OIDC userinfo (best-effort)
+      tags: [auth]
+      parameters:
+        - {in: header, name: Authorization, required: true, schema: {type: string}, description: "Bearer <access_token>"}
+      responses:
+        "200": {description: OK}
+        "502": {description: Keycloak upstream error}
+`);
+P.push(`components:
+  schemas:
+    IamLoginRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username: {type: string}
+        password: {type: string}
+        tenantId: {type: string, nullable: true}
+    IamRefreshRequest:
+      type: object
+      required: [refreshToken]
+      properties:
+        refreshToken: {type: string}
+    IamAuthUserInfo:
+      type: object
+      properties:
+        id: {type: string}
+        username: {type: string}
+        email: {type: string, nullable: true}
+        realName: {type: string, nullable: true}
+    IamAuthResponse:
+      type: object
+      required: [accessToken]
+      properties:
+        accessToken: {type: string}
+        refreshToken: {type: string, nullable: true}
+        tokenType: {type: string, default: Bearer}
+        expiresIn: {type: integer}
+        refreshExpiresIn: {type: integer}
+        userId: {type: string, nullable: true}
+        username: {type: string, nullable: true}
+        realName: {type: string, nullable: true}
+        user:
+          $ref: "#/components/schemas/IamAuthUserInfo"
+        requirePasswordReset: {type: boolean}
+        mfaRequired: {type: boolean}
+        loginAt: {type: string, nullable: true}
+    VerifyRequest:
+      type: object
+      required: [token]
+      properties:
+        token: {type: string, description: "Bearer JWT to verify"}
+    VerifyResponse:
+      type: object
+      required: [valid]
+      properties:
+        valid: {type: boolean}
+        subject: {type: string, nullable: true}
+        tenant_id: {type: string, nullable: true}
+        username: {type: string, nullable: true}
+        email: {type: string, nullable: true}
+        roles:
+          type: array
+          items: {type: string}
+        scopes:
+          type: array
+          items: {type: string}
+        expires_at: {type: integer}
+        issued_at: {type: integer}
+    RevokeRequest:
+      type: object
+      required: [jti]
+      properties:
+        jti: {type: string, description: "JWT ID to revoke"}
+`);
+
+let raw = P.join('');
+fs.mkdirSync(path.dirname(out), { recursive: true });
+fs.writeFileSync(out, raw, 'utf8');
+if (raw.charCodeAt(0) === 0xFEFF) { fs.writeFileSync(out, raw.slice(1)); }
+console.log('wrote', out, 'bytes', fs.statSync(out).size);

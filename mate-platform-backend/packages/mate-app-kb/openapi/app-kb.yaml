@@ -1,0 +1,181 @@
+openapi: 3.1.0
+info:
+  title: mate-app-kb
+  version: 0.1.0
+  description: |
+    Business aggregation facade for the knowledge-base app.
+    Wraps mate-tech-rag (upload / search / stats) and mate-tech-agent (chat / stream / review).
+    All endpoints are unauthenticated; access control is expected to be
+    enforced by the api-gateway or the BFF.
+servers:
+  - url: http://localhost:8003
+    description: local dev
+  - url: http://mate-app-kb:8003
+    description: docker compose
+tags:
+  - name: app-kb
+    description: Aggregated KB business endpoints
+  - name: meta
+    description: Service health
+paths:
+  /healthz:
+    get:
+      summary: Liveness probe
+      tags: [meta]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/HealthResponse'}
+  /api/v1/app-kb/upload:
+    post:
+      summary: Multipart upload (text/markdown) -> RAG upload
+      tags: [app-kb]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                document_id:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/UploadResponse'}
+        '400':
+          description: Empty file
+        '502':
+          description: Upstream RAG error
+  /api/v1/app-kb/search:
+    post:
+      summary: Search via RAG (forwarded)
+      tags: [app-kb]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/SearchRequest'}
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/SearchResponse'}
+        '502':
+          description: Upstream RAG error
+  /api/v1/app-kb/chat:
+    post:
+      summary: Agent chat (forwarded to mate-tech-agent)
+      tags: [app-kb]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ChatRequest'}
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ChatResponse'}
+        '502':
+          description: Upstream agent error
+  /api/v1/app-kb/chat/stream:
+    post:
+      summary: Agent chat (SSE) - proxies mate-tech-agent stream
+      tags: [app-kb]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ChatRequest'}
+      responses:
+        '200':
+          description: SSE stream
+          content:
+            text/event-stream: {}
+  /api/v1/app-kb/stats:
+    get:
+      summary: Forwarded RAG stats
+      tags: [app-kb]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/StatsResponse'}
+        '502':
+          description: Upstream RAG error
+components:
+  schemas:
+    HealthResponse:
+      type: object
+      required: [status, service, version]
+      properties:
+        status: {type: string}
+        service: {type: string}
+        version: {type: string}
+    UploadResponse:
+      type: object
+      required: [document_id, filename, size_bytes, chunk_count, indexed_in]
+      properties:
+        document_id: {type: string}
+        filename: {type: string}
+        size_bytes: {type: integer, minimum: 0}
+        chunk_count: {type: integer, minimum: 0}
+        indexed_in:
+          type: array
+          items: {type: string}
+    SearchRequest:
+      type: object
+      required: [query]
+      properties:
+        query: {type: string, minLength: 1, maxLength: 4096}
+        top_k: {type: integer, minimum: 1, maximum: 100, default: 10}
+        mode: {type: string, enum: [AUTO, FACTUAL, ENTITY, THEMATIC], default: AUTO}
+    SearchResponse:
+      type: object
+      required: [query, mode, total, hits, latency_ms]
+      properties:
+        query: {type: string}
+        mode: {type: string}
+        total: {type: integer, minimum: 0}
+        hits:
+          type: array
+          items: {type: object}
+        latency_ms: {type: integer, minimum: 0}
+    ChatRequest:
+      type: object
+      required: [message]
+      properties:
+        message: {type: string, minLength: 1, maxLength: 4096}
+        thread_id: {type: string, nullable: true}
+        scenario: {type: string, enum: [S1, S2, S3], default: S1}
+    ChatResponse:
+      type: object
+      required: [thread_id, scenario, answer, latency_ms]
+      properties:
+        thread_id: {type: string}
+        scenario: {type: string}
+        answer: {type: string}
+        retrieved_chunks:
+          type: array
+          items: {type: object}
+        tool_calls:
+          type: array
+          items: {type: object}
+        latency_ms: {type: integer, minimum: 0}
+    StatsResponse:
+      type: object
+      required: [total_chunks, embedder_dim]
+      properties:
+        total_chunks: {type: integer, minimum: 0}
+        embedder_dim: {type: integer, minimum: 0}
