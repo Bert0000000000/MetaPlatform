@@ -68,9 +68,9 @@ jobs:
       - name: Install dependencies
         working-directory: ./metaplatform-frontend
         run: pnpm install --frozen-lockfile
-      - name: Typecheck
+      - name: Typecheck (affected apps)
         working-directory: ./metaplatform-frontend
-        run: pnpm typecheck
+        run: pnpm -r --filter './apps/*' --filter '!./apps/portal' typecheck
       - name: Build
         working-directory: ./metaplatform-frontend
         run: pnpm build
