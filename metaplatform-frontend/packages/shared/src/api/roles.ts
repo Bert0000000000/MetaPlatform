@@ -108,11 +108,16 @@ export async function createRole(payload: CreateRoleRequest): Promise<RoleRespon
 
 export async function updateRole(roleId: string, payload: UpdateRoleRequest): Promise<RoleResponse> {
   const url = apiPath('iam', '/roles/' + roleId);
-  // Backend RoleUpdate expects snake_case; map the legacy fields.
+  // Backend RoleUpdate expects snake_case; map the legacy fields. The
+  // version field is required for optimistic concurrency control on the
+  // backend (server returns 409 if the supplied version no longer matches
+  // the row's persisted version) so the policy-save flow can detect a
+  // concurrent edit and refresh. Forward it as snake_case `version`.
   const body: Record<string, unknown> = {};
   if (payload.roleName !== undefined) body.name = payload.roleName;
   if (payload.description !== undefined) body.description = payload.description;
   if (payload.dataScope !== undefined) body.data_scope = payload.dataScope;
+  if (payload.version !== undefined) body.version = payload.version;
   const resp = await apiClient.put<RoleResponse>(url, body);
   return resp.data;
 }
