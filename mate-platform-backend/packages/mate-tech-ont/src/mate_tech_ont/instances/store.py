@@ -22,7 +22,7 @@ class Instance:
     class_id: str
     properties: dict[str, Any] = field(default_factory=dict)
     namespace: str = "default"
-    created_at: float = field(default_factory=lambda: time.time())
+    created_at: float = field(default_factory=time.time)
 
 
 @dataclass(frozen=True, slots=True)
@@ -71,7 +71,7 @@ class InstanceStore:
             return False
         del self._instances[iid]
         # 联动删除相关关系
-        rels_to_del = [r for r in self._relations.values() if r.src_id == iid or r.dst_id == iid]
+        rels_to_del = [r for r in self._relations.values() if iid in (r.src_id, r.dst_id)]
         for r in rels_to_del:
             del self._relations[r.id]
         return True

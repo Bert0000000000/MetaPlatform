@@ -1,8 +1,6 @@
 """错误恢复 + 灾备 (10 ST)."""
 from __future__ import annotations
 
-import pytest
-
 
 def test_pg_connection_loss_recovery() -> None:
     """PG 连接丢失恢复."""
@@ -12,7 +10,6 @@ def test_pg_connection_loss_recovery() -> None:
 
 def test_redis_failover() -> None:
     """Redis Sentinel / Cluster failover."""
-    primary_down = True
     replica_up = True
     assert replica_up is True
 
@@ -31,14 +28,12 @@ def test_neo4j_bolt_encryption() -> None:
 
 def test_minio_disk_full_recovery() -> None:
     """MinIO 磁盘满恢复."""
-    disk_full = True
     recovered = True
     assert recovered is True
 
 
 def test_keycloak_idp_outage_degraded() -> None:
     """Keycloak IdP 故障降级."""
-    idp_up = False
     degraded = True  # 走 fallback token
     assert degraded is True
 

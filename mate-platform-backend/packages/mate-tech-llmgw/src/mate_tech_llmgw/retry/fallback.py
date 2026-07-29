@@ -4,9 +4,8 @@
 """
 from __future__ import annotations
 
-import asyncio
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
-from typing import Awaitable, Callable
 
 import structlog
 from tenacity import (
@@ -65,7 +64,7 @@ async def chat_with_fallback(
             if model != primary_model:
                 logger.warning("llmgw.fallback.used", model=model, primary=primary_model)
             return resp
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             last_error = e
             logger.warning(
                 "llmgw.fallback.failed",

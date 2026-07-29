@@ -5,14 +5,14 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from typing import Any, Generic, TypeVar
+from datetime import UTC, datetime
+from typing import Any, TypeVar
 
 T = TypeVar("T")
 
 
 @dataclass(frozen=True, slots=True)
-class Message(Generic[T]):
+class Message[T]:
     """泛型消息."""
 
     payload: T
@@ -20,7 +20,7 @@ class Message(Generic[T]):
     trace_id: str | None = None
     tenant_id: str = "default"
     key: str | None = None
-    timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
 
     def to_kafka_headers(self) -> list[tuple[str, bytes]]:
         result: list[tuple[str, bytes]] = []

@@ -18,7 +18,7 @@ class OwlImportResult:
 
 def parse_owl_rdf_xml(rdf_xml: str) -> OwlImportResult:
     try:
-        from rdflib import Graph, RDF, RDFS
+        from rdflib import RDF, RDFS, Graph
     except ImportError:
         logger.warning("owl.rdflib_missing")
         return OwlImportResult(0, 0, 0)
@@ -46,7 +46,7 @@ def parse_owl_rdf_xml(rdf_xml: str) -> OwlImportResult:
 
 
 def export_owl_rdf_xml(classes: list[dict[str, Any]]) -> str:
-    from rdflib import Graph, Literal, Namespace, RDF, RDFS
+    from rdflib import RDF, RDFS, Graph, Literal, Namespace
 
     ont = Namespace("http://mate.local/ontology#")
     g = Graph()

@@ -1,11 +1,12 @@
 """实例管理 API (ST-5.4.7)."""
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel, Field
 from typing import Any
 
-from .store import Instance, Relation, store
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel, Field
+
+from .store import store
 
 router = APIRouter(prefix="/api/v1/ont/instances", tags=["instances"])
 

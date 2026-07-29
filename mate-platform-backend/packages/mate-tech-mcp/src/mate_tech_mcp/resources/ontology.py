@@ -59,7 +59,7 @@ class OntologyResource:
         """列出 namespace 下所有类."""
         try:
             resp = await self._client.get(
-                f"/api/v1/ont/classes",
+                "/api/v1/ont/classes",
                 params={"namespace": namespace},
             )
             resp.raise_for_status()

@@ -5,8 +5,9 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass, field
-from typing import Any, Callable
+from collections.abc import Callable
+from dataclasses import dataclass
+from typing import Any
 
 import structlog
 
@@ -124,7 +125,7 @@ async def dispatch_tool_call(
                 if hasattr(result, "__await__"):
                     result = await result
                 return {"tool_call_id": call.id, "result": result}
-            except Exception as e:  # noqa: BLE001
+            except Exception as e:
                 logger.warning("tools.dispatch.error", name=call.name, error=str(e))
                 return {"tool_call_id": call.id, "error": str(e)}
     return {"tool_call_id": call.id, "error": f"Tool '{call.name}' not found"}

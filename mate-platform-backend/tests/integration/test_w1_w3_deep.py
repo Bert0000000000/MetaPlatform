@@ -1,8 +1,6 @@
 """W1 + W3 深度测试 (10 ST)."""
 from __future__ import annotations
 
-import pytest
-
 
 # W1 骨架深度
 def test_w1_uv_workspace_python_312() -> None:

@@ -4,7 +4,6 @@
 """
 from __future__ import annotations
 
-import os
 import time
 from dataclasses import dataclass
 from typing import Any
@@ -116,7 +115,8 @@ def make_test_token(
         "roles": roles or ["viewer"],
         "exp": int(time.time()) + expires_in,
     }
-    b64 = lambda d: base64.urlsafe_b64encode(
-        json.dumps(d).encode()
-    ).rstrip(b"=").decode()
+    def b64(d):
+        return base64.urlsafe_b64encode(
+            json.dumps(d).encode()
+        ).rstrip(b"=").decode()
     return f"{b64(header)}.{b64(payload)}.unsigned"

@@ -102,7 +102,7 @@ class OrgTreeNode(BaseModel):
     leader_id: int | None
     sort_order: int
     member_count: int
-    children: list["OrgTreeNode"] = []
+    children: list[OrgTreeNode] = []
 
 
 OrgTreeNode.model_rebuild()
@@ -134,7 +134,7 @@ async def _member_counts(session: AsyncSession, org_ids: list[int]) -> dict[int,
             select(Position.id, Position.org_id).where(Position.org_id.in_(org_ids))
         )).all()
     )
-    result: dict[int, int] = {oid: 0 for oid in org_ids}
+    result: dict[int, int] = dict.fromkeys(org_ids, 0)
     for pos_id, count in rows:
         org_id = pos_to_org.get(pos_id)
         if org_id is not None:
@@ -152,7 +152,7 @@ async def _position_counts(session: AsyncSession, org_ids: list[int]) -> dict[in
             .group_by(Position.org_id)
         )
     ).all()
-    return {oid: cnt for oid, cnt in rows}
+    return dict(rows)
 
 
 # ---- Endpoints ----
@@ -171,14 +171,11 @@ async def get_org_tree(
         return ok([])
 
     members = await _member_counts(session, [o.id for o in orgs if o.id is not None])
-    leaders = {
-        uid: name
-        for uid, name in (
+    dict((
             await session.execute(select(User.id, User.real_name).where(
                 User.id.in_({o.leader_id for o in orgs if o.leader_id is not None})
             ))
-        ).all()
-    }
+        ).all())
 
     by_parent: dict[int | None, list[Org]] = {}
     for o in orgs:
@@ -224,12 +221,9 @@ async def list_orgs(
     members = await _member_counts(session, org_ids)
     pos_counts = await _position_counts(session, org_ids)
     leader_ids = {o.leader_id for o in items if o.leader_id is not None}
-    leaders = {
-        uid: name
-        for uid, name in (
+    leaders = dict((
             await session.execute(select(User.id, User.real_name).where(User.id.in_(leader_ids)))
-        ).all()
-    } if leader_ids else {}
+        ).all()) if leader_ids else {}
 
     out = []
     for o in items:
@@ -429,7 +423,7 @@ async def list_positions(
                 .group_by(EmployeePosition.position_id)
             )
         ).all()
-        holders = {pid: cnt for pid, cnt in rows}
+        holders = dict(rows)
 
     out = []
     for p in items:

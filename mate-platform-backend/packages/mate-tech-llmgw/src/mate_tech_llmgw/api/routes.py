@@ -10,9 +10,9 @@ import structlog
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
-from .chat import ChatMessage, ChatResponse
-from .router import chat as router_chat
 from ..stream.sse import make_streaming_response
+from .chat import ChatMessage
+from .router import chat as router_chat
 
 logger = structlog.get_logger(__name__)
 

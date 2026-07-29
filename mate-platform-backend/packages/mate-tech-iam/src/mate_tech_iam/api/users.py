@@ -3,25 +3,22 @@ from __future__ import annotations
 
 import csv
 import io
-import json
 from datetime import UTC, datetime
 from typing import Any
-from typing_extensions import Annotated
 
 import structlog
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, UploadFile, File, status
+from fastapi import APIRouter, File, HTTPException, Query, Request, UploadFile, status
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..domain.audit import AuditAction
-from ..domain.login_log import LoginLog, LoginResult
+from ..domain.login_log import LoginLog
 from ..domain.role import Role, UserRole
 from ..domain.user import User, UserStatus
 from ..services.deps import (
     AdminDep,
-    CallerDep,
     SessionDep,
     write_audit,
 )
@@ -374,15 +371,12 @@ async def update_user(
         "status": user.status.value if user.status else None,
         "is_super_admin": user.is_super_admin,
     }
-    changed = False
     for field_name in ("real_name", "email", "phone", "department", "position", "avatar"):
         new_val = getattr(payload, field_name)
         if new_val is not None and getattr(user, field_name) != new_val:
             setattr(user, field_name, new_val)
-            changed = True
     if payload.status is not None and user.status != payload.status:
         user.status = payload.status
-        changed = True
     if payload.is_super_admin is not None and user.is_super_admin != payload.is_super_admin:
         if not caller.is_super_admin:
             raise HTTPException(
@@ -390,7 +384,6 @@ async def update_user(
                 detail={"code": "E403_FORBIDDEN", "message": "仅超级管理员可调整 is_super_admin"},
             )
         user.is_super_admin = payload.is_super_admin
-        changed = True
     if payload.role_ids is not None:
         # 替换角色
         existing = (
@@ -400,7 +393,6 @@ async def update_user(
             await session.delete(ur)
         for rid in payload.role_ids:
             session.add(UserRole(user_id=user.id, role_id=rid))
-        changed = True
 
     user.updated_at = datetime.now(UTC)
     after = {

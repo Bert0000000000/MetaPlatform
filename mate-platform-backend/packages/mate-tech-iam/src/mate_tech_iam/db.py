@@ -44,6 +44,8 @@ async def get_session() -> AsyncIterator[AsyncSession]:
 async def init_db() -> None:
     """Create tables. Should be called once at startup."""
     # Import inside to ensure SQLModel metadata is fully populated.
+    from sqlmodel import SQLModel
+
     from .domain import (  # noqa: F401  pylint: disable=import-outside-toplevel
         AuditLog,
         EmployeePosition,
@@ -57,7 +59,6 @@ async def init_db() -> None:
         User,
         UserRole,
     )
-    from sqlmodel import SQLModel
 
     async with engine.begin() as conn:
         await conn.run_sync(SQLModel.metadata.create_all)

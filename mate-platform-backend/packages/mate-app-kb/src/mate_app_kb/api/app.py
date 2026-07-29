@@ -4,7 +4,6 @@ from __future__ import annotations
 import logging
 import time
 import uuid
-from typing import Any
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.responses import StreamingResponse

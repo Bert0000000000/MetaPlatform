@@ -1,7 +1,9 @@
 """SPARQL -> Cypher (ST-5.4.4)."""
 from __future__ import annotations
+
 import re
 from dataclasses import dataclass, field
+
 import structlog
 
 logger = structlog.get_logger(__name__)
@@ -80,7 +82,7 @@ def _select_to_cypher(p: ParsedQuery) -> str:
     if not p.triples:
         return "MATCH (n) RETURN n LIMIT 25"
     parts = []
-    for i, (s, pr, o) in enumerate(p.triples):
+    for i, (_s, pr, _o) in enumerate(p.triples):
         var_name = f"n{i}"
         parts.append(f"({var_name}:{pr.strip('<>').strip(':')})")
     return f"MATCH {', '.join(parts)} RETURN {', '.join(f'n{i}' for i in range(len(p.triples)))}"
@@ -90,7 +92,7 @@ def _insert_to_cypher(p: ParsedQuery) -> str:
     if not p.triples:
         return "CREATE (n:Thing {name: 'empty'})"
     parts = []
-    for s, pr, o in p.triples:
+    for s, pr, _o in p.triples:
         label = pr.strip('<>').strip(':')
         var = s.strip('?') if s.startswith('?') else 'n'
         parts.append(f"({var}:{label} {{rdf: '{s}'}})")
@@ -101,7 +103,7 @@ def _delete_to_cypher(p: ParsedQuery) -> str:
     if not p.triples:
         return "MATCH (n) DELETE n"
     parts = []
-    for s, pr, o in p.triples:
+    for s, pr, _o in p.triples:
         var = s.strip('?') if s.startswith('?') else 'n'
         parts.append(f"({var}:{pr.strip('<>').strip(':')})")
     return f"MATCH {', '.join(parts)} DELETE {', '.join(p.strip('?') if p.startswith('?') else 'n' for p in p.triples)}"

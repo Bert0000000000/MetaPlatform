@@ -1,10 +1,11 @@
 """Dual write integration tests (ST-5.4.12)."""
 from __future__ import annotations
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock
 
-from mate_tech_ont.dual_write.writer import DualWriter, DualWriteResult
+import pytest
+
+from mate_tech_ont.dual_write.writer import DualWriter
 
 
 @pytest.mark.asyncio

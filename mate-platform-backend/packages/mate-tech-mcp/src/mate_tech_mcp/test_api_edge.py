@@ -3,8 +3,8 @@ from __future__ import annotations
 
 import pytest
 
-from mate_tech_mcp.main import app
 from mate_tech_mcp.auth import make_test_token
+from mate_tech_mcp.main import app
 
 
 @pytest.mark.asyncio

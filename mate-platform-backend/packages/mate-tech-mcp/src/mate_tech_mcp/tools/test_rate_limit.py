@@ -1,8 +1,9 @@
 """Rate limit tests (ST-5.3.7)."""
 from __future__ import annotations
 
-import pytest
 from unittest.mock import AsyncMock
+
+import pytest
 
 from mate_tech_mcp.tools.rate_limit import (
     RateLimitConfig,

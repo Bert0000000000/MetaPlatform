@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import Any, Iterator
 
 import httpx
 
@@ -98,8 +97,7 @@ class AgentClient:
             f"{self._base_url}/api/v1/agent/chat/stream",
             json=body,
         ) as r:
-            for line in r.iter_lines():
-                yield line
+            yield from r.iter_lines()
 
     def close(self):
         self._client.close()

@@ -12,6 +12,8 @@ from mate_tech_rag.api.ingest import ingest
 from mate_tech_rag.api.parse import parse_document
 from mate_tech_rag.api.retrieval import (
     create_clients as init_real_clients,
+)
+from mate_tech_rag.api.retrieval import (
     get_embedder,
     get_graph,
     get_hybrid,

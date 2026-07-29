@@ -19,7 +19,7 @@ class Version:
     ontology_id: str
     version: str  # e.g. "v1.0.0", "v1.1.0-rc.1"
     parent: str | None = None  # 父版本
-    created_at: float = field(default_factory=lambda: time.time())
+    created_at: float = field(default_factory=time.time)
     metadata: dict[str, str] = field(default_factory=dict)
 
 

@@ -8,7 +8,6 @@ from __future__ import annotations
 import hashlib
 import json
 import os
-from dataclasses import asdict
 from typing import Any
 
 import redis.asyncio as redis

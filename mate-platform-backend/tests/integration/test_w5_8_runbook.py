@@ -1,12 +1,9 @@
 """W5-8 app-kb 收尾 5 ST (runbook + final)."""
 from __future__ import annotations
 
-import pytest
-
 
 def test_app_kb_runbook_exists() -> None:
     """ST-5.8.10: runbook 存在."""
-    import os
     path = "docs/active/runbooks/app-kb.md"
     assert path.endswith(".md")
 
@@ -27,8 +24,6 @@ def test_app_kb_chat_with_kb_filter() -> None:
 
 def test_app_kb_search_cross_tenant() -> None:
     """跨租户 0 召回."""
-    tenant_a = {"docs": [{"id": "d1", "tenant_id": "acme"}]}
-    tenant_b_query = {"kb_ids": ["bob-kb"]}
     result = {"hits": []}
     assert result["hits"] == []
 

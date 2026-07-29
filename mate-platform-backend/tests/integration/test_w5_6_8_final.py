@@ -1,8 +1,6 @@
 """W5-6/W5-8 收尾边角 (tech-rag + app-kb)."""
 from __future__ import annotations
 
-import pytest
-
 
 # W5-6 tech-rag 边角
 def test_rag_search_default_top_k() -> None:

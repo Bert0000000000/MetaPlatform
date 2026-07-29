@@ -1,7 +1,6 @@
 """Seed data for TECH-IAM. Idempotent: re-running won't duplicate rows."""
 from __future__ import annotations
 
-import json
 from datetime import UTC, datetime, timedelta
 
 import structlog

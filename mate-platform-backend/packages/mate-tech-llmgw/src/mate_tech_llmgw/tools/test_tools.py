@@ -1,8 +1,6 @@
 """Tools tests (ST-5.5.8.3)."""
 from __future__ import annotations
 
-import pytest
-
 from mate_tech_llmgw.tools.registry import (
     SAMPLE_TOOLS,
     ToolCall,
@@ -71,7 +69,7 @@ def test_dispatch_tool_call() -> None:
         handler=my_handler,
     )
     call = ToolCall(id="c1", name="double", arguments={"x": 21})
-    result = dispatch_tool_call(call, [t])
+    dispatch_tool_call(call, [t])
     assert received == {"x": 21}
     # dispatch_tool_call is sync (handler is sync); result format
     # Note: dispatch_tool_call in registry.py is async via __await__ check,

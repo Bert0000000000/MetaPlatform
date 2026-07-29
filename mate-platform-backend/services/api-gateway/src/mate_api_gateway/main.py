@@ -8,14 +8,13 @@ from __future__ import annotations
 
 import os
 import time
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 from typing import Any
 
 import httpx
 import structlog
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, Field
 
 logger = structlog.get_logger(__name__)
 
@@ -81,10 +80,8 @@ async def lifespan(app: FastAPI):
     yield
     await app.state.client.aclose()
     if app.state.redis is not None:
-        try:
+        with suppress(Exception):
             await app.state.redis.aclose()
-        except Exception:
-            pass
     logger.info("mate-api-gateway.shutdown")
 
 

@@ -4,8 +4,6 @@
 """
 from __future__ import annotations
 
-import pytest
-
 
 def test_docker_available_for_testcontainers() -> None:
     """ST-2.4.1: 检查 docker 可用."""
@@ -19,14 +17,14 @@ def test_docker_available_for_testcontainers() -> None:
 def test_postgres_testcontainer_default_version() -> None:
     """ST-2.4.1: PG testcontainer 默认 16."""
     pg_version = "postgres:16-alpine"
-    major = int(pg_version.split(":")[1].split(".")[0])
+    major = int(pg_version.split(":")[1].split(".", maxsplit=1)[0])
     assert major >= 15
 
 
 def test_redis_testcontainer_version() -> None:
     """ST-2.4.1: Redis 7+."""
     redis_version = "redis:7-alpine"
-    major = int(redis_version.split(":")[1].split(".")[0])
+    major = int(redis_version.split(":")[1].split(".", maxsplit=1)[0])
     assert major >= 7
 
 
@@ -39,14 +37,14 @@ def test_kafka_testcontainer_kraft_mode() -> None:
 def test_neo4j_testcontainer_default_version() -> None:
     """ST-2.4.1: Neo4j 5+."""
     version = "5.25.0"
-    major = int(version.split(".")[0])
+    major = int(version.split(".", maxsplit=1)[0])
     assert major >= 5
 
 
 def test_milvus_testcontainer_default_version() -> None:
     """ST-2.4.1: Milvus."""
     version = "2.5.0"
-    major = int(version.split(".")[0])
+    major = int(version.split(".", maxsplit=1)[0])
     assert major >= 2
 
 
@@ -59,7 +57,7 @@ def test_minio_testcontainer_default_version() -> None:
 def test_keycloak_testcontainer_default_version() -> None:
     """ST-2.4.1: Keycloak 25."""
     version = "25.0"
-    major = int(version.split(".")[0])
+    major = int(version.split(".", maxsplit=1)[0])
     assert major >= 25
 
 

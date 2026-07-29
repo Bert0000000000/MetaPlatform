@@ -48,7 +48,7 @@ async def test_kb_search_with_kb_ids() -> None:
         side_effect=capture
     )
     tool = KbSearchTool()
-    result = await tool(query="x", kb_ids=["kb1", "kb2"])
+    await tool(query="x", kb_ids=["kb1", "kb2"])
     assert captured["payload"]["kb_ids"] == ["kb1", "kb2"]
     await tool.aclose()
 
@@ -57,7 +57,6 @@ async def test_kb_search_with_kb_ids() -> None:
 @respx.mock
 async def test_kb_search_http_error() -> None:
     """tech-rag 不可达 → 错误返回."""
-    import httpx
     respx.post("http://localhost:8006/api/v1/rag/search").mock(
         return_value=Response(503, text="upstream down")
     )

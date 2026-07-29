@@ -1,6 +1,7 @@
 ﻿"""MilvusHybridClient: real Milvus v2.5+ connection for FACTUAL retrieval."""
 from __future__ import annotations
 
+import contextlib
 import logging
 import os
 import threading
@@ -101,8 +102,6 @@ class MilvusHybridClient:
 
     def close(self):
         if self._client is not None:
-            try:
+            with contextlib.suppress(Exception):
                 self._client.close()
-            except Exception:
-                pass
             self._client = None

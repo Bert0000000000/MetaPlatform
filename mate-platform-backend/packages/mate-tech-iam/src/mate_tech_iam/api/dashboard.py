@@ -478,7 +478,6 @@ async def get_sessions(userId: str | None = Query(default=None)) -> Any:
 async def revoke_session(session_id: str) -> None:
     global _SESSIONS
     _SESSIONS = [s for s in _SESSIONS if s["id"] != session_id]
-    return None
 
 
 @router.get("/api-keys", summary="List API keys")
@@ -511,7 +510,6 @@ async def create_api_key(payload: ApiKeyCreate) -> Any:
 async def revoke_api_key(api_key_id: str) -> None:
     global _API_KEYS
     _API_KEYS = [k for k in _API_KEYS if k["apiKeyId"] != api_key_id]
-    return None
 
 
 # ============================================================================
@@ -542,14 +540,12 @@ async def mark_read(notification_id: str) -> None:
         if n["id"] == notification_id:
             n["read"] = True
             break
-    return None
 
 
 @router.post("/notifications/read-all", status_code=status.HTTP_204_NO_CONTENT)
 async def mark_all_read(userId: str | None = Query(default=None)) -> None:
     for n in _NOTIFICATIONS:
         n["read"] = True
-    return None
 
 
 @router.get("/notifications/settings", summary="Notification preferences")
@@ -720,7 +716,6 @@ async def download_deliverable(deliverable_id: str,
 async def delete_deliverable(deliverable_id: str) -> None:
     global _DELIVERABLES
     _DELIVERABLES = [d for d in _DELIVERABLES if d["id"] != deliverable_id]
-    return None
 
 
 # ============================================================================
@@ -810,7 +805,6 @@ async def update_anomaly_rule(rule_id: str, payload: AnomalyRuleCreate) -> Any:
 async def delete_anomaly_rule(rule_id: str) -> None:
     global _ANOMALY_RULES
     _ANOMALY_RULES = [r for r in _ANOMALY_RULES if r["id"] != rule_id]
-    return None
 
 
 # ============================================================================

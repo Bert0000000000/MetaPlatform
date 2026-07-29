@@ -1,8 +1,6 @@
 """W1 集成测试 (10 ST)."""
 from __future__ import annotations
 
-import pytest
-
 
 def test_w1_apps_workspace_pnpm() -> None:
     apps = 9

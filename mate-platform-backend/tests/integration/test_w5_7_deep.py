@@ -1,13 +1,10 @@
 """W5-7 mate-tech-agent 深度测试 (S1-S4 E2E)."""
 from __future__ import annotations
 
-import pytest
-
 
 def test_s1_single_agent_qa() -> None:
     """S1: 单 Agent 问答."""
     scenario = "S1"
-    user_input = {"query": "What is RAG?"}
     response = {"answer": "...", "scenario": scenario}
     assert response["scenario"] == "S1"
     assert "answer" in response
@@ -23,14 +20,12 @@ def test_s2_multi_agent_collaboration() -> None:
 
 def test_s3_human_in_the_loop() -> None:
     """S3: HITL."""
-    scenario = "S3"
     config = {"interrupt_before": ["approval"], "decision": "approve"}
     assert "approval" in config["interrupt_before"]
 
 
 def test_s4_bpmn_workflow() -> None:
     """S4: Flowable BPMN 编排."""
-    scenario = "S4"
     workflow = {"process_id": "p-1", "status": "started"}
     assert workflow["status"] == "started"
 

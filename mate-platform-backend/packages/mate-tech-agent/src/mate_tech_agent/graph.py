@@ -3,15 +3,14 @@ from __future__ import annotations
 
 import logging
 import re
-from typing import Literal
 
 from langgraph.graph import END, START, StateGraph
 
 from mate_tech_agent.llm import get_llm, synthesize_answer
-from mate_tech_agent.memory import load_state, save_state
+from mate_tech_agent.memory import save_state
+from mate_tech_agent.security.guard import guard_input
 from mate_tech_agent.state import AgentState
 from mate_tech_agent.tools import get_rag_tool
-from mate_tech_agent.security.guard import guard_input
 
 _log = logging.getLogger(__name__)
 
@@ -45,7 +44,7 @@ def retrieve_node(state):
     return {
         **state,
         "retrieved_chunks": chunks,
-        "tool_calls": state.get("tool_calls", []) + [{"name": "rag_search", "args": {"query": query, "mode": mode, "hits": len(chunks)}}],
+        "tool_calls": [*state.get("tool_calls", []), {"name": "rag_search", "args": {"query": query, "mode": mode, "hits": len(chunks)}}],
     }
 
 
@@ -145,7 +144,7 @@ def build_s2_graph():
 
 def answer_node_stream(state):
     """S1 stream variant: build answer via LLM, expose stream hook (no return)."""
-    from mate_tech_agent.llm import stream_answer, get_llm
+    from mate_tech_agent.llm import get_llm, stream_answer
     chunks = state.get("retrieved_chunks", [])
     query = _extract_query(state)
     llm = get_llm()
@@ -194,7 +193,6 @@ def should_continue_after_review(state):
 
 def build_s3_graph():
     """S3: HITL flow (retrieve -> draft -> human_review -> post_review -> persist)."""
-    from langgraph.checkpoint.memory import MemorySaver
     g = StateGraph(AgentState)
     g.add_node("retrieve", retrieve_node)
     g.add_node("answer", answer_node)

@@ -10,12 +10,12 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 
 from mate_tech_rag.api.schemas import ChunkHit
 
 
-class RetrievalMode(str, Enum):
+class RetrievalMode(StrEnum):
     FACTUAL = "FACTUAL"
     ENTITY = "ENTITY"
     THEMATIC = "THEMATIC"

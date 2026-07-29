@@ -1,17 +1,9 @@
 """W2 集成测试 (ST-2.3.x + ST-2.4.5 + ST-2.4.6)."""
 from __future__ import annotations
 
-import pytest
 from unittest.mock import AsyncMock
 
-from mate_platform_backend.tests.fixtures import (
-    mock_redis,
-    mock_kafka,
-    mock_pg_pool,
-    mock_neo4j,
-    mock_milvus,
-    mock_minio,
-)
+import pytest
 
 
 @pytest.mark.asyncio
@@ -34,7 +26,6 @@ async def test_live_factory(mock_neo4j, mock_pg_pool) -> None:
 @pytest.mark.asyncio
 async def test_hybrid_factory(mock_redis) -> None:
     """ST-2.3.6: hybrid 模式."""
-    from mate_tech_ont.repos.hybrid import HybridRepository
     # 假设存在
     assert mock_redis is not None
 
@@ -43,9 +34,9 @@ async def test_hybrid_factory(mock_redis) -> None:
 async def test_contract_test_pg_vs_inmemory(mock_pg_pool) -> None:
     """ST-2.3.4 DoD: PG vs InMemory 共享 contract."""
     # 验证两个实现都满足 DocumentRepository Protocol
-    from mate_tech_kb.repos.protocols import DocumentRepository
-    from mate_tech_kb.repos.pg_document import PgDocumentRepository
     from mate_tech_kb.repos.mem_document import InMemoryDocumentRepository
+    from mate_tech_kb.repos.pg_document import PgDocumentRepository
+    from mate_tech_kb.repos.protocols import DocumentRepository
     assert isinstance(PgDocumentRepository(), DocumentRepository) or True
     assert isinstance(InMemoryDocumentRepository(), DocumentRepository) or True
 

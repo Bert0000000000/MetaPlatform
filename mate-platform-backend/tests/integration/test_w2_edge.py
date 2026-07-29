@@ -1,8 +1,6 @@
 """W2 基础设施 edge tests (ST-2.x edge)."""
 from __future__ import annotations
 
-import pytest
-
 
 def test_pg_pool_min_max() -> None:
     """ST-2.1.1: 连接池 min=2 max=10."""

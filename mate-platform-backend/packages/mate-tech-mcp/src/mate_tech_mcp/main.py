@@ -5,14 +5,13 @@ ST-5.3.8.1: HTTP 濠碘剝銇滈崕鑼暜?/api/v1/mcp/tools/{name}
 """
 from __future__ import annotations
 
-from typing import Any
-
 import os
+from typing import Any
 
 import structlog
 from fastapi import APIRouter, FastAPI, HTTPException, Request
 
-from .auth import verify_jwt_token, AuthError
+from .auth import AuthError, verify_jwt_token
 from .prompts.templates import list_prompts, render_prompt
 from .resources.ontology import OntologyResource, build_ontology_resource
 from .server import MCPServer, create_server
@@ -161,6 +160,7 @@ async def on_startup() -> None:
 def run_stdio() -> None:
     """ST-5.3.1.2 DoD: stdio 闂佸憡鍑归崹鐗堟叏?"""
     import asyncio
+
     from mcp.server.stdio import stdio_server
 
     async def arun() -> None:

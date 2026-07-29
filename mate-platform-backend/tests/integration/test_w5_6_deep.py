@@ -1,8 +1,6 @@
 """W5-6 mate-tech-rag 深度测试 (双写 + eval + ranking)."""
 from __future__ import annotations
 
-import pytest
-
 
 def test_rag_dual_write_class() -> None:
     """类实体的 Neo4j + PG 双写."""

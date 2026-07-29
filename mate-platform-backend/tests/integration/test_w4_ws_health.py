@@ -1,8 +1,6 @@
 """W4 Traefik WebSocket + health check + canary (ST-4.3.x)."""
 from __future__ import annotations
 
-import pytest
-
 
 def test_websocket_routes() -> None:
     """ST-4.3.1: WS 路径."""

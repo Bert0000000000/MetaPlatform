@@ -36,10 +36,9 @@ class InMemoryLightRAGClient:
         for ch in text.lower():
             if ch.isalnum() or "\u4e00" <= ch <= "\u9fff":
                 cur.append(ch)
-            else:
-                if cur:
-                    out.add("".join(cur))
-                    cur = []
+            elif cur:
+                out.add("".join(cur))
+                cur = []
         if cur:
             out.add("".join(cur))
         return out

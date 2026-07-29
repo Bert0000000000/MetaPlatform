@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import Iterator
+from collections.abc import Iterator
 
 _log = logging.getLogger(__name__)
 
@@ -99,8 +99,7 @@ def stream_answer(llm, query, chunks) -> Iterator[str]:
     prompt = _build_prompt(query, chunks)
     if hasattr(llm, "stream"):
         try:
-            for token in llm.stream(prompt):
-                yield token
+            yield from llm.stream(prompt)
             return
         except Exception as exc:
             _log.warning("LLM stream failed, falling back: %s", exc)

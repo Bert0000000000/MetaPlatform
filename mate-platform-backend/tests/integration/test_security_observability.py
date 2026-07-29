@@ -1,8 +1,6 @@
 """安全 + 可观测性 (10 ST)."""
 from __future__ import annotations
 
-import pytest
-
 
 # Security (5)
 def test_jwt_expiry_validation() -> None:
@@ -16,8 +14,8 @@ def test_jwt_expiry_validation() -> None:
 
 def test_oauth_pkce_validation() -> None:
     """OAuth PKCE code_verifier 验证."""
-    import hashlib
     import base64
+    import hashlib
     code_verifier = "random-string-43-128-chars"
     code_challenge = base64.urlsafe_b64encode(
         hashlib.sha256(code_verifier.encode()).digest()

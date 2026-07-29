@@ -1,8 +1,9 @@
 """Dual write with real PG mock (ST-5.4.9 enhanced)."""
 from __future__ import annotations
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock
+
+import pytest
 
 from mate_tech_ont.dual_write.writer import DualWriter
 

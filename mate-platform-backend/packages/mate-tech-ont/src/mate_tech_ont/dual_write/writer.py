@@ -4,8 +4,6 @@ CRUD 同时写 PG 元数据 + Neo4j 关系，失败回滚。
 """
 from __future__ import annotations
 
-import asyncio
-from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from typing import Any
 
@@ -67,12 +65,10 @@ class DualWriter:
             neo4j_ok = True
 
             # 2. 写 PG
-            pg_ok = False
             try:
                 if self._pg is not None:
                     async with self._pg.acquire() as conn:
                         await conn.execute(pg_sql, *pg_params.values())
-                pg_ok = True
                 logger.info(
                     "dual_write.ok",
                     entity=entity,

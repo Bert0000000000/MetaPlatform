@@ -3,8 +3,6 @@ from __future__ import annotations
 
 import os
 
-import pytest
-
 
 def test_pg_dsn() -> None:
     dsn = "postgresql://mate:mate@localhost:5432/mate"

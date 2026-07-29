@@ -1,8 +1,6 @@
 """最终深度 15 ST (W1/W3 + W6/W7 收尾)."""
 from __future__ import annotations
 
-import pytest
-
 
 # W1 终极 (3)
 def test_w1_workspace_full_structure() -> None:

@@ -1,8 +1,6 @@
 """W4 Traefik edge tests (ST-4.x edge)."""
 from __future__ import annotations
 
-import pytest
-
 
 def test_traefik_routes_count() -> None:
     """ST-4.2.1: 路由数 = 17 (9 apps + 8 tech)."""

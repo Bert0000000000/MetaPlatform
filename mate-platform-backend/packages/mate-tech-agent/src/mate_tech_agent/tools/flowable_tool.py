@@ -127,7 +127,7 @@ class HttpxFlowableTool:
             )
             r.raise_for_status()
             return r.json()
-        except Exception as exc:
+        except Exception:
             return self._fallback.start_process(process_key, variables)
 
     def get_process_state(self, instance_id):
@@ -142,7 +142,7 @@ class HttpxFlowableTool:
                 data["status"] = "running" if not data.get("ended") else "completed"
                 return data
             return {"id": instance_id, "status": "not_found"}
-        except Exception as exc:
+        except Exception:
             return self._fallback.get_process_state(instance_id)
 
     def list_process_definitions(self):
@@ -152,7 +152,7 @@ class HttpxFlowableTool:
             r = self._client.get(f"{self._base_url}{self.REST_PREFIX}/repository/process-definitions")
             r.raise_for_status()
             return r.json().get("data", [])
-        except Exception as exc:
+        except Exception:
             return self._fallback.list_process_definitions()
 
     def close(self):

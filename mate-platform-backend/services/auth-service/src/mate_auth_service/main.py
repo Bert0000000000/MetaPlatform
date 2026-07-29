@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import os
 import time
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 from typing import Any
 
 import httpx
@@ -77,7 +77,7 @@ async def _refresh_jwks_if_needed(client: httpx.AsyncClient) -> None:
         if cached:
             import json
             data = json.loads(cached)
-            for kid, _ in data.items():
+            for _kid, _ in data.items():
                 pass  # values are jwk strings, not keys
             # rebuild keys
             _jwks_cache = await _fetch_jwks(client)
@@ -182,10 +182,8 @@ async def lifespan(app: FastAPI):
     yield
     await app.state.client.aclose()
     if app.state.redis is not None:
-        try:
+        with suppress(Exception):
             await app.state.redis.aclose()
-        except Exception:
-            pass
     logger.info("mate-auth-service.shutdown")
 
 

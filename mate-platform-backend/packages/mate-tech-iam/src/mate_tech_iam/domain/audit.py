@@ -3,7 +3,6 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 from enum import StrEnum
-from typing import Optional
 
 from sqlalchemy import Column, DateTime, Index, Text
 from sqlmodel import Field, SQLModel
@@ -38,7 +37,7 @@ class AuditLog(SQLModel, table=True):
         Index("ix_audit_actor", "actor_id"),
     )
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     tenant_id: str = Field(index=True, max_length=64)
     actor_id: str = Field(max_length=64, description="操作者 user_id (字符串以兼容 SSO sub)")
     actor_name: str | None = Field(default=None, max_length=128, description="操作者姓名")

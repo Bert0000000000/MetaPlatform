@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from typing import Optional
 
 from sqlalchemy import Column, DateTime, Index
 from sqlmodel import Field, SQLModel
@@ -17,7 +16,7 @@ class Permission(SQLModel, table=True):
         Index("ix_perm_resource", "resource_type"),
     )
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     tenant_id: str = Field(index=True, max_length=64)
     code: str = Field(max_length=128, description="权限编码 (e.g. user:create)")
     name: str = Field(max_length=128, description="权限显示名")
@@ -36,7 +35,7 @@ class RolePermission(SQLModel, table=True):
         Index("ix_role_perm_perm", "permission_id"),
     )
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     role_id: int = Field(foreign_key="iam_role.id", index=True)
     permission_id: int = Field(foreign_key="iam_permission.id", index=True)
     effect: str = Field(default="ALLOW", max_length=16, description="ALLOW / DENY")

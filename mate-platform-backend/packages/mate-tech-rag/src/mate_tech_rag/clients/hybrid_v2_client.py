@@ -5,8 +5,6 @@ Rerank by weighted score fusion: 0.5 * vector_sim + 0.5 * bm25_norm.
 from __future__ import annotations
 
 import logging
-import os
-from typing import Any
 
 from mate_tech_rag.api.schemas import ChunkHit
 from mate_tech_rag.clients.milvus_client import MilvusHybridClient

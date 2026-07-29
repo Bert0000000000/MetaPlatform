@@ -1,8 +1,6 @@
 """W5-8 app-kb 收尾 (CRUD + 集成 + 覆盖率)."""
 from __future__ import annotations
 
-import pytest
-
 
 def test_kb_business_models() -> None:
     app = {"id": "kb-1", "name": "Test KB", "namespace": "default", "tenant_id": "acme"}
@@ -32,13 +30,11 @@ def test_get_kb_endpoint() -> None:
 
 
 def test_list_kbs_endpoint() -> None:
-    path = "/api/v1/app-kb/kbs"
     method = "GET"
     assert method == "GET"
 
 
 def test_delete_kb_endpoint() -> None:
-    path = "/api/v1/app-kb/kbs/kb-1"
     method = "DELETE"
     assert method == "DELETE"
 

@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import os
-import traceback
 from contextlib import asynccontextmanager
 from typing import Any
 
@@ -11,7 +10,15 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
 
-from .api import (auth_router, configs_router, dashboard_router, logs_router, orgs_router, permissions_router, users_router)
+from .api import (
+    auth_router,
+    configs_router,
+    dashboard_router,
+    logs_router,
+    orgs_router,
+    permissions_router,
+    users_router,
+)
 from .db import AsyncSessionMaker, db_health, init_db
 from .seed import seed
 
@@ -53,8 +60,8 @@ app.add_middleware(
 )
 
 
-from starlette.exceptions import HTTPException as StarletteHTTPException
 from fastapi.exceptions import RequestValidationError
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 
 @app.exception_handler(StarletteHTTPException)
@@ -92,9 +99,11 @@ app.include_router(dashboard_router)
 # This middleware rewrites /api/v1/iam/<rest> -> /api/v1/admin/<rest> for non-auth paths.
 # Auth endpoints (e.g. /api/v1/iam/auth/login) are handled by auth_router directly.
 import re as _re
+
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request as _StRequest
 from starlette.types import ASGIApp as _ASGIApp
+
 
 class _PortalIamAliasMiddleware(BaseHTTPMiddleware):
     def __init__(self, app: _ASGIApp):
@@ -150,9 +159,6 @@ class _PortalIamAliasMiddleware(BaseHTTPMiddleware):
             "logs/audit": "logs/audit",          # identity (alias already has trailing segment)
             "logs/modules": "logs/modules",
             "logs/audit/export": "logs/audit/export",
-            "orgs/positions": "orgs/positions",
-            "orgs/transfer": "orgs/transfer",
-            "orgs/[^/]+": "orgs",
             "api-keys": "api-keys",
             "sso": "sso",
             "sso-providers": "sso-providers",

@@ -4,8 +4,8 @@ from __future__ import annotations
 import pytest
 from fastapi.testclient import TestClient
 
-from mate_tech_ont.main import app
 from mate_tech_ont.instances.store import store as instance_store
+from mate_tech_ont.main import app
 from mate_tech_ont.security.tenant import (
     DEFAULT_TENANT,
     TenantContext,

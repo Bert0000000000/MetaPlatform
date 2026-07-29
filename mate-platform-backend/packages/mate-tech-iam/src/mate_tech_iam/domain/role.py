@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from typing import Optional
 
 from sqlalchemy import Column, DateTime, Index
 from sqlmodel import Field, SQLModel
@@ -14,7 +13,7 @@ class Role(SQLModel, table=True):
     __tablename__ = "iam_role"
     __table_args__ = (Index("ix_role_tenant_code", "tenant_id", "code", unique=True),)
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     tenant_id: str = Field(index=True, max_length=64)
     code: str = Field(max_length=64, description="角色编码 (e.g. PLATFORM_ADMIN)")
     name: str = Field(max_length=128, description="角色显示名")
@@ -31,7 +30,7 @@ class UserRole(SQLModel, table=True):
     __tablename__ = "iam_user_role"
     __table_args__ = (Index("ix_user_role_user", "user_id"), Index("ix_user_role_role", "role_id"))
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     user_id: int = Field(foreign_key="iam_user.id", index=True)
     role_id: int = Field(foreign_key="iam_role.id", index=True)
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC), sa_column=Column(DateTime(timezone=True)))

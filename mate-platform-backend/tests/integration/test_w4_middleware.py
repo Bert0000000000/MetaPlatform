@@ -1,8 +1,6 @@
 """W4 Traefik middleware 边角 (ST-4.2.x comprehensive)."""
 from __future__ import annotations
 
-import pytest
-
 
 def test_rate_limit_middleware_rpm() -> None:
     """ST-4.2.2: rate-limit middleware 100 rpm burst 200."""

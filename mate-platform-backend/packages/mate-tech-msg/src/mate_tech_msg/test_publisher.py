@@ -1,12 +1,13 @@
 """Publisher tests (ST-5.1.4)."""
 from __future__ import annotations
 
-import pytest
 from unittest.mock import AsyncMock
 
-from mate_tech_msg.publisher import Publisher
-from mate_tech_msg.kafka_client import KafkaClient
+import pytest
+
 from mate_tech_msg.dedup import DedupStore
+from mate_tech_msg.kafka_client import KafkaClient
+from mate_tech_msg.publisher import Publisher
 from mate_tech_msg.schemas import PublishRequest
 
 

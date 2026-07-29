@@ -1,7 +1,7 @@
 """Cost tests (ST-5.5.5.2)."""
 from __future__ import annotations
 
-from mate_tech_llmgw.cost.recorder import PRICING, estimate_cost, CostRecorder
+from mate_tech_llmgw.cost.recorder import PRICING, CostRecorder, estimate_cost
 
 
 def test_estimate_cost_gpt4o() -> None:
@@ -42,6 +42,7 @@ def test_cost_recorder_creates_record() -> None:
 def test_cost_recorder_estimate_only_no_pool() -> None:
     """无 PG pool 时只计算不写入."""
     import asyncio
+
     from mate_tech_llmgw.cost.recorder import CostRecorder
     rec = CostRecorder()
     # 没有 pool，record() 不会抛错（写 PG 失败被 try-except 吞掉）

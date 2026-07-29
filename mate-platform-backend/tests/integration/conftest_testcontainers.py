@@ -2,9 +2,9 @@
 from __future__ import annotations
 
 import pytest
+from testcontainers.kafka import KafkaContainer
 from testcontainers.postgres import PostgresContainer
 from testcontainers.redis import RedisContainer
-from testcontainers.kafka import KafkaContainer
 
 
 @pytest.fixture(scope="session")

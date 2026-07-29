@@ -1,7 +1,7 @@
 """PII mask tests (ST-5.5.11.2)."""
 from __future__ import annotations
 
-from mate_tech_llmgw.security.pii_mask import mask_pii, has_pii
+from mate_tech_llmgw.security.pii_mask import has_pii, mask_pii
 
 
 def test_mask_phone() -> None:

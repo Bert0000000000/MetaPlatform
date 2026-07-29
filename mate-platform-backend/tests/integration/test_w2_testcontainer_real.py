@@ -70,6 +70,7 @@ def test_milvus_p99_latency() -> None:
 async def test_dual_write_neo4j_unavailable_no_pg() -> None:
     """ST-2.4.6: Neo4j 失败不写 PG."""
     from unittest.mock import AsyncMock, MagicMock
+
     from mate_tech_ont.dual_write.writer import DualWriter
 
     pg_pool = MagicMock()

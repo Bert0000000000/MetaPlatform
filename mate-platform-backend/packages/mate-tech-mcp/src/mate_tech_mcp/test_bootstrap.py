@@ -1,9 +1,7 @@
 """Bootstrap verification tests (ST-5.3.6.x)."""
 from __future__ import annotations
 
-import pytest
-
-from mate_tech_mcp.main import app, mcp_server, _rate_limiter, _ontology
+from mate_tech_mcp.main import _ontology, _rate_limiter, app, mcp_server
 
 
 def test_app_initialized() -> None:

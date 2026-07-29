@@ -7,7 +7,6 @@ import pytest
 
 from mate_tech_mcp.auth import (
     AuthError,
-    JWTClaims,
     make_test_token,
     verify_jwt_token,
 )
@@ -48,9 +47,10 @@ async def test_missing_sub_raises() -> None:
     import json
 
     payload = {"tenant_id": "x", "exp": int(time.time()) + 60}
-    b64 = lambda d: base64.urlsafe_b64encode(
-        json.dumps(d).encode()
-    ).rstrip(b"=").decode()
+    def b64(d):
+        return base64.urlsafe_b64encode(
+            json.dumps(d).encode()
+        ).rstrip(b"=").decode()
     bad_token = f"{b64({'alg': 'none'})}.{b64(payload)}.sig"
     with pytest.raises(AuthError, match="sub"):
         await verify_jwt_token(bad_token)

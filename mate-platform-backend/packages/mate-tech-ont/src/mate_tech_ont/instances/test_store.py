@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import pytest
 
-from mate_tech_ont.instances.store import InstanceStore, store
+from mate_tech_ont.instances.store import InstanceStore
 
 
 @pytest.fixture

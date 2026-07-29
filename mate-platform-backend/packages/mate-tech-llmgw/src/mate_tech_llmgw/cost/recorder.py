@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 import structlog
@@ -86,7 +86,7 @@ class CostRecorder:
             prompt_tokens=pt,
             completion_tokens=ct,
             cost_usd=cost,
-            ts=datetime.now(timezone.utc),
+            ts=datetime.now(UTC),
         )
         # 写 PG（如果 pool 已配置）
         if self._pool is not None:

@@ -44,7 +44,7 @@ async def publish_endpoint(req: PublishRequest) -> PublishResponse:
     """ST-5.1.4: 发布消息."""
     try:
         return await publisher.publish(req)
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         logger.error("publish.error", error=str(e))
         raise HTTPException(status_code=500, detail=str(e))
 

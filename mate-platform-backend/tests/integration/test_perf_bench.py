@@ -1,7 +1,6 @@
 """性能基准 (10 ST - PG/Redis/Kafka/Neo4j/Milvus)."""
 from __future__ import annotations
 
-import pytest
 import time
 
 

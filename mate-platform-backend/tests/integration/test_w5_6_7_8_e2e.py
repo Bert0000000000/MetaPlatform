@@ -1,8 +1,6 @@
 """W5-6/W5-7/W5-8 E2E 验证 (10 ST)."""
 from __future__ import annotations
 
-import pytest
-
 
 # W5-6 E2E
 def test_w5_6_ingest_to_search() -> None:
@@ -27,7 +25,6 @@ def test_w5_6_hybrid_score_normalization() -> None:
 def test_w5_7_s1_simple_qa() -> None:
     """S1 简单问答."""
     scenario = "S1"
-    steps = ["llm call", "tool call kb_search", "return answer"]
     assert scenario == "S1"
 
 

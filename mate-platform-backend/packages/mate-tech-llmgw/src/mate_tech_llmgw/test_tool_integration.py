@@ -6,9 +6,8 @@ import respx
 from httpx import Response
 
 from mate_tech_llmgw.chat import ChatMessage
-from mate_tech_llmgw.providers.openai import OpenAIChatProvider
 from mate_tech_llmgw.providers.anthropic import AnthropicChatProvider
-from mate_tech_llmgw.providers.qwen import QwenChatProvider
+from mate_tech_llmgw.providers.openai import OpenAIChatProvider
 from mate_tech_llmgw.tools.registry import (
     SAMPLE_TOOLS,
     ToolCall,

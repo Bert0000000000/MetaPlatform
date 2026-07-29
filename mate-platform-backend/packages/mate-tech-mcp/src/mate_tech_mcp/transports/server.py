@@ -4,9 +4,9 @@ stdio (本地) + sse (远端) 双 transport。
 """
 from __future__ import annotations
 
-import asyncio
 import os
-from typing import Any, AsyncIterator
+from collections.abc import AsyncIterator
+from typing import Any
 
 import structlog
 

@@ -7,11 +7,9 @@ publish API:
 """
 from __future__ import annotations
 
-from typing import Any
-
 import structlog
 
-from .dedup import DedupResult, DedupStore
+from .dedup import DedupStore
 from .kafka_client import KafkaClient
 from .schemas import PublishRequest, PublishResponse
 
@@ -52,7 +50,6 @@ class Publisher:
                     "publisher.idempotency_hit",
                     key=req.idempotency_key,
                 )
-                idempotency_hit = True
                 # 鍛戒腑锛氳繑鍥炶櫄鎷熷搷搴旓紙涓嶇湡鍙戯級
                 return PublishResponse(
                     topic=req.topic,

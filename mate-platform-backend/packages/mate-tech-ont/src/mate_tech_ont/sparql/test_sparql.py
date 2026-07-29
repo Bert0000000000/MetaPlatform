@@ -1,8 +1,6 @@
 """SPARQL tests (ST-5.4.4 + ST-5.4.5)."""
 from __future__ import annotations
 
-import pytest
-
 from mate_tech_ont.sparql.cypher import (
     parse_sparql,
     sparql_to_cypher,

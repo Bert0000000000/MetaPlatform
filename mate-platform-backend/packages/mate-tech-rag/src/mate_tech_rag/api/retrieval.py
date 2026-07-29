@@ -4,19 +4,19 @@ from __future__ import annotations
 import logging
 import os
 
-from mate_tech_rag.api.schemas import RetrievalRequest, RetrievalResponse
+from mate_tech_rag.api.schemas import RetrievalResponse
 from mate_tech_rag.clients.graphrag_client import GraphRAGClient, InMemoryGraphRAGClient
 from mate_tech_rag.clients.hybrid_client import HybridClient, InMemoryHybridClient
 from mate_tech_rag.clients.lightrag_client import InMemoryLightRAGClient, LightRAGClient
 from mate_tech_rag.clients.lightrag_httpx_client import HttpxLightRAGClient
 from mate_tech_rag.clients.milvus_client import MilvusHybridClient
 from mate_tech_rag.clients.neo4j_graphrag_client import Neo4jGraphRAGClient
+from mate_tech_rag.clients.pg_client import PGClient
 from mate_tech_rag.clients.ragflow_client import InMemoryRAGFlowClient, RAGFlowClient
 from mate_tech_rag.clients.ragflow_httpx_client import HttpxRAGFlowClient
-from mate_tech_rag.clients.pg_client import PGClient
-from mate_tech_rag.storage.pg_store import PGStore
 from mate_tech_rag.embedder import Embedder, create_embedder
-from mate_tech_rag.router import RetrievalMode, RetrievalResult, detect_mode
+from mate_tech_rag.router import RetrievalMode, detect_mode
+from mate_tech_rag.storage.pg_store import PGStore
 from mate_tech_rag.strategies.base import GraphStrategy, HybridStrategy, ThematicStrategy
 
 _log = logging.getLogger(__name__)
@@ -106,6 +106,7 @@ def reload_embedder(provider=None):
 
 def fake_chunk(text):
     import uuid
+
     from mate_tech_rag.api.schemas import ChunkHit
     return ChunkHit(
         chunk_id=str(uuid.uuid4()),

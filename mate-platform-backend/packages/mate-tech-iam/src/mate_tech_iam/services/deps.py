@@ -4,9 +4,8 @@ from __future__ import annotations
 import json
 import os
 from collections.abc import AsyncIterator
-from typing import Annotated
 from dataclasses import dataclass
-from typing import Any
+from typing import Annotated, Any
 
 import jwt
 import structlog

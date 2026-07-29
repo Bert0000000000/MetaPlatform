@@ -86,7 +86,7 @@ class Subscriber:
                 if self._handler:
                     # value 是 bytes 或 dict（取决于 deserializer）
                     value = msg.value
-                    headers = {k: v for k, v in (msg.headers or [])}
+                    headers = dict(msg.headers or [])
                     if hasattr(value, "decode"):
                         import json
                         value = json.loads(value.decode())
@@ -100,7 +100,7 @@ class Subscriber:
                     offset=msg.offset,
                 )
                 return
-            except Exception as e:  # noqa: BLE001
+            except Exception as e:
                 attempts += 1
                 last_exc = e
                 logger.warning(

@@ -10,7 +10,6 @@ import structlog
 from fastapi import APIRouter, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy import and_, func, or_, select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..domain.audit import AuditAction, AuditLog
 from ..services.deps import AdminDep, SessionDep

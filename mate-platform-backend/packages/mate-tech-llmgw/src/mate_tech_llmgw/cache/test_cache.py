@@ -1,8 +1,9 @@
 """Cache tests (ST-5.5.10.2)."""
 from __future__ import annotations
 
-import pytest
 from unittest.mock import AsyncMock
+
+import pytest
 
 from mate_tech_llmgw.cache.llm_cache import LLMCache, cache_key, cache_or_call
 from mate_tech_llmgw.chat import ChatMessage, ChatResponse
@@ -125,7 +126,7 @@ async def test_cache_or_call_hit_ratio_ge_30pct() -> None:
         await cache_or_call(cache, fake_fn, msgs, model="gpt-4o", temperature=0.0)
 
     # 计算 fn 调用次数（即 miss 次数）
-    fn_calls = fake_fn.call_count if hasattr(fake_fn, "call_count") else None
+    fake_fn.call_count if hasattr(fake_fn, "call_count") else None
     # 用 get 行为推算：第一次 miss (return None) + 99 次 hit
     misses = 1
     hits = 99

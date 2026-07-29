@@ -7,7 +7,6 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 from enum import StrEnum
-from typing import Optional
 
 from sqlalchemy import Column, DateTime, Index, Text
 from sqlmodel import Field, SQLModel
@@ -31,7 +30,7 @@ class SystemConfig(SQLModel, table=True):
     __tablename__ = "iam_system_config"
     __table_args__ = (Index("ix_cfg_tenant_key", "tenant_id", "key", unique=True),)
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     tenant_id: str = Field(index=True, max_length=64)
     key: str = Field(max_length=128, description="配置键 (e.g. sso.oidc.issuer)")
     value: str | None = Field(default=None, sa_column=Column(Text), description="配置值 (JSON 序列化)")

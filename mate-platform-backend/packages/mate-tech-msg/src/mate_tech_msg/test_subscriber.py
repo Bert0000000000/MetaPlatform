@@ -1,10 +1,11 @@
 """Subscriber tests (ST-5.1.5)."""
 from __future__ import annotations
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock
 
-from mate_tech_msg.subscriber import Subscriber, DLQ_TOPIC, MAX_RETRIES
+import pytest
+
+from mate_tech_msg.subscriber import DLQ_TOPIC, MAX_RETRIES, Subscriber
 
 
 def test_subscriber_constants() -> None:

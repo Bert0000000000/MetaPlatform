@@ -1,11 +1,11 @@
 ﻿"""PostgresSaver: state persistence via psycopg (TC-5.7.4 瀹屾暣鐗?."""
 from __future__ import annotations
 
+import contextlib
 import json
 import logging
 import os
 import threading
-from typing import Any
 
 _log = logging.getLogger(__name__)
 
@@ -77,10 +77,9 @@ class PGSaver:
         if not self._available or self._pool is None:
             return None
         try:
-            with self._pool.connection() as conn:
-                with conn.cursor() as cur:
-                    cur.execute("SELECT state FROM kb_agent_threads WHERE thread_id = %s", (thread_id,))
-                    row = cur.fetchone()
+            with self._pool.connection() as conn, conn.cursor() as cur:
+                cur.execute("SELECT state FROM kb_agent_threads WHERE thread_id = %s", (thread_id,))
+                row = cur.fetchone()
             if not row:
                 return None
             state = row[0]
@@ -99,17 +98,16 @@ class PGSaver:
                     deleted = cur.rowcount
                 conn.commit()
             return int(deleted or 0) > 0
-        except Exception as exc:
+        except Exception:
             return False
 
     def count(self):
         if not self._available or self._pool is None:
             return 0
         try:
-            with self._pool.connection() as conn:
-                with conn.cursor() as cur:
-                    cur.execute("SELECT count(*) FROM kb_agent_threads")
-                    row = cur.fetchone()
+            with self._pool.connection() as conn, conn.cursor() as cur:
+                cur.execute("SELECT count(*) FROM kb_agent_threads")
+                row = cur.fetchone()
             return int(row[0]) if row else 0
         except Exception:
             return 0
@@ -119,8 +117,6 @@ class PGSaver:
 
     def close(self):
         if self._pool is not None:
-            try:
+            with contextlib.suppress(Exception):
                 self._pool.close()
-            except Exception:
-                pass
             self._pool = None

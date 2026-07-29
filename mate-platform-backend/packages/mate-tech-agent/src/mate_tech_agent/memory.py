@@ -10,7 +10,6 @@ import os
 import threading
 import time
 from pathlib import Path
-from typing import Any
 
 _log = logging.getLogger(__name__)
 
@@ -71,7 +70,7 @@ def save_state(thread_id, state):
         if pg.save(thread_id, state, scenario=scenario):
             return
     # Fallback: JSON file
-    from mate_tech_agent.memory import _path_for, _payload, _lock  # type: ignore
+    from mate_tech_agent.memory import _lock, _path_for  # type: ignore
     p = _path_for(thread_id)
     payload = {"_saved_at": time.time(), "state": state}
     with _lock:
@@ -86,8 +85,9 @@ def load_state(thread_id):
         if state is not None:
             return {"state": state, "_source": "pg"}
     # Fallback: JSON file
-    from mate_tech_agent.memory import _path_for, _lock  # type: ignore
     import json as _json
+
+    from mate_tech_agent.memory import _lock, _path_for  # type: ignore
     p = _path_for(thread_id)
     if not p.exists():
         return None
@@ -101,7 +101,7 @@ def load_state(thread_id):
 def delete_state(thread_id):
     pg = get_pg_saver()
     pg_ok = pg and pg.is_available() and pg.delete(thread_id)
-    from mate_tech_agent.memory import _path_for, _lock  # type: ignore
+    from mate_tech_agent.memory import _lock, _path_for  # type: ignore
     p = _path_for(thread_id)
     json_deleted = False
     if p.exists():

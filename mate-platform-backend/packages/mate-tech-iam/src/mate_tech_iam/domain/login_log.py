@@ -3,7 +3,6 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 from enum import StrEnum
-from typing import Optional
 
 from sqlalchemy import Column, DateTime, Index
 from sqlmodel import Field, SQLModel
@@ -27,9 +26,9 @@ class LoginLog(SQLModel, table=True):
         Index("ix_login_user", "username"),
     )
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     tenant_id: str = Field(index=True, max_length=64)
-    user_id: Optional[int] = Field(default=None, foreign_key="iam_user.id")
+    user_id: int | None = Field(default=None, foreign_key="iam_user.id")
     username: str = Field(max_length=64, description="尝试登录的用户名")
     result: LoginResult = Field(default=LoginResult.SUCCESS, index=True)
     ip: str | None = Field(default=None, max_length=64)

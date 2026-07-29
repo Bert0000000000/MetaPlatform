@@ -1,8 +1,6 @@
 """Neo4j repo tests (ST-5.4.2)."""
 from __future__ import annotations
 
-import pytest
-
 from mate_tech_ont.repos.neo4j_repo import (
     GraphEdge,
     GraphNode,

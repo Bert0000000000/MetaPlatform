@@ -73,7 +73,7 @@ class KbSearchTool:
         except httpx.HTTPError as e:
             logger.error("kb_search.http_error", error=str(e))
             return {"error": f"tech-rag unreachable: {e}", "query": query}
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             logger.error("kb_search.error", error=str(e))
             return {"error": str(e), "query": query}
 

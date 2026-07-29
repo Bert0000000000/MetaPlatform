@@ -7,7 +7,13 @@ Pipeline:
 """
 from __future__ import annotations
 
-from mate_tech_rag.api.retrieval import get_embedder, get_graph, get_hybrid, get_lightrag, get_ragflow
+from mate_tech_rag.api.retrieval import (
+    get_embedder,
+    get_graph,
+    get_hybrid,
+    get_lightrag,
+    get_ragflow,
+)
 from mate_tech_rag.api.schemas import ParseRequest, ParseResponse
 
 INDEX_NAMES = ("hybrid", "graph", "lightrag")

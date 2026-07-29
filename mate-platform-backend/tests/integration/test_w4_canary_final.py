@@ -1,8 +1,6 @@
 """W4 canary + 流量影子 (ST-4.3.3 + 4.1.4 final)."""
 from __future__ import annotations
 
-import pytest
-
 
 def test_canary_header_matcher_syntax() -> None:
     """ST-4.3.3: Header matcher 语法."""

@@ -1,8 +1,6 @@
 """W6 + W7 深度 15 ST (端到端 + 集成)."""
 from __future__ import annotations
 
-import pytest
-
 
 # W6 深度 (10)
 def test_portal_sso_flow() -> None:
@@ -96,7 +94,6 @@ def test_w7_auto_rollback_60s_threshold() -> None:
 def test_w7_data_isolation_stg_prefix() -> None:
     """数据隔离 stg_ 前缀."""
     pg_schema = "stg_mate"
-    redis_db = 1
     minio_bucket = "stg-mate-documents"
     assert pg_schema.startswith("stg_")
     assert minio_bucket.startswith("stg-")

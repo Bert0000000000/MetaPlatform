@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import time
 import uuid
-from typing import Any
 
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import StreamingResponse
@@ -17,22 +16,21 @@ from mate_tech_agent.api.schemas import (
     HumanReviewResponse,
 )
 from mate_tech_agent.graph import (
-    build_s4_graph,
+    answer_node,
     build_s1_graph,
     build_s2_graph,
     build_s3_graph,
+    build_s4_graph,
     human_review_node,
     persist_node,
+    planner_node,
     post_review_node,
     retrieve_node,
-    answer_node,
-    planner_node,
-    worker_node,
     synthesizer_node,
+    worker_node,
 )
 from mate_tech_agent.llm import get_llm, stream_answer
 from mate_tech_agent.memory import delete_state, load_state, save_state
-
 
 _GRAPHS = {
     "S1": build_s1_graph(),
@@ -116,16 +114,16 @@ def create_app() -> FastAPI:
                 rc = state.get("retrieved_chunks", [])
                 yield f"event: retrieve_done\ndata: hits={len(rc)}\n\n"
                 state = answer_node(state)
-                yield f"event: llm_start\ndata: synthesizing\n\n"
+                yield "event: llm_start\ndata: synthesizing\n\n"
                 llm = get_llm()
                 for token in stream_answer(llm, req.message, rc):
                     yield f"event: token\ndata: {token}\n\n"
-                yield f"event: llm_done\ndata: complete\n\n"
+                yield "event: llm_done\ndata: complete\n\n"
                 state = human_review_node(state)
-                yield f"event: awaiting_review\ndata: pending=true\n\n"
+                yield "event: awaiting_review\ndata: pending=true\n\n"
                 _PENDING_REVIEWS[thread_id] = dict(state)
                 save_state(thread_id, state)
-                yield f"event: done\ndata: paused\n\n"
+                yield "event: done\ndata: paused\n\n"
                 return
 
             if req.scenario == "S1":
@@ -136,11 +134,11 @@ def create_app() -> FastAPI:
                 state = retrieve_node(init)
                 rc = state.get("retrieved_chunks", [])
                 yield f"event: retrieve_done\ndata: hits={len(rc)}\n\n"
-                yield f"event: llm_start\ndata: synthesizing\n\n"
+                yield "event: llm_start\ndata: synthesizing\n\n"
                 llm = get_llm()
                 for token in stream_answer(llm, req.message, rc):
                     yield f"event: token\ndata: {token}\n\n"
-                yield f"event: llm_done\ndata: complete\n\n"
+                yield "event: llm_done\ndata: complete\n\n"
                 save_state(thread_id, state)
                 yield "event: done\ndata: end\n\n"
                 return
@@ -157,11 +155,11 @@ def create_app() -> FastAPI:
                 rc = state.get("retrieved_chunks", [])
                 yield f"event: worker\ndata: chunks={len(rc)}\n\n"
                 state = synthesizer_node(state)
-                yield f"event: llm_start\ndata: synthesizing\n\n"
+                yield "event: llm_start\ndata: synthesizing\n\n"
                 llm = get_llm()
                 for token in stream_answer(llm, req.message, rc):
                     yield f"event: token\ndata: {token}\n\n"
-                yield f"event: llm_done\ndata: complete\n\n"
+                yield "event: llm_done\ndata: complete\n\n"
                 save_state(thread_id, state)
                 yield "event: done\ndata: end\n\n"
                 return

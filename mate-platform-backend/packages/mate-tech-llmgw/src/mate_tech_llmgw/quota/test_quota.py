@@ -1,8 +1,9 @@
 """Quota tests (ST-5.5.4.3)."""
 from __future__ import annotations
 
-import pytest
 from unittest.mock import AsyncMock
+
+import pytest
 
 from mate_tech_llmgw.quota.bucket import QuotaConfig, QuotaExceeded, RedisTokenBucket
 from mate_tech_llmgw.quota.guard import with_quota

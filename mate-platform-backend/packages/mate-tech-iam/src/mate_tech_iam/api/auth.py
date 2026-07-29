@@ -15,11 +15,11 @@ from __future__ import annotations
 import os
 import time
 from datetime import UTC, datetime
-from typing import Annotated, Any
+from typing import Any
 
 import jwt
 import structlog
-from fastapi import APIRouter, Depends, Header, HTTPException
+from fastapi import APIRouter, Header, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy import and_, select
 
@@ -27,7 +27,7 @@ from ..domain.audit import AuditAction
 from ..domain.login_log import LoginLog, LoginResult
 from ..domain.role import Role, UserRole
 from ..domain.user import User, UserStatus
-from ..services.deps import CallerIdentity, SessionDep, get_caller, write_audit
+from ..services.deps import CallerIdentity, write_audit
 from ..services.security import verify_password
 from .response import ok
 
@@ -286,7 +286,7 @@ async def iam_me(authorization: str | None = Header(default=None)) -> dict[str, 
         uid = int(claims.get("sub", "0"))
     except (TypeError, ValueError):
         raise HTTPException(status_code=401, detail={"code": "E401_UNAUTHORIZED", "message": "Invalid token subject"})
-    tenant_id = claims.get("tenant_id", "tenant-default")
+    claims.get("tenant_id", "tenant-default")
 
     async with AsyncSessionMaker() as session:
         user = (await session.execute(select(User).where(User.id == uid))).scalar_one_or_none()

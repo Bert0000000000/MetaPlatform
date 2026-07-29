@@ -3,13 +3,9 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 from enum import StrEnum
-from typing import TYPE_CHECKING, Optional
 
-from sqlalchemy import Column, DateTime, Index, String
+from sqlalchemy import Column, DateTime, Index
 from sqlmodel import Field, SQLModel
-
-if TYPE_CHECKING:
-    pass
 
 
 class UserStatus(StrEnum):
@@ -26,7 +22,7 @@ class User(SQLModel, table=True):
     __tablename__ = "iam_user"
     __table_args__ = (Index("ix_user_tenant_username", "tenant_id", "username", unique=True),)
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     tenant_id: str = Field(index=True, max_length=64, description="Tenant ID")
     username: str = Field(max_length=64, description="登录名")
     real_name: str | None = Field(default=None, max_length=128, description="真实姓名")

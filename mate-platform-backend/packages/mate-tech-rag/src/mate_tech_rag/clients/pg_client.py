@@ -5,6 +5,7 @@ Vector search goes to Milvus. Hybrid = vector + BM25 score fusion.
 """
 from __future__ import annotations
 
+import contextlib
 import logging
 import os
 import threading
@@ -110,10 +111,9 @@ class PGClient:
         if not self._available or self._pool is None:
             return []
         try:
-            with self._pool.connection() as conn:
-                with conn.cursor() as cur:
-                    cur.execute(
-                        """
+            with self._pool.connection() as conn, conn.cursor() as cur:
+                cur.execute(
+                    """
                         SELECT chunk_id, document_id, text, metadata,
                                ts_rank(ts_vector, plainto_tsquery('english', %s)) AS rank
                         FROM kb_chunks
@@ -121,9 +121,9 @@ class PGClient:
                         ORDER BY rank DESC
                         LIMIT %s
                         """,
-                        (query, query, max(1, top_k)),
-                    )
-                    rows = cur.fetchall()
+                    (query, query, max(1, top_k)),
+                )
+                rows = cur.fetchall()
             return [
                 {
                     "chunk_id": r[0],
@@ -142,10 +142,9 @@ class PGClient:
         if not self._available:
             return 0
         try:
-            with self._pool.connection() as conn:
-                with conn.cursor() as cur:
-                    cur.execute("SELECT count(*) FROM kb_chunks")
-                    row = cur.fetchone()
+            with self._pool.connection() as conn, conn.cursor() as cur:
+                cur.execute("SELECT count(*) FROM kb_chunks")
+                row = cur.fetchone()
             return int(row[0]) if row else 0
         except Exception:
             return 0
@@ -155,10 +154,8 @@ class PGClient:
 
     def close(self) -> None:
         if self._pool is not None:
-            try:
+            with contextlib.suppress(Exception):
                 self._pool.close()
-            except Exception:
-                pass
             self._pool = None
 
 

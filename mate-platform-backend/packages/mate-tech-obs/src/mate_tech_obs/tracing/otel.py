@@ -2,8 +2,9 @@
 from __future__ import annotations
 
 import os
+from collections.abc import Callable
 from functools import wraps
-from typing import Any, Callable
+from typing import Any
 
 import structlog
 from opentelemetry import trace
@@ -47,7 +48,7 @@ def traced(name: str | None = None) -> Callable:
         span_name = name or f"{fn.__module__}.{fn.__qualname__}"
         tracer = get_tracer()
 
-        if hasattr(fn, "__call__") and hasattr(fn, "__await__"):
+        if callable(fn) and hasattr(fn, "__await__"):
             @wraps(fn)
             async def async_wrapper(*args: Any, **kwargs: Any) -> Any:
                 with tracer.start_as_current_span(span_name) as span:

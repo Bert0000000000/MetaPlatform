@@ -1,9 +1,6 @@
 """W5-5 工具调用 schema 边角 (ST-5.5.8 final)."""
 from __future__ import annotations
 
-import json
-import pytest
-
 
 def test_tool_schema_json_schema_valid() -> None:
     """工具 schema 必须是 valid JSON Schema."""
