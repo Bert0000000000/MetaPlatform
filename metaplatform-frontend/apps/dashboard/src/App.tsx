@@ -1,4 +1,4 @@
-﻿import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ConfigProvider, App as AntApp } from 'antd';
 import zhCN from 'antd/locale/zh_CN';
 import enUS from 'antd/locale/en_US';
@@ -27,7 +27,7 @@ function ProtectedRoute({ children }: { children: ReactNode }) {
 function ThemedApp() {
   const { settings } = useSettings();
   const locale = settings.language === 'en-US' ? enUS : zhCN;
-  // V12-08: 统一使用 @mate/shared 的 getAntdTheme('dark')，确保全平台暗色主题一致。
+  // V12-08: 缁熶竴浣跨敤 @mate/shared 鐨?getAntdTheme('dark')锛岀‘淇濆叏骞冲彴鏆楄壊涓婚涓€鑷淬€?
   const { theme } = getAntdTheme('dark', locale);
   useAsyncError();
 
@@ -70,9 +70,11 @@ function ThemedApp() {
 
 export default function App() {
   return (
-    <SettingsProvider>
-      <ThemedApp />
-    </SettingsProvider>
+    <AuthProvider>
+      <SettingsProvider>
+        <ThemedApp />
+      </SettingsProvider>
+    </AuthProvider>
   );
 }
 
