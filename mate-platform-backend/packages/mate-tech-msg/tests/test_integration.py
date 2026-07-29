@@ -1,6 +1,8 @@
 """End-to-end integration tests for mate-tech-msg (ST-5.1.12.2)."""
 from __future__ import annotations
 
+import dataclasses
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -35,7 +37,9 @@ def test_publish_endpoint_idempotency(client: TestClient, monkeypatch) -> None:
             from mate_tech_msg.dedup import DedupResult
             return DedupResult(hit=False, stored=True)
 
-    monkeypatch.setattr(main, "dedup", FakeDedup())
+    # Publisher captures dedup at __init__ (module import time),
+    # so patch the bound attribute on the publisher, not main.dedup.
+    monkeypatch.setattr(main.publisher, "_dedup", FakeDedup())
 
     req = PublishRequest(
         topic="test.topic",
@@ -44,7 +48,7 @@ def test_publish_endpoint_idempotency(client: TestClient, monkeypatch) -> None:
     )
     resp = client.post(
         "/api/v1/msg/publish",
-        json=req.model_dump(),
+        json=dataclasses.asdict(req),
     )
     assert resp.status_code == 200
     body = resp.json()
