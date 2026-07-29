@@ -4,7 +4,6 @@ from __future__ import annotations
 import pytest
 import respx
 from httpx import Response
-import time
 
 from mate_tech_obs.health.aggregator import (
     DEFAULT_TARGETS,
@@ -38,7 +37,6 @@ async def test_check_endpoint_3xx() -> None:
 @pytest.mark.asyncio
 async def test_check_endpoint_timeout() -> None:
     """超时 → unhealthy."""
-    import asyncio
     # 用不可达的 IP + 短 timeout
     s = await _check_endpoint(
         "test",

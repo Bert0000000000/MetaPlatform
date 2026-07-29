@@ -2,11 +2,10 @@
 from __future__ import annotations
 
 import pytest
-from unittest.mock import AsyncMock
 from fastapi.testclient import TestClient
 
-from mate_tech_mcp.main import app
 from mate_tech_mcp.auth import make_test_token
+from mate_tech_mcp.main import app
 from mate_tech_mcp.tools.kb_search import KbSearchTool
 
 

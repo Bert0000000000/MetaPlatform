@@ -3,8 +3,7 @@ from __future__ import annotations
 
 import pytest
 
-from mate_tech_mcp.server import create_server
-from mate_tech_mcp.server import MCPServer
+from mate_tech_mcp.server import MCPServer, create_server
 
 
 def test_create_server_default() -> None:
@@ -25,7 +24,8 @@ def test_register_tool(mcp_server: MCPServer) -> None:
         name = "fake"
         description = "test"
         input_schema = {}
-        handler = lambda: "ok"
+        def handler():
+            return "ok"
 
     mcp_server.register_tool(FakeTool())
     assert len(mcp_server._tools) == 1
@@ -68,7 +68,8 @@ async def test_call_tool(mcp_server: MCPServer) -> None:
         name = "add"
         description = ""
         input_schema = {}
-        handler = lambda a, b: a + b
+        def handler(self, b):
+            return self + b
 
     mcp_server.register_tool(FakeTool())
     result = await mcp_server.call_tool("add", {"a": 2, "b": 3})

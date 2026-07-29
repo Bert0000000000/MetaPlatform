@@ -5,10 +5,10 @@ import respx
 from httpx import Response
 
 from mate_tech_llmgw.chat import ChatMessage, ChatResponse
-from mate_tech_llmgw.providers.openai import OpenAIChatProvider
 from mate_tech_llmgw.providers.anthropic import AnthropicChatProvider
-from mate_tech_llmgw.providers.qwen import QwenChatProvider
 from mate_tech_llmgw.providers.doubao import DoubaoChatProvider
+from mate_tech_llmgw.providers.openai import OpenAIChatProvider
+from mate_tech_llmgw.providers.qwen import QwenChatProvider
 from mate_tech_llmgw.router import _provider_name, get_provider, reset_providers
 
 

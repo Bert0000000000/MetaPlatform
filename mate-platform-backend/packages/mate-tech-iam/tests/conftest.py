@@ -2,12 +2,9 @@
 from __future__ import annotations
 
 import os
-import shutil
 import tempfile
 from collections.abc import AsyncIterator
-from typing import Any
 
-import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -18,12 +15,11 @@ os.environ.setdefault("IAM_DATA_DIR", tempfile.mkdtemp(prefix="mate-iam-test-"))
 os.environ.setdefault("IAM_DEV_JWT_SECRET", "test-secret")
 os.environ.setdefault("LOG_LEVEL", "WARNING")
 
-from mate_tech_iam.db import AsyncSessionMaker, engine, init_db  # noqa: E402
-from mate_tech_iam.main import app  # noqa: E402
-from mate_tech_iam.seed import seed  # noqa: E402
-from mate_tech_iam.services.deps import (  # noqa: E402
+from mate_tech_iam.db import AsyncSessionMaker, engine, init_db
+from mate_tech_iam.main import app
+from mate_tech_iam.seed import seed
+from mate_tech_iam.services.deps import (
     JWT_SECRET,
-    parse_token,
 )
 
 

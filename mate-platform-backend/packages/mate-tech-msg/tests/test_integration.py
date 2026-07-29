@@ -5,8 +5,6 @@ import pytest
 from fastapi.testclient import TestClient
 
 from mate_tech_msg.main import app
-from mate_tech_msg.publisher import Publisher
-from mate_tech_msg.dedup import DedupStore
 
 
 @pytest.fixture
@@ -22,9 +20,10 @@ def test_healthz(client: TestClient) -> None:
 
 def test_publish_endpoint_idempotency(client: TestClient, monkeypatch) -> None:
     """完整 publish 端点 + 幂等."""
+    from unittest.mock import AsyncMock
+
     from mate_tech_msg import main
     from mate_tech_msg.schemas import PublishRequest
-    from unittest.mock import AsyncMock
 
     # mock kafka send
     send_mock = AsyncMock(return_value=(0, 100))

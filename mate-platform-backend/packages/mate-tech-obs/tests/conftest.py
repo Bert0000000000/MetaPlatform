@@ -1,8 +1,9 @@
 """Conftest for mate-tech-obs (ST-5.2.10)."""
 from __future__ import annotations
 
-import pytest
 from unittest.mock import AsyncMock
+
+import pytest
 
 from mate_tech_obs.health.aggregator import HealthStatus
 

@@ -1,8 +1,9 @@
 """Dedup store tests (ST-5.1.8)."""
 from __future__ import annotations
 
-import pytest
 from unittest.mock import AsyncMock
+
+import pytest
 
 from mate_tech_msg.dedup import DedupResult, DedupStore
 

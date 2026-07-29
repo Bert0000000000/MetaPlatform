@@ -1,4 +1,4 @@
-﻿[project]
+[project]
 name = "mate-tech-rag"
 version = "0.1.0"
 description = "Mate Platform RAG 核心服务（v3.0 Plan D）"

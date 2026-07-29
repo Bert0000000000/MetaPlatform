@@ -1,18 +1,18 @@
 """Shared pytest fixtures for mate-tech-mcp (ST-5.3.10.1)."""
 from __future__ import annotations
 
-import pytest
 from unittest.mock import AsyncMock
 
-from mate_tech_mcp.server import MCPServer, create_server
-from mate_tech_mcp.tools.kb_search import KbSearchTool
-from mate_tech_mcp.resources.ontology import OntologyResource
+import pytest
+
 from mate_tech_mcp.prompts.templates import (
-    PROMPT_REGISTRY,
-    SUMMARIZE_DOC,
     EXTRACT_ENTITIES,
     PLAN_TASK,
+    SUMMARIZE_DOC,
 )
+from mate_tech_mcp.resources.ontology import OntologyResource
+from mate_tech_mcp.server import MCPServer, create_server
+from mate_tech_mcp.tools.kb_search import KbSearchTool
 
 
 @pytest.fixture

@@ -11,7 +11,7 @@ async def test_tree(client):
     items = r.json()["data"]
     assert isinstance(items, list)
     # Root "MetaPlatform 总部" should have children
-    assert any("技术中心" == n["name"] for n in items[0].get("children", []))
+    assert any(n["name"] == "技术中心" for n in items[0].get("children", []))
 
 
 @pytest.mark.asyncio

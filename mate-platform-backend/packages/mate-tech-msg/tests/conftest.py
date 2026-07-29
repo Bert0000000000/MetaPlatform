@@ -1,8 +1,9 @@
 """Conftest for mate-tech-msg (ST-5.1.12.1)."""
 from __future__ import annotations
 
-import pytest
 from unittest.mock import AsyncMock
+
+import pytest
 
 from mate_tech_msg.dedup import DedupStore
 from mate_tech_msg.kafka_client import KafkaClient

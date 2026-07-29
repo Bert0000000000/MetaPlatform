@@ -1,13 +1,14 @@
 """Edge case tests for mate-tech-msg (ST-5.1.12.2)."""
 from __future__ import annotations
 
-import pytest
 from unittest.mock import AsyncMock
 
-from mate_tech_msg.dedup import DedupResult, DedupStore
+import pytest
+
+from mate_tech_msg.dedup import DedupStore
 from mate_tech_msg.kafka_client import KafkaClient
 from mate_tech_msg.publisher import Publisher
-from mate_tech_msg.schemas import PublishRequest, PublishResponse
+from mate_tech_msg.schemas import PublishRequest
 
 
 @pytest.mark.asyncio

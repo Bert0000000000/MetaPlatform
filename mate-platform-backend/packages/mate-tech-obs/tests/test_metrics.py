@@ -10,7 +10,7 @@ from mate_tech_obs.metrics.prom import (
 
 
 def test_render_metrics_returns_bytes() -> None:
-    body, content_type = render_metrics()
+    body, _content_type = render_metrics()
     assert isinstance(body, bytes)
     assert len(body) > 0
 
