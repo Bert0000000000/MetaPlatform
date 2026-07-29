@@ -38,9 +38,6 @@ export interface RoleResponse {
   permissionCount?: number;
   permission_count?: number;
   version?: number;
-  enabled: boolean;
-  version?: number;
-  permissionCount?: number;
   memberCount?: number;
   /** 角色策略 JSON 字符串（菜单权限/API 权限/数据范围/脱敏规则） */
   policy?: string;

@@ -43,6 +43,8 @@ export interface SsoProviderPreset {
   description: string;
   /** 品牌主色（用于按钮/图标着色） */
   color: string;
+  /** optional brand icon (React node) */
+  icon?: import("react").ReactNode;
   /** OAuth/OIDC 授权端点（企业微信/微信/飞书通常为固定值） */
   authorizationEndpoint?: string;
   tokenEndpoint?: string;

@@ -8,7 +8,7 @@
  *
  * 通过 props 让上层注入品牌信息（标题/副标题/标签），默认 fallback 合理。
  */
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { Loader2, Sparkles } from "lucide-react";
 import { useAuth, type AuthUser } from "../auth/AuthProvider";
@@ -43,7 +43,7 @@ export interface SharedLoginPageProps {
   redirectTo?: string;
 }
 
-const DEFAULT_TAGS = [
+const DEFAULT_TAGS: Array<{ label: string; icon?: React.ReactNode }> = [
   { label: "本体驱动" },
   { label: "SSO 登录" },
   { label: "数字员工" },

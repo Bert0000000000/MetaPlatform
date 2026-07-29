@@ -16,6 +16,8 @@ import {
   type AuthUser,
 } from './token';
 
+export type { AuthUser };
+
 export interface AuthContextValue {
   user: AuthUser | null;
   isAuthenticated: boolean;
