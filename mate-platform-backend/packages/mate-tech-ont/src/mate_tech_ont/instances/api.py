@@ -1,6 +1,8 @@
 """实例管理 API (ST-5.4.7)."""
 from __future__ import annotations
 
+import dataclasses
+
 from typing import Any
 
 from fastapi import APIRouter, HTTPException
@@ -42,26 +44,13 @@ class RelationResponse(BaseModel):
 @router.post("", response_model=InstanceResponse)
 async def create_instance_endpoint(payload: InstanceCreate) -> InstanceResponse:
     inst = store.create_instance(payload.class_id, payload.properties, payload.namespace)
-    return InstanceResponse(**inst.__dict__)
-
-
-@router.get("/{iid}", response_model=InstanceResponse)
-async def get_instance_endpoint(iid: str) -> InstanceResponse:
-    inst = store.get_instance(iid)
-    if inst is None:
-        raise HTTPException(status_code=404, detail="not found")
-    return InstanceResponse(**inst.__dict__)
+    return InstanceResponse(**dataclasses.asdict(inst))
 
 
 @router.get("", response_model=list[InstanceResponse])
 async def list_instances_endpoint(class_id: str | None = None) -> list[InstanceResponse]:
     items = store.list_instances(class_id)
-    return [InstanceResponse(**i.__dict__) for i in items]
-
-
-@router.delete("/{iid}")
-async def delete_instance_endpoint(iid: str) -> dict[str, bool]:
-    return {"deleted": store.delete_instance(iid)}
+    return [InstanceResponse(**dataclasses.asdict(i)) for i in items]
 
 
 @router.post("/relations", response_model=RelationResponse)
@@ -72,9 +61,26 @@ async def create_relation_endpoint(payload: RelationCreate) -> RelationResponse:
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-    return RelationResponse(**rel.__dict__)
+    return RelationResponse(**dataclasses.asdict(rel))
 
 
 @router.get("/relations", response_model=list[RelationResponse])
 async def list_relations_endpoint() -> list[RelationResponse]:
-    return [RelationResponse(**r.__dict__) for r in store.list_relations()]
+    return [RelationResponse(**dataclasses.asdict(r)) for r in store.list_relations()]
+
+
+# Static-path routes registered before wildcard routes so the
+# GET /api/v1/ont/instances/relations path is not shadowed by
+# GET /{iid} (which would match iid="relations" and return 404
+# because no instance with id "relations" exists).
+@router.get("/{iid}", response_model=InstanceResponse)
+async def get_instance_endpoint(iid: str) -> InstanceResponse:
+    inst = store.get_instance(iid)
+    if inst is None:
+        raise HTTPException(status_code=404, detail="not found")
+    return InstanceResponse(**dataclasses.asdict(inst))
+
+
+@router.delete("/{iid}")
+async def delete_instance_endpoint(iid: str) -> dict[str, bool]:
+    return {"deleted": store.delete_instance(iid)}
