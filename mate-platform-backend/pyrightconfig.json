@@ -28,5 +28,19 @@
     "strictSetInference": true,
     "strictParameterNoneValue": true,
     "enableTypeIgnoreComments": true,
-    "reportUnnecessaryTypeIgnoreComment": "warning"
+    "reportUnnecessaryTypeIgnoreComment": "warning",
+    "extraPaths": [
+        "packages/mate-common/src",
+        "packages/mate-app-kb/src",
+        "packages/mate-tech-agent/src",
+        "packages/mate-tech-iam/src",
+        "packages/mate-tech-llmgw/src",
+        "packages/mate-tech-mcp/src",
+        "packages/mate-tech-msg/src",
+        "packages/mate-tech-obs/src",
+        "packages/mate-tech-ont/src",
+        "packages/mate-tech-rag/src",
+        "services/api-gateway/src",
+        "services/auth-service/src"
+    ]
 }

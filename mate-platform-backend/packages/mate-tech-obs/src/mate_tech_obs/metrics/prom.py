@@ -35,5 +35,5 @@ def render_metrics() -> tuple[bytes, str]:
 
 
 def get_registry() -> CollectorRegistry:
-    from prometheus_client import REGISTRY
+    from prometheus_client import REGISTRY  # noqa: PLC0415
     return REGISTRY

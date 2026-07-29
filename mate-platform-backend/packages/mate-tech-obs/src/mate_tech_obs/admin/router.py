@@ -52,12 +52,12 @@ async def operations_health():
 
 @router.get("/metrics/self")
 async def self_metrics():
-    from ..metrics.prom import render_metrics
+    from ..metrics.prom import render_metrics  # noqa: PLC0415
 
     body, _ = render_metrics()
-    text = body.decode("utf-8") if isinstance(body, (bytes, bytearray)) else str(body)
+    text = body.decode("utf-8") if isinstance(body, bytes | bytearray) else str(body)  # type: ignore[reportUnnecessaryIsInstance]
 
-    def _parse_value(name):
+    def _parse_value(name: str):
         for line in text.splitlines():
             if line.startswith(name + " ") or line.startswith(name + "{"):
                 parts = line.rsplit(" ", 1)

@@ -51,11 +51,11 @@ async def instrument_status() -> dict[str, object]:
 
 app.include_router(admin_router)
 
-@app.on_event("startup")
+@app.on_event("startup")  # pyright: ignore[reportDeprecated]
 async def on_startup() -> None:
     logger.info("mate-tech-obs.startup", version=app.version, instrumented=_INSTRUMENT_RESULT)
 
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("PORT", "8083")))
+    uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("PORT", "8083")))  # noqa: S104

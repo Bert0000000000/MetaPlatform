@@ -7,30 +7,30 @@ from httpx import Response
 
 from mate_tech_obs.health.aggregator import (
     HealthStatus,
-    _check_endpoint,
     aggregate_health,
+    check_endpoint,
 )
 
 
 @pytest.mark.asyncio
 @respx.mock
-async def test_check_endpoint_success() -> None:
+async def testcheck_endpoint_success() -> None:
     respx.get("http://test/healthz").mock(return_value=Response(200, json={"ok": True}))
-    s = await _check_endpoint("test", "http://test/healthz")
+    s = await check_endpoint("test", "http://test/healthz")
     assert s.healthy is True
 
 
 @pytest.mark.asyncio
 @respx.mock
-async def test_check_endpoint_5xx() -> None:
+async def testcheck_endpoint_5xx() -> None:
     respx.get("http://test/healthz").mock(return_value=Response(503))
-    s = await _check_endpoint("test", "http://test/healthz")
+    s = await check_endpoint("test", "http://test/healthz")
     assert s.healthy is False
 
 
 @pytest.mark.asyncio
-async def test_check_endpoint_unreachable() -> None:
-    s = await _check_endpoint("missing", "http://does-not-exist.invalid:9999/healthz", timeout=0.5)
+async def testcheck_endpoint_unreachable() -> None:
+    s = await check_endpoint("missing", "http://does-not-exist.invalid:9999/healthz", timeout=0.5)
     assert s.healthy is False
 
 

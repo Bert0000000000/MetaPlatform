@@ -7,7 +7,7 @@ import structlog
 
 
 def configure_json_logging(level: str = "INFO") -> None:
-    import logging
+    import logging  # noqa: PLC0415
     log_level = getattr(logging, level.upper(), logging.INFO)
     structlog.configure(
         processors=[

@@ -9,17 +9,17 @@ from mate_tech_obs.health.aggregator import (
     DEFAULT_TARGETS,
     HealthReport,
     HealthStatus,
-    _check_endpoint,
     aggregate_health,
+    check_endpoint,
 )
 
 
 @pytest.mark.asyncio
 @respx.mock
-async def test_check_endpoint_4xx() -> None:
+async def testcheck_endpoint_4xx() -> None:
     """4xx 仍算 healthy (< 500)."""
     respx.get("http://test/healthz").mock(return_value=Response(404))
-    s = await _check_endpoint("test", "http://test/healthz")
+    s = await check_endpoint("test", "http://test/healthz")
     # 4xx < 500 → healthy
     assert s.healthy is True
     assert s.detail == "HTTP 404"
@@ -27,18 +27,18 @@ async def test_check_endpoint_4xx() -> None:
 
 @pytest.mark.asyncio
 @respx.mock
-async def test_check_endpoint_3xx() -> None:
+async def testcheck_endpoint_3xx() -> None:
     """3xx redirect → healthy."""
     respx.get("http://test/healthz").mock(return_value=Response(301))
-    s = await _check_endpoint("test", "http://test/healthz")
+    s = await check_endpoint("test", "http://test/healthz")
     assert s.healthy is True
 
 
 @pytest.mark.asyncio
-async def test_check_endpoint_timeout() -> None:
+async def testcheck_endpoint_timeout() -> None:
     """超时 → unhealthy."""
     # 用不可达的 IP + 短 timeout
-    s = await _check_endpoint(
+    s = await check_endpoint(
         "test",
         "http://192.0.2.1:9999/healthz",  # TEST-NET-1 RFC 5737
         timeout=0.3,
@@ -50,8 +50,6 @@ async def test_check_endpoint_timeout() -> None:
 @pytest.mark.asyncio
 async def test_aggregate_health_mixed_partial_down() -> None:
     """部分 down → overall=False."""
-    import respx
-    from httpx import Response
     with respx.mock:
         respx.get("http://a/healthz").mock(return_value=Response(200))
         respx.get("http://b/healthz").mock(return_value=Response(500))

@@ -62,7 +62,7 @@ DEFAULT_TARGETS: list[tuple[str, str, str]] = [
 ]
 
 
-async def _check_endpoint(name: str, url: str, timeout: float = 2.0) -> HealthStatus:
+async def check_endpoint(name: str, url: str, timeout: float = 2.0) -> HealthStatus:  # noqa: ASYNC109
     start = time.time()
     try:
         async with httpx.AsyncClient(timeout=timeout) as client:
@@ -86,21 +86,21 @@ async def _check_endpoint(name: str, url: str, timeout: float = 2.0) -> HealthSt
 
 async def aggregate_health(
     targets: list[tuple[str, str, str]] | None = None,
-    timeout: float = 2.0,
+    timeout: float = 2.0,  # noqa: ASYNC109
 ) -> HealthReport:
-    targets = targets or DEFAULT_TARGETS
+    targets = DEFAULT_TARGETS if targets is None else targets
     tasks = [
-        _check_endpoint(name, url, timeout)
-        for kind, name, url in targets
+        check_endpoint(name, url, timeout)
+        for _kind, name, url in targets
     ]
     results = await asyncio.gather(*tasks, return_exceptions=True)
 
     report = HealthReport()
     for r in results:
-        if isinstance(r, Exception):
+        if isinstance(r, BaseException):
             report.components.append(HealthStatus(name="unknown", healthy=False, detail=str(r)))
-        else:
-            report.components.append(r)
+            continue
+        report.components.append(r)
     report.overall = all(c.healthy for c in report.components)
     report.summary = {
         "total": len(report.components),

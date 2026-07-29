@@ -1,6 +1,8 @@
 """OTel tracing tests."""
 from __future__ import annotations
 
+import asyncio
+
 from mate_tech_obs.tracing.otel import get_tracer, init_tracing, traced
 
 
@@ -20,7 +22,7 @@ def test_get_tracer_default() -> None:
 
 
 def test_traced_decorator_sync() -> None:
-    @traced("test.sync")
+    @traced("test.sync")  # pyright: ignore[reportUntypedFunctionDecorator]
     def add(a: int, b: int) -> int:
         return a + b
 
@@ -28,9 +30,7 @@ def test_traced_decorator_sync() -> None:
 
 
 def test_traced_decorator_async() -> None:
-    import asyncio
-
-    @traced("test.async")
+    @traced("test.async")  # pyright: ignore[reportUntypedFunctionDecorator]
     async def double(x: int) -> int:
         return x * 2
 
