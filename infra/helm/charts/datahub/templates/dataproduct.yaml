@@ -1,0 +1,37 @@
+# D2: DataProduct CRD
+# Each app declares its data products as a Kubernetes resource;
+# DataHub ingests via the metadata-change-event flow.
+apiVersion: datahub.metaplatform.io/v1
+kind: DataProduct
+metadata:
+  name: example
+  namespace: metaplatform
+  labels:
+    app.kubernetes.io/managed-by: datahub-operator
+    app.kubernetes.io/part-of: metaplatform
+spec:
+  # Per-tenant scoping (SEC-TENANT-01 hard rule 3).
+  tenantId: "acme"
+  domain: "iam"
+  owner: "platform-messaging@metaplatform.local"
+  version: "1.0.0"
+  description: "IAM users and roles reference data."
+  datasets:
+    - name: "iam.user"
+      type: "table"
+      schemaRef: "iam.user.v1.avsc"
+      sla:
+        availability: "99.9%"
+        latencyP99Ms: 500
+    - name: "iam.role"
+      type: "table"
+      schemaRef: "iam.role.v1.avsc"
+  quality:
+    # GE integration: each dataset has a GE expectation suite.
+    expectationSuite: "iam.user.suite"
+    blocking: true
+  lineage:
+    # D1 integration: this product is sourced from the
+    # PLATFORM-EVENT-01 outbox; emit lineage events to Marquez.
+    source: outbox
+    marquezJob: "iam.user.created"

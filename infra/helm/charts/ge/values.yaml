@@ -1,4 +1,50 @@
+# Great Expectations chart - DATA-D0-D8 D3 expansion
+# (D0 was a stub; D3 turns it on with the GE server + Airflow
+# integration)
 image:
   repository: great_expectations/great_expectations
   tag: "1.0.0"
-enabled: false
+  pullPolicy: IfNotPresent
+
+replicaCount: 1
+
+resources:
+  requests:
+    cpu: 250m
+    memory: 512Mi
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+
+# Postgres backend for the GE expectation store.
+db:
+  host: postgres.metaplatform.svc.cluster.local
+  port: 5432
+  database: great_expectations
+  user: ge
+  existingSecret: ge-db  # SealedSecret / ExternalSecret
+
+# Per-tenant scoping (SEC-TENANT-01 inheritance).
+# Each app's expectations live in a per-tenant namespace, so a
+# tenant's quality gates never see other tenants' schemas.
+expectations:
+  storagePerTenant: true
+  defaultProfile: "metaplatform-default"
+
+# Airflow integration: GE server pushes expectation results to
+# Airflow's metadata DB so DAGs can reference them. In v3.1, GE is
+# the gate; failed expectations block DDL migrations in the same
+# business transaction.
+airflow:
+  enabled: true
+  backend: "kubernetes"
+  namespace: "airflow"
+  dagsPath: "/opt/airflow/dags"
+  # Per-app expectations are emitted as Airflow Sensors.
+  sensor:
+    type: "GEExpectationSensor"
+    pokeIntervalSeconds: 60
+
+service:
+  type: ClusterIP
+  port: 8080
