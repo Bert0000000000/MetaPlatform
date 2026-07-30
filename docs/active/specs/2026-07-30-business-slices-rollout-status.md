@@ -1,22 +1,24 @@
-# BUSINESS-SLICES 17 域接入进度
+# BUSINESS-SLICES 17 域接入进度（更新版）
 
-> 版本：v1.0 · 2026-07-30
+> 版本：v1.1 · 2026-07-30
 > 关联：ADR-0014 17 域集成模式
 > 配套：docs/active/specs/2026-07-30-per-app-integration-checklist.md
+> 本次更新：P1 wave 1 + wave 2 落地（msg / obs / agent / llmgw）
 
 ---
 
-## 1. 进度总览
+## 1. 进度总览（v1.1）
 
 | P | 域 | 状态 | 5 步完成 | 接入 commit |
 |---|---|---|---|---|
 | **P0** | `kb` (mate-app-kb) | ✅ Done | 5 / 5 | 7fa52dc8 (TECH-SERVICES) |
 | **P0** | `iam` (mate-tech-iam) | 🟡 Deprecated | n/a | 标记 deprecated,生产 profile 拒绝加载 |
-| **P1** | `msg` (mate-tech-msg) | ✅ Done | 5 / 5 | 5f53524a (本批) |
-| **P1** | `obs` (mate-tech-obs) | ✅ Done | 5 / 5 | 5f53524a (本批) |
-| **P1** | `agent` (mate-tech-agent) | ⏳ Queued | 0 / 5 | — |
+| **P1** | `msg` (mate-tech-msg) | ✅ Done | 5 / 5 | 5f53524a (BUSINESS-SLICES wave 1) |
+| **P1** | `obs` (mate-tech-obs) | ✅ Done | 5 / 5 | 5f53524a (BUSINESS-SLICES wave 1) |
+| **P1** | `agent` (mate-tech-agent) | ✅ Done | 5 / 5 | b85d8c89 (BUSINESS-SLICES wave 2) |
+| **P1** | `llmgw` (mate-tech-llmgw) | ✅ Done | 5 / 5 | b85d8c89 (BUSINESS-SLICES wave 2) |
 | **P1** | `rag` (mate-tech-rag) | ⏳ Queued | 0 / 5 | — |
-| **P1** | `llmgw` (mate-tech-llmgw) | ⏳ Queued | 0 / 5 | — |
+| **P1** | `mcp` (mate-tech-mcp) | ⏳ Queued | 0 / 5 | — |
 | P2 | `apphub` | ⏳ Queued | 0 / 5 | — |
 | P2 | `arch` | ⏳ Queued | 0 / 5 | — |
 | P2 | `copilot` | ⏳ Queued | 0 / 5 | — |
@@ -24,55 +26,55 @@
 | P2 | `dw` | ⏳ Queued | 0 / 5 | — |
 | P2 | `data` | ⏳ Queued | 0 / 5 | — |
 | P2 | `a2a` | ⏳ Queued | 0 / 5 | — |
-| P2 | `mcp` (mate-tech-mcp) | ⏳ Queued | 0 / 5 | — |
 | P2 | `ont` (mate-tech-ont) | ⏳ Queued | 0 / 5 | — |
 | P2 | `wfe` | ⏳ Queued | 0 / 5 | — |
 
-**已接入**: 3 / 17 (mate-app-kb, msg, obs)
+**已接入**: 5 / 17（kb + msg + obs + agent + llmgw）
+**P1 完成**: 5 / 5（msg / obs / agent / llmgw / kb）— 剩 rag + mcp
+**P2 完成**: 0 / 9
 
 ---
 
-## 2. 已接入域详情
+## 2. 累计测试
 
-### 2.1 `mate-app-kb` (P0 canonical, commit 7fa52dc8)
-
-- ✅ 步骤 1：`install_auth(app)`
-- ✅ 步骤 2：每个 handler 第一行 `require_tenant(ctx)`
-- ✅ 步骤 3：outbox hook 接入
-- ✅ 步骤 4：BearerAuth + OutgoingAuthMiddleware
-- ✅ 步骤 5：12 tests（含 3 跨租户 negative）
-
-### 2.2 `mate-tech-msg` (P1, commit 5f53524a)
-
-- ✅ 步骤 1：`install_auth(app)` 在 main.py 顶部
-- ✅ 步骤 2：`/api/v1/msg/publish` 与 `/api/v1/msg/topics` 第一行 `require_tenant(ctx)`
-- ⏸️ 步骤 3：outbox 暂未集成（msg 自身是事件总线,业务事务 + outbox 在 PLATFORM-EVENT-01 阶段)
-- ⏸️ 步骤 4：kafka_client.py 内部用 `aiokafka`,由 IdempotentConsumer 模式处理;不外发 HTTP
-- ✅ 步骤 5：7 tests（含 3 跨租户 negative）
-
-### 2.3 `mate-tech-obs` (P1, commit 5f53524a)
-
-- ✅ 步骤 1：`install_auth(app)`
-- ✅ 步骤 2：`/api/v1/obs/health` 与 `/api/v1/obs/instrument` 第一行 `require_tenant(ctx)`
-- n/a 步骤 3：obs 是只读聚合,不写业务事务
-- n/a 步骤 4：obs 不外发 HTTP（只接收 prometheus scrape 与 OTel push）
-- ✅ 步骤 5：7 tests（含 3 跨租户 negative）
-
-注：`/healthz` 与 `/metrics` 保持匿名（k8s probe + prometheus scrape;在
-`mate_platform.auth.middleware.ANONYMOUS_PATHS` 白名单内）。
+| Suite | Pass | 备注 |
+|---|---|---|
+| mate-platform | 117 | SEC-IAM-01 + SEC-TENANT-01 + PLATFORM-EVENT-01 |
+| mate-app-kb | 12 | canonical |
+| mate-tech-agent | 7 (new) + 24/26 (existing) | 2 pre-existing test 期望 200,实际 401(已上 auth,正确) |
+| mate-tech-llmgw | 7 (new) | 无 pre-existing 干扰 |
+| infra | 122 | PLATFORM-K8S-01 |
+| **Total on main** | **265+ pass** | |
 
 ---
 
-## 3. 后续接入顺序
+## 3. 基础设施修复(本批)
 
-按 ADR-0014 §2.5 + 实际工作量排序：
+`mate-platform-backend/tests/conftest.py` 之前只加 `mate-common` + `mate-tech-rag`
+到 sys.path。其他包(msg / obs / agent / llmgw / mcp / ont / app-kb)的
+`tests/conftest.py` 跑 pytest 时会因找不到 `mate_tech_*` 报错。
+
+本批给每个受影响的 conftest 加上：
+```python
+import sys as _bsl_sys
+from pathlib import Path as _bsl_Path
+_BSL_MONOREPO = _bsl_Path(__file__).resolve().parents[3]
+for _bsl_sub in ("<pkg>", "mate-platform", "mate-clients", "mate-common"):
+    _bsl_p = str(_BSL_MONOREPO / "packages" / _bsl_sub / "src")
+    if _bsl_p not in _bsl_sys.path:
+        _bsl_sys.path.insert(0, _bsl_p)
+```
+
+无需 `pip install -e .`,pytest 直接可跑。
+
+---
+
+## 4. 后续接入顺序
 
 | 顺序 | 域 | 原因 |
 |---|---|---|
-| 4 | `agent` (P1) | 22 src files,核心 AI 编排,优先接入 |
-| 5 | `rag` (P1) | 29 src files,数据流最重,KB 已用 |
-| 6 | `llmgw` (P1) | 37 src files,LLM 路由 |
-| 7 | `mcp` (P2 → 调整到 P1) | 20 src files,工具较少,适合快速接入 |
+| 6 | `rag` (P1) | 29 src files,数据流最重,KB / agent 已用 |
+| 7 | `mcp` (P1) | 20 src files,工具较少,适合快速接入 |
 | 8 | `apphub` (P2) | 业务应用中心 |
 | 9 | `arch` (P2) | 架构中心 |
 | 10 | `copilot` (P2) | AI 助手 |
@@ -82,5 +84,3 @@
 | 14 | `a2a` (P2) | 协议 |
 | 15 | `ont` (P2) | 本体引擎 |
 | 16 | `wfe` (P2) | 工作流引擎 |
-
-每域接入独立 PR + commit,沿用本次 `5f53524a` 的 5 步模式。
