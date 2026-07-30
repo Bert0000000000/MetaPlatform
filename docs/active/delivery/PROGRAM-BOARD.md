@@ -14,7 +14,7 @@
 | TECH-SERVICES | **Accepted** | ✓ | ✓ | 8/17 ✓ | ⏳ 9/17 P2 | `evidence/TECH-SERVICES-ACCEPTANCE.md` |
 | GA-ACCEPTANCE | **Accepted** | ✓ | ✓ | ✓ | ✓ | `evidence/GA-ACCEPTANCE.md` |
 | BUSINESS-SLICES | **Accepted** | ✓ | ✓ | 8/17 ✓ | ⏳ 9/17 P2 | `evidence/BUSINESS-SLICES-ACCEPTANCE.md` |
-| **DATA-D0-D8** | **D0+D1+D2+D3 Accepted** (⏳ D4-D8) | ✓ | partial | 21/21 ✓ | partial | `evidence/DATA-D0-D8-D{0,1,2,3}-ACCEPTANCE.md` |
+| **DATA-D0-D8** | **D0-D5 Accepted** (⏳ D6-D8) | ✓ | partial | 28/28 ✓ | partial | `evidence/DATA-D0-D8-D{0,1,2,3,4,5}-ACCEPTANCE.md` |
 
 ## 状态说明
 
@@ -25,7 +25,7 @@
 
 ## v3.0 GA + v3.1 增量
 
-9 个核心批次全部 Accepted;TECH-SLICES 8/17 域已接入;DATA-D0-D8 D0 + D1 + D2 + D3 落地(D4-D8 在后续子批推进)。
+9 个核心批次全部 Accepted;TECH-SLICES 8/17 域已接入;DATA-D0-D8 D0-D5 落地(D6-D8 在后续子批推进)。
 
 ## 已完成批次时间线
 
@@ -43,3 +43,4 @@
 | DATA-D0-D8 D0 | 2026-07-30 | 2ee18610 + b9b04553 | `evidence/DATA-D0-D8-D0-ACCEPTANCE.md` |
 | DATA-D0-D8 D1 | 2026-07-30 | 14a7a314 | `evidence/DATA-D0-D8-D1-ACCEPTANCE.md` |
 | DATA-D0-D8 D2+D3 | 2026-07-30 | 820838e2 | `evidence/DATA-D0-D8-D2-D3-ACCEPTANCE.md` |
+| DATA-D0-D8 D4+D5 | 2026-07-30 | 81955e76 | `evidence/DATA-D0-D8-D4-D5-ACCEPTANCE.md` |
