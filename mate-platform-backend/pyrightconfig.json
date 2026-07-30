@@ -2,7 +2,9 @@
     "include": [
         "packages",
         "services",
-        "rules"
+        "rules",
+        "tests",
+        "scripts"
     ],
     "exclude": [
         "**/node_modules",
@@ -41,6 +43,9 @@
         "packages/mate-tech-ont/src",
         "packages/mate-tech-rag/src",
         "services/api-gateway/src",
-        "services/auth-service/src"
+        "services/auth-service/src",
+        "packages/mate-kernel/src",
+        "packages/mate-platform/src",
+        "packages/mate-clients/src"
     ]
 }

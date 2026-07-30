@@ -62,6 +62,25 @@ jobs:
       - name: Run pyright
         run: cd mate-platform-backend && uv run pyright
 
+  architecture-tests:
+    name: Architecture tests (import-linter + four-layer guardrails)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: astral-sh/setup-uv@v3
+        with:
+          version: '0.5.11'
+      - run: cd mate-platform-backend && uv sync --frozen
+      - name: Install import-linter
+        run: cd mate-platform-backend && uv pip install import-linter
+      - name: Architecture tests
+        run: cd mate-platform-backend && uv run pytest tests/architecture -q
+      - name: Import-linter contracts
+        run: cd mate-platform-backend && uv run python scripts/architecture_check.py
+
   validate-yaml:
     name: Validate compose + Dockerfiles
     runs-on: ubuntu-latest

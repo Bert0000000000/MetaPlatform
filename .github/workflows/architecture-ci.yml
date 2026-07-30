@@ -1,0 +1,46 @@
+name: Architecture Governance CI
+
+on:
+  push:
+    branches: [main, master, develop, codex/arch-core-01]
+    paths:
+      - 'mate-platform-backend/**'
+      - '.github/workflows/architecture-ci.yml'
+  pull_request:
+    branches: [main, master, develop, codex/arch-core-01]
+    paths:
+      - 'mate-platform-backend/**'
+      - '.github/workflows/architecture-ci.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  arch:
+    name: Architecture kernel governance
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mate-platform-backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: '0.5.11'
+      - name: Sync dependencies
+        run: uv sync --frozen
+      - name: Install import-linter
+        run: uv pip install import-linter
+      - name: Ruff check (kernel + tests)
+        run: uv run ruff check packages/mate-kernel packages/mate-platform packages/mate-clients tests/architecture scripts/architecture_check.py scripts/tests scripts/arch_template.py
+      - name: Pyright strict (kernel + tests)
+        run: uv run pyright packages/mate-kernel packages/mate-platform packages/mate-clients tests/architecture scripts/architecture_check.py scripts/arch_template.py
+      - name: Architecture tests
+        run: uv run pytest tests/architecture -q
+      - name: Import-linter contracts
+        run: uv run python scripts/architecture_check.py
