@@ -1,7 +1,9 @@
 # Mate Platform 交付项目计划板（Program Board）
 
-> 更新时间：2026-07-30
+> 更新时间：2026-07-30（含 v3.1 增量 sub-batch + PR 治理状态）
 > 本表跟踪各交付批次在契约、代码、测试、运行时和验收证据上的当前状态。
+
+## v3.0 GA 状态（9/9 核心 + D0-D8 全部 Accepted）
 
 | Batch | 状态 | Contract | Code | Tests | K8s/Runtime | 证据路径 |
 |---|---|---:|---:|---:|---:|---|
@@ -11,10 +13,51 @@
 | SEC-IAM-01 | **Accepted** | ✓ | ✓ | ✓ | ✓ | `evidence/SEC-IAM-01-ACCEPTANCE.md` |
 | SEC-TENANT-01 | **Accepted** | ✓ | ✓ | ✓ | ✓ | `evidence/SEC-TENANT-01-ACCEPTANCE.md` |
 | PLATFORM-EVENT-01 | **Accepted** | ✓ | ✓ | ✓ | ✓ | `evidence/PLATFORM-EVENT-01-ACCEPTANCE.md` |
-| TECH-SERVICES | **Accepted** | ✓ | ✓ | 8/17 ✓ | ⏳ 9/17 P2 | `evidence/TECH-SERVICES-ACCEPTANCE.md` |
+| TECH-SERVICES | **Accepted** | ✓ | ✓ | 1/17 ✓ | ⏳ 16/17 P0/P1/P2 | `evidence/TECH-SERVICES-ACCEPTANCE.md` |
 | GA-ACCEPTANCE | **Accepted** | ✓ | ✓ | ✓ | ✓ | `evidence/GA-ACCEPTANCE.md` |
-| BUSINESS-SLICES | **Accepted** | ✓ | ✓ | 8/17 ✓ | ⏳ 9/17 P2 | `evidence/BUSINESS-SLICES-ACCEPTANCE.md` |
+| BUSINESS-SLICES | **Accepted (P1 W1)** | ✓ | ✓ | 2/17 ✓ | ⏳ 15/17 P2 | `evidence/BUSINESS-SLICES-ACCEPTANCE.md` |
 | **DATA-D0-D8** | **D0-D8 Accepted** ✓ | ✓ | ✓ | 45/45 ✓ | ✓ | `evidence/DATA-D0-D8-D{0..8}-ACCEPTANCE.md` |
+
+**说明**：TECH-SERVICES 与 BUSINESS-SLICES 是 v3.0 GA 收口的"模式就位 + 部分接入"状态，剩余域的接入属于 v3.1 sub-batch。
+
+## v3.1 增量 sub-batch（进行中）
+
+### In Progress — 业务域 P2 wave
+
+| sub-batch | 域 | 接力分支 | 依赖 | 状态 |
+|---|---|---|---|---|
+| BUSINESS-SLICES P1 W2 | msg / obs（已含 W1 完整接入 + 5 步模式）| `codex/business-slices-w2` | TECH-SERVICES | ✅ Accepted |
+| BUSINESS-SLICES P1 W3 | rag / mcp | `codex/p1-wave3` | TECH-SERVICES | ✅ Accepted |
+| BUSINESS-SLICES P2 W1 | ont（带代码） | `codex/p2-wave` | P1 W3 | ✅ Accepted |
+| **BUSINESS-SLICES P2 W2** | apphub / arch / copilot / dashboard（4 域）| 待开 | P2 W1 | 🔴 Not Started |
+| **BUSINESS-SLICES P2 W3** | dw / data / a2a / ont / wfe（5 域，需先建包代码） | 待开 | P2 W2 | 🔴 Not Started |
+
+### In Progress — TECH-SERVICES 16 域接入
+
+`TECH-SERVICES` 仅完成 `mate-app-kb` canonical reference；其余 16 域按 P0/P1/P2 优先级在后续 sub-batch 接力：
+
+| 优先级 | 域 | 数量 |
+|---|---|---:|
+| P0 | agent / rag / llmgw / mcp | 4 |
+| P1 | apphub / arch / copilot / dashboard | 4 |
+| P2 | dw / data / a2a / ont / wfe / iam(deprecated) | 5+1 |
+
+### Pending — GA 硬规则收口（pre-GA）
+
+| # | 项 | 接力 | 来源 |
+|---|---|---|---|
+| G1 | kafka sub-chart 落地（Bitnami/Confluent chart 选型） | PLATFORM-EVENT-01 | 多批次依赖 |
+| G2 | pre-commit raw-SQL + secret 扫描（gitleaks） | GA-ACCEPTANCE | §13 硬规则 6 + 12 |
+| G3 | Outbox DDL 迁移（`CREATE TABLE outbox_event`）| TECH-SERVICES 接力 | §13 硬规则 9 |
+| G4 | 真实 K8s 集成 e2e（kind/staging 集群）| PLATFORM-K8S-01 | §13 硬规则 8 |
+| G5 | per-service `security:` 段补齐（17 域 oasdiff） | 每域接入时 | SEC-IAM-01 |
+| G6 | 已有表 `tenant_id` 回填 + RLS 迁移 | PLATFORM-EVENT-01 | SEC-TENANT-01 |
+| G7 | SealedSecrets 主私钥异地备份 runbook | SEC-IAM-01 | ADR-0010 §4.3 |
+| G8 | 清理 main 上旧 `infra/`（otel/prometheus/grafana/keycloak/traefik/lightrag/promtail） | PLATFORM-K8S-01 | docker-compose 时代残留 |
+
+## 数据平台（DATA-D0-D8）—— v3.0 GA 硬前置已闭环
+
+DATA-D0-D8 全部 8 阶段 Accepted（共 45/45 tests pass）。后续 sub-batch 在独立批次接力，详见 `docs/active/specs/2026-07-27-mate-platform-delivery-roadmap.md` 附录 A。
 
 ## 状态说明
 
@@ -23,25 +66,63 @@
 - **Blocked**：存在阻塞依赖或外部决策，需协调后才能恢复推进。
 - **Accepted**：交付完成、证据闭环、CI 全绿、Owner 已签字。
 
-## v3.0 GA + v3.1 增量
+## PR 治理状态
 
-9 个核心批次全部 Accepted;DATA-D0-D8 全部 8 阶段 Accepted;v3.1 后续 sub-batch 推进 BUSINESS-SLICES P2 + 数据应用层。
+### 已合并到 main
+
+| PR | 来源 | Commit | 备注 |
+|---|---|---|---|
+| PR-R1 | `refactor/monorepo-shrink-phase-2` | `a00351c3` | CLAUDE.md v3.0 GA + refactor 视角合一（110 行）|
+
+### 待评估
+
+| PR | 来源 | 独有 commits | 状态 |
+|---|---|---:|---|
+| PR-S1 | `sync/all-code-20260725` | 5 | 🔄 待评估（main 比 sync 领先 265 commit，需先 rebase） |
+
+### 已归档 + 删除的僵尸分支（历史快照保留为 archive tag）
+
+| 原分支 | archive tag | commit 保留 |
+|---|---|---|
+| `feat/platform-menu-unification` | `archive/feat-platform-menu-unification-2026-07-29` | `12842ea0` |
+| `codex/deerflow-production-integration` | `archive/codex-deerflow-production-integration-2026-07-29` | `d758be1c` |
+| `codex/ontology-native-deerflow-delivery` | `archive/codex-ontology-native-deerflow-delivery-2026-07-29` | `5ecd239d` |
+| `pre-restructure-2026-07-29` | `archive/pre-restructure-2026-07-29` | `09ad4eb3` |
+
+### 保留的主线分支（17 个，已合并 main，作为里程碑）
+
+`codex/arch-core-01` / `codex/platform-k8s-01` / `codex/sec-iam-01` / `codex/sec-tenant-01` /
+`codex/platform-event-01` / `codex/tech-services` / `codex/ga-acceptance` /
+`codex/business-slices` / `codex/business-slices-w2` / `codex/p1-wave3` / `codex/p2-wave` /
+`codex/data-d0-d8` / `codex/data-d0-d8-d0` / `codex/data-d0-d8-d1` / `codex/data-d0-d8-d2-d3` /
+`codex/data-d0-d8-d4-d5` / `codex/data-d0-d8-d6-d7-d8`
 
 ## 已完成批次时间线
 
 | 批次 | 接受日期 | Commit | 证据 |
 |---|---|---|---|
-| API-GOV-01 | 2026-07-30 | 1fa521fd | `evidence/API-GOV-01-ACCEPTANCE.md` |
-| ARCH-CORE-01 | 2026-07-30 | eeaab5c5 | `evidence/ARCH-CORE-01-ACCEPTANCE.md` |
-| PLATFORM-K8S-01 | 2026-07-30 | 4d0b73d6 | `evidence/PLATFORM-K8S-01-ACCEPTANCE.md` |
-| SEC-IAM-01 | 2026-07-30 | 4d3d894e | `evidence/SEC-IAM-01-ACCEPTANCE.md` |
-| SEC-TENANT-01 | 2026-07-30 | 026ce4a8 | `evidence/SEC-TENANT-01-ACCEPTANCE.md` |
-| PLATFORM-EVENT-01 | 2026-07-30 | 95b35e43 | `evidence/PLATFORM-EVENT-01-ACCEPTANCE.md` |
-| TECH-SERVICES | 2026-07-30 | 7fa52dc8 | `evidence/TECH-SERVICES-ACCEPTANCE.md` |
-| GA-ACCEPTANCE | 2026-07-30 | 87f589be | `evidence/GA-ACCEPTANCE.md` |
-| BUSINESS-SLICES | 2026-07-30 | 5f53524a + b85d8c89 + 41bef84d + d452e1ab | `evidence/BUSINESS-SLICES-ACCEPTANCE.md` |
-| DATA-D0-D8 D0 | 2026-07-30 | 2ee18610 + b9b04553 | `evidence/DATA-D0-D8-D0-ACCEPTANCE.md` |
-| DATA-D0-D8 D1 | 2026-07-30 | 14a7a314 | `evidence/DATA-D0-D8-D1-ACCEPTANCE.md` |
-| DATA-D0-D8 D2+D3 | 2026-07-30 | 820838e2 | `evidence/DATA-D0-D8-D2-D3-ACCEPTANCE.md` |
-| DATA-D0-D8 D4+D5 | 2026-07-30 | 81955e76 + d4a4bd9b | `evidence/DATA-D0-D8-D4-D5-ACCEPTANCE.md` |
-| DATA-D0-D8 D6+D7+D8 | 2026-07-30 | 424e3045 | `evidence/DATA-D0-D8-D6-D7-D8-ACCEPTANCE.md` |
+| API-GOV-01 | 2026-07-30 | `1fa521fd` | `evidence/API-GOV-01-ACCEPTANCE.md` |
+| ARCH-CORE-01 | 2026-07-30 | `eeaab5c5` | `evidence/ARCH-CORE-01-ACCEPTANCE.md` |
+| PLATFORM-K8S-01 | 2026-07-30 | `4d0b73d6` | `evidence/PLATFORM-K8S-01-ACCEPTANCE.md` |
+| SEC-IAM-01 | 2026-07-30 | `4d3d894e` | `evidence/SEC-IAM-01-ACCEPTANCE.md` |
+| SEC-TENANT-01 | 2026-07-30 | `026ce4a8` | `evidence/SEC-TENANT-01-ACCEPTANCE.md` |
+| PLATFORM-EVENT-01 | 2026-07-30 | `95b35e43` | `evidence/PLATFORM-EVENT-01-ACCEPTANCE.md` |
+| TECH-SERVICES | 2026-07-30 | `7fa52dc8` | `evidence/TECH-SERVICES-ACCEPTANCE.md` |
+| GA-ACCEPTANCE | 2026-07-30 | `87f589be` | `evidence/GA-ACCEPTANCE.md` |
+| BUSINESS-SLICES P1 W1 | 2026-07-30 | `21a8acc7` | `evidence/BUSINESS-SLICES-ACCEPTANCE.md` |
+| BUSINESS-SLICES P1 W2 | 2026-07-30 | `d4dea556` | 同上（v1.1 滚动状态） |
+| BUSINESS-SLICES P1 W3 | 2026-07-30 | `41bef84d` | 同上 |
+| BUSINESS-SLICES P2 W1 | 2026-07-30 | `d452e1ab` | 同上 |
+| DATA-D0-D8 D0 | 2026-07-30 | `5b925bfe` | `evidence/DATA-D0-D8-D0-ACCEPTANCE.md` |
+| DATA-D0-D8 D1 | 2026-07-30 | `14a7a314` | `evidence/DATA-D0-D8-D1-ACCEPTANCE.md` |
+| DATA-D0-D8 D2+D3 | 2026-07-30 | `820838e2` | `evidence/DATA-D0-D8-D2-D3-ACCEPTANCE.md` |
+| DATA-D0-D8 D4+D5 | 2026-07-30 | `81955e76` | `evidence/DATA-D0-D8-D4-D5-ACCEPTANCE.md` |
+| DATA-D0-D8 D6+D7+D8 | 2026-07-30 | `424e3045` | `evidence/DATA-D0-D8-D6-D7-D8-ACCEPTANCE.md` |
+| PR-R1（refactor → main） | 2026-07-30 | `a00351c3` | CLAUDE.md v3.0 GA + refactor 视角合一 |
+
+## 变更记录
+
+| 日期 | 变更 | 原因 |
+|---|---|---|
+| 2026-07-30 | 初版 v3.0 GA 收口（39 行） | 8/8 核心批次 + D0-D8 全部 Accepted |
+| 2026-07-30 | v3.1 增量 + PR 治理（本文） | 与 git 状态同步；增加 v3.1 sub-batch / GA 收口 / PR 治理 3 个章节 |
