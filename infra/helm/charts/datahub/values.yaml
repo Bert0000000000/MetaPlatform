@@ -1,12 +1,9 @@
-# DataHub chart - DATA-D0-D8 D2 expansion
-# (D0 was a stub; D2 turns it on with DataProduct CRD + ingest pipeline)
+'# DataHub chart - DATA-D0-D8 D4 expansion
 image:
   repository: acryldata/datahub-gms
   tag: "0.13.0"
   pullPolicy: IfNotPresent
-
 replicaCount: 1
-
 resources:
   requests:
     cpu: 500m
@@ -14,36 +11,30 @@ resources:
   limits:
     cpu: 2000m
     memory: 2Gi
-
-# Per-tenant scoping (SEC-TENANT-01 inheritance).
 tenant:
   partitionByCorpGroup: true
   defaultDomain: "metaplatform"
-
-# DataProduct definition (the v3.1 shape).
-# A DataProduct is a curated collection of datasets with ownership,
-# versioning, and SLAs. In v3.1, every DataProduct belongs to a
-# tenant (corp-group) and has a schema contract.
 dataProducts:
   enabled: true
-  versioning: "semver"  # major.minor.patch
+  versioning: "semver"
   sloan:
     defaultTemplate: "metaplatform-default"
-
-# Ingest pipeline: pulls from Kafka topics (PLATFORM-EVENT-01
-# events) and pushes into DataHub via the metadata ingestion API.
-# Per-tenant partition = per-tenant DataHub corp-group.
 ingest:
   kafkaConnect:
     enabled: true
     bootstrapServers: "kafka:9092"
     topics:
-      # The 17-domain topic convention per PLATFORM-EVENT-01.
       - "metaplatform.*.*.*.cdc"
       - "metaplatform.*.*.*.event"
   mceConsumer:
     enabled: true
-
+# D4: OpenLineage <-> DataHub sync
+lineage:
+  enabled: true
+  source: "marquez"
+  marquezUrl: "http://marquez.metaplatform.svc.cluster.local:5000"
+  pullIntervalSeconds: 30
+  openlineageVersion: "1.0.0"
 service:
   type: ClusterIP
   gms:
@@ -52,3 +43,4 @@ service:
     port: 9090
   maeConsumer:
     port: 9091
+'
