@@ -836,6 +836,36 @@ services:
       timeout: 5s
       retries: 5
       start_period: 30s
+  swagger-ui:
+    build:
+      context: .
+      dockerfile: mate-platform-backend/contracts/Dockerfile.docs
+    image: mate-api-docs:dev
+    container_name: mate-swagger-ui
+    profiles: ["local", "docs"]
+    ports:
+      - "8200:80"
+
+  redoc:
+    build:
+      context: .
+      dockerfile: mate-platform-backend/contracts/Dockerfile.docs
+    image: mate-api-docs:dev
+    container_name: mate-redoc
+    profiles: ["local", "docs"]
+    ports:
+      - "8201:80"
+
+  prism:
+    image: stoplight/prism:5
+    container_name: mate-prism
+    profiles: ["local", "docs"]
+    command: ["mock", "/contracts/openapi/generated/bundled.yaml", "--host", "0.0.0.0", "--port", "4010"]
+    volumes:
+      - ./mate-platform-backend/contracts:/contracts:ro
+    ports:
+      - "4010:4010"
+
 networks:
   default:
     name: metaplatform_default
