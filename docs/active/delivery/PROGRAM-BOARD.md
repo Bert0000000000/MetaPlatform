@@ -11,10 +11,10 @@
 | SEC-IAM-01 | **Accepted** | ✓ | ✓ | ✓ | ✓ | `evidence/SEC-IAM-01-ACCEPTANCE.md` |
 | SEC-TENANT-01 | **Accepted** | ✓ | ✓ | ✓ | ✓ | `evidence/SEC-TENANT-01-ACCEPTANCE.md` |
 | PLATFORM-EVENT-01 | **Accepted** | ✓ | ✓ | ✓ | ✓ | `evidence/PLATFORM-EVENT-01-ACCEPTANCE.md` |
-| TECH-SERVICES | **Accepted** | ✓ | ✓ | 7/17 ✓ | ⏳ 10/17 P2 | `evidence/TECH-SERVICES-ACCEPTANCE.md` |
+| TECH-SERVICES | **Accepted** | ✓ | ✓ | 8/17 ✓ | ⏳ 9/17 P2 | `evidence/TECH-SERVICES-ACCEPTANCE.md` |
 | GA-ACCEPTANCE | **Accepted** | ✓ | ✓ | ✓ | ✓ | `evidence/GA-ACCEPTANCE.md` |
-| BUSINESS-SLICES | **Accepted** | ✓ | ✓ | 7/17 ✓ | ⏳ 10/17 P2 | `evidence/BUSINESS-SLICES-ACCEPTANCE.md` |
-| **DATA-D0-D8** | **D0 Accepted** (⏳ D1-D8) | ✓ | partial | 6/6 ✓ | partial | `evidence/DATA-D0-D8-D0-ACCEPTANCE.md` |
+| BUSINESS-SLICES | **Accepted** | ✓ | ✓ | 8/17 ✓ | ⏳ 9/17 P2 | `evidence/BUSINESS-SLICES-ACCEPTANCE.md` |
+| **DATA-D0-D8** | **D0+D1 Accepted** (⏳ D2-D8) | ✓ | partial | 13/13 ✓ | partial | `evidence/DATA-D0-D8-D{0,1}-ACCEPTANCE.md` |
 
 ## 状态说明
 
@@ -25,7 +25,7 @@
 
 ## v3.0 GA + v3.1 增量
 
-9 个核心批次中 9 个 Accepted;TECH-SLICES 7/17 域已接入;DATA-D0-D8 D0 sub-batch 落地(debezium + marquez chart 完整,datahub + ge stub),D1-D8 在后续子批推进。
+9 个核心批次全部 Accepted;TECH-SLICES 8/17 域已接入;DATA-D0-D8 D0 + D1 已落地(D2-D8 在后续子批推进)。
 
 ## 已完成批次时间线
 
@@ -39,5 +39,6 @@
 | PLATFORM-EVENT-01 | 2026-07-30 | 95b35e43 | `evidence/PLATFORM-EVENT-01-ACCEPTANCE.md` |
 | TECH-SERVICES | 2026-07-30 | 7fa52dc8 | `evidence/TECH-SERVICES-ACCEPTANCE.md` |
 | GA-ACCEPTANCE | 2026-07-30 | 87f589be | `evidence/GA-ACCEPTANCE.md` |
-| BUSINESS-SLICES | 2026-07-30 | 5f53524a + b85d8c89 + 41bef84d | `evidence/BUSINESS-SLICES-ACCEPTANCE.md` |
-| DATA-D0-D8 D0 | 2026-07-30 | 2ee18610 | `evidence/DATA-D0-D8-D0-ACCEPTANCE.md` |
+| BUSINESS-SLICES | 2026-07-30 | 5f53524a + b85d8c89 + 41bef84d + d452e1ab | `evidence/BUSINESS-SLICES-ACCEPTANCE.md` |
+| DATA-D0-D8 D0 | 2026-07-30 | 2ee18610 + b9b04553 | `evidence/DATA-D0-D8-D0-ACCEPTANCE.md` |
+| DATA-D0-D8 D1 | 2026-07-30 | 14a7a314 | `evidence/DATA-D0-D8-D1-ACCEPTANCE.md` |
