@@ -8,15 +8,15 @@ from openapi_normalize import sanitize_document
 ROOT=Path(__file__).parents[2]
 OUT=Path(__file__).parents[1]/"openapi/services"
 SOURCES={
- "iam": ROOT/"packages/mate-tech-iam/openapi/iam.yaml",
- "msg": ROOT/"packages/mate-tech-msg/openapi/msg.yaml",
- "obs": ROOT/"packages/mate-tech-obs/openapi/obs.yaml",
- "mcp": ROOT/"packages/mate-tech-mcp/openapi/mcp.yaml",
- "llmgw": ROOT/"packages/mate-tech-llmgw/openapi/llmgw.yaml",
- "ont": ROOT/"packages/mate-tech-ont/openapi/ont.yaml",
- "rag": ROOT/"packages/mate-tech-rag/openapi/rag.yaml",
- "agent": ROOT/"packages/mate-tech-agent/openapi/agent.yaml",
- "kb": ROOT/"packages/mate-app-kb/openapi/app-kb.yaml",
+ "iam": ROOT.parent/"docs/legacy/api/service-contracts/iam.yaml",
+ "msg": ROOT.parent/"docs/legacy/api/service-contracts/msg.yaml",
+ "obs": ROOT.parent/"docs/legacy/api/service-contracts/obs.yaml",
+ "mcp": ROOT.parent/"docs/legacy/api/service-contracts/mcp.yaml",
+ "llmgw": ROOT.parent/"docs/legacy/api/service-contracts/llmgw.yaml",
+ "ont": ROOT.parent/"docs/legacy/api/service-contracts/ont.yaml",
+ "rag": ROOT.parent/"docs/legacy/api/service-contracts/rag.yaml",
+ "agent": ROOT.parent/"docs/legacy/api/service-contracts/agent.yaml",
+ "kb": ROOT.parent/"docs/legacy/api/service-contracts/app-kb.yaml",
 }
 OWNERS={"iam":"security-iam","dashboard":"business-workbench","msg":"platform-messaging","obs":"platform-observability","mcp":"ai-protocols","llmgw":"ai-runtime","ont":"ontology-platform","rag":"knowledge-platform","agent":"agent-platform","kb":"knowledge-platform"}
 METHODS={"get","post","put","patch","delete","options","head"}

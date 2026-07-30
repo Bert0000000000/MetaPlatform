@@ -5,7 +5,7 @@ import re,yaml
 from openapi_normalize import sanitize_document
 BACKEND=Path(__file__).parents[2]
 WORKSPACE=BACKEND.parent
-SOURCE=WORKSPACE/"docs/active/api/openapi.yaml"
+SOURCE=WORKSPACE/"docs/legacy/api/openapi-pre-api-gov-01.yaml"
 OUT=Path(__file__).parents[1]/"openapi/services"
 OWNERS={"data":"data-platform","copilot":"agent-experience","dw":"digital-workforce","apphub":"application-platform","arch":"enterprise-architecture","wfe":"workflow-platform","a2a":"ai-protocols"}
 MAP={"data":"data","etl":"data","scheduler":"data","metrics":"data","copilot":"copilot","dw":"dw","apphub":"apphub","ea":"arch","wfe":"wfe","a2a":"a2a"}

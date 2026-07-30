@@ -4,15 +4,15 @@ import yaml
 ROOT = Path(__file__).parents[1]
 BACKEND = ROOT.parent
 SOURCES = {
- "iam": BACKEND / "packages/mate-tech-iam/openapi/iam.yaml",
- "msg": BACKEND / "packages/mate-tech-msg/openapi/msg.yaml",
- "obs": BACKEND / "packages/mate-tech-obs/openapi/obs.yaml",
- "mcp": BACKEND / "packages/mate-tech-mcp/openapi/mcp.yaml",
- "llmgw": BACKEND / "packages/mate-tech-llmgw/openapi/llmgw.yaml",
- "ont": BACKEND / "packages/mate-tech-ont/openapi/ont.yaml",
- "rag": BACKEND / "packages/mate-tech-rag/openapi/rag.yaml",
- "agent": BACKEND / "packages/mate-tech-agent/openapi/agent.yaml",
- "kb": BACKEND / "packages/mate-app-kb/openapi/app-kb.yaml",
+ "iam": BACKEND.parent / "docs/legacy/api/service-contracts/iam.yaml",
+ "msg": BACKEND.parent / "docs/legacy/api/service-contracts/msg.yaml",
+ "obs": BACKEND.parent / "docs/legacy/api/service-contracts/obs.yaml",
+ "mcp": BACKEND.parent / "docs/legacy/api/service-contracts/mcp.yaml",
+ "llmgw": BACKEND.parent / "docs/legacy/api/service-contracts/llmgw.yaml",
+ "ont": BACKEND.parent / "docs/legacy/api/service-contracts/ont.yaml",
+ "rag": BACKEND.parent / "docs/legacy/api/service-contracts/rag.yaml",
+ "agent": BACKEND.parent / "docs/legacy/api/service-contracts/agent.yaml",
+ "kb": BACKEND.parent / "docs/legacy/api/service-contracts/app-kb.yaml",
 }
 METHODS={"get","post","put","patch","delete","options","head"}
 
