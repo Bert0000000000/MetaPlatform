@@ -1,0 +1,11 @@
+apis:
+  platform@v1:
+    root: openapi/platform.yaml
+extends:
+  - recommended
+rules:
+  no-unused-components: error
+  operation-operationId: error
+  operation-summary: error
+  security-defined: error
+  no-ambiguous-paths: error

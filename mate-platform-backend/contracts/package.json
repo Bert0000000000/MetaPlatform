@@ -1,0 +1,17 @@
+{
+  "name": "@mate/openapi-contracts",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "lint:redocly": "redocly lint platform@v1 --config redocly.yaml --max-problems 0",
+    "lint:spectral": "spectral lint openapi/platform.yaml openapi/services/*.yaml -r .spectral.yaml",
+    "bundle": "redocly bundle platform@v1 --config redocly.yaml --output openapi/generated/bundled.yaml",
+    "mock": "prism mock openapi/generated/bundled.yaml --host 0.0.0.0 --port 4010",
+    "check": "npm run lint:redocly && npm run lint:spectral && npm run bundle"
+  },
+  "devDependencies": {
+    "@redocly/cli": "1.27.2",
+    "@stoplight/prism-cli": "5.12.0",
+    "@stoplight/spectral-cli": "6.14.2"
+  }
+}
