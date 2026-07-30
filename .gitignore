@@ -139,3 +139,5 @@ Thumbs.db
 .traae/
 # Backup
 *.orig
+
+.worktrees/
