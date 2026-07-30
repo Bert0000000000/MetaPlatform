@@ -91,6 +91,6 @@ build-backend = "hatchling.build"
 [tool.pytest.ini_options]
 minversion = "8.0"
 testpaths = ["packages"]
-pythonpath = ["packages", "packages/mate-common/src", "packages/mate-tech-iam/src", "packages/mate-tech-agent/src", "packages/mate-tech-llmgw/src", "packages/mate-tech-mcp/src", "packages/mate-tech-msg/src", "packages/mate-tech-obs/src", "packages/mate-tech-ont/src", "packages/mate-tech-rag/src", "packages/mate-app-kb/src"]
+pythonpath = ["packages", "packages/mate-common/src", "packages/mate-kernel/src", "packages/mate-platform/src", "packages/mate-clients/src", "packages/mate-tech-iam/src", "packages/mate-tech-agent/src", "packages/mate-tech-llmgw/src", "packages/mate-tech-mcp/src", "packages/mate-tech-msg/src", "packages/mate-tech-obs/src", "packages/mate-tech-ont/src", "packages/mate-tech-rag/src", "packages/mate-app-kb/src"]
 addopts = ["-ra", "--strict-markers", "--strict-config"]
 norecursedirs = ["src", ".venv", "build", "dist", "node_modules", ".pytest_cache", ".git"]
