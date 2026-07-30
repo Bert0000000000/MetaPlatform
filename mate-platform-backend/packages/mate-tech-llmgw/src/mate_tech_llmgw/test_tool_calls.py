@@ -82,8 +82,12 @@ async def test_anthropic_tool_use_parsed() -> None:
     resp = await p.chat([ChatMessage(role="user", content="search?")])
     assert resp.finish_reason == "tool_use"
     assert len(resp.tool_calls) == 1
-    assert resp.tool_calls[0]["name"] == "kb_search"
-    assert resp.tool_calls[0]["arguments"] == {"query": "test"}
+    # AnthropicChatProvider normalises Anthropic tool_use blocks
+    # into the OpenAI-compatible shape used by tool_calls_from_openai
+    # downstream. The function name lives under `function["name"]`,
+    # not at the top level.
+    assert resp.tool_calls[0]["function"]["name"] == "kb_search"
+    assert resp.tool_calls[0]["function"]["arguments"] == {"query": "test"}
     await p.aclose()
 
 

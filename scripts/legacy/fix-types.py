@@ -10,6 +10,7 @@
 import re
 import sys
 from pathlib import Path
+
 sys.stdout.reconfigure(encoding="utf-8")
 
 MODULES = ["TECH-IAM", "TECH-WFE", "TECH-EA", "TECH-ACTION"]
@@ -35,7 +36,6 @@ def fix_status_enum_in_entity(entity_path, enum_name, field_name, column_name):
     if not m:
         return False
     # Replace with enum
-    enum_path = enum_name  # same package
     new_field = (
         f"@Enumerated(EnumType.STRING)\n"
         f"    @JdbcTypeCode(SqlTypes.VARCHAR)\n"

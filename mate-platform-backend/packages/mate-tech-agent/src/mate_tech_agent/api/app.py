@@ -4,9 +4,12 @@ from __future__ import annotations
 import time
 import uuid
 
-from fastapi import FastAPI, HTTPException
+# BUSINESS-SLICES P1 wave 2: hooks 1, 2 (auth + tenant).
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import StreamingResponse
 
+from mate_platform.auth import install_auth
+from mate_platform.tenancy.guards import require_tenant
 from mate_tech_agent import __version__
 from mate_tech_agent.api.schemas import (
     ChatRequest,
@@ -30,11 +33,6 @@ from mate_tech_agent.graph import (
     worker_node,
 )
 from mate_tech_agent.llm import get_llm, stream_answer
-
-# BUSINESS-SLICES P1 wave 2: hooks 1, 2 (auth + tenant).
-from fastapi import Request
-from mate_platform.auth import install_auth
-from mate_platform.tenancy.guards import require_tenant
 from mate_tech_agent.memory import delete_state, load_state, save_state
 
 _GRAPHS = {

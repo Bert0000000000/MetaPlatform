@@ -1,5 +1,7 @@
 from pathlib import Path
+
 import yaml
+
 COMMON = Path(__file__).parents[1] / "openapi" / "common"
 
 def load(name: str) -> dict:

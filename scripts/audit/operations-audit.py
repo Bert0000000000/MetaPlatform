@@ -1,6 +1,6 @@
-from pathlib import Path
-import re
 import json
+import re
+from pathlib import Path
 
 root = Path('metaplatform-frontend/apps/web/src')
 files = [p for p in root.rglob('*') if p.suffix in {'.ts', '.tsx'}]

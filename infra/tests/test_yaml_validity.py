@@ -8,8 +8,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import yaml
 import pytest
+import yaml
 
 HELM_ROOT = Path(__file__).resolve().parents[1] / "helm"
 

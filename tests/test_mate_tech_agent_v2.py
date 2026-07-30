@@ -13,12 +13,11 @@ for sub in ("mate-common", "mate-tech-rag", "mate-tech-agent"):
 import pytest
 from fastapi.testclient import TestClient
 
-from mate_tech_agent import __version__
 from mate_tech_agent.api.app import create_app
+from mate_tech_agent.graph import build_s2_graph, planner_node, worker_node
 from mate_tech_agent.llm import EchoLLM, NoOpLLM, get_llm, synthesize_answer
 from mate_tech_agent.memory import delete_state, load_state, save_state
 from mate_tech_agent.tools import set_rag_tool
-from mate_tech_agent.graph import build_s1_graph, build_s2_graph, planner_node, worker_node
 
 
 class FakeRAGTool:

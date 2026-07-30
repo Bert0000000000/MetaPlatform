@@ -9,9 +9,6 @@ from pathlib import Path
 
 import yaml
 
-from conftest import HELM_DIR
-
-
 REQUIRED_TOP_LEVEL_FILES = {
     "Chart.yaml",
     "values.yaml",

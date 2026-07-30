@@ -28,13 +28,6 @@ from unittest.mock import AsyncMock
 import pytest
 
 from mate_tech_llmgw.cache.llm_cache import LLMCache
-from mate_tech_llmgw.chat import ChatMessage, ChatResponse
-from mate_tech_llmgw.cost.recorder import CostRecorder
-from mate_tech_llmgw.providers.anthropic import AnthropicChatProvider
-from mate_tech_llmgw.providers.doubao import DoubaoChatProvider
-from mate_tech_llmgw.providers.openai import OpenAIChatProvider
-from mate_tech_llmgw.providers.qwen import QwenChatProvider
-from mate_tech_llmgw.quota.bucket import QuotaConfig, RedisTokenBucket
 
 
 @pytest.fixture

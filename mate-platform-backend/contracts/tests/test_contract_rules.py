@@ -1,7 +1,7 @@
-from pathlib import Path
 import importlib.util
+from pathlib import Path
+
 import yaml
-import pytest
 
 ROOT = Path(__file__).parents[1]
 EXPECTED = {"iam", "dashboard", "msg", "obs", "mcp", "llmgw", "ont", "rag", "agent", "data", "kb", "copilot", "dw", "apphub", "arch", "wfe", "a2a"}

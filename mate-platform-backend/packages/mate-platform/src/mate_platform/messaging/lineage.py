@@ -34,7 +34,6 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Any, Protocol
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -46,7 +45,7 @@ class LineageConfig:
     namespace_template: str = "metaplatform.<tenant>"
 
     @classmethod
-    def from_env(cls) -> "LineageConfig":
+    def from_env(cls) -> LineageConfig:
         return cls(
             marquez_url=os.environ.get(
                 "MARQUEZ_URL", "http://marquez.metaplatform.svc.cluster.local:5000"

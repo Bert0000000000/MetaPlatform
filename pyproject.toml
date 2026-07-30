@@ -1,0 +1,69 @@
+# Top-level pyproject.toml for the metaplatform monorepo.
+#
+# Per-package config (linting, dependencies, pytest) lives in each
+# package's own pyproject.toml under mate-platform-backend/.
+# This file only carries workspace-wide config that needs to apply
+# at the repo root, primarily so that `ruff check .` invoked from
+# the repo root finds the same config as `cd mate-platform-backend
+# && ruff check .`.
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+extend-exclude = [
+    ".venv",
+    "node_modules",
+    "dist",
+    "build",
+    "mate-platform-backend/services/*/legacy",
+    "metaplatform-frontend",
+]
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "B", "C4", "UP", "N", "SIM", "PTH", "ERA", "PL", "RUF", "ASYNC", "S", "TCH"]
+ignore = ["E501", "PLR0913", "PLR2004", "S101", "TC001", "TC002", "TC003", "RUF002", "RUF003"]
+
+[tool.ruff.lint.per-file-ignores]
+# ruff 0.16 matches per-file-ignores against the path *basename*
+# (i.e. everything after the longest common prefix), NOT as a
+# gitignore-style glob. To cover nested test files we have to spell
+# out one pattern per package prefix; this is verbose but it's
+# the only way ruff 0.16 honours the rule.
+"packages/*/tests/**/*.py" = ["S101", "PLR2004", "ARG", "FBT", "PLC0415", "E402", "I001", "PTH118"]
+"packages/services/*/tests/**/*.py" = ["S101", "PLR2004", "ARG", "FBT", "PLC0415", "E402", "I001", "PTH118"]
+"packages/*/tests/architecture/**/*.py" = ["S603"]
+"packages/*/conftest.py" = ["E402", "F401", "PTH118"]
+"packages/services/*/conftest.py" = ["E402", "F401", "PTH118"]
+# Top-level tests (next to repo root).
+"tests/test_*.py" = ["S101", "PLR2004", "ARG", "FBT", "PLC0415", "E402", "I001", "PTH118"]
+# Co-located client stubs are allowed many positional args.
+"packages/*/clients/*.py" = ["PLR0913"]
+# Script entry points tolerate print / subprocess without lint nag.
+"scripts/**/*.py" = ["T201", "S"]
+
+# Test files co-located under src/ in each package (older pattern;
+# some packages ship tests inside their source tree).
+[tool.ruff.lint.extend-per-file-ignores]
+"packages/*/src/**/test_*.py" = ["S101", "PLR2004", "ARG", "FBT", "PLC0415", "E402", "I001", "PTH118"]
+"packages/services/*/src/**/test_*.py" = ["S101", "PLR2004", "ARG", "FBT", "PLC0415", "E402", "I001", "PTH118"]
+
+[tool.ruff.lint.isort]
+known-first-party = [
+    "mate_common",
+    "mate_tech_rag",
+    "mate_tech_agent",
+    "mate_tech_llmgw",
+    "mate_tech_msg",
+    "mate_tech_obs",
+    "mate_tech_ont",
+    "mate_tech_mcp",
+    "mate_app_kb",
+    "mate_kernel",
+    "mate_platform",
+    "mate_clients",
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+docstring-code-format = true

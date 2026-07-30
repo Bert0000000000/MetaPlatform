@@ -1,5 +1,7 @@
 from pathlib import Path
+
 import yaml
+
 ROOT=Path(__file__).parents[1]/"openapi"
 def build()->None:
  manifest=yaml.safe_load((ROOT/"manifest.yaml").read_text(encoding="utf-8")); paths={}; tags=[]

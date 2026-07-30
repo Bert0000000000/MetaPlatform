@@ -2,19 +2,18 @@
 from __future__ import annotations
 
 import logging
-from typing import Awaitable, Callable
+from collections.abc import Awaitable, Callable
 
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
 
+from ..tenancy.context import AuthMethod, RequestContext, TenantId, UserId
 from .config import AuthConfig, load_auth_config
-from .identity import IdentityError, ServiceIdentity
+from .identity import ServiceIdentity
 from .tenant import TenantError, resolve_tenant
 from .verifier import TokenError, TokenVerifier
-
-from ..tenancy.context import AuthMethod, RequestContext, TenantId, UserId
 
 logger = logging.getLogger(__name__)
 

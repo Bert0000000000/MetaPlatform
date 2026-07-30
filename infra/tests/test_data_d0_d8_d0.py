@@ -8,7 +8,6 @@ production-ready chart is in the D1+ sub-batches.
 """
 from __future__ import annotations
 
-import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]

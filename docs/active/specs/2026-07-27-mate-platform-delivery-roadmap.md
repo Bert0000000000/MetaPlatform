@@ -55,16 +55,18 @@
 
 ## 3. 当前快照（每周更新）
 
-> 上次更新：2026-07-27
+> 上次更新：2026-07-30(v3.0 GA 收口,详见附录 B)
 
 | 里程碑 | 计划完成 | 当前状态 | 本周进展 | 阻塞项 |
 |---|---|---|---|---|
 | M0 项目启动 | 2026-07-27 | 🟢 完成 | 文档定稿、决策拍板 | 无 |
-| M1 基础设施 | 2026-08-17 | 🔴 未启动 | — | 无 |
-| M2 引擎 + 网关 | 2026-08-31 | 🔴 未启动 | — | 无 |
-| M3 业务域 | 2026-11-10 | 🔴 未启动 | — | 无 |
-| M4 前端 | 2026-10-27 | 🔴 未启动 | — | 无 |
-| M5 蓝绿上线 | 2026-12-22 | 🔴 未启动 | — | 无 |
+| M1 基础设施 | 2026-08-17 | 🟢 完成 | PLATFORM-K8S-01 + SEC-IAM-01 + SEC-TENANT-01 + GA 收口(9/9 核心批次 Accepted) | 无 |
+| M2 引擎 + 网关 | 2026-08-31 | 🟡 部分 | Flowable 集成已部署,Kafka 落地;8 域 P2 未建包 | 无 |
+| M3 业务域 | 2026-11-10 | 🟡 进行中 | 8/17 域已 5 步接入(kb/msg/obs/agent/llmgw/rag/mcp/ont);8 域 P2 未建包 | 无 |
+| M4 前端 | 2026-10-27 | 🟡 进行中 | W6-1 dashboard + SuperAI + admin 已对接 | 无 |
+| M5 蓝绿上线 | 2026-12-22 | 🔴 未启动 | — | 8 域 P2 + 数据平台控制面挂载 |
+
+**v3.0 GA 状态**:9/9 核心 Delivery Batch 已 Accepted(API-GOV-01 / ARCH-CORE-01 / PLATFORM-K8S-01 / SEC-IAM-01 / SEC-TENANT-01 / PLATFORM-EVENT-01 / TECH-SERVICES / GA-ACCEPTANCE + DATA-D0-D8)。§13 硬规则 1-13 通过 pre-commit + CI + 测试三层闭环,251 / 251 tests pass。
 
 ---
 
@@ -254,6 +256,7 @@ W1-1 → W2-3 → W3-3 → W4-3 → W5-6 → W5-7 → W5-8 → W7-6
 | 2026-07-27 | v1.0 初稿 | 基于 v3.0 Plan D + tech-stack-confirmed v1.2 |
 | 2026-07-27 | v1.1 | BPMN 升级到 Flowable 8.0（分布式）；W3-4/W3-5 工期调整 |
 | v1.2 | 全文 | 追加附录 A：Data Track（D0–D8），将数据平台作为 v1.0 GA 硬前置 |
+| **2026-07-30** | **v1.3** | **§3 当前快照刷新到 v3.0 GA 收口(M1 完成 / M2-M4 进行中 / M5 待启动);追加附录 B:未实现功能盘点(125 个 spec 路由 + 8 域 P2 待建包 + 跨域能力 PRD 对照 + 工作量估算);新增 §10 引用 features-backlog / backend-impl-backlog** | **v3.0 GA 收口后业务侧缺口盘点** |
 
 ---
 
@@ -335,3 +338,96 @@ D7 与 W6-2 ontstudio 同步推进；D8 与 W7 蓝绿迁移并行，最终由 D8
 - Docker Compose：`docker-compose.yml`
 - 前端 monorepo：`metaplatform-frontend/`
 - 启动脚本：`scripts/start-services/`
+- **未实现功能盘点**(2026-07-30 增量):
+  - `2026-07-30-features-backlog.md` v1.0 — 功能维度(用户能做什么还没做)
+  - `2026-07-30-backend-impl-backlog.md` v1.0 — 接口维度(每个 endpoint 怎么落地)
+  - `2026-07-30-business-slices-rollout-status.md` v1.2 — 17 域接入进度
+  - `2026-07-30-per-app-integration-checklist.md` v1.0 — 5 步接入模式
+
+---
+
+## 附录 B：未实现功能盘点（2026-07-30 增量）
+
+> 本附录是 v1.3 的增量补丁。v3.0 GA 已收口(9/9 核心批次 Accepted),但业务侧仍有 8 个 P2 域未建包、125 个 spec 路由无 handler、跨域能力(A2A / SQL Copilot / 代码 Copilot / 数据平台控制面等)尚未落地。本附录是 M3 / M5 推进的子清单。
+
+### B.1 总体规模
+
+| 项 | 数 |
+|---|---:|
+| 17 域接入进度 | 8 / 17(P0 + P1 完成;P2 待建包) |
+| Spec 路由(去重) | 214 |
+| 代码路由命中 | 89 |
+| **未实现 spec 路由** | **125** |
+| 路径别名待修 | 8(`app-kb → kb` 5 个 + legacy `llm → llmgw` 3 个) |
+
+### B.2 8 域 P2 待建包代码(🔴 完全未实现)
+
+| 域 | spec 路由 | 核心业务能力 | 工作量 |
+|---|---:|---|---|
+| **apphub** | 5 | 应用中心:apps / groups / modules / pages / templates | 1-2 周 |
+| **a2a** | 2 | A2A 协议层:agent-cards 搜索 + 委托 | 1 周 |
+| **wfe** | 2 | 工作流引擎:Flowable 集成(试运行 / 校验) | 1-2 周 |
+| **dw** | 15 | 数字员工聚合:协作 / commit / 文档 / 员工 / 评估 / learning | 2 周 |
+| **data** | 15 | 数据平台控制面:CDC / Sources | 1 周(挂 DATA-D0-D8) |
+| **etl** | 8 | ETL 任务:CRUD / run / stop / status | 同上 |
+| **metrics** | 8 | 指标管理:CRUD / lineage / values | 同上 |
+| **scheduler** | 8 | 调度 DAG + 任务:pause / trigger | 同上 |
+| **arch** | 29 | 架构中心:应用 / 流程 / 能力 / 数据资产 / 治理 / 技术雷达 | 3-4 周 |
+| **copilot** | 35 | 超级 AI 对话:SQL / 代码 / 多模态 / NLQ / 调度 / Action | 3-4 周 |
+
+### B.3 跨域缺失业务能力(PRD 对照)
+
+| 业务能力 | PRD 来源 | 现状 | 阻塞 |
+|---|---|---|---|
+| A2A 协议层完整实现 | PRD-APP-COPILOT / PRD-APP-AGENT | 🔴 | copilot + a2a 无包 |
+| SQL Copilot(审计/执行/解释/生成) | PRD-APP-COPILOT §3.4 | 🔴 | copilot 无包 |
+| 代码 Copilot(生成/解释/review) | PRD-APP-COPILOT §3.3 | 🔴 | copilot 无包 |
+| NLQ 自然语言查询 | PRD-APP-COPILOT §3.6 | 🔴 | copilot 无包 |
+| 多模态 chat(图像 / 语音) | PRD-APP-COPILOT §3.5 | 🔴 llmgw 无多模态 provider | llmgw 扩展 |
+| 任务调度(plan / 员工匹配 / 意图) | PRD-APP-COPILOT §3.7 | 🔴 | copilot 无包 |
+| Action 平台(动作匹配 / 执行) | PRD-APP-COPILOT §3.8 | 🔴 | copilot 无包 |
+| 数字员工自主决策 | PRD-APP-DW | 🔴 | dw 无包 |
+| 本体推理(SHACL / OWL Reasoner) | PRD-APP-ONTSTUDIO §6.4 | 🔴 | ont 仅有 SPARQL + Explain |
+| 联邦查询 / 跨本体合并 | PRD-APP-ONTSTUDIO §6.5 | 🔴 | ont 域无 |
+| 数据血缘 + 资产目录 | PRD-APP-ARCH §5.3 | 🔴 | arch 域无包 |
+| 治理评审流程 | PRD-APP-ARCH §7 | 🔴 | arch 域无包 |
+| 应用市场 / 模板 | PRD-APP-APPHUB | 🔴 | apphub 域无包 |
+| 工作流编排 + 试运行 | PRD-APP-WFE | 🔴 | wfe 域无包 |
+| 数据平台控制面(CDC / ETL / Metrics / Scheduler) | ADR-0016 | 🔴 HTTP 未挂 | DATA-D0-D8 已落地,缺控制面 |
+| 数据保留 + GDPR + PII 掩码 + 跨域审计 | ADR-0016 | 🟢 模块已落地 | 仅需挂 HTTP |
+
+### B.4 13 硬规则合规盘点
+
+| 域 | install_auth | require_tenant | outbox | BearerAuth | 跨租户 tests | security 段 |
+|---|---|---|---|---|---|---|
+| kb / rag / llmgw / agent / ont / msg / obs / mcp | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **apphub / arch / copilot / dashboard / dw / data / a2a / wfe** | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | spec 已签 |
+| iam | 🟠 deprecated | — | — | — | — | — |
+
+### B.5 工作量估算
+
+| 阶段 | 内容 | 工作量 | 起点 |
+|---|---|---|---|
+| **P0 收口** | 路径对齐(`app-kb→kb`、`llm→llmgw`)+ mcp 路由挂载 + dashboard 9 个 PUT | 1-2 周 | 本周 |
+| **P1 8 域 P2 建包** | apphub / a2a / wfe / dw / copilot / arch 各 1-4 周 | 8-12 周 | 本周 + 1 |
+| **P2 数据平台控制面** | data/etl/metrics/scheduler 39 endpoint 挂 DATA-D0-D8 模块 | 1-2 周 | DATA-D0-D8 完成后 |
+
+合计 **10-16 周 / 12-20 个 PR**。详见 `docs/active/specs/2026-07-30-features-backlog.md` v1.0 与 `2026-07-30-backend-impl-backlog.md` v1.0。
+
+### B.6 与 M3 / M5 里程碑对齐
+
+| 里程碑 | 增量依赖 | 说明 |
+|---|---|---|
+| **M3 业务域** | B.2 的 8 域 P2 + B.3 的跨域能力 | W5-9~W5-16 子批次 |
+| **M5 蓝绿上线** | B.5 P0 + P1 全部完成 | 8 域 P2 + 数据平台挂载后才能真正切流量 |
+| **附录 A Data Track** | B.3 数据平台控制面 + D8 GA | 互锁:D8 GA 是 M5 共同门槛 |
+
+### B.7 后续阅读
+
+- `docs/active/specs/2026-07-30-features-backlog.md` v1.0 — 功能维度详细盘点(每个功能 🟢/🟡/🔴)
+- `docs/active/specs/2026-07-30-backend-impl-backlog.md` v1.0 — 接口维度开发清单(每个 PR 的工作)
+- `docs/active/specs/2026-07-30-business-slices-rollout-status.md` v1.2 — 17 域接入进度官方表
+- `docs/active/specs/2026-07-30-per-app-integration-checklist.md` v1.0 — 5 步接入模式
+- `docs/active/decisions/ADR-0014-tech-services-integration.md` — 集成模式决策
+- `docs/active/delivery/PROGRAM-BOARD.md` — 全局批次跟踪
+- `docs/active/specs/2026-07-30-backend-production-readiness-design.md` §13 — 13 硬规则

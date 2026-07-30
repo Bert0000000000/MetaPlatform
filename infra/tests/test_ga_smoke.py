@@ -16,8 +16,6 @@ import os
 import sys
 from pathlib import Path
 
-import pytest
-
 # Make packages importable.
 REPO = Path(__file__).resolve().parents[2]
 PKG = REPO / "mate-platform-backend" / "packages"
@@ -46,7 +44,6 @@ class TestWiring:
     def test_tenancy_subsystem_importable(self) -> None:
         from mate_platform.tenancy import (
             RequestContext,
-            TenantAccessError,
             TenantScopedRepository,
             emit_cross_tenant_access,
             require_tenant,
@@ -66,9 +63,6 @@ class TestWiring:
     def test_messaging_subsystem_importable(self) -> None:
         from mate_platform.messaging import (
             Event,
-            EventTypeTopicResolver,
-            InMemoryOutboxWriter,
-            InMemorySchemaRegistry,
             OutboxRelay,
             schema_id_for,
             validate_event_type,
@@ -81,11 +75,7 @@ class TestWiring:
     def test_kafka_acl_importable(self) -> None:
         from mate_clients.kafka import (
             IdempotentConsumer,
-            InMemoryDedupStore,
-            InMemoryDlq,
             KafkaProducer,
-            Message,
-            ProcessOutcome,
         )
         assert hasattr(IdempotentConsumer, "process")
         assert hasattr(KafkaProducer, "send")
@@ -111,6 +101,14 @@ class TestEndToEndSmoke:
     """
 
     def test_event_to_outbox_to_consumer(self) -> None:
+        from mate_clients.kafka import (
+            IdempotentConsumer,
+            InMemoryDedupStore,
+            InMemoryDlq,
+            Message,
+            ProcessOutcome,
+            bind,
+        )
         from mate_platform.messaging import (
             Event,
             EventTypeTopicResolver,
@@ -122,14 +120,6 @@ class TestEndToEndSmoke:
             RequestContext,
             TenantId,
             UserId,
-        )
-        from mate_clients.kafka import (
-            IdempotentConsumer,
-            InMemoryDedupStore,
-            InMemoryDlq,
-            Message,
-            ProcessOutcome,
-            bind,
         )
 
         # 1. Build an event.

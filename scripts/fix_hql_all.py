@@ -1,6 +1,5 @@
-﻿import os
-from pathlib import Path
-import re
+﻿from pathlib import Path
+
 patterns = [
   ("AND (:keyword IS NULL OR LOWER(t.name) LIKE LOWER(CONCAT('%', cast(:keyword as string), '%'))) OR LOWER(t.code) LIKE LOWER(CONCAT('%', cast(:keyword as string), '%'))))",
    "AND (:keyword IS NULL OR (LOWER(t.name) LIKE LOWER(CONCAT('%', cast(:keyword as string), '%')) OR LOWER(t.code) LIKE LOWER(CONCAT('%', cast(:keyword as string), '%'))))"),

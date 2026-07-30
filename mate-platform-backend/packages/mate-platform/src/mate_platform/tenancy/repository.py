@@ -18,8 +18,7 @@ from typing import Any, Protocol, TypeVar
 
 from sqlalchemy import Select
 
-from .context import RequestContext, TenantId
-from .guards import TenantAccessError
+from .context import RequestContext
 
 T = TypeVar("T")
 

@@ -31,7 +31,7 @@ os.environ.setdefault("KEYCLOAK_URL", "https://keycloak.test.invalid")
 os.environ.setdefault("KEYCLOAK_REALM", "metaplatform")
 os.environ.setdefault("SERVICE_CLIENT_SECRET", "test-secret")
 
-from mate_platform.auth import (  # noqa: E402
+from mate_platform.auth import (
     ALLOWED_ALGS,
     JWKSCache,
     JWKSError,
@@ -42,9 +42,9 @@ from mate_platform.auth import (  # noqa: E402
     load_auth_config,
     resolve_tenant,
 )
-from mate_platform.auth.config import AuthConfig  # noqa: E402
-from mate_platform.auth.verifier import VerifiedClaims  # noqa: E402
-from mate_platform.tenancy.context import (  # noqa: E402
+from mate_platform.auth.config import AuthConfig
+from mate_platform.auth.verifier import VerifiedClaims
+from mate_platform.tenancy.context import (
     AuthMethod,
     RequestContext,
     TenantId,
@@ -196,19 +196,19 @@ def _make_cfg() -> AuthConfig:
 
 
 def _make_claims(**overrides) -> VerifiedClaims:
-    base = dict(
-        sub="user-1",
-        azp="metaplatform-backend",
-        iss="https://kc.test/realms/metaplatform",
-        aud="metaplatform-backend",
-        tenant_id="t1",
-        realm_roles=frozenset({"admin"}),
-        client_roles=frozenset(),
-        scopes=frozenset({"platform.read"}),
-        expires_at=9999999999,
-        not_before=0,
-        jti="j-1",
-    )
+    base = {
+        "sub": "user-1",
+        "azp": "metaplatform-backend",
+        "iss": "https://kc.test/realms/metaplatform",
+        "aud": "metaplatform-backend",
+        "tenant_id": "t1",
+        "realm_roles": frozenset({"admin"}),
+        "client_roles": frozenset(),
+        "scopes": frozenset({"platform.read"}),
+        "expires_at": 9999999999,
+        "not_before": 0,
+        "jti": "j-1",
+    }
     base.update(overrides)
     return VerifiedClaims(**base)
 

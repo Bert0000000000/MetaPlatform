@@ -37,10 +37,8 @@ from mate_app_kb.api.schemas import (
     UploadResponse,
 )
 from mate_app_kb.clients import AgentClient, RAGClient
-
 from mate_platform.auth import install_auth
 from mate_platform.tenancy.guards import require_tenant
-
 
 _log = logging.getLogger(__name__)
 

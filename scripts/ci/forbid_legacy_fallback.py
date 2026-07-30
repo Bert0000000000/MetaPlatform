@@ -12,7 +12,6 @@ import re
 import sys
 from pathlib import Path
 
-
 PATTERNS = [
     re.compile(r"LEGACY_LOGIN_COMPAT\s*=\s*[\"']?true"),
     re.compile(r"INSECURE_SKIP_SIGNATURE\s*=\s*[\"']?true"),

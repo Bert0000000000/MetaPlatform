@@ -10,7 +10,6 @@ for sub in ("mate-common", "mate-tech-rag", "mate-tech-agent"):
     if p not in sys.path:
         sys.path.insert(0, p)
 
-import pytest
 
 # --- TC-5.7.4 PGSaver ---
 def test_pg_saver_init_without_server():

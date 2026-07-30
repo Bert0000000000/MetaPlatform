@@ -1,17 +1,15 @@
 """Conftest for mate-tech-msg (ST-5.1.12.1)."""
 from __future__ import annotations
 
-from unittest.mock import AsyncMock
-
-import pytest
-
-
-
 # BUSINESS-SLICES P1 wave 2: ensure cross-package paths work
 # without `pip install -e .`. The block is appended after all
 # `from __future__` and standard imports to keep Python happy.
 import sys as _bsl_sys
 from pathlib import Path as _bsl_Path
+from unittest.mock import AsyncMock
+
+import pytest
+
 _BSL_MONOREPO = _bsl_Path(__file__).resolve().parents[3]
 for _bsl_sub in (
     "mate-tech-msg",

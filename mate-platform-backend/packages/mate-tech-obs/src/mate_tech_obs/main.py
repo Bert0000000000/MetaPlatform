@@ -20,16 +20,16 @@ import os
 import structlog
 from fastapi import FastAPI, HTTPException, Request, Response
 
+# TECH-SERVICES / BUSINESS-SLICES: hooks 1, 2.
+from mate_platform.auth import install_auth
+from mate_platform.tenancy.guards import require_tenant
+
 from .admin import router as admin_router
 from .health.aggregator import aggregate_health
 from .metrics.prom import render_metrics
 from .tracing.instrument import auto_instrument
 from .tracing.logging import configure_json_logging
 from .tracing.otel import init_tracing
-
-# TECH-SERVICES / BUSINESS-SLICES: hooks 1, 2.
-from mate_platform.auth import install_auth
-from mate_platform.tenancy.guards import require_tenant
 
 logger = structlog.get_logger(__name__)
 

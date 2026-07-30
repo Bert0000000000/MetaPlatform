@@ -1,7 +1,18 @@
-# Ruff 配置（v3.0 Python 后端）
+# Ruff 配置（v3.0 Python 后端 + v3.1 pre-existing CI cleanup）
+#
+# This file lives at the repo root so that `ruff check .` from
+# either the repo root or from mate-platform-backend/ picks up the
+# same config. Per-package overrides (if any) go in
+# mate-platform-backend/ruff.toml.
 target-version = "py312"
 line-length = 100
-extend-exclude = [".venv", "node_modules", "dist", "build"]
+extend-exclude = [
+    ".venv",
+    "node_modules",
+    "dist",
+    "build",
+    "metaplatform-frontend",
+]
 
 [lint]
 select = [
@@ -19,15 +30,27 @@ ignore = [
 ]
 
 [lint.per-file-ignores]
+# ruff 0.16 matches per-file-ignores patterns against the path
+# *relative to the project root*, not as a gitignore-style glob.
+# `tests/**` matches the top-level tests/ directory.
 "tests/**/*.py" = ["S101", "PLR2004", "ARG", "FBT"]
+# `packages/*/tests/**` matches every nested package's tests/.
+"packages/*/tests/**/*.py" = ["S101", "PLR2004", "ARG", "FBT", "PLC0415", "E402", "I001", "PTH118"]
+"packages/services/*/tests/**/*.py" = ["S101", "PLR2004", "ARG", "FBT", "PLC0415", "E402", "I001", "PTH118"]
+# Conftest files add sys.path / cross-package imports — same exemptions.
+"**/conftest.py" = ["E402", "F401", "PTH118"]
+# Co-located client stubs are allowed many positional args.
 "**/clients/*.py" = ["PLR0913"]
+# Script entry points tolerate print / subprocess without lint nag.
 "scripts/**/*.py" = ["T201", "S"]
+# Test files co-located under src/ in each package (older pattern).
+"**/src/**/test_*.py" = ["S101", "PLR2004", "ARG", "FBT", "PLC0415", "E402", "I001", "PTH118"]
 
 [lint.isort]
 known-first-party = [
     "mate_common", "mate_tech_rag", "mate_tech_agent", "mate_tech_llmgw",
     "mate_tech_msg", "mate_tech_obs", "mate_tech_ont", "mate_tech_mcp",
-    "mate_app_kb",
+    "mate_app_kb", "mate_kernel", "mate_platform", "mate_clients",
 ]
 
 [format]

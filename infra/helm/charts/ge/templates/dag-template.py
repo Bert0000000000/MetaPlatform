@@ -2,6 +2,7 @@
 # In v3.1, every DDL migration runs the corresponding GE suite
 # before applying. This DAG is the canonical template.
 from datetime import datetime
+
 from airflow import DAG
 from airflow.operators.bash import BashOperator
 

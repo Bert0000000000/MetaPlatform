@@ -10,10 +10,9 @@ for sub in ("mate-common", "mate-tech-rag"):
     if p not in sys.path:
         sys.path.insert(0, p)
 
-import pytest
 
-from mate_tech_rag.clients.pg_client import PGClient
 from mate_tech_rag.clients.hybrid_v2_client import HybridV2Client
+from mate_tech_rag.clients.pg_client import PGClient
 
 
 # ---------- PGClient (graceful no-op) ----------

@@ -17,7 +17,6 @@
 from __future__ import annotations
 
 import re
-import uuid
 
 DATA_BASE = "/api/v1/data"
 AGENT_BASE = "/api/v1/agent"

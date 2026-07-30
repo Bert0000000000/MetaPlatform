@@ -1,8 +1,11 @@
 from __future__ import annotations
-import json,re
+
+import json
+import re
 from pathlib import Path
-from typing import Iterable
+
 import yaml
+
 CONTRACTS=Path(__file__).parents[1]
 METHODS={"get","post","put","patch","delete","options","head"}
 META={"/healthz","/readyz","/metrics","/openapi.json","/docs","/docs/oauth2-redirect","/redoc"}

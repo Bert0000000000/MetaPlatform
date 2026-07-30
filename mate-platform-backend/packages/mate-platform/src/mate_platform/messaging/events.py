@@ -52,7 +52,7 @@ class Event:
         trace_id: str = "",
         event_id: str | None = None,
         occurred_at: str | None = None,
-    ) -> "Event":
+    ) -> Event:
         """Build an Event with auto-generated id / timestamp.
 
         `type` should follow the convention `<domain>.<aggregate>.<action>`,
@@ -76,7 +76,7 @@ class Event:
         return asdict(self)
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "Event":
+    def from_dict(cls, data: dict[str, Any]) -> Event:
         return cls(
             id=str(data["id"]),
             type=str(data["type"]),

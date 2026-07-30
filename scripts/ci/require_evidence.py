@@ -7,9 +7,7 @@ file in the same commit (or earlier).
 from __future__ import annotations
 
 import re
-import sys
 from pathlib import Path
-
 
 ACCEPTED_MARKER = re.compile(r"\*\*Accepted\*\*")
 EVIDENCE = Path("docs/active/delivery/evidence")

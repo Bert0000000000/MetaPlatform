@@ -56,6 +56,8 @@ def test_parse_anthropic_tool_use() -> None:
 
 def test_dispatch_tool_call() -> None:
     """dispatch_tool_call 执行 handler."""
+    import asyncio
+
     received = {}
 
     def my_handler(x: int) -> int:
@@ -69,11 +71,11 @@ def test_dispatch_tool_call() -> None:
         handler=my_handler,
     )
     call = ToolCall(id="c1", name="double", arguments={"x": 21})
-    dispatch_tool_call(call, [t])
+    # dispatch_tool_call is async (returns a coroutine that runs
+    # the handler); call it via asyncio.run so the side effect
+    # (`received["x"] = x`) actually fires before the assertion.
+    asyncio.run(dispatch_tool_call(call, [t]))
     assert received == {"x": 21}
-    # dispatch_tool_call is sync (handler is sync); result format
-    # Note: dispatch_tool_call in registry.py is async via __await__ check,
-    # but here we called it without await — adjust test to use asyncio.run
 
 
 def test_dispatch_tool_call_async() -> None:

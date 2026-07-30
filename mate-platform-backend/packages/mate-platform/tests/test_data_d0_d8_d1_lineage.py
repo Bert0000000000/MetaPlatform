@@ -58,7 +58,8 @@ class TestLineageEventFormat:
 class TestInMemoryLineageEmitter:
     def test_emit_collects(self) -> None:
         from mate_platform.messaging import (
-            LineageEvent, InMemoryLineageEmitter,
+            InMemoryLineageEmitter,
+            LineageEvent,
         )
 
         e = InMemoryLineageEmitter()

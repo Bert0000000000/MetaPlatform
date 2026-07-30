@@ -8,8 +8,8 @@ from __future__ import annotations
 import os
 import shutil
 import subprocess
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Iterator
 
 import pytest
 
@@ -78,6 +78,7 @@ def templates_per_chart(charts_dir: Path) -> dict[str, list[Path]]:
 # DATA-D0-D8 D5: cross-tenant audit tests need auth module on path.
 import sys as _d5_sys
 from pathlib import Path as _d5_Path
+
 _D5_AUTH_SRC = _d5_Path(__file__).resolve().parents[3] / "mate-platform-backend" / "packages" / "mate-platform" / "src"
 if str(_D5_AUTH_SRC) not in _d5_sys.path:
     _d5_sys.path.insert(0, str(_D5_AUTH_SRC))

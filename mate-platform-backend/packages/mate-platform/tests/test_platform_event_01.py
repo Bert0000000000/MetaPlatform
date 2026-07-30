@@ -30,31 +30,7 @@ os.environ.setdefault("KEYCLOAK_URL", "https://keycloak.test.invalid")
 os.environ.setdefault("KEYCLOAK_REALM", "metaplatform")
 os.environ.setdefault("SERVICE_CLIENT_SECRET", "test-secret")
 
-from mate_platform.messaging import (  # noqa: E402
-    Event,
-    EventTypeTopicResolver,
-    InMemoryOutboxWriter,
-    InMemorySchemaRegistry,
-    OutboxError,
-    OutboxRecord,
-    OutboxRelay,
-    OutboxWriter,
-    SchemaError,
-    SchemaRegistry,
-    Producer,
-    TopicResolver,
-    new_event_id,
-    schema_id_for,
-    validate_event_type,
-)
-from mate_platform.messaging.events import Event as EventClass  # noqa: E402
-from mate_platform.tenancy import (  # noqa: E402
-    AuthMethod,
-    RequestContext,
-    TenantId,
-    UserId,
-)
-from mate_clients.kafka import (  # noqa: E402
+from mate_clients.kafka import (
     ConsumerError,
     DlqEntry,
     IdempotentConsumer,
@@ -64,7 +40,26 @@ from mate_clients.kafka import (  # noqa: E402
     ProcessOutcome,
     RetryPolicy,
     bind,
-    handler,
+)
+from mate_platform.messaging import (
+    Event,
+    EventTypeTopicResolver,
+    InMemoryOutboxWriter,
+    InMemorySchemaRegistry,
+    OutboxError,
+    OutboxRelay,
+    OutboxWriter,
+    SchemaError,
+    SchemaRegistry,
+    new_event_id,
+    schema_id_for,
+    validate_event_type,
+)
+from mate_platform.tenancy import (
+    AuthMethod,
+    RequestContext,
+    TenantId,
+    UserId,
 )
 
 

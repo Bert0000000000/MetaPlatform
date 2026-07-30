@@ -12,7 +12,6 @@ import re
 import sys
 from pathlib import Path
 
-
 PATTERN = re.compile(r"""\bsession\.execute\s*\(\s*text\s*\(""")
 EXCLUDE_DIRS = {"tests", "__pycache__"}
 

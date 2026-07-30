@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 
 @pytest.fixture
 def obs_client() -> TestClient:
-    from mate_tech_obs.main import app  # noqa: PLC0415
+    from mate_tech_obs.main import app
 
     return TestClient(app)
 

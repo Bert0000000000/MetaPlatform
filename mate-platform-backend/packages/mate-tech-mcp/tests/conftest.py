@@ -1,11 +1,10 @@
 """Shared pytest fixtures for mate-tech-mcp (ST-5.3.10.1)."""
 from __future__ import annotations
 
-
-
 # BUSINESS-SLICES: ensure cross-package paths work without `pip install -e .`
 import sys as _sys
 from pathlib import Path as _Path
+
 _MONOREPO = _Path(__file__).resolve().parents[3]
 for _sub in (
     "mate-tech-mcp",
@@ -17,14 +16,13 @@ for _sub in (
     if _p not in _sys.path:
         _sys.path.insert(0, _p)
 
+# BUSINESS-SLICES: ensure cross-package paths work without `pip install -e .`
+import sys as _bsl_sys
+from pathlib import Path as _bsl_Path
 from unittest.mock import AsyncMock
 
 import pytest
 
-
-# BUSINESS-SLICES: ensure cross-package paths work without `pip install -e .`
-import sys as _bsl_sys
-from pathlib import Path as _bsl_Path
 _BSL_MONOREPO = _bsl_Path(__file__).resolve().parents[3]
 for _bsl_sub in (
     "mate-tech-mcp",
@@ -39,6 +37,7 @@ for _bsl_sub in (
 # BUSINESS-SLICES: ensure cross-package paths work without `pip install -e .`
 import sys as _bsl_sys
 from pathlib import Path as _bsl_Path
+
 _BSL_MONOREPO = _bsl_Path(__file__).resolve().parents[3]
 for _bsl_sub in (
     "mate-tech-mcp",

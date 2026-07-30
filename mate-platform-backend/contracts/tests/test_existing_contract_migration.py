@@ -1,4 +1,5 @@
 from pathlib import Path
+
 import yaml
 
 ROOT = Path(__file__).parents[1]
@@ -38,7 +39,7 @@ def test_existing_operations_are_conserved() -> None:
 def test_every_migrated_operation_has_governance() -> None:
  for path in (ROOT/"openapi/services").glob("*.yaml"):
   doc=yaml.safe_load(path.read_text(encoding="utf-8"))
-  for route,item in doc.get("paths",{}).items():
+  for _route,item in doc.get("paths",{}).items():
    for method,op in item.items():
     if method not in METHODS: continue
     assert op.get("operationId")

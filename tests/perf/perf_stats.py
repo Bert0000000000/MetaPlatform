@@ -14,14 +14,13 @@ from __future__ import annotations
 
 import statistics
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Callable, List
-
 
 P95_THRESHOLD_MS = 500.0  # V11-12 验收标准：API P95 < 500ms
 
 
-def _percentile(samples: List[float], pct: float) -> float:
+def _percentile(samples: list[float], pct: float) -> float:
     """Linear-interpolated percentile (matches numpy default).
 
     ``samples`` is sorted ascending. ``pct`` is in [0, 100].
@@ -48,7 +47,7 @@ class PerfStats:
     """
 
     name: str
-    samples: List[float] = field(default_factory=list)
+    samples: list[float] = field(default_factory=list)
 
     def record_ms(self, ms: float) -> None:
         self.samples.append(float(ms))
@@ -94,7 +93,7 @@ class PerfStats:
 class PerfReport:
     """Aggregates multiple ``PerfStats`` and formats output."""
 
-    stats: List[PerfStats] = field(default_factory=list)
+    stats: list[PerfStats] = field(default_factory=list)
 
     def add(self, stat: PerfStats) -> None:
         self.stats.append(stat)

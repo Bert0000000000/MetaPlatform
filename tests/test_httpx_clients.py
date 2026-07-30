@@ -31,7 +31,7 @@ def test_ragflow_httpx_graceful_when_no_server():
         chunks = c.parse("hello world", "doc1")
         assert chunks == ["hello world"]
         assert c.parse_bytes(b"", "doc2") == []
-        chunks2 = c.parse_bytes("hello".encode("utf-8"), "doc3", filename="x.txt")
+        chunks2 = c.parse_bytes(b"hello", "doc3", filename="x.txt")
         assert chunks2 == ["hello"]
         assert c.count() == 0
     finally:
@@ -40,6 +40,7 @@ def test_ragflow_httpx_graceful_when_no_server():
 
 def test_lightrag_httpx_query_calls_api(respx_mock):
     import respx
+
     from mate_tech_rag.clients.lightrag_httpx_client import HttpxLightRAGClient
     respx_mock.get("http://localhost:9621/health").mock(return_value=respx.MockResponse(200, json={"status": "ok"}))
     respx_mock.post("http://localhost:9621/query").mock(
@@ -59,6 +60,7 @@ def test_lightrag_httpx_query_calls_api(respx_mock):
 
 def test_ragflow_httpx_parse_calls_api(respx_mock):
     import respx
+
     from mate_tech_rag.clients.ragflow_httpx_client import HttpxRAGFlowClient
     respx_mock.get("http://localhost:9380/api/v1/datasets").mock(return_value=respx.MockResponse(200, json={"data": []}))
     respx_mock.post("http://localhost:9380/api/v1/datasets/mate-kb/chunks").mock(
@@ -78,7 +80,6 @@ def test_create_clients_wires_httpx_singletons():
     os.environ["M"] = "full"
     os.environ["L"] = "http://127.0.0.1:1"
     os.environ["F"] = "http://127.0.0.1:1"
-    from mate_tech_rag.api.retrieval import _lightrag, _ragflow
     import mate_tech_rag.api.retrieval as r
     r._lightrag = type("X", (), {})()  # reset
     # Manually call create_clients

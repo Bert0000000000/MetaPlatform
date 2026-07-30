@@ -16,7 +16,6 @@ from typing import Any
 
 import httpx
 
-
 ALLOWED_ALGS: frozenset[str] = frozenset({"RS256", "RS384", "RS512"})
 
 

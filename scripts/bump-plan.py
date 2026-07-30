@@ -1,4 +1,5 @@
 ﻿from pathlib import Path
+
 p=Path('docs/superpowers/specs/2026-07-26-ontology-native-deerflow-final-delivery-plan.md')
 lines=p.read_text(encoding='utf-8').splitlines()
 for i,l in enumerate(lines):

@@ -116,8 +116,7 @@ def tenant_headers(trace_id: str) -> dict[str, str]:
 # -------------------------------------------------- 共享 PerfReport
 
 
-from perf_stats import PerfReport, PerfStats  # noqa: E402
-
+from perf_stats import PerfReport, PerfStats
 
 # module-level session cache for perf_report so sessionfinish hook can access
 _SESSION_PERF_REPORT: PerfReport | None = None

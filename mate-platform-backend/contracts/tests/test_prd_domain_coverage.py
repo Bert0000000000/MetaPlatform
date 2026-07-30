@@ -1,5 +1,7 @@
 from pathlib import Path
+
 import yaml
+
 ROOT=Path(__file__).parents[1]
 DOMAINS={"data","copilot","dw","apphub","arch","wfe","a2a"}
 METHODS={"get","post","put","patch","delete","options","head"}

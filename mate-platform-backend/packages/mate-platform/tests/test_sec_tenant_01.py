@@ -29,7 +29,24 @@ os.environ.setdefault("KEYCLOAK_URL", "https://keycloak.test.invalid")
 os.environ.setdefault("KEYCLOAK_REALM", "metaplatform")
 os.environ.setdefault("SERVICE_CLIENT_SECRET", "test-secret")
 
-from mate_platform.tenancy import (  # noqa: E402
+from mate_clients.minio import (
+    MinioBucketError,
+    bucket_for,
+    object_key,
+)
+from mate_clients.redis import (
+    RedisKeyError,
+    k,
+    pattern_for,
+    tenant_prefix,
+)
+from mate_platform.messaging import (
+    KafkaTopicError,
+    assert_message_tenant,
+    consumer_group,
+    topic_name,
+)
+from mate_platform.tenancy import (
     AuthMethod,
     CrossTenantAccess,
     RequestContext,
@@ -41,24 +58,7 @@ from mate_platform.tenancy import (  # noqa: E402
     is_cross_tenant_admin,
     require_tenant,
 )
-from mate_platform.tenancy.guards import require_any_tenant  # noqa: E402
-from mate_platform.messaging import (  # noqa: E402
-    KafkaTopicError,
-    assert_message_tenant,
-    consumer_group,
-    topic_name,
-)
-from mate_clients.redis import (  # noqa: E402
-    RedisKeyError,
-    k,
-    pattern_for,
-    tenant_prefix,
-)
-from mate_clients.minio import (  # noqa: E402
-    MinioBucketError,
-    bucket_for,
-    object_key,
-)
+from mate_platform.tenancy.guards import require_any_tenant
 
 
 # -----------------------------------------------------------------------------

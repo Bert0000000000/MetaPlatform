@@ -36,7 +36,8 @@ class TestD6Retention:
 
     def test_request_gdpr_forget_creates_record(self) -> None:
         from mate_platform.auth.retention import (
-            InMemoryRetentionStore, request_gdpr_forget,
+            InMemoryRetentionStore,
+            request_gdpr_forget,
         )
         store = InMemoryRetentionStore()
         rec = request_gdpr_forget(
@@ -56,13 +57,14 @@ class TestD6Retention:
 
         try:
             request_gdpr_forget(tenant_id="", requested_by="u1")
-            assert False, "should have raised"
+            raise AssertionError("should have raised")
         except ValueError:
             pass
 
     def test_request_gdpr_forget_custom_window(self) -> None:
         from mate_platform.auth.retention import (
-            InMemoryRetentionStore, RetentionPolicy,
+            InMemoryRetentionStore,
+            RetentionPolicy,
             request_gdpr_forget,
         )
         store = InMemoryRetentionStore()
@@ -77,7 +79,8 @@ class TestD6Retention:
 
     def test_list_pending_filters(self) -> None:
         from mate_platform.auth.retention import (
-            InMemoryRetentionStore, request_gdpr_forget,
+            InMemoryRetentionStore,
+            request_gdpr_forget,
         )
         store = InMemoryRetentionStore()
         request_gdpr_forget(tenant_id="t1", requested_by="u1", store=store)
@@ -86,7 +89,8 @@ class TestD6Retention:
 
     def test_to_dict_has_required_fields(self) -> None:
         from mate_platform.auth.retention import (
-            InMemoryRetentionStore, request_gdpr_forget,
+            InMemoryRetentionStore,
+            request_gdpr_forget,
         )
         store = InMemoryRetentionStore()
         rec = request_gdpr_forget(tenant_id="acme", requested_by="u1", store=store)
@@ -155,7 +159,7 @@ class TestD7PIIMask:
     def test_redact_dict_specific_fields(self) -> None:
         from mate_clients.security.pii_mask import redact_dict
 
-        d, matches = redact_dict(
+        d, _matches = redact_dict(
             {"name": "Bob", "phone": "555-123-4567"},
             fields=["name"],
         )
@@ -171,7 +175,8 @@ class TestD7PIIMask:
 class TestD8CrossDomainAudit:
     def test_emit_emits_for_multi_tenant_query(self) -> None:
         from mate_platform.observability.xdomain_audit import (
-            InMemoryCrossDomainSink, emit_cross_domain_query,
+            InMemoryCrossDomainSink,
+            emit_cross_domain_query,
         )
         sink = InMemoryCrossDomainSink()
         emit_cross_domain_query(
@@ -188,7 +193,8 @@ class TestD8CrossDomainAudit:
 
     def test_emit_no_op_for_single_tenant_query(self) -> None:
         from mate_platform.observability.xdomain_audit import (
-            InMemoryCrossDomainSink, emit_cross_domain_query,
+            InMemoryCrossDomainSink,
+            emit_cross_domain_query,
         )
         sink = InMemoryCrossDomainSink()
         emit_cross_domain_query(
@@ -203,7 +209,7 @@ class TestD8CrossDomainAudit:
 
     def test_emit_to_dict_has_required_fields(self) -> None:
         from mate_platform.observability.xdomain_audit import (
-            InMemoryCrossDomainSink, CrossDomainQuery,
+            InMemoryCrossDomainSink,
             emit_cross_domain_query,
         )
         sink = InMemoryCrossDomainSink()
