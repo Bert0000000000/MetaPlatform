@@ -1,4 +1,4 @@
-'# DataHub chart - DATA-D0-D8 D4 expansion
+# DataHub chart - DATA-D0-D8 D4 expansion
 image:
   repository: acryldata/datahub-gms
   tag: "0.13.0"
@@ -43,4 +43,3 @@ service:
     port: 9090
   maeConsumer:
     port: 9091
-'
