@@ -1,0 +1,112 @@
+"""BUSINESS-SLICES P1 wave 2 cross-tenant tests for mate-tech-agent.
+
+Per ADR-0014 5-step checklist step 5, this file covers the 3
+mandatory cross-tenant negative cases for mate-tech-agent.
+"""
+from __future__ import annotations
+
+import os
+import sys
+from pathlib import Path
+
+import pytest
+
+REPO = Path(__file__).resolve().parents[3]
+PKG = REPO / "mate-platform-backend" / "packages"
+for sub in ("mate-platform", "mate-clients", "mate-common", "mate-tech-agent"):
+    sys.path.insert(0, str(PKG / sub / "src"))
+
+os.environ.setdefault("LEGACY_LOGIN_COMPAT", "true")
+os.environ.setdefault("KEYCLOAK_URL", "https://keycloak.test.invalid")
+os.environ.setdefault("KEYCLOAK_REALM", "metaplatform")
+os.environ.setdefault("SERVICE_CLIENT_SECRET", "test-secret")
+
+
+class TestInstallAuthWired:
+    def test_create_app_calls_install_auth(self) -> None:
+        from mate_tech_agent.api import app
+
+        middleware_classes = [m.cls.__name__ for m in app.app.user_middleware]
+        assert "AuthMiddleware" in middleware_classes, (
+            f"AuthMiddleware missing from stack: {middleware_classes}"
+        )
+
+
+class TestRequireTenantEnforced:
+    def test_require_tenant_rejects_empty(self) -> None:
+        from mate_platform.tenancy import (
+            AuthMethod, RequestContext, TenantAccessError,
+            TenantId, UserId, require_tenant,
+        )
+        ctx = RequestContext(
+            request_id="r1", trace_id="t1", tenant_id=TenantId(""),
+            user_id=UserId("u"), roles=frozenset(),
+            permissions=frozenset(), auth_method=AuthMethod.USER,
+        )
+        with pytest.raises(TenantAccessError, match="missing tenant"):
+            require_tenant(ctx)
+
+    def test_require_tenant_rejects_anonymous(self) -> None:
+        from mate_platform.tenancy import (
+            AuthMethod, RequestContext, TenantAccessError,
+            TenantId, UserId, require_tenant,
+        )
+        ctx = RequestContext(
+            request_id="r1", trace_id="t1", tenant_id=TenantId("t1"),
+            user_id=UserId("anon"), roles=frozenset(),
+            permissions=frozenset(), auth_method=AuthMethod.ANONYMOUS,
+        )
+        with pytest.raises(TenantAccessError, match="anonymous"):
+            require_tenant(ctx)
+
+    def test_require_tenant_accepts_valid(self) -> None:
+        from mate_platform.tenancy import (
+            AuthMethod, RequestContext, TenantId, UserId, require_tenant,
+        )
+        ctx = RequestContext(
+            request_id="r1", trace_id="t1", tenant_id=TenantId("acme"),
+            user_id=UserId("u"), roles=frozenset(),
+            permissions=frozenset(), auth_method=AuthMethod.SERVICE,
+        )
+        assert require_tenant(ctx) == "acme"
+
+
+class TestCrossTenantNegatives:
+    def test_case1_no_tenant_rejected(self) -> None:
+        from mate_platform.tenancy import (
+            AuthMethod, RequestContext, TenantAccessError,
+            TenantId, UserId, require_tenant,
+        )
+        ctx = RequestContext(
+            request_id="r1", trace_id="t1", tenant_id=TenantId(""),
+            user_id=UserId("u"), roles=frozenset(),
+            permissions=frozenset(), auth_method=AuthMethod.USER,
+        )
+        with pytest.raises(TenantAccessError, match="missing tenant"):
+            require_tenant(ctx)
+
+    def test_case2_anonymous_rejected(self) -> None:
+        from mate_platform.tenancy import (
+            AuthMethod, RequestContext, TenantAccessError,
+            TenantId, UserId, require_tenant,
+        )
+        ctx = RequestContext(
+            request_id="r1", trace_id="t1", tenant_id=TenantId("t1"),
+            user_id=UserId("anon"), roles=frozenset(),
+            permissions=frozenset(), auth_method=AuthMethod.ANONYMOUS,
+        )
+        with pytest.raises(TenantAccessError, match="anonymous"):
+            require_tenant(ctx)
+
+    def test_case3_mismatched_tenant_rejected(self) -> None:
+        from mate_platform.tenancy import (
+            AuthMethod, RequestContext, TenantAccessError,
+            TenantId, UserId, assert_same_tenant,
+        )
+        ctx = RequestContext(
+            request_id="r1", trace_id="t1", tenant_id=TenantId("t1"),
+            user_id=UserId("u"), roles=frozenset(),
+            permissions=frozenset(), auth_method=AuthMethod.USER,
+        )
+        with pytest.raises(TenantAccessError, match="does not match"):
+            assert_same_tenant(TenantId("t2"), ctx)

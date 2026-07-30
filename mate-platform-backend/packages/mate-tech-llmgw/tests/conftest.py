@@ -1,5 +1,27 @@
-"""Conftest for mate-tech-llmgw (ST-5.5.12.1 enhanced)."""
+"""Conftest for mate-tech-llmgw (ST-5.5.12.1 enhanced).
+
+Adds the package src/ + cross-package dependencies to sys.path so
+that the existing `from mate_tech_llmgw.X import Y` and
+`from mate_platform.X import Y` imports work, even when pytest is
+invoked from the package directory without `pip install -e .`.
+"""
 from __future__ import annotations
+
+import sys
+from pathlib import Path
+
+# conftest.py path: <monorepo>/packages/mate-tech-llmgw/tests/conftest.py
+# parents[3] is the monorepo root.
+_MONOREPO = Path(__file__).resolve().parents[3]
+for sub in (
+    "mate-tech-llmgw",
+    "mate-platform",
+    "mate-clients",
+    "mate-common",
+):
+    p = str(_MONOREPO / "packages" / sub / "src")
+    if p not in sys.path:
+        sys.path.insert(0, p)
 
 from unittest.mock import AsyncMock
 
@@ -16,64 +38,7 @@ from mate_tech_llmgw.quota.bucket import QuotaConfig, RedisTokenBucket
 
 
 @pytest.fixture
-def sample_messages() -> list[ChatMessage]:
-    return [
-        ChatMessage(role="system", content="You are helpful"),
-        ChatMessage(role="user", content="Hello"),
-    ]
-
-
-@pytest.fixture
-def sample_response() -> ChatResponse:
-    return ChatResponse(
-        content="Hi there!",
-        model="gpt-4o",
-        finish_reason="stop",
-        tool_calls=[],
-        usage={"prompt_tokens": 5, "completion_tokens": 3, "total_tokens": 8},
-    )
-
-
-@pytest.fixture
-def openai_provider() -> OpenAIChatProvider:
-    return OpenAIChatProvider(api_key="sk-test", model="gpt-4o")
-
-
-@pytest.fixture
-def anthropic_provider() -> AnthropicChatProvider:
-    return AnthropicChatProvider(api_key="sk-ant-test", model="claude-3-5-sonnet-20241022")
-
-
-@pytest.fixture
-def qwen_provider() -> QwenChatProvider:
-    return QwenChatProvider(api_key="sk-qwen-test", model="qwen-turbo")
-
-
-@pytest.fixture
-def doubao_provider() -> DoubaoChatProvider:
-    return DoubaoChatProvider(api_key="sk-doubao-test", model="doubao-pro-32k")
-
-
-@pytest.fixture
-def quota_config() -> QuotaConfig:
-    return QuotaConfig(rpm_limit=10, tpm_limit=10_000, window_sec=60)
-
-
-@pytest.fixture
-def mock_redis_bucket(quota_config: QuotaConfig) -> RedisTokenBucket:
-    mock_redis = AsyncMock()
-    mock_redis.pipeline.return_value.execute = AsyncMock(
-        return_value=[(1, 60, 100, 60), (1, 60, 100, 60)]
-    )
-    return RedisTokenBucket(redis_client=mock_redis, config=quota_config)
-
-
-@pytest.fixture
-def cost_recorder() -> CostRecorder:
-    return CostRecorder()
-
-
-@pytest.fixture
-def llm_cache_mock() -> LLMCache:
-    mock_redis = AsyncMock()
-    return LLMCache(redis_client=mock_redis, ttl_sec=60, enabled=True)
+def llm_cache() -> LLMCache:
+    cache = LLMCache.__new__(LLMCache)
+    cache._redis = AsyncMock()
+    return cache

@@ -30,6 +30,11 @@ from mate_tech_agent.graph import (
     worker_node,
 )
 from mate_tech_agent.llm import get_llm, stream_answer
+
+# BUSINESS-SLICES P1 wave 2: hooks 1, 2 (auth + tenant).
+from fastapi import Request
+from mate_platform.auth import install_auth
+from mate_platform.tenancy.guards import require_tenant
 from mate_tech_agent.memory import delete_state, load_state, save_state
 
 _GRAPHS = {
@@ -63,12 +68,25 @@ def create_app() -> FastAPI:
         description="Mate Platform multi-agent service (LangGraph S1+S2+S3)",
     )
 
+    # Hook 1 of 5: install auth middleware (SEC-IAM-01).
+    install_auth(app)
+
+    def _require_ctx(request: Request):
+        """Defence in depth: install_auth populates ctx or returns 401."""
+        ctx = getattr(request.state, "ctx", None)
+        if ctx is None:
+            raise HTTPException(status_code=401, detail="no auth context")
+        return ctx
+
     @app.get("/healthz", response_model=HealthResponse)
     async def healthz() -> HealthResponse:
         return HealthResponse(status="ok", service="mate-tech-agent", version=__version__)
 
     @app.post("/api/v1/agent/chat", response_model=ChatResponse)
-    async def chat(req: ChatRequest) -> ChatResponse:
+    async def chat(request: Request, req: ChatRequest) -> ChatResponse:
+        # Hook 2 of 5: tenant guard.
+        ctx = _require_ctx(request)
+        require_tenant(ctx)
         if req.scenario not in _GRAPHS:
             raise HTTPException(status_code=501, detail=f"scenario {req.scenario} not implemented")
         thread_id = req.thread_id or str(uuid.uuid4())
@@ -98,7 +116,9 @@ def create_app() -> FastAPI:
         )
 
     @app.post("/api/v1/agent/chat/stream")
-    async def chat_stream(req: ChatRequest):
+    async def chat_stream(request: Request, req: ChatRequest):
+        ctx = _require_ctx(request)
+        require_tenant(ctx)
         if req.scenario not in _GRAPHS:
             raise HTTPException(status_code=501, detail=f"scenario {req.scenario} not implemented")
         thread_id = req.thread_id or str(uuid.uuid4())
@@ -169,7 +189,9 @@ def create_app() -> FastAPI:
         return StreamingResponse(event_gen(), media_type="text/event-stream")
 
     @app.post("/api/v1/agent/review", response_model=HumanReviewResponse)
-    async def review(req: HumanReviewRequest) -> HumanReviewResponse:
+    async def review(request: Request, req: HumanReviewRequest) -> HumanReviewResponse:
+        ctx = _require_ctx(request)
+        require_tenant(ctx)
         pending = _PENDING_REVIEWS.get(req.thread_id)
         if not pending:
             saved = load_state(req.thread_id)
@@ -198,14 +220,18 @@ def create_app() -> FastAPI:
         )
 
     @app.get("/api/v1/agent/state/{thread_id}")
-    async def get_state(thread_id: str):
+    async def get_state(request: Request, thread_id: str):
+        ctx = _require_ctx(request)
+        require_tenant(ctx)
         s = load_state(thread_id)
         if not s:
             raise HTTPException(status_code=404, detail="thread not found")
         return s
 
     @app.delete("/api/v1/agent/state/{thread_id}")
-    async def delete_state_endpoint(thread_id: str):
+    async def delete_state_endpoint(request: Request, thread_id: str):
+        ctx = _require_ctx(request)
+        require_tenant(ctx)
         ok = delete_state(thread_id)
         _PENDING_REVIEWS.pop(thread_id, None)
         if not ok:

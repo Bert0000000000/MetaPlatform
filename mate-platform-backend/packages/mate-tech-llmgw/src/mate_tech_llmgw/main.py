@@ -1,7 +1,11 @@
 """Mate Platform - Tech LLM Gateway main entry.
 
-ST-5.5.1.2: main.py + /healthz
-ST-5.5.9.1: 注册 /api/v1/llm/* 路由
+Wires the 3 integration hooks per ADR-0014:
+  1. install_auth(app) from mate_platform.auth (SEC-IAM-01).
+  2. require_tenant(ctx) at every non-/healthz route in api/routes.py
+     (the install here only wires the middleware; the per-route guard
+     is in api/routes.py).
+  3. (future) outbox.append(event) for usage events.
 """
 from __future__ import annotations
 
@@ -12,6 +16,9 @@ from fastapi import FastAPI
 
 from .api.routes import router as llm_router
 
+# BUSINESS-SLICES P1 wave 2: hook 1 (auth).
+from mate_platform.auth import install_auth
+
 logger = structlog.get_logger(__name__)
 
 app = FastAPI(
@@ -20,18 +27,21 @@ app = FastAPI(
     description="LLM Gateway: multi-provider routing, quota, cache, fallback",
 )
 
+# Hook 1 of 5: install auth middleware (SEC-IAM-01).
+install_auth(app)
+
 app.include_router(llm_router)
 
 
 @app.get("/healthz")
 async def healthz() -> dict[str, str]:
-    """ST-5.5.1.2 DoD: 健康检查."""
+    """ST-5.5.1.2 DoD: health check (anonymous, whitelisted)."""
     return {"status": "ok", "version": app.version}
 
 
 @app.on_event("startup")
 async def on_startup() -> None:
-    """lifespan 钩子."""
+    """lifespan hook."""
     log_level = os.getenv("LOG_LEVEL", "INFO").upper()
     structlog.configure(
         processors=[
@@ -48,4 +58,5 @@ async def on_startup() -> None:
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8008)
+
+    uvicorn.run(app, host="0.0.0.0", port=8008)  # noqa: S104
