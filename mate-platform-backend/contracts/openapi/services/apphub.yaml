@@ -1,0 +1,577 @@
+openapi: 3.1.0
+info:
+  title: Mate Platform apphub API
+  version: 1.0.0
+  x-mate-owner: application-platform
+  description: Canonical contract for Mate Platform apphub API.
+  contact:
+    name: Mate Platform API Governance
+    email: api-governance@metaplatform.local
+servers:
+- url: /
+tags:
+- name: apphub
+  description: apphub domain operations
+security:
+- bearerAuth: []
+paths:
+  /api/v1/apphub/apps:
+    get:
+      tags:
+      - apphub
+      summary: /v1/apphub/apps
+      operationId: apphubGetApphubApps
+      parameters:
+      - $ref: '#/components/parameters/Page'
+      - $ref: '#/components/parameters/Size'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+      description: /v1/apphub/apps
+      x-mate-owner: application-platform
+      x-mate-permission: apphub.get
+      x-mate-requirements:
+      - FR-APPHUB-APPHUBGETAPPHUBAPPS
+      x-mate-implementation-status: planned
+  /api/v1/apphub/apps/groups:
+    get:
+      tags:
+      - apphub
+      summary: /v1/apphub/apps/groups
+      operationId: apphubGetApphubAppsGroups
+      parameters:
+      - $ref: '#/components/parameters/Page'
+      - $ref: '#/components/parameters/Size'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+      description: /v1/apphub/apps/groups
+      x-mate-owner: application-platform
+      x-mate-permission: apphub.get
+      x-mate-requirements:
+      - FR-APPHUB-APPHUBGETAPPHUBAPPSGROUPS
+      x-mate-implementation-status: planned
+  /api/v1/apphub/modules:
+    get:
+      tags:
+      - apphub
+      summary: /v1/apphub/modules
+      operationId: apphubGetApphubModules
+      parameters:
+      - $ref: '#/components/parameters/Page'
+      - $ref: '#/components/parameters/Size'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+      description: /v1/apphub/modules
+      x-mate-owner: application-platform
+      x-mate-permission: apphub.get
+      x-mate-requirements:
+      - FR-APPHUB-APPHUBGETAPPHUBMODULES
+      x-mate-implementation-status: planned
+  /api/v1/apphub/pages:
+    get:
+      tags:
+      - apphub
+      summary: /v1/apphub/pages
+      operationId: apphubGetApphubPages
+      parameters:
+      - $ref: '#/components/parameters/Page'
+      - $ref: '#/components/parameters/Size'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+      description: /v1/apphub/pages
+      x-mate-owner: application-platform
+      x-mate-permission: apphub.get
+      x-mate-requirements:
+      - FR-APPHUB-APPHUBGETAPPHUBPAGES
+      x-mate-implementation-status: planned
+  /api/v1/apphub/templates:
+    get:
+      tags:
+      - apphub
+      summary: /v1/apphub/templates
+      operationId: apphubGetApphubTemplates
+      parameters:
+      - $ref: '#/components/parameters/Page'
+      - $ref: '#/components/parameters/Size'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+      description: /v1/apphub/templates
+      x-mate-owner: application-platform
+      x-mate-permission: apphub.get
+      x-mate-requirements:
+      - FR-APPHUB-APPHUBGETAPPHUBTEMPLATES
+      x-mate-implementation-status: planned
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: 统一 IAM Token
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    TenantId:
+      name: X-Tenant-Id
+      in: header
+      required: true
+      description: 租户 ID
+      schema:
+        type: string
+    Page:
+      name: page
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    Size:
+      name: size
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+    TraceId:
+      name: X-Trace-Id
+      in: header
+      required: false
+      schema:
+        type: string
+  responses:
+    Unauthorized:
+      description: 未登录
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Forbidden:
+      description: 无权限
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: 资源不存在
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    BadRequest:
+      description: 参数错误
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    ServerError:
+      description: 服务器错误
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+  schemas:
+    ErrorResponse:
+      type: object
+      required:
+      - code
+      - message
+      properties:
+        code:
+          type: integer
+        message:
+          type: string
+        traceId:
+          type: string
+    ApiResponse:
+      type: object
+      required:
+      - code
+      - message
+      - data
+      properties:
+        code:
+          type: integer
+          enum:
+          - 0
+        message:
+          type: string
+        data: {}
+        traceId:
+          type: string
+    PageResponse:
+      type: object
+      required:
+      - items
+      - total
+      - page
+      - size
+      - pages
+      properties:
+        items:
+          type: array
+          items: {}
+        total:
+          type: integer
+        page:
+          type: integer
+        size:
+          type: integer
+        pages:
+          type: integer
+    BigDataSource:
+      type: object
+      required:
+      - sourceId
+      - name
+      - sourceType
+      - host
+      - port
+      - authType
+      - status
+      properties:
+        sourceId:
+          type: string
+        tenantId:
+          type: string
+        name:
+          type: string
+          maxLength: 64
+        sourceType:
+          type: string
+          enum:
+          - HIVE
+          - HBASE
+          - CLICKHOUSE
+          - DORIS
+          - STARROCKS
+          - ICEBERG
+          - HUDI
+          - DELTA
+          - PRESTO
+          - TRINO
+          - KAFKA
+          - PULSAR
+          - HDFS
+        host:
+          type: string
+        port:
+          type: integer
+          minimum: 1
+          maximum: 65535
+        database:
+          type: string
+        schema:
+          type: string
+        authType:
+          type: string
+          enum:
+          - NONE
+          - USER_PASSWORD
+          - KERBERY
+          - LDAP
+          default: NONE
+        sslEnabled:
+          type: boolean
+          default: false
+        poolSize:
+          type: integer
+          default: 10
+        status:
+          type: string
+          enum:
+          - DRAFT
+          - ACTIVE
+          - INACTIVE
+          - ERROR
+          - DELETED
+    CDCTask:
+      type: object
+      required:
+      - taskId
+      - name
+      - sourceId
+      - syncMode
+      - targetType
+      - targetName
+      - status
+      properties:
+        taskId:
+          type: string
+        name:
+          type: string
+        sourceId:
+          type: string
+        syncMode:
+          type: string
+          enum:
+          - FULL_INCREMENTAL
+          - INCREMENTAL_ONLY
+          - SNAPSHOT_ONLY
+        targetType:
+          type: string
+          enum:
+          - KAFKA
+          - CLICKHOUSE
+          - HUDI
+          - ICEBERG
+        targetName:
+          type: string
+        status:
+          type: string
+          enum:
+          - PENDING
+          - SNAPSHOTTING
+          - RUNNING
+          - PAUSED
+          - FAILED
+          - STOPPED
+        lagMs:
+          type: integer
+        totalRecords:
+          type: integer
+          format: int64
+    ETLTask:
+      type: object
+      required:
+      - taskId
+      - name
+      - mode
+      - sourceIds
+      - targetType
+      - targetTable
+      - writeMode
+      - status
+      properties:
+        taskId:
+          type: string
+        name:
+          type: string
+        mode:
+          type: string
+          enum:
+          - BATCH_SPARK
+          - BATCH_FLINK
+          - STREAMING_FLINK
+          - STREAMING_SPARK
+          - SQL_TRANSFORM
+        priority:
+          type: string
+          enum:
+          - LOW
+          - NORMAL
+          - HIGH
+          - URGENT
+        sourceIds:
+          type: array
+          items:
+            type: string
+        transformDag:
+          type: object
+        transformSql:
+          type: string
+        targetType:
+          type: string
+          enum:
+          - HIVE
+          - CLICKHOUSE
+          - ICEBERG
+          - HUDI
+          - DELTA
+          - DORIS
+        targetTable:
+          type: string
+        writeMode:
+          type: string
+          enum:
+          - OVERWRITE
+          - APPEND
+          - UPSERT
+          - MERGE
+        status:
+          type: string
+          enum:
+          - DRAFT
+          - READY
+          - RUNNING
+          - SUCCESS
+          - FAILED
+          - CANCELLED
+          - TIMEOUT
+    SchedulerTask:
+      type: object
+      required:
+      - schedulerId
+      - name
+      - taskType
+      - taskId
+      - triggerType
+      - status
+      properties:
+        schedulerId:
+          type: string
+        name:
+          type: string
+        taskType:
+          type: string
+          enum:
+          - ETL_TASK
+          - CDC_TASK
+          - QUALITY_CHECK
+          - CUSTOM_ACTION
+        taskId:
+          type: string
+        triggerType:
+          type: string
+          enum:
+          - CRON
+          - EVENT
+          - MANUAL
+          - DEPENDENCY
+        cron:
+          type: string
+        status:
+          type: string
+          enum:
+          - ACTIVE
+          - PAUSED
+          - EXPIRED
+          - DELETED
+    Metric:
+      type: object
+      required:
+      - metricId
+      - name
+      - code
+      - type
+      - sourceId
+      - sourceTable
+      - sourceField
+      - aggregation
+      - calculationFrequency
+      - status
+      properties:
+        metricId:
+          type: string
+        name:
+          type: string
+        code:
+          type: string
+        type:
+          type: string
+          enum:
+          - ATOMIC
+          - DERIVED
+          - COMPOSITE
+          - REALTIME
+        sourceId:
+          type: string
+        sourceTable:
+          type: string
+        sourceField:
+          type: string
+        aggregation:
+          type: string
+          enum:
+          - SUM
+          - AVG
+          - COUNT
+          - MAX
+          - MIN
+          - LAST
+        calculationFrequency:
+          type: string
+          enum:
+          - REALTIME
+          - MINUTELY
+          - HOURLY
+          - DAILY
+        status:
+          type: string
+          enum:
+          - DRAFT
+          - ACTIVE
+          - INACTIVE
+          - ERROR

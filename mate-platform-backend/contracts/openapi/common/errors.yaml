@@ -1,0 +1,79 @@
+components:
+  schemas:
+    ValidationIssue:
+      type: object
+      additionalProperties: false
+      required: [field, message]
+      properties:
+        field: {type: string}
+        message: {type: string}
+    ErrorResponse:
+      type: object
+      additionalProperties: false
+      required: [code, message, requestId]
+      properties:
+        code: {type: string, pattern: '^E[0-9]{3}_[A-Z0-9_]+$'}
+        message: {type: string, minLength: 1}
+        requestId: {type: string, minLength: 1}
+        details: {type: object, additionalProperties: true}
+  responses:
+    Error400:
+      description: Bad request
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorResponse'}
+    Error401:
+      description: Unauthenticated
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorResponse'}
+    Error403:
+      description: Forbidden
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorResponse'}
+    Error404:
+      description: Not found
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorResponse'}
+    Error409:
+      description: Conflict
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorResponse'}
+    Error422:
+      description: Validation failed
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorResponse'}
+    Error429:
+      description: Rate limited
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorResponse'}
+    Error500:
+      description: Internal error
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorResponse'}
+    Error502:
+      description: Bad gateway
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorResponse'}
+    Error503:
+      description: Service unavailable
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorResponse'}
+    Error504:
+      description: Gateway timeout
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorResponse'}
+    Error412:
+      description: Precondition failed
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorResponse'}

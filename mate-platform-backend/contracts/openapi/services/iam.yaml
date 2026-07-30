@@ -1,0 +1,1838 @@
+openapi: 3.1.0
+info:
+  title: Mate Platform iam API
+  version: 1.0.0
+  x-mate-owner: security-iam
+  description: Canonical contract for Mate Platform iam API.
+  contact:
+    name: Mate Platform API Governance
+    email: api-governance@metaplatform.local
+servers:
+- url: /
+tags:
+- name: iam
+  description: iam domain operations
+security:
+- bearerAuth: []
+paths:
+  /healthz:
+    get:
+      summary: Liveness probe
+      tags:
+      - iam
+      security: []
+      responses:
+        '200':
+          description: OK
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
+      operationId: iamGetHealthz
+      description: Liveness probe
+      x-mate-owner: security-iam
+      x-mate-permission: iam.get
+      x-mate-requirements:
+      - FR-IAM-IAMGETHEALTHZ
+      x-mate-implementation-status: implemented
+  /readyz:
+    get:
+      summary: Readiness (DB ping)
+      tags:
+      - iam
+      security: []
+      responses:
+        '200':
+          description: OK
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
+      operationId: iamGetReadyz
+      description: Readiness (DB ping)
+      x-mate-owner: security-iam
+      x-mate-permission: iam.get
+      x-mate-requirements:
+      - FR-IAM-IAMGETREADYZ
+      x-mate-implementation-status: implemented
+  /api/v1/iam/auth/login:
+    post:
+      summary: Username + password (bcrypt) -> access + refresh JWT
+      tags:
+      - iam
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Bad credentials or disabled user
+      operationId: iamPostIamAuthLogin
+      description: Username + password (bcrypt) -> access + refresh JWT
+      x-mate-owner: security-iam
+      x-mate-permission: iam.post
+      x-mate-requirements:
+      - FR-IAM-IAMPOSTIAMAUTHLOGIN
+      x-mate-implementation-status: placeholder
+  /api/v1/iam/auth/refresh:
+    post:
+      summary: Exchange refresh token for new pair
+      tags:
+      - iam
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - refreshToken
+              properties:
+                refreshToken:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Invalid or non-refresh token
+      operationId: iamPostIamAuthRefresh
+      description: Exchange refresh token for new pair
+      x-mate-owner: security-iam
+      x-mate-permission: iam.post
+      x-mate-requirements:
+      - FR-IAM-IAMPOSTIAMAUTHREFRESH
+      x-mate-implementation-status: placeholder
+  /api/v1/iam/auth/logout:
+    post:
+      summary: Logout (bump updated_at; best-effort)
+      tags:
+      - iam
+      responses:
+        '200':
+          description: OK
+        '401':
+          description: Missing Bearer token
+      operationId: iamPostIamAuthLogout
+      description: Logout (bump updated_at; best-effort)
+      x-mate-owner: security-iam
+      x-mate-permission: iam.post
+      x-mate-requirements:
+      - FR-IAM-IAMPOSTIAMAUTHLOGOUT
+      x-mate-implementation-status: placeholder
+  /api/v1/iam/auth/me:
+    get:
+      summary: Current user (inline bearer parse)
+      tags:
+      - iam
+      responses:
+        '200':
+          description: OK
+        '401':
+          description: Bad token
+        '404':
+          description: User not found
+      operationId: iamGetIamAuthMe
+      description: Current user (inline bearer parse)
+      x-mate-owner: security-iam
+      x-mate-permission: iam.get
+      x-mate-requirements:
+      - FR-IAM-IAMGETIAMAUTHME
+      x-mate-implementation-status: placeholder
+  /api/v1/iam/sso-providers:
+    get:
+      summary: List SSO providers (empty by default)
+      tags:
+      - iam
+      security: []
+      parameters:
+      - in: query
+        name: page
+        schema:
+          type: integer
+          default: 1
+      - in: query
+        name: size
+        schema:
+          type: integer
+          default: 100
+      - in: query
+        name: keyword
+        schema:
+          type: string
+      - in: query
+        name: enabled_only
+        schema:
+          type: boolean
+          default: false
+      responses:
+        '200':
+          description: OK
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
+      operationId: iamGetIamSsoProviders
+      description: List SSO providers (empty by default)
+      x-mate-owner: security-iam
+      x-mate-permission: iam.get
+      x-mate-requirements:
+      - FR-IAM-IAMGETIAMSSOPROVIDERS
+      x-mate-implementation-status: placeholder
+  /api/v1/admin/users:
+    get:
+      summary: List users (paginated, filterable)
+      tags:
+      - iam
+      parameters:
+      - in: query
+        name: keyword
+        schema:
+          type: string
+      - in: query
+        name: status
+        schema:
+          $ref: '#/components/schemas/UserStatus'
+      - in: query
+        name: department
+        schema:
+          type: string
+      - in: query
+        name: role_id
+        schema:
+          type: integer
+      - in: query
+        name: page
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+      - in: query
+        name: pageSize
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 200
+          default: 20
+      responses:
+        '200':
+          description: OK
+        '403':
+          description: Not platform admin
+      operationId: iamGetAdminUsers
+      description: List users (paginated, filterable)
+      x-mate-owner: security-iam
+      x-mate-permission: iam.get
+      x-mate-requirements:
+      - FR-IAM-IAMGETADMINUSERS
+      x-mate-implementation-status: implemented
+    post:
+      summary: Create user
+      tags:
+      - iam
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreate'
+      responses:
+        '201':
+          description: Created
+        '409':
+          description: Username already exists
+      operationId: iamPostAdminUsers
+      description: Create user
+      x-mate-owner: security-iam
+      x-mate-permission: iam.post
+      x-mate-requirements:
+      - FR-IAM-IAMPOSTADMINUSERS
+      x-mate-implementation-status: implemented
+  /api/v1/admin/users/import:
+    post:
+      summary: Bulk import users from CSV
+      tags:
+      - iam
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: 'CSV header: username,real_name,email,phone,department,position,password,status'
+      responses:
+        '200':
+          description: OK
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
+      operationId: iamPostAdminUsersImport
+      description: Bulk import users from CSV
+      x-mate-owner: security-iam
+      x-mate-permission: iam.post
+      x-mate-requirements:
+      - FR-IAM-IAMPOSTADMINUSERSIMPORT
+      x-mate-implementation-status: implemented
+  /api/v1/admin/users/export:
+    get:
+      summary: Export users as CSV
+      tags:
+      - iam
+      responses:
+        '200':
+          description: text/csv stream
+          content:
+            text/csv: {}
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
+      operationId: iamGetAdminUsersExport
+      description: Export users as CSV
+      x-mate-owner: security-iam
+      x-mate-permission: iam.get
+      x-mate-requirements:
+      - FR-IAM-IAMGETADMINUSERSEXPORT
+      x-mate-implementation-status: implemented
+  /api/v1/admin/users/{user_id}:
+    parameters:
+    - in: path
+      name: user_id
+      required: true
+      schema:
+        type: integer
+    get:
+      summary: Get one user
+      tags:
+      - iam
+      responses:
+        '200':
+          description: OK
+        '404':
+          description: Not found
+      operationId: iamGetAdminUsersUserId
+      description: Get one user
+      x-mate-owner: security-iam
+      x-mate-permission: iam.get
+      x-mate-requirements:
+      - FR-IAM-IAMGETADMINUSERSUSERID
+      x-mate-implementation-status: implemented
+      parameters:
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: string
+    put:
+      summary: Update user
+      tags:
+      - iam
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserUpdate'
+      responses:
+        '200':
+          description: OK
+        '404':
+          description: Not found
+      operationId: iamPutAdminUsersUserId
+      description: Update user
+      x-mate-owner: security-iam
+      x-mate-permission: iam.put
+      x-mate-requirements:
+      - FR-IAM-IAMPUTADMINUSERSUSERID
+      x-mate-implementation-status: implemented
+      parameters:
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: string
+    delete:
+      summary: Delete user (cascades UserRole)
+      tags:
+      - iam
+      responses:
+        '200':
+          description: OK
+        '403':
+          description: Trying to delete super admin without super admin caller
+        '404':
+          description: Not found
+      operationId: iamDeleteAdminUsersUserId
+      description: Delete user (cascades UserRole)
+      x-mate-owner: security-iam
+      x-mate-permission: iam.delete
+      x-mate-requirements:
+      - FR-IAM-IAMDELETEADMINUSERSUSERID
+      x-mate-implementation-status: implemented
+      parameters:
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: string
+  /api/v1/admin/users/{user_id}/reset-password:
+    parameters:
+    - in: path
+      name: user_id
+      required: true
+      schema:
+        type: integer
+    post:
+      summary: Reset password (returns new temporary password)
+      tags:
+      - iam
+      responses:
+        '200':
+          description: OK, body includes temporary_password
+        '404':
+          description: Not found
+      operationId: iamPostAdminUsersUserIdResetPassword
+      description: Reset password (returns new temporary password)
+      x-mate-owner: security-iam
+      x-mate-permission: iam.post
+      x-mate-requirements:
+      - FR-IAM-IAMPOSTADMINUSERSUSERIDRESETPASSWORD
+      x-mate-implementation-status: implemented
+      parameters:
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: string
+  /api/v1/admin/users/{user_id}/status:
+    parameters:
+    - in: path
+      name: user_id
+      required: true
+      schema:
+        type: integer
+    post:
+      summary: Enable / disable user
+      tags:
+      - iam
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - status
+              properties:
+                status:
+                  $ref: '#/components/schemas/UserStatus'
+      responses:
+        '200':
+          description: OK
+        '403':
+          description: Disable super admin without super admin caller
+        '404':
+          description: Not found
+      operationId: iamPostAdminUsersUserIdStatus
+      description: Enable / disable user
+      x-mate-owner: security-iam
+      x-mate-permission: iam.post
+      x-mate-requirements:
+      - FR-IAM-IAMPOSTADMINUSERSUSERIDSTATUS
+      x-mate-implementation-status: implemented
+      parameters:
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: string
+  /api/v1/admin/users/{user_id}/verify-password:
+    parameters:
+    - in: path
+      name: user_id
+      required: true
+      schema:
+        type: integer
+    post:
+      summary: Verify a plaintext password against the stored hash
+      tags:
+      - iam
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - password
+              properties:
+                password:
+                  type: string
+      responses:
+        '200':
+          description: 'OK, body { matched: bool }'
+        '404':
+          description: User not found or no password set
+      operationId: iamPostAdminUsersUserIdVerifyPassword
+      description: Verify a plaintext password against the stored hash
+      x-mate-owner: security-iam
+      x-mate-permission: iam.post
+      x-mate-requirements:
+      - FR-IAM-IAMPOSTADMINUSERSUSERIDVERIFYPASSWORD
+      x-mate-implementation-status: implemented
+      parameters:
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: string
+  /api/v1/admin/users/{user_id}/login-logs:
+    parameters:
+    - in: path
+      name: user_id
+      required: true
+      schema:
+        type: integer
+    get:
+      summary: Recent login logs for a user
+      tags:
+      - iam
+      parameters:
+      - in: query
+        name: page
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+      - in: query
+        name: pageSize
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 200
+          default: 20
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+        '404':
+          description: Not found
+      operationId: iamGetAdminUsersUserIdLoginLogs
+      description: Recent login logs for a user
+      x-mate-owner: security-iam
+      x-mate-permission: iam.get
+      x-mate-requirements:
+      - FR-IAM-IAMGETADMINUSERSUSERIDLOGINLOGS
+      x-mate-implementation-status: implemented
+  /api/v1/admin/orgs/tree:
+    get:
+      summary: Org tree (root -> children)
+      tags:
+      - iam
+      responses:
+        '200':
+          description: OK
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
+      operationId: iamGetAdminOrgsTree
+      description: Org tree (root -> children)
+      x-mate-owner: security-iam
+      x-mate-permission: iam.get
+      x-mate-requirements:
+      - FR-IAM-IAMGETADMINORGSTREE
+      x-mate-implementation-status: implemented
+  /api/v1/admin/orgs:
+    get:
+      summary: List orgs (paginated)
+      tags:
+      - iam
+      parameters:
+      - in: query
+        name: keyword
+        schema:
+          type: string
+      - in: query
+        name: type
+        schema:
+          type: string
+          enum:
+          - DEPARTMENT
+          - COMPANY
+          - TEAM
+          - VIRTUAL
+      - in: query
+        name: page
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+      - in: query
+        name: pageSize
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 200
+          default: 20
+      responses:
+        '200':
+          description: OK
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
+      operationId: iamGetAdminOrgs
+      description: List orgs (paginated)
+      x-mate-owner: security-iam
+      x-mate-permission: iam.get
+      x-mate-requirements:
+      - FR-IAM-IAMGETADMINORGS
+      x-mate-implementation-status: implemented
+    post:
+      summary: Create org
+      tags:
+      - iam
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrgCreate'
+      responses:
+        '201':
+          description: Created
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
+      operationId: iamPostAdminOrgs
+      description: Create org
+      x-mate-owner: security-iam
+      x-mate-permission: iam.post
+      x-mate-requirements:
+      - FR-IAM-IAMPOSTADMINORGS
+      x-mate-implementation-status: implemented
+  /api/v1/admin/orgs/{org_id}:
+    parameters:
+    - in: path
+      name: org_id
+      required: true
+      schema:
+        type: integer
+    put:
+      summary: Update org
+      tags:
+      - iam
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrgUpdate'
+      responses:
+        '200':
+          description: OK
+        '404':
+          description: Not found
+      operationId: iamPutAdminOrgsOrgId
+      description: Update org
+      x-mate-owner: security-iam
+      x-mate-permission: iam.put
+      x-mate-requirements:
+      - FR-IAM-IAMPUTADMINORGSORGID
+      x-mate-implementation-status: implemented
+      parameters:
+      - name: org_id
+        in: path
+        required: true
+        schema:
+          type: string
+    delete:
+      summary: Delete org (rejected when children exist)
+      tags:
+      - iam
+      responses:
+        '200':
+          description: OK
+        '409':
+          description: Children / positions still exist
+        '404':
+          description: Not found
+      operationId: iamDeleteAdminOrgsOrgId
+      description: Delete org (rejected when children exist)
+      x-mate-owner: security-iam
+      x-mate-permission: iam.delete
+      x-mate-requirements:
+      - FR-IAM-IAMDELETEADMINORGSORGID
+      x-mate-implementation-status: implemented
+      parameters:
+      - name: org_id
+        in: path
+        required: true
+        schema:
+          type: string
+  /api/v1/admin/orgs/positions:
+    get:
+      summary: List positions
+      tags:
+      - iam
+      parameters:
+      - in: query
+        name: org_id
+        schema:
+          type: integer
+      - in: query
+        name: page
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+      - in: query
+        name: pageSize
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 200
+          default: 20
+      responses:
+        '200':
+          description: OK
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
+      operationId: iamGetAdminOrgsPositions
+      description: List positions
+      x-mate-owner: security-iam
+      x-mate-permission: iam.get
+      x-mate-requirements:
+      - FR-IAM-IAMGETADMINORGSPOSITIONS
+      x-mate-implementation-status: implemented
+    post:
+      summary: Create position
+      tags:
+      - iam
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PositionCreate'
+      responses:
+        '201':
+          description: Created
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
+      operationId: iamPostAdminOrgsPositions
+      description: Create position
+      x-mate-owner: security-iam
+      x-mate-permission: iam.post
+      x-mate-requirements:
+      - FR-IAM-IAMPOSTADMINORGSPOSITIONS
+      x-mate-implementation-status: implemented
+  /api/v1/admin/orgs/positions/{position_id}:
+    parameters:
+    - in: path
+      name: position_id
+      required: true
+      schema:
+        type: integer
+    put:
+      summary: Update position
+      tags:
+      - iam
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PositionUpdate'
+      responses:
+        '200':
+          description: OK
+        '404':
+          description: Not found
+      operationId: iamPutAdminOrgsPositionsPositionId
+      description: Update position
+      x-mate-owner: security-iam
+      x-mate-permission: iam.put
+      x-mate-requirements:
+      - FR-IAM-IAMPUTADMINORGSPOSITIONSPOSITIONID
+      x-mate-implementation-status: implemented
+      parameters:
+      - name: position_id
+        in: path
+        required: true
+        schema:
+          type: string
+    delete:
+      summary: Delete position (rejected when employees still attached)
+      tags:
+      - iam
+      responses:
+        '200':
+          description: OK
+        '409':
+          description: Holders still attached
+        '404':
+          description: Not found
+      operationId: iamDeleteAdminOrgsPositionsPositionId
+      description: Delete position (rejected when employees still attached)
+      x-mate-owner: security-iam
+      x-mate-permission: iam.delete
+      x-mate-requirements:
+      - FR-IAM-IAMDELETEADMINORGSPOSITIONSPOSITIONID
+      x-mate-implementation-status: implemented
+      parameters:
+      - name: position_id
+        in: path
+        required: true
+        schema:
+          type: string
+  /api/v1/admin/orgs/transfer:
+    post:
+      summary: Transfer an employee to a target org/position
+      tags:
+      - iam
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransferPayload'
+      responses:
+        '200':
+          description: OK
+        '404':
+          description: User or target org not found
+        '409':
+          description: Target org has no position
+      operationId: iamPostAdminOrgsTransfer
+      description: Transfer an employee to a target org/position
+      x-mate-owner: security-iam
+      x-mate-permission: iam.post
+      x-mate-requirements:
+      - FR-IAM-IAMPOSTADMINORGSTRANSFER
+      x-mate-implementation-status: implemented
+  /api/v1/admin/permissions/roles:
+    get:
+      summary: List roles
+      tags:
+      - iam
+      parameters:
+      - in: query
+        name: keyword
+        schema:
+          type: string
+      - in: query
+        name: page
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+      - in: query
+        name: pageSize
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 200
+          default: 20
+      responses:
+        '200':
+          description: OK
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
+      operationId: iamGetAdminPermissionsRoles
+      description: List roles
+      x-mate-owner: security-iam
+      x-mate-permission: iam.get
+      x-mate-requirements:
+      - FR-IAM-IAMGETADMINPERMISSIONSROLES
+      x-mate-implementation-status: implemented
+    post:
+      summary: Create role
+      tags:
+      - iam
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoleCreate'
+      responses:
+        '201':
+          description: Created
+        '409':
+          description: Role code already exists
+      operationId: iamPostAdminPermissionsRoles
+      description: Create role
+      x-mate-owner: security-iam
+      x-mate-permission: iam.post
+      x-mate-requirements:
+      - FR-IAM-IAMPOSTADMINPERMISSIONSROLES
+      x-mate-implementation-status: implemented
+  /api/v1/admin/permissions/roles/{role_id}:
+    parameters:
+    - in: path
+      name: role_id
+      required: true
+      schema:
+        type: integer
+    get:
+      summary: Role + permission detail
+      tags:
+      - iam
+      responses:
+        '200':
+          description: OK
+        '404':
+          description: Not found
+      operationId: iamGetAdminPermissionsRolesRoleId
+      description: Role + permission detail
+      x-mate-owner: security-iam
+      x-mate-permission: iam.get
+      x-mate-requirements:
+      - FR-IAM-IAMGETADMINPERMISSIONSROLESROLEID
+      x-mate-implementation-status: implemented
+      parameters:
+      - name: role_id
+        in: path
+        required: true
+        schema:
+          type: string
+    put:
+      summary: Update role
+      tags:
+      - iam
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoleUpdate'
+      responses:
+        '200':
+          description: OK
+        '404':
+          description: Not found
+      operationId: iamPutAdminPermissionsRolesRoleId
+      description: Update role
+      x-mate-owner: security-iam
+      x-mate-permission: iam.put
+      x-mate-requirements:
+      - FR-IAM-IAMPUTADMINPERMISSIONSROLESROLEID
+      x-mate-implementation-status: implemented
+      parameters:
+      - name: role_id
+        in: path
+        required: true
+        schema:
+          type: string
+    delete:
+      summary: Delete role (rejected if users still assigned)
+      tags:
+      - iam
+      responses:
+        '200':
+          description: OK
+        '409':
+          description: Role still has assignments
+        '404':
+          description: Not found
+      operationId: iamDeleteAdminPermissionsRolesRoleId
+      description: Delete role (rejected if users still assigned)
+      x-mate-owner: security-iam
+      x-mate-permission: iam.delete
+      x-mate-requirements:
+      - FR-IAM-IAMDELETEADMINPERMISSIONSROLESROLEID
+      x-mate-implementation-status: implemented
+      parameters:
+      - name: role_id
+        in: path
+        required: true
+        schema:
+          type: string
+  /api/v1/admin/permissions/catalog:
+    get:
+      summary: Permission catalog (resource + actions)
+      tags:
+      - iam
+      responses:
+        '200':
+          description: OK
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
+      operationId: iamGetAdminPermissionsCatalog
+      description: Permission catalog (resource + actions)
+      x-mate-owner: security-iam
+      x-mate-permission: iam.get
+      x-mate-requirements:
+      - FR-IAM-IAMGETADMINPERMISSIONSCATALOG
+      x-mate-implementation-status: implemented
+  /api/v1/admin/permissions/assign:
+    post:
+      summary: Assign permissions to a user or a role
+      tags:
+      - iam
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignPayload'
+      responses:
+        '200':
+          description: OK
+        '400':
+          description: bad type/role_ids combination
+      operationId: iamPostAdminPermissionsAssign
+      description: Assign permissions to a user or a role
+      x-mate-owner: security-iam
+      x-mate-permission: iam.post
+      x-mate-requirements:
+      - FR-IAM-IAMPOSTADMINPERMISSIONSASSIGN
+      x-mate-implementation-status: implemented
+  /api/v1/admin/permissions/matrix:
+    get:
+      summary: Role x permission matrix
+      tags:
+      - iam
+      parameters:
+      - in: query
+        name: role_id
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: OK
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
+      operationId: iamGetAdminPermissionsMatrix
+      description: Role x permission matrix
+      x-mate-owner: security-iam
+      x-mate-permission: iam.get
+      x-mate-requirements:
+      - FR-IAM-IAMGETADMINPERMISSIONSMATRIX
+      x-mate-implementation-status: implemented
+  /api/v1/admin/logs/audit:
+    get:
+      summary: Audit log query
+      tags:
+      - iam
+      parameters:
+      - in: query
+        name: actor
+        schema:
+          type: string
+      - in: query
+        name: module
+        schema:
+          type: string
+      - in: query
+        name: action
+        schema:
+          $ref: '#/components/schemas/AuditAction'
+      - in: query
+        name: resource_type
+        schema:
+          type: string
+      - in: query
+        name: resource_id
+        schema:
+          type: string
+      - in: query
+        name: start
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: end
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: page
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+      - in: query
+        name: pageSize
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 500
+          default: 50
+      responses:
+        '200':
+          description: OK
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
+      operationId: iamGetAdminLogsAudit
+      description: Audit log query
+      x-mate-owner: security-iam
+      x-mate-permission: iam.get
+      x-mate-requirements:
+      - FR-IAM-IAMGETADMINLOGSAUDIT
+      x-mate-implementation-status: implemented
+  /api/v1/admin/logs/audit/export:
+    get:
+      summary: Export audit log (csv | json), max 50000 rows
+      tags:
+      - iam
+      parameters:
+      - in: query
+        name: actor
+        schema:
+          type: string
+      - in: query
+        name: module
+        schema:
+          type: string
+      - in: query
+        name: action
+        schema:
+          $ref: '#/components/schemas/AuditAction'
+      - in: query
+        name: start
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: end
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: fmt
+        schema:
+          type: string
+          enum:
+          - csv
+          - json
+          default: csv
+      responses:
+        '200':
+          description: text/csv | application/json stream
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
+      operationId: iamGetAdminLogsAuditExport
+      description: Export audit log (csv | json), max 50000 rows
+      x-mate-owner: security-iam
+      x-mate-permission: iam.get
+      x-mate-requirements:
+      - FR-IAM-IAMGETADMINLOGSAUDITEXPORT
+      x-mate-implementation-status: implemented
+  /api/v1/admin/logs/audit/{log_id}:
+    parameters:
+    - in: path
+      name: log_id
+      required: true
+      schema:
+        type: integer
+    get:
+      summary: Audit log detail
+      tags:
+      - iam
+      responses:
+        '200':
+          description: OK
+        '404':
+          description: Not found
+      operationId: iamGetAdminLogsAuditLogId
+      description: Audit log detail
+      x-mate-owner: security-iam
+      x-mate-permission: iam.get
+      x-mate-requirements:
+      - FR-IAM-IAMGETADMINLOGSAUDITLOGID
+      x-mate-implementation-status: implemented
+      parameters:
+      - name: log_id
+        in: path
+        required: true
+        schema:
+          type: string
+  /api/v1/admin/logs/modules:
+    get:
+      summary: Distinct module/action counts (for filter UI)
+      tags:
+      - iam
+      responses:
+        '200':
+          description: OK
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
+      operationId: iamGetAdminLogsModules
+      description: Distinct module/action counts (for filter UI)
+      x-mate-owner: security-iam
+      x-mate-permission: iam.get
+      x-mate-requirements:
+      - FR-IAM-IAMGETADMINLOGSMODULES
+      x-mate-implementation-status: implemented
+  /api/v1/admin/configs:
+    get:
+      summary: List system configs
+      tags:
+      - iam
+      parameters:
+      - in: query
+        name: category
+        schema:
+          $ref: '#/components/schemas/ConfigCategory'
+      - in: query
+        name: keyword
+        schema:
+          type: string
+      - in: query
+        name: page
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+      - in: query
+        name: pageSize
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 200
+          default: 50
+      responses:
+        '200':
+          description: OK
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
+      operationId: iamGetAdminConfigs
+      description: List system configs
+      x-mate-owner: security-iam
+      x-mate-permission: iam.get
+      x-mate-requirements:
+      - FR-IAM-IAMGETADMINCONFIGS
+      x-mate-implementation-status: implemented
+  /api/v1/admin/configs/categories:
+    get:
+      summary: Distinct category counts
+      tags:
+      - iam
+      responses:
+        '200':
+          description: OK
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
+      operationId: iamGetAdminConfigsCategories
+      description: Distinct category counts
+      x-mate-owner: security-iam
+      x-mate-permission: iam.get
+      x-mate-requirements:
+      - FR-IAM-IAMGETADMINCONFIGSCATEGORIES
+      x-mate-implementation-status: implemented
+  /api/v1/admin/configs/{key}:
+    parameters:
+    - in: path
+      name: key
+      required: true
+      schema:
+        type: string
+    put:
+      summary: Update a system config (with audit)
+      tags:
+      - iam
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfigUpdate'
+      responses:
+        '200':
+          description: OK
+        '400':
+          description: Bad key or value not in enum
+        '404':
+          description: Not found
+      operationId: iamPutAdminConfigsKeyPath
+      description: Update a system config (with audit)
+      x-mate-owner: security-iam
+      x-mate-permission: iam.put
+      x-mate-requirements:
+      - FR-IAM-IAMPUTADMINCONFIGSKEYPATH
+      x-mate-implementation-status: implemented
+      parameters:
+      - name: key
+        in: path
+        required: true
+        schema:
+          type: string
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    LoginRequest:
+      type: object
+      required:
+      - username
+      - password
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+        tenantId:
+          type:
+          - string
+          - 'null'
+    AuthResponse:
+      type: object
+      required:
+      - accessToken
+      - refreshToken
+      - userId
+      - username
+      - user
+      properties:
+        loginResult:
+          type: string
+          default: SUCCESS
+        userId:
+          type: string
+        username:
+          type: string
+        realName:
+          type:
+          - string
+          - 'null'
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+        tokenType:
+          type: string
+          default: Bearer
+        expiresIn:
+          type: integer
+        refreshExpiresIn:
+          type: integer
+        requirePasswordReset:
+          type: boolean
+        mfaRequired:
+          type: boolean
+        user:
+          $ref: '#/components/schemas/UserInfo'
+        loginAt:
+          type: string
+          format: date-time
+        loginIp:
+          type:
+          - string
+          - 'null'
+    UserInfo:
+      type: object
+      required:
+      - id
+      - username
+      properties:
+        id:
+          type: string
+        username:
+          type: string
+        email:
+          type:
+          - string
+          - 'null'
+        realName:
+          type:
+          - string
+          - 'null'
+        status:
+          type:
+          - string
+          - 'null'
+    UserStatus:
+      type: string
+      enum:
+      - ACTIVE
+      - DISABLED
+      - LOCKED
+    UserCreate:
+      type: object
+      required:
+      - username
+      properties:
+        username:
+          type: string
+          minLength: 2
+          maxLength: 64
+        real_name:
+          type:
+          - string
+          - 'null'
+        email:
+          type:
+          - string
+          - 'null'
+        phone:
+          type:
+          - string
+          - 'null'
+        department:
+          type:
+          - string
+          - 'null'
+        position:
+          type:
+          - string
+          - 'null'
+        password:
+          type:
+          - string
+          - 'null'
+          minLength: 8
+          maxLength: 128
+        status:
+          $ref: '#/components/schemas/UserStatus'
+        is_super_admin:
+          type: boolean
+          default: false
+        role_ids:
+          type: array
+          items:
+            type: integer
+    UserUpdate:
+      type: object
+      properties:
+        real_name:
+          type:
+          - string
+          - 'null'
+        email:
+          type:
+          - string
+          - 'null'
+        phone:
+          type:
+          - string
+          - 'null'
+        department:
+          type:
+          - string
+          - 'null'
+        position:
+          type:
+          - string
+          - 'null'
+        avatar:
+          type:
+          - string
+          - 'null'
+        status:
+          $ref: '#/components/schemas/UserStatus'
+        is_super_admin:
+          type:
+          - boolean
+          - 'null'
+        role_ids:
+          type:
+          - array
+          - 'null'
+          items:
+            type: integer
+    OrgCreate:
+      type: object
+      required:
+      - code
+      - name
+      properties:
+        parent_id:
+          type:
+          - integer
+          - 'null'
+        code:
+          type: string
+          minLength: 1
+          maxLength: 64
+        name:
+          type: string
+          minLength: 1
+          maxLength: 128
+        type:
+          type: string
+          enum:
+          - DEPARTMENT
+          - COMPANY
+          - TEAM
+          - VIRTUAL
+          default: DEPARTMENT
+        leader_id:
+          type:
+          - integer
+          - 'null'
+        sort_order:
+          type: integer
+          default: 0
+        description:
+          type:
+          - string
+          - 'null'
+          maxLength: 512
+    OrgUpdate:
+      type: object
+      properties:
+        parent_id:
+          type:
+          - integer
+          - 'null'
+        name:
+          type:
+          - string
+          - 'null'
+        type:
+          type:
+          - string
+          - 'null'
+          enum:
+          - DEPARTMENT
+          - COMPANY
+          - TEAM
+          - VIRTUAL
+        leader_id:
+          type:
+          - integer
+          - 'null'
+        sort_order:
+          type:
+          - integer
+          - 'null'
+        description:
+          type:
+          - string
+          - 'null'
+    PositionCreate:
+      type: object
+      required:
+      - org_id
+      - code
+      - name
+      properties:
+        org_id:
+          type: integer
+        code:
+          type: string
+          minLength: 1
+          maxLength: 64
+        name:
+          type: string
+          minLength: 1
+          maxLength: 128
+        level:
+          type:
+          - string
+          - 'null'
+        description:
+          type:
+          - string
+          - 'null'
+    PositionUpdate:
+      type: object
+      properties:
+        name:
+          type:
+          - string
+          - 'null'
+        level:
+          type:
+          - string
+          - 'null'
+        description:
+          type:
+          - string
+          - 'null'
+    TransferPayload:
+      type: object
+      required:
+      - user_id
+      - target_org_id
+      properties:
+        user_id:
+          type: integer
+        target_org_id:
+          type: integer
+        target_position_id:
+          type:
+          - integer
+          - 'null'
+        reports_to:
+          type:
+          - integer
+          - 'null'
+        reason:
+          type:
+          - string
+          - 'null'
+    RoleCreate:
+      type: object
+      required:
+      - code
+      - name
+      properties:
+        code:
+          type: string
+          minLength: 2
+          maxLength: 64
+        name:
+          type: string
+          minLength: 1
+          maxLength: 128
+        description:
+          type:
+          - string
+          - 'null'
+        data_scope:
+          type: string
+          enum:
+          - ALL
+          - DEPT
+          - DEPT_AND_SUB
+          - SELF
+          - CUSTOM
+          default: SELF
+        permission_ids:
+          type: array
+          items:
+            type: integer
+    RoleUpdate:
+      type: object
+      properties:
+        name:
+          type:
+          - string
+          - 'null'
+        description:
+          type:
+          - string
+          - 'null'
+          maxLength: 8192
+        data_scope:
+          type:
+          - string
+          - 'null'
+          enum:
+          - ALL
+          - DEPT
+          - DEPT_AND_SUB
+          - SELF
+          - CUSTOM
+        permission_ids:
+          type:
+          - array
+          - 'null'
+          items:
+            type: integer
+    AssignPayload:
+      type: object
+      required:
+      - type
+      - target_id
+      properties:
+        type:
+          type: string
+          enum:
+          - user
+          - role
+        target_id:
+          type: integer
+        permission_ids:
+          type: array
+          items:
+            type: integer
+        role_ids:
+          type:
+          - array
+          - 'null'
+          description: required when type=user
+          items:
+            type: integer
+    AuditAction:
+      type: string
+      enum:
+      - CREATE
+      - UPDATE
+      - DELETE
+      - ENABLE
+      - DISABLE
+      - RESET_PASSWORD
+      - LOGIN
+      - LOGOUT
+      - IMPORT
+      - EXPORT
+      - CONFIG_CHANGE
+    ConfigCategory:
+      type: string
+      enum:
+      - GENERAL
+      - SECURITY
+      - INTEGRATION
+      - NOTIFICATION
+      - BILLING
+      - AI
+    ConfigUpdate:
+      type: object
+      required:
+      - value
+      properties:
+        value: {}
+        note:
+          type:
+          - string
+          - 'null'
+          maxLength: 512
+    SettingsUpdate:
+      type: object
+      properties:
+        userId:
+          type:
+          - string
+          - 'null'
+        language:
+          type:
+          - string
+          - 'null'
+        timezone:
+          type:
+          - string
+          - 'null'
+        dateFormat:
+          type:
+          - string
+          - 'null'
+        defaultPage:
+          type:
+          - string
+          - 'null'
+        theme:
+          type:
+          - string
+          - 'null'
+        layout:
+          type:
+          - array
+          - 'null'
+          items:
+            type: string
+    NotificationSettingsUpdate:
+      type: object
+      properties:
+        userId:
+          type:
+          - string
+          - 'null'
+        approval:
+          type:
+          - boolean
+          - 'null'
+        task:
+          type:
+          - boolean
+          - 'null'
+        system:
+          type:
+          - boolean
+          - 'null'
+        mention:
+          type:
+          - boolean
+          - 'null'
+        alert:
+          type:
+          - boolean
+          - 'null'
+        email:
+          type:
+          - boolean
+          - 'null'
+        push:
+          type:
+          - boolean
+          - 'null'
+    ApiKeyCreate:
+      type: object
+      required:
+      - name
+      properties:
+        tenantId:
+          type: string
+          default: tenant-default
+        name:
+          type: string
+        userId:
+          type:
+          - string
+          - 'null'
+        scopes:
+          type: array
+          items:
+            type: string
+        expiresAt:
+          type:
+          - string
+          - 'null'
+          format: date-time
+    DownloadRequest:
+      type: object
+      required:
+      - format
+      properties:
+        format:
+          type: string
+    TodoActionRequest:
+      type: object
+      required:
+      - action
+      properties:
+        action:
+          type: string
+          enum:
+          - approve
+          - reject
+        comment:
+          type:
+          - string
+          - 'null'
+    AnomalyRuleCreate:
+      type: object
+      required:
+      - name
+      - metricType
+      - conditionOperator
+      - threshold
+      - timeWindowSeconds
+      - aggregationFunction
+      - severity
+      properties:
+        name:
+          type: string
+        metricType:
+          type: string
+        conditionOperator:
+          type: string
+        threshold:
+          type: number
+        timeWindowSeconds:
+          type: integer
+        aggregationFunction:
+          type: string
+        severity:
+          type: string
+          enum:
+          - INFO
+          - WARNING
+          - CRITICAL
+        enabled:
+          type: boolean
+          default: true

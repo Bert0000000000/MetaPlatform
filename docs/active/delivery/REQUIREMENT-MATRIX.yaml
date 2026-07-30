@@ -1,0 +1,2282 @@
+version: 1
+requirements:
+  FR-A2A-A2AGETA2AAGENTCARDSSEARCH:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: a2a
+    operationIds:
+    - a2aGetA2aAgentCardsSearch
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-A2A-A2AGETA2ADELEGATIONS:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: a2a
+    operationIds:
+    - a2aGetA2aDelegations
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-AGENT-AGENTDELETEAGENTSTATETHREADID:
+    prd: docs/active/prd/APP-COPILOT/PRD-APP-COPILOT_v2.3-20260727.md
+    service: agent
+    operationIds:
+    - agentDeleteAgentStateThreadId
+    handler: null
+    tests: []
+    implementationStatus: placeholder
+    acceptanceStatus: notAccepted
+  FR-AGENT-AGENTGETAGENTSTATETHREADID:
+    prd: docs/active/prd/APP-COPILOT/PRD-APP-COPILOT_v2.3-20260727.md
+    service: agent
+    operationIds:
+    - agentGetAgentStateThreadId
+    handler: null
+    tests: []
+    implementationStatus: placeholder
+    acceptanceStatus: notAccepted
+  FR-AGENT-AGENTPOSTAGENTCHAT:
+    prd: docs/active/prd/APP-COPILOT/PRD-APP-COPILOT_v2.3-20260727.md
+    service: agent
+    operationIds:
+    - agentPostAgentChat
+    handler: null
+    tests: []
+    implementationStatus: placeholder
+    acceptanceStatus: notAccepted
+  FR-AGENT-AGENTPOSTAGENTCHATSTREAM:
+    prd: docs/active/prd/APP-COPILOT/PRD-APP-COPILOT_v2.3-20260727.md
+    service: agent
+    operationIds:
+    - agentPostAgentChatStream
+    handler: null
+    tests: []
+    implementationStatus: placeholder
+    acceptanceStatus: notAccepted
+  FR-AGENT-AGENTPOSTAGENTREVIEW:
+    prd: docs/active/prd/APP-COPILOT/PRD-APP-COPILOT_v2.3-20260727.md
+    service: agent
+    operationIds:
+    - agentPostAgentReview
+    handler: null
+    tests: []
+    implementationStatus: placeholder
+    acceptanceStatus: notAccepted
+  FR-APPHUB-APPHUBGETAPPHUBAPPS:
+    prd: docs/active/prd/APP-APPHUB/PRD-APP-APPHUB-应用中心_v2.2-20260727.md
+    service: apphub
+    operationIds:
+    - apphubGetApphubApps
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-APPHUB-APPHUBGETAPPHUBAPPSGROUPS:
+    prd: docs/active/prd/APP-APPHUB/PRD-APP-APPHUB-应用中心_v2.2-20260727.md
+    service: apphub
+    operationIds:
+    - apphubGetApphubAppsGroups
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-APPHUB-APPHUBGETAPPHUBMODULES:
+    prd: docs/active/prd/APP-APPHUB/PRD-APP-APPHUB-应用中心_v2.2-20260727.md
+    service: apphub
+    operationIds:
+    - apphubGetApphubModules
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-APPHUB-APPHUBGETAPPHUBPAGES:
+    prd: docs/active/prd/APP-APPHUB/PRD-APP-APPHUB-应用中心_v2.2-20260727.md
+    service: apphub
+    operationIds:
+    - apphubGetApphubPages
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-APPHUB-APPHUBGETAPPHUBTEMPLATES:
+    prd: docs/active/prd/APP-APPHUB/PRD-APP-APPHUB-应用中心_v2.2-20260727.md
+    service: apphub
+    operationIds:
+    - apphubGetApphubTemplates
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-ARCH-ARCHGETARCHAPPLICATIONS:
+    prd: docs/active/prd/APP-ARCH/PRD-APP-ARCH-架构中心_v2.2-20260727.md
+    service: arch
+    operationIds:
+    - archGetArchApplications
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-ARCH-ARCHGETARCHBUSINESSPROCESSES:
+    prd: docs/active/prd/APP-ARCH/PRD-APP-ARCH-架构中心_v2.2-20260727.md
+    service: arch
+    operationIds:
+    - archGetArchBusinessProcesses
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-ARCH-ARCHGETARCHCAPABILITIES:
+    prd: docs/active/prd/APP-ARCH/PRD-APP-ARCH-架构中心_v2.2-20260727.md
+    service: arch
+    operationIds:
+    - archGetArchCapabilities
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-ARCH-ARCHGETARCHCAPABILITIESTREE:
+    prd: docs/active/prd/APP-ARCH/PRD-APP-ARCH-架构中心_v2.2-20260727.md
+    service: arch
+    operationIds:
+    - archGetArchCapabilitiesTree
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-ARCH-ARCHGETARCHCAPABILITYMAPPINGS:
+    prd: docs/active/prd/APP-ARCH/PRD-APP-ARCH-架构中心_v2.2-20260727.md
+    service: arch
+    operationIds:
+    - archGetArchCapabilityMappings
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-ARCH-ARCHGETARCHDATAASSETS:
+    prd: docs/active/prd/APP-ARCH/PRD-APP-ARCH-架构中心_v2.2-20260727.md
+    service: arch
+    operationIds:
+    - archGetArchDataAssets
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-ARCH-ARCHGETARCHDATAASSETSCATALOG:
+    prd: docs/active/prd/APP-ARCH/PRD-APP-ARCH-架构中心_v2.2-20260727.md
+    service: arch
+    operationIds:
+    - archGetArchDataAssetsCatalog
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-ARCH-ARCHGETARCHDATADOMAINS:
+    prd: docs/active/prd/APP-ARCH/PRD-APP-ARCH-架构中心_v2.2-20260727.md
+    service: arch
+    operationIds:
+    - archGetArchDataDomains
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-ARCH-ARCHGETARCHDATAENTITIES:
+    prd: docs/active/prd/APP-ARCH/PRD-APP-ARCH-架构中心_v2.2-20260727.md
+    service: arch
+    operationIds:
+    - archGetArchDataEntities
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-ARCH-ARCHGETARCHDATAFLOWS:
+    prd: docs/active/prd/APP-ARCH/PRD-APP-ARCH-架构中心_v2.2-20260727.md
+    service: arch
+    operationIds:
+    - archGetArchDataFlows
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-ARCH-ARCHGETARCHDATASTANDARDS:
+    prd: docs/active/prd/APP-ARCH/PRD-APP-ARCH-架构中心_v2.2-20260727.md
+    service: arch
+    operationIds:
+    - archGetArchDataStandards
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-ARCH-ARCHGETARCHDEPLOYMENTS:
+    prd: docs/active/prd/APP-ARCH/PRD-APP-ARCH-架构中心_v2.2-20260727.md
+    service: arch
+    operationIds:
+    - archGetArchDeployments
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-ARCH-ARCHGETARCHGOVERNANCEPRINCIPLECATEGORIES:
+    prd: docs/active/prd/APP-ARCH/PRD-APP-ARCH-架构中心_v2.2-20260727.md
+    service: arch
+    operationIds:
+    - archGetArchGovernancePrincipleCategories
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-ARCH-ARCHGETARCHGOVERNANCEPRINCIPLES:
+    prd: docs/active/prd/APP-ARCH/PRD-APP-ARCH-架构中心_v2.2-20260727.md
+    service: arch
+    operationIds:
+    - archGetArchGovernancePrinciples
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-ARCH-ARCHGETARCHGOVERNANCEREVIEWTEMPLATES:
+    prd: docs/active/prd/APP-ARCH/PRD-APP-ARCH-架构中心_v2.2-20260727.md
+    service: arch
+    operationIds:
+    - archGetArchGovernanceReviewTemplates
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-ARCH-ARCHGETARCHGOVERNANCEREVIEWTICKETS:
+    prd: docs/active/prd/APP-ARCH/PRD-APP-ARCH-架构中心_v2.2-20260727.md
+    service: arch
+    operationIds:
+    - archGetArchGovernanceReviewTickets
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-ARCH-ARCHGETARCHGOVERNANCETECHDEBTS:
+    prd: docs/active/prd/APP-ARCH/PRD-APP-ARCH-架构中心_v2.2-20260727.md
+    service: arch
+    operationIds:
+    - archGetArchGovernanceTechDebts
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-ARCH-ARCHGETARCHIMPACTANALYSIS:
+    prd: docs/active/prd/APP-ARCH/PRD-APP-ARCH-架构中心_v2.2-20260727.md
+    service: arch
+    operationIds:
+    - archGetArchImpactAnalysis
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-ARCH-ARCHGETARCHINFRASTRUCTURES:
+    prd: docs/active/prd/APP-ARCH/PRD-APP-ARCH-架构中心_v2.2-20260727.md
+    service: arch
+    operationIds:
+    - archGetArchInfrastructures
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-ARCH-ARCHGETARCHONTOLOGYMAPPINGSCHANGES:
+    prd: docs/active/prd/APP-ARCH/PRD-APP-ARCH-架构中心_v2.2-20260727.md
+    service: arch
+    operationIds:
+    - archGetArchOntologyMappingsChanges
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-ARCH-ARCHGETARCHONTOLOGYMAPPINGSRULES:
+    prd: docs/active/prd/APP-ARCH/PRD-APP-ARCH-架构中心_v2.2-20260727.md
+    service: arch
+    operationIds:
+    - archGetArchOntologyMappingsRules
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-ARCH-ARCHGETARCHORGS:
+    prd: docs/active/prd/APP-ARCH/PRD-APP-ARCH-架构中心_v2.2-20260727.md
+    service: arch
+    operationIds:
+    - archGetArchOrgs
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-ARCH-ARCHGETARCHORGSTREE:
+    prd: docs/active/prd/APP-ARCH/PRD-APP-ARCH-架构中心_v2.2-20260727.md
+    service: arch
+    operationIds:
+    - archGetArchOrgsTree
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-ARCH-ARCHGETARCHROLES:
+    prd: docs/active/prd/APP-ARCH/PRD-APP-ARCH-架构中心_v2.2-20260727.md
+    service: arch
+    operationIds:
+    - archGetArchRoles
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-ARCH-ARCHGETARCHTECHNOLOGYCOMPONENTS:
+    prd: docs/active/prd/APP-ARCH/PRD-APP-ARCH-架构中心_v2.2-20260727.md
+    service: arch
+    operationIds:
+    - archGetArchTechnologyComponents
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-ARCH-ARCHGETARCHTECHNOLOGYRADAR:
+    prd: docs/active/prd/APP-ARCH/PRD-APP-ARCH-架构中心_v2.2-20260727.md
+    service: arch
+    operationIds:
+    - archGetArchTechnologyRadar
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-ARCH-ARCHGETARCHTECHNOLOGYSTACKS:
+    prd: docs/active/prd/APP-ARCH/PRD-APP-ARCH-架构中心_v2.2-20260727.md
+    service: arch
+    operationIds:
+    - archGetArchTechnologyStacks
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-ARCH-ARCHGETARCHTECHSTACKS:
+    prd: docs/active/prd/APP-ARCH/PRD-APP-ARCH-架构中心_v2.2-20260727.md
+    service: arch
+    operationIds:
+    - archGetArchTechStacks
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-ARCH-ARCHGETARCHVALUESTREAMS:
+    prd: docs/active/prd/APP-ARCH/PRD-APP-ARCH-架构中心_v2.2-20260727.md
+    service: arch
+    operationIds:
+    - archGetArchValueStreams
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-COPILOT-COPILOTGETCOPILOT:
+    prd: docs/active/prd/APP-COPILOT/PRD-APP-COPILOT_v2.3-20260727.md
+    service: copilot
+    operationIds:
+    - copilotGetCopilot
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-COPILOT-COPILOTGETCOPILOTA2AEXTERNAL:
+    prd: docs/active/prd/APP-COPILOT/PRD-APP-COPILOT_v2.3-20260727.md
+    service: copilot
+    operationIds:
+    - copilotGetCopilotA2aExternal
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-COPILOT-COPILOTGETCOPILOTACTIONS:
+    prd: docs/active/prd/APP-COPILOT/PRD-APP-COPILOT_v2.3-20260727.md
+    service: copilot
+    operationIds:
+    - copilotGetCopilotActions
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-COPILOT-COPILOTGETCOPILOTANALYSISEXPLAINSQL:
+    prd: docs/active/prd/APP-COPILOT/PRD-APP-COPILOT_v2.3-20260727.md
+    service: copilot
+    operationIds:
+    - copilotGetCopilotAnalysisExplainSql
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-COPILOT-COPILOTGETCOPILOTCODE:
+    prd: docs/active/prd/APP-COPILOT/PRD-APP-COPILOT_v2.3-20260727.md
+    service: copilot
+    operationIds:
+    - copilotGetCopilotCode
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-COPILOT-COPILOTGETCOPILOTCONVERSATIONS:
+    prd: docs/active/prd/APP-COPILOT/PRD-APP-COPILOT_v2.3-20260727.md
+    service: copilot
+    operationIds:
+    - copilotGetCopilotConversations
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-COPILOT-COPILOTGETCOPILOTDATASOURCES:
+    prd: docs/active/prd/APP-COPILOT/PRD-APP-COPILOT_v2.3-20260727.md
+    service: copilot
+    operationIds:
+    - copilotGetCopilotDatasources
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-COPILOT-COPILOTGETCOPILOTGENERATEPROCESS:
+    prd: docs/active/prd/APP-COPILOT/PRD-APP-COPILOT_v2.3-20260727.md
+    service: copilot
+    operationIds:
+    - copilotGetCopilotGenerateProcess
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-COPILOT-COPILOTGETCOPILOTKNOWLEDGEBASES:
+    prd: docs/active/prd/APP-COPILOT/PRD-APP-COPILOT_v2.3-20260727.md
+    service: copilot
+    operationIds:
+    - copilotGetCopilotKnowledgeBases
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-COPILOT-COPILOTGETCOPILOTMODELSMULTIMODAL:
+    prd: docs/active/prd/APP-COPILOT/PRD-APP-COPILOT_v2.3-20260727.md
+    service: copilot
+    operationIds:
+    - copilotGetCopilotModelsMultimodal
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-COPILOT-COPILOTGETCOPILOTONTOLOGYCONCEPTSSEARCH:
+    prd: docs/active/prd/APP-COPILOT/PRD-APP-COPILOT_v2.3-20260727.md
+    service: copilot
+    operationIds:
+    - copilotGetCopilotOntologyConceptsSearch
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-COPILOT-COPILOTGETCOPILOTONTOLOGYGRAPHEXPAND:
+    prd: docs/active/prd/APP-COPILOT/PRD-APP-COPILOT_v2.3-20260727.md
+    service: copilot
+    operationIds:
+    - copilotGetCopilotOntologyGraphExpand
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-COPILOT-COPILOTGETCOPILOTONTOLOGYGRAPHQUERY:
+    prd: docs/active/prd/APP-COPILOT/PRD-APP-COPILOT_v2.3-20260727.md
+    service: copilot
+    operationIds:
+    - copilotGetCopilotOntologyGraphQuery
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-COPILOT-COPILOTGETCOPILOTPLANS:
+    prd: docs/active/prd/APP-COPILOT/PRD-APP-COPILOT_v2.3-20260727.md
+    service: copilot
+    operationIds:
+    - copilotGetCopilotPlans
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-COPILOT-COPILOTGETCOPILOTQUERIESHISTORY:
+    prd: docs/active/prd/APP-COPILOT/PRD-APP-COPILOT_v2.3-20260727.md
+    service: copilot
+    operationIds:
+    - copilotGetCopilotQueriesHistory
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-COPILOT-COPILOTGETCOPILOTSCHEDULINGEMPLOYEESMATCH:
+    prd: docs/active/prd/APP-COPILOT/PRD-APP-COPILOT_v2.3-20260727.md
+    service: copilot
+    operationIds:
+    - copilotGetCopilotSchedulingEmployeesMatch
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-COPILOT-COPILOTGETCOPILOTSCHEDULINGINTENTS:
+    prd: docs/active/prd/APP-COPILOT/PRD-APP-COPILOT_v2.3-20260727.md
+    service: copilot
+    operationIds:
+    - copilotGetCopilotSchedulingIntents
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-COPILOT-COPILOTGETCOPILOTSCHEDULINGTEMPLATES:
+    prd: docs/active/prd/APP-COPILOT/PRD-APP-COPILOT_v2.3-20260727.md
+    service: copilot
+    operationIds:
+    - copilotGetCopilotSchedulingTemplates
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-COPILOT-COPILOTGETCOPILOTSEARCH:
+    prd: docs/active/prd/APP-COPILOT/PRD-APP-COPILOT_v2.3-20260727.md
+    service: copilot
+    operationIds:
+    - copilotGetCopilotSearch
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-COPILOT-COPILOTPOSTCOPILOTA2ADELEGATE:
+    prd: docs/active/prd/APP-COPILOT/PRD-APP-COPILOT_v2.3-20260727.md
+    service: copilot
+    operationIds:
+    - copilotPostCopilotA2aDelegate
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-COPILOT-COPILOTPOSTCOPILOTACTIONSEXECUTE:
+    prd: docs/active/prd/APP-COPILOT/PRD-APP-COPILOT_v2.3-20260727.md
+    service: copilot
+    operationIds:
+    - copilotPostCopilotActionsExecute
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-COPILOT-COPILOTPOSTCOPILOTACTIONSMATCH:
+    prd: docs/active/prd/APP-COPILOT/PRD-APP-COPILOT_v2.3-20260727.md
+    service: copilot
+    operationIds:
+    - copilotPostCopilotActionsMatch
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-COPILOT-COPILOTPOSTCOPILOTANALYSISAUDITSQL:
+    prd: docs/active/prd/APP-COPILOT/PRD-APP-COPILOT_v2.3-20260727.md
+    service: copilot
+    operationIds:
+    - copilotPostCopilotAnalysisAuditSql
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-COPILOT-COPILOTPOSTCOPILOTANALYSISEXECUTESQL:
+    prd: docs/active/prd/APP-COPILOT/PRD-APP-COPILOT_v2.3-20260727.md
+    service: copilot
+    operationIds:
+    - copilotPostCopilotAnalysisExecuteSql
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-COPILOT-COPILOTPOSTCOPILOTANALYSISGENERATESQL:
+    prd: docs/active/prd/APP-COPILOT/PRD-APP-COPILOT_v2.3-20260727.md
+    service: copilot
+    operationIds:
+    - copilotPostCopilotAnalysisGenerateSql
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-COPILOT-COPILOTPOSTCOPILOTAUTHLOGIN:
+    prd: docs/active/prd/APP-COPILOT/PRD-APP-COPILOT_v2.3-20260727.md
+    service: copilot
+    operationIds:
+    - copilotPostCopilotAuthLogin
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-COPILOT-COPILOTPOSTCOPILOTCHATMULTIMODALUPLOAD:
+    prd: docs/active/prd/APP-COPILOT/PRD-APP-COPILOT_v2.3-20260727.md
+    service: copilot
+    operationIds:
+    - copilotPostCopilotChatMultimodalUpload
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-COPILOT-COPILOTPOSTCOPILOTGENERATEDASHBOARD:
+    prd: docs/active/prd/APP-COPILOT/PRD-APP-COPILOT_v2.3-20260727.md
+    service: copilot
+    operationIds:
+    - copilotPostCopilotGenerateDashboard
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-COPILOT-COPILOTPOSTCOPILOTGENERATEEXPLAINCODE:
+    prd: docs/active/prd/APP-COPILOT/PRD-APP-COPILOT_v2.3-20260727.md
+    service: copilot
+    operationIds:
+    - copilotPostCopilotGenerateExplainCode
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-COPILOT-COPILOTPOSTCOPILOTGENERATEFORM:
+    prd: docs/active/prd/APP-COPILOT/PRD-APP-COPILOT_v2.3-20260727.md
+    service: copilot
+    operationIds:
+    - copilotPostCopilotGenerateForm
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-COPILOT-COPILOTPOSTCOPILOTGENERATEREVIEWCODE:
+    prd: docs/active/prd/APP-COPILOT/PRD-APP-COPILOT_v2.3-20260727.md
+    service: copilot
+    operationIds:
+    - copilotPostCopilotGenerateReviewCode
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-COPILOT-COPILOTPOSTCOPILOTQUERIESEXECUTE:
+    prd: docs/active/prd/APP-COPILOT/PRD-APP-COPILOT_v2.3-20260727.md
+    service: copilot
+    operationIds:
+    - copilotPostCopilotQueriesExecute
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-COPILOT-COPILOTPOSTCOPILOTSCHEDULINGEXECUTIONSTART:
+    prd: docs/active/prd/APP-COPILOT/PRD-APP-COPILOT_v2.3-20260727.md
+    service: copilot
+    operationIds:
+    - copilotPostCopilotSchedulingExecutionStart
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-COPILOT-COPILOTPOSTCOPILOTSCHEDULINGINTENTDETECT:
+    prd: docs/active/prd/APP-COPILOT/PRD-APP-COPILOT_v2.3-20260727.md
+    service: copilot
+    operationIds:
+    - copilotPostCopilotSchedulingIntentDetect
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-COPILOT-COPILOTPOSTCOPILOTSCHEDULINGPLANGENERATE:
+    prd: docs/active/prd/APP-COPILOT/PRD-APP-COPILOT_v2.3-20260727.md
+    service: copilot
+    operationIds:
+    - copilotPostCopilotSchedulingPlanGenerate
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-DASHBOARD-DASHBOARDDELETEDASHBOARDANOMALYRULESRULEID:
+    prd: docs/active/prd/APP-DASHBOARD/PRD-APP-DASHBOARD-后台管理_v1.2-20260728.md
+    service: dashboard
+    operationIds:
+    - dashboardDeleteDashboardAnomalyRulesRuleId
+    handler: null
+    tests: []
+    implementationStatus: placeholder
+    acceptanceStatus: notAccepted
+  FR-DASHBOARD-DASHBOARDDELETEDASHBOARDAPIKEYSAPIKEYID:
+    prd: docs/active/prd/APP-DASHBOARD/PRD-APP-DASHBOARD-后台管理_v1.2-20260728.md
+    service: dashboard
+    operationIds:
+    - dashboardDeleteDashboardApiKeysApiKeyId
+    handler: null
+    tests: []
+    implementationStatus: placeholder
+    acceptanceStatus: notAccepted
+  FR-DASHBOARD-DASHBOARDDELETEDASHBOARDDELIVERABLESDELIVERABLEID:
+    prd: docs/active/prd/APP-DASHBOARD/PRD-APP-DASHBOARD-后台管理_v1.2-20260728.md
+    service: dashboard
+    operationIds:
+    - dashboardDeleteDashboardDeliverablesDeliverableId
+    handler: null
+    tests: []
+    implementationStatus: placeholder
+    acceptanceStatus: notAccepted
+  FR-DASHBOARD-DASHBOARDDELETEDASHBOARDSESSIONSSESSIONID:
+    prd: docs/active/prd/APP-DASHBOARD/PRD-APP-DASHBOARD-后台管理_v1.2-20260728.md
+    service: dashboard
+    operationIds:
+    - dashboardDeleteDashboardSessionsSessionId
+    handler: null
+    tests: []
+    implementationStatus: placeholder
+    acceptanceStatus: notAccepted
+  FR-DASHBOARD-DASHBOARDGETDASHBOARDANOMALIES:
+    prd: docs/active/prd/APP-DASHBOARD/PRD-APP-DASHBOARD-后台管理_v1.2-20260728.md
+    service: dashboard
+    operationIds:
+    - dashboardGetDashboardAnomalies
+    handler: null
+    tests: []
+    implementationStatus: placeholder
+    acceptanceStatus: notAccepted
+  FR-DASHBOARD-DASHBOARDGETDASHBOARDANOMALIESANOMALYID:
+    prd: docs/active/prd/APP-DASHBOARD/PRD-APP-DASHBOARD-后台管理_v1.2-20260728.md
+    service: dashboard
+    operationIds:
+    - dashboardGetDashboardAnomaliesAnomalyId
+    handler: null
+    tests: []
+    implementationStatus: placeholder
+    acceptanceStatus: notAccepted
+  FR-DASHBOARD-DASHBOARDGETDASHBOARDANOMALYRULES:
+    prd: docs/active/prd/APP-DASHBOARD/PRD-APP-DASHBOARD-后台管理_v1.2-20260728.md
+    service: dashboard
+    operationIds:
+    - dashboardGetDashboardAnomalyRules
+    handler: null
+    tests: []
+    implementationStatus: placeholder
+    acceptanceStatus: notAccepted
+  FR-DASHBOARD-DASHBOARDGETDASHBOARDAPIKEYS:
+    prd: docs/active/prd/APP-DASHBOARD/PRD-APP-DASHBOARD-后台管理_v1.2-20260728.md
+    service: dashboard
+    operationIds:
+    - dashboardGetDashboardApiKeys
+    handler: null
+    tests: []
+    implementationStatus: placeholder
+    acceptanceStatus: notAccepted
+  FR-DASHBOARD-DASHBOARDGETDASHBOARDDELIVERABLES:
+    prd: docs/active/prd/APP-DASHBOARD/PRD-APP-DASHBOARD-后台管理_v1.2-20260728.md
+    service: dashboard
+    operationIds:
+    - dashboardGetDashboardDeliverables
+    handler: null
+    tests: []
+    implementationStatus: placeholder
+    acceptanceStatus: notAccepted
+  FR-DASHBOARD-DASHBOARDGETDASHBOARDMETRICS:
+    prd: docs/active/prd/APP-DASHBOARD/PRD-APP-DASHBOARD-后台管理_v1.2-20260728.md
+    service: dashboard
+    operationIds:
+    - dashboardGetDashboardMetrics
+    handler: null
+    tests: []
+    implementationStatus: placeholder
+    acceptanceStatus: notAccepted
+  FR-DASHBOARD-DASHBOARDGETDASHBOARDMETRICSTREND:
+    prd: docs/active/prd/APP-DASHBOARD/PRD-APP-DASHBOARD-后台管理_v1.2-20260728.md
+    service: dashboard
+    operationIds:
+    - dashboardGetDashboardMetricsTrend
+    handler: null
+    tests: []
+    implementationStatus: placeholder
+    acceptanceStatus: notAccepted
+  FR-DASHBOARD-DASHBOARDGETDASHBOARDNOTIFICATIONS:
+    prd: docs/active/prd/APP-DASHBOARD/PRD-APP-DASHBOARD-后台管理_v1.2-20260728.md
+    service: dashboard
+    operationIds:
+    - dashboardGetDashboardNotifications
+    handler: null
+    tests: []
+    implementationStatus: placeholder
+    acceptanceStatus: notAccepted
+  FR-DASHBOARD-DASHBOARDGETDASHBOARDNOTIFICATIONSSETTINGS:
+    prd: docs/active/prd/APP-DASHBOARD/PRD-APP-DASHBOARD-后台管理_v1.2-20260728.md
+    service: dashboard
+    operationIds:
+    - dashboardGetDashboardNotificationsSettings
+    handler: null
+    tests: []
+    implementationStatus: placeholder
+    acceptanceStatus: notAccepted
+  FR-DASHBOARD-DASHBOARDGETDASHBOARDNOTIFICATIONSUNREADCOUNT:
+    prd: docs/active/prd/APP-DASHBOARD/PRD-APP-DASHBOARD-后台管理_v1.2-20260728.md
+    service: dashboard
+    operationIds:
+    - dashboardGetDashboardNotificationsUnreadCount
+    handler: null
+    tests: []
+    implementationStatus: placeholder
+    acceptanceStatus: notAccepted
+  FR-DASHBOARD-DASHBOARDGETDASHBOARDPROFILE:
+    prd: docs/active/prd/APP-DASHBOARD/PRD-APP-DASHBOARD-后台管理_v1.2-20260728.md
+    service: dashboard
+    operationIds:
+    - dashboardGetDashboardProfile
+    handler: null
+    tests: []
+    implementationStatus: placeholder
+    acceptanceStatus: notAccepted
+  FR-DASHBOARD-DASHBOARDGETDASHBOARDPROFILEPERMISSIONS:
+    prd: docs/active/prd/APP-DASHBOARD/PRD-APP-DASHBOARD-后台管理_v1.2-20260728.md
+    service: dashboard
+    operationIds:
+    - dashboardGetDashboardProfilePermissions
+    handler: null
+    tests: []
+    implementationStatus: placeholder
+    acceptanceStatus: notAccepted
+  FR-DASHBOARD-DASHBOARDGETDASHBOARDSEARCH:
+    prd: docs/active/prd/APP-DASHBOARD/PRD-APP-DASHBOARD-后台管理_v1.2-20260728.md
+    service: dashboard
+    operationIds:
+    - dashboardGetDashboardSearch
+    handler: null
+    tests: []
+    implementationStatus: placeholder
+    acceptanceStatus: notAccepted
+  FR-DASHBOARD-DASHBOARDGETDASHBOARDSESSIONS:
+    prd: docs/active/prd/APP-DASHBOARD/PRD-APP-DASHBOARD-后台管理_v1.2-20260728.md
+    service: dashboard
+    operationIds:
+    - dashboardGetDashboardSessions
+    handler: null
+    tests: []
+    implementationStatus: placeholder
+    acceptanceStatus: notAccepted
+  FR-DASHBOARD-DASHBOARDGETDASHBOARDSETTINGS:
+    prd: docs/active/prd/APP-DASHBOARD/PRD-APP-DASHBOARD-后台管理_v1.2-20260728.md
+    service: dashboard
+    operationIds:
+    - dashboardGetDashboardSettings
+    handler: null
+    tests: []
+    implementationStatus: placeholder
+    acceptanceStatus: notAccepted
+  FR-DASHBOARD-DASHBOARDGETDASHBOARDTODOS:
+    prd: docs/active/prd/APP-DASHBOARD/PRD-APP-DASHBOARD-后台管理_v1.2-20260728.md
+    service: dashboard
+    operationIds:
+    - dashboardGetDashboardTodos
+    handler: null
+    tests: []
+    implementationStatus: placeholder
+    acceptanceStatus: notAccepted
+  FR-DASHBOARD-DASHBOARDGETDASHBOARDTODOSDONE:
+    prd: docs/active/prd/APP-DASHBOARD/PRD-APP-DASHBOARD-后台管理_v1.2-20260728.md
+    service: dashboard
+    operationIds:
+    - dashboardGetDashboardTodosDone
+    handler: null
+    tests: []
+    implementationStatus: placeholder
+    acceptanceStatus: notAccepted
+  FR-DASHBOARD-DASHBOARDGETDASHBOARDWORKERS:
+    prd: docs/active/prd/APP-DASHBOARD/PRD-APP-DASHBOARD-后台管理_v1.2-20260728.md
+    service: dashboard
+    operationIds:
+    - dashboardGetDashboardWorkers
+    handler: null
+    tests: []
+    implementationStatus: placeholder
+    acceptanceStatus: notAccepted
+  FR-DASHBOARD-DASHBOARDPOSTDASHBOARDANOMALIESANOMALYIDANALYZE:
+    prd: docs/active/prd/APP-DASHBOARD/PRD-APP-DASHBOARD-后台管理_v1.2-20260728.md
+    service: dashboard
+    operationIds:
+    - dashboardPostDashboardAnomaliesAnomalyIdAnalyze
+    handler: null
+    tests: []
+    implementationStatus: placeholder
+    acceptanceStatus: notAccepted
+  FR-DASHBOARD-DASHBOARDPOSTDASHBOARDANOMALIESANOMALYIDREMEDIATE:
+    prd: docs/active/prd/APP-DASHBOARD/PRD-APP-DASHBOARD-后台管理_v1.2-20260728.md
+    service: dashboard
+    operationIds:
+    - dashboardPostDashboardAnomaliesAnomalyIdRemediate
+    handler: null
+    tests: []
+    implementationStatus: placeholder
+    acceptanceStatus: notAccepted
+  FR-DASHBOARD-DASHBOARDPOSTDASHBOARDANOMALYRULES:
+    prd: docs/active/prd/APP-DASHBOARD/PRD-APP-DASHBOARD-后台管理_v1.2-20260728.md
+    service: dashboard
+    operationIds:
+    - dashboardPostDashboardAnomalyRules
+    handler: null
+    tests: []
+    implementationStatus: placeholder
+    acceptanceStatus: notAccepted
+  FR-DASHBOARD-DASHBOARDPOSTDASHBOARDAPIKEYS:
+    prd: docs/active/prd/APP-DASHBOARD/PRD-APP-DASHBOARD-后台管理_v1.2-20260728.md
+    service: dashboard
+    operationIds:
+    - dashboardPostDashboardApiKeys
+    handler: null
+    tests: []
+    implementationStatus: placeholder
+    acceptanceStatus: notAccepted
+  FR-DASHBOARD-DASHBOARDPOSTDASHBOARDAUTHLOGIN:
+    prd: docs/active/prd/APP-DASHBOARD/PRD-APP-DASHBOARD-后台管理_v1.2-20260728.md
+    service: dashboard
+    operationIds:
+    - dashboardPostDashboardAuthLogin
+    handler: null
+    tests: []
+    implementationStatus: placeholder
+    acceptanceStatus: notAccepted
+  FR-DASHBOARD-DASHBOARDPOSTDASHBOARDDELIVERABLESDELIVERABLEIDDOWNLOAD:
+    prd: docs/active/prd/APP-DASHBOARD/PRD-APP-DASHBOARD-后台管理_v1.2-20260728.md
+    service: dashboard
+    operationIds:
+    - dashboardPostDashboardDeliverablesDeliverableIdDownload
+    handler: null
+    tests: []
+    implementationStatus: placeholder
+    acceptanceStatus: notAccepted
+  FR-DASHBOARD-DASHBOARDPOSTDASHBOARDNOTIFICATIONSREADALL:
+    prd: docs/active/prd/APP-DASHBOARD/PRD-APP-DASHBOARD-后台管理_v1.2-20260728.md
+    service: dashboard
+    operationIds:
+    - dashboardPostDashboardNotificationsReadAll
+    handler: null
+    tests: []
+    implementationStatus: placeholder
+    acceptanceStatus: notAccepted
+  FR-DASHBOARD-DASHBOARDPOSTDASHBOARDTODOSTASKIDACTION:
+    prd: docs/active/prd/APP-DASHBOARD/PRD-APP-DASHBOARD-后台管理_v1.2-20260728.md
+    service: dashboard
+    operationIds:
+    - dashboardPostDashboardTodosTaskIdAction
+    handler: null
+    tests: []
+    implementationStatus: placeholder
+    acceptanceStatus: notAccepted
+  FR-DASHBOARD-DASHBOARDPUTDASHBOARDANOMALYRULESRULEID:
+    prd: docs/active/prd/APP-DASHBOARD/PRD-APP-DASHBOARD-后台管理_v1.2-20260728.md
+    service: dashboard
+    operationIds:
+    - dashboardPutDashboardAnomalyRulesRuleId
+    handler: null
+    tests: []
+    implementationStatus: placeholder
+    acceptanceStatus: notAccepted
+  FR-DASHBOARD-DASHBOARDPUTDASHBOARDNOTIFICATIONSNOTIFICATIONIDREAD:
+    prd: docs/active/prd/APP-DASHBOARD/PRD-APP-DASHBOARD-后台管理_v1.2-20260728.md
+    service: dashboard
+    operationIds:
+    - dashboardPutDashboardNotificationsNotificationIdRead
+    handler: null
+    tests: []
+    implementationStatus: placeholder
+    acceptanceStatus: notAccepted
+  FR-DASHBOARD-DASHBOARDPUTDASHBOARDNOTIFICATIONSSETTINGS:
+    prd: docs/active/prd/APP-DASHBOARD/PRD-APP-DASHBOARD-后台管理_v1.2-20260728.md
+    service: dashboard
+    operationIds:
+    - dashboardPutDashboardNotificationsSettings
+    handler: null
+    tests: []
+    implementationStatus: placeholder
+    acceptanceStatus: notAccepted
+  FR-DASHBOARD-DASHBOARDPUTDASHBOARDSETTINGS:
+    prd: docs/active/prd/APP-DASHBOARD/PRD-APP-DASHBOARD-后台管理_v1.2-20260728.md
+    service: dashboard
+    operationIds:
+    - dashboardPutDashboardSettings
+    handler: null
+    tests: []
+    implementationStatus: placeholder
+    acceptanceStatus: notAccepted
+  FR-DATA-DATADELETEDATACDCTASKSID:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: data
+    operationIds:
+    - dataDeleteDataCdcTasksId
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-DATA-DATADELETEDATASOURCESID:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: data
+    operationIds:
+    - dataDeleteDataSourcesId
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-DATA-DATADELETEETLTASKSID:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: data
+    operationIds:
+    - dataDeleteEtlTasksId
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-DATA-DATADELETEMETRICSID:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: data
+    operationIds:
+    - dataDeleteMetricsId
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-DATA-DATADELETESCHEDULERTASKSID:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: data
+    operationIds:
+    - dataDeleteSchedulerTasksId
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-DATA-DATAGETDATACDCTASKS:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: data
+    operationIds:
+    - dataGetDataCdcTasks
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-DATA-DATAGETDATACDCTASKSID:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: data
+    operationIds:
+    - dataGetDataCdcTasksId
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-DATA-DATAGETDATACDCTASKSIDSTATUS:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: data
+    operationIds:
+    - dataGetDataCdcTasksIdStatus
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-DATA-DATAGETDATASOURCES:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: data
+    operationIds:
+    - dataGetDataSources
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-DATA-DATAGETDATASOURCESID:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: data
+    operationIds:
+    - dataGetDataSourcesId
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-DATA-DATAGETDATASOURCESIDSCHEMA:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: data
+    operationIds:
+    - dataGetDataSourcesIdSchema
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-DATA-DATAGETETLTASKS:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: data
+    operationIds:
+    - dataGetEtlTasks
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-DATA-DATAGETETLTASKSID:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: data
+    operationIds:
+    - dataGetEtlTasksId
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-DATA-DATAGETETLTASKSIDSTATUS:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: data
+    operationIds:
+    - dataGetEtlTasksIdStatus
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-DATA-DATAGETMETRICS:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: data
+    operationIds:
+    - dataGetMetrics
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-DATA-DATAGETMETRICSID:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: data
+    operationIds:
+    - dataGetMetricsId
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-DATA-DATAGETMETRICSIDLINEAGE:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: data
+    operationIds:
+    - dataGetMetricsIdLineage
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-DATA-DATAGETMETRICSIDVALUES:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: data
+    operationIds:
+    - dataGetMetricsIdValues
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-DATA-DATAGETSCHEDULERDAG:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: data
+    operationIds:
+    - dataGetSchedulerDag
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-DATA-DATAGETSCHEDULERTASKS:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: data
+    operationIds:
+    - dataGetSchedulerTasks
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-DATA-DATAGETSCHEDULERTASKSID:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: data
+    operationIds:
+    - dataGetSchedulerTasksId
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-DATA-DATAPOSTDATACDCTASKS:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: data
+    operationIds:
+    - dataPostDataCdcTasks
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-DATA-DATAPOSTDATACDCTASKSIDPAUSE:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: data
+    operationIds:
+    - dataPostDataCdcTasksIdPause
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-DATA-DATAPOSTDATACDCTASKSIDRESUME:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: data
+    operationIds:
+    - dataPostDataCdcTasksIdResume
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-DATA-DATAPOSTDATASOURCES:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: data
+    operationIds:
+    - dataPostDataSources
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-DATA-DATAPOSTDATASOURCESIDTEST:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: data
+    operationIds:
+    - dataPostDataSourcesIdTest
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-DATA-DATAPOSTETLTASKS:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: data
+    operationIds:
+    - dataPostEtlTasks
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-DATA-DATAPOSTETLTASKSIDRUN:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: data
+    operationIds:
+    - dataPostEtlTasksIdRun
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-DATA-DATAPOSTETLTASKSIDSTOP:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: data
+    operationIds:
+    - dataPostEtlTasksIdStop
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-DATA-DATAPOSTMETRICS:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: data
+    operationIds:
+    - dataPostMetrics
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-DATA-DATAPOSTMETRICSIDCOMPUTE:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: data
+    operationIds:
+    - dataPostMetricsIdCompute
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-DATA-DATAPOSTSCHEDULERTASKS:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: data
+    operationIds:
+    - dataPostSchedulerTasks
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-DATA-DATAPOSTSCHEDULERTASKSIDPAUSE:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: data
+    operationIds:
+    - dataPostSchedulerTasksIdPause
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-DATA-DATAPOSTSCHEDULERTASKSIDTRIGGER:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: data
+    operationIds:
+    - dataPostSchedulerTasksIdTrigger
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-DATA-DATAPUTDATACDCTASKSID:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: data
+    operationIds:
+    - dataPutDataCdcTasksId
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-DATA-DATAPUTDATASOURCESID:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: data
+    operationIds:
+    - dataPutDataSourcesId
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-DATA-DATAPUTETLTASKSID:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: data
+    operationIds:
+    - dataPutEtlTasksId
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-DATA-DATAPUTMETRICSID:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: data
+    operationIds:
+    - dataPutMetricsId
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-DATA-DATAPUTSCHEDULERTASKSID:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: data
+    operationIds:
+    - dataPutSchedulerTasksId
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-DW-DWGETDWAUTHLOGIN:
+    prd: docs/active/prd/APP-DW/PRD-APP-DW-页面专属Agent_v1.1-20260727.md
+    service: dw
+    operationIds:
+    - dwGetDwAuthLogin
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-DW-DWGETDWCOLLABORATIONS:
+    prd: docs/active/prd/APP-DW/PRD-APP-DW-页面专属Agent_v1.1-20260727.md
+    service: dw
+    operationIds:
+    - dwGetDwCollaborations
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-DW-DWGETDWCOMMIT:
+    prd: docs/active/prd/APP-DW/PRD-APP-DW-页面专属Agent_v1.1-20260727.md
+    service: dw
+    operationIds:
+    - dwGetDwCommit
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-DW-DWGETDWDOCUMENTS:
+    prd: docs/active/prd/APP-DW/PRD-APP-DW-页面专属Agent_v1.1-20260727.md
+    service: dw
+    operationIds:
+    - dwGetDwDocuments
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-DW-DWGETDWEMPLOYEES:
+    prd: docs/active/prd/APP-DW/PRD-APP-DW-页面专属Agent_v1.1-20260727.md
+    service: dw
+    operationIds:
+    - dwGetDwEmployees
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-DW-DWGETDWEMPLOYEESTASKS:
+    prd: docs/active/prd/APP-DW/PRD-APP-DW-页面专属Agent_v1.1-20260727.md
+    service: dw
+    operationIds:
+    - dwGetDwEmployeesTasks
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-DW-DWGETDWEVALUATIONS:
+    prd: docs/active/prd/APP-DW/PRD-APP-DW-页面专属Agent_v1.1-20260727.md
+    service: dw
+    operationIds:
+    - dwGetDwEvaluations
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-DW-DWGETDWEXTRACT:
+    prd: docs/active/prd/APP-DW/PRD-APP-DW-页面专属Agent_v1.1-20260727.md
+    service: dw
+    operationIds:
+    - dwGetDwExtract
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-DW-DWGETDWKNOWLEDGEBASES:
+    prd: docs/active/prd/APP-DW/PRD-APP-DW-页面专属Agent_v1.1-20260727.md
+    service: dw
+    operationIds:
+    - dwGetDwKnowledgeBases
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-DW-DWGETDWLEARNINGEXTRACT:
+    prd: docs/active/prd/APP-DW/PRD-APP-DW-页面专属Agent_v1.1-20260727.md
+    service: dw
+    operationIds:
+    - dwGetDwLearningExtract
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-DW-DWGETDWLEARNINGFEEDBACK:
+    prd: docs/active/prd/APP-DW/PRD-APP-DW-页面专属Agent_v1.1-20260727.md
+    service: dw
+    operationIds:
+    - dwGetDwLearningFeedback
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-DW-DWGETDWMODELS:
+    prd: docs/active/prd/APP-DW/PRD-APP-DW-页面专属Agent_v1.1-20260727.md
+    service: dw
+    operationIds:
+    - dwGetDwModels
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-DW-DWGETDWTOOLS:
+    prd: docs/active/prd/APP-DW/PRD-APP-DW-页面专属Agent_v1.1-20260727.md
+    service: dw
+    operationIds:
+    - dwGetDwTools
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-DW-DWGETDWTRACES:
+    prd: docs/active/prd/APP-DW/PRD-APP-DW-页面专属Agent_v1.1-20260727.md
+    service: dw
+    operationIds:
+    - dwGetDwTraces
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-DW-DWPOSTDWDOCUMENTSUPLOAD:
+    prd: docs/active/prd/APP-DW/PRD-APP-DW-页面专属Agent_v1.1-20260727.md
+    service: dw
+    operationIds:
+    - dwPostDwDocumentsUpload
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-IAM-IAMDELETEADMINORGSORGID:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: iam
+    operationIds:
+    - iamDeleteAdminOrgsOrgId
+    handler: mate_tech_iam.main:app#iamDeleteAdminOrgsOrgId
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-IAM-IAMDELETEADMINORGSPOSITIONSPOSITIONID:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: iam
+    operationIds:
+    - iamDeleteAdminOrgsPositionsPositionId
+    handler: mate_tech_iam.main:app#iamDeleteAdminOrgsPositionsPositionId
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-IAM-IAMDELETEADMINPERMISSIONSROLESROLEID:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: iam
+    operationIds:
+    - iamDeleteAdminPermissionsRolesRoleId
+    handler: mate_tech_iam.main:app#iamDeleteAdminPermissionsRolesRoleId
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-IAM-IAMDELETEADMINUSERSUSERID:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: iam
+    operationIds:
+    - iamDeleteAdminUsersUserId
+    handler: mate_tech_iam.main:app#iamDeleteAdminUsersUserId
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-IAM-IAMGETADMINCONFIGS:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: iam
+    operationIds:
+    - iamGetAdminConfigs
+    handler: mate_tech_iam.main:app#iamGetAdminConfigs
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-IAM-IAMGETADMINCONFIGSCATEGORIES:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: iam
+    operationIds:
+    - iamGetAdminConfigsCategories
+    handler: mate_tech_iam.main:app#iamGetAdminConfigsCategories
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-IAM-IAMGETADMINLOGSAUDIT:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: iam
+    operationIds:
+    - iamGetAdminLogsAudit
+    handler: mate_tech_iam.main:app#iamGetAdminLogsAudit
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-IAM-IAMGETADMINLOGSAUDITEXPORT:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: iam
+    operationIds:
+    - iamGetAdminLogsAuditExport
+    handler: mate_tech_iam.main:app#iamGetAdminLogsAuditExport
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-IAM-IAMGETADMINLOGSAUDITLOGID:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: iam
+    operationIds:
+    - iamGetAdminLogsAuditLogId
+    handler: mate_tech_iam.main:app#iamGetAdminLogsAuditLogId
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-IAM-IAMGETADMINLOGSMODULES:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: iam
+    operationIds:
+    - iamGetAdminLogsModules
+    handler: mate_tech_iam.main:app#iamGetAdminLogsModules
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-IAM-IAMGETADMINORGS:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: iam
+    operationIds:
+    - iamGetAdminOrgs
+    handler: mate_tech_iam.main:app#iamGetAdminOrgs
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-IAM-IAMGETADMINORGSPOSITIONS:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: iam
+    operationIds:
+    - iamGetAdminOrgsPositions
+    handler: mate_tech_iam.main:app#iamGetAdminOrgsPositions
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-IAM-IAMGETADMINORGSTREE:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: iam
+    operationIds:
+    - iamGetAdminOrgsTree
+    handler: mate_tech_iam.main:app#iamGetAdminOrgsTree
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-IAM-IAMGETADMINPERMISSIONSCATALOG:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: iam
+    operationIds:
+    - iamGetAdminPermissionsCatalog
+    handler: mate_tech_iam.main:app#iamGetAdminPermissionsCatalog
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-IAM-IAMGETADMINPERMISSIONSMATRIX:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: iam
+    operationIds:
+    - iamGetAdminPermissionsMatrix
+    handler: mate_tech_iam.main:app#iamGetAdminPermissionsMatrix
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-IAM-IAMGETADMINPERMISSIONSROLES:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: iam
+    operationIds:
+    - iamGetAdminPermissionsRoles
+    handler: mate_tech_iam.main:app#iamGetAdminPermissionsRoles
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-IAM-IAMGETADMINPERMISSIONSROLESROLEID:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: iam
+    operationIds:
+    - iamGetAdminPermissionsRolesRoleId
+    handler: mate_tech_iam.main:app#iamGetAdminPermissionsRolesRoleId
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-IAM-IAMGETADMINUSERS:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: iam
+    operationIds:
+    - iamGetAdminUsers
+    handler: mate_tech_iam.main:app#iamGetAdminUsers
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-IAM-IAMGETADMINUSERSEXPORT:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: iam
+    operationIds:
+    - iamGetAdminUsersExport
+    handler: mate_tech_iam.main:app#iamGetAdminUsersExport
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-IAM-IAMGETADMINUSERSUSERID:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: iam
+    operationIds:
+    - iamGetAdminUsersUserId
+    handler: mate_tech_iam.main:app#iamGetAdminUsersUserId
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-IAM-IAMGETADMINUSERSUSERIDLOGINLOGS:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: iam
+    operationIds:
+    - iamGetAdminUsersUserIdLoginLogs
+    handler: mate_tech_iam.main:app#iamGetAdminUsersUserIdLoginLogs
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-IAM-IAMGETIAMAUTHME:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: iam
+    operationIds:
+    - iamGetIamAuthMe
+    handler: null
+    tests: []
+    implementationStatus: placeholder
+    acceptanceStatus: notAccepted
+  FR-IAM-IAMGETIAMSSOPROVIDERS:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: iam
+    operationIds:
+    - iamGetIamSsoProviders
+    handler: null
+    tests: []
+    implementationStatus: placeholder
+    acceptanceStatus: notAccepted
+  FR-IAM-IAMPOSTADMINORGS:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: iam
+    operationIds:
+    - iamPostAdminOrgs
+    handler: mate_tech_iam.main:app#iamPostAdminOrgs
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-IAM-IAMPOSTADMINORGSPOSITIONS:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: iam
+    operationIds:
+    - iamPostAdminOrgsPositions
+    handler: mate_tech_iam.main:app#iamPostAdminOrgsPositions
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-IAM-IAMPOSTADMINORGSTRANSFER:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: iam
+    operationIds:
+    - iamPostAdminOrgsTransfer
+    handler: mate_tech_iam.main:app#iamPostAdminOrgsTransfer
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-IAM-IAMPOSTADMINPERMISSIONSASSIGN:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: iam
+    operationIds:
+    - iamPostAdminPermissionsAssign
+    handler: mate_tech_iam.main:app#iamPostAdminPermissionsAssign
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-IAM-IAMPOSTADMINPERMISSIONSROLES:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: iam
+    operationIds:
+    - iamPostAdminPermissionsRoles
+    handler: mate_tech_iam.main:app#iamPostAdminPermissionsRoles
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-IAM-IAMPOSTADMINUSERS:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: iam
+    operationIds:
+    - iamPostAdminUsers
+    handler: mate_tech_iam.main:app#iamPostAdminUsers
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-IAM-IAMPOSTADMINUSERSIMPORT:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: iam
+    operationIds:
+    - iamPostAdminUsersImport
+    handler: mate_tech_iam.main:app#iamPostAdminUsersImport
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-IAM-IAMPOSTADMINUSERSUSERIDRESETPASSWORD:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: iam
+    operationIds:
+    - iamPostAdminUsersUserIdResetPassword
+    handler: mate_tech_iam.main:app#iamPostAdminUsersUserIdResetPassword
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-IAM-IAMPOSTADMINUSERSUSERIDSTATUS:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: iam
+    operationIds:
+    - iamPostAdminUsersUserIdStatus
+    handler: mate_tech_iam.main:app#iamPostAdminUsersUserIdStatus
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-IAM-IAMPOSTADMINUSERSUSERIDVERIFYPASSWORD:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: iam
+    operationIds:
+    - iamPostAdminUsersUserIdVerifyPassword
+    handler: mate_tech_iam.main:app#iamPostAdminUsersUserIdVerifyPassword
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-IAM-IAMPOSTIAMAUTHLOGIN:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: iam
+    operationIds:
+    - iamPostIamAuthLogin
+    handler: null
+    tests: []
+    implementationStatus: placeholder
+    acceptanceStatus: notAccepted
+  FR-IAM-IAMPOSTIAMAUTHLOGOUT:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: iam
+    operationIds:
+    - iamPostIamAuthLogout
+    handler: null
+    tests: []
+    implementationStatus: placeholder
+    acceptanceStatus: notAccepted
+  FR-IAM-IAMPOSTIAMAUTHREFRESH:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: iam
+    operationIds:
+    - iamPostIamAuthRefresh
+    handler: null
+    tests: []
+    implementationStatus: placeholder
+    acceptanceStatus: notAccepted
+  FR-IAM-IAMPUTADMINCONFIGSKEYPATH:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: iam
+    operationIds:
+    - iamPutAdminConfigsKeyPath
+    handler: mate_tech_iam.main:app#iamPutAdminConfigsKeyPath
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-IAM-IAMPUTADMINORGSORGID:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: iam
+    operationIds:
+    - iamPutAdminOrgsOrgId
+    handler: mate_tech_iam.main:app#iamPutAdminOrgsOrgId
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-IAM-IAMPUTADMINORGSPOSITIONSPOSITIONID:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: iam
+    operationIds:
+    - iamPutAdminOrgsPositionsPositionId
+    handler: mate_tech_iam.main:app#iamPutAdminOrgsPositionsPositionId
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-IAM-IAMPUTADMINPERMISSIONSROLESROLEID:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: iam
+    operationIds:
+    - iamPutAdminPermissionsRolesRoleId
+    handler: mate_tech_iam.main:app#iamPutAdminPermissionsRolesRoleId
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-IAM-IAMPUTADMINUSERSUSERID:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: iam
+    operationIds:
+    - iamPutAdminUsersUserId
+    handler: mate_tech_iam.main:app#iamPutAdminUsersUserId
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-KB-KBGETKBSTATS:
+    prd: docs/active/prd/APP-KB/PRD-APP-KB-知识库_v1.2-20260727.md
+    service: kb
+    operationIds:
+    - kbGetKbStats
+    handler: mate_app_kb.api.app:app#kbGetKbStats
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-KB-KBPOSTKBCHAT:
+    prd: docs/active/prd/APP-KB/PRD-APP-KB-知识库_v1.2-20260727.md
+    service: kb
+    operationIds:
+    - kbPostKbChat
+    handler: mate_app_kb.api.app:app#kbPostKbChat
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-KB-KBPOSTKBCHATSTREAM:
+    prd: docs/active/prd/APP-KB/PRD-APP-KB-知识库_v1.2-20260727.md
+    service: kb
+    operationIds:
+    - kbPostKbChatStream
+    handler: mate_app_kb.api.app:app#kbPostKbChatStream
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-KB-KBPOSTKBSEARCH:
+    prd: docs/active/prd/APP-KB/PRD-APP-KB-知识库_v1.2-20260727.md
+    service: kb
+    operationIds:
+    - kbPostKbSearch
+    handler: mate_app_kb.api.app:app#kbPostKbSearch
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-KB-KBPOSTKBUPLOAD:
+    prd: docs/active/prd/APP-KB/PRD-APP-KB-知识库_v1.2-20260727.md
+    service: kb
+    operationIds:
+    - kbPostKbUpload
+    handler: mate_app_kb.api.app:app#kbPostKbUpload
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-LLMGW-LLMGWPOSTLLMGWCHAT:
+    prd: docs/active/prd/APP-COPILOT/PRD-APP-COPILOT_v2.3-20260727.md
+    service: llmgw
+    operationIds:
+    - llmgwPostLlmgwChat
+    handler: mate_tech_llmgw.main:app#llmgwPostLlmgwChat
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-LLMGW-LLMGWPOSTLLMGWCHATSTREAM:
+    prd: docs/active/prd/APP-COPILOT/PRD-APP-COPILOT_v2.3-20260727.md
+    service: llmgw
+    operationIds:
+    - llmgwPostLlmgwChatStream
+    handler: null
+    tests: []
+    implementationStatus: placeholder
+    acceptanceStatus: notAccepted
+  FR-LLMGW-LLMGWPOSTLLMGWEMBEDDINGS:
+    prd: docs/active/prd/APP-COPILOT/PRD-APP-COPILOT_v2.3-20260727.md
+    service: llmgw
+    operationIds:
+    - llmgwPostLlmgwEmbeddings
+    handler: null
+    tests: []
+    implementationStatus: placeholder
+    acceptanceStatus: notAccepted
+  FR-MCP-MCPGETMCPPROMPTS:
+    prd: docs/active/prd/APP-MCPHUB/PRD-APP-MCPHUB-MCP服务中心_v2.2-20260727.md
+    service: mcp
+    operationIds:
+    - mcpGetMcpPrompts
+    handler: null
+    tests: []
+    implementationStatus: placeholder
+    acceptanceStatus: notAccepted
+  FR-MCP-MCPGETMCPRESOURCES:
+    prd: docs/active/prd/APP-MCPHUB/PRD-APP-MCPHUB-MCP服务中心_v2.2-20260727.md
+    service: mcp
+    operationIds:
+    - mcpGetMcpResources
+    handler: null
+    tests: []
+    implementationStatus: placeholder
+    acceptanceStatus: notAccepted
+  FR-MCP-MCPGETMCPTOOLS:
+    prd: docs/active/prd/APP-MCPHUB/PRD-APP-MCPHUB-MCP服务中心_v2.2-20260727.md
+    service: mcp
+    operationIds:
+    - mcpGetMcpTools
+    handler: null
+    tests: []
+    implementationStatus: placeholder
+    acceptanceStatus: notAccepted
+  FR-MCP-MCPPOSTMCPPROMPTSNAME:
+    prd: docs/active/prd/APP-MCPHUB/PRD-APP-MCPHUB-MCP服务中心_v2.2-20260727.md
+    service: mcp
+    operationIds:
+    - mcpPostMcpPromptsName
+    handler: null
+    tests: []
+    implementationStatus: placeholder
+    acceptanceStatus: notAccepted
+  FR-MCP-MCPPOSTMCPTOOLSNAME:
+    prd: docs/active/prd/APP-MCPHUB/PRD-APP-MCPHUB-MCP服务中心_v2.2-20260727.md
+    service: mcp
+    operationIds:
+    - mcpPostMcpToolsName
+    handler: null
+    tests: []
+    implementationStatus: placeholder
+    acceptanceStatus: notAccepted
+  FR-MSG-MSGGETMSGTOPICS:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: msg
+    operationIds:
+    - msgGetMsgTopics
+    handler: null
+    tests: []
+    implementationStatus: placeholder
+    acceptanceStatus: notAccepted
+  FR-MSG-MSGPOSTMSGPUBLISH:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: msg
+    operationIds:
+    - msgPostMsgPublish
+    handler: mate_tech_msg.main:app#msgPostMsgPublish
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-OBS-OBSGETADMINOPERATIONSALERTSRULES:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: obs
+    operationIds:
+    - obsGetAdminOperationsAlertsRules
+    handler: null
+    tests: []
+    implementationStatus: placeholder
+    acceptanceStatus: notAccepted
+  FR-OBS-OBSGETADMINOPERATIONSCAPACITY:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: obs
+    operationIds:
+    - obsGetAdminOperationsCapacity
+    handler: null
+    tests: []
+    implementationStatus: placeholder
+    acceptanceStatus: notAccepted
+  FR-OBS-OBSGETADMINOPERATIONSHEALTH:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: obs
+    operationIds:
+    - obsGetAdminOperationsHealth
+    handler: null
+    tests: []
+    implementationStatus: placeholder
+    acceptanceStatus: notAccepted
+  FR-OBS-OBSGETADMINOPERATIONSMETRICSSELF:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: obs
+    operationIds:
+    - obsGetAdminOperationsMetricsSelf
+    handler: null
+    tests: []
+    implementationStatus: placeholder
+    acceptanceStatus: notAccepted
+  FR-OBS-OBSGETADMINOPERATIONSPROMETHEUSQUERY:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: obs
+    operationIds:
+    - obsGetAdminOperationsPrometheusQuery
+    handler: null
+    tests: []
+    implementationStatus: placeholder
+    acceptanceStatus: notAccepted
+  FR-OBS-OBSGETOBSHEALTH:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: obs
+    operationIds:
+    - obsGetObsHealth
+    handler: null
+    tests: []
+    implementationStatus: placeholder
+    acceptanceStatus: notAccepted
+  FR-OBS-OBSGETOBSINSTRUMENT:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: obs
+    operationIds:
+    - obsGetObsInstrument
+    handler: null
+    tests: []
+    implementationStatus: placeholder
+    acceptanceStatus: notAccepted
+  FR-ONT-ONTDELETEONTINSTANCESIID:
+    prd: docs/active/prd/APP-ONTSTUDIO/PRD-APP-ONTSTUDIO-状态与改进规划_v2.2-20260727.md
+    service: ont
+    operationIds:
+    - ontDeleteOntInstancesIid
+    handler: null
+    tests: []
+    implementationStatus: placeholder
+    acceptanceStatus: notAccepted
+  FR-ONT-ONTGETONTCLASSESCLASSID:
+    prd: docs/active/prd/APP-ONTSTUDIO/PRD-APP-ONTSTUDIO-状态与改进规划_v2.2-20260727.md
+    service: ont
+    operationIds:
+    - ontGetOntClassesClassId
+    handler: mate_tech_ont.main:app#ontGetOntClassesClassId
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-ONT-ONTGETONTINSTANCES:
+    prd: docs/active/prd/APP-ONTSTUDIO/PRD-APP-ONTSTUDIO-状态与改进规划_v2.2-20260727.md
+    service: ont
+    operationIds:
+    - ontGetOntInstances
+    handler: null
+    tests: []
+    implementationStatus: placeholder
+    acceptanceStatus: notAccepted
+  FR-ONT-ONTGETONTINSTANCESIID:
+    prd: docs/active/prd/APP-ONTSTUDIO/PRD-APP-ONTSTUDIO-状态与改进规划_v2.2-20260727.md
+    service: ont
+    operationIds:
+    - ontGetOntInstancesIid
+    handler: null
+    tests: []
+    implementationStatus: placeholder
+    acceptanceStatus: notAccepted
+  FR-ONT-ONTGETONTINSTANCESRELATIONS:
+    prd: docs/active/prd/APP-ONTSTUDIO/PRD-APP-ONTSTUDIO-状态与改进规划_v2.2-20260727.md
+    service: ont
+    operationIds:
+    - ontGetOntInstancesRelations
+    handler: null
+    tests: []
+    implementationStatus: placeholder
+    acceptanceStatus: notAccepted
+  FR-ONT-ONTGETONTONTOLOGIESONTOLOGYID:
+    prd: docs/active/prd/APP-ONTSTUDIO/PRD-APP-ONTSTUDIO-状态与改进规划_v2.2-20260727.md
+    service: ont
+    operationIds:
+    - ontGetOntOntologiesOntologyId
+    handler: mate_tech_ont.main:app#ontGetOntOntologiesOntologyId
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-ONT-ONTPOSTONTCLASSES:
+    prd: docs/active/prd/APP-ONTSTUDIO/PRD-APP-ONTSTUDIO-状态与改进规划_v2.2-20260727.md
+    service: ont
+    operationIds:
+    - ontPostOntClasses
+    handler: mate_tech_ont.main:app#ontPostOntClasses
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-ONT-ONTPOSTONTEXPLAIN:
+    prd: docs/active/prd/APP-ONTSTUDIO/PRD-APP-ONTSTUDIO-状态与改进规划_v2.2-20260727.md
+    service: ont
+    operationIds:
+    - ontPostOntExplain
+    handler: mate_tech_ont.main:app#ontPostOntExplain
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-ONT-ONTPOSTONTINSTANCES:
+    prd: docs/active/prd/APP-ONTSTUDIO/PRD-APP-ONTSTUDIO-状态与改进规划_v2.2-20260727.md
+    service: ont
+    operationIds:
+    - ontPostOntInstances
+    handler: null
+    tests: []
+    implementationStatus: placeholder
+    acceptanceStatus: notAccepted
+  FR-ONT-ONTPOSTONTINSTANCESRELATIONS:
+    prd: docs/active/prd/APP-ONTSTUDIO/PRD-APP-ONTSTUDIO-状态与改进规划_v2.2-20260727.md
+    service: ont
+    operationIds:
+    - ontPostOntInstancesRelations
+    handler: null
+    tests: []
+    implementationStatus: placeholder
+    acceptanceStatus: notAccepted
+  FR-ONT-ONTPOSTONTONTOLOGIES:
+    prd: docs/active/prd/APP-ONTSTUDIO/PRD-APP-ONTSTUDIO-状态与改进规划_v2.2-20260727.md
+    service: ont
+    operationIds:
+    - ontPostOntOntologies
+    handler: mate_tech_ont.main:app#ontPostOntOntologies
+    tests:
+    - mate-platform-backend/contracts/tests/test_runtime_comparison.py
+    implementationStatus: implemented
+    acceptanceStatus: notAccepted
+  FR-ONT-ONTPOSTONTSPARQL:
+    prd: docs/active/prd/APP-ONTSTUDIO/PRD-APP-ONTSTUDIO-状态与改进规划_v2.2-20260727.md
+    service: ont
+    operationIds:
+    - ontPostOntSparql
+    handler: null
+    tests: []
+    implementationStatus: placeholder
+    acceptanceStatus: notAccepted
+  FR-RAG-RAGGETRAGADMINPGSTATS:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: rag
+    operationIds:
+    - ragGetRagAdminPgStats
+    handler: null
+    tests: []
+    implementationStatus: placeholder
+    acceptanceStatus: notAccepted
+  FR-RAG-RAGGETRAGSTATS:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: rag
+    operationIds:
+    - ragGetRagStats
+    handler: null
+    tests: []
+    implementationStatus: placeholder
+    acceptanceStatus: notAccepted
+  FR-RAG-RAGGETRAGSTATUS:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: rag
+    operationIds:
+    - ragGetRagStatus
+    handler: null
+    tests: []
+    implementationStatus: placeholder
+    acceptanceStatus: notAccepted
+  FR-RAG-RAGPOSTRAGINGEST:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: rag
+    operationIds:
+    - ragPostRagIngest
+    handler: null
+    tests: []
+    implementationStatus: placeholder
+    acceptanceStatus: notAccepted
+  FR-RAG-RAGPOSTRAGPARSE:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: rag
+    operationIds:
+    - ragPostRagParse
+    handler: null
+    tests: []
+    implementationStatus: placeholder
+    acceptanceStatus: notAccepted
+  FR-RAG-RAGPOSTRAGSEARCH:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: rag
+    operationIds:
+    - ragPostRagSearch
+    handler: null
+    tests: []
+    implementationStatus: placeholder
+    acceptanceStatus: notAccepted
+  FR-RAG-RAGPOSTRAGUPLOAD:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: rag
+    operationIds:
+    - ragPostRagUpload
+    handler: null
+    tests: []
+    implementationStatus: placeholder
+    acceptanceStatus: notAccepted
+  FR-WFE-WFEGETWFEFLOWSVALIDATE:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: wfe
+    operationIds:
+    - wfeGetWfeFlowsValidate
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted
+  FR-WFE-WFEPOSTWFEFLOWSTEST:
+    prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
+    service: wfe
+    operationIds:
+    - wfePostWfeFlowsTest
+    handler: null
+    tests: []
+    implementationStatus: planned
+    acceptanceStatus: notAccepted

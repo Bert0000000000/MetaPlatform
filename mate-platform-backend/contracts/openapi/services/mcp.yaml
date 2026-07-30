@@ -1,0 +1,185 @@
+openapi: 3.1.0
+info:
+  title: Mate Platform mcp API
+  version: 1.0.0
+  x-mate-owner: ai-protocols
+  description: Canonical contract for Mate Platform mcp API.
+  contact:
+    name: Mate Platform API Governance
+    email: api-governance@metaplatform.local
+servers:
+- url: /
+tags:
+- name: mcp
+  description: mcp domain operations
+security:
+- bearerAuth: []
+paths:
+  /healthz:
+    get:
+      summary: 健康检查
+      tags:
+      - mcp
+      responses:
+        '200':
+          description: OK
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
+      operationId: mcpGetHealthz
+      description: 健康检查
+      x-mate-owner: ai-protocols
+      x-mate-permission: mcp.get
+      x-mate-requirements:
+      - FR-MCP-MCPGETHEALTHZ
+      x-mate-implementation-status: placeholder
+  /api/v1/mcp/tools:
+    get:
+      summary: 列出所有已注册工具
+      tags:
+      - mcp
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tools:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ToolSpec'
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
+      operationId: mcpGetMcpTools
+      description: 列出所有已注册工具
+      x-mate-owner: ai-protocols
+      x-mate-permission: mcp.get
+      x-mate-requirements:
+      - FR-MCP-MCPGETMCPTOOLS
+      x-mate-implementation-status: placeholder
+  /api/v1/mcp/tools/{name}:
+    post:
+      summary: HTTP 桥接 — 调工具
+      tags:
+      - mcp
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: name
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arguments:
+                  type: object
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tool:
+                    type: string
+                  result: {}
+        '401':
+          description: 缺少或无效 JWT
+        '404':
+          description: 工具不存在
+        '429':
+          description: 触发限流
+      operationId: mcpPostMcpToolsName
+      description: HTTP 桥接 — 调工具
+      x-mate-owner: ai-protocols
+      x-mate-permission: mcp.post
+      x-mate-requirements:
+      - FR-MCP-MCPPOSTMCPTOOLSNAME
+      x-mate-implementation-status: placeholder
+  /api/v1/mcp/resources:
+    get:
+      summary: 列出资源
+      tags:
+      - mcp
+      responses:
+        '200':
+          description: OK
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
+      operationId: mcpGetMcpResources
+      description: 列出资源
+      x-mate-owner: ai-protocols
+      x-mate-permission: mcp.get
+      x-mate-requirements:
+      - FR-MCP-MCPGETMCPRESOURCES
+      x-mate-implementation-status: placeholder
+  /api/v1/mcp/prompts:
+    get:
+      summary: 列出 prompt 模板
+      tags:
+      - mcp
+      responses:
+        '200':
+          description: OK
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
+      operationId: mcpGetMcpPrompts
+      description: 列出 prompt 模板
+      x-mate-owner: ai-protocols
+      x-mate-permission: mcp.get
+      x-mate-requirements:
+      - FR-MCP-MCPGETMCPPROMPTS
+      x-mate-implementation-status: placeholder
+  /api/v1/mcp/prompts/{name}:
+    post:
+      summary: 渲染 prompt 模板
+      tags:
+      - mcp
+      parameters:
+      - name: name
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: OK
+        '404':
+          description: prompt 不存在
+      operationId: mcpPostMcpPromptsName
+      description: 渲染 prompt 模板
+      x-mate-owner: ai-protocols
+      x-mate-permission: mcp.post
+      x-mate-requirements:
+      - FR-MCP-MCPPOSTMCPPROMPTSNAME
+      x-mate-implementation-status: placeholder
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    ToolSpec:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        inputSchema:
+          type: object

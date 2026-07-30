@@ -1,0 +1,8 @@
+FROM node:22-alpine
+WORKDIR /contracts
+COPY mate-platform-backend/contracts/package.json mate-platform-backend/contracts/package-lock.json ./
+RUN npm ci
+COPY mate-platform-backend/contracts/openapi ./openapi
+ENTRYPOINT ["npx", "prism"]
+CMD ["mock", "openapi/generated/bundled.yaml", "--host", "0.0.0.0", "--port", "4010"]
+EXPOSE 4010
