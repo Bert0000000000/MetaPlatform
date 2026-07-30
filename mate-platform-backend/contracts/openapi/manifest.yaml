@@ -1,0 +1,87 @@
+version: 1
+domains:
+  iam:
+    contract: services/iam.yaml
+    owner: security-iam
+    visibility: external
+    runtimeModule: mate_tech_iam.main:app
+  dashboard:
+    contract: services/dashboard.yaml
+    owner: business-workbench
+    visibility: external
+    runtimeModule: mate_tech_iam.main:app
+  msg:
+    contract: services/msg.yaml
+    owner: platform-messaging
+    visibility: external
+    runtimeModule: mate_tech_msg.main:app
+  obs:
+    contract: services/obs.yaml
+    owner: platform-observability
+    visibility: external
+    runtimeModule: mate_tech_obs.main:app
+  mcp:
+    contract: services/mcp.yaml
+    owner: ai-protocols
+    visibility: external
+    runtimeModule: mate_tech_mcp.main:app
+  llmgw:
+    contract: services/llmgw.yaml
+    owner: ai-runtime
+    visibility: external
+    runtimeModule: mate_tech_llmgw.main:app
+  ont:
+    contract: services/ont.yaml
+    owner: ontology-platform
+    visibility: external
+    runtimeModule: mate_tech_ont.main:app
+  rag:
+    contract: services/rag.yaml
+    owner: knowledge-platform
+    visibility: external
+    runtimeModule: mate_tech_rag.api.app:app
+  agent:
+    contract: services/agent.yaml
+    owner: agent-platform
+    visibility: external
+    runtimeModule: mate_tech_agent.api.app:app
+  data:
+    contract: services/data.yaml
+    owner: data-platform
+    visibility: external
+    runtimeModule: null
+  kb:
+    contract: services/kb.yaml
+    owner: knowledge-platform
+    visibility: external
+    runtimeModule: mate_app_kb.api.app:app
+  copilot:
+    contract: services/copilot.yaml
+    owner: agent-experience
+    visibility: external
+    runtimeModule: null
+  dw:
+    contract: services/dw.yaml
+    owner: digital-workforce
+    visibility: external
+    runtimeModule: null
+  apphub:
+    contract: services/apphub.yaml
+    owner: application-platform
+    visibility: external
+    runtimeModule: null
+  arch:
+    contract: services/arch.yaml
+    owner: enterprise-architecture
+    visibility: external
+    runtimeModule: null
+  wfe:
+    contract: services/wfe.yaml
+    owner: workflow-platform
+    visibility: external
+    runtimeModule: null
+  a2a:
+    contract: services/a2a.yaml
+    owner: ai-protocols
+    visibility: external
+    runtimeModule: null
