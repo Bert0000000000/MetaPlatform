@@ -8,6 +8,14 @@ Wires the three integration hooks per ADR-0014:
 The RAGClient / AgentClient are constructed lazily per-request from
 the request's RequestContext so the X-Tenant-Id header is bound to
 the verified tenant.
+
+Path alignment (P0 close-out, 2026-07-30):
+  - Canonical prefix is now `/api/v1/kb/*` to match the spec
+    (contracts/openapi/services/kb.yaml + platform.yaml).
+  - The legacy `/api/v1/app-kb/*` paths remain as DEPRECATED
+    aliases for one release; they return the same handler results
+    but emit a Deprecation response header. Consumers must migrate
+    before the next minor release (see API-GOV-01 §6).
 """
 from __future__ import annotations
 
@@ -15,7 +23,7 @@ import logging
 import time
 import uuid
 
-from fastapi import FastAPI, File, HTTPException, Request, UploadFile
+from fastapi import FastAPI, File, HTTPException, Request, Response, UploadFile
 from fastapi.responses import StreamingResponse
 
 from mate_app_kb import __version__
@@ -35,6 +43,11 @@ from mate_platform.tenancy.guards import require_tenant
 
 
 _log = logging.getLogger(__name__)
+
+
+# Standard deprecation header (RFC 8594). The legacy prefix
+# /api/v1/app-kb/* is the deprecated alias of /api/v1/kb/*.
+_DEPRECATION_HEADER_VALUE = 'true; target="/api/v1/kb"'
 
 
 def create_app(rag: RAGClient | None = None, agent: AgentClient | None = None) -> FastAPI:
@@ -90,7 +103,7 @@ def create_app(rag: RAGClient | None = None, agent: AgentClient | None = None) -
     async def healthz() -> HealthResponse:
         return HealthResponse(status="ok", service="mate-app-kb", version=__version__)
 
-    @app.post("/api/v1/app-kb/upload", response_model=UploadResponse)
+    @app.post("/api/v1/kb/upload", response_model=UploadResponse)
     async def upload(
         request: Request,
         file: UploadFile = File(...),
@@ -119,7 +132,7 @@ def create_app(rag: RAGClient | None = None, agent: AgentClient | None = None) -
         except Exception as exc:
             raise HTTPException(status_code=502, detail=f"upstream error: {exc}") from exc
 
-    @app.post("/api/v1/app-kb/search", response_model=SearchResponse)
+    @app.post("/api/v1/kb/search", response_model=SearchResponse)
     async def search(request: Request, req: SearchRequest) -> SearchResponse:
         # Hook 2: tenant guard.
         ctx = _require_ctx(request)
@@ -138,7 +151,7 @@ def create_app(rag: RAGClient | None = None, agent: AgentClient | None = None) -
             latency_ms=latency_ms,
         )
 
-    @app.post("/api/v1/app-kb/chat", response_model=ChatResponse)
+    @app.post("/api/v1/kb/chat", response_model=ChatResponse)
     async def chat(request: Request, req: ChatRequest) -> ChatResponse:
         ctx = _require_ctx(request)
         require_tenant(ctx)
@@ -157,7 +170,7 @@ def create_app(rag: RAGClient | None = None, agent: AgentClient | None = None) -
             latency_ms=latency_ms,
         )
 
-    @app.post("/api/v1/app-kb/chat/stream")
+    @app.post("/api/v1/kb/chat/stream")
     async def chat_stream(request: Request, req: ChatRequest):
         ctx = _require_ctx(request)
         require_tenant(ctx)
@@ -169,7 +182,7 @@ def create_app(rag: RAGClient | None = None, agent: AgentClient | None = None) -
                 yield line + "\n\n"
         return StreamingResponse(event_gen(), media_type="text/event-stream")
 
-    @app.get("/api/v1/app-kb/stats", response_model=StatsResponse)
+    @app.get("/api/v1/kb/stats", response_model=StatsResponse)
     async def stats(request: Request) -> StatsResponse:
         ctx = _require_ctx(request)
         require_tenant(ctx)
@@ -181,6 +194,164 @@ def create_app(rag: RAGClient | None = None, agent: AgentClient | None = None) -
             total_chunks=data.get("total_chunks", 0),
             embedder_dim=data.get("embedder_dim", 0),
         )
+
+    # ------------------------------------------------------------------
+    # Deprecated aliases: /api/v1/app-kb/*  (P0 close-out 2026-07-30)
+    # The canonical prefix above is /api/v1/kb/*. The legacy endpoints
+    # remain available for one release to give consumers time to migrate;
+    # they emit the RFC 8594 Deprecation response header pointing at the
+    # new path. Remove in the release after consumers flip.
+    # ------------------------------------------------------------------
+    async def _deprecated_upload(
+        request: Request,
+        file: UploadFile = File(...),
+        document_id: str | None = None,
+    ) -> Response:
+        ctx = _require_ctx(request)
+        require_tenant(ctx)
+        try:
+            raw = await file.read()
+            if not raw:
+                raise HTTPException(status_code=400, detail="empty file")
+            doc_id = document_id or str(uuid.uuid4())
+            data = _rag(request).upload(
+                raw, file.filename or "unknown", doc_id, file.content_type or "text/plain"
+            )
+            body = UploadResponse(
+                document_id=data.get("document_id", doc_id),
+                filename=data.get("filename", file.filename or ""),
+                size_bytes=data.get("size_bytes", len(raw)),
+                chunk_count=data.get("chunk_count", 0),
+                indexed_in=data.get("indexed_in", []),
+            ).model_dump()
+        except HTTPException:
+            raise
+        except Exception as exc:
+            raise HTTPException(status_code=502, detail=f"upstream error: {exc}") from exc
+        return Response(
+            content=__import__("json").dumps(body),
+            media_type="application/json",
+            headers={"Deprecation": _DEPRECATION_HEADER_VALUE},
+        )
+
+    async def _deprecated_search(request: Request, req: SearchRequest) -> Response:
+        ctx = _require_ctx(request)
+        require_tenant(ctx)
+        start = time.perf_counter()
+        try:
+            data = _rag(request).search(req.query, top_k=req.top_k, mode=req.mode)
+        except Exception as exc:
+            raise HTTPException(status_code=502, detail=f"upstream error: {exc}") from exc
+        latency_ms = int((time.perf_counter() - start) * 1000)
+        body = SearchResponse(
+            query=data.get("query", req.query),
+            mode=data.get("mode", req.mode),
+            total=data.get("total", 0),
+            hits=data.get("hits", []),
+            latency_ms=latency_ms,
+        ).model_dump()
+        return Response(
+            content=__import__("json").dumps(body),
+            media_type="application/json",
+            headers={"Deprecation": _DEPRECATION_HEADER_VALUE},
+        )
+
+    async def _deprecated_chat(request: Request, req: ChatRequest) -> Response:
+        ctx = _require_ctx(request)
+        require_tenant(ctx)
+        start = time.perf_counter()
+        try:
+            data = _agent(request).chat(req.message, scenario=req.scenario, thread_id=req.thread_id)
+        except Exception as exc:
+            raise HTTPException(status_code=502, detail=f"upstream error: {exc}") from exc
+        latency_ms = int((time.perf_counter() - start) * 1000)
+        body = ChatResponse(
+            thread_id=data.get("thread_id", ""),
+            scenario=data.get("scenario", req.scenario),
+            answer=data.get("answer", ""),
+            retrieved_chunks=data.get("retrieved_chunks", []),
+            tool_calls=data.get("tool_calls", []),
+            latency_ms=latency_ms,
+        ).model_dump()
+        return Response(
+            content=__import__("json").dumps(body),
+            media_type="application/json",
+            headers={"Deprecation": _DEPRECATION_HEADER_VALUE},
+        )
+
+    async def _deprecated_chat_stream(request: Request, req: ChatRequest) -> Response:
+        ctx = _require_ctx(request)
+        require_tenant(ctx)
+        # Streams cannot trivially wrap with a header; emit Deprecation
+        # via the first SSE preamble comment line. Clients consuming the
+        # legacy path will see ": deprecation: ..." as the first event.
+        from fastapi.responses import StreamingResponse as _SR
+
+        async def event_gen():
+            yield f": deprecation: {_DEPRECATION_HEADER_VALUE}\n\n"
+            for line in _agent(request).stream_chat(
+                req.message, scenario=req.scenario, thread_id=req.thread_id
+            ):
+                yield line + "\n\n"
+
+        return _SR(event_gen(), media_type="text/event-stream")
+
+    async def _deprecated_stats(request: Request) -> Response:
+        ctx = _require_ctx(request)
+        require_tenant(ctx)
+        try:
+            data = _rag(request).stats()
+        except Exception as exc:
+            raise HTTPException(status_code=502, detail=f"upstream error: {exc}") from exc
+        body = StatsResponse(
+            total_chunks=data.get("total_chunks", 0),
+            embedder_dim=data.get("embedder_dim", 0),
+        ).model_dump()
+        return Response(
+            content=__import__("json").dumps(body),
+            media_type="application/json",
+            headers={"Deprecation": _DEPRECATION_HEADER_VALUE},
+        )
+
+    app.add_api_route(
+        "/api/v1/app-kb/upload",
+        _deprecated_upload,
+        methods=["POST"],
+        response_model=UploadResponse,
+        tags=["kb-deprecated"],
+        deprecated=True,
+    )
+    app.add_api_route(
+        "/api/v1/app-kb/search",
+        _deprecated_search,
+        methods=["POST"],
+        response_model=SearchResponse,
+        tags=["kb-deprecated"],
+        deprecated=True,
+    )
+    app.add_api_route(
+        "/api/v1/app-kb/chat",
+        _deprecated_chat,
+        methods=["POST"],
+        response_model=ChatResponse,
+        tags=["kb-deprecated"],
+        deprecated=True,
+    )
+    app.add_api_route(
+        "/api/v1/app-kb/chat/stream",
+        _deprecated_chat_stream,
+        methods=["POST"],
+        tags=["kb-deprecated"],
+        deprecated=True,
+    )
+    app.add_api_route(
+        "/api/v1/app-kb/stats",
+        _deprecated_stats,
+        methods=["GET"],
+        response_model=StatsResponse,
+        tags=["kb-deprecated"],
+        deprecated=True,
+    )
 
     return app
 
