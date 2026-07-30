@@ -26,9 +26,13 @@ from __future__ import annotations
 import os
 import sys
 from pathlib import Path
+from typing import TYPE_CHECKING
 from unittest.mock import patch
 
 import pytest
+
+if TYPE_CHECKING:
+    from fastapi.testclient import TestClient
 
 REPO = Path(__file__).resolve().parents[3]
 PKG = REPO / "mate-platform-backend" / "packages"
@@ -40,8 +44,6 @@ os.environ.setdefault("KEYCLOAK_URL", "https://keycloak.test.invalid")
 os.environ.setdefault("KEYCLOAK_REALM", "metaplatform")
 os.environ.setdefault("SERVICE_CLIENT_SECRET", "test-secret")
 
-from fastapi.testclient import TestClient
-
 
 class TestMcpHttpEndpointsWired:
     """Verify the 5 spec endpoints are mounted on the FastAPI app."""
@@ -52,6 +54,8 @@ class TestMcpHttpEndpointsWired:
         TestClient doesn't need a real Keycloak. We import main
         AFTER patching so install_auth(app) is a no-op.
         """
+        from fastapi.testclient import TestClient
+
         with patch("mate_platform.auth.install_auth", return_value=None):
             # Force a clean import so install_auth is mocked before
             # the module top-level `install_auth(app)` runs. Only
@@ -60,11 +64,11 @@ class TestMcpHttpEndpointsWired:
             for m in list(sys.modules):
                 if m == "mate_tech_mcp.main" or m.startswith("mate_tech_mcp."):
                     sys.modules.pop(m, None)
-            from mate_tech_mcp import main as _main_mod
-
             # Snapshot the production app so other tests in the
             # same session can still see install_auth wired.
             from fastapi import FastAPI
+
+            from mate_tech_mcp import main as _main_mod
             from mate_tech_mcp.main import http_bridge
 
             _test_app = FastAPI(title="mate-tech-mcp-test")

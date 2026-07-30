@@ -16,9 +16,13 @@ from __future__ import annotations
 import os
 import sys
 from pathlib import Path
+from typing import TYPE_CHECKING
 from unittest.mock import patch
 
 import pytest
+
+if TYPE_CHECKING:
+    from fastapi.testclient import TestClient
 
 REPO = Path(__file__).resolve().parents[3]
 PKG = REPO / "mate-platform-backend" / "packages"
@@ -30,14 +34,17 @@ os.environ.setdefault("KEYCLOAK_URL", "https://keycloak.test.invalid")
 os.environ.setdefault("KEYCLOAK_REALM", "metaplatform")
 os.environ.setdefault("SERVICE_CLIENT_SECRET", "test-secret")
 
-from fastapi.testclient import TestClient
-
-from mate_app_kb.clients import AgentClient, RAGClient
+# Imports below the sys.path bootstrap would trigger E402. Move
+# the cross-package imports into the fixture body where they're
+# used (ruff ignores PLC0415 for tests/**/*.py).
 
 
 @pytest.fixture
 def client():
+    from fastapi.testclient import TestClient
+
     from mate_app_kb.api.app import create_app
+    from mate_app_kb.clients import AgentClient, RAGClient
 
     fake_rag = RAGClient()
     fake_rag.search = lambda query, top_k=5, mode="AUTO": {
@@ -72,7 +79,10 @@ def client():
         app = create_app(rag=fake_rag, agent=fake_agent)
         # inject a fake auth ctx into request.state for every call
         from mate_platform.tenancy import (
-            AuthMethod, RequestContext, TenantId, UserId,
+            AuthMethod,
+            RequestContext,
+            TenantId,
+            UserId,
         )
 
         async def fake_middleware(request, call_next):
