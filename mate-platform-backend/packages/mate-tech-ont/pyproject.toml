@@ -30,12 +30,16 @@ dependencies = [
     "opentelemetry-instrumentation-fastapi>=0.48b0",
     "opentelemetry-instrumentation-httpx>=0.48b0",
     "mate-common",
+    "mate-platform",
+    "mate-clients",
     "rdflib>=7.0",
 ]
 
 
 [tool.uv.sources]
 mate-common = { workspace = true }
+mate-platform = { workspace = true }
+mate-clients = { workspace = true }
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"

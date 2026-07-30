@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """Conftest for mate-tech-ont."""
 
 
@@ -14,7 +16,6 @@ for _sub in (
     _p = str(_MONOREPO / "packages" / _sub / "src")
     if _p not in _sys.path:
         _sys.path.insert(0, _p)
-from __future__ import annotations
 
 import pytest
 
