@@ -1,0 +1,9 @@
+image:
+  repository: marquezproject/marquez
+  tag: "0.30.0"
+replicaCount: 1
+db:
+  host: postgres.metaplatform.svc.cluster.local
+  existingSecret: marquez-db
+graph:
+  partitionByTenant: true

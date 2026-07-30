@@ -1,0 +1,9 @@
+image:
+  repository: quay.io/debezium/connect
+  tag: "2.5.4.Final"
+  pullPolicy: IfNotPresent
+
+replicaCount: 1
+config:
+  bootstrap.servers: "kafka:9092"
+  group.id: "metaplatform-debezium"

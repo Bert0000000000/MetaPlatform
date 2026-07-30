@@ -1,0 +1,11 @@
+apiVersion: v2
+name: marquez
+description: |
+  OpenLineage + Marquez 0.30+ lineage server. DATA-D0-D8 D0
+  lineage placeholder; per-tenant partition.
+type: application
+version: 0.1.0
+appVersion: "0.30.0"
+maintainers:
+  - name: MetaPlatform Platform Owner
+    email: platform@metaplatform.local

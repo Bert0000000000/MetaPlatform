@@ -45,3 +45,15 @@ dependencies:
   - name: kafka
     version: 0.1.0
     condition: kafka.enabled
+  - name: debezium
+    version: 0.1.0
+    condition: debezium.enabled
+  - name: marquez
+    version: 0.1.0
+    condition: marquez.enabled
+  - name: datahub
+    version: 0.1.0
+    condition: datahub.enabled
+  - name: ge
+    version: 0.1.0
+    condition: ge.enabled

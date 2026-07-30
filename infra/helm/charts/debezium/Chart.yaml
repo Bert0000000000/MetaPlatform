@@ -1,0 +1,16 @@
+apiVersion: v2
+name: debezium
+description: |
+  Debezium 2.5 (CDC) for PostgreSQL 16. Closes the DATA-D0-D8
+  D0 placeholder; emits change events to Kafka topics named
+  metaplatform.<domain>.<tenant>.<table>.cdc.
+type: application
+version: 0.1.0
+appVersion: "2.5.4"
+keywords:
+  - debezium
+  - cdc
+  - postgresql
+maintainers:
+  - name: MetaPlatform Platform Owner
+    email: platform@metaplatform.local

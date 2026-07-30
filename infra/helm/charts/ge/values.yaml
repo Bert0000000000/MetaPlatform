@@ -1,0 +1,4 @@
+image:
+  repository: great_expectations/great_expectations
+  tag: "1.0.0"
+enabled: false

@@ -1,0 +1,4 @@
+image:
+  repository: acryldata/datahub-gms
+  tag: "0.13.0"
+enabled: false

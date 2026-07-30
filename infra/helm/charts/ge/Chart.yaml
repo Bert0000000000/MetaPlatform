@@ -1,0 +1,7 @@
+apiVersion: v2
+name: ge
+description: |
+  Great Expectations - DATA-D0-D8 D0 quality stub.
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
