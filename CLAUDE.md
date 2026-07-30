@@ -1,7 +1,7 @@
 # CLAUDE.md
 
 > 本文件供 Claude Code 读取，提供项目上下文、架构约束与开发规范。
-> **最近更新**：2026-07-30（**v3.0 GA 收口** — 8 个核心 Delivery Batch 全部 Accepted，§13 硬规则 1-13 全部闭环）
+> **最近更新**：2026-07-30（**v3.0 GA 收口** — 8 个核心 Delivery Batch 全部 Accepted，§13 硬规则 1-13 全部闭环）；上一版 2026-07-29（新增 Cowork ↔ Claude Code 交接约定）
 >
 > **当前架构版本**：**v3.0（Plan D - Polyglot Microservice）GA**，v3.1 Data-Ready Baseline 同步中
 
@@ -61,6 +61,50 @@ CI jobs + 测试覆盖三层保障闭环。251 / 251 tests pass。
 
 > 详见 `docs/active/specs/2026-07-27-mate-platform-architecture-implementation.md` 的服务矩阵。
 
+## 当前 Delivery Batch 接力（refactor/monorepo-shrink-phase-2 视角）
+
+| Batch | 状态 | Commit | 关键 ADR | AI Launch Prompt |
+|---|---|---|---|---|
+| API-GOV-01 | **Accepted** | 1fa521fd | — | `ai-launch-prompt.md`（batch A） |
+| ARCH-CORE-01 | **Accepted** | eeaab5c5 | — | `ai-launch-prompt-batchB.md` |
+| PLATFORM-K8S-01 | **Accepted** | 4d0b73d6 | ADR-0010 | `2026-07-30-ai-launch-prompt-batchC-platform-k8s.md` |
+| SEC-IAM-01 | **Accepted** | 4d3d894e | ADR-0011 | `2026-07-30-ai-launch-prompt-batchD-sec-iam-01.md` |
+| SEC-TENANT-01 | **Accepted** | 026ce4a8 | ADR-0012 | `2026-07-30-ai-launch-prompt-batchE-sec-tenant-01.md` |
+| PLATFORM-EVENT-01 | **Accepted** | 95b35e43 | ADR-0013 | `2026-07-30-ai-launch-prompt-batchF-platform-event-01.md` |
+| TECH-SERVICES | **Accepted** | 7fa52dc8 | ADR-0014 | `2026-07-30-ai-launch-prompt-batchG-tech-services.md` |
+| GA-ACCEPTANCE | **Accepted** | 87f589be | ADR-0015 | `2026-07-30-ai-launch-prompt-batchH-ga-acceptance.md` |
+| BUSINESS-SLICES | In Progress | — | ADR-0016 | `2026-07-30-ai-launch-prompt-batchI-business-slices.md` |
+| DATA-D0-D8 | In Progress | — | ADR-0017 | `2026-07-30-ai-launch-prompt-batchJ-data-d0-d8.md` |
+
+> 详细 13 门禁证据见 `docs/active/delivery/evidence/<BATCH>-ACCEPTANCE.md`。
+> 全部批次跟踪表见 `docs/active/delivery/PROGRAM-BOARD.md`。
+
+## 已落地的基础设施（PLATFORM-K8S-01 / SEC-IAM-01 / SEC-TENANT-01）
+
+### 运行时（PLATFORM-K8S-01）
+- `infra/helm/` umbrella chart + 4 sub-charts（otel-collector / keycloak /
+  network-policies / service-templates）。
+- 6 套环境 values（local / staging / production 等）。
+- `infra/argocd/` ApplicationSet + app-of-apps + AppProject。
+- `.github/workflows/platform-k8s-ci.yml` 5 jobs 流水线。
+- `infra/tests/` 105 pytest 静态校验。
+
+### 身份（SEC-IAM-01）
+- `mate-platform/auth/` 7 模块：config / jwks / verifier / identity /
+  tenant / middleware / __init__。
+- `mate-clients/security/` 3 模块：BearerAuth / OutgoingAuthMiddleware /
+  __init__。
+- `tests/test_sec_iam_01.py` 29 tests pass。
+- 旧 `mate-tech-iam` 标 deprecated（生产 profile 拒绝加载）。
+- OpenAPI securityScheme 升级：bearerAuth + tenantHeader + oidcScopes。
+
+### 租户（SEC-TENANT-01）
+- `mate-platform/tenancy/` 4 模块：repository / guards / db_filter / audit。
+- `mate-platform/messaging/kafka_tenant.py`：topic 命名约定 +
+  assert_message_tenant 消费端校验。
+- `mate-clients/redis/keys.py` + `minio/buckets.py`：命名空间隔离。
+- `tests/test_sec_tenant_01.py` 54 tests pass（含 12 跨租户 negative）。
+
 ## 提交顺序（强约束，沿用 production-readiness §10）
 
 ```
@@ -92,4 +136,4 @@ docs/ADR → contract → failing tests → feature → infrastructure → deplo
 3. 跑既有 pytest 套件确认基线（`infra/tests` + `mate-platform-backend/packages/*/tests`）。
 4. 提交风格遵循 Conventional Commits。
 5. PR 必须包含 ADR 引用 + operationId 引用 + 验收证据链接。
-6. v3.1 增量工作（BUSINESS-SLICES / DATA-D0-D8）按 ADR-0014 / 未来 ADR-0016 推进。
+6. v3.1 增量工作（BUSINESS-SLICES / DATA-D0-D8）按 ADR-0016 / ADR-0017 推进。
