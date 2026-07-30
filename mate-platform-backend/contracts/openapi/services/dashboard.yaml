@@ -3,6 +3,10 @@ info:
   title: Mate Platform dashboard API
   version: 1.0.0
   x-mate-owner: business-workbench
+  description: Canonical contract for Mate Platform dashboard API.
+  contact:
+    name: Mate Platform API Governance
+    email: api-governance@metaplatform.local
 servers:
 - url: /
 tags:
@@ -55,6 +59,8 @@ paths:
       responses:
         '200':
           description: OK
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: dashboardGetDashboardProfile
       description: Current user profile (synthetic)
       x-mate-owner: business-workbench
@@ -70,6 +76,8 @@ paths:
       responses:
         '200':
           description: OK
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: dashboardGetDashboardProfilePermissions
       description: Aggregated permissions (synthetic)
       x-mate-owner: business-workbench
@@ -90,6 +98,8 @@ paths:
       responses:
         '200':
           description: OK
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: dashboardGetDashboardSettings
       description: Get user preferences
       x-mate-owner: business-workbench
@@ -110,6 +120,8 @@ paths:
       responses:
         '200':
           description: OK
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: dashboardPutDashboardSettings
       description: Update user preferences
       x-mate-owner: business-workbench
@@ -130,6 +142,8 @@ paths:
       responses:
         '200':
           description: OK
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: dashboardGetDashboardSessions
       description: Active sessions (synthetic)
       x-mate-owner: business-workbench
@@ -151,6 +165,8 @@ paths:
       responses:
         '204':
           description: No Content
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: dashboardDeleteDashboardSessionsSessionId
       description: Revoke session
       x-mate-owner: business-workbench
@@ -158,6 +174,12 @@ paths:
       x-mate-requirements:
       - FR-DASHBOARD-DASHBOARDDELETEDASHBOARDSESSIONSSESSIONID
       x-mate-implementation-status: placeholder
+      parameters:
+      - name: session_id
+        in: path
+        required: true
+        schema:
+          type: string
   /api/v1/dashboard/api-keys:
     get:
       summary: List API keys (synthetic)
@@ -181,6 +203,8 @@ paths:
       responses:
         '200':
           description: OK
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: dashboardGetDashboardApiKeys
       description: List API keys (synthetic)
       x-mate-owner: business-workbench
@@ -201,6 +225,8 @@ paths:
       responses:
         '200':
           description: OK
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: dashboardPostDashboardApiKeys
       description: Create API key
       x-mate-owner: business-workbench
@@ -222,6 +248,8 @@ paths:
       responses:
         '204':
           description: No Content
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: dashboardDeleteDashboardApiKeysApiKeyId
       description: Revoke API key
       x-mate-owner: business-workbench
@@ -229,6 +257,12 @@ paths:
       x-mate-requirements:
       - FR-DASHBOARD-DASHBOARDDELETEDASHBOARDAPIKEYSAPIKEYID
       x-mate-implementation-status: placeholder
+      parameters:
+      - name: api_key_id
+        in: path
+        required: true
+        schema:
+          type: string
   /api/v1/dashboard/notifications:
     get:
       summary: List notifications (in-memory)
@@ -237,6 +271,8 @@ paths:
       responses:
         '200':
           description: OK
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: dashboardGetDashboardNotifications
       description: List notifications (in-memory)
       x-mate-owner: business-workbench
@@ -252,6 +288,8 @@ paths:
       responses:
         '200':
           description: OK
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: dashboardGetDashboardNotificationsUnreadCount
       description: Unread notification count
       x-mate-owner: business-workbench
@@ -273,6 +311,8 @@ paths:
       responses:
         '204':
           description: No Content
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: dashboardPutDashboardNotificationsNotificationIdRead
       description: Mark one notification read
       x-mate-owner: business-workbench
@@ -280,6 +320,12 @@ paths:
       x-mate-requirements:
       - FR-DASHBOARD-DASHBOARDPUTDASHBOARDNOTIFICATIONSNOTIFICATIONIDREAD
       x-mate-implementation-status: placeholder
+      parameters:
+      - name: notification_id
+        in: path
+        required: true
+        schema:
+          type: string
   /api/v1/dashboard/notifications/read-all:
     post:
       summary: Mark all notifications read
@@ -288,6 +334,8 @@ paths:
       responses:
         '204':
           description: No Content
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: dashboardPostDashboardNotificationsReadAll
       description: Mark all notifications read
       x-mate-owner: business-workbench
@@ -303,6 +351,8 @@ paths:
       responses:
         '200':
           description: OK
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: dashboardGetDashboardNotificationsSettings
       description: Get notification preferences
       x-mate-owner: business-workbench
@@ -323,6 +373,8 @@ paths:
       responses:
         '200':
           description: OK
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: dashboardPutDashboardNotificationsSettings
       description: Update notification preferences
       x-mate-owner: business-workbench
@@ -338,6 +390,8 @@ paths:
       responses:
         '200':
           description: OK
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: dashboardGetDashboardMetrics
       description: Metric cards (in-memory)
       x-mate-owner: business-workbench
@@ -362,6 +416,8 @@ paths:
       responses:
         '200':
           description: OK
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: dashboardGetDashboardMetricsTrend
       description: Metric trend (in-memory)
       x-mate-owner: business-workbench
@@ -377,6 +433,8 @@ paths:
       responses:
         '200':
           description: OK
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: dashboardGetDashboardTodos
       description: Pending todos (in-memory)
       x-mate-owner: business-workbench
@@ -392,6 +450,8 @@ paths:
       responses:
         '200':
           description: OK
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: dashboardGetDashboardTodosDone
       description: Done todos (in-memory)
       x-mate-owner: business-workbench
@@ -419,6 +479,8 @@ paths:
       responses:
         '200':
           description: OK
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: dashboardPostDashboardTodosTaskIdAction
       description: Approve / reject todo
       x-mate-owner: business-workbench
@@ -426,6 +488,12 @@ paths:
       x-mate-requirements:
       - FR-DASHBOARD-DASHBOARDPOSTDASHBOARDTODOSTASKIDACTION
       x-mate-implementation-status: placeholder
+      parameters:
+      - name: task_id
+        in: path
+        required: true
+        schema:
+          type: string
   /api/v1/dashboard/workers:
     get:
       summary: List digital workers (in-memory)
@@ -434,6 +502,8 @@ paths:
       responses:
         '200':
           description: OK
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: dashboardGetDashboardWorkers
       description: List digital workers (in-memory)
       x-mate-owner: business-workbench
@@ -449,6 +519,8 @@ paths:
       responses:
         '200':
           description: OK
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: dashboardGetDashboardDeliverables
       description: List deliverables (in-memory)
       x-mate-owner: business-workbench
@@ -485,6 +557,12 @@ paths:
       x-mate-requirements:
       - FR-DASHBOARD-DASHBOARDPOSTDASHBOARDDELIVERABLESDELIVERABLEIDDOWNLOAD
       x-mate-implementation-status: placeholder
+      parameters:
+      - name: deliverable_id
+        in: path
+        required: true
+        schema:
+          type: string
   /api/v1/dashboard/deliverables/{deliverable_id}:
     parameters:
     - in: path
@@ -499,6 +577,8 @@ paths:
       responses:
         '204':
           description: No Content
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: dashboardDeleteDashboardDeliverablesDeliverableId
       description: Delete deliverable
       x-mate-owner: business-workbench
@@ -506,6 +586,12 @@ paths:
       x-mate-requirements:
       - FR-DASHBOARD-DASHBOARDDELETEDASHBOARDDELIVERABLESDELIVERABLEID
       x-mate-implementation-status: placeholder
+      parameters:
+      - name: deliverable_id
+        in: path
+        required: true
+        schema:
+          type: string
   /api/v1/dashboard/anomalies:
     get:
       summary: List anomaly events (in-memory)
@@ -523,6 +609,8 @@ paths:
       responses:
         '200':
           description: OK
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: dashboardGetDashboardAnomalies
       description: List anomaly events (in-memory)
       x-mate-owner: business-workbench
@@ -553,6 +641,12 @@ paths:
       x-mate-requirements:
       - FR-DASHBOARD-DASHBOARDGETDASHBOARDANOMALIESANOMALYID
       x-mate-implementation-status: placeholder
+      parameters:
+      - name: anomaly_id
+        in: path
+        required: true
+        schema:
+          type: string
   /api/v1/dashboard/anomalies/{anomaly_id}/analyze:
     parameters:
     - in: path
@@ -576,6 +670,12 @@ paths:
       x-mate-requirements:
       - FR-DASHBOARD-DASHBOARDPOSTDASHBOARDANOMALIESANOMALYIDANALYZE
       x-mate-implementation-status: placeholder
+      parameters:
+      - name: anomaly_id
+        in: path
+        required: true
+        schema:
+          type: string
   /api/v1/dashboard/anomalies/{anomaly_id}/remediate:
     parameters:
     - in: path
@@ -615,6 +715,12 @@ paths:
       x-mate-requirements:
       - FR-DASHBOARD-DASHBOARDPOSTDASHBOARDANOMALIESANOMALYIDREMEDIATE
       x-mate-implementation-status: placeholder
+      parameters:
+      - name: anomaly_id
+        in: path
+        required: true
+        schema:
+          type: string
   /api/v1/dashboard/anomaly-rules:
     get:
       summary: List anomaly detection rules (in-memory)
@@ -623,6 +729,8 @@ paths:
       responses:
         '200':
           description: OK
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: dashboardGetDashboardAnomalyRules
       description: List anomaly detection rules (in-memory)
       x-mate-owner: business-workbench
@@ -643,6 +751,8 @@ paths:
       responses:
         '200':
           description: Created
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: dashboardPostDashboardAnomalyRules
       description: Create anomaly rule
       x-mate-owner: business-workbench
@@ -679,6 +789,12 @@ paths:
       x-mate-requirements:
       - FR-DASHBOARD-DASHBOARDPUTDASHBOARDANOMALYRULESRULEID
       x-mate-implementation-status: placeholder
+      parameters:
+      - name: rule_id
+        in: path
+        required: true
+        schema:
+          type: string
     delete:
       summary: Delete anomaly rule
       tags:
@@ -686,6 +802,8 @@ paths:
       responses:
         '204':
           description: No Content
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: dashboardDeleteDashboardAnomalyRulesRuleId
       description: Delete anomaly rule
       x-mate-owner: business-workbench
@@ -693,6 +811,12 @@ paths:
       x-mate-requirements:
       - FR-DASHBOARD-DASHBOARDDELETEDASHBOARDANOMALYRULESRULEID
       x-mate-implementation-status: placeholder
+      parameters:
+      - name: rule_id
+        in: path
+        required: true
+        schema:
+          type: string
   /api/v1/dashboard/search:
     get:
       summary: Global search (in-memory index)
@@ -706,6 +830,8 @@ paths:
       responses:
         '200':
           description: OK
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: dashboardGetDashboardSearch
       description: Global search (in-memory index)
       x-mate-owner: business-workbench
@@ -719,3 +845,566 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+  schemas:
+    LoginRequest:
+      type: object
+      required:
+      - username
+      - password
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+        tenantId:
+          type:
+          - string
+          - 'null'
+    AuthResponse:
+      type: object
+      required:
+      - accessToken
+      - refreshToken
+      - userId
+      - username
+      - user
+      properties:
+        loginResult:
+          type: string
+          default: SUCCESS
+        userId:
+          type: string
+        username:
+          type: string
+        realName:
+          type:
+          - string
+          - 'null'
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+        tokenType:
+          type: string
+          default: Bearer
+        expiresIn:
+          type: integer
+        refreshExpiresIn:
+          type: integer
+        requirePasswordReset:
+          type: boolean
+        mfaRequired:
+          type: boolean
+        user:
+          $ref: '#/components/schemas/UserInfo'
+        loginAt:
+          type: string
+          format: date-time
+        loginIp:
+          type:
+          - string
+          - 'null'
+    UserInfo:
+      type: object
+      required:
+      - id
+      - username
+      properties:
+        id:
+          type: string
+        username:
+          type: string
+        email:
+          type:
+          - string
+          - 'null'
+        realName:
+          type:
+          - string
+          - 'null'
+        status:
+          type:
+          - string
+          - 'null'
+    UserStatus:
+      type: string
+      enum:
+      - ACTIVE
+      - DISABLED
+      - LOCKED
+    UserCreate:
+      type: object
+      required:
+      - username
+      properties:
+        username:
+          type: string
+          minLength: 2
+          maxLength: 64
+        real_name:
+          type:
+          - string
+          - 'null'
+        email:
+          type:
+          - string
+          - 'null'
+        phone:
+          type:
+          - string
+          - 'null'
+        department:
+          type:
+          - string
+          - 'null'
+        position:
+          type:
+          - string
+          - 'null'
+        password:
+          type:
+          - string
+          - 'null'
+          minLength: 8
+          maxLength: 128
+        status:
+          $ref: '#/components/schemas/UserStatus'
+        is_super_admin:
+          type: boolean
+          default: false
+        role_ids:
+          type: array
+          items:
+            type: integer
+    UserUpdate:
+      type: object
+      properties:
+        real_name:
+          type:
+          - string
+          - 'null'
+        email:
+          type:
+          - string
+          - 'null'
+        phone:
+          type:
+          - string
+          - 'null'
+        department:
+          type:
+          - string
+          - 'null'
+        position:
+          type:
+          - string
+          - 'null'
+        avatar:
+          type:
+          - string
+          - 'null'
+        status:
+          $ref: '#/components/schemas/UserStatus'
+        is_super_admin:
+          type:
+          - boolean
+          - 'null'
+        role_ids:
+          type:
+          - array
+          - 'null'
+          items:
+            type: integer
+    OrgCreate:
+      type: object
+      required:
+      - code
+      - name
+      properties:
+        parent_id:
+          type:
+          - integer
+          - 'null'
+        code:
+          type: string
+          minLength: 1
+          maxLength: 64
+        name:
+          type: string
+          minLength: 1
+          maxLength: 128
+        type:
+          type: string
+          enum:
+          - DEPARTMENT
+          - COMPANY
+          - TEAM
+          - VIRTUAL
+          default: DEPARTMENT
+        leader_id:
+          type:
+          - integer
+          - 'null'
+        sort_order:
+          type: integer
+          default: 0
+        description:
+          type:
+          - string
+          - 'null'
+          maxLength: 512
+    OrgUpdate:
+      type: object
+      properties:
+        parent_id:
+          type:
+          - integer
+          - 'null'
+        name:
+          type:
+          - string
+          - 'null'
+        type:
+          type:
+          - string
+          - 'null'
+          enum:
+          - DEPARTMENT
+          - COMPANY
+          - TEAM
+          - VIRTUAL
+        leader_id:
+          type:
+          - integer
+          - 'null'
+        sort_order:
+          type:
+          - integer
+          - 'null'
+        description:
+          type:
+          - string
+          - 'null'
+    PositionCreate:
+      type: object
+      required:
+      - org_id
+      - code
+      - name
+      properties:
+        org_id:
+          type: integer
+        code:
+          type: string
+          minLength: 1
+          maxLength: 64
+        name:
+          type: string
+          minLength: 1
+          maxLength: 128
+        level:
+          type:
+          - string
+          - 'null'
+        description:
+          type:
+          - string
+          - 'null'
+    PositionUpdate:
+      type: object
+      properties:
+        name:
+          type:
+          - string
+          - 'null'
+        level:
+          type:
+          - string
+          - 'null'
+        description:
+          type:
+          - string
+          - 'null'
+    TransferPayload:
+      type: object
+      required:
+      - user_id
+      - target_org_id
+      properties:
+        user_id:
+          type: integer
+        target_org_id:
+          type: integer
+        target_position_id:
+          type:
+          - integer
+          - 'null'
+        reports_to:
+          type:
+          - integer
+          - 'null'
+        reason:
+          type:
+          - string
+          - 'null'
+    RoleCreate:
+      type: object
+      required:
+      - code
+      - name
+      properties:
+        code:
+          type: string
+          minLength: 2
+          maxLength: 64
+        name:
+          type: string
+          minLength: 1
+          maxLength: 128
+        description:
+          type:
+          - string
+          - 'null'
+        data_scope:
+          type: string
+          enum:
+          - ALL
+          - DEPT
+          - DEPT_AND_SUB
+          - SELF
+          - CUSTOM
+          default: SELF
+        permission_ids:
+          type: array
+          items:
+            type: integer
+    RoleUpdate:
+      type: object
+      properties:
+        name:
+          type:
+          - string
+          - 'null'
+        description:
+          type:
+          - string
+          - 'null'
+          maxLength: 8192
+        data_scope:
+          type:
+          - string
+          - 'null'
+          enum:
+          - ALL
+          - DEPT
+          - DEPT_AND_SUB
+          - SELF
+          - CUSTOM
+        permission_ids:
+          type:
+          - array
+          - 'null'
+          items:
+            type: integer
+    AssignPayload:
+      type: object
+      required:
+      - type
+      - target_id
+      properties:
+        type:
+          type: string
+          enum:
+          - user
+          - role
+        target_id:
+          type: integer
+        permission_ids:
+          type: array
+          items:
+            type: integer
+        role_ids:
+          type:
+          - array
+          - 'null'
+          description: required when type=user
+          items:
+            type: integer
+    AuditAction:
+      type: string
+      enum:
+      - CREATE
+      - UPDATE
+      - DELETE
+      - ENABLE
+      - DISABLE
+      - RESET_PASSWORD
+      - LOGIN
+      - LOGOUT
+      - IMPORT
+      - EXPORT
+      - CONFIG_CHANGE
+    ConfigCategory:
+      type: string
+      enum:
+      - GENERAL
+      - SECURITY
+      - INTEGRATION
+      - NOTIFICATION
+      - BILLING
+      - AI
+    ConfigUpdate:
+      type: object
+      required:
+      - value
+      properties:
+        value: {}
+        note:
+          type:
+          - string
+          - 'null'
+          maxLength: 512
+    SettingsUpdate:
+      type: object
+      properties:
+        userId:
+          type:
+          - string
+          - 'null'
+        language:
+          type:
+          - string
+          - 'null'
+        timezone:
+          type:
+          - string
+          - 'null'
+        dateFormat:
+          type:
+          - string
+          - 'null'
+        defaultPage:
+          type:
+          - string
+          - 'null'
+        theme:
+          type:
+          - string
+          - 'null'
+        layout:
+          type:
+          - array
+          - 'null'
+          items:
+            type: string
+    NotificationSettingsUpdate:
+      type: object
+      properties:
+        userId:
+          type:
+          - string
+          - 'null'
+        approval:
+          type:
+          - boolean
+          - 'null'
+        task:
+          type:
+          - boolean
+          - 'null'
+        system:
+          type:
+          - boolean
+          - 'null'
+        mention:
+          type:
+          - boolean
+          - 'null'
+        alert:
+          type:
+          - boolean
+          - 'null'
+        email:
+          type:
+          - boolean
+          - 'null'
+        push:
+          type:
+          - boolean
+          - 'null'
+    ApiKeyCreate:
+      type: object
+      required:
+      - name
+      properties:
+        tenantId:
+          type: string
+          default: tenant-default
+        name:
+          type: string
+        userId:
+          type:
+          - string
+          - 'null'
+        scopes:
+          type: array
+          items:
+            type: string
+        expiresAt:
+          type:
+          - string
+          - 'null'
+          format: date-time
+    DownloadRequest:
+      type: object
+      required:
+      - format
+      properties:
+        format:
+          type: string
+    TodoActionRequest:
+      type: object
+      required:
+      - action
+      properties:
+        action:
+          type: string
+          enum:
+          - approve
+          - reject
+        comment:
+          type:
+          - string
+          - 'null'
+    AnomalyRuleCreate:
+      type: object
+      required:
+      - name
+      - metricType
+      - conditionOperator
+      - threshold
+      - timeWindowSeconds
+      - aggregationFunction
+      - severity
+      properties:
+        name:
+          type: string
+        metricType:
+          type: string
+        conditionOperator:
+          type: string
+        threshold:
+          type: number
+        timeWindowSeconds:
+          type: integer
+        aggregationFunction:
+          type: string
+        severity:
+          type: string
+          enum:
+          - INFO
+          - WARNING
+          - CRITICAL
+        enabled:
+          type: boolean
+          default: true

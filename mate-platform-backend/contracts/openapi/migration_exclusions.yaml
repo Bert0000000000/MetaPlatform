@@ -1,0 +1,10 @@
+version: 1
+breakingRemovals:
+- prefix: /api/v1/superai
+  reason: Superseded by /api/v1/copilot
+- prefix: /api/v1/ea
+  reason: Renamed to /api/v1/arch
+- prefix: /api/v1/app-kb
+  reason: Renamed to /api/v1/kb
+- prefix: /api/v1/llm
+  reason: Renamed to /api/v1/llmgw

@@ -3,6 +3,10 @@ info:
   title: Mate Platform obs API
   version: 1.0.0
   x-mate-owner: platform-observability
+  description: Canonical contract for Mate Platform obs API.
+  contact:
+    name: Mate Platform API Governance
+    email: api-governance@metaplatform.local
 servers:
 - url: /
 tags:
@@ -19,6 +23,8 @@ paths:
       responses:
         '200':
           description: OK
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: obsGetHealthz
       description: Liveness probe
       x-mate-owner: platform-observability
@@ -34,6 +40,8 @@ paths:
       responses:
         '200':
           description: text/plain exposition format
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: obsGetMetrics
       description: Prometheus metrics (text/plain)
       x-mate-owner: platform-observability
@@ -49,6 +57,8 @@ paths:
       responses:
         '200':
           description: OK
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: obsGetObsHealth
       description: Aggregated health (9 apps + 7 infra)
       x-mate-owner: platform-observability
@@ -64,6 +74,8 @@ paths:
       responses:
         '200':
           description: OK
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: obsGetObsInstrument
       description: Auto-instrument status
       x-mate-owner: platform-observability
@@ -79,6 +91,8 @@ paths:
       responses:
         '200':
           description: OK
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: obsGetAdminOperationsHealth
       description: Operations health (per service)
       x-mate-owner: platform-observability
@@ -94,6 +108,8 @@ paths:
       responses:
         '200':
           description: OK
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: obsGetAdminOperationsMetricsSelf
       description: Self process metrics snapshot
       x-mate-owner: platform-observability
@@ -109,6 +125,8 @@ paths:
       responses:
         '200':
           description: OK
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: obsGetAdminOperationsAlertsRules
       description: List alert rules
       x-mate-owner: platform-observability
@@ -131,6 +149,8 @@ paths:
       responses:
         '200':
           description: OK
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: obsGetAdminOperationsPrometheusQuery
       description: Prometheus passthrough (best-effort)
       x-mate-owner: platform-observability
@@ -146,6 +166,8 @@ paths:
       responses:
         '200':
           description: OK
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: obsGetAdminOperationsCapacity
       description: Capacity snapshot
       x-mate-owner: platform-observability

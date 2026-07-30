@@ -3,6 +3,10 @@ info:
   title: Mate Platform agent API
   version: 1.0.0
   x-mate-owner: agent-platform
+  description: Canonical contract for Mate Platform agent API.
+  contact:
+    name: Mate Platform API Governance
+    email: api-governance@metaplatform.local
 servers:
 - url: /
 tags:
@@ -23,6 +27,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HealthResponse'
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: agentGetHealthz
       description: Liveness probe
       x-mate-owner: agent-platform
@@ -52,6 +58,8 @@ paths:
           description: Scenario not implemented
         '500':
           description: Graph execution failure
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: agentPostAgentChat
       description: Agent chat (S1 | S2 | S3 | S4)
       x-mate-owner: agent-platform
@@ -75,6 +83,8 @@ paths:
           description: text/event-stream
         '501':
           description: Scenario not implemented
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: agentPostAgentChatStream
       description: SSE streaming chat (S1 / S2 / S3)
       x-mate-owner: agent-platform
@@ -102,6 +112,8 @@ paths:
                 $ref: '#/components/schemas/HumanReviewResponse'
         '500':
           description: Post-review execution failure
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: agentPostAgentReview
       description: S3 human review resume (approve / abort)
       x-mate-owner: agent-platform
@@ -132,6 +144,12 @@ paths:
       x-mate-requirements:
       - FR-AGENT-AGENTGETAGENTSTATETHREADID
       x-mate-implementation-status: placeholder
+      parameters:
+      - name: thread_id
+        in: path
+        required: true
+        schema:
+          type: string
     delete:
       summary: Delete persisted thread state
       tags:
@@ -148,6 +166,12 @@ paths:
       x-mate-requirements:
       - FR-AGENT-AGENTDELETEAGENTSTATETHREADID
       x-mate-implementation-status: placeholder
+      parameters:
+      - name: thread_id
+        in: path
+        required: true
+        schema:
+          type: string
 components:
   securitySchemes:
     bearerAuth:
@@ -178,8 +202,9 @@ components:
           minLength: 1
           maxLength: 4096
         thread_id:
-          type: string
-          nullable: true
+          type:
+          - string
+          - 'null'
         scenario:
           type: string
           enum:
@@ -224,8 +249,9 @@ components:
         approved:
           type: boolean
         feedback:
-          type: string
-          nullable: true
+          type:
+          - string
+          - 'null'
     HumanReviewResponse:
       type: object
       required:
@@ -241,5 +267,6 @@ components:
           - aborted
           - no_pending
         message:
-          type: string
-          nullable: true
+          type:
+          - string
+          - 'null'

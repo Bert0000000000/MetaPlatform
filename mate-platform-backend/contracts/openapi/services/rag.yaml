@@ -3,6 +3,10 @@ info:
   title: Mate Platform rag API
   version: 1.0.0
   x-mate-owner: knowledge-platform
+  description: Canonical contract for Mate Platform rag API.
+  contact:
+    name: Mate Platform API Governance
+    email: api-governance@metaplatform.local
 servers:
 - url: /
 tags:
@@ -23,6 +27,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HealthResponse'
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: ragGetHealthz
       description: Liveness probe
       x-mate-owner: knowledge-platform
@@ -42,6 +48,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemStatus'
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: ragGetRagStatus
       description: System status (embedder + index backends)
       x-mate-owner: knowledge-platform
@@ -61,6 +69,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/StatsResponse'
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: ragGetRagStats
       description: Indexed chunk count + embedder dim
       x-mate-owner: knowledge-platform
@@ -80,6 +90,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PgStatsResponse'
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: ragGetRagAdminPgStats
       description: PostgreSQL store diagnostics
       x-mate-owner: knowledge-platform
@@ -107,6 +119,8 @@ paths:
                 $ref: '#/components/schemas/ParseResponse'
         '500':
           description: Parse / index failure
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: ragPostRagParse
       description: Parse raw text via RAGFlow and fan out to 3 indexes
       x-mate-owner: knowledge-platform
@@ -134,6 +148,8 @@ paths:
                 $ref: '#/components/schemas/IngestResponse'
         '500':
           description: Ingest failure
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: ragPostRagIngest
       description: Ingest pre-chunked text into all 3 indexes
       x-mate-owner: knowledge-platform
@@ -198,6 +214,8 @@ paths:
                 $ref: '#/components/schemas/RetrievalResponse'
         '500':
           description: Retrieval failure
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: ragPostRagSearch
       description: 3-strategy retrieval (auto / factual / entity / thematic)
       x-mate-owner: knowledge-platform

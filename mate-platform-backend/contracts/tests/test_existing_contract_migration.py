@@ -20,6 +20,7 @@ def ops(doc: dict) -> set[tuple[str,str]]:
  return {(method,path) for path,item in doc.get("paths",{}).items() for method in item if method in METHODS}
 
 def normalize(domain: str, path: str) -> tuple[str,str]:
+ path=path.replace("{key:path}","{key}")
  if domain=="iam" and path.startswith("/api/v1/dashboard"): return "dashboard",path
  if domain=="kb": return "kb",path.replace("/api/v1/app-kb","/api/v1/kb")
  if domain=="llmgw": return "llmgw",path.replace("/api/v1/llm","/api/v1/llmgw")

@@ -3,6 +3,10 @@ info:
   title: Mate Platform llmgw API
   version: 1.0.0
   x-mate-owner: ai-runtime
+  description: Canonical contract for Mate Platform llmgw API.
+  contact:
+    name: Mate Platform API Governance
+    email: api-governance@metaplatform.local
 servers:
 - url: /
 tags:
@@ -31,6 +35,8 @@ paths:
                 $ref: '#/components/schemas/ChatResponseAPI'
         '501':
           description: Provider not implemented
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: llmgwPostLlmgwChat
       description: 非流式 chat
       x-mate-owner: ai-runtime
@@ -54,6 +60,8 @@ paths:
           description: SSE stream
           content:
             text/event-stream: {}
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: llmgwPostLlmgwChatStream
       description: SSE 流式 chat
       x-mate-owner: ai-runtime
@@ -75,6 +83,8 @@ paths:
       responses:
         '200':
           description: OK
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: llmgwPostLlmgwEmbeddings
       description: 嵌入向量
       x-mate-owner: ai-runtime
@@ -90,6 +100,8 @@ paths:
       responses:
         '200':
           description: OK
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: llmgwGetHealthz
       description: 健康检查
       x-mate-owner: ai-runtime
@@ -112,11 +124,13 @@ components:
         content:
           type: string
         name:
-          type: string
-          nullable: true
+          type:
+          - string
+          - 'null'
         tool_call_id:
-          type: string
-          nullable: true
+          type:
+          - string
+          - 'null'
     ChatRequest:
       type: object
       required:
@@ -133,8 +147,9 @@ components:
           type: number
           default: 1.0
         max_tokens:
-          type: integer
-          nullable: true
+          type:
+          - integer
+          - 'null'
         tools:
           type: array
           items:
@@ -147,8 +162,9 @@ components:
         model:
           type: string
         finish_reason:
-          type: string
-          nullable: true
+          type:
+          - string
+          - 'null'
         tool_calls:
           type: array
           items:

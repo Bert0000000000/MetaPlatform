@@ -3,6 +3,7 @@ from copy import deepcopy
 from pathlib import Path
 import re
 import yaml
+from openapi_normalize import sanitize_document
 
 ROOT=Path(__file__).parents[2]
 OUT=Path(__file__).parents[1]/"openapi/services"
@@ -47,9 +48,11 @@ def migrate()->None:
     docs={d:blank(d) for d in OWNERS}
     for source_domain,source in SOURCES.items():
         src=yaml.safe_load(source.read_text(encoding="utf-8"))
-        for name,value in (src.get("components") or {}).items():
-            if name=="securitySchemes": continue
-            docs[source_domain].setdefault("components",{}).setdefault(name,{}).update(deepcopy(value or {}))
+        component_targets=[source_domain,"dashboard"] if source_domain=="iam" else [source_domain]
+        for component_domain in component_targets:
+            for name,value in (src.get("components") or {}).items():
+                if name=="securitySchemes": continue
+                docs[component_domain].setdefault("components",{}).setdefault(name,{}).update(deepcopy(value or {}))
         for path,item in (src.get("paths") or {}).items():
             domain,new_path=target(source_domain,path)
             new_item=deepcopy(item)
@@ -68,6 +71,7 @@ def migrate()->None:
     for domain,doc in docs.items():
         doc["tags"]=[{"name":domain,"description":f"{domain} domain operations"}]
         OUT.mkdir(parents=True,exist_ok=True)
+        doc=sanitize_document(doc)
         (OUT/f"{domain}.yaml").write_text(yaml.safe_dump(doc,sort_keys=False,allow_unicode=True),encoding="utf-8")
 
 if __name__=="__main__": migrate()

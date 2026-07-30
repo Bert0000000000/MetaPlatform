@@ -3,6 +3,10 @@ info:
   title: Mate Platform mcp API
   version: 1.0.0
   x-mate-owner: ai-protocols
+  description: Canonical contract for Mate Platform mcp API.
+  contact:
+    name: Mate Platform API Governance
+    email: api-governance@metaplatform.local
 servers:
 - url: /
 tags:
@@ -19,6 +23,8 @@ paths:
       responses:
         '200':
           description: OK
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: mcpGetHealthz
       description: 健康检查
       x-mate-owner: ai-protocols
@@ -43,6 +49,8 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/ToolSpec'
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: mcpGetMcpTools
       description: 列出所有已注册工具
       x-mate-owner: ai-protocols
@@ -104,6 +112,8 @@ paths:
       responses:
         '200':
           description: OK
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: mcpGetMcpResources
       description: 列出资源
       x-mate-owner: ai-protocols
@@ -119,6 +129,8 @@ paths:
       responses:
         '200':
           description: OK
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: mcpGetMcpPrompts
       description: 列出 prompt 模板
       x-mate-owner: ai-protocols

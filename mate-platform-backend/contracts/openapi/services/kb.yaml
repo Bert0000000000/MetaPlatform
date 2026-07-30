@@ -3,6 +3,10 @@ info:
   title: Mate Platform kb API
   version: 1.0.0
   x-mate-owner: knowledge-platform
+  description: Canonical contract for Mate Platform kb API.
+  contact:
+    name: Mate Platform API Governance
+    email: api-governance@metaplatform.local
 servers:
 - url: /
 tags:
@@ -23,6 +27,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HealthResponse'
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: kbGetHealthz
       description: Liveness probe
       x-mate-owner: knowledge-platform
@@ -85,6 +91,8 @@ paths:
                 $ref: '#/components/schemas/SearchResponse'
         '502':
           description: Upstream RAG error
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: kbPostKbSearch
       description: Search via RAG (forwarded)
       x-mate-owner: knowledge-platform
@@ -112,6 +120,8 @@ paths:
                 $ref: '#/components/schemas/ChatResponse'
         '502':
           description: Upstream agent error
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: kbPostKbChat
       description: Agent chat (forwarded to mate-tech-agent)
       x-mate-owner: knowledge-platform
@@ -135,6 +145,8 @@ paths:
           description: SSE stream
           content:
             text/event-stream: {}
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: kbPostKbChatStream
       description: Agent chat (SSE) - proxies mate-tech-agent stream
       x-mate-owner: knowledge-platform
@@ -156,6 +168,8 @@ paths:
                 $ref: '#/components/schemas/StatsResponse'
         '502':
           description: Upstream RAG error
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: kbGetKbStats
       description: Forwarded RAG stats
       x-mate-owner: knowledge-platform
@@ -261,8 +275,9 @@ components:
           minLength: 1
           maxLength: 4096
         thread_id:
-          type: string
-          nullable: true
+          type:
+          - string
+          - 'null'
         scenario:
           type: string
           enum:

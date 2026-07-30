@@ -3,6 +3,10 @@ info:
   title: Mate Platform msg API
   version: 1.0.0
   x-mate-owner: platform-messaging
+  description: Canonical contract for Mate Platform msg API.
+  contact:
+    name: Mate Platform API Governance
+    email: api-governance@metaplatform.local
 servers:
 - url: /
 tags:
@@ -19,6 +23,8 @@ paths:
       responses:
         '200':
           description: OK
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: msgGetHealthz
       description: 健康检查
       x-mate-owner: platform-messaging
@@ -46,6 +52,8 @@ paths:
                 $ref: '#/components/schemas/PublishResponse'
         '500':
           description: 发布失败
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: msgPostMsgPublish
       description: 发布消息
       x-mate-owner: platform-messaging
@@ -61,6 +69,8 @@ paths:
       responses:
         '200':
           description: OK
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: msgGetMsgTopics
       description: 列出主题
       x-mate-owner: platform-messaging
@@ -86,11 +96,13 @@ components:
         payload:
           type: object
         partition_key:
-          type: string
-          nullable: true
+          type:
+          - string
+          - 'null'
         idempotency_key:
-          type: string
-          nullable: true
+          type:
+          - string
+          - 'null'
     PublishResponse:
       type: object
       properties:

@@ -3,6 +3,10 @@ info:
   title: Mate Platform iam API
   version: 1.0.0
   x-mate-owner: security-iam
+  description: Canonical contract for Mate Platform iam API.
+  contact:
+    name: Mate Platform API Governance
+    email: api-governance@metaplatform.local
 servers:
 - url: /
 tags:
@@ -20,6 +24,8 @@ paths:
       responses:
         '200':
           description: OK
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: iamGetHealthz
       description: Liveness probe
       x-mate-owner: security-iam
@@ -36,6 +42,8 @@ paths:
       responses:
         '200':
           description: OK
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: iamGetReadyz
       description: Readiness (DB ping)
       x-mate-owner: security-iam
@@ -169,6 +177,8 @@ paths:
       responses:
         '200':
           description: OK
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: iamGetIamSsoProviders
       description: List SSO providers (empty by default)
       x-mate-owner: security-iam
@@ -264,6 +274,8 @@ paths:
       responses:
         '200':
           description: OK
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: iamPostAdminUsersImport
       description: Bulk import users from CSV
       x-mate-owner: security-iam
@@ -281,6 +293,8 @@ paths:
           description: text/csv stream
           content:
             text/csv: {}
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: iamGetAdminUsersExport
       description: Export users as CSV
       x-mate-owner: security-iam
@@ -311,6 +325,12 @@ paths:
       x-mate-requirements:
       - FR-IAM-IAMGETADMINUSERSUSERID
       x-mate-implementation-status: implemented
+      parameters:
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: string
     put:
       summary: Update user
       tags:
@@ -333,6 +353,12 @@ paths:
       x-mate-requirements:
       - FR-IAM-IAMPUTADMINUSERSUSERID
       x-mate-implementation-status: implemented
+      parameters:
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: string
     delete:
       summary: Delete user (cascades UserRole)
       tags:
@@ -351,6 +377,12 @@ paths:
       x-mate-requirements:
       - FR-IAM-IAMDELETEADMINUSERSUSERID
       x-mate-implementation-status: implemented
+      parameters:
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: string
   /api/v1/admin/users/{user_id}/reset-password:
     parameters:
     - in: path
@@ -374,6 +406,12 @@ paths:
       x-mate-requirements:
       - FR-IAM-IAMPOSTADMINUSERSUSERIDRESETPASSWORD
       x-mate-implementation-status: implemented
+      parameters:
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: string
   /api/v1/admin/users/{user_id}/status:
     parameters:
     - in: path
@@ -410,6 +448,12 @@ paths:
       x-mate-requirements:
       - FR-IAM-IAMPOSTADMINUSERSUSERIDSTATUS
       x-mate-implementation-status: implemented
+      parameters:
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: string
   /api/v1/admin/users/{user_id}/verify-password:
     parameters:
     - in: path
@@ -444,6 +488,12 @@ paths:
       x-mate-requirements:
       - FR-IAM-IAMPOSTADMINUSERSUSERIDVERIFYPASSWORD
       x-mate-implementation-status: implemented
+      parameters:
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: string
   /api/v1/admin/users/{user_id}/login-logs:
     parameters:
     - in: path
@@ -469,6 +519,11 @@ paths:
           minimum: 1
           maximum: 200
           default: 20
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: string
       responses:
         '200':
           description: OK
@@ -489,6 +544,8 @@ paths:
       responses:
         '200':
           description: OK
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: iamGetAdminOrgsTree
       description: Org tree (root -> children)
       x-mate-owner: security-iam
@@ -531,6 +588,8 @@ paths:
       responses:
         '200':
           description: OK
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: iamGetAdminOrgs
       description: List orgs (paginated)
       x-mate-owner: security-iam
@@ -551,6 +610,8 @@ paths:
       responses:
         '201':
           description: Created
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: iamPostAdminOrgs
       description: Create org
       x-mate-owner: security-iam
@@ -587,6 +648,12 @@ paths:
       x-mate-requirements:
       - FR-IAM-IAMPUTADMINORGSORGID
       x-mate-implementation-status: implemented
+      parameters:
+      - name: org_id
+        in: path
+        required: true
+        schema:
+          type: string
     delete:
       summary: Delete org (rejected when children exist)
       tags:
@@ -605,6 +672,12 @@ paths:
       x-mate-requirements:
       - FR-IAM-IAMDELETEADMINORGSORGID
       x-mate-implementation-status: implemented
+      parameters:
+      - name: org_id
+        in: path
+        required: true
+        schema:
+          type: string
   /api/v1/admin/orgs/positions:
     get:
       summary: List positions
@@ -631,6 +704,8 @@ paths:
       responses:
         '200':
           description: OK
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: iamGetAdminOrgsPositions
       description: List positions
       x-mate-owner: security-iam
@@ -651,6 +726,8 @@ paths:
       responses:
         '201':
           description: Created
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: iamPostAdminOrgsPositions
       description: Create position
       x-mate-owner: security-iam
@@ -687,6 +764,12 @@ paths:
       x-mate-requirements:
       - FR-IAM-IAMPUTADMINORGSPOSITIONSPOSITIONID
       x-mate-implementation-status: implemented
+      parameters:
+      - name: position_id
+        in: path
+        required: true
+        schema:
+          type: string
     delete:
       summary: Delete position (rejected when employees still attached)
       tags:
@@ -705,6 +788,12 @@ paths:
       x-mate-requirements:
       - FR-IAM-IAMDELETEADMINORGSPOSITIONSPOSITIONID
       x-mate-implementation-status: implemented
+      parameters:
+      - name: position_id
+        in: path
+        required: true
+        schema:
+          type: string
   /api/v1/admin/orgs/transfer:
     post:
       summary: Transfer an employee to a target org/position
@@ -756,6 +845,8 @@ paths:
       responses:
         '200':
           description: OK
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: iamGetAdminPermissionsRoles
       description: List roles
       x-mate-owner: security-iam
@@ -808,6 +899,12 @@ paths:
       x-mate-requirements:
       - FR-IAM-IAMGETADMINPERMISSIONSROLESROLEID
       x-mate-implementation-status: implemented
+      parameters:
+      - name: role_id
+        in: path
+        required: true
+        schema:
+          type: string
     put:
       summary: Update role
       tags:
@@ -830,6 +927,12 @@ paths:
       x-mate-requirements:
       - FR-IAM-IAMPUTADMINPERMISSIONSROLESROLEID
       x-mate-implementation-status: implemented
+      parameters:
+      - name: role_id
+        in: path
+        required: true
+        schema:
+          type: string
     delete:
       summary: Delete role (rejected if users still assigned)
       tags:
@@ -848,6 +951,12 @@ paths:
       x-mate-requirements:
       - FR-IAM-IAMDELETEADMINPERMISSIONSROLESROLEID
       x-mate-implementation-status: implemented
+      parameters:
+      - name: role_id
+        in: path
+        required: true
+        schema:
+          type: string
   /api/v1/admin/permissions/catalog:
     get:
       summary: Permission catalog (resource + actions)
@@ -856,6 +965,8 @@ paths:
       responses:
         '200':
           description: OK
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: iamGetAdminPermissionsCatalog
       description: Permission catalog (resource + actions)
       x-mate-owner: security-iam
@@ -899,6 +1010,8 @@ paths:
       responses:
         '200':
           description: OK
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: iamGetAdminPermissionsMatrix
       description: Role x permission matrix
       x-mate-owner: security-iam
@@ -958,6 +1071,8 @@ paths:
       responses:
         '200':
           description: OK
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: iamGetAdminLogsAudit
       description: Audit log query
       x-mate-owner: security-iam
@@ -1004,6 +1119,8 @@ paths:
       responses:
         '200':
           description: text/csv | application/json stream
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: iamGetAdminLogsAuditExport
       description: Export audit log (csv | json), max 50000 rows
       x-mate-owner: security-iam
@@ -1034,6 +1151,12 @@ paths:
       x-mate-requirements:
       - FR-IAM-IAMGETADMINLOGSAUDITLOGID
       x-mate-implementation-status: implemented
+      parameters:
+      - name: log_id
+        in: path
+        required: true
+        schema:
+          type: string
   /api/v1/admin/logs/modules:
     get:
       summary: Distinct module/action counts (for filter UI)
@@ -1042,6 +1165,8 @@ paths:
       responses:
         '200':
           description: OK
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: iamGetAdminLogsModules
       description: Distinct module/action counts (for filter UI)
       x-mate-owner: security-iam
@@ -1079,6 +1204,8 @@ paths:
       responses:
         '200':
           description: OK
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: iamGetAdminConfigs
       description: List system configs
       x-mate-owner: security-iam
@@ -1094,6 +1221,8 @@ paths:
       responses:
         '200':
           description: OK
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
       operationId: iamGetAdminConfigsCategories
       description: Distinct category counts
       x-mate-owner: security-iam
@@ -1101,7 +1230,7 @@ paths:
       x-mate-requirements:
       - FR-IAM-IAMGETADMINCONFIGSCATEGORIES
       x-mate-implementation-status: implemented
-  /api/v1/admin/configs/{key:path}:
+  /api/v1/admin/configs/{key}:
     parameters:
     - in: path
       name: key
@@ -1132,6 +1261,12 @@ paths:
       x-mate-requirements:
       - FR-IAM-IAMPUTADMINCONFIGSKEYPATH
       x-mate-implementation-status: implemented
+      parameters:
+      - name: key
+        in: path
+        required: true
+        schema:
+          type: string
 components:
   securitySchemes:
     bearerAuth:
@@ -1150,8 +1285,9 @@ components:
         password:
           type: string
         tenantId:
-          type: string
-          nullable: true
+          type:
+          - string
+          - 'null'
     AuthResponse:
       type: object
       required:
@@ -1169,8 +1305,9 @@ components:
         username:
           type: string
         realName:
-          type: string
-          nullable: true
+          type:
+          - string
+          - 'null'
         accessToken:
           type: string
         refreshToken:
@@ -1192,8 +1329,9 @@ components:
           type: string
           format: date-time
         loginIp:
-          type: string
-          nullable: true
+          type:
+          - string
+          - 'null'
     UserInfo:
       type: object
       required:
@@ -1205,14 +1343,17 @@ components:
         username:
           type: string
         email:
-          type: string
-          nullable: true
+          type:
+          - string
+          - 'null'
         realName:
-          type: string
-          nullable: true
+          type:
+          - string
+          - 'null'
         status:
-          type: string
-          nullable: true
+          type:
+          - string
+          - 'null'
     UserStatus:
       type: string
       enum:
@@ -1229,25 +1370,31 @@ components:
           minLength: 2
           maxLength: 64
         real_name:
-          type: string
-          nullable: true
+          type:
+          - string
+          - 'null'
         email:
-          type: string
-          nullable: true
+          type:
+          - string
+          - 'null'
         phone:
-          type: string
-          nullable: true
+          type:
+          - string
+          - 'null'
         department:
-          type: string
-          nullable: true
+          type:
+          - string
+          - 'null'
         position:
-          type: string
-          nullable: true
+          type:
+          - string
+          - 'null'
         password:
-          type: string
+          type:
+          - string
+          - 'null'
           minLength: 8
           maxLength: 128
-          nullable: true
         status:
           $ref: '#/components/schemas/UserStatus'
         is_super_admin:
@@ -1261,31 +1408,39 @@ components:
       type: object
       properties:
         real_name:
-          type: string
-          nullable: true
+          type:
+          - string
+          - 'null'
         email:
-          type: string
-          nullable: true
+          type:
+          - string
+          - 'null'
         phone:
-          type: string
-          nullable: true
+          type:
+          - string
+          - 'null'
         department:
-          type: string
-          nullable: true
+          type:
+          - string
+          - 'null'
         position:
-          type: string
-          nullable: true
+          type:
+          - string
+          - 'null'
         avatar:
-          type: string
-          nullable: true
+          type:
+          - string
+          - 'null'
         status:
           $ref: '#/components/schemas/UserStatus'
         is_super_admin:
-          type: boolean
-          nullable: true
+          type:
+          - boolean
+          - 'null'
         role_ids:
-          type: array
-          nullable: true
+          type:
+          - array
+          - 'null'
           items:
             type: integer
     OrgCreate:
@@ -1295,8 +1450,9 @@ components:
       - name
       properties:
         parent_id:
-          type: integer
-          nullable: true
+          type:
+          - integer
+          - 'null'
         code:
           type: string
           minLength: 1
@@ -1314,41 +1470,49 @@ components:
           - VIRTUAL
           default: DEPARTMENT
         leader_id:
-          type: integer
-          nullable: true
+          type:
+          - integer
+          - 'null'
         sort_order:
           type: integer
           default: 0
         description:
-          type: string
-          nullable: true
+          type:
+          - string
+          - 'null'
           maxLength: 512
     OrgUpdate:
       type: object
       properties:
         parent_id:
-          type: integer
-          nullable: true
+          type:
+          - integer
+          - 'null'
         name:
-          type: string
-          nullable: true
+          type:
+          - string
+          - 'null'
         type:
-          type: string
+          type:
+          - string
+          - 'null'
           enum:
           - DEPARTMENT
           - COMPANY
           - TEAM
           - VIRTUAL
-          nullable: true
         leader_id:
-          type: integer
-          nullable: true
+          type:
+          - integer
+          - 'null'
         sort_order:
-          type: integer
-          nullable: true
+          type:
+          - integer
+          - 'null'
         description:
-          type: string
-          nullable: true
+          type:
+          - string
+          - 'null'
     PositionCreate:
       type: object
       required:
@@ -1367,23 +1531,28 @@ components:
           minLength: 1
           maxLength: 128
         level:
-          type: string
-          nullable: true
+          type:
+          - string
+          - 'null'
         description:
-          type: string
-          nullable: true
+          type:
+          - string
+          - 'null'
     PositionUpdate:
       type: object
       properties:
         name:
-          type: string
-          nullable: true
+          type:
+          - string
+          - 'null'
         level:
-          type: string
-          nullable: true
+          type:
+          - string
+          - 'null'
         description:
-          type: string
-          nullable: true
+          type:
+          - string
+          - 'null'
     TransferPayload:
       type: object
       required:
@@ -1395,14 +1564,17 @@ components:
         target_org_id:
           type: integer
         target_position_id:
-          type: integer
-          nullable: true
+          type:
+          - integer
+          - 'null'
         reports_to:
-          type: integer
-          nullable: true
+          type:
+          - integer
+          - 'null'
         reason:
-          type: string
-          nullable: true
+          type:
+          - string
+          - 'null'
     RoleCreate:
       type: object
       required:
@@ -1418,8 +1590,9 @@ components:
           minLength: 1
           maxLength: 128
         description:
-          type: string
-          nullable: true
+          type:
+          - string
+          - 'null'
         data_scope:
           type: string
           enum:
@@ -1437,24 +1610,28 @@ components:
       type: object
       properties:
         name:
-          type: string
-          nullable: true
+          type:
+          - string
+          - 'null'
         description:
-          type: string
-          nullable: true
+          type:
+          - string
+          - 'null'
           maxLength: 8192
         data_scope:
-          type: string
+          type:
+          - string
+          - 'null'
           enum:
           - ALL
           - DEPT
           - DEPT_AND_SUB
           - SELF
           - CUSTOM
-          nullable: true
         permission_ids:
-          type: array
-          nullable: true
+          type:
+          - array
+          - 'null'
           items:
             type: integer
     AssignPayload:
@@ -1475,8 +1652,9 @@ components:
           items:
             type: integer
         role_ids:
-          type: array
-          nullable: true
+          type:
+          - array
+          - 'null'
           description: required when type=user
           items:
             type: integer
@@ -1510,62 +1688,78 @@ components:
       properties:
         value: {}
         note:
-          type: string
-          nullable: true
+          type:
+          - string
+          - 'null'
           maxLength: 512
     SettingsUpdate:
       type: object
       properties:
         userId:
-          type: string
-          nullable: true
+          type:
+          - string
+          - 'null'
         language:
-          type: string
-          nullable: true
+          type:
+          - string
+          - 'null'
         timezone:
-          type: string
-          nullable: true
+          type:
+          - string
+          - 'null'
         dateFormat:
-          type: string
-          nullable: true
+          type:
+          - string
+          - 'null'
         defaultPage:
-          type: string
-          nullable: true
+          type:
+          - string
+          - 'null'
         theme:
-          type: string
-          nullable: true
+          type:
+          - string
+          - 'null'
         layout:
-          type: array
-          nullable: true
+          type:
+          - array
+          - 'null'
           items:
             type: string
     NotificationSettingsUpdate:
       type: object
       properties:
         userId:
-          type: string
-          nullable: true
+          type:
+          - string
+          - 'null'
         approval:
-          type: boolean
-          nullable: true
+          type:
+          - boolean
+          - 'null'
         task:
-          type: boolean
-          nullable: true
+          type:
+          - boolean
+          - 'null'
         system:
-          type: boolean
-          nullable: true
+          type:
+          - boolean
+          - 'null'
         mention:
-          type: boolean
-          nullable: true
+          type:
+          - boolean
+          - 'null'
         alert:
-          type: boolean
-          nullable: true
+          type:
+          - boolean
+          - 'null'
         email:
-          type: boolean
-          nullable: true
+          type:
+          - boolean
+          - 'null'
         push:
-          type: boolean
-          nullable: true
+          type:
+          - boolean
+          - 'null'
     ApiKeyCreate:
       type: object
       required:
@@ -1577,16 +1771,18 @@ components:
         name:
           type: string
         userId:
-          type: string
-          nullable: true
+          type:
+          - string
+          - 'null'
         scopes:
           type: array
           items:
             type: string
         expiresAt:
-          type: string
+          type:
+          - string
+          - 'null'
           format: date-time
-          nullable: true
     DownloadRequest:
       type: object
       required:
@@ -1605,8 +1801,9 @@ components:
           - approve
           - reject
         comment:
-          type: string
-          nullable: true
+          type:
+          - string
+          - 'null'
     AnomalyRuleCreate:
       type: object
       required:
