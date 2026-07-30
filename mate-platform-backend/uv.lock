@@ -18,7 +18,10 @@ members = [
     "mate-api-gateway",
     "mate-app-kb",
     "mate-auth-service",
+    "mate-clients",
     "mate-common",
+    "mate-kernel",
+    "mate-platform",
     "mate-platform-backend",
     "mate-tech-agent",
     "mate-tech-iam",
@@ -2049,6 +2052,41 @@ requires-dist = [
 ]
 
 [[package]]
+name = "mate-clients"
+version = "0.1.0"
+source = { editable = "packages/mate-clients" }
+dependencies = [
+    { name = "aiokafka" },
+    { name = "asyncpg" },
+    { name = "httpx" },
+    { name = "mate-kernel" },
+    { name = "mate-platform" },
+    { name = "minio" },
+    { name = "neo4j" },
+    { name = "opentelemetry-exporter-otlp-proto-grpc" },
+    { name = "psycopg", extra = ["binary", "pool"] },
+    { name = "pydantic" },
+    { name = "pymilvus" },
+    { name = "redis" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "aiokafka", specifier = ">=0.12.0" },
+    { name = "asyncpg", specifier = ">=0.30.0" },
+    { name = "httpx", specifier = ">=0.28.0" },
+    { name = "mate-kernel", editable = "packages/mate-kernel" },
+    { name = "mate-platform", editable = "packages/mate-platform" },
+    { name = "minio", specifier = ">=7.2.0" },
+    { name = "neo4j", specifier = ">=5.25.0" },
+    { name = "opentelemetry-exporter-otlp-proto-grpc", specifier = ">=1.27.0" },
+    { name = "psycopg", extras = ["binary", "pool"], specifier = ">=3.2.0" },
+    { name = "pydantic", specifier = ">=2.0" },
+    { name = "pymilvus", specifier = ">=2.5.0" },
+    { name = "redis", specifier = ">=5.2.0" },
+]
+
+[[package]]
 name = "mate-common"
 version = "0.1.0"
 source = { editable = "packages/mate-common" }
@@ -2058,6 +2096,56 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [{ name = "pydantic", specifier = ">=2.0.0" }]
+
+[[package]]
+name = "mate-kernel"
+version = "0.1.0"
+source = { editable = "packages/mate-kernel" }
+dependencies = [
+    { name = "pydantic" },
+    { name = "typing-extensions" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "pydantic", specifier = ">=2.0" },
+    { name = "typing-extensions", specifier = ">=4.10" },
+]
+
+[[package]]
+name = "mate-platform"
+version = "0.1.0"
+source = { editable = "packages/mate-platform" }
+dependencies = [
+    { name = "aiokafka" },
+    { name = "fastapi" },
+    { name = "httpx" },
+    { name = "mate-kernel" },
+    { name = "opentelemetry-api" },
+    { name = "opentelemetry-exporter-otlp-proto-grpc" },
+    { name = "opentelemetry-sdk" },
+    { name = "pybreaker" },
+    { name = "pydantic" },
+    { name = "pydantic-settings" },
+    { name = "redis" },
+    { name = "tenacity" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "aiokafka", specifier = ">=0.12.0" },
+    { name = "fastapi", specifier = ">=0.115.0" },
+    { name = "httpx", specifier = ">=0.28.0" },
+    { name = "mate-kernel", editable = "packages/mate-kernel" },
+    { name = "opentelemetry-api", specifier = ">=1.27.0" },
+    { name = "opentelemetry-exporter-otlp-proto-grpc", specifier = ">=1.27.0" },
+    { name = "opentelemetry-sdk", specifier = ">=1.27.0" },
+    { name = "pybreaker", specifier = ">=1.2.0" },
+    { name = "pydantic", specifier = ">=2.0" },
+    { name = "pydantic-settings", specifier = ">=2.0" },
+    { name = "redis", specifier = ">=5.2.0" },
+    { name = "tenacity", specifier = ">=9.0.0" },
+]
 
 [[package]]
 name = "mate-platform-backend"

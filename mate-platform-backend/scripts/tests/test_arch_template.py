@@ -1,6 +1,8 @@
 """Direct test for the four-layer module template."""
+import sys
+import tempfile
 from pathlib import Path
-import sys, tempfile
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from scripts.arch_template import render
 

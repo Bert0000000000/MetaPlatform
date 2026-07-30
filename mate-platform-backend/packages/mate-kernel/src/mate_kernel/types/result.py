@@ -1,13 +1,13 @@
-﻿from dataclasses import dataclass
-from typing import Generic, TypeVar, Union
+from dataclasses import dataclass
+from typing import TypeVar
 
 T = TypeVar("T")
 E = TypeVar("E", bound=Exception)
 
 
 @dataclass(frozen=True, slots=True)
-class Result(Generic[T, E]):
-    _value: Union[T, E, None]
+class Result[T, E]:
+    _value: T | E | None
     _is_ok: bool
 
     @classmethod
