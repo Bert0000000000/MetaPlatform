@@ -141,3 +141,7 @@ Thumbs.db
 *.orig
 
 .worktrees/
+
+# Generated FastAPI runtime schemas
+mate-platform-backend/contracts/runtime/*.json
+!mate-platform-backend/contracts/runtime/.gitkeep
