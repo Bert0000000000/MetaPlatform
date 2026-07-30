@@ -1,22 +1,46 @@
-"""HTTP clients to downstream services (mate-tech-rag, mate-tech-agent)."""
+"""HTTP clients for downstream services.
+
+Reuses the SEC-IAM-01 + SEC-TENANT-01 contracts:
+  - BearerAuth: client_credentials token cache.
+  - OutgoingAuthMiddleware: injects Authorization + X-Tenant-Id.
+
+The client constructor takes an optional `tenant_id` so the caller
+can scope calls to a specific tenant. In the FastAPI handler, the
+`tenant_id` is read from `request.state.ctx.tenant_id` (set by
+the auth middleware) and passed to the client.
+"""
 from __future__ import annotations
 
-import logging
 import os
 
 import httpx
 
-_log = logging.getLogger(__name__)
+from mate_clients.security import BearerAuth, OutgoingAuthMiddleware
 
 
 class RAGClient:
-    """HTTP client for mate-tech-rag /api/v1/rag/*."""
+    """HTTP client for mate-tech-rag /api/v1/rag/*.
+
+    Adds bearer token + X-Tenant-Id via OutgoingAuthMiddleware so
+    every outbound call respects the request's tenant binding.
+    """
 
     DEFAULT_URL = "http://localhost:8001"
 
-    def __init__(self, base_url=None, timeout=30.0):
+    def __init__(self, base_url=None, timeout=60.0, *, auth: BearerAuth | None = None, tenant_id: str = ""):
         self._base_url = (base_url or os.environ.get("RAG_URL", self.DEFAULT_URL)).rstrip("/")
         self._client = httpx.Client(timeout=timeout)
+        # OutgoingAuthMiddleware injects Bearer + X-Tenant-Id on each call.
+        if auth is not None and tenant_id:
+            self._client.auth = OutgoingAuthMiddleware(auth, tenant_id=tenant_id)
+        # Keep auth/tenant on self for callers that need to switch tenants.
+        self._auth = auth
+        self._tenant_id = tenant_id
+
+    def set_tenant(self, tenant_id: str) -> None:
+        self._tenant_id = tenant_id
+        if self._auth is not None and tenant_id:
+            self._client.auth = OutgoingAuthMiddleware(self._auth, tenant_id=tenant_id)
 
     def upload(self, file_content, filename, document_id, content_type="text/plain"):
         files = {"file": (filename, file_content, content_type)}
@@ -63,9 +87,18 @@ class AgentClient:
 
     DEFAULT_URL = "http://localhost:8002"
 
-    def __init__(self, base_url=None, timeout=60.0):
+    def __init__(self, base_url=None, timeout=60.0, *, auth: BearerAuth | None = None, tenant_id: str = ""):
         self._base_url = (base_url or os.environ.get("AGENT_URL", self.DEFAULT_URL)).rstrip("/")
         self._client = httpx.Client(timeout=timeout)
+        if auth is not None and tenant_id:
+            self._client.auth = OutgoingAuthMiddleware(auth, tenant_id=tenant_id)
+        self._auth = auth
+        self._tenant_id = tenant_id
+
+    def set_tenant(self, tenant_id: str) -> None:
+        self._tenant_id = tenant_id
+        if self._auth is not None and tenant_id:
+            self._client.auth = OutgoingAuthMiddleware(self._auth, tenant_id=tenant_id)
 
     def chat(self, message, scenario="S1", thread_id=None):
         body = {"message": message, "scenario": scenario}

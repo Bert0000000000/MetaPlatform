@@ -11,6 +11,8 @@ dependencies = [
     "sse-starlette>=2.0.0",
     "python-multipart>=0.0.32",
     "mate-common",
+    "mate-platform",
+    "mate-clients",
 ]
 
 [build-system]
@@ -22,3 +24,5 @@ packages = ["src/mate_app_kb"]
 
 [tool.uv.sources]
 mate-common = { workspace = true }
+mate-platform = { workspace = true }
+mate-clients = { workspace = true }

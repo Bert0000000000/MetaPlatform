@@ -1,11 +1,21 @@
-"""FastAPI app for mate-app-kb (business aggregation facade)."""
+"""FastAPI app for mate-app-kb (business aggregation facade).
+
+Wires the three integration hooks per ADR-0014:
+  1. install_auth(app) from mate_platform.auth (SEC-IAM-01).
+  2. require_tenant(ctx) at the top of every handler (SEC-TENANT-01).
+  3. (future) outbox.append(event) for write endpoints (PLATFORM-EVENT-01).
+
+The RAGClient / AgentClient are constructed lazily per-request from
+the request's RequestContext so the X-Tenant-Id header is bound to
+the verified tenant.
+"""
 from __future__ import annotations
 
 import logging
 import time
 import uuid
 
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.responses import StreamingResponse
 
 from mate_app_kb import __version__
@@ -20,6 +30,10 @@ from mate_app_kb.api.schemas import (
 )
 from mate_app_kb.clients import AgentClient, RAGClient
 
+from mate_platform.auth import install_auth
+from mate_platform.tenancy.guards import require_tenant
+
+
 _log = logging.getLogger(__name__)
 
 
@@ -29,23 +43,70 @@ def create_app(rag: RAGClient | None = None, agent: AgentClient | None = None) -
         version=__version__,
         description="Mate Platform business aggregation service (RAG + Agent facade)",
     )
-    if rag is None:
-        rag = RAGClient()
-    if agent is None:
-        agent = AgentClient()
+    # Hook 1 of 3: install the auth middleware (SEC-IAM-01).
+    # After this call, every incoming request has request.state.ctx
+    # populated with a verified RequestContext (or a 401/403 response
+    # was returned).
+    install_auth(app)
+
+    # Handlers for /healthz are anonymous (the middleware already
+    # whitelists them); nothing to do for them beyond the AppConfig.
+
+    def _require_ctx(request: Request):
+        """Return ctx, raising if missing (defence in depth)."""
+        ctx = getattr(request.state, "ctx", None)
+        if ctx is None:
+            # This should never happen because install_auth populates
+            # ctx or returns 401; the check is a safety net.
+            raise HTTPException(status_code=401, detail="no auth context")
+        return ctx
+
+    def _rag(request: Request) -> RAGClient:
+        ctx = _require_ctx(request)
+        if rag is None:
+            # Lazily construct with auth + tenant; we re-use the
+            # middleware-installed auth config via the app state.
+            c = RAGClient(
+                auth=app.state.service_identity,
+                tenant_id=ctx.tenant_id,
+            )
+            return c
+        # Reuse injected client; rebind its tenant to the request.
+        rag.set_tenant(ctx.tenant_id)
+        return rag
+
+    def _agent(request: Request) -> AgentClient:
+        ctx = _require_ctx(request)
+        if agent is None:
+            c = AgentClient(
+                auth=app.state.service_identity,
+                tenant_id=ctx.tenant_id,
+            )
+            return c
+        agent.set_tenant(ctx.tenant_id)
+        return agent
 
     @app.get("/healthz", response_model=HealthResponse)
     async def healthz() -> HealthResponse:
         return HealthResponse(status="ok", service="mate-app-kb", version=__version__)
 
     @app.post("/api/v1/app-kb/upload", response_model=UploadResponse)
-    async def upload(file: UploadFile = File(...), document_id: str | None = None) -> UploadResponse:
+    async def upload(
+        request: Request,
+        file: UploadFile = File(...),
+        document_id: str | None = None,
+    ) -> UploadResponse:
+        # Hook 2 of 3: require a tenant binding.
+        ctx = _require_ctx(request)
+        require_tenant(ctx)
         try:
             raw = await file.read()
             if not raw:
                 raise HTTPException(status_code=400, detail="empty file")
             doc_id = document_id or str(uuid.uuid4())
-            data = rag.upload(raw, file.filename or "unknown", doc_id, file.content_type or "text/plain")
+            data = _rag(request).upload(
+                raw, file.filename or "unknown", doc_id, file.content_type or "text/plain"
+            )
             return UploadResponse(
                 document_id=data.get("document_id", doc_id),
                 filename=data.get("filename", file.filename or ""),
@@ -59,10 +120,13 @@ def create_app(rag: RAGClient | None = None, agent: AgentClient | None = None) -
             raise HTTPException(status_code=502, detail=f"upstream error: {exc}") from exc
 
     @app.post("/api/v1/app-kb/search", response_model=SearchResponse)
-    async def search(req: SearchRequest) -> SearchResponse:
+    async def search(request: Request, req: SearchRequest) -> SearchResponse:
+        # Hook 2: tenant guard.
+        ctx = _require_ctx(request)
+        require_tenant(ctx)
         start = time.perf_counter()
         try:
-            data = rag.search(req.query, top_k=req.top_k, mode=req.mode)
+            data = _rag(request).search(req.query, top_k=req.top_k, mode=req.mode)
         except Exception as exc:
             raise HTTPException(status_code=502, detail=f"upstream error: {exc}") from exc
         latency_ms = int((time.perf_counter() - start) * 1000)
@@ -75,10 +139,12 @@ def create_app(rag: RAGClient | None = None, agent: AgentClient | None = None) -
         )
 
     @app.post("/api/v1/app-kb/chat", response_model=ChatResponse)
-    async def chat(req: ChatRequest) -> ChatResponse:
+    async def chat(request: Request, req: ChatRequest) -> ChatResponse:
+        ctx = _require_ctx(request)
+        require_tenant(ctx)
         start = time.perf_counter()
         try:
-            data = agent.chat(req.message, scenario=req.scenario, thread_id=req.thread_id)
+            data = _agent(request).chat(req.message, scenario=req.scenario, thread_id=req.thread_id)
         except Exception as exc:
             raise HTTPException(status_code=502, detail=f"upstream error: {exc}") from exc
         latency_ms = int((time.perf_counter() - start) * 1000)
@@ -92,16 +158,23 @@ def create_app(rag: RAGClient | None = None, agent: AgentClient | None = None) -
         )
 
     @app.post("/api/v1/app-kb/chat/stream")
-    async def chat_stream(req: ChatRequest):
+    async def chat_stream(request: Request, req: ChatRequest):
+        ctx = _require_ctx(request)
+        require_tenant(ctx)
+
         async def event_gen():
-            for line in agent.stream_chat(req.message, scenario=req.scenario, thread_id=req.thread_id):
+            for line in _agent(request).stream_chat(
+                req.message, scenario=req.scenario, thread_id=req.thread_id
+            ):
                 yield line + "\n\n"
         return StreamingResponse(event_gen(), media_type="text/event-stream")
 
     @app.get("/api/v1/app-kb/stats", response_model=StatsResponse)
-    async def stats() -> StatsResponse:
+    async def stats(request: Request) -> StatsResponse:
+        ctx = _require_ctx(request)
+        require_tenant(ctx)
         try:
-            data = rag.stats()
+            data = _rag(request).stats()
         except Exception as exc:
             raise HTTPException(status_code=502, detail=f"upstream error: {exc}") from exc
         return StatsResponse(
