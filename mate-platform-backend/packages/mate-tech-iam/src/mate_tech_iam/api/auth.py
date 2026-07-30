@@ -80,11 +80,33 @@ class AuthResponse(BaseModel):
 # ---------- Helpers ----------
 def _make_token(user: User, roles: list[str], ttl: int, kind: str) -> str:
     now = int(time.time())
+    # Tokens issued by the IAM auth router must round-trip through
+    # `mate_platform.auth.middleware.install_auth` when that middleware
+    # is mounted on the same FastAPI app. The middleware's verifier
+    # requires iss/aud/realm_access/scope/attributes.tenant_id claims
+    # (see packages/mate-platform/src/mate_platform/auth/verifier.py).
+    # Tests run with INSECURE_SKIP_SIGNATURE=1 so signature
+    # verification is skipped, but iss/aud checks remain.
+    #
+    # The legacy dev-only claims (`roles`, `tenant_id`) are kept for
+    # backwards compat with the legacy `services/deps.parse_token` path.
     payload = {
+        # Keycloak-format claims (required by mate_platform.auth.verifier)
+        "iss": os.getenv(
+            "KEYCLOAK_URL",
+            "http://localhost:8080",
+        ).rstrip("/") + "/realms/" + os.getenv("KEYCLOAK_REALM", "metaplatform"),
+        "aud": os.getenv("KEYCLOAK_AUDIENCE", "metaplatform-backend"),
+        "azp": os.getenv("SERVICE_CLIENT_ID", "metaplatform-backend"),
+        "realm_access": {"roles": list(roles)},
+        "scope": "platform.read platform.write",
+        "attributes": {"tenant_id": [user.tenant_id]},
+        # Legacy dev claims (kept for the services/deps.parse_token path
+        # used by /api/v1/iam/auth/me and /auth/refresh)
         "sub": str(user.id),
         "preferred_username": user.username,
         "tenant_id": user.tenant_id,
-        "roles": roles,
+        "roles": list(roles),
         "is_super_admin": user.is_super_admin,
         "iat": now,
         "exp": now + ttl,
@@ -240,8 +262,17 @@ async def iam_logout(authorization: str | None = Header(default=None)) -> dict[s
 async def iam_refresh(req: RefreshRequest) -> AuthResponse:
     from ..db import AsyncSessionMaker
 
+    # `verify_aud=False` because tokens minted by this router carry
+    # the platform audience ("metaplatform-backend") for the bearer
+    # middleware to validate; the refresh path is a pure
+    # intra-service round-trip and should not require aud match.
     try:
-        claims = jwt.decode(req.refreshToken, JWT_SECRET, algorithms=[JWT_ALG])
+        claims = jwt.decode(
+            req.refreshToken,
+            JWT_SECRET,
+            algorithms=[JWT_ALG],
+            options={"verify_aud": False},
+        )
     except jwt.PyJWTError as exc:
         raise HTTPException(status_code=401, detail={"code": "E401_UNAUTHORIZED", "message": f"Invalid refresh token: {exc}"})
 
@@ -278,7 +309,15 @@ async def iam_me(authorization: str | None = Header(default=None)) -> dict[str, 
         raise HTTPException(status_code=401, detail={"code": "E401_UNAUTHORIZED", "message": "Missing Bearer token"})
     token = authorization[len("Bearer "):].strip()
     try:
-        claims = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALG])
+        # `verify_aud=False` keeps /auth/me decoupled from the bearer
+        # middleware's audience policy; this endpoint is the legacy
+        # identity surface and only relies on signature + expiry.
+        claims = jwt.decode(
+            token,
+            JWT_SECRET,
+            algorithms=[JWT_ALG],
+            options={"verify_aud": False},
+        )
     except jwt.PyJWTError as exc:
         raise HTTPException(status_code=401, detail={"code": "E401_UNAUTHORIZED", "message": f"Invalid token: {exc}"})
 

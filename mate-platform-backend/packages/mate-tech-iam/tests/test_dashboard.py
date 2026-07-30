@@ -12,11 +12,12 @@ Refs: ADR-0014 5-step pattern; see
 """
 from __future__ import annotations
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+from mate_tech_iam.api.dashboard import router as dashboard_router
 
 from mate_platform.tenancy.context import (
     AuthMethod,
@@ -24,8 +25,6 @@ from mate_platform.tenancy.context import (
     TenantId,
     UserId,
 )
-
-from mate_tech_iam.api.dashboard import router as dashboard_router
 
 
 def _ctx(tenant_id: str = "tenant-default") -> RequestContext:

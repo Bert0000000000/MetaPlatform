@@ -10,6 +10,8 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
 
+from mate_platform.auth import install_auth
+
 from .api import (
     auth_router,
     configs_router,
@@ -57,6 +59,23 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+)
+
+# Step 1 of ADR-0014 5-step pattern: install bearer-token auth
+# middleware (see packages/mate-tech-iam/docs/active/specs/.../2026-07-30-p2-wave-2-spec.md).
+# The middleware injects a verified RequestContext on every request and
+# rejects callers without a valid Keycloak-format JWT. The dashboard
+# workbench login, IAM auth login, and SSO providers list must be
+# reachable without a token (the user has not authenticated yet), so
+# they widen the default ANONYMOUS set via `extra_anonymous_paths`.
+# Every other endpoint requires a valid bearer + tenant binding.
+install_auth(
+    app,
+    extra_anonymous_paths={
+        "/api/v1/dashboard/auth/login",
+        "/api/v1/iam/auth/login",
+        "/api/v1/iam/sso-providers",
+    },
 )
 
 

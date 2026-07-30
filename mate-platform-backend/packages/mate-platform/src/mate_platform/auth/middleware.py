@@ -2,19 +2,18 @@
 from __future__ import annotations
 
 import logging
-from typing import Awaitable, Callable
+from collections.abc import Awaitable, Callable
 
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
 
+from ..tenancy.context import AuthMethod, RequestContext, TenantId, UserId
 from .config import AuthConfig, load_auth_config
-from .identity import IdentityError, ServiceIdentity
+from .identity import ServiceIdentity
 from .tenant import TenantError, resolve_tenant
 from .verifier import TokenError, TokenVerifier
-
-from ..tenancy.context import AuthMethod, RequestContext, TenantId, UserId
 
 logger = logging.getLogger(__name__)
 
@@ -29,10 +28,40 @@ ANONYMOUS_PATHS: frozenset[str] = frozenset(
 )
 
 
-def install_auth(app: FastAPI, *, config: AuthConfig | None = None) -> TokenVerifier:
+def install_auth(
+    app: FastAPI,
+    *,
+    config: AuthConfig | None = None,
+    extra_anonymous_paths: set[str] | None = None,
+) -> TokenVerifier:
+    """Install the bearer-token auth middleware on `app`.
+
+    Args:
+        app: The FastAPI application.
+        config: Override for the resolved AuthConfig.
+        extra_anonymous_paths: Paths that should bypass the bearer-token
+            requirement and resolve an anonymous RequestContext (e.g.
+            workbench login at `/api/v1/dashboard/auth/login`). Per-path;
+            methods are not filtered, so POST endpoints in this set will
+            still receive `require_tenant`-style guard checks downstream
+            (where applicable).
+
+    The DEFAULT anonymous paths (`/healthz`, `/readyz`, `/openapi.json`,
+    `/docs`, `/docs/oauth2-redirect`) are always honoured. Pass
+    `extra_anonymous_paths` to widen the set for a specific service.
+    """
     cfg = config or load_auth_config()
     verifier = TokenVerifier(cfg)
-    app.add_middleware(AuthMiddleware, config=cfg, verifier=verifier)
+    anonymous_paths: frozenset[str] = (
+        ANONYMOUS_PATHS if extra_anonymous_paths is None
+        else ANONYMOUS_PATHS | frozenset(extra_anonymous_paths)
+    )
+    app.add_middleware(
+        AuthMiddleware,
+        config=cfg,
+        verifier=verifier,
+        anonymous_paths=anonymous_paths,
+    )
     app.state.auth_config = cfg
     app.state.token_verifier = verifier
     return verifier
@@ -53,17 +82,25 @@ def build_service_identity(cfg: AuthConfig | None = None) -> ServiceIdentity:
 
 
 class AuthMiddleware(BaseHTTPMiddleware):
-    def __init__(self, app: ASGIApp, *, config: AuthConfig, verifier: TokenVerifier) -> None:
+    def __init__(
+        self,
+        app: ASGIApp,
+        *,
+        config: AuthConfig,
+        verifier: TokenVerifier,
+        anonymous_paths: frozenset[str] | None = None,
+    ) -> None:
         super().__init__(app)
         self._config = config
         self._verifier = verifier
+        self._anonymous_paths = anonymous_paths or ANONYMOUS_PATHS
 
     async def dispatch(
         self,
         request: Request,
         call_next: Callable[[Request], Awaitable[Response]],
     ) -> Response:
-        if request.url.path in ANONYMOUS_PATHS:
+        if request.url.path in self._anonymous_paths:
             request.state.ctx = _anonymous_ctx(request)
             return await call_next(request)
 

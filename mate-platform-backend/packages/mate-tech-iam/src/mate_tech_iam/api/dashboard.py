@@ -35,13 +35,13 @@ from fastapi import APIRouter, HTTPException, Query, Request, Response, status
 from pydantic import BaseModel, Field
 
 from mate_platform.messaging import Event, OutboxWriter
-from mate_platform.tenancy.guards import require_tenant
 from mate_platform.tenancy.context import (
     AuthMethod,
     RequestContext,
     TenantId,
     UserId,
 )
+from mate_platform.tenancy.guards import require_tenant
 
 logger = structlog.get_logger(__name__)
 router = APIRouter(prefix="/api/v1/dashboard", tags=["dashboard"])
