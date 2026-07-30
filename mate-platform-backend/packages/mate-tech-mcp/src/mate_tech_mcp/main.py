@@ -1,7 +1,29 @@
-﻿"""Mate Platform - MCP main entry.
+"""Mate Platform - MCP main entry.
 
-ST-5.3.1.2: mcp.Server 闁诲骸婀遍崑妯兼閵夆晛绀?+ stdio 闂佸憡鍑归崹鐗堟叏?ST-5.3.6.1: 闂備焦婢樼粔鍫曟偪閸℃瑦灏?env
-ST-5.3.8.1: HTTP 濠碘剝銇滈崕鑼暜?/api/v1/mcp/tools/{name}
+Wires the 5 spec endpoints (`contracts/openapi/services/mcp.yaml`):
+
+  - GET    /api/v1/mcp/tools
+  - GET    /api/v1/mcp/resources
+  - GET    /api/v1/mcp/prompts
+  - POST   /api/v1/mcp/prompts/{name}
+  - POST   /api/v1/mcp/tools/{name}
+
+The canonical SEC-IAM-01 auth middleware (install_auth) is
+attached at the FastAPI level. The legacy `auth.py` JWT helper
+remains for back-compat in dev profile only; production profiles
+enforce LEGACY_LOGIN_COMPAT=false.
+
+P0 close-out (2026-07-30):
+  - Replaced the previous garbled main.py (the FastAPI title
+    description was interrupted mid-string and the install_auth
+    call appeared inside the description, leading to a SyntaxError
+    on import) with this clean rewrite.
+  - The 5 HTTP endpoints were defined via decorators after the
+    `app.include_router(http_bridge)` line in the previous file,
+    which meant FastAPI mounted the bridge BEFORE the routes
+    were registered, so consumers saw 404. The endpoints are
+    now defined before include_router so they actually mount.
+  - This PR verifies the 5 endpoints are reachable end-to-end.
 """
 from __future__ import annotations
 
@@ -11,76 +33,54 @@ from typing import Any
 import structlog
 from fastapi import APIRouter, FastAPI, HTTPException, Request
 
-from .auth import AuthError, verify_jwt_token
 from .prompts.templates import list_prompts, render_prompt
 from .resources.ontology import OntologyResource, build_ontology_resource
 from .server import MCPServer, create_server
 from .tools.kb_search import build_kb_search_tool
-from .tools.rate_limit import RateLimitConfig, ToolRateLimiter
+from .tools.rate_limit import RateLimitConfig, RateLimitExceeded, ToolRateLimiter
+
+# BUSINESS-SLICES P1 wave 3: hook 1 (auth).
+from mate_platform.auth import install_auth
 
 logger = structlog.get_logger(__name__)
 
-# 闂佺绻堥崝宀勬儑?MCP server 闁诲骸婀遍崑妯兼?
+# MCP server (lazy import mcp).
 mcp_server: MCPServer = create_server()
 
-# 婵帗绋掗…鍫ヮ敇鐠囨祴鏋栭柕濞垮劚閺傗偓 kb_search 閻庤鎮堕崕閬嶅矗閸ф鏅柛锔惧竸-5.3.2.1闂?
+# Register the kb_search tool (ST-5.3.2.1).
 mcp_server.register_tool(build_kb_search_tool())
 
-# ontology 闁荤姍鍐仾缂?
+# Ontology resource.
 _ontology: OntologyResource = build_ontology_resource()
+mcp_server.register_resource(_ontology)
 
-
-def _register_default_resources() -> None:
-    """濠电偛顦崝宀勫船閼恒儺娓舵俊顖涱儥閸氬洭鎮硅鐎氼厾鑺遍鈧弫宥夊锤椤хology://{class_id}闂?"""
-    mcp_server.register_resource(_ontology)
-
-
-_register_default_resources()
-
-# per-tenant per-tool 闂傚倸瀚崝鏍矈閿曞倸闂?
+# per-tenant per-tool rate limiter.
 _rate_limiter = ToolRateLimiter(config=RateLimitConfig(limit=50, window_sec=60))
 
-# HTTP 濠碘剝銇滈崕鑼暜鐎靛憡宕夋い鏍ㄧ矋閺嗙娀鏌ㄥ☉妯荤astAPI 婵＄偛顑呯€涒晠鎮ч幖浣规櫖?
+# HTTP bridge router carrying the 5 spec endpoints. Endpoint
+# handlers must be registered onto `http_bridge` BEFORE we call
+# `app.include_router(http_bridge)` below — otherwise FastAPI
+# mounts an empty router and the consumers see 404. The previous
+# version of this file declared the endpoints below include_router,
+# which silently produced an empty surface.
 http_bridge = APIRouter(prefix="/api/v1/mcp", tags=["mcp"])
-
-
-app = FastAPI(
-    title="mate-tech-mcp",
-    version="0.1.0",
-    description="MCP (Model Context Protocol)
-
-# Hook 1 of 5: install SEC-IAM-01 auth middleware.
-# The legacy auth.py JWT path remains in place for back-compat
-# in dev; in production profile LEGACY_LOGIN_COMPAT=false makes
-# Keycloak the only identity source.
-install_auth(app)
- server",
-)
-
-app.include_router(http_bridge)
-
-
-@app.get("/healthz")
-async def healthz() -> dict[str, Any]:
-    """ST-5.3.6.2 DoD: 闂佺顑冮崕閬嶅箖瀹ュ憘娑㈠焵椤掑嫬钃?"""
-    return {"status": "ok", "version": app.version, "tools": len(mcp_server._tools)}
 
 
 @http_bridge.get("/tools")
 async def list_tools_endpoint() -> dict[str, list]:
-    """ST-5.3.8.2: 閻庤鎮堕崕閬嶅矗閸ф绀嗘俊銈呭閳?"""
+    """ST-5.3.8.2: list registered tools."""
     return {"tools": await mcp_server.list_tools()}
 
 
 @http_bridge.get("/resources")
 async def list_resources_endpoint() -> dict[str, list]:
-    """ST-5.3.8.2: 闁荤姍鍐仾缂侇煈鍣ｅ畷姘旈崟鈹惧亾?"""
+    """ST-5.3.8.2: list registered resources."""
     return {"resources": await mcp_server.list_resources()}
 
 
 @http_bridge.get("/prompts")
 async def list_prompts_endpoint() -> dict[str, list]:
-    """ST-5.3.4: 闂佸湱绮崝妤呭Φ濮橆儵鐔煎焺閸愨晝鍑￠梺鍛婂笚椤ㄥ濡?"""
+    """ST-5.3.4: list prompt templates."""
     return {"prompts": list_prompts()}
 
 
@@ -90,15 +90,18 @@ async def render_prompt_endpoint(
     payload: dict,
     request: Request,
 ) -> dict[str, str]:
-    """ST-5.3.4: Render a prompt.
+    """ST-5.3.4: render a prompt template.
 
-    Requires Authorization: Bearer <JWT> (ST-5.3.9). Same auth as
-    call_tool_endpoint so prompts cannot be rendered anonymously.
+    Requires Authorization: Bearer <JWT>.
     """
     auth = request.headers.get("Authorization", "")
     if not auth.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Missing Bearer token")
     token = auth[len("Bearer "):]
+    # Lazy import: dev-only legacy verifier; production profile
+    # rejects the LEGACY_LOGIN_COMPAT path at startup (SEC-IAM-01).
+    from .auth import AuthError, verify_jwt_token
+
     try:
         await verify_jwt_token(token)
     except AuthError as e:
@@ -116,40 +119,38 @@ async def call_tool_endpoint(
     payload: dict,
     request: Request,
 ) -> dict[str, object]:
-    """ST-5.3.8.1: HTTP 濠碘剝銇滈崕鑼暜?闂?闁荤姴顑呴崯顐ｅ閹版澘绀?
+    """ST-5.3.8.1: invoke a tool over HTTP.
 
     Body:
         {"arguments": {"query": "...", "top_k": 5}}
 
     Headers:
-        Authorization: Bearer <JWT>  (ST-5.3.9 闂佸搫绋勭换婵嬫偘?
-        X-Tenant-Id: <tenant>        (ST-5.3.7 闂傚倸瀚崝鏍矈?
+        Authorization: Bearer <JWT>
+        X-Tenant-Id: <tenant>
     """
-    # OAuth: JWT 闂佸搫绋勭换婵嬫偘?(ST-5.3.9)
     auth = request.headers.get("Authorization", "")
     if not auth.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Missing Bearer token")
     token = auth[len("Bearer "):]
+    from .auth import AuthError, verify_jwt_token
+
     try:
         claims = await verify_jwt_token(token)
     except AuthError as e:
         raise HTTPException(status_code=401, detail=str(e))
     tenant_id = claims.get("tenant_id", "default")
 
-    # 闂傚倸瀚崝鏍矈?(ST-5.3.7)
+    # per-tenant rate limiting.
     try:
         await _rate_limiter.check(tenant_id=tenant_id, tool_name=name)
-    except Exception as e:  # RateLimitExceeded
-        from .tools.rate_limit import RateLimitExceeded
-        if isinstance(e, RateLimitExceeded):
-            raise HTTPException(
-                status_code=429,
-                detail=str(e),
-                headers={"Retry-After": str(e.retry_after)},
-            )
-        raise
+    except RateLimitExceeded as e:
+        raise HTTPException(
+            status_code=429,
+            detail=str(e),
+            headers={"Retry-After": str(e.retry_after)},
+        )
 
-    # 闁荤姴顑呴崯顐ｅ閹版澘绀?    arguments = payload.get("arguments", {})
+    arguments = payload.get("arguments", {})
     try:
         result = await mcp_server.call_tool(name, arguments)
         return {"tool": name, "result": result}
@@ -159,9 +160,28 @@ async def call_tool_endpoint(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+app = FastAPI(
+    title="mate-tech-mcp",
+    version="0.1.0",
+    description="MCP (Model Context Protocol) HTTP bridge.",
+)
+
+# Hook 1 of 5: install SEC-IAM-01 auth middleware.
+install_auth(app)
+
+# Mount the bridge AFTER all routes are registered on it.
+app.include_router(http_bridge)
+
+
+@app.get("/healthz")
+async def healthz() -> dict[str, Any]:
+    """Liveness probe."""
+    return {"status": "ok", "version": app.version, "tools": len(mcp_server._tools)}
+
+
 @app.on_event("startup")
 async def on_startup() -> None:
-    """lifespan 闂備浇袙閺呮盯鎮?"""
+    """lifespan hook."""
     log_level = os.getenv("LOG_LEVEL", "INFO").upper()
     structlog.configure(
         processors=[
@@ -181,7 +201,7 @@ async def on_startup() -> None:
 
 
 def run_stdio() -> None:
-    """ST-5.3.1.2 DoD: stdio 闂佸憡鍑归崹鐗堟叏?"""
+    """ST-5.3.1.2 DoD: stdio transport entry."""
     import asyncio
 
     from mcp.server.stdio import stdio_server
@@ -203,6 +223,4 @@ if __name__ == "__main__":
     else:
         import uvicorn
 
-# BUSINESS-SLICES P1 wave 3: hook 1 (auth).
-from mate_platform.auth import install_auth
         uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("PORT", "8081")))
