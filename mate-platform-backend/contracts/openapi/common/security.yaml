@@ -1,6 +1,54 @@
+# =============================================================================
+# OpenAPI securitySchemes - SEC-IAM-01 upgrade
+# =============================================================================
+# Three schemes cooperate on every authenticated request:
+#   - bearerAuth: Keycloak-issued RS256 JWT.
+#   - tenantHeader: X-Tenant-Id, used by the BFF to bind a request to
+#     a tenant when the token alone is not enough (multi-tenant user).
+#   - oidcScopes: OAuth2 client_credentials scope grant.
+#
+# Per-operation `security:` lists combine these:
+#   security:
+#     - bearerAuth: []
+#       tenantHeader: []
+#       oidcScopes: [platform.read]
+# =============================================================================
 components:
   securitySchemes:
     bearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
+      description: |
+        Keycloak RS256/RS384/RS512 JWT. aud must include
+        `metaplatform-backend`. iss must equal
+        `${KEYCLOAK_URL}/realms/${KEYCLOAK_REALM}`. The token is
+        verified against the live Keycloak JWKS endpoint; HS* algorithms
+        are explicitly rejected (CVE-2015-9235 family).
+    tenantHeader:
+      type: apiKey
+      in: header
+      name: X-Tenant-Id
+      description: |
+        Tenant binding. Must equal `token.tenant_id` (mismatch is 403).
+        Mismatches are allowed only when the token carries the
+        `tenant_switch_enabled` scope (BFF / SRE workflows) and the
+        request is audit-logged to OBS.
+    oidcScopes:
+      type: oauth2
+      description: |
+        OAuth2 client_credentials grant against the same Keycloak realm.
+        Scopes:
+          - platform.read:  read-only access
+          - platform.write: mutation access
+          - platform.admin: service-to-service admin (rare)
+          - tenant_switch_enabled: permits X-Tenant-Id header to differ
+            from token.tenant_id
+      flows:
+        clientCredentials:
+          tokenUrl: ${KEYCLOAK_URL}/realms/${KEYCLOAK_REALM}/protocol/openid-connect/token
+          scopes:
+            platform.read: Read-only access
+            platform.write: Mutation access
+            platform.admin: Service-to-service admin
+            tenant_switch_enabled: Permit tenant switching via X-Tenant-Id
