@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Bot, FileCheck, Scale } from 'lucide-react';
 import { SubTabs, type SubTabItem } from '@mate/shared';
-import { MOCK_AGENTS } from '@/mock'; // MOCK
 
 const AGENT_TABS: SubTabItem[] = [
   { label: '数字员工列表', path: '/agents' },

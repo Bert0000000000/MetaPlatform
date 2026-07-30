@@ -8,12 +8,12 @@
     "pnpm": ">=9.0.0"
   },
   "scripts": {
-    "dev": "pnpm --filter @mate/portal dev",
+    "dev": "pnpm --filter @mate/web dev",
     "dev:all": "pnpm -r --parallel dev",
     "build": "pnpm -r build",
     "build:app": "pnpm --filter",
     "typecheck": "pnpm -r typecheck",
-    "preview": "pnpm --filter @mate/portal preview",
+    "preview": "pnpm --filter @mate/web preview",
     "clean": "pnpm -r exec rimraf dist node_modules/.vite",
     "install:clean": "rimraf node_modules **/node_modules pnpm-lock.yaml && pnpm install"
   },

@@ -184,34 +184,46 @@ Traefik → rate-limit → forward-auth (→ AuthService) → trace-id 透传 �
 
 ## 7. 前端（已就位，metaplatform-frontend）
 
+> **2026-07-29 整改**：原 `apps/{portal,dashboard,kb,mcphub,apphub,arch,dw,superai}` 9 个 SPA 是早期"按业务模块拆分"思路的错位决策，与"前端是 1 套 SPA + 9 个一级菜单"的产品定位不符。已收敛为唯一 `apps/web`(@mate/web),承载全部 9 个菜单模块。其余 8 个 app 的独有页面下沉到 `apps/web/src/pages/{module}/*`,详见 `metaplatform-frontend/scripts/refactor/2026-07-29-monorepo-shrink.sh`。
+
 | 类别 | 选型 | 版本 |
 |---|---|---|
 | 包管理 | pnpm | 9.0+ |
 | 构建 | Vite | 6.4 |
 | UI 框架 | React | 19 |
-| 语言 | TypeScript | 5.7（strict） |
-| HTTP | axios | 1.18 |
+| 语言 | TypeScript | 5.7（strict + noUnusedLocals + noUnusedParameters） |
+| HTTP | axios | 1.18(逐步切到 ky/ofetch,BFF 收敛后) |
 | UI 库 | Semi UI + Ant Design | 2.101 / 6 |
 | 流程编辑器 | Flowgram.ai | 1.0.x |
 | 图编辑器 | AntV X6 | 3.0 |
 | E2E | Playwright | 1.61 |
+| BFF(新增) | Fastify + Vite plugin | 5.x |
+| 契约生成 | openapi-typescript + orval | 7.x / 7.x |
 
-**monorepo 结构**：
+**monorepo 结构(v3.0 整改后)**：
 ```
 metaplatform-frontend/
 ├── apps/
-│   ├── portal/         # 主入口
-│   ├── dashboard/      # 仪表盘
-│   ├── ontstudio/      # Ontology 工作台
-│   ├── kb/             # 知识库
-│   ├── mcphub/         # MCP Hub
-│   ├── apphub/         # App 市场
-│   ├── arch/           # 架构
-│   ├── dw/             # 数据工作台
-│   └── superai/        # Super AI
+│   ├── web/                    # @mate/web —— 唯一前端入口(SPA,9 个一级菜单)
+│   └── bff/                    # @mate/bff —— dev-only 后端聚合层(可选,生产走 Traefik → Python 主后端)
 └── packages/
-    └── shared/         # 共享组件、菜单、布局
+    ├── shared/                 # @mate/shared —— 布局、菜单、AuthGuard、主题、图标
+    ├── ui-kit/                 # @mate/ui —— 二次封装的业务组件(待落地)
+    ├── api/                    # @mate/api —— OpenAPI 生成 + 客户端(待落地)
+    ├── flow/                   # @mate/flow —— 流程编排器封装(待落地)
+    ├── graph/                  # @mate/graph —— 图编辑器封装(待落地)
+    ├── i18n/                   # @mate/i18n —— 多语言(待落地)
+    ├── auth/                   # @mate/auth —— Keycloak OIDC 适配(待落地)
+    ├── store/                  # @mate/store —— 状态管理(待落地)
+    ├── msw/                    # @mate/msw —— Mock Service Worker 假数据(待落地)
+    ├── storybook/              # @mate/storybook —— 组件文档(待落地)
+    └── e2e/                    # @mate/e2e —— Playwright 用例(待落地)
 ```
+
+**SPA 单一入口约束(v3.0 铁律 17)**：
+- 浏览器只命中 `apps/web/` 编译产物
+- 9 个一级菜单由 `packages/shared/src/PlatformMenu.tsx` 的 `NAV_ITEMS` 定义,严禁在 apps/ 下另建第二套 SPA
+- 新增功能模块 = 在 `apps/web/src/pages/{module}/*` 加页面 + 在 `NAV_ITEMS` 加条目
 
 ---
 

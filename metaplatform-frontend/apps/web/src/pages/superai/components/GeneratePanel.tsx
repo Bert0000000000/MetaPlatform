@@ -1,4 +1,4 @@
-﻿import { useState, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import {
   Button,
   Input,
@@ -40,7 +40,7 @@ import type {
   GenerateType,
   GeneratedConfig,
   CodeSnippet,
-} from '@/types';
+} from '@/api/superai/types';
 
 const { TextArea } = Input;
 

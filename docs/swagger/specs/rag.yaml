@@ -1,0 +1,271 @@
+openapi: 3.1.0
+info:
+  title: mate-tech-rag
+  version: 0.1.0
+  description: |
+    Mate Platform RAG service.
+    Pipeline: RAGFlow parse -> 3-index fan-out (Hybrid Milvus + GraphRAG Neo4j + LightRAG).
+    Backing store: PostgreSQL (chunks metadata). All endpoints are unauthenticated
+    by default; access control is expected to be enforced by the api-gateway
+    (X-Tenant-Id / Authorization headers) and by the platform BFF.
+servers:
+  - url: http://localhost:8001
+    description: local dev
+  - url: http://mate-tech-rag:8001
+    description: docker compose
+tags:
+  - name: rag
+    description: Retrieval / ingestion / search
+  - name: admin
+    description: Diagnostics
+  - name: meta
+    description: Service health
+paths:
+  /healthz:
+    get:
+      summary: Liveness probe
+      tags: [meta]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/HealthResponse'}
+  /api/v1/rag/status:
+    get:
+      summary: System status (embedder + index backends)
+      tags: [admin]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/SystemStatus'}
+  /api/v1/rag/stats:
+    get:
+      summary: Indexed chunk count + embedder dim
+      tags: [admin]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/StatsResponse'}
+  /api/v1/rag/admin/pg-stats:
+    get:
+      summary: PostgreSQL store diagnostics
+      tags: [admin]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PgStatsResponse'}
+  /api/v1/rag/parse:
+    post:
+      summary: Parse raw text via RAGFlow and fan out to 3 indexes
+      tags: [rag]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ParseRequest'}
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ParseResponse'}
+        '500':
+          description: Parse / index failure
+  /api/v1/rag/ingest:
+    post:
+      summary: Ingest pre-chunked text into all 3 indexes
+      tags: [rag]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/IngestRequest'}
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/IngestResponse'}
+        '500':
+          description: Ingest failure
+  /api/v1/rag/upload:
+    post:
+      summary: Multipart upload (text/markdown) -> parse + 3-index fan-out
+      tags: [rag]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: text/markdown file
+                document_id:
+                  type: string
+                  description: optional client-supplied document id
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/UploadResponse'}
+        '400':
+          description: Empty file
+        '500':
+          description: Parse / index failure
+  /api/v1/rag/search:
+    post:
+      summary: 3-strategy retrieval (auto / factual / entity / thematic)
+      tags: [rag]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/RetrievalRequest'}
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RetrievalResponse'}
+        '500':
+          description: Retrieval failure
+components:
+  schemas:
+    HealthResponse:
+      type: object
+      required: [status, service, version]
+      properties:
+        status: {type: string}
+        service: {type: string}
+        version: {type: string}
+    EmbedderInfo:
+      type: object
+      required: [provider, dim]
+      properties:
+        provider: {type: string, description: local | openai}
+        model_name: {type: string}
+        dim: {type: integer, minimum: 0}
+    IndexStatus:
+      type: object
+      required: [name, backend, chunk_count]
+      properties:
+        name: {type: string, enum: [hybrid, graph, lightrag]}
+        backend: {type: string, description: memory | milvus | neo4j | lightrag | lightrag-http}
+        chunk_count: {type: integer, minimum: 0}
+    SystemStatus:
+      type: object
+      required: [status, service, version, embedder, indexes]
+      properties:
+        status: {type: string}
+        service: {type: string}
+        version: {type: string}
+        embedder: {$ref: '#/components/schemas/EmbedderInfo'}
+        indexes:
+          type: array
+          items: {$ref: '#/components/schemas/IndexStatus'}
+    StatsResponse:
+      type: object
+      required: [total_chunks, embedder_dim]
+      properties:
+        total_chunks: {type: integer, minimum: 0}
+        embedder_dim: {type: integer, minimum: 0}
+    PgStatsResponse:
+      type: object
+      required: [available, chunks_count]
+      properties:
+        available: {type: boolean}
+        chunks_count: {type: integer, minimum: 0}
+        dsn_host: {type: string}
+    ParseRequest:
+      type: object
+      required: [document_id, content]
+      properties:
+        document_id: {type: string, minLength: 1, maxLength: 64}
+        content: {type: string, minLength: 1, maxLength: 1000000}
+        metadata:
+          type: object
+          additionalProperties: {type: string}
+    ParseResponse:
+      type: object
+      required: [document_id, chunk_count, ragflow_parsed, indexed_in]
+      properties:
+        document_id: {type: string}
+        chunk_count: {type: integer, minimum: 0}
+        ragflow_parsed: {type: integer, minimum: 0}
+        indexed_in:
+          type: array
+          items: {type: string}
+    IngestRequest:
+      type: object
+      required: [document_id, chunks]
+      properties:
+        document_id: {type: string, minLength: 1, maxLength: 64}
+        chunks:
+          type: array
+          minItems: 1
+          maxItems: 1000
+          items: {type: string}
+        metadata:
+          type: object
+          additionalProperties: {type: string}
+    IngestResponse:
+      type: object
+      required: [document_id, chunk_count, total_chunks]
+      properties:
+        document_id: {type: string}
+        chunk_count: {type: integer, minimum: 0}
+        total_chunks: {type: integer, minimum: 0}
+    UploadResponse:
+      type: object
+      required: [document_id, filename, size_bytes, chunk_count, indexed_in]
+      properties:
+        document_id: {type: string}
+        filename: {type: string}
+        size_bytes: {type: integer, minimum: 0}
+        chunk_count: {type: integer, minimum: 0}
+        indexed_in:
+          type: array
+          items: {type: string}
+    ChunkHit:
+      type: object
+      required: [chunk_id, document_id, score, text]
+      properties:
+        chunk_id: {type: string}
+        document_id: {type: string}
+        score: {type: number, minimum: 0, maximum: 1}
+        text: {type: string}
+        metadata:
+          type: object
+          additionalProperties: {type: string}
+    RetrievalRequest:
+      type: object
+      required: [query]
+      properties:
+        query: {type: string, minLength: 1, maxLength: 4096}
+        top_k: {type: integer, minimum: 1, maximum: 100, default: 5}
+        mode: {type: string, enum: [AUTO, FACTUAL, ENTITY, THEMATIC], default: AUTO}
+        metadata_filter:
+          type: object
+          additionalProperties: {type: string}
+    RetrievalResponse:
+      type: object
+      required: [query, hits, total, latency_ms, mode]
+      properties:
+        query: {type: string}
+        hits:
+          type: array
+          items: {$ref: '#/components/schemas/ChunkHit'}
+        total: {type: integer, minimum: 0}
+        latency_ms: {type: integer, minimum: 0}
+        mode: {type: string, enum: [FACTUAL, ENTITY, THEMATIC]}

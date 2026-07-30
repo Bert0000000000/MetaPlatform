@@ -1,4 +1,4 @@
-﻿/**
+/**
  * KnowledgeBasePage - 知识库列表
  * --------------------------------------------------
  * 路由: /knowledge
@@ -9,7 +9,7 @@ import { useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Card, Table, Button, Space, Tag, Modal, Form, Input, Select, message } from 'antd';
 import { Plus, RefreshCw, Database } from 'lucide-react';
-import { SubTabs, type SubTabItem, useAsync, useLoadingState } from '@mate/shared';
+import { SubTabs, type SubTabItem, useAsync, useLoadingState, useApiErrorBoundary } from '@mate/shared';
 import { listKb, createKb, type KbEntity } from '@/api/kb';
 
 const KB_TABS: SubTabItem[] = [
@@ -27,6 +27,7 @@ const KB_KIND_OPTIONS = [
 ];
 
 export default function KnowledgeBasePage() {
+  const { report } = useApiErrorBoundary();
   const location = useLocation();
   const [form] = Form.useForm();
   const [open, setOpen] = useState(false);
@@ -35,7 +36,7 @@ export default function KnowledgeBasePage() {
 
   const { data: kbs, loading, error, reload } = useAsync<KbEntity[]>(
     () => listKb().catch((e: Error) => {
-      message.error(`加载知识库失败: ${e.message}`);
+      report(e);
       return [];
     }),
     [reloadTick],

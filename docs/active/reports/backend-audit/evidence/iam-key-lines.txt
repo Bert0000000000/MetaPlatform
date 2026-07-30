@@ -1,0 +1,340 @@
+﻿mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/services\deps.py:12:from fastapi import Depends, Header, HTTPException, Request, status
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/services\deps.py:13:from sqlalchemy.ext.asyncio import AsyncSession
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/services\deps.py:28:    tenant_id: str
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/services\deps.py:29:    roles: list[str]
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/services\deps.py:40:DEV_TENANT_HEADER = "x-mate-tenant-id"
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/services\deps.py:53:def parse_token(token: str) -> dict[str, Any] | None:
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/services\deps.py:64:    authorization: str | None = Header(default=None, alias="Authorization"),
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/services\deps.py:65:    x_tenant: str | None = Header(default=None, alias=DEV_TENANT_HEADER),
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/services\deps.py:72:    Production deployments must rely on the ``Authorization`` bearer token.
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/services\deps.py:74:    claims: dict[str, Any] = {}
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/services\deps.py:89:    tenant_id = (
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/services\deps.py:90:        claims.get("tenant_id")
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/services\deps.py:92:        or x_tenant
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/services\deps.py:94:        or "tenant-default"
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/services\deps.py:115:        tenant_id=str(tenant_id),
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/services\deps.py:123:    caller: CallerIdentity = Depends(get_caller),
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/services\deps.py:137:async def get_session_dep() -> AsyncIterator[AsyncSession]:
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/services\deps.py:142:SessionDep = Annotated[AsyncSession, Depends(get_session_dep)]
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/services\deps.py:143:AdminDep = Annotated[CallerIdentity, Depends(require_admin)]
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/services\deps.py:144:CallerDep = Annotated[CallerIdentity, Depends(get_caller)]
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/services\deps.py:148:    session: AsyncSession,
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/services\deps.py:174:        tenant_id=caller.tenant_id,
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/services\deps.py:187:    session.add(entry)
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\logs.py:15:from ..services.deps import AdminDep, SessionDep
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\logs.py:34:    session: SessionDep,
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\logs.py:44:) -> dict[str, Any]:
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\logs.py:45:    base = select(AuditLog).where(AuditLog.tenant_id == caller.tenant_id)
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\logs.py:64:    total = (await session.execute(select(func.count()).select_from(base.subquery()))).scalar_one()
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\logs.py:91:    session: SessionDep,
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\logs.py:99:    base = select(AuditLog).where(AuditLog.tenant_id == caller.tenant_id)
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\logs.py:174:    session: SessionDep,
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\logs.py:176:) -> dict[str, Any]:
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\logs.py:179:            select(AuditLog).where(and_(AuditLog.id == log_id, AuditLog.tenant_id == caller.tenant_id))
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\logs.py:206:    session: SessionDep,
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\logs.py:207:) -> dict[str, Any]:
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\logs.py:211:            select(AuditLog.module, func.count(AuditLog.id))
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\logs.py:212:            .where(AuditLog.tenant_id == caller.tenant_id)
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\logs.py:218:            select(AuditLog.action, func.count(AuditLog.id))
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\logs.py:219:            .where(AuditLog.tenant_id == caller.tenant_id)
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\__init__.py:10:__all__ = [
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\users.py:14:from sqlalchemy.ext.asyncio import AsyncSession
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\users.py:22:    SessionDep,
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\users.py:37:    tenant_id: str
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\users.py:51:    role_ids: list[int] = Field(default_factory=list)
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\users.py:52:    role_codes: list[str] = Field(default_factory=list)
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\users.py:65:    role_ids: list[int] = Field(default_factory=list)
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\users.py:77:    role_ids: list[int] | None = None
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\users.py:93:def _user_to_out(user: User, role_ids: list[int], role_codes: list[str]) -> UserOut:
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\users.py:96:        tenant_id=user.tenant_id,
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\users.py:116:    session: AsyncSession, user_ids: list[int]
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\users.py:117:) -> dict[int, tuple[list[int], list[str]]]:
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\users.py:121:        select(UserRole.user_id, Role.id, Role.code)
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\users.py:126:    result: dict[int, list[int]] = {uid: [] for uid in user_ids}
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\users.py:127:    codes: dict[int, list[str]] = {uid: [] for uid in user_ids}
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\users.py:134:async def _load_user(session: AsyncSession, user_id: int, tenant_id: str) -> User | None:
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\users.py:135:    stmt = select(User).where(and_(User.id == user_id, User.tenant_id == tenant_id))
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\users.py:143:    session: SessionDep,
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\users.py:150:) -> dict[str, Any]:
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\users.py:151:    base = select(User).where(User.tenant_id == caller.tenant_id)
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\users.py:167:            User.id.in_(select(UserRole.user_id).where(UserRole.role_id == role_id))
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\users.py:170:    total_stmt = select(func.count()).select_from(base.subquery())
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\users.py:187:    session: SessionDep,
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\users.py:190:) -> dict[str, Any]:
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\users.py:193:            select(User).where(
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\users.py:194:                and_(User.tenant_id == caller.tenant_id, User.username == payload.username)
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\users.py:206:        tenant_id=caller.tenant_id,
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\users.py:217:    session.add(user)
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\users.py:222:            session.add(UserRole(user_id=user.id, role_id=rid))
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\users.py:236:    await session.commit()
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\users.py:248:    session: SessionDep,
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\users.py:251:) -> dict[str, Any]:
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\users.py:265:                select(User).where(
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\users.py:266:                    and_(User.tenant_id == caller.tenant_id, User.username == username)
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\users.py:277:                tenant_id=caller.tenant_id,
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\users.py:287:            session.add(user)
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\users.py:305:    await session.commit()
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\users.py:311:    session: SessionDep,
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\users.py:315:            select(User).where(User.tenant_id == caller.tenant_id).order_by(User.created_at.desc())
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\users.py:343:    session: SessionDep,
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\users.py:345:) -> dict[str, Any]:
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\users.py:346:    user = await _load_user(session, user_id, caller.tenant_id)
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\users.py:356:    session: SessionDep,
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\users.py:360:) -> dict[str, Any]:
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\users.py:361:    user = await _load_user(session, user_id, caller.tenant_id)
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\users.py:390:            await session.execute(select(UserRole).where(UserRole.user_id == user.id))
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\users.py:393:            await session.delete(ur)
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\users.py:395:            session.add(UserRole(user_id=user.id, role_id=rid))
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\users.py:419:    await session.commit()
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\users.py:425:@router.delete("/{user_id}")
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\users.py:428:    session: SessionDep,
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\users.py:431:) -> dict[str, Any]:
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\users.py:432:    user = await _load_user(session, user_id, caller.tenant_id)
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\users.py:443:        await session.execute(select(UserRole).where(UserRole.user_id == user.id))
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\users.py:446:        await session.delete(rel)
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\users.py:447:    await session.delete(user)
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\users.py:459:    await session.commit()
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\users.py:466:    session: SessionDep,
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\users.py:469:) -> dict[str, Any]:
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\users.py:470:    user = await _load_user(session, user_id, caller.tenant_id)
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\users.py:487:    await session.commit()
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\users.py:494:    session: SessionDep,
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\users.py:498:) -> dict[str, Any]:
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\users.py:499:    user = await _load_user(session, user_id, caller.tenant_id)
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\users.py:520:    await session.commit()
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\users.py:527:    session: SessionDep,
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\users.py:530:) -> dict[str, Any]:
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\users.py:531:    user = await _load_user(session, user_id, caller.tenant_id)
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\users.py:539:    session: SessionDep,
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\users.py:543:) -> dict[str, Any]:
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\users.py:545:    user = await _load_user(session, user_id, caller.tenant_id)
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\users.py:549:    base = select(LoginLog).where(
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\users.py:550:        and_(LoginLog.tenant_id == caller.tenant_id, LoginLog.username == user.username)
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\users.py:552:    total = (await session.execute(select(func.count()).select_from(base.subquery()))).scalar_one()
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\dashboard.py:39:_NOTIFICATIONS: list[dict[str, Any]] = [
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\dashboard.py:67:def _seed_todos() -> list[dict[str, Any]]:
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\dashboard.py:99:_TODOS = _seed_todos()
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\dashboard.py:102:_WORKERS: list[dict[str, Any]] = [
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\dashboard.py:126:_DELIVERABLES: list[dict[str, Any]] = [
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\dashboard.py:169:_ANOMALIES: list[dict[str, Any]] = [
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\dashboard.py:194:_ANOMALY_RULES: list[dict[str, Any]] = [
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\dashboard.py:210:_SEARCH_INDEX: list[dict[str, Any]] = [
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\dashboard.py:233:     "description": "\u5408\u540c\u5ba1\u6279\u52a8\u4f5c\uff1a\u89e6\u53d1 Flowable \u6d41\u7a0b + ABAC \u6821\u9a8c",
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\dashboard.py:246:_API_KEYS: list[dict[str, Any]] = [
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\dashboard.py:262:_SESSIONS: list[dict[str, Any]] = [
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\dashboard.py:275:_USER_SETTINGS: dict[str, dict[str, Any]] = {
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\dashboard.py:288:_NOTIFICATION_SETTINGS: dict[str, dict[str, Any]] = {
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\dashboard.py:305:    tenantId: str | None = None
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\dashboard.py:323:    layout: list[str] | None = None
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\dashboard.py:338:    tenantId: str | None = "tenant-default"
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\dashboard.py:341:    scopes: list[str] = Field(default_factory=list)
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\dashboard.py:410:        "tenantId": "tenant-default",
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\dashboard.py:428:        "tenantId": "tenant-default",
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\dashboard.py:447:_DEFAULT_SETTINGS: dict[str, Any] = {
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\dashboard.py:477:@router.delete("/sessions/{session_id}", status_code=status.HTTP_204_NO_CONTENT)
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\dashboard.py:484:async def list_api_keys(tenantId: str | None = Query(default=None),
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\dashboard.py:509:@router.delete("/api-keys/{api_key_id}", status_code=status.HTTP_204_NO_CONTENT)
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\dashboard.py:616:def _map_todo(item: dict[str, Any]) -> dict[str, Any]:
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\dashboard.py:715:@router.delete("/deliverables/{deliverable_id}", status_code=status.HTTP_204_NO_CONTENT)
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\dashboard.py:770:                             body: dict[str, Any] | None = None) -> Any:
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\dashboard.py:804:@router.delete("/anomaly-rules/{rule_id}", status_code=status.HTTP_204_NO_CONTENT)
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\response.py:7:def ok(data: Any = None, message: str = "success") -> dict[str, Any]:
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\response.py:12:def page(items: list[Any], total: int, page: int, page_size: int) -> dict[str, Any]:
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\configs.py:13:from sqlalchemy.ext.asyncio import AsyncSession
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\configs.py:17:from ..services.deps import AdminDep, SessionDep, write_audit
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\configs.py:36:    enum_options: list[str] = Field(default_factory=list)
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\configs.py:100:async def _load_cfg(session: AsyncSession, key: str, tenant_id: str) -> SystemConfig | None:
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\configs.py:103:            select(SystemConfig).where(
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\configs.py:104:                and_(SystemConfig.key == key, SystemConfig.tenant_id == tenant_id)
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\configs.py:127:    session: SessionDep,
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\configs.py:132:) -> dict[str, Any]:
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\configs.py:133:    base = select(SystemConfig).where(SystemConfig.tenant_id == caller.tenant_id)
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\configs.py:140:    total = (await session.execute(select(func.count()).select_from(base.subquery()))).scalar_one()
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\configs.py:150:    session: SessionDep,
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\configs.py:151:) -> dict[str, Any]:
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\configs.py:154:            select(SystemConfig.category, func.count(SystemConfig.id))
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\configs.py:155:            .where(SystemConfig.tenant_id == caller.tenant_id)
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\configs.py:165:    session: SessionDep,
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\configs.py:169:) -> dict[str, Any]:
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\configs.py:172:    cfg = await _load_cfg(session, key, caller.tenant_id)
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\configs.py:194:    await session.commit()
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\permissions.py:11:from sqlalchemy.ext.asyncio import AsyncSession
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\permissions.py:17:from ..services.deps import AdminDep, SessionDep, write_audit
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\permissions.py:29:    tenant_id: str
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\permissions.py:66:    permission_ids: list[int] = Field(default_factory=list)
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\permissions.py:77:    permission_ids: list[int] | None = None
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\permissions.py:87:    actions: list[str]
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\permissions.py:94:    permission_ids: list[int] = Field(default_factory=list)
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\permissions.py:95:    role_ids: list[int] | None = Field(default=None, description="type=user 时：分配的角色")
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\permissions.py:105:    permissions: list[PermissionOut]
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\permissions.py:112:    roles: list[RoleOut]
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\permissions.py:113:    permissions: list[PermissionOut]
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\permissions.py:128:async def _load_role(session: AsyncSession, role_id: int, tenant_id: str) -> Role | None:
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\permissions.py:131:            select(Role).where(and_(Role.id == role_id, Role.tenant_id == tenant_id))
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\permissions.py:136:async def _role_stats(session: AsyncSession, role_ids: list[int]) -> dict[int, tuple[int, int]]:
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\permissions.py:141:            select(RolePermission.role_id, func.count(RolePermission.id))
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\permissions.py:148:            select(UserRole.role_id, func.count(UserRole.id))
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\permissions.py:160:    session: SessionDep,
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\permissions.py:164:) -> dict[str, Any]:
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\permissions.py:165:    base = select(Role).where(Role.tenant_id == caller.tenant_id)
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\permissions.py:170:    total = (await session.execute(select(func.count()).select_from(base.subquery()))).scalar_one()
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\permissions.py:180:                tenant_id=r.tenant_id,
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\permissions.py:198:    session: SessionDep,
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\permissions.py:201:) -> dict[str, Any]:
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\permissions.py:209:            select(Role).where(and_(Role.tenant_id == caller.tenant_id, Role.code == payload.code))
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\permissions.py:219:        tenant_id=caller.tenant_id,
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\permissions.py:226:    session.add(role)
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\permissions.py:230:        session.add(RolePermission(role_id=role.id, permission_id=pid, effect="ALLOW"))
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\permissions.py:244:    await session.commit()
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\permissions.py:250:            tenant_id=role.tenant_id,
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\permissions.py:267:    session: SessionDep,
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\permissions.py:271:) -> dict[str, Any]:
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\permissions.py:272:    role = await _load_role(session, role_id, caller.tenant_id)
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\permissions.py:291:            await session.execute(select(RolePermission).where(RolePermission.role_id == role.id))
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\permissions.py:294:            await session.delete(rp)
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\permissions.py:296:            session.add(RolePermission(role_id=role.id, permission_id=pid, effect="ALLOW"))
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\permissions.py:314:    await session.commit()
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\permissions.py:318:@router.delete("/roles/{role_id}")
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\permissions.py:321:    session: SessionDep,
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\permissions.py:324:) -> dict[str, Any]:
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\permissions.py:325:    role = await _load_role(session, role_id, caller.tenant_id)
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\permissions.py:334:    rels = (await session.execute(select(UserRole).where(UserRole.role_id == role.id))).scalars().all()
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\permissions.py:336:        await session.delete(r)
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\permissions.py:337:    perms = (await session.execute(select(RolePermission).where(RolePermission.role_id == role.id))).scalars().all()
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\permissions.py:339:        await session.delete(r)
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\permissions.py:341:    await session.delete(role)
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\permissions.py:354:    await session.commit()
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\permissions.py:361:    session: SessionDep,
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\permissions.py:363:) -> dict[str, Any]:
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\permissions.py:364:    role = await _load_role(session, role_id, caller.tenant_id)
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\permissions.py:369:        await session.execute(select(RolePermission.permission_id).where(RolePermission.role_id == role.id))
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\permissions.py:374:            await session.execute(select(Permission).where(Permission.id.in_(perm_ids)))
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\permissions.py:395:    session: SessionDep,
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\permissions.py:397:) -> dict[str, Any]:
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\permissions.py:398:    base = select(Permission).where(Permission.tenant_id == caller.tenant_id)
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\permissions.py:410:    session: SessionDep,
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\permissions.py:413:) -> dict[str, Any]:
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\permissions.py:417:                select(User).where(and_(User.id == payload.target_id, User.tenant_id == caller.tenant_id))
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\permissions.py:425:                await session.execute(select(UserRole).where(UserRole.user_id == user.id))
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\permissions.py:428:                await session.delete(ur)
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\permissions.py:430:                session.add(UserRole(user_id=user.id, role_id=rid))
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\permissions.py:449:        role = await _load_role(session, payload.target_id, caller.tenant_id)
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\permissions.py:453:            await session.execute(select(RolePermission).where(RolePermission.role_id == role.id))
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\permissions.py:456:            await session.delete(rp)
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\permissions.py:458:            session.add(RolePermission(role_id=role.id, permission_id=pid, effect="ALLOW"))
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\permissions.py:477:    await session.commit()
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\permissions.py:485:    session: SessionDep,
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\permissions.py:486:) -> dict[str, Any]:
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\permissions.py:490:            select(Role).where(Role.tenant_id == caller.tenant_id).order_by(Role.code)
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\permissions.py:495:            select(Permission).where(Permission.tenant_id == caller.tenant_id).order_by(Permission.code)
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\permissions.py:500:        await session.execute(select(RolePermission.role_id, RolePermission.permission_id))
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\auth.py:11:production, swap to RS256 + Keycloak JWKS (see services/auth-service).
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\auth.py:48:    tenantId: str | None = None
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\auth.py:81:def _make_token(user: User, roles: list[str], ttl: int, kind: str) -> str:
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\auth.py:86:        "tenant_id": user.tenant_id,
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\auth.py:97:def _build_response(user: User, roles: list[str], ip: str | None) -> AuthResponse:
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\auth.py:118:async def _load_roles(session, user_id: int) -> list[str]:
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\auth.py:120:        select(Role.code)
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\auth.py:133:        tenant_id=user.tenant_id,
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\auth.py:142:    tenant_id: str,
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\auth.py:150:        session.add(
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\auth.py:152:                tenant_id=tenant_id,
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\auth.py:174:    from ..db import AsyncSessionMaker
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\auth.py:176:    tenant_id = req.tenantId or "tenant-default"
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\auth.py:179:    async with AsyncSessionMaker() as session:
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\auth.py:180:        stmt = select(User).where(
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\auth.py:181:            and_(User.tenant_id == tenant_id, User.username == req.username)
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\auth.py:185:            await _write_login_log(session, tenant_id, req.username, None, LoginResult.FAILED, ip, "user not found")
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\auth.py:189:            await _write_login_log(session, tenant_id, req.username, user.id, LoginResult.FAILED, ip, "bad password")
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\auth.py:193:            await _write_login_log(session, tenant_id, req.username, user.id, LoginResult.LOCKED, ip, f"status={user.status.value}")
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\auth.py:199:        await _write_login_log(session, tenant_id, req.username, user.id, LoginResult.SUCCESS, ip, None)
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\auth.py:209:            detail={"tenant_id": tenant_id, "ip": ip},
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\auth.py:211:        await session.commit()
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\auth.py:216:async def iam_logout(authorization: str | None = Header(default=None)) -> dict[str, Any]:
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\auth.py:217:    from ..db import AsyncSessionMaker
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\auth.py:233:        async with AsyncSessionMaker() as session:
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\auth.py:235:            await session.commit()
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\auth.py:241:    from ..db import AsyncSessionMaker
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\auth.py:252:    tenant_id = claims.get("tenant_id", "tenant-default")
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\auth.py:253:    async with AsyncSessionMaker() as session:
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\auth.py:256:                select(User).where(and_(User.id == user_id, User.tenant_id == tenant_id))
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\auth.py:267:async def iam_me(authorization: str | None = Header(default=None)) -> dict[str, Any]:
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\auth.py:270:    Uses inline bearer parsing to avoid the `Depends(get_caller)` overhead and
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\auth.py:275:    from ..db import AsyncSessionMaker
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\auth.py:289:    claims.get("tenant_id", "tenant-default")
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\auth.py:291:    async with AsyncSessionMaker() as session:
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\auth.py:292:        user = (await session.execute(select(User).where(User.id == uid))).scalar_one_or_none()
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\auth.py:302:            "tenantId": user.tenant_id,
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\auth.py:314:) -> dict[str, Any]:
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\orgs.py:11:from sqlalchemy.ext.asyncio import AsyncSession
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\orgs.py:16:from ..services.deps import AdminDep, SessionDep, write_audit
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\orgs.py:105:    children: list[OrgTreeNode] = []
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\orgs.py:112:async def _load_org(session: AsyncSession, org_id: int, tenant_id: str) -> Org | None:
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\orgs.py:115:            select(Org).where(and_(Org.id == org_id, Org.tenant_id == tenant_id))
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\orgs.py:120:async def _member_counts(session: AsyncSession, org_ids: list[int]) -> dict[int, int]:
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\orgs.py:125:            select(EmployeePosition.position_id, func.count(EmployeePosition.id))
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\orgs.py:127:                select(Position.id).where(Position.org_id.in_(org_ids))
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\orgs.py:134:            select(Position.id, Position.org_id).where(Position.org_id.in_(org_ids))
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\orgs.py:137:    result: dict[int, int] = dict.fromkeys(org_ids, 0)
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\orgs.py:145:async def _position_counts(session: AsyncSession, org_ids: list[int]) -> dict[int, int]:
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\orgs.py:150:            select(Position.org_id, func.count(Position.id))
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\orgs.py:162:    session: SessionDep,
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\orgs.py:163:) -> dict[str, Any]:
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\orgs.py:167:            select(Org).where(Org.tenant_id == caller.tenant_id).order_by(Org.sort_order, Org.id)
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\orgs.py:175:            await session.execute(select(User.id, User.real_name).where(
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\orgs.py:180:    by_parent: dict[int | None, list[Org]] = {}
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\orgs.py:204:    session: SessionDep,
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\orgs.py:209:) -> dict[str, Any]:
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\orgs.py:210:    base = select(Org).where(Org.tenant_id == caller.tenant_id)
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\orgs.py:217:    total = (await session.execute(select(func.count()).select_from(base.subquery()))).scalar_one()
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\orgs.py:225:            await session.execute(select(User.id, User.real_name).where(User.id.in_(leader_ids)))
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\orgs.py:253:    session: SessionDep,
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\orgs.py:256:) -> dict[str, Any]:
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\orgs.py:258:        parent = await _load_org(session, payload.parent_id, caller.tenant_id)
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\orgs.py:264:            select(Org).where(and_(Org.tenant_id == caller.tenant_id, Org.code == payload.code))
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\orgs.py:271:        tenant_id=caller.tenant_id,
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\orgs.py:280:    session.add(org)
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\orgs.py:294:    await session.commit()
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\orgs.py:302:    session: SessionDep,
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\orgs.py:306:) -> dict[str, Any]:
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\orgs.py:307:    org = await _load_org(session, org_id, caller.tenant_id)
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\orgs.py:350:    await session.commit()
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\orgs.py:354:@router.delete("/{org_id}")
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\orgs.py:357:    session: SessionDep,
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\orgs.py:360:) -> dict[str, Any]:
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\orgs.py:361:    org = await _load_org(session, org_id, caller.tenant_id)
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\orgs.py:366:        await session.execute(select(Org).where(Org.parent_id == org.id))
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\orgs.py:375:    await session.delete(org)
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\orgs.py:387:    await session.commit()
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\orgs.py:395:    session: SessionDep,
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\orgs.py:400:) -> dict[str, Any]:
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\orgs.py:401:    base = select(Position).where(Position.tenant_id == caller.tenant_id)
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\orgs.py:408:    total = (await session.execute(select(func.count()).select_from(base.subquery()))).scalar_one()
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\orgs.py:413:            select(Org.id, Org.name).where(Org.id.in_({p.org_id for p in items}))
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\orgs.py:421:                select(EmployeePosition.position_id, func.count(EmployeePosition.id))
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\orgs.py:448:    session: SessionDep,
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\orgs.py:451:) -> dict[str, Any]:
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\orgs.py:452:    org = await _load_org(session, payload.org_id, caller.tenant_id)
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\orgs.py:457:        tenant_id=caller.tenant_id,
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\orgs.py:464:    session.add(position)
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\orgs.py:478:    await session.commit()
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\orgs.py:485:    session: SessionDep,
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\orgs.py:489:) -> dict[str, Any]:
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\orgs.py:492:            select(Position).where(and_(Position.id == position_id, Position.tenant_id == caller.tenant_id))
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\orgs.py:516:    await session.commit()
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\orgs.py:520:@router.delete("/positions/{position_id}")
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\orgs.py:523:    session: SessionDep,
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\orgs.py:526:) -> dict[str, Any]:
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\orgs.py:529:            select(Position).where(and_(Position.id == position_id, Position.tenant_id == caller.tenant_id))
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\orgs.py:536:        await session.execute(select(EmployeePosition).where(EmployeePosition.position_id == pos.id))
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\orgs.py:543:    await session.delete(pos)
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\orgs.py:555:    await session.commit()
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\orgs.py:563:    session: SessionDep,
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\orgs.py:566:) -> dict[str, Any]:
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\orgs.py:570:            select(User).where(and_(User.id == payload.user_id, User.tenant_id == caller.tenant_id))
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\orgs.py:575:    org = await _load_org(session, payload.target_org_id, caller.tenant_id)
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\orgs.py:582:            select(EmployeePosition).where(
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\orgs.py:598:                select(Position).where(Position.org_id == org.id).order_by(Position.id)
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\orgs.py:609:        tenant_id=caller.tenant_id,
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\orgs.py:616:    session.add(new_ep)
+mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api\orgs.py:634:    await session.commit()

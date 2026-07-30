@@ -5,8 +5,9 @@ import {
 } from 'lucide-react';
 import {
   listMetrics, createMetric, computeMetric, getMetricLineage,
-  Metric, MetricType, METRIC_TYPE_META,
+  Metric, MetricType, MetricAggregation, MetricFrequency, BigDataSource, METRIC_TYPE_META,
 } from '../../../api/ontology-bigdata';
+import { App, message } from 'antd';
 import { listBigDataSources } from '../../../api/ontology-bigdata';
 import { formatNumber, formatTimestamp } from './common';
 
@@ -25,30 +26,30 @@ const MSTATUS_META = {
 };
 
 export default function MetricView() {
-  const [metrics, setMetrics] = useState([]);
-  const [sources, setSources] = useState([]);
+  const [metrics, setMetrics] = useState<Metric[]>([]);
+  const [sources, setSources] = useState<BigDataSource[]>([]);
   const [loading, setLoading] = useState(false);
-  const [actionLoading, setActionLoading] = useState(null);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
-  const [showLineage, setShowLineage] = useState(null);
+  const [showLineage, setShowLineage] = useState<Metric | null>(null);
 
   const load = async () => {
     setLoading(true);
     try {
       const [metricData, sourceData] = await Promise.all([listMetrics(), listBigDataSources()]);
-      setMetrics(Array.isArray(metricData) ? metricData : (metricData?.items || []));
-      setSources(Array.isArray(sourceData) ? sourceData : (sourceData?.items || []));
+      setMetrics(metricData);
+      setSources(sourceData);
     } finally { setLoading(false); }
   };
 
   useEffect(() => { load(); }, []);
 
-  const handleCompute = async (id) => {
+  const handleCompute = async (id: string) => {
     setActionLoading(id);
     try { await computeMetric(id); await load(); } finally { setActionLoading(null); }
   };
 
-  const handleShowLineage = async (m) => {
+  const handleShowLineage = async (m: Metric) => {
     setShowLineage(m);
     try { await getMetricLineage(m.metricId); } catch {}
   };
@@ -152,15 +153,15 @@ export default function MetricView() {
   );
 }
 
-function CreateMetricDialog({ sources, onClose, onSuccess }) {
-  const [form, setForm] = useState({
+function CreateMetricDialog({ sources, onClose, onSuccess }: { sources: BigDataSource[]; onClose: () => void; onSuccess: () => void }) {
+  const [form, setForm] = useState<Partial<Metric>>({
     type: 'ATOMIC', aggregation: 'SUM', calculationFrequency: 'HOURLY', businessDomain: 'general',
   });
   const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async () => {
     if (!form.name || !form.code || !form.sourceId || !form.sourceTable || !form.sourceField) {
-      alert('请填写必填字段');
+      message.warning('请填写必填字段');
       return;
     }
     setSubmitting(true);
@@ -185,12 +186,12 @@ function CreateMetricDialog({ sources, onClose, onSuccess }) {
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <FFM label="类型 *" required>
-              <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} style={i3}>
+              <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value as MetricType })} style={i3}>
                 {Object.entries(METRIC_TYPE_META).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
               </select>
             </FFM>
             <FFM label="聚合方式 *" required>
-              <select value={form.aggregation} onChange={(e) => setForm({ ...form, aggregation: e.target.value })} style={i3}>
+              <select value={form.aggregation} onChange={(e) => setForm({ ...form, aggregation: e.target.value as MetricAggregation })} style={i3}>
                 {['SUM', 'AVG', 'COUNT', 'MAX', 'MIN', 'LAST'].map(v => <option key={v} value={v}>{v}</option>)}
               </select>
             </FFM>
@@ -210,7 +211,7 @@ function CreateMetricDialog({ sources, onClose, onSuccess }) {
             </FFM>
           </div>
           <FFM label="计算频率">
-            <select value={form.calculationFrequency} onChange={(e) => setForm({ ...form, calculationFrequency: e.target.value })} style={i3}>
+            <select value={form.calculationFrequency} onChange={(e) => setForm({ ...form, calculationFrequency: e.target.value as MetricFrequency })} style={i3}>
               <option value="REALTIME">实时</option><option value="MINUTELY">每分钟</option><option value="HOURLY">每小时</option><option value="DAILY">每天</option>
             </select>
           </FFM>
@@ -224,7 +225,7 @@ function CreateMetricDialog({ sources, onClose, onSuccess }) {
   );
 }
 
-function LineageDialog({ metric, onClose }) {
+function LineageDialog({ metric, onClose }: { metric: Metric; onClose: () => void }) {
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
       <div className="v-card" style={{ width: 520, padding: 20 }}>
@@ -248,7 +249,7 @@ function LineageDialog({ metric, onClose }) {
 
 const i3 = { width: '100%', padding: '6px 10px', border: '1px solid var(--border)', borderRadius: 4, background: 'var(--background)', color: 'var(--foreground)', fontSize: 13 };
 
-function FFM({ label, children, required }) {
+function FFM({ label, children, required = false }: { label: React.ReactNode; children: React.ReactNode; required?: boolean }) {
   return (
     <div>
       <label style={{ display: 'block', fontSize: 12, fontWeight: 500, marginBottom: 4, color: 'var(--muted-foreground)' }}>

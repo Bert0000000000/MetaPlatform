@@ -1,0 +1,145 @@
+openapi: 3.1.0
+info:
+  title: mate-tech-agent
+  version: 0.1.0
+  description: |
+    Agent service (LangGraph S1 + S2 + S3 + S4).
+    Scenarios:
+      S1: simple RAG-augmented single-step answer
+      S2: planner -> multi-worker retrieve -> synthesize
+      S3: retrieve + answer + human_review pause -> POST /review to resume
+      S4: post-review persistence + abort
+servers:
+  - url: http://localhost:8002
+    description: local dev
+  - url: http://mate-tech-agent:8002
+    description: docker compose
+tags:
+  - name: agent
+  - name: meta
+paths:
+  /healthz:
+    get:
+      summary: Liveness probe
+      tags: [meta]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+  /api/v1/agent/chat:
+    post:
+      summary: Agent chat (S1 | S2 | S3 | S4)
+      tags: [agent]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChatRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChatResponse"
+        "501":
+          description: Scenario not implemented
+        "500":
+          description: Graph execution failure
+  /api/v1/agent/chat/stream:
+    post:
+      summary: SSE streaming chat (S1 / S2 / S3)
+      tags: [agent]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChatRequest"
+      responses:
+        "200":
+          description: text/event-stream
+        "501":
+          description: Scenario not implemented
+  /api/v1/agent/review:
+    post:
+      summary: S3 human review resume (approve / abort)
+      tags: [agent]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/HumanReviewRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HumanReviewResponse"
+        "500":
+          description: Post-review execution failure
+  /api/v1/agent/state/{thread_id}:
+    parameters:
+      - {in: path, name: thread_id, required: true, schema: {type: string}}
+    get:
+      summary: Read persisted thread state
+      tags: [agent]
+      responses:
+        "200": {description: OK}
+        "404": {description: thread not found}
+    delete:
+      summary: Delete persisted thread state
+      tags: [agent]
+      responses:
+        "200": {description: OK}
+        "404": {description: thread not found}
+components:
+  schemas:
+    HealthResponse:
+      type: object
+      required: [status, service, version]
+      properties:
+        status: {type: string}
+        service: {type: string}
+        version: {type: string}
+    ChatRequest:
+      type: object
+      required: [message]
+      properties:
+        message: {type: string, minLength: 1, maxLength: 4096}
+        thread_id: {type: string, nullable: true}
+        scenario: {type: string, enum: [S1, S2, S3, S4], default: S1}
+    ChatResponse:
+      type: object
+      required: [thread_id, scenario, answer, latency_ms]
+      properties:
+        thread_id: {type: string}
+        scenario: {type: string}
+        answer: {type: string}
+        retrieved_chunks:
+          type: array
+          items: {type: object}
+        tool_calls:
+          type: array
+          items: {type: object}
+        latency_ms: {type: integer, minimum: 0}
+    HumanReviewRequest:
+      type: object
+      required: [thread_id, approved]
+      properties:
+        thread_id: {type: string}
+        approved: {type: boolean}
+        feedback: {type: string, nullable: true}
+    HumanReviewResponse:
+      type: object
+      required: [thread_id, status]
+      properties:
+        thread_id: {type: string}
+        status: {type: string, enum: [approved, aborted, no_pending]}
+        message: {type: string, nullable: true}

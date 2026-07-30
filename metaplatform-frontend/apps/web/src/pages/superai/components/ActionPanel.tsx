@@ -14,7 +14,7 @@ import {
   Modal,
   Descriptions,
   Table,
-} from 'antd';
+message, } from 'antd';
 import {
   ThunderboltOutlined,
   SearchOutlined,
@@ -44,7 +44,7 @@ export default function ActionPanel({ query, onQueryChange, onResult }: ActionPa
   const [form] = Form.useForm();
 
   useEffect(() => {
-    listActions().then(setAllActions).catch(() => {});
+    listActions().then(setAllActions).catch((error) => { console.warn('[ActionPanel] listActions failed', error); message.warning('Action 列表加载失败，请检查后端服务状态'); });
   }, []);
 
   const handleMatch = useCallback(async () => {

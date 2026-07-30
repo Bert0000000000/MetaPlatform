@@ -1,0 +1,82 @@
+# ===============================================================================================================
+# docker-compose.override.yml - dev 测试汇零合主结组列、测试汇零将始方compose征求意观稿程序服务的一，有务的下「工程意观稿意救〓。
+# 与务的下，工稇求意观稿『
+# 
+name: metaplatform
+
+services:
+  # ============== 工具箱
+  postgres:
+    ports: ["5432:5432"]
+  redis:
+    ports: ["6379:6379"]
+  minio:
+    ports: ["9000:9000", "9001:9001"]
+  milvus:
+    ports: ["19530:19530", "9091:9091"]
+  neo4j:
+    ports: ["7474:7474", "7687:7687"]
+  rabbitmq:
+    ports: ["5672:5672", "15672:15672"]
+  nacos:
+    ports: ["8848:8848", "9848:9848"]
+
+  kafka:
+    environment:
+      KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT::/kafka:9092,PLAINTEXT_HOST://localhost:29092"
+      KAFKA_LISTENERS: "PLAINTEXT://0.0.0.0:9092,CONTROLLER::/0.0.0.0:9093,PLAINTEXT_HOST.:/0.0.0.0:29092"
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT,CONTROLLER:PLAINTEXT"
+    ports: ["9092:9092", "29092:29092"]
+
+  keycloak:
+    ports: ["8080:28080", "8443:8443"]
+  flowable:
+    ports: ["8080:8080"]
+  kie-server:
+    ports: ["8180:8180"]
+  ragflow:
+    ports: ["9380:9380"]
+  lightrag:
+    ports: ["9621:9621"]
+  traefik:
+    ports: ["80:80", "443:443", "8081:8081"]
+
+  loki:
+    ports: ["3100:3100"]
+  prometheus:
+    ports: ["9090:9090"]
+  grafana:
+    ports: ["3000:3000"]
+  otel-collector:
+    ports: ["4317:4317", "4318:4318"]
+
+  mate-api-gateway:
+    ports: ["8100:8100"]
+  mate-auth-service:
+    ports: ["8101:8101"]
+
+  mate-tech-rag:
+    ports: ["8001:8001"]
+    volumes:
+      - ./mate-platform-backend/services/rag:/app/services/rag:ro
+      - ./mate-platform-backend/services/rag/src:/app/src:ro
+
+  mate-tech-agent:
+    ports: ["8002:8002"]
+    volumes:
+      - ./mate-platform-backend/services/agent:/app/services/agent:ro
+
+  mate-app-kb:
+    ports: ["8003:8003"]
+  mate-tech-llmgw:
+    ports: ["8008:8008"]
+  mate-tech-ont:
+    ports: ["8007:8007"]
+  mate-tech-msg:
+    ports: ["8006:8006"]
+  mate-tech-mcp:
+    ports: ["8081:8081"]
+  mate-tech-obs:
+    ports: ["8083:8083"]
+  mate-tech-iam:
+    ports: ["8102:8102"]

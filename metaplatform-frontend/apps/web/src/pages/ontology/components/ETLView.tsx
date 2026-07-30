@@ -5,8 +5,9 @@ import {
 } from 'lucide-react';
 import {
   listETLTasks, runETLTask, stopETLTask, createETLTask,
-  ETLTask, ETLMode, ETL_MODE_META,
+  ETLTask, ETLMode, ETLPriority, ETLTriggerType, BigDataSource, ETL_MODE_META,
 } from '../../../api/ontology-bigdata';
+import { App, message } from 'antd';
 import { listBigDataSources } from '../../../api/ontology-bigdata';
 import { formatDuration, formatNumber, formatTimestamp } from './common';
 
@@ -28,29 +29,29 @@ const PRIORITY_META = {
 };
 
 export default function ETLView() {
-  const [tasks, setTasks] = useState([]);
-  const [sources, setSources] = useState([]);
+  const [tasks, setTasks] = useState<ETLTask[]>([]);
+  const [sources, setSources] = useState<BigDataSource[]>([]);
   const [loading, setLoading] = useState(false);
-  const [actionLoading, setActionLoading] = useState(null);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
 
   const load = async () => {
     setLoading(true);
     try {
       const [taskData, sourceData] = await Promise.all([listETLTasks(), listBigDataSources()]);
-      setTasks(Array.isArray(taskData) ? taskData : (taskData?.items || []));
-      setSources(Array.isArray(sourceData) ? sourceData : (sourceData?.items || []));
+      setTasks(taskData);
+      setSources(sourceData);
     } finally { setLoading(false); }
   };
 
   useEffect(() => { load(); }, []);
 
-  const handleRun = async (id) => {
+  const handleRun = async (id: string) => {
     setActionLoading(id);
     try { await runETLTask(id); await load(); } finally { setActionLoading(null); }
   };
 
-  const handleStop = async (id) => {
+  const handleStop = async (id: string) => {
     if (!confirm('确认停止此 ETL 任务？')) return;
     setActionLoading(id);
     try { await stopETLTask(id); await load(); } finally { setActionLoading(null); }
@@ -174,8 +175,8 @@ export default function ETLView() {
   );
 }
 
-function CreateETLDialog({ sources, onClose, onSuccess }) {
-  const [form, setForm] = useState({
+function CreateETLDialog({ sources, onClose, onSuccess }: { sources: BigDataSource[]; onClose: () => void; onSuccess: () => void }) {
+  const [form, setForm] = useState<Partial<ETLTask>>({
     mode: 'BATCH_SPARK', priority: 'NORMAL', triggerType: 'MANUAL', writeMode: 'APPEND',
     targetType: 'CLICKHOUSE', executorNum: 2, executorMemory: 4, driverMemory: 2, queue: 'default',
     retryCount: 3, timeout: 3600, alertOnFailure: true,
@@ -184,7 +185,7 @@ function CreateETLDialog({ sources, onClose, onSuccess }) {
 
   const handleSubmit = async () => {
     if (!form.name || !form.targetSourceId || !form.targetTable) {
-      alert('请填写任务名、目标源、目标表');
+      message.warning('请填写任务名、目标源、目标表');
       return;
     }
     setSubmitting(true);
@@ -204,19 +205,19 @@ function CreateETLDialog({ sources, onClose, onSuccess }) {
               <input value={form.name || ''} onChange={(e) => setForm({ ...form, name: e.target.value })} style={is3} />
             </FF>
             <FF label="执行模式 *" required>
-              <select value={form.mode} onChange={(e) => setForm({ ...form, mode: e.target.value })} style={is3}>
+              <select value={form.mode} onChange={(e) => setForm({ ...form, mode: e.target.value as ETLMode })} style={is3}>
                 {Object.entries(ETL_MODE_META).map(([k, v]) => <option key={k} value={k}>{v.icon} {v.label}</option>)}
               </select>
             </FF>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <FF label="优先级">
-              <select value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value })} style={is3}>
+              <select value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value as ETLPriority })} style={is3}>
                 <option value="LOW">低</option><option value="NORMAL">中</option><option value="HIGH">高</option><option value="URGENT">紧急</option>
               </select>
             </FF>
             <FF label="触发方式">
-              <select value={form.triggerType} onChange={(e) => setForm({ ...form, triggerType: e.target.value })} style={is3}>
+              <select value={form.triggerType} onChange={(e) => setForm({ ...form, triggerType: e.target.value as ETLTriggerType })} style={is3}>
                 <option value="MANUAL">手动</option><option value="SCHEDULED">定时</option><option value="EVENT">事件</option>
               </select>
             </FF>
@@ -247,7 +248,7 @@ function CreateETLDialog({ sources, onClose, onSuccess }) {
 
 const is3 = { width: '100%', padding: '6px 10px', border: '1px solid var(--border)', borderRadius: 4, background: 'var(--background)', color: 'var(--foreground)', fontSize: 13 };
 
-function FF({ label, children, required }) {
+function FF({ label, children, required = false }: { label: React.ReactNode; children: React.ReactNode; required?: boolean }) {
   return (
     <div>
       <label style={{ display: 'block', fontSize: 12, fontWeight: 500, marginBottom: 4, color: 'var(--muted-foreground)' }}>

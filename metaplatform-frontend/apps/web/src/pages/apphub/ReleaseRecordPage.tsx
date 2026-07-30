@@ -1,3 +1,4 @@
+import { useParams } from "react-router-dom";
 import { useEffect, useState } from 'react';
 import {
   Button,
@@ -40,7 +41,7 @@ import {
 import type { PageResponse } from '@/api/apphub/types';
 
 interface ReleaseRecordPageProps {
-  appId: string;
+  appId?: string;
 }
 
 const STRATEGY_LABELS: Record<string, string> = {
@@ -70,7 +71,9 @@ const GRAY_MARKS: Record<number, string> = {
   100: '100%',
 };
 
-export default function ReleaseRecordPage({ appId }: ReleaseRecordPageProps) {
+export default function ReleaseRecordPage({ appId: appIdProp }: ReleaseRecordPageProps) {
+  const { appId: routeAppId } = useParams<"appId">();
+  const appId = appIdProp ?? routeAppId ?? "";
   const [releases, setReleases] = useState<PageResponse<ReleaseRecord> | null>(null);
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);

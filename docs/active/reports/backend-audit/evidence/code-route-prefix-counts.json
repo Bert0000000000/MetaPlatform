@@ -1,0 +1,18 @@
+{
+  "healthz": 11,
+  "rag": 7,
+  "ont": 8,
+  "metrics": 1,
+  "obs": 2,
+  "admin": 36,
+  "msg": 2,
+  "mcp": 5,
+  "llm": 3,
+  "readyz": 3,
+  "iam": 8,
+  "dashboard": 34,
+  "agent": 5,
+  "app-kb": 5,
+  "auth": 3,
+  "{path:path}": 1
+}

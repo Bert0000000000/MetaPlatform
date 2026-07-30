@@ -4,7 +4,6 @@ import {
   Plus, Eye, CheckCheck, FileText, Check, X, Pencil,
 } from 'lucide-react';
 import { SubTabs, type SubTabItem, StepDrawer, Field, TextInput, TextArea, Select, FormSection } from '@mate/shared';
-import { MOCK_AGENTS } from '@/mock'; // MOCK
 
 const AGENT_TABS: SubTabItem[] = [
   { label: '数字员工列表', path: '/agents' },

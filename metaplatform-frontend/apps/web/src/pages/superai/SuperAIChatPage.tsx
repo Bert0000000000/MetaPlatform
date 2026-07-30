@@ -1,6 +1,6 @@
-﻿import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Card, Input, Button, List, Empty, Tag, Space, Select, message, Row, Col, Statistic } from 'antd';
-import { SendOutlined, ThunderboltOutlined } from '@mate/shared';
+import { SendOutlined, ThunderboltOutlined, useApiErrorBoundary } from '@mate/shared';
 import {
   InteractionProvider, useInteractionContext, toInteractionContextJson,
   streamAgentRun, ClaimRenderer, EvidenceRenderer,
@@ -10,6 +10,8 @@ import {
  * SuperAI 对话页（P4.3.1）。
  */
 function SuperAIInner() {
+  const { report } = useApiErrorBoundary();
+
   const interaction = useInteractionContext();
   const [mode, setMode] = useState<'fast' | 'deep'>('fast');
   const [messages, setMessages] = useState<Array<{ role: string; content: string; claims?: any[]; evidences?: any[]; subAgents?: any[] }>>([]);
@@ -52,10 +54,10 @@ function SuperAIInner() {
             setLatency(Date.now() - startRef.current);
           }
         },
-        onError: (e) => message.error('流式响应失败：' + (e as Error).message),
+        onError: (e) => report(e),
       });
     } catch (e) {
-      message.error('调用失败：' + (e as Error).message);
+      report(e);
     } finally {
       setStreaming(false);
       abortRef.current = null;
@@ -140,6 +142,7 @@ function SuperAIInner() {
 }
 
 export default function SuperAIChatPage() {
+  const { report } = useApiErrorBoundary();
   return (
     <InteractionProvider appCode="superai" pageCode="chat">
       <SuperAIInner />

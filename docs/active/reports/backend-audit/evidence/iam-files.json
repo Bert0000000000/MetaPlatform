@@ -1,0 +1,122 @@
+﻿[
+    {
+        "File":  "mate-platform-backend\\packages\\mate-tech-iam\\src\\mate_tech_iam\\db.py",
+        "Lines":  76,
+        "Routes":  ""
+    },
+    {
+        "File":  "mate-platform-backend\\packages\\mate-tech-iam\\src\\mate_tech_iam\\main.py",
+        "Lines":  236,
+        "Routes":  "@app.exception_handler(StarletteHTTPException); @app.exception_handler(RequestValidationError); @app.get(\"/healthz\"); @app.get(\"/readyz\")"
+    },
+    {
+        "File":  "mate-platform-backend\\packages\\mate-tech-iam\\src\\mate_tech_iam\\seed.py",
+        "Lines":  616,
+        "Routes":  ""
+    },
+    {
+        "File":  "mate-platform-backend\\packages\\mate-tech-iam\\src\\mate_tech_iam\\__init__.py",
+        "Lines":  2,
+        "Routes":  ""
+    },
+    {
+        "File":  "mate-platform-backend\\packages\\mate-tech-iam\\src\\mate_tech_iam\\api\\auth.py",
+        "Lines":  322,
+        "Routes":  "@router.post(\"/auth/login\", response_model=AuthResponse); @router.post(\"/auth/logout\"); @router.post(\"/auth/refresh\", response_model=AuthResponse); @router.get(\"/auth/me\"); @router.get(\"/sso-providers\")"
+    },
+    {
+        "File":  "mate-platform-backend\\packages\\mate-tech-iam\\src\\mate_tech_iam\\api\\configs.py",
+        "Lines":  196,
+        "Routes":  "@router.get(\"\"); @router.get(\"/categories\"); @router.put(\"/{key:path}\", status_code=status.HTTP_200_OK)"
+    },
+    {
+        "File":  "mate-platform-backend\\packages\\mate-tech-iam\\src\\mate_tech_iam\\api\\dashboard.py",
+        "Lines":  822,
+        "Routes":  "@router.post(\"/auth/login\", summary=\"Workbench login\"); @router.get(\"/profile\", summary=\"Current user profile\"); @router.get(\"/profile/permissions\", summary=\"Aggregated permissions\"); @router.get(\"/settings\", summary=\"User preferences\"); @router.put(\"/settings\", summary=\"Update user preferences\"); @router.get(\"/sessions\", summary=\"Active sessions\"); @router.delete(\"/sessions/{session_id}\", status_code=status.HTTP_204_NO_CONTENT); @router.get(\"/api-keys\", summary=\"List API keys\"); @router.post(\"/api-keys\", summary=\"Create API key\"); @router.delete(\"/api-keys/{api_key_id}\", status_code=status.HTTP_204_NO_CONTENT); @router.get(\"/notifications\", summary=\"List notifications\"); @router.get(\"/notifications/unread-count\", summary=\"Unread count\"); @router.put(\"/notifications/{notification_id}/read\", status_code=status.HTTP_204_NO_CONTENT); @router.post(\"/notifications/read-all\", status_code=status.HTTP_204_NO_CONTENT); @router.get(\"/notifications/settings\", summary=\"Notification preferences\"); @router.put(\"/notifications/settings\", summary=\"Update notification preferences\"); @router.get(\"/metrics\", summary=\"Metric cards\"); @router.get(\"/metrics/trend\", summary=\"Metric trend\"); @router.get(\"/todos\", summary=\"Pending tasks\"); @router.get(\"/todos/done\", summary=\"Done tasks\"); @router.post(\"/todos/{task_id}/action\", summary=\"Approve / reject\"); @router.get(\"/workers\", summary=\"Digital workers\"); @router.get(\"/deliverables\", summary=\"Deliverables\"); @router.post(\"/deliverables/{deliverable_id}/download\"); @router.delete(\"/deliverables/{deliverable_id}\", status_code=status.HTTP_204_NO_CONTENT); @router.get(\"/anomalies\", summary=\"Anomaly events\"); @router.get(\"/anomalies/{anomaly_id}\", summary=\"Anomaly detail\"); @router.post(\"/anomalies/{anomaly_id}/analyze\", summary=\"RCA\"); @router.post(\"/anomalies/{anomaly_id}/remediate\", summary=\"Trigger remediation\"); @router.get(\"/anomaly-rules\", summary=\"Anomaly detection rules\"); @router.post(\"/anomaly-rules\", summary=\"Create rule\"); @router.put(\"/anomaly-rules/{rule_id}\", summary=\"Update rule\"); @router.delete(\"/anomaly-rules/{rule_id}\", status_code=status.HTTP_204_NO_CONTENT); @router.get(\"/search\", summary=\"Global search\")"
+    },
+    {
+        "File":  "mate-platform-backend\\packages\\mate-tech-iam\\src\\mate_tech_iam\\api\\logs.py",
+        "Lines":  226,
+        "Routes":  "@router.get(\"/audit\"); @router.get(\"/audit/export\"); @router.get(\"/audit/{log_id}\"); @router.get(\"/modules\")"
+    },
+    {
+        "File":  "mate-platform-backend\\packages\\mate-tech-iam\\src\\mate_tech_iam\\api\\orgs.py",
+        "Lines":  633,
+        "Routes":  "@router.get(\"/tree\"); @router.get(\"\"); @router.post(\"\", status_code=status.HTTP_201_CREATED); @router.put(\"/{org_id}\"); @router.delete(\"/{org_id}\"); @router.get(\"/positions\"); @router.post(\"/positions\", status_code=status.HTTP_201_CREATED); @router.put(\"/positions/{position_id}\"); @router.delete(\"/positions/{position_id}\"); @router.post(\"/transfer\")"
+    },
+    {
+        "File":  "mate-platform-backend\\packages\\mate-tech-iam\\src\\mate_tech_iam\\api\\permissions.py",
+        "Lines":  512,
+        "Routes":  "@router.get(\"/roles\"); @router.post(\"/roles\", status_code=status.HTTP_201_CREATED); @router.put(\"/roles/{role_id}\"); @router.delete(\"/roles/{role_id}\"); @router.get(\"/roles/{role_id}\"); @router.get(\"/catalog\"); @router.post(\"/assign\"); @router.get(\"/matrix\")"
+    },
+    {
+        "File":  "mate-platform-backend\\packages\\mate-tech-iam\\src\\mate_tech_iam\\api\\response.py",
+        "Lines":  25,
+        "Routes":  ""
+    },
+    {
+        "File":  "mate-platform-backend\\packages\\mate-tech-iam\\src\\mate_tech_iam\\api\\users.py",
+        "Lines":  568,
+        "Routes":  "@router.get(\"\"); @router.post(\"\", status_code=status.HTTP_201_CREATED); @router.post(\"/import\"); @router.get(\"/export\"); @router.get(\"/{user_id}\"); @router.put(\"/{user_id}\"); @router.delete(\"/{user_id}\"); @router.post(\"/{user_id}/reset-password\"); @router.post(\"/{user_id}/status\"); @router.post(\"/{user_id}/verify-password\"); @router.get(\"/{user_id}/login-logs\")"
+    },
+    {
+        "File":  "mate-platform-backend\\packages\\mate-tech-iam\\src\\mate_tech_iam\\api\\__init__.py",
+        "Lines":  19,
+        "Routes":  ""
+    },
+    {
+        "File":  "mate-platform-backend\\packages\\mate-tech-iam\\src\\mate_tech_iam\\domain\\audit.py",
+        "Lines":  56,
+        "Routes":  ""
+    },
+    {
+        "File":  "mate-platform-backend\\packages\\mate-tech-iam\\src\\mate_tech_iam\\domain\\login_log.py",
+        "Lines":  42,
+        "Routes":  ""
+    },
+    {
+        "File":  "mate-platform-backend\\packages\\mate-tech-iam\\src\\mate_tech_iam\\domain\\org.py",
+        "Lines":  76,
+        "Routes":  ""
+    },
+    {
+        "File":  "mate-platform-backend\\packages\\mate-tech-iam\\src\\mate_tech_iam\\domain\\permission.py",
+        "Lines":  42,
+        "Routes":  ""
+    },
+    {
+        "File":  "mate-platform-backend\\packages\\mate-tech-iam\\src\\mate_tech_iam\\domain\\role.py",
+        "Lines":  36,
+        "Routes":  ""
+    },
+    {
+        "File":  "mate-platform-backend\\packages\\mate-tech-iam\\src\\mate_tech_iam\\domain\\system_config.py",
+        "Lines":  45,
+        "Routes":  ""
+    },
+    {
+        "File":  "mate-platform-backend\\packages\\mate-tech-iam\\src\\mate_tech_iam\\domain\\user.py",
+        "Lines":  40,
+        "Routes":  ""
+    },
+    {
+        "File":  "mate-platform-backend\\packages\\mate-tech-iam\\src\\mate_tech_iam\\domain\\__init__.py",
+        "Lines":  27,
+        "Routes":  ""
+    },
+    {
+        "File":  "mate-platform-backend\\packages\\mate-tech-iam\\src\\mate_tech_iam\\services\\deps.py",
+        "Lines":  193,
+        "Routes":  ""
+    },
+    {
+        "File":  "mate-platform-backend\\packages\\mate-tech-iam\\src\\mate_tech_iam\\services\\security.py",
+        "Lines":  56,
+        "Routes":  ""
+    },
+    {
+        "File":  "mate-platform-backend\\packages\\mate-tech-iam\\src\\mate_tech_iam\\services\\__init__.py",
+        "Lines":  1,
+        "Routes":  ""
+    }
+]

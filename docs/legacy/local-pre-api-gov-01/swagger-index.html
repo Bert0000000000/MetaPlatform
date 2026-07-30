@@ -1,0 +1,74 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Mate Platform - API Reference</title>
+  <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5.17.14/swagger-ui.css" />
+  <style>
+    body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #fafafa; }
+    header { background: #1f2937; color: #fff; padding: 12px 24px; display: flex; align-items: center; gap: 16px; box-shadow: 0 1px 3px rgba(0,0,0,.2); }
+    header h1 { margin: 0; font-size: 18px; font-weight: 600; }
+    header .badge { background: #10b981; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+    .picker { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+    .picker label { font-size: 13px; opacity: 0.85; }
+    .picker select { padding: 6px 10px; border-radius: 4px; border: none; min-width: 260px; font-size: 14px; cursor: pointer; }
+    .picker a { color: #93c5fd; text-decoration: none; font-size: 13px; }
+    .picker a:hover { text-decoration: underline; }
+    .env { background: #fffbeb; padding: 8px 24px; border-bottom: 1px solid #fde68a; font-size: 12px; color: #92400e; }
+    #swagger-ui { max-width: 1400px; margin: 0 auto; }
+    .topbar { display: none !important; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Mate Platform API Reference</h1>
+    <span class="badge">v3.0</span>
+    <div class="picker">
+      <label for="spec-select">服务:</label>
+      <select id="spec-select">
+        <option value="specs/iam.yaml">mate-tech-iam (Identity & Access)</option>
+        <option value="specs/auth-service.yaml">auth-service (JWT verify)</option>
+        <option value="specs/gateway.yaml">api-gateway (L7 router)</option>
+        <option value="specs/rag.yaml">mate-tech-rag (RAG)</option>
+        <option value="specs/agent.yaml">mate-tech-agent (Agent)</option>
+        <option value="specs/app-kb.yaml">mate-app-kb (KB facade)</option>
+        <option value="specs/llmgw.yaml">mate-tech-llmgw (LLM gateway)</option>
+        <option value="specs/ont.yaml">mate-tech-ont (Ontology)</option>
+        <option value="specs/mcp.yaml">mate-tech-mcp (MCP)</option>
+        <option value="specs/msg.yaml">mate-tech-msg (Message bus)</option>
+        <option value="specs/obs.yaml">mate-tech-obs (Observability)</option>
+      </select>
+      <a id="raw-link" href="specs/iam.yaml" target="_blank">查看 raw yaml</a>
+    </div>
+  </header>
+  <div class="env">
+    提示: FastAPI 服务自带 Swagger UI — 启动后访问 <code>/docs</code> 即可（gateway 透传），本页面聚合所有 11 个 OpenAPI 3.1 契约。
+  </div>
+  <div id="swagger-ui"></div>
+
+  <script src="https://unpkg.com/swagger-ui-dist@5.17.14/swagger-ui-bundle.js" crossorigin></script>
+  <script>
+    const select = document.getElementById("spec-select");
+    const rawLink = document.getElementById("raw-link");
+
+    function loadSpec(url) {
+      rawLink.href = url;
+      window.ui = SwaggerUIBundle({
+        url: url,
+        dom_id: "#swagger-ui",
+        deepLinking: true,
+        presets: [
+          SwaggerUIBundle.presets.apis
+        ],
+        layout: "BaseLayout",
+        defaultModelsExpandDepth: -1,
+        docExpansion: "list",
+        filter: true
+      });
+    }
+
+    select.addEventListener("change", (e) => loadSpec(e.target.value));
+    loadSpec(select.value);
+  </script>
+</body>
+</html>

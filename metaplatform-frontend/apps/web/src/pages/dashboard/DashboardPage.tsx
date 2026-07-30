@@ -11,6 +11,7 @@ import {
   GitBranch,
   RefreshCw,
 } from 'lucide-react';
+import { App, message } from 'antd';
 import { SubTabs, FormDrawer, Field, TextInput, TextArea, Select } from '@mate/shared';
 import { getDashboardSummary, type DashboardSummary, type DashboardStat, type RecentTask, type SystemHealthItem, type ActiveAgent } from '@/api/dashboard/workbench';
 
@@ -124,6 +125,7 @@ const REFRESH_INTERVAL_MS = 60_000; // 60s 自动刷新
       setLastUpdated(new Date());
     } catch (e) {
       setSource('fallback');
+      message.warning('仪表盘加载失败，已使用本地默认数据：' + (e instanceof Error ? e.message : String(e)));
     } finally {
       setRefreshing(false);
       setLoading(false);

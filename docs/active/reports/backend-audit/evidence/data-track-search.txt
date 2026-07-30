@@ -1,0 +1,5 @@
+﻿mate-platform-backend\packages\mate-tech-rag\src\mate_tech_rag\clients\ragflow_httpx_client.py:23:    - POST /api/v1/datasets/{id}/documents (upload)
+mate-platform-backend\packages\mate-tech-rag\src\mate_tech_rag\clients\ragflow_httpx_client.py:25:    - GET  /api/v1/datasets
+mate-platform-backend\packages\mate-tech-rag\src\mate_tech_rag\clients\ragflow_httpx_client.py:49:            r = self._client.get(f"{self._base_url}/api/v1/datasets", headers=self._headers(), timeout=5.0)
+mate-platform-backend\packages\mate-tech-rag\src\mate_tech_rag\clients\ragflow_httpx_client.py:64:                f"{self._base_url}/api/v1/datasets/{self._dataset_id}/chunks",
+mate-platform-backend\packages\mate-tech-rag\src\mate_tech_rag\clients\ragflow_httpx_client.py:94:            r = self._client.get(f"{self._base_url}/api/v1/datasets/{self._dataset_id}/documents", headers=self._headers(), timeout=5.0)

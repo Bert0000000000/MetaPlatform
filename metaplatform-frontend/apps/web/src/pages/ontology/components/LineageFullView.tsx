@@ -15,12 +15,27 @@ const NODE_TYPE_META = {
   metric:    { label: '指标',     color: '#a855f7' },
 };
 
-const LAYER_ORDER = ['source', 'cdc', 'ods', 'dwd', 'dws', 'ads', 'metric'];
-const LAYER_LABEL = {
+
+type LineageLayer = keyof typeof NODE_TYPE_META;
+type LineageNode = {
+  id: string;
+  name: string;
+  type: LineageLayer;
+  layer: LineageLayer;
+  system: string;
+  rows: string;
+};
+type LineageEdge = { from: string; to: string; type: string };
+type Position = { x: number; y: number };
+type ForcePosition = Position & { vx: number; vy: number };
+type PositionMap = Record<string, Position>;
+type ForcePositionMap = Record<string, ForcePosition>;
+const LAYER_ORDER: LineageLayer[] = ['source', 'cdc', 'ods', 'dwd', 'dws', 'ads', 'metric'];
+const LAYER_LABEL: Record<LineageLayer, string> = {
   source: '源系统', cdc: 'CDC', ods: 'ODS', dwd: 'DWD', dws: 'DWS', ads: 'ADS', metric: '指标',
 };
 
-const NODES = [
+const NODES: LineageNode[] = [
   { id: 'src-mysql-orders',   name: 'MySQL.orders',     type: 'source',  layer: 'source', system: 'MySQL',     rows: '2.3M' },
   { id: 'src-mysql-users',    name: 'MySQL.users',      type: 'source',  layer: 'source', system: 'MySQL',     rows: '560K' },
   { id: 'src-pg-events',      name: 'PostgreSQL.events',type: 'source',  layer: 'source', system: 'PostgreSQL',rows: '8.9M' },
@@ -43,7 +58,7 @@ const NODES = [
   { id: 'm-conversion',       name: 'biz_conversion_rate',    type: 'metric', layer: 'metric', system: 'ClickHouse', rows: '-' },
 ];
 
-const EDGES = [
+const EDGES: LineageEdge[] = [
   { from: 'src-mysql-orders', to: 'cdc-orders',  type: 'binlog' },
   { from: 'src-pg-events',    to: 'cdc-events',  type: 'wal' },
   { from: 'cdc-orders',       to: 'ods-orders',  type: 'snapshot+binlog' },
@@ -76,10 +91,10 @@ const FORCE_PARAMS = {
   iterations: 350,    // 迭代步数
 };
 
-function runForceLayout(nodes, edges, width, height) {
+function runForceLayout(nodes: LineageNode[], edges: LineageEdge[], width: number, height: number): PositionMap {
   if (nodes.length === 0) return {};
   // 初始化: 随机位置 (但分层) 避免初始重叠
-  const pos = {};
+  const pos: ForcePositionMap = {};
   const cx = width / 2;
   const cy = height / 2;
   nodes.forEach((n, i) => {
@@ -93,7 +108,7 @@ function runForceLayout(nodes, edges, width, height) {
   });
 
   // 构建邻接表
-  const adj = {};
+  const adj: Record<string, string[]> = {};
   nodes.forEach(n => { adj[n.id] = []; });
   edges.forEach(e => {
     if (adj[e.from] && adj[e.to]) {
@@ -163,13 +178,13 @@ export default function LineageFullView() {
   const [filterSystem, setFilterSystem] = useState('all');
   const [viewMode, setViewMode] = useState('hierarchical'); // hierarchical | force
   const [zoom, setZoom] = useState(1);
-  const [expanded, setExpanded] = useState(new Set());
-  const [selectedNode, setSelectedNode] = useState(null);
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [selectedNode, setSelectedNode] = useState<LineageNode | null>(null);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
-  const [dragNode, setDragNode] = useState(null);
+  const [dragNode, setDragNode] = useState<string | null>(null);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  const svgRef = useRef(null);
+  const svgRef = useRef<SVGSVGElement | null>(null);
 
   // 过滤节点
   const filteredNodes = useMemo(() => {
@@ -210,7 +225,7 @@ export default function LineageFullView() {
   const visibleEdges = filteredEdges.length;
   const allSystems = useMemo(() => [...new Set(NODES.map(n => n.system))].sort(), []);
 
-  const toggleExpand = (id, e) => {
+  const toggleExpand = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     const next = new Set(expanded);
     if (next.has(id)) next.delete(id); else next.add(id);
@@ -218,17 +233,18 @@ export default function LineageFullView() {
   };
 
   // 拖拽
-  const onMouseDown = (e, nodeId) => {
+  const onMouseDown = (e: React.MouseEvent, nodeId: string) => {
     if (viewMode !== 'force') return;
     e.stopPropagation();
     setDragNode(nodeId);
     setIsDragging(false);
     setDragStart({ x: e.clientX, y: e.clientY });
   };
-  const onMouseMove = (e) => {
+  const onMouseMove = (e: React.MouseEvent) => {
     if (dragNode) {
       setIsDragging(true);
-      const rect = svgRef.current.getBoundingClientRect();
+      const rect = svgRef.current?.getBoundingClientRect();
+      if (!rect) return;
       setForcePos(prev => ({
         ...prev,
         [dragNode]: {
@@ -245,9 +261,9 @@ export default function LineageFullView() {
   const onMouseUp = () => setDragNode(null);
 
   // 合并力布局 + 用户拖拽覆盖
-  const [forcePos, setForcePos] = useState({});
+  const [forcePos, setForcePos] = useState<PositionMap>({});
   const effectivePos = useMemo(() => {
-    const merged = {};
+    const merged: PositionMap = {};
     filteredNodes.forEach(n => {
       const base = forceLayout[n.id] || { x: 0, y: 0 };
       merged[n.id] = forcePos[n.id] || base;
@@ -339,7 +355,7 @@ export default function LineageFullView() {
           svgRef={svgRef}
           canvasWidth={canvasWidth}
           canvasHeight={canvasHeight}
-          setCanvasSize={(w, h) => { setCanvasWidth(w); setCanvasHeight(h); }}
+          setCanvasSize={(w: number, h: number) => { setCanvasWidth(w); setCanvasHeight(h); }}
           onNodeDrag={onMouseDown}
           onSvgMouseMove={onMouseMove}
           onSvgMouseUp={onMouseUp}
@@ -399,11 +415,29 @@ export default function LineageFullView() {
 }
 
 // ============== 力导向图组件 (SVG) ==============
+type ForceGraphViewProps = {
+  nodes: LineageNode[];
+  edges: LineageEdge[];
+  positions: PositionMap;
+  zoom: number;
+  pan: Position;
+  expanded: Set<string>;
+  toggleExpand: (id: string, event: React.MouseEvent) => void;
+  selectedNode: LineageNode | null;
+  setSelectedNode: React.Dispatch<React.SetStateAction<LineageNode | null>>;
+  svgRef: React.RefObject<SVGSVGElement | null>;
+  canvasWidth: number;
+  canvasHeight: number;
+  setCanvasSize: (width: number, height: number) => void;
+  onNodeDrag: (event: React.MouseEvent, nodeId: string) => void;
+  onSvgMouseMove: (event: React.MouseEvent) => void;
+  onSvgMouseUp: () => void;
+};
 function ForceGraphView({
   nodes, edges, positions, zoom, pan, expanded, toggleExpand, selectedNode, setSelectedNode,
   svgRef, canvasWidth, canvasHeight, setCanvasSize, onNodeDrag, onSvgMouseMove, onSvgMouseUp,
-}) {
-  const containerRef = useRef(null);
+}: ForceGraphViewProps) {
+  const containerRef = useRef<HTMLDivElement | null>(null);
 
   // 测量容器尺寸
   useEffect(() => {
@@ -478,7 +512,7 @@ function ForceGraphView({
                 style={{ cursor: 'pointer' }}
                 onMouseDown={(e) => onNodeDrag(e, node.id)}
                 onClick={() => setSelectedNode(node)}
-                onDoubleClick={() => toggleExpand(node.id, e)}
+                onDoubleClick={(event) => toggleExpand(node.id, event)}
               >
                 <circle r={radius} fill={meta.color} fillOpacity="0.15" stroke={meta.color} strokeWidth={isSelected ? 3 : 1.5} />
                 <circle r="4" fill={meta.color} />
@@ -511,7 +545,7 @@ function ForceGraphView({
 }
 
 // ============== 节点卡片 (层级视图) ==============
-function NodeCard({ node, edges, expanded, onToggle }) {
+function NodeCard({ node, edges, expanded, onToggle }: { node: LineageNode; edges: LineageEdge[]; expanded: boolean; onToggle: React.MouseEventHandler<HTMLDivElement> }) {
   const meta = NODE_TYPE_META[node.type] || NODE_TYPE_META.source;
   const outEdges = edges.filter(e => e.from === node.id);
   const inEdges = edges.filter(e => e.to === node.id);
@@ -544,7 +578,7 @@ function NodeCard({ node, edges, expanded, onToggle }) {
 }
 
 // ============== 节点详情侧栏 ==============
-function NodeDetailPanel({ node, edges, onClose }) {
+function NodeDetailPanel({ node, edges, onClose }: { node: LineageNode; edges: LineageEdge[]; onClose: () => void }) {
   const outEdges = edges.filter(e => e.from === node.id);
   const inEdges = edges.filter(e => e.to === node.id);
   const meta = NODE_TYPE_META[node.type];

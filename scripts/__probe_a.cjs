@@ -1,1 +1,0 @@
-﻿const fs=require('fs');const src=fs.readFileSync('D:/Hermes/Workspace/10_Projects/2026-07-02-MetaPlatform/TECH-AGENT/src/test/java/com/metaplatform/agent/verification/ScenarioA_ObjectCopilotTest.java','utf8');console.log('lines:',src.split('\n').length);console.log('lastLine:',src.substring(src.length-30));

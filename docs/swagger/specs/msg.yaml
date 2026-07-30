@@ -1,0 +1,56 @@
+openapi: 3.1.0
+info:
+  title: mate-tech-msg
+  version: 0.1.0
+  description: Message Bus service - Kafka + Redis idempotency
+paths:
+  /healthz:
+    get:
+      summary: 健康检查
+      tags: [meta]
+      responses:
+        "200":
+          description: OK
+  /api/v1/msg/publish:
+    post:
+      summary: 发布消息
+      tags: [msg]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PublishRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublishResponse"
+        "500":
+          description: 发布失败
+  /api/v1/msg/topics:
+    get:
+      summary: 列出主题
+      tags: [msg]
+      responses:
+        "200":
+          description: OK
+components:
+  schemas:
+    PublishRequest:
+      type: object
+      required: [topic, payload]
+      properties:
+        topic: {type: string}
+        payload: {type: object}
+        partition_key: {type: string, nullable: true}
+        idempotency_key: {type: string, nullable: true}
+    PublishResponse:
+      type: object
+      properties:
+        topic: {type: string}
+        partition: {type: integer}
+        offset: {type: integer}
+        idempotency_hit: {type: boolean}
