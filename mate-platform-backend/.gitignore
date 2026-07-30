@@ -35,3 +35,6 @@ Thumbs.db
 contracts/openapi/generated/
 .mate/
 *.log
+# Services only live in the monorepo copy
+/services/
+
