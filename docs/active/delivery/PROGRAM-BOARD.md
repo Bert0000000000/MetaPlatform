@@ -6,7 +6,7 @@
 | Batch | ?? | Contract | Code | Tests | K8s/Runtime | ???? |
 |---|---|---:|---:|---:|---:|---|
 | API-GOV-01 | **Accepted** | ? | ? | ? | ? local/docs | `evidence/API-GOV-01-ACCEPTANCE.md` |
-| ARCH-CORE-01 | Not Started | ? | ? | ? | ? | ? |
+| ARCH-CORE-01 | **Accepted** | ✓ | ✓ | ✓ | ✓ | `evidence/ARCH-CORE-01-ACCEPTANCE.md` |
 | PLATFORM-K8S-01 | Not Started | ? | ? | ? | ? | ? |
 | SEC-IAM-01 | Not Started | planned | ? | ? | ? | ? |
 | SEC-TENANT-01 | Not Started | planned | ? | ? | ? | ? |
