@@ -1,3 +1,15 @@
-from .outbox import OutboxEvent, OutboxPublisher, OutboxWriter
+from .kafka_tenant import (
+    KafkaTopicError,
+    assert_message_tenant,
+    consumer_group,
+    topic_name,
+)
+from .outbox import OutboxEvent
 
-__all__ = ["OutboxEvent", "OutboxPublisher", "OutboxWriter"]
+__all__ = [
+    "KafkaTopicError",
+    "OutboxEvent",
+    "assert_message_tenant",
+    "consumer_group",
+    "topic_name",
+]
