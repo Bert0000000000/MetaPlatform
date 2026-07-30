@@ -1,4 +1,4 @@
-﻿name: Python Backend CI
+name: Python Backend CI
 
 on:
   push:
@@ -60,7 +60,7 @@ jobs:
       - name: Install pyright
         run: cd mate-platform-backend && uv pip install pyright
       - name: Run pyright
-        run: cd mate-platform-backend && uv run pyright mate-platform-backend/
+        run: cd mate-platform-backend && uv run pyright
 
   validate-yaml:
     name: Validate compose + Dockerfiles
