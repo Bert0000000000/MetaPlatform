@@ -1,0 +1,28 @@
+apiVersion: v2
+name: kafka
+description: |
+  Apache Kafka 3.7 in KRaft mode (no Zookeeper). Closes the
+  PLATFORM-K8S-01 / PLATFORM-EVENT-01 placeholder (`enabled: false`
+  in values.yaml). The chart references Bitnami's
+  `kafka:28.x.x` sub-chart so we don't fork the image; the values
+  here are tuned for the four-layer metaplatform workloads.
+
+  In production we run 3 brokers in KRaft mode; for local
+  development a single broker is enough.
+type: application
+version: 0.1.0
+appVersion: "3.7.1"
+
+keywords:
+  - kafka
+  - event-streaming
+  - messaging
+  - kraft
+
+maintainers:
+  - name: MetaPlatform Platform Owner
+    email: platform@metaplatform.local
+
+annotations:
+  category: Messaging
+  licenses: Apache-2.0

@@ -42,3 +42,6 @@ dependencies:
   - name: service-templates
     version: 0.1.0
     condition: service-templates.enabled
+  - name: kafka
+    version: 0.1.0
+    condition: kafka.enabled

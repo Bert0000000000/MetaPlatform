@@ -1,0 +1,102 @@
+# =============================================================================
+# Kafka sub-chart values
+# =============================================================================
+# Closes the PLATFORM-K8S-01 / PLATFORM-EVENT-01 placeholder. The
+# real chart here is Bitnami's `kafka:28.x.x`; we just tune the
+# values for the four-layer metaplatform workload.
+# =============================================================================
+
+image:
+  registry: docker.io
+  repository: bitnami/kafka
+  tag: 3.7.1
+  pullPolicy: IfNotPresent
+
+# KRaft mode (no Zookeeper). PLAINTEXT in dev / SASL_SSL in prod.
+kraft:
+  enabled: true
+  clusterId: "metaplatform-kraft-cluster"
+
+replicaCount: 1   # 3 in production per values-production.yaml
+
+resources:
+  requests:
+    cpu: 250m
+    memory: 512Mi
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+
+persistence:
+  enabled: true
+  size: 8Gi
+  storageClass: ""
+
+# Producer / consumer defaults.
+config:
+  auto.create.topics.enable: "false"   # topics are explicit (PLATFORM-EVENT-01)
+  default.replication.factor: "1"      # 3 in production
+  num.partitions: "6"
+  log.retention.hours: "72"
+  compression.type: "producer"
+  inter.broker.listener.names: "INTERNAL,CLIENT"
+  advertised.listeners: "INTERNAL://kafka:9092,CLIENT://kafka:9092"
+  listener.security.protocol.map: "INTERNAL:PLAINTEXT,CLIENT:PLAINTEXT"
+
+# 17-domain topic declarations. PLATFORM-EVENT-01 publish path
+# resolves topics from event.type + tenant_id; this list is the
+# boot-time pre-create so first-event latency is zero.
+topics:
+  preCreate: true
+  domains:
+    - name: iam
+      partitions: 3
+    - name: msg
+      partitions: 6
+    - name: obs
+      partitions: 3
+    - name: mcp
+      partitions: 3
+    - name: llmgw
+      partitions: 6
+    - name: ont
+      partitions: 3
+    - name: rag
+      partitions: 6
+    - name: agent
+      partitions: 6
+    - name: data
+      partitions: 3
+    - name: kb
+      partitions: 3
+    - name: copilot
+      partitions: 3
+    - name: dw
+      partitions: 3
+    - name: apphub
+      partitions: 3
+    - name: arch
+      partitions: 3
+    - name: wfe
+      partitions: 3
+    - name: a2a
+      partitions: 3
+    - name: dashboard
+      partitions: 3
+
+service:
+  type: ClusterIP
+  ports:
+    client: 9092
+    internal: 9092
+
+# Schema Registry (Confluent 7.6) — required by PLATFORM-EVENT-01
+# schema_id_for() path.
+schemaRegistry:
+  enabled: true
+  image:
+    repository: confluentinc/cp-schema-registry
+    tag: "7.6.1"
+  service:
+    type: ClusterIP
+    port: 8081

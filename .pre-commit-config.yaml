@@ -1,6 +1,10 @@
-﻿# Pre-commit configuration
+# Pre-commit configuration
 # Install: pip install pre-commit && pre-commit install
 # Run:    pre-commit run --all-files
+#
+# The hooks below enforce the production-readiness design 13
+# hard rules per ADR-0015. Each rule has a pre-commit hook + a CI
+# job in .github/workflows/ga-acceptance.yml. Rules 1-13.
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.6.0
@@ -16,6 +20,7 @@ repos:
       - id: check-added-large-files
         args: [--maxkb=512]
       - id: detect-private-key
+      # rule 13: no-commit-to-branch (main protected)
       - id: no-commit-to-branch
         args: [--branch=main]
 
@@ -52,3 +57,84 @@ repos:
       - id: shellcheck
         args: [--severity=warning]
         files: \.(sh|bash)$
+
+  # -------------------------------------------------------------------
+  # GA-ACCEPTANCE additions (ADR-0015)
+  # -------------------------------------------------------------------
+
+  # rule 12: Secret 不进 git (gitleaks).
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.18.4
+    hooks:
+      - id: gitleaks
+
+  # rule 3: 没有 tenant 上下文，不访问 repository (raw-SQL detector).
+  # Forbid session.execute(text("...")) in app-*/src and
+  # mate-platform-backend/packages/*/src/mate_*/src.
+  - repo: local
+    hooks:
+      - id: forbid-raw-sql
+        name: forbid raw SQL session.execute(text(...)) in app sources
+        entry: python scripts/ci/forbid_raw_sql.py
+        language: system
+        types: [python]
+        files: ^mate-platform-backend/.*/src/.*\.py$
+
+  # rule 6: 静态检查 (pyright strict).
+  - repo: local
+    hooks:
+      - id: pyright-strict
+        name: pyright strict type-check on mate-platform / mate-clients
+        entry: python -m pyright mate-platform-backend/packages/mate-platform/src mate-platform-backend/packages/mate-clients/src
+        language: system
+        pass_filenames: false
+        types: [python]
+
+  # rule 11: helm-docs 同步每个子 chart 的 README.
+  - repo: local
+    hooks:
+      - id: helm-docs-sync
+        name: helm-docs sync check
+        entry: bash -c 'cd infra/helm && (command -v helm-docs >/dev/null 2>&1 && helm-docs --dry-run --sort-values-order=file) || echo "helm-docs not installed; skipping (CI enforces)"'
+        language: system
+        pass_filenames: false
+        files: ^infra/helm/.*\.(yaml|yml)$
+
+  # rule 4: 外部系统没有 ACL Client，业务代码不直连 (forbid bare httpx).
+  - repo: local
+    hooks:
+      - id: forbid-bare-httpx
+        name: forbid bare httpx.Client() in app sources (use mate-clients ACL)
+        entry: python scripts/ci/forbid_bare_httpx.py
+        language: system
+        types: [python]
+        files: ^mate-platform-backend/.*/src/.*\.py$
+
+  # rule 5: Production profile 禁止 fake / mock / memory fallback.
+  - repo: local
+    hooks:
+      - id: forbid-legacy-fallback
+        name: forbid legacy_login_compat=true in production
+        entry: python scripts/ci/forbid_legacy_fallback.py
+        language: system
+        pass_filenames: false
+
+  # rule 7: 契约或集成测试跳过不标记 Accepted (forbid skip/xfail).
+  - repo: local
+    hooks:
+      - id: forbid-skip-tests
+        name: forbid pytest.skip / @pytest.mark.xfail in tests/
+        entry: python scripts/ci/forbid_skip_tests.py
+        language: system
+        types: [python]
+        files: ^.*/tests/.*\.py$
+
+  # rule 10: 所有状态以验收证据为准 (require evidence files).
+  - repo: local
+    hooks:
+      - id: require-evidence-on-accept
+        name: refuse delivery/*.md to be merged without an evidence/*-ACCEPTANCE.md
+        entry: python scripts/ci/require_evidence.py
+        language: system
+        pass_filenames: false
+        files: ^docs/active/delivery/PROGRAM-BOBOARD\.md$
