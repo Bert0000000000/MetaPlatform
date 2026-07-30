@@ -857,12 +857,13 @@ services:
       - "8201:80"
 
   prism:
-    image: stoplight/prism:5
+    build:
+      context: .
+      dockerfile: mate-platform-backend/contracts/Dockerfile.prism
+    image: mate-prism:dev
     container_name: mate-prism
     profiles: ["local", "docs"]
-    command: ["mock", "/contracts/openapi/generated/bundled.yaml", "--host", "0.0.0.0", "--port", "4010"]
-    volumes:
-      - ./mate-platform-backend/contracts:/contracts:ro
+    command: ["mock", "openapi/generated/bundled.yaml", "--host", "0.0.0.0", "--port", "4010"]
     ports:
       - "4010:4010"
 
