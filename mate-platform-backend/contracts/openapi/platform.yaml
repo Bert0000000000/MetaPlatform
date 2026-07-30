@@ -1,0 +1,485 @@
+openapi: 3.1.0
+info:
+  title: Mate Platform API
+  version: 1.0.0
+  description: Canonical contract-first API for all Mate Platform domains.
+  contact:
+    name: Mate Platform API Governance
+    email: api-governance@metaplatform.local
+  license:
+    name: Proprietary
+    identifier: LicenseRef-Proprietary
+  x-mate-owner: architecture-api-governance
+servers:
+- url: /
+  description: Gateway-relative production endpoint
+tags:
+- name: iam
+  description: iam domain operations
+- name: dashboard
+  description: dashboard domain operations
+- name: msg
+  description: msg domain operations
+- name: obs
+  description: obs domain operations
+- name: mcp
+  description: mcp domain operations
+- name: llmgw
+  description: llmgw domain operations
+- name: ont
+  description: ont domain operations
+- name: rag
+  description: rag domain operations
+- name: agent
+  description: agent domain operations
+- name: data
+  description: data domain operations
+- name: kb
+  description: kb domain operations
+- name: copilot
+  description: copilot domain operations
+- name: dw
+  description: dw domain operations
+- name: apphub
+  description: apphub domain operations
+- name: arch
+  description: arch domain operations
+- name: wfe
+  description: wfe domain operations
+- name: a2a
+  description: a2a domain operations
+security:
+- bearerAuth: []
+paths:
+  /api/v1/a2a/agent-cards/search:
+    $ref: ./services/a2a.yaml#/paths/~1api~1v1~1a2a~1agent-cards~1search
+  /api/v1/a2a/delegations:
+    $ref: ./services/a2a.yaml#/paths/~1api~1v1~1a2a~1delegations
+  /api/v1/admin/configs:
+    $ref: ./services/iam.yaml#/paths/~1api~1v1~1admin~1configs
+  /api/v1/admin/configs/categories:
+    $ref: ./services/iam.yaml#/paths/~1api~1v1~1admin~1configs~1categories
+  /api/v1/admin/configs/{key}:
+    $ref: ./services/iam.yaml#/paths/~1api~1v1~1admin~1configs~1{key}
+  /api/v1/admin/logs/audit:
+    $ref: ./services/iam.yaml#/paths/~1api~1v1~1admin~1logs~1audit
+  /api/v1/admin/logs/audit/export:
+    $ref: ./services/iam.yaml#/paths/~1api~1v1~1admin~1logs~1audit~1export
+  /api/v1/admin/logs/audit/{log_id}:
+    $ref: ./services/iam.yaml#/paths/~1api~1v1~1admin~1logs~1audit~1{log_id}
+  /api/v1/admin/logs/modules:
+    $ref: ./services/iam.yaml#/paths/~1api~1v1~1admin~1logs~1modules
+  /api/v1/admin/operations/alerts/rules:
+    $ref: ./services/obs.yaml#/paths/~1api~1v1~1admin~1operations~1alerts~1rules
+  /api/v1/admin/operations/capacity:
+    $ref: ./services/obs.yaml#/paths/~1api~1v1~1admin~1operations~1capacity
+  /api/v1/admin/operations/health:
+    $ref: ./services/obs.yaml#/paths/~1api~1v1~1admin~1operations~1health
+  /api/v1/admin/operations/metrics/self:
+    $ref: ./services/obs.yaml#/paths/~1api~1v1~1admin~1operations~1metrics~1self
+  /api/v1/admin/operations/prometheus/query:
+    $ref: ./services/obs.yaml#/paths/~1api~1v1~1admin~1operations~1prometheus~1query
+  /api/v1/admin/orgs:
+    $ref: ./services/iam.yaml#/paths/~1api~1v1~1admin~1orgs
+  /api/v1/admin/orgs/positions:
+    $ref: ./services/iam.yaml#/paths/~1api~1v1~1admin~1orgs~1positions
+  /api/v1/admin/orgs/positions/{position_id}:
+    $ref: ./services/iam.yaml#/paths/~1api~1v1~1admin~1orgs~1positions~1{position_id}
+  /api/v1/admin/orgs/transfer:
+    $ref: ./services/iam.yaml#/paths/~1api~1v1~1admin~1orgs~1transfer
+  /api/v1/admin/orgs/tree:
+    $ref: ./services/iam.yaml#/paths/~1api~1v1~1admin~1orgs~1tree
+  /api/v1/admin/orgs/{org_id}:
+    $ref: ./services/iam.yaml#/paths/~1api~1v1~1admin~1orgs~1{org_id}
+  /api/v1/admin/permissions/assign:
+    $ref: ./services/iam.yaml#/paths/~1api~1v1~1admin~1permissions~1assign
+  /api/v1/admin/permissions/catalog:
+    $ref: ./services/iam.yaml#/paths/~1api~1v1~1admin~1permissions~1catalog
+  /api/v1/admin/permissions/matrix:
+    $ref: ./services/iam.yaml#/paths/~1api~1v1~1admin~1permissions~1matrix
+  /api/v1/admin/permissions/roles:
+    $ref: ./services/iam.yaml#/paths/~1api~1v1~1admin~1permissions~1roles
+  /api/v1/admin/permissions/roles/{role_id}:
+    $ref: ./services/iam.yaml#/paths/~1api~1v1~1admin~1permissions~1roles~1{role_id}
+  /api/v1/admin/users:
+    $ref: ./services/iam.yaml#/paths/~1api~1v1~1admin~1users
+  /api/v1/admin/users/export:
+    $ref: ./services/iam.yaml#/paths/~1api~1v1~1admin~1users~1export
+  /api/v1/admin/users/import:
+    $ref: ./services/iam.yaml#/paths/~1api~1v1~1admin~1users~1import
+  /api/v1/admin/users/{user_id}:
+    $ref: ./services/iam.yaml#/paths/~1api~1v1~1admin~1users~1{user_id}
+  /api/v1/admin/users/{user_id}/login-logs:
+    $ref: ./services/iam.yaml#/paths/~1api~1v1~1admin~1users~1{user_id}~1login-logs
+  /api/v1/admin/users/{user_id}/reset-password:
+    $ref: ./services/iam.yaml#/paths/~1api~1v1~1admin~1users~1{user_id}~1reset-password
+  /api/v1/admin/users/{user_id}/status:
+    $ref: ./services/iam.yaml#/paths/~1api~1v1~1admin~1users~1{user_id}~1status
+  /api/v1/admin/users/{user_id}/verify-password:
+    $ref: ./services/iam.yaml#/paths/~1api~1v1~1admin~1users~1{user_id}~1verify-password
+  /api/v1/agent/chat:
+    $ref: ./services/agent.yaml#/paths/~1api~1v1~1agent~1chat
+  /api/v1/agent/chat/stream:
+    $ref: ./services/agent.yaml#/paths/~1api~1v1~1agent~1chat~1stream
+  /api/v1/agent/review:
+    $ref: ./services/agent.yaml#/paths/~1api~1v1~1agent~1review
+  /api/v1/agent/state/{thread_id}:
+    $ref: ./services/agent.yaml#/paths/~1api~1v1~1agent~1state~1{thread_id}
+  /api/v1/apphub/apps:
+    $ref: ./services/apphub.yaml#/paths/~1api~1v1~1apphub~1apps
+  /api/v1/apphub/apps/groups:
+    $ref: ./services/apphub.yaml#/paths/~1api~1v1~1apphub~1apps~1groups
+  /api/v1/apphub/modules:
+    $ref: ./services/apphub.yaml#/paths/~1api~1v1~1apphub~1modules
+  /api/v1/apphub/pages:
+    $ref: ./services/apphub.yaml#/paths/~1api~1v1~1apphub~1pages
+  /api/v1/apphub/templates:
+    $ref: ./services/apphub.yaml#/paths/~1api~1v1~1apphub~1templates
+  /api/v1/arch/applications:
+    $ref: ./services/arch.yaml#/paths/~1api~1v1~1arch~1applications
+  /api/v1/arch/business-processes:
+    $ref: ./services/arch.yaml#/paths/~1api~1v1~1arch~1business-processes
+  /api/v1/arch/capabilities:
+    $ref: ./services/arch.yaml#/paths/~1api~1v1~1arch~1capabilities
+  /api/v1/arch/capabilities/tree:
+    $ref: ./services/arch.yaml#/paths/~1api~1v1~1arch~1capabilities~1tree
+  /api/v1/arch/capability-mappings:
+    $ref: ./services/arch.yaml#/paths/~1api~1v1~1arch~1capability-mappings
+  /api/v1/arch/data-assets:
+    $ref: ./services/arch.yaml#/paths/~1api~1v1~1arch~1data-assets
+  /api/v1/arch/data-assets/catalog:
+    $ref: ./services/arch.yaml#/paths/~1api~1v1~1arch~1data-assets~1catalog
+  /api/v1/arch/data-entities:
+    $ref: ./services/arch.yaml#/paths/~1api~1v1~1arch~1data-entities
+  /api/v1/arch/data-flows:
+    $ref: ./services/arch.yaml#/paths/~1api~1v1~1arch~1data-flows
+  /api/v1/arch/data-standards:
+    $ref: ./services/arch.yaml#/paths/~1api~1v1~1arch~1data-standards
+  /api/v1/arch/data/domains:
+    $ref: ./services/arch.yaml#/paths/~1api~1v1~1arch~1data~1domains
+  /api/v1/arch/deployments:
+    $ref: ./services/arch.yaml#/paths/~1api~1v1~1arch~1deployments
+  /api/v1/arch/governance/principle-categories:
+    $ref: ./services/arch.yaml#/paths/~1api~1v1~1arch~1governance~1principle-categories
+  /api/v1/arch/governance/principles:
+    $ref: ./services/arch.yaml#/paths/~1api~1v1~1arch~1governance~1principles
+  /api/v1/arch/governance/review-templates:
+    $ref: ./services/arch.yaml#/paths/~1api~1v1~1arch~1governance~1review-templates
+  /api/v1/arch/governance/review-tickets:
+    $ref: ./services/arch.yaml#/paths/~1api~1v1~1arch~1governance~1review-tickets
+  /api/v1/arch/governance/tech-debts:
+    $ref: ./services/arch.yaml#/paths/~1api~1v1~1arch~1governance~1tech-debts
+  /api/v1/arch/impact-analysis:
+    $ref: ./services/arch.yaml#/paths/~1api~1v1~1arch~1impact-analysis
+  /api/v1/arch/infrastructures:
+    $ref: ./services/arch.yaml#/paths/~1api~1v1~1arch~1infrastructures
+  /api/v1/arch/ontology-mappings/changes:
+    $ref: ./services/arch.yaml#/paths/~1api~1v1~1arch~1ontology-mappings~1changes
+  /api/v1/arch/ontology-mappings/rules:
+    $ref: ./services/arch.yaml#/paths/~1api~1v1~1arch~1ontology-mappings~1rules
+  /api/v1/arch/orgs:
+    $ref: ./services/arch.yaml#/paths/~1api~1v1~1arch~1orgs
+  /api/v1/arch/orgs/tree:
+    $ref: ./services/arch.yaml#/paths/~1api~1v1~1arch~1orgs~1tree
+  /api/v1/arch/roles:
+    $ref: ./services/arch.yaml#/paths/~1api~1v1~1arch~1roles
+  /api/v1/arch/tech-stacks:
+    $ref: ./services/arch.yaml#/paths/~1api~1v1~1arch~1tech-stacks
+  /api/v1/arch/technology-components:
+    $ref: ./services/arch.yaml#/paths/~1api~1v1~1arch~1technology-components
+  /api/v1/arch/technology-radar:
+    $ref: ./services/arch.yaml#/paths/~1api~1v1~1arch~1technology-radar
+  /api/v1/arch/technology-stacks:
+    $ref: ./services/arch.yaml#/paths/~1api~1v1~1arch~1technology-stacks
+  /api/v1/arch/value-streams:
+    $ref: ./services/arch.yaml#/paths/~1api~1v1~1arch~1value-streams
+  /api/v1/copilot:
+    $ref: ./services/copilot.yaml#/paths/~1api~1v1~1copilot
+  /api/v1/copilot/a2a/delegate:
+    $ref: ./services/copilot.yaml#/paths/~1api~1v1~1copilot~1a2a~1delegate
+  /api/v1/copilot/a2a/external:
+    $ref: ./services/copilot.yaml#/paths/~1api~1v1~1copilot~1a2a~1external
+  /api/v1/copilot/actions:
+    $ref: ./services/copilot.yaml#/paths/~1api~1v1~1copilot~1actions
+  /api/v1/copilot/actions/execute:
+    $ref: ./services/copilot.yaml#/paths/~1api~1v1~1copilot~1actions~1execute
+  /api/v1/copilot/actions/match:
+    $ref: ./services/copilot.yaml#/paths/~1api~1v1~1copilot~1actions~1match
+  /api/v1/copilot/analysis/audit-sql:
+    $ref: ./services/copilot.yaml#/paths/~1api~1v1~1copilot~1analysis~1audit-sql
+  /api/v1/copilot/analysis/execute-sql:
+    $ref: ./services/copilot.yaml#/paths/~1api~1v1~1copilot~1analysis~1execute-sql
+  /api/v1/copilot/analysis/explain-sql:
+    $ref: ./services/copilot.yaml#/paths/~1api~1v1~1copilot~1analysis~1explain-sql
+  /api/v1/copilot/analysis/generate-sql:
+    $ref: ./services/copilot.yaml#/paths/~1api~1v1~1copilot~1analysis~1generate-sql
+  /api/v1/copilot/auth/login:
+    $ref: ./services/copilot.yaml#/paths/~1api~1v1~1copilot~1auth~1login
+  /api/v1/copilot/chat/multimodal/upload:
+    $ref: ./services/copilot.yaml#/paths/~1api~1v1~1copilot~1chat~1multimodal~1upload
+  /api/v1/copilot/code:
+    $ref: ./services/copilot.yaml#/paths/~1api~1v1~1copilot~1code
+  /api/v1/copilot/conversations:
+    $ref: ./services/copilot.yaml#/paths/~1api~1v1~1copilot~1conversations
+  /api/v1/copilot/datasources:
+    $ref: ./services/copilot.yaml#/paths/~1api~1v1~1copilot~1datasources
+  /api/v1/copilot/generate/dashboard:
+    $ref: ./services/copilot.yaml#/paths/~1api~1v1~1copilot~1generate~1dashboard
+  /api/v1/copilot/generate/explain-code:
+    $ref: ./services/copilot.yaml#/paths/~1api~1v1~1copilot~1generate~1explain-code
+  /api/v1/copilot/generate/form:
+    $ref: ./services/copilot.yaml#/paths/~1api~1v1~1copilot~1generate~1form
+  /api/v1/copilot/generate/process:
+    $ref: ./services/copilot.yaml#/paths/~1api~1v1~1copilot~1generate~1process
+  /api/v1/copilot/generate/review-code:
+    $ref: ./services/copilot.yaml#/paths/~1api~1v1~1copilot~1generate~1review-code
+  /api/v1/copilot/knowledge-bases:
+    $ref: ./services/copilot.yaml#/paths/~1api~1v1~1copilot~1knowledge-bases
+  /api/v1/copilot/models/multimodal:
+    $ref: ./services/copilot.yaml#/paths/~1api~1v1~1copilot~1models~1multimodal
+  /api/v1/copilot/ontology/concepts/search:
+    $ref: ./services/copilot.yaml#/paths/~1api~1v1~1copilot~1ontology~1concepts~1search
+  /api/v1/copilot/ontology/graph/expand:
+    $ref: ./services/copilot.yaml#/paths/~1api~1v1~1copilot~1ontology~1graph~1expand
+  /api/v1/copilot/ontology/graph/query:
+    $ref: ./services/copilot.yaml#/paths/~1api~1v1~1copilot~1ontology~1graph~1query
+  /api/v1/copilot/plans:
+    $ref: ./services/copilot.yaml#/paths/~1api~1v1~1copilot~1plans
+  /api/v1/copilot/queries/execute:
+    $ref: ./services/copilot.yaml#/paths/~1api~1v1~1copilot~1queries~1execute
+  /api/v1/copilot/queries/history:
+    $ref: ./services/copilot.yaml#/paths/~1api~1v1~1copilot~1queries~1history
+  /api/v1/copilot/scheduling/employees/match:
+    $ref: ./services/copilot.yaml#/paths/~1api~1v1~1copilot~1scheduling~1employees~1match
+  /api/v1/copilot/scheduling/execution/start:
+    $ref: ./services/copilot.yaml#/paths/~1api~1v1~1copilot~1scheduling~1execution~1start
+  /api/v1/copilot/scheduling/intent/detect:
+    $ref: ./services/copilot.yaml#/paths/~1api~1v1~1copilot~1scheduling~1intent~1detect
+  /api/v1/copilot/scheduling/intents:
+    $ref: ./services/copilot.yaml#/paths/~1api~1v1~1copilot~1scheduling~1intents
+  /api/v1/copilot/scheduling/plan/generate:
+    $ref: ./services/copilot.yaml#/paths/~1api~1v1~1copilot~1scheduling~1plan~1generate
+  /api/v1/copilot/scheduling/templates:
+    $ref: ./services/copilot.yaml#/paths/~1api~1v1~1copilot~1scheduling~1templates
+  /api/v1/copilot/search:
+    $ref: ./services/copilot.yaml#/paths/~1api~1v1~1copilot~1search
+  /api/v1/dashboard/anomalies:
+    $ref: ./services/dashboard.yaml#/paths/~1api~1v1~1dashboard~1anomalies
+  /api/v1/dashboard/anomalies/{anomaly_id}:
+    $ref: ./services/dashboard.yaml#/paths/~1api~1v1~1dashboard~1anomalies~1{anomaly_id}
+  /api/v1/dashboard/anomalies/{anomaly_id}/analyze:
+    $ref: ./services/dashboard.yaml#/paths/~1api~1v1~1dashboard~1anomalies~1{anomaly_id}~1analyze
+  /api/v1/dashboard/anomalies/{anomaly_id}/remediate:
+    $ref: ./services/dashboard.yaml#/paths/~1api~1v1~1dashboard~1anomalies~1{anomaly_id}~1remediate
+  /api/v1/dashboard/anomaly-rules:
+    $ref: ./services/dashboard.yaml#/paths/~1api~1v1~1dashboard~1anomaly-rules
+  /api/v1/dashboard/anomaly-rules/{rule_id}:
+    $ref: ./services/dashboard.yaml#/paths/~1api~1v1~1dashboard~1anomaly-rules~1{rule_id}
+  /api/v1/dashboard/api-keys:
+    $ref: ./services/dashboard.yaml#/paths/~1api~1v1~1dashboard~1api-keys
+  /api/v1/dashboard/api-keys/{api_key_id}:
+    $ref: ./services/dashboard.yaml#/paths/~1api~1v1~1dashboard~1api-keys~1{api_key_id}
+  /api/v1/dashboard/auth/login:
+    $ref: ./services/dashboard.yaml#/paths/~1api~1v1~1dashboard~1auth~1login
+  /api/v1/dashboard/deliverables:
+    $ref: ./services/dashboard.yaml#/paths/~1api~1v1~1dashboard~1deliverables
+  /api/v1/dashboard/deliverables/{deliverable_id}:
+    $ref: ./services/dashboard.yaml#/paths/~1api~1v1~1dashboard~1deliverables~1{deliverable_id}
+  /api/v1/dashboard/deliverables/{deliverable_id}/download:
+    $ref: ./services/dashboard.yaml#/paths/~1api~1v1~1dashboard~1deliverables~1{deliverable_id}~1download
+  /api/v1/dashboard/metrics:
+    $ref: ./services/dashboard.yaml#/paths/~1api~1v1~1dashboard~1metrics
+  /api/v1/dashboard/metrics/trend:
+    $ref: ./services/dashboard.yaml#/paths/~1api~1v1~1dashboard~1metrics~1trend
+  /api/v1/dashboard/notifications:
+    $ref: ./services/dashboard.yaml#/paths/~1api~1v1~1dashboard~1notifications
+  /api/v1/dashboard/notifications/read-all:
+    $ref: ./services/dashboard.yaml#/paths/~1api~1v1~1dashboard~1notifications~1read-all
+  /api/v1/dashboard/notifications/settings:
+    $ref: ./services/dashboard.yaml#/paths/~1api~1v1~1dashboard~1notifications~1settings
+  /api/v1/dashboard/notifications/unread-count:
+    $ref: ./services/dashboard.yaml#/paths/~1api~1v1~1dashboard~1notifications~1unread-count
+  /api/v1/dashboard/notifications/{notification_id}/read:
+    $ref: ./services/dashboard.yaml#/paths/~1api~1v1~1dashboard~1notifications~1{notification_id}~1read
+  /api/v1/dashboard/profile:
+    $ref: ./services/dashboard.yaml#/paths/~1api~1v1~1dashboard~1profile
+  /api/v1/dashboard/profile/permissions:
+    $ref: ./services/dashboard.yaml#/paths/~1api~1v1~1dashboard~1profile~1permissions
+  /api/v1/dashboard/search:
+    $ref: ./services/dashboard.yaml#/paths/~1api~1v1~1dashboard~1search
+  /api/v1/dashboard/sessions:
+    $ref: ./services/dashboard.yaml#/paths/~1api~1v1~1dashboard~1sessions
+  /api/v1/dashboard/sessions/{session_id}:
+    $ref: ./services/dashboard.yaml#/paths/~1api~1v1~1dashboard~1sessions~1{session_id}
+  /api/v1/dashboard/settings:
+    $ref: ./services/dashboard.yaml#/paths/~1api~1v1~1dashboard~1settings
+  /api/v1/dashboard/todos:
+    $ref: ./services/dashboard.yaml#/paths/~1api~1v1~1dashboard~1todos
+  /api/v1/dashboard/todos/done:
+    $ref: ./services/dashboard.yaml#/paths/~1api~1v1~1dashboard~1todos~1done
+  /api/v1/dashboard/todos/{task_id}/action:
+    $ref: ./services/dashboard.yaml#/paths/~1api~1v1~1dashboard~1todos~1{task_id}~1action
+  /api/v1/dashboard/workers:
+    $ref: ./services/dashboard.yaml#/paths/~1api~1v1~1dashboard~1workers
+  /api/v1/data/cdc-tasks:
+    $ref: ./services/data.yaml#/paths/~1api~1v1~1data~1cdc-tasks
+  /api/v1/data/cdc-tasks/{id}:
+    $ref: ./services/data.yaml#/paths/~1api~1v1~1data~1cdc-tasks~1{id}
+  /api/v1/data/cdc-tasks/{id}/pause:
+    $ref: ./services/data.yaml#/paths/~1api~1v1~1data~1cdc-tasks~1{id}~1pause
+  /api/v1/data/cdc-tasks/{id}/resume:
+    $ref: ./services/data.yaml#/paths/~1api~1v1~1data~1cdc-tasks~1{id}~1resume
+  /api/v1/data/cdc-tasks/{id}/status:
+    $ref: ./services/data.yaml#/paths/~1api~1v1~1data~1cdc-tasks~1{id}~1status
+  /api/v1/data/sources:
+    $ref: ./services/data.yaml#/paths/~1api~1v1~1data~1sources
+  /api/v1/data/sources/{id}:
+    $ref: ./services/data.yaml#/paths/~1api~1v1~1data~1sources~1{id}
+  /api/v1/data/sources/{id}/schema:
+    $ref: ./services/data.yaml#/paths/~1api~1v1~1data~1sources~1{id}~1schema
+  /api/v1/data/sources/{id}/test:
+    $ref: ./services/data.yaml#/paths/~1api~1v1~1data~1sources~1{id}~1test
+  /api/v1/dw/auth/login:
+    $ref: ./services/dw.yaml#/paths/~1api~1v1~1dw~1auth~1login
+  /api/v1/dw/collaborations:
+    $ref: ./services/dw.yaml#/paths/~1api~1v1~1dw~1collaborations
+  /api/v1/dw/commit:
+    $ref: ./services/dw.yaml#/paths/~1api~1v1~1dw~1commit
+  /api/v1/dw/documents:
+    $ref: ./services/dw.yaml#/paths/~1api~1v1~1dw~1documents
+  /api/v1/dw/documents/upload:
+    $ref: ./services/dw.yaml#/paths/~1api~1v1~1dw~1documents~1upload
+  /api/v1/dw/employees:
+    $ref: ./services/dw.yaml#/paths/~1api~1v1~1dw~1employees
+  /api/v1/dw/employees/tasks:
+    $ref: ./services/dw.yaml#/paths/~1api~1v1~1dw~1employees~1tasks
+  /api/v1/dw/evaluations:
+    $ref: ./services/dw.yaml#/paths/~1api~1v1~1dw~1evaluations
+  /api/v1/dw/extract:
+    $ref: ./services/dw.yaml#/paths/~1api~1v1~1dw~1extract
+  /api/v1/dw/knowledge-bases:
+    $ref: ./services/dw.yaml#/paths/~1api~1v1~1dw~1knowledge-bases
+  /api/v1/dw/learning/extract:
+    $ref: ./services/dw.yaml#/paths/~1api~1v1~1dw~1learning~1extract
+  /api/v1/dw/learning/feedback:
+    $ref: ./services/dw.yaml#/paths/~1api~1v1~1dw~1learning~1feedback
+  /api/v1/dw/models:
+    $ref: ./services/dw.yaml#/paths/~1api~1v1~1dw~1models
+  /api/v1/dw/tools:
+    $ref: ./services/dw.yaml#/paths/~1api~1v1~1dw~1tools
+  /api/v1/dw/traces:
+    $ref: ./services/dw.yaml#/paths/~1api~1v1~1dw~1traces
+  /api/v1/etl/tasks:
+    $ref: ./services/data.yaml#/paths/~1api~1v1~1etl~1tasks
+  /api/v1/etl/tasks/{id}:
+    $ref: ./services/data.yaml#/paths/~1api~1v1~1etl~1tasks~1{id}
+  /api/v1/etl/tasks/{id}/run:
+    $ref: ./services/data.yaml#/paths/~1api~1v1~1etl~1tasks~1{id}~1run
+  /api/v1/etl/tasks/{id}/status:
+    $ref: ./services/data.yaml#/paths/~1api~1v1~1etl~1tasks~1{id}~1status
+  /api/v1/etl/tasks/{id}/stop:
+    $ref: ./services/data.yaml#/paths/~1api~1v1~1etl~1tasks~1{id}~1stop
+  /api/v1/iam/auth/login:
+    $ref: ./services/iam.yaml#/paths/~1api~1v1~1iam~1auth~1login
+  /api/v1/iam/auth/logout:
+    $ref: ./services/iam.yaml#/paths/~1api~1v1~1iam~1auth~1logout
+  /api/v1/iam/auth/me:
+    $ref: ./services/iam.yaml#/paths/~1api~1v1~1iam~1auth~1me
+  /api/v1/iam/auth/refresh:
+    $ref: ./services/iam.yaml#/paths/~1api~1v1~1iam~1auth~1refresh
+  /api/v1/iam/sso-providers:
+    $ref: ./services/iam.yaml#/paths/~1api~1v1~1iam~1sso-providers
+  /api/v1/kb/chat:
+    $ref: ./services/kb.yaml#/paths/~1api~1v1~1kb~1chat
+  /api/v1/kb/chat/stream:
+    $ref: ./services/kb.yaml#/paths/~1api~1v1~1kb~1chat~1stream
+  /api/v1/kb/search:
+    $ref: ./services/kb.yaml#/paths/~1api~1v1~1kb~1search
+  /api/v1/kb/stats:
+    $ref: ./services/kb.yaml#/paths/~1api~1v1~1kb~1stats
+  /api/v1/kb/upload:
+    $ref: ./services/kb.yaml#/paths/~1api~1v1~1kb~1upload
+  /api/v1/llmgw/chat:
+    $ref: ./services/llmgw.yaml#/paths/~1api~1v1~1llmgw~1chat
+  /api/v1/llmgw/chat/stream:
+    $ref: ./services/llmgw.yaml#/paths/~1api~1v1~1llmgw~1chat~1stream
+  /api/v1/llmgw/embeddings:
+    $ref: ./services/llmgw.yaml#/paths/~1api~1v1~1llmgw~1embeddings
+  /api/v1/mcp/prompts:
+    $ref: ./services/mcp.yaml#/paths/~1api~1v1~1mcp~1prompts
+  /api/v1/mcp/prompts/{name}:
+    $ref: ./services/mcp.yaml#/paths/~1api~1v1~1mcp~1prompts~1{name}
+  /api/v1/mcp/resources:
+    $ref: ./services/mcp.yaml#/paths/~1api~1v1~1mcp~1resources
+  /api/v1/mcp/tools:
+    $ref: ./services/mcp.yaml#/paths/~1api~1v1~1mcp~1tools
+  /api/v1/mcp/tools/{name}:
+    $ref: ./services/mcp.yaml#/paths/~1api~1v1~1mcp~1tools~1{name}
+  /api/v1/metrics:
+    $ref: ./services/data.yaml#/paths/~1api~1v1~1metrics
+  /api/v1/metrics/{id}:
+    $ref: ./services/data.yaml#/paths/~1api~1v1~1metrics~1{id}
+  /api/v1/metrics/{id}/compute:
+    $ref: ./services/data.yaml#/paths/~1api~1v1~1metrics~1{id}~1compute
+  /api/v1/metrics/{id}/lineage:
+    $ref: ./services/data.yaml#/paths/~1api~1v1~1metrics~1{id}~1lineage
+  /api/v1/metrics/{id}/values:
+    $ref: ./services/data.yaml#/paths/~1api~1v1~1metrics~1{id}~1values
+  /api/v1/msg/publish:
+    $ref: ./services/msg.yaml#/paths/~1api~1v1~1msg~1publish
+  /api/v1/msg/topics:
+    $ref: ./services/msg.yaml#/paths/~1api~1v1~1msg~1topics
+  /api/v1/obs/health:
+    $ref: ./services/obs.yaml#/paths/~1api~1v1~1obs~1health
+  /api/v1/obs/instrument:
+    $ref: ./services/obs.yaml#/paths/~1api~1v1~1obs~1instrument
+  /api/v1/ont/classes:
+    $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1classes
+  /api/v1/ont/classes/{class_id}:
+    $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1classes~1{class_id}
+  /api/v1/ont/explain:
+    $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1explain
+  /api/v1/ont/instances:
+    $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1instances
+  /api/v1/ont/instances/relations:
+    $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1instances~1relations
+  /api/v1/ont/instances/{iid}:
+    $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1instances~1{iid}
+  /api/v1/ont/ontologies:
+    $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1ontologies
+  /api/v1/ont/ontologies/{ontology_id}:
+    $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1ontologies~1{ontology_id}
+  /api/v1/ont/sparql:
+    $ref: ./services/ont.yaml#/paths/~1api~1v1~1ont~1sparql
+  /api/v1/rag/admin/pg-stats:
+    $ref: ./services/rag.yaml#/paths/~1api~1v1~1rag~1admin~1pg-stats
+  /api/v1/rag/ingest:
+    $ref: ./services/rag.yaml#/paths/~1api~1v1~1rag~1ingest
+  /api/v1/rag/parse:
+    $ref: ./services/rag.yaml#/paths/~1api~1v1~1rag~1parse
+  /api/v1/rag/search:
+    $ref: ./services/rag.yaml#/paths/~1api~1v1~1rag~1search
+  /api/v1/rag/stats:
+    $ref: ./services/rag.yaml#/paths/~1api~1v1~1rag~1stats
+  /api/v1/rag/status:
+    $ref: ./services/rag.yaml#/paths/~1api~1v1~1rag~1status
+  /api/v1/rag/upload:
+    $ref: ./services/rag.yaml#/paths/~1api~1v1~1rag~1upload
+  /api/v1/scheduler/dag:
+    $ref: ./services/data.yaml#/paths/~1api~1v1~1scheduler~1dag
+  /api/v1/scheduler/tasks:
+    $ref: ./services/data.yaml#/paths/~1api~1v1~1scheduler~1tasks
+  /api/v1/scheduler/tasks/{id}:
+    $ref: ./services/data.yaml#/paths/~1api~1v1~1scheduler~1tasks~1{id}
+  /api/v1/scheduler/tasks/{id}/pause:
+    $ref: ./services/data.yaml#/paths/~1api~1v1~1scheduler~1tasks~1{id}~1pause
+  /api/v1/scheduler/tasks/{id}/trigger:
+    $ref: ./services/data.yaml#/paths/~1api~1v1~1scheduler~1tasks~1{id}~1trigger
+  /api/v1/wfe/flows/test:
+    $ref: ./services/wfe.yaml#/paths/~1api~1v1~1wfe~1flows~1test
+  /api/v1/wfe/flows/validate:
+    $ref: ./services/wfe.yaml#/paths/~1api~1v1~1wfe~1flows~1validate
+components:
+  securitySchemes:
+    bearerAuth:
+      $ref: ./common/security.yaml#/components/securitySchemes/bearerAuth

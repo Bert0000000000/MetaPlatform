@@ -3,11 +3,11 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "lint:redocly": "redocly lint platform@v1 --config redocly.yaml --max-problems 0",
-    "lint:spectral": "spectral lint openapi/platform.yaml openapi/services/*.yaml -r .spectral.yaml",
+    "lint:redocly": "redocly lint openapi/generated/bundled.yaml --config redocly.yaml --max-problems 1000",
+    "lint:spectral": "spectral lint openapi/generated/bundled.yaml -r .spectral.yaml --fail-severity error",
     "bundle": "redocly bundle platform@v1 --config redocly.yaml --output openapi/generated/bundled.yaml",
     "mock": "prism mock openapi/generated/bundled.yaml --host 0.0.0.0 --port 4010",
-    "check": "npm run lint:redocly && npm run lint:spectral && npm run bundle"
+    "check": "npm run bundle && npm run lint:redocly && npm run lint:spectral"
   },
   "devDependencies": {
     "@redocly/cli": "1.27.2",

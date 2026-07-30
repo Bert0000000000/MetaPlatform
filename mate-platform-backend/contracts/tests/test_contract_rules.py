@@ -27,3 +27,5 @@ def test_validator_rejects_missing_governance() -> None:
     errors = module.validate_document(spec, yaml.safe_load(spec.read_text(encoding="utf-8")))
     assert any("operationId" in error for error in errors)
     assert any("x-mate-owner" in error for error in errors)
+    spec.unlink()
+    temp.rmdir()
