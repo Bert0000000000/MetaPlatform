@@ -74,13 +74,13 @@ DATA-D0-D8 全部 8 阶段 Accepted（共 45/45 tests pass）。后续 sub-batch
 |---|---|---|---|
 | PR-R1 | `refactor/monorepo-shrink-phase-2` | `a00351c3` | CLAUDE.md v3.0 GA + refactor 视角合一（110 行）|
 
-### 待评估
+### 评估后归档（不合并 main）
 
-| PR | 来源 | 独有 commits | 状态 |
-|---|---|---:|---|
-| PR-S1 | `sync/all-code-20260725` | 5 | 🔄 待评估（main 比 sync 领先 265 commit，需先 rebase） |
+| PR | 来源 | 独有 commits | archive tag | 不合并原因 |
+|---|---|---:|---|---|
+| PR-S1 | `sync/all-code-20260725` | 5 | `archive/sync-all-code-20260725-2026-07-25` | 与 v3.0 路线对立（7781faf6 unify to Java stack）；FlowGram admin 集成 main 已实现；R5 Java entity 修复与 main Python 后端无关 |
 
-### 已归档 + 删除的僵尸分支（历史快照保留为 archive tag）
+### 已归档 + 删除的分支（历史快照保留为 archive tag）
 
 | 原分支 | archive tag | commit 保留 |
 |---|---|---|
@@ -88,6 +88,7 @@ DATA-D0-D8 全部 8 阶段 Accepted（共 45/45 tests pass）。后续 sub-batch
 | `codex/deerflow-production-integration` | `archive/codex-deerflow-production-integration-2026-07-29` | `d758be1c` |
 | `codex/ontology-native-deerflow-delivery` | `archive/codex-ontology-native-deerflow-delivery-2026-07-29` | `5ecd239d` |
 | `pre-restructure-2026-07-29` | `archive/pre-restructure-2026-07-29` | `09ad4eb3` |
+| `refactor/monorepo-shrink-phase-2` | `archive/refactor-monorepo-shrink-phase-2-2026-07-30` | `2832d777`（已合并 main via `a00351c3`）|
 
 ### 保留的主线分支（17 个，已合并 main，作为里程碑）
 
