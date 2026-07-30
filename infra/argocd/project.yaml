@@ -1,0 +1,37 @@
+# Argo CD AppProject - RBAC scope for the metaplatform platform.
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: metaplatform
+  namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: metaplatform
+spec:
+  description: MetaPlatform umbrella project
+  sourceRepos:
+    - https://github.com/Bert0000000000/MetaPlatform
+  destinations:
+    - namespace: "metaplatform-*"
+      server: "*"
+  clusterResourceWhitelist:
+    - group: ""
+      kind: Namespace
+  namespaceResourceWhitelist:
+    - group: ""
+      kind: "*"
+    - group: "apps"
+      kind: "*"
+    - group: "networking.k8s.io"
+      kind: "*"
+    - group: "rbac.authorization.k8s.io"
+      kind: "*"
+    - group: "monitoring.coreos.com"
+      kind: "*"
+  orphanedResources:
+    warn: true
+  roles:
+    - name: platform-admin
+      policies:
+        - p, proj:metaplatform:platform-admin, applications, *, metaplatform/*, allow
+      groups:
+        - platform-admins

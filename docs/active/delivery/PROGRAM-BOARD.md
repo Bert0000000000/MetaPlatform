@@ -7,7 +7,7 @@
 |---|---|---:|---:|---:|---:|---|
 | API-GOV-01 | **Accepted** | ✓ | ✓ | ✓ | ✓ local/docs | `evidence/API-GOV-01-ACCEPTANCE.md` |
 | ARCH-CORE-01 | **Accepted** | ✓ | ✓ | ✓ | ✓ | `evidence/ARCH-CORE-01-ACCEPTANCE.md` |
-| PLATFORM-K8S-01 | Not Started | ⏳ | ⏳ | ⏳ | ⏳ | — |
+| **PLATFORM-K8S-01** | **Accepted** | ✓ | ✓ | ✓ | ✓ | `evidence/PLATFORM-K8S-01-ACCEPTANCE.md` |
 | SEC-IAM-01 | Not Started | planned | ⏳ | ⏳ | ⏳ | — |
 | SEC-TENANT-01 | Not Started | planned | ⏳ | ⏳ | ⏳ | — |
 | PLATFORM-EVENT-01 | Not Started | planned | ⏳ | ⏳ | ⏳ | — |
@@ -25,4 +25,15 @@
 
 ## 后续计划
 
-按上下游依赖顺序：`ARCH-CORE-01` 与 `PLATFORM-K8S-01` 在 API-GOV-01 完成后并行启动；其后 SEC-IAM-01、SEC-TENANT-01、PLATFORM-EVENT-01 解锁；最后再进入技术服务与业务域迁移。HTTP 网关与 canonical OpenAPI 由 API-GOV-01 提供基线。
+按上下游依赖顺序：`ARCH-CORE-01` 与 `PLATFORM-K8S-01` 在 API-GOV-01 完成后并行启动；
+其后 SEC-IAM-01、SEC-TENANT-01、PLATFORM-EVENT-01 解锁；最后再进入技术服务与
+业务域迁移。HTTP 网关与 canonical OpenAPI 由 API-GOV-01 提供基线，K8s 运行时由
+PLATFORM-K8S-01 提供基线，身份与租户由 SEC-* 接力。
+
+## 已完成批次时间线
+
+| 批次 | 接受日期 | Commit | 证据 |
+|---|---|---|---|
+| API-GOV-01 | 2026-07-30 | 1fa521fd | `evidence/API-GOV-01-ACCEPTANCE.md` |
+| ARCH-CORE-01 | 2026-07-30 | eeaab5c5 | `evidence/ARCH-CORE-01-ACCEPTANCE.md` |
+| PLATFORM-K8S-01 | 2026-07-30 | 4d0b73d6 | `evidence/PLATFORM-K8S-01-ACCEPTANCE.md` |

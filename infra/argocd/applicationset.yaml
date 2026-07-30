@@ -1,0 +1,107 @@
+# Argo CD ApplicationSet - covers all 17 domain runtimeModules.
+# Migrated from per-service compose files. The generator uses a list
+# pattern to enumerate the 17 domains; an alternative cluster generator
+# is also configured for the 6 environments.
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: metaplatform
+  namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: metaplatform
+    app.kubernetes.io/managed-by: Helm
+spec:
+  goTemplate: true
+  goTemplateOptions:
+    - missingkey=error
+  generators:
+    # List generator: enumerate 17 domains from mate-platform-backend/contracts/openapi/manifest.yaml.
+    - list:
+        elements:
+          - domain: iam
+            owner: security-iam
+            runtimeModule: mate_tech_iam.main:app
+          - domain: dashboard
+            owner: business-workbench
+            runtimeModule: mate_tech_iam.main:app
+          - domain: msg
+            owner: platform-messaging
+            runtimeModule: mate_tech_msg.main:app
+          - domain: obs
+            owner: platform-observability
+            runtimeModule: mate_tech_obs.main:app
+          - domain: mcp
+            owner: ai-protocols
+            runtimeModule: mate_tech_mcp.main:app
+          - domain: llmgw
+            owner: ai-runtime
+            runtimeModule: mate_tech_llmgw.main:app
+          - domain: ont
+            owner: ontology-platform
+            runtimeModule: mate_tech_ont.main:app
+          - domain: rag
+            owner: knowledge-platform
+            runtimeModule: mate_tech_rag.api.app:app
+          - domain: agent
+            owner: agent-platform
+            runtimeModule: mate_tech_agent.api.app:app
+          - domain: data
+            owner: data-platform
+            runtimeModule: null
+          - domain: kb
+            owner: knowledge-platform
+            runtimeModule: mate_app_kb.api.app:app
+          - domain: copilot
+            owner: agent-experience
+            runtimeModule: null
+          - domain: dw
+            owner: digital-workforce
+            runtimeModule: null
+          - domain: apphub
+            owner: application-platform
+            runtimeModule: null
+          - domain: arch
+            owner: enterprise-architecture
+            runtimeModule: null
+          - domain: wfe
+            owner: workflow-platform
+            runtimeModule: null
+          - domain: a2a
+            owner: ai-protocols
+            runtimeModule: null
+  template:
+    metadata:
+      name: "metaplatform-{{.domain}}"
+      labels:
+        app.kubernetes.io/component: "{{.domain}}"
+        metaplatform.metaplatform.io/owner: "{{.owner}}"
+    spec:
+      project: metaplatform
+      source:
+        repoURL: https://github.com/Bert0000000000/MetaPlatform
+        targetRevision: "{{.branch | default `main`}}"
+        path: infra/helm
+        helm:
+          valueFiles:
+            - values.yaml
+            - values-{{.environment | default `production`}}.yaml
+          parameters:
+            - name: service-templates.defaults.replicaCount
+              value: "2"
+      destination:
+        server: "{{.server | default `https://kubernetes.default.svc`}}"
+        namespace: metaplatform-{{.domain}}
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
+          - PrunePropagationPolicy=foreground
+          - PruneLast=true
+        retry:
+          limit: 5
+          backoff:
+            duration: 10s
+            factor: 2
+            maxDuration: 5m

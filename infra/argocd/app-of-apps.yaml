@@ -1,0 +1,25 @@
+# App-of-apps - the umbrella entry point for Argo CD. Registers the
+# ApplicationSet above so that 17 domain applications roll out together.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: metaplatform-root
+  namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: metaplatform
+    app.kubernetes.io/managed-by: Helm
+spec:
+  project: metaplatform
+  source:
+    repoURL: https://github.com/Bert0000000000/MetaPlatform
+    targetRevision: main
+    path: infra/argocd
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
