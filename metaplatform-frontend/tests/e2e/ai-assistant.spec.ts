@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 
-const portalUrl = process.env.PORTAL_E2E_URL ?? 'http://localhost:9200';
+const portalUrl = process.env.E2E_BASE_URL ?? process.env.PORTAL_E2E_URL ?? 'http://localhost:9200';
 
 async function authenticate(page: Page) {
   await page.addInitScript(() => {

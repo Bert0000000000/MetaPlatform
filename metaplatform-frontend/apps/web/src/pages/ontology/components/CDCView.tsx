@@ -5,8 +5,9 @@ import {
 } from 'lucide-react';
 import {
   listCDCTasks, createCDCTask, pauseCDCTask, resumeCDCTask, getCDCTaskStatus,
-  CDCTask, SourceType, BigDataSource,
+  CDCTask, CDCSyncMode, CDCStartPosition, CDCTargetType, BigDataSource,
 } from '../../../api/ontology-bigdata';
+import { App, message } from 'antd';
 import { listBigDataSources } from '../../../api/ontology-bigdata';
 
 const STATUS_META = {
@@ -29,7 +30,7 @@ export default function CDCView() {
   const [loading, setLoading] = useState(false);
   const [sources, setSources] = useState<BigDataSource[]>([]);
   const [showCreate, setShowCreate] = useState(false);
-  const [actionLoading, setActionLoading] = useState(null);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -38,8 +39,8 @@ export default function CDCView() {
         listCDCTasks(),
         listBigDataSources(),
       ]);
-      setTasks(Array.isArray(taskData) ? taskData : (taskData?.items || []));
-      setSources(Array.isArray(sourceData) ? sourceData : (sourceData?.items || []));
+      setTasks(taskData);
+      setSources(sourceData);
     } finally {
       setLoading(false);
     }
@@ -47,12 +48,12 @@ export default function CDCView() {
 
   useEffect(() => { load(); }, []);
 
-  const handlePause = async (id) => {
+  const handlePause = async (id: string) => {
     setActionLoading(id);
     try { await pauseCDCTask(id); await load(); } finally { setActionLoading(null); }
   };
 
-  const handleResume = async (id) => {
+  const handleResume = async (id: string) => {
     setActionLoading(id);
     try { await resumeCDCTask(id); await load(); } finally { setActionLoading(null); }
   };
@@ -183,8 +184,8 @@ export default function CDCView() {
   );
 }
 
-function CreateCDCDialog({ sources, onClose, onSuccess }) {
-  const [form, setForm] = useState({
+function CreateCDCDialog({ sources, onClose, onSuccess }: { sources: BigDataSource[]; onClose: () => void; onSuccess: () => void }) {
+  const [form, setForm] = useState<Partial<CDCTask>>({
     syncMode: 'FULL_INCREMENTAL',
     startPosition: 'LATEST',
     targetType: 'KAFKA',
@@ -199,7 +200,7 @@ function CreateCDCDialog({ sources, onClose, onSuccess }) {
 
   const handleSubmit = async () => {
     if (!form.name || !form.sourceId || !form.targetName) {
-      alert('请填写名称、源数据源、目标');
+      message.warning('请填写名称、源数据源、目标');
       return;
     }
     setSubmitting(true);
@@ -229,14 +230,14 @@ function CreateCDCDialog({ sources, onClose, onSuccess }) {
           </FormField>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <FormField label="同步模式 *" required>
-              <select value={form.syncMode} onChange={(e) => setForm({ ...form, syncMode: e.target.value })} style={inputStyle2}>
+              <select value={form.syncMode} onChange={(e) => setForm({ ...form, syncMode: e.target.value as CDCSyncMode })} style={inputStyle2}>
                 <option value="FULL_INCREMENTAL">全量+增量</option>
                 <option value="INCREMENTAL_ONLY">仅增量</option>
                 <option value="SNAPSHOT_ONLY">仅快照</option>
               </select>
             </FormField>
             <FormField label="起始位点">
-              <select value={form.startPosition} onChange={(e) => setForm({ ...form, startPosition: e.target.value })} style={inputStyle2}>
+              <select value={form.startPosition} onChange={(e) => setForm({ ...form, startPosition: e.target.value as CDCStartPosition })} style={inputStyle2}>
                 <option value="LATEST">最新位置</option>
                 <option value="CURRENT_TIMESTAMP">当前时间</option>
                 <option value="CUSTOM">自定义</option>
@@ -245,7 +246,7 @@ function CreateCDCDialog({ sources, onClose, onSuccess }) {
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 12 }}>
             <FormField label="目标类型 *" required>
-              <select value={form.targetType} onChange={(e) => setForm({ ...form, targetType: e.target.value })} style={inputStyle2}>
+              <select value={form.targetType} onChange={(e) => setForm({ ...form, targetType: e.target.value as CDCTargetType })} style={inputStyle2}>
                 <option value="KAFKA">Kafka</option>
                 <option value="CLICKHOUSE">ClickHouse</option>
                 <option value="HUDI">Hudi</option>
@@ -281,7 +282,7 @@ const inputStyle2 = {
   background: 'var(--background)', color: 'var(--foreground)', fontSize: 13,
 };
 
-function FormField({ label, children, required }) {
+function FormField({ label, children, required = false }: { label: React.ReactNode; children: React.ReactNode; required?: boolean }) {
   return (
     <div>
       <label style={{ display: 'block', fontSize: 12, fontWeight: 500, marginBottom: 4, color: 'var(--muted-foreground)' }}>

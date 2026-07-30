@@ -7,7 +7,6 @@ import {
   FileSearch, Database, BarChart3, Send, ScrollText,
 } from 'lucide-react';
 import { SubTabs, type SubTabItem, FormDrawer, Field, TextInput, TextArea, Select } from '@mate/shared';
-import { MOCK_AGENTS } from '@/mock'; // MOCK
 
 const AGENT_TABS: SubTabItem[] = [
   { label: '数字员工列表', path: '/agents' },

@@ -7,7 +7,7 @@ export type SourceType =
   | 'ICEBERG' | 'HUDI' | 'DELTA' | 'PRESTO' | 'TRINO'
   | 'KAFKA' | 'PULSAR' | 'HDFS';
 
-export type AuthType = 'NONE' | 'USER_PASSWORD' | 'KERBERY' | 'LDAP';
+export type AuthType = 'NONE' | 'USER_PASSWORD' | 'KERBERY' | 'LDAP' | 'OAUTH2';
 
 export type BigDataSourceStatus = 'DRAFT' | 'ACTIVE' | 'INACTIVE' | 'ERROR' | 'DELETED';
 

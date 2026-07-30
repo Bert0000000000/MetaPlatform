@@ -1,4 +1,4 @@
-﻿// P4 interaction, renderer, and built-in icon APIs.
+// P4 interaction, renderer, and built-in icon APIs.
 export * from './interaction/InteractionContextProvider';
 export * from './renderers/ClaimRenderer';
 export * from './renderers/EvidenceRenderer';
@@ -49,8 +49,12 @@ export { default as Breadcrumb, type BreadcrumbItem, type BreadcrumbProps } from
 export { useThemeMode, getAntdTheme } from './theme';
 export * as FlowCanvas from './components/flow';
 export * as Api from './api';
+export { isApiError, isBizError, isHttpError } from './api/errors';
+export type { BizError, HttpError } from './api/errors';
 export { useAsyncError } from './errors';
+export { useApiErrorBoundary, type NormalizedError } from './hooks/useApiErrorBoundary';
 export { useAsync } from './hooks/useAsync';
+export { useCachedAsync, type UseCachedAsyncOptions, type UseCachedAsyncResult } from './hooks/useCachedAsync';
 export { useWebSocket, type UseWebSocketOptions, type UseWebSocketResult, type WsMessage } from './hooks/useWebSocket';
 export { useLoadingState } from './hooks/useLoadingState';
 export {

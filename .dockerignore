@@ -1,0 +1,88 @@
+﻿# MetaPlatform .dockerignore —— 加速构建 + 减小镜像体积
+# 适用：所有 mate-* 服务的 Dockerfile 构建上下文
+
+# === VCS / IDE / 缓存 ===
+.git
+.gitignore
+.github
+.gitattributes
+.gitkeep
+.hg
+.svn
+.vscode
+.idea
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# === Python 缓存与虚拟环境 ===
+.venv
+.venv-*
+venv
+env
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache
+.ruff_cache
+.mypy_cache
+.tox
+.coverage
+.coverage.*
+htmlcov
+*.egg-info
+build/
+dist/
+
+# === Node 缓存（前端不在容器内）===
+node_modules
+.pnpm-store
+.npm
+.yarn
+.pnp.*
+
+# === 文档与设计资料（不进镜像）===
+docs
+metaplatform-design-draft
+README.md
+CLAUDE.md
+agent.md
+
+# === 测试与历史代码（不进镜像）===
+tests
+acceptance
+legacy
+.superpowers
+.claude
+
+# === 日志与构建产物 ===
+build-logs
+*.log
+*.err
+*.out
+api-gw.log
+gateway-dev.log
+docker-*.log
+iam-*.log
+obs-dev.log
+portal-dev.log
+pnpm_*.log
+*.stdout.log
+*.stderr.log
+
+# === Docker / Compose 文件本身 ===
+docker-compose*.yml
+docker-compose*.yaml
+.dockerignore
+Dockerfile.orig
+
+# === 一些根级配置（按需排除）===
+.pre-commit-config.yaml
+ruff.toml
+pyproject.toml
+uv.lock
+package.json
+package-lock.json
+pnpm-lock.yaml

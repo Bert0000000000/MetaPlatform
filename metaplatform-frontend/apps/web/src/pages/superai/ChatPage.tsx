@@ -247,7 +247,7 @@ export default function ChatPage() {
   const modelsLoadedRef = useRef(false);
 
   useEffect(() => {
-    listKnowledgeBases().then(setKnowledgeBases).catch(() => {});
+    listKnowledgeBases().then(setKnowledgeBases).catch((error) => { message.warning('知识库加载失败，已使用本地默认列表'); console.warn(error); });
     // 加载后端会话列表，与本地兜底会话合并
     listConversations()
       .then((convs) => {
@@ -265,8 +265,10 @@ export default function ChatPage() {
           );
         }
       })
-      .catch(() => {
-        /* 后端未就绪时静默降级到本地会话 */
+      .catch((error) => {
+        /* 后端未就绪时降级到本地会话，但需告知用户 */
+        message.warning('后端会话加载失败，已使用本地缓存');
+        console.warn(error);
       });
   }, []);
 
@@ -353,8 +355,10 @@ export default function ChatPage() {
         );
         setActiveId((prev) => (prev === localSession.id ? conv.id : prev));
       })
-      .catch(() => {
-        /* 后端不可用时保留本地会话 */
+      .catch((error) => {
+        /* 后端不可用时保留本地会话，但需告知用户 */
+        message.warning('后端会话同步失败，保留本地会话');
+        console.warn(error);
       });
   }, []);
 
@@ -387,8 +391,10 @@ export default function ChatPage() {
     });
     loadedHistoryRef.current.delete(key);
     if (wasBackend) {
-      deleteConversation(key).catch(() => {
-        /* 后端删除失败已不影响本地状态 */
+      deleteConversation(key).catch((error) => {
+        /* 后端删除失败，本地状态保持 */
+        message.error('会话同步删除失败，请手动清理本地缓存');
+        console.warn(error);
       });
     }
   }, [sessions]);
@@ -400,7 +406,7 @@ export default function ChatPage() {
         favorite: !session.favorite,
       }));
       if (isBackendConversation(id)) {
-        toggleFavorite(id).catch(() => {
+        toggleFavorite(id).catch((error) => {
           // 后端失败时回滚本地状态
           updateSession(id, (session) => ({
             ...session,
@@ -562,8 +568,10 @@ export default function ChatPage() {
               metadata: { ...(msg.metadata || {}), graphData },
             }));
           })
-          .catch(() => {
+          .catch((error) => {
             /* Graph fetch failed; assistant text response still shows. */
+            message.warning('图谱数据加载失败，仅显示文本回复');
+            console.warn(error);
           });
       }
 

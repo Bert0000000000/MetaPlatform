@@ -1,0 +1,112 @@
+﻿mate-platform-backend/services\auth-service\src\mate_auth_service\main.py:426:        pass
+mate-platform-backend/packages\mate-tech-rag\src\mate_tech_rag\vector_store.py:1:"""Vector store abstraction + InMemory impl (placeholder).
+mate-platform-backend/packages\mate-tech-rag\src\mate_tech_rag\vector_store.py:66:            return []
+mate-platform-backend/packages\mate-tech-rag\src\mate_tech_rag\embedder.py:5:- LocalTinyEmbedder: offline, deterministic 384-dim hash-based (demo + tests)
+mate-platform-backend/packages\mate-tech-rag\src\mate_tech_rag\embedder.py:92:    Quality: lower than real models but stable and reproducible for demos + tests.
+mate-platform-backend/packages\mate-tech-rag\src\mate_tech_rag\clients\graphrag_client.py:48:            return []
+mate-platform-backend/packages\mate-tech-rag\src\mate_tech_rag\clients\hybrid_v2_client.py:29:        self._fallback = InMemoryVectorStore()
+mate-platform-backend/packages\mate-tech-rag\src\mate_tech_rag\clients\lightrag_client.py:8:Current: InMemory placeholder (Jaccard similarity on token sets).
+mate-platform-backend/packages\mate-tech-rag\src\mate_tech_rag\clients\lightrag_client.py:56:            return []
+mate-platform-backend/packages\mate-tech-rag\src\mate_tech_rag\clients\lightrag_httpx_client.py:64:            return []
+mate-platform-backend/packages\mate-tech-rag\src\mate_tech_rag\clients\lightrag_httpx_client.py:66:            return []
+mate-platform-backend/packages\mate-tech-rag\src\mate_tech_rag\clients\lightrag_httpx_client.py:77:            return []
+mate-platform-backend/packages\mate-tech-rag\src\mate_tech_rag\clients\lightrag_httpx_client.py:102:            return f"lrag-stub-{document_id}"
+mate-platform-backend/packages\mate-tech-rag\src\mate_tech_rag\clients\neo4j_graphrag_client.py:81:            return []
+mate-platform-backend/packages\mate-tech-rag\src\mate_tech_rag\clients\neo4j_graphrag_client.py:84:            return []
+mate-platform-backend/packages\mate-tech-rag\src\mate_tech_rag\api\schemas.py:28:    """single hit (placeholder)"""
+mate-platform-backend/packages\mate-tech-rag\src\mate_tech_rag\clients\milvus_client.py:72:            return []
+mate-platform-backend/packages\mate-tech-rag\src\mate_tech_rag\clients\ragflow_client.py:8:Current: InMemory placeholder (regex-based paragraph split + length-based chunking).
+mate-platform-backend/packages\mate-tech-rag\src\mate_tech_rag\clients\ragflow_client.py:32:    This implementation focuses on text-mode fallback.
+mate-platform-backend/packages\mate-tech-rag\src\mate_tech_rag\clients\ragflow_client.py:48:            return []
+mate-platform-backend/packages\mate-tech-rag\src\mate_tech_rag\clients\ragflow_client.py:75:        return []
+mate-platform-backend/packages\mate-tech-rag\src\mate_tech_rag\clients\ragflow_httpx_client.py:59:            return []
+mate-platform-backend/packages\mate-tech-rag\src\mate_tech_rag\clients\ragflow_httpx_client.py:61:            return [content]  # fallback: treat whole content as 1 chunk
+mate-platform-backend/packages\mate-tech-rag\src\mate_tech_rag\clients\ragflow_httpx_client.py:78:            return []
+mate-platform-backend/packages\mate-tech-rag\src\mate_tech_rag\clients\ragflow_httpx_client.py:88:        return []
+mate-platform-backend/packages\mate-tech-rag\src\mate_tech_rag\clients\ragflow_httpx_client.py:99:            pass
+mate-platform-backend/packages\mate-tech-rag\src\mate_tech_rag\clients\pg_client.py:112:            return []
+mate-platform-backend/packages\mate-tech-rag\src\mate_tech_rag\clients\pg_client.py:139:            return []
+mate-platform-backend/packages\mate-tech-iam\src\mate_tech_iam\seed.py:209:    """Seed minimal demo data. Idempotent."""
+mate-platform-backend/packages\mate-tech-iam\src\mate_tech_iam\seed.py:264:    # --- demo users ---
+mate-platform-backend/packages\mate-tech-iam\src\mate_tech_iam\seed.py:270:    demo_users = [
+mate-platform-backend/packages\mate-tech-iam\src\mate_tech_iam\seed.py:316:            "password": "demo1234",
+mate-platform-backend/packages\mate-tech-iam\src\mate_tech_iam\seed.py:328:            "password": "demo1234",
+mate-platform-backend/packages\mate-tech-iam\src\mate_tech_iam\seed.py:340:            "password": "demo1234",
+mate-platform-backend/packages\mate-tech-iam\src\mate_tech_iam\seed.py:352:            "password": "demo1234",
+mate-platform-backend/packages\mate-tech-iam\src\mate_tech_iam\seed.py:364:            "password": "demo1234",
+mate-platform-backend/packages\mate-tech-iam\src\mate_tech_iam\seed.py:376:            "password": "demo1234",
+mate-platform-backend/packages\mate-tech-iam\src\mate_tech_iam\seed.py:388:            "password": "demo1234",
+mate-platform-backend/packages\mate-tech-iam\src\mate_tech_iam\seed.py:394:    for spec in demo_users:
+mate-platform-backend/packages\mate-tech-iam\src\mate_tech_iam\seed.py:491:    # --- demo employee-position bindings ---
+mate-platform-backend/packages\mate-tech-iam\src\mate_tech_iam\seed.py:564:    # --- demo audit logs (only if empty) ---
+mate-platform-backend/packages\mate-tech-iam\src\mate_tech_iam\seed.py:601:    # --- demo login logs ---
+mate-platform-backend/packages\mate-tech-agent\src\mate_tech_agent\tools.py:35:            return []
+mate-platform-backend/packages\mate-tech-agent\src\mate_tech_agent\tools\rag_tool.py:29:            return []
+mate-platform-backend/packages\mate-tech-agent\src\mate_tech_agent\tools\flowable_tool.py:9:Falls back to InMemory (returns mock) when server unavailable.
+mate-platform-backend/packages\mate-tech-agent\src\mate_tech_agent\tools\flowable_tool.py:90:        self._fallback = InMemoryFlowableTool()
+mate-platform-backend/packages\mate-tech-agent\src\mate_tech_agent\tools\flowable_tool.py:100:                _log.info("Flowable responded %d, using InMemory fallback", r.status_code)
+mate-platform-backend/packages\mate-tech-agent\src\mate_tech_agent\tools\flowable_tool.py:102:            _log.info("Flowable unavailable at %s: %s (using InMemory fallback)", self._base_url, exc)
+mate-platform-backend/packages\mate-tech-agent\src\mate_tech_agent\tools\flowable_tool.py:106:            return self._fallback.deploy_bpmn(process_key, bpmn_xml, name)
+mate-platform-backend/packages\mate-tech-agent\src\mate_tech_agent\tools\flowable_tool.py:117:            _log.warning("Flowable deploy failed: %s (using fallback)", exc)
+mate-platform-backend/packages\mate-tech-agent\src\mate_tech_agent\tools\flowable_tool.py:118:            return self._fallback.deploy_bpmn(process_key, bpmn_xml, name)
+mate-platform-backend/packages\mate-tech-agent\src\mate_tech_agent\tools\flowable_tool.py:122:            return self._fallback.start_process(process_key, variables)
+mate-platform-backend/packages\mate-tech-agent\src\mate_tech_agent\tools\flowable_tool.py:131:            return self._fallback.start_process(process_key, variables)
+mate-platform-backend/packages\mate-tech-agent\src\mate_tech_agent\tools\flowable_tool.py:135:            return self._fallback.get_process_state(instance_id)
+mate-platform-backend/packages\mate-tech-agent\src\mate_tech_agent\tools\flowable_tool.py:146:            return self._fallback.get_process_state(instance_id)
+mate-platform-backend/packages\mate-tech-agent\src\mate_tech_agent\tools\flowable_tool.py:150:            return self._fallback.list_process_definitions()
+mate-platform-backend/packages\mate-tech-agent\src\mate_tech_agent\tools\flowable_tool.py:156:            return self._fallback.list_process_definitions()
+mate-platform-backend/packages\mate-tech-agent\src\mate_tech_agent\scenarios\memory.py:55:            return []
+mate-platform-backend/packages\mate-tech-agent\src\mate_tech_agent\scenarios\memory.py:57:        return []
+mate-platform-backend/packages\mate-tech-mcp\src\mate_tech_mcp\resources\ontology.py:69:            return []
+mate-platform-backend/packages\mate-tech-agent\src\mate_tech_agent\memory.py:72:    # Fallback: JSON file
+mate-platform-backend/packages\mate-tech-agent\src\mate_tech_agent\memory.py:81:    """Load state: try PGSaver first, fallback to JSON."""
+mate-platform-backend/packages\mate-tech-agent\src\mate_tech_agent\memory.py:87:    # Fallback: JSON file
+mate-platform-backend/packages\mate-tech-ont\src\mate_tech_ont\search\fulltext.py:42:        return []
+mate-platform-backend/packages\mate-tech-iam\src\mate_tech_iam\api\dashboard.py:4:surface consumed by @mate/dashboard (port 9230). Self-contained mock store
+mate-platform-backend/packages\mate-tech-iam\src\mate_tech_iam\api\dashboard.py:67:def _seed_todos() -> list[dict[str, Any]]:
+mate-platform-backend/packages\mate-tech-iam\src\mate_tech_iam\api\dashboard.py:99:_TODOS = _seed_todos()
+mate-platform-backend/packages\mate-tech-iam\src\mate_tech_iam\api\dashboard.py:349:class TodoActionRequest(BaseModel):
+mate-platform-backend/packages\mate-tech-iam\src\mate_tech_iam\api\dashboard.py:612:# Todos / Approvals
+mate-platform-backend/packages\mate-tech-iam\src\mate_tech_iam\api\dashboard.py:616:def _map_todo(item: dict[str, Any]) -> dict[str, Any]:
+mate-platform-backend/packages\mate-tech-iam\src\mate_tech_iam\api\dashboard.py:633:@router.get("/todos", summary="Pending tasks")
+mate-platform-backend/packages\mate-tech-iam\src\mate_tech_iam\api\dashboard.py:634:async def list_todos(userId: str | None = Query(default=None),
+mate-platform-backend/packages\mate-tech-iam\src\mate_tech_iam\api\dashboard.py:636:    pending = [_map_todo(t) for t in _TODOS if t["status"] == "pending"]
+mate-platform-backend/packages\mate-tech-iam\src\mate_tech_iam\api\dashboard.py:641:@router.get("/todos/done", summary="Done tasks")
+mate-platform-backend/packages\mate-tech-iam\src\mate_tech_iam\api\dashboard.py:642:async def list_done_todos(userId: str | None = Query(default=None),
+mate-platform-backend/packages\mate-tech-iam\src\mate_tech_iam\api\dashboard.py:644:    done = [_map_todo(t) for t in _TODOS if t["status"] != "pending"]
+mate-platform-backend/packages\mate-tech-iam\src\mate_tech_iam\api\dashboard.py:649:@router.post("/todos/{task_id}/action", summary="Approve / reject")
+mate-platform-backend/packages\mate-tech-iam\src\mate_tech_iam\api\dashboard.py:650:async def act_todo(task_id: str, body: TodoActionRequest) -> Any:
+mate-platform-backend/packages\mate-tech-iam\src\mate_tech_iam\api\dashboard.py:651:    for t in _TODOS:
+mate-platform-backend/packages\mate-tech-iam\src\mate_tech_iam\api\dashboard.py:818:        return []
+mate-platform-backend/packages\mate-tech-iam\src\mate_tech_iam\api\orgs.py:122:        return {}
+mate-platform-backend/packages\mate-tech-iam\src\mate_tech_iam\api\orgs.py:147:        return {}
+mate-platform-backend/packages\mate-tech-agent\src\mate_tech_agent\memory\_json_store.py:1:"""JSON file state persistence (fallback when PG unavailable)."""
+mate-platform-backend/packages\mate-tech-agent\src\mate_tech_agent\memory\_json_store.py:50:    """Load state: try PGSaver first, fallback to JSON."""
+mate-platform-backend/packages\mate-tech-ont\src\mate_tech_ont\instances\store.py:3:/instances + /relations CRUD（in-memory + Neo4j 适配点）。
+mate-platform-backend/packages\mate-tech-ont\src\mate_tech_ont\instances\store.py:40:    """实例存储（in-memory + Neo4j 适配点）."""
+mate-platform-backend/packages\mate-tech-iam\src\mate_tech_iam\api\users.py:119:        return {}
+mate-platform-backend/packages\mate-tech-ont\src\mate_tech_ont\sparql\api.py:39:    # 实际应调 neo4j — mock 返回空
+mate-platform-backend/packages\mate-tech-ont\src\mate_tech_ont\sparql\cypher.py:116:    return []
+mate-platform-backend/packages\mate-tech-llmgw\src\mate_tech_llmgw\main.py:20:    description="LLM Gateway: multi-provider routing, quota, cache, fallback",
+mate-platform-backend/packages\mate-tech-iam\src\mate_tech_iam\api\permissions.py:138:        return {}
+mate-platform-backend/packages\mate-tech-iam\src\mate_tech_iam\api\permissions.py:434:            pass
+mate-platform-backend/packages\mate-tech-llmgw\src\mate_tech_llmgw\router.py:75:        raise NotImplementedError(f"Provider '{name}' not implemented")
+mate-platform-backend/packages\mate-tech-llmgw\src\mate_tech_llmgw\retry\fallback.py:1:"""Retry + Fallback (ST-5.5.6).
+mate-platform-backend/packages\mate-tech-llmgw\src\mate_tech_llmgw\retry\fallback.py:3:主模型 5xx/超时 → 自动 fallback 到次选。
+mate-platform-backend/packages\mate-tech-llmgw\src\mate_tech_llmgw\retry\fallback.py:25:class FallbackChain:
+mate-platform-backend/packages\mate-tech-llmgw\src\mate_tech_llmgw\retry\fallback.py:26:    """主备 fallback 链：依次尝试每个模型."""
+mate-platform-backend/packages\mate-tech-llmgw\src\mate_tech_llmgw\retry\fallback.py:29:    retry_per_model: int = 1  # 每个模型的重试次数（不重试，靠 fallback）
+mate-platform-backend/packages\mate-tech-llmgw\src\mate_tech_llmgw\retry\fallback.py:32:async def chat_with_fallback(
+mate-platform-backend/packages\mate-tech-llmgw\src\mate_tech_llmgw\retry\fallback.py:36:    fallback_models: tuple[str, ...] = (),
+mate-platform-backend/packages\mate-tech-llmgw\src\mate_tech_llmgw\retry\fallback.py:43:    """先 primary，失败 fallback 到次选.
+mate-platform-backend/packages\mate-tech-llmgw\src\mate_tech_llmgw\retry\fallback.py:48:        fallback_models: 备选模型列表
+mate-platform-backend/packages\mate-tech-llmgw\src\mate_tech_llmgw\retry\fallback.py:51:    chain = (primary_model, *fallback_models)
+mate-platform-backend/packages\mate-tech-llmgw\src\mate_tech_llmgw\retry\fallback.py:55:            logger.info("llmgw.fallback.try", model=model)
+mate-platform-backend/packages\mate-tech-llmgw\src\mate_tech_llmgw\retry\fallback.py:65:                logger.warning("llmgw.fallback.used", model=model, primary=primary_model)
+mate-platform-backend/packages\mate-tech-llmgw\src\mate_tech_llmgw\retry\fallback.py:70:                "llmgw.fallback.failed",
+mate-platform-backend/packages\mate-tech-llmgw\src\mate_tech_llmgw\retry\fallback.py:77:    msg = f"All models failed. Primary={primary_model}, fallbacks={fallback_models}"
+mate-platform-backend/packages\mate-tech-llmgw\src\mate_tech_llmgw\api\routes.py:54:    except NotImplementedError as e:
+mate-platform-backend/packages\mate-tech-llmgw\src\mate_tech_llmgw\api\routes.py:61:async def _mock_stream(req: ChatRequest):
+mate-platform-backend/packages\mate-tech-llmgw\src\mate_tech_llmgw\api\routes.py:62:    """ST-5.5.7 配套：mock token 流（实际生产应替换为 provider 的 stream 接口）."""
+mate-platform-backend/packages\mate-tech-llmgw\src\mate_tech_llmgw\api\routes.py:72:        _mock_stream,
+mate-platform-backend/packages\mate-tech-llmgw\src\mate_tech_llmgw\api\routes.py:97:    # TODO: 接入实际 embedding provider

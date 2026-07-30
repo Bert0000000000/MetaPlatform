@@ -1,4 +1,6 @@
+import { useApiErrorBoundary } from '@mate/shared';
 import React, { useState, useEffect } from 'react';
+import { App, Modal } from 'antd';
 import {
   Database, Plus, Search, Settings2, Trash2, RefreshCw, CheckCircle2,
   XCircle, Loader2, AlertCircle, Play,
@@ -6,7 +8,7 @@ import {
 import {
   listBigDataSources, createBigDataSource, deleteBigDataSource,
   testBigDataSourceConnection,
-  BigDataSource, SourceType, SOURCE_TYPE_META,
+  BigDataSource, SourceType, BigDataSourceStatus, AuthType, SOURCE_TYPE_META,
 } from '../../../api/ontology-bigdata';
 
 const STATUS_META = {
@@ -17,10 +19,28 @@ const STATUS_META = {
   DELETED:  { label: '已删除', color: '#6b7280', bg: 'rgba(107,114,128,0.12)', icon: Trash2 },
 };
 
+function InternalBody({ message, modal, report }: { message: any; modal: any; report: any }) {
+  return <InnerBody message={message} modal={modal} report={report} />;
+}
+
+function BigDataSourceViewImpl({ report }: { report: any }) {
+  const { message, modal } = App.useApp();
+  return <InternalBody message={message} modal={modal} report={report} />;
+}
+
+function BigDataSourceViewShell() {
+  const { report } = useApiErrorBoundary();
+  return <App><BigDataSourceViewImpl report={report} /></App>;
+}
+
 export default function BigDataSourceView() {
+  return <BigDataSourceViewShell />;
+}
+
+function InnerBody({ message, modal, report }: { message: any; modal: any; report: any }) {
   const [sources, setSources] = useState<BigDataSource[]>([]);
   const [loading, setLoading] = useState(false);
-  const [filter, setFilter] = useState<{ keyword?: string; sourceType?: SourceType; status?: string }>({});
+  const [filter, setFilter] = useState<{ keyword?: string; sourceType?: SourceType; status?: BigDataSourceStatus }>({});
   const [showCreate, setShowCreate] = useState(false);
   const [testing, setTesting] = useState<string | null>(null);
 
@@ -29,6 +49,9 @@ export default function BigDataSourceView() {
     try {
       const data: any = await listBigDataSources(filter);
       setSources(Array.isArray(data) ? data : (data?.items || []));
+    } catch (e) {
+      report(e);
+      setSources([]);
     } finally {
       setLoading(false);
     }
@@ -41,9 +64,9 @@ export default function BigDataSourceView() {
     try {
       const result: any = await testBigDataSourceConnection(id);
       if (result?.success) {
-        alert('连接成功! 延迟: ' + result.latency + 'ms');
+        message.success('连接成功! 延迟: ' + result.latency + 'ms');
       } else {
-        alert('连接失败');
+        message.error('连接失败: ' + (result?.message || 'unknown'));
       }
     } finally {
       setTesting(null);
@@ -51,9 +74,22 @@ export default function BigDataSourceView() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('确认删除此数据源？相关 ETL/CDC 任务将失败。')) return;
-    await deleteBigDataSource(id);
-    await load();
+    modal.confirm({
+      title: '确认删除此数据源？',
+      content: '相关 ETL/CDC 任务将失败。',
+      okText: '确认删除',
+      okButtonProps: { danger: true },
+      cancelText: '取消',
+      onOk: async () => {
+        try {
+          await deleteBigDataSource(id);
+          message.success('已删除数据源');
+          await load();
+        } catch (e) {
+          report(e);
+        }
+      },
+    });
   };
 
   return (
@@ -81,7 +117,7 @@ export default function BigDataSourceView() {
         </select>
         <select
           value={filter.status || ''}
-          onChange={(e) => setFilter({ ...filter, status: e.target.value || undefined })}
+          onChange={(e) => setFilter({ ...filter, status: (e.target.value || undefined) as BigDataSourceStatus | undefined })}
           style={{ padding: '8px 12px', border: '1px solid var(--border)', borderRadius: 6, background: 'var(--background)', color: 'var(--foreground)', fontSize: 13 }}
         >
           <option value="">全部状态</option>
@@ -221,13 +257,14 @@ export default function BigDataSourceView() {
         </div>
       )}
 
-      {showCreate && <CreateSourceModal onClose={() => setShowCreate(false)} onSuccess={() => { setShowCreate(false); load(); }} />}
+      {showCreate && <CreateSourceModal onClose={() => setShowCreate(false)} onSuccess={() => { setShowCreate(false); load(); }} report={report} />}
     </div>
   );
 }
 
-function CreateSourceModal({ onClose, onSuccess }) {
-  const [form, setForm] = useState({
+function CreateSourceModal({ onClose, onSuccess, report }: { onClose: () => void; onSuccess: () => void; report: any }) {
+  const { message } = App.useApp();
+  const [form, setForm] = useState<Partial<BigDataSource>>({
     sourceType: 'CLICKHOUSE',
     authType: 'NONE',
     sslEnabled: false,
@@ -239,13 +276,16 @@ function CreateSourceModal({ onClose, onSuccess }) {
 
   const handleSubmit = async () => {
     if (!form.name || !form.host || !form.port) {
-      alert('请填写必填字段：名称、主机、端口');
+      message.warning('请填写必填字段：名称、主机、端口');
       return;
     }
     setSubmitting(true);
     try {
       await createBigDataSource(form);
+      message.success('已创建数据源');
       onSuccess();
+    } catch (e) {
+      report(e);
     } finally {
       setSubmitting(false);
     }
@@ -263,7 +303,7 @@ function CreateSourceModal({ onClose, onSuccess }) {
             <input value={form.name || ''} onChange={(e) => setForm({ ...form, name: e.target.value })} style={inputStyle} />
           </Field>
           <Field label="类型 *" required>
-            <select value={form.sourceType} onChange={(e) => setForm({ ...form, sourceType: e.target.value })} style={inputStyle}>
+            <select value={form.sourceType} onChange={(e) => setForm({ ...form, sourceType: e.target.value as SourceType })} style={inputStyle}>
               {Object.entries(SOURCE_TYPE_META).map(([k, v]) => (
                 <option key={k} value={k}>{v.icon} {v.label}</option>
               ))}
@@ -286,7 +326,7 @@ function CreateSourceModal({ onClose, onSuccess }) {
             </Field>
           </div>
           <Field label="认证类型">
-            <select value={form.authType} onChange={(e) => setForm({ ...form, authType: e.target.value })} style={inputStyle}>
+            <select value={form.authType} onChange={(e) => setForm({ ...form, authType: e.target.value as AuthType })} style={inputStyle}>
               <option value="NONE">无</option>
               <option value="USER_PASSWORD">用户名密码</option>
               <option value="KERBERY">Kerberos</option>
@@ -324,7 +364,7 @@ const inputStyle = {
   background: 'var(--background)', color: 'var(--foreground)', fontSize: 13,
 };
 
-function Field({ label, children, required }) {
+function Field({ label, children, required = false }: { label: React.ReactNode; children: React.ReactNode; required?: boolean }) {
   return (
     <div>
       <label style={{ display: 'block', fontSize: 12, fontWeight: 500, marginBottom: 4, color: 'var(--muted-foreground)' }}>

@@ -1,4 +1,4 @@
-﻿import { useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { useState } from 'react';
 import {
   RefreshCw, GitBranch, Plus, Activity, PlugZap, Layers,
@@ -94,12 +94,13 @@ const LINEAGE_EDGES = [
   { from: 'dws-2', to: 'ads-2' },
 ];
 
-const badgeColor = (type) =>
+const badgeColor = (type: string) =>
   type === 'success' ? 'var(--success)' : type === 'warning' ? 'var(--warning)' : type === 'error' ? 'var(--destructive)' : 'var(--muted-foreground)';
 
 export default function OntologyDatacenterPage() {
   const location = useLocation();
   const [activeSubTab, setActiveSubTab] = useState('bigdata');
+  const [reloadKey, setReloadKey] = useState(0);
   const assistant = usePageAssistant({
     employeeId: 'ontology-data-steward',
     employeeName: '本体数据管家',
@@ -111,8 +112,8 @@ export default function OntologyDatacenterPage() {
   });
 
   const renderSubTabContent = () => {
-    const sub = (node) => (
-      <ErrorBoundary fallback={<SubErrorFallback name="${activeSubTab}" />}>
+    const sub = (node: React.ReactNode) => (
+      <ErrorBoundary key={`${activeSubTab}-${reloadKey}`} fallback={<SubErrorFallback name={activeSubTab} />}>
         {node}
       </ErrorBoundary>
     );
@@ -144,10 +145,10 @@ export default function OntologyDatacenterPage() {
               <div style={{ fontSize: 13, color: 'var(--muted-foreground)', marginTop: 4 }}>数据源管理、数据加工、数据质量与血缘</div>
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
-              <button onClick={() => window.location.reload()} style={{ padding: '6px 12px', border: '1px solid var(--border)', borderRadius: 6, background: 'var(--card)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
+              <button onClick={() => setReloadKey((k) => k + 1)} style={{ padding: '6px 12px', border: '1px solid var(--border)', borderRadius: 6, background: 'var(--card)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
                 <RefreshCw style={{ width: 12, height: 12 }} />刷新
               </button>
-              <AIAssistantTrigger assistant={assistant} label="AI 助手" />
+              <AIAssistantTrigger open={assistant.isOpen} onClick={assistant.toggle} />
             </div>
           </div>
 
@@ -295,7 +296,7 @@ function LakeView() {
 }
 
 
-function SubErrorFallback({ name }) {
+function SubErrorFallback({ name }: { name: string }) {
   return (
     <div style={{ padding: 40, textAlign: 'center', color: 'var(--destructive)' }}>
       <AlertCircle style={{ width: 32, height: 32, margin: '0 auto 12px' }} />

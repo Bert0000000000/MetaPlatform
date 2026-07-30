@@ -1,3 +1,5 @@
+import { useApiErrorBoundary } from '@mate/shared';
+import type { NormalizedError } from '@mate/shared';
 import { useState } from 'react';
 import { Card, List, Tag, Typography, Space, Button, Segmented, Modal, Form, Switch, message } from 'antd';
 import { useNavigate } from 'react-router-dom';
@@ -24,6 +26,7 @@ const TYPE_LABEL: Record<NotificationType, { label: string; color: string }> = {
 };
 
 export default function NotificationsPage() {
+  const { report } = useApiErrorBoundary();
   const navigate = useNavigate();
   void navigate;
   const { settings } = useSettings();
@@ -41,7 +44,7 @@ export default function NotificationsPage() {
       await markAsRead(id);
       reload();
     } catch (e) {
-      message.error(e instanceof Error ? e.message : '操作失败');
+      report(e);
     }
   };
 
@@ -50,7 +53,7 @@ export default function NotificationsPage() {
       await markAsUnread(id);
       reload();
     } catch (e) {
-      message.error(e instanceof Error ? e.message : '操作失败');
+      report(e);
     }
   };
 
@@ -60,7 +63,7 @@ export default function NotificationsPage() {
       reload();
       message.success('已全部标记为已读');
     } catch (e) {
-      message.error(e instanceof Error ? e.message : '操作失败');
+      report(e);
     }
   };
 
@@ -70,7 +73,7 @@ export default function NotificationsPage() {
       form.setFieldsValue(s);
       setSettingsOpen(true);
     } catch (e) {
-      message.error(e instanceof Error ? e.message : '加载通知设置失败');
+      report(e);
     }
   };
 
@@ -80,7 +83,7 @@ export default function NotificationsPage() {
       setSettingsOpen(false);
       message.success('通知设置已保存');
     } catch (e) {
-      message.error(e instanceof Error ? e.message : '保存失败');
+      report(e);
     }
   };
 

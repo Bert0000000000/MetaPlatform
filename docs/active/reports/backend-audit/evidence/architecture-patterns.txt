@@ -1,0 +1,82 @@
+﻿mate-platform-backend/services\auth-service\src\mate_auth_service\main.py:4:  - JWT 校验 (RS256, Keycloak JWKS)
+mate-platform-backend/services\auth-service\src\mate_auth_service\main.py:10:  - 不发 token (Keycloak)
+mate-platform-backend/services\auth-service\src\mate_auth_service\main.py:11:  - 不写用户/角色 (Keycloak admin API)
+mate-platform-backend/services\auth-service\src\mate_auth_service\main.py:30:KEYCLOAK_URL = os.getenv("KEYCLOAK_URL", "http://keycloak:8080")
+mate-platform-backend/services\auth-service\src\mate_auth_service\main.py:31:KEYCLOAK_REALM = os.getenv("KEYCLOAK_REALM", "metaplatform")
+mate-platform-backend/services\auth-service\src\mate_auth_service\main.py:32:KEYCLOAK_CLIENT_ID = os.getenv("KEYCLOAK_CLIENT_ID", "metaplatform-backend")
+mate-platform-backend/services\auth-service\src\mate_auth_service\main.py:33:KEYCLOAK_CLIENT_SECRET = os.getenv("KEYCLOAK_CLIENT_SECRET", "")
+mate-platform-backend/services\auth-service\src\mate_auth_service\main.py:34:KEYCLOAK_INTERNAL_URL = os.getenv("KEYCLOAK_INTERNAL_URL", KEYCLOAK_URL)
+mate-platform-backend/services\auth-service\src\mate_auth_service\main.py:36:JWKS_URL = f"{KEYCLOAK_INTERNAL_URL}/realms/{KEYCLOAK_REALM}/protocol/openid-connect/certs"
+mate-platform-backend/services\auth-service\src\mate_auth_service\main.py:37:ISSUER = f"{KEYCLOAK_INTERNAL_URL}/realms/{KEYCLOAK_REALM}"
+mate-platform-backend/services\auth-service\src\mate_auth_service\main.py:38:OIDC_USERINFO_URL = f"{KEYCLOAK_INTERNAL_URL}/realms/{KEYCLOAK_REALM}/protocol/openid-connect/userinfo"
+mate-platform-backend/services\auth-service\src\mate_auth_service\main.py:42:JWKS_CACHE_KEY = f"jwks:{KEYCLOAK_REALM}"
+mate-platform-backend/services\auth-service\src\mate_auth_service\main.py:193:    description="JWT verify + tenant resolution (Keycloak JWKS)",
+mate-platform-backend/services\auth-service\src\mate_auth_service\main.py:207:        "keycloak_jwks": len(_jwks_cache) > 0,
+mate-platform-backend/services\auth-service\src\mate_auth_service\main.py:253:            audience=KEYCLOAK_CLIENT_ID,
+mate-platform-backend/services\auth-service\src\mate_auth_service\main.py:297:    """Proxy to Keycloak userinfo endpoint (RFC 7662 OIDC)."""
+mate-platform-backend/services\auth-service\src\mate_auth_service\main.py:307:        raise HTTPException(status_code=504, detail="Keycloak userinfo timeout")
+mate-platform-backend/services\auth-service\src\mate_auth_service\main.py:315:    """Password grant to Keycloak, return AuthResponse (camelCase)."""
+mate-platform-backend/services\auth-service\src\mate_auth_service\main.py:316:    if not KEYCLOAK_CLIENT_SECRET:
+mate-platform-backend/services\auth-service\src\mate_auth_service\main.py:317:        raise HTTPException(status_code=503, detail="KEYCLOAK_CLIENT_SECRET not configured")
+mate-platform-backend/services\auth-service\src\mate_auth_service\main.py:318:    token_url = f"{KEYCLOAK_INTERNAL_URL}/realms/{KEYCLOAK_REALM}/protocol/openid-connect/token"
+mate-platform-backend/services\auth-service\src\mate_auth_service\main.py:321:        "client_id": KEYCLOAK_CLIENT_ID,
+mate-platform-backend/services\auth-service\src\mate_auth_service\main.py:322:        "client_secret": KEYCLOAK_CLIENT_SECRET,
+mate-platform-backend/services\auth-service\src\mate_auth_service\main.py:333:        raise HTTPException(status_code=504, detail="Keycloak timeout")
+mate-platform-backend/services\auth-service\src\mate_auth_service\main.py:378:    """Refresh grant to Keycloak."""
+mate-platform-backend/services\auth-service\src\mate_auth_service\main.py:379:    if not KEYCLOAK_CLIENT_SECRET:
+mate-platform-backend/services\auth-service\src\mate_auth_service\main.py:380:        raise HTTPException(status_code=503, detail="KEYCLOAK_CLIENT_SECRET not configured")
+mate-platform-backend/services\auth-service\src\mate_auth_service\main.py:381:    token_url = f"{KEYCLOAK_INTERNAL_URL}/realms/{KEYCLOAK_REALM}/protocol/openid-connect/token"
+mate-platform-backend/services\auth-service\src\mate_auth_service\main.py:384:        "client_id": KEYCLOAK_CLIENT_ID,
+mate-platform-backend/services\auth-service\src\mate_auth_service\main.py:385:        "client_secret": KEYCLOAK_CLIENT_SECRET,
+mate-platform-backend/services\auth-service\src\mate_auth_service\main.py:395:        raise HTTPException(status_code=504, detail="Keycloak timeout")
+mate-platform-backend/services\auth-service\src\mate_auth_service\main.py:415:    """Logout: blacklist current JTI in Redis; best-effort Keycloak end_session."""
+mate-platform-backend/services\auth-service\src\mate_auth_service\main.py:433:    # Best-effort Keycloak logout (no refresh token here, so skip end_session call)
+mate-platform-backend/packages\mate-tech-mcp\tests\conftest.py:29:def mock_keycloak() -> AsyncMock:
+mate-platform-backend/packages\mate-tech-agent\src\mate_tech_agent\graph.py:213:    """Deploy BPMN process definition to Flowable (TC-5.7.8)."""
+mate-platform-backend/packages\mate-tech-agent\src\mate_tech_agent\graph.py:214:    from mate_tech_agent.tools.flowable_tool import get_flowable_tool
+mate-platform-backend/packages\mate-tech-agent\src\mate_tech_agent\graph.py:217:    result = get_flowable_tool().deploy_bpmn(process_key, bpmn_xml, name=process_key)
+mate-platform-backend/packages\mate-tech-agent\src\mate_tech_agent\graph.py:222:    """Start a process instance on Flowable."""
+mate-platform-backend/packages\mate-tech-agent\src\mate_tech_agent\graph.py:223:    from mate_tech_agent.tools.flowable_tool import get_flowable_tool
+mate-platform-backend/packages\mate-tech-agent\src\mate_tech_agent\graph.py:228:    inst = get_flowable_tool().start_process(state.get("process_key", "agent_qa"), variables)
+mate-platform-backend/packages\mate-tech-agent\src\mate_tech_agent\graph.py:234:    from mate_tech_agent.tools.flowable_tool import get_flowable_tool
+mate-platform-backend/packages\mate-tech-agent\src\mate_tech_agent\graph.py:238:    info = get_flowable_tool().get_process_state(inst_id)
+mate-platform-backend/packages\mate-tech-agent\src\mate_tech_agent\graph.py:249:             xmlns:flowable="http://flowable.org/bpmn"
+mate-platform-backend/packages\mate-tech-agent\src\mate_tech_agent\graph.py:254:    <serviceTask id="retrieve" name="RAG Retrieve" flowable:class="mate.bpmn.RAGDelegate"/>
+mate-platform-backend/packages\mate-tech-agent\src\mate_tech_agent\graph.py:256:    <serviceTask id="answer" name="LLM Answer" flowable:class="mate.bpmn.AnswerDelegate"/>
+mate-platform-backend/packages\mate-tech-agent\src\mate_tech_agent\eval\qa_set.py:51:        "expected_keywords": ["RAGFlow", "LightRAG", "Flowable"],
+mate-platform-backend/packages\mate-tech-msg\src\mate_tech_msg\retry.py:9:from tenacity import (
+mate-platform-backend/packages\mate-tech-msg\src\mate_tech_msg\retry.py:20:def with_retry(
+mate-platform-backend/packages\mate-tech-agent\src\mate_tech_agent\tools\flowable_tool.py:1:"""Flowable HTTP client (TC-5.7.8 S4 BPMN).
+mate-platform-backend/packages\mate-tech-agent\src\mate_tech_agent\tools\flowable_tool.py:3:Real endpoints (Flowable 6/7/8 REST API):
+mate-platform-backend/packages\mate-tech-agent\src\mate_tech_agent\tools\flowable_tool.py:4:- POST /flowable-rest/service/repository/deployments       (deploy BPMN)
+mate-platform-backend/packages\mate-tech-agent\src\mate_tech_agent\tools\flowable_tool.py:5:- POST /flowable-rest/service/runtime/process-instances     (start process)
+mate-platform-backend/packages\mate-tech-agent\src\mate_tech_agent\tools\flowable_tool.py:6:- GET  /flowable-rest/service/runtime/process-instances/{id} (status)
+mate-platform-backend/packages\mate-tech-agent\src\mate_tech_agent\tools\flowable_tool.py:8:Env: FLOWABLE_URL (default http://localhost:8080).
+mate-platform-backend/packages\mate-tech-agent\src\mate_tech_agent\tools\flowable_tool.py:25:class FlowableTool(Protocol):
+mate-platform-backend/packages\mate-tech-agent\src\mate_tech_agent\tools\flowable_tool.py:32:class InMemoryFlowableTool:
+mate-platform-backend/packages\mate-tech-agent\src\mate_tech_agent\tools\flowable_tool.py:82:class HttpxFlowableTool:
+mate-platform-backend/packages\mate-tech-agent\src\mate_tech_agent\tools\flowable_tool.py:84:    REST_PREFIX = "/flowable-rest/service"
+mate-platform-backend/packages\mate-tech-agent\src\mate_tech_agent\tools\flowable_tool.py:87:        self._base_url = (base_url or os.environ.get("FLOWABLE_URL", self.DEFAULT_URL)).rstrip("/")
+mate-platform-backend/packages\mate-tech-agent\src\mate_tech_agent\tools\flowable_tool.py:90:        self._fallback = InMemoryFlowableTool()
+mate-platform-backend/packages\mate-tech-agent\src\mate_tech_agent\tools\flowable_tool.py:98:                _log.info("Flowable ACTIVE at %s", self._base_url)
+mate-platform-backend/packages\mate-tech-agent\src\mate_tech_agent\tools\flowable_tool.py:100:                _log.info("Flowable responded %d, using InMemory fallback", r.status_code)
+mate-platform-backend/packages\mate-tech-agent\src\mate_tech_agent\tools\flowable_tool.py:102:            _log.info("Flowable unavailable at %s: %s (using InMemory fallback)", self._base_url, exc)
+mate-platform-backend/packages\mate-tech-agent\src\mate_tech_agent\tools\flowable_tool.py:117:            _log.warning("Flowable deploy failed: %s (using fallback)", exc)
+mate-platform-backend/packages\mate-tech-agent\src\mate_tech_agent\tools\flowable_tool.py:162:_tool: FlowableTool | None = None
+mate-platform-backend/packages\mate-tech-agent\src\mate_tech_agent\tools\flowable_tool.py:165:def get_flowable_tool():
+mate-platform-backend/packages\mate-tech-agent\src\mate_tech_agent\tools\flowable_tool.py:168:        _tool = HttpxFlowableTool()
+mate-platform-backend/packages\mate-tech-agent\src\mate_tech_agent\tools\flowable_tool.py:172:def set_flowable_tool(tool):
+mate-platform-backend/packages\mate-tech-llmgw\src\mate_tech_llmgw\retry\fallback.py:11:from tenacity import (
+mate-platform-backend/packages\mate-tech-llmgw\src\mate_tech_llmgw\retry\fallback.py:83:def with_retry(
+mate-platform-backend/packages\mate-tech-llmgw\src\mate_tech_llmgw\retry\fallback.py:91:    """用 tenacity 给函数加指数退避重试."""
+mate-platform-backend/packages\mate-tech-mcp\src\mate_tech_mcp\auth.py:38:    生产应使用 Keycloak 公钥验签，参见 ST-5.3.9 依赖 python-keycloak。
+mate-platform-backend/packages\mate-tech-agent\src\mate_tech_agent\scenarios\s1_s4.py:6:- S4: 流程驱动（Flowable BPMN）
+mate-platform-backend/packages\mate-tech-agent\src\mate_tech_agent\scenarios\s1_s4.py:104:    flowable_client: Any,
+mate-platform-backend/packages\mate-tech-agent\src\mate_tech_agent\scenarios\s1_s4.py:107:    """S4: 用 Flowable BPMN 编排 agent 步骤."""
+mate-platform-backend/packages\mate-tech-agent\src\mate_tech_agent\scenarios\s1_s4.py:109:    return {"type": "s4", "flowable": flowable_client, "process": bpmn_process}
+mate-platform-backend/packages\mate-tech-obs\src\mate_tech_obs\health\aggregator.py:61:    ("infra", "keycloak", "http://keycloak:8080/realms/master"),
+mate-platform-backend/packages\mate-tech-iam\src\mate_tech_iam\api\auth.py:11:production, swap to RS256 + Keycloak JWKS (see services/auth-service).
+mate-platform-backend/packages\mate-tech-iam\src\mate_tech_iam\api\dashboard.py:233:     "description": "\u5408\u540c\u5ba1\u6279\u52a8\u4f5c\uff1a\u89e6\u53d1 Flowable \u6d41\u7a0b + ABAC \u6821\u9a8c",
+mate-platform-backend/packages\mate-tech-iam\src\mate_tech_iam\api\dashboard.py:760:                     "message": "circuit breaker opened"},
+mate-platform-backend/packages\mate-tech-iam\src\mate_tech_iam\api\dashboard.py:775:        "actionCode": body.get("actionCode") or "auto-circuit-breaker",
+mate-platform-backend/packages\mate-tech-iam\src\mate_tech_iam\domain\system_config.py:4:configuration items persisted in TECH-IAM (overridable via Nacos at deploy time).

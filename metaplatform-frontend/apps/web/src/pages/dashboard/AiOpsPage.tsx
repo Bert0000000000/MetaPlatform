@@ -28,7 +28,9 @@ import {
   EditOutlined,
   DeleteOutlined,
 } from '@ant-design/icons';
-import { useAsync } from '@mate/shared';
+import { useAsync, useApiErrorBoundary } from '@mate/shared';
+// helper type used below; not exported from antd
+import type { NormalizedError } from '@mate/shared';
 import {
   getAnomalies,
   getAnomalyRules,
@@ -78,6 +80,7 @@ const METRIC_TYPE_LABEL: Record<string, string> = {
 };
 
 export default function AiOpsPage() {
+  const { report } = useApiErrorBoundary();
   const { settings } = useSettings();
   const [activeTab, setActiveTab] = useState('events');
 
@@ -114,7 +117,7 @@ export default function AiOpsPage() {
       message.success('根因分析完成');
       reloadEvents();
     } catch (e) {
-      message.error(e instanceof Error ? e.message : '分析失败');
+      report(e);
     } finally {
       setAnalyzing(false);
     }
@@ -130,7 +133,7 @@ export default function AiOpsPage() {
         reloadEvents();
       }
     } catch (e) {
-      message.error(e instanceof Error ? e.message : '修复失败');
+      report(e);
     } finally {
       setRemediating(false);
     }
@@ -185,7 +188,7 @@ export default function AiOpsPage() {
       setRuleModalOpen(false);
       reloadRules();
     } catch (e) {
-      message.error(e instanceof Error ? e.message : '保存失败');
+      report(e);
     }
   };
 
@@ -195,7 +198,7 @@ export default function AiOpsPage() {
       message.success('规则已删除');
       reloadRules();
     } catch (e) {
-      message.error(e instanceof Error ? e.message : '删除失败');
+      report(e);
     }
   };
 

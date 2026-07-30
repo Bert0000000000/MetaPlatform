@@ -7,6 +7,7 @@ import {
   listSchedulerTasks, triggerScheduler, pauseScheduler, resumeScheduler,
   SchedulerTask,
 } from '../../../api/ontology-bigdata';
+import { App, message } from 'antd';
 import { formatTimestamp } from './common';
 
 const TYPE_META = {
@@ -31,31 +32,31 @@ const STATUS_META = {
 };
 
 export default function SchedulerView() {
-  const [tasks, setTasks] = useState([]);
+  const [tasks, setTasks] = useState<SchedulerTask[]>([]);
   const [loading, setLoading] = useState(false);
-  const [actionLoading, setActionLoading] = useState(null);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   const load = async () => {
     setLoading(true);
     try {
       const data = await listSchedulerTasks();
-      setTasks(Array.isArray(data) ? data : (data?.items || []));
+      setTasks(data);
     } finally { setLoading(false); }
   };
 
   useEffect(() => { load(); }, []);
 
-  const handleTrigger = async (id) => {
+  const handleTrigger = async (id: string) => {
     setActionLoading(id);
     try { await triggerScheduler(id); await load(); } finally { setActionLoading(null); }
   };
 
-  const handlePause = async (id) => {
+  const handlePause = async (id: string) => {
     setActionLoading(id);
     try { await pauseScheduler(id); await load(); } finally { setActionLoading(null); }
   };
 
-  const handleResume = async (id) => {
+  const handleResume = async (id: string) => {
     setActionLoading(id);
     try { await resumeScheduler(id); await load(); } finally { setActionLoading(null); }
   };
@@ -69,7 +70,7 @@ export default function SchedulerView() {
         <button onClick={() => load()} style={{ padding: '8px 12px', border: '1px solid var(--border)', borderRadius: 6, background: 'var(--card)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
           <RefreshCw style={{ width: 14, height: 14 }} />刷新
         </button>
-        <button onClick={() => alert('新建调度功能待 P3 补全')} style={{ padding: '8px 16px', background: 'var(--primary)', color: 'var(--primary-foreground)', border: 'none', borderRadius: 6, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
+        <button onClick={() => message.info('新建调度计划正在补全，预计在 P3 阶段上线')} style={{ padding: '8px 16px', background: 'var(--primary)', color: 'var(--primary-foreground)', border: 'none', borderRadius: 6, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
           <Plus style={{ width: 14, height: 14 }} />新建调度
         </button>
       </div>

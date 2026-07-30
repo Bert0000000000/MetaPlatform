@@ -46,7 +46,7 @@
 | **M1** 基础设施就绪 | W1 + W2 完成 | 2026-08-17 | 🔴 |
 | **M2** 引擎 + 网关就绪 | W3 + W4 完成 | 2026-08-31 | 🔴 |
 | **M3** 业务域完成 | W5 完成（tech-msg → app-kb） | 2026-11-10 | 🔴 |
-| **M4** 前端就绪 | W6 完成（9 apps 全量对接） | 2026-10-27 | 🔴 |
+| **M4** 前端就绪 | W6 完成（@mate/web 唯一 SPA + 9 个菜单全量对接 + 11 个 packages + 工程基线 + BFF） | 2026-10-27 | 🔴 |
 | **M5** 蓝绿上线 | W7 完成（全部模块迁移上线） | 2026-12-22 | 🔴 |
 
 **总工期**：约 22 周（约 5 个月）
@@ -141,20 +141,24 @@
 | W5-7 | tech-agent（Agent/LangGraph） | 🔴 高 | 3 周 | W5-6 | 🔴 | LangGraph + Flowable 集成 + S4 场景 |
 | W5-8 | app-kb（业务聚合） | 🔴 高 | 3 周 | W5-7 | 🔴 | 业务接口 + OpenAPI + E2E |
 
-### W6 - 前端 9 apps 补齐对接
+### W6 - 前端唯一 SPA(@mate/web)全菜单对接
 
 **Owner**: TBD | **工期**: 13 周（2026-07-28 ~ 2026-10-27，分 3 批）| **依赖**: W1（OpenAPI）
 
-**前端分组**（按优先级）：
+> **2026-07-29 整改**：原"9 apps 补齐对接"已废,前端是 `apps/web/`(@mate/web)单一 SPA + 9 个一级菜单。新增模块 = 在 `apps/web/src/pages/{module}/*` 加页面 + 在 `packages/shared/src/PlatformMenu.tsx` 的 `NAV_ITEMS` 加条目。**禁止在 `apps/` 下另建第二套 SPA**(详见 CLAUDE.md 铁律 #17 / tech-stack-confirmed.md §7)。
+
+**前端交付分组**(按模块优先级):
 
 | ID | 交付项 | 负责人 | 工期 | 依赖 | 状态 | 完成标准 |
 |---|---|---|---|---|---|---|
-| W6-1 | **P0 batch**: portal + dashboard（主入口 + 仪表盘） | TBD | 4 周 | W1-4 | 🔴 | 9 成接口对接 + E2E 走通 |
-| W6-2 | **P1 batch**: ontstudio + kb + mcphub（业务高频） | TBD | 4 周 | W5-4/5/6 | 🔴 | 同上 |
-| W6-3 | **P2 batch**: apphub + arch + dw + superai（次要） | TBD | 3 周 | W5-1~8 | 🔴 | 同上 |
-| W6-4 | BFF `API_MODE=mock\|live\|hybrid` 开关 | TBD | 2d | W1-1 | 🔴 | 切换不影响前端代码 |
-| W6-5 | MSW 浏览器层 Mock（覆盖 BFF 调用） | TBD | 3d | W6-4 | 🔴 | Storybook 可独立调试 |
-| W6-6 | Playwright E2E 回归测试（每 app 关键路径） | TBD | 2 周 | W6-1 | 🔴 | 每个 app ≥ 5 个关键 E2E |
+| W6-1 | **P0 batch**: 工作台(dashboard) + SuperAI + 后台管理(admin) | TBD | 4 周 | W1-4 | 🔴 | 9 成接口对接 + E2E 走通 |
+| W6-2 | **P1 batch**: 本体引擎(ontology) + 知识库(knowledge) + MCP 中心(mcp) | TBD | 4 周 | W5-4/5/6 | 🔴 | 同上 |
+| W6-3 | **P2 batch**: 架构中心(arch) + 应用中心(apps) + 数字员工(agents) | TBD | 3 周 | W5-1~8 | 🔴 | 同上 |
+| W6-4 | dev-only BFF `apps/bff/`(@mate/bff, Fastify),`API_MODE=mock\|live\|hybrid` 开关 | TBD | 2 周 | W1-1 | 🔴 | 切换不影响前端代码 |
+| W6-5 | MSW 浏览器层 Mock(覆盖 BFF 调用) + `@mate/msw` 包 | TBD | 3d | W6-4 | 🔴 | Storybook 可独立调试 |
+| W6-6 | Playwright E2E 回归测试(`@mate/e2e`,9 个菜单各 ≥ 5 个关键路径) | TBD | 2 周 | W6-1 | 🔴 | 全菜单冒烟 + 关键 E2E 全绿 |
+| W6-7 | packages 拆分:`@mate/{ui,api,flow,graph,i18n,auth,store}` | TBD | 3 周 | W6-1 | 🔴 | 每个包独立可发版 |
+| W6-8 | 工程基线:turbo + eslint flat config + stylelint + commitlint + lefthook + Makefile | TBD | 1 周 | W6-7 | 🔴 | CI 全绿 |
 
 ### W7 - 蓝绿迁移（无 Java 兜底）
 

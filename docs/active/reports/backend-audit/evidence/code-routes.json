@@ -1,0 +1,806 @@
+[
+  {
+    "file": "mate-platform-backend/packages/mate-tech-rag/src/mate_tech_rag/api/app.py",
+    "line": 64,
+    "method": "GET",
+    "path": "/healthz"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-rag/src/mate_tech_rag/api/app.py",
+    "line": 68,
+    "method": "GET",
+    "path": "/api/v1/rag/status"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-rag/src/mate_tech_rag/api/app.py",
+    "line": 89,
+    "method": "POST",
+    "path": "/api/v1/rag/parse"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-rag/src/mate_tech_rag/api/app.py",
+    "line": 96,
+    "method": "POST",
+    "path": "/api/v1/rag/upload"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-rag/src/mate_tech_rag/api/app.py",
+    "line": 132,
+    "method": "POST",
+    "path": "/api/v1/rag/ingest"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-rag/src/mate_tech_rag/api/app.py",
+    "line": 139,
+    "method": "POST",
+    "path": "/api/v1/rag/search"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-rag/src/mate_tech_rag/api/app.py",
+    "line": 146,
+    "method": "GET",
+    "path": "/api/v1/rag/stats"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-rag/src/mate_tech_rag/api/app.py",
+    "line": 153,
+    "method": "GET",
+    "path": "/api/v1/rag/admin/pg-stats"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/main.py",
+    "line": 31,
+    "method": "GET",
+    "path": "/healthz"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/api/ontology.py",
+    "line": 47,
+    "method": "POST",
+    "path": "/api/v1/ont/ontologies"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/api/ontology.py",
+    "line": 56,
+    "method": "GET",
+    "path": "/api/v1/ont/ontologies/{ontology_id}"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/api/ontology.py",
+    "line": 64,
+    "method": "POST",
+    "path": "/api/v1/ont/classes"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/api/ontology.py",
+    "line": 73,
+    "method": "GET",
+    "path": "/api/v1/ont/classes/{class_id}"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/instances/api.py",
+    "line": 56,
+    "method": "POST",
+    "path": "/api/v1/ont/instances/relations"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/instances/api.py",
+    "line": 67,
+    "method": "GET",
+    "path": "/api/v1/ont/instances/relations"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/instances/api.py",
+    "line": 76,
+    "method": "GET",
+    "path": "/api/v1/ont/instances/{iid}"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-ont/src/mate_tech_ont/instances/api.py",
+    "line": 84,
+    "method": "DELETE",
+    "path": "/api/v1/ont/instances/{iid}"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-obs/src/mate_tech_obs/main.py",
+    "line": 30,
+    "method": "GET",
+    "path": "/healthz"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-obs/src/mate_tech_obs/main.py",
+    "line": 35,
+    "method": "GET",
+    "path": "/metrics"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-obs/src/mate_tech_obs/main.py",
+    "line": 41,
+    "method": "GET",
+    "path": "/api/v1/obs/health"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-obs/src/mate_tech_obs/main.py",
+    "line": 47,
+    "method": "GET",
+    "path": "/api/v1/obs/instrument"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-obs/src/mate_tech_obs/admin/router.py",
+    "line": 40,
+    "method": "GET",
+    "path": "/api/v1/admin/operations/health"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-obs/src/mate_tech_obs/admin/router.py",
+    "line": 53,
+    "method": "GET",
+    "path": "/api/v1/admin/operations/metrics/self"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-obs/src/mate_tech_obs/admin/router.py",
+    "line": 80,
+    "method": "GET",
+    "path": "/api/v1/admin/operations/alerts/rules"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-obs/src/mate_tech_obs/admin/router.py",
+    "line": 101,
+    "method": "GET",
+    "path": "/api/v1/admin/operations/prometheus/query"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-obs/src/mate_tech_obs/admin/router.py",
+    "line": 136,
+    "method": "GET",
+    "path": "/api/v1/admin/operations/capacity"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-msg/src/mate_tech_msg/main.py",
+    "line": 36,
+    "method": "GET",
+    "path": "/healthz"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-msg/src/mate_tech_msg/main.py",
+    "line": 42,
+    "method": "POST",
+    "path": "/api/v1/msg/publish"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-msg/src/mate_tech_msg/main.py",
+    "line": 52,
+    "method": "GET",
+    "path": "/api/v1/msg/topics"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-mcp/src/mate_tech_mcp/main.py",
+    "line": 56,
+    "method": "GET",
+    "path": "/healthz"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-mcp/src/mate_tech_mcp/main.py",
+    "line": 62,
+    "method": "GET",
+    "path": "/api/v1/mcp/tools"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-mcp/src/mate_tech_mcp/main.py",
+    "line": 68,
+    "method": "GET",
+    "path": "/api/v1/mcp/resources"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-mcp/src/mate_tech_mcp/main.py",
+    "line": 74,
+    "method": "GET",
+    "path": "/api/v1/mcp/prompts"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-mcp/src/mate_tech_mcp/main.py",
+    "line": 80,
+    "method": "POST",
+    "path": "/api/v1/mcp/prompts/{name}"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-mcp/src/mate_tech_mcp/main.py",
+    "line": 106,
+    "method": "POST",
+    "path": "/api/v1/mcp/tools/{name}"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-llmgw/src/mate_tech_llmgw/main.py",
+    "line": 26,
+    "method": "GET",
+    "path": "/healthz"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-llmgw/src/mate_tech_llmgw/api/routes.py",
+    "line": 42,
+    "method": "POST",
+    "path": "/api/v1/llm/chat"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-llmgw/src/mate_tech_llmgw/api/routes.py",
+    "line": 68,
+    "method": "POST",
+    "path": "/api/v1/llm/chat/stream"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-llmgw/src/mate_tech_llmgw/api/routes.py",
+    "line": 94,
+    "method": "POST",
+    "path": "/api/v1/llm/embeddings"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/main.py",
+    "line": 78,
+    "method": "GET",
+    "path": "/healthz"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/main.py",
+    "line": 83,
+    "method": "GET",
+    "path": "/readyz"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api/auth.py",
+    "line": 169,
+    "method": "POST",
+    "path": "/api/v1/iam/auth/login"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api/auth.py",
+    "line": 215,
+    "method": "POST",
+    "path": "/api/v1/iam/auth/logout"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api/auth.py",
+    "line": 239,
+    "method": "POST",
+    "path": "/api/v1/iam/auth/refresh"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api/auth.py",
+    "line": 266,
+    "method": "GET",
+    "path": "/api/v1/iam/auth/me"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api/auth.py",
+    "line": 308,
+    "method": "GET",
+    "path": "/api/v1/iam/sso-providers"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api/configs.py",
+    "line": 147,
+    "method": "GET",
+    "path": "/api/v1/admin/configs/categories"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api/configs.py",
+    "line": 162,
+    "method": "PUT",
+    "path": "/api/v1/admin/configs/{key:path}"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api/dashboard.py",
+    "line": 370,
+    "method": "POST",
+    "path": "/api/v1/dashboard/auth/login"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api/dashboard.py",
+    "line": 403,
+    "method": "GET",
+    "path": "/api/v1/dashboard/profile"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api/dashboard.py",
+    "line": 424,
+    "method": "GET",
+    "path": "/api/v1/dashboard/profile/permissions"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api/dashboard.py",
+    "line": 457,
+    "method": "GET",
+    "path": "/api/v1/dashboard/settings"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api/dashboard.py",
+    "line": 463,
+    "method": "PUT",
+    "path": "/api/v1/dashboard/settings"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api/dashboard.py",
+    "line": 472,
+    "method": "GET",
+    "path": "/api/v1/dashboard/sessions"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api/dashboard.py",
+    "line": 477,
+    "method": "DELETE",
+    "path": "/api/v1/dashboard/sessions/{session_id}"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api/dashboard.py",
+    "line": 483,
+    "method": "GET",
+    "path": "/api/v1/dashboard/api-keys"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api/dashboard.py",
+    "line": 491,
+    "method": "POST",
+    "path": "/api/v1/dashboard/api-keys"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api/dashboard.py",
+    "line": 509,
+    "method": "DELETE",
+    "path": "/api/v1/dashboard/api-keys/{api_key_id}"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api/dashboard.py",
+    "line": 520,
+    "method": "GET",
+    "path": "/api/v1/dashboard/notifications"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api/dashboard.py",
+    "line": 532,
+    "method": "GET",
+    "path": "/api/v1/dashboard/notifications/unread-count"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api/dashboard.py",
+    "line": 537,
+    "method": "PUT",
+    "path": "/api/v1/dashboard/notifications/{notification_id}/read"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api/dashboard.py",
+    "line": 545,
+    "method": "POST",
+    "path": "/api/v1/dashboard/notifications/read-all"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api/dashboard.py",
+    "line": 551,
+    "method": "GET",
+    "path": "/api/v1/dashboard/notifications/settings"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api/dashboard.py",
+    "line": 559,
+    "method": "PUT",
+    "path": "/api/v1/dashboard/notifications/settings"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api/dashboard.py",
+    "line": 575,
+    "method": "GET",
+    "path": "/api/v1/dashboard/metrics"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api/dashboard.py",
+    "line": 593,
+    "method": "GET",
+    "path": "/api/v1/dashboard/metrics/trend"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api/dashboard.py",
+    "line": 633,
+    "method": "GET",
+    "path": "/api/v1/dashboard/todos"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api/dashboard.py",
+    "line": 641,
+    "method": "GET",
+    "path": "/api/v1/dashboard/todos/done"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api/dashboard.py",
+    "line": 649,
+    "method": "POST",
+    "path": "/api/v1/dashboard/todos/{task_id}/action"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api/dashboard.py",
+    "line": 665,
+    "method": "GET",
+    "path": "/api/v1/dashboard/workers"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api/dashboard.py",
+    "line": 682,
+    "method": "GET",
+    "path": "/api/v1/dashboard/deliverables"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api/dashboard.py",
+    "line": 702,
+    "method": "POST",
+    "path": "/api/v1/dashboard/deliverables/{deliverable_id}/download"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api/dashboard.py",
+    "line": 715,
+    "method": "DELETE",
+    "path": "/api/v1/dashboard/deliverables/{deliverable_id}"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api/dashboard.py",
+    "line": 726,
+    "method": "GET",
+    "path": "/api/v1/dashboard/anomalies"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api/dashboard.py",
+    "line": 734,
+    "method": "GET",
+    "path": "/api/v1/dashboard/anomalies/{anomaly_id}"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api/dashboard.py",
+    "line": 742,
+    "method": "POST",
+    "path": "/api/v1/dashboard/anomalies/{anomaly_id}/analyze"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api/dashboard.py",
+    "line": 768,
+    "method": "POST",
+    "path": "/api/v1/dashboard/anomalies/{anomaly_id}/remediate"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api/dashboard.py",
+    "line": 783,
+    "method": "GET",
+    "path": "/api/v1/dashboard/anomaly-rules"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api/dashboard.py",
+    "line": 788,
+    "method": "POST",
+    "path": "/api/v1/dashboard/anomaly-rules"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api/dashboard.py",
+    "line": 795,
+    "method": "PUT",
+    "path": "/api/v1/dashboard/anomaly-rules/{rule_id}"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api/dashboard.py",
+    "line": 804,
+    "method": "DELETE",
+    "path": "/api/v1/dashboard/anomaly-rules/{rule_id}"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api/dashboard.py",
+    "line": 815,
+    "method": "GET",
+    "path": "/api/v1/dashboard/search"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api/logs.py",
+    "line": 31,
+    "method": "GET",
+    "path": "/api/v1/admin/logs/audit"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api/logs.py",
+    "line": 88,
+    "method": "GET",
+    "path": "/api/v1/admin/logs/audit/export"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api/logs.py",
+    "line": 171,
+    "method": "GET",
+    "path": "/api/v1/admin/logs/audit/{log_id}"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api/logs.py",
+    "line": 203,
+    "method": "GET",
+    "path": "/api/v1/admin/logs/modules"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api/orgs.py",
+    "line": 159,
+    "method": "GET",
+    "path": "/api/v1/admin/orgs/tree"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api/orgs.py",
+    "line": 299,
+    "method": "PUT",
+    "path": "/api/v1/admin/orgs/{org_id}"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api/orgs.py",
+    "line": 354,
+    "method": "DELETE",
+    "path": "/api/v1/admin/orgs/{org_id}"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api/orgs.py",
+    "line": 392,
+    "method": "GET",
+    "path": "/api/v1/admin/orgs/positions"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api/orgs.py",
+    "line": 445,
+    "method": "POST",
+    "path": "/api/v1/admin/orgs/positions"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api/orgs.py",
+    "line": 482,
+    "method": "PUT",
+    "path": "/api/v1/admin/orgs/positions/{position_id}"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api/orgs.py",
+    "line": 520,
+    "method": "DELETE",
+    "path": "/api/v1/admin/orgs/positions/{position_id}"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api/orgs.py",
+    "line": 560,
+    "method": "POST",
+    "path": "/api/v1/admin/orgs/transfer"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api/permissions.py",
+    "line": 157,
+    "method": "GET",
+    "path": "/api/v1/admin/permissions/roles"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api/permissions.py",
+    "line": 195,
+    "method": "POST",
+    "path": "/api/v1/admin/permissions/roles"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api/permissions.py",
+    "line": 264,
+    "method": "PUT",
+    "path": "/api/v1/admin/permissions/roles/{role_id}"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api/permissions.py",
+    "line": 318,
+    "method": "DELETE",
+    "path": "/api/v1/admin/permissions/roles/{role_id}"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api/permissions.py",
+    "line": 358,
+    "method": "GET",
+    "path": "/api/v1/admin/permissions/roles/{role_id}"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api/permissions.py",
+    "line": 392,
+    "method": "GET",
+    "path": "/api/v1/admin/permissions/catalog"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api/permissions.py",
+    "line": 407,
+    "method": "POST",
+    "path": "/api/v1/admin/permissions/assign"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api/permissions.py",
+    "line": 482,
+    "method": "GET",
+    "path": "/api/v1/admin/permissions/matrix"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api/users.py",
+    "line": 245,
+    "method": "POST",
+    "path": "/api/v1/admin/users/import"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api/users.py",
+    "line": 308,
+    "method": "GET",
+    "path": "/api/v1/admin/users/export"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api/users.py",
+    "line": 340,
+    "method": "GET",
+    "path": "/api/v1/admin/users/{user_id}"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api/users.py",
+    "line": 353,
+    "method": "PUT",
+    "path": "/api/v1/admin/users/{user_id}"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api/users.py",
+    "line": 425,
+    "method": "DELETE",
+    "path": "/api/v1/admin/users/{user_id}"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api/users.py",
+    "line": 463,
+    "method": "POST",
+    "path": "/api/v1/admin/users/{user_id}/reset-password"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api/users.py",
+    "line": 491,
+    "method": "POST",
+    "path": "/api/v1/admin/users/{user_id}/status"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api/users.py",
+    "line": 524,
+    "method": "POST",
+    "path": "/api/v1/admin/users/{user_id}/verify-password"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-iam/src/mate_tech_iam/api/users.py",
+    "line": 536,
+    "method": "GET",
+    "path": "/api/v1/admin/users/{user_id}/login-logs"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-agent/src/mate_tech_agent/api/app.py",
+    "line": 66,
+    "method": "GET",
+    "path": "/healthz"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-agent/src/mate_tech_agent/api/app.py",
+    "line": 70,
+    "method": "POST",
+    "path": "/api/v1/agent/chat"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-agent/src/mate_tech_agent/api/app.py",
+    "line": 100,
+    "method": "POST",
+    "path": "/api/v1/agent/chat/stream"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-agent/src/mate_tech_agent/api/app.py",
+    "line": 171,
+    "method": "POST",
+    "path": "/api/v1/agent/review"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-agent/src/mate_tech_agent/api/app.py",
+    "line": 200,
+    "method": "GET",
+    "path": "/api/v1/agent/state/{thread_id}"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-tech-agent/src/mate_tech_agent/api/app.py",
+    "line": 207,
+    "method": "DELETE",
+    "path": "/api/v1/agent/state/{thread_id}"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-app-kb/src/mate_app_kb/api/app.py",
+    "line": 37,
+    "method": "GET",
+    "path": "/healthz"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-app-kb/src/mate_app_kb/api/app.py",
+    "line": 41,
+    "method": "POST",
+    "path": "/api/v1/app-kb/upload"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-app-kb/src/mate_app_kb/api/app.py",
+    "line": 61,
+    "method": "POST",
+    "path": "/api/v1/app-kb/search"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-app-kb/src/mate_app_kb/api/app.py",
+    "line": 77,
+    "method": "POST",
+    "path": "/api/v1/app-kb/chat"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-app-kb/src/mate_app_kb/api/app.py",
+    "line": 94,
+    "method": "POST",
+    "path": "/api/v1/app-kb/chat/stream"
+  },
+  {
+    "file": "mate-platform-backend/packages/mate-app-kb/src/mate_app_kb/api/app.py",
+    "line": 101,
+    "method": "GET",
+    "path": "/api/v1/app-kb/stats"
+  },
+  {
+    "file": "mate-platform-backend/services/auth-service/src/mate_auth_service/main.py",
+    "line": 199,
+    "method": "GET",
+    "path": "/healthz"
+  },
+  {
+    "file": "mate-platform-backend/services/auth-service/src/mate_auth_service/main.py",
+    "line": 204,
+    "method": "GET",
+    "path": "/readyz"
+  },
+  {
+    "file": "mate-platform-backend/services/auth-service/src/mate_auth_service/main.py",
+    "line": 214,
+    "method": "POST",
+    "path": "/api/v1/auth/verify"
+  },
+  {
+    "file": "mate-platform-backend/services/auth-service/src/mate_auth_service/main.py",
+    "line": 278,
+    "method": "POST",
+    "path": "/api/v1/auth/revoke"
+  },
+  {
+    "file": "mate-platform-backend/services/auth-service/src/mate_auth_service/main.py",
+    "line": 295,
+    "method": "GET",
+    "path": "/api/v1/auth/userinfo"
+  },
+  {
+    "file": "mate-platform-backend/services/auth-service/src/mate_auth_service/main.py",
+    "line": 313,
+    "method": "POST",
+    "path": "/api/v1/iam/auth/login"
+  },
+  {
+    "file": "mate-platform-backend/services/auth-service/src/mate_auth_service/main.py",
+    "line": 376,
+    "method": "POST",
+    "path": "/api/v1/iam/auth/refresh"
+  },
+  {
+    "file": "mate-platform-backend/services/auth-service/src/mate_auth_service/main.py",
+    "line": 413,
+    "method": "POST",
+    "path": "/api/v1/iam/auth/logout"
+  },
+  {
+    "file": "mate-platform-backend/services/api-gateway/src/mate_api_gateway/main.py",
+    "line": 97,
+    "method": "GET",
+    "path": "/healthz"
+  },
+  {
+    "file": "mate-platform-backend/services/api-gateway/src/mate_api_gateway/main.py",
+    "line": 102,
+    "method": "GET",
+    "path": "/readyz"
+  },
+  {
+    "file": "mate-platform-backend/services/api-gateway/src/mate_api_gateway/main.py",
+    "line": 157,
+    "method": "API_ROUTE",
+    "path": "/api/v1/{path:path}"
+  }
+]

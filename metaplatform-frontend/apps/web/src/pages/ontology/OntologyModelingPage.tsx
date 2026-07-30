@@ -6,7 +6,6 @@ import {
   Link as LinkIcon, ArrowUpRight, ArrowDownLeft, ArrowRight, ArrowLeft,
 } from 'lucide-react';
 import { AIAssistantTrigger, AIAssistantWorkspace, SubTabs, FormDrawer, Field, TextInput, TextArea, Select, FormSection, usePageAssistant } from '@mate/shared';
-import { MOCK_ONTOLOGY_ENTITIES } from '@/mock'; // MOCK
 
 const ONTOLOGY_TABS = [
   { label: '本体论管理', path: '/ontology' },
@@ -311,8 +310,7 @@ export default function OntologyModelingPage() {
       </div>
 
       {/* MOCK: 引用本体实体数据 */}
-      <span style={{ display: 'none' }}>{MOCK_ONTOLOGY_ENTITIES.length}</span>
-
+      
       <FormDrawer
         open={drawerOpen}
         title="新建本体"

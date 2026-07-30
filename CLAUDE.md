@@ -1,7 +1,7 @@
 ﻿# CLAUDE.md
 
 > 本文件供 Claude Code 读取，提供项目上下文、架构约束与开发规范。
-> **最近更新**：2026-07-28（v3.1 Data-Ready Baseline 同步）；上一版 2026-07-27（v3.0 Plan D 实施版定稿）
+> **最近更新**：2026-07-29（新增 Cowork ↔ Claude Code 交接约定）；上一版 2026-07-28（v3.1 Data-Ready Baseline 同步）
 >
 > **当前架构版本**：**v3.0（Plan D - Polyglot Microservice）**，v3.1 Data-Ready Baseline 同步中（详见附录 A）
 >
@@ -95,13 +95,19 @@
 - 服务发现：Nacos
 - 鉴权：Keycloak JWT（所有语言共用）
 
-## 仓库结构（2026-07-27）
+17. **前端单一 SPA**:`apps/web/`(@mate/web)是唯一前端入口,承载 9 个一级菜单;禁止在 `apps/` 下另建第二套 SPA。新增模块 = 在 `apps/web/src/pages/{module}/*` 加页面 + 在 `packages/shared/src/PlatformMenu.tsx` 的 `NAV_ITEMS` 加条目。
+
+## 仓库结构（2026-07-29 整改后）
 
 ```
 D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\
-|-- metaplatform-frontend/                  # 前端 monorepo（已落地）
-|   |-- apps/{portal, dashboard, ontstudio, kb, mcphub, apphub, arch, dw, superai}
-|   `-- packages/shared
+|-- metaplatform-frontend/                  # 前端 monorepo（已收敛为唯一 SPA）
+|   |-- apps/
+|   |   |-- web/                            # @mate/web —— 唯一前端入口,承载 9 个一级菜单
+|   |   `-- bff/                            # @mate/bff —— dev-only 后端聚合层(可选)
+|   `-- packages/
+|       |-- shared/                         # @mate/shared —— 布局、菜单、AuthGuard、主题
+|       `-- ... (ui/api/flow/graph/i18n/auth/store/msw/storybook/e2e 待落地)
 |-- docs/active/specs/                      # 架构 + 交付文档
 |   |-- 2026-07-27-mate-platform-architecture-implementation.md  ⭐ 主架构
 |   |-- 2026-07-27-mate-platform-tech-stack-confirmed.md         ⭐ 技术栈定稿
@@ -112,10 +118,13 @@ D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\
 |-- tests/                                  # e2e + perf
 |-- infra/                                  # 基础设施配置
 |-- scripts/                                # 启动脚本
+|   `-- refactor/2026-07-29-monorepo-shrink.sh  # 9-SPA → 1-SPA 重构脚本
 |-- docker-compose.yml                      # 基础设施栈（postgres/nacos/minio/milvus/kafka/rabbitmq/loki）
 |-- agent.md / CLAUDE.md                    # 本文件
 `-- ...
 ```
+
+**2026-07-29 前**:原 `apps/{portal,dashboard,kb,mcphub,apphub,arch,dw,superai}` 9 个 SPA 已废弃,通过 `scripts/refactor/2026-07-29-monorepo-shrink.sh` 收敛为唯一 `apps/web/`。详见 `docs/active/specs/2026-07-27-mate-platform-tech-stack-confirmed.md` §7。
 
 ## 架构铁律（v3.0 + v3.1 增量）
 
@@ -129,6 +138,7 @@ D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\
 8. **OTel 全链路 traceId 透传**：从 Traefik 到 Python OTel context
 9. **不切流**：无 v2.1/v3.0 灰度切流（Java 已归档）
 10. **模块迁移按风险从低到高**：tech-msg -> tech-obs -> tech-mcp -> tech-ont -> tech-llmgw -> tech-rag -> tech-agent -> app-kb
+11. **前端单一 SPA**：`apps/web/`(@mate/web)是唯一前端入口，承载 9 个一级菜单；禁止在 `apps/` 下另建第二套 SPA。
 
 ### v3.1 增量铁律（不破坏 v3.0）
 
@@ -193,6 +203,23 @@ D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\
 > 4. **主后端**：Python（团队不写 Java）
 > 5. **外部 Java 引擎**：Keycloak/Flowable/Drools 是成熟产品，二进制部署（不计入"Java 服务"）
 > 6. **接口契约**：Swagger/OpenAPI 3.1
+
+## Cowork ↔ Claude Code 任务交接
+
+外部 Cowork 出方案、Claude Code 实现的标准入口（单向流转）：
+
+- 入口目录：`docs/handoff/`
+  - `inbox/`：Cowork 产出的任务方案（按 `TASK-TEMPLATE.md` 写）
+  - `outbox/`：Claude Code 实现回执（按 `RESULT-TEMPLATE.md` 写）
+  - `README.md`：完整协作约定
+- 标准提示词（贴到 Claude Code 会话）：
+
+  ```
+  请读 docs/handoff/inbox/TASK-YYYYMMDD-NNN-<slug>.md，
+  按里面的验收标准实现。完成后把 commit SHA、变更摘要、未通过项写到
+  docs/handoff/outbox/TASK-YYYYMMDD-NNN-<slug>-result.md。
+  ```
+- 铁律：只读 `inbox/`、只写 `outbox/` 与业务代码；同一文件禁止两边同时改。
 
 ## v3.1 增量任务（Data Track）
 

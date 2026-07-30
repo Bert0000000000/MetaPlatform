@@ -5,7 +5,6 @@ import {
   Code, TrendingUp, Plus, Search, Eye, Pencil, Pause, Trash2,
 } from 'lucide-react';
 import { SubTabs, type SubTabItem, StepDrawer, Field, TextInput, TextArea, Select, FormSection } from '@mate/shared';
-import { MOCK_AGENTS } from '@/mock'; // MOCK
 
 const AGENT_TABS: SubTabItem[] = [
   { label: '数字员工列表', path: '/agents' },
@@ -103,7 +102,7 @@ export default function AgentsListPage() {
       {/* Stats */}
       <div className="al-stats-row">
         <div className="al-stat-card">
-          <div className="al-stat-value">{MOCK_AGENTS.length + 6}</div>
+          <div className="al-stat-value">{6}</div>
           <div className="al-stat-label">总数</div>
         </div>
         <div className="al-stat-card">

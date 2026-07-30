@@ -1,4 +1,4 @@
-﻿name: CI
+name: CI
 
 on:
   push:
@@ -68,9 +68,11 @@ jobs:
       - name: Install dependencies
         working-directory: ./metaplatform-frontend
         run: pnpm install --frozen-lockfile
-      - name: Typecheck (affected apps)
+      - name: Operations audit
+        run: python scripts/audit/operations-audit.py
+      - name: Typecheck web
         working-directory: ./metaplatform-frontend
-        run: pnpm -r --filter './apps/*' --filter '!./apps/web' typecheck
-      # Build step disabled: apps/web has 359 pre-existing errors in pages/ontology/* + pages/admin/* that predate the monorepo-shrink PR. Will be re-enabled in Phase 4.
-
-
+        run: pnpm --filter @mate/web typecheck
+      - name: Build web
+        working-directory: ./metaplatform-frontend
+        run: pnpm --filter @mate/web build

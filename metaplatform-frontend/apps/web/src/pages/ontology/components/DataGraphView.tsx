@@ -7,6 +7,7 @@ import {
   Circle, Box, ChevronRight, ArrowRight,
   RefreshCw, Download, Eye, EyeOff,
 } from 'lucide-react';
+import { App, message } from 'antd';
 import { Graph } from '@antv/g6';
 
 // ============== 节点类型元数据 ==============
@@ -299,7 +300,7 @@ export default function DataGraphView() {
     const g = graphRef.current;
     if (!g) return;
     g.setData(buildGraphData(filteredNodes, filteredEdges));
-    g.render().catch(() => undefined);
+    g.render().catch((error) => { console.warn('[DataGraphView] render failed', error); message.warning('图谱渲染失败，请稍后重试'); });
     setSelectedNode(null);
   }, [filteredNodes, filteredEdges]);
 
@@ -308,7 +309,7 @@ export default function DataGraphView() {
     const g = graphRef.current;
     if (!g) return;
     g.setLayout(getLayoutConfig(layoutType));
-    g.render().catch(() => undefined);
+    g.render().catch((error) => { console.warn('[DataGraphView] render failed', error); message.warning('图谱渲染失败，请稍后重试'); });
   }, [layoutType]);
 
   // ============== 工具栏操作 ==============
@@ -334,7 +335,7 @@ export default function DataGraphView() {
     const g = graphRef.current;
     if (!g) return;
     g.setData(buildGraphData(NODES, EDGES));
-    g.render().catch(() => undefined);
+    g.render().catch((error) => { console.warn('[DataGraphView] render failed', error); message.warning('图谱渲染失败，请稍后重试'); });
     setKeyword('');
     setFilterLayer('all');
     setFilterSystem('all');

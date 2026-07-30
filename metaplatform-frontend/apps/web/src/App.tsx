@@ -12,7 +12,7 @@ import {
 } from '@mate/shared';
 import LoginPage from './pages/LoginPage';
 
-// 懒加载各模块页面
+// 閹虫帒濮炴潪钘夋倗濡€虫健妞ょ敻娼?
 
 const SuperaiOverviewPage = lazy(() => import('./pages/superai/ChatPage'));
 const SuperaiChatPage = lazy(() => import('./pages/superai/SuperAIChatPage'));
@@ -128,7 +128,7 @@ const AgentsEvaluationPage = lazy(() => import('./pages/agents/AgentsEvaluationP
 function Loading() {
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
-      <span style={{ color: 'var(--muted-foreground)', fontSize: 14 }}>加载中...</span>
+      <span style={{ color: 'var(--muted-foreground)', fontSize: 14 }}>閸旂姾娴囨稉?..</span>
     </div>
   );
 }
@@ -148,7 +148,7 @@ function AppRoutes() {
             </AuthGuard>
           }
         >
-          {/* 工作台(Phase 4.2: from apps/dashboard) */}
+          {/* 瀹搞儰缍旈崣?Phase 4.2: from apps/dashboard) */}
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard" element={<DashboardDashboardPage />} />
           <Route path="dashboard/notifications" element={<DashboardNotificationsPage />} />
@@ -156,7 +156,7 @@ function AppRoutes() {
           <Route path="dashboard/aiops" element={<DashboardAiOpsPage />} />
           <Route path="dashboard/settings" element={<DashboardSettingsPage />} />
 
-          {/* 后台管理(Phase 4.2: from apps/dashboard) */}
+          {/* 閸氬骸褰寸粻锛勬倞(Phase 4.2: from apps/dashboard) */}
           <Route path="admin" element={<DashboardAdminOverviewPage />} />
           <Route path="admin/users" element={<DashboardAdminUsersPage />} />
           <Route path="admin/permissions" element={<DashboardAdminPermissionsPage />} />
@@ -164,7 +164,7 @@ function AppRoutes() {
           <Route path="admin/logs" element={<DashboardAdminLogsPage />} />
           <Route path="admin/configs" element={<DashboardAdminConfigsPage />} />
           <Route path="admin/operations" element={<DashboardAdminOperationsPage />} />
-          {/* SuperAI 对话中心(Phase 4.5: from apps/superai) */}
+          {/* SuperAI 鐎电鐦芥稉顓炵妇(Phase 4.5: from apps/superai) */}
           <Route path="superai" element={<SuperaiOverviewPage />} />
           <Route path="superai/chat" element={<SuperaiChatPage />} />
           <Route path="superai/a2a" element={<SuperaiA2ACollaborationPage />} />
@@ -184,7 +184,7 @@ function AppRoutes() {
           <Route path="superai/schedule/plan" element={<SuperaiSchedulePlanCardPage />} />
           <Route path="superai/tasks" element={<SuperaiTaskOrchestrationPage />} />
           <Route path="superai/templates" element={<SuperaiTaskTemplatePage />} />
-          {/* 架构中心(Phase 4: from apps/arch) */}
+          {/* 閺嬭埖鐎稉顓炵妇(Phase 4: from apps/arch) */}
           <Route path="arch" element={<ArchBusinessArchPage />} />
           <Route path="arch/capabilities" element={<ArchCapabilityManagementPage />} />
           <Route path="arch/applications" element={<ArchApplicationManagementPage />} />
@@ -207,7 +207,7 @@ function AppRoutes() {
           <Route path="arch/tech-debt" element={<ArchTechDebtPage />} />
           <Route path="arch/ontology-mapping" element={<ArchOntologyMappingPage />} />
 
-          {/* 搴旂敤涓績(Phase 2: from apps/apphub) */}
+          {/* 閹煎瓨姊婚弫銈嗙▔椤撶偟濡?Phase 2: from apps/apphub) */}
           <Route path="apps" element={<ApphubAppListPage />} />
           <Route path="apps/:appId" element={<ApphubAppDetailPage />} />
           <Route path="apps/:appId/lifecycle" element={<ApphubAppLifecyclePage />} />
@@ -224,19 +224,19 @@ function AppRoutes() {
           <Route path="my-templates/submit" element={<ApphubTemplateSubmitPage />} />
           <Route path="ai-designer" element={<ApphubAIDesignerPage />} />
 
-          {/* 本体引擎 */}
+          {/* 閺堫兛缍嬪鏇熸惛 */}
           <Route path="ontology" element={<OntologyModelingPage />} />
           <Route path="ontology/datacenter" element={<OntologyDatacenterPage />} />
           <Route path="ontology/action" element={<OntologyActionPage />} />
           <Route path="ontology/graph" element={<OntologyGraphPage />} />
 
-          {/* 知识库 */}
+          {/* 閻儴鐦戞惔?*/}
           <Route path="knowledge" element={<KnowledgeBasePage />} />
           <Route path="knowledge/docs" element={<KnowledgeDocsPage />} />
           <Route path="knowledge/test" element={<KnowledgeTestPage />} />
           <Route path="knowledge/config" element={<KnowledgeConfigPage />} />
 
-          {/* MCP 中心 */}
+          {/* MCP 娑擃厼绺?*/}
           <Route path="mcp" element={<McpToolsPage />} />
           <Route path="mcp/server" element={<McpServerPage />} />
           <Route path="mcp/client" element={<McpClientPage />} />
@@ -262,22 +262,13 @@ function AppRoutes() {
           <Route path="mcp/ide-config" element={<McpIdeConfigPage />} />
           <Route path="mcp/external-agents" element={<McpExternalAgentListPage />} />
           <Route path="mcp/trusts" element={<McpTrustManagementPage />} />
-          {/* 数字员工 */}
+          {/* 閺佹澘鐡ч崨妯轰紣 */}
           <Route path="agents" element={<AgentsListPage />} />
           <Route path="agents/detail" element={<AgentsDetailPage />} />
           <Route path="agents/knowledge" element={<AgentsKnowledgePage />} />
           <Route path="agents/tasks" element={<AgentsTasksPage />} />
           <Route path="agents/collab" element={<AgentsCollabPage />} />
-          <Route path="agents/evaluation" element={<AgentsEvaluationPage />} />
-
-          {/* 后台管理 */}
-          <Route path="admin" element={<AdminUsersPage />} />
-          <Route path="admin/permissions" element={<AdminPermissionsPage />} />
-          <Route path="admin/org" element={<AdminOrgPage />} />
-          <Route path="admin/logs" element={<AdminLogsPage />} />
-          <Route path="admin/config" element={<AdminConfigPage />} />
-          <Route path="admin/components" element={<AdminComponentsPage />} />
-          <Route path="admin/operations" element={<AdminOperationsPage />} />
+          <Route path="agents/evaluation" element={<AgentsEvaluationPage />} />          {/* 鍚庡彴绠＄悊锛氱粺涓€浣跨敤 dashboard/admin 椤甸潰锛岄伩鍏嶉噸澶嶈矾鐢卞拰鏈畾涔夌粍浠?*/}
         </Route>
       </Routes>
     </Suspense>

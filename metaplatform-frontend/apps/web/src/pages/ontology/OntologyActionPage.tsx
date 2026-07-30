@@ -41,6 +41,7 @@ import { defaultFixedSemiMaterials } from '@flowgram.ai/fixed-semi-materials';
 import '@flowgram.ai/free-layout-editor/index.css';
 import '@flowgram.ai/fixed-layout-editor/index.css';
 import { SubTabs, FormDrawer, Field, TextInput, TextArea, Select, FormSection } from '@mate/shared';
+import { SEED_EXECUTION_HISTORY } from './actions/executionHistory';
 
 const ONTOLOGY_TABS = [
   { label: '本体论管理', path: '/ontology' },
@@ -84,12 +85,7 @@ const NODE_PROPS: Record<string, Record<string, unknown>> = {
 };
 
 // MOCK: 执行历史
-const EXEC_HISTORY = [
-  { trigger: 'API 调用', time: '07-23 14:32:08', input: '{user_id: 12345}', output: '{success: true}', duration: '234ms', status: 'success' },
-  { trigger: 'API 调用', time: '07-23 14:30:15', input: '{user_id: 12344}', output: '{success: true}', duration: '189ms', status: 'success' },
-  { trigger: '手动触发', time: '07-23 14:28:42', input: '{user_id: 12343}', output: '{error: ...}', duration: '1.2s', status: 'failed' },
-  { trigger: '定时调度', time: '07-23 14:25:00', input: 'batch_id: 8921', output: '{success: true}', duration: '5.4s', status: 'success' },
-];
+const EXEC_HISTORY = SEED_EXECUTION_HISTORY;
 
 // 节点颜色（按 type 区分）
 function colorOf(type: string): { border: string; bg: string; text: string; label: string } {

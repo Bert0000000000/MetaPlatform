@@ -1,4 +1,4 @@
-﻿/**
+/**
  * KnowledgeTestPage - 检索测试
  * --------------------------------------------------
  * 路由: /knowledge/test
@@ -9,7 +9,7 @@ import { useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Card, Input, Button, Select, Space, List, Tag, Typography, message } from 'antd';
 import { Search, FileText, Zap } from 'lucide-react';
-import { SubTabs, type SubTabItem, useAsync, useLoadingState } from '@mate/shared';
+import { SubTabs, type SubTabItem, useAsync, useLoadingState, useApiErrorBoundary } from '@mate/shared';
 import { listKb, search, type KbEntity, type Evidence } from '@/api/kb';
 
 const KB_TABS: SubTabItem[] = [
@@ -22,6 +22,7 @@ const KB_TABS: SubTabItem[] = [
 const DEFAULT_TENANT = 'tenant-default';
 
 export default function KnowledgeTestPage() {
+  const { report } = useApiErrorBoundary();
   const location = useLocation();
   const [query, setQuery] = useState('');
   const [kbId, setKbId] = useState<string | undefined>(undefined);
@@ -30,7 +31,7 @@ export default function KnowledgeTestPage() {
 
   // KB 列表:走 useAsync,首次加载后缓存
   const { data: kbs } = useAsync<KbEntity[]>(
-    () => listKb().catch(() => [] as KbEntity[]),
+    () => listKb().catch((error) => { console.warn('[KnowledgeTest] kb list failed', error); message.warning('知识库列表加载失败，请检查后端服务状态'); return [] as KbEntity[]; }),
     [],
     { initialData: [] },
   );
@@ -49,7 +50,7 @@ export default function KnowledgeTestPage() {
       message.success(`命中 ${resp.length} 条`);
     } catch (e) {
       const err = e instanceof Error ? e : new Error(String(e));
-      message.error(`检索失败: ${err.message}`);
+      report(err);
     }
   };
 

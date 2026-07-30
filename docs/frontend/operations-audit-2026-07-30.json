@@ -1,0 +1,39 @@
+{
+  "totals": {
+    "noop onClick (empty)": 0,
+    "silent catch returning mock or []": 0,
+    "alert/confirm/prompt": 1,
+    "window.location.reload/href": 1,
+    "only-disabled button (unconditional)": 1,
+    "empty catch block": 0
+  },
+  "files": [
+    {
+      "file": "metaplatform-frontend/apps/web/src/api/client.ts",
+      "noop onClick (empty)": 0,
+      "silent catch returning mock or []": 0,
+      "alert/confirm/prompt": 0,
+      "window.location.reload/href": 1,
+      "only-disabled button (unconditional)": 0,
+      "empty catch block": 0
+    },
+    {
+      "file": "metaplatform-frontend/apps/web/src/pages/ontology/OntologyActionPage.tsx",
+      "noop onClick (empty)": 0,
+      "silent catch returning mock or []": 0,
+      "alert/confirm/prompt": 0,
+      "window.location.reload/href": 0,
+      "only-disabled button (unconditional)": 1,
+      "empty catch block": 0
+    },
+    {
+      "file": "metaplatform-frontend/apps/web/src/pages/ontology/components/ETLView.tsx",
+      "noop onClick (empty)": 0,
+      "silent catch returning mock or []": 0,
+      "alert/confirm/prompt": 1,
+      "window.location.reload/href": 0,
+      "only-disabled button (unconditional)": 0,
+      "empty catch block": 0
+    }
+  ]
+}
