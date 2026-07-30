@@ -1,0 +1,15 @@
+components:
+  schemas:
+    PageMeta:
+      type: object
+      required: [page, size, total]
+      properties:
+        page: {type: integer, minimum: 1}
+        size: {type: integer, minimum: 1, maximum: 200}
+        total: {type: integer, minimum: 0}
+    CursorMeta:
+      type: object
+      required: [hasMore]
+      properties:
+        nextCursor: {type: [string, 'null']}
+        hasMore: {type: boolean}

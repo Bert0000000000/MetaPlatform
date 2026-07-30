@@ -1,0 +1,12 @@
+components:
+  parameters:
+    XRequestId:
+      name: X-Request-Id
+      in: header
+      required: false
+      schema: {type: string, minLength: 1, maxLength: 128}
+    Traceparent:
+      name: traceparent
+      in: header
+      required: false
+      schema: {type: string, pattern: '^[0-9a-f]{2}-[0-9a-f]{32}-[0-9a-f]{16}-[0-9a-f]{2}$'}
