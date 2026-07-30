@@ -12,8 +12,10 @@ servers:
 tags:
 - name: llmgw
   description: llmgw domain operations
-security:
-- bearerAuth: []
+security:
+  - bearerAuth: []
+    tenantHeader: []
+    oidcScopes: [platform.read]
 paths:
   /api/v1/llmgw/chat:
     post:

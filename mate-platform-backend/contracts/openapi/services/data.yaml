@@ -12,8 +12,10 @@ servers:
 tags:
 - name: data
   description: data domain operations
-security:
-- bearerAuth: []
+security:
+  - bearerAuth: []
+    tenantHeader: []
+    oidcScopes: [platform.read]
 paths:
   /api/v1/data/sources:
     get:

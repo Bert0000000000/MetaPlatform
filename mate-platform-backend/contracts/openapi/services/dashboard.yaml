@@ -12,8 +12,10 @@ servers:
 tags:
 - name: dashboard
   description: dashboard domain operations
-security:
-- bearerAuth: []
+security:
+  - bearerAuth: []
+    tenantHeader: []
+    oidcScopes: [platform.read]
 paths:
   /api/v1/dashboard/auth/login:
     post:

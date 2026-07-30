@@ -12,8 +12,10 @@ servers:
 tags:
 - name: apphub
   description: apphub domain operations
-security:
-- bearerAuth: []
+security:
+  - bearerAuth: []
+    tenantHeader: []
+    oidcScopes: [platform.read]
 paths:
   /api/v1/apphub/apps:
     get:

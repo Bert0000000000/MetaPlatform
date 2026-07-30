@@ -12,8 +12,10 @@ servers:
 tags:
 - name: wfe
   description: wfe domain operations
-security:
-- bearerAuth: []
+security:
+  - bearerAuth: []
+    tenantHeader: []
+    oidcScopes: [platform.read]
 paths:
   /api/v1/wfe/flows/test:
     post:

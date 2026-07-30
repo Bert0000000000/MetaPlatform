@@ -12,8 +12,10 @@ servers:
 tags:
 - name: a2a
   description: a2a domain operations
-security:
-- bearerAuth: []
+security:
+  - bearerAuth: []
+    tenantHeader: []
+    oidcScopes: [platform.read]
 paths:
   /api/v1/a2a/agent-cards/search:
     get:
