@@ -12,6 +12,14 @@ No business code may call Keycloak directly (hard rule 4); it must
 go through `BearerAuth` and `OutgoingAuthMiddleware`.
 """
 from .bearer import BearerAuth, BearerAuthError, CachedToken
+from .pii_mask import (
+    PIIMatch,
+    PIIRedactionResult,
+    detect_pii,
+    redact_dict,
+    redact_pii,
+)
+
 from .outgoing import OutgoingAuthMiddleware
 
 __all__ = [
@@ -19,4 +27,9 @@ __all__ = [
     "BearerAuthError",
     "CachedToken",
     "OutgoingAuthMiddleware",
+    "PIIMatch",
+    "PIIRedactionResult",
+    "detect_pii",
+    "redact_dict",
+    "redact_pii",
 ]

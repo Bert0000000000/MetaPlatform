@@ -3,6 +3,16 @@ from .config import AuthConfig, load_auth_config
 from .identity import IdentityError, ServiceIdentity, ServiceToken
 from .jwks import ALLOWED_ALGS, JWKSCache, JWKSError
 
+from .retention import (
+    InMemoryRetentionStore,
+    RetentionAction,
+    RetentionPolicy,
+    RetentionStore,
+    SoftDeleteRecord,
+    is_tenant_soft_deleted,
+    request_gdpr_forget,
+)
+
 from .audit import (
     CrossTenantAuditSink,
     CrossTenantDataAccess,
@@ -35,6 +45,13 @@ __all__ = [
     "InMemoryAuditSink",
     "StdoutAuditSink",
     "emit_cross_tenant_data_access",
+    "InMemoryRetentionStore",
+    "RetentionAction",
+    "RetentionPolicy",
+    "RetentionStore",
+    "SoftDeleteRecord",
+    "is_tenant_soft_deleted",
+    "request_gdpr_forget",
     "load_auth_config",
     "resolve_tenant",
 ]
