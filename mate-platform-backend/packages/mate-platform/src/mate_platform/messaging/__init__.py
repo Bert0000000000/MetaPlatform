@@ -22,6 +22,15 @@ from .outbox import (
     Producer,
     TopicResolver,
 )
+from .lineage import (
+    InMemoryLineageEmitter,
+    LineageConfig,
+    LineageEmitter,
+    LineageEvent,
+    MarquezHttpLineageEmitter,
+    lineage_event_from_outbox,
+)
+
 from .schemas import (
     InMemorySchemaRegistry,
     SchemaError,
