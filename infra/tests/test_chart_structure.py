@@ -27,6 +27,10 @@ REQUIRED_SUB_CHARTS = {
     "kafka",
     "network-policies",
     "service-templates",
+    "debezium",
+    "marquez",
+    "datahub",
+    "ge",
 }
 
 
