@@ -47,7 +47,14 @@ http_bridge = APIRouter(prefix="/api/v1/mcp", tags=["mcp"])
 app = FastAPI(
     title="mate-tech-mcp",
     version="0.1.0",
-    description="MCP (Model Context Protocol) server",
+    description="MCP (Model Context Protocol)
+
+# Hook 1 of 5: install SEC-IAM-01 auth middleware.
+# The legacy auth.py JWT path remains in place for back-compat
+# in dev; in production profile LEGACY_LOGIN_COMPAT=false makes
+# Keycloak the only identity source.
+install_auth(app)
+ server",
 )
 
 app.include_router(http_bridge)
@@ -195,4 +202,7 @@ if __name__ == "__main__":
         run_stdio()
     else:
         import uvicorn
+
+# BUSINESS-SLICES P1 wave 3: hook 1 (auth).
+from mate_platform.auth import install_auth
         uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("PORT", "8081")))

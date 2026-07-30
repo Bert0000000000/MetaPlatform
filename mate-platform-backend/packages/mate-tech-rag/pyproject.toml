@@ -8,6 +8,8 @@ dependencies = [
     "uvicorn[standard]>=0.30.0",
     "pydantic>=2.0.0",
     "mate-common",
+    "mate-platform",
+    "mate-clients",
 ]
 
 [build-system]
@@ -19,3 +21,5 @@ packages = ["src/mate_tech_rag"]
 
 [tool.uv.sources]
 mate-common = { workspace = true }
+mate-platform = { workspace = true }
+mate-clients = { workspace = true }

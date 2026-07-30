@@ -1,4 +1,6 @@
 """Shared pytest fixtures for mate-tech-mcp (ST-5.3.10.1)."""
+from __future__ import annotations
+
 
 
 # BUSINESS-SLICES: ensure cross-package paths work without `pip install -e .`
@@ -14,7 +16,6 @@ for _sub in (
     _p = str(_MONOREPO / "packages" / _sub / "src")
     if _p not in _sys.path:
         _sys.path.insert(0, _p)
-from __future__ import annotations
 
 from unittest.mock import AsyncMock
 

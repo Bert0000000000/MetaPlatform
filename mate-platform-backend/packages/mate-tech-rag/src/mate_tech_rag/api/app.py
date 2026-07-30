@@ -23,6 +23,11 @@ from mate_tech_rag.api.retrieval import (
     retrieve,
 )
 from mate_tech_rag.api.schemas import (
+
+# BUSINESS-SLICES P1 wave 3: hooks 1, 2 (auth + tenant).
+from fastapi import Request
+from mate_platform.auth import install_auth
+from mate_platform.tenancy.guards import require_tenant
     EmbedderInfo,
     HealthResponse,
     IndexStatus,
@@ -61,12 +66,25 @@ def create_app() -> FastAPI:
         description="Mate Platform RAG: RAGFlow parse + Hybrid(Milvus) + GraphRAG(Neo4j) + LightRAG",
     )
 
+    # Hook 1 of 5: install auth middleware (SEC-IAM-01).
+    install_auth(app)
+
+    def _require_ctx(request: Request):
+        # Defence in depth: install_auth populates ctx or returns 401.
+        ctx = getattr(request.state, 'ctx', None)
+        if ctx is None:
+            raise HTTPException(status_code=401, detail='no auth context')
+        return ctx
+
     @app.get("/healthz", response_model=HealthResponse)
     async def healthz() -> HealthResponse:
         return HealthResponse(status="ok", service="mate-tech-rag", version=__version__)
 
     @app.get("/api/v1/rag/status", response_model=SystemStatus)
-    async def status() -> SystemStatus:
+    async def status(request: Request) -> SystemStatus:
+        # Hook 2 of 5: tenant guard.
+        _require_ctx(request)
+        require_tenant(request.state.ctx)
         emb = get_embedder()
         provider_name = os.environ.get("EMBEDDER_PROVIDER", "local")
         model_name = getattr(emb, "_model", "") if provider_name == "openai" else type(emb).__name__
@@ -87,7 +105,9 @@ def create_app() -> FastAPI:
         )
 
     @app.post("/api/v1/rag/parse", response_model=ParseResponse)
-    async def parse_endpoint(req: ParseRequest) -> ParseResponse:
+    async def parse_endpoint(request: Request, req: ParseRequest) -> ParseResponse:
+        _require_ctx(request)
+        require_tenant(request.state.ctx)
         try:
             return parse_document(req)
         except Exception as exc:
@@ -95,9 +115,13 @@ def create_app() -> FastAPI:
 
     @app.post("/api/v1/rag/upload", response_model=UploadResponse)
     async def upload_endpoint(
+        request: Request,
         file: UploadFile = File(..., description="text/markdown file to ingest"),
         document_id: str | None = None,
     ) -> UploadResponse:
+        # Hook 2 of 5: tenant guard.
+        _require_ctx(request)
+        require_tenant(request.state.ctx)
         try:
             raw = await file.read()
             if not raw:
@@ -130,28 +154,36 @@ def create_app() -> FastAPI:
             raise HTTPException(status_code=500, detail=str(exc)) from exc
 
     @app.post("/api/v1/rag/ingest", response_model=IngestResponse)
-    async def ingest_endpoint(req: IngestRequest) -> IngestResponse:
+    async def ingest_endpoint(request: Request, req: IngestRequest) -> IngestResponse:
+        _require_ctx(request)
+        require_tenant(request.state.ctx)
         try:
             return ingest(req)
         except Exception as exc:
             raise HTTPException(status_code=500, detail=str(exc)) from exc
 
     @app.post("/api/v1/rag/search", response_model=RetrievalResponse)
-    async def search(req: RetrievalRequest) -> RetrievalResponse:
+    async def search(request: Request, req: RetrievalRequest) -> RetrievalResponse:
+        _require_ctx(request)
+        require_tenant(request.state.ctx)
         try:
             return retrieve(req)
         except Exception as exc:
             raise HTTPException(status_code=500, detail=str(exc)) from exc
 
     @app.get("/api/v1/rag/stats", response_model=StatsResponse)
-    async def stats() -> StatsResponse:
+    async def stats(request: Request) -> StatsResponse:
+        _require_ctx(request)
+        require_tenant(request.state.ctx)
         return StatsResponse(
             total_chunks=get_hybrid().count(),
             embedder_dim=get_embedder().dim,
         )
 
     @app.get("/api/v1/rag/admin/pg-stats", response_model=PgStatsResponse)
-    async def pg_stats() -> PgStatsResponse:
+    async def pg_stats(request: Request) -> PgStatsResponse:
+        _require_ctx(request)
+        require_tenant(request.state.ctx)
         store = get_pg_store()
         if store is None:
             return PgStatsResponse(

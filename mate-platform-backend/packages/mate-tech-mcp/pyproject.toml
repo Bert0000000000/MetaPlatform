@@ -25,11 +25,15 @@ dependencies = [
     "opentelemetry-exporter-otlp-proto-grpc>=1.27.0",
     "structlog>=24.4.0",
     "mate-common",
+    "mate-platform",
+    "mate-clients",
 ]
 
 
 [tool.uv.sources]
 mate-common = { workspace = true }
+mate-platform = { workspace = true }
+mate-clients = { workspace = true }
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
