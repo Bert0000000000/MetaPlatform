@@ -1,0 +1,207 @@
+# =============================================================================
+# MetaPlatform umbrella chart - default values
+# =============================================================================
+# Conventions:
+#   - Per-environment overrides live in values-{env}.yaml.
+#   - Secret material MUST be referenced via existingSecretName
+#     (SealedSecret or ExternalSecret) - never inline.
+#   - See docs/active/decisions/ADR-0010-platform-k8s-baseline.md
+# =============================================================================
+
+global:
+  labels:
+    app.kubernetes.io/part-of: metaplatform
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/version: "3.0.0"
+  podSecurityStandards:
+    enforce: restricted
+    audit: restricted
+    warn: restricted
+
+imageRegistry: docker.io
+imagePullSecrets: []
+
+# Service-account used by Argo CD / Helm hooks.
+serviceAccount:
+  create: true
+  name: metaplatform
+
+# -----------------------------------------------------------------------------
+# Network policy defaults (the §13 硬规则 8 enforcer)
+# -----------------------------------------------------------------------------
+network-policies:
+  enabled: true
+  defaultDeny:
+    ingress: true
+    egress: true
+  allowedEgress:
+    dns:
+      enabled: true
+      namespace: kube-system
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    keycloak:
+      enabled: true
+    otelCollector:
+      enabled: true
+    dataPlane:
+      enabled: true
+      targets:
+        - postgres
+        - redis
+        - kafka
+  allowedIngress:
+    apiGateway:
+      enabled: true
+      fromNamespace: api-gateway
+
+# -----------------------------------------------------------------------------
+# OTel Collector
+# -----------------------------------------------------------------------------
+otel-collector:
+  enabled: true
+  fullnameOverride: otel-collector
+  replicaCount: 2
+  image:
+    repository: otel/opentelemetry-collector-contrib
+    tag: 0.104.0
+    pullPolicy: IfNotPresent
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  receivers:
+    otlp:
+      grpc:
+        enabled: true
+        port: 4317
+      http:
+        enabled: true
+        port: 4318
+    prometheus:
+      enabled: true
+    kafkametrics:
+      enabled: false
+    postgresql:
+      enabled: false
+    redis:
+      enabled: false
+  processors:
+    batch:
+      timeout: 5s
+      sendBatchSize: 1000
+    memoryLimiter:
+      checkInterval: 1s
+      limitPercentage: 80
+      spikeLimitPercentage: 25
+    tailSampling:
+      enabled: false
+    attributes:
+      tenantKey: tenant.id
+      traceKey: trace.id
+  exporters:
+    otlphttp:
+      enabled: true
+      tracesEndpoint: http://tempo:4318
+    prometheusremotewrite:
+      enabled: true
+      endpoint: http://prometheus:9090/api/v1/write
+  exportersLogging:
+    enabled: true
+    verbosity: basic
+  extensions:
+    healthCheck:
+      enabled: true
+      port: 13133
+    pprof:
+      enabled: false
+  service:
+    type: ClusterIP
+
+# -----------------------------------------------------------------------------
+# Keycloak (identity)
+# -----------------------------------------------------------------------------
+keycloak:
+  enabled: true
+  fullnameOverride: keycloak
+  image:
+    repository: quay.io/keycloak/keycloak
+    tag: "24.0"
+  replicas: 1
+  database:
+    vendor: postgres
+    host: postgres.metaplatform.svc.cluster.local
+    port: 5432
+    database: keycloak
+    username: keycloak
+    existingSecretName: keycloak-db
+    existingSecretKey: password
+  admin:
+    existingSecretName: keycloak-admin
+    existingSecretKey: password
+  realm:
+    import:
+      enabled: true
+      existingConfigMap: keycloak-realm-metaplatform
+      realmName: metaplatform
+  service:
+    type: ClusterIP
+    port: 8080
+  probes:
+    livenessPath: /health/live
+    readinessPath: /health/ready
+
+# -----------------------------------------------------------------------------
+# Service templates (the four-layer application chart skeleton)
+# -----------------------------------------------------------------------------
+service-templates:
+  enabled: true
+  defaults:
+    replicaCount: 2
+    podDisruptionBudget:
+      minAvailable: 1
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 1000m
+        memory: 1Gi
+    probes:
+      livenessPath: /healthz
+      readinessPath: /readyz
+    otel:
+      sidecar:
+        enabled: true
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 65532
+      readOnlyRootFilesystem: true
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop: [ALL]
+
+# -----------------------------------------------------------------------------
+# External chart switches (placeholders; Bitnami/Confluent charts to be added
+# as umbrella dependencies once finalized).
+# -----------------------------------------------------------------------------
+postgres:
+  enabled: false
+redis:
+  enabled: false
+kafka:
+  enabled: false
+prometheus:
+  enabled: false
+grafana:
+  enabled: false
+loki:
+  enabled: false
+tempo:
+  enabled: false

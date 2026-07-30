@@ -1,0 +1,74 @@
+# otel-collector sub-chart values
+image:
+  repository: otel/opentelemetry-collector-contrib
+  tag: 0.104.0
+  pullPolicy: IfNotPresent
+
+replicaCount: 2
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+receivers:
+  otlp:
+    grpc:
+      enabled: true
+      port: 4317
+    http:
+      enabled: true
+      port: 4318
+  prometheus:
+    enabled: true
+  kafkametrics:
+    enabled: false
+  postgresql:
+    enabled: false
+  redis:
+    enabled: false
+
+processors:
+  batch:
+    timeout: 5s
+    sendBatchSize: 1000
+  memoryLimiter:
+    checkInterval: 1s
+    limitPercentage: 80
+    spikeLimitPercentage: 25
+  tailSampling:
+    enabled: false
+  attributes:
+    tenantKey: tenant.id
+    traceKey: trace.id
+
+exporters:
+  otlphttp:
+    enabled: true
+    tracesEndpoint: http://tempo:4318
+  prometheusremotewrite:
+    enabled: true
+    endpoint: http://prometheus:9090/api/v1/write
+exportersLogging:
+  enabled: true
+  verbosity: basic
+
+extensions:
+  healthCheck:
+    enabled: true
+    port: 13133
+  pprof:
+    enabled: false
+
+service:
+  type: ClusterIP
+
+# Resource attributes injected by the attributes processor; do not delete.
+attributes:
+  resourceAttributes:
+    - key: deployment.environment
+      value: dev
+      action: upsert

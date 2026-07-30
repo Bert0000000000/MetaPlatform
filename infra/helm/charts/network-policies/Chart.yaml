@@ -1,0 +1,23 @@
+apiVersion: v2
+name: network-policies
+description: |
+  Default-deny and explicit-allow NetworkPolicy set for the metaplatform
+  namespace. Enforces production-readiness 13 hard rule 8: "no K8s
+  readiness and rollback does not count as production completion."
+
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+
+keywords:
+  - network-policy
+  - security
+  - kubernetes
+
+maintainers:
+  - name: MetaPlatform Platform Owner
+    email: platform@metaplatform.local
+
+annotations:
+  category: Security
+  licenses: Apache-2.0

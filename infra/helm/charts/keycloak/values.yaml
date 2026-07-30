@@ -1,0 +1,32 @@
+image:
+  repository: quay.io/keycloak/keycloak
+  tag: "24.0"
+
+replicaCount: 1
+
+database:
+  vendor: postgres
+  host: postgres.metaplatform.svc.cluster.local
+  port: 5432
+  database: keycloak
+  username: keycloak
+  existingSecretName: keycloak-db
+  existingSecretKey: password
+
+admin:
+  existingSecretName: keycloak-admin
+  existingSecretKey: password
+
+realm:
+  import:
+    enabled: true
+    existingConfigMap: keycloak-realm-metaplatform
+    realmName: metaplatform
+
+service:
+  type: ClusterIP
+  port: 8080
+
+probes:
+  livenessPath: /health/live
+  readinessPath: /health/ready

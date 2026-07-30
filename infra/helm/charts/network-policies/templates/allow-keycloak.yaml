@@ -1,0 +1,22 @@
+{{- if .Values.allowedEgress.keycloak.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "metaplatform.componentName" (dict "ctx" . "component" "network-policies") }}-allow-egress-keycloak
+  labels:
+    {{- include "metaplatform.labels" . | nindent 4 }}
+  annotations:
+    policy.description: Allow pods in the metaplatform namespace to reach Keycloak for OIDC token validation.
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: keycloak
+      ports:
+        - protocol: TCP
+          port: {{ .Values.allowedEgress.keycloak.port }}
+{{- end }}

@@ -1,0 +1,21 @@
+apiVersion: v2
+name: service-templates
+description: |
+  Common templates for the four-layer application services
+  (mate-kernel, mate-platform, mate-clients, app-*). Provides
+  reusable Deployment, Service, ServiceMonitor, PodDisruptionBudget
+  patterns that every application chart in the platform inherits.
+
+type: library
+version: 0.1.0
+appVersion: "0.1.0"
+
+keywords:
+  - service
+  - library
+  - template
+  - four-layer
+
+maintainers:
+  - name: MetaPlatform Platform Owner
+    email: platform@metaplatform.local

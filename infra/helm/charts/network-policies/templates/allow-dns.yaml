@@ -1,0 +1,25 @@
+{{- if .Values.allowedEgress.dns.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "metaplatform.componentName" (dict "ctx" . "component" "network-policies") }}-allow-dns
+  labels:
+    {{- include "metaplatform.labels" . | nindent 4 }}
+  annotations:
+    policy.description: Allow pods in the metaplatform namespace to reach kube-dns.
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ .Values.allowedEgress.dns.namespace }}
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        {{- range .Values.allowedEgress.dns.ports }}
+        - protocol: {{ .protocol }}
+          port: {{ .port }}
+        {{- end }}
+{{- end }}

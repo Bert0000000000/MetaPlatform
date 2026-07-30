@@ -1,0 +1,28 @@
+apiVersion: v2
+name: otel-collector
+description: |
+  OpenTelemetry Collector (contrib) - the §13 硬规则 9 (audit/metrics/trace)
+  enforcer. Routes traces, metrics, and logs to Tempo / Prometheus / Loki.
+  Migrated from infra/otel/otel-collector.yaml.
+
+type: application
+version: 0.1.0
+appVersion: "0.104.0"
+
+home: https://opentelemetry.io
+sources:
+  - https://github.com/open-telemetry/opentelemetry-collector-contrib
+keywords:
+  - opentelemetry
+  - observability
+  - otel
+  - tracing
+  - metrics
+
+maintainers:
+  - name: MetaPlatform Platform Owner
+    email: platform@metaplatform.local
+
+annotations:
+  category: Observability
+  licenses: Apache-2.0

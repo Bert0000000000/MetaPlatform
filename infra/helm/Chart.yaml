@@ -1,0 +1,44 @@
+apiVersion: v2
+name: metaplatform
+description: |
+  MetaPlatform v3.0 umbrella chart - Helm baseline for the
+  PLATFORM-K8S-01 batch. Bundles Keycloak, Postgres, Redis, Kafka,
+  OpenTelemetry Collector, Prometheus, Grafana, and NetworkPolicy
+  defaults. Targets production-readiness 13 hard rules 1, 8, 9, 12.
+
+type: application
+version: 0.1.0
+appVersion: "3.0.0"
+
+home: https://github.com/Bert0000000000/MetaPlatform
+sources:
+  - https://github.com/Bert0000000000/MetaPlatform
+keywords:
+  - metaplatform
+  - platform
+  - kubernetes
+  - helm
+  - keycloak
+  - opentelemetry
+
+maintainers:
+  - name: MetaPlatform Platform Owner
+    email: platform@metaplatform.local
+
+annotations:
+  category: Platform
+  licenses: Apache-2.0
+
+dependencies:
+  - name: otel-collector
+    version: 0.1.0
+    condition: otel-collector.enabled
+  - name: keycloak
+    version: 0.1.0
+    condition: keycloak.enabled
+  - name: network-policies
+    version: 0.1.0
+    condition: network-policies.enabled
+  - name: service-templates
+    version: 0.1.0
+    condition: service-templates.enabled

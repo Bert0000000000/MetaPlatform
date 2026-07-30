@@ -1,0 +1,99 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "metaplatform.componentName" (dict "ctx" . "component" "otel-collector") }}
+  labels:
+    {{- include "metaplatform.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "metaplatform.selectorLabels" . | nindent 6 }}
+      component: otel-collector
+  template:
+    metadata:
+      labels:
+        {{- include "metaplatform.labels" . | nindent 8 }}
+        component: otel-collector
+        app.kubernetes.io/component: observability
+    spec:
+      serviceAccountName: {{ .Values.global.serviceAccount.name | default "default" }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        fsGroup: 65532
+      containers:
+        - name: otel-collector
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            - --config=/conf/relay.yaml
+          ports:
+            {{- if .Values.receivers.otlp.grpc.enabled }}
+            - name: otlp-grpc
+              containerPort: {{ .Values.receivers.otlp.grpc.port }}
+              protocol: TCP
+            {{- end }}
+            {{- if .Values.receivers.otlp.http.enabled }}
+            - name: otlp-http
+              containerPort: {{ .Values.receivers.otlp.http.port }}
+              protocol: TCP
+            {{- end }}
+            {{- if .Values.receivers.prometheus.enabled }}
+            - name: prometheus
+              containerPort: 8889
+              protocol: TCP
+            {{- end }}
+            {{- if .Values.extensions.healthCheck.enabled }}
+            - name: health
+              containerPort: {{ .Values.extensions.healthCheck.port }}
+              protocol: TCP
+            {{- end }}
+          env:
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-admin
+                  key: password
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: config
+              mountPath: /conf
+          livenessProbe:
+            {{- if .Values.extensions.healthCheck.enabled }}
+            httpGet:
+              path: /
+              port: health
+            {{- else }}
+            tcpSocket:
+              port: otlp-grpc
+            {{- end }}
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          readinessProbe:
+            {{- if .Values.extensions.healthCheck.enabled }}
+            httpGet:
+              path: /
+              port: health
+            {{- else }}
+            tcpSocket:
+              port: otlp-grpc
+            {{- end }}
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          securityContext:
+            runAsNonRoot: true
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "metaplatform.componentName" (dict "ctx" . "component" "otel-collector") }}
+            items:
+              - key: relay.yaml
+                path: relay.yaml

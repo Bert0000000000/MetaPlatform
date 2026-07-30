@@ -1,0 +1,76 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "metaplatform.componentName" (dict "ctx" . "component" "otel-collector") }}
+  labels:
+    {{- include "metaplatform.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "metaplatform.selectorLabels" . | nindent 6 }}
+      component: otel-collector
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Any pod in metaplatform namespace can push traces/metrics/logs.
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: metaplatform
+      ports:
+        - protocol: TCP
+          port: 4317
+        - protocol: TCP
+          port: 4318
+        - protocol: TCP
+          port: 8889
+        - protocol: TCP
+          port: 13133
+  egress:
+    # DNS
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    # Tempo (traces exporter)
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: tempo
+      ports:
+        - protocol: TCP
+          port: 4317
+        - protocol: TCP
+          port: 4318
+    # Prometheus (remote write)
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: prometheus
+      ports:
+        - protocol: TCP
+          port: 9090
+    # Postgres / Redis / Kafka exporter connections
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: postgres
+          - podSelector:
+              matchLabels:
+                app.kubernetes.io/name: redis
+          - podSelector:
+              matchLabels:
+                app.kubernetes.io/name: kafka
+      ports:
+        - protocol: TCP
+          port: 5432
+        - protocol: TCP
+          port: 6379
+        - protocol: TCP
+          port: 9092

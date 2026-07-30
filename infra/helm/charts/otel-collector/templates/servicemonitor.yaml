@@ -1,0 +1,17 @@
+{{- if and .Values.receivers.prometheus.enabled (default true .Values.serviceMonitor.enabled) -}}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "metaplatform.componentName" (dict "ctx" . "component" "otel-collector") }}
+  labels:
+    {{- include "metaplatform.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "metaplatform.selectorLabels" . | nindent 6 }}
+      component: otel-collector
+  endpoints:
+    - port: prometheus
+      path: /metrics
+      interval: 30s
+{{- end }}

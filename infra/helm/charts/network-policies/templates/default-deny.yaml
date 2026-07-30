@@ -1,0 +1,33 @@
+{{- if .Values.defaultDeny.ingress }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "metaplatform.componentName" (dict "ctx" . "component" "network-policies") }}-default-deny-ingress
+  labels:
+    {{- include "metaplatform.labels" . | nindent 4 }}
+  annotations:
+    policy.description: |
+      Default deny-all ingress for the metaplatform namespace.
+      Any pod not matched by an explicit allow rule below cannot receive traffic.
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+{{- end }}
+{{- if .Values.defaultDeny.egress }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "metaplatform.componentName" (dict "ctx" . "component" "network-policies") }}-default-deny-egress
+  labels:
+    {{- include "metaplatform.labels" . | nindent 4 }}
+  annotations:
+    policy.description: |
+      Default deny-all egress for the metaplatform namespace.
+      Any pod not matched by an explicit allow rule below cannot initiate traffic.
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+{{- end }}

@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "metaplatform.componentName" (dict "ctx" . "component" "keycloak") }}
+  labels:
+    {{- include "metaplatform.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  selector:
+    {{- include "metaplatform.selectorLabels" . | nindent 4 }}
+    component: keycloak
+  ports:
+    - name: http
+      port: {{ .Values.service.port }}
+      targetPort: http
+      protocol: TCP
+    - name: mgmt
+      port: 9000
+      targetPort: mgmt
+      protocol: TCP

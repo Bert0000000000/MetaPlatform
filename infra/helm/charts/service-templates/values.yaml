@@ -1,0 +1,25 @@
+# Default values inherited by every app chart.
+defaults:
+  replicaCount: 2
+  podDisruptionBudget:
+    minAvailable: 1
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+  probes:
+    livenessPath: /healthz
+    readinessPath: /readyz
+  otel:
+    sidecar:
+      enabled: true
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 65532
+    readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop: [ALL]

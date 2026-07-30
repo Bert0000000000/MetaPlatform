@@ -1,0 +1,93 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "metaplatform.componentName" (dict "ctx" . "component" "keycloak") }}
+  labels:
+    {{- include "metaplatform.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  serviceName: keycloak
+  selector:
+    matchLabels:
+      {{- include "metaplatform.selectorLabels" . | nindent 6 }}
+      component: keycloak
+  template:
+    metadata:
+      labels:
+        {{- include "metaplatform.labels" . | nindent 8 }}
+        component: keycloak
+    spec:
+      securityContext:
+        runAsNonRoot: false
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+        - name: keycloak
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          args:
+            - start
+            - --http-enabled=true
+            - --http-port=8080
+            - --hostname-strict=false
+            - --proxy-headers=xforwarded
+            - --health-enabled=true
+          env:
+            - name: KC_DB
+              value: {{ .Values.database.vendor }}
+            - name: KC_DB_URL
+              value: jdbc:postgresql://{{ .Values.database.host }}:{{ .Values.database.port }}/{{ .Values.database.database }}
+            - name: KC_DB_USERNAME
+              value: {{ .Values.database.username }}
+            - name: KC_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.database.existingSecretName }}
+                  key: {{ .Values.database.existingSecretKey }}
+            - name: KEYCLOAK_ADMIN
+              value: admin
+            - name: KEYCLOAK_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.admin.existingSecretName }}
+                  key: {{ .Values.admin.existingSecretKey }}
+            {{- if .Values.realm.import.enabled }}
+            - name: KEYCLOAK_IMPORT
+              value: /opt/keycloak/data/import/{{ .Values.realm.import.realmName }}.json
+            {{- end }}
+          ports:
+            - name: http
+              containerPort: 8080
+            - name: mgmt
+              containerPort: 9000
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.probes.livenessPath }}
+              port: mgmt
+            initialDelaySeconds: 60
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.probes.readinessPath }}
+              port: mgmt
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 500m
+              memory: 1Gi
+            limits:
+              cpu: 2000m
+              memory: 2Gi
+          volumeMounts:
+            - name: realm-import
+              mountPath: /opt/keycloak/data/import
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
+      volumes:
+        {{- if .Values.realm.import.enabled }}
+        - name: realm-import
+          configMap:
+            name: {{ .Values.realm.import.existingConfigMap }}
+        {{- end }}

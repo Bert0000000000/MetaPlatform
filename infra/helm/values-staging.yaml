@@ -1,0 +1,42 @@
+# Staging environment overrides
+global:
+  labels:
+    environment: staging
+otel-collector:
+  replicaCount: 2
+  receivers:
+    kafkametrics:
+      enabled: true
+    postgresql:
+      enabled: true
+    redis:
+      enabled: true
+  processors:
+    tailSampling:
+      enabled: true
+keycloak:
+  replicas: 2
+  ingress:
+    enabled: true
+    className: nginx
+    hosts:
+      - host: keycloak.staging.metaplatform.io
+        paths: [/]
+    tls:
+      - secretName: keycloak-tls
+        hosts: [keycloak.staging.metaplatform.io]
+postgres:
+  enabled: true
+redis:
+  enabled: true
+kafka:
+  enabled: true
+  mode: kraft
+prometheus:
+  enabled: true
+grafana:
+  enabled: true
+loki:
+  enabled: true
+tempo:
+  enabled: true

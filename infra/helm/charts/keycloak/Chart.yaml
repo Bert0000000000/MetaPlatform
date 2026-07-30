@@ -1,0 +1,21 @@
+apiVersion: v2
+name: keycloak
+description: |
+  Keycloak 24.x identity provider. Single source of identity for
+  MetaPlatform; embeds the metaplatform realm via ConfigMap.
+  Enforces production-readiness 13 hard rule 12 (Secret must not
+  enter git; uses SealedSecret / ExternalSecret references).
+
+type: application
+version: 0.1.0
+appVersion: "24.0"
+
+keywords:
+  - keycloak
+  - identity
+  - oidc
+  - sso
+
+maintainers:
+  - name: MetaPlatform Platform Owner
+    email: platform@metaplatform.local

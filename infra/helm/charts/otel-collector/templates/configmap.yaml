@@ -1,0 +1,182 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "metaplatform.componentName" (dict "ctx" . "component" "otel-collector") }}
+  labels:
+    {{- include "metaplatform.labels" . | nindent 4 }}
+data:
+  relay.yaml: |-
+    receivers:
+    {{- if .Values.receivers.otlp.grpc.enabled }}
+      otlp/grpc:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:{{ .Values.receivers.otlp.grpc.port }}
+    {{- end }}
+    {{- if .Values.receivers.otlp.http.enabled }}
+      otlp/http:
+        protocols:
+          http:
+            endpoint: 0.0.0.0:{{ .Values.receivers.otlp.http.port }}
+    {{- end }}
+    {{- if .Values.receivers.prometheus.enabled }}
+      prometheus:
+        config:
+          scrape_configs:
+            - job_name: otel-collector-self
+              static_configs:
+                - targets: [localhost:8889]
+    {{- end }}
+    {{- if .Values.receivers.kafkametrics.enabled }}
+      kafkametrics:
+        brokers:
+          - kafka:9092
+        protocol_version: 3.7.0
+    {{- end }}
+    {{- if .Values.receivers.postgresql.enabled }}
+      postgresql:
+        endpoint: postgres:5432
+        transport: tcp
+        username: meta
+        password: ${env:POSTGRES_PASSWORD}
+        databases: [metaplatform]
+        collection_interval: 30s
+    {{- end }}
+    {{- if .Values.receivers.redis.enabled }}
+      redis:
+        endpoint: redis:6379
+        collection_interval: 30s
+    {{- end }}
+    processors:
+      memory_limiter:
+        check_interval: {{ .Values.processors.memoryLimiter.checkInterval }}
+        limit_percentage: {{ .Values.processors.memoryLimiter.limitPercentage }}
+        spike_limit_percentage: {{ .Values.processors.memoryLimiter.spikeLimitPercentage }}
+      batch:
+        timeout: {{ .Values.processors.batch.timeout }}
+        send_batch_size: {{ .Values.processors.batch.sendBatchSize }}
+      attributes/tenant:
+        actions:
+          - key: {{ .Values.processors.attributes.tenantKey }}
+            from_attribute: tenant
+            action: insert
+          - key: {{ .Values.processors.attributes.traceKey }}
+            from_attribute: trace
+            action: insert
+      resource:
+        attributes:
+        {{- range .Values.attributes.resourceAttributes }}
+          - key: {{ .key }}
+            value: {{ .value | quote }}
+            action: {{ .action }}
+        {{- end }}
+    {{- if .Values.processors.tailSampling.enabled }}
+      tail_sampling:
+        decision_wait: 10s
+        num_traces: 100000
+        expected_new_traces_per_sec: 1000
+        policies:
+          - name: errors
+            type: status_code
+            status_code: { status_codes: [ERROR] }
+          - name: latency
+            type: latency
+            latency: { threshold_ms: 500 }
+    {{- end }}
+    exporters:
+    {{- if .Values.exporters.otlphttp.enabled }}
+      otlphttp:
+        endpoint: {{ .Values.exporters.otlphttp.tracesEndpoint }}
+        tls:
+          insecure: true
+    {{- end }}
+    {{- if .Values.exporters.prometheusremotewrite.enabled }}
+      prometheusremotewrite:
+        endpoint: {{ .Values.exporters.prometheusremotewrite.endpoint }}
+    {{- end }}
+    {{- if .Values.exportersLogging.enabled }}
+      logging:
+        verbosity: {{ .Values.exportersLogging.verbosity }}
+    {{- end }}
+    extensions:
+    {{- if .Values.extensions.healthCheck.enabled }}
+      health_check:
+        endpoint: 0.0.0.0:{{ .Values.extensions.healthCheck.port }}
+    {{- end }}
+    {{- if .Values.extensions.pprof.enabled }}
+      pprof:
+        endpoint: 0.0.0.0:1777
+    {{- end }}
+    service:
+      extensions:
+        {{- if .Values.extensions.healthCheck.enabled }}
+        - health_check
+        {{- end }}
+        {{- if .Values.extensions.pprof.enabled }}
+        - pprof
+        {{- end }}
+      pipelines:
+        traces:
+          receivers:
+            {{- if .Values.receivers.otlp.grpc.enabled }}
+            - otlp/grpc
+            {{- end }}
+            {{- if .Values.receivers.otlp.http.enabled }}
+            - otlp/http
+            {{- end }}
+          processors:
+            - memory_limiter
+            - attributes/tenant
+            {{- if .Values.processors.tailSampling.enabled }}
+            - tail_sampling
+            {{- end }}
+            - batch
+            - resource
+          exporters:
+            {{- if .Values.exporters.otlphttp.enabled }}
+            - otlphttp
+            {{- end }}
+            {{- if .Values.exportersLogging.enabled }}
+            - logging
+            {{- end }}
+        metrics:
+          receivers:
+            {{- if .Values.receivers.otlp.grpc.enabled }}
+            - otlp/grpc
+            {{- end }}
+            {{- if .Values.receivers.otlp.http.enabled }}
+            - otlp/http
+            {{- end }}
+            {{- if .Values.receivers.prometheus.enabled }}
+            - prometheus
+            {{- end }}
+            {{- if .Values.receivers.kafkametrics.enabled }}
+            - kafkametrics
+            {{- end }}
+            {{- if .Values.receivers.postgresql.enabled }}
+            - postgresql
+            {{- end }}
+            {{- if .Values.receivers.redis.enabled }}
+            - redis
+            {{- end }}
+          processors: [memory_limiter, batch, resource]
+          exporters:
+            {{- if .Values.exporters.prometheusremotewrite.enabled }}
+            - prometheusremotewrite
+            {{- end }}
+            {{- if .Values.exportersLogging.enabled }}
+            - logging
+            {{- end }}
+        logs:
+          receivers:
+            {{- if .Values.receivers.otlp.grpc.enabled }}
+            - otlp/grpc
+            {{- end }}
+            {{- if .Values.receivers.otlp.http.enabled }}
+            - otlp/http
+            {{- end }}
+          processors: [memory_limiter, batch, resource]
+          exporters:
+            {{- if .Values.exportersLogging.enabled }}
+            - logging
+            {{- end }}
