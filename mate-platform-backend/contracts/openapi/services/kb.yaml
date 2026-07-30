@@ -1,0 +1,309 @@
+openapi: 3.1.0
+info:
+  title: Mate Platform kb API
+  version: 1.0.0
+  x-mate-owner: knowledge-platform
+servers:
+- url: /
+tags:
+- name: kb
+  description: kb domain operations
+security:
+- bearerAuth: []
+paths:
+  /healthz:
+    get:
+      summary: Liveness probe
+      tags:
+      - kb
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+      operationId: kbGetHealthz
+      description: Liveness probe
+      x-mate-owner: knowledge-platform
+      x-mate-permission: kb.get
+      x-mate-requirements:
+      - FR-KB-KBGETHEALTHZ
+      x-mate-implementation-status: implemented
+  /api/v1/kb/upload:
+    post:
+      summary: Multipart upload (text/markdown) -> RAG upload
+      tags:
+      - kb
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                document_id:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UploadResponse'
+        '400':
+          description: Empty file
+        '502':
+          description: Upstream RAG error
+      operationId: kbPostKbUpload
+      description: Multipart upload (text/markdown) -> RAG upload
+      x-mate-owner: knowledge-platform
+      x-mate-permission: kb.post
+      x-mate-requirements:
+      - FR-KB-KBPOSTKBUPLOAD
+      x-mate-implementation-status: implemented
+  /api/v1/kb/search:
+    post:
+      summary: Search via RAG (forwarded)
+      tags:
+      - kb
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SearchRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResponse'
+        '502':
+          description: Upstream RAG error
+      operationId: kbPostKbSearch
+      description: Search via RAG (forwarded)
+      x-mate-owner: knowledge-platform
+      x-mate-permission: kb.post
+      x-mate-requirements:
+      - FR-KB-KBPOSTKBSEARCH
+      x-mate-implementation-status: implemented
+  /api/v1/kb/chat:
+    post:
+      summary: Agent chat (forwarded to mate-tech-agent)
+      tags:
+      - kb
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatResponse'
+        '502':
+          description: Upstream agent error
+      operationId: kbPostKbChat
+      description: Agent chat (forwarded to mate-tech-agent)
+      x-mate-owner: knowledge-platform
+      x-mate-permission: kb.post
+      x-mate-requirements:
+      - FR-KB-KBPOSTKBCHAT
+      x-mate-implementation-status: implemented
+  /api/v1/kb/chat/stream:
+    post:
+      summary: Agent chat (SSE) - proxies mate-tech-agent stream
+      tags:
+      - kb
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatRequest'
+      responses:
+        '200':
+          description: SSE stream
+          content:
+            text/event-stream: {}
+      operationId: kbPostKbChatStream
+      description: Agent chat (SSE) - proxies mate-tech-agent stream
+      x-mate-owner: knowledge-platform
+      x-mate-permission: kb.post
+      x-mate-requirements:
+      - FR-KB-KBPOSTKBCHATSTREAM
+      x-mate-implementation-status: implemented
+  /api/v1/kb/stats:
+    get:
+      summary: Forwarded RAG stats
+      tags:
+      - kb
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatsResponse'
+        '502':
+          description: Upstream RAG error
+      operationId: kbGetKbStats
+      description: Forwarded RAG stats
+      x-mate-owner: knowledge-platform
+      x-mate-permission: kb.get
+      x-mate-requirements:
+      - FR-KB-KBGETKBSTATS
+      x-mate-implementation-status: implemented
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    HealthResponse:
+      type: object
+      required:
+      - status
+      - service
+      - version
+      properties:
+        status:
+          type: string
+        service:
+          type: string
+        version:
+          type: string
+    UploadResponse:
+      type: object
+      required:
+      - document_id
+      - filename
+      - size_bytes
+      - chunk_count
+      - indexed_in
+      properties:
+        document_id:
+          type: string
+        filename:
+          type: string
+        size_bytes:
+          type: integer
+          minimum: 0
+        chunk_count:
+          type: integer
+          minimum: 0
+        indexed_in:
+          type: array
+          items:
+            type: string
+    SearchRequest:
+      type: object
+      required:
+      - query
+      properties:
+        query:
+          type: string
+          minLength: 1
+          maxLength: 4096
+        top_k:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 10
+        mode:
+          type: string
+          enum:
+          - AUTO
+          - FACTUAL
+          - ENTITY
+          - THEMATIC
+          default: AUTO
+    SearchResponse:
+      type: object
+      required:
+      - query
+      - mode
+      - total
+      - hits
+      - latency_ms
+      properties:
+        query:
+          type: string
+        mode:
+          type: string
+        total:
+          type: integer
+          minimum: 0
+        hits:
+          type: array
+          items:
+            type: object
+        latency_ms:
+          type: integer
+          minimum: 0
+    ChatRequest:
+      type: object
+      required:
+      - message
+      properties:
+        message:
+          type: string
+          minLength: 1
+          maxLength: 4096
+        thread_id:
+          type: string
+          nullable: true
+        scenario:
+          type: string
+          enum:
+          - S1
+          - S2
+          - S3
+          default: S1
+    ChatResponse:
+      type: object
+      required:
+      - thread_id
+      - scenario
+      - answer
+      - latency_ms
+      properties:
+        thread_id:
+          type: string
+        scenario:
+          type: string
+        answer:
+          type: string
+        retrieved_chunks:
+          type: array
+          items:
+            type: object
+        tool_calls:
+          type: array
+          items:
+            type: object
+        latency_ms:
+          type: integer
+          minimum: 0
+    StatsResponse:
+      type: object
+      required:
+      - total_chunks
+      - embedder_dim
+      properties:
+        total_chunks:
+          type: integer
+          minimum: 0
+        embedder_dim:
+          type: integer
+          minimum: 0

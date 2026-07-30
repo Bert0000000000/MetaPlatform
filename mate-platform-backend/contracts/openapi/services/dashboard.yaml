@@ -1,0 +1,721 @@
+openapi: 3.1.0
+info:
+  title: Mate Platform dashboard API
+  version: 1.0.0
+  x-mate-owner: business-workbench
+servers:
+- url: /
+tags:
+- name: dashboard
+  description: dashboard domain operations
+security:
+- bearerAuth: []
+paths:
+  /api/v1/dashboard/auth/login:
+    post:
+      summary: 'Workbench login (DEV: returns synthetic tokens, NOT real IAM)'
+      tags:
+      - dashboard
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - username
+              - password
+              properties:
+                username:
+                  type: string
+                  minLength: 1
+                password:
+                  type: string
+                  minLength: 1
+                tenantId:
+                  type: string
+      responses:
+        '200':
+          description: OK
+        '400':
+          description: Missing username or password
+      operationId: dashboardPostDashboardAuthLogin
+      description: 'Workbench login (DEV: returns synthetic tokens, NOT real IAM)'
+      x-mate-owner: business-workbench
+      x-mate-permission: dashboard.post
+      x-mate-requirements:
+      - FR-DASHBOARD-DASHBOARDPOSTDASHBOARDAUTHLOGIN
+      x-mate-implementation-status: placeholder
+  /api/v1/dashboard/profile:
+    get:
+      summary: Current user profile (synthetic)
+      tags:
+      - dashboard
+      responses:
+        '200':
+          description: OK
+      operationId: dashboardGetDashboardProfile
+      description: Current user profile (synthetic)
+      x-mate-owner: business-workbench
+      x-mate-permission: dashboard.get
+      x-mate-requirements:
+      - FR-DASHBOARD-DASHBOARDGETDASHBOARDPROFILE
+      x-mate-implementation-status: placeholder
+  /api/v1/dashboard/profile/permissions:
+    get:
+      summary: Aggregated permissions (synthetic)
+      tags:
+      - dashboard
+      responses:
+        '200':
+          description: OK
+      operationId: dashboardGetDashboardProfilePermissions
+      description: Aggregated permissions (synthetic)
+      x-mate-owner: business-workbench
+      x-mate-permission: dashboard.get
+      x-mate-requirements:
+      - FR-DASHBOARD-DASHBOARDGETDASHBOARDPROFILEPERMISSIONS
+      x-mate-implementation-status: placeholder
+  /api/v1/dashboard/settings:
+    get:
+      summary: Get user preferences
+      tags:
+      - dashboard
+      parameters:
+      - in: query
+        name: userId
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+      operationId: dashboardGetDashboardSettings
+      description: Get user preferences
+      x-mate-owner: business-workbench
+      x-mate-permission: dashboard.get
+      x-mate-requirements:
+      - FR-DASHBOARD-DASHBOARDGETDASHBOARDSETTINGS
+      x-mate-implementation-status: placeholder
+    put:
+      summary: Update user preferences
+      tags:
+      - dashboard
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SettingsUpdate'
+      responses:
+        '200':
+          description: OK
+      operationId: dashboardPutDashboardSettings
+      description: Update user preferences
+      x-mate-owner: business-workbench
+      x-mate-permission: dashboard.put
+      x-mate-requirements:
+      - FR-DASHBOARD-DASHBOARDPUTDASHBOARDSETTINGS
+      x-mate-implementation-status: placeholder
+  /api/v1/dashboard/sessions:
+    get:
+      summary: Active sessions (synthetic)
+      tags:
+      - dashboard
+      parameters:
+      - in: query
+        name: userId
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+      operationId: dashboardGetDashboardSessions
+      description: Active sessions (synthetic)
+      x-mate-owner: business-workbench
+      x-mate-permission: dashboard.get
+      x-mate-requirements:
+      - FR-DASHBOARD-DASHBOARDGETDASHBOARDSESSIONS
+      x-mate-implementation-status: placeholder
+  /api/v1/dashboard/sessions/{session_id}:
+    parameters:
+    - in: path
+      name: session_id
+      required: true
+      schema:
+        type: string
+    delete:
+      summary: Revoke session
+      tags:
+      - dashboard
+      responses:
+        '204':
+          description: No Content
+      operationId: dashboardDeleteDashboardSessionsSessionId
+      description: Revoke session
+      x-mate-owner: business-workbench
+      x-mate-permission: dashboard.delete
+      x-mate-requirements:
+      - FR-DASHBOARD-DASHBOARDDELETEDASHBOARDSESSIONSSESSIONID
+      x-mate-implementation-status: placeholder
+  /api/v1/dashboard/api-keys:
+    get:
+      summary: List API keys (synthetic)
+      tags:
+      - dashboard
+      parameters:
+      - in: query
+        name: tenantId
+        schema:
+          type: string
+      - in: query
+        name: page
+        schema:
+          type: integer
+          default: 0
+      - in: query
+        name: size
+        schema:
+          type: integer
+          default: 100
+      responses:
+        '200':
+          description: OK
+      operationId: dashboardGetDashboardApiKeys
+      description: List API keys (synthetic)
+      x-mate-owner: business-workbench
+      x-mate-permission: dashboard.get
+      x-mate-requirements:
+      - FR-DASHBOARD-DASHBOARDGETDASHBOARDAPIKEYS
+      x-mate-implementation-status: placeholder
+    post:
+      summary: Create API key
+      tags:
+      - dashboard
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApiKeyCreate'
+      responses:
+        '200':
+          description: OK
+      operationId: dashboardPostDashboardApiKeys
+      description: Create API key
+      x-mate-owner: business-workbench
+      x-mate-permission: dashboard.post
+      x-mate-requirements:
+      - FR-DASHBOARD-DASHBOARDPOSTDASHBOARDAPIKEYS
+      x-mate-implementation-status: placeholder
+  /api/v1/dashboard/api-keys/{api_key_id}:
+    parameters:
+    - in: path
+      name: api_key_id
+      required: true
+      schema:
+        type: string
+    delete:
+      summary: Revoke API key
+      tags:
+      - dashboard
+      responses:
+        '204':
+          description: No Content
+      operationId: dashboardDeleteDashboardApiKeysApiKeyId
+      description: Revoke API key
+      x-mate-owner: business-workbench
+      x-mate-permission: dashboard.delete
+      x-mate-requirements:
+      - FR-DASHBOARD-DASHBOARDDELETEDASHBOARDAPIKEYSAPIKEYID
+      x-mate-implementation-status: placeholder
+  /api/v1/dashboard/notifications:
+    get:
+      summary: List notifications (in-memory)
+      tags:
+      - dashboard
+      responses:
+        '200':
+          description: OK
+      operationId: dashboardGetDashboardNotifications
+      description: List notifications (in-memory)
+      x-mate-owner: business-workbench
+      x-mate-permission: dashboard.get
+      x-mate-requirements:
+      - FR-DASHBOARD-DASHBOARDGETDASHBOARDNOTIFICATIONS
+      x-mate-implementation-status: placeholder
+  /api/v1/dashboard/notifications/unread-count:
+    get:
+      summary: Unread notification count
+      tags:
+      - dashboard
+      responses:
+        '200':
+          description: OK
+      operationId: dashboardGetDashboardNotificationsUnreadCount
+      description: Unread notification count
+      x-mate-owner: business-workbench
+      x-mate-permission: dashboard.get
+      x-mate-requirements:
+      - FR-DASHBOARD-DASHBOARDGETDASHBOARDNOTIFICATIONSUNREADCOUNT
+      x-mate-implementation-status: placeholder
+  /api/v1/dashboard/notifications/{notification_id}/read:
+    parameters:
+    - in: path
+      name: notification_id
+      required: true
+      schema:
+        type: string
+    put:
+      summary: Mark one notification read
+      tags:
+      - dashboard
+      responses:
+        '204':
+          description: No Content
+      operationId: dashboardPutDashboardNotificationsNotificationIdRead
+      description: Mark one notification read
+      x-mate-owner: business-workbench
+      x-mate-permission: dashboard.put
+      x-mate-requirements:
+      - FR-DASHBOARD-DASHBOARDPUTDASHBOARDNOTIFICATIONSNOTIFICATIONIDREAD
+      x-mate-implementation-status: placeholder
+  /api/v1/dashboard/notifications/read-all:
+    post:
+      summary: Mark all notifications read
+      tags:
+      - dashboard
+      responses:
+        '204':
+          description: No Content
+      operationId: dashboardPostDashboardNotificationsReadAll
+      description: Mark all notifications read
+      x-mate-owner: business-workbench
+      x-mate-permission: dashboard.post
+      x-mate-requirements:
+      - FR-DASHBOARD-DASHBOARDPOSTDASHBOARDNOTIFICATIONSREADALL
+      x-mate-implementation-status: placeholder
+  /api/v1/dashboard/notifications/settings:
+    get:
+      summary: Get notification preferences
+      tags:
+      - dashboard
+      responses:
+        '200':
+          description: OK
+      operationId: dashboardGetDashboardNotificationsSettings
+      description: Get notification preferences
+      x-mate-owner: business-workbench
+      x-mate-permission: dashboard.get
+      x-mate-requirements:
+      - FR-DASHBOARD-DASHBOARDGETDASHBOARDNOTIFICATIONSSETTINGS
+      x-mate-implementation-status: placeholder
+    put:
+      summary: Update notification preferences
+      tags:
+      - dashboard
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotificationSettingsUpdate'
+      responses:
+        '200':
+          description: OK
+      operationId: dashboardPutDashboardNotificationsSettings
+      description: Update notification preferences
+      x-mate-owner: business-workbench
+      x-mate-permission: dashboard.put
+      x-mate-requirements:
+      - FR-DASHBOARD-DASHBOARDPUTDASHBOARDNOTIFICATIONSSETTINGS
+      x-mate-implementation-status: placeholder
+  /api/v1/dashboard/metrics:
+    get:
+      summary: Metric cards (in-memory)
+      tags:
+      - dashboard
+      responses:
+        '200':
+          description: OK
+      operationId: dashboardGetDashboardMetrics
+      description: Metric cards (in-memory)
+      x-mate-owner: business-workbench
+      x-mate-permission: dashboard.get
+      x-mate-requirements:
+      - FR-DASHBOARD-DASHBOARDGETDASHBOARDMETRICS
+      x-mate-implementation-status: placeholder
+  /api/v1/dashboard/metrics/trend:
+    get:
+      summary: Metric trend (in-memory)
+      tags:
+      - dashboard
+      parameters:
+      - in: query
+        name: metric
+        schema:
+          type: string
+      - in: query
+        name: range
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+      operationId: dashboardGetDashboardMetricsTrend
+      description: Metric trend (in-memory)
+      x-mate-owner: business-workbench
+      x-mate-permission: dashboard.get
+      x-mate-requirements:
+      - FR-DASHBOARD-DASHBOARDGETDASHBOARDMETRICSTREND
+      x-mate-implementation-status: placeholder
+  /api/v1/dashboard/todos:
+    get:
+      summary: Pending todos (in-memory)
+      tags:
+      - dashboard
+      responses:
+        '200':
+          description: OK
+      operationId: dashboardGetDashboardTodos
+      description: Pending todos (in-memory)
+      x-mate-owner: business-workbench
+      x-mate-permission: dashboard.get
+      x-mate-requirements:
+      - FR-DASHBOARD-DASHBOARDGETDASHBOARDTODOS
+      x-mate-implementation-status: placeholder
+  /api/v1/dashboard/todos/done:
+    get:
+      summary: Done todos (in-memory)
+      tags:
+      - dashboard
+      responses:
+        '200':
+          description: OK
+      operationId: dashboardGetDashboardTodosDone
+      description: Done todos (in-memory)
+      x-mate-owner: business-workbench
+      x-mate-permission: dashboard.get
+      x-mate-requirements:
+      - FR-DASHBOARD-DASHBOARDGETDASHBOARDTODOSDONE
+      x-mate-implementation-status: placeholder
+  /api/v1/dashboard/todos/{task_id}/action:
+    parameters:
+    - in: path
+      name: task_id
+      required: true
+      schema:
+        type: string
+    post:
+      summary: Approve / reject todo
+      tags:
+      - dashboard
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TodoActionRequest'
+      responses:
+        '200':
+          description: OK
+      operationId: dashboardPostDashboardTodosTaskIdAction
+      description: Approve / reject todo
+      x-mate-owner: business-workbench
+      x-mate-permission: dashboard.post
+      x-mate-requirements:
+      - FR-DASHBOARD-DASHBOARDPOSTDASHBOARDTODOSTASKIDACTION
+      x-mate-implementation-status: placeholder
+  /api/v1/dashboard/workers:
+    get:
+      summary: List digital workers (in-memory)
+      tags:
+      - dashboard
+      responses:
+        '200':
+          description: OK
+      operationId: dashboardGetDashboardWorkers
+      description: List digital workers (in-memory)
+      x-mate-owner: business-workbench
+      x-mate-permission: dashboard.get
+      x-mate-requirements:
+      - FR-DASHBOARD-DASHBOARDGETDASHBOARDWORKERS
+      x-mate-implementation-status: placeholder
+  /api/v1/dashboard/deliverables:
+    get:
+      summary: List deliverables (in-memory)
+      tags:
+      - dashboard
+      responses:
+        '200':
+          description: OK
+      operationId: dashboardGetDashboardDeliverables
+      description: List deliverables (in-memory)
+      x-mate-owner: business-workbench
+      x-mate-permission: dashboard.get
+      x-mate-requirements:
+      - FR-DASHBOARD-DASHBOARDGETDASHBOARDDELIVERABLES
+      x-mate-implementation-status: placeholder
+  /api/v1/dashboard/deliverables/{deliverable_id}/download:
+    parameters:
+    - in: path
+      name: deliverable_id
+      required: true
+      schema:
+        type: string
+    post:
+      summary: Generate a one-shot download URL
+      tags:
+      - dashboard
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DownloadRequest'
+      responses:
+        '200':
+          description: OK
+        '404':
+          description: Not found
+      operationId: dashboardPostDashboardDeliverablesDeliverableIdDownload
+      description: Generate a one-shot download URL
+      x-mate-owner: business-workbench
+      x-mate-permission: dashboard.post
+      x-mate-requirements:
+      - FR-DASHBOARD-DASHBOARDPOSTDASHBOARDDELIVERABLESDELIVERABLEIDDOWNLOAD
+      x-mate-implementation-status: placeholder
+  /api/v1/dashboard/deliverables/{deliverable_id}:
+    parameters:
+    - in: path
+      name: deliverable_id
+      required: true
+      schema:
+        type: string
+    delete:
+      summary: Delete deliverable
+      tags:
+      - dashboard
+      responses:
+        '204':
+          description: No Content
+      operationId: dashboardDeleteDashboardDeliverablesDeliverableId
+      description: Delete deliverable
+      x-mate-owner: business-workbench
+      x-mate-permission: dashboard.delete
+      x-mate-requirements:
+      - FR-DASHBOARD-DASHBOARDDELETEDASHBOARDDELIVERABLESDELIVERABLEID
+      x-mate-implementation-status: placeholder
+  /api/v1/dashboard/anomalies:
+    get:
+      summary: List anomaly events (in-memory)
+      tags:
+      - dashboard
+      parameters:
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - OPEN
+          - ANALYZING
+          - RESOLVED
+      responses:
+        '200':
+          description: OK
+      operationId: dashboardGetDashboardAnomalies
+      description: List anomaly events (in-memory)
+      x-mate-owner: business-workbench
+      x-mate-permission: dashboard.get
+      x-mate-requirements:
+      - FR-DASHBOARD-DASHBOARDGETDASHBOARDANOMALIES
+      x-mate-implementation-status: placeholder
+  /api/v1/dashboard/anomalies/{anomaly_id}:
+    parameters:
+    - in: path
+      name: anomaly_id
+      required: true
+      schema:
+        type: string
+    get:
+      summary: Anomaly detail
+      tags:
+      - dashboard
+      responses:
+        '200':
+          description: OK
+        '404':
+          description: Not found
+      operationId: dashboardGetDashboardAnomaliesAnomalyId
+      description: Anomaly detail
+      x-mate-owner: business-workbench
+      x-mate-permission: dashboard.get
+      x-mate-requirements:
+      - FR-DASHBOARD-DASHBOARDGETDASHBOARDANOMALIESANOMALYID
+      x-mate-implementation-status: placeholder
+  /api/v1/dashboard/anomalies/{anomaly_id}/analyze:
+    parameters:
+    - in: path
+      name: anomaly_id
+      required: true
+      schema:
+        type: string
+    post:
+      summary: RCA (synthetic)
+      tags:
+      - dashboard
+      responses:
+        '200':
+          description: OK
+        '404':
+          description: Not found
+      operationId: dashboardPostDashboardAnomaliesAnomalyIdAnalyze
+      description: RCA (synthetic)
+      x-mate-owner: business-workbench
+      x-mate-permission: dashboard.post
+      x-mate-requirements:
+      - FR-DASHBOARD-DASHBOARDPOSTDASHBOARDANOMALIESANOMALYIDANALYZE
+      x-mate-implementation-status: placeholder
+  /api/v1/dashboard/anomalies/{anomaly_id}/remediate:
+    parameters:
+    - in: path
+      name: anomaly_id
+      required: true
+      schema:
+        type: string
+    post:
+      summary: Trigger remediation (synthetic; mode=AUTO executes, mode=ADVISE suggests)
+      tags:
+      - dashboard
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                mode:
+                  type: string
+                  enum:
+                  - AUTO
+                  - ADVISE
+                  default: ADVISE
+                actionCode:
+                  type: string
+      responses:
+        '200':
+          description: OK
+        '404':
+          description: Not found
+      operationId: dashboardPostDashboardAnomaliesAnomalyIdRemediate
+      description: Trigger remediation (synthetic; mode=AUTO executes, mode=ADVISE
+        suggests)
+      x-mate-owner: business-workbench
+      x-mate-permission: dashboard.post
+      x-mate-requirements:
+      - FR-DASHBOARD-DASHBOARDPOSTDASHBOARDANOMALIESANOMALYIDREMEDIATE
+      x-mate-implementation-status: placeholder
+  /api/v1/dashboard/anomaly-rules:
+    get:
+      summary: List anomaly detection rules (in-memory)
+      tags:
+      - dashboard
+      responses:
+        '200':
+          description: OK
+      operationId: dashboardGetDashboardAnomalyRules
+      description: List anomaly detection rules (in-memory)
+      x-mate-owner: business-workbench
+      x-mate-permission: dashboard.get
+      x-mate-requirements:
+      - FR-DASHBOARD-DASHBOARDGETDASHBOARDANOMALYRULES
+      x-mate-implementation-status: placeholder
+    post:
+      summary: Create anomaly rule
+      tags:
+      - dashboard
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AnomalyRuleCreate'
+      responses:
+        '200':
+          description: Created
+      operationId: dashboardPostDashboardAnomalyRules
+      description: Create anomaly rule
+      x-mate-owner: business-workbench
+      x-mate-permission: dashboard.post
+      x-mate-requirements:
+      - FR-DASHBOARD-DASHBOARDPOSTDASHBOARDANOMALYRULES
+      x-mate-implementation-status: placeholder
+  /api/v1/dashboard/anomaly-rules/{rule_id}:
+    parameters:
+    - in: path
+      name: rule_id
+      required: true
+      schema:
+        type: string
+    put:
+      summary: Update anomaly rule
+      tags:
+      - dashboard
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AnomalyRuleCreate'
+      responses:
+        '200':
+          description: OK
+        '404':
+          description: Not found
+      operationId: dashboardPutDashboardAnomalyRulesRuleId
+      description: Update anomaly rule
+      x-mate-owner: business-workbench
+      x-mate-permission: dashboard.put
+      x-mate-requirements:
+      - FR-DASHBOARD-DASHBOARDPUTDASHBOARDANOMALYRULESRULEID
+      x-mate-implementation-status: placeholder
+    delete:
+      summary: Delete anomaly rule
+      tags:
+      - dashboard
+      responses:
+        '204':
+          description: No Content
+      operationId: dashboardDeleteDashboardAnomalyRulesRuleId
+      description: Delete anomaly rule
+      x-mate-owner: business-workbench
+      x-mate-permission: dashboard.delete
+      x-mate-requirements:
+      - FR-DASHBOARD-DASHBOARDDELETEDASHBOARDANOMALYRULESRULEID
+      x-mate-implementation-status: placeholder
+  /api/v1/dashboard/search:
+    get:
+      summary: Global search (in-memory index)
+      tags:
+      - dashboard
+      parameters:
+      - in: query
+        name: keyword
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+      operationId: dashboardGetDashboardSearch
+      description: Global search (in-memory index)
+      x-mate-owner: business-workbench
+      x-mate-permission: dashboard.get
+      x-mate-requirements:
+      - FR-DASHBOARD-DASHBOARDGETDASHBOARDSEARCH
+      x-mate-implementation-status: placeholder
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

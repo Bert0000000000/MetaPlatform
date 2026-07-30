@@ -1,0 +1,500 @@
+openapi: 3.1.0
+info:
+  title: Mate Platform ont API
+  version: 1.0.0
+  x-mate-owner: ontology-platform
+servers:
+- url: /
+tags:
+- name: ont
+  description: ont domain operations
+security:
+- bearerAuth: []
+paths:
+  /healthz:
+    get:
+      summary: Liveness probe
+      tags:
+      - ont
+      responses:
+        '200':
+          description: OK
+      operationId: ontGetHealthz
+      description: Liveness probe
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.get
+      x-mate-requirements:
+      - FR-ONT-ONTGETHEALTHZ
+      x-mate-implementation-status: implemented
+  /api/v1/ont/ontologies:
+    post:
+      summary: Create ontology
+      tags:
+      - ont
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OntologyCreate'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ontology'
+        '409':
+          description: Ontology already exists
+      operationId: ontPostOntOntologies
+      description: Create ontology
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.post
+      x-mate-requirements:
+      - FR-ONT-ONTPOSTONTONTOLOGIES
+      x-mate-implementation-status: implemented
+  /api/v1/ont/ontologies/{ontology_id}:
+    parameters:
+    - in: path
+      name: ontology_id
+      required: true
+      schema:
+        type: string
+    get:
+      summary: Read ontology
+      tags:
+      - ont
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ontology'
+        '404':
+          description: not found
+      operationId: ontGetOntOntologiesOntologyId
+      description: Read ontology
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.get
+      x-mate-requirements:
+      - FR-ONT-ONTGETONTONTOLOGIESONTOLOGYID
+      x-mate-implementation-status: implemented
+  /api/v1/ont/classes:
+    post:
+      summary: Create class
+      tags:
+      - ont
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClassCreate'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClassResponse'
+        '409':
+          description: Class already exists
+      operationId: ontPostOntClasses
+      description: Create class
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.post
+      x-mate-requirements:
+      - FR-ONT-ONTPOSTONTCLASSES
+      x-mate-implementation-status: implemented
+  /api/v1/ont/classes/{class_id}:
+    parameters:
+    - in: path
+      name: class_id
+      required: true
+      schema:
+        type: string
+    get:
+      summary: Read class
+      tags:
+      - ont
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClassResponse'
+        '404':
+          description: not found
+      operationId: ontGetOntClassesClassId
+      description: Read class
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.get
+      x-mate-requirements:
+      - FR-ONT-ONTGETONTCLASSESCLASSID
+      x-mate-implementation-status: implemented
+  /api/v1/ont/instances:
+    get:
+      summary: List instances (optional class_id filter)
+      tags:
+      - ont
+      parameters:
+      - in: query
+        name: class_id
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/InstanceResponse'
+      operationId: ontGetOntInstances
+      description: List instances (optional class_id filter)
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.get
+      x-mate-requirements:
+      - FR-ONT-ONTGETONTINSTANCES
+      x-mate-implementation-status: placeholder
+    post:
+      summary: Create instance
+      tags:
+      - ont
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InstanceCreate'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InstanceResponse'
+      operationId: ontPostOntInstances
+      description: Create instance
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.post
+      x-mate-requirements:
+      - FR-ONT-ONTPOSTONTINSTANCES
+      x-mate-implementation-status: placeholder
+  /api/v1/ont/instances/{iid}:
+    parameters:
+    - in: path
+      name: iid
+      required: true
+      schema:
+        type: string
+    get:
+      summary: Read instance
+      tags:
+      - ont
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InstanceResponse'
+        '404':
+          description: not found
+      operationId: ontGetOntInstancesIid
+      description: Read instance
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.get
+      x-mate-requirements:
+      - FR-ONT-ONTGETONTINSTANCESIID
+      x-mate-implementation-status: placeholder
+    delete:
+      summary: Delete instance
+      tags:
+      - ont
+      responses:
+        '200':
+          description: OK
+      operationId: ontDeleteOntInstancesIid
+      description: Delete instance
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.delete
+      x-mate-requirements:
+      - FR-ONT-ONTDELETEONTINSTANCESIID
+      x-mate-implementation-status: placeholder
+  /api/v1/ont/instances/relations:
+    get:
+      summary: List relations
+      tags:
+      - ont
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RelationResponse'
+      operationId: ontGetOntInstancesRelations
+      description: List relations
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.get
+      x-mate-requirements:
+      - FR-ONT-ONTGETONTINSTANCESRELATIONS
+      x-mate-implementation-status: placeholder
+    post:
+      summary: Create relation
+      tags:
+      - ont
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RelationCreate'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RelationResponse'
+        '400':
+          description: Bad payload
+      operationId: ontPostOntInstancesRelations
+      description: Create relation
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.post
+      x-mate-requirements:
+      - FR-ONT-ONTPOSTONTINSTANCESRELATIONS
+      x-mate-implementation-status: placeholder
+  /api/v1/ont/sparql:
+    post:
+      summary: SPARQL -> Cypher -> execute
+      tags:
+      - ont
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SparqlRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SparqlResponse'
+        '400':
+          description: SPARQL parse / transpile failure
+      operationId: ontPostOntSparql
+      description: SPARQL -> Cypher -> execute
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.post
+      x-mate-requirements:
+      - FR-ONT-ONTPOSTONTSPARQL
+      x-mate-implementation-status: placeholder
+  /api/v1/ont/explain:
+    post:
+      summary: SPARQL EXPLAIN (parse + transpile only)
+      tags:
+      - ont
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - query
+              properties:
+                query:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  cypher:
+                    type: string
+                  plan:
+                    type: string
+                  estimated_rows:
+                    type: integer
+                  variables:
+                    type: array
+                    items:
+                      type: string
+      operationId: ontPostOntExplain
+      description: SPARQL EXPLAIN (parse + transpile only)
+      x-mate-owner: ontology-platform
+      x-mate-permission: ont.post
+      x-mate-requirements:
+      - FR-ONT-ONTPOSTONTEXPLAIN
+      x-mate-implementation-status: implemented
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    OntologyCreate:
+      type: object
+      required:
+      - id
+      properties:
+        id:
+          type: string
+        namespace:
+          type: string
+          default: default
+        description:
+          type: string
+    Ontology:
+      type: object
+      required:
+      - id
+      - namespace
+      - description
+      properties:
+        id:
+          type: string
+        namespace:
+          type: string
+        description:
+          type: string
+    ClassCreate:
+      type: object
+      required:
+      - id
+      properties:
+        id:
+          type: string
+        namespace:
+          type: string
+          default: default
+        label:
+          type: string
+        parent:
+          type: string
+          nullable: true
+        properties:
+          type: array
+          items:
+            type: object
+    ClassResponse:
+      type: object
+      required:
+      - id
+      - namespace
+      - label
+      properties:
+        id:
+          type: string
+        namespace:
+          type: string
+        label:
+          type: string
+        parent:
+          type: string
+          nullable: true
+        properties:
+          type: array
+          items:
+            type: object
+    InstanceCreate:
+      type: object
+      required:
+      - class_id
+      properties:
+        class_id:
+          type: string
+        properties:
+          type: object
+        namespace:
+          type: string
+          default: default
+    InstanceResponse:
+      type: object
+      required:
+      - id
+      - class_id
+      - namespace
+      properties:
+        id:
+          type: string
+        class_id:
+          type: string
+        namespace:
+          type: string
+        properties:
+          type: object
+    RelationCreate:
+      type: object
+      required:
+      - type
+      - src_id
+      - dst_id
+      properties:
+        type:
+          type: string
+        src_id:
+          type: string
+        dst_id:
+          type: string
+        properties:
+          type: object
+    RelationResponse:
+      type: object
+      required:
+      - id
+      - type
+      - src_id
+      - dst_id
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+        src_id:
+          type: string
+        dst_id:
+          type: string
+        properties:
+          type: object
+    SparqlRequest:
+      type: object
+      required:
+      - query
+      properties:
+        query:
+          type: string
+        format:
+          type: string
+          default: json
+          enum:
+          - json
+          - xml
+          - csv
+    SparqlResponse:
+      type: object
+      required:
+      - cypher
+      properties:
+        cypher:
+          type: string
+        bindings:
+          type: array
+          items:
+            type: object
+        took_ms:
+          type: number
