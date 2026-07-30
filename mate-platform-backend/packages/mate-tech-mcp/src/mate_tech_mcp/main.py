@@ -1,4 +1,4 @@
-"""Mate Platform - MCP main entry.
+﻿"""Mate Platform - MCP main entry.
 
 ST-5.3.1.2: mcp.Server 闁诲骸婀遍崑妯兼閵夆晛绀?+ stdio 闂佸憡鍑归崹鐗堟叏?ST-5.3.6.1: 闂備焦婢樼粔鍫曟偪閸℃瑦灏?env
 ST-5.3.8.1: HTTP 濠碘剝銇滈崕鑼暜?/api/v1/mcp/tools/{name}
@@ -78,8 +78,24 @@ async def list_prompts_endpoint() -> dict[str, list]:
 
 
 @http_bridge.post("/prompts/{name}")
-async def render_prompt_endpoint(name: str, payload: dict) -> dict[str, str]:
-    """ST-5.3.4: 濠电偞鎸稿鍫曟偂?prompt."""
+async def render_prompt_endpoint(
+    name: str,
+    payload: dict,
+    request: Request,
+) -> dict[str, str]:
+    """ST-5.3.4: Render a prompt.
+
+    Requires Authorization: Bearer <JWT> (ST-5.3.9). Same auth as
+    call_tool_endpoint so prompts cannot be rendered anonymously.
+    """
+    auth = request.headers.get("Authorization", "")
+    if not auth.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Missing Bearer token")
+    token = auth[len("Bearer "):]
+    try:
+        await verify_jwt_token(token)
+    except AuthError as e:
+        raise HTTPException(status_code=401, detail=str(e))
     try:
         rendered = render_prompt(name, **payload)
     except KeyError:

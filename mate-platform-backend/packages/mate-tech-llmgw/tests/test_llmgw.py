@@ -1,6 +1,7 @@
 """Tests for mate-tech-llmgw (ST-5.5.2.3 + ST-5.5.3.4 + ST-5.5.3.2)."""
 from __future__ import annotations
 
+import pytest
 import respx
 from httpx import Response
 
@@ -61,6 +62,7 @@ def test_doubao_factory_lazy_load() -> None:
 
 
 @respx.mock
+@pytest.mark.asyncio
 async def test_openai_chat_mock() -> None:
     """ST-5.5.2.3: chat mock 跑通."""
     respx.post("https://api.openai.com/v1/chat/completions").mock(
@@ -90,6 +92,7 @@ async def test_openai_chat_mock() -> None:
 
 
 @respx.mock
+@pytest.mark.asyncio
 async def test_qwen_chat_mock() -> None:
     """ST-5.5.3.2: Qwen mock 跑通."""
     respx.post("https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions").mock(
