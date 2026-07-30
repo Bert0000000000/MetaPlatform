@@ -15,7 +15,7 @@ const ROUTES: RouteConfig[] = [
   { method: "GET", path: "/api/v1/rag/search", upstream: "/api/v1/rag/search" },
   { method: "POST", path: "/api/v1/agent/chat", upstream: "/api/v1/agent/chat" },
   { method: "POST", path: "/api/v1/agent/chat/stream", upstream: "/api/v1/agent/chat/stream" },
-  { method: "GET", path: "/api/v1/llm/chat", upstream: "/api/v1/llm/chat" },
+  { method: "POST", path: "/api/v1/llmgw/chat", upstream: "/api/v1/llmgw/chat" },
   { method: "GET", path: "/api/v1/msg/topics", upstream: "/api/v1/msg/topics" },
 ];
 

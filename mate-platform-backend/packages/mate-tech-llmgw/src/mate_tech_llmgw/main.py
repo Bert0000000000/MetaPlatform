@@ -14,7 +14,7 @@ import os
 import structlog
 from fastapi import FastAPI
 
-from .api.routes import router as llm_router
+from .api.routes import legacy_router as legacy_llm_router, router as llm_router
 
 # BUSINESS-SLICES P1 wave 2: hook 1 (auth).
 from mate_platform.auth import install_auth
@@ -30,7 +30,12 @@ app = FastAPI(
 # Hook 1 of 5: install auth middleware (SEC-IAM-01).
 install_auth(app)
 
+# Canonical prefix is /api/v1/llmgw/* (per spec). The legacy
+# /api/v1/llm/* alias is also wired for one release so existing
+# callers (BFF routes, integration tests) keep working while they
+# migrate to the spec-compliant path.
 app.include_router(llm_router)
+app.include_router(legacy_llm_router)
 
 
 @app.get("/healthz")
