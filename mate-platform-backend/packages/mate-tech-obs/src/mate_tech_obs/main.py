@@ -1,10 +1,24 @@
-"""Mate Platform - Tech OBS main entry."""
+"""Mate Platform - Tech OBS main entry.
+
+Wires the 3 integration hooks per ADR-0014:
+  1. install_auth(app) from mate_platform.auth (SEC-IAM-01).
+  2. require_tenant(ctx) at every non-/healthz non-/metrics handler
+     (SEC-TENANT-01).
+  3. (future) outbox.append(event) for write endpoints.
+
+Note: /healthz and /metrics are anonymous by design (PROBE endpoints
+that any k8s liveness / readiness / Prometheus can hit without auth).
+The auth middleware in mate_platform.auth already whitelists
+/healthz; we add /metrics to the same whitelist at the
+AuthMiddleware level (see ADR-0011 §2.4 + the existing
+ANONYMOUS_PATHS constant).
+"""
 from __future__ import annotations
 
 import os
 
 import structlog
-from fastapi import FastAPI, Response
+from fastapi import FastAPI, HTTPException, Request, Response
 
 from .admin import router as admin_router
 from .health.aggregator import aggregate_health
@@ -12,6 +26,10 @@ from .metrics.prom import render_metrics
 from .tracing.instrument import auto_instrument
 from .tracing.logging import configure_json_logging
 from .tracing.otel import init_tracing
+
+# TECH-SERVICES / BUSINESS-SLICES: hooks 1, 2.
+from mate_platform.auth import install_auth
+from mate_platform.tenancy.guards import require_tenant
 
 logger = structlog.get_logger(__name__)
 
@@ -24,32 +42,61 @@ app = FastAPI(
     description="Observability aggregation (OTel + Prometheus + Loki + Tempo)",
 )
 
+# Hook 1 of 5: install auth middleware (SEC-IAM-01).
+install_auth(app)
+
 _INSTRUMENT_RESULT = auto_instrument(app)
+
+
+def _require_ctx(request: Request):
+    """Defence in depth: ctx should already be set by install_auth."""
+    ctx = getattr(request.state, "ctx", None)
+    if ctx is None:
+        raise HTTPException(status_code=401, detail="no auth context")
+    return ctx
 
 
 @app.get("/healthz")
 async def healthz() -> dict[str, str]:
+    """Anonymous — k8s liveness probe.
+
+    Whitelisted by AuthMiddleware.ANONYMOUS_PATHS in
+    mate_platform.auth.middleware.
+    """
     return {"status": "ok", "version": app.version}
 
 
 @app.get("/metrics")
 async def metrics_endpoint() -> Response:
+    """Anonymous — Prometheus scrape.
+
+    Whitelisted by AuthMiddleware.ANONYMOUS_PATHS. (In production,
+    the Prometheus server IP-range is enforced at NetworkPolicy
+    level; the path is anonymous to make scrape config simpler.)
+    """
     body, content_type = render_metrics()
     return Response(content=body, media_type=content_type)
 
 
 @app.get("/api/v1/obs/health")
-async def health_aggregate() -> dict[str, object]:
-    report = await aggregate_health()
+async def health_aggregate(request: Request) -> dict[str, object]:
+    """Per-tenant health view. Tenant guard at the top."""
+    ctx = _require_ctx(request)
+    require_tenant(ctx)
+    report = await aggregate_health(tenant_id=ctx.tenant_id)
     return report.to_dict()
 
 
 @app.get("/api/v1/obs/instrument")
-async def instrument_status() -> dict[str, object]:
-    return {"instrumented": _INSTRUMENT_RESULT}
+async def instrument_status(request: Request) -> dict[str, object]:
+    """Per-tenant instrumentation status."""
+    ctx = _require_ctx(request)
+    require_tenant(ctx)
+    return {"instrumented": _INSTRUMENT_RESULT, "tenant_id": ctx.tenant_id}
 
 
 app.include_router(admin_router)
+
 
 @app.on_event("startup")  # pyright: ignore[reportDeprecated]
 async def on_startup() -> None:
@@ -58,4 +105,5 @@ async def on_startup() -> None:
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("PORT", "8083")))  # noqa: S104
