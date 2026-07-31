@@ -33,6 +33,7 @@
     "reportUnnecessaryTypeIgnoreComment": "warning",
     "extraPaths": [
         "packages/mate-common/src",
+        "packages/mate-tech-db/src",
         "packages/mate-app-kb/src",
         "packages/mate-tech-agent/src",
         "packages/mate-tech-iam/src",

@@ -21,6 +21,12 @@ from mate_app_a2a.repositories import (  # pyright: ignore[reportMissingImports]
     create_delegation,
     list_external_agents,
 )
+from mate_app_arch.repositories import (  # pyright: ignore[reportMissingImports]
+    list_capability_tree,
+    list_data_assets,
+    list_data_entities,
+    list_data_flows,
+)
 
 from mate_clients.security.bearer import BearerAuth
 from mate_platform.messaging.events import Event
@@ -503,8 +509,6 @@ async def get_knowledge_bases(request: Request) -> dict[str, Any]:
     if items:
         return _resp(items)
     # P2-W4: fallback to arch DataAssets as knowledge-base proxies
-    from mate_app_arch.repositories import list_data_assets  # pyright: ignore[reportMissingImports]
-
     assets = list_data_assets(tid)
     kb_items = [
         {"id": a.id, "name": a.name, "doc_count": 0}
@@ -527,11 +531,6 @@ async def search_concepts(
 ) -> dict[str, Any]:
     tid = _tid(request)
     # P2-W4: pull concepts from arch Capability tree + DataEntity store
-    from mate_app_arch.repositories import (  # pyright: ignore[reportMissingImports]
-        list_capability_tree,
-        list_data_entities,
-    )
-
     concepts: list[dict[str, Any]] = []
     for cap in list_capability_tree(tid):
         concepts.append({"id": cap.id, "name": cap.name, "category": "capability"})
@@ -549,11 +548,6 @@ async def expand_graph(
 ) -> dict[str, Any]:
     tid = _tid(request)
     # P2-W4: expand from arch Capability tree (parent → children)
-    from mate_app_arch.repositories import (  # pyright: ignore[reportMissingImports]
-        list_capability_tree,
-        list_data_flows,
-    )
-
     nodes: list[dict[str, Any]] = []
     edges: list[dict[str, Any]] = []
     caps = list_capability_tree(tid)
@@ -566,7 +560,7 @@ async def expand_graph(
         edges.append({"source": node_id, "target": child.id, "label": "contains"})
     # also pull data flows touching this node
     for flow in list_data_flows(tid):
-        if flow.source_entity_id == node_id or flow.target_entity_id == node_id:
+        if node_id in {flow.source_entity_id, flow.target_entity_id}:
             for nid in (flow.source_entity_id, flow.target_entity_id):
                 if not any(n["id"] == nid for n in nodes):
                     nodes.append({"id": nid, "label": nid})
@@ -585,11 +579,6 @@ async def query_graph(
 ) -> dict[str, Any]:
     tid = _tid(request)
     # P2-W4: full graph from arch Capability tree + DataEntity store
-    from mate_app_arch.repositories import (  # pyright: ignore[reportMissingImports]
-        list_capability_tree,
-        list_data_entities,
-    )
-
     nodes: list[dict[str, Any]] = []
     edges: list[dict[str, Any]] = []
     for cap in list_capability_tree(tid):

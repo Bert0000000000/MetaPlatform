@@ -14,7 +14,7 @@ ignore = ["E501", "PLR0913", "PLR2004", "S101", "TC001", "TC002", "TC003", "RUF0
 "tests/architecture/**/*.py" = ["S603"]
 
 [lint.isort]
-known-first-party = ["mate_common", "mate_tech_rag", "mate_tech_agent", "mate_tech_llmgw", "mate_tech_msg", "mate_tech_obs", "mate_tech_ont", "mate_tech_mcp", "mate_app_kb", "mate_kernel", "mate_platform", "mate_clients"]
+known-first-party = ["mate_common", "mate_tech_rag", "mate_tech_agent", "mate_tech_llmgw", "mate_tech_msg", "mate_tech_obs", "mate_tech_ont", "mate_tech_mcp", "mate_tech_db", "mate_app_kb", "mate_kernel", "mate_platform", "mate_clients"]
 
 [format]
 quote-style = "double"

@@ -1,0 +1,71 @@
+"""Copilot ORM models (SQLAlchemy 2.0) — maps to Postgres/SQLite tables.
+
+These models mirror the frozen dataclasses in in_memory.py. The
+factory in repositories/__init__.py selects between in-memory and
+SQL backends based on MATE_DB_URL env var.
+
+v3.2 proof-of-concept: implements 5 of the 10 tables (Conversation,
+QueryLog, Plan, Intent, Action). The remaining 5 follow the same
+pattern and will be added incrementally.
+"""
+from __future__ import annotations
+
+from sqlalchemy import REAL, Integer, String, Text
+from sqlalchemy.orm import Mapped, mapped_column
+
+from mate_tech_db.base import Base
+
+
+class ConversationORM(Base):
+    __tablename__ = "copilot_conversations"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    title: Mapped[str] = mapped_column(String(256), nullable=False)
+    summary: Mapped[str] = mapped_column(Text, default="")
+    message_count: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[str] = mapped_column(String(64), default="")
+
+
+class QueryLogORM(Base):
+    __tablename__ = "copilot_queries"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    sql: Mapped[str] = mapped_column(Text, nullable=False)
+    datasource_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    status: Mapped[str] = mapped_column(String(32), default="ok")
+    row_count: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[str] = mapped_column(String(64), default="")
+
+
+class PlanORM(Base):
+    __tablename__ = "copilot_plans"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    name: Mapped[str] = mapped_column(String(256), nullable=False)
+    goal: Mapped[str] = mapped_column(Text, nullable=False)
+    steps: Mapped[str] = mapped_column(Text, default="")  # newline-separated
+    status: Mapped[str] = mapped_column(String(32), default="draft")
+
+
+class IntentORM(Base):
+    __tablename__ = "copilot_intents"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    name: Mapped[str] = mapped_column(String(128), nullable=False)
+    keywords: Mapped[str] = mapped_column(Text, default="")  # comma-separated
+    confidence: Mapped[float] = mapped_column(REAL, default=0.0)
+
+
+class ActionORM(Base):
+    __tablename__ = "copilot_actions"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    name: Mapped[str] = mapped_column(String(256), nullable=False)
+    description: Mapped[str] = mapped_column(Text, nullable=False)
+    category: Mapped[str] = mapped_column(String(64), default="general")
+    keywords: Mapped[str] = mapped_column(Text, default="")  # comma-separated
