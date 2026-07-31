@@ -14,7 +14,6 @@ from __future__ import annotations
 import re
 from typing import Any, Protocol
 
-
 _TYPE_PATTERN = re.compile(r"^[a-z][a-z0-9_]*\.[a-z][a-z0-9_]*\.[a-z][a-z0-9_]+$")
 
 

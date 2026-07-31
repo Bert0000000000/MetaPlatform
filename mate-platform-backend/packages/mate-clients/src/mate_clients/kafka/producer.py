@@ -14,10 +14,9 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import Any, Protocol
+from typing import Protocol
 
 from mate_platform.messaging.events import Event
-
 
 logger = logging.getLogger(__name__)
 

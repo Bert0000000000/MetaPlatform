@@ -14,21 +14,18 @@ require an authenticated tenant.
 """
 from __future__ import annotations
 
-import logging
-import os
-
 import structlog
 from fastapi import FastAPI, HTTPException, Request
+
+# TECH-SERVICES / BUSINESS-SLICES: hooks 1, 2 (auth + tenant).
+from mate_platform.auth import install_auth
+from mate_platform.tenancy.guards import require_tenant
 
 from .dedup import DedupStore
 from .kafka_client import create_kafka_client
 from .observability.tracing import init_tracing
 from .publisher import Publisher
 from .schemas import PublishRequest, PublishResponse
-
-# TECH-SERVICES / BUSINESS-SLICES: hooks 1, 2 (auth + tenant).
-from mate_platform.auth import install_auth
-from mate_platform.tenancy.guards import require_tenant
 
 logger = structlog.get_logger(__name__)
 

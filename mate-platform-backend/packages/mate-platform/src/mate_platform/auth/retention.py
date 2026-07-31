@@ -21,7 +21,6 @@ from datetime import UTC, datetime, timedelta
 from enum import Enum
 from typing import Any, Protocol
 
-
 logger = logging.getLogger("metaplatform.retention")
 
 
@@ -45,7 +44,7 @@ class RetentionPolicy:
     retentionDays: int = 0  # 0 = forever
 
     @classmethod
-    def default(cls) -> "RetentionPolicy":
+    def default(cls) -> RetentionPolicy:
         return cls(hardDeleteAfterDays=30, retentionDays=0)
 
 

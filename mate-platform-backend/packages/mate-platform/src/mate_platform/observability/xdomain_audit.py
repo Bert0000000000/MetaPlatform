@@ -21,7 +21,6 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Any, Protocol
 
-
 logger = logging.getLogger("metaplatform.federation")
 
 

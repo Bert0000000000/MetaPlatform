@@ -31,9 +31,10 @@ os.environ.setdefault("KEYCLOAK_URL", "https://keycloak.test.invalid")
 os.environ.setdefault("KEYCLOAK_REALM", "metaplatform")
 os.environ.setdefault("SERVICE_CLIENT_SECRET", "test-secret")
 
-from fastapi.testclient import TestClient
 
-from mate_platform.auth import install_auth
+from mate_clients.security import (
+    BearerAuth,
+)
 from mate_platform.tenancy import (
     AuthMethod,
     RequestContext,
@@ -41,10 +42,6 @@ from mate_platform.tenancy import (
     TenantId,
     UserId,
     require_tenant,
-)
-from mate_clients.security import (
-    BearerAuth,
-    OutgoingAuthMiddleware,
 )
 
 
@@ -145,7 +142,7 @@ class TestClientsUseAuth:
         """No auth + no tenant is allowed for dev/local; in
         production install_auth enforces the auth contract.
         """
-        from mate_app_kb.clients import RAGClient, AgentClient
+        from mate_app_kb.clients import AgentClient, RAGClient
 
         # Construct without auth; should not raise.
         RAGClient().close()

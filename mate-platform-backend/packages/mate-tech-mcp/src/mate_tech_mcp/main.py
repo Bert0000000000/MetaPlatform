@@ -33,14 +33,14 @@ from typing import Any
 import structlog
 from fastapi import APIRouter, FastAPI, HTTPException, Request
 
+# BUSINESS-SLICES P1 wave 3: hook 1 (auth).
+from mate_platform.auth import install_auth
+
 from .prompts.templates import list_prompts, render_prompt
 from .resources.ontology import OntologyResource, build_ontology_resource
 from .server import MCPServer, create_server
 from .tools.kb_search import build_kb_search_tool
 from .tools.rate_limit import RateLimitConfig, RateLimitExceeded, ToolRateLimiter
-
-# BUSINESS-SLICES P1 wave 3: hook 1 (auth).
-from mate_platform.auth import install_auth
 
 logger = structlog.get_logger(__name__)
 

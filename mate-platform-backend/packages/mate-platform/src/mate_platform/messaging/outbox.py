@@ -23,13 +23,11 @@ All paths carry tenant_id (SEC-TENANT-01 hard rule 3).
 """
 from __future__ import annotations
 
-import abc
 import logging
-from dataclasses import dataclass, field
-from typing import Any, Protocol
+from dataclasses import dataclass
+from typing import Protocol
 
 from .events import Event
-
 
 logger = logging.getLogger(__name__)
 
@@ -46,10 +44,10 @@ class OutboxRecord:
     last_error: str
 
     @classmethod
-    def pending(cls, event: Event) -> "OutboxRecord":
+    def pending(cls, event: Event) -> OutboxRecord:
         return cls(event=event, published=False, attempts=0, last_error="")
 
-    def with_attempt(self, error: str) -> "OutboxRecord":
+    def with_attempt(self, error: str) -> OutboxRecord:
         return type(self)(
             event=self.event,
             published=self.published,
@@ -57,7 +55,7 @@ class OutboxRecord:
             last_error=error,
         )
 
-    def with_published(self) -> "OutboxRecord":
+    def with_published(self) -> OutboxRecord:
         return type(self)(
             event=self.event,
             published=True,
@@ -151,7 +149,7 @@ class OutboxRelay:
         *,
         outbox: OutboxWriter,
         producer: Producer,
-        topic_resolver: "TopicResolver",
+        topic_resolver: TopicResolver,
         max_attempts: int = 5,
         batch_size: int = 100,
     ) -> None:

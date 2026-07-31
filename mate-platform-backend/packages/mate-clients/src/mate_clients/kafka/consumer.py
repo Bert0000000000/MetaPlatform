@@ -16,15 +16,15 @@ from __future__ import annotations
 
 import json
 import logging
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any, Callable, Protocol
+from typing import Any, Protocol
 
-from mate_platform.messaging.events import Event
 from mate_clients.redis import k
+from mate_platform.messaging.events import Event
+from mate_platform.messaging.kafka_tenant import assert_message_tenant
 from mate_platform.tenancy.context import RequestContext
 from mate_platform.tenancy.guards import require_tenant
-from mate_platform.messaging.kafka_tenant import assert_message_tenant, topic_name
-
 
 logger = logging.getLogger(__name__)
 
@@ -91,7 +91,7 @@ class RedisDedupStore:
     tenant-prefixed key builder from SEC-TENANT-01).
     """
 
-    def __init__(self, client: "Any") -> None:
+    def __init__(self, client: Any) -> None:
         self._client = client
 
     def is_processed(self, key: str) -> bool:
@@ -172,7 +172,7 @@ class IdempotentConsumer:
 
         try:
             handler(event, self._ctx)
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             attempts = self._attempts.get(event.id, 0) + 1
             self._attempts[event.id] = attempts
             if attempts >= self._retry.max_attempts:

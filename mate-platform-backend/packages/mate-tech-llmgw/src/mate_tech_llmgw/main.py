@@ -14,10 +14,11 @@ import os
 import structlog
 from fastapi import FastAPI
 
-from .api.routes import legacy_router as legacy_llm_router, router as llm_router
-
 # BUSINESS-SLICES P1 wave 2: hook 1 (auth).
 from mate_platform.auth import install_auth
+
+from .api.routes import legacy_router as legacy_llm_router
+from .api.routes import router as llm_router
 
 logger = structlog.get_logger(__name__)
 

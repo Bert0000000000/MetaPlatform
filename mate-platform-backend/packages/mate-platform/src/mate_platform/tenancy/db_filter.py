@@ -18,13 +18,12 @@ from __future__ import annotations
 
 import logging
 import os
-import threading
 from typing import Any
 
-from sqlalchemy import event, Table
-from sqlalchemy.orm import Session, with_loader_criteria
+from sqlalchemy import Table, event
+from sqlalchemy.orm import Session
 
-from .context import AuthMethod, RequestContext
+from .context import RequestContext
 from .guards import is_cross_tenant_admin, require_tenant
 
 logger = logging.getLogger(__name__)

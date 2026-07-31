@@ -15,7 +15,7 @@ from __future__ import annotations
 from typing import Any
 
 import structlog
-from fastapi import APIRouter, HTTPException, Request, Response
+from fastapi import APIRouter, HTTPException, Response
 from pydantic import BaseModel, Field
 
 from ..stream.sse import make_streaming_response

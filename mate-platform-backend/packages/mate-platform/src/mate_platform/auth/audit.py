@@ -19,7 +19,6 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Any, Protocol
 
-
 logger = logging.getLogger("metaplatform.audit")
 
 
@@ -48,13 +47,13 @@ class CrossTenantDataAccess:
 
 
 class CrossTenantAuditSink(Protocol):
-    def emit(self, event: "CrossTenantDataAccess") -> None: ...
+    def emit(self, event: CrossTenantDataAccess) -> None: ...
 
 
 class StdoutAuditSink:
     """Default audit sink: writes to logger + stdout."""
 
-    def emit(self, event: "CrossTenantDataAccess") -> None:
+    def emit(self, event: CrossTenantDataAccess) -> None:
         logger.info("audit.cross_tenant_data_access", extra=event.to_dict())
 
 
@@ -63,7 +62,7 @@ class InMemoryAuditSink:
         self._events: list = []
         self._lock = threading.Lock()
 
-    def emit(self, event: "CrossTenantDataAccess") -> None:
+    def emit(self, event: CrossTenantDataAccess) -> None:
         with self._lock:
             self._events.append(event)
 
@@ -80,7 +79,7 @@ def emit_cross_tenant_data_access(
     operation: str,
     dataset: str,
     trace_id: str,
-    sink: "CrossTenantAuditSink | None" = None,
+    sink: CrossTenantAuditSink | None = None,
 ) -> None:
     """Emit a cross-tenant data access audit event.
 

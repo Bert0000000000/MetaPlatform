@@ -28,8 +28,12 @@ os.environ.setdefault("SERVICE_CLIENT_SECRET", "test-secret")
 class TestRequireTenantEnforced:
     def test_require_tenant_rejects_empty(self) -> None:
         from mate_platform.tenancy import (
-            AuthMethod, RequestContext, TenantAccessError,
-            TenantId, UserId, require_tenant,
+            AuthMethod,
+            RequestContext,
+            TenantAccessError,
+            TenantId,
+            UserId,
+            require_tenant,
         )
         ctx = RequestContext(
             request_id="r1", trace_id="t1", tenant_id=TenantId(""),
@@ -41,8 +45,12 @@ class TestRequireTenantEnforced:
 
     def test_require_tenant_rejects_anonymous(self) -> None:
         from mate_platform.tenancy import (
-            AuthMethod, RequestContext, TenantAccessError,
-            TenantId, UserId, require_tenant,
+            AuthMethod,
+            RequestContext,
+            TenantAccessError,
+            TenantId,
+            UserId,
+            require_tenant,
         )
         ctx = RequestContext(
             request_id="r1", trace_id="t1", tenant_id=TenantId("t1"),
@@ -54,7 +62,11 @@ class TestRequireTenantEnforced:
 
     def test_require_tenant_accepts_valid(self) -> None:
         from mate_platform.tenancy import (
-            AuthMethod, RequestContext, TenantId, UserId, require_tenant,
+            AuthMethod,
+            RequestContext,
+            TenantId,
+            UserId,
+            require_tenant,
         )
         ctx = RequestContext(
             request_id="r1", trace_id="t1", tenant_id=TenantId("acme"),
@@ -67,8 +79,12 @@ class TestRequireTenantEnforced:
 class TestCrossTenantNegatives:
     def test_case1_no_tenant_rejected(self) -> None:
         from mate_platform.tenancy import (
-            AuthMethod, RequestContext, TenantAccessError,
-            TenantId, UserId, require_tenant,
+            AuthMethod,
+            RequestContext,
+            TenantAccessError,
+            TenantId,
+            UserId,
+            require_tenant,
         )
         ctx = RequestContext(
             request_id="r1", trace_id="t1", tenant_id=TenantId(""),
@@ -80,8 +96,12 @@ class TestCrossTenantNegatives:
 
     def test_case2_anonymous_rejected(self) -> None:
         from mate_platform.tenancy import (
-            AuthMethod, RequestContext, TenantAccessError,
-            TenantId, UserId, require_tenant,
+            AuthMethod,
+            RequestContext,
+            TenantAccessError,
+            TenantId,
+            UserId,
+            require_tenant,
         )
         ctx = RequestContext(
             request_id="r1", trace_id="t1", tenant_id=TenantId("t1"),
@@ -93,8 +113,12 @@ class TestCrossTenantNegatives:
 
     def test_case3_mismatched_tenant_rejected(self) -> None:
         from mate_platform.tenancy import (
-            AuthMethod, RequestContext, TenantAccessError,
-            TenantId, UserId, assert_same_tenant,
+            AuthMethod,
+            RequestContext,
+            TenantAccessError,
+            TenantId,
+            UserId,
+            assert_same_tenant,
         )
         ctx = RequestContext(
             request_id="r1", trace_id="t1", tenant_id=TenantId("t1"),

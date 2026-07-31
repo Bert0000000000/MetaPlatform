@@ -8,9 +8,11 @@ from __future__ import annotations
 
 # Import models so their tables register on Base.metadata before create_all
 import mate_app_arch.repositories.sql_models  # noqa: F401
+import mate_app_arch.repositories.sql_models as models_mod
 import pytest
 from mate_app_arch.repositories.in_memory import (
     Application,
+    BusinessProcess,
     Capability,
     DataAsset,
     DataEntity,
@@ -18,12 +20,14 @@ from mate_app_arch.repositories.in_memory import (
 )
 from mate_app_arch.repositories.sql_store import (
     list_applications,
+    list_business_processes,
     list_capabilities,
     list_capability_tree,
     list_data_assets,
     list_data_entities,
     list_data_flows,
     put_application,
+    put_business_process,
     put_capability,
     put_data_asset,
     put_data_entity,
@@ -258,3 +262,55 @@ def test_seed_from_inmemory(sql_backend: None) -> None:
     entities = list_data_entities("tenant-acme")
     assert len(entities) >= 5
     assert all(len(e.fields) > 0 for e in entities)
+
+
+def test_all_25_tables_have_orm_models() -> None:
+    """Verify all 25 ORM model classes exist and map to arch_ tables."""
+    orm_classes = [
+        cls for cls in vars(models_mod).values()
+        if isinstance(cls, type) and hasattr(cls, "__tablename__")
+    ]
+    assert len(orm_classes) == 25, (
+        f"Expected 25 ORM models, found {len(orm_classes)}"
+    )
+    for cls in orm_classes:
+        assert cls.__tablename__.startswith("arch_"), (
+            f"{cls.__name__} -> {cls.__tablename__}"
+        )
+
+
+def test_business_process_crud(sql_backend: None) -> None:
+    """Write + read round-trip for BusinessProcess."""
+    bp = BusinessProcess(
+        id="bp-test-1",
+        tenant_id="tenant-acme",
+        name="Test Process",
+        code="test-proc",
+        application_id="app-kb",
+        description="A test process",
+    )
+    put_business_process("tenant-acme", bp)
+
+    results = list_business_processes("tenant-acme")
+    assert len(results) == 1
+    assert results[0].id == "bp-test-1"
+    assert results[0].name == "Test Process"
+    assert results[0].application_id == "app-kb"
+    assert results[0].description == "A test process"
+
+    # Update
+    updated = BusinessProcess(
+        id="bp-test-1",
+        tenant_id="tenant-acme",
+        name="Updated Process",
+        code="test-proc",
+        application_id="app-rag",
+        description="Updated desc",
+    )
+    put_business_process("tenant-acme", updated)
+
+    results = list_business_processes("tenant-acme")
+    assert len(results) == 1
+    assert results[0].name == "Updated Process"
+    assert results[0].application_id == "app-rag"
+    assert results[0].description == "Updated desc"

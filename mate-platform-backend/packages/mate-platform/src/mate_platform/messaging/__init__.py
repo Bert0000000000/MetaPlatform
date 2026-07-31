@@ -12,6 +12,14 @@ from .kafka_tenant import (
     consumer_group,
     topic_name,
 )
+from .lineage import (
+    InMemoryLineageEmitter,
+    LineageConfig,
+    LineageEmitter,
+    LineageEvent,
+    MarquezHttpLineageEmitter,
+    lineage_event_from_outbox,
+)
 from .outbox import (
     EventTypeTopicResolver,
     InMemoryOutboxWriter,
@@ -22,15 +30,6 @@ from .outbox import (
     Producer,
     TopicResolver,
 )
-from .lineage import (
-    InMemoryLineageEmitter,
-    LineageConfig,
-    LineageEmitter,
-    LineageEvent,
-    MarquezHttpLineageEmitter,
-    lineage_event_from_outbox,
-)
-
 from .schemas import (
     InMemorySchemaRegistry,
     SchemaError,

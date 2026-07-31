@@ -836,7 +836,7 @@ def _ensure_tenant(tenant_id: str) -> dict[str, Any]:
 
 def _list(tenant_id: str, key: str) -> list[Any]:
     store = _ensure_tenant(tenant_id)
-    return sorted(store.get(key, {}).values(), key=lambda x: x.code)
+    return sorted(store.get(key, {}).values(), key=lambda x: getattr(x, "code", x.id))
 
 
 # ---------------------------------------------------------------------------

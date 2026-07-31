@@ -16,7 +16,6 @@ import re
 from mate_platform.tenancy.context import RequestContext
 from mate_platform.tenancy.guards import is_cross_tenant_admin, require_tenant
 
-
 _DOMAIN_PATTERN = re.compile(r"^[a-z][a-z0-9_]{0,31}$")
 _EVENT_PATTERN = re.compile(r"^[a-z][a-z0-9_]{0,63}$")
 _TENANT_ID_PATTERN = re.compile(r"^[a-z0-9][a-z0-9_-]{0,62}$")

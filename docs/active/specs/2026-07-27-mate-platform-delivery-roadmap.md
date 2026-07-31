@@ -255,6 +255,7 @@ W1-1 → W2-3 → W3-3 → W4-3 → W5-6 → W5-7 → W5-8 → W7-6
 | 2026-07-27 | v1.1 | BPMN 升级到 Flowable 8.0（分布式）；W3-4/W3-5 工期调整 |
 | v1.2 | 全文 | 追加附录 A：Data Track（D0–D8），将数据平台作为 v1.0 GA 硬前置 |
 | v1.3 | 追加附录 B | P2 域盘点与实际交付；记录 P2 W2 Accepted（2026-07-31，PR #12 `833a809d`）|
+| **v1.4** | **§9 变更记录 + 附录 B 勘误 + §10 引用** | **TRAE 7/31 扫描修正**:`arch` 实际 27/29(2 endpoint 待补,capabilities / capability-mappings / orgs / roles);`copilot` 实际 32/35(3 endpoint + A2A + LLM 真实 stub 待补);`mcp` 5 endpoint 真正挂载(P0-CLOSE);累计测试 440+;新增 P0-CLOSE 证据引用 |
 
 ---
 
@@ -342,15 +343,15 @@ D7 与 W6-2 ontstudio 同步推进；D8 与 W7 蓝绿迁移并行，最终由 D8
 | P2 W2 | dashboard / apphub / arch / copilot（4 域）| ✅ Accepted（2026-07-31）|
 | P2 W3 | dw / data / a2a / wfe | 🔴 Not Started |
 
-### B.2 P2 W2 endpoint 盘点
+### B.2 P2 W2 endpoint 盘点(7/31 TRAE 扫描修正)
 
-| 域 | spec endpoint | 代码包 |
-|---|---:|---|
-| dashboard | 34 | `mate-tech-iam`（5 步合规补全）|
-| apphub | 5 | `mate-app-hub`（新建）|
-| arch | 27 | `mate-app-arch`（新建）|
-| copilot | 33 | `mate-app-copilot`（新建）|
-| **合计** | **99** | 3 新包 + 1 现有包合规 |
+| 域 | spec endpoint | 代码包 | 实际命中 | 未实现 |
+|---|---:|---|---:|---:|
+| dashboard | 34 → 38 | `mate-tech-iam`（5 步合规补全）| 38/38 ✅ | 0 |
+| apphub | 5 | `mate-app-hub`（新建）| 5/5 ✅ | 0 |
+| arch | 27 | `mate-app-arch`（新建）| 27/29 🟡 | **2**(capabilities / capability-mappings / orgs / roles 规范化后) |
+| copilot | 33 | `mate-app-copilot`（新建）| 32/35 🟡 | **3**(actions/execute + generate/process + scheduling/templates)+ A2A + LLM 真实 stub |
+| **合计** | **99** | 3 新包 + 1 现有包合规 | **102/105** | **5 + TD-4 + TD-6** |
 
 ### B.6 实际交付指标（P2 W2）
 
@@ -372,3 +373,9 @@ D7 与 W6-2 ontstudio 同步推进；D8 与 W7 蓝绿迁移并行，最终由 D8
 - Docker Compose：`docker-compose.yml`
 - 前端 monorepo：`metaplatform-frontend/`
 - 启动脚本：`scripts/start-services/`
+- **7/30 P0-CLOSE 证据**:`docs/active/delivery/evidence/P0-CLOSE-ACCEPTANCE.md`(路径对齐 + mcp 挂载)
+- **7/31 P2-W2 证据**:`docs/active/delivery/evidence/P2-W2-ACCEPTANCE.md`(4 域 99 endpoint)
+- **7/31 P2 wave 2 三件套**:`2026-07-30-p2-wave-2-{spec,checklist,tasks}.md`
+- **功能维度盘点**:`docs/active/specs/2026-07-31-features-backlog.md` v1.1
+- **接口维度盘点**:`docs/active/specs/2026-07-31-backend-impl-backlog.md` v1.1
+- **17 域进度**:`docs/active/specs/2026-07-30-business-slices-rollout-status.md` v1.3
