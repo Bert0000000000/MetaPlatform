@@ -17,12 +17,18 @@ from typing import Any
 
 import sqlparse
 from fastapi import APIRouter, HTTPException, Query, Request
+from mate_app_a2a.repositories import (  # pyright: ignore[reportMissingImports]
+    create_delegation,
+    list_external_agents,
+)
 
+from mate_clients.security.bearer import BearerAuth
 from mate_platform.messaging.events import Event
 from mate_platform.messaging.outbox import InMemoryOutboxWriter
 from mate_platform.tenancy.context import TenantId
 from mate_platform.tenancy.guards import require_tenant
 
+from ..clients import AsyncCopilotClient
 from ..llm import stub_provider
 from ..repositories import (
     AssetRecord,
@@ -81,6 +87,32 @@ def _resp(rows: list[Any]) -> dict[str, Any]:
     return {"items": items, "total": len(items)}
 
 
+def _get_client(request: Request) -> AsyncCopilotClient:
+    """Return the configured AsyncCopilotClient or build a default one.
+
+    In production the client is wired by the platform startup hook onto
+    `app.state.copilot_client`. In tests / single-binary deployment it
+    falls back to an in-process stub provider. Either way the call
+    surface (embed / chat / generate_sql) is identical.
+    """
+    client: AsyncCopilotClient | None = getattr(
+        request.app.state, "copilot_client", None
+    )
+    if client is not None:
+        return client
+
+    return AsyncCopilotClient(
+        base_url="http://localhost",
+        auth=BearerAuth(
+            token_uri="http://localhost:8080/realms/metaplatform/protocol/openid-connect/token",  # noqa: S106
+            client_id="metaplatform-backend",
+            client_secret="stub",  # noqa: S106
+            scope="platform.read platform.write",
+        ),
+        provider=stub_provider,
+    )
+
+
 # --- Root (1) ---------------------------------------------------------------
 @router.get("")
 async def get_root(request: Request) -> dict[str, Any]:
@@ -116,8 +148,6 @@ async def a2a_delegate(request: Request) -> dict[str, Any]:
     """
     tid = _tid(request)
     body = await request.json()
-    # Import locally to avoid circular dependency at module load time
-    from mate_app_a2a.repositories import create_delegation  # pyright: ignore[reportMissingImports]  # noqa: PLC0415
 
     task = create_delegation(
         tenant_id=tid,
@@ -139,7 +169,6 @@ async def a2a_delegate(request: Request) -> dict[str, Any]:
 async def a2a_external(request: Request) -> dict[str, Any]:
     """Proxy external agent listing to mate-app-a2a (in-process)."""
     tid = _tid(request)
-    from mate_app_a2a.repositories import list_external_agents  # pyright: ignore[reportMissingImports]  # noqa: PLC0415
 
     items = list_external_agents(tid)
     return {"items": [asdict(e) for e in items], "total": len(items)}
@@ -294,7 +323,10 @@ async def generate_sql(request: Request, body: dict[str, Any]) -> dict[str, Any]
     if not isinstance(tables, list):
         tables = [str(tables)]
     tables_str = [str(t) for t in tables]
-    sql = stub_provider.generate_sql(prompt, tables_str)
+    # P2-W4: route through AsyncCopilotClient so the SQL generator can
+    # move from stub_provider to the real llmgw adapter transparently.
+    client = _get_client(request)
+    sql = client.generate_sql(prompt, tables_str)
     return {"sql": sql}
 
 
@@ -305,7 +337,11 @@ async def multimodal_upload(request: Request, body: dict[str, Any]) -> dict[str,
     filename = str(body.get("filename", "asset.bin"))
     content_type = str(body.get("content_type", "application/octet-stream"))
     asset_id = f"asset-{uuid.uuid4().hex[:8]}"
-    emb = stub_provider.embeddings([filename])[0]
+    # P2-W4: route embedding through the configured AsyncCopilotClient
+    # so the same call site can swap stub_provider for the real llmgw
+    # transport without touching this handler.
+    client = _get_client(request)
+    emb = client.embed([filename])[0]
     record = AssetRecord(
         id=asset_id,
         tenant_id=tid,
@@ -379,7 +415,16 @@ async def generate_dashboard(request: Request, body: dict[str, Any]) -> dict[str
 async def explain_code(request: Request, body: dict[str, Any]) -> dict[str, Any]:
     _tid(request)
     code = str(body.get("code", ""))
-    return {"explanation": f"[stub] This code ({len(code)} chars) defines a callable unit."}
+    # P2-W4: drive the explanation through AsyncCopilotClient.chat so
+    # the call site is transport-agnostic (stub today, llmgw tomorrow).
+    client = _get_client(request)
+    explanation = client.chat(
+        [
+            {"role": "system", "content": "You explain code clearly and concisely."},
+            {"role": "user", "content": code[:2000]},
+        ]
+    )
+    return {"explanation": explanation}
 
 
 @router.post("/generate/form")

@@ -1,8 +1,9 @@
 """Happy-path tests for the copilot endpoints (FR-COPILOT-001..033).
 
-8 tests covering auth login, conversations listing, SQL audit,
+9 tests covering auth login, conversations listing, SQL audit,
 SQL generation, SQL execution rejection, multimodal upload,
-scheduling intent detection, and action matching.
+scheduling intent detection, action matching, and the P2-W4
+client-routed code explanation endpoint.
 """
 from __future__ import annotations
 
@@ -94,3 +95,22 @@ def test_actions_match(client, auth_headers_acme) -> None:
     assert body["total"] >= 1, body
     matched_ids = {a["id"] for a in body["matched"]}
     assert "act-send-email" in matched_ids, matched_ids
+
+
+def test_explain_code_via_client(client, auth_headers_acme) -> None:
+    """P2-W4: POST /generate/explain-code now drives client.chat().
+
+    The default client falls back to the in-process stub_provider,
+    so the explanation must come from the stub's chat reply format
+    (which echoes the last user message).
+    """
+    r = client.post(
+        "/api/v1/copilot/generate/explain-code",
+        json={"code": "def hello():\n    return 'hi'\n"},
+        headers=auth_headers_acme,
+    )
+    assert r.status_code == 200, r.text
+    body = r.json()
+    explanation = body["explanation"]
+    # The stub chat returns "[stub-copilot] Acknowledged: <last user msg>"
+    assert "stub-copilot" in explanation or "Acknowledged" in explanation
