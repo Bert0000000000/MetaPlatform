@@ -5,6 +5,33 @@ All notable changes to the Mate Platform (MetaPlatform) project are documented i
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v3.3] — 2026-07-31
+
+> FRONTEND-BACKEND INTEGRATION. Unified dev server + API path fix across 48
+> frontend files. Login flow verified end-to-end (admin/admin123). Dashboard,
+> SuperAI, and Arch pages render with live backend data.
+
+### Added
+
+- **Unified dev server** (`scripts/dev_server.py`): Single FastAPI instance mounting all 6 app routers (copilot 33 + a2a 10 + arch 27 + apphub 5 + IAM auth/dashboard) on port 8100. Auto-initializes IAM SQLite DB with seed data on startup.
+- **Unified vite proxy**: All `/api/v1/*` routes forward to single backend port via `VITE_BACKEND_PORT` env (default 8100).
+
+### Fixed
+
+- **Frontend API path doubling bug** (48 files): `apiPath('service', '/v1')` + `/v1/service/endpoint` produced quadruple-prefixed URLs (e.g. `/api/v1/arch/v1/v1/arch/applications`). Fixed across 5 core domains: arch (13), copilot (13), apphub (11), dashboard (10), apiConfig (1).
+- **apiConfig.ts**: Added `arch`, `copilot`, `dashboard` service keys to match backend route prefixes.
+- **IAM anonymous paths**: Login/refresh/sso-providers endpoints bypass auth middleware in dev mode.
+- **IAM SQLite**: `IAM_DATA_DIR` defaults to `.` (was `/data` — Linux path, fails on Windows).
+
+### Verified pages
+
+| Page | URL | Status |
+|---|---|---|
+| Login | `/login` | ✅ admin/admin123 auth works |
+| Dashboard | `/dashboard` | ✅ Full render: metrics, task table, system status, digital employees |
+| Arch capabilities | `/arch/capabilities` | ✅ Capability tree + list + visualization |
+| SuperAI chat | `/superai/chat` | ✅ Chat input, query type selector, conversation area |
+
 ## [v3.2.1] — 2026-07-31
 
 > TRIPLE-ZERO milestone. ruff 0 errors + pyright 0 errors + 555 tests passed
