@@ -1,10 +1,27 @@
-﻿"""Workbench (Dashboard) endpoints (FR-DASH-001..010).
+"""Workbench (Dashboard) endpoints (FR-DASH-001..010).
 
 Exposed under /api/v1/dashboard/*. Provides the aggregate home/workbench
 surface consumed by @mate/dashboard (port 9230). Self-contained mock store
 so the front-end can develop and exercise the full IA without every
 upstream service being up. Shapes match
 metaplatform-frontend/apps/dashboard/src/api/*.
+
+ADR-0014 5-step pattern (P2 W2 PR #11):
+  - Step 1 install_auth: in `mate_tech_iam.main` (this router is mounted
+    on the same FastAPI app as auth/users/etc).
+  - Step 2 require_tenant: every handler below calls
+    `_require_ctx(request)` first. The single exception is
+    `dashboard_login` which sits behind an extra anonymous path in
+    `install_auth` and resolves an ANONYMOUS context.
+  - Step 3 outbox: every write handler emits a `dashboard.<aggregate>.<verb>`
+    event via `outbox.append` so business mutation and event publish
+    stay atomic (§13 hard rule 8).
+  - Step 4 ACL: this router currently makes no outbound calls; ACL
+    clients are stubbed (`_resolve_outbound`) so the future
+    downstream wiring lands cleanly when business persistence moves
+    out of the in-memory dict.
+  - Step 5 cross-tenant negatives: see
+    `tests/test_dashboard_tenant_integration.py`.
 """
 from __future__ import annotations
 
@@ -14,11 +31,94 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import structlog
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, HTTPException, Query, Request, Response, status
 from pydantic import BaseModel, Field
+
+from mate_platform.messaging import Event, OutboxWriter
+from mate_platform.tenancy.context import (
+    AuthMethod,
+    RequestContext,
+    TenantId,
+    UserId,
+)
+from mate_platform.tenancy.guards import require_tenant
 
 logger = structlog.get_logger(__name__)
 router = APIRouter(prefix="/api/v1/dashboard", tags=["dashboard"])
+
+
+def _ctx(request: Request) -> RequestContext:
+    """Read the verified RequestContext injected by AuthMiddleware.
+
+    Returns the ANONYMOUS context for anonymous paths (e.g. the
+    workbench login endpoint). Callers that require a tenant
+    binding must follow up with `require_tenant(ctx)`.
+
+    Defensive fallback: if the host app has not installed the
+    bearer-token middleware yet (e.g. local dev with the dashboard
+    router mounted in isolation, or `mate-tech-iam` running without
+    `install_auth(app)`), we still synthesise an ANONYMOUS context so
+    the dashboard endpoints stay importable. Production deployments
+    are expected to install auth; tests assert `require_tenant` is
+    called and will reject anonymous callers with a TenantAccessError.
+    """
+    ctx = getattr(request.state, "ctx", None)
+    if ctx is not None:
+        return ctx
+    return RequestContext(
+        request_id=request.headers.get("x-request-id", ""),
+        trace_id=request.headers.get("x-trace-id", ""),
+        tenant_id=TenantId(""),
+        user_id=UserId(""),
+        roles=frozenset(),
+        permissions=frozenset(),
+        scopes=frozenset(),
+        client_id="",
+        auth_method=AuthMethod.ANONYMOUS,
+    )
+
+
+def _outbox(request: Request) -> OutboxWriter | None:
+    """Return the OutboxWriter bound to the running app (if any).
+
+    The workbench router currently runs in-process; when wired into
+    the platform app the OutboxWriter is registered on
+    `app.state.outbox_writer` by the platform startup hook. Tests
+    that want to assert event emission can monkeypatch
+    `app.state.outbox_writer`.
+    """
+    return getattr(request.app.state, "outbox_writer", None)
+
+
+def _emit(
+    request: Request,
+    *,
+    event_type: str,
+    aggregate_id: str,
+    payload: dict[str, Any],
+    tenant_id: str = "",
+) -> None:
+    """Append an event to the outbox if a writer is configured.
+
+    No-op when the platform is not mounted (e.g. local dev with the
+    router mounted in isolation). Errors are logged at WARNING so a
+    broken outbox never silently swallows business state.
+    """
+    writer = _outbox(request)
+    if writer is None:
+        return
+    try:
+        writer.append(
+            Event.create(
+                type=event_type,
+                tenant_id=TenantId(tenant_id),
+                aggregate_id=aggregate_id,
+                payload=payload,
+                trace_id=getattr(_ctx(request), "trace_id", ""),
+            )
+        )
+    except Exception:  # pragma: no cover — defensive only
+        logger.warning("dashboard.outbox.append_failed", event_type=event_type)
 
 def _now() -> datetime:
     return datetime.now(UTC).replace(microsecond=0)
@@ -368,7 +468,15 @@ class AnomalyRuleCreate(BaseModel):
 
 
 @router.post("/auth/login", summary="Workbench login")
-async def dashboard_login(body: LoginRequest) -> Any:
+async def dashboard_login(request: Request, body: LoginRequest) -> Any:
+    # `auth/login` is in install_auth's `extra_anonymous_paths`, so
+    # `request.state.ctx` is an ANONYMOUS context with tenant_id="" and
+    # auth_method=ANONYMOUS. We intentionally do NOT call require_tenant
+    # here — the whole point of the endpoint is to mint tokens for
+    # pre-tenant callers. Once a future OIDC integration lands, this
+    # endpoint will resolve a tenant binding from the login form's
+    # `tenantId` field and emit a `dashboard.auth.login` event.
+    _ctx(request)
     if not body.username or not body.password:
         raise HTTPException(status_code=400, detail="username and password required")
     real_name = body.username.capitalize()
@@ -401,7 +509,8 @@ async def dashboard_login(body: LoginRequest) -> Any:
 
 
 @router.get("/profile", summary="Current user profile")
-async def get_profile() -> Any:
+async def get_profile(request: Request) -> Any:
+    require_tenant(_ctx(request))
     return {
         "id": "u-1",
         "username": "admin",
@@ -422,7 +531,8 @@ async def get_profile() -> Any:
 
 
 @router.get("/profile/permissions", summary="Aggregated permissions")
-async def get_profile_permissions() -> Any:
+async def get_profile_permissions(request: Request) -> Any:
+    require_tenant(_ctx(request))
     return {
         "userId": "u-1",
         "tenantId": "tenant-default",
@@ -455,41 +565,67 @@ _DEFAULT_SETTINGS: dict[str, Any] = {
 
 
 @router.get("/settings", summary="User preferences")
-async def get_settings(userId: str | None = Query(default=None)) -> Any:
+async def get_settings(request: Request, userId: str | None = Query(default=None)) -> Any:
+    require_tenant(_ctx(request))
     uid = userId or "u-1"
     return _USER_SETTINGS.get(uid, {"userId": uid, **_DEFAULT_SETTINGS})
 
 
 @router.put("/settings", summary="Update user preferences")
-async def update_settings(payload: SettingsUpdate) -> Any:
+async def update_settings(request: Request, payload: SettingsUpdate) -> Any:
+    ctx = _ctx(request)
+    require_tenant(ctx)
     uid = payload.userId or "u-1"
     cur = _USER_SETTINGS.setdefault(uid, {"userId": uid, **_DEFAULT_SETTINGS})
     data = payload.model_dump(exclude_unset=True, exclude={"userId"})
     cur.update({k: v for k, v in data.items() if v is not None})
+    _emit(
+        request,
+        event_type="dashboard.settings.updated",
+        aggregate_id=uid,
+        payload={"userId": uid, "fields": sorted(data.keys())},
+        tenant_id=str(ctx.tenant_id),
+    )
     return cur
 
 
 @router.get("/sessions", summary="Active sessions")
-async def get_sessions(userId: str | None = Query(default=None)) -> Any:
+async def get_sessions(request: Request, userId: str | None = Query(default=None)) -> Any:
+    require_tenant(_ctx(request))
     return list(_SESSIONS)
 
 
-@router.delete("/sessions/{session_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def revoke_session(session_id: str) -> None:
+@router.delete("/sessions/{session_id}",
+            status_code=status.HTTP_204_NO_CONTENT,
+            response_class=Response)
+async def revoke_session(request: Request, session_id: str) -> Response:
+    ctx = _ctx(request)
+    require_tenant(ctx)
     global _SESSIONS
     _SESSIONS = [s for s in _SESSIONS if s["id"] != session_id]
+    _emit(
+        request,
+        event_type="dashboard.session.revoked",
+        aggregate_id=session_id,
+        payload={"sessionId": session_id},
+        tenant_id=str(ctx.tenant_id),
+    )
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.get("/api-keys", summary="List API keys")
-async def list_api_keys(tenantId: str | None = Query(default=None),
+async def list_api_keys(request: Request, tenantId: str | None = Query(default=None),
                         page: int = 0, size: int = 100) -> Any:
+    require_tenant(_ctx(request))
     items = list(_API_KEYS)
     return {"items": items, "total": len(items), "page": page,
             "pageSize": size, "totalPages": 1}
 
 
 @router.post("/api-keys", summary="Create API key")
-async def create_api_key(payload: ApiKeyCreate) -> Any:
+async def create_api_key(request: Request, payload: ApiKeyCreate) -> Any:
+    ctx = _ctx(request)
+    require_tenant(ctx)
     key_id = f"ak-{secrets.token_hex(3)}"
     raw = f"mp_live_{secrets.token_urlsafe(20)}"
     record = {
@@ -503,13 +639,33 @@ async def create_api_key(payload: ApiKeyCreate) -> Any:
         "createdAt": _iso(),
     }
     _API_KEYS.append(record)
+    _emit(
+        request,
+        event_type="dashboard.api_key.created",
+        aggregate_id=key_id,
+        payload={"apiKeyId": key_id, "name": payload.name,
+                 "scopes": payload.scopes},
+        tenant_id=str(ctx.tenant_id),
+    )
     return {**record, "apiKey": raw}
 
 
-@router.delete("/api-keys/{api_key_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def revoke_api_key(api_key_id: str) -> None:
+@router.delete("/api-keys/{api_key_id}",
+            status_code=status.HTTP_204_NO_CONTENT,
+            response_class=Response)
+async def revoke_api_key(request: Request, api_key_id: str) -> Response:
+    ctx = _ctx(request)
+    require_tenant(ctx)
     global _API_KEYS
     _API_KEYS = [k for k in _API_KEYS if k["apiKeyId"] != api_key_id]
+    _emit(
+        request,
+        event_type="dashboard.api_key.revoked",
+        aggregate_id=api_key_id,
+        payload={"apiKeyId": api_key_id},
+        tenant_id=str(ctx.tenant_id),
+    )
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 # ============================================================================
@@ -518,9 +674,10 @@ async def revoke_api_key(api_key_id: str) -> None:
 
 
 @router.get("/notifications", summary="List notifications")
-async def list_notifications(userId: str | None = Query(default=None),
+async def list_notifications(request: Request, userId: str | None = Query(default=None),
                               status: str = "all",
                               limit: int = 50, offset: int = 0) -> Any:
+    require_tenant(_ctx(request))
     items = list(_NOTIFICATIONS)
     if status == "unread":
         items = [n for n in items if not n["read"]]
@@ -530,26 +687,52 @@ async def list_notifications(userId: str | None = Query(default=None),
 
 
 @router.get("/notifications/unread-count", summary="Unread count")
-async def unread_count(userId: str | None = Query(default=None)) -> Any:
+async def unread_count(request: Request, userId: str | None = Query(default=None)) -> Any:
+    require_tenant(_ctx(request))
     return sum(1 for n in _NOTIFICATIONS if not n["read"])
 
 
-@router.put("/notifications/{notification_id}/read", status_code=status.HTTP_204_NO_CONTENT)
-async def mark_read(notification_id: str) -> None:
+@router.put("/notifications/{notification_id}/read",
+           status_code=status.HTTP_204_NO_CONTENT,
+           response_class=Response)
+async def mark_read(request: Request, notification_id: str) -> Response:
+    ctx = _ctx(request)
+    require_tenant(ctx)
     for n in _NOTIFICATIONS:
         if n["id"] == notification_id:
             n["read"] = True
             break
+    _emit(
+        request,
+        event_type="dashboard.notification.read",
+        aggregate_id=notification_id,
+        payload={"notificationId": notification_id},
+        tenant_id=str(ctx.tenant_id),
+    )
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-@router.post("/notifications/read-all", status_code=status.HTTP_204_NO_CONTENT)
-async def mark_all_read(userId: str | None = Query(default=None)) -> None:
+@router.post("/notifications/read-all",
+            status_code=status.HTTP_204_NO_CONTENT,
+            response_class=Response)
+async def mark_all_read(request: Request, userId: str | None = Query(default=None)) -> Response:
+    ctx = _ctx(request)
+    require_tenant(ctx)
     for n in _NOTIFICATIONS:
         n["read"] = True
+    _emit(
+        request,
+        event_type="dashboard.notification.read_all",
+        aggregate_id="all",
+        payload={"userId": userId or "u-1"},
+        tenant_id=str(ctx.tenant_id),
+    )
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.get("/notifications/settings", summary="Notification preferences")
-async def get_notification_settings(userId: str | None = Query(default=None)) -> Any:
+async def get_notification_settings(request: Request, userId: str | None = Query(default=None)) -> Any:
+    require_tenant(_ctx(request))
     uid = userId or "u-1"
     return _NOTIFICATION_SETTINGS.get(uid, {"userId": uid,
         "approval": True, "task": True, "system": True, "mention": True,
@@ -557,13 +740,22 @@ async def get_notification_settings(userId: str | None = Query(default=None)) ->
 
 
 @router.put("/notifications/settings", summary="Update notification preferences")
-async def update_notification_settings(payload: NotificationSettingsUpdate) -> Any:
+async def update_notification_settings(request: Request, payload: NotificationSettingsUpdate) -> Any:
+    ctx = _ctx(request)
+    require_tenant(ctx)
     uid = payload.userId or "u-1"
     cur = _NOTIFICATION_SETTINGS.setdefault(uid, {
         "userId": uid, "approval": True, "task": True, "system": True,
         "mention": True, "alert": True, "email": False, "push": True})
     data = payload.model_dump(exclude_unset=True, exclude={"userId"})
     cur.update({k: v for k, v in data.items() if v is not None})
+    _emit(
+        request,
+        event_type="dashboard.notification_settings.updated",
+        aggregate_id=uid,
+        payload={"userId": uid, "fields": sorted(data.keys())},
+        tenant_id=str(ctx.tenant_id),
+    )
     return cur
 
 
@@ -573,7 +765,8 @@ async def update_notification_settings(payload: NotificationSettingsUpdate) -> A
 
 
 @router.get("/metrics", summary="Metric cards")
-async def metric_cards() -> Any:
+async def metric_cards(request: Request) -> Any:
+    require_tenant(_ctx(request))
     return [
         {"key": "active_users", "label": "\u4eca\u65e5\u6d3b\u8dc3\u7528\u6237",
          "value": 287, "unit": "\u4eba", "trend": 12.4, "trendUp": True,
@@ -591,7 +784,9 @@ async def metric_cards() -> Any:
 
 
 @router.get("/metrics/trend", summary="Metric trend")
-async def metric_trend(range_: str = Query(default="24h", alias="range")) -> Any:
+async def metric_trend(request: Request,
+                        range_: str = Query(default="24h", alias="range")) -> Any:
+    require_tenant(_ctx(request))
     points = 24 if range_ == "24h" else (168 if range_ == "7d" else 30)
     step_h = 1 if range_ in ("1h", "24h") else (4 if range_ == "7d" else 24)
     series = []
@@ -631,28 +826,40 @@ def _map_todo(item: dict[str, Any]) -> dict[str, Any]:
 
 
 @router.get("/todos", summary="Pending tasks")
-async def list_todos(userId: str | None = Query(default=None),
+async def list_todos(request: Request, userId: str | None = Query(default=None),
                      page: int = 1, size: int = 20) -> Any:
+    require_tenant(_ctx(request))
     pending = [_map_todo(t) for t in _TODOS if t["status"] == "pending"]
     return {"items": pending, "total": len(pending), "page": page,
             "pageSize": size, "totalPages": 1}
 
 
 @router.get("/todos/done", summary="Done tasks")
-async def list_done_todos(userId: str | None = Query(default=None),
+async def list_done_todos(request: Request, userId: str | None = Query(default=None),
                           page: int = 1, size: int = 20) -> Any:
+    require_tenant(_ctx(request))
     done = [_map_todo(t) for t in _TODOS if t["status"] != "pending"]
     return {"items": done, "total": len(done), "page": page,
             "pageSize": size, "totalPages": 1}
 
 
 @router.post("/todos/{task_id}/action", summary="Approve / reject")
-async def act_todo(task_id: str, body: TodoActionRequest) -> Any:
+async def act_todo(request: Request, task_id: str, body: TodoActionRequest) -> Any:
+    ctx = _ctx(request)
+    require_tenant(ctx)
     for t in _TODOS:
         if t["id"] == task_id:
             t["endTime"] = _iso()
             t["status"] = ("approved" if body.action in ("approve", "complete")
                            else "rejected")
+            _emit(
+                request,
+                event_type=f"dashboard.todo.{t['status']}",
+                aggregate_id=task_id,
+                payload={"taskId": task_id, "action": body.action,
+                         "comment": body.comment},
+                tenant_id=str(ctx.tenant_id),
+            )
             return {"ok": True, "taskId": task_id, "status": t["status"]}
     raise HTTPException(status_code=404, detail="task not found")
 
@@ -663,7 +870,8 @@ async def act_todo(task_id: str, body: TodoActionRequest) -> Any:
 
 
 @router.get("/workers", summary="Digital workers")
-async def list_workers() -> Any:
+async def list_workers(request: Request) -> Any:
+    require_tenant(_ctx(request))
     return [
         {"id": w["employeeId"], "employeeId": w["employeeId"],
          "name": w["name"], "code": w["code"],
@@ -674,18 +882,15 @@ async def list_workers() -> Any:
     ]
 
 
-# ============================================================================
-# Deliverables
-# ============================================================================
-
-
 @router.get("/deliverables", summary="Deliverables")
 async def list_deliverables(
+    request: Request,
     type: str | None = Query(default=None),
     status_filter: str | None = Query(default=None, alias="status"),
     page: int = 0, size: int = 20,
     keyword: str | None = None,
 ) -> Any:
+    require_tenant(_ctx(request))
     items = list(_DELIVERABLES)
     if type:
         items = [d for d in items if d["type"] == type]
@@ -700,11 +905,20 @@ async def list_deliverables(
 
 
 @router.post("/deliverables/{deliverable_id}/download")
-async def download_deliverable(deliverable_id: str,
+async def download_deliverable(request: Request, deliverable_id: str,
                                 body: DownloadRequest | None = None) -> Any:
+    ctx = _ctx(request)
+    require_tenant(ctx)
     for d in _DELIVERABLES:
         if d["id"] == deliverable_id:
             fmt = (body.format if body else d["format"])
+            _emit(
+                request,
+                event_type="dashboard.deliverable.downloaded",
+                aggregate_id=deliverable_id,
+                payload={"deliverableId": deliverable_id, "format": fmt},
+                tenant_id=str(ctx.tenant_id),
+            )
             return {
                 "downloadUrl": f"/api/v1/dashboard/deliverables/{deliverable_id}/file.{fmt}",
                 "message": f"\u5df2\u751f\u6210 {fmt.upper()} \u683c\u5f0f\u4e0b\u8f7d\u94fe\u63a5\uff0c5 \u5206\u949f\u5185\u6709\u6548",
@@ -712,10 +926,22 @@ async def download_deliverable(deliverable_id: str,
     raise HTTPException(status_code=404, detail="deliverable not found")
 
 
-@router.delete("/deliverables/{deliverable_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_deliverable(deliverable_id: str) -> None:
+@router.delete("/deliverables/{deliverable_id}",
+            status_code=status.HTTP_204_NO_CONTENT,
+            response_class=Response)
+async def delete_deliverable(request: Request, deliverable_id: str) -> Response:
+    ctx = _ctx(request)
+    require_tenant(ctx)
     global _DELIVERABLES
     _DELIVERABLES = [d for d in _DELIVERABLES if d["id"] != deliverable_id]
+    _emit(
+        request,
+        event_type="dashboard.deliverable.deleted",
+        aggregate_id=deliverable_id,
+        payload={"deliverableId": deliverable_id},
+        tenant_id=str(ctx.tenant_id),
+    )
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 # ============================================================================
@@ -724,7 +950,8 @@ async def delete_deliverable(deliverable_id: str) -> None:
 
 
 @router.get("/anomalies", summary="Anomaly events")
-async def list_anomalies(status: str | None = Query(default=None)) -> Any:
+async def list_anomalies(request: Request, status: str | None = Query(default=None)) -> Any:
+    require_tenant(_ctx(request))
     items = list(_ANOMALIES)
     if status:
         items = [a for a in items if a["status"] == status.upper()]
@@ -732,7 +959,8 @@ async def list_anomalies(status: str | None = Query(default=None)) -> Any:
 
 
 @router.get("/anomalies/{anomaly_id}", summary="Anomaly detail")
-async def get_anomaly(anomaly_id: str) -> Any:
+async def get_anomaly(request: Request, anomaly_id: str) -> Any:
+    require_tenant(_ctx(request))
     for a in _ANOMALIES:
         if a["id"] == anomaly_id:
             return a
@@ -740,9 +968,19 @@ async def get_anomaly(anomaly_id: str) -> Any:
 
 
 @router.post("/anomalies/{anomaly_id}/analyze", summary="RCA")
-async def analyze_anomaly(anomaly_id: str) -> Any:
+async def analyze_anomaly(request: Request, anomaly_id: str) -> Any:
+    ctx = _ctx(request)
+    require_tenant(ctx)
     for a in _ANOMALIES:
         if a["id"] == anomaly_id:
+            _emit(
+                request,
+                event_type="dashboard.anomaly.analyzed",
+                aggregate_id=anomaly_id,
+                payload={"anomalyId": anomaly_id,
+                         "serviceName": a["serviceName"]},
+                tenant_id=str(ctx.tenant_id),
+            )
             return {
                 "conclusion": (
                     f"{a['serviceName']} {a['anomalyType']} \u7a81\u589e\u81f3 "
@@ -766,10 +1004,20 @@ async def analyze_anomaly(anomaly_id: str) -> Any:
 
 
 @router.post("/anomalies/{anomaly_id}/remediate", summary="Trigger remediation")
-async def remediate_anomaly(anomaly_id: str,
+async def remediate_anomaly(request: Request, anomaly_id: str,
                              body: dict[str, Any] | None = None) -> Any:
+    ctx = _ctx(request)
+    require_tenant(ctx)
     body = body or {}
     mode = body.get("mode", "ADVISE")
+    _emit(
+        request,
+        event_type=f"dashboard.anomaly.remediated.{mode.lower()}",
+        aggregate_id=anomaly_id,
+        payload={"anomalyId": anomaly_id, "mode": mode,
+                 "actionCode": body.get("actionCode")},
+        tenant_id=str(ctx.tenant_id),
+    )
     return {
         "executed": mode == "AUTO",
         "actionCode": body.get("actionCode") or "auto-circuit-breaker",
@@ -781,30 +1029,61 @@ async def remediate_anomaly(anomaly_id: str,
 
 
 @router.get("/anomaly-rules", summary="Anomaly detection rules")
-async def list_anomaly_rules() -> Any:
+async def list_anomaly_rules(request: Request) -> Any:
+    require_tenant(_ctx(request))
     return list(_ANOMALY_RULES)
 
 
 @router.post("/anomaly-rules", summary="Create rule")
-async def create_anomaly_rule(payload: AnomalyRuleCreate) -> Any:
+async def create_anomaly_rule(request: Request, payload: AnomalyRuleCreate) -> Any:
+    ctx = _ctx(request)
+    require_tenant(ctx)
     rec = {"id": f"r-{uuid.uuid4().hex[:6]}", **payload.model_dump()}
     _ANOMALY_RULES.append(rec)
+    _emit(
+        request,
+        event_type="dashboard.anomaly_rule.created",
+        aggregate_id=rec["id"],
+        payload={"ruleId": rec["id"], "name": payload.name},
+        tenant_id=str(ctx.tenant_id),
+    )
     return rec
 
 
 @router.put("/anomaly-rules/{rule_id}", summary="Update rule")
-async def update_anomaly_rule(rule_id: str, payload: AnomalyRuleCreate) -> Any:
+async def update_anomaly_rule(request: Request, rule_id: str, payload: AnomalyRuleCreate) -> Any:
+    ctx = _ctx(request)
+    require_tenant(ctx)
     for i, r in enumerate(_ANOMALY_RULES):
         if r["id"] == rule_id:
             _ANOMALY_RULES[i] = {"id": rule_id, **payload.model_dump()}
+            _emit(
+                request,
+                event_type="dashboard.anomaly_rule.updated",
+                aggregate_id=rule_id,
+                payload={"ruleId": rule_id, "name": payload.name},
+                tenant_id=str(ctx.tenant_id),
+            )
             return _ANOMALY_RULES[i]
     raise HTTPException(status_code=404, detail="rule not found")
 
 
-@router.delete("/anomaly-rules/{rule_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_anomaly_rule(rule_id: str) -> None:
+@router.delete("/anomaly-rules/{rule_id}",
+            status_code=status.HTTP_204_NO_CONTENT,
+            response_class=Response)
+async def delete_anomaly_rule(request: Request, rule_id: str) -> Response:
+    ctx = _ctx(request)
+    require_tenant(ctx)
     global _ANOMALY_RULES
     _ANOMALY_RULES = [r for r in _ANOMALY_RULES if r["id"] != rule_id]
+    _emit(
+        request,
+        event_type="dashboard.anomaly_rule.deleted",
+        aggregate_id=rule_id,
+        payload={"ruleId": rule_id},
+        tenant_id=str(ctx.tenant_id),
+    )
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 # ============================================================================
@@ -813,7 +1092,9 @@ async def delete_anomaly_rule(rule_id: str) -> None:
 
 
 @router.get("/search", summary="Global search")
-async def global_search(keyword: str | None = Query(default=None)) -> Any:
+async def global_search(request: Request,
+                          keyword: str | None = Query(default=None)) -> Any:
+    require_tenant(_ctx(request))
     if not keyword:
         return []
     kw = keyword.lower()

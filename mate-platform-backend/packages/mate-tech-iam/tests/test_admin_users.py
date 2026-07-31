@@ -1,4 +1,4 @@
-﻿"""Tests for /api/v1/admin/users endpoints (FR-DASH-006-01)."""
+"""Tests for /api/v1/admin/users endpoints (FR-DASH-006-01)."""
 from __future__ import annotations
 
 import pytest
@@ -111,14 +111,37 @@ async def test_import_and_export(client):
 @pytest.mark.asyncio
 async def test_require_admin_rejects_no_role():
     """A caller without PLATFORM_* roles is rejected with 403."""
+    import time
+
+    import jwt as pyjwt
     from httpx import ASGITransport, AsyncClient
     from mate_tech_iam.main import app
+    from mate_tech_iam.services.deps import JWT_SECRET
 
+    now = int(time.time())
+    token = pyjwt.encode(
+        {
+            "sub": "guest",
+            "iss": "http://localhost:8080/realms/metaplatform",
+            "aud": "metaplatform-backend",
+            "azp": "metaplatform-backend",
+            "preferred_username": "guest",
+            "realm_access": {"roles": ["GUEST"]},
+            "scope": "platform.read",
+            "attributes": {"tenant_id": ["tenant-default"]},
+            "tenant_id": "tenant-default",
+            "roles": ["GUEST"],
+            "iat": now,
+            "exp": now + 3600,
+        },
+        JWT_SECRET,
+        algorithm="HS256",
+    )
     transport = ASGITransport(app=app)
     async with AsyncClient(
         transport=transport,
         base_url="http://testserver",
-        headers={"x-mate-tenant-id": "tenant-default", "x-mate-dev-user": "guest", "x-mate-roles": "GUEST"},
+        headers={"Authorization": f"Bearer {token}"},
     ) as ac:
         r = await ac.get("/api/v1/admin/users")
     assert r.status_code == 403
