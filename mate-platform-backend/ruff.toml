@@ -36,6 +36,8 @@ ignore = ["E501", "PLR0913", "PLR2004", "S101", "TC001", "TC002", "TC003", "RUF0
 "packages/mate-app-kb/src/mate_app_kb/api/app.py" = ["PLR0915", "B008", "PLC0415"]
 # mate-clients: global handler singleton
 "packages/mate-clients/src/mate_clients/kafka/consumer.py" = ["PLW0603"]
+# mate-tech-obs: lazy imports for optional otel instrumentors
+"packages/mate-tech-obs/src/mate_tech_obs/tracing/instrument.py" = ["PLC0415"]
 # mate-tech-iam: camelCase API response models (frontend contract)
 "packages/mate-tech-iam/src/mate_tech_iam/api/auth.py" = ["N815"]
 "packages/mate-tech-iam/src/mate_tech_iam/api/dashboard.py" = ["N803", "N815", "PLW0603"]

@@ -2,9 +2,10 @@
 from __future__ import annotations
 
 import os
+from collections.abc import Awaitable, Callable
 
 import structlog
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, Response
 
 # TECH-SERVICES / BUSINESS-SLICES: hooks 1, 2 (auth + tenant).
 from mate_platform.auth import install_auth
@@ -36,7 +37,10 @@ app = FastAPI(
 # outermost middleware and runs first — populating request.state.ctx
 # before this guard checks it.
 @app.middleware('http')
-async def _enforce_tenant_per_request(request, call_next):
+async def _enforce_tenant_per_request(  # pyright: ignore[reportUnusedFunction]
+    request: Request,
+    call_next: Callable[[Request], Awaitable[Response]],
+) -> Response:
     path = request.url.path
     if not path.startswith('/healthz') and not path.startswith('/openapi'):
         ctx = getattr(request.state, 'ctx', None)
@@ -55,7 +59,7 @@ async def _enforce_tenant_per_request(request, call_next):
 install_auth(app)
 
 
-def _require_ctx(request: Request):
+def _require_ctx(request: Request):  # pyright: ignore[reportUnusedFunction]
     # Defence in depth: install_auth populates ctx or returns 401.
     ctx = getattr(request.state, 'ctx', None)
     if ctx is None:
@@ -74,7 +78,7 @@ async def healthz() -> dict[str, str]:
     return {"status": "ok", "version": app.version}
 
 
-@app.on_event("startup")
+@app.on_event("startup")  # pyright: ignore[reportDeprecated]
 async def on_startup() -> None:
     log_level = os.getenv("LOG_LEVEL", "INFO").upper()
     structlog.configure(
@@ -94,7 +98,7 @@ async def on_startup() -> None:
     logger.info("mate-tech-ont.startup", version=app.version)
 
 
-@app.on_event("shutdown")
+@app.on_event("shutdown")  # pyright: ignore[reportDeprecated]
 async def on_shutdown() -> None:
     await neo4j.close()
 

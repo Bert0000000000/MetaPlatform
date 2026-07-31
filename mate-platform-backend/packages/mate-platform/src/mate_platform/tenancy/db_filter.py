@@ -37,7 +37,7 @@ _TENANT_FILTER_ENABLED: bool = os.environ.get(
 # -----------------------------------------------------------------------------
 # RequestContext carrier on the Session
 # -----------------------------------------------------------------------------
-class _SessionTenantState:
+class _SessionTenantState:  # pyright: ignore[reportUnusedClass]
     """Per-thread tenant context attached to a SQLAlchemy Session.
 
     The state is created on session begin and cleared on rollback;
@@ -71,11 +71,11 @@ def current_tenant_context(session: Session) -> RequestContext | None:
 # -----------------------------------------------------------------------------
 # Event listener
 # -----------------------------------------------------------------------------
-def _has_tenant_column(table: Table) -> bool:
+def _has_tenant_column(table: Table) -> bool:  # pyright: ignore[reportUnusedFunction]
     return "tenant_id" in table.c
 
 
-def _register_event_listeners() -> None:
+def _register_event_listeners() -> None:  # pyright: ignore[reportUnusedFunction]
     """Attach do_orm_execute event listener.
 
     Idempotent: a flag on the engine keeps the listener single-registered.

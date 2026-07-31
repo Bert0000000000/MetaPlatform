@@ -36,7 +36,7 @@ class InMemoryFlowableTool:
         self._defs: dict[str, dict[str, Any]] = {}
         self._lock = threading.Lock()
 
-    def deploy_bpmn(self, process_key, bpmn_xml, name=""):
+    def deploy_bpmn(self, process_key: str, bpmn_xml: str, name: str = "") -> dict[str, Any]:
         dep_id = str(uuid.uuid4())
         with self._lock:
             self._deployments[dep_id] = {
@@ -48,7 +48,7 @@ class InMemoryFlowableTool:
             self._defs[process_key] = self._deployments[dep_id]
         return self._deployments[dep_id]
 
-    def start_process(self, process_key, variables=None):
+    def start_process(self, process_key: str, variables: dict[str, Any] | None = None) -> dict[str, Any]:
         with self._lock:
             if process_key not in self._defs:
                 return {"id": "", "error": f"process {process_key} not deployed"}
@@ -63,7 +63,7 @@ class InMemoryFlowableTool:
             }
         return self._instances[inst_id]
 
-    def get_process_state(self, instance_id):
+    def get_process_state(self, instance_id: str) -> dict[str, Any]:
         with self._lock:
             inst = self._instances.get(instance_id)
         if not inst:
@@ -74,7 +74,7 @@ class InMemoryFlowableTool:
             inst["result"] = f"Process {inst['process_key']} completed (simulated)"
         return inst
 
-    def list_process_definitions(self):
+    def list_process_definitions(self) -> list[dict[str, Any]]:
         with self._lock:
             return list(self._defs.values())
 
@@ -83,14 +83,14 @@ class HttpxFlowableTool:
     DEFAULT_URL = "http://localhost:8080"
     REST_PREFIX = "/flowable-rest/service"
 
-    def __init__(self, base_url=None, timeout=30.0):
+    def __init__(self, base_url: str | None = None, timeout: float = 30.0) -> None:
         self._base_url = (base_url or os.environ.get("FLOWABLE_URL", self.DEFAULT_URL)).rstrip("/")
         self._client = httpx.Client(timeout=timeout, auth=("admin", "test"))
         self._available = False
         self._fallback = InMemoryFlowableTool()
         self._check()
 
-    def _check(self):
+    def _check(self) -> None:
         try:
             r = self._client.get(f"{self._base_url}{self.REST_PREFIX}/management/engine", timeout=5.0)
             self._available = r.status_code == 200
@@ -101,7 +101,7 @@ class HttpxFlowableTool:
         except Exception as exc:
             _log.info("Flowable unavailable at %s: %s (using InMemory fallback)", self._base_url, exc)
 
-    def deploy_bpmn(self, process_key, bpmn_xml, name=""):
+    def deploy_bpmn(self, process_key: str, bpmn_xml: str, name: str = "") -> dict[str, Any]:
         if not self._available:
             return self._fallback.deploy_bpmn(process_key, bpmn_xml, name)
         try:
@@ -117,7 +117,7 @@ class HttpxFlowableTool:
             _log.warning("Flowable deploy failed: %s (using fallback)", exc)
             return self._fallback.deploy_bpmn(process_key, bpmn_xml, name)
 
-    def start_process(self, process_key, variables=None):
+    def start_process(self, process_key: str, variables: dict[str, Any] | None = None) -> dict[str, Any]:
         if not self._available:
             return self._fallback.start_process(process_key, variables)
         try:
@@ -130,7 +130,7 @@ class HttpxFlowableTool:
         except Exception:
             return self._fallback.start_process(process_key, variables)
 
-    def get_process_state(self, instance_id):
+    def get_process_state(self, instance_id: str) -> dict[str, Any]:
         if not self._available:
             return self._fallback.get_process_state(instance_id)
         try:
@@ -145,7 +145,7 @@ class HttpxFlowableTool:
         except Exception:
             return self._fallback.get_process_state(instance_id)
 
-    def list_process_definitions(self):
+    def list_process_definitions(self) -> list[dict[str, Any]]:
         if not self._available:
             return self._fallback.list_process_definitions()
         try:
@@ -155,20 +155,20 @@ class HttpxFlowableTool:
         except Exception:
             return self._fallback.list_process_definitions()
 
-    def close(self):
+    def close(self) -> None:
         self._client.close()
 
 
 _tool: FlowableTool | None = None
 
 
-def get_flowable_tool():
+def get_flowable_tool() -> FlowableTool:
     global _tool
     if _tool is None:
         _tool = HttpxFlowableTool()
     return _tool
 
 
-def set_flowable_tool(tool):
+def set_flowable_tool(tool: FlowableTool | None) -> None:
     global _tool
     _tool = tool

@@ -1,7 +1,7 @@
 """Full-text search tests (ST-5.4.10)."""
 from __future__ import annotations
 
-from mate_tech_ont.search.fulltext import _tokenize, fuzzy_match
+from mate_tech_ont.search.fulltext import _tokenize, fuzzy_match  # pyright: ignore[reportPrivateUsage]
 
 
 def test_tokenize_english() -> None:

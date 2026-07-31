@@ -10,6 +10,7 @@ import os
 import threading
 import time
 from pathlib import Path
+from typing import Any
 
 _log = logging.getLogger(__name__)
 
@@ -18,42 +19,15 @@ _STORAGE_DIR.mkdir(parents=True, exist_ok=True)
 _lock = threading.Lock()
 
 
-def _path_for(thread_id):
+def _path_for(thread_id: str) -> Path:
     safe = thread_id.replace("/", "_").replace("..", "_")
     return _STORAGE_DIR / f"{safe}.json"
 
 
-def save_state(thread_id, state):
-    p = _path_for(thread_id)
-    payload = {"_saved_at": time.time(), "state": state}
-    with _lock:
-        p.write_text(json.dumps(payload, default=str, ensure_ascii=False), encoding="utf-8")
+_pg_saver: Any = None
 
 
-def load_state(thread_id):
-    p = _path_for(thread_id)
-    if not p.exists():
-        return None
-    with _lock:
-        try:
-            return json.loads(p.read_text(encoding="utf-8"))
-        except Exception as exc:
-            _log.warning("load_state failed for %s: %s", thread_id, exc)
-            return None
-
-
-def delete_state(thread_id):
-    p = _path_for(thread_id)
-    if not p.exists():
-        return False
-    with _lock:
-        p.unlink()
-    return True
-
-_pg_saver = None
-
-
-def get_pg_saver():
+def get_pg_saver() -> Any:
     """Lazy-init PGSaver (returns None if PG unavailable)."""
     global _pg_saver
     if _pg_saver is None:
@@ -62,7 +36,7 @@ def get_pg_saver():
     return _pg_saver
 
 
-def save_state(thread_id, state):
+def save_state(thread_id: str, state: dict[str, Any]) -> None:
     """Save state: prefer PGSaver if available, else JSON file."""
     pg = get_pg_saver()
     if pg and pg.is_available():
@@ -70,14 +44,13 @@ def save_state(thread_id, state):
         if pg.save(thread_id, state, scenario=scenario):
             return
     # Fallback: JSON file
-    from mate_tech_agent.memory import _lock, _path_for  # type: ignore
     p = _path_for(thread_id)
     payload = {"_saved_at": time.time(), "state": state}
     with _lock:
-        p.write_text(__import__("json").dumps(payload, default=str, ensure_ascii=False), encoding="utf-8")
+        p.write_text(json.dumps(payload, default=str, ensure_ascii=False), encoding="utf-8")
 
 
-def load_state(thread_id):
+def load_state(thread_id: str) -> dict[str, Any] | None:
     """Load state: try PGSaver first, fallback to JSON."""
     pg = get_pg_saver()
     if pg and pg.is_available():
@@ -85,23 +58,19 @@ def load_state(thread_id):
         if state is not None:
             return {"state": state, "_source": "pg"}
     # Fallback: JSON file
-    import json as _json
-
-    from mate_tech_agent.memory import _lock, _path_for  # type: ignore
     p = _path_for(thread_id)
     if not p.exists():
         return None
     with _lock:
         try:
-            return _json.loads(p.read_text(encoding="utf-8"))
+            return json.loads(p.read_text(encoding="utf-8"))
         except Exception:
             return None
 
 
-def delete_state(thread_id):
+def delete_state(thread_id: str) -> bool:
     pg = get_pg_saver()
     pg_ok = pg and pg.is_available() and pg.delete(thread_id)
-    from mate_tech_agent.memory import _lock, _path_for  # type: ignore
     p = _path_for(thread_id)
     json_deleted = False
     if p.exists():

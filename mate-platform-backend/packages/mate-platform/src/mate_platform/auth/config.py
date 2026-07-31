@@ -11,7 +11,7 @@ import os
 from dataclasses import dataclass
 
 
-def _require(name: str, *, allow_empty: bool = False) -> str:
+def _require(name: str, *, allow_empty: bool = False) -> str:  # pyright: ignore[reportUnusedFunction]
     value = os.environ.get(name, "")
     if not allow_empty and not value:
         raise RuntimeError(

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
+from typing import Any
 
 import structlog
 
@@ -109,7 +110,7 @@ def _delete_to_cypher(p: ParsedQuery) -> str:
     return f"MATCH {', '.join(parts)} DELETE {', '.join(p.strip('?') if p.startswith('?') else 'n' for p in p.triples)}"
 
 
-def execute_sparql(sparql, neo4j_session=None):
+def execute_sparql(sparql: str, neo4j_session: Any | None = None) -> list[Any]:
     parsed = parse_sparql(sparql)
     cypher = sparql_to_cypher(parsed)
     logger.info('sparql.executed', cypher=cypher[:80])

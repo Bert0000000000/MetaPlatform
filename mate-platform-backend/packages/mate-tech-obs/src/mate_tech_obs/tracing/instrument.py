@@ -11,15 +11,19 @@ def auto_instrument(app: object | None = None) -> dict[str, bool]:
 
     if app is not None:
         try:
-            from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor  # noqa: PLC0415
-            FastAPIInstrumentor.instrument_app(app)  # type: ignore[arg-type]
+            from opentelemetry.instrumentation.fastapi import (  # pyright: ignore[reportMissingImports]
+                FastAPIInstrumentor,
+            )
+            FastAPIInstrumentor.instrument_app(app)
             results["fastapi"] = True
         except Exception as e:
             logger.warning("instrument.fastapi.failed", error=str(e))
             results["fastapi"] = False
 
     try:
-        from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor  # noqa: PLC0415
+        from opentelemetry.instrumentation.httpx import (  # pyright: ignore[reportMissingImports]
+            HTTPXClientInstrumentor,
+        )
         HTTPXClientInstrumentor().instrument()
         results["httpx"] = True
     except Exception as e:
@@ -27,7 +31,9 @@ def auto_instrument(app: object | None = None) -> dict[str, bool]:
         results["httpx"] = False
 
     try:
-        from opentelemetry.instrumentation.aiokafka import AIOKafkaInstrumentor  # noqa: PLC0415
+        from opentelemetry.instrumentation.aiokafka import (  # pyright: ignore[reportMissingImports]
+            AIOKafkaInstrumentor,
+        )
         AIOKafkaInstrumentor().instrument()
         results["aiokafka"] = True
     except Exception as e:

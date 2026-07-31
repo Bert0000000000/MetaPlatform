@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import logging
 import os
+from typing import Any
 
 import httpx
 
@@ -12,11 +13,11 @@ _log = logging.getLogger(__name__)
 class RAGTool:
     DEFAULT_URL = "http://localhost:8001"
 
-    def __init__(self, base_url=None, timeout=30.0):
+    def __init__(self, base_url: str | None = None, timeout: float = 30.0) -> None:
         self._base_url = (base_url or os.environ.get("RAG_URL", self.DEFAULT_URL)).rstrip("/")
         self._client = httpx.Client(timeout=timeout)
 
-    def search(self, query, top_k=5, mode="AUTO"):
+    def search(self, query: str, top_k: int = 5, mode: str = "AUTO") -> list[dict[str, Any]]:
         try:
             r = self._client.post(
                 f"{self._base_url}/api/v1/rag/search",
@@ -28,20 +29,20 @@ class RAGTool:
             _log.warning("RAG search failed: %s", exc)
             return []
 
-    def close(self):
+    def close(self) -> None:
         self._client.close()
 
 
-_rag_tool = None
+_rag_tool: RAGTool | None = None
 
 
-def get_rag_tool():
+def get_rag_tool() -> RAGTool:
     global _rag_tool
     if _rag_tool is None:
         _rag_tool = RAGTool()
     return _rag_tool
 
 
-def set_rag_tool(tool):
+def set_rag_tool(tool: RAGTool | None) -> None:
     global _rag_tool
     _rag_tool = tool

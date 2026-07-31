@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import logging
 import re
+from typing import Any
 
 from langgraph.graph import END, START, StateGraph
 
@@ -15,7 +16,7 @@ from mate_tech_agent.tools import get_rag_tool
 _log = logging.getLogger(__name__)
 
 
-def _extract_query(state):
+def _extract_query(state: dict[str, Any]) -> str:
     for msg in reversed(state.get("messages", [])):
         if isinstance(msg, dict) and msg.get("role") == "user":
             return msg.get("content", "")
@@ -24,13 +25,13 @@ def _extract_query(state):
     return ""
 
 
-def _detect_mode(query):
+def _detect_mode(query: str) -> str:
     if re.search(r"[A-Z][a-z]+", query):
         return "ENTITY"
     return "FACTUAL"
 
 
-def retrieve_node(state):
+def retrieve_node(state: dict[str, Any]) -> dict[str, Any]:
     """S1: RAG retrieval. Respects guard_blocked + _redacted_query (TC-5.7.11)."""
     if state.get("guard_blocked"):
         return {**state, "retrieved_chunks": [], "guard_blocked": True}
@@ -48,7 +49,7 @@ def retrieve_node(state):
     }
 
 
-def answer_node(state):
+def answer_node(state: dict[str, Any]) -> dict[str, Any]:
     if state.get("guard_blocked"):
         return {**state, "answer": state.get("answer", "[BLOCKED] Safety guard rejected input.")}
     query = state.get("_redacted_query") or _extract_query(state)
@@ -58,7 +59,7 @@ def answer_node(state):
     return {**state, "answer": answer}
 
 
-def planner_node(state):
+def planner_node(state: dict[str, Any]) -> dict[str, Any]:
     query = _extract_query(state)
     if not query:
         return {**state, "error": "no query"}
@@ -70,7 +71,7 @@ def planner_node(state):
     return {**state, "sub_questions": sub_questions}
 
 
-def worker_node(state):
+def worker_node(state: dict[str, Any]) -> dict[str, Any]:
     sub_qs = state.get("sub_questions", [])
     rag = get_rag_tool()
     all_chunks = list(state.get("retrieved_chunks", []))
@@ -88,23 +89,23 @@ def worker_node(state):
     return {**state, "retrieved_chunks": unique[:10]}
 
 
-def synthesizer_node(state):
+def synthesizer_node(state: dict[str, Any]) -> dict[str, Any]:
     return answer_node(state)
 
 
-def should_continue_after_retrieve(state):
+def should_continue_after_retrieve(state: dict[str, Any]) -> str:
     if state.get("error"):
         return "__end__"
     return "answer"
 
 
-def should_continue_after_planner(state):
+def should_continue_after_planner(state: dict[str, Any]) -> str:
     if state.get("error") or not state.get("sub_questions"):
         return "__end__"
     return "worker"
 
 
-def persist_node(state):
+def persist_node(state: dict[str, Any]) -> dict[str, Any]:
     tid = state.get("thread_id", "")
     if tid:
         save_state(tid, dict(state))
@@ -142,7 +143,7 @@ def build_s2_graph():
     g.add_edge("persist", END)
     return g.compile()
 
-def answer_node_stream(state):
+def answer_node_stream(state: dict[str, Any]) -> dict[str, Any]:
     """S1 stream variant: build answer via LLM, expose stream hook (no return)."""
     from mate_tech_agent.llm import get_llm, stream_answer
     chunks = state.get("retrieved_chunks", [])
@@ -165,7 +166,7 @@ def build_s1_stream_graph():
     g.add_edge("persist", END)
     return g.compile()
 
-def human_review_node(state):
+def human_review_node(state: dict[str, Any]) -> dict[str, Any]:
     """S3: pause for human review (returns pending_review state)."""
     return {
         **state,
@@ -174,7 +175,7 @@ def human_review_node(state):
     }
 
 
-def post_review_node(state):
+def post_review_node(state: dict[str, Any]) -> dict[str, Any]:
     """S3: finalize after human review."""
     approved = state.get("approved", True)
     feedback = state.get("feedback", "")
@@ -185,7 +186,7 @@ def post_review_node(state):
     return {**state, "answer": base + suffix, "pending_review": False, "reviewed": True}
 
 
-def should_continue_after_review(state):
+def should_continue_after_review(state: dict[str, Any]) -> str:
     if state.get("error"):
         return "__end__"
     return "answer"
@@ -209,7 +210,7 @@ def build_s3_graph():
 
 
 # S4: BPMN flow-driven (TC-5.7.8)
-def bpmn_deploy_node(state):
+def bpmn_deploy_node(state: dict[str, Any]) -> dict[str, Any]:
     """Deploy BPMN process definition to Flowable (TC-5.7.8)."""
     from mate_tech_agent.tools.flowable_tool import get_flowable_tool
     process_key = state.get("process_key", "agent_qa")
@@ -218,7 +219,7 @@ def bpmn_deploy_node(state):
     return {**state, "deployment_id": result.get("id", ""), "process_key": process_key}
 
 
-def bpmn_start_node(state):
+def bpmn_start_node(state: dict[str, Any]) -> dict[str, Any]:
     """Start a process instance on Flowable."""
     from mate_tech_agent.tools.flowable_tool import get_flowable_tool
     variables = {
@@ -229,7 +230,7 @@ def bpmn_start_node(state):
     return {**state, "process_instance_id": inst.get("id", ""), "process_status": "running"}
 
 
-def bpmn_monitor_node(state):
+def bpmn_monitor_node(state: dict[str, Any]) -> dict[str, Any]:
     """Poll process instance until completion (with timeout)."""
     from mate_tech_agent.tools.flowable_tool import get_flowable_tool
     inst_id = state.get("process_instance_id", "")
@@ -239,7 +240,7 @@ def bpmn_monitor_node(state):
     return {**state, "process_status": info.get("status", "running"), "process_result": info.get("result", "")}
 
 
-def bpmn_complete_node(state):
+def bpmn_complete_node(state: dict[str, Any]) -> dict[str, Any]:
     """Mark process complete and aggregate result."""
     return {**state, "process_status": "completed"}
 
@@ -281,7 +282,7 @@ def build_s4_graph():
     g.add_edge("persist", END)
     return g.compile()
 
-def guard_node(state):
+def guard_node(state: dict[str, Any]) -> dict[str, Any]:
     """Input safety check (TC-5.7.11): reject prompt injection + redact PII."""
     query = _extract_query(state)
     result = guard_input(query)

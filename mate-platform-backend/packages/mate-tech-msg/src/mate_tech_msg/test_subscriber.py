@@ -1,6 +1,7 @@
 """Subscriber tests (ST-5.1.5)."""
 from __future__ import annotations
 
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -15,20 +16,20 @@ def test_subscriber_constants() -> None:
 
 def test_subscriber_default_group() -> None:
     s = Subscriber(topics=["t"])
-    assert s._group_id == "tech-msg"
-    assert s._max_retries == 3
-    assert s._dlq_topic == "mate.msg.dlq"
+    assert s._group_id == "tech-msg"  # pyright: ignore[reportPrivateUsage]
+    assert s._max_retries == 3  # pyright: ignore[reportPrivateUsage]
+    assert s._dlq_topic == "mate.msg.dlq"  # pyright: ignore[reportPrivateUsage]
 
 
 def test_subscriber_custom_group() -> None:
     s = Subscriber(topics=["t"], group_id="custom", max_retries=5)
-    assert s._group_id == "custom"
-    assert s._max_retries == 5
+    assert s._group_id == "custom"  # pyright: ignore[reportPrivateUsage]
+    assert s._max_retries == 5  # pyright: ignore[reportPrivateUsage]
 
 
 def test_subscriber_consumer_lazy() -> None:
     s = Subscriber(topics=["t"])
-    assert s._consumer is None
+    assert s._consumer is None  # pyright: ignore[reportPrivateUsage]
 
 
 @pytest.mark.asyncio
@@ -44,16 +45,16 @@ async def test_subscriber_retry_then_success() -> None:
     mock_msg.headers = []
     mock_consumer.getone = AsyncMock(return_value=mock_msg)
     mock_consumer.commit = AsyncMock()
-    s._consumer = mock_consumer
+    s._consumer = mock_consumer  # pyright: ignore[reportPrivateUsage]
 
     attempts = {"n": 0}
 
-    async def flaky_handler(value, headers):
+    async def flaky_handler(value: dict[str, Any], headers: dict[str, bytes]) -> None:
         attempts["n"] += 1
         if attempts["n"] < 3:
             raise RuntimeError("transient")
 
-    s._handler = flaky_handler
+    s._handler = flaky_handler  # pyright: ignore[reportPrivateUsage]
     await s.process_one()
     assert attempts["n"] == 3
     mock_consumer.commit.assert_called_once()  # 成功后提交
@@ -72,12 +73,12 @@ async def test_subscriber_dlq_after_max_retries() -> None:
     mock_msg.headers = []
     mock_consumer.getone = AsyncMock(return_value=mock_msg)
     mock_consumer.commit = AsyncMock()
-    s._consumer = mock_consumer
+    s._consumer = mock_consumer  # pyright: ignore[reportPrivateUsage]
 
-    async def always_fail(value, headers):
+    async def always_fail(value: dict[str, Any], headers: dict[str, bytes]) -> None:
         raise RuntimeError("permanent")
 
-    s._handler = always_fail
+    s._handler = always_fail  # pyright: ignore[reportPrivateUsage]
     await s.process_one()
     # max_retries=3 都失败，未 commit（DLQ 路径）
     mock_consumer.commit.assert_not_called()

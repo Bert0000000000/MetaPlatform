@@ -60,7 +60,7 @@ async def test_pg_failure_rolls_back_neo4j() -> None:
     assert result.pg_ok is False
     assert result.neo4j_ok is True
     assert result.rolled_back is True
-    assert "pg down" in result.error
+    assert result.error is not None and "pg down" in result.error
     # 验证回滚被调用
     assert neo4j.run.call_count == 2  # CREATE + DELETE
 

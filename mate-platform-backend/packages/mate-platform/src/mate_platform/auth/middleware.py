@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Awaitable, Callable
+from typing import Any
 
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import JSONResponse
@@ -15,7 +16,7 @@ from ..tenancy.guards import TenantAccessError
 from .config import AuthConfig, load_auth_config
 from .identity import ServiceIdentity
 from .tenant import TenantError, resolve_tenant
-from .verifier import TokenError, TokenVerifier
+from .verifier import TokenError, TokenVerifier, VerifiedClaims
 
 logger = logging.getLogger(__name__)
 
@@ -161,15 +162,15 @@ def _extract_trace_id(request: Request) -> str:
     return request.headers.get("x-trace-id", "")
 
 
-def _switch_allowed(claims) -> bool:
+def _switch_allowed(claims: VerifiedClaims) -> bool:
     return "tenant_switch_enabled" in claims.scopes
 
 
-def _looks_like_service(claims) -> bool:
+def _looks_like_service(claims: VerifiedClaims) -> bool:
     return "preferred_username" not in _claims_dict(claims) and bool(claims.azp)
 
 
-def _claims_dict(claims) -> dict:
+def _claims_dict(claims: VerifiedClaims) -> dict[str, Any]:
     return {
         "sub": claims.sub,
         "azp": claims.azp,

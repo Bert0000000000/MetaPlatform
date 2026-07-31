@@ -4,7 +4,7 @@ from __future__ import annotations
 import logging
 import os
 
-from mate_tech_rag.api.schemas import RetrievalResponse
+from mate_tech_rag.api.schemas import RetrievalRequest, RetrievalResponse
 from mate_tech_rag.clients.graphrag_client import GraphRAGClient, InMemoryGraphRAGClient
 from mate_tech_rag.clients.hybrid_client import HybridClient, InMemoryHybridClient
 from mate_tech_rag.clients.lightrag_client import InMemoryLightRAGClient, LightRAGClient
@@ -59,7 +59,14 @@ def get_pg_client():
     return _ragflow
 
 
-def set_dependencies(*, embedder=None, hybrid=None, graph=None, lightrag=None, ragflow=None):
+def set_dependencies(
+    *,
+    embedder: Embedder | None = None,
+    hybrid: HybridClient | None = None,
+    graph: GraphRAGClient | None = None,
+    lightrag: LightRAGClient | None = None,
+    ragflow: RAGFlowClient | None = None,
+) -> None:
     global _embedder, _hybrid, _graph, _lightrag, _ragflow
     if embedder is not None:
         _embedder = embedder
@@ -104,12 +111,12 @@ def create_clients():
             _log.warning("RAGFlow init failed: %s", exc)
 
 
-def reload_embedder(provider=None):
+def reload_embedder(provider: str | None = None) -> None:
     global _embedder
     _embedder = create_embedder(provider)
 
 
-def fake_chunk(text):
+def fake_chunk(text: str):
     import uuid
 
     from mate_tech_rag.api.schemas import ChunkHit
@@ -122,7 +129,7 @@ def fake_chunk(text):
     )
 
 
-def _resolve_mode(requested):
+def _resolve_mode(requested: str) -> RetrievalMode:
     try:
         mode = RetrievalMode(requested)
     except ValueError:
@@ -132,7 +139,7 @@ def _resolve_mode(requested):
     return mode
 
 
-def retrieve(req):
+def retrieve(req: RetrievalRequest) -> RetrievalResponse:
     mode = _resolve_mode(req.mode)
     if mode == RetrievalMode.AUTO:
         mode = detect_mode(req.query)

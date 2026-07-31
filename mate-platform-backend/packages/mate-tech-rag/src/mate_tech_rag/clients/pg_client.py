@@ -46,7 +46,7 @@ class PGClient:
 
     def _connect(self) -> None:
         try:
-            from psycopg_pool import ConnectionPool
+            from psycopg_pool import ConnectionPool  # pyright: ignore[reportMissingImports]
         except ImportError as exc:
             _log.warning("psycopg/psycopg_pool not installed: %s", exc)
             return
@@ -158,6 +158,6 @@ class PGClient:
             self._pool = None
 
 
-def _json_dump(obj):
+def _json_dump(obj: Any) -> str:
     import json
     return json.dumps(obj, default=str, ensure_ascii=False)

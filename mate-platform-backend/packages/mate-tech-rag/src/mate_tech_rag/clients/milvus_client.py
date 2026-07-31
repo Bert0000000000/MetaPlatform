@@ -1,4 +1,4 @@
-﻿"""MilvusHybridClient: real Milvus v2.5+ connection for FACTUAL retrieval."""
+"""MilvusHybridClient: real Milvus v2.5+ connection for FACTUAL retrieval."""
 from __future__ import annotations
 
 import contextlib
@@ -6,7 +6,7 @@ import logging
 import os
 import threading
 import uuid
-from typing import Protocol
+from typing import Any, Protocol
 
 from mate_tech_rag.api.schemas import ChunkHit
 
@@ -14,9 +14,9 @@ _log = logging.getLogger(__name__)
 
 
 class HybridClient(Protocol):
-    def search(self, query, query_vector, top_k=10): ...
-    def add(self, document_id, text, vector, metadata=None): ...
-    def count(self): ...
+    def search(self, query: str, query_vector: list[float], top_k: int = 10) -> list[ChunkHit]: ...
+    def add(self, document_id: str, text: str, vector: list[float], metadata: dict[str, str] | None = None) -> str: ...
+    def count(self) -> int: ...
 
 
 class MilvusHybridClient:
@@ -27,12 +27,12 @@ class MilvusHybridClient:
 
     DEFAULT_COLLECTION = "mate_kb_chunks"
 
-    def __init__(self, host=None, port=None, collection_name=None, dim=384):
+    def __init__(self, host: str | None = None, port: str | int | None = None, collection_name: str | None = None, dim: int = 384) -> None:
         self._host = host or os.environ.get("MILVUS_HOST", "localhost")
         self._port = int(port or os.environ.get("MILVUS_PORT", "19530"))
         self._collection = collection_name or os.environ.get("MILVUS_COLLECTION", self.DEFAULT_COLLECTION)
         self._dim = dim
-        self._client = None
+        self._client: Any = None
         self._lock = threading.Lock()
         self._connect()
 
@@ -56,7 +56,7 @@ class MilvusHybridClient:
             _log.warning("Milvus connect failed (%s:%d): %s", self._host, self._port, exc)
             self._client = None
 
-    def add(self, document_id, text, vector, metadata=None):
+    def add(self, document_id: str, text: str, vector: list[float], metadata: dict[str, str] | None = None) -> str:
         chunk_id = str(uuid.uuid4())
         if self._client is None:
             return chunk_id
@@ -67,7 +67,7 @@ class MilvusHybridClient:
             )
         return chunk_id
 
-    def search(self, query, query_vector, top_k=10):
+    def search(self, query: str, query_vector: list[float], top_k: int = 10) -> list[ChunkHit]:
         if self._client is None:
             return []
         with self._lock:

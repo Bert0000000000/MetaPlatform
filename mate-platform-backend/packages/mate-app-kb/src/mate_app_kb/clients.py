@@ -12,6 +12,7 @@ the auth middleware) and passed to the client.
 from __future__ import annotations
 
 import os
+from typing import Any
 
 import httpx
 
@@ -27,7 +28,7 @@ class RAGClient:
 
     DEFAULT_URL = "http://localhost:8001"
 
-    def __init__(self, base_url=None, timeout=60.0, *, auth: BearerAuth | None = None, tenant_id: str = ""):
+    def __init__(self, base_url: str | None = None, timeout: float = 60.0, *, auth: BearerAuth | None = None, tenant_id: str = ""):
         self._base_url = (base_url or os.environ.get("RAG_URL", self.DEFAULT_URL)).rstrip("/")
         self._client = httpx.Client(timeout=timeout)
         # OutgoingAuthMiddleware injects Bearer + X-Tenant-Id on each call.
@@ -42,7 +43,7 @@ class RAGClient:
         if self._auth is not None and tenant_id:
             self._client.auth = OutgoingAuthMiddleware(self._auth, tenant_id=tenant_id)
 
-    def upload(self, file_content, filename, document_id, content_type="text/plain"):
+    def upload(self, file_content: bytes, filename: str, document_id: str, content_type: str = "text/plain") -> dict[str, Any]:
         files = {"file": (filename, file_content, content_type)}
         r = self._client.post(
             f"{self._base_url}/api/v1/rag/upload",
@@ -52,7 +53,7 @@ class RAGClient:
         r.raise_for_status()
         return r.json()
 
-    def parse(self, document_id, content, metadata=None):
+    def parse(self, document_id: str, content: str, metadata: dict[str, Any] | None = None) -> dict[str, Any]:
         r = self._client.post(
             f"{self._base_url}/api/v1/rag/parse",
             json={"document_id": document_id, "content": content, "metadata": metadata or {}},
@@ -60,7 +61,7 @@ class RAGClient:
         r.raise_for_status()
         return r.json()
 
-    def search(self, query, top_k=5, mode="AUTO"):
+    def search(self, query: str, top_k: int = 5, mode: str = "AUTO") -> dict[str, Any]:
         r = self._client.post(
             f"{self._base_url}/api/v1/rag/search",
             json={"query": query, "top_k": top_k, "mode": mode},
@@ -68,17 +69,17 @@ class RAGClient:
         r.raise_for_status()
         return r.json()
 
-    def stats(self):
+    def stats(self) -> dict[str, Any]:
         r = self._client.get(f"{self._base_url}/api/v1/rag/stats")
         r.raise_for_status()
         return r.json()
 
-    def status(self):
+    def status(self) -> dict[str, Any]:
         r = self._client.get(f"{self._base_url}/api/v1/rag/status")
         r.raise_for_status()
         return r.json()
 
-    def close(self):
+    def close(self) -> None:
         self._client.close()
 
 
@@ -87,7 +88,7 @@ class AgentClient:
 
     DEFAULT_URL = "http://localhost:8002"
 
-    def __init__(self, base_url=None, timeout=60.0, *, auth: BearerAuth | None = None, tenant_id: str = ""):
+    def __init__(self, base_url: str | None = None, timeout: float = 60.0, *, auth: BearerAuth | None = None, tenant_id: str = ""):
         self._base_url = (base_url or os.environ.get("AGENT_URL", self.DEFAULT_URL)).rstrip("/")
         self._client = httpx.Client(timeout=timeout)
         if auth is not None and tenant_id:
@@ -100,7 +101,7 @@ class AgentClient:
         if self._auth is not None and tenant_id:
             self._client.auth = OutgoingAuthMiddleware(self._auth, tenant_id=tenant_id)
 
-    def chat(self, message, scenario="S1", thread_id=None):
+    def chat(self, message: str, scenario: str = "S1", thread_id: str | None = None) -> dict[str, Any]:
         body = {"message": message, "scenario": scenario}
         if thread_id:
             body["thread_id"] = thread_id
@@ -108,7 +109,7 @@ class AgentClient:
         r.raise_for_status()
         return r.json()
 
-    def review(self, thread_id, approved, feedback=""):
+    def review(self, thread_id: str, approved: bool, feedback: str = "") -> dict[str, Any]:
         r = self._client.post(
             f"{self._base_url}/api/v1/agent/review",
             json={"thread_id": thread_id, "approved": approved, "feedback": feedback},
@@ -116,12 +117,12 @@ class AgentClient:
         r.raise_for_status()
         return r.json()
 
-    def get_state(self, thread_id):
+    def get_state(self, thread_id: str) -> dict[str, Any]:
         r = self._client.get(f"{self._base_url}/api/v1/agent/state/{thread_id}")
         r.raise_for_status()
         return r.json()
 
-    def stream_chat(self, message, scenario="S1", thread_id=None):
+    def stream_chat(self, message: str, scenario: str = "S1", thread_id: str | None = None):
         body = {"message": message, "scenario": scenario}
         if thread_id:
             body["thread_id"] = thread_id
@@ -132,5 +133,5 @@ class AgentClient:
         ) as r:
             yield from r.iter_lines()
 
-    def close(self):
+    def close(self) -> None:
         self._client.close()

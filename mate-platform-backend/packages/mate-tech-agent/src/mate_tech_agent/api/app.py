@@ -1,4 +1,5 @@
 """FastAPI app for mate-tech-agent (S1 + S2 + S3)."""
+# pyright: reportUnusedFunction=false
 from __future__ import annotations
 
 import time
@@ -45,7 +46,7 @@ _GRAPHS = {
 _PENDING_REVIEWS: dict[str, dict] = {}
 
 
-def _run_s3_initial(req, thread_id):
+def _run_s3_initial(req: ChatRequest, thread_id: str) -> dict:
     """S3 first call: retrieve + answer + human_review (paused)."""
     init = {
         "messages": [{"role": "user", "content": req.message}],

@@ -15,9 +15,9 @@ _ENTITY_RE = re.compile(r"[\u4e00-\u9fff]{2,4}|[A-Z][A-Za-z0-9_]{2,}")
 
 
 class GraphRAGClient(Protocol):
-    def query(self, query, top_k=10): ...
-    def insert(self, text, document_id, metadata=None): ...
-    def count(self): ...
+    def query(self, query: str, top_k: int = 10) -> list[ChunkHit]: ...
+    def insert(self, text: str, document_id: str, metadata: dict[str, str] | None = None) -> str: ...
+    def count(self) -> int: ...
 
 
 class Neo4jGraphRAGClient:
@@ -29,7 +29,7 @@ class Neo4jGraphRAGClient:
     DEFAULT_DATABASE = "rag-graphrag"
     DEFAULT_URI = "bolt://localhost:7687"
 
-    def __init__(self, uri=None, user=None, password=None, database=None):
+    def __init__(self, uri: str | None = None, user: str | None = None, password: str | None = None, database: str | None = None) -> None:
         self._uri = uri or os.environ.get("NEO4J_URI", self.DEFAULT_URI)
         self._user = user or os.environ.get("NEO4J_USER", "neo4j")
         self._password = password or os.environ.get("NEO4J_PASSWORD", "mate-pass")
@@ -55,10 +55,10 @@ class Neo4jGraphRAGClient:
             self._driver = None
 
     @staticmethod
-    def _extract_entities(text):
+    def _extract_entities(text: str) -> set[str]:
         return set(_ENTITY_RE.findall(text))
 
-    def insert(self, text, document_id, metadata=None):
+    def insert(self, text: str, document_id: str, metadata: dict[str, str] | None = None) -> str:
         chunk_id = str(uuid.uuid4())
         if self._driver is None:
             return chunk_id
@@ -75,7 +75,7 @@ class Neo4jGraphRAGClient:
                 ).consume()
         return chunk_id
 
-    def query(self, query, top_k=10):
+    def query(self, query: str, top_k: int = 10) -> list[ChunkHit]:
         if self._driver is None:
             return []
         entities = self._extract_entities(query)

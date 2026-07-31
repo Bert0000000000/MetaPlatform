@@ -1,4 +1,4 @@
-"""FastAPI app for mate-app-kb (business aggregation facade).
+﻿"""FastAPI app for mate-app-kb (business aggregation facade).
 
 Wires the three integration hooks per ADR-0014:
   1. install_auth(app) from mate_platform.auth (SEC-IAM-01).
@@ -98,11 +98,11 @@ def create_app(rag: RAGClient | None = None, agent: AgentClient | None = None) -
         return agent
 
     @app.get("/healthz", response_model=HealthResponse)
-    async def healthz() -> HealthResponse:
+    async def healthz() -> HealthResponse:  # pyright: ignore[reportUnusedFunction]
         return HealthResponse(status="ok", service="mate-app-kb", version=__version__)
 
     @app.post("/api/v1/kb/upload", response_model=UploadResponse)
-    async def upload(
+    async def upload(  # pyright: ignore[reportUnusedFunction]
         request: Request,
         file: UploadFile = File(...),
         document_id: str | None = None,
@@ -131,7 +131,7 @@ def create_app(rag: RAGClient | None = None, agent: AgentClient | None = None) -
             raise HTTPException(status_code=502, detail=f"upstream error: {exc}") from exc
 
     @app.post("/api/v1/kb/search", response_model=SearchResponse)
-    async def search(request: Request, req: SearchRequest) -> SearchResponse:
+    async def search(request: Request, req: SearchRequest) -> SearchResponse:  # pyright: ignore[reportUnusedFunction]
         # Hook 2: tenant guard.
         ctx = _require_ctx(request)
         require_tenant(ctx)
@@ -150,7 +150,7 @@ def create_app(rag: RAGClient | None = None, agent: AgentClient | None = None) -
         )
 
     @app.post("/api/v1/kb/chat", response_model=ChatResponse)
-    async def chat(request: Request, req: ChatRequest) -> ChatResponse:
+    async def chat(request: Request, req: ChatRequest) -> ChatResponse:  # pyright: ignore[reportUnusedFunction]
         ctx = _require_ctx(request)
         require_tenant(ctx)
         start = time.perf_counter()
@@ -169,7 +169,7 @@ def create_app(rag: RAGClient | None = None, agent: AgentClient | None = None) -
         )
 
     @app.post("/api/v1/kb/chat/stream")
-    async def chat_stream(request: Request, req: ChatRequest):
+    async def chat_stream(request: Request, req: ChatRequest):  # pyright: ignore[reportUnusedFunction]
         ctx = _require_ctx(request)
         require_tenant(ctx)
 
@@ -181,7 +181,7 @@ def create_app(rag: RAGClient | None = None, agent: AgentClient | None = None) -
         return StreamingResponse(event_gen(), media_type="text/event-stream")
 
     @app.get("/api/v1/kb/stats", response_model=StatsResponse)
-    async def stats(request: Request) -> StatsResponse:
+    async def stats(request: Request) -> StatsResponse:  # pyright: ignore[reportUnusedFunction]
         ctx = _require_ctx(request)
         require_tenant(ctx)
         try:

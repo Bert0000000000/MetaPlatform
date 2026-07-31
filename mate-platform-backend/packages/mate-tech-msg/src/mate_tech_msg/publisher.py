@@ -61,7 +61,7 @@ class Publisher:
         # 2. Compute partition key (default: tenantId)
         partition_key = req.partition_key
         if partition_key is None:
-            payload_dict = req.payload if isinstance(req.payload, dict) else {}
+            payload_dict = req.payload
             partition_key = str(
                 payload_dict.get(self._default_partition_key_field, "default")
             )

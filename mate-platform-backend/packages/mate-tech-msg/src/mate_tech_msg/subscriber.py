@@ -76,8 +76,6 @@ class Subscriber:
         """处理单条消息（可独立测试）."""
         assert self._consumer is not None
         msg = await self._consumer.getone()
-        if msg is None:
-            return
         # 重试计数：3 次后入 DLQ
         attempts = 0
         last_exc: Exception | None = None

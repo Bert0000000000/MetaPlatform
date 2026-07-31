@@ -44,7 +44,7 @@ from mate_tech_rag.api.schemas import (
 _log = logging.getLogger(__name__)
 
 
-def _backend_label(client) -> str:
+def _backend_label(client: object) -> str:
     name = type(client).__name__
     if "Milvus" in name:
         return "milvus"
@@ -75,11 +75,11 @@ def create_app() -> FastAPI:
         return ctx
 
     @app.get("/healthz", response_model=HealthResponse)
-    async def healthz() -> HealthResponse:
+    async def healthz() -> HealthResponse:  # pyright: ignore[reportUnusedFunction]
         return HealthResponse(status="ok", service="mate-tech-rag", version=__version__)
 
     @app.get("/api/v1/rag/status", response_model=SystemStatus)
-    async def status(request: Request) -> SystemStatus:
+    async def status(request: Request) -> SystemStatus:  # pyright: ignore[reportUnusedFunction]
         # Hook 2 of 5: tenant guard.
         _require_ctx(request)
         require_tenant(request.state.ctx)
@@ -103,7 +103,7 @@ def create_app() -> FastAPI:
         )
 
     @app.post("/api/v1/rag/parse", response_model=ParseResponse)
-    async def parse_endpoint(request: Request, req: ParseRequest) -> ParseResponse:
+    async def parse_endpoint(request: Request, req: ParseRequest) -> ParseResponse:  # pyright: ignore[reportUnusedFunction]
         _require_ctx(request)
         require_tenant(request.state.ctx)
         try:
@@ -112,7 +112,7 @@ def create_app() -> FastAPI:
             raise HTTPException(status_code=500, detail=str(exc)) from exc
 
     @app.post("/api/v1/rag/upload", response_model=UploadResponse)
-    async def upload_endpoint(
+    async def upload_endpoint(  # pyright: ignore[reportUnusedFunction]
         request: Request,
         file: UploadFile = File(..., description="text/markdown file to ingest"),
         document_id: str | None = None,
@@ -152,7 +152,7 @@ def create_app() -> FastAPI:
             raise HTTPException(status_code=500, detail=str(exc)) from exc
 
     @app.post("/api/v1/rag/ingest", response_model=IngestResponse)
-    async def ingest_endpoint(request: Request, req: IngestRequest) -> IngestResponse:
+    async def ingest_endpoint(request: Request, req: IngestRequest) -> IngestResponse:  # pyright: ignore[reportUnusedFunction]
         _require_ctx(request)
         require_tenant(request.state.ctx)
         try:
@@ -161,7 +161,7 @@ def create_app() -> FastAPI:
             raise HTTPException(status_code=500, detail=str(exc)) from exc
 
     @app.post("/api/v1/rag/search", response_model=RetrievalResponse)
-    async def search(request: Request, req: RetrievalRequest) -> RetrievalResponse:
+    async def search(request: Request, req: RetrievalRequest) -> RetrievalResponse:  # pyright: ignore[reportUnusedFunction]
         _require_ctx(request)
         require_tenant(request.state.ctx)
         try:
@@ -170,7 +170,7 @@ def create_app() -> FastAPI:
             raise HTTPException(status_code=500, detail=str(exc)) from exc
 
     @app.get("/api/v1/rag/stats", response_model=StatsResponse)
-    async def stats(request: Request) -> StatsResponse:
+    async def stats(request: Request) -> StatsResponse:  # pyright: ignore[reportUnusedFunction]
         _require_ctx(request)
         require_tenant(request.state.ctx)
         return StatsResponse(
@@ -179,7 +179,7 @@ def create_app() -> FastAPI:
         )
 
     @app.get("/api/v1/rag/admin/pg-stats", response_model=PgStatsResponse)
-    async def pg_stats(request: Request) -> PgStatsResponse:
+    async def pg_stats(request: Request) -> PgStatsResponse:  # pyright: ignore[reportUnusedFunction]
         _require_ctx(request)
         require_tenant(request.state.ctx)
         store = get_pg_store()

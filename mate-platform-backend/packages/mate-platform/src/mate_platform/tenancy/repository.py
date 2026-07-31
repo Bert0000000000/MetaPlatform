@@ -20,10 +20,10 @@ from sqlalchemy import Select
 
 from .context import RequestContext
 
-T = TypeVar("T")
+T_co = TypeVar("T_co", covariant=True)
 
 
-class TenantScopedRepository(Protocol[T]):
+class TenantScopedRepository(Protocol[T_co]):
     """Protocol for repositories whose data is partitioned by tenant.
 
     The protocol does not prescribe a specific ORM (SQLAlchemy,

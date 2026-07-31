@@ -48,12 +48,12 @@ def get_tracer(name: str = "mate-tech-msg") -> trace.Tracer:
 
 def inject_trace_headers(carrier: dict[str, Any]) -> None:
     """把当前 span context 注入 carrier（Kafka headers 用）."""
-    from opentelemetry.propagate.inject import inject
+    from opentelemetry.propagate import inject
     inject(carrier)
 
 
-def extract_trace_context(headers: list[tuple[str, bytes]]) -> dict[str, str]:
+def extract_trace_context(headers: list[tuple[str, bytes | str]]) -> dict[str, str]:
     """从 Kafka headers 提取 trace context."""
-    from opentelemetry.propagate.extract import extract
+    from opentelemetry.propagate import extract
     carrier = {k: v.decode() if isinstance(v, bytes) else v for k, v in headers}
     return extract(carrier)

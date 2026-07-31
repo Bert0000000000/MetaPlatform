@@ -1,4 +1,4 @@
-﻿"""LightRAGClient (THEMATIC) — real httpx client for HKUDS LightRAG HTTP API."""
+"""LightRAGClient (THEMATIC) — real httpx client for HKUDS LightRAG HTTP API."""
 from __future__ import annotations
 
 import logging
@@ -13,9 +13,9 @@ _log = logging.getLogger(__name__)
 
 
 class LightRAGClient(Protocol):
-    def query(self, query, top_k=10): ...
-    def insert(self, text, document_id, metadata=None): ...
-    def count(self): ...
+    def query(self, query: str, top_k: int = 10) -> list[ChunkHit]: ...
+    def insert(self, text: str, document_id: str, metadata: dict[str, str] | None = None) -> str: ...
+    def count(self) -> int: ...
 
 
 class HttpxLightRAGClient:
@@ -33,7 +33,7 @@ class HttpxLightRAGClient:
     DEFAULT_URL = "http://localhost:9621"
     DEFAULT_MODE = "hybrid"
 
-    def __init__(self, base_url=None, api_key=None, mode=None, timeout=30.0):
+    def __init__(self, base_url: str | None = None, api_key: str | None = None, mode: str | None = None, timeout: float = 30.0) -> None:
         self._base_url = (base_url or os.environ.get("LIGHTRAG_URL", self.DEFAULT_URL)).rstrip("/")
         self._api_key = api_key or os.environ.get("LIGHTRAG_API_KEY", "")
         self._mode = mode or os.environ.get("LIGHTRAG_MODE", self.DEFAULT_MODE)
@@ -59,7 +59,7 @@ class HttpxLightRAGClient:
             _log.info("LightRAG unavailable at %s: %s", self._base_url, exc)
             self._available = False
 
-    def query(self, query, top_k=10):
+    def query(self, query: str, top_k: int = 10) -> list[ChunkHit]:
         if not query.strip():
             return []
         if not self._available:
@@ -97,7 +97,7 @@ class HttpxLightRAGClient:
             )
         return hits
 
-    def insert(self, text, document_id, metadata=None):
+    def insert(self, text: str, document_id: str, metadata: dict[str, str] | None = None) -> str:
         if not self._available:
             return f"lrag-stub-{document_id}"
         try:

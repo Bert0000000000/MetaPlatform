@@ -7,35 +7,36 @@ from __future__ import annotations
 import logging
 import os
 from collections.abc import Iterator
+from typing import Any
 
 _log = logging.getLogger(__name__)
 
 
 class NoOpLLM:
-    def invoke(self, prompt):
+    def invoke(self, prompt: str) -> str:
         return f"[NoOpLLM echo] You said: {prompt[:200]}"
 
-    def stream(self, prompt):
+    def stream(self, prompt: str) -> Iterator[str]:
         text = f"[NoOpLLM echo] You said: {prompt[:200]}"
         for word in text.split(" "):
             yield word + " "
 
 
 class EchoLLM:
-    def invoke(self, prompt):
+    def invoke(self, prompt: str) -> str:
         return f"[EchoLLM] {prompt[:500]}"
 
-    def stream(self, prompt):
+    def stream(self, prompt: str) -> Iterator[str]:
         text = f"[EchoLLM] {prompt[:500]}"
         for word in text.split(" "):
             yield word + " "
 
 
-def get_llm():
+def get_llm() -> Any:
     provider = os.environ.get("LLM_PROVIDER", "echo").lower()
     if provider == "openai":
         try:
-            from langchain_openai import ChatOpenAI
+            from langchain_openai import ChatOpenAI  # pyright: ignore[reportMissingImports]
         except ImportError as exc:
             raise RuntimeError("langchain_openai not installed") from exc
         model = os.environ.get("OPENAI_CHAT_MODEL", "gpt-4o-mini")
@@ -45,7 +46,7 @@ def get_llm():
     return EchoLLM()
 
 
-def _build_prompt(query, chunks):
+def _build_prompt(query: str, chunks: list[dict[str, Any]]) -> str:
     if not chunks:
         return f"Question: {query}\n\nNo context available. Answer briefly:"
     context_lines = []
@@ -60,7 +61,7 @@ def _build_prompt(query, chunks):
     )
 
 
-def synthesize_answer(llm, query, chunks):
+def synthesize_answer(llm: Any, query: str, chunks: list[dict[str, Any]]) -> str:
     prompt = _build_prompt(query, chunks)
     if hasattr(llm, "stream"):
         try:
@@ -91,7 +92,7 @@ def synthesize_answer(llm, query, chunks):
         return "Based on " + str(len(chunks)) + " chunks: " + " | ".join(snippets)
 
 
-def stream_answer(llm, query, chunks) -> Iterator[str]:
+def stream_answer(llm: Any, query: str, chunks: list[dict[str, Any]]) -> Iterator[str]:
     """Yield LLM tokens one at a time (TC-5.7.9 SSE).
 
     Falls back to word-level chunking for non-streaming LLMs.
