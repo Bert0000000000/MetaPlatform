@@ -17,7 +17,6 @@ from typing import Any
 
 import sqlparse
 from fastapi import APIRouter, HTTPException, Query, Request
-from fastapi.responses import JSONResponse
 
 from mate_platform.messaging.events import Event
 from mate_platform.messaging.outbox import InMemoryOutboxWriter
@@ -108,21 +107,42 @@ async def auth_login(request: Request) -> dict[str, Any]:
 
 # --- A2A (2) ----------------------------------------------------------------
 @router.post("/a2a/delegate")
-async def a2a_delegate(request: Request) -> JSONResponse:
-    _tid(request)
-    return JSONResponse(
-        status_code=501,
-        content={"error": "mate-app-a2a pending", "code": "E_NOT_IMPLEMENTED"},
+async def a2a_delegate(request: Request) -> dict[str, Any]:
+    """Proxy A2A delegation to mate-app-a2a (in-process for P2-W3).
+
+    Accepts {target_agent_id, message, context} and creates a
+    delegation task in the a2a repository. Returns the task_id +
+    pending status. Emits copilot.a2a.delegated outbox event.
+    """
+    tid = _tid(request)
+    body = await request.json()
+    # Import locally to avoid circular dependency at module load time
+    from mate_app_a2a.repositories import create_delegation  # pyright: ignore[reportMissingImports]  # noqa: PLC0415
+
+    task = create_delegation(
+        tenant_id=tid,
+        target_agent_id=body.get("target_agent_id", ""),
+        message=body.get("message", ""),
+        context=body.get("context", {}),
     )
+    _emit(
+        request,
+        event_type="copilot.a2a.delegated",
+        aggregate_id=task.id,
+        payload={"target_agent_id": body.get("target_agent_id", "")},
+        tenant_id=tid,
+    )
+    return asdict(task)
 
 
 @router.get("/a2a/external")
-async def a2a_external(request: Request) -> JSONResponse:
-    _tid(request)
-    return JSONResponse(
-        status_code=501,
-        content={"error": "mate-app-a2a pending", "code": "E_NOT_IMPLEMENTED"},
-    )
+async def a2a_external(request: Request) -> dict[str, Any]:
+    """Proxy external agent listing to mate-app-a2a (in-process)."""
+    tid = _tid(request)
+    from mate_app_a2a.repositories import list_external_agents  # pyright: ignore[reportMissingImports]  # noqa: PLC0415
+
+    items = list_external_agents(tid)
+    return {"items": [asdict(e) for e in items], "total": len(items)}
 
 
 # --- Actions (3) ------------------------------------------------------------

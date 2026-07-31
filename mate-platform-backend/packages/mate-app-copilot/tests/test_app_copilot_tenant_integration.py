@@ -1,7 +1,7 @@
 """Cross-tenant integration tests for mate-app-copilot (ADR-0014 step 5).
 
 5 tests: wrong-tenant 403, missing-scope pinned, no-tenant non-200,
-tenant-isolation ok, a2a delegate returns 501.
+tenant-isolation ok, a2a delegate proxies to mate-app-a2a.
 """
 from __future__ import annotations
 
@@ -95,13 +95,30 @@ def test_tenant_isolation_ok(fresh_app: TestClient) -> None:
     assert all(c["tenant_id"] == "tenant-globex" for c in r2.json()["items"])
 
 
-def test_a2a_delegate_returns_501(fresh_app: TestClient) -> None:
+def test_a2a_delegate_proxies_to_a2a(fresh_app: TestClient) -> None:
+    """POST /a2a/delegate now proxies to mate-app-a2a (not 501).
+
+    P2-W3: the 501 stub has been replaced with an in-process proxy
+    to mate_app_a2a.repositories.create_delegation.
+    """
+    from mate_app_a2a.repositories import in_memory as a2a_repo  # noqa: PLC0415
+
+    a2a_repo.reset_store()
+
     token = _token(tenant_id="tenant-acme")
     r = fresh_app.post(
         "/api/v1/copilot/a2a/delegate",
-        json={},
+        json={
+            "target_agent_id": "agent-rag",
+            "message": "summarize document",
+            "context": {"doc_id": "doc-1"},
+        },
         headers={"Authorization": f"Bearer {token}"},
     )
-    assert r.status_code == 501, r.text
+    assert r.status_code == 200, r.text
     body = r.json()
-    assert body["code"] == "E_NOT_IMPLEMENTED"
+    assert body["status"] == "pending"
+    assert body["target_agent_id"] == "agent-rag"
+    assert body["id"].startswith("task-")
+
+    a2a_repo.reset_store()
