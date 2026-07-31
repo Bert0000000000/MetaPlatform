@@ -502,12 +502,15 @@ async def get_knowledge_bases(request: Request) -> dict[str, Any]:
     items = list_knowledge_bases(tid)
     if items:
         return _resp(items)
-    return {
-        "items": [
-            {"id": "kb-fallback", "name": "Default KB", "doc_count": 0},
-        ],
-        "total": 1,
-    }
+    # P2-W4: fallback to arch DataAssets as knowledge-base proxies
+    from mate_app_arch.repositories import list_data_assets  # pyright: ignore[reportMissingImports]
+
+    assets = list_data_assets(tid)
+    kb_items = [
+        {"id": a.id, "name": a.name, "doc_count": 0}
+        for a in assets[:5]
+    ]
+    return {"items": kb_items, "total": len(kb_items)}
 
 
 # --- Models (1) -------------------------------------------------------------
@@ -522,12 +525,18 @@ async def search_concepts(
     request: Request,
     keyword: str = Query(...),
 ) -> dict[str, Any]:
-    _tid(request)
-    concepts = [
-        {"id": "c-customer", "name": "Customer", "category": "entity"},
-        {"id": "c-contract", "name": "Contract", "category": "entity"},
-        {"id": "a-approve", "name": "Approve", "category": "action"},
-    ]
+    tid = _tid(request)
+    # P2-W4: pull concepts from arch Capability tree + DataEntity store
+    from mate_app_arch.repositories import (  # pyright: ignore[reportMissingImports]
+        list_capability_tree,
+        list_data_entities,
+    )
+
+    concepts: list[dict[str, Any]] = []
+    for cap in list_capability_tree(tid):
+        concepts.append({"id": cap.id, "name": cap.name, "category": "capability"})
+    for ent in list_data_entities(tid):
+        concepts.append({"id": ent.id, "name": ent.name, "category": "entity"})
     kw = keyword.lower()
     matched = [c for c in concepts if kw in c["name"].lower()]
     return {"items": matched, "total": len(matched)}
@@ -538,14 +547,35 @@ async def expand_graph(
     request: Request,
     node_id: str = Query(...),
 ) -> dict[str, Any]:
-    _tid(request)
-    return {
-        "nodes": [
-            {"id": node_id, "label": node_id},
-            {"id": f"{node_id}-child", "label": f"{node_id}-child"},
-        ],
-        "edges": [{"source": node_id, "target": f"{node_id}-child", "label": "relates_to"}],
-    }
+    tid = _tid(request)
+    # P2-W4: expand from arch Capability tree (parent → children)
+    from mate_app_arch.repositories import (  # pyright: ignore[reportMissingImports]
+        list_capability_tree,
+        list_data_flows,
+    )
+
+    nodes: list[dict[str, Any]] = []
+    edges: list[dict[str, Any]] = []
+    caps = list_capability_tree(tid)
+    root = next((c for c in caps if c.id == node_id), None)
+    if root:
+        nodes.append({"id": root.id, "label": root.name})
+    children = [c for c in caps if c.parent_id == node_id]
+    for child in children:
+        nodes.append({"id": child.id, "label": child.name})
+        edges.append({"source": node_id, "target": child.id, "label": "contains"})
+    # also pull data flows touching this node
+    for flow in list_data_flows(tid):
+        if flow.source_entity_id == node_id or flow.target_entity_id == node_id:
+            for nid in (flow.source_entity_id, flow.target_entity_id):
+                if not any(n["id"] == nid for n in nodes):
+                    nodes.append({"id": nid, "label": nid})
+            edges.append(
+                {"source": flow.source_entity_id, "target": flow.target_entity_id, "label": flow.name}
+            )
+    if not nodes:
+        nodes = [{"id": node_id, "label": node_id}]
+    return {"nodes": nodes, "edges": edges}
 
 
 @router.get("/ontology/graph/query")
@@ -553,11 +583,24 @@ async def query_graph(
     request: Request,
     cypher: str = Query(default=""),
 ) -> dict[str, Any]:
-    _tid(request)
-    return {
-        "nodes": [{"id": "n-1", "label": "Root"}, {"id": "n-2", "label": "Leaf"}],
-        "edges": [{"source": "n-1", "target": "n-2", "label": "contains"}],
-    }
+    tid = _tid(request)
+    # P2-W4: full graph from arch Capability tree + DataEntity store
+    from mate_app_arch.repositories import (  # pyright: ignore[reportMissingImports]
+        list_capability_tree,
+        list_data_entities,
+    )
+
+    nodes: list[dict[str, Any]] = []
+    edges: list[dict[str, Any]] = []
+    for cap in list_capability_tree(tid):
+        nodes.append({"id": cap.id, "label": cap.name, "type": "capability"})
+        if cap.parent_id:
+            edges.append(
+                {"source": cap.parent_id, "target": cap.id, "label": "contains"}
+            )
+    for ent in list_data_entities(tid):
+        nodes.append({"id": ent.id, "label": ent.name, "type": "entity"})
+    return {"nodes": nodes, "edges": edges}
 
 
 # --- Plans (1) --------------------------------------------------------------
