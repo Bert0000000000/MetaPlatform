@@ -417,6 +417,13 @@ def get_asset(tenant_id: str, asset_id: str) -> AssetRecord | None:
     return _ASSETS[tenant_id].get(asset_id)
 
 
+def list_assets(tenant_id: str) -> list[AssetRecord]:
+    if not tenant_id:
+        return []
+    _ensure_tenant(tenant_id)
+    return sorted(_ASSETS[tenant_id].values(), key=lambda a: a.id)
+
+
 # ---------------------------------------------------------------------------
 # Test helpers — DO NOT call from production code paths
 # ---------------------------------------------------------------------------

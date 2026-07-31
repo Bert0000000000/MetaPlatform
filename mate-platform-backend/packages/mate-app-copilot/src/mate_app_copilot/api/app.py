@@ -33,6 +33,7 @@ from ..llm import stub_provider
 from ..repositories import (
     AssetRecord,
     list_actions,
+    list_assets,
     list_conversations,
     list_datasources,
     list_intents,
@@ -618,12 +619,21 @@ async def generate_plan(request: Request, body: dict[str, Any]) -> dict[str, Any
     _tid(request)
     goal = str(body.get("goal", ""))
     plan_id = f"plan-{uuid.uuid4().hex[:8]}"
-    steps = [
-        f"Analyze goal: {goal[:40]}",
-        "Gather required data",
-        "Execute primary action",
-        "Verify outcome",
-    ]
+    # P2-W4: drive plan generation through AsyncCopilotClient.chat so
+    # the plan quality scales with the provider.
+    client = _get_client(request)
+    raw = client.chat(
+        [
+            {
+                "role": "system",
+                "content": "Break down the goal into 3-5 actionable steps. One step per line.",
+            },
+            {"role": "user", "content": goal[:500]},
+        ]
+    )
+    steps = [s.strip("- ").strip() for s in raw.splitlines() if s.strip()]
+    if not steps:
+        steps = [f"Analyze goal: {goal[:40]}", "Gather data", "Execute", "Verify"]
     return {"plan_id": plan_id, "steps": steps}
 
 
@@ -633,10 +643,20 @@ async def search(
     request: Request,
     q: str = Query(...),
 ) -> dict[str, Any]:
-    _tid(request)
-    return {
-        "results": [
-            {"id": "r-1", "title": f"Result for '{q}'", "type": "doc", "score": 0.95},
-            {"id": "r-2", "title": f"Related: {q}", "type": "app", "score": 0.72},
-        ],
-    }
+    tid = _tid(request)
+    # P2-W4: semantic search using client.embed to compute a similarity
+    # score between the query and known asset filenames in the tenant.
+    client = _get_client(request)
+    query_vec = client.embed([q])[0]
+    assets = list_assets(tid)
+    results: list[dict[str, Any]] = []
+    for asset in assets:
+        asset_vec = client.embed([asset.filename])[0]
+        # cosine similarity (simplified — dot product of normalized stubs)
+        dot = sum(a * b for a, b in zip(query_vec[:64], asset_vec[:64], strict=False))
+        score = min(0.99, max(0.01, dot))
+        results.append(
+            {"id": asset.id, "title": asset.filename, "type": "asset", "score": round(score, 4)}
+        )
+    results.sort(key=lambda r: r["score"], reverse=True)
+    return {"results": results[:10]}
