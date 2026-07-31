@@ -447,9 +447,21 @@ async def generate_form(request: Request, body: dict[str, Any]) -> dict[str, Any
 async def review_code(request: Request, body: dict[str, Any]) -> dict[str, Any]:
     _tid(request)
     code = str(body.get("code", ""))
-    issues = ["Consider adding type hints"] if "def " in code else []
-    score = 80 if issues else 95
-    return {"issues": issues, "score": score}
+    # P2-W4: drive code review through AsyncCopilotClient.chat so the
+    # review quality scales with the provider (stub today, llmgw tomorrow).
+    client = _get_client(request)
+    review = client.chat(
+        [
+            {
+                "role": "system",
+                "content": "Review the following code. List issues briefly, one per line.",
+            },
+            {"role": "user", "content": code[:2000]},
+        ]
+    )
+    issues = [line.strip("- ").strip() for line in review.splitlines() if line.strip()]
+    score = max(60, 95 - len(issues) * 5)
+    return {"issues": issues, "score": score, "review": review}
 
 
 # --- Knowledge-bases (1) ----------------------------------------------------
