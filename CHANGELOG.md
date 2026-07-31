@@ -5,6 +5,28 @@ All notable changes to the Mate Platform (MetaPlatform) project are documented i
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v3.2.1] — 2026-07-31
+
+> TRIPLE-ZERO milestone. ruff 0 errors + pyright 0 errors + 555 tests passed
+> across all 16 packages. Total lint debt cleared: 664 ruff + 253 pyright = 917 errors.
+
+### Fixed
+
+- **ruff: 664 → 0** across 16 packages. Root cause for 3 worst packages (llmgw/mcp/iam) was local `pyproject.toml` overriding root `ruff.toml`. Fixed fullwidth Chinese punctuation → ASCII (83 files), B904 raise-in-except (15 sites), N818 error class naming, ERA001 dead code removal, RUF012 mutable class defaults. mate-tech-rag had 5 syntax-error `__init__.py` files (bare text → triple-quoted docstrings).
+- **pyright: 253 → 0** across 16 packages. Added type annotations to 80+ untyped function parameters (agent graph/llm/memory/tools, rag clients, kb clients, msg handlers). TypedDict for iam seed.py. Protocol interface consistency for rag clients. pyright: ignore for third-party libs without stubs (pymilvus, neo4j, langgraph, otel instrumentors).
+- **Auth middleware ordering (mate-tech-ont)**: tenant guard ran before AuthMiddleware causing 401 on all requests. Fixed by defining `_enforce_tenant_per_request` before `install_auth(app)`.
+- **Test auth fixtures (mcp/msg/obs/ont)**: Added conftest.py with Keycloak-format JWT token helper + `auth_headers` fixture. Resolved 22 persistent 401 test failures.
+- **Production bugs uncovered by auth fix**: obs `aggregate_health` invalid kwarg, msg `publisher.publish` invalid kwarg.
+- **forbid_bare_httpx**: Added identity.py + jwks.py to EXCLUDE_FILES (auth infrastructure legitimately talks to IDP directly).
+- **TypeVar naming**: `T` → `T_co` for covariant TypeVar (PLC0105 compliance).
+
+### Test metrics
+
+- **555 tests** passing (was 522 passed + 33 failed/errored)
+- **0 ruff errors** (was 664)
+- **0 pyright errors** (was 253)
+- 0 PR gate violations
+
 ## [v3.2] — 2026-07-31
 
 > PERSISTENCE layer. Introduces SQLAlchemy 2.0 ORM across 3 app packages
