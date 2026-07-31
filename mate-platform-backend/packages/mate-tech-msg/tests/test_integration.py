@@ -20,7 +20,9 @@ def test_healthz(client: TestClient) -> None:
     assert resp.json()["status"] == "ok"
 
 
-def test_publish_endpoint_idempotency(client: TestClient, monkeypatch) -> None:
+def test_publish_endpoint_idempotency(
+    client: TestClient, monkeypatch, auth_headers: dict[str, str]
+) -> None:
     """完整 publish 端点 + 幂等."""
     from unittest.mock import AsyncMock
 
@@ -49,6 +51,7 @@ def test_publish_endpoint_idempotency(client: TestClient, monkeypatch) -> None:
     resp = client.post(
         "/api/v1/msg/publish",
         json=dataclasses.asdict(req),
+        headers=auth_headers,
     )
     assert resp.status_code == 200
     body = resp.json()
@@ -57,9 +60,9 @@ def test_publish_endpoint_idempotency(client: TestClient, monkeypatch) -> None:
     assert body["offset"] == 100
 
 
-def test_topics_endpoint(client: TestClient) -> None:
+def test_topics_endpoint(client: TestClient, auth_headers: dict[str, str]) -> None:
     """GET /api/v1/msg/topics."""
-    resp = client.get("/api/v1/msg/topics")
+    resp = client.get("/api/v1/msg/topics", headers=auth_headers)
     assert resp.status_code == 200
     body = resp.json()
     assert "topics" in body

@@ -65,16 +65,20 @@ def test_instance_deletion_cascades_relations() -> None:
     assert len(instance_store.list_relations()) == 0
 
 
-def test_relation_to_missing_src_raises(client: TestClient) -> None:
+def test_relation_to_missing_src_raises(
+    client: TestClient, auth_headers: dict[str, str]
+) -> None:
     """关系指向不存在的源实例 → 400."""
     resp = client.post(
         "/api/v1/ont/instances",
         json={"class_id": "Concept", "properties": {}},
+        headers=auth_headers,
     )
     real_id = resp.json()["id"]
 
     resp = client.post(
         "/api/v1/ont/instances/relations",
         json={"type": "type_of", "src_id": "missing", "dst_id": real_id, "properties": {}},
+        headers=auth_headers,
     )
     assert resp.status_code == 400

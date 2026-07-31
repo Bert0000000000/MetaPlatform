@@ -20,19 +20,20 @@ def test_healthz(client: TestClient) -> None:
     assert resp.status_code == 200
 
 
-def test_ontology_create_get(client: TestClient) -> None:
+def test_ontology_create_get(client: TestClient, auth_headers: dict[str, str]) -> None:
     """E2E: 创建本体 → 读取."""
     resp = client.post(
         "/api/v1/ont/ontologies",
         json={"id": "e2e-test", "namespace": "default", "description": "E2E"},
+        headers=auth_headers,
     )
     assert resp.status_code == 200
-    resp = client.get("/api/v1/ont/ontologies/e2e-test")
+    resp = client.get("/api/v1/ont/ontologies/e2e-test", headers=auth_headers)
     assert resp.status_code == 200
     assert resp.json()["id"] == "e2e-test"
 
 
-def test_class_lifecycle(client: TestClient) -> None:
+def test_class_lifecycle(client: TestClient, auth_headers: dict[str, str]) -> None:
     """E2E: 类 CRUD."""
     resp = client.post(
         "/api/v1/ont/classes",
@@ -43,17 +44,19 @@ def test_class_lifecycle(client: TestClient) -> None:
             "parent": None,
             "properties": [],
         },
+        headers=auth_headers,
     )
     assert resp.status_code == 200
-    resp = client.get("/api/v1/ont/classes/MyClass")
+    resp = client.get("/api/v1/ont/classes/MyClass", headers=auth_headers)
     assert resp.status_code == 200
 
 
-def test_sparql_endpoint(client: TestClient) -> None:
+def test_sparql_endpoint(client: TestClient, auth_headers: dict[str, str]) -> None:
     """E2E: SPARQL → Cypher 转换."""
     resp = client.post(
         "/api/v1/ont/sparql",
         json={"query": "SELECT ?s WHERE { ?s :label 'X' } LIMIT 10", "format": "json"},
+        headers=auth_headers,
     )
     assert resp.status_code == 200
     body = resp.json()
@@ -62,11 +65,12 @@ def test_sparql_endpoint(client: TestClient) -> None:
     assert "LIMIT 10" in body["cypher"]
 
 
-def test_explain_endpoint(client: TestClient) -> None:
+def test_explain_endpoint(client: TestClient, auth_headers: dict[str, str]) -> None:
     """E2E: SPARQL EXPLAIN."""
     resp = client.post(
         "/api/v1/ont/explain",
         json={"query": "SELECT ?s WHERE { ?s :label 'X' }"},
+        headers=auth_headers,
     )
     assert resp.status_code == 200
     body = resp.json()
@@ -75,12 +79,13 @@ def test_explain_endpoint(client: TestClient) -> None:
     assert body["estimated_rows"] >= 0
 
 
-def test_instance_lifecycle(client: TestClient) -> None:
+def test_instance_lifecycle(client: TestClient, auth_headers: dict[str, str]) -> None:
     """E2E: 实例 + 关系 CRUD."""
     # 1. 创建实例 A
     resp = client.post(
         "/api/v1/ont/instances",
         json={"class_id": "Concept", "properties": {"name": "A"}},
+        headers=auth_headers,
     )
     assert resp.status_code == 200
     a_id = resp.json()["id"]
@@ -89,6 +94,7 @@ def test_instance_lifecycle(client: TestClient) -> None:
     resp = client.post(
         "/api/v1/ont/instances",
         json={"class_id": "Concept", "properties": {"name": "B"}},
+        headers=auth_headers,
     )
     assert resp.status_code == 200
     b_id = resp.json()["id"]
@@ -97,10 +103,11 @@ def test_instance_lifecycle(client: TestClient) -> None:
     resp = client.post(
         "/api/v1/ont/instances/relations",
         json={"type": "type_of", "src_id": a_id, "dst_id": b_id, "properties": {}},
+        headers=auth_headers,
     )
     assert resp.status_code == 200
 
     # 4. 列出关系
-    resp = client.get("/api/v1/ont/instances/relations")
+    resp = client.get("/api/v1/ont/instances/relations", headers=auth_headers)
     assert resp.status_code == 200
     assert len(resp.json()) >= 1

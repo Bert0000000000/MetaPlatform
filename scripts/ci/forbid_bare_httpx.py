@@ -15,7 +15,19 @@ from pathlib import Path
 # Tests and client modules themselves are excluded by the caller
 # (the hook is registered with `files:` regex that scopes to src/).
 PATTERN = re.compile(r"""\bhttpx\.(Async)?Client\s*\(""")
-EXCLUDE_FILES = {"clients.py", "llmgw_provider.py", "bearer.py", "outgoing.py"}
+EXCLUDE_FILES = {
+    "clients.py",
+    "llmgw_provider.py",
+    "bearer.py",
+    "outgoing.py",
+    # Auth infrastructure that legitimately talks to the IDP directly:
+    #   - identity.py: obtains client_credentials tokens (cannot use a Bearer
+    #     token to fetch one).
+    #   - jwks.py: fetches public JWKS keys for JWT verification (public
+    #     endpoint, no Bearer required).
+    "identity.py",
+    "jwks.py",
+}
 
 
 def main() -> int:

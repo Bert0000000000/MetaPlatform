@@ -83,7 +83,7 @@ async def health_aggregate(request: Request) -> dict[str, object]:
     """Per-tenant health view. Tenant guard at the top."""
     ctx = _require_ctx(request)
     require_tenant(ctx)
-    report = await aggregate_health(tenant_id=ctx.tenant_id)
+    report = await aggregate_health()
     return report.to_dict()
 
 

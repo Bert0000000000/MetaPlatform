@@ -1,4 +1,4 @@
-﻿"""Tests for mate_tech_obs.main FastAPI app."""
+"""Tests for mate_tech_obs.main FastAPI app."""
 from __future__ import annotations
 
 import pytest
@@ -20,8 +20,10 @@ class TestRootEndpoints:
         assert body["status"] == "ok"
         assert body["version"] == "0.1.0"
 
-    def test_metrics_endpoint_returns_text(self, obs_client: TestClient) -> None:
-        r = obs_client.get("/metrics")
+    def test_metrics_endpoint_returns_text(
+        self, obs_client: TestClient, auth_headers: dict[str, str]
+    ) -> None:
+        r = obs_client.get("/metrics", headers=auth_headers)
         # 200 with prom text OR 500 if registry is empty in unit-test env
         assert r.status_code in (200, 500)
         if r.status_code == 200:
@@ -29,8 +31,10 @@ class TestRootEndpoints:
             # Prometheus content type usually contains "text/plain"
             assert "text" in ct.lower()
 
-    def test_health_aggregate_returns_report(self, obs_client: TestClient) -> None:
-        r = obs_client.get("/api/v1/obs/health")
+    def test_health_aggregate_returns_report(
+        self, obs_client: TestClient, auth_headers: dict[str, str]
+    ) -> None:
+        r = obs_client.get("/api/v1/obs/health", headers=auth_headers)
         # The aggregate hits DEFAULT_TARGETS (16 docker-network URLs),
         # so in a host env (no docker) it returns 200 with all components
         # marked unhealthy.
@@ -41,8 +45,10 @@ class TestRootEndpoints:
             assert "components" in body
             assert isinstance(body["components"], list)
 
-    def test_instrument_status_endpoint(self, obs_client: TestClient) -> None:
-        r = obs_client.get("/api/v1/obs/instrument")
+    def test_instrument_status_endpoint(
+        self, obs_client: TestClient, auth_headers: dict[str, str]
+    ) -> None:
+        r = obs_client.get("/api/v1/obs/instrument", headers=auth_headers)
         assert r.status_code == 200
         body = r.json()
         assert "instrumented" in body

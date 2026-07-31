@@ -73,8 +73,9 @@ async def publish_endpoint(request: Request, req: PublishRequest) -> PublishResp
     ctx = _require_ctx(request)
     require_tenant(ctx)
     try:
-        # Pass tenant_id down so the publisher can scope the topic.
-        return await publisher.publish(req, tenant_id=ctx.tenant_id)
+        # The publisher derives the partition key from the payload's
+        # tenant_id field (default_partition_key_field="tenant_id").
+        return await publisher.publish(req)
     except Exception as e:
         logger.error("publish.error", error=str(e), tenant_id=ctx.tenant_id)
         raise HTTPException(status_code=500, detail=str(e))

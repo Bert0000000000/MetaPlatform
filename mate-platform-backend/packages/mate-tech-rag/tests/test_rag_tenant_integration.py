@@ -138,7 +138,7 @@ class TestRagAppHasTenantGuards:
 
     def test_rag_app_uses_install_auth(self) -> None:
         from pathlib import Path as _P
-        app_py = _P(r'D:\Hermes\Workspace\10_Projects\2026-07-02-MetaPlatform\.worktrees\p1-wave3\mate-platform-backend\packages\mate-tech-rag\src\mate_tech_rag\api\app.py')
+        app_py = _P(__file__).resolve().parent.parent / "src" / "mate_tech_rag" / "api" / "app.py"
         text = app_py.read_text(encoding="utf-8")
         assert "install_auth(app)" in text, "install_auth not wired in rag"
         # All non-/healthz handlers should have a require_tenant line

@@ -4,7 +4,6 @@ from __future__ import annotations
 import pytest
 from fastapi.testclient import TestClient
 
-from mate_tech_mcp.auth import make_test_token
 from mate_tech_mcp.main import app
 from mate_tech_mcp.tools.kb_search import KbSearchTool
 
@@ -20,37 +19,34 @@ def test_prompts_endpoint_unauthorized(client: TestClient) -> None:
     assert resp.status_code == 401
 
 
-def test_prompts_summarize_with_token(client: TestClient) -> None:
+def test_prompts_summarize_with_token(client: TestClient, auth_headers: dict[str, str]) -> None:
     """有 token + summarize_doc → 200."""
-    token = make_test_token(sub="alice", tenant_id="acme")
     resp = client.post(
         "/api/v1/mcp/prompts/summarize_doc",
         json={"document": "test document"},
-        headers={"Authorization": f"Bearer {token}"},
+        headers=auth_headers,
     )
     assert resp.status_code == 200
     body = resp.json()
     assert "test document" in body["rendered"]
 
 
-def test_prompts_extract_entities(client: TestClient) -> None:
-    token = make_test_token(sub="alice", tenant_id="acme")
+def test_prompts_extract_entities(client: TestClient, auth_headers: dict[str, str]) -> None:
     resp = client.post(
         "/api/v1/mcp/prompts/extract_entities",
         json={"text": "concept X"},
-        headers={"Authorization": f"Bearer {token}"},
+        headers=auth_headers,
     )
     assert resp.status_code == 200
     body = resp.json()
     assert "JSON" in body["rendered"]
 
 
-def test_prompts_plan_task(client: TestClient) -> None:
-    token = make_test_token(sub="alice", tenant_id="acme")
+def test_prompts_plan_task(client: TestClient, auth_headers: dict[str, str]) -> None:
     resp = client.post(
         "/api/v1/mcp/prompts/plan_task",
         json={"task": "search X", "tools": "kb_search"},
-        headers={"Authorization": f"Bearer {token}"},
+        headers=auth_headers,
     )
     assert resp.status_code == 200
     body = resp.json()
@@ -58,19 +54,19 @@ def test_prompts_plan_task(client: TestClient) -> None:
     assert "kb_search" in body["rendered"]
 
 
-def test_resources_endpoint(client: TestClient) -> None:
+def test_resources_endpoint(client: TestClient, auth_headers: dict[str, str]) -> None:
     """GET /api/v1/mcp/resources."""
-    resp = client.get("/api/v1/mcp/resources")
+    resp = client.get("/api/v1/mcp/resources", headers=auth_headers)
     assert resp.status_code == 200
     assert "resources" in resp.json()
 
 
-def test_tools_endpoint_empty(client: TestClient) -> None:
+def test_tools_endpoint_empty(client: TestClient, auth_headers: dict[str, str]) -> None:
     """GET /api/v1/mcp/tools（无 tools 时仍 200）."""
     # 重置全局以避免污染
     from mate_tech_mcp.main import mcp_server
     mcp_server._tools.clear()
-    resp = client.get("/api/v1/mcp/tools")
+    resp = client.get("/api/v1/mcp/tools", headers=auth_headers)
     assert resp.status_code == 200
     assert resp.json()["tools"] == []
 
