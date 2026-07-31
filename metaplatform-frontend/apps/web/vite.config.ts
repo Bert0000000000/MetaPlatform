@@ -4,6 +4,8 @@ import path from 'path';
 
 const proxyHost = process.env.VITE_PROXY_HOST ?? 'localhost';
 const proxyTarget = (port: number) => `http://${proxyHost}:${port}`;
+// v3.2 unified backend port (all app packages mounted on one server)
+const BACKEND_PORT = Number(process.env.VITE_BACKEND_PORT ?? 8100);
 
 export default defineConfig({
   plugins: [react()],
@@ -17,43 +19,8 @@ export default defineConfig({
   server: {
     port: 9200,
     proxy: {
-      // === TECH-IAM ===
-      '/api/v1/iam':    { target: proxyTarget(8102), changeOrigin: true },
-      // === TECH-KB (Phase 1: from apps/kb) ===
-      '/api/v1/kb':     { target: proxyTarget(9004), changeOrigin: true },
-      // mate-tech-iam
-      // === APP-DASHBOARD (workbench BFF) ===
-      '/api/v1/dashboard': { target: proxyTarget(9001), changeOrigin: true },
-      // === TECH-AGENT ===
-      '/api/v1/agent':  { target: proxyTarget(8511), changeOrigin: true },
-      // === TECH-APPHUB (Phase 2: from apps/apphub) ===
-      '/api/v1/apphub':  { target: proxyTarget(8202), changeOrigin: true },
-      // === TECH-SUPERAI (Phase 2: from apps/apphub AI Designer) ===
-      '/api/v1/superai': { target: proxyTarget(8601), changeOrigin: true },
-      // === TECH-MCP ===
-      '/api/v1/mcp':    { target: proxyTarget(8105), changeOrigin: true },
-      // === TECH-RAG ===
-      '/api/v1/rag':    { target: proxyTarget(8901), changeOrigin: true },
-      // === TECH-ONT ===
-      '/api/v1/ont':    { target: proxyTarget(8301), changeOrigin: true },
-      // === TECH-WFE ===
-      '/api/v1/wfe':    { target: proxyTarget(8311), changeOrigin: true },
-      // === TECH-EA ===
-      '/api/v1/ea':     { target: proxyTarget(8321), changeOrigin: true },
-      // === TECH-RULE ===
-      '/api/v1/rule':   { target: proxyTarget(8331), changeOrigin: true },
-      // === TECH-ACTION ===
-      '/api/v1/action': { target: proxyTarget(8341), changeOrigin: true },
-      // === TECH-DATA ===
-      '/api/v1/data':   { target: proxyTarget(8701), changeOrigin: true },
-      // === TECH-LLMGW ===
-      '/api/v1/llmgw':  { target: proxyTarget(8210), changeOrigin: true },
-      // === TECH-OBS ===
-      '/api/v1/obs':    { target: proxyTarget(8401), changeOrigin: true },
-      // === TECH-MSG ===
-      '/api/v1/msg':    { target: proxyTarget(8411), changeOrigin: true },
-      // === TECH-A2A ===
-      '/api/v1/a2a':    { target: proxyTarget(8502), changeOrigin: true },
+      // v3.2: all routes proxy to unified backend on BACKEND_PORT (default 8100)
+      '/api/v1': { target: proxyTarget(BACKEND_PORT), changeOrigin: true },
     },
   },
   optimizeDeps: {
