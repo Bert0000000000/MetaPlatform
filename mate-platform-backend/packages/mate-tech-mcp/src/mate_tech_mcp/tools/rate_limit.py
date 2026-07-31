@@ -1,6 +1,6 @@
 """Per-tenant rate limit (ST-5.3.7).
 
-每个工具按 tenant 50 req/min（用 Redis 滑动窗口）。
+每个工具按 tenant 50 req/min (用 Redis 滑动窗口).
 """
 from __future__ import annotations
 
@@ -22,7 +22,7 @@ class RateLimitConfig:
     window_sec: int = 60
 
 
-class RateLimitExceeded(Exception):
+class RateLimitExceeded(Exception):  # noqa: N818
     """触发限流."""
 
     def __init__(self, key: str, retry_after: int) -> None:
@@ -44,7 +44,7 @@ class ToolRateLimiter:
         self._config = config or RateLimitConfig()
 
     async def check(self, *, tenant_id: str, tool_name: str) -> None:
-        """检查并扣减，超限抛 RateLimitExceeded."""
+        """检查并扣减, 超限抛 RateLimitExceeded."""
         minute = int(time.time()) // self._config.window_sec
         key = f"ratelimit:{tenant_id}:{tool_name}:{minute}"
 

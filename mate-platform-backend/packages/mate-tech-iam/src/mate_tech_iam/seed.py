@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
+from typing import NotRequired, TypedDict
 
 import structlog
 from sqlalchemy import select
@@ -19,7 +20,62 @@ from .services.security import hash_password
 logger = structlog.get_logger(__name__)
 
 
-PERMISSION_SEED: list[dict[str, object]] = [
+class PermissionSpec(TypedDict):
+    code: str
+    name: str
+    resource_type: str
+    actions: str
+    description: NotRequired[str]
+
+
+class RoleSpec(TypedDict):
+    code: str
+    name: str
+    description: NotRequired[str]
+    data_scope: str
+    permission_codes: NotRequired[list[str]]
+
+
+class ConfigSpec(TypedDict):
+    key: str
+    value: object
+    value_type: str
+    category: ConfigCategory
+    label: str
+    description: NotRequired[str]
+    enum_options: NotRequired[str]
+    is_sensitive: NotRequired[bool]
+
+
+class DemoUserSpec(TypedDict):
+    username: str
+    real_name: str
+    email: str
+    phone: str
+    department: str
+    position: str
+    is_super_admin: bool
+    status: UserStatus
+    password: str
+    roles: list[str]
+
+
+class OrgSpec(TypedDict):
+    code: str
+    name: str
+    type: OrgType
+    parent_id: str | None
+    sort_order: int
+
+
+class PosSpec(TypedDict):
+    code: str
+    org_code: str
+    name: str
+    level: str
+
+
+PERMISSION_SEED: list[PermissionSpec] = [
     # user
     {"code": "user:view", "name": "查看用户", "resource_type": "user", "actions": "read"},
     {"code": "user:create", "name": "创建用户", "resource_type": "user", "actions": "create"},
@@ -51,7 +107,7 @@ PERMISSION_SEED: list[dict[str, object]] = [
 ]
 
 
-ROLE_SEED: list[dict[str, object]] = [
+ROLE_SEED: list[RoleSpec] = [
     {
         "code": "PLATFORM_SUPER_ADMIN",
         "name": "超级管理员",
@@ -86,7 +142,7 @@ ROLE_SEED: list[dict[str, object]] = [
 ]
 
 
-CONFIG_SEED: list[dict[str, object]] = [
+CONFIG_SEED: list[ConfigSpec] = [
     {
         "key": "sso.oidc.issuer",
         "value": "https://idp.example.com/realms/metaplatform",
@@ -258,7 +314,7 @@ async def seed(session: AsyncSession, tenant_id: str = "tenant-default") -> None
         )
         for pcode in spec.get("permission_codes", []):
             perm = perm_by_code.get(pcode)
-            if perm and perm.id is not None:
+            if perm and perm.id is not None and role.id is not None:
                 session.add(RolePermission(role_id=role.id, permission_id=perm.id, effect="ALLOW"))
 
     # --- demo users ---
@@ -267,7 +323,7 @@ async def seed(session: AsyncSession, tenant_id: str = "tenant-default") -> None
             await session.execute(select(User).where(User.tenant_id == tenant_id))
         ).scalars().all()
     }
-    demo_users = [
+    demo_users: list[DemoUserSpec] = [
         {
             "username": "admin",
             "real_name": "系统管理员",
@@ -416,7 +472,7 @@ async def seed(session: AsyncSession, tenant_id: str = "tenant-default") -> None
         )
         for rcode in spec["roles"]:
             role = role_by_code.get(rcode)
-            if role and role.id is not None:
+            if role and role.id is not None and user.id is not None:
                 session.add(UserRole(user_id=user.id, role_id=role.id))
 
     # --- orgs ---
@@ -425,7 +481,7 @@ async def seed(session: AsyncSession, tenant_id: str = "tenant-default") -> None
             await session.execute(select(Org).where(Org.tenant_id == tenant_id))
         ).scalars().all()
     }
-    org_specs = [
+    org_specs: list[OrgSpec] = [
         {"code": "ROOT", "name": "MetaPlatform 总部", "type": OrgType.COMPANY, "parent_id": None, "sort_order": 0},
         {"code": "TECH", "name": "技术中心", "type": OrgType.DEPARTMENT, "parent_id": "ROOT", "sort_order": 1},
         {"code": "OPS", "name": "运营中心", "type": OrgType.DEPARTMENT, "parent_id": "ROOT", "sort_order": 2},
@@ -460,7 +516,7 @@ async def seed(session: AsyncSession, tenant_id: str = "tenant-default") -> None
             await session.execute(select(Position).where(Position.tenant_id == tenant_id))
         ).scalars().all()
     }
-    pos_specs = [
+    pos_specs: list[PosSpec] = [
         {"code": "TECH_LEAD", "org_code": "TECH", "name": "技术总监", "level": "M3"},
         {"code": "TECH_PLAT_LEAD", "org_code": "TECH_PLAT", "name": "平台架构师", "level": "P9"},
         {"code": "TECH_PLAT_DEV", "org_code": "TECH_PLAT", "name": "高级工程师", "level": "P7"},
@@ -569,8 +625,8 @@ async def seed(session: AsyncSession, tenant_id: str = "tenant-default") -> None
     ).scalars().first()
     if not audit_count:
         now = datetime.now(UTC)
-        admin_actor = {"actor_id": admin_user.username if admin_user else "system",
-                       "actor_name": admin_user.real_name if admin_user else "系统"}
+        admin_actor: dict[str, str] = {"actor_id": admin_user.username if admin_user else "system",
+                       "actor_name": (admin_user.real_name or "系统") if admin_user else "系统"}
         seed_logs = [
             ("user", AuditAction.CREATE, "user", "zhangsan", "张三", "新建用户 zhangsan"),
             ("user", AuditAction.RESET_PASSWORD, "user", "lisi", "李四", "重置用户 lisi 密码"),

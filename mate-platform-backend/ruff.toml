@@ -5,13 +5,29 @@ extend-exclude = [".venv", "node_modules", "dist", "build"]
 
 [lint]
 select = ["E", "W", "F", "I", "B", "C4", "UP", "N", "SIM", "PTH", "ERA", "PL", "RUF", "ASYNC", "S", "TCH"]
-ignore = ["E501", "PLR0913", "PLR2004", "S101", "TC001", "TC002", "TC003", "RUF002", "RUF003"]
+ignore = ["E501", "PLR0913", "PLR2004", "S101", "TC001", "TC002", "TC003", "RUF001", "RUF002", "RUF003"]
 
 [lint.per-file-ignores]
 "tests/**/*.py" = ["S101", "PLR2004", "ARG", "FBT", "PLC0415"]
+"packages/*/tests/**/*.py" = ["S101", "PLR2004", "ARG", "FBT", "PLC0415"]
 "**/clients/*.py" = ["PLR0913"]
 "scripts/**/*.py" = ["T201", "S"]
 "tests/architecture/**/*.py" = ["S603"]
+# mate-tech-iam: camelCase API response models (frontend contract)
+"packages/mate-tech-iam/src/mate_tech_iam/api/auth.py" = ["N815"]
+"packages/mate-tech-iam/src/mate_tech_iam/api/dashboard.py" = ["N803", "N815", "PLW0603"]
+# mate-tech-iam: FastAPI route handlers (Depends/Query in defaults, many params, lazy imports)
+"packages/mate-tech-iam/src/mate_tech_iam/api/*.py" = ["B008", "PLR0917", "PLC0415", "PLR0911"]
+# mate-tech-iam: app bootstrap ordered imports, container host, lazy loads
+"packages/mate-tech-iam/src/mate_tech_iam/main.py" = ["E402", "S104", "PLC0415"]
+# mate-tech-iam: lazy imports avoid circular deps
+"packages/mate-tech-iam/src/mate_tech_iam/db.py" = ["PLC0415"]
+# mate-tech-iam: Depends in defaults (FastAPI pattern)
+"packages/mate-tech-iam/src/mate_tech_iam/services/deps.py" = ["B008"]
+# mate-tech-iam: enum value name, not a real password
+"packages/mate-tech-iam/src/mate_tech_iam/domain/audit.py" = ["S105"]
+# mate-tech-iam: seed script complexity + lazy imports
+"packages/mate-tech-iam/src/mate_tech_iam/seed.py" = ["PLC0415", "PLR0912", "PLR0915"]
 
 [lint.isort]
 known-first-party = ["mate_common", "mate_tech_rag", "mate_tech_agent", "mate_tech_llmgw", "mate_tech_msg", "mate_tech_obs", "mate_tech_ont", "mate_tech_mcp", "mate_tech_db", "mate_app_kb", "mate_kernel", "mate_platform", "mate_clients"]

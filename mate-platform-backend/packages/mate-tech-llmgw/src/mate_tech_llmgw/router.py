@@ -58,7 +58,7 @@ _providers: dict[str, ChatProvider] = {}
 
 
 def get_provider(model: str) -> ChatProvider:
-    """获取 provider 实例（懒加载 + 单例）."""
+    """获取 provider 实例(懒加载 + 单例)."""
     name = _provider_name(model)
     if name in _providers:
         return _providers[name]
@@ -99,5 +99,5 @@ async def chat(
 
 
 def reset_providers() -> None:
-    """测试辅助：清除 provider 缓存."""
+    """测试辅助:清除 provider 缓存."""
     _providers.clear()

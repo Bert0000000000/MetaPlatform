@@ -50,5 +50,5 @@ class ChatProvider(Protocol):
 
     @property
     def dim(self) -> int:
-        """provider 支持的 embedding 维度（如适用）."""
+        """provider 支持的 embedding 维度(如适用)."""
         ...

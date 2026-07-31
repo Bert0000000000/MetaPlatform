@@ -1,6 +1,6 @@
 """Function calling tools (ST-5.5.8).
 
-统一 tool schema（OpenAI Function format）+ 各 provider tool_calls 适配。
+统一 tool schema(OpenAI Function format)+ 各 provider tool_calls 适配。
 """
 from __future__ import annotations
 
@@ -21,7 +21,7 @@ class ToolDefinition:
     name: str
     description: str
     parameters: dict[str, Any]  # JSON Schema
-    handler: Callable[..., Any] | None = None  # 实际执行函数（可选）
+    handler: Callable[..., Any] | None = None  # 实际执行函数(可选)
 
     def to_openai_schema(self) -> dict[str, Any]:
         """转 OpenAI tool schema."""

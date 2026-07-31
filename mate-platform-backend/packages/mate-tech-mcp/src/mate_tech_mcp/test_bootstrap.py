@@ -1,7 +1,12 @@
 """Bootstrap verification tests (ST-5.3.6.x)."""
 from __future__ import annotations
 
-from mate_tech_mcp.main import _ontology, _rate_limiter, app, mcp_server
+from mate_tech_mcp.main import (
+    _ontology,  # pyright: ignore[reportPrivateUsage]
+    _rate_limiter,  # pyright: ignore[reportPrivateUsage]
+    app,
+    mcp_server,
+)
 
 
 def test_app_initialized() -> None:
@@ -18,13 +23,13 @@ def test_mcp_server_module_level() -> None:
 
 def test_default_tools_registered() -> None:
     """kb_search 已默认注册."""
-    tool_names = [getattr(t, "name", None) for t in mcp_server._tools]
+    tool_names = [getattr(t, "name", None) for t in mcp_server._tools]  # pyright: ignore[reportPrivateUsage]
     assert "kb_search" in tool_names
 
 
 def test_default_resources_registered() -> None:
     """ontology 资源已默认注册."""
-    assert len(mcp_server._resources) >= 1
+    assert len(mcp_server._resources) >= 1  # pyright: ignore[reportPrivateUsage]
 
 
 def test_rate_limiter_module_level() -> None:
@@ -39,7 +44,7 @@ def test_ontology_module_level() -> None:
 
 def test_routes_registered() -> None:
     """FastAPI 路由注册."""
-    paths = {r.path for r in app.routes if hasattr(r, "path")}
+    paths = {r.path for r in app.routes if hasattr(r, "path")}  # pyright: ignore[reportAttributeAccessIssue]
     # 核心 4 路由
     assert "/healthz" in paths
     assert "/api/v1/mcp/tools" in paths

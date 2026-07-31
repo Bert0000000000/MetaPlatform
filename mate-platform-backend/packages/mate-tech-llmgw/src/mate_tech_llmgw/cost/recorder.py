@@ -1,6 +1,6 @@
 """Cost metering (ST-5.5.5.1).
 
-每个请求记录 token 用量 + 单价 → 写入 PG `llm_usage` 表（asyncpg）。
+每个请求记录 token 用量 + 单价 → 写入 PG `llm_usage` 表(asyncpg)。
 
 Usage:
     async with CostRecorder(pg_pool) as rec:
@@ -17,7 +17,7 @@ import structlog
 
 logger = structlog.get_logger(__name__)
 
-# 单价表（USD / 1k tokens）— ST-5.5.5 DoD
+# 单价表(USD / 1k tokens)— ST-5.5.5 DoD
 PRICING: dict[str, dict[str, float]] = {
     "gpt-4o": {"prompt": 0.005, "completion": 0.015},
     "gpt-4o-mini": {"prompt": 0.00015, "completion": 0.0006},
@@ -42,7 +42,7 @@ class UsageRecord:
 
 
 def estimate_cost(model: str, prompt_tokens: int, completion_tokens: int) -> float:
-    """根据 PRICING 表计算成本（USD）."""
+    """根据 PRICING 表计算成本(USD)."""
     price = PRICING.get(model)
     if price is None:
         return 0.0
@@ -59,6 +59,16 @@ class CostRecorder:
     def __init__(self, pool: Any | None = None, dsn: str | None = None) -> None:
         self._pool = pool
         self._dsn = dsn or os.getenv("PG_DSN", "postgresql://mate:mate@localhost:5432/mate")
+
+    @property
+    def pool(self) -> Any | None:
+        """The asyncpg connection pool (if configured)."""
+        return self._pool
+
+    @property
+    def dsn(self) -> str:
+        """The configured Postgres DSN."""
+        return self._dsn
 
     async def record(
         self,
@@ -88,7 +98,7 @@ class CostRecorder:
             cost_usd=cost,
             ts=datetime.now(UTC),
         )
-        # 写 PG（如果 pool 已配置）
+        # 写 PG(如果 pool 已配置)
         if self._pool is not None:
             try:
                 async with self._pool.acquire() as conn:

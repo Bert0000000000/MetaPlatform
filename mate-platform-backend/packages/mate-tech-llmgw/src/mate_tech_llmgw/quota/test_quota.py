@@ -5,33 +5,33 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from mate_tech_llmgw.quota.bucket import QuotaConfig, QuotaExceeded, RedisTokenBucket
+from mate_tech_llmgw.quota.bucket import QuotaConfig, QuotaExceededError, RedisTokenBucket
 from mate_tech_llmgw.quota.guard import with_quota
 
 
 @pytest.mark.asyncio
 async def test_quota_rpm_exceeded() -> None:
-    """RPM 超限 -> QuotaExceeded."""
+    """RPM 超限 -> QuotaExceededError."""
     cfg = QuotaConfig(rpm_limit=2, tpm_limit=100_000, window_sec=60)
     mock_redis = AsyncMock()
     mock_redis.pipeline.return_value.execute = AsyncMock(
         return_value=[(3, 60, 100, 60), (3, 60, 100, 60)]
     )
     bucket = RedisTokenBucket(redis_client=mock_redis, config=cfg)
-    with pytest.raises(QuotaExceeded, match="Quota exceeded"):
+    with pytest.raises(QuotaExceededError, match="Quota exceeded"):
         await bucket.acquire(tenant_id="acme", estimated_tokens=100)
 
 
 @pytest.mark.asyncio
 async def test_quota_tpm_exceeded() -> None:
-    """TPM 超限 -> QuotaExceeded."""
+    """TPM 超限 -> QuotaExceededError."""
     cfg = QuotaConfig(rpm_limit=100, tpm_limit=1000, window_sec=60)
     mock_redis = AsyncMock()
     mock_redis.pipeline.return_value.execute = AsyncMock(
         return_value=[(1, 60, 1500, 60), (1, 60, 1500, 60)]
     )
     bucket = RedisTokenBucket(redis_client=mock_redis, config=cfg)
-    with pytest.raises(QuotaExceeded):
+    with pytest.raises(QuotaExceededError):
         await bucket.acquire(tenant_id="acme", estimated_tokens=1500)
 
 

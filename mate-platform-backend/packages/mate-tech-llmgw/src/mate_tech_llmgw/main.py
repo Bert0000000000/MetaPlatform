@@ -10,6 +10,7 @@ Wires the 3 integration hooks per ADR-0014:
 from __future__ import annotations
 
 import os
+from contextlib import asynccontextmanager
 
 import structlog
 from fastapi import FastAPI
@@ -22,10 +23,30 @@ from .api.routes import router as llm_router
 
 logger = structlog.get_logger(__name__)
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Startup lifespan hook: configure structlog."""
+    log_level = os.getenv("LOG_LEVEL", "INFO").upper()
+    structlog.configure(
+        processors=[
+            structlog.processors.add_log_level,
+            structlog.processors.TimeStamper(fmt="iso"),
+            structlog.processors.JSONRenderer(),
+        ],
+        wrapper_class=structlog.make_filtering_bound_logger(
+            getattr(__import__("logging"), log_level)
+        ),
+    )
+    logger.info("mate-tech-llmgw.startup", version=app.version)
+    yield
+
+
 app = FastAPI(
     title="mate-tech-llmgw",
     version="0.1.0",
     description="LLM Gateway: multi-provider routing, quota, cache, fallback",
+    lifespan=lifespan,
 )
 
 # Hook 1 of 5: install auth middleware (SEC-IAM-01).
@@ -43,23 +64,6 @@ app.include_router(legacy_llm_router)
 async def healthz() -> dict[str, str]:
     """ST-5.5.1.2 DoD: health check (anonymous, whitelisted)."""
     return {"status": "ok", "version": app.version}
-
-
-@app.on_event("startup")
-async def on_startup() -> None:
-    """lifespan hook."""
-    log_level = os.getenv("LOG_LEVEL", "INFO").upper()
-    structlog.configure(
-        processors=[
-            structlog.processors.add_log_level,
-            structlog.processors.TimeStamper(fmt="iso"),
-            structlog.processors.JSONRenderer(),
-        ],
-        wrapper_class=structlog.make_filtering_bound_logger(
-            getattr(__import__("logging"), log_level)
-        ),
-    )
-    logger.info("mate-tech-llmgw.startup", version=app.version)
 
 
 if __name__ == "__main__":

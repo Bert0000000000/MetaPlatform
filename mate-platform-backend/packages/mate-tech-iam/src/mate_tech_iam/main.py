@@ -1,4 +1,4 @@
-﻿"""Mate Platform - TECH-IAM main entry."""
+"""Mate Platform - TECH-IAM main entry."""
 from __future__ import annotations
 
 import os
@@ -183,7 +183,7 @@ class _PortalIamAliasMiddleware(BaseHTTPMiddleware):
             "sso-providers": "sso-providers",
         }
 
-    async def dispatch(self, request: _StRequest, call_next):
+    async def dispatch(self, request: _StRequest, call_next: Any):
         m = self._pattern.match(request.url.path)
         if not m:
             return await call_next(request)
@@ -216,7 +216,7 @@ class _PortalIamAliasMiddleware(BaseHTTPMiddleware):
             return await self._forward_to_obs(request, new_path)
         return await call_next(request)
 
-    async def _forward_to_obs(self, request, new_path: str):
+    async def _forward_to_obs(self, request: _StRequest, new_path: str):
         import httpx
         obs_base = "http://127.0.0.1:8083"
         target_url = obs_base + new_path

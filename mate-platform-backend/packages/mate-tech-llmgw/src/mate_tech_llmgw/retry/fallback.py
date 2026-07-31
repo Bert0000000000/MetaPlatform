@@ -23,10 +23,10 @@ logger = structlog.get_logger(__name__)
 
 @dataclass(frozen=True, slots=True)
 class FallbackChain:
-    """主备 fallback 链：依次尝试每个模型."""
+    """主备 fallback 链:依次尝试每个模型."""
 
     models: tuple[str, ...]
-    retry_per_model: int = 1  # 每个模型的重试次数（不重试，靠 fallback）
+    retry_per_model: int = 1  # 每个模型的重试次数(不重试,靠 fallback)
 
 
 async def chat_with_fallback(
@@ -40,7 +40,7 @@ async def chat_with_fallback(
     tools: list[dict] | None = None,
     **kwargs: object,
 ) -> ChatResponse:
-    """先 primary，失败 fallback 到次选.
+    """先 primary,失败 fallback 到次选.
 
     Args:
         chat_fn: router.chat 函数
@@ -102,5 +102,6 @@ def with_retry(
                     return await fn(*args, **kwargs)
         except RetryError as e:
             raise RuntimeError(f"Retry exhausted after {max_attempts} attempts") from e
+        raise RuntimeError("retry loop exited without returning")  # unreachable
 
     return wrapper

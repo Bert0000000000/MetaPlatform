@@ -1,11 +1,11 @@
 """kb_search tool (ST-5.3.2).
 
-通过 httpx 调 tech-rag HTTP bridge，返回 top_k 命中。
+通过 httpx 调 tech-rag HTTP bridge, 返回 top_k 命中.
 """
 from __future__ import annotations
 
 import os
-from typing import Any
+from typing import Any, ClassVar
 
 import httpx
 import structlog
@@ -17,8 +17,9 @@ class KbSearchTool:
     """kb_search(query, top_k, kb_ids) -> 调 tech-rag."""
 
     name = "kb_search"
-    description = "在知识库中检索相关文档（走 tech-rag 的 /api/v1/rag/search 端点）"
-    input_schema = {
+    description = "在知识库中检索相关文档(走 tech-rag 的 /api/v1/rag/search 端点)"
+    handler: Any = None
+    input_schema: ClassVar[dict[str, Any]] = {
         "type": "object",
         "properties": {
             "query": {"type": "string", "description": "检索查询"},

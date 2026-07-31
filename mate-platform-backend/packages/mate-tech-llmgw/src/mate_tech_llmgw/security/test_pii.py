@@ -6,7 +6,7 @@ from mate_tech_llmgw.security.pii_mask import has_pii, mask_pii
 
 def test_mask_phone() -> None:
     """手机号打码."""
-    text = "我的手机是13800138000，请联系我"
+    text = "我的手机是13800138000,请联系我"
     masked = mask_pii(text)
     assert "13800138000" not in masked
     assert "***" in masked
@@ -14,7 +14,7 @@ def test_mask_phone() -> None:
 
 def test_mask_id_card() -> None:
     """身份证打码."""
-    text = "身份证号：110101199003078888"
+    text = "身份证号:110101199003078888"
     masked = mask_pii(text)
     assert "110101199003078888" not in masked
     assert "***" in masked
@@ -52,4 +52,4 @@ def test_has_pii_true() -> None:
 
 def test_has_pii_false() -> None:
     assert has_pii("hello world") is False
-    assert has_pii("普通文本，无敏感信息") is False
+    assert has_pii("普通文本,无敏感信息") is False

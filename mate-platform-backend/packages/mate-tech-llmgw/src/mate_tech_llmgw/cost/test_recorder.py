@@ -35,8 +35,8 @@ def test_pricing_table_has_4_providers() -> None:
 def test_cost_recorder_creates_record() -> None:
     """构造 CostRecorder 实例."""
     rec = CostRecorder(dsn="postgresql://test")
-    assert rec._dsn == "postgresql://test"
-    assert rec._pool is None
+    assert rec.dsn == "postgresql://test"
+    assert rec.pool is None
 
 
 def test_cost_recorder_estimate_only_no_pool() -> None:
@@ -45,7 +45,7 @@ def test_cost_recorder_estimate_only_no_pool() -> None:
 
     from mate_tech_llmgw.cost.recorder import CostRecorder
     rec = CostRecorder()
-    # 没有 pool，record() 不会抛错（写 PG 失败被 try-except 吞掉）
+    # 没有 pool,record() 不会抛错(写 PG 失败被 try-except 吞掉)
     async def go() -> None:
         r = await rec.record(
             model="gpt-4o",

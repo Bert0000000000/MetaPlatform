@@ -1,6 +1,8 @@
 """kb_search tool tests (ST-5.3.2.2)."""
 from __future__ import annotations
 
+from typing import Any
+
 import pytest
 import respx
 from httpx import Response
@@ -39,7 +41,7 @@ async def test_kb_search_with_kb_ids() -> None:
     """带 kb_ids 参数."""
     captured: dict = {}
 
-    def capture(req) -> Response:
+    def capture(req: Any) -> Response:
         import json
         captured["payload"] = json.loads(req.content)
         return Response(200, json={"hits": [], "total": 0})
@@ -68,7 +70,7 @@ async def test_kb_search_http_error() -> None:
 
 
 def test_kb_search_tool_metadata() -> None:
-    """Tool 元数据：name/description/input_schema."""
+    """Tool 元数据: name/description/input_schema."""
     t = KbSearchTool
     assert t.name == "kb_search"
     assert "知识库" in t.description or "检索" in t.description

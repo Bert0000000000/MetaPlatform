@@ -1,6 +1,6 @@
 """PII 自动脱敏 (ST-5.5.11.1).
 
-敏感字段（手机号、身份证、邮箱）送 LLM 前自动打码。
+敏感字段(手机号、身份证、邮箱)送 LLM 前自动打码。
 """
 from __future__ import annotations
 
@@ -33,7 +33,7 @@ def mask_pii(
 
     Args:
         text: 输入文本
-        patterns: 自定义 PII pattern；不传则用默认 5 种
+        patterns: 自定义 PII pattern;不传则用默认 5 种
         mask: 替换字符串
 
     Returns:

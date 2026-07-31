@@ -20,7 +20,7 @@ def test_tool_definition_to_openai_schema() -> None:
 
 
 def test_parse_openai_tool_calls() -> None:
-    """解析 OpenAI tool_calls（arguments 为 JSON 字符串）."""
+    """解析 OpenAI tool_calls(arguments 为 JSON 字符串)."""
     raw = [
         {
             "id": "call_1",
@@ -69,11 +69,11 @@ def test_dispatch_tool_call() -> None:
         handler=my_handler,
     )
     call = ToolCall(id="c1", name="double", arguments={"x": 21})
-    dispatch_tool_call(call, [t])
+    import asyncio
+
+    result = asyncio.run(dispatch_tool_call(call, [t]))
     assert received == {"x": 21}
-    # dispatch_tool_call is sync (handler is sync); result format
-    # Note: dispatch_tool_call in registry.py is async via __await__ check,
-    # but here we called it without await — adjust test to use asyncio.run
+    assert result["result"] == 42
 
 
 def test_dispatch_tool_call_async() -> None:
@@ -112,7 +112,7 @@ def test_dispatch_unknown_tool() -> None:
 
 
 def test_sample_tools_have_required_fields() -> None:
-    """SAMPLE_TOOLS 至少 2 个，名称 + description + parameters 完整."""
+    """SAMPLE_TOOLS 至少 2 个,名称 + description + parameters 完整."""
     assert len(SAMPLE_TOOLS) >= 2
     for t in SAMPLE_TOOLS:
         assert t.name

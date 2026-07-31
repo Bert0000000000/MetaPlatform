@@ -33,9 +33,9 @@ class JWTClaims:
 
 
 def _decode_unverified_jwt(token: str) -> dict[str, Any]:
-    """无签名校验：仅解析 JWT payload（开发/测试用）.
+    """无签名校验: 仅解析 JWT payload (开发/测试用).
 
-    生产应使用 Keycloak 公钥验签，参见 ST-5.3.9 依赖 python-keycloak。
+    生产应使用 Keycloak 公钥验签, 参见 ST-5.3.9 依赖 python-keycloak.
     """
     import base64
     import json
@@ -50,11 +50,11 @@ def _decode_unverified_jwt(token: str) -> dict[str, Any]:
         decoded = base64.urlsafe_b64decode(payload_b64 + padding)
         return json.loads(decoded)
     except Exception as e:
-        raise AuthError(f"Decode failed: {e}")
+        raise AuthError(f"Decode failed: {e}") from e
 
 
 async def verify_jwt_token(token: str) -> dict[str, Any]:
-    """校验 JWT token，返回 claims.
+    """校验 JWT token, 返回 claims.
 
     Args:
         token: Bearer token (去除 'Bearer ' 前缀)
@@ -84,7 +84,7 @@ async def verify_jwt_token(token: str) -> dict[str, Any]:
     if "sub" not in payload:
         raise AuthError("Missing sub claim")
 
-    # 提取 tenant_id（自定义 claim）
+    # 提取 tenant_id (自定义 claim)
     tenant_id = payload.get("tenant_id") or payload.get("tenant") or "default"
     roles = payload.get("realm_access", {}).get("roles", []) or payload.get("roles", [])
 
@@ -104,7 +104,7 @@ def make_test_token(
     roles: list[str] | None = None,
     expires_in: int = 3600,
 ) -> str:
-    """构造测试用 JWT (无签名，仅供本地测试)."""
+    """构造测试用 JWT (无签名, 仅供本地测试)."""
     import base64
     import json
 
@@ -115,7 +115,7 @@ def make_test_token(
         "roles": roles or ["viewer"],
         "exp": int(time.time()) + expires_in,
     }
-    def b64(d):
+    def b64(d: dict[str, Any]) -> str:
         return base64.urlsafe_b64encode(
             json.dumps(d).encode()
         ).rstrip(b"=").decode()

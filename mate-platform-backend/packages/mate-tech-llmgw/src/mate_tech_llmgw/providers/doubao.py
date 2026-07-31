@@ -1,6 +1,6 @@
 """Doubao Provider (ST-5.5.3.2).
 
-字节跳动豆包系列（火山方舟 ARK），OpenAI 兼容 API。
+字节跳动豆包系列(火山方舟 ARK),OpenAI 兼容 API。
 """
 from __future__ import annotations
 
@@ -18,7 +18,7 @@ DOUBAO_BASE_URL = "https://ark.cn-beijing.volces.com/api/v3"
 
 
 class DoubaoChatProvider:
-    """Doubao Chat Provider（OpenAI 兼容协议）."""
+    """Doubao Chat Provider(OpenAI 兼容协议)."""
 
     def __init__(
         self,

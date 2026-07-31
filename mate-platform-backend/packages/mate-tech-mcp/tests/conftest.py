@@ -30,11 +30,11 @@ for _sub in (
         _sys.path.insert(0, _p)
 
 # BUSINESS-SLICES: ensure cross-package paths work without `pip install -e .`
-import sys as _bsl_sys
-from pathlib import Path as _bsl_Path
-from unittest.mock import AsyncMock
+import sys as _bsl_sys  # noqa: E402
+from pathlib import Path as _bsl_Path  # noqa: E402
+from unittest.mock import AsyncMock  # noqa: E402
 
-import pytest
+import pytest  # noqa: E402
 
 _BSL_MONOREPO = _bsl_Path(__file__).resolve().parents[3]
 for _bsl_sub in (
@@ -48,8 +48,8 @@ for _bsl_sub in (
         _bsl_sys.path.insert(0, _bsl_p)
 
 # BUSINESS-SLICES: ensure cross-package paths work without `pip install -e .`
-import sys as _bsl_sys
-from pathlib import Path as _bsl_Path
+import sys as _bsl_sys  # noqa: E402
+from pathlib import Path as _bsl_Path  # noqa: E402
 
 _BSL_MONOREPO = _bsl_Path(__file__).resolve().parents[3]
 for _bsl_sub in (
@@ -61,16 +61,17 @@ for _bsl_sub in (
     _bsl_p = str(_BSL_MONOREPO / "packages" / _bsl_sub / "src")
     if _bsl_p not in _bsl_sys.path:
         _bsl_sys.path.insert(0, _bsl_p)
-from mate_tech_mcp.prompts.templates import (
+
+import jwt as _pyjwt  # noqa: E402
+
+from mate_tech_mcp.prompts.templates import (  # noqa: E402
     EXTRACT_ENTITIES,
     PLAN_TASK,
     SUMMARIZE_DOC,
 )
-from mate_tech_mcp.resources.ontology import OntologyResource
-from mate_tech_mcp.server import MCPServer, create_server
-from mate_tech_mcp.tools.kb_search import KbSearchTool
-
-import jwt as _pyjwt
+from mate_tech_mcp.resources.ontology import OntologyResource  # noqa: E402
+from mate_tech_mcp.server import MCPServer, create_server  # noqa: E402
+from mate_tech_mcp.tools.kb_search import KbSearchTool  # noqa: E402
 
 _TEST_JWT_SECRET = "test-secret"  # noqa: S105
 

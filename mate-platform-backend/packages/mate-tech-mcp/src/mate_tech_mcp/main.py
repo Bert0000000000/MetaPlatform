@@ -105,11 +105,11 @@ async def render_prompt_endpoint(
     try:
         await verify_jwt_token(token)
     except AuthError as e:
-        raise HTTPException(status_code=401, detail=str(e))
+        raise HTTPException(status_code=401, detail=str(e)) from e
     try:
         rendered = render_prompt(name, **payload)
     except KeyError:
-        raise HTTPException(status_code=404, detail=f"Prompt '{name}' not found")
+        raise HTTPException(status_code=404, detail=f"Prompt '{name}' not found") from None
     return {"name": name, "rendered": rendered}
 
 
@@ -137,7 +137,7 @@ async def call_tool_endpoint(
     try:
         claims = await verify_jwt_token(token)
     except AuthError as e:
-        raise HTTPException(status_code=401, detail=str(e))
+        raise HTTPException(status_code=401, detail=str(e)) from e
     tenant_id = claims.get("tenant_id", "default")
 
     # per-tenant rate limiting.
@@ -148,16 +148,16 @@ async def call_tool_endpoint(
             status_code=429,
             detail=str(e),
             headers={"Retry-After": str(e.retry_after)},
-        )
+        ) from e
 
     arguments = payload.get("arguments", {})
     try:
         result = await mcp_server.call_tool(name, arguments)
         return {"tool": name, "result": result}
     except KeyError:
-        raise HTTPException(status_code=404, detail=f"Tool '{name}' not found")
+        raise HTTPException(status_code=404, detail=f"Tool '{name}' not found") from None
     except RuntimeError as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 app = FastAPI(
@@ -176,10 +176,10 @@ app.include_router(http_bridge)
 @app.get("/healthz")
 async def healthz() -> dict[str, Any]:
     """Liveness probe."""
-    return {"status": "ok", "version": app.version, "tools": len(mcp_server._tools)}
+    return {"status": "ok", "version": app.version, "tools": len(mcp_server._tools)}  # pyright: ignore[reportPrivateUsage]
 
 
-@app.on_event("startup")
+@app.on_event("startup")  # pyright: ignore[reportDeprecated]
 async def on_startup() -> None:
     """lifespan hook."""
     log_level = os.getenv("LOG_LEVEL", "INFO").upper()
@@ -207,7 +207,7 @@ def run_stdio() -> None:
     from mcp.server.stdio import stdio_server
 
     async def arun() -> None:
-        server = await mcp_server._ensure_server()
+        server = await mcp_server._ensure_server()  # pyright: ignore[reportPrivateUsage]
         async with stdio_server() as (read_stream, write_stream):
             await server.run(
                 read_stream, write_stream, server.create_initialization_options()
@@ -223,4 +223,4 @@ if __name__ == "__main__":
     else:
         import uvicorn
 
-        uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("PORT", "8081")))
+        uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("PORT", "8081")))  # noqa: S104

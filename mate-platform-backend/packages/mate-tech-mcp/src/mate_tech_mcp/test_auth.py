@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import time
+from typing import Any
 
 import pytest
 
@@ -47,7 +48,7 @@ async def test_missing_sub_raises() -> None:
     import json
 
     payload = {"tenant_id": "x", "exp": int(time.time()) + 60}
-    def b64(d):
+    def b64(d: dict[str, Any]) -> str:
         return base64.urlsafe_b64encode(
             json.dumps(d).encode()
         ).rstrip(b"=").decode()

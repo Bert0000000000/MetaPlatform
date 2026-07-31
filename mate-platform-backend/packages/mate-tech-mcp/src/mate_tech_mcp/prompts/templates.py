@@ -28,7 +28,7 @@ class PromptTemplate:
 
 SUMMARIZE_DOC = PromptTemplate(
     name="summarize_doc",
-    description="总结文档内容（输入文档全文）",
+    description="总结文档内容(输入文档全文)",
     template=(
         "请用 3 句话总结以下文档:\n"
         "--- 文档开始 ---\n{document}\n--- 文档结束 ---\n"
@@ -39,9 +39,9 @@ SUMMARIZE_DOC = PromptTemplate(
 
 EXTRACT_ENTITIES = PromptTemplate(
     name="extract_entities",
-    description="从文本中抽取实体（概念/对象/指标/动作）",
+    description="从文本中抽取实体(概念/对象/指标/动作)",
     template=(
-        "从以下文本抽取 ontology 实体，输出 JSON 列表:\n"
+        "从以下文本抽取 ontology 实体, 输出 JSON 列表:\n"
         "{text}\n\n"
         "格式: [{{\"id\": \"...\", \"type\": \"Concept|Object|Metric|Action\", \"label\": \"...\"}}]"
     ),
@@ -68,7 +68,7 @@ PROMPT_REGISTRY: dict[str, PromptTemplate] = {
 
 
 def list_prompts() -> list[dict[str, Any]]:
-    """列出所有 prompt（OpenAPI 格式）."""
+    """列出所有 prompt (OpenAPI 格式)."""
     return [
         {
             "name": p.name,

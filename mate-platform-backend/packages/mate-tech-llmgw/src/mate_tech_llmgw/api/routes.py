@@ -35,7 +35,7 @@ legacy_router = APIRouter(prefix="/api/v1/llm", tags=["llmgw-deprecated"], depre
 class ChatRequest(BaseModel):
     """ST-5.5.9.1: /chat 请求体."""
 
-    model: str = Field(..., description="模型名（gpt-4o, claude-3-5-sonnet-20241022, etc.）")
+    model: str = Field(..., description="模型名(gpt-4o, claude-3-5-sonnet-20241022, etc.)")
     messages: list[ChatMessage]
     temperature: float = 1.0
     max_tokens: int | None = None
@@ -65,14 +65,14 @@ async def chat_endpoint(req: ChatRequest) -> ChatResponseAPI:
         )
         return ChatResponseAPI(**resp.__dict__)
     except NotImplementedError as e:
-        raise HTTPException(status_code=501, detail=str(e))
+        raise HTTPException(status_code=501, detail=str(e)) from e
     except Exception as e:
         logger.error("llmgw.chat.error", error=str(e))
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 async def _mock_stream(req: ChatRequest):
-    """ST-5.5.7 配套：mock token 流（实际生产应替换为 provider 的 stream 接口）."""
+    """ST-5.5.7 配套:mock token 流(实际生产应替换为 provider 的 stream 接口)."""
     for i, word in enumerate(("hello", " ", "world")):
         yield {"type": "token", "data": {"text": word, "index": i}}
     yield {"type": "final", "data": {"finish_reason": "stop"}}
@@ -106,7 +106,7 @@ class EmbeddingResponse(BaseModel):
 
 @router.post("/embeddings", response_model=EmbeddingResponse)
 async def embeddings_endpoint(req: EmbeddingRequest) -> EmbeddingResponse:
-    """/embeddings 端点（占位 — 实际实现见 W5-6 tech-rag 嵌入层）."""
+    """/embeddings 端点(占位 — 实际实现见 W5-6 tech-rag 嵌入层)."""
     # TODO: 接入实际 embedding provider
     return EmbeddingResponse(
         model=req.model,
@@ -131,7 +131,7 @@ def _deprecation_header() -> dict[str, str]:
     response_model=ChatResponseAPI,
     deprecated=True,
 )
-async def _legacy_chat(req: ChatRequest, response: Response) -> ChatResponseAPI:
+async def legacy_chat(req: ChatRequest, response: Response) -> ChatResponseAPI:
     try:
         resp = await router_chat(
             req.model,
@@ -141,10 +141,10 @@ async def _legacy_chat(req: ChatRequest, response: Response) -> ChatResponseAPI:
             tools=req.tools,
         )
     except NotImplementedError as e:
-        raise HTTPException(status_code=501, detail=str(e))
+        raise HTTPException(status_code=501, detail=str(e)) from e
     except Exception as e:
         logger.error("llmgw.chat.error.legacy", error=str(e))
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
     response.headers.update(_deprecation_header())
     return ChatResponseAPI(**resp.__dict__)
 
@@ -153,7 +153,7 @@ async def _legacy_chat(req: ChatRequest, response: Response) -> ChatResponseAPI:
     "/chat/stream",
     deprecated=True,
 )
-async def _legacy_chat_stream(req: ChatRequest, response: Response):
+async def legacy_chat_stream(req: ChatRequest, response: Response):
     response.headers.update(_deprecation_header())
     return make_streaming_response(
         _mock_stream,
@@ -168,7 +168,7 @@ async def _legacy_chat_stream(req: ChatRequest, response: Response):
     response_model=EmbeddingResponse,
     deprecated=True,
 )
-async def _legacy_embeddings(req: EmbeddingRequest, response: Response) -> EmbeddingResponse:
+async def legacy_embeddings(req: EmbeddingRequest, response: Response) -> EmbeddingResponse:
     response.headers.update(_deprecation_header())
     return EmbeddingResponse(
         model=req.model,

@@ -22,6 +22,7 @@ import structlog
 from fastapi import APIRouter, Header, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy import and_, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..domain.audit import AuditAction
 from ..domain.login_log import LoginLog, LoginResult
@@ -137,7 +138,7 @@ def _build_response(user: User, roles: list[str], ip: str | None) -> AuthRespons
     )
 
 
-async def _load_roles(session, user_id: int) -> list[str]:
+async def _load_roles(session: AsyncSession, user_id: int) -> list[str]:
     stmt = (
         select(Role.code)
         .join(UserRole, UserRole.role_id == Role.id)
@@ -160,7 +161,7 @@ def get_caller_for_user(user: User) -> CallerIdentity:
 
 
 async def _write_login_log(
-    session,
+    session: AsyncSession,
     tenant_id: str,
     username: str,
     user_id: int | None,
@@ -274,7 +275,7 @@ async def iam_refresh(req: RefreshRequest) -> AuthResponse:
             options={"verify_aud": False},
         )
     except jwt.PyJWTError as exc:
-        raise HTTPException(status_code=401, detail={"code": "E401_UNAUTHORIZED", "message": f"Invalid refresh token: {exc}"})
+        raise HTTPException(status_code=401, detail={"code": "E401_UNAUTHORIZED", "message": f"Invalid refresh token: {exc}"}) from exc
 
     if claims.get("token_kind") != "refresh":
         raise HTTPException(status_code=401, detail={"code": "E401_UNAUTHORIZED", "message": "Not a refresh token"})
@@ -319,12 +320,12 @@ async def iam_me(authorization: str | None = Header(default=None)) -> dict[str, 
             options={"verify_aud": False},
         )
     except jwt.PyJWTError as exc:
-        raise HTTPException(status_code=401, detail={"code": "E401_UNAUTHORIZED", "message": f"Invalid token: {exc}"})
+        raise HTTPException(status_code=401, detail={"code": "E401_UNAUTHORIZED", "message": f"Invalid token: {exc}"}) from exc
 
     try:
         uid = int(claims.get("sub", "0"))
     except (TypeError, ValueError):
-        raise HTTPException(status_code=401, detail={"code": "E401_UNAUTHORIZED", "message": "Invalid token subject"})
+        raise HTTPException(status_code=401, detail={"code": "E401_UNAUTHORIZED", "message": "Invalid token subject"}) from None
     claims.get("tenant_id", "tenant-default")
 
     async with AsyncSessionMaker() as session:

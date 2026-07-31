@@ -18,7 +18,7 @@ class OntologyResource:
 
     uri_template = "ontology://{class_id}"
     name = "ontology_class"
-    description = "查询本体的类定义（concept / object / metric / action）"
+    description = "查询本体的类定义(concept / object / metric / action)"
 
     def __init__(
         self,

@@ -1,6 +1,6 @@
 """Qwen Provider (ST-5.5.3.2).
 
-Alibaba DashScope Qwen 系列，OpenAI 兼容 API。
+Alibaba DashScope Qwen 系列,OpenAI 兼容 API。
 """
 from __future__ import annotations
 
@@ -18,7 +18,7 @@ QWEN_BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 
 
 class QwenChatProvider:
-    """Qwen Chat Provider（OpenAI 兼容协议）."""
+    """Qwen Chat Provider(OpenAI 兼容协议)."""
 
     def __init__(
         self,

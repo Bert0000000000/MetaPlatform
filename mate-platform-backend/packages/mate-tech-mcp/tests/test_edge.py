@@ -62,7 +62,7 @@ def test_resources_endpoint(client: TestClient, auth_headers: dict[str, str]) ->
 
 
 def test_tools_endpoint_empty(client: TestClient, auth_headers: dict[str, str]) -> None:
-    """GET /api/v1/mcp/tools（无 tools 时仍 200）."""
+    """GET /api/v1/mcp/tools (无 tools 时仍 200)."""
     # 重置全局以避免污染
     from mate_tech_mcp.main import mcp_server
     mcp_server._tools.clear()

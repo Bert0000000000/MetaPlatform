@@ -50,8 +50,13 @@ class LLMCache:
         self._ttl = ttl_sec
         self._enabled = enabled
 
+    @property
+    def enabled(self) -> bool:
+        """Whether caching is enabled."""
+        return self._enabled
+
     async def get(self, key: str) -> ChatResponse | None:
-        """命中返回；miss 返回 None."""
+        """命中返回;miss 返回 None."""
         if not self._enabled:
             return None
         raw = await self._redis.get(key)
@@ -91,14 +96,14 @@ async def cache_or_call(
     model: str,
     temperature: float,
 ) -> ChatResponse:
-    """先查缓存；miss 调 fn 并写入缓存.
+    """先查缓存;miss 调 fn 并写入缓存.
 
     Args:
         cache: LLMCache 实例
         fn: async callable(messages) -> ChatResponse
     """
     # temperature=0 强制 cache-first 路径
-    use_cache = cache._enabled or temperature == 0.0
+    use_cache = cache.enabled or temperature == 0.0
     key = cache_key(messages, model=model, temperature=temperature)
     if use_cache:
         cached = await cache.get(key)

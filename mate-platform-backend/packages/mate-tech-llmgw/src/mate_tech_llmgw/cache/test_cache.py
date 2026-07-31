@@ -116,7 +116,7 @@ async def test_cache_or_call_hit_ratio_ge_30pct() -> None:
 
     cache = LLMCache(redis_client=mock_redis, ttl_sec=60, enabled=True)
 
-    async def fake_fn(messages):
+    async def fake_fn(messages: list[ChatMessage]) -> ChatResponse:
         return ChatResponse(content="hi", model="gpt-4o")
 
     msgs = [ChatMessage(role="user", content="hi")]
@@ -125,9 +125,7 @@ async def test_cache_or_call_hit_ratio_ge_30pct() -> None:
     for _ in range(100):
         await cache_or_call(cache, fake_fn, msgs, model="gpt-4o", temperature=0.0)
 
-    # 计算 fn 调用次数（即 miss 次数）
-    fake_fn.call_count if hasattr(fake_fn, "call_count") else None
-    # 用 get 行为推算：第一次 miss (return None) + 99 次 hit
+    # 用 get 行为推算:第一次 miss (return None) + 99 次 hit
     misses = 1
     hits = 99
     hit_ratio = hits / (hits + misses)

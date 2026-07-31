@@ -64,7 +64,7 @@ async def test_all_fail_raises() -> None:
 
 @pytest.mark.asyncio
 async def test_with_retry_succeeds_after_retries() -> None:
-    """重试装饰器：失败 2 次后成功."""
+    """重试装饰器:失败 2 次后成功."""
     attempts = {"n": 0}
 
     async def flaky(**kwargs: object) -> ChatResponse:

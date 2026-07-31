@@ -60,6 +60,13 @@ target-version = "py312"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "UP", "B", "SIM", "RUF", "ASYNC", "S"]
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["S101"]
+"src/**/test_*.py" = ["S101"]
+"src/mate_tech_llmgw/test_*.py" = ["S101"]
+"test_tool_calls_extra.py" = ["S101"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

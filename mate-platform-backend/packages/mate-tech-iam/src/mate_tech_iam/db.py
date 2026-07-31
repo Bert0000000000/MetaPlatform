@@ -3,6 +3,7 @@
 Uses SQLite by default for dev convenience. Production deployments can override
 ``IAM_DATABASE_URL`` to point at PostgreSQL.
 """
+# pyright: reportUnusedImport=false
 from __future__ import annotations
 
 import os

@@ -13,7 +13,7 @@ logger = structlog.get_logger(__name__)
 
 
 class MCPServer:
-    """MCP Server 封装（lazy import mcp 以减少启动开销）."""
+    """MCP Server wrapper (lazy import mcp to reduce startup overhead)."""
 
     def __init__(self, name: str = "mate-tech-mcp") -> None:
         self.name = name
@@ -31,7 +31,7 @@ class MCPServer:
         return self._server
 
     def register_tool(self, tool: Any) -> None:
-        """注册工具（懒注册到 MCP server）."""
+        """Register tool (lazy registration to MCP server)."""
         self._tools.append(tool)
         logger.info("mcp.tool.registered", name=getattr(tool, "name", "?"))
 

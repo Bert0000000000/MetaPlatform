@@ -22,7 +22,7 @@ class QuotaConfig:
     window_sec: int = 60
 
 
-class QuotaExceeded(Exception):
+class QuotaExceededError(Exception):
     """触发限流时抛出."""
 
     def __init__(self, key: str, retry_after: int) -> None:
@@ -50,14 +50,14 @@ class RedisTokenBucket:
         tenant_id: str,
         estimated_tokens: int = 0,
     ) -> None:
-        """检查并扣减配额；超额抛 QuotaExceeded.
+        """检查并扣减配额;超额抛 QuotaExceededError.
 
         Args:
             tenant_id: 租户 id
-            estimated_tokens: 预估本次请求 token 数（TPM）
+            estimated_tokens: 预估本次请求 token 数(TPM)
 
         Raises:
-            QuotaExceeded: RPM 或 TPM 超限
+            QuotaExceededError: RPM 或 TPM 超限
         """
         import time
         minute = int(time.time()) // self._config.window_sec
@@ -74,12 +74,12 @@ class RedisTokenBucket:
         if int(req_count) > self._config.rpm_limit:
             retry_after = self._config.window_sec - (int(time.time()) % self._config.window_sec)
             logger.warning("quota.exceeded.rpm", tenant=tenant_id, count=req_count)
-            raise QuotaExceeded(req_key, retry_after)
+            raise QuotaExceededError(req_key, retry_after)
 
         if int(tok_count) > self._config.tpm_limit:
             retry_after = self._config.window_sec - (int(time.time()) % self._config.window_sec)
             logger.warning("quota.exceeded.tpm", tenant=tenant_id, count=tok_count)
-            raise QuotaExceeded(tok_key, retry_after)
+            raise QuotaExceededError(tok_key, retry_after)
 
         logger.debug("quota.acquired", tenant=tenant_id, req=req_count, tok=tok_count)
 

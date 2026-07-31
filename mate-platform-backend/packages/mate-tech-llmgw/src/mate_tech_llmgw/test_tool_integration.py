@@ -20,7 +20,7 @@ from mate_tech_llmgw.tools.registry import (
 @respx.mock
 async def test_openai_tool_call_then_text_response() -> None:
     """OpenAI 完整 tool_call → text 双轮."""
-    # 第一轮：tool_call
+    # 第一轮:tool_call
     respx.post("https://api.openai.com/v1/chat/completions").mock(
         return_value=Response(
             200,
@@ -55,7 +55,7 @@ async def test_openai_tool_call_then_text_response() -> None:
     resp1 = await p.chat([ChatMessage(role="user", content="weather?")])
     assert resp1.finish_reason == "tool_calls"
 
-    # 第二轮：执行 tool
+    # 第二轮:执行 tool
     tool_call = ToolCall(
         id=resp1.tool_calls[0]["id"],
         name=resp1.tool_calls[0]["function"]["name"],
