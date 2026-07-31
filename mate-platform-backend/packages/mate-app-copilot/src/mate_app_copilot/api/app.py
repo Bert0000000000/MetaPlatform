@@ -252,11 +252,23 @@ async def explain_sql(
                 name = raw.strip().split()[-1].strip("`\"'")
                 if name != "*":
                     columns.append(name)
+    # P2-W4: augment the parsed metadata with an LLM natural-language
+    # explanation of what the SQL does.
+    client = _get_client(request)
+    op_type = stmt.get_type() if stmt else "unknown"
+    explanation = client.chat(
+        [
+            {
+                "role": "system",
+                "content": "Explain what this SQL query does in one sentence.",
+            },
+            {"role": "user", "content": sql[:500]},
+        ]
+    ) if sql.strip() else f"No SQL provided (operation: {op_type})."
     return {
         "tables": tables,
         "columns": columns,
-        "explanation": f"Parsed {len(parsed)} statement(s); operation "
-        f"'{stmt.get_type() if stmt else 'unknown'}'.",
+        "explanation": explanation,
     }
 
 
@@ -598,6 +610,7 @@ async def detect_intent(request: Request, body: dict[str, Any]) -> dict[str, Any
     intents = list_intents(tid)
     best_name = "unknown"
     best_conf = 0.0
+    # Fast-path: keyword matching against seeded intents
     for intent in intents:
         for kw in intent.keywords:
             if kw in text_lower:
@@ -606,6 +619,28 @@ async def detect_intent(request: Request, body: dict[str, Any]) -> dict[str, Any
                 break
         if best_conf > 0:
             break
+    # P2-W4: if keyword matching missed, use client.chat for NLU fallback
+    if best_conf == 0.0 and text.strip():
+        client = _get_client(request)
+        intent_names = ", ".join(i.name for i in intents) or "general"
+        raw = client.chat(
+            [
+                {
+                    "role": "system",
+                    "content": f"Classify the user's intent into one of: {intent_names}. Reply with just the intent name.",
+                },
+                {"role": "user", "content": text[:500]},
+            ]
+        )
+        matched = raw.strip().lower()
+        for intent in intents:
+            if intent.name.lower() in matched:
+                best_name = intent.name
+                best_conf = 0.7
+                break
+        if best_conf == 0.0:
+            best_name = raw.strip()[:50] or "unknown"
+            best_conf = 0.5
     return {"intent": best_name, "confidence": best_conf}
 
 
