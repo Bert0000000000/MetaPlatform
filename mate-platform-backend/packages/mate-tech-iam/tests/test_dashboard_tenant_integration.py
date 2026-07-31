@@ -124,10 +124,9 @@ def test_no_tenant_400() -> None:
 
     We craft a token with `attributes.tenant_id = [""]` which the
     verifier accepts (it is a valid string), but the handler's
-    `require_tenant(ctx)` raises TenantAccessError. Until the
-    platform wires a TenantAccessError exception handler (it
-    currently surfaces as a Starlette ServerErrorMiddleware
-    response), the call must NOT return 200.
+    `require_tenant(ctx)` raises TenantAccessError. install_auth now
+    registers a TenantAccessError exception handler that maps it to a
+    structured 400 Bad Request with code E_TENANT_REQUIRED.
     """
     token = _keycloak_token(tenant_id="")
     with _mounted_app() as (app, _outbox):
@@ -136,7 +135,8 @@ def test_no_tenant_400() -> None:
             "/api/v1/dashboard/profile",
             headers={"Authorization": f"Bearer {token}"},
         )
-    assert r.status_code != 200, r.text
+    assert r.status_code == 400, r.text
+    assert r.json()["code"] == "E_TENANT_REQUIRED"
 
 
 def test_auth_login_anonymous_ok() -> None:

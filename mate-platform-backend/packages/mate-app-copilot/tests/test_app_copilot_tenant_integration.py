@@ -73,7 +73,8 @@ def test_no_tenant_non_200(fresh_app: TestClient) -> None:
         "/api/v1/copilot/conversations",
         headers={"Authorization": f"Bearer {token}"},
     )
-    assert r.status_code != 200, r.text
+    assert r.status_code == 400, r.text
+    assert r.json()["code"] == "E_TENANT_REQUIRED"
 
 
 def test_tenant_isolation_ok(fresh_app: TestClient) -> None:

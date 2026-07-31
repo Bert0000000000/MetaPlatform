@@ -20,8 +20,7 @@ Tests rely on these minima; bumping is allowed but tests assert
 """
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass, field
-from typing import Any
+from dataclasses import dataclass, field
 
 
 # ---------------------------------------------------------------------------
@@ -340,10 +339,6 @@ def _ensure_tenant(tenant_id: str) -> None:
 # ---------------------------------------------------------------------------
 # Public read API
 # ---------------------------------------------------------------------------
-def _items(rows: list[Any]) -> list[dict[str, Any]]:
-    return [asdict(r) if hasattr(r, "__dataclass_fields__") else dict(r.__dict__) for r in rows]
-
-
 def list_conversations(tenant_id: str) -> list[Conversation]:
     if not tenant_id:
         return []

@@ -472,7 +472,7 @@ def _seed_data_domains(tenant_id: str) -> dict[str, DataDomain]:
             name=name,
             code=code,
         )
-        for code, name, parent in items
+        for code, name, _parent in items
     }
 
 
@@ -759,11 +759,11 @@ def _seed_technology_radar(tenant_id: str) -> dict[str, TechnologyRadarEntry]:
 
 
 def _seed_technology_stacks(tenant_id: str) -> dict[str, TechnologyStack]:
-    items: list[tuple[str, str, tuple[str, ...]]] = (
+    items: list[tuple[str, str, tuple[str, ...]]] = [
         ("tst-kb", "kb", ("tc-fastapi", "tc-postgres", "tc-milvus", "tc-redis")),
         ("tst-rag", "rag", ("tc-fastapi", "tc-milvus", "tc-redis", "tc-kafka")),
         ("tst-dw", "dw", ("tc-fastapi", "tc-postgres", "tc-kafka", "tc-minio")),
-    )
+    ]
     return {
         tid: TechnologyStack(
             id=tid,

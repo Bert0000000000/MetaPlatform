@@ -193,7 +193,7 @@ def _seed_pages(tenant_id: str) -> dict[str, ApphubPage]:
             module_code=module_code,
             layout=layout,
         )
-        for code, name, app_code, module_code, layout in pages
+        for code, name, _app_code, module_code, layout in pages
     }
 
 

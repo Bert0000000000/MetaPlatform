@@ -9,7 +9,9 @@ from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
 
+from ..errors.handlers import tenant_access_error_handler
 from ..tenancy.context import AuthMethod, RequestContext, TenantId, UserId
+from ..tenancy.guards import TenantAccessError
 from .config import AuthConfig, load_auth_config
 from .identity import ServiceIdentity
 from .tenant import TenantError, resolve_tenant
@@ -62,6 +64,10 @@ def install_auth(
         verifier=verifier,
         anonymous_paths=anonymous_paths,
     )
+    # Map TenantAccessError (raised by require_tenant / hard rule 3) to a
+    # 400 Bad Request instead of a 500. Registered here so every package
+    # that calls install_auth(app) gets the structured 400 behaviour.
+    app.add_exception_handler(TenantAccessError, tenant_access_error_handler)
     app.state.auth_config = cfg
     app.state.token_verifier = verifier
     return verifier

@@ -49,11 +49,11 @@ def _tid(request: Request) -> str:
     return str(require_tenant(ctx))
 
 
-def _items(rows) -> list[dict]:
+def _items(rows: list) -> list[dict]:
     return [asdict(r) for r in rows]
 
 
-def _resp(rows) -> dict:
+def _resp(rows: list) -> dict:
     items = _items(rows)
     return {"items": items, "total": len(items)}
 

@@ -88,10 +88,10 @@ def test_no_tenant_400(fresh_app: TestClient) -> None:
         "/api/v1/apphub/apps",
         headers={"Authorization": f"Bearer {token}"},
     )
-    # require_tenant raises TenantAccessError which surfaces as 500
-    # until the platform wires an exception handler; either way the
-    # response MUST NOT be 200.
-    assert r.status_code != 200, r.text
+    # require_tenant raises TenantAccessError which the platform maps
+    # to a structured 400 Bad Request (registered in install_auth).
+    assert r.status_code == 400, r.text
+    assert r.json()["code"] == "E_TENANT_REQUIRED"
 
 
 def test_tenant_isolation_ok(fresh_app: TestClient) -> None:

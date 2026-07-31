@@ -35,7 +35,7 @@ from ..repositories import (
 router = APIRouter(prefix="/api/v1/apphub", tags=["apphub"])
 
 
-def _serialize(rows):
+def _serialize(rows: list) -> list[dict]:
     """Convert dataclass rows to JSON-friendly dicts."""
     return [asdict(r) for r in rows]
 
