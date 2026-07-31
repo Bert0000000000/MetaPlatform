@@ -964,6 +964,7 @@ export default function ChatPage() {
               )}
             </Upload>
           )}
+          {!isModePanelVisible && (
           <Sender
             value={input}
             onChange={setInput}
@@ -978,6 +979,7 @@ export default function ChatPage() {
             autoSize={{ minRows: 2, maxRows: 6 }}
             style={{ marginTop: isMultimodal ? 8 : 0 }}
           />
+          )}
         </div>
       </div>
     </div>
