@@ -1,6 +1,6 @@
 import { createApiClient, apiPath } from '@mate/shared/api';
 
-const client = createApiClient({ baseURL: apiPath('superai', '/v1') });
+const client = createApiClient({ baseURL: apiPath('superai', '') });
 const data = <T>(resp: { data: T }): T => resp.data;
 async function post<T>(url: string, body?: unknown): Promise<T> {
   return data(await client.post<T>(url, body));
@@ -15,20 +15,20 @@ import type {
 } from './types';
 
 export async function generateForm(prompt: string): Promise<FormGenResult> {
-  return post<FormGenResult>('/v1/superai/generate/form', { prompt });
+  return post<FormGenResult>('/generate/form', { prompt });
 }
 
 export async function generateProcess(prompt: string): Promise<ProcessGenResult> {
-  return post<ProcessGenResult>('/v1/superai/generate/process', { prompt });
+  return post<ProcessGenResult>('/generate/process', { prompt });
 }
 
 export async function generateCode(
   prompt: string,
   language: string,
 ): Promise<CodeGenResult> {
-  return post<CodeGenResult>('/v1/superai/generate/code', { prompt, language });
+  return post<CodeGenResult>('/generate/code', { prompt, language });
 }
 
 export async function generateDashboard(prompt: string): Promise<DashboardGenResult> {
-  return post<DashboardGenResult>('/v1/superai/generate/dashboard', { prompt });
+  return post<DashboardGenResult>('/generate/dashboard', { prompt });
 }

@@ -1,6 +1,6 @@
 import { createApiClient, apiPath } from '@mate/shared/api';
 
-const client = createApiClient({ baseURL: apiPath('dashboard', '/v1') });
+const client = createApiClient({ baseURL: apiPath('dashboard', '') });
 const data = <T>(resp: { data: T }): T => resp.data;
 async function get<T>(url: string, params?: Record<string, unknown>): Promise<T> {
   return data(await client.get<T>(url, params ? { params } : undefined));
@@ -27,7 +27,7 @@ function getUserId(): string | undefined {
 export async function getNotifications(filter: 'all' | 'unread' | 'read' = 'all'): Promise<NotificationItem[]> {
   const userId = getUserId();
   if (!userId) return [];
-  const items = await get<NotificationItem[]>('/v1/dashboard/notifications', {
+  const items = await get<NotificationItem[]>('/notifications', {
     userId,
     status: filter,
     limit: 50,
@@ -39,18 +39,18 @@ export async function getNotifications(filter: 'all' | 'unread' | 'read' = 'all'
 export async function getUnreadCount(): Promise<number> {
   const userId = getUserId();
   if (!userId) return 0;
-  const count = await get<number>('/v1/dashboard/notifications/unread-count', { userId });
+  const count = await get<number>('/notifications/unread-count', { userId });
   return typeof count === 'number' ? count : 0;
 }
 
 export async function markAsRead(id: string): Promise<void> {
-  await put(`/v1/dashboard/notifications/${id}/read`);
+  await put(`/notifications/${id}/read`);
 }
 
 export async function markAllAsRead(): Promise<void> {
   const userId = getUserId();
   if (!userId) return;
-  await post(`/v1/dashboard/notifications/read-all?userId=${encodeURIComponent(userId)}`);
+  await post(`/notifications/read-all?userId=${encodeURIComponent(userId)}`);
 }
 
 export async function markAsUnread(id: string): Promise<void> {
@@ -71,13 +71,13 @@ export async function getNotificationSettings(): Promise<NotificationSettings> {
       push: false,
     };
   }
-  return get<NotificationSettings>('/v1/dashboard/notifications/settings', { userId });
+  return get<NotificationSettings>('/notifications/settings', { userId });
 }
 
 export async function updateNotificationSettings(settings: NotificationSettings): Promise<void> {
   const userId = getUserId();
   if (!userId) return;
-  await put('/v1/dashboard/notifications/settings', { ...settings, userId });
+  await put('/notifications/settings', { ...settings, userId });
 }
 
 export function createLocalNotification(type: NotificationType, title: string, content: string): NotificationItem {

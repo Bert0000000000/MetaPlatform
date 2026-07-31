@@ -1,6 +1,6 @@
 import { createApiClient, apiPath } from '@mate/shared/api';
 
-const client = createApiClient({ baseURL: apiPath('dashboard', '/v1') });
+const client = createApiClient({ baseURL: apiPath('dashboard', '') });
 const data = <T>(resp: { data: T }): T => resp.data;
 async function get<T>(url: string, params?: Record<string, unknown>): Promise<T> {
   return data(await client.get<T>(url, params ? { params } : undefined));
@@ -20,7 +20,7 @@ async function del<T>(url: string): Promise<T> {
 import type { Deliverable, DeliverableType, PageResponse } from './types';
 
 export async function listDeliverables(params?: { keyword?: string; type?: DeliverableType }): Promise<PageResponse<Deliverable>> {
-  return get<PageResponse<Deliverable>>('/v1/dashboard/deliverables', params as Record<string, unknown> | undefined);
+  return get<PageResponse<Deliverable>>('/deliverables', params as Record<string, unknown> | undefined);
 }
 
 export async function searchDeliverables(keyword: string): Promise<Deliverable[]> {
@@ -29,9 +29,9 @@ export async function searchDeliverables(keyword: string): Promise<Deliverable[]
 }
 
 export async function downloadDeliverable(id: string, format: string): Promise<{ downloadUrl: string; message: string }> {
-  return post<{ downloadUrl: string; message: string }>(`/v1/dashboard/deliverables/${id}/download`, { format });
+  return post<{ downloadUrl: string; message: string }>(`/deliverables/${id}/download`, { format });
 }
 
 export async function deleteDeliverable(id: string): Promise<void> {
-  await del<void>(`/v1/dashboard/deliverables/${id}`);
+  await del<void>(`/deliverables/${id}`);
 }

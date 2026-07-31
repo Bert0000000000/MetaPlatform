@@ -1,6 +1,6 @@
 import { createApiClient, apiPath } from '@mate/shared/api';
 
-const client = createApiClient({ baseURL: apiPath('ea', '/v1') });
+const client = createApiClient({ baseURL: apiPath('arch', '') });
 const data = <T>(resp: { data: T }): T => resp.data;
 async function get<T>(url: string, params?: Record<string, unknown>): Promise<T> { return data(await client.get<T>(url, params ? { params } : undefined)); }
 async function post<T>(url: string, body?: unknown): Promise<T> { return data(await client.post<T>(url, body)); }
@@ -57,78 +57,78 @@ export function normalizeTechDebt(raw: TechDebt): TechDebt {
 
 // ---------- 原则分类 ----------
 export async function listPrincipleCategories(): Promise<PrincipleCategory[]> {
-  return get<PrincipleCategory[]>('/v1/ea/governance/principle-categories');
+  return get<PrincipleCategory[]>('/governance/principle-categories');
 }
 
 export async function createPrincipleCategory(req: Partial<PrincipleCategory>): Promise<PrincipleCategory> {
-  return post<PrincipleCategory>('/v1/ea/governance/principle-categories', req);
+  return post<PrincipleCategory>('/governance/principle-categories', req);
 }
 
 export async function updatePrincipleCategory(id: string, req: Partial<PrincipleCategory>): Promise<PrincipleCategory> {
-  return put<PrincipleCategory>(`/v1/ea/governance/principle-categories/${id}`, req);
+  return put<PrincipleCategory>(`/governance/principle-categories/${id}`, req);
 }
 
 export async function deletePrincipleCategory(id: string): Promise<void> {
-  await del<void>(`/v1/ea/governance/principle-categories/${id}`);
+  await del<void>(`/governance/principle-categories/${id}`);
 }
 
 // ---------- 架构原则 ----------
 export async function listPrinciples(categoryId?: string): Promise<Principle[]> {
-  const items = await get<Principle[]>('/v1/ea/governance/principles', categoryId ? { categoryId } : undefined);
+  const items = await get<Principle[]>('/governance/principles', categoryId ? { categoryId } : undefined);
   return items.map(normalizePrinciple);
 }
 
 export async function createPrinciple(req: Partial<Principle>): Promise<Principle> {
-  return normalizePrinciple(await post<Principle>('/v1/ea/governance/principles', req));
+  return normalizePrinciple(await post<Principle>('/governance/principles', req));
 }
 
 export async function updatePrinciple(id: string, req: Partial<Principle>): Promise<Principle> {
-  return normalizePrinciple(await put<Principle>(`/v1/ea/governance/principles/${id}`, req));
+  return normalizePrinciple(await put<Principle>(`/governance/principles/${id}`, req));
 }
 
 export async function deletePrinciple(id: string): Promise<void> {
-  await del<void>(`/v1/ea/governance/principles/${id}`);
+  await del<void>(`/governance/principles/${id}`);
 }
 
 // ---------- 评审模板 ----------
 export async function listReviewTemplates(): Promise<ReviewTemplate[]> {
-  const items = await get<ReviewTemplate[]>('/v1/ea/governance/review-templates');
+  const items = await get<ReviewTemplate[]>('/governance/review-templates');
   return items.map(normalizeReviewTemplate);
 }
 
 export async function createReviewTemplate(req: Partial<ReviewTemplate>): Promise<ReviewTemplate> {
-  return normalizeReviewTemplate(await post<ReviewTemplate>('/v1/ea/governance/review-templates', req));
+  return normalizeReviewTemplate(await post<ReviewTemplate>('/governance/review-templates', req));
 }
 
 export async function updateReviewTemplate(id: string, req: Partial<ReviewTemplate>): Promise<ReviewTemplate> {
-  return normalizeReviewTemplate(await put<ReviewTemplate>(`/v1/ea/governance/review-templates/${id}`, req));
+  return normalizeReviewTemplate(await put<ReviewTemplate>(`/governance/review-templates/${id}`, req));
 }
 
 export async function deleteReviewTemplate(id: string): Promise<void> {
-  await del<void>(`/v1/ea/governance/review-templates/${id}`);
+  await del<void>(`/governance/review-templates/${id}`);
 }
 
 // ---------- 评审工单 ----------
 export async function listReviewTickets(status?: string): Promise<ReviewTicket[]> {
-  const items = await get<ReviewTicket[]>('/v1/ea/governance/review-tickets', status ? { status } : undefined);
+  const items = await get<ReviewTicket[]>('/governance/review-tickets', status ? { status } : undefined);
   return items.map(normalizeReviewTicket);
 }
 
 export async function createReviewTicket(req: Partial<ReviewTicket>): Promise<ReviewTicket> {
-  return normalizeReviewTicket(await post<ReviewTicket>('/v1/ea/governance/review-tickets', req));
+  return normalizeReviewTicket(await post<ReviewTicket>('/governance/review-tickets', req));
 }
 
 export async function updateReviewTicket(id: string, req: Partial<ReviewTicket>): Promise<ReviewTicket> {
-  return normalizeReviewTicket(await put<ReviewTicket>(`/v1/ea/governance/review-tickets/${id}`, req));
+  return normalizeReviewTicket(await put<ReviewTicket>(`/governance/review-tickets/${id}`, req));
 }
 
 export async function deleteReviewTicket(id: string): Promise<void> {
-  await del<void>(`/v1/ea/governance/review-tickets/${id}`);
+  await del<void>(`/governance/review-tickets/${id}`);
 }
 
 export async function startReviewTicket(id: string, reviewer?: string): Promise<ReviewTicket> {
   const query = reviewer ? `?reviewer=${encodeURIComponent(reviewer)}` : '';
-  return normalizeReviewTicket(await post<ReviewTicket>(`/v1/ea/governance/review-tickets/${id}/start${query}`));
+  return normalizeReviewTicket(await post<ReviewTicket>(`/governance/review-tickets/${id}/start${query}`));
 }
 
 export async function approveReviewTicket(
@@ -139,7 +139,7 @@ export async function approveReviewTicket(
   decision?: string
 ): Promise<ReviewTicket> {
   return normalizeReviewTicket(
-    await post<ReviewTicket>(`/v1/ea/governance/review-tickets/${id}/approve`, { reviewer, scores, comment, decision })
+    await post<ReviewTicket>(`/governance/review-tickets/${id}/approve`, { reviewer, scores, comment, decision })
   );
 }
 
@@ -151,31 +151,31 @@ export async function rejectReviewTicket(
   decision?: string
 ): Promise<ReviewTicket> {
   return normalizeReviewTicket(
-    await post<ReviewTicket>(`/v1/ea/governance/review-tickets/${id}/reject`, { reviewer, scores, comment, decision })
+    await post<ReviewTicket>(`/governance/review-tickets/${id}/reject`, { reviewer, scores, comment, decision })
   );
 }
 
 export async function addReviewTicketComment(id: string, reviewer: string, comment: string): Promise<ReviewTicket> {
   const query = `?reviewer=${encodeURIComponent(reviewer)}&comment=${encodeURIComponent(comment)}`;
   return normalizeReviewTicket(
-    await post<ReviewTicket>(`/v1/ea/governance/review-tickets/${id}/comments${query}`)
+    await post<ReviewTicket>(`/governance/review-tickets/${id}/comments${query}`)
   );
 }
 
 // ---------- 技术债务 ----------
 export async function listTechDebt(level?: string, status?: string): Promise<TechDebt[]> {
-  const items = await get<TechDebt[]>('/v1/ea/governance/tech-debts', { level, status });
+  const items = await get<TechDebt[]>('/governance/tech-debts', { level, status });
   return items.map(normalizeTechDebt);
 }
 
 export async function createTechDebt(req: Partial<TechDebt>): Promise<TechDebt> {
-  return normalizeTechDebt(await post<TechDebt>('/v1/ea/governance/tech-debts', req));
+  return normalizeTechDebt(await post<TechDebt>('/governance/tech-debts', req));
 }
 
 export async function updateTechDebt(id: string, req: Partial<TechDebt>): Promise<TechDebt> {
-  return normalizeTechDebt(await put<TechDebt>(`/v1/ea/governance/tech-debts/${id}`, req));
+  return normalizeTechDebt(await put<TechDebt>(`/governance/tech-debts/${id}`, req));
 }
 
 export async function deleteTechDebt(id: string): Promise<void> {
-  await del<void>(`/v1/ea/governance/tech-debts/${id}`);
+  await del<void>(`/governance/tech-debts/${id}`);
 }

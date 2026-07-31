@@ -1,6 +1,6 @@
 import { createApiClient, apiPath } from '@mate/shared/api';
 
-const client = createApiClient({ baseURL: apiPath('dashboard', '/v1') });
+const client = createApiClient({ baseURL: apiPath('dashboard', '') });
 const data = <T>(resp: { data: T }): T => resp.data;
 async function get<T>(url: string, params?: Record<string, unknown>): Promise<T> {
   return data(await client.get<T>(url, params ? { params } : undefined));
@@ -24,7 +24,7 @@ import type { UserProfile, UserPermissions } from './types';
  * 返回包含邮箱、姓名、租户、角色、部门、权限摘要。
  */
 export async function getCurrentUser(): Promise<UserProfile> {
-  return get<UserProfile>('/v1/dashboard/profile');
+  return get<UserProfile>('/profile');
 }
 
 /**
@@ -32,5 +32,5 @@ export async function getCurrentUser(): Promise<UserProfile> {
  * 对齐 SPEC-TECH-IAM 3.5.8，供个人中心「权限查看」按模块分组展示。
  */
 export async function getCurrentUserPermissions(): Promise<UserPermissions> {
-  return get<UserPermissions>('/v1/dashboard/profile/permissions');
+  return get<UserPermissions>('/profile/permissions');
 }

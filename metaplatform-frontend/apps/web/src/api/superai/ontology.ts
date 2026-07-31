@@ -1,6 +1,6 @@
 import { createApiClient, apiPath } from '@mate/shared/api';
 
-const client = createApiClient({ baseURL: apiPath('superai', '/v1') });
+const client = createApiClient({ baseURL: apiPath('copilot', '') });
 const data = <T>(resp: { data: T }): T => resp.data;
 async function get<T>(url: string, params?: Record<string, unknown>): Promise<T> { return data(await client.get<T>(url, params ? { params } : undefined)); }
 async function post<T>(url: string, body?: unknown): Promise<T> { return data(await client.post<T>(url, body)); }
@@ -79,7 +79,7 @@ export async function searchConcepts(
   if (keyword) params.keyword = keyword;
   if (attribute) params.attribute = attribute;
   if (tag) params.tag = tag;
-  return get<OntologyConcept[]>('/v1/copilot/ontology/concepts/search', params);
+  return get<OntologyConcept[]>('/ontology/concepts/search', params);
 }
 /**
  * 兼容旧调用：等价于 searchConcepts(keyword)。
@@ -93,7 +93,7 @@ export async function queryConcepts(query: string): Promise<OntologyConcept[]> {
  * 概念详情（REQ-031）。返回完整属性、实例、关联概念。
  */
 export async function getConceptDetail(conceptId: string): Promise<OntologyConcept> {
-  return get<OntologyConcept>(`/v1/copilot/ontology/concepts/${conceptId}/detail`);
+  return get<OntologyConcept>(`/ontology/concepts/${conceptId}/detail`);
 }
 /**
  * 语义查询知识图谱（REQ-032 / REQ-034）。
@@ -101,7 +101,7 @@ export async function getConceptDetail(conceptId: string): Promise<OntologyConce
  */
 export async function semanticQuery(query: string): Promise<GraphData> {
   const body: GraphQueryRequest = { query, depth: 2 };
-  const resp = await post<GraphQueryResponse>('/v1/copilot/ontology/graph/query', body);
+  const resp = await post<GraphQueryResponse>('/ontology/graph/query', body);
   return toGraphData(resp);
 }
 /**
@@ -109,7 +109,7 @@ export async function semanticQuery(query: string): Promise<GraphData> {
  */
 export async function queryGraph(query: string, depth: number): Promise<GraphData> {
   const body: GraphQueryRequest = { query, depth };
-  const resp = await post<GraphQueryResponse>('/v1/copilot/ontology/graph/query', body);
+  const resp = await post<GraphQueryResponse>('/ontology/graph/query', body);
   return toGraphData(resp);
 }
 /**
@@ -133,7 +133,7 @@ export async function filterGraph(
     tags: options.tags,
     relationType: options.relationType,
   };
-  const resp = await post<GraphQueryResponse>('/v1/copilot/ontology/graph/query', body);
+  const resp = await post<GraphQueryResponse>('/ontology/graph/query', body);
   return toGraphData(resp);
 }
 /**
@@ -142,6 +142,6 @@ export async function filterGraph(
  */
 export async function expandGraphNode(nodeId: string, depth = 1): Promise<GraphData> {
   const params: Record<string, string | number> = { nodeId, depth };
-  const resp = await get<GraphQueryResponse>('/v1/copilot/ontology/graph/expand', params);
+  const resp = await get<GraphQueryResponse>('/ontology/graph/expand', params);
   return toGraphData(resp);
 }

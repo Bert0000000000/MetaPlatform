@@ -1,6 +1,6 @@
 import { createApiClient, apiPath } from '@mate/shared/api';
 
-const client = createApiClient({ baseURL: apiPath('dashboard', '/v1') });
+const client = createApiClient({ baseURL: apiPath('dashboard', '') });
 const data = <T>(resp: { data: T }): T => resp.data;
 async function get<T>(url: string, params?: Record<string, unknown>): Promise<T> {
   return data(await client.get<T>(url, params ? { params } : undefined));
@@ -21,5 +21,5 @@ import type { SearchResult } from './types';
 
 export async function globalSearch(keyword: string): Promise<SearchResult[]> {
   if (!keyword.trim()) return [];
-  return get<SearchResult[]>('/v1/dashboard/search', { keyword });
+  return get<SearchResult[]>('/search', { keyword });
 }

@@ -1,8 +1,8 @@
 import { createApiClient, apiPath } from '@mate/shared/api';
 
-export const apiClient = createApiClient({ baseURL: apiPath('superai', '/v1') });
+export const apiClient = createApiClient({ baseURL: apiPath('copilot', '') });
 
-const BASE = '/v1/copilot';
+const BASE = '';
 export interface RoutingRequest {
   promptTokens: number;
   completionTokens: number;

@@ -8,7 +8,7 @@
  */
 import { createApiClient, apiPath } from '@mate/shared/api';
 
-const client = createApiClient({ baseURL: apiPath('apphub', '/v1') });
+const client = createApiClient({ baseURL: apiPath('apphub', '') });
 const data = <T>(resp: { data: T }): T => resp.data;
 
 export async function get<T>(url: string, params?: Record<string, unknown>): Promise<T> {

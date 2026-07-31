@@ -1,6 +1,6 @@
 import { createApiClient, apiPath } from '@mate/shared/api';
 
-export const apiClient = createApiClient({ baseURL: apiPath('superai', '/v1') });
+export const apiClient = createApiClient({ baseURL: apiPath('copilot', '') });
 const data = <T>(resp: { data: T }): T => resp.data;
 export async function get<T>(url: string, params?: Record<string, unknown>): Promise<T> { return data(await apiClient.get<T>(url, params ? { params } : undefined)); }
 export async function post<T>(url: string, body?: unknown): Promise<T> { return data(await apiClient.post<T>(url, body)); }
@@ -33,7 +33,7 @@ export interface MultimodalResponse {
 }
 export async function listMultimodalModels(): Promise<MultimodalModel[]> {
   const data = await get<{ items: MultimodalModel[]; total: number }>(
-    '/v1/copilot/models/multimodal',
+    '/models/multimodal',
   );
   return data.items;
 }
@@ -56,7 +56,7 @@ export async function multimodalUploadChat(params: {
   for (const image of params.images) {
     formData.append('image', image);
   }
-  const response = await apiClient.post('/v1/copilot/chat/multimodal/upload', formData, {
+  const response = await apiClient.post('/chat/multimodal/upload', formData, {
     headers: {
       'Content-Type': 'multipart/form-data',
     },

@@ -21,15 +21,18 @@ export interface ServiceRoute {
 
 export const SERVICES: Record<string, ServiceRoute> = {
   iam:     { name: 'tech-iam',     port: 8101, apiPrefix: '/api/v1/iam',     label: 'IAM' },
+  dashboard: { name: 'tech-iam',   port: 8101, apiPrefix: '/api/v1/dashboard', label: 'DASHBOARD' },
   kb:      { name: 'tech-kb',      port: 9004, apiPrefix: '/api/v1/kb',      label: 'KB' },
   agent:   { name: 'mate-agent',   port: 8511, apiPrefix: '/api/v1/agent',   label: 'AGENT' },
   apphub:  { name: 'tech-apphub',  port: 8202, apiPrefix: '/api/v1/apphub',  label: 'APP' },
   superai: { name: 'tech-superai', port: 8601, apiPrefix: '/api/v1/superai', label: 'SUPERAI' },
+  copilot: { name: 'mate-app-copilot', port: 8601, apiPrefix: '/api/v1/copilot', label: 'COPILOT' },
   mcp:     { name: 'tech-mcp',     port: 8105, apiPrefix: '/api/v1/mcp',     label: 'MCP' },
   rag:     { name: 'tech-rag',     port: 8901, apiPrefix: '/api/v1/rag',     label: 'RAG' },
   ont:     { name: 'tech-ont',     port: 8301, apiPrefix: '/api/v1/ont',     label: 'ONT' },
   wfe:     { name: 'tech-wfe',     port: 8311, apiPrefix: '/api/v1/wfe',     label: 'WFE' },
   ea:      { name: 'tech-ea',      port: 8321, apiPrefix: '/api/v1/ea',      label: 'EA' },
+  arch:    { name: 'mate-app-arch', port: 8321, apiPrefix: '/api/v1/arch',  label: 'ARCH' },
   rule:    { name: 'tech-rule',    port: 8331, apiPrefix: '/api/v1/rule',    label: 'RULE' },
   action:  { name: 'tech-action',  port: 8341, apiPrefix: '/api/v1/action',  label: 'ACTION' },
   data:    { name: 'mate-data',    port: 8701, apiPrefix: '/api/v1/data',    label: 'DATA' },

@@ -1,6 +1,6 @@
 import { createApiClient, apiPath } from '@mate/shared/api';
 
-const client = createApiClient({ baseURL: apiPath('superai', '/v1') });
+const client = createApiClient({ baseURL: apiPath('copilot', '') });
 const data = <T>(resp: { data: T }): T => resp.data;
 async function get<T>(url: string, params?: Record<string, unknown>): Promise<T> { return data(await client.get<T>(url, params ? { params } : undefined)); }
 async function post<T>(url: string, body?: unknown): Promise<T> { return data(await client.post<T>(url, body)); }
@@ -27,31 +27,31 @@ export async function listConversations(params?: {
   favorite?: boolean;
   mode?: ChatMode;
 }): Promise<Conversation[]> {
-  const res = await get<PageResult<Conversation>>('/v1/copilot/conversations', params as Record<string, unknown> | undefined);
+  const res = await get<PageResult<Conversation>>('/conversations', params as Record<string, unknown> | undefined);
   return res?.items ?? [];
 }
 export async function createConversation(request: ConversationCreateRequest): Promise<Conversation> {
-  return post<Conversation>('/v1/copilot/conversations', {
+  return post<Conversation>('/conversations', {
     agentId: 'default',
     title: request.title,
     mode: request.mode,
   });
 }
 export async function getConversation(id: string): Promise<Conversation> {
-  return get<Conversation>(`/v1/copilot/conversations/${id}`);
+  return get<Conversation>(`/conversations/${id}`);
 }
 export async function deleteConversation(id: string): Promise<void> {
-  await del<void>(`/v1/copilot/conversations/${id}`);
+  await del<void>(`/conversations/${id}`);
 }
 export async function toggleFavorite(id: string): Promise<Conversation> {
-  return post<Conversation>(`/v1/copilot/conversations/${id}/favorite`);
+  return post<Conversation>(`/conversations/${id}/favorite`);
 }
 export async function getHistory(
   id: string,
   params?: { page?: number; pageSize?: number },
 ): Promise<ConversationMessage[]> {
   const res = await get<PageResult<ConversationMessage>>(
-    `/v1/copilot/conversations/${id}/messages`,
+    `/conversations/${id}/messages`,
     params as Record<string, unknown> | undefined,
   );
   return res?.items ?? [];

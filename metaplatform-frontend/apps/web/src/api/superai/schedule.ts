@@ -1,6 +1,6 @@
 import { createApiClient, apiPath } from '@mate/shared/api';
 
-const client = createApiClient({ baseURL: apiPath('superai', '/v1') });
+const client = createApiClient({ baseURL: apiPath('copilot', '') });
 const data = <T>(resp: { data: T }): T => resp.data;
 async function get<T>(url: string, params?: Record<string, unknown>): Promise<T> { return data(await client.get<T>(url, params ? { params } : undefined)); }
 async function post<T>(url: string, body?: unknown): Promise<T> { return data(await client.post<T>(url, body)); }
@@ -58,26 +58,26 @@ export interface ScheduleExecution {
   finalReport?: string;
 }
 export async function detectIntent(text: string): Promise<ScheduleIntent> {
-  return post<ScheduleIntent>('/v1/copilot/scheduling/intent/detect', { text });
+  return post<ScheduleIntent>('/scheduling/intent/detect', { text });
 }
 export async function matchEmployees(intent: string): Promise<Array<{ employeeId: string; name: string; confidence: number }>> {
-  return post<Array<{ employeeId: string; name: string; confidence: number }>>('/v1/copilot/scheduling/employees/match', { intent });
+  return post<Array<{ employeeId: string; name: string; confidence: number }>>('/scheduling/employees/match', { intent });
 }
 export async function generatePlan(intentId: string): Promise<ExecutionPlan> {
-  return post<ExecutionPlan>('/v1/copilot/scheduling/plan/generate', { intentId });
+  return post<ExecutionPlan>('/scheduling/plan/generate', { intentId });
 }
 export async function startExecution(planId: string): Promise<ScheduleExecution> {
-  return post<ScheduleExecution>('/v1/copilot/scheduling/execution/start', { planId });
+  return post<ScheduleExecution>('/scheduling/execution/start', { planId });
 }
 export async function aggregateResults(executionId: string): Promise<string> {
-  return get<string>(`/v1/copilot/scheduling/execution/${executionId}/report`);
+  return get<string>(`/scheduling/execution/${executionId}/report`);
 }
 export async function listIntentHistory(): Promise<ScheduleIntent[]> {
-  return get<ScheduleIntent[]>('/v1/copilot/scheduling/intents');
+  return get<ScheduleIntent[]>('/scheduling/intents');
 }
 export async function listTemplates(): Promise<ScheduleTemplate[]> {
-  return get<ScheduleTemplate[]>('/v1/copilot/scheduling/templates');
+  return get<ScheduleTemplate[]>('/scheduling/templates');
 }
 export async function createTemplate(req: Omit<ScheduleTemplate, 'templateId' | 'createdAt'>): Promise<ScheduleTemplate> {
-  return post<ScheduleTemplate>('/v1/copilot/scheduling/templates', req);
+  return post<ScheduleTemplate>('/scheduling/templates', req);
 }

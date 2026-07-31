@@ -1,6 +1,6 @@
 import { createApiClient, apiPath } from '@mate/shared/api';
 
-const client = createApiClient({ baseURL: apiPath('apphub', '/v1') });
+const client = createApiClient({ baseURL: apiPath('apphub', '') });
 const data = <T>(resp: { data: T }): T => resp.data;
 async function get<T>(url: string, params?: Record<string, unknown>): Promise<T> {
   return data(await client.get<T>(url, params ? { params } : undefined));
@@ -67,22 +67,22 @@ export async function listReleases(
   page = 1,
   size = 20,
 ): Promise<PageResponse<ReleaseRecord>> {
-  return get<PageResponse<ReleaseRecord>>(`/v1/apphub/apps/${appId}/releases`, { page, size });
+  return get<PageResponse<ReleaseRecord>>(`/apps/${appId}/releases`, { page, size });
 }
 
 export async function createRelease(
   appId: string,
   req: CreateReleaseRequest,
 ): Promise<ReleaseRecord> {
-  return post<ReleaseRecord>(`/v1/apphub/apps/${appId}/releases`, req);
+  return post<ReleaseRecord>(`/apps/${appId}/releases`, req);
 }
 
 export async function getRelease(releaseId: string): Promise<ReleaseRecord> {
-  return get<ReleaseRecord>(`/v1/apphub/releases/${releaseId}`);
+  return get<ReleaseRecord>(`/releases/${releaseId}`);
 }
 
 export async function getReleaseLogs(releaseId: string): Promise<ReleaseLog[]> {
-  return get<ReleaseLog[]>(`/v1/apphub/releases/${releaseId}/logs`);
+  return get<ReleaseLog[]>(`/releases/${releaseId}/logs`);
 }
 
 export async function getReleaseTasks(processInstanceId: string): Promise<ReleaseTask[]> {

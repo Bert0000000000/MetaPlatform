@@ -1,6 +1,6 @@
 import { createApiClient, apiPath } from '@mate/shared/api';
 
-const client = createApiClient({ baseURL: apiPath('ea', '/v1') });
+const client = createApiClient({ baseURL: apiPath('arch', '') });
 const data = <T>(resp: { data: T }): T => resp.data;
 async function get<T>(url: string, params?: Record<string, unknown>): Promise<T> { return data(await client.get<T>(url, params ? { params } : undefined)); }
 async function post<T>(url: string, body?: unknown): Promise<T> { return data(await client.post<T>(url, body)); }
@@ -10,85 +10,85 @@ async function del<T>(url: string): Promise<T> { return data(await client.delete
 import type { DataDomain, DataEntity, DataFlow, DataStandard, DataAsset, DataAssetCatalog } from './types';
 
 export async function listDomains(): Promise<DataDomain[]> {
-  return get<DataDomain[]>('/v1/ea/data/domains');
+  return get<DataDomain[]>('/data/domains');
 }
 
 export async function createDomain(req: Partial<DataDomain>): Promise<DataDomain> {
-  return post<DataDomain>('/v1/ea/data/domains', req);
+  return post<DataDomain>('/data/domains', req);
 }
 
 export async function deleteDomain(id: string): Promise<void> {
-  await del<void>(`/v1/ea/data/domains/${id}`);
+  await del<void>(`/data/domains/${id}`);
 }
 
 export async function listEntities(domainId?: string): Promise<DataEntity[]> {
-  return get<DataEntity[]>('/v1/ea/data-entities', { domainId });
+  return get<DataEntity[]>('/data-entities', { domainId });
 }
 
 export async function getEntity(id: string): Promise<DataEntity> {
-  return get<DataEntity>(`/v1/ea/data-entities/${id}`);
+  return get<DataEntity>(`/data-entities/${id}`);
 }
 
 export async function createEntity(req: Partial<DataEntity>): Promise<DataEntity> {
-  return post<DataEntity>('/v1/ea/data-entities', req);
+  return post<DataEntity>('/data-entities', req);
 }
 
 export async function updateEntity(id: string, req: Partial<DataEntity>): Promise<DataEntity> {
-  return put<DataEntity>(`/v1/ea/data-entities/${id}`, req);
+  return put<DataEntity>(`/data-entities/${id}`, req);
 }
 
 export async function deleteEntity(id: string): Promise<void> {
-  await del<void>(`/v1/ea/data-entities/${id}`);
+  await del<void>(`/data-entities/${id}`);
 }
 
 export async function listFlows(): Promise<DataFlow[]> {
-  return get<DataFlow[]>('/v1/ea/data-flows');
+  return get<DataFlow[]>('/data-flows');
 }
 
 export async function createFlow(req: Partial<DataFlow>): Promise<DataFlow> {
-  return post<DataFlow>('/v1/ea/data-flows', req);
+  return post<DataFlow>('/data-flows', req);
 }
 
 export async function updateFlow(id: string, req: Partial<DataFlow>): Promise<DataFlow> {
-  return put<DataFlow>(`/v1/ea/data-flows/${id}`, req);
+  return put<DataFlow>(`/data-flows/${id}`, req);
 }
 
 export async function deleteFlow(id: string): Promise<void> {
-  await del<void>(`/v1/ea/data-flows/${id}`);
+  await del<void>(`/data-flows/${id}`);
 }
 
 export async function listStandards(): Promise<DataStandard[]> {
-  return get<DataStandard[]>('/v1/ea/data-standards');
+  return get<DataStandard[]>('/data-standards');
 }
 
 export async function createStandard(req: Partial<DataStandard>): Promise<DataStandard> {
-  return post<DataStandard>('/v1/ea/data-standards', req);
+  return post<DataStandard>('/data-standards', req);
 }
 
 export async function updateStandard(id: string, req: Partial<DataStandard>): Promise<DataStandard> {
-  return put<DataStandard>(`/v1/ea/data-standards/${id}`, req);
+  return put<DataStandard>(`/data-standards/${id}`, req);
 }
 
 export async function deleteStandard(id: string): Promise<void> {
-  await del<void>(`/v1/ea/data-standards/${id}`);
+  await del<void>(`/data-standards/${id}`);
 }
 
 export async function listAssets(params?: { keyword?: string; assetType?: string; classification?: string }): Promise<DataAsset[]> {
-  return get<DataAsset[]>('/v1/ea/data-assets', params);
+  return get<DataAsset[]>('/data-assets', params);
 }
 
 export async function getAssetCatalog(groupBy?: string): Promise<DataAssetCatalog> {
-  return get<DataAssetCatalog>('/v1/ea/data-assets/catalog', { groupBy });
+  return get<DataAssetCatalog>('/data-assets/catalog', { groupBy });
 }
 
 export async function createAsset(req: Partial<DataAsset>): Promise<DataAsset> {
-  return post<DataAsset>('/v1/ea/data-assets', req);
+  return post<DataAsset>('/data-assets', req);
 }
 
 export async function updateAsset(id: string, req: Partial<DataAsset>): Promise<DataAsset> {
-  return put<DataAsset>(`/v1/ea/data-assets/${id}`, req);
+  return put<DataAsset>(`/data-assets/${id}`, req);
 }
 
 export async function deleteAsset(id: string): Promise<void> {
-  await del<void>(`/v1/ea/data-assets/${id}`);
+  await del<void>(`/data-assets/${id}`);
 }

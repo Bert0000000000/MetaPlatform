@@ -1,6 +1,6 @@
 import { createApiClient, apiPath } from '@mate/shared/api';
 
-const client = createApiClient({ baseURL: apiPath('apphub', '/v1') });
+const client = createApiClient({ baseURL: apiPath('apphub', '') });
 const data = <T>(resp: { data: T }): T => resp.data;
 async function get<T>(url: string, params?: Record<string, unknown>): Promise<T> {
   return data(await client.get<T>(url, params ? { params } : undefined));
@@ -36,6 +36,6 @@ export async function publishFlow(moduleId: string, config: FlowConfig): Promise
 }
 
 export async function listFormModules(appId: string): Promise<ModuleItem[]> {
-  const res = await get<PageResponse<ModuleItem>>('/v1/apphub/modules', { appId, type: 'FORM' });
+  const res = await get<PageResponse<ModuleItem>>('/modules', { appId, type: 'FORM' });
   return res.items;
 }

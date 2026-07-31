@@ -1,6 +1,6 @@
 import { createApiClient, apiPath } from '@mate/shared/api';
 
-const client = createApiClient({ baseURL: apiPath('superai', '/v1') });
+const client = createApiClient({ baseURL: apiPath('copilot', '') });
 const data = <T>(resp: { data: T }): T => resp.data;
 async function get<T>(url: string, params?: Record<string, unknown>): Promise<T> { return data(await client.get<T>(url, params ? { params } : undefined)); }
 async function post<T>(url: string, body?: unknown): Promise<T> { return data(await client.post<T>(url, body)); }
@@ -29,23 +29,23 @@ import type {
 // ----------------------------------------------------------- form / process
 // (unchanged endpoints — kept for backward compatibility with P2-SAI-13~17)
 export async function generateForm(description: string): Promise<FormGenResult> {
-  return post<FormGenResult>('/v1/copilot/generate/form', { description });
+  return post<FormGenResult>('/generate/form', { description });
 }
 export async function generateProcess(description: string): Promise<ProcessGenResult> {
-  return post<ProcessGenResult>('/v1/copilot/generate/process', { description });
+  return post<ProcessGenResult>('/generate/process', { description });
 }
 export async function explainCode(code: string): Promise<GeneratedConfig> {
-  return post<GeneratedConfig>('/v1/copilot/generate/explain-code', { code });
+  return post<GeneratedConfig>('/generate/explain-code', { code });
 }
 export async function reviewCode(code: string): Promise<CodeReviewResult> {
-  return post<CodeReviewResult>('/v1/copilot/generate/review-code', { code });
+  return post<CodeReviewResult>('/generate/review-code', { code });
 }
 export async function generateDashboard(description: string): Promise<DashboardGenResult> {
-  return post<DashboardGenResult>('/v1/copilot/generate/dashboard', { description });
+  return post<DashboardGenResult>('/generate/dashboard', { description });
 }
 // ----------------------------------------------------- V12-02 code workspace
 // All code-related endpoints are mounted under /v1/copilot/code/* on APP-COPILOT.
-const CODE_BASE = '/v1/copilot/code';
+const CODE_BASE = '/code';
 // REQ-038 — natural-language -> code
 export async function generateCode(
   description: string,

@@ -1,6 +1,6 @@
 import { createApiClient, apiPath } from '@mate/shared/api';
 
-const client = createApiClient({ baseURL: apiPath('dashboard', '/v1') });
+const client = createApiClient({ baseURL: apiPath('dashboard', '') });
 const data = <T>(resp: { data: T }): T => resp.data;
 async function get<T>(url: string, params?: Record<string, unknown>): Promise<T> {
   return data(await client.get<T>(url, params ? { params } : undefined));
@@ -44,6 +44,6 @@ function mapAgent(item: AgentResponse): WorkerStatus {
 }
 
 export async function getEmployeeStatus(): Promise<WorkerStatus[]> {
-  const agents = await get<AgentResponse[]>('/v1/dashboard/workers');
+  const agents = await get<AgentResponse[]>('/workers');
   return Array.isArray(agents) ? agents.map(mapAgent) : [];
 }

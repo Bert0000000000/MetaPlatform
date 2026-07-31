@@ -1,6 +1,6 @@
 import { createApiClient, apiPath } from '@mate/shared/api';
 
-const client = createApiClient({ baseURL: apiPath('apphub', '/v1') });
+const client = createApiClient({ baseURL: apiPath('apphub', '') });
 const data = <T>(resp: { data: T }): T => resp.data;
 async function get<T>(url: string, params?: Record<string, unknown>): Promise<T> {
   return data(await client.get<T>(url, params ? { params } : undefined));
@@ -45,15 +45,15 @@ export async function listTemplates(params?: {
   keyword?: string;
   category?: string;
 }): Promise<TemplateItem[]> {
-  return get<TemplateItem[]>('/v1/apphub/templates', params as Record<string, unknown> | undefined);
+  return get<TemplateItem[]>('/templates', params as Record<string, unknown> | undefined);
 }
 
 export async function getTemplate(id: string): Promise<TemplateItem> {
-  return get<TemplateItem>(`/v1/apphub/templates/${id}`);
+  return get<TemplateItem>(`/templates/${id}`);
 }
 
 export async function installTemplate(id: string): Promise<{ success: boolean; appId?: string }> {
-  return post<{ success: boolean; appId?: string }>(`/v1/apphub/templates/${id}/install`);
+  return post<{ success: boolean; appId?: string }>(`/templates/${id}/install`);
 }
 
 export async function listTemplateComments(
@@ -61,7 +61,7 @@ export async function listTemplateComments(
   params?: { page?: number; size?: number },
 ): Promise<TemplateComment[]> {
   return get<TemplateComment[]>(
-    `/v1/apphub/templates/${id}/comments`,
+    `/templates/${id}/comments`,
     params as Record<string, unknown> | undefined,
   );
 }
@@ -70,5 +70,5 @@ export async function addTemplateComment(
   id: string,
   req: TemplateCommentRequest,
 ): Promise<TemplateComment> {
-  return post<TemplateComment>(`/v1/apphub/templates/${id}/comments`, req);
+  return post<TemplateComment>(`/templates/${id}/comments`, req);
 }

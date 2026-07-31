@@ -1,6 +1,6 @@
 import { createApiClient, apiPath } from '@mate/shared/api';
 
-const client = createApiClient({ baseURL: apiPath('apphub', '/v1') });
+const client = createApiClient({ baseURL: apiPath('apphub', '') });
 const data = <T>(resp: { data: T }): T => resp.data;
 async function get<T>(url: string, params?: Record<string, unknown>): Promise<T> {
   return data(await client.get<T>(url, params ? { params } : undefined));
@@ -62,17 +62,17 @@ export interface PageDesignerConfig {
 }
 
 export async function getPage(id: string): Promise<PageDesignerConfig> {
-  return get<PageDesignerConfig>(`/v1/apphub/pages/${id}`);
+  return get<PageDesignerConfig>(`/pages/${id}`);
 }
 
 export async function savePage(id: string, config: PageDesignerConfig): Promise<PageDesignerConfig> {
-  return put<PageDesignerConfig>(`/v1/apphub/pages/${id}`, config);
+  return put<PageDesignerConfig>(`/pages/${id}`, config);
 }
 
 export async function deletePage(id: string): Promise<void> {
-  return del<void>(`/v1/apphub/pages/${id}`);
+  return del<void>(`/pages/${id}`);
 }
 
 export async function listPages(): Promise<PageResponse<{ id: string; name: string }>> {
-  return get<PageResponse<{ id: string; name: string }>>('/v1/apphub/pages');
+  return get<PageResponse<{ id: string; name: string }>>('/pages');
 }

@@ -1,6 +1,6 @@
 import { createApiClient, apiPath } from '@mate/shared/api';
 
-const client = createApiClient({ baseURL: apiPath('apphub', '/v1') });
+const client = createApiClient({ baseURL: apiPath('apphub', '') });
 const data = <T>(resp: { data: T }): T => resp.data;
 async function get<T>(url: string, params?: Record<string, unknown>): Promise<T> {
   return data(await client.get<T>(url, params ? { params } : undefined));
@@ -36,27 +36,27 @@ export interface AppVersionCreateRequest {
 }
 
 export async function listVersions(appId: string): Promise<PageResponse<AppVersion>> {
-  return get<PageResponse<AppVersion>>(`/v1/apphub/apps/${appId}/versions`);
+  return get<PageResponse<AppVersion>>(`/apps/${appId}/versions`);
 }
 
 export async function getVersion(versionId: string): Promise<AppVersion> {
-  return get<AppVersion>(`/v1/apphub/versions/${versionId}`);
+  return get<AppVersion>(`/versions/${versionId}`);
 }
 
 export async function createVersion(req: AppVersionCreateRequest): Promise<AppVersion> {
-  return post<AppVersion>(`/v1/apphub/apps/${req.appId}/versions`, req);
+  return post<AppVersion>(`/apps/${req.appId}/versions`, req);
 }
 
 export async function publishVersion(versionId: string): Promise<AppVersion> {
-  return post<AppVersion>(`/v1/apphub/versions/${versionId}/publish`);
+  return post<AppVersion>(`/versions/${versionId}/publish`);
 }
 
 export async function rollbackVersion(versionId: string): Promise<AppVersion> {
-  return post<AppVersion>(`/v1/apphub/versions/${versionId}/rollback`);
+  return post<AppVersion>(`/versions/${versionId}/rollback`);
 }
 
 export async function deleteVersion(versionId: string): Promise<void> {
-  return del<void>(`/v1/apphub/versions/${versionId}`);
+  return del<void>(`/versions/${versionId}`);
 }
 
 export async function compareVersions(

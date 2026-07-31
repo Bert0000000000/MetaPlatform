@@ -1,6 +1,6 @@
 import { createApiClient, apiPath } from '@mate/shared/api';
 
-const client = createApiClient({ baseURL: apiPath('llmgw', '/v1') });
+const client = createApiClient({ baseURL: apiPath('llmgw', '') });
 const data = <T>(resp: { data: T }): T => resp.data;
 
 
@@ -24,6 +24,6 @@ export interface ChatCompletionResponse {
 }
 
 export async function chatCompletions(req: ChatCompletionRequest): Promise<ChatCompletionResponse> {
-  const response = await client.post('/v1/llmgw/chat/completions', req);
+  const response = await client.post('/chat/completions', req);
   return response.data as ChatCompletionResponse;
 }

@@ -1,6 +1,6 @@
 import { createApiClient, apiPath } from '@mate/shared/api';
 
-const client = createApiClient({ baseURL: apiPath('dashboard', '/v1') });
+const client = createApiClient({ baseURL: apiPath('dashboard', '') });
 const data = <T>(resp: { data: T }): T => resp.data;
 async function get<T>(url: string, params?: Record<string, unknown>): Promise<T> {
   return data(await client.get<T>(url, params ? { params } : undefined));
@@ -64,17 +64,17 @@ function getUserId(): string | undefined {
 export async function getPendingTasks(): Promise<PageResponse<ApprovalTask>> {
   const userId = getUserId();
   if (!userId) return emptyPage();
-  const page = await get<WfePageResponse<TaskResponse>>('/v1/dashboard/todos', { userId, page: 1, size: 20 });
+  const page = await get<WfePageResponse<TaskResponse>>('/todos', { userId, page: 1, size: 20 });
   return { ...page, items: page.items.map(mapTask) };
 }
 
 export async function getCompletedTasks(): Promise<PageResponse<ApprovalTask>> {
   const userId = getUserId();
   if (!userId) return emptyPage();
-  const page = await get<WfePageResponse<TaskResponse>>('/v1/dashboard/todos/done', { userId, page: 1, size: 20 });
+  const page = await get<WfePageResponse<TaskResponse>>('/todos/done', { userId, page: 1, size: 20 });
   return { ...page, items: page.items.map(mapTask) };
 }
 
 export async function completeTask(taskId: string, action: 'approve' | 'reject', comment: string): Promise<void> {
-  await post(`/v1/dashboard/todos/${taskId}/action`, { action, comment });
+  await post(`/todos/${taskId}/action`, { action, comment });
 }
