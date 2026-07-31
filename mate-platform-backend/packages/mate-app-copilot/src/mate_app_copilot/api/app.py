@@ -1,0 +1,565 @@
+"""FastAPI router exposing the copilot endpoints (FR-COPILOT-001..033).
+
+33 endpoints under `/api/v1/copilot/*`. Every handler enforces
+ADR-0014 step 2 (`require_tenant(ctx)`) before touching the
+repository, except `/auth/login` which sits behind an anonymous path.
+
+Write handlers emit `<domain>.<aggregate>.<verb>` outbox events via
+`app.state.outbox_writer` (ADR-0014 step 3).
+"""
+from __future__ import annotations
+
+import re
+import time
+import uuid
+from dataclasses import asdict
+from typing import Any
+
+import sqlparse
+from fastapi import APIRouter, HTTPException, Query, Request
+from fastapi.responses import JSONResponse
+
+from mate_platform.messaging.events import Event
+from mate_platform.messaging.outbox import InMemoryOutboxWriter
+from mate_platform.tenancy.context import TenantId
+from mate_platform.tenancy.guards import require_tenant
+
+from ..llm import stub_provider
+from ..repositories import (
+    AssetRecord,
+    list_actions,
+    list_conversations,
+    list_datasources,
+    list_intents,
+    list_knowledge_bases,
+    list_models,
+    list_plans,
+    list_queries,
+    put_asset,
+)
+
+router = APIRouter(prefix="/api/v1/copilot", tags=["copilot"])
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+def _tid(request: Request) -> str:
+    ctx = request.state.ctx
+    return str(require_tenant(ctx))
+
+
+def _emit(
+    request: Request,
+    event_type: str,
+    aggregate_id: str,
+    payload: dict[str, Any],
+    tenant_id: str,
+) -> None:
+    """Append an outbox event if a writer is configured (no-op otherwise)."""
+    writer: InMemoryOutboxWriter | None = getattr(
+        request.app.state, "outbox_writer", None
+    )
+    if writer is None:
+        return
+    writer.append(
+        Event.create(
+            type=event_type,
+            tenant_id=TenantId(tenant_id),
+            aggregate_id=aggregate_id,
+            payload=payload,
+            trace_id=getattr(request.state.ctx, "trace_id", ""),
+        )
+    )
+
+
+def _serialize(rows: list[Any]) -> list[dict[str, Any]]:
+    return [asdict(r) for r in rows]
+
+
+def _resp(rows: list[Any]) -> dict[str, Any]:
+    items = _serialize(rows)
+    return {"items": items, "total": len(items)}
+
+
+# --- Root (1) ---------------------------------------------------------------
+@router.get("")
+async def get_root(request: Request) -> dict[str, Any]:
+    _tid(request)
+    return {
+        "service": "mate-app-copilot",
+        "version": "0.1.0",
+        "endpoints": 33,
+    }
+
+
+# --- Auth (1) ---------------------------------------------------------------
+@router.post("/auth/login")
+async def auth_login(request: Request) -> dict[str, Any]:
+    # Anonymous path — do NOT call require_tenant here.
+    ts = int(time.time())
+    return {
+        "access_token": f"stub-copilot-{ts}",
+        "token_type": "Bearer",
+        "expires_in": 3600,
+        "user": {"id": "u-copilot", "name": "copilot-user", "role": "analyst"},
+    }
+
+
+# --- A2A (2) ----------------------------------------------------------------
+@router.post("/a2a/delegate")
+async def a2a_delegate(request: Request) -> JSONResponse:
+    _tid(request)
+    return JSONResponse(
+        status_code=501,
+        content={"error": "mate-app-a2a pending", "code": "E_NOT_IMPLEMENTED"},
+    )
+
+
+@router.get("/a2a/external")
+async def a2a_external(request: Request) -> JSONResponse:
+    _tid(request)
+    return JSONResponse(
+        status_code=501,
+        content={"error": "mate-app-a2a pending", "code": "E_NOT_IMPLEMENTED"},
+    )
+
+
+# --- Actions (3) ------------------------------------------------------------
+@router.get("/actions")
+async def get_actions(
+    request: Request,
+    keyword: str | None = Query(default=None),
+) -> dict[str, Any]:
+    tid = _tid(request)
+    items = list_actions(tid)
+    if keyword:
+        kw = keyword.lower()
+        items = [a for a in items if kw in a.name.lower() or any(kw in k for k in a.keywords)]
+    return _resp(items)
+
+
+@router.post("/actions/match")
+async def match_actions(request: Request, body: dict[str, Any]) -> dict[str, Any]:
+    tid = _tid(request)
+    context = str(body.get("context", ""))
+    ctx_lower = context.lower()
+    actions = list_actions(tid)
+    matched = [
+        a for a in actions
+        if any(k in ctx_lower for k in a.keywords) or a.name.lower() in ctx_lower
+    ]
+    return {"matched": _serialize(matched), "total": len(matched)}
+
+
+@router.post("/actions/{action_id}/execute")
+async def execute_action(
+    request: Request, action_id: str, body: dict[str, Any],
+) -> dict[str, Any]:
+    tid = _tid(request)
+    actions = list_actions(tid)
+    target = next((a for a in actions if a.id == action_id), None)
+    if target is None:
+        raise HTTPException(status_code=404, detail="action not found")
+    params = body.get("params", {})
+    result_id = f"res-{uuid.uuid4().hex[:8]}"
+    _emit(
+        request,
+        "copilot.action.executed",
+        action_id,
+        {"action_id": action_id, "result_id": result_id, "params": params},
+        tid,
+    )
+    return {
+        "action_id": action_id,
+        "result_id": result_id,
+        "status": "completed",
+        "output": {"params": params},
+    }
+
+
+# --- Analysis SQL Copilot (4) ----------------------------------------------
+@router.get("/analysis/explain-sql")
+async def explain_sql(
+    request: Request,
+    sql: str = Query(...),
+) -> dict[str, Any]:
+    _tid(request)
+    parsed = sqlparse.parse(sql)
+    stmt = parsed[0] if parsed else None
+    tables: list[str] = []
+    columns: list[str] = []
+    if stmt is not None:
+        text = str(stmt)
+        # crude table extraction after FROM / JOIN
+        for match in re.findall(r"(?:FROM|JOIN)\s+([A-Za-z_][\w]*)", text, re.IGNORECASE):
+            if match.lower() not in [t.lower() for t in tables]:
+                tables.append(match)
+        # crude column extraction between SELECT and FROM
+        sel = re.search(r"SELECT\s+(.*?)\s+FROM", text, re.IGNORECASE | re.DOTALL)
+        if sel:
+            for raw in sel.group(1).split(","):
+                name = raw.strip().split()[-1].strip("`\"'")
+                if name != "*":
+                    columns.append(name)
+    return {
+        "tables": tables,
+        "columns": columns,
+        "explanation": f"Parsed {len(parsed)} statement(s); operation "
+        f"'{stmt.get_type() if stmt else 'unknown'}'.",
+    }
+
+
+@router.post("/analysis/audit-sql")
+async def audit_sql(request: Request, body: dict[str, Any]) -> dict[str, Any]:
+    tid = _tid(request)
+    sql = str(body.get("sql", ""))
+    sqlparse.parse(sql)  # validate parseable
+    issues: list[str] = []
+    risk_level = "low"
+    sql_upper = sql.strip().upper()
+    if "SELECT *" in sql_upper:
+        issues.append("SELECT * is discouraged; specify explicit columns")
+        risk_level = "medium"
+    if re.match(r"\s*DELETE\b", sql_upper, re.IGNORECASE) and "WHERE" not in sql_upper:
+        issues.append("DELETE without WHERE clause is dangerous")
+        risk_level = "high"
+    if re.match(r"\s*(UPDATE|DROP|TRUNCATE)\b", sql_upper, re.IGNORECASE) and "WHERE" not in sql_upper:
+        issues.append("Destructive statement without WHERE clause")
+        risk_level = "high"
+    _emit(
+        request,
+        "copilot.sql.audited",
+        "audit",
+        {"sql": sql, "risk_level": risk_level, "issues": issues},
+        tid,
+    )
+    return {"risk_level": risk_level, "issues": issues}
+
+
+@router.post("/analysis/execute-sql")
+async def execute_sql(request: Request, body: dict[str, Any]) -> dict[str, Any]:
+    tid = _tid(request)
+    sql = str(body.get("sql", ""))
+    sql_stripped = sql.strip()
+    if not sql_stripped.upper().startswith("SELECT"):
+        raise HTTPException(
+            status_code=403,
+            detail="Only SELECT statements are allowed in dry-run mode",
+        )
+    parsed = sqlparse.parse(sql)
+    columns: list[str] = []
+    if parsed:
+        sel = re.search(r"SELECT\s+(.*?)\s+FROM", sql, re.IGNORECASE | re.DOTALL)
+        if sel:
+            for raw in sel.group(1).split(","):
+                name = raw.strip().split()[-1].strip("`\"'")
+                if name != "*":
+                    columns.append(name)
+    _emit(
+        request,
+        "copilot.query.executed",
+        "dry-run",
+        {"sql": sql, "columns": columns},
+        tid,
+    )
+    return {"rows": 0, "columns": columns}
+
+
+@router.post("/analysis/generate-sql")
+async def generate_sql(request: Request, body: dict[str, Any]) -> dict[str, Any]:
+    _tid(request)
+    prompt = str(body.get("prompt", ""))
+    tables = body.get("tables", [])
+    if not isinstance(tables, list):
+        tables = [str(tables)]
+    tables_str = [str(t) for t in tables]
+    sql = stub_provider.generate_sql(prompt, tables_str)
+    return {"sql": sql}
+
+
+# --- Chat (1) ---------------------------------------------------------------
+@router.post("/chat/multimodal/upload")
+async def multimodal_upload(request: Request, body: dict[str, Any]) -> dict[str, Any]:
+    tid = _tid(request)
+    filename = str(body.get("filename", "asset.bin"))
+    content_type = str(body.get("content_type", "application/octet-stream"))
+    asset_id = f"asset-{uuid.uuid4().hex[:8]}"
+    emb = stub_provider.embeddings([filename])[0]
+    record = AssetRecord(
+        id=asset_id,
+        tenant_id=tid,
+        filename=filename,
+        content_type=content_type,
+        embedding_dim=len(emb),
+    )
+    put_asset(tid, record)
+    _emit(
+        request,
+        "copilot.multimodal.uploaded",
+        asset_id,
+        {"filename": filename, "content_type": content_type},
+        tid,
+    )
+    _emit(
+        request,
+        "copilot.multimodal.indexed",
+        asset_id,
+        {"asset_id": asset_id, "embedding_dim": len(emb)},
+        tid,
+    )
+    return {"asset_id": asset_id, "embedding_dim": len(emb)}
+
+
+# --- Code (1) ---------------------------------------------------------------
+@router.get("/code")
+async def get_code(request: Request) -> dict[str, Any]:
+    _tid(request)
+    return {
+        "language": "python",
+        "framework": "fastapi",
+        "snippet": (
+            "from fastapi import FastAPI\n"
+            "app = FastAPI()\n"
+            "@app.get('/')\n"
+            "async def root():\n"
+            "    return {'hello': 'copilot'}\n"
+        ),
+    }
+
+
+# --- Conversations (1) ------------------------------------------------------
+@router.get("/conversations")
+async def get_conversations(request: Request) -> dict[str, Any]:
+    return _resp(list_conversations(_tid(request)))
+
+
+# --- Datasources (1) --------------------------------------------------------
+@router.get("/datasources")
+async def get_datasources(request: Request) -> dict[str, Any]:
+    return _resp(list_datasources(_tid(request)))
+
+
+# --- Generate (4) -----------------------------------------------------------
+@router.post("/generate/dashboard")
+async def generate_dashboard(request: Request, body: dict[str, Any]) -> dict[str, Any]:
+    _tid(request)
+    name = str(body.get("name", "Untitled Dashboard"))
+    return {
+        "name": name,
+        "layout": "grid",
+        "widgets": [
+            {"type": "metric", "title": "Total Revenue", "position": {"row": 0, "col": 0}},
+            {"type": "chart", "title": "Trend", "position": {"row": 0, "col": 1}},
+        ],
+    }
+
+
+@router.post("/generate/explain-code")
+async def explain_code(request: Request, body: dict[str, Any]) -> dict[str, Any]:
+    _tid(request)
+    code = str(body.get("code", ""))
+    return {"explanation": f"[stub] This code ({len(code)} chars) defines a callable unit."}
+
+
+@router.post("/generate/form")
+async def generate_form(request: Request, body: dict[str, Any]) -> dict[str, Any]:
+    _tid(request)
+    name = str(body.get("name", "Untitled Form"))
+    fields = body.get("fields", [])
+    if not isinstance(fields, list):
+        fields = []
+    return {
+        "name": name,
+        "fields": [
+            {"name": str(f.get("name", f"field-{i}")), "type": str(f.get("type", "text"))}
+            for i, f in enumerate(fields)
+        ],
+    }
+
+
+@router.post("/generate/review-code")
+async def review_code(request: Request, body: dict[str, Any]) -> dict[str, Any]:
+    _tid(request)
+    code = str(body.get("code", ""))
+    issues = ["Consider adding type hints"] if "def " in code else []
+    score = 80 if issues else 95
+    return {"issues": issues, "score": score}
+
+
+# --- Knowledge-bases (1) ----------------------------------------------------
+@router.get("/knowledge-bases")
+async def get_knowledge_bases(request: Request) -> dict[str, Any]:
+    tid = _tid(request)
+    items = list_knowledge_bases(tid)
+    if items:
+        return _resp(items)
+    return {
+        "items": [
+            {"id": "kb-fallback", "name": "Default KB", "doc_count": 0},
+        ],
+        "total": 1,
+    }
+
+
+# --- Models (1) -------------------------------------------------------------
+@router.get("/models/multimodal")
+async def get_multimodal_models(request: Request) -> dict[str, Any]:
+    return _resp(list_models(_tid(request)))
+
+
+# --- Ontology (3) -----------------------------------------------------------
+@router.get("/ontology/concepts/search")
+async def search_concepts(
+    request: Request,
+    keyword: str = Query(...),
+) -> dict[str, Any]:
+    _tid(request)
+    concepts = [
+        {"id": "c-customer", "name": "Customer", "category": "entity"},
+        {"id": "c-contract", "name": "Contract", "category": "entity"},
+        {"id": "a-approve", "name": "Approve", "category": "action"},
+    ]
+    kw = keyword.lower()
+    matched = [c for c in concepts if kw in c["name"].lower()]
+    return {"items": matched, "total": len(matched)}
+
+
+@router.get("/ontology/graph/expand")
+async def expand_graph(
+    request: Request,
+    node_id: str = Query(...),
+) -> dict[str, Any]:
+    _tid(request)
+    return {
+        "nodes": [
+            {"id": node_id, "label": node_id},
+            {"id": f"{node_id}-child", "label": f"{node_id}-child"},
+        ],
+        "edges": [{"source": node_id, "target": f"{node_id}-child", "label": "relates_to"}],
+    }
+
+
+@router.get("/ontology/graph/query")
+async def query_graph(
+    request: Request,
+    cypher: str = Query(default=""),
+) -> dict[str, Any]:
+    _tid(request)
+    return {
+        "nodes": [{"id": "n-1", "label": "Root"}, {"id": "n-2", "label": "Leaf"}],
+        "edges": [{"source": "n-1", "target": "n-2", "label": "contains"}],
+    }
+
+
+# --- Plans (1) --------------------------------------------------------------
+@router.get("/plans")
+async def get_plans(request: Request) -> dict[str, Any]:
+    return _resp(list_plans(_tid(request)))
+
+
+# --- Queries (2) ------------------------------------------------------------
+@router.post("/queries/execute")
+async def execute_query(request: Request, body: dict[str, Any]) -> dict[str, Any]:
+    tid = _tid(request)
+    sql = str(body.get("sql", ""))
+    datasource_id = str(body.get("datasource_id", "ds-1"))
+    query_id = f"q-{uuid.uuid4().hex[:8]}"
+    _emit(
+        request,
+        "copilot.query.executed",
+        query_id,
+        {"sql": sql, "datasource_id": datasource_id},
+        tid,
+    )
+    return {"query_id": query_id, "rows": [{"id": 1, "result": "dry-run"}]}
+
+
+@router.get("/queries/history")
+async def query_history(request: Request) -> dict[str, Any]:
+    return _resp(list_queries(_tid(request)))
+
+
+# --- Scheduling (5) ---------------------------------------------------------
+@router.get("/scheduling/employees/match")
+async def match_employees(
+    request: Request,
+    task_type: str = Query(...),
+) -> dict[str, Any]:
+    _tid(request)
+    employees = [
+        {"id": "emp-1", "name": "Finance Recon Bot", "skills": ["finance", "reconciliation"]},
+        {"id": "emp-2", "name": "CRM Archivist", "skills": ["crm", "data"]},
+        {"id": "emp-3", "name": "KB Curator", "skills": ["knowledge", "indexing"]},
+    ]
+    tt = task_type.lower()
+    matched = [e for e in employees if any(tt in s for s in e["skills"])]
+    return {"items": matched, "total": len(matched)}
+
+
+@router.post("/scheduling/execution/start")
+async def start_execution(request: Request, body: dict[str, Any]) -> dict[str, Any]:
+    tid = _tid(request)
+    plan_id = str(body.get("plan_id", "plan-1"))
+    execution_id = f"exec-{uuid.uuid4().hex[:8]}"
+    _emit(
+        request,
+        "copilot.scheduling.started",
+        execution_id,
+        {"plan_id": plan_id, "execution_id": execution_id},
+        tid,
+    )
+    return {"execution_id": execution_id, "status": "running"}
+
+
+@router.post("/scheduling/intent/detect")
+async def detect_intent(request: Request, body: dict[str, Any]) -> dict[str, Any]:
+    tid = _tid(request)
+    text = str(body.get("text", ""))
+    text_lower = text.lower()
+    intents = list_intents(tid)
+    best_name = "unknown"
+    best_conf = 0.0
+    for intent in intents:
+        for kw in intent.keywords:
+            if kw in text_lower:
+                best_name = intent.name
+                best_conf = 0.9
+                break
+        if best_conf > 0:
+            break
+    return {"intent": best_name, "confidence": best_conf}
+
+
+@router.get("/scheduling/intents")
+async def get_intents(request: Request) -> dict[str, Any]:
+    return _resp(list_intents(_tid(request)))
+
+
+@router.post("/scheduling/plan/generate")
+async def generate_plan(request: Request, body: dict[str, Any]) -> dict[str, Any]:
+    _tid(request)
+    goal = str(body.get("goal", ""))
+    plan_id = f"plan-{uuid.uuid4().hex[:8]}"
+    steps = [
+        f"Analyze goal: {goal[:40]}",
+        "Gather required data",
+        "Execute primary action",
+        "Verify outcome",
+    ]
+    return {"plan_id": plan_id, "steps": steps}
+
+
+# --- Search (1) -------------------------------------------------------------
+@router.get("/search")
+async def search(
+    request: Request,
+    q: str = Query(...),
+) -> dict[str, Any]:
+    _tid(request)
+    return {
+        "results": [
+            {"id": "r-1", "title": f"Result for '{q}'", "type": "doc", "score": 0.95},
+            {"id": "r-2", "title": f"Related: {q}", "type": "app", "score": 0.72},
+        ],
+    }
