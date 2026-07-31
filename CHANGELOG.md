@@ -5,6 +5,43 @@ All notable changes to the Mate Platform (MetaPlatform) project are documented i
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v3.2] — 2026-07-31
+
+> PERSISTENCE layer. Introduces SQLAlchemy 2.0 ORM across 3 app packages
+> (40 models) + a new infra package `mate-tech-db`. Completes all P2 tech debt
+> including TD-5 (persistence). Copilot handlers fully routed (10/33 LLM
+> endpoints + 4 cross-package data proxies, 0 hardcoded stubs).
+
+### Added
+
+- **`mate-tech-db` (new package)**: SQLAlchemy 2.0 `Base(DeclarativeBase)`, global engine + session factory (`init_engine` / `get_session` / `create_all`), `Repository` protocol, raw SQL DDL migrations for all copilot tables.
+- **Copilot SQL repository**: 10 ORM models (Conversation, QueryLog, Plan, Intent, Action, Datasource, KnowledgeBase, ModelInfo, Template, Asset) + full read/write API + `seed_from_inmemory` bootstrap.
+- **A2A SQL repository**: 5 ORM models (Agent, AgentCapability, DelegationTask, ExternalAgent, TaskResult) + delegation lifecycle CRUD + seed bootstrap.
+- **Arch SQL repository**: 25 ORM models covering all arch domain entities (Application, Capability, DataEntity, DataFlow, DataAsset, Org, Role, BusinessProcess, etc.) + read/write for 5 focus entities + capability tree reconstruction + seed bootstrap.
+- **Backend selection**: `MATE_DB_URL` env var → SQL backend (SQLite/Postgres); absent → in-memory dict (zero-config dev).
+- **Copilot handler upgrades**: 10/33 endpoints now route through `AsyncCopilotClient` (generate-sql, explain-sql, explain-code, review-code, generate-dashboard, multimodal-upload, plan-generate, intent-detect, employees-match, search). 4 ontology/knowledge-base endpoints proxy to `mate_app_arch` repository data. 0 hardcoded stubs remaining.
+- **`list_assets`**: Added to copilot repository read API.
+
+### Changed
+
+- **Copilot `/search`**: Now uses `client.embed()` for semantic asset search (was hardcoded results).
+- **Copilot `/scheduling/intent/detect`**: Now has LLM NLU fallback when keyword matching misses.
+- **Copilot `/scheduling/employees/match`**: Now has LLM fallback for skill matching.
+- **Copilot `/generate/dashboard`**: Now uses `client.chat()` for widget title suggestions.
+- **Import cleanup**: All `mate_app_arch` imports hoisted to top-level in copilot `api/app.py` (0 PLC0415 violations).
+
+### Test metrics
+
+- **216 tests** passing (was 179 in v3.1) — 31 new SQL tests across 3 packages
+- 0 ruff errors
+- 0 pyright errors
+- 0 PR gate violations
+
+### Commits
+
+- `e35c1ecd` feat: v3.2 TD-5 — mate-tech-db + copilot SQL repository POC
+- `b8a9c75a` feat: v3.2 full SQL persistence — 3 packages, 40 ORM models, 216 tests
+
 ## [v3.1] — 2026-07-31
 
 > BUSINESS-SLICES incremental wave (P2-W2 → P2-W4). Adds 4 new Python app
