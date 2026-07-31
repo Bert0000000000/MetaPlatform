@@ -1,6 +1,6 @@
 # Mate Platform 交付项目计划板（Program Board）
 
-> 更新时间：2026-07-30（含 v3.1 增量 sub-batch + PR 治理状态）
+> 更新时间：2026-07-31（含 v3.1 增量 sub-batch + PR 治理状态；P2 W2 Accepted）
 > 本表跟踪各交付批次在契约、代码、测试、运行时和验收证据上的当前状态。
 
 ## v3.0 GA 状态（9/9 核心 + D0-D8 全部 Accepted）
@@ -29,7 +29,7 @@
 | BUSINESS-SLICES P1 W2 | msg / obs（已含 W1 完整接入 + 5 步模式）| `codex/business-slices-w2` | TECH-SERVICES | ✅ Accepted |
 | BUSINESS-SLICES P1 W3 | rag / mcp | `codex/p1-wave3` | TECH-SERVICES | ✅ Accepted |
 | BUSINESS-SLICES P2 W1 | ont（带代码） | `codex/p2-wave` | P1 W3 | ✅ Accepted |
-| **BUSINESS-SLICES P2 W2** | apphub / arch / copilot / dashboard（4 域）| 待开 | P2 W1 | 🔴 Not Started |
+| **BUSINESS-SLICES P2 W2** | dashboard / apphub / arch / copilot（4 域，99 endpoints / 93 tests）| `codex/p2-wave-2` → PR #12 | P2 W1 | ✅ Accepted（2026-07-31，PR #12 合入 main，commit `833a809d`） |
 | **BUSINESS-SLICES P2 W3** | dw / data / a2a / ont / wfe（5 域，需先建包代码） | 待开 | P2 W2 | 🔴 Not Started |
 
 ### In Progress — TECH-SERVICES 16 域接入
@@ -73,6 +73,7 @@ DATA-D0-D8 全部 8 阶段 Accepted（共 45/45 tests pass）。后续 sub-batch
 | PR | 来源 | Commit | 备注 |
 |---|---|---|---|
 | PR-R1 | `refactor/monorepo-shrink-phase-2` | `a00351c3` | CLAUDE.md v3.0 GA + refactor 视角合一（110 行）|
+| PR #12 | `codex/p2-wave-2` | `833a809d` | BUSINESS-SLICES P2 W2：dashboard / apphub / arch / copilot 4 域 · 99 endpoints · 93 tests（2026-07-31）|
 
 ### 评估后归档（不合并 main）
 
@@ -114,6 +115,7 @@ DATA-D0-D8 全部 8 阶段 Accepted（共 45/45 tests pass）。后续 sub-batch
 | BUSINESS-SLICES P1 W2 | 2026-07-30 | `d4dea556` | 同上（v1.1 滚动状态） |
 | BUSINESS-SLICES P1 W3 | 2026-07-30 | `41bef84d` | 同上 |
 | BUSINESS-SLICES P2 W1 | 2026-07-30 | `d452e1ab` | 同上 |
+| BUSINESS-SLICES P2 W2 | 2026-07-31 | `833a809d` | `evidence/P2-W2-ACCEPTANCE.md`（dashboard / apphub / arch / copilot 4 域 · 99 endpoints · 93 tests）|
 | DATA-D0-D8 D0 | 2026-07-30 | `5b925bfe` | `evidence/DATA-D0-D8-D0-ACCEPTANCE.md` |
 | DATA-D0-D8 D1 | 2026-07-30 | `14a7a314` | `evidence/DATA-D0-D8-D1-ACCEPTANCE.md` |
 | DATA-D0-D8 D2+D3 | 2026-07-30 | `820838e2` | `evidence/DATA-D0-D8-D2-D3-ACCEPTANCE.md` |
@@ -127,3 +129,4 @@ DATA-D0-D8 全部 8 阶段 Accepted（共 45/45 tests pass）。后续 sub-batch
 |---|---|---|
 | 2026-07-30 | 初版 v3.0 GA 收口（39 行） | 8/8 核心批次 + D0-D8 全部 Accepted |
 | 2026-07-30 | v3.1 增量 + PR 治理（本文） | 与 git 状态同步；增加 v3.1 sub-batch / GA 收口 / PR 治理 3 个章节 |
+| 2026-07-31 | P2 W2 → Accepted | dashboard / apphub / arch / copilot 4 域 · 99 endpoints · 93 tests · PR #12 `833a809d` |

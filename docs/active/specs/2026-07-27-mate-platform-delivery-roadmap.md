@@ -254,6 +254,7 @@ W1-1 → W2-3 → W3-3 → W4-3 → W5-6 → W5-7 → W5-8 → W7-6
 | 2026-07-27 | v1.0 初稿 | 基于 v3.0 Plan D + tech-stack-confirmed v1.2 |
 | 2026-07-27 | v1.1 | BPMN 升级到 Flowable 8.0（分布式）；W3-4/W3-5 工期调整 |
 | v1.2 | 全文 | 追加附录 A：Data Track（D0–D8），将数据平台作为 v1.0 GA 硬前置 |
+| v1.3 | 追加附录 B | P2 域盘点与实际交付；记录 P2 W2 Accepted（2026-07-31，PR #12 `833a809d`）|
 
 ---
 
@@ -327,6 +328,42 @@ D7 与 W6-2 ontstudio 同步推进；D8 与 W7 蓝绿迁移并行，最终由 D8
 | M5+ | D7–D8 + W7（GA 共同门槛） | 2027-03-15 |
 
 注：以上日期为 Data Squad 并行假设；如只有单团队需重新评估。
+
+## 附录 B：P2 域盘点与实际交付（BUSINESS-SLICES P2 wave）
+
+> v3.1 增量补丁。P2 wave 把 v3.0 GA 收口后「spec 已签 / 无代码」的 P2 域推进到 5 步模式合规 + 全部 spec endpoint 落地。
+> 关联：`2026-07-30-p2-wave-2-spec.md`、`2026-07-30-business-slices-rollout-status.md`、ADR-0014。
+
+### B.1 P2 wave 拆分与状态
+
+| wave | 域 | 状态 |
+|---|---|---|
+| P2 W1 | ont | ✅ Accepted（2026-07-30）|
+| P2 W2 | dashboard / apphub / arch / copilot（4 域）| ✅ Accepted（2026-07-31）|
+| P2 W3 | dw / data / a2a / wfe | 🔴 Not Started |
+
+### B.2 P2 W2 endpoint 盘点
+
+| 域 | spec endpoint | 代码包 |
+|---|---:|---|
+| dashboard | 34 | `mate-tech-iam`（5 步合规补全）|
+| apphub | 5 | `mate-app-hub`（新建）|
+| arch | 27 | `mate-app-arch`（新建）|
+| copilot | 33 | `mate-app-copilot`（新建）|
+| **合计** | **99** | 3 新包 + 1 现有包合规 |
+
+### B.6 实际交付指标（P2 W2）
+
+| 指标 | 实际值 |
+|---|---|
+| 完成日期 | 2026-07-31 |
+| 实际 commits | 8 |
+| 净增 LOC | ~6200 |
+| 净增 tests | +93 |
+| 新增 packages | 3（mate-app-hub / mate-app-arch / mate-app-copilot）|
+| 覆盖 endpoint | 99（dashboard 34 + apphub 5 + arch 27 + copilot 33）|
+| 合入 PR | PR #12 → main（commit `833a809d`）|
+| 验收证据 | `docs/active/delivery/evidence/P2-W2-ACCEPTANCE.md` |
 
 ## 10. 引用
 
