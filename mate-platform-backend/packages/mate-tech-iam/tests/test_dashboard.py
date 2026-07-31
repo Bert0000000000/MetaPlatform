@@ -12,13 +12,12 @@ Refs: ADR-0014 5-step pattern; see
 """
 from __future__ import annotations
 
-from unittest.mock import patch
-
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from mate_tech_iam.api.dashboard import router as dashboard_router
 
+from mate_platform.messaging.outbox import InMemoryOutboxWriter
 from mate_platform.tenancy.context import (
     AuthMethod,
     RequestContext,
@@ -42,16 +41,28 @@ def _ctx(tenant_id: str = "tenant-default") -> RequestContext:
 
 
 @pytest.fixture
-def dashboard_app() -> FastAPI:
+def outbox() -> InMemoryOutboxWriter:
+    """Fresh in-memory outbox per test for assertion against
+    `fetch_pending()`."""
+    return InMemoryOutboxWriter()
+
+
+@pytest.fixture
+def dashboard_app(outbox: InMemoryOutboxWriter) -> FastAPI:
     """Stand-alone FastAPI app that mounts only the dashboard router.
 
     We mount the router directly (no install_auth) and rely on a
     tiny test middleware that injects a stable RequestContext per
     request. This keeps these tests independent of the IAM/Keycloak
     integration status.
+
+    The shared `outbox` fixture is wired onto `app.state.outbox_writer`
+    so write handlers route their `Event` through the real
+    `InMemoryOutboxWriter.append` path (ADR-0014 step 3).
     """
     app = FastAPI(title="dashboard-test")
     app.include_router(dashboard_router)
+    app.state.outbox_writer = outbox
 
     @app.middleware("http")
     async def _inject_ctx(request, call_next):  # type: ignore[no-redef]
@@ -91,29 +102,44 @@ def test_list_notifications_ok(client: TestClient) -> None:
     assert len(items) >= 5  # 5 seeded notifications
 
 
-def test_put_settings_emits_outbox_event(client: TestClient) -> None:
-    """PUT /settings must call `_emit` with the right event type."""
-    import mate_tech_iam.api.dashboard as mod
+def test_put_settings_emits_outbox_event(
+    client: TestClient,
+    outbox: InMemoryOutboxWriter,
+) -> None:
+    """PUT /settings must publish a typed outbox event.
 
-    captured: list[dict] = []
-
-    def fake_emit(request, *, event_type, aggregate_id, payload, tenant_id=""):
-        captured.append({
-            "event_type": event_type,
-            "aggregate_id": aggregate_id,
-            "payload": payload,
-            "tenant_id": tenant_id,
-        })
-
-    with patch.object(mod, "_emit", side_effect=fake_emit):
-        r = client.put(
-            "/api/v1/dashboard/settings",
-            json={"theme": "light"},
-        )
+    Drives the real `InMemoryOutboxWriter.append` path (ADR-0014
+    step 3) — no monkey-patching of `_emit`. The pending records
+    are read back via `fetch_pending()` and asserted on type,
+    tenant_id and payload.
+    """
+    r = client.put(
+        "/api/v1/dashboard/settings",
+        json={"theme": "light"},
+    )
     assert r.status_code == 200, r.text
-    assert captured, "no outbox events were emitted"
-    types = [c["event_type"] for c in captured]
-    assert "dashboard.settings.updated" in types
+
+    pending = outbox.fetch_pending()
+    assert pending, "outbox is empty after PUT /settings"
+
+    types = [record.event.type for record in pending]
+    assert "dashboard.settings.updated" in types, types
+
+    settings_event = next(
+        r for r in pending if r.event.type == "dashboard.settings.updated"
+    )
+    assert settings_event.event.tenant_id == "tenant-default"
+    # The handler uses the caller user id as the aggregate id;
+    # settings is per-user state, not a single canonical row.
+    assert settings_event.event.aggregate_id == "u-1"
+    assert "fields" in settings_event.event.payload
+    # Hard rule 3: every outbox event must carry a non-empty tenant.
+    assert settings_event.event.tenant_id
+    # Event type follows the <domain>.<aggregate>.<verb> convention.
+    assert settings_event.event.type.count(".") >= 2
+    # Records start in pending state (not yet published to Kafka).
+    assert not settings_event.published
+    assert settings_event.attempts == 0
 
 
 def test_search_ok(client: TestClient) -> None:
