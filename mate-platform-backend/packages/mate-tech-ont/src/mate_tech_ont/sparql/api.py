@@ -29,12 +29,12 @@ async def sparql_endpoint(req: SparqlRequest) -> SparqlResponse:
     try:
         parsed = parse_sparql(req.query)
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Parse failed: {e}")
+        raise HTTPException(status_code=400, detail=f"Parse failed: {e}") from e
 
     try:
         cypher = sparql_to_cypher(parsed)
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
     # 实际应调 neo4j — mock 返回空
     bindings = execute_sparql(req.query, neo4j_session=None)

@@ -27,7 +27,7 @@ class VersionStore:
     """版本存储."""
 
     def __init__(self) -> None:
-        # key: (ontology_id, version)
+        # Maps (ontology_id, version) tuples to Version objects.
         self._versions: dict[tuple[str, str], Version] = {}
 
     def create(

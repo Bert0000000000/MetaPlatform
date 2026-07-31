@@ -29,7 +29,7 @@ class TestReExports:
 
     def test_dto_classes_exported(self) -> None:
         # Direct import to catch ImportError if re-exports are missing.
-        from mate_common import BaseDTO, TenantMixin, TimestampMixin  # noqa: PLC0415
+        from mate_common import BaseDTO, TenantMixin, TimestampMixin
 
         assert hasattr(mate_common, "BaseDTO")
         assert hasattr(mate_common, "TenantMixin")
@@ -38,7 +38,7 @@ class TestReExports:
         _ = BaseDTO, TenantMixin, TimestampMixin
 
     def test_exceptions_exported(self) -> None:
-        from mate_common import (  # noqa: PLC0415
+        from mate_common import (
             AuthError,
             ConflictError,
             DomainError,

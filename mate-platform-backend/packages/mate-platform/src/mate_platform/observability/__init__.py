@@ -8,4 +8,12 @@ from .xdomain_audit import (
     emit_cross_domain_query,
 )
 
-__all__ = ["setup_metrics", "setup_tracing"]
+__all__ = [
+    "CrossDomainAuditSink",
+    "CrossDomainQuery",
+    "InMemoryCrossDomainSink",
+    "StdoutCrossDomainSink",
+    "emit_cross_domain_query",
+    "setup_metrics",
+    "setup_tracing",
+]

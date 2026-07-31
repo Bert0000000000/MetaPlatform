@@ -5,8 +5,11 @@ import logging
 import os
 import uuid
 
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import FastAPI, File, HTTPException, Request, UploadFile
 
+# BUSINESS-SLICES P1 wave 3: hooks 1, 2 (auth + tenant).
+from mate_platform.auth import install_auth
+from mate_platform.tenancy.guards import require_tenant
 from mate_tech_rag import __version__
 from mate_tech_rag.api.ingest import ingest
 from mate_tech_rag.api.parse import parse_document
@@ -23,11 +26,6 @@ from mate_tech_rag.api.retrieval import (
     retrieve,
 )
 from mate_tech_rag.api.schemas import (
-
-# BUSINESS-SLICES P1 wave 3: hooks 1, 2 (auth + tenant).
-from fastapi import Request
-from mate_platform.auth import install_auth
-from mate_platform.tenancy.guards import require_tenant
     EmbedderInfo,
     HealthResponse,
     IndexStatus,

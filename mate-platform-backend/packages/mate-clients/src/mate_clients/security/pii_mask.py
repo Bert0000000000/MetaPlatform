@@ -69,7 +69,7 @@ def redact_pii(text: str, *, reversible: bool = False) -> PIIRedactionResult:
     with [REDACTED_<KIND>] for irreversible downstream use.
     """
     if not text:
-        return PIIRedactionResult(redacted=text, matches=tuple(), has_pii=False)
+        return PIIRedactionResult(redacted=text, matches=(), has_pii=False)
     matches: list[PIIMatch] = []
     redacted = text
     for kind, pat in _PATTERNS.items():
@@ -79,8 +79,8 @@ def redact_pii(text: str, *, reversible: bool = False) -> PIIRedactionResult:
             if reversible:
                 # Stable token: same length, same digits (preserves
                 # field structure for downstream schema validation).
-                def _token(_m: re.Match[str]) -> str:
-                    return f"[PII-{kind}-{len(_m.group(0)):04d}]"
+                def _token(_m: re.Match[str], _kind: str = kind) -> str:
+                    return f"[PII-{_kind}-{len(_m.group(0)):04d}]"
                 redacted = pat.sub(_token, redacted)
             else:
                 redacted = pat.sub(f"[REDACTED_{kind.upper()}]", redacted)
@@ -102,10 +102,7 @@ def redact_dict(
     If fields is None, every string value is scanned. Otherwise
     only the listed top-level fields are scanned.
     """
-    if fields is None:
-        keys = [k for k, v in payload.items() if isinstance(v, str)]
-    else:
-        keys = fields
+    keys = [k for k, v in payload.items() if isinstance(v, str)] if fields is None else fields
 
     out = dict(payload)
     all_matches: list[PIIMatch] = []

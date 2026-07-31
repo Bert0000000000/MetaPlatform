@@ -118,5 +118,4 @@ class Subscriber:
             offset=msg.offset,
             last_error=str(last_exc),
         )
-        # 实际生产应发送到 DLQ topic；此处仅记录
-        # producer.send_and_wait(dlq_topic, msg.value, ...)
+        # In production, send to a DLQ topic; here we only log.

@@ -24,14 +24,14 @@ UNREACHABLE_URL = "http://localhost:1"
 def _make_auth() -> BearerAuth:
     """BearerAuth with a pre-seeded token cache (no network hit)."""
     auth = BearerAuth(
-        token_uri="http://localhost:8080/realms/metaplatform/protocol/openid-connect/token",  # noqa: S106
+        token_uri="http://localhost:8080/realms/metaplatform/protocol/openid-connect/token",
         client_id="metaplatform-backend",
-        client_secret="test-secret",  # noqa: S106
+        client_secret="test-secret",
         scope="platform.read",
     )
     # Pre-seed the cache so token() never hits the network.
     auth._cached = CachedToken(  # type: ignore[attr-defined]
-        access_token="stub-cached-token",  # noqa: S106
+        access_token="stub-cached-token",
         expires_at=time.time() + 3600.0,
     )
     return auth

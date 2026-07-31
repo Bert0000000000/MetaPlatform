@@ -8,11 +8,34 @@ select = ["E", "W", "F", "I", "B", "C4", "UP", "N", "SIM", "PTH", "ERA", "PL", "
 ignore = ["E501", "PLR0913", "PLR2004", "S101", "TC001", "TC002", "TC003", "RUF001", "RUF002", "RUF003"]
 
 [lint.per-file-ignores]
-"tests/**/*.py" = ["S101", "PLR2004", "ARG", "FBT", "PLC0415"]
-"packages/*/tests/**/*.py" = ["S101", "PLR2004", "ARG", "FBT", "PLC0415"]
+"tests/**/*.py" = ["S101", "PLR2004", "ARG", "FBT", "PLC0415", "S105", "S106", "B017"]
+"packages/*/tests/**/*.py" = ["S101", "PLR2004", "ARG", "FBT", "PLC0415", "S105", "S106", "B017", "E402"]
+# All conftest.py: sys.path manipulation before imports
+"**/conftest.py" = ["E402"]
 "**/clients/*.py" = ["PLR0913"]
 "scripts/**/*.py" = ["T201", "S"]
 "tests/architecture/**/*.py" = ["S603"]
+# mate-platform: lazy imports for SQLAlchemy event listeners
+"packages/mate-platform/src/**/*.py" = ["PLC0415"]
+"packages/mate-platform/src/mate_platform/tenancy/db_filter.py" = ["PLR0917"]
+# mate-platform: camelCase API contract fields (frontend)
+"packages/mate-platform/src/mate_platform/auth/retention.py" = ["N815"]
+# mate-tech-agent: lazy imports for optional deps (langgraph, psycopg), global singleton pattern
+"packages/mate-tech-agent/src/**/*.py" = ["PLC0415", "PLW0603", "S108", "F811"]
+"packages/mate-tech-agent/src/mate_tech_agent/llm.py" = ["PLR0911"]
+"packages/mate-tech-agent/src/mate_tech_agent/api/app.py" = ["PLR0915"]
+# mate-tech-rag: lazy imports for optional deps (pymilvus, neo4j, psycopg), global singleton pattern
+"packages/mate-tech-rag/src/**/*.py" = ["PLC0415", "PLW0603"]
+"packages/mate-tech-rag/src/mate_tech_rag/api/app.py" = ["PLR0915", "B008"]
+# mate-tech-msg: lazy imports for optional deps (kafka, otel)
+"packages/mate-tech-msg/src/**/*.py" = ["PLC0415"]
+# mate-tech-ont: lazy imports for optional deps (rdflib, owlready2)
+"packages/mate-tech-ont/src/**/*.py" = ["PLC0415"]
+"packages/mate-tech-ont/src/mate_tech_ont/main.py" = ["S104"]
+# mate-app-kb: FastAPI File() in defaults, app bootstrap complexity
+"packages/mate-app-kb/src/mate_app_kb/api/app.py" = ["PLR0915", "B008", "PLC0415"]
+# mate-clients: global handler singleton
+"packages/mate-clients/src/mate_clients/kafka/consumer.py" = ["PLW0603"]
 # mate-tech-iam: camelCase API response models (frontend contract)
 "packages/mate-tech-iam/src/mate_tech_iam/api/auth.py" = ["N815"]
 "packages/mate-tech-iam/src/mate_tech_iam/api/dashboard.py" = ["N803", "N815", "PLW0603"]

@@ -42,8 +42,8 @@ def parse_sparql(sparql: str) -> ParsedQuery:
     where_match = re.search(r"WHERE\s*\{([^}]*)\}", sparql_strip, re.IGNORECASE | re.DOTALL)
     if where_match:
         body = where_match.group(1)
-        for line in body.split("."):
-            line = line.strip()
+        for raw_line in body.split("."):
+            line = raw_line.strip()
             if not line:
                 continue
             triple = _parse_triple(line)

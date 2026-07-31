@@ -63,14 +63,6 @@ def build_s1_graph(
         CompiledGraph（实际调 langgraph）
     """
     logger.info("scenario.s1.built")
-    # 实际实现：StateGraph + ToolNode
-    # from langgraph.graph import StateGraph, END
-    # from langgraph.prebuilt import ToolNode
-    # workflow = StateGraph(AgentState)
-    # workflow.add_node("agent", call_model)
-    # workflow.add_node("tools", ToolNode([kb_search_tool]))
-    # workflow.add_conditional_edges(...)
-    # return workflow.compile()
     return {"type": "s1", "tools": [kb_search_tool.name]}
 
 

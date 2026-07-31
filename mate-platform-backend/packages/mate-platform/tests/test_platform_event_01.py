@@ -30,7 +30,7 @@ os.environ.setdefault("KEYCLOAK_URL", "https://keycloak.test.invalid")
 os.environ.setdefault("KEYCLOAK_REALM", "metaplatform")
 os.environ.setdefault("SERVICE_CLIENT_SECRET", "test-secret")
 
-from mate_clients.kafka import (  # noqa: E402
+from mate_clients.kafka import (
     ConsumerError,
     DlqEntry,
     IdempotentConsumer,
@@ -41,7 +41,7 @@ from mate_clients.kafka import (  # noqa: E402
     RetryPolicy,
     bind,
 )
-from mate_platform.messaging import (  # noqa: E402
+from mate_platform.messaging import (
     Event,
     EventTypeTopicResolver,
     InMemoryOutboxWriter,
@@ -55,7 +55,7 @@ from mate_platform.messaging import (  # noqa: E402
     schema_id_for,
     validate_event_type,
 )
-from mate_platform.tenancy import (  # noqa: E402
+from mate_platform.tenancy import (
     AuthMethod,
     RequestContext,
     TenantId,
@@ -167,7 +167,7 @@ class TestSchemaRegistry:
 # -----------------------------------------------------------------------------
 class TestOutboxWriter:
     def test_append_requires_tenant(self) -> None:
-        ob: OutboxWriter = InMemoryOutboxWriter()
+        InMemoryOutboxWriter()
         # Event.create now rejects empty tenant_id at construction time
         # (SEC-TENANT-01 hard rule 3 — defense in depth with OutboxWriter).
         with pytest.raises(ValueError, match="tenant_id must not be empty"):
@@ -254,8 +254,6 @@ class TestOutboxRelay:
     def test_drain_once_skips_max_attempts(self) -> None:
         ob: InMemoryOutboxWriter = InMemoryOutboxWriter()
         prod = FakeProducer()
-        for _ in range(6):
-            ob.mark_attempt_failed if False else None
         # Simulate that the event has been attempted 5 times already
         e = make_event(event_id="e1")
         ob.append(e)
@@ -421,7 +419,7 @@ class TestIdempotentConsumer:
 # -----------------------------------------------------------------------------
 class TestCrossTenantNegatives:
     def test_event_without_tenant_rejected_by_outbox(self) -> None:
-        ob: InMemoryOutboxWriter = InMemoryOutboxWriter()
+        InMemoryOutboxWriter()
         # Event.create now rejects empty tenant_id at construction time
         # (SEC-TENANT-01 hard rule 3 — defense in depth with OutboxWriter).
         with pytest.raises(ValueError, match="tenant_id must not be empty"):

@@ -1,4 +1,4 @@
-﻿"""Retrieval service: 3-strategy router + real client factory."""
+"""Retrieval service: 3-strategy router + real client factory."""
 from __future__ import annotations
 
 import logging
@@ -61,11 +61,16 @@ def get_pg_client():
 
 def set_dependencies(*, embedder=None, hybrid=None, graph=None, lightrag=None, ragflow=None):
     global _embedder, _hybrid, _graph, _lightrag, _ragflow
-    if embedder is not None: _embedder = embedder
-    if hybrid is not None: _hybrid = hybrid
-    if graph is not None: _graph = graph
-    if lightrag is not None: _lightrag = lightrag
-    if ragflow is not None: _ragflow = ragflow
+    if embedder is not None:
+        _embedder = embedder
+    if hybrid is not None:
+        _hybrid = hybrid
+    if graph is not None:
+        _graph = graph
+    if lightrag is not None:
+        _lightrag = lightrag
+    if ragflow is not None:
+        _ragflow = ragflow
 
 
 def create_clients():

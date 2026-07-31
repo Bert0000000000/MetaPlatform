@@ -8,11 +8,11 @@ layer (every endpoint that needs a tenant / user / role).
 from __future__ import annotations
 
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 from typing import NewType
 
 
-class AuthMethod(str, Enum):
+class AuthMethod(StrEnum):
     USER = "user"
     SERVICE = "service"
     ANONYMOUS = "anonymous"

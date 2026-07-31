@@ -59,7 +59,7 @@ async def create_relation_endpoint(payload: RelationCreate) -> RelationResponse:
             payload.type, payload.src_id, payload.dst_id, payload.properties
         )
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     return RelationResponse(**dataclasses.asdict(rel))
 
 

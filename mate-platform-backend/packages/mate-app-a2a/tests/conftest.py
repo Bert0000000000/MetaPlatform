@@ -21,7 +21,7 @@ from mate_app_a2a.repositories import in_memory as in_memory_repo
 
 from mate_platform.messaging.outbox import InMemoryOutboxWriter
 
-JWT_SECRET = "test-secret"  # noqa: S105
+JWT_SECRET = "test-secret"
 
 
 def _keycloak_token(

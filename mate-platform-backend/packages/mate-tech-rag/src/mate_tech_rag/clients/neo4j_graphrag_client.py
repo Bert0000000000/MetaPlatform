@@ -1,4 +1,4 @@
-﻿"""Neo4jGraphRAGClient: real Neo4j connection for ENTITY retrieval."""
+"""Neo4jGraphRAGClient: real Neo4j connection for ENTITY retrieval."""
 from __future__ import annotations
 
 import logging
@@ -65,8 +65,7 @@ class Neo4jGraphRAGClient:
         entities = self._extract_entities(text)
         snippet = text[:200]
         meta_str = str(metadata or {})
-        with self._lock:
-            with self._driver.session(database=self._database) as sess:
+        with self._lock, self._driver.session(database=self._database) as sess:
                 sess.run(
                     "MERGE (c:Chunk {id: $cid}) SET c.document_id=$did, c.snippet=$snip, c.text=$text, c.metadata=$meta "
                     "WITH c UNWIND $ents AS e_name "

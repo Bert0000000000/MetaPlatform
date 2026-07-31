@@ -18,13 +18,13 @@ import threading
 import uuid
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
-from enum import Enum
+from enum import StrEnum
 from typing import Any, Protocol
 
 logger = logging.getLogger("metaplatform.retention")
 
 
-class RetentionAction(str, Enum):
+class RetentionAction(StrEnum):
     HARD_DELETE = "hard_delete"
     SOFT_DELETE = "soft_delete"
     ANONYMIZE = "anonymize"

@@ -1,4 +1,4 @@
-﻿"""RAGFlowClient — real httpx client for infiniflow/ragflow HTTP API."""
+"""RAGFlowClient — real httpx client for infiniflow/ragflow HTTP API."""
 from __future__ import annotations
 
 import logging
@@ -96,7 +96,7 @@ class HttpxRAGFlowClient:
                 data = r.json()
                 return len(data.get("data", {}).get("docs", []))
         except Exception:
-            pass
+            _log.warning("ragflow count failed", exc_info=True)
         return 0
 
     def close(self):

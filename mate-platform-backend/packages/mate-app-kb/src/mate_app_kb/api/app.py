@@ -283,7 +283,7 @@ def create_app(rag: RAGClient | None = None, agent: AgentClient | None = None) -
         # Streams cannot trivially wrap with a header; emit Deprecation
         # via the first SSE preamble comment line. Clients consuming the
         # legacy path will see ": deprecation: ..." as the first event.
-        from fastapi.responses import StreamingResponse as _SR
+        from fastapi.responses import StreamingResponse as _StreamingResponse
 
         async def event_gen():
             yield f": deprecation: {_DEPRECATION_HEADER_VALUE}\n\n"
@@ -292,7 +292,7 @@ def create_app(rag: RAGClient | None = None, agent: AgentClient | None = None) -
             ):
                 yield line + "\n\n"
 
-        return _SR(event_gen(), media_type="text/event-stream")
+        return _StreamingResponse(event_gen(), media_type="text/event-stream")
 
     async def _deprecated_stats(request: Request) -> Response:
         ctx = _require_ctx(request)

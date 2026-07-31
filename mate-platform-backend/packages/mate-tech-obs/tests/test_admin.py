@@ -32,7 +32,7 @@ def health_only_target() -> Any:
     Returns an async lambda that calls aggregate_health with a custom
     single-target list and confirms the resulting report.
     """
-    from mate_tech_obs.health.aggregator import aggregate_health  # noqa: PLC0415
+    from mate_tech_obs.health.aggregator import aggregate_health
 
     return aggregate_health
 

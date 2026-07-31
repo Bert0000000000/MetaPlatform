@@ -13,7 +13,7 @@ def test_auth_login_returns_token(client) -> None:
     assert r.status_code == 200, r.text
     body = r.json()
     assert body["access_token"].startswith("stub-copilot-"), body
-    assert body["token_type"] == "Bearer"  # noqa: S105
+    assert body["token_type"] == "Bearer"
     assert body["expires_in"] == 3600
     assert "id" in body["user"]
     assert "name" in body["user"]

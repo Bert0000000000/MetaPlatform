@@ -67,7 +67,7 @@ import jwt as _pyjwt
 from mate_tech_ont.instances.store import store as instance_store
 from mate_tech_ont.security.tenant import TenantContext
 
-_TEST_JWT_SECRET = "test-secret"  # noqa: S105
+_TEST_JWT_SECRET = "test-secret"
 
 
 def make_keycloak_token(

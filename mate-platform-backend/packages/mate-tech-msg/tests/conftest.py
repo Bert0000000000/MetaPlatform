@@ -37,7 +37,7 @@ for _bsl_sub in (
 from mate_tech_msg.dedup import DedupStore
 from mate_tech_msg.kafka_client import KafkaClient
 
-_TEST_JWT_SECRET = "test-secret"  # noqa: S105
+_TEST_JWT_SECRET = "test-secret"
 
 
 def make_keycloak_token(

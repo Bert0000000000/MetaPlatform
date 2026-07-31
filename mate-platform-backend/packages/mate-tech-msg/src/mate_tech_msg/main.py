@@ -78,7 +78,7 @@ async def publish_endpoint(request: Request, req: PublishRequest) -> PublishResp
         return await publisher.publish(req)
     except Exception as e:
         logger.error("publish.error", error=str(e), tenant_id=ctx.tenant_id)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @app.get("/api/v1/msg/topics")

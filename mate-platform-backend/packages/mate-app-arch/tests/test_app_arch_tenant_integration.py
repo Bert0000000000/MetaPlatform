@@ -13,7 +13,7 @@ from fastapi.testclient import TestClient
 from mate_app_arch.main import create_app
 from mate_app_arch.repositories import in_memory as in_memory_repo
 
-JWT_SECRET = "test-secret"  # noqa: S105
+JWT_SECRET = "test-secret"
 
 
 def _token(*, tenant_id: str, scopes: str = "platform.read platform.write") -> str:

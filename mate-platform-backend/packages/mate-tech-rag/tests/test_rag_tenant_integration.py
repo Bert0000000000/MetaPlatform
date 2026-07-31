@@ -137,8 +137,8 @@ class TestRagAppHasTenantGuards:
     does not need the package importable."""
 
     def test_rag_app_uses_install_auth(self) -> None:
-        from pathlib import Path as _P
-        app_py = _P(__file__).resolve().parent.parent / "src" / "mate_tech_rag" / "api" / "app.py"
+        from pathlib import Path as _Path
+        app_py = _Path(__file__).resolve().parent.parent / "src" / "mate_tech_rag" / "api" / "app.py"
         text = app_py.read_text(encoding="utf-8")
         assert "install_auth(app)" in text, "install_auth not wired in rag"
         # All non-/healthz handlers should have a require_tenant line

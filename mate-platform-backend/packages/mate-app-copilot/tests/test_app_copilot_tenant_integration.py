@@ -13,7 +13,7 @@ from fastapi.testclient import TestClient
 from mate_app_copilot.main import create_app
 from mate_app_copilot.repositories import in_memory as in_memory_repo
 
-JWT_SECRET = "test-secret"  # noqa: S105
+JWT_SECRET = "test-secret"
 
 
 def _token(*, tenant_id: str, scopes: str = "platform.read platform.write") -> str:
@@ -101,7 +101,7 @@ def test_a2a_delegate_proxies_to_a2a(fresh_app: TestClient) -> None:
     P2-W3: the 501 stub has been replaced with an in-process proxy
     to mate_app_a2a.repositories.create_delegation.
     """
-    from mate_app_a2a.repositories import in_memory as a2a_repo  # noqa: PLC0415
+    from mate_app_a2a.repositories import in_memory as a2a_repo
 
     a2a_repo.reset_store()
 

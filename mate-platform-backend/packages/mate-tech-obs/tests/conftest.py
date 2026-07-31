@@ -36,7 +36,7 @@ for _bsl_sub in (
         _bsl_sys.path.insert(0, _bsl_p)
 from mate_tech_obs.health.aggregator import HealthStatus
 
-_TEST_JWT_SECRET = "test-secret"  # noqa: S105
+_TEST_JWT_SECRET = "test-secret"
 
 
 def make_keycloak_token(

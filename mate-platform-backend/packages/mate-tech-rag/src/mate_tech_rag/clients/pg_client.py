@@ -46,7 +46,6 @@ class PGClient:
 
     def _connect(self) -> None:
         try:
-            import psycopg
             from psycopg_pool import ConnectionPool
         except ImportError as exc:
             _log.warning("psycopg/psycopg_pool not installed: %s", exc)
