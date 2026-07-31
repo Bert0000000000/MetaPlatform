@@ -173,14 +173,15 @@ class TestSchemaRegistry:
 class TestOutboxWriter:
     def test_append_requires_tenant(self) -> None:
         ob: OutboxWriter = InMemoryOutboxWriter()
-        e = Event.create(
-            type="iam.user.created",
-            tenant_id="",
-            aggregate_id="u",
-            payload={},
-        )
-        with pytest.raises(OutboxError, match="no tenant_id"):
-            ob.append(e)
+        # Event.create now rejects empty tenant_id at construction time
+        # (SEC-TENANT-01 hard rule 3 — defense in depth with OutboxWriter).
+        with pytest.raises(ValueError, match="tenant_id must not be empty"):
+            Event.create(
+                type="iam.user.created",
+                tenant_id="",
+                aggregate_id="u",
+                payload={},
+            )
 
     def test_append_and_fetch(self) -> None:
         ob: OutboxWriter = InMemoryOutboxWriter()
@@ -426,14 +427,15 @@ class TestIdempotentConsumer:
 class TestCrossTenantNegatives:
     def test_event_without_tenant_rejected_by_outbox(self) -> None:
         ob: InMemoryOutboxWriter = InMemoryOutboxWriter()
-        e = Event.create(
-            type="iam.user.created",
-            tenant_id="",
-            aggregate_id="u",
-            payload={},
-        )
-        with pytest.raises(OutboxError, match="no tenant_id"):
-            ob.append(e)
+        # Event.create now rejects empty tenant_id at construction time
+        # (SEC-TENANT-01 hard rule 3 — defense in depth with OutboxWriter).
+        with pytest.raises(ValueError, match="tenant_id must not be empty"):
+            Event.create(
+                type="iam.user.created",
+                tenant_id="",
+                aggregate_id="u",
+                payload={},
+            )
 
     def test_event_invalid_type_rejected(self) -> None:
         with pytest.raises(ValueError):

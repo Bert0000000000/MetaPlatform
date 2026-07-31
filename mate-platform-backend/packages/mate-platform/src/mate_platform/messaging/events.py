@@ -62,6 +62,10 @@ class Event:
             raise ValueError(
                 f"event type {type!r} must follow '<domain>.<aggregate>.<action>'"
             )
+        if not tenant_id:
+            raise ValueError(
+                "event tenant_id must not be empty (SEC-TENANT-01 hard rule 3)"
+            )
         return cls(
             id=event_id or new_event_id(),
             type=type,
