@@ -27,9 +27,9 @@ const getMsgIcon = (name: string | null | undefined): LucideIcon => {
   return MSG_ICON_MAP[name] ?? MessageSquare;
 };
 
-// API priority 转换 (medium → mid，因为原 mock 用 mid)
+// API priority 转换 (medium/normal → mid，因为原 mock 用 mid)
 const PRIORITY_API_MAP: Record<string, 'low' | 'mid' | 'high'> = {
-  low: 'low', medium: 'mid', high: 'high',
+  low: 'low', medium: 'mid', normal: 'mid', high: 'high',
 };
 
 const avatarBgMap: Record<string, string> = {
