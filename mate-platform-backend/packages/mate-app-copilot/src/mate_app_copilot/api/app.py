@@ -414,12 +414,30 @@ async def get_datasources(request: Request) -> dict[str, Any]:
 async def generate_dashboard(request: Request, body: dict[str, Any]) -> dict[str, Any]:
     _tid(request)
     name = str(body.get("name", "Untitled Dashboard"))
+    # P2-W4: use client.chat to suggest widget titles based on the dashboard name
+    client = _get_client(request)
+    raw = client.chat(
+        [
+            {
+                "role": "system",
+                "content": "Suggest 4 dashboard widget titles, one per line.",
+            },
+            {"role": "user", "content": name[:200]},
+        ]
+    )
+    titles = [t.strip() for t in raw.splitlines() if t.strip()][:4]
+    if len(titles) < 2:
+        titles = ["Total Revenue", "Trend", "Breakdown", "Top Items"]
     return {
         "name": name,
         "layout": "grid",
         "widgets": [
-            {"type": "metric", "title": "Total Revenue", "position": {"row": 0, "col": 0}},
-            {"type": "chart", "title": "Trend", "position": {"row": 0, "col": 1}},
+            {
+                "type": "metric" if i == 0 else "chart",
+                "title": titles[i],
+                "position": {"row": i // 2, "col": i % 2},
+            }
+            for i in range(min(len(titles), 4))
         ],
     }
 
@@ -577,13 +595,31 @@ async def match_employees(
     task_type: str = Query(...),
 ) -> dict[str, Any]:
     _tid(request)
-    employees = [
+    employees: list[dict[str, Any]] = [
         {"id": "emp-1", "name": "Finance Recon Bot", "skills": ["finance", "reconciliation"]},
         {"id": "emp-2", "name": "CRM Archivist", "skills": ["crm", "data"]},
         {"id": "emp-3", "name": "KB Curator", "skills": ["knowledge", "indexing"]},
     ]
     tt = task_type.lower()
     matched = [e for e in employees if any(tt in s for s in e["skills"])]
+    # P2-W4: if no keyword match, use client.chat to suggest the best employee
+    if not matched and task_type.strip():
+        client = _get_client(request)
+        names = ", ".join(e["name"] for e in employees)
+        raw = client.chat(
+            [
+                {
+                    "role": "system",
+                    "content": f"Which of these employees best fits the task? Reply with just the name. Options: {names}",
+                },
+                {"role": "user", "content": task_type[:200]},
+            ]
+        )
+        raw_lower = raw.strip().lower()
+        for e in employees:
+            if e["name"].lower() in raw_lower:
+                matched = [e]
+                break
     return {"items": matched, "total": len(matched)}
 
 
