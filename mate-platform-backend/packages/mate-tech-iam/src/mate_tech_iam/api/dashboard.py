@@ -530,6 +530,153 @@ async def get_profile(request: Request) -> Any:
     }
 
 
+@router.get("/myapps", summary="My apps")
+async def my_apps(request: Request) -> Any:
+    return [
+        {"name": "财务审批助手", "type": "approval", "type_label": "审批流",
+         "description": "自动化财务报销审批流程",
+         "last_used": "2026-07-30", "date": "2026-06-15", "usage": "日均 45 次",
+         "icon": "AuditOutlined", "pinned": True},
+        {"name": "客户数据看板", "type": "dashboard", "type_label": "数据看板",
+         "description": "客户行为分析实时看板",
+         "last_used": "2026-07-31", "date": "2026-07-01", "usage": "日均 120 次",
+         "icon": "DashboardOutlined", "pinned": True},
+        {"name": "合同管理平台", "type": "workflow", "type_label": "工作流",
+         "description": "合同全生命周期管理",
+         "last_used": "2026-07-28", "date": "2026-05-20", "usage": "日均 18 次",
+         "icon": "FileTextOutlined", "pinned": False},
+        {"name": "营销内容生成器", "type": "ai", "type_label": "AI 应用",
+         "description": "AI 驱动的营销文案自动生成",
+         "last_used": "2026-07-31", "date": "2026-07-10", "usage": "日均 230 次",
+         "icon": "BulbOutlined", "pinned": True},
+        {"name": "安全巡检系统", "type": "monitor", "type_label": "监控",
+         "description": "自动化安全漏洞扫描与告警",
+         "last_used": "2026-07-29", "date": "2026-04-01", "usage": "周均 3 次",
+         "icon": "SafetyOutlined", "pinned": False},
+    ]
+
+
+@router.get("/myagents", summary="My digital employees")
+async def my_agents(request: Request) -> Any:
+    return [
+        {"name": "客服助手", "type": "对话型", "type_label": "对话型",
+         "status": "online", "status_class": "success",
+         "description": "7x24 智能客服对话", "tasks": 234, "success_rate": 98.7,
+         "icon": "CustomerServiceOutlined"},
+        {"name": "合同审核员", "type": "审核型", "type_label": "审核型",
+         "status": "busy", "status_class": "processing",
+         "description": "合同条款自动审核", "tasks": 89, "success_rate": 95.5,
+         "icon": "FileSearchOutlined"},
+        {"name": "数据分析师", "type": "分析型", "type_label": "分析型",
+         "status": "paused", "status_class": "warning",
+         "description": "业务数据深度分析", "tasks": 156, "success_rate": 92.3,
+         "icon": "BarChartOutlined"},
+        {"name": "营销文案", "type": "生成型", "type_label": "生成型",
+         "status": "online", "status_class": "success",
+         "description": "营销内容 AI 生成", "tasks": 312, "success_rate": 99.1,
+         "icon": "HighlightOutlined"},
+        {"name": "代码审查员", "type": "审核型", "type_label": "审核型",
+         "status": "online", "status_class": "success",
+         "description": "代码质量自动审查", "tasks": 198, "success_rate": 96.4,
+         "icon": "CodeOutlined"},
+    ]
+
+
+@router.get("/myagents/logs", summary="Agent execution logs")
+async def my_agent_logs(request: Request) -> Any:
+    return [
+        {"log_id": "log-001", "agent": "客服助手", "agent_id": "agent-001",
+         "exec_time": "2026-07-31 10:30:00", "duration": "1.2s",
+         "status": "success", "status_class": "success", "dot_class": "success",
+         "trigger": "用户请求", "tokens": "1,234"},
+        {"log_id": "log-002", "agent": "合同审核员", "agent_id": "agent-002",
+         "exec_time": "2026-07-31 10:25:00", "duration": "3.5s",
+         "status": "success", "status_class": "success", "dot_class": "success",
+         "trigger": "定时任务", "tokens": "2,890"},
+        {"log_id": "log-003", "agent": "数据分析师", "agent_id": "agent-003",
+         "exec_time": "2026-07-31 09:15:00", "duration": "12.3s",
+         "status": "failed", "status_class": "error", "dot_class": "error",
+         "trigger": "API 调用", "tokens": "5,678"},
+    ]
+
+
+@router.get("/messages", summary="Messages")
+async def messages(request: Request) -> Any:
+    return [
+        {"msg_id": "msg-001", "sender": "系统通知", "avatar_class": "system",
+         "icon": "NotificationOutlined",
+         "title": "安全巡检完成", "summary": "发现 2 个中危漏洞，请及时处理",
+         "time": "5 分钟前", "priority": "high", "unread": True, "attachments": 1},
+        {"msg_id": "msg-002", "sender": "客服助手", "avatar_class": "agent",
+         "icon": "RobotOutlined",
+         "title": "对话转人工", "summary": "客户 #12345 请求人工客服介入",
+         "time": "15 分钟前", "priority": "normal", "unread": True, "attachments": 0},
+        {"msg_id": "msg-003", "sender": "合同审核员", "avatar_class": "agent",
+         "icon": "FileSearchOutlined",
+         "title": "审核报告已生成", "summary": "合同 #C-2026-0456 审核完成",
+         "time": "1 小时前", "priority": "normal", "unread": False, "attachments": 2},
+        {"msg_id": "msg-004", "sender": "管理员", "avatar_class": "admin",
+         "icon": "UserOutlined",
+         "title": "系统维护通知", "summary": "今晚 22:00-23:00 系统维护",
+         "time": "2 小时前", "priority": "low", "unread": False, "attachments": 0},
+    ]
+
+
+@router.get("/portal", summary="Portal links")
+async def portal(request: Request, kind: str | None = Query(default=None)) -> Any:
+    items = [
+        {"name": "企业知识库", "kind": "internal", "description": "企业内部知识库系统",
+         "icon": "BookOutlined", "visits": 15420, "last_visit": "今天",
+         "url": "https://kb.example.com"},
+        {"name": "数据平台", "kind": "internal", "description": "企业数据资产平台",
+         "icon": "DatabaseOutlined", "visits": 8930, "last_visit": "昨天",
+         "url": "https://data.example.com"},
+        {"name": "OA 系统", "kind": "internal", "description": "办公自动化系统",
+         "icon": "DesktopOutlined", "visits": 23100, "last_visit": "今天",
+         "url": "https://oa.example.com"},
+        {"name": "合作伙伴门户", "kind": "external", "description": "外部合作伙伴入口",
+         "icon": "GlobalOutlined", "visits": 1200, "last_visit": "3 天前",
+         "url": "https://partner.example.com"},
+    ]
+    if kind:
+        items = [i for i in items if i["kind"] == kind]
+    return items
+
+
+@router.get("/deliverables/summary", summary="Deliverables + timeline")
+async def deliverables_summary(request: Request) -> Any:
+    return {
+        "deliverables": [
+            {"name": "Q2 财务报告", "type_label": "报告", "type_class": "report",
+             "project": "财务部", "gen_class": "ai", "gen_name": "AI 生成",
+             "format": "PDF", "size": "2.3 MB", "date": "2026-07-28",
+             "status": "已交付", "status_class": "success", "icon": "FilePdfOutlined"},
+            {"name": "客户行为分析", "type_label": "分析", "type_class": "analysis",
+             "project": "市场部", "gen_class": "ai", "gen_name": "AI 生成",
+             "format": "XLSX", "size": "5.1 MB", "date": "2026-07-30",
+             "status": "已交付", "status_class": "success", "icon": "FileExcelOutlined"},
+            {"name": "安全审计报告", "type_label": "报告", "type_class": "report",
+             "project": "安全部", "gen_class": "human", "gen_name": "人工编写",
+             "format": "DOCX", "size": "1.8 MB", "date": "2026-07-25",
+             "status": "审核中", "status_class": "processing", "icon": "FileWordOutlined"},
+            {"name": "产品需求文档 v2", "type_label": "文档", "type_class": "doc",
+             "project": "产品部", "gen_class": "ai", "gen_name": "AI 辅助",
+             "format": "PDF", "size": "3.2 MB", "date": "2026-07-20",
+             "status": "已归档", "status_class": "default", "icon": "FilePdfOutlined"},
+        ],
+        "timeline": [
+            {"time_label": "2026-07-31", "title": "客户行为分析已交付",
+             "description": "市场部 — AI 生成，5.1 MB", "icon": "CheckCircleOutlined"},
+            {"time_label": "2026-07-28", "title": "Q2 财务报告已交付",
+             "description": "财务部 — AI 生成，2.3 MB", "icon": "CheckCircleOutlined"},
+            {"time_label": "2026-07-25", "title": "安全审计报告提交审核",
+             "description": "安全部 — 人工编写，1.8 MB", "icon": "ClockCircleOutlined"},
+            {"time_label": "2026-07-20", "title": "产品需求文档 v2 已归档",
+             "description": "产品部 — AI 辅助，3.2 MB", "icon": "ArchiveOutlined"},
+        ],
+    }
+
+
 @router.get("/profile/permissions", summary="Aggregated permissions")
 async def get_profile_permissions(request: Request) -> Any:
     require_tenant(_ctx(request))
