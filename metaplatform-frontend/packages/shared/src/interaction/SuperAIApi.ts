@@ -18,6 +18,24 @@ import axios, { AxiosRequestConfig } from 'axios';
 
 export const superAiApi = axios.create({ baseURL: '/api/v1', timeout: 60000 });
 
+// Inject Bearer token + tenant header (same as shared apiClient)
+superAiApi.interceptors.request.use((config) => {
+  try {
+    const token = localStorage.getItem('mate_platform_token');
+    if (token && config.headers) {
+      config.headers.set('Authorization', 'Bearer ' + token);
+    }
+    const rawUser = localStorage.getItem('mate_platform_user');
+    if (rawUser && config.headers) {
+      const user = JSON.parse(rawUser);
+      if (user?.tenantId) {
+        config.headers.set('X-Tenant-Id', user.tenantId);
+      }
+    }
+  } catch { /* localStorage not available */ }
+  return config;
+});
+
 /**
  * RunEvent 对齐 OpenAPI §ERR-2 — 21 种事件。
  *

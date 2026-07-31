@@ -108,6 +108,70 @@ def build_app() -> FastAPI:
     except Exception as e:
         logger.warning("Failed to mount IAM: %s", e)
 
+    # === SuperAI mock endpoints (ontology + agent run) ===
+    import uuid as _uuid
+    from fastapi import Body as _Body
+
+    _envelopes: dict[str, dict] = {}
+    _runs: dict[str, list] = {}
+
+    @app.post("/api/v1/ontology/context/build")
+    async def _build_context(payload: dict = _Body(default={})) -> Any:
+        envelope_id = f"env-{_uuid.uuid4().hex[:12]}"
+        _envelopes[envelope_id] = {
+            "envelopeId": envelope_id,
+            "signature": {"alg": "HS256", "kid": "dev-key", "value": "dev-sig"},
+            "expiresAt": "2026-12-31T23:59:59Z",
+        }
+        return {"code": 0, "data": _envelopes[envelope_id], "message": "ok"}
+
+    @app.post("/api/v1/agent/runs")
+    async def _create_run(payload: dict = _Body(default={})) -> Any:
+        run_id = f"run-{_uuid.uuid4().hex[:12]}"
+        goal = payload.get("goal", "未指定问题")
+        claim1 = {
+            "claimId": f"claim-{_uuid.uuid4().hex[:8]}",
+            "type": "INFERENCE",
+            "content": f"关于「{goal}」的分析结果：华东区销售环比下降 12%，主要受市场需求收缩和竞品促销影响。",
+            "confidence": 0.92,
+            "evidenceRefs": ["数据源: 内部知识库", "推理链: 3 步"],
+        }
+        claim2 = {
+            "claimId": f"claim-{_uuid.uuid4().hex[:8]}",
+            "type": "RECOMMENDATION",
+            "content": "建议加大华东区营销投入，优化定价策略，预计可恢复 8% 的销售增长。",
+            "confidence": 0.78,
+            "evidenceRefs": ["历史数据模型", "竞品分析报告"],
+        }
+        _runs[run_id] = [
+            {"eventId": f"evt-{_uuid.uuid4().hex[:8]}", "runId": run_id,
+             "type": "RUN_STARTED", "seq": 1, "ts": "2026-07-31T12:00:00Z",
+             "traceId": "", "tenantId": "", "payload": {}, "data": {}},
+            {"eventId": f"evt-{_uuid.uuid4().hex[:8]}", "runId": run_id,
+             "type": "CLAIM_PRODUCED", "seq": 2, "ts": "2026-07-31T12:00:01Z",
+             "traceId": "", "tenantId": "", "payload": {"claim": claim1}, "data": claim1},
+            {"eventId": f"evt-{_uuid.uuid4().hex[:8]}", "runId": run_id,
+             "type": "CLAIM_PRODUCED", "seq": 3, "ts": "2026-07-31T12:00:02Z",
+             "traceId": "", "tenantId": "", "payload": {"claim": claim2}, "data": claim2},
+            {"eventId": f"evt-{_uuid.uuid4().hex[:8]}", "runId": run_id,
+             "type": "RUN_COMPLETED", "seq": 4, "ts": "2026-07-31T12:00:03Z",
+             "traceId": "", "tenantId": "", "payload": {"summary": "分析完成"}, "data": {"summary": "分析完成"}},
+        ]
+        logger.info("Created agent run %s for goal: %s", run_id, goal[:50])
+        return {"code": 0, "data": {"runId": run_id, "status": "RUNNING", "traceId": ""}, "message": "ok"}
+
+    @app.get("/api/v1/agent/runs/{run_id}/events")
+    async def _get_events(run_id: str, afterSeq: int = 0) -> Any:
+        events = _runs.get(run_id, [])
+        result = [e for e in events if e["seq"] > afterSeq]
+        return {"code": 0, "data": result, "message": "ok"}
+
+    @app.post("/api/v1/agent/runs/{run_id}/cancel")
+    async def _cancel_run(run_id: str) -> Any:
+        return {"code": 0, "data": None, "message": "cancelled"}
+
+    logger.info("SuperAI mock endpoints (ontology/context + agent/runs) mounted")
+
     return app
 
 
