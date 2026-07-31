@@ -56,6 +56,10 @@ const OntologyActionPage = lazy(() => import('./pages/ontology/OntologyActionPag
 const OntologyGraphPage = lazy(() => import('./pages/ontology/OntologyGraphPage'));
 
 const DashboardDashboardPage = lazy(() => import('./pages/dashboard/DashboardPage'));
+const DashboardMyAppsPage = lazy(() => import('./pages/dashboard/MyAppsPage'));
+const DashboardMyAgentsPage = lazy(() => import('./pages/dashboard/MyAgentsPage'));
+const DashboardMessagesPage = lazy(() => import('./pages/dashboard/MessagesPage'));
+const DashboardPortalPage = lazy(() => import('./pages/dashboard/PortalPage'));
 const DashboardNotificationsPage = lazy(() => import('./pages/dashboard/NotificationsPage'));
 const DashboardAiOpsPage = lazy(() => import('./pages/dashboard/AiOpsPage'));
 const DashboardSettingsPage = lazy(() => import('./pages/dashboard/SettingsPage'));
@@ -151,6 +155,10 @@ function AppRoutes() {
           {/* 瀹搞儰缍旈崣?Phase 4.2: from apps/dashboard) */}
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard" element={<DashboardDashboardPage />} />
+          <Route path="dashboard/my-apps" element={<DashboardMyAppsPage />} />
+          <Route path="dashboard/my-agents" element={<DashboardMyAgentsPage />} />
+          <Route path="dashboard/messages" element={<DashboardMessagesPage />} />
+          <Route path="dashboard/portal" element={<DashboardPortalPage />} />
           <Route path="dashboard/notifications" element={<DashboardNotificationsPage />} />
           <Route path="dashboard/deliverables" element={<DashboardDeliverablesPage />} />
           <Route path="dashboard/aiops" element={<DashboardAiOpsPage />} />

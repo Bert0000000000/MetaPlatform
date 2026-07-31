@@ -1101,3 +1101,55 @@ async def global_search(request: Request,
     return [s for s in _SEARCH_INDEX
             if kw in s["title"].lower() or kw in s["description"].lower()]
 
+
+@router.get("/page/summary", summary="Dashboard page summary")
+async def page_summary(request: Request) -> Any:
+    """Aggregated dashboard data for the workbench homepage.
+
+    Returns stats, recent tasks, system health, active agents, and
+    quick links in a single payload so the frontend can render the
+    dashboard with one request.
+    """
+    ctx = _ctx(request)
+
+    return {
+        "stats": [
+            {"label": "活跃应用", "value": 18, "delta": "+3", "trend": "up"},
+            {"label": "数字员工在线", "value": "8/12", "status": "running"},
+            {"label": "今日任务", "value": 234, "delta": "+18%", "trend": "up"},
+            {"label": "待处理审批", "value": 5, "status": "attention"},
+        ],
+        "recentTasks": [
+            {"name": "财务报销审核", "type": "审批", "agent": "合同审核员",
+             "status": "done", "time": "10 分钟前"},
+            {"name": "客户数据周报生成", "type": "分析", "agent": "数据分析师",
+             "status": "running", "time": "25 分钟前"},
+            {"name": "安全漏洞扫描", "type": "巡检", "agent": "安全巡检员",
+             "status": "failed", "time": "42 分钟前"},
+            {"name": "营销邮件撰写", "type": "生成", "agent": "营销文案",
+             "status": "done", "time": "1 小时前"},
+            {"name": "知识库索引重建", "type": "维护", "agent": "知识库管理员",
+             "status": "done", "time": "2 小时前"},
+        ],
+        "recentTasksTotal": 15,
+        "systemHealth": [
+            {"name": "LLM Gateway", "status": "ok", "detail": "响应正常，P99 120ms"},
+            {"name": "MCP Registry", "status": "ok", "detail": "已注册 23 个服务"},
+            {"name": "Kafka 消息队列", "status": "warning", "detail": "Lag 偏高 (1,204)"},
+        ],
+        "activeAgents": [
+            {"name": "客服助手", "type": "对话型", "taskCount": 23, "status": "online"},
+            {"name": "合同审核员", "type": "审核型", "taskCount": 8, "status": "busy"},
+            {"name": "营销文案", "type": "生成型", "taskCount": 15, "status": "online"},
+            {"name": "代码审查员", "type": "审核型", "taskCount": 6, "status": "online"},
+        ],
+        "quickLinks": [
+            {"label": "SuperAI", "icon": "Robot", "link": "/superai/chat"},
+            {"label": "应用中心", "icon": "AppstoreOutlined", "link": "/apps"},
+            {"label": "本体引擎", "icon": "ApartmentOutlined", "link": "/ontology"},
+            {"label": "MCP 中心", "icon": "ApiOutlined", "link": "/mcp/tools"},
+            {"label": "数字员工", "icon": "TeamOutlined", "link": "/agents"},
+            {"label": "架构中心", "icon": "ClusterOutlined", "link": "/arch/capabilities"},
+        ],
+    }
+

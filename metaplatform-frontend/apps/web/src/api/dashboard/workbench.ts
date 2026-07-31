@@ -2,38 +2,18 @@
 // 数据来源：BFF at /api/v1/dashboard/page/*
 // 后端表：metaplatform_dashboard.dashboard_page_*
 
-import axios from 'axios';
+import { createApiClient, apiPath } from '@mate/shared/api';
 
-const client = axios.create({
-  baseURL: '/api/v1/dashboard',
-  timeout: 10000,
-});
+const client = createApiClient({ baseURL: apiPath('dashboard', '') });
+const data = <T>(resp: { data: T }): T => resp.data;
 
 /**
- * 响应处理：兼容两种返回格式
- * - 包装式：{ code: 0, message: "success", data: <payload> }（项目约定 ApiResponse.success）
- * - 直返式：<payload>（APP-DASHBOARD 当前控制器风格）
- * 业务码非 0 时抛错。
+ * 响应处理：统一走 shared createApiClient 的拦截器
+ * - 请求拦截器自动注入 Bearer token（解决 401）
+ * - 响应拦截器自动解包 { code: 0, data } 或直返 payload
  */
 async function getData<T>(url: string, params?: Record<string, unknown>): Promise<T> {
-  const res = await client.get(url, { params });
-  const body = res.data;
-  if (body && typeof body === 'object' && 'code' in body) {
-    const code = (body as { code: unknown }).code;
-    const isOk =
-      code === 0 ||
-      code === '0' ||
-      code === 'SUCCESS' ||
-      code === '200' ||
-      code === 200;
-    if (!isOk) {
-      const msg = (body as { message?: string }).message;
-      throw new Error(msg || 'API error: ' + url);
-    }
-    return (body as { data: T }).data;
-  }
-  // 直返式（无 code 包装）
-  return body as T;
+  return data(await client.get<T>(url, params ? { params } : undefined));
 }
 
 // ============ 类型定义（与 BFF 返回对齐） ============
