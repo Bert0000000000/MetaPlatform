@@ -88,7 +88,7 @@ distro==1.9.0
     # via
     #   langsmith
     #   openai
-fastapi==0.140.4
+fastapi==0.140.7
     # via mate-platform-backend
 filetype==1.2.0
     # via
@@ -139,7 +139,7 @@ httpx-sse==0.4.3
     # via
     #   langchain-community
     #   mcp
-hypothesis==6.161.6
+hypothesis==6.161.8
 idna==3.18
     # via
     #   anyio
@@ -220,7 +220,7 @@ llama-index-workflows==2.22.2
     # via llama-index-core
 markupsafe==3.0.3
     # via jinja2
-marshmallow==3.26.2
+marshmallow==4.3.0
     # via dataclasses-json
 mcp==1.28.1
     # via mate-platform-backend
@@ -252,7 +252,7 @@ numpy==2.5.1
     #   langchain-community
     #   llama-index-core
     #   pandas
-openai==2.48.0
+openai==2.49.0
     # via
     #   llama-index-embeddings-openai
     #   llama-index-llms-openai
@@ -379,7 +379,7 @@ pydantic==2.13.4
     #   openai
     #   pydantic-settings
     #   sqlmodel
-pydantic-core==2.46.4
+pydantic-core==2.47.0
     # via pydantic
 pydantic-settings==2.14.2
     # via
@@ -556,7 +556,7 @@ uvloop==0.22.1 ; sys_platform != 'win32'
     #   uvicorn
 watchfiles==1.2.0 ; sys_platform != 'win32'
     # via uvicorn
-websockets==15.0.1
+websockets==16.1.1
     # via
     #   langgraph-sdk
     #   langsmith
