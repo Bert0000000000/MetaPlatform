@@ -8,8 +8,7 @@ import {
   ExpandAltOutlined,
   CompressOutlined,
 } from '@ant-design/icons';
-import { Graph, Shape } from '@antv/x6';
-import { History } from '@antv/x6-plugin-history';
+import { Graph, Shape, History } from '@antv/x6';
 import type { GraphData, GraphNode } from '@/api/superai/types';
 import { expandGraphNode } from '@/api/superai/ontology';
 
