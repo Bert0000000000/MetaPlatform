@@ -8,6 +8,7 @@ leaking FastAPI types.
 """
 from __future__ import annotations
 
+from . import sql_store
 from .in_memory import (
     Agent,
     AgentCapability,
@@ -42,6 +43,7 @@ __all__ = [
     "list_external_agents",
     "register_external_agent",
     "reset_store",
+    "sql_store",
     "task_to_dict",
     "update_delegation_result",
 ]
