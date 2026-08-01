@@ -1,4 +1,4 @@
-﻿# MetaPlatform Docker Profiles 使用指南
+# MetaPlatform Docker Profiles 使用指南
 
 ## 为什么用 profiles?
 
@@ -14,8 +14,8 @@
 | `infra` | postgres, redis, minio, milvus, neo4j, traefik | 任何后端开发的基础 | ~3G |
 | `iam` | + keycloak, mate-tech-iam, mate-auth-service | 改鉴权/SSO | +1.5G |
 | `events` | + kafka, rabbitmq, nacos | 改消息总线/事件流 | +1.5G |
-| `ai` | + ragflow, lightrag | 文档解析/GraphRAG | +2.3G |
-| `obs` | + loki, prometheus, grafana, otel, promtail | 调试可观测性 | +1.5G |
+| `ai` | + ragflow | 文档解析/GraphRAG | +2.3G |
+| `obs` | + loki, prometheus, grafana, otel-collector | 调试可观测性 | +1.5G |
 | `workflow` | + flowable, kie-server | 改 BPMN/规则引擎 | +1.5G |
 | `rag` | infra + mate-tech-rag | 改 RAG 检索 | +0.5G |
 | `agent` | infra + mate-tech-agent | 改 Agent 编排 | +0.5G |
