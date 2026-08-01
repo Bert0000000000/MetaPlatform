@@ -20,12 +20,14 @@ def cache_key(
     *,
     model: str,
     temperature: float,
+    tenant_id: str = "default",
     extra: dict[str, Any] | None = None,
 ) -> str:
-    """生成缓存 key — hash(prompt + temperature + model)."""
+    """生成缓存 key — hash(prompt + temperature + model + tenant)."""
     payload = {
         "model": model,
         "temperature": temperature,
+        "tenant_id": tenant_id,
         "messages": [
             {"role": m.role, "content": m.content, "name": m.name}
             for m in messages
@@ -33,7 +35,7 @@ def cache_key(
         "extra": extra or {},
     }
     raw = json.dumps(payload, sort_keys=True, ensure_ascii=False).encode("utf-8")
-    return "llmgw:cache:" + hashlib.sha256(raw).hexdigest()[:32]
+    return f"llmgw:cache:{tenant_id}:" + hashlib.sha256(raw).hexdigest()[:32]
 
 
 class LLMCache:
@@ -49,6 +51,8 @@ class LLMCache:
         self._redis = redis_client or redis.from_url(url, decode_responses=True)
         self._ttl = ttl_sec
         self._enabled = enabled
+        self._hits = 0
+        self._misses = 0
 
     @property
     def enabled(self) -> bool:
@@ -61,7 +65,9 @@ class LLMCache:
             return None
         raw = await self._redis.get(key)
         if raw is None:
+            self._misses += 1
             return None
+        self._hits += 1
         data = json.loads(raw)
         return ChatResponse(
             content=data["content"],
@@ -86,6 +92,27 @@ class LLMCache:
 
     async def close(self) -> None:
         await self._redis.aclose()
+
+    def stats(self) -> dict[str, Any]:
+        """返回缓存命中率统计."""
+        total = self._hits + self._misses
+        return {
+            "hits": self._hits,
+            "misses": self._misses,
+            "hit_rate": round(self._hits / total, 4) if total > 0 else 0.0,
+            "enabled": self._enabled,
+        }
+
+    async def clear_tenant(self, tenant_id: str) -> int:
+        """清除某租户的所有缓存条目,返回删除数量."""
+        if not self._enabled:
+            return 0
+        pattern = f"llmgw:cache:{tenant_id}:*"
+        deleted = 0
+        async for key in self._redis.scan_iter(match=pattern, count=100):
+            await self._redis.delete(key)
+            deleted += 1
+        return deleted
 
 
 async def cache_or_call(

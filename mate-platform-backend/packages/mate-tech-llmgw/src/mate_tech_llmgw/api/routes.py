@@ -24,6 +24,9 @@ from .router import chat as router_chat
 
 logger = structlog.get_logger(__name__)
 
+# P3-W9: management API helpers (cache / quota / cost singletons).
+from ..router import get_cache, get_cost_recorder, get_quota_bucket  # noqa: E402
+
 # Canonical prefix per the spec.
 router = APIRouter(prefix="/api/v1/llmgw", tags=["llmgw"])
 
@@ -40,6 +43,7 @@ class ChatRequest(BaseModel):
     temperature: float = 1.0
     max_tokens: int | None = None
     tools: list[dict[str, Any]] | None = None
+    tenant_id: str = Field(default="default", description="租户 ID")
 
 
 class ChatResponseAPI(BaseModel):
@@ -62,8 +66,11 @@ async def chat_endpoint(req: ChatRequest) -> ChatResponseAPI:
             temperature=req.temperature,
             max_tokens=req.max_tokens,
             tools=req.tools,
+            tenant_id=req.tenant_id,
         )
         return ChatResponseAPI(**resp.__dict__)
+    except HTTPException:
+        raise
     except NotImplementedError as e:
         raise HTTPException(status_code=501, detail=str(e)) from e
     except Exception as e:
@@ -308,6 +315,66 @@ async def multimodal_chat_endpoint(req: MultimodalChatRequest) -> MultimodalChat
 
 
 # ---------------------------------------------------------------------------
+# P3-W9: Management API — cache / quota / cost 运维端点
+# ---------------------------------------------------------------------------
+@router.get("/cache/stats")
+async def cache_stats_endpoint() -> dict[str, Any]:
+    """返回缓存命中率统计."""
+    cache = get_cache()
+    if cache is None:
+        return {"hits": 0, "misses": 0, "hit_rate": 0.0, "enabled": False}
+    return cache.stats()
+
+
+@router.delete("/cache/{tenant_id}")
+async def cache_clear_endpoint(tenant_id: str) -> dict[str, Any]:
+    """清除某租户的缓存."""
+    cache = get_cache()
+    if cache is None:
+        return {"cleared": 0, "tenant_id": tenant_id, "enabled": False}
+    try:
+        count = await cache.clear_tenant(tenant_id)
+    except Exception as e:
+        logger.warning("llmgw.cache.clear_failed", error=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
+    return {"cleared": count, "tenant_id": tenant_id}
+
+
+@router.get("/quota/{tenant_id}")
+async def quota_status_endpoint(tenant_id: str) -> dict[str, Any]:
+    """返回某租户配额状态(RPM/TPM used/limit)."""
+    bucket = get_quota_bucket()
+    if bucket is None:
+        return {
+            "tenant_id": tenant_id,
+            "rpm_used": 0,
+            "rpm_limit": 0,
+            "tpm_used": 0,
+            "tpm_limit": 0,
+            "enabled": False,
+        }
+    try:
+        return await bucket.status(tenant_id)
+    except Exception as e:
+        logger.warning("llmgw.quota.status_failed", error=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.get("/usage/{tenant_id}")
+async def usage_endpoint(tenant_id: str) -> dict[str, Any]:
+    """返回某租户成本用量摘要(total_tokens / total_cost / by_model)."""
+    recorder = get_cost_recorder()
+    if recorder is None:
+        return {
+            "tenant_id": tenant_id,
+            "total_tokens": 0,
+            "total_cost": 0.0,
+            "by_model": {},
+        }
+    return recorder.summary(tenant_id)
+
+
+# ---------------------------------------------------------------------------
 # Deprecated alias handlers under /api/v1/llm/*  (P0 close-out 2026-07-30)
 # These re-emit the canonical handler result with an RFC 8594 Deprecation
 # response header pointing at /api/v1/llmgw/*, so existing clients (the
@@ -331,7 +398,10 @@ async def legacy_chat(req: ChatRequest, response: Response) -> ChatResponseAPI:
             temperature=req.temperature,
             max_tokens=req.max_tokens,
             tools=req.tools,
+            tenant_id=req.tenant_id,
         )
+    except HTTPException:
+        raise
     except NotImplementedError as e:
         raise HTTPException(status_code=501, detail=str(e)) from e
     except Exception as e:

@@ -59,6 +59,7 @@ class CostRecorder:
     def __init__(self, pool: Any | None = None, dsn: str | None = None) -> None:
         self._pool = pool
         self._dsn = dsn or os.getenv("PG_DSN", "postgresql://mate:mate@localhost:5432/mate")
+        self._records: list[UsageRecord] = []
 
     @property
     def pool(self) -> Any | None:
@@ -98,6 +99,7 @@ class CostRecorder:
             cost_usd=cost,
             ts=datetime.now(UTC),
         )
+        self._records.append(record)
         # 写 PG(如果 pool 已配置)
         if self._pool is not None:
             try:
@@ -127,3 +129,23 @@ class CostRecorder:
             cost_usd=cost,
         )
         return record
+
+    def summary(self, tenant_id: str) -> dict[str, Any]:
+        """返回某租户的成本用量摘要."""
+        tenant_records = [r for r in self._records if r.tenant_id == tenant_id]
+        total_tokens = sum(r.prompt_tokens + r.completion_tokens for r in tenant_records)
+        total_cost = sum(r.cost_usd for r in tenant_records)
+        by_model: dict[str, dict[str, Any]] = {}
+        for r in tenant_records:
+            entry = by_model.setdefault(
+                r.model, {"tokens": 0, "cost": 0.0, "calls": 0}
+            )
+            entry["tokens"] += r.prompt_tokens + r.completion_tokens
+            entry["cost"] = round(entry["cost"] + r.cost_usd, 6)
+            entry["calls"] += 1
+        return {
+            "tenant_id": tenant_id,
+            "total_tokens": total_tokens,
+            "total_cost": round(total_cost, 6),
+            "by_model": by_model,
+        }

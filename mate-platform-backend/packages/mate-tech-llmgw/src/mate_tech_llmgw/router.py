@@ -1,18 +1,23 @@
 """Multi-provider router (ST-5.5.3.3 + ST-5.5.3.2 已完成).
 
 根据 model 字段路由到 openai / anthropic / qwen / doubao。
+P3-W9: chat() 主路径接入 cache + quota + cost 三大模块。
 """
 from __future__ import annotations
 
 from typing import Any
 
 import structlog
+from fastapi import HTTPException
 
+from .cache.llm_cache import LLMCache, cache_key
 from .chat import ChatMessage, ChatProvider, ChatResponse
+from .cost.recorder import CostRecorder
 from .providers.anthropic import AnthropicChatProvider
 from .providers.doubao import DoubaoChatProvider
 from .providers.openai import OpenAIChatProvider
 from .providers.qwen import QwenChatProvider
+from .quota.bucket import QuotaExceededError, RedisTokenBucket
 
 logger = structlog.get_logger(__name__)
 
@@ -56,6 +61,46 @@ def _provider_name(model: str) -> str:
 
 _providers: dict[str, ChatProvider] = {}
 
+# ---------------------------------------------------------------------------
+# P3-W9: Cache / Quota / Cost 单例 (lazy-init, 测试环境无 Redis 时降级 no-op)
+# ---------------------------------------------------------------------------
+_cache: LLMCache | None = None
+_quota_bucket: RedisTokenBucket | None = None
+_cost_recorder: CostRecorder | None = None
+
+
+def set_cache(cache: LLMCache | None) -> None:
+    """注入 LLMCache 实例(生产启动或测试注入)."""
+    global _cache
+    _cache = cache
+
+
+def set_quota_bucket(bucket: RedisTokenBucket | None) -> None:
+    """注入 RedisTokenBucket 实例."""
+    global _quota_bucket
+    _quota_bucket = bucket
+
+
+def set_cost_recorder(recorder: CostRecorder | None) -> None:
+    """注入 CostRecorder 实例."""
+    global _cost_recorder
+    _cost_recorder = recorder
+
+
+def get_cache() -> LLMCache | None:
+    """获取当前 cache 单例(管理 API 使用)."""
+    return _cache
+
+
+def get_quota_bucket() -> RedisTokenBucket | None:
+    """获取当前 quota bucket 单例."""
+    return _quota_bucket
+
+
+def get_cost_recorder() -> CostRecorder | None:
+    """获取当前 cost recorder 单例."""
+    return _cost_recorder
+
 
 def get_provider(model: str) -> ChatProvider:
     """获取 provider 实例(懒加载 + 单例)."""
@@ -85,17 +130,72 @@ async def chat(
     temperature: float = 1.0,
     max_tokens: int | None = None,
     tools: list[dict[str, Any]] | None = None,
+    tenant_id: str = "default",
     **kwargs: Any,
 ) -> ChatResponse:
-    """根据 model 路由 chat 调用."""
+    """根据 model 路由 chat 调用.
+
+    P3-W9: 接入 cache (命中跳过 provider) + quota (超限 429) + cost (记录用量)。
+    三者在无 Redis/PG 的测试环境降级为 no-op (try/except 包裹)。
+    """
+    # --- 1. Quota check (模拟 @with_quota 效果) ---
+    if _quota_bucket is not None:
+        estimated_tokens = sum(max(1, len(m.content) // 4) for m in messages)
+        try:
+            await _quota_bucket.acquire(
+                tenant_id=tenant_id, estimated_tokens=estimated_tokens
+            )
+        except QuotaExceededError as e:
+            raise HTTPException(
+                status_code=429,
+                detail=f"Quota exceeded for tenant '{tenant_id}'; retry after {e.retry_after}s",
+                headers={"Retry-After": str(e.retry_after)},
+            ) from e
+        except Exception as e:
+            logger.warning("llmgw.quota.degraded", tenant=tenant_id, error=str(e))
+
+    # --- 2. Cache check (命中则跳过 provider) ---
+    ckey: str | None = None
+    if _cache is not None:
+        ckey = cache_key(
+            messages, model=model, temperature=temperature, tenant_id=tenant_id
+        )
+        try:
+            cached = await _cache.get(ckey)
+            if cached is not None:
+                logger.info("llmgw.cache.hit", tenant=tenant_id, model=model)
+                return cached
+        except Exception as e:
+            logger.warning("llmgw.cache.get_failed", error=str(e))
+            ckey = None  # disable set if get failed
+
+    # --- 3. Provider call ---
     provider = get_provider(model)
-    return await provider.chat(
+    resp = await provider.chat(
         messages,
         temperature=temperature,
         max_tokens=max_tokens,
         tools=tools,
         **kwargs,
     )
+
+    # --- 4. Cache set (回填) ---
+    if _cache is not None and ckey is not None:
+        try:
+            await _cache.set(ckey, resp)
+        except Exception as e:
+            logger.warning("llmgw.cache.set_failed", error=str(e))
+
+    # --- 5. Cost record (记录 token 用量) ---
+    if _cost_recorder is not None:
+        try:
+            await _cost_recorder.record(
+                model=model, tenant_id=tenant_id, usage=resp.usage
+            )
+        except Exception as e:
+            logger.warning("llmgw.cost.record_failed", error=str(e))
+
+    return resp
 
 
 def reset_providers() -> None:

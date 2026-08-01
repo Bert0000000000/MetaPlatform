@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass
+from typing import Any
 
 import redis.asyncio as redis
 import structlog
@@ -85,3 +86,21 @@ class RedisTokenBucket:
 
     async def close(self) -> None:
         await self._redis.aclose()
+
+    async def status(self, tenant_id: str) -> dict[str, Any]:
+        """返回某租户当前配额使用状态."""
+        import time
+
+        minute = int(time.time()) // self._config.window_sec
+        req_key = f"req:{tenant_id}:{minute}"
+        tok_key = f"tok:{tenant_id}:{minute}"
+        req_count = await self._redis.get(req_key)
+        tok_count = await self._redis.get(tok_key)
+        return {
+            "tenant_id": tenant_id,
+            "rpm_used": int(req_count or 0),
+            "rpm_limit": self._config.rpm_limit,
+            "tpm_used": int(tok_count or 0),
+            "tpm_limit": self._config.tpm_limit,
+            "window_sec": self._config.window_sec,
+        }
