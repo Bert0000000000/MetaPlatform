@@ -12,10 +12,12 @@ from mate_platform.auth import install_auth
 from mate_platform.tenancy.guards import TenantAccessError, require_tenant
 
 from .api.ontology import router as ontology_router
+from .inference.api import router as inference_router
 from .instances.api import router as instances_router
 from .repos.neo4j_repo import create_neo4j_repository
 from .sparql.api import router as sparql_router
 from .sparql.explain import router as explain_router
+from .versioning.api import router as versioning_router
 
 logger = structlog.get_logger(__name__)
 
@@ -71,6 +73,8 @@ app.include_router(ontology_router)
 app.include_router(instances_router)
 app.include_router(sparql_router)
 app.include_router(explain_router)
+app.include_router(versioning_router)
+app.include_router(inference_router)
 
 
 @app.get("/healthz")

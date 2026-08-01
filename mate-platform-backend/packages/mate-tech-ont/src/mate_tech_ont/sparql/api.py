@@ -1,7 +1,7 @@
 """SPARQL HTTP 端点 (ST-5.4.4)."""
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 
 from .cypher import execute_sparql, parse_sparql, sparql_to_cypher
@@ -20,8 +20,15 @@ class SparqlResponse(BaseModel):
     took_ms: float = 0.0
 
 
+def _tenant_id(request: Request) -> str | None:
+    ctx = getattr(request.state, "ctx", None)
+    if ctx is None:
+        return None
+    return getattr(ctx, "tenant_id", None)
+
+
 @router.post("", response_model=SparqlResponse)
-async def sparql_endpoint(req: SparqlRequest) -> SparqlResponse:
+async def sparql_endpoint(req: SparqlRequest, request: Request) -> SparqlResponse:
     """ST-5.4.4: SPARQL → Cypher → 执行."""
     import time
     start = time.time()
@@ -36,8 +43,7 @@ async def sparql_endpoint(req: SparqlRequest) -> SparqlResponse:
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
-    # 实际应调 neo4j — mock 返回空
-    bindings = execute_sparql(req.query, neo4j_session=None)
+    bindings = execute_sparql(req.query, neo4j_session=None, tenant_id=_tenant_id(request))
 
     return SparqlResponse(
         cypher=cypher,

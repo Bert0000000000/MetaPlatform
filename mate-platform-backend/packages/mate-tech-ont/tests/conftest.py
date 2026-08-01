@@ -66,6 +66,7 @@ import jwt as _pyjwt
 
 from mate_tech_ont.instances.store import store as instance_store
 from mate_tech_ont.security.tenant import TenantContext
+from mate_tech_ont.versioning.store import version_store
 
 _TEST_JWT_SECRET = "test-secret"
 
@@ -114,6 +115,8 @@ def auth_headers() -> dict[str, str]:
 def _reset_stores() -> None:
     instance_store._instances.clear()
     instance_store._relations.clear()
+    version_store._versions.clear()
+    version_store._by_id.clear()
 
 
 @pytest.fixture
