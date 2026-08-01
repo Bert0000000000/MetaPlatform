@@ -19,6 +19,9 @@ security:
 paths:
   /api/v1/arch/applications:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - arch
       summary: /v1/ea/applications
@@ -51,6 +54,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/arch/business-processes:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - arch
       summary: /v1/ea/business-processes
@@ -83,6 +89,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/arch/capabilities:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - arch
       summary: /v1/ea/capabilities
@@ -115,6 +124,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/arch/capabilities/tree:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - arch
       summary: /v1/ea/capabilities/tree
@@ -147,6 +159,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/arch/capability-mappings:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - arch
       summary: /v1/ea/capability-mappings
@@ -179,6 +194,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/arch/data-assets:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - arch
       summary: /v1/ea/data-assets
@@ -211,6 +229,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/arch/data-assets/catalog:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - arch
       summary: /v1/ea/data-assets/catalog
@@ -243,6 +264,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/arch/data-entities:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - arch
       summary: /v1/ea/data-entities
@@ -275,6 +299,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/arch/data-flows:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - arch
       summary: /v1/ea/data-flows
@@ -307,6 +334,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/arch/data-standards:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - arch
       summary: /v1/ea/data-standards
@@ -339,6 +369,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/arch/data/domains:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - arch
       summary: /v1/ea/data/domains
@@ -371,6 +404,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/arch/deployments:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - arch
       summary: /v1/ea/deployments
@@ -403,6 +439,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/arch/governance/principle-categories:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - arch
       summary: /v1/ea/governance/principle-categories
@@ -435,6 +474,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/arch/governance/principles:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - arch
       summary: /v1/ea/governance/principles
@@ -467,6 +509,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/arch/governance/review-templates:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - arch
       summary: /v1/ea/governance/review-templates
@@ -499,6 +544,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/arch/governance/review-tickets:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - arch
       summary: /v1/ea/governance/review-tickets
@@ -531,6 +579,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/arch/governance/tech-debts:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - arch
       summary: /v1/ea/governance/tech-debts
@@ -563,6 +614,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/arch/impact-analysis:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - arch
       summary: /v1/ea/impact-analysis
@@ -595,6 +649,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/arch/infrastructures:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - arch
       summary: /v1/ea/infrastructures
@@ -627,6 +684,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/arch/ontology-mappings/changes:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - arch
       summary: /v1/ea/ontology-mappings/changes
@@ -659,6 +719,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/arch/ontology-mappings/rules:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - arch
       summary: /v1/ea/ontology-mappings/rules
@@ -691,6 +754,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/arch/orgs:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - arch
       summary: /v1/ea/orgs
@@ -723,6 +789,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/arch/orgs/tree:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - arch
       summary: /v1/ea/orgs/tree
@@ -755,6 +824,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/arch/roles:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - arch
       summary: /v1/ea/roles
@@ -787,6 +859,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/arch/tech-stacks:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - arch
       summary: /v1/ea/tech-stacks
@@ -819,6 +894,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/arch/technology-components:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - arch
       summary: /v1/ea/technology-components
@@ -851,6 +929,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/arch/technology-radar:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - arch
       summary: /v1/ea/technology-radar
@@ -883,6 +964,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/arch/technology-stacks:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - arch
       summary: /v1/ea/technology-stacks
@@ -915,6 +999,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/arch/value-streams:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - arch
       summary: /v1/ea/value-streams
@@ -947,19 +1034,24 @@ paths:
       x-mate-implementation-status: planned
 components:
   securitySchemes:
-    BearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
-      description: 统一 IAM Token
-    ApiKeyAuth:
-      type: apiKey
-      in: header
-      name: X-API-Key
     bearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
+    tenantHeader:
+      type: apiKey
+      in: header
+      name: X-Tenant-Id
+    oidcScopes:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: https://keycloak.metaplatform.io/realms/metaplatform/protocol/openid-connect/token
+          scopes:
+            platform.read: Read-only access
+            platform.write: Mutation access
+            platform.admin: Service-to-service admin
+            tenant_switch_enabled: Permit tenant switching via X-Tenant-Id
   parameters:
     TenantId:
       name: X-Tenant-Id

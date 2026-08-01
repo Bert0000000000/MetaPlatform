@@ -19,6 +19,9 @@ security:
 paths:
   /healthz:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: 健康检查
       tags:
       - msg
@@ -36,6 +39,9 @@ paths:
       x-mate-implementation-status: implemented
   /api/v1/msg/publish:
     post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: 发布消息
       tags:
       - msg
@@ -65,6 +71,9 @@ paths:
       x-mate-implementation-status: implemented
   /api/v1/msg/topics:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: 列出主题
       tags:
       - msg
@@ -86,6 +95,20 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+    tenantHeader:
+      type: apiKey
+      in: header
+      name: X-Tenant-Id
+    oidcScopes:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: https://keycloak.metaplatform.io/realms/metaplatform/protocol/openid-connect/token
+          scopes:
+            platform.read: Read-only access
+            platform.write: Mutation access
+            platform.admin: Service-to-service admin
+            tenant_switch_enabled: Permit tenant switching via X-Tenant-Id
   schemas:
     PublishRequest:
       type: object

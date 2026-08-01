@@ -116,6 +116,9 @@ paths:
       x-mate-implementation-status: placeholder
   /api/v1/iam/auth/logout:
     post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: Logout (bump updated_at; best-effort)
       tags:
       - iam
@@ -133,6 +136,9 @@ paths:
       x-mate-implementation-status: placeholder
   /api/v1/iam/auth/me:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: Current user (inline bearer parse)
       tags:
       - iam
@@ -190,6 +196,9 @@ paths:
       x-mate-implementation-status: placeholder
   /api/v1/admin/users:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: List users (paginated, filterable)
       tags:
       - iam
@@ -236,6 +245,9 @@ paths:
       - FR-IAM-IAMGETADMINUSERS
       x-mate-implementation-status: implemented
     post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: Create user
       tags:
       - iam
@@ -259,6 +271,9 @@ paths:
       x-mate-implementation-status: implemented
   /api/v1/admin/users/import:
     post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: Bulk import users from CSV
       tags:
       - iam
@@ -287,6 +302,9 @@ paths:
       x-mate-implementation-status: implemented
   /api/v1/admin/users/export:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: Export users as CSV
       tags:
       - iam
@@ -312,6 +330,9 @@ paths:
       schema:
         type: integer
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: Get one user
       tags:
       - iam
@@ -334,6 +355,9 @@ paths:
         schema:
           type: string
     put:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: Update user
       tags:
       - iam
@@ -362,6 +386,9 @@ paths:
         schema:
           type: string
     delete:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: Delete user (cascades UserRole)
       tags:
       - iam
@@ -393,6 +420,9 @@ paths:
       schema:
         type: integer
     post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: Reset password (returns new temporary password)
       tags:
       - iam
@@ -422,6 +452,9 @@ paths:
       schema:
         type: integer
     post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: Enable / disable user
       tags:
       - iam
@@ -464,6 +497,9 @@ paths:
       schema:
         type: integer
     post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: Verify a plaintext password against the stored hash
       tags:
       - iam
@@ -504,6 +540,9 @@ paths:
       schema:
         type: integer
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: Recent login logs for a user
       tags:
       - iam
@@ -540,6 +579,9 @@ paths:
       x-mate-implementation-status: implemented
   /api/v1/admin/orgs/tree:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: Org tree (root -> children)
       tags:
       - iam
@@ -557,6 +599,9 @@ paths:
       x-mate-implementation-status: implemented
   /api/v1/admin/orgs:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: List orgs (paginated)
       tags:
       - iam
@@ -600,6 +645,9 @@ paths:
       - FR-IAM-IAMGETADMINORGS
       x-mate-implementation-status: implemented
     post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: Create org
       tags:
       - iam
@@ -629,6 +677,9 @@ paths:
       schema:
         type: integer
     put:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: Update org
       tags:
       - iam
@@ -657,6 +708,9 @@ paths:
         schema:
           type: string
     delete:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: Delete org (rejected when children exist)
       tags:
       - iam
@@ -682,6 +736,9 @@ paths:
           type: string
   /api/v1/admin/orgs/positions:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: List positions
       tags:
       - iam
@@ -716,6 +773,9 @@ paths:
       - FR-IAM-IAMGETADMINORGSPOSITIONS
       x-mate-implementation-status: implemented
     post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: Create position
       tags:
       - iam
@@ -745,6 +805,9 @@ paths:
       schema:
         type: integer
     put:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: Update position
       tags:
       - iam
@@ -773,6 +836,9 @@ paths:
         schema:
           type: string
     delete:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: Delete position (rejected when employees still attached)
       tags:
       - iam
@@ -798,6 +864,9 @@ paths:
           type: string
   /api/v1/admin/orgs/transfer:
     post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: Transfer an employee to a target org/position
       tags:
       - iam
@@ -823,6 +892,9 @@ paths:
       x-mate-implementation-status: implemented
   /api/v1/admin/permissions/roles:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: List roles
       tags:
       - iam
@@ -857,6 +929,9 @@ paths:
       - FR-IAM-IAMGETADMINPERMISSIONSROLES
       x-mate-implementation-status: implemented
     post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: Create role
       tags:
       - iam
@@ -886,6 +961,9 @@ paths:
       schema:
         type: integer
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: Role + permission detail
       tags:
       - iam
@@ -908,6 +986,9 @@ paths:
         schema:
           type: string
     put:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: Update role
       tags:
       - iam
@@ -936,6 +1017,9 @@ paths:
         schema:
           type: string
     delete:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: Delete role (rejected if users still assigned)
       tags:
       - iam
@@ -961,6 +1045,9 @@ paths:
           type: string
   /api/v1/admin/permissions/catalog:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: Permission catalog (resource + actions)
       tags:
       - iam
@@ -978,6 +1065,9 @@ paths:
       x-mate-implementation-status: implemented
   /api/v1/admin/permissions/assign:
     post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: Assign permissions to a user or a role
       tags:
       - iam
@@ -1001,6 +1091,9 @@ paths:
       x-mate-implementation-status: implemented
   /api/v1/admin/permissions/matrix:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: Role x permission matrix
       tags:
       - iam
@@ -1023,6 +1116,9 @@ paths:
       x-mate-implementation-status: implemented
   /api/v1/admin/logs/audit:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: Audit log query
       tags:
       - iam
@@ -1084,6 +1180,9 @@ paths:
       x-mate-implementation-status: implemented
   /api/v1/admin/logs/audit/export:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: Export audit log (csv | json), max 50000 rows
       tags:
       - iam
@@ -1138,6 +1237,9 @@ paths:
       schema:
         type: integer
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: Audit log detail
       tags:
       - iam
@@ -1161,6 +1263,9 @@ paths:
           type: string
   /api/v1/admin/logs/modules:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: Distinct module/action counts (for filter UI)
       tags:
       - iam
@@ -1178,6 +1283,9 @@ paths:
       x-mate-implementation-status: implemented
   /api/v1/admin/configs:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: List system configs
       tags:
       - iam
@@ -1217,6 +1325,9 @@ paths:
       x-mate-implementation-status: implemented
   /api/v1/admin/configs/categories:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: Distinct category counts
       tags:
       - iam
@@ -1240,6 +1351,9 @@ paths:
       schema:
         type: string
     put:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: Update a system config (with audit)
       tags:
       - iam
@@ -1275,6 +1389,20 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+    tenantHeader:
+      type: apiKey
+      in: header
+      name: X-Tenant-Id
+    oidcScopes:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: https://keycloak.metaplatform.io/realms/metaplatform/protocol/openid-connect/token
+          scopes:
+            platform.read: Read-only access
+            platform.write: Mutation access
+            platform.admin: Service-to-service admin
+            tenant_switch_enabled: Permit tenant switching via X-Tenant-Id
   schemas:
     LoginRequest:
       type: object

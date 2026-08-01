@@ -19,6 +19,9 @@ security:
 paths:
   /api/v1/dw/auth/login:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - dw
       summary: /v1/dw/auth/login
@@ -51,6 +54,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/dw/collaborations:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - dw
       summary: /v1/dw/collaborations
@@ -83,6 +89,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/dw/commit:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - dw
       summary: /v1/dw/commit
@@ -115,6 +124,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/dw/documents:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - dw
       summary: /v1/dw/documents
@@ -147,6 +159,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/dw/documents/upload:
     post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - dw
       summary: /v1/dw/documents/upload
@@ -183,6 +198,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/dw/employees:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - dw
       summary: /v1/dw/employees
@@ -215,6 +233,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/dw/employees/tasks:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - dw
       summary: /v1/dw/employees/tasks
@@ -247,6 +268,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/dw/evaluations:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - dw
       summary: /v1/dw/evaluations
@@ -279,6 +303,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/dw/extract:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - dw
       summary: /v1/dw/extract
@@ -311,6 +338,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/dw/knowledge-bases:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - dw
       summary: /v1/dw/knowledge-bases
@@ -343,6 +373,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/dw/learning/extract:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - dw
       summary: /v1/dw/learning/extract
@@ -375,6 +408,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/dw/learning/feedback:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - dw
       summary: /v1/dw/learning/feedback
@@ -407,6 +443,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/dw/models:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - dw
       summary: /v1/dw/models
@@ -439,6 +478,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/dw/tools:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - dw
       summary: /v1/dw/tools
@@ -471,6 +513,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/dw/traces:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - dw
       summary: /v1/dw/traces
@@ -503,19 +548,24 @@ paths:
       x-mate-implementation-status: planned
 components:
   securitySchemes:
-    BearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
-      description: 统一 IAM Token
-    ApiKeyAuth:
-      type: apiKey
-      in: header
-      name: X-API-Key
     bearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
+    tenantHeader:
+      type: apiKey
+      in: header
+      name: X-Tenant-Id
+    oidcScopes:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: https://keycloak.metaplatform.io/realms/metaplatform/protocol/openid-connect/token
+          scopes:
+            platform.read: Read-only access
+            platform.write: Mutation access
+            platform.admin: Service-to-service admin
+            tenant_switch_enabled: Permit tenant switching via X-Tenant-Id
   parameters:
     TenantId:
       name: X-Tenant-Id

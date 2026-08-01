@@ -19,6 +19,9 @@ security:
 paths:
   /api/v1/data/sources:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - data
       summary: 列表 大数据源
@@ -44,6 +47,9 @@ paths:
       - FR-DATA-DATAGETDATASOURCES
       x-mate-implementation-status: planned
     post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - data
       summary: 新建 大数据源
@@ -70,6 +76,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/data/sources/{id}:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - data
       summary: 详情 大数据源
@@ -100,6 +109,9 @@ paths:
       - FR-DATA-DATAGETDATASOURCESID
       x-mate-implementation-status: planned
     put:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - data
       summary: 更新 大数据源
@@ -130,6 +142,9 @@ paths:
       - FR-DATA-DATAPUTDATASOURCESID
       x-mate-implementation-status: planned
     delete:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - data
       summary: 删除 大数据源
@@ -161,6 +176,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/data/sources/{id}/test:
     post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - data
       summary: 测试 测试连接
@@ -192,6 +210,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/data/sources/{id}/schema:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - data
       summary: 发现 发现schema
@@ -223,6 +244,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/data/cdc-tasks:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - data
       summary: 列表 CDC任务
@@ -248,6 +272,9 @@ paths:
       - FR-DATA-DATAGETDATACDCTASKS
       x-mate-implementation-status: planned
     post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - data
       summary: 新建 CDC任务
@@ -274,6 +301,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/data/cdc-tasks/{id}:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - data
       summary: 详情 CDC任务
@@ -304,6 +334,9 @@ paths:
       - FR-DATA-DATAGETDATACDCTASKSID
       x-mate-implementation-status: planned
     put:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - data
       summary: 更新 CDC任务
@@ -334,6 +367,9 @@ paths:
       - FR-DATA-DATAPUTDATACDCTASKSID
       x-mate-implementation-status: planned
     delete:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - data
       summary: 删除 CDC任务
@@ -365,6 +401,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/data/cdc-tasks/{id}/status:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - data
       summary: 状态 CDC状态
@@ -396,6 +435,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/data/cdc-tasks/{id}/pause:
     post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - data
       summary: 暂停 暂停CDC
@@ -427,6 +469,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/data/cdc-tasks/{id}/resume:
     post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - data
       summary: 恢复 恢复CDC
@@ -458,6 +503,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/etl/tasks:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - data
       summary: 列表 ETL任务
@@ -483,6 +531,9 @@ paths:
       - FR-DATA-DATAGETETLTASKS
       x-mate-implementation-status: planned
     post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - data
       summary: 新建 ETL任务
@@ -509,6 +560,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/etl/tasks/{id}:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - data
       summary: 详情 ETL任务
@@ -539,6 +593,9 @@ paths:
       - FR-DATA-DATAGETETLTASKSID
       x-mate-implementation-status: planned
     put:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - data
       summary: 更新 ETL任务
@@ -569,6 +626,9 @@ paths:
       - FR-DATA-DATAPUTETLTASKSID
       x-mate-implementation-status: planned
     delete:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - data
       summary: 删除 ETL任务
@@ -600,6 +660,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/etl/tasks/{id}/run:
     post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - data
       summary: 运行 运行ETL
@@ -631,6 +694,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/etl/tasks/{id}/stop:
     post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - data
       summary: 停止 停止ETL
@@ -662,6 +728,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/etl/tasks/{id}/status:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - data
       summary: 状态 ETL状态
@@ -693,6 +762,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/scheduler/tasks:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - data
       summary: 列表 调度任务
@@ -718,6 +790,9 @@ paths:
       - FR-DATA-DATAGETSCHEDULERTASKS
       x-mate-implementation-status: planned
     post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - data
       summary: 新建 调度任务
@@ -744,6 +819,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/scheduler/tasks/{id}:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - data
       summary: 详情 调度任务
@@ -774,6 +852,9 @@ paths:
       - FR-DATA-DATAGETSCHEDULERTASKSID
       x-mate-implementation-status: planned
     put:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - data
       summary: 更新 调度任务
@@ -804,6 +885,9 @@ paths:
       - FR-DATA-DATAPUTSCHEDULERTASKSID
       x-mate-implementation-status: planned
     delete:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - data
       summary: 删除 调度任务
@@ -835,6 +919,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/scheduler/tasks/{id}/trigger:
     post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - data
       summary: 触发 触发调度
@@ -866,6 +953,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/scheduler/tasks/{id}/pause:
     post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - data
       summary: 暂停 暂停调度
@@ -897,6 +987,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/scheduler/dag:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - data
       summary: DAG 调度DAG
@@ -923,6 +1016,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/metrics:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - data
       summary: 列表 数据指标
@@ -948,6 +1044,9 @@ paths:
       - FR-DATA-DATAGETMETRICS
       x-mate-implementation-status: planned
     post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - data
       summary: 新建 数据指标
@@ -974,6 +1073,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/metrics/{id}:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - data
       summary: 详情 数据指标
@@ -1004,6 +1106,9 @@ paths:
       - FR-DATA-DATAGETMETRICSID
       x-mate-implementation-status: planned
     put:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - data
       summary: 更新 数据指标
@@ -1034,6 +1139,9 @@ paths:
       - FR-DATA-DATAPUTMETRICSID
       x-mate-implementation-status: planned
     delete:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - data
       summary: 删除 数据指标
@@ -1065,6 +1173,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/metrics/{id}/values:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - data
       summary: 值 指标值
@@ -1096,6 +1207,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/metrics/{id}/lineage:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - data
       summary: 血缘 指标血缘
@@ -1127,6 +1241,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/metrics/{id}/compute:
     post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - data
       summary: 计算 手动计算
@@ -1158,19 +1275,24 @@ paths:
       x-mate-implementation-status: planned
 components:
   securitySchemes:
-    BearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
-      description: 统一 IAM Token
-    ApiKeyAuth:
-      type: apiKey
-      in: header
-      name: X-API-Key
     bearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
+    tenantHeader:
+      type: apiKey
+      in: header
+      name: X-Tenant-Id
+    oidcScopes:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: https://keycloak.metaplatform.io/realms/metaplatform/protocol/openid-connect/token
+          scopes:
+            platform.read: Read-only access
+            platform.write: Mutation access
+            platform.admin: Service-to-service admin
+            tenant_switch_enabled: Permit tenant switching via X-Tenant-Id
   parameters:
     TenantId:
       name: X-Tenant-Id

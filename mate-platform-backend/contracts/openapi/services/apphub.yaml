@@ -19,6 +19,9 @@ security:
 paths:
   /api/v1/apphub/apps:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - apphub
       summary: /v1/apphub/apps
@@ -51,6 +54,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/apphub/apps/groups:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - apphub
       summary: /v1/apphub/apps/groups
@@ -83,6 +89,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/apphub/modules:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - apphub
       summary: /v1/apphub/modules
@@ -115,6 +124,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/apphub/pages:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - apphub
       summary: /v1/apphub/pages
@@ -147,6 +159,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/apphub/templates:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - apphub
       summary: /v1/apphub/templates
@@ -179,19 +194,24 @@ paths:
       x-mate-implementation-status: planned
 components:
   securitySchemes:
-    BearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
-      description: 统一 IAM Token
-    ApiKeyAuth:
-      type: apiKey
-      in: header
-      name: X-API-Key
     bearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
+    tenantHeader:
+      type: apiKey
+      in: header
+      name: X-Tenant-Id
+    oidcScopes:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: https://keycloak.metaplatform.io/realms/metaplatform/protocol/openid-connect/token
+          scopes:
+            platform.read: Read-only access
+            platform.write: Mutation access
+            platform.admin: Service-to-service admin
+            tenant_switch_enabled: Permit tenant switching via X-Tenant-Id
   parameters:
     TenantId:
       name: X-Tenant-Id

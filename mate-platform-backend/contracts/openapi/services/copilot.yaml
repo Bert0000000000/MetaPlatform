@@ -19,6 +19,9 @@ security:
 paths:
   /api/v1/copilot:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - copilot
       summary: /v1/copilot
@@ -51,6 +54,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/copilot/a2a/delegate:
     post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - copilot
       summary: /v1/copilot/a2a/delegate
@@ -87,6 +93,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/copilot/a2a/external:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - copilot
       summary: /v1/copilot/a2a/external
@@ -119,6 +128,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/copilot/actions:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - copilot
       summary: /v1/copilot/actions
@@ -151,6 +163,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/copilot/actions/execute:
     post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - copilot
       summary: /v1/copilot/actions/execute
@@ -187,6 +202,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/copilot/actions/match:
     post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - copilot
       summary: /v1/copilot/actions/match
@@ -223,6 +241,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/copilot/analysis/audit-sql:
     post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - copilot
       summary: /v1/copilot/analysis/audit-sql
@@ -259,6 +280,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/copilot/analysis/execute-sql:
     post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - copilot
       summary: /v1/copilot/analysis/execute-sql
@@ -295,6 +319,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/copilot/analysis/explain-sql:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - copilot
       summary: /v1/copilot/analysis/explain-sql
@@ -327,6 +354,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/copilot/analysis/generate-sql:
     post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - copilot
       summary: /v1/copilot/analysis/generate-sql
@@ -363,6 +393,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/copilot/auth/login:
     post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - copilot
       summary: /v1/copilot/auth/login
@@ -399,6 +432,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/copilot/chat/multimodal/upload:
     post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - copilot
       summary: /v1/copilot/chat/multimodal/upload
@@ -435,6 +471,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/copilot/code:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - copilot
       summary: /v1/copilot/code
@@ -467,6 +506,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/copilot/conversations:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - copilot
       summary: /v1/copilot/conversations
@@ -499,6 +541,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/copilot/datasources:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - copilot
       summary: /v1/copilot/datasources
@@ -531,6 +576,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/copilot/generate/dashboard:
     post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - copilot
       summary: /v1/copilot/generate/dashboard
@@ -567,6 +615,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/copilot/generate/explain-code:
     post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - copilot
       summary: /v1/copilot/generate/explain-code
@@ -603,6 +654,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/copilot/generate/form:
     post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - copilot
       summary: /v1/copilot/generate/form
@@ -639,6 +693,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/copilot/generate/process:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - copilot
       summary: /v1/copilot/generate/process
@@ -671,6 +728,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/copilot/generate/review-code:
     post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - copilot
       summary: /v1/copilot/generate/review-code
@@ -707,6 +767,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/copilot/knowledge-bases:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - copilot
       summary: /v1/copilot/knowledge-bases
@@ -739,6 +802,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/copilot/models/multimodal:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - copilot
       summary: /v1/copilot/models/multimodal
@@ -771,6 +837,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/copilot/ontology/concepts/search:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - copilot
       summary: /v1/copilot/ontology/concepts/search
@@ -803,6 +872,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/copilot/ontology/graph/expand:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - copilot
       summary: /v1/copilot/ontology/graph/expand
@@ -835,6 +907,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/copilot/ontology/graph/query:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - copilot
       summary: /v1/copilot/ontology/graph/query
@@ -867,6 +942,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/copilot/plans:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - copilot
       summary: /v1/copilot/plans
@@ -899,6 +977,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/copilot/queries/execute:
     post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - copilot
       summary: /v1/copilot/queries/execute
@@ -935,6 +1016,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/copilot/queries/history:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - copilot
       summary: /v1/copilot/queries/history
@@ -967,6 +1051,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/copilot/scheduling/employees/match:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - copilot
       summary: /v1/copilot/scheduling/employees/match
@@ -999,6 +1086,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/copilot/scheduling/execution/start:
     post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - copilot
       summary: /v1/copilot/scheduling/execution/start
@@ -1035,6 +1125,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/copilot/scheduling/intent/detect:
     post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - copilot
       summary: /v1/copilot/scheduling/intent/detect
@@ -1071,6 +1164,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/copilot/scheduling/intents:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - copilot
       summary: /v1/copilot/scheduling/intents
@@ -1103,6 +1199,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/copilot/scheduling/plan/generate:
     post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - copilot
       summary: /v1/copilot/scheduling/plan/generate
@@ -1139,6 +1238,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/copilot/scheduling/templates:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - copilot
       summary: /v1/copilot/scheduling/templates
@@ -1171,6 +1273,9 @@ paths:
       x-mate-implementation-status: planned
   /api/v1/copilot/search:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       tags:
       - copilot
       summary: /v1/copilot/search
@@ -1203,19 +1308,24 @@ paths:
       x-mate-implementation-status: planned
 components:
   securitySchemes:
-    BearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
-      description: 统一 IAM Token
-    ApiKeyAuth:
-      type: apiKey
-      in: header
-      name: X-API-Key
     bearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
+    tenantHeader:
+      type: apiKey
+      in: header
+      name: X-Tenant-Id
+    oidcScopes:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: https://keycloak.metaplatform.io/realms/metaplatform/protocol/openid-connect/token
+          scopes:
+            platform.read: Read-only access
+            platform.write: Mutation access
+            platform.admin: Service-to-service admin
+            tenant_switch_enabled: Permit tenant switching via X-Tenant-Id
   parameters:
     TenantId:
       name: X-Tenant-Id

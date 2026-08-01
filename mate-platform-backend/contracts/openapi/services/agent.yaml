@@ -19,6 +19,9 @@ security:
 paths:
   /healthz:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: Liveness probe
       tags:
       - agent
@@ -40,6 +43,9 @@ paths:
       x-mate-implementation-status: placeholder
   /api/v1/agent/chat:
     post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: Agent chat (S1 | S2 | S3 | S4)
       tags:
       - agent
@@ -71,6 +77,9 @@ paths:
       x-mate-implementation-status: placeholder
   /api/v1/agent/chat/stream:
     post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: SSE streaming chat (S1 / S2 / S3)
       tags:
       - agent
@@ -96,6 +105,9 @@ paths:
       x-mate-implementation-status: placeholder
   /api/v1/agent/review:
     post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: S3 human review resume (approve / abort)
       tags:
       - agent
@@ -131,6 +143,9 @@ paths:
       schema:
         type: string
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: Read persisted thread state
       tags:
       - agent
@@ -153,6 +168,9 @@ paths:
         schema:
           type: string
     delete:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: Delete persisted thread state
       tags:
       - agent
@@ -180,6 +198,20 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+    tenantHeader:
+      type: apiKey
+      in: header
+      name: X-Tenant-Id
+    oidcScopes:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: https://keycloak.metaplatform.io/realms/metaplatform/protocol/openid-connect/token
+          scopes:
+            platform.read: Read-only access
+            platform.write: Mutation access
+            platform.admin: Service-to-service admin
+            tenant_switch_enabled: Permit tenant switching via X-Tenant-Id
   schemas:
     HealthResponse:
       type: object

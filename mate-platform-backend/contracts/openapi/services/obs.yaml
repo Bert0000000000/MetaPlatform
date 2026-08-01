@@ -19,6 +19,9 @@ security:
 paths:
   /healthz:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: Liveness probe
       tags:
       - obs
@@ -36,6 +39,9 @@ paths:
       x-mate-implementation-status: placeholder
   /metrics:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: Prometheus metrics (text/plain)
       tags:
       - obs
@@ -53,6 +59,9 @@ paths:
       x-mate-implementation-status: placeholder
   /api/v1/obs/health:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: Aggregated health (9 apps + 7 infra)
       tags:
       - obs
@@ -70,6 +79,9 @@ paths:
       x-mate-implementation-status: placeholder
   /api/v1/obs/instrument:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: Auto-instrument status
       tags:
       - obs
@@ -87,6 +99,9 @@ paths:
       x-mate-implementation-status: placeholder
   /api/v1/admin/operations/health:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: Operations health (per service)
       tags:
       - obs
@@ -104,6 +119,9 @@ paths:
       x-mate-implementation-status: placeholder
   /api/v1/admin/operations/metrics/self:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: Self process metrics snapshot
       tags:
       - obs
@@ -121,6 +139,9 @@ paths:
       x-mate-implementation-status: placeholder
   /api/v1/admin/operations/alerts/rules:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: List alert rules
       tags:
       - obs
@@ -138,6 +159,9 @@ paths:
       x-mate-implementation-status: placeholder
   /api/v1/admin/operations/prometheus/query:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: Prometheus passthrough (best-effort)
       tags:
       - obs
@@ -162,6 +186,9 @@ paths:
       x-mate-implementation-status: placeholder
   /api/v1/admin/operations/capacity:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: Capacity snapshot
       tags:
       - obs
@@ -183,3 +210,17 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+    tenantHeader:
+      type: apiKey
+      in: header
+      name: X-Tenant-Id
+    oidcScopes:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: https://keycloak.metaplatform.io/realms/metaplatform/protocol/openid-connect/token
+          scopes:
+            platform.read: Read-only access
+            platform.write: Mutation access
+            platform.admin: Service-to-service admin
+            tenant_switch_enabled: Permit tenant switching via X-Tenant-Id

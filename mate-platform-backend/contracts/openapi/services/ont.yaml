@@ -19,6 +19,9 @@ security:
 paths:
   /healthz:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: Liveness probe
       tags:
       - ont
@@ -36,6 +39,9 @@ paths:
       x-mate-implementation-status: implemented
   /api/v1/ont/ontologies:
     post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: Create ontology
       tags:
       - ont
@@ -69,6 +75,9 @@ paths:
       schema:
         type: string
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: Read ontology
       tags:
       - ont
@@ -96,6 +105,9 @@ paths:
           type: string
   /api/v1/ont/classes:
     post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: Create class
       tags:
       - ont
@@ -129,6 +141,9 @@ paths:
       schema:
         type: string
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: Read class
       tags:
       - ont
@@ -156,6 +171,9 @@ paths:
           type: string
   /api/v1/ont/instances:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: List instances (optional class_id filter)
       tags:
       - ont
@@ -183,6 +201,9 @@ paths:
       - FR-ONT-ONTGETONTINSTANCES
       x-mate-implementation-status: placeholder
     post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: Create instance
       tags:
       - ont
@@ -216,6 +237,9 @@ paths:
       schema:
         type: string
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: Read instance
       tags:
       - ont
@@ -242,6 +266,9 @@ paths:
         schema:
           type: string
     delete:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: Delete instance
       tags:
       - ont
@@ -265,6 +292,9 @@ paths:
           type: string
   /api/v1/ont/instances/relations:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: List relations
       tags:
       - ont
@@ -287,6 +317,9 @@ paths:
       - FR-ONT-ONTGETONTINSTANCESRELATIONS
       x-mate-implementation-status: placeholder
     post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: Create relation
       tags:
       - ont
@@ -314,6 +347,9 @@ paths:
       x-mate-implementation-status: placeholder
   /api/v1/ont/sparql:
     post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: SPARQL -> Cypher -> execute
       tags:
       - ont
@@ -341,6 +377,9 @@ paths:
       x-mate-implementation-status: placeholder
   /api/v1/ont/explain:
     post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: SPARQL EXPLAIN (parse + transpile only)
       tags:
       - ont
@@ -388,6 +427,20 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+    tenantHeader:
+      type: apiKey
+      in: header
+      name: X-Tenant-Id
+    oidcScopes:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: https://keycloak.metaplatform.io/realms/metaplatform/protocol/openid-connect/token
+          scopes:
+            platform.read: Read-only access
+            platform.write: Mutation access
+            platform.admin: Service-to-service admin
+            tenant_switch_enabled: Permit tenant switching via X-Tenant-Id
   schemas:
     OntologyCreate:
       type: object

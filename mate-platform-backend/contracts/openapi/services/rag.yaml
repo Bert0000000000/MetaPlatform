@@ -19,6 +19,9 @@ security:
 paths:
   /healthz:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: Liveness probe
       tags:
       - rag
@@ -40,6 +43,9 @@ paths:
       x-mate-implementation-status: placeholder
   /api/v1/rag/status:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: System status (embedder + index backends)
       tags:
       - rag
@@ -61,6 +67,9 @@ paths:
       x-mate-implementation-status: placeholder
   /api/v1/rag/stats:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: Indexed chunk count + embedder dim
       tags:
       - rag
@@ -82,6 +91,9 @@ paths:
       x-mate-implementation-status: placeholder
   /api/v1/rag/admin/pg-stats:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: PostgreSQL store diagnostics
       tags:
       - rag
@@ -103,6 +115,9 @@ paths:
       x-mate-implementation-status: placeholder
   /api/v1/rag/parse:
     post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: Parse raw text via RAGFlow and fan out to 3 indexes
       tags:
       - rag
@@ -132,6 +147,9 @@ paths:
       x-mate-implementation-status: placeholder
   /api/v1/rag/ingest:
     post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: Ingest pre-chunked text into all 3 indexes
       tags:
       - rag
@@ -161,6 +179,9 @@ paths:
       x-mate-implementation-status: placeholder
   /api/v1/rag/upload:
     post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: Multipart upload (text/markdown) -> parse + 3-index fan-out
       tags:
       - rag
@@ -198,6 +219,9 @@ paths:
       x-mate-implementation-status: placeholder
   /api/v1/rag/search:
     post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: 3-strategy retrieval (auto / factual / entity / thematic)
       tags:
       - rag
@@ -231,6 +255,20 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+    tenantHeader:
+      type: apiKey
+      in: header
+      name: X-Tenant-Id
+    oidcScopes:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: https://keycloak.metaplatform.io/realms/metaplatform/protocol/openid-connect/token
+          scopes:
+            platform.read: Read-only access
+            platform.write: Mutation access
+            platform.admin: Service-to-service admin
+            tenant_switch_enabled: Permit tenant switching via X-Tenant-Id
   schemas:
     HealthResponse:
       type: object

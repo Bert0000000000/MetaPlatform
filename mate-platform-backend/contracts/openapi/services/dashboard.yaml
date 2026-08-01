@@ -55,6 +55,9 @@ paths:
       x-mate-implementation-status: placeholder
   /api/v1/dashboard/profile:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: Current user profile (synthetic)
       tags:
       - dashboard
@@ -72,6 +75,9 @@ paths:
       x-mate-implementation-status: placeholder
   /api/v1/dashboard/profile/permissions:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: Aggregated permissions (synthetic)
       tags:
       - dashboard
@@ -89,6 +95,9 @@ paths:
       x-mate-implementation-status: placeholder
   /api/v1/dashboard/settings:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: Get user preferences
       tags:
       - dashboard
@@ -110,6 +119,9 @@ paths:
       - FR-DASHBOARD-DASHBOARDGETDASHBOARDSETTINGS
       x-mate-implementation-status: placeholder
     put:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: Update user preferences
       tags:
       - dashboard
@@ -133,6 +145,9 @@ paths:
       x-mate-implementation-status: placeholder
   /api/v1/dashboard/sessions:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: Active sessions (synthetic)
       tags:
       - dashboard
@@ -161,6 +176,9 @@ paths:
       schema:
         type: string
     delete:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: Revoke session
       tags:
       - dashboard
@@ -184,6 +202,9 @@ paths:
           type: string
   /api/v1/dashboard/api-keys:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: List API keys (synthetic)
       tags:
       - dashboard
@@ -215,6 +236,9 @@ paths:
       - FR-DASHBOARD-DASHBOARDGETDASHBOARDAPIKEYS
       x-mate-implementation-status: placeholder
     post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: Create API key
       tags:
       - dashboard
@@ -244,6 +268,9 @@ paths:
       schema:
         type: string
     delete:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: Revoke API key
       tags:
       - dashboard
@@ -267,6 +294,9 @@ paths:
           type: string
   /api/v1/dashboard/notifications:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: List notifications (in-memory)
       tags:
       - dashboard
@@ -284,6 +314,9 @@ paths:
       x-mate-implementation-status: placeholder
   /api/v1/dashboard/notifications/unread-count:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: Unread notification count
       tags:
       - dashboard
@@ -307,6 +340,9 @@ paths:
       schema:
         type: string
     put:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: Mark one notification read
       tags:
       - dashboard
@@ -330,6 +366,9 @@ paths:
           type: string
   /api/v1/dashboard/notifications/read-all:
     post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: Mark all notifications read
       tags:
       - dashboard
@@ -347,6 +386,9 @@ paths:
       x-mate-implementation-status: placeholder
   /api/v1/dashboard/notifications/settings:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: Get notification preferences
       tags:
       - dashboard
@@ -363,6 +405,9 @@ paths:
       - FR-DASHBOARD-DASHBOARDGETDASHBOARDNOTIFICATIONSSETTINGS
       x-mate-implementation-status: placeholder
     put:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: Update notification preferences
       tags:
       - dashboard
@@ -386,6 +431,9 @@ paths:
       x-mate-implementation-status: placeholder
   /api/v1/dashboard/metrics:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: Metric cards (in-memory)
       tags:
       - dashboard
@@ -403,6 +451,9 @@ paths:
       x-mate-implementation-status: placeholder
   /api/v1/dashboard/metrics/trend:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: Metric trend (in-memory)
       tags:
       - dashboard
@@ -429,6 +480,9 @@ paths:
       x-mate-implementation-status: placeholder
   /api/v1/dashboard/todos:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: Pending todos (in-memory)
       tags:
       - dashboard
@@ -446,6 +500,9 @@ paths:
       x-mate-implementation-status: placeholder
   /api/v1/dashboard/todos/done:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: Done todos (in-memory)
       tags:
       - dashboard
@@ -469,6 +526,9 @@ paths:
       schema:
         type: string
     post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: Approve / reject todo
       tags:
       - dashboard
@@ -498,6 +558,9 @@ paths:
           type: string
   /api/v1/dashboard/workers:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: List digital workers (in-memory)
       tags:
       - dashboard
@@ -515,6 +578,9 @@ paths:
       x-mate-implementation-status: placeholder
   /api/v1/dashboard/deliverables:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: List deliverables (in-memory)
       tags:
       - dashboard
@@ -538,6 +604,9 @@ paths:
       schema:
         type: string
     post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: Generate a one-shot download URL
       tags:
       - dashboard
@@ -573,6 +642,9 @@ paths:
       schema:
         type: string
     delete:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: Delete deliverable
       tags:
       - dashboard
@@ -596,6 +668,9 @@ paths:
           type: string
   /api/v1/dashboard/anomalies:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: List anomaly events (in-memory)
       tags:
       - dashboard
@@ -628,6 +703,9 @@ paths:
       schema:
         type: string
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: Anomaly detail
       tags:
       - dashboard
@@ -657,6 +735,9 @@ paths:
       schema:
         type: string
     post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: RCA (synthetic)
       tags:
       - dashboard
@@ -686,6 +767,9 @@ paths:
       schema:
         type: string
     post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: Trigger remediation (synthetic; mode=AUTO executes, mode=ADVISE suggests)
       tags:
       - dashboard
@@ -725,6 +809,9 @@ paths:
           type: string
   /api/v1/dashboard/anomaly-rules:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: List anomaly detection rules (in-memory)
       tags:
       - dashboard
@@ -741,6 +828,9 @@ paths:
       - FR-DASHBOARD-DASHBOARDGETDASHBOARDANOMALYRULES
       x-mate-implementation-status: placeholder
     post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: Create anomaly rule
       tags:
       - dashboard
@@ -770,6 +860,9 @@ paths:
       schema:
         type: string
     put:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: Update anomaly rule
       tags:
       - dashboard
@@ -798,6 +891,9 @@ paths:
         schema:
           type: string
     delete:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: Delete anomaly rule
       tags:
       - dashboard
@@ -821,6 +917,9 @@ paths:
           type: string
   /api/v1/dashboard/search:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: Global search (in-memory index)
       tags:
       - dashboard
@@ -847,6 +946,20 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+    tenantHeader:
+      type: apiKey
+      in: header
+      name: X-Tenant-Id
+    oidcScopes:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: https://keycloak.metaplatform.io/realms/metaplatform/protocol/openid-connect/token
+          scopes:
+            platform.read: Read-only access
+            platform.write: Mutation access
+            platform.admin: Service-to-service admin
+            tenant_switch_enabled: Permit tenant switching via X-Tenant-Id
   schemas:
     LoginRequest:
       type: object

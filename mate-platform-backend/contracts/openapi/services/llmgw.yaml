@@ -19,6 +19,9 @@ security:
 paths:
   /api/v1/llmgw/chat:
     post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: 非流式 chat
       tags:
       - llmgw
@@ -48,6 +51,9 @@ paths:
       x-mate-implementation-status: implemented
   /api/v1/llmgw/chat/stream:
     post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: SSE 流式 chat
       tags:
       - llmgw
@@ -73,6 +79,9 @@ paths:
       x-mate-implementation-status: placeholder
   /api/v1/llmgw/embeddings:
     post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: 嵌入向量
       tags:
       - llmgw
@@ -96,6 +105,9 @@ paths:
       x-mate-implementation-status: placeholder
   /healthz:
     get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
       summary: 健康检查
       tags:
       - llmgw
@@ -117,6 +129,20 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+    tenantHeader:
+      type: apiKey
+      in: header
+      name: X-Tenant-Id
+    oidcScopes:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: https://keycloak.metaplatform.io/realms/metaplatform/protocol/openid-connect/token
+          scopes:
+            platform.read: Read-only access
+            platform.write: Mutation access
+            platform.admin: Service-to-service admin
+            tenant_switch_enabled: Permit tenant switching via X-Tenant-Id
   schemas:
     ChatMessage:
       type: object
