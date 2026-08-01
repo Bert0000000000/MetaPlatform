@@ -17,18 +17,18 @@
 | 项 | 数 |
 |---|---:|
 | Spec 路由(去重后) | 214 |
-| 代码路由(`@router.*` + `@app.*`,去重) | 169 |
-| Spec 命中代码 | 159 |
-| Spec-only(**未实现**) | **55** |
+| 代码路由(`@router.*` + `@app.*`,去重) | 184 |
+| Spec 命中代码 | 174 |
+| Spec-only(**未实现**) | **40** |
 | Impl-only(legacy / 内部探针 / 路径别名) | 10 |
-| **17 域接入进度** | **11/17**(8/17 → 11/17,apphub/arch/copilot 完成) |
+| **17 域接入进度** | **12/17**(8/17 → 11/17 → 12/17,apphub/arch/copilot/dw 完成) |
 
-**8 / 17 域已 5 步模式接入 + 3 / 17 域 P2 已建包(dashboard/apphub/arch/copilot 全部或基本完成)**;**6 域 P2 待建包**(dw / data / etl / metrics / scheduler / a2a / wfe)。
+**9 / 17 域已 5 步模式接入 + 3 / 17 域 P2 已建包(dashboard/apphub/arch/copilot/dw 全部或基本完成)**;**5 域 P2 待建包**(data / etl / metrics / scheduler / a2a / wfe)。
 
-**v1.1(7/31)vs v1.0(7/30)更新**:
-- **P0-CLOSE 完成**:`app-kb→kb` 路径对齐、`llm→llmgw` 路径对齐、`mcp` 5 endpoint 挂载
-- **P2-W2 完成**:dashboard 9 个 PUT 补齐(29→38)、新建 3 包(hub/arch/copilot)99 endpoint
-- **未实现 125 → 55**(-70)
+**v1.2(8/1)vs v1.1(7/30)更新**:
+- **P2-W3 PR#15 完成**:新建 `mate-tech-dw` 包,15 endpoint 全通(14 GET + 1 POST `/documents/upload` stub)
+- **未实现 55 → 40**(-15)
+- **17 域 11/17 → 12/17**(+1)
 
 ---
 
@@ -99,13 +99,13 @@
 - **5 步 checklist**:全量。
 - **阻塞**:DATA-D0-D8 D0-D8 全部 Accepted ✅(已落地),仅需挂路由。
 
-### 4.2 dw 包代码 + 15 endpoint(1-2 周)
+### 4.2 ✅ dw 包代码 + 15 endpoint — **已完成**(P2-W3 PR#15,8/1)
 
-- **现状**:OpenAPI `services/dw.yaml` 已签,`packages/mate-tech-dw/` 不存在。
-- **缺失**:15 个 GET endpoint(commit / documents / employees / evaluations / extract / knowledge-bases / models / tools / traces / learning / auth 等)。
-- **修复**:新建 `mate-tech-dw`,做数字员工聚合查询(对接 mate-app-kb / mate-tech-rag / mate-tech-agent)。
-- **5 步 checklist**:全量。
-- **阻塞**:无
+- **状态**:**已完成**
+- **改动**:新建 `packages/mate-tech-dw/`(`api/app.py` + `repositories/in_memory.py` + `clients.py` + `main.py`),15 endpoint 全通(14 GET + 1 POST `/documents/upload` stub),14 个 dataclass + tenant-scoped in-memory store
+- **测试**:17 happy-path + 6 tenant-integration(含 14-endpoint 跨租户 negative sweep)= 23 tests pass
+- **回归**:全后端 578 passed / 0 failed;infra/tests 186 passed
+- **真实跨服务聚合**:留 TD-6,待 P2-W5(接 mate-app-kb / mate-tech-rag / mate-tech-agent + `BearerAuth`)
 
 ### 4.3 a2a 真实实现(2 endpoint)— **stub 已挂,真实留 P2-W3**
 
@@ -143,12 +143,12 @@
 | **copilot** | 35 | 32 | **3** | 1 PR | **P2**(补齐) |
 | **a2a** | 2 | 0(独立包) | **2** | 1 PR | **P2**(独立 a2a 域) |
 | **wfe** | 2 | 0 | **2** | 1 PR | **P2** |
-| **dw** | 15 | 0 | **15** | 1-2 周 | **P1** |
+| **dw** | 15 | 15 | 0 | — | ✅ P2-W3 PR#15 |
 | **data** | 15 | 0 | **15** | 1 周(挂 DATA-D0-D8) | **P2** |
 | **etl** | 5 | 0 | **5** | 同上 | **P2** |
 | **metrics** | 5 | 0 | **5** | 同上 | **P2** |
 | **scheduler** | 5 | 0 | **5** | 同上 | **P2** |
-| **Σ** | **214** | **159** | **55** | — | — |
+| **Σ** | **214** | **174** | **40** | — | — |
 
 ---
 
@@ -196,4 +196,5 @@
 | 日期 | 变更 | 作者 |
 |---|---|---|
 | 2026-07-30 | v1.0 初版(基于 main + bundled.yaml 解析,未实现 125) | TRAE 盘点 |
-| **2026-07-31** | **v1.1**:**P0-CLOSE + P2-W2 已落地**:未实现 125 → 55;17 域 8/17 → 11/17;新增 §4.1 数据平台控制面挂载计划 + §4.3 a2a 真实实现(TD-4)| TRAE 盘点 |
+| 2026-07-31 | v1.1:**P0-CLOSE + P2-W2 已落地**:未实现 125 → 55;17 域 8/17 → 11/17;新增 §4.1 数据平台控制面挂载计划 + §4.3 a2a 真实实现(TD-4)| TRAE 盘点 |
+| **2026-08-01** | **v1.2**:**P2-W3 PR#15 已落地**:新建 `mate-tech-dw` 包,15 endpoint 全通;未实现 55 → 40;17 域 11/17 → 12/17 | TRAE 盘点 |
