@@ -31,7 +31,7 @@ import os
 from typing import Any
 
 import structlog
-from fastapi import APIRouter, FastAPI, HTTPException, Request
+from fastapi import APIRouter, FastAPI
 
 # BUSINESS-SLICES P1 wave 3: hook 1 (auth).
 from mate_platform.auth import install_auth
@@ -41,11 +41,10 @@ from .federation_routes import router as federation_router_routes
 from .federation_routes import _set_external_client as _share_federation_external_client
 from .federation_routes import _set_outbox as _share_federation_outbox
 from .federation_routes import _set_registry as _share_federation_registry
-from .prompts.templates import list_prompts, render_prompt
 from .resources.ontology import OntologyResource, build_ontology_resource
 from .server import MCPServer, create_server
 from .tools.kb_search import build_kb_search_tool
-from .tools.rate_limit import RateLimitConfig, RateLimitExceeded, ToolRateLimiter
+from .tools.rate_limit import RateLimitConfig, ToolRateLimiter
 
 logger = structlog.get_logger(__name__)
 
@@ -71,107 +70,12 @@ _share_federation_external_client(federation_external_client)
 # the InMemoryOutboxWriter or SQL-backed writer at startup.
 _share_federation_outbox(None)
 
-# HTTP bridge router carrying the 5 spec endpoints. Endpoint
-# handlers must be registered onto `http_bridge` BEFORE we call
-# `app.include_router(http_bridge)` below — otherwise FastAPI
-# mounts an empty router and the consumers see 404. The previous
-# version of this file declared the endpoints below include_router,
-# which silently produced an empty surface.
+# P3-W10 Fix-1: the 5 spec endpoints now live in the explicit
+# ``api/origin_routes.py`` router (registered via ``@router.get``/
+# ``@router.post`` so spec-level scanners can discover them). This
+# variable is retained as an empty router for backwards-compat with
+# any external code that imports ``mate_tech_mcp.main.http_bridge``.
 http_bridge = APIRouter(prefix="/api/v1/mcp", tags=["mcp"])
-
-
-@http_bridge.get("/tools")
-async def list_tools_endpoint() -> dict[str, list]:
-    """ST-5.3.8.2: list registered tools."""
-    return {"tools": await mcp_server.list_tools()}
-
-
-@http_bridge.get("/resources")
-async def list_resources_endpoint() -> dict[str, list]:
-    """ST-5.3.8.2: list registered resources."""
-    return {"resources": await mcp_server.list_resources()}
-
-
-@http_bridge.get("/prompts")
-async def list_prompts_endpoint() -> dict[str, list]:
-    """ST-5.3.4: list prompt templates."""
-    return {"prompts": list_prompts()}
-
-
-@http_bridge.post("/prompts/{name}")
-async def render_prompt_endpoint(
-    name: str,
-    payload: dict,
-    request: Request,
-) -> dict[str, str]:
-    """ST-5.3.4: render a prompt template.
-
-    Requires Authorization: Bearer <JWT>.
-    """
-    auth = request.headers.get("Authorization", "")
-    if not auth.startswith("Bearer "):
-        raise HTTPException(status_code=401, detail="Missing Bearer token")
-    token = auth[len("Bearer "):]
-    # Lazy import: dev-only legacy verifier; production profile
-    # rejects the LEGACY_LOGIN_COMPAT path at startup (SEC-IAM-01).
-    from .auth import AuthError, verify_jwt_token
-
-    try:
-        await verify_jwt_token(token)
-    except AuthError as e:
-        raise HTTPException(status_code=401, detail=str(e)) from e
-    try:
-        rendered = render_prompt(name, **payload)
-    except KeyError:
-        raise HTTPException(status_code=404, detail=f"Prompt '{name}' not found") from None
-    return {"name": name, "rendered": rendered}
-
-
-@http_bridge.post("/tools/{name}")
-async def call_tool_endpoint(
-    name: str,
-    payload: dict,
-    request: Request,
-) -> dict[str, object]:
-    """ST-5.3.8.1: invoke a tool over HTTP.
-
-    Body:
-        {"arguments": {"query": "...", "top_k": 5}}
-
-    Headers:
-        Authorization: Bearer <JWT>
-        X-Tenant-Id: <tenant>
-    """
-    auth = request.headers.get("Authorization", "")
-    if not auth.startswith("Bearer "):
-        raise HTTPException(status_code=401, detail="Missing Bearer token")
-    token = auth[len("Bearer "):]
-    from .auth import AuthError, verify_jwt_token
-
-    try:
-        claims = await verify_jwt_token(token)
-    except AuthError as e:
-        raise HTTPException(status_code=401, detail=str(e)) from e
-    tenant_id = claims.get("tenant_id", "default")
-
-    # per-tenant rate limiting.
-    try:
-        await _rate_limiter.check(tenant_id=tenant_id, tool_name=name)
-    except RateLimitExceeded as e:
-        raise HTTPException(
-            status_code=429,
-            detail=str(e),
-            headers={"Retry-After": str(e.retry_after)},
-        ) from e
-
-    arguments = payload.get("arguments", {})
-    try:
-        result = await mcp_server.call_tool(name, arguments)
-        return {"tool": name, "result": result}
-    except KeyError:
-        raise HTTPException(status_code=404, detail=f"Tool '{name}' not found") from None
-    except RuntimeError as e:
-        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 app = FastAPI(
@@ -183,8 +87,17 @@ app = FastAPI(
 # Hook 1 of 5: install SEC-IAM-01 auth middleware.
 install_auth(app)
 
-# Mount the bridge AFTER all routes are registered on it.
-app.include_router(http_bridge)
+# Bind the MCP server + per-tenant rate limiter onto app.state so the
+# origin router handlers (api/origin_routes.py) can resolve them without
+# importing main.py (avoids a circular import).
+app.state.mcp_server = mcp_server
+app.state.rate_limiter = _rate_limiter
+
+# P3-W10 Fix-1: 5 spec endpoints mounted via the explicit origin router
+# (api/origin_routes.py) so that spec-level scanners can discover them.
+from .api.origin_routes import router as origin_router  # noqa: E402
+
+app.include_router(origin_router)
 # 扩展能力 (backlog §3.8): MCP Federation endpoints.
 app.include_router(federation_router_routes)
 
