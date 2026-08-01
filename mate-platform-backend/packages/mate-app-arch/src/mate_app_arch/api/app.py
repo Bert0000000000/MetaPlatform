@@ -15,6 +15,7 @@ from mate_platform.tenancy.guards import require_tenant
 from ..repositories import (
     list_applications,
     list_business_processes,
+    list_capabilities,
     list_capability_mappings,
     list_capability_tree,
     list_data_assets,
@@ -31,8 +32,10 @@ from ..repositories import (
     list_ontology_mapping_rules,
     list_org_roles,
     list_org_tree,
+    list_orgs,
     list_review_templates,
     list_review_tickets,
+    list_roles,
     list_tech_debts,
     list_tech_stacks,
     list_technology_components,
@@ -56,6 +59,24 @@ def _items(rows: list) -> list[dict]:
 def _resp(rows: list) -> dict:
     items = _items(rows)
     return {"items": items, "total": len(items)}
+
+
+def _paginate(rows: list, page: int, size: int) -> dict:
+    """Paginate a list of dataclass/dict rows into a cursor-free page envelope."""
+    items = []
+    for r in rows:
+        items.append(r if isinstance(r, dict) else asdict(r))
+    total = len(items)
+    pages = (total + size - 1) // size if size > 0 else 0
+    start = (page - 1) * size
+    end = start + size
+    return {
+        "items": items[start:end],
+        "total": total,
+        "page": page,
+        "size": size,
+        "pages": pages,
+    }
 
 
 # --- applications / business-processes / capabilities ---
@@ -86,6 +107,31 @@ async def get_capability_tree(request: Request) -> dict:
 async def get_capability_mappings(request: Request) -> dict:
     items = list_capability_mappings(_tid(request))
     return {"items": items, "total": len(items)}
+
+
+@router.get("/capabilities")
+async def get_capabilities(
+    request: Request,
+    page: int = Query(default=1, ge=1),
+    size: int = Query(default=20, ge=1, le=100),
+) -> dict:
+    """Flat capability list (FR-ARCH-ARCHGETARCHCAPABILITIES)."""
+    rows = list_capabilities(_tid(request))
+    return _paginate(rows, page, size)
+
+
+@router.get("/capability-mappings")
+async def get_capability_mappings_flat(
+    request: Request,
+    page: int = Query(default=1, ge=1),
+    size: int = Query(default=20, ge=1, le=100),
+) -> dict:
+    """Flat capability→application mappings (FR-ARCH-ARCHGETARCHCAPABILITYMAPPINGS).
+
+    Alias of /capabilities/mappings exposed at the canonical EA path.
+    """
+    rows = list_capability_mappings(_tid(request))
+    return _paginate(rows, page, size)
 
 
 # --- data-assets / data-entities / data-flows / data-standards / data/domains ---
@@ -193,6 +239,28 @@ async def get_org_tree(request: Request) -> dict:
 @router.get("/orgs/roles")
 async def get_org_roles(request: Request) -> dict:
     return _resp(list_org_roles(_tid(request)))
+
+
+@router.get("/orgs")
+async def get_orgs(
+    request: Request,
+    page: int = Query(default=1, ge=1),
+    size: int = Query(default=20, ge=1, le=100),
+) -> dict:
+    """Flat org list (FR-ARCH-ARCHGETARCHORGS)."""
+    rows = list_orgs(_tid(request))
+    return _paginate(rows, page, size)
+
+
+@router.get("/roles")
+async def get_roles(
+    request: Request,
+    page: int = Query(default=1, ge=1),
+    size: int = Query(default=20, ge=1, le=100),
+) -> dict:
+    """Flat role list (FR-ARCH-ARCHGETARCHROLES)."""
+    rows = list_roles(_tid(request))
+    return _paginate(rows, page, size)
 
 
 # --- tech-stacks / technology-* ---

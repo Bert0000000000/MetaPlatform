@@ -19,7 +19,7 @@
 | Spec 路由(去重后) | 214 |
 | 代码路由(`@router.*` + `@app.*`,去重) | 184 |
 | Spec 命中代码 | 174 |
-| Spec-only(**未实现**) | **40** |
+| Spec-only(**未实现**) | **33** |
 | Impl-only(legacy / 内部探针 / 路径别名) | 10 |
 | **17 域接入进度** | **12/17**(8/17 → 11/17 → 12/17,apphub/arch/copilot/dw 完成) |
 
@@ -68,20 +68,18 @@
 - **改动**:新建 `packages/mate-app-hub/`(`api/app.py` + `repositories/in_memory.py` + `clients.py` + `main.py`),5 endpoint 全通
 - **测试**:9 tests pass(in-memory 种子 + 4 tenant tests)
 
-### 3.3 arch 包代码 + 2 endpoint(补齐)— **27/29 已完成**(P2-W2 PR#13,7/31)
+### 3.3 ✅ arch 包代码 + 4 endpoint(补齐)— **31/31 已完成**(P2-W2 PR#13 + P2-W4 PR#16,8/1)
 
-- **状态**:**27/29 endpoint**(剩 4 endpoint 待补:capabilities / capability-mappings / orgs / roles 路径规范化后)
-- **未实现**:`GET /api/v1/arch/capabilities`、`GET /api/v1/arch/capability-mappings`、`GET /api/v1/arch/orgs`、`GET /api/v1/arch/roles`(规范化后 4 个)
-- **改动**:新建 `packages/mate-app-arch/`(`api/app.py` + `repositories/in_memory.py` + `clients.py` + `main.py`),27 endpoint 全通 + BFS 影响分析
-- **测试**:9 tests pass + 4 tenant tests pass
+- **状态**:**已完成**(P2-W4 补齐 4 endpoint:capabilities / capability-mappings / orgs / roles)
+- **改动**(P2-W4):`api/app.py` 新增 4 个分页 GET endpoint + `_paginate` helper;`repositories/in_memory.py` 新增 `list_capabilities` / `list_orgs` / `list_roles` 扁平列表函数
+- **测试**(P2-W4):4 happy-path + 2 tenant(isolation + no-tenant 400)= 6 新增 tests pass
 
-### 3.4 copilot 包代码 + 3 endpoint(补齐)— **32/35 已完成**(P2-W2 PR#14,7/31)
+### 3.4 ✅ copilot 包代码 + 3 endpoint(补齐)— **35/35 已完成**(P2-W2 PR#14 + P2-W4 PR#16,8/1)
 
-- **状态**:**32/35 endpoint**(剩 3 endpoint 待补)
-- **未实现**:`POST /api/v1/copilot/actions/execute`、`GET /api/v1/copilot/generate/process`、`GET /api/v1/copilot/scheduling/templates`
-- **改动**:新建 `packages/mate-app-copilot/`(`api/app.py` + `llm/stub_provider.py` + `repositories/in_memory.py` + `clients.py` + `main.py`),32 endpoint + SQL Copilot(sqlparse)+ 代码 Copilot + NLQ + 本体图 + 任务调度 + Action + 多模态上传
-- **测试**:13 tests pass + 5 tenant tests pass(含 a2a 501 stub)
-- **A2A / LLM 真实实现**:留 TD-4 / TD-6,待 P2-W3 / P2-W5
+- **状态**:**已完成**(P2-W4 补齐 3 endpoint:actions/execute + generate/process + scheduling/templates)
+- **改动**(P2-W4):`api/app.py` 新增 `POST /actions/execute`(body 取 action_id/action_name,emit outbox event)+ `GET /generate/process`(分页,复用 list_plans)+ `GET /scheduling/templates`(分页,复用 list_templates)+ `_paginate` helper
+- **测试**(P2-W4):3 happy-path + 3 tenant(isolation + scoped + no-tenant 400)= 6 新增 tests pass
+- **A2A / LLM 真实实现**:TD-4 已闭环(P2-W3);TD-6 留 P2-W5
 
 ---
 
@@ -139,8 +137,8 @@
 | llmgw | 3 | 3 | 0 | — | ✅ P0-CLOSE |
 | **dashboard** | 38 | 38 | 0 | — | ✅ P2-W2 |
 | **apphub** | 5 | 5 | 0 | — | ✅ P2-W2 |
-| **arch** | 29 | 27 | **2** | 1 PR | **P2**(补齐) |
-| **copilot** | 35 | 32 | **3** | 1 PR | **P2**(补齐) |
+| **arch** | 29 | 29 | 0 | — | ✅ P2-W4 PR#16 |
+| **copilot** | 35 | 35 | 0 | — | ✅ P2-W4 PR#16 |
 | **a2a** | 2 | 0(独立包) | **2** | 1 PR | **P2**(独立 a2a 域) |
 | **wfe** | 2 | 0 | **2** | 1 PR | **P2** |
 | **dw** | 15 | 15 | 0 | — | ✅ P2-W3 PR#15 |
@@ -148,7 +146,7 @@
 | **etl** | 5 | 0 | **5** | 同上 | **P2** |
 | **metrics** | 5 | 0 | **5** | 同上 | **P2** |
 | **scheduler** | 5 | 0 | **5** | 同上 | **P2** |
-| **Σ** | **214** | **174** | **40** | — | — |
+| **Σ** | **214** | **181** | **33** | — | — |
 
 ---
 
@@ -198,3 +196,4 @@
 | 2026-07-30 | v1.0 初版(基于 main + bundled.yaml 解析,未实现 125) | TRAE 盘点 |
 | 2026-07-31 | v1.1:**P0-CLOSE + P2-W2 已落地**:未实现 125 → 55;17 域 8/17 → 11/17;新增 §4.1 数据平台控制面挂载计划 + §4.3 a2a 真实实现(TD-4)| TRAE 盘点 |
 | **2026-08-01** | **v1.2**:**P2-W3 PR#15 已落地**:新建 `mate-tech-dw` 包,15 endpoint 全通;未实现 55 → 40;17 域 11/17 → 12/17 | TRAE 盘点 |
+| **2026-08-01** | **v1.3**:**P2-W4 PR#16 已落地**:arch 补 4 endpoint + copilot 补 3 endpoint;未实现 40 → 33;arch 31/31 + copilot 35/35 全通 | TRAE 盘点 |

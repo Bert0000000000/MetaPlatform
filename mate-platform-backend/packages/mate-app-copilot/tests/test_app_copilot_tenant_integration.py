@@ -122,3 +122,82 @@ def test_a2a_delegate_proxies_to_a2a(fresh_app: TestClient) -> None:
     assert body["id"].startswith("task-")
 
     a2a_repo.reset_store()
+
+
+def test_new_get_endpoints_tenant_isolation(fresh_app: TestClient) -> None:
+    """P2-W4: /generate/process and /scheduling/templates isolate tenant data.
+
+    Seed data uses fixed ids across tenants (the storage dict is
+    per-tenant), so we verify isolation via the ``tenant_id`` field on
+    each row rather than id disjointness.
+    """
+    token_acme = _token(tenant_id="tenant-acme")
+    token_globex = _token(tenant_id="tenant-globex")
+
+    for path in ("generate/process", "scheduling/templates"):
+        r_acme = fresh_app.get(
+            f"/api/v1/copilot/{path}",
+            headers={"Authorization": f"Bearer {token_acme}"},
+        )
+        r_globex = fresh_app.get(
+            f"/api/v1/copilot/{path}",
+            headers={"Authorization": f"Bearer {token_globex}"},
+        )
+        assert r_acme.status_code == 200, (path, r_acme.text)
+        assert r_globex.status_code == 200, (path, r_globex.text)
+        for item in r_acme.json()["items"]:
+            assert item["tenant_id"] == "tenant-acme", (path, item)
+        for item in r_globex.json()["items"]:
+            assert item["tenant_id"] == "tenant-globex", (path, item)
+
+
+def test_actions_execute_cross_tenant_scoped(fresh_app: TestClient) -> None:
+    """P2-W4: /actions/execute is tenant-scoped.
+
+    Both tenants seed ``act-send-email`` from the same stub catalog, so
+    each tenant resolves the action against its own store. The negative
+    guarantee (no tenant context → 400) is covered by
+    ``test_new_endpoints_no_tenant_400``; here we pin that a valid
+    tenant token can execute and an unknown action_id returns 404.
+    """
+    token_acme = _token(tenant_id="tenant-acme")
+
+    # tenant A can execute its own action
+    r_acme = fresh_app.post(
+        "/api/v1/copilot/actions/execute",
+        json={"action_id": "act-send-email"},
+        headers={"Authorization": f"Bearer {token_acme}"},
+    )
+    assert r_acme.status_code == 200, r_acme.text
+    assert r_acme.json()["action_id"] == "act-send-email"
+
+    # unknown action_id → 404 (no leak of a nonexistent action)
+    r_unknown = fresh_app.post(
+        "/api/v1/copilot/actions/execute",
+        json={"action_id": "act-tenant-acme-private"},
+        headers={"Authorization": f"Bearer {token_acme}"},
+    )
+    assert r_unknown.status_code == 404, r_unknown.text
+
+
+def test_new_endpoints_no_tenant_400(fresh_app: TestClient) -> None:
+    """P2-W4: the 3 new endpoints reject requests with no tenant context."""
+    token = _token(tenant_id="")
+    for method, path, payload in (
+        ("GET", "generate/process", None),
+        ("GET", "scheduling/templates", None),
+        ("POST", "actions/execute", {"action_id": "act-send-email"}),
+    ):
+        if method == "GET":
+            r = fresh_app.get(
+                f"/api/v1/copilot/{path}",
+                headers={"Authorization": f"Bearer {token}"},
+            )
+        else:
+            r = fresh_app.post(
+                f"/api/v1/copilot/{path}",
+                json=payload,
+                headers={"Authorization": f"Bearer {token}"},
+            )
+        assert r.status_code == 400, (path, r.text)
+        assert r.json()["code"] == "E_TENANT_REQUIRED"

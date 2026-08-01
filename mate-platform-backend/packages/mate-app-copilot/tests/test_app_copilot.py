@@ -114,3 +114,54 @@ def test_explain_code_via_client(client, auth_headers_acme) -> None:
     explanation = body["explanation"]
     # The stub chat returns "[stub-copilot] Acknowledged: <last user msg>"
     assert "stub-copilot" in explanation or "Acknowledged" in explanation
+
+
+def test_actions_execute_by_body(client, auth_headers_acme) -> None:
+    """POST /actions/execute fires an action via body (FR-COPILOT-COPILOTPOSTCOPILOTACTIONSEXECUTE)."""
+    r = client.post(
+        "/api/v1/copilot/actions/execute",
+        json={"action_id": "act-send-email", "params": {"to": "alice@example.com"}},
+        headers=auth_headers_acme,
+    )
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["action_id"] == "act-send-email"
+    assert body["status"] == "completed"
+    assert body["result_id"].startswith("res-")
+
+    # action_name lookup also works
+    r2 = client.post(
+        "/api/v1/copilot/actions/execute",
+        json={"action_name": "Send Email", "params": {}},
+        headers=auth_headers_acme,
+    )
+    assert r2.status_code == 200, r2.text
+    assert r2.json()["action_id"] == "act-send-email"
+
+    # unknown action → 404
+    r3 = client.post(
+        "/api/v1/copilot/actions/execute",
+        json={"action_id": "act-nope"},
+        headers=auth_headers_acme,
+    )
+    assert r3.status_code == 404, r3.text
+
+
+def test_generate_process_paginated(client, auth_headers_acme) -> None:
+    """GET /generate/process lists generation processes (FR-COPILOT-COPILOTGETCOPILOTGENERATEPROCESS)."""
+    r = client.get("/api/v1/copilot/generate/process", headers=auth_headers_acme)
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["total"] >= 1, body
+    assert all(p["tenant_id"] == "tenant-acme" for p in body["items"])
+    assert {"page", "size", "pages"} <= set(body.keys())
+
+
+def test_scheduling_templates_paginated(client, auth_headers_acme) -> None:
+    """GET /scheduling/templates lists templates (FR-COPILOT-COPILOTGETCOPILOTSCHEDULINGTEMPLATES)."""
+    r = client.get("/api/v1/copilot/scheduling/templates", headers=auth_headers_acme)
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["total"] >= 1, body
+    assert all(t["tenant_id"] == "tenant-acme" for t in body["items"])
+    assert {"page", "size", "pages"} <= set(body.keys())

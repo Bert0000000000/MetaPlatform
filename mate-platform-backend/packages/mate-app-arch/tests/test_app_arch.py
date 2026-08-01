@@ -82,3 +82,50 @@ def test_impact_analysis_bfs(client, auth_headers_acme) -> None:
     )
     assert r2.status_code == 200
     assert r2.json()["total"] == 0
+
+
+def test_capabilities_flat_paginated(client, auth_headers_acme) -> None:
+    """GET /capabilities returns a flat paginated list (FR-ARCH-ARCHGETARCHCAPABILITIES)."""
+    r = client.get("/api/v1/arch/capabilities", headers=auth_headers_acme)
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["total"] >= 3, body
+    assert all(c["tenant_id"] == "tenant-acme" for c in body["items"])
+    assert {"page", "size", "pages"} <= set(body.keys())
+
+    # Pagination: size=1 returns 1 item
+    r2 = client.get(
+        "/api/v1/arch/capabilities",
+        params={"page": 1, "size": 1},
+        headers=auth_headers_acme,
+    )
+    assert r2.status_code == 200
+    assert len(r2.json()["items"]) == 1
+    assert r2.json()["pages"] == r2.json()["total"]
+
+
+def test_capability_mappings_flat_paginated(client, auth_headers_acme) -> None:
+    """GET /capability-mappings canonical path (FR-ARCH-ARCHGETARCHCAPABILITYMAPPINGS)."""
+    r = client.get("/api/v1/arch/capability-mappings", headers=auth_headers_acme)
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["total"] >= 1, body
+    assert all("capability_code" in m for m in body["items"])
+
+
+def test_orgs_flat_paginated(client, auth_headers_acme) -> None:
+    """GET /orgs returns a flat paginated list (FR-ARCH-ARCHGETARCHORGS)."""
+    r = client.get("/api/v1/arch/orgs", headers=auth_headers_acme)
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["total"] >= 1, body
+    assert all(o["tenant_id"] == "tenant-acme" for o in body["items"])
+
+
+def test_roles_flat_paginated(client, auth_headers_acme) -> None:
+    """GET /roles returns a flat paginated list (FR-ARCH-ARCHGETARCHROLES)."""
+    r = client.get("/api/v1/arch/roles", headers=auth_headers_acme)
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["total"] >= 1, body
+    assert all(ro["tenant_id"] == "tenant-acme" for ro in body["items"])

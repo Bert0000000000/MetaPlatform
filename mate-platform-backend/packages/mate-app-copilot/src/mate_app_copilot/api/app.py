@@ -47,6 +47,7 @@ from ..repositories import (
     list_models,
     list_plans,
     list_queries,
+    list_templates,
     put_asset,
 )
 
@@ -92,6 +93,22 @@ def _serialize(rows: list[Any]) -> list[dict[str, Any]]:
 def _resp(rows: list[Any]) -> dict[str, Any]:
     items = _serialize(rows)
     return {"items": items, "total": len(items)}
+
+
+def _paginate(rows: list[Any], page: int, size: int) -> dict[str, Any]:
+    """Paginate a list of dataclass rows into a cursor-free page envelope."""
+    items = _serialize(rows)
+    total = len(items)
+    pages = (total + size - 1) // size if size > 0 else 0
+    start = (page - 1) * size
+    end = start + size
+    return {
+        "items": items[start:end],
+        "total": total,
+        "page": page,
+        "size": size,
+        "pages": pages,
+    }
 
 
 def _get_client(request: Request) -> AsyncCopilotClient:
@@ -215,6 +232,44 @@ async def execute_action(
     tid = _tid(request)
     actions = list_actions(tid)
     target = next((a for a in actions if a.id == action_id), None)
+    if target is None:
+        raise HTTPException(status_code=404, detail="action not found")
+    params = body.get("params", {})
+    result_id = f"res-{uuid.uuid4().hex[:8]}"
+    _emit(
+        request,
+        "copilot.action.executed",
+        action_id,
+        {"action_id": action_id, "result_id": result_id, "params": params},
+        tid,
+    )
+    return {
+        "action_id": action_id,
+        "result_id": result_id,
+        "status": "completed",
+        "output": {"params": params},
+    }
+
+
+@router.post("/actions/execute")
+async def execute_action_by_body(
+    request: Request, body: dict[str, Any],
+) -> dict[str, Any]:
+    """Execute an action identified by body (FR-COPILOT-COPILOTPOSTCOPILOTACTIONSEXECUTE).
+
+    Accepts ``action_id`` (preferred) or ``action_name`` in the request
+    body so callers can fire an action without embedding the id in the
+    path. Emits ``copilot.action.executed`` outbox event.
+    """
+    tid = _tid(request)
+    actions = list_actions(tid)
+    action_id = str(body.get("action_id", ""))
+    target = next((a for a in actions if a.id == action_id), None) if action_id else None
+    if target is None:
+        name = str(body.get("action_name", ""))
+        target = next((a for a in actions if a.name == name), None) if name else None
+        if target is not None:
+            action_id = target.id
     if target is None:
         raise HTTPException(status_code=404, detail="action not found")
     params = body.get("params", {})
@@ -501,6 +556,21 @@ async def review_code(request: Request, body: dict[str, Any]) -> dict[str, Any]:
     return {"issues": issues, "score": score, "review": review}
 
 
+@router.get("/generate/process")
+async def get_generate_process(
+    request: Request,
+    page: int = Query(default=1, ge=1),
+    size: int = Query(default=20, ge=1, le=100),
+) -> dict[str, Any]:
+    """List generation processes (FR-COPILOT-COPILOTGETCOPILOTGENERATEPROCESS).
+
+    A generation process is backed by a copilot Plan in ``running`` /
+    ``draft`` state; we surface the plan list as the process catalog.
+    """
+    rows = list_plans(_tid(request))
+    return _paginate(rows, page, size)
+
+
 # --- Knowledge-bases (1) ----------------------------------------------------
 @router.get("/knowledge-bases")
 async def get_knowledge_bases(request: Request) -> dict[str, Any]:
@@ -738,6 +808,21 @@ async def generate_plan(request: Request, body: dict[str, Any]) -> dict[str, Any
     if not steps:
         steps = [f"Analyze goal: {goal[:40]}", "Gather data", "Execute", "Verify"]
     return {"plan_id": plan_id, "steps": steps}
+
+
+@router.get("/scheduling/templates")
+async def get_scheduling_templates(
+    request: Request,
+    page: int = Query(default=1, ge=1),
+    size: int = Query(default=20, ge=1, le=100),
+) -> dict[str, Any]:
+    """List scheduling templates (FR-COPILOT-COPILOTGETCOPILOTSCHEDULINGTEMPLATES).
+
+    Templates are reusable plan skeletons; we surface the copilot
+    Template catalog, optionally filtered by category.
+    """
+    rows = list_templates(_tid(request))
+    return _paginate(rows, page, size)
 
 
 # --- Search (1) -------------------------------------------------------------

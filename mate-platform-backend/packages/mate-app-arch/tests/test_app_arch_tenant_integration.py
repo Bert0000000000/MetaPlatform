@@ -97,3 +97,47 @@ def test_tenant_isolation_ok(fresh_app: TestClient) -> None:
     assert all(
         a["tenant_id"] == "tenant-globex" for a in r2.json()["items"]
     )
+
+
+def test_new_endpoints_tenant_isolation(fresh_app: TestClient) -> None:
+    """P2-W4: the 4 new flat-list endpoints (capabilities / capability-mappings
+    / orgs / roles) must isolate tenant data — tenant B must never see
+    tenant A's rows.
+
+    Seed data uses fixed codes/ids across tenants (the storage dict is
+    per-tenant), so we verify isolation via the ``tenant_id`` field on
+    each row rather than id disjointness.
+    """
+    token_acme = _token(tenant_id="tenant-acme")
+    token_globex = _token(tenant_id="tenant-globex")
+
+    for path in ("capabilities", "capability-mappings", "orgs", "roles"):
+        r_acme = fresh_app.get(
+            f"/api/v1/arch/{path}",
+            headers={"Authorization": f"Bearer {token_acme}"},
+        )
+        r_globex = fresh_app.get(
+            f"/api/v1/arch/{path}",
+            headers={"Authorization": f"Bearer {token_globex}"},
+        )
+        assert r_acme.status_code == 200, (path, r_acme.text)
+        assert r_globex.status_code == 200, (path, r_globex.text)
+        # Rows carrying tenant_id must match the requesting tenant.
+        for item in r_acme.json()["items"]:
+            if "tenant_id" in item:
+                assert item["tenant_id"] == "tenant-acme", (path, item)
+        for item in r_globex.json()["items"]:
+            if "tenant_id" in item:
+                assert item["tenant_id"] == "tenant-globex", (path, item)
+
+
+def test_new_endpoints_no_tenant_400(fresh_app: TestClient) -> None:
+    """P2-W4: the 4 new endpoints reject requests with no tenant context."""
+    token = _token(tenant_id="")
+    for path in ("capabilities", "capability-mappings", "orgs", "roles"):
+        r = fresh_app.get(
+            f"/api/v1/arch/{path}",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert r.status_code == 400, (path, r.text)
+        assert r.json()["code"] == "E_TENANT_REQUIRED"

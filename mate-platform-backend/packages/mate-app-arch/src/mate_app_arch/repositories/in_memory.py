@@ -953,6 +953,21 @@ def list_org_roles(tenant_id: str) -> list[Role]:
     return _list(tenant_id, "roles")
 
 
+def list_capabilities(tenant_id: str) -> list[Capability]:
+    """Flat capability list (counterpart to list_capability_tree)."""
+    return _list(tenant_id, "capabilities")
+
+
+def list_orgs(tenant_id: str) -> list[Org]:
+    """Flat org list (counterpart to list_org_tree)."""
+    return _list(tenant_id, "orgs")
+
+
+def list_roles(tenant_id: str) -> list[Role]:
+    """Flat role list (semantic alias of list_org_roles for /roles)."""
+    return _list(tenant_id, "roles")
+
+
 def list_tech_stacks(tenant_id: str) -> list[TechStack]:
     return _list(tenant_id, "tech_stacks")
 

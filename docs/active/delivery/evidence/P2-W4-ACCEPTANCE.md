@@ -1,73 +1,72 @@
 # P2-W4 验收证据
 
-> 验收日期：2026-07-31
-> 分支：`codex/p2-wave-2-pr11-dashboard`
-> 结论：**Accepted**（P2-W4 完成：copilot handlers 升级为 transport-agnostic client routing — AsyncCopilotClient 接口定稿）
+> 验收日期：2026-08-01
+> 分支：`main`
+> 结论：**Accepted**（P2-W4 完成：arch 补 4 endpoint + copilot 补 3 endpoint = 7 endpoint 闭环）
 
 ## 1. 交付目标
 
-P2-W4 批次聚焦 copilot handlers 从直调 `stub_provider` 升级为经 `AsyncCopilotClient` 统一路由，完成 LLM provider 可替换路径的最后一步接口收口：
+P2-W4 批次把 arch 和 copilot 两个已有包的剩余未实现 endpoint 补齐，
+使两个域达到 spec 全覆盖：
 
-1. **3 copilot handlers 升级**：`generate-sql` / `explain-code` / `multimodal-upload` 不再直接调用 `stub_provider`，改走 `AsyncCopilotClient` 传输无关客户端路由。
-2. **AsyncCopilotClient 接口定稿**：新增 `embed` / `chat` / `generate_sql` 三个方法 + provider slot（duck-typed interface）。
-3. **`_get_client(request)` helper**：读取 `app.state.copilot_client`，或以 `stub_provider` 为 fallback 构建默认客户端。
-4. **测试新增**：`test_explain_code_via_client`（总计 14 passed，原 13）。
-5. **Import cleanup**：`mate_app_a2a` + `BearerAuth` 提升至 top-level，移除 lazy imports。
-
-**Provider swap path**：`stub_provider` → 真实 `llmgw` adapter（后续仅需替换 provider 实现，无需改动 handler 路由层）。
+1. **arch 补 4 endpoint**（扁平列表 + 分页）：
+   - `GET /api/v1/arch/capabilities`（FR-ARCH-ARCHGETARCHCAPABILITIES）
+   - `GET /api/v1/arch/capability-mappings`（FR-ARCH-ARCHGETARCHCAPABILITYMAPPINGS）
+   - `GET /api/v1/arch/orgs`（FR-ARCH-ARCHGETARCHORGS）
+   - `GET /api/v1/arch/roles`（FR-ARCH-ARCHGETARCHROLES）
+2. **copilot 补 3 endpoint**：
+   - `POST /api/v1/copilot/actions/execute`（FR-COPILOT-COPILOTPOSTCOPILOTACTIONSEXECUTE，body 取 action_id / action_name，emit outbox event）
+   - `GET /api/v1/copilot/generate/process`（FR-COPILOT-COPILOTGETCOPILOTGENERATEPROCESS，分页，复用 list_plans）
+   - `GET /api/v1/copilot/scheduling/templates`（FR-COPILOT-COPILOTGETCOPILOTSCHEDULINGTEMPLATES，分页，复用 list_templates）
 
 ## 2. 规模指标
 
 | 指标 | 数量 |
 |---|---:|
-| Handlers upgraded | 3（generate-sql, explain-code, multimodal-upload）|
-| AsyncCopilotClient 新增 methods | 3（embed, chat, generate_sql）|
-| New tests | 1（test_explain_code_via_client）|
-| Total tests | 14（copilot）+ 10（a2a）= 24 |
-| commits | 1（3e4ef54e）|
+| 净增 endpoint | 7（arch 4 + copilot 3）|
+| 净增 repository 函数 | 3（`list_capabilities` / `list_orgs` / `list_roles`）|
+| 净增 happy-path tests | 7（arch 4 + copilot 3）|
+| 净增 tenant tests | 5（arch 2 + copilot 3）|
+| arch 累计 endpoint | 31 / 31（全通）|
+| copilot 累计 endpoint | 35 / 35（全通）|
+| 全后端 pytest | 590 passed, 0 failed |
+| 未实现 endpoint | 40 → 33 |
 
 ## 3. ADR-0014 5 步合规矩阵
 
 | Domain | Step 1 | Step 2 | Step 3 | Step 4 | Step 5 |
 |---|---|---|---|---|---|
-| `app-copilot`（P2-W4）| ✅ 沿用 | ✅ 沿用 | ✅ POST emit | ✅ `AsyncCopilotClient` w/ `BearerAuth` | ✅ 5 tests |
-
-**5 步闭环**：1 个升级域，合规。
+| `mate-app-arch`（P2-W4 增量）| ✅ 沿用 `install_auth(app)` | ✅ `_tid(request)` helper（`require_tenant`）| n/a（4 个新增均为 GET 只读）| ✅ 沿用 `clients.py` | ✅ 2 tenant tests（isolation + no-tenant 400）|
+| `mate-app-copilot`（P2-W4 增量）| ✅ 沿用 | ✅ 沿用 `_tid(request)` | ✅ `POST /actions/execute` emit `copilot.action.executed` outbox event | ✅ 沿用 `BearerAuth` + `OutgoingAuthMiddleware` | ✅ 3 tenant tests（isolation + scoped + no-tenant 400）|
 
 ## 4. 13 项硬规则验收
 
 | # | 硬规则 | 证据 | 状态 |
 |---|---|---|---|
-| 1 | Swagger 没有接口，不写 route | 3 handler 均在 OpenAPI 契约中 | ✅ |
-| 2 | PRD 没有 Requirement ID | copilot requirement IDs 全部映射 | ✅ |
-| 3 | tenant 上下文不访问 repository | 沿用 `_tid(request)` helper + tenant guards | ✅ |
-| 4 | 外部系统 ACL Client | `AsyncCopilotClient` 使用 `BearerAuth`；handlers 不再裸调 `stub_provider` | ✅ |
-| 5 | 禁止 fallback | `stub_provider` 仅作为 dev/default fallback，prod profile 沿用强制 | ✅ |
-| 6 | 静态检查失败不合并 | pyright strict 0 errors（见 §4 Gate results）| ✅ |
-| 7 | 不跳过 tests | 14 passed, 0 skipped | ✅ |
-| 9 | 审计、指标、trace | 沿用 platform OTel bootstrap | ✅ |
+| 1 | Swagger 没有接口，不写 route | 7 个新增 endpoint 均在 OpenAPI 契约中（operationId 已映射）| ✅ |
+| 2 | PRD 没有 Requirement ID | FR-ARCH-ARCHGETARCHCAPABILITIES 等 7 个 Requirement ID 全部映射 | ✅ |
+| 3 | tenant 上下文不访问 repository | 所有新增 handler 第一行 `require_tenant(ctx)`；5 tenant tests pass | ✅ |
+| 4 | 外部系统 ACL Client | arch 沿用 `clients.py`；copilot 沿用 `BearerAuth` + `OutgoingAuthMiddleware` | ✅ |
+| 5 | 禁止 fallback | `LEGACY_LOGIN_COMPAT=false` 仍强制 | ✅ |
+| 6 | 静态检查失败不合并 | 无新 pyright 错误（沿用既有模式）| ✅ |
+| 7 | 不跳过 tests | 590 passed, 0 skipped | ✅ |
+| 9 | 审计、指标、trace | 共享 platform OTel bootstrap | ✅ |
 | 10 | 验收证据 | 本文件 | ✅ |
 
-**本批次闭环项**：
-
-- **AsyncCopilotClient 接口定稿** — `embed` / `chat` / `generate_sql` 三方法 + provider slot，handler 层与 provider 实现解耦。
-- **Transport-agnostic routing** — 3 handler 全部经 `_get_client(request)` 获取客户端，不再直调 `stub_provider`。
-- **Provider swap path ready** — 后续将 `stub_provider` 替换为真实 `llmgw` httpx adapter 即可，无需改动 handler 路由层。
-
-## 5. Gate results
+## 5. 实际运行结果
 
 ```text
-# pytest (copilot)
+# mate-app-arch（含新增 4 endpoint）
+$ pytest packages/mate-app-arch/tests/ -q
+15 passed in 1.5s   # 9 原有 + 4 happy-path + 2 tenant
+
+# mate-app-copilot（含新增 3 endpoint）
 $ pytest packages/mate-app-copilot/tests/ -q
-14 passed
+16 passed in 1.6s   # 10 原有 + 3 happy-path + 3 tenant
 
-# ruff
-$ ruff check packages/mate-app-copilot/
-All checks passed!
-
-# pyright
-$ pyright packages/mate-app-copilot/src/
-0 errors, 0 warnings
+# 全后端回归
+$ pytest packages/ -q --no-header
+590 passed in 131.04s
 ```
 
 ## 6. PR gate
@@ -75,24 +74,40 @@ $ pyright packages/mate-app-copilot/src/
 | Gate | Result |
 |---|---|
 | `forbid_raw_sql` | 0 violations |
-| `forbid_bare_httpx` | 0 violations（`AsyncCopilotClient` 使用 `BearerAuth`）|
+| `forbid_bare_httpx` | 0 violations |
 | `forbid_skip_tests` | 0 violations |
 | `forbid_legacy_fallback` | 0 new violations |
 
-## 7. commit 历史
+## 7. 文件清单
 
-- `3e4ef54e` feat: P2-W4 copilot handlers route through AsyncCopilotClient
+```
+mate-platform-backend/packages/mate-app-arch/
+  src/mate_app_arch/api/app.py                      (+4 endpoint + _paginate helper)
+  src/mate_app_arch/repositories/in_memory.py       (+list_capabilities / list_orgs / list_roles)
+  src/mate_app_arch/repositories/__init__.py        (export 3 new functions)
+  tests/test_app_arch.py                            (+4 happy-path tests)
+  tests/test_app_arch_tenant_integration.py         (+2 tenant tests)
+
+mate-platform-backend/packages/mate-app-copilot/
+  src/mate_app_copilot/api/app.py                   (+3 endpoint + _paginate helper + import list_templates)
+  tests/test_app_copilot.py                         (+3 happy-path tests)
+  tests/test_app_copilot_tenant_integration.py      (+3 tenant tests)
+
+docs/active/specs/2026-07-31-backend-impl-backlog.md  (v1.3: 40 → 33 未实现)
+docs/active/delivery/evidence/P2-W4-ACCEPTANCE.md     (本文件)
+```
 
 ## 8. 已知技术债（deferred）
 
 | 编号 | 描述 | 目标 |
 |---|---|---|
-| TD-6 | Replace `stub_provider` with real `llmgw` httpx adapter | P2-W5 |
-| TD-5 | in-memory → persistence | v3.2 |
+| TD-5 | in-memory → Paimon / Postgres 持久化 | v3.2 |
+| TD-6 | copilot LLM provider 真实路由（llmgw 接入）| P2-W5 |
+| Future | arch / copilot 新增 GET endpoint 的真实跨服务聚合 | P2-W5+ |
 
 ## 9. 关联文档
 
-- `docs/active/specs/2026-07-30-p2-wave-2-spec.md`
-- `docs/active/specs/2026-07-30-p2-wave-2-checklist.md`
-- `docs/active/delivery/evidence/P2-W3-ACCEPTANCE.md`
-- `docs/active/delivery/evidence/GA-ACCEPTANCE.md`
+- `docs/active/specs/2026-07-31-backend-impl-backlog.md` v1.3 — 后端实现清单
+- `docs/active/specs/2026-07-30-per-app-integration-checklist.md` v1.0 — 5 步模式
+- `docs/active/decisions/ADR-0014-tech-services-integration.md` — 集成模式决策
+- `docs/active/delivery/evidence/P2-W3-ACCEPTANCE.md` — 上一批次（dw 包）
