@@ -33,6 +33,7 @@ from mate_platform.messaging.outbox import InMemoryOutboxWriter
 from mate_platform.tenancy.context import TenantId
 from mate_platform.tenancy.guards import require_tenant
 
+from ..delegate import AgentNotFoundError, get_default_delegator
 from ..repositories import (
     create_delegation,
     get_agent,
@@ -214,6 +215,61 @@ async def register_agent(request: Request, body: dict[str, Any]) -> dict[str, An
         tid,
     )
     return {"agent_id": agent.id}
+
+
+# --- External agent call (1 POST, TD-4 real) --------------------------------
+@router.post("/external")
+async def call_external_agent(
+    request: Request, body: dict[str, Any],
+) -> dict[str, Any]:
+    """Call a registered external (federated) agent synchronously (TD-4).
+
+    Accepts ``{target_agent_id, message, context}`` and dispatches to
+    the agent's HTTP endpoint via the ``A2ADelegator``. The response
+    carries the agent's reply payload, the delegation status
+    (``completed`` / ``failed`` / ``timeout``), and the agent summary.
+
+    Emits ``a2a.external.called`` outbox event regardless of outcome.
+    """
+    tid = _tid(request)
+    target_agent_id = str(body.get("target_agent_id", ""))
+    message = str(body.get("message", ""))
+    context = body.get("context", {})
+    if not isinstance(context, dict):
+        context = {}
+    trace_id = getattr(request.state.ctx, "trace_id", "")
+
+    delegator = get_default_delegator()
+    try:
+        outcome = await delegator.delegate_to_external(
+            tenant_id=tid,
+            external_agent_id=target_agent_id,
+            message=message,
+            context=context,
+            trace_id=trace_id,
+        )
+    except AgentNotFoundError as e:
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "code": "E_AGENT_NOT_FOUND",
+                "message": str(e),
+                "target_agent_id": target_agent_id,
+            },
+        ) from e
+
+    _emit(
+        request,
+        event_type="a2a.external.called",
+        aggregate_id=target_agent_id,
+        payload={
+            "target_agent_id": target_agent_id,
+            "status": outcome["status"],
+            "message": message,
+        },
+        tenant_id=tid,
+    )
+    return outcome
 
 
 # ---------------------------------------------------------------------------

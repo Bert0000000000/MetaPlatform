@@ -116,6 +116,93 @@ async def embeddings_endpoint(req: EmbeddingRequest) -> EmbeddingResponse:
 
 
 # ---------------------------------------------------------------------------
+# Real provider chat (TD-6 — P3-W7 real LLM provider with fallback)
+#
+# ``POST /api/v1/llmgw/chat/real`` routes to a real OpenAI or Anthropic
+# provider based on the ``provider`` field. When the real call fails
+# (no API key, timeout, HTTP error) the provider automatically falls
+# back to a deterministic stub response and emits a structlog warning.
+# ---------------------------------------------------------------------------
+class RealChatRequest(BaseModel):
+    """``/chat/real`` 请求体 (TD-6)."""
+
+    provider: str = Field(
+        ..., description="openai | anthropic — selects the real backend"
+    )
+    model: str = Field(
+        default="", description="模型名 (defaults to provider default)"
+    )
+    messages: list[ChatMessage]
+    temperature: float = 1.0
+    max_tokens: int | None = None
+    tenant_id: str = Field(default="", description="租户 ID (for tenant-scoped API key)")
+
+
+class RealChatResponseAPI(BaseModel):
+    """``/chat/real`` 响应体."""
+
+    content: str
+    model: str
+    finish_reason: str | None = None
+    usage: dict[str, int] = {}
+    provider: str = ""
+    fallback: bool = False
+
+
+@router.post("/chat/real", response_model=RealChatResponseAPI)
+async def real_chat_endpoint(req: RealChatRequest) -> RealChatResponseAPI:
+    """TD-6: route to a real OpenAI / Anthropic provider with stub fallback.
+
+    The ``provider`` field selects the backend. Each provider resolves
+    its API key from the environment (tenant-scoped or global). On any
+    failure the provider returns a deterministic stub response so the
+    caller always gets a reply.
+    """
+    from ..providers.real_anthropic_provider import RealAnthropicProvider
+    from ..providers.real_openai_provider import RealOpenAIProvider
+
+    if req.provider == "anthropic":
+        model = req.model or "claude-3-5-sonnet-20241022"
+        provider = RealAnthropicProvider(model=model)
+    elif req.provider == "openai":
+        model = req.model or "gpt-4o-mini"
+        provider = RealOpenAIProvider(model=model)
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail=f"unknown provider: {req.provider!r} (expected 'openai' or 'anthropic')",
+        )
+
+    try:
+        resp = await provider.chat(
+            req.messages,
+            temperature=req.temperature,
+            max_tokens=req.max_tokens,
+            tenant_id=req.tenant_id,
+        )
+    finally:
+        await provider.aclose()
+
+    # Detect fallback by checking for the stub marker in content
+    is_fallback = "[stub-fallback]" in resp.content
+    if is_fallback:
+        logger.warning(
+            "llmgw.chat.real.fallback",
+            provider=req.provider,
+            tenant_id=req.tenant_id,
+        )
+
+    return RealChatResponseAPI(
+        content=resp.content,
+        model=resp.model,
+        finish_reason=resp.finish_reason,
+        usage=resp.usage,
+        provider=req.provider,
+        fallback=is_fallback,
+    )
+
+
+# ---------------------------------------------------------------------------
 # Multimodal chat (扩展能力 — backlog §3.3)
 #
 # Spec status: ``contracts/openapi/services/llmgw.yaml`` does NOT yet
