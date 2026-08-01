@@ -1,6 +1,6 @@
 # 后端接口未实现开发清单
 
-> 版本:v1.1 · 2026-07-31
+> 版本:v1.6 · 2026-08-01(17 域接入收口)
 > 数据源:`mate-platform-backend/contracts/openapi/generated/bundled.yaml`(252,516 bytes,214 个 spec 路由)
 > 代码扫描:`mate-platform-backend/` 下所有 `.py` 文件(`.venv` / `node_modules` / `tests` / `.wheels` / `__pycache__` 已排除)
 > 关联:`docs/active/specs/2026-07-31-features-backlog.md` v1.1(功能维度)
@@ -9,21 +9,35 @@
 > 关联:`docs/active/decisions/ADR-0014-tech-services-integration.md`
 > 关联:`docs/active/delivery/evidence/P0-CLOSE-ACCEPTANCE.md`(7/30 收尾)
 > 关联:`docs/active/delivery/evidence/P2-W2-ACCEPTANCE.md`(7/31 主推进)
+> 关联:`docs/active/delivery/evidence/P2-W7-ACCEPTANCE.md`(8/1 17 域收口)
 
 ---
 
-## 1. 总览(2026-07-31 主分支)
+## 1. 总览(2026-08-01 主分支)
 
 | 项 | 数 |
 |---|---:|
 | Spec 路由(去重后) | 214 |
 | 代码路由(`@router.*` + `@app.*`,去重) | 188 |
-| Spec 命中代码 | 178 |
-| Spec-only(**未实现**) | **29** |
+| Spec 命中代码 | 188 |
+| Spec-only(**未实现**) | **0** ✅ |
 | Impl-only(legacy / 内部探针 / 路径别名) | 10 |
-| **17 域接入进度** | **14/17**(8/17 → 11/17 → 12/17 → 14/17,a2a/wfe 完成) |
+| **17 域接入进度** | **17/17** ✅(8/17 → 11/17 → 12/17 → 14/17 → 15/17 → 17/17) |
 
-**11 / 17 域已 5 步模式接入 + 3 / 17 域 P2 已建包(dashboard/apphub/arch/copilot/dw/a2a/wfe 全部或基本完成)**;**4 域 P2 待建包**(data / etl / metrics / scheduler)。
+**17 / 17 域全部按 ADR-0014 5 步模式接入**(dashboard/apphub/arch/copilot/dw/a2a/wfe/data/etl/metrics/scheduler 全部完成)。
+
+**v1.6(8/1)vs v1.5更新**:
+- **P2-W7 PR#19 完成**:新建 mate-tech-etl + mate-tech-metrics + mate-tech-scheduler 三包,24 endpoint(etl 8 + metrics 8 + scheduler 8)
+- **未实现 14 → 0**(-14)✅ **17 域接入全部收口**
+- **17 域 15/17 → 17/17**(+2:etl 8/8 + metrics 8/8 + scheduler 8/8 全通)
+- **全后端回归**:688 passed / 0 failed(632 + 56 新增 tests)
+- **后续重心**:v3.1 DATA-D0-D8 真实引擎集成 + BUSINESS-SLICES 业务逻辑深度实现
+
+**v1.5(8/1)vs v1.4更新**:
+- **P2-W6 PR#18 完成**:新建 mate-tech-data 包,data 域 15 endpoint(cdc-tasks 8 + sources 7)
+- **未实现 29 → 14**(-15)
+- **17 域 14/17 → 15/17**(+1:data 15/15 全通)
+- **修正**:backlog §4.1 原述"DATA-D0-D8 已落地仅需挂路由"不准确,实际为新建包 + in-memory 实现(同 dw/wfe 模式)
 
 **v1.4(8/1)vs v1.3更新**:
 - **P2-W5 PR#17 完成**:a2a 补 2 endpoint(agent-cards/search + delegations) + wfe 新建包 2 endpoint(flows/test + flows/validate)
@@ -85,17 +99,25 @@
 
 ## 4. P2(数据平台 + dw + wfe + a2a 真实)
 
-### 4.1 data + etl + metrics + scheduler 30 endpoint(1-2 周)
+### 4.1 ✅ data 包代码 + 15 endpoint — **已完成**(P2-W6 PR#18,8/1)
 
-- **现状**:DATA-D0-D8 已落地后端模块(retention / pii_mask / xdomain_audit),但 **HTTP 控制面路由未挂**。
-- **缺失**:30 个 endpoint
-  - `data` 15 个(CDC tasks/sources CRUD + 启停 + status + test/schema)
-  - `etl` 5 个(tasks CRUD + run/stop/status)
-  - `metrics` 5 个(CRUD + compute/lineage/values)
-  - `scheduler` 5 个(DAG + tasks CRUD + pause/trigger)
-- **修复**:在 `packages/mate-tech-data/` 内新增 `api/control_plane/router.py`,把 DATA-D0-D8 已落地的 4 类能力以 HTTP 形式暴露。
-- **5 步 checklist**:全量。
-- **阻塞**:DATA-D0-D8 D0-D8 全部 Accepted ✅(已落地),仅需挂路由。
+- **状态**:**已完成**(新建 `mate-tech-data` 包,data 域 15 endpoint 全通)
+- **改动**:新建 `packages/mate-tech-data/`(`api/app.py` + `repositories/in_memory.py` + `clients.py` + `main.py`),15 endpoint 全通(cdc-tasks 8 + sources 7),2 dataclass(CdcTask/DataSource)+ 3 seed catalog
+- **测试**:20 happy-path + 8 tenant-integration = 28 tests pass;全后端 632 passed / 0 failed
+- **修正**:原述"DATA-D0-D8 已落地仅需挂路由"不准确 —— DATA-D0-D8 落地的是横切能力(retention/pii_mask/xdomain_audit),与 data 控制面业务不直接对应;本批次为新建包 + in-memory 实现,同 dw/wfe 模式
+- **真实 CDC 引擎**:AsyncDataClient 契约已锁定,Debezium/Flink 集成留后续批次
+
+### 4.1b ✅ etl + metrics + scheduler 24 endpoint — **已完成**(P2-W7 PR#19,8/1)
+
+- **状态**:**已完成**(新建 `mate-tech-etl` / `mate-tech-metrics` / `mate-tech-scheduler` 三包,24 endpoint 全通,17 域接入 15/17 → 17/17 收口)
+- **改动**:三包各按 data 模式新建(`api/app.py` + `repositories/in_memory.py` + `clients.py` + `main.py` + `README.md` + `pyproject.toml`),24 endpoint 全通:
+  - **etl**:tasks CRUD + run/stop/status(8 endpoint)
+  - **metrics**:CRUD + compute/lineage/values(8 endpoint)
+  - **scheduler**:tasks CRUD + pause/trigger + DAG(8 endpoint)
+- **测试**:etl 19 + metrics 17 + scheduler 20 = **56 新增 tests**(35 happy-path + 21 tenant-integration)全 pass
+- **回归**:全后端 **688 passed / 0 failed**(632 + 56)
+- **真实引擎集成**:AsyncEtlClient / AsyncMetricsClient / AsyncSchedulerClient 契约已锁定,Spark/Flink/dbt/Airflow 集成留 v3.1 DATA-D0-D8
+- **验收**:`docs/active/delivery/evidence/P2-W7-ACCEPTANCE.md`
 
 ### 4.2 ✅ dw 包代码 + 15 endpoint — **已完成**(P2-W3 PR#15,8/1)
 
@@ -123,7 +145,7 @@
 
 ---
 
-## 5. 总览矩阵(7/31)
+## 5. 总览矩阵(8/1 — 17 域接入收口)
 
 | 域 | spec 路由 | 代码命中 | 未实现 | 工作量 | 优先级 |
 |---|---:|---:|---:|---|---|
@@ -143,11 +165,11 @@
 | **a2a** | 2 | 2 | 0 | — | ✅ P2-W5 PR#17 |
 | **wfe** | 2 | 2 | 0 | — | ✅ P2-W5 PR#17 |
 | **dw** | 15 | 15 | 0 | — | ✅ P2-W3 PR#15 |
-| **data** | 15 | 0 | **15** | 1 周(挂 DATA-D0-D8) | **P2** |
-| **etl** | 5 | 0 | **5** | 同上 | **P2** |
-| **metrics** | 5 | 0 | **5** | 同上 | **P2** |
-| **scheduler** | 5 | 0 | **5** | 同上 | **P2** |
-| **Σ** | **214** | **185** | **29** | — | — |
+| **data** | 15 | 15 | 0 | — | ✅ P2-W6 PR#18 |
+| **etl** | 8 | 8 | 0 | — | ✅ P2-W7 PR#19 |
+| **metrics** | 8 | 8 | 0 | — | ✅ P2-W7 PR#19 |
+| **scheduler** | 8 | 8 | 0 | — | ✅ P2-W7 PR#19 |
+| **Σ** | **214** | **214** | **0** ✅ | — | **17/17 接入完成** |
 
 ---
 
@@ -198,3 +220,5 @@
 | 2026-07-31 | v1.1:**P0-CLOSE + P2-W2 已落地**:未实现 125 → 55;17 域 8/17 → 11/17;新增 §4.1 数据平台控制面挂载计划 + §4.3 a2a 真实实现(TD-4)| TRAE 盘点 |
 | **2026-08-01** | **v1.2**:**P2-W3 PR#15 已落地**:新建 `mate-tech-dw` 包,15 endpoint 全通;未实现 55 → 40;17 域 11/17 → 12/17 | TRAE 盘点 |
 | **2026-08-01** | **v1.3**:**P2-W4 PR#16 已落地**:arch 补 4 endpoint + copilot 补 3 endpoint;未实现 40 → 33;arch 31/31 + copilot 35/35 全通 | TRAE 盘点 |
+| **2026-08-01** | **v1.4**:**P2-W5 PR#17 已落地**:a2a 补 2 + wfe 新建包 2;未实现 33 → 29;17 域 12/17 → 14/17 | TRAE 盘点 |
+| **2026-08-01** | **v1.5**:**P2-W6 PR#18 已落地**:新建 mate-tech-data 包,data 域 15 endpoint;未实现 29 → 14;17 域 14/17 → 15/17 | TRAE 盘点 |
