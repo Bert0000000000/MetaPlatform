@@ -1,20 +1,28 @@
 """MCP Federation — multi-server registry + external MCP client (扩展能力 — backlog §3.8).
 
 The mcp spec only declares 5 local endpoints (tools/resources/prompts
-list + prompt render + tool call). ``多 MCP server 联邦 / 外部 MCP 客户端``
-is a declared gap. This module adds:
+list + prompt render + tool call). ``多 MCP server 联邦 / 外部 MCP
+客户端`` is a declared gap. This package adds:
 
 * ``FederatedServer`` — a tenant-scoped registration of an external
   MCP server (name + transport URL + auth token ref + status).
 * ``ExternalMcpClient`` — a thin HTTP client that calls a remote
-  MCP server's ``/api/v1/mcp/tools`` (list) and ``/api/v1/mcp/tools/{name}``
-  (invoke) endpoints. Supports bearer auth.
+  MCP server's ``/api/v1/mcp/tools`` (list) and
+  ``/api/v1/mcp/tools/{name}`` (invoke) endpoints. Supports bearer auth.
 * ``FederationRegistry`` — in-memory tenant-scoped registry. Each
   tenant can register multiple external servers; the registry
   indexes tools by name for cross-server routing.
 * ``FederationRouter`` — given a tool name, find which federated
   server exposes it and route the call. Falls back to local tools
   (handled by ``MCPServer``) when no federation match exists.
+
+v3.2 W1 (federation 真实化) adds, in submodules:
+* ``McpRemoteClient`` — real HTTP remote client (discover / invoke /
+  health) with explicit ``AuthError`` / ``RemoteUnavailableError`` /
+  ``RemoteError`` failure modes.
+* ``HealthChecker`` — 60s heartbeat that flips dead servers to
+  ``disabled``.
+* ``FederationDLQ`` — tenant-scoped dead-letter queue with replay.
 
 Production replaces the in-memory registry with the SQL store (out
 of scope per task constraint "不修改持久化层"); the API surface is
@@ -429,11 +437,32 @@ def emit_federation_event(
     outbox.append(event)
 
 
+# ---------------------------------------------------------------------------
+# v3.2 W1: real federation components (re-exported from submodules)
+# ---------------------------------------------------------------------------
+from .dlq import FederationDLQ, FederationDLQEntry  # noqa: E402
+from .heartbeat import HealthChecker  # noqa: E402
+from .mcp_remote_client import (  # noqa: E402
+    AuthError,
+    FederationClientError,
+    McpRemoteClient,
+    RemoteError,
+    RemoteUnavailableError,
+)
+
 __all__ = [
+    "AuthError",
     "ExternalMcpClient",
+    "FederationClientError",
+    "FederationDLQ",
+    "FederationDLQEntry",
     "FederationRegistry",
     "FederationRouter",
     "FederatedServer",
+    "HealthChecker",
+    "McpRemoteClient",
+    "RemoteError",
+    "RemoteUnavailableError",
     "ServerStatus",
     "emit_federation_event",
 ]
