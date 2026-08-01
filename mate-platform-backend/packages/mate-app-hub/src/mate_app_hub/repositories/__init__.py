@@ -1,13 +1,15 @@
 """mate_app_hub.repositories — storage layer for apphub entities.
 
-This batch exposes only an in-memory implementation. The
-`ApphubApp` / `ApphubGroup` / `ApphubModule` / `ApphubPage` /
+This batch exposes an in-memory implementation (default) and a SQL
+implementation (P3-W3 TD-5) backed by SQLAlchemy 2.0 + mate-tech-db.
+The `ApphubApp` / `ApphubGroup` / `ApphubModule` / `ApphubPage` /
 `ApphubTemplate` dataclasses are deliberately framework-agnostic
 so the upcoming Paimon / Postgres adapter (v3.2) can reuse them
 without leaking FastAPI types.
 """
 from __future__ import annotations
 
+from . import sql_store
 from .in_memory import (
     ApphubApp,
     ApphubGroup,
@@ -32,4 +34,5 @@ __all__ = [
     "list_modules",
     "list_pages",
     "list_templates",
+    "sql_store",
 ]

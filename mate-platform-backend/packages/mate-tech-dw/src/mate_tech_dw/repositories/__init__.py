@@ -1,15 +1,16 @@
 """mate_tech_dw.repositories — storage layer for dw entities.
 
-This batch exposes only an in-memory implementation. The 14
-dataclasses (DwAuthLogin / DwCollaboration / DwCommit / DwDocument /
-DwEmployee / DwEmployeeTask / DwEvaluation / DwExtract /
-DwKnowledgeBase / DwLearningExtract / DwLearningFeedback /
-DwModel / DwTool / DwTrace) are deliberately framework-agnostic
-so the upcoming Paimon / Postgres adapter (v3.2) can reuse them
-without leaking FastAPI types.
+P3-W3 (TD-5) adds a SQL-backed implementation (sql_store) alongside
+the in-memory implementation. The 14 dataclasses (DwAuthLogin /
+DwCollaboration / DwCommit / DwDocument / DwEmployee / DwEmployeeTask /
+DwEvaluation / DwExtract / DwKnowledgeBase / DwLearningExtract /
+DwLearningFeedback / DwModel / DwTool / DwTrace) are deliberately
+framework-agnostic so the upcoming Paimon / Postgres adapter (v3.2)
+can reuse them without leaking FastAPI types.
 """
 from __future__ import annotations
 
+from . import sql_store  # noqa: F401
 from .in_memory import (
     DwAuthLogin,
     DwCollaboration,
@@ -53,4 +54,5 @@ __all__ = [
     "list_knowledge_bases", "list_learning_extracts",
     "list_learning_feedback", "list_models", "list_tools",
     "list_traces",
+    "sql_store",
 ]
