@@ -81,6 +81,16 @@ lineage:
   marquezUrl: "http://marquez.metaplatform.svc.cluster.local:5000"
   pullIntervalSeconds: 30
   openlineageVersion: "1.0.0"
+  # D4 bridge: pulls completed OpenLineage events from Marquez and pushes
+  # dataset-level lineage relationships into DataHub GMS as MCE documents.
+  # Per-tenant queue isolation (SEC-TENANT-01 hard rule 3); only COMPLETE
+  # events are promoted (FAIL events land in the dead-letter queue).
+  bridge:
+    enabled: true
+    mode: "marquez-to-datahub"
+    batchSize: 100
+    retryAttempts: 3
+    deadLetterQueue: true
 
 service:
   type: ClusterIP

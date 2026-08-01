@@ -135,6 +135,7 @@ DATA-D0-D8 全部 8 阶段 Accepted（共 45/45 tests pass）。后续 sub-batch
 | DATA-D0-D8 D2+D3 | 2026-07-30 | `820838e2` | `evidence/DATA-D0-D8-D2-D3-ACCEPTANCE.md` |
 | DATA-D2 v2 扩展 | 2026-08-01 | （本批） | DATA-D2 v2 扩展：DataProduct Python client（13 tests）+ DataJob/Dataset CRD（8 tests）— 2026-08-01；`evidence/DATA-D0-D8-D2-ACCEPTANCE-v2.md` |
 | DATA-D3 v2 扩展 | 2026-08-01 | （本批） | DATA-D3 v2 扩展：QualityClient Python client（14 e2e tests）+ GE values checkpoints/tenantScoping 段 — 2026-08-01；`evidence/DATA-D0-D8-D3-ACCEPTANCE-v2.md` |
+| DATA-D4 sync bridge | 2026-08-01 | （本批） | DATA-D4：LineageSyncClient Python client（13 e2e tests）+ datahub values lineage.bridge 段（marquez-to-datahub + DLQ + retry）— 2026-08-01；`evidence/DATA-D0-D8-D4-ACCEPTANCE.md` |
 | DATA-D0-D8 D4+D5 | 2026-07-30 | `81955e76` | `evidence/DATA-D0-D8-D4-D5-ACCEPTANCE.md` |
 | DATA-D0-D8 D6+D7+D8 | 2026-07-30 | `424e3045` | `evidence/DATA-D0-D8-D6-D7-D8-ACCEPTANCE.md` |
 | PR-R1（refactor → main） | 2026-07-30 | `a00351c3` | CLAUDE.md v3.0 GA + refactor 视角合一 |
