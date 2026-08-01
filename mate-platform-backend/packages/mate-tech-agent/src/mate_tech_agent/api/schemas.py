@@ -53,3 +53,30 @@ class BpmnProcessState(BaseModel):
     process_instance_id: Annotated[str, Field(default="")]
     process_status: Annotated[str, Field(default="unknown")]  # running | completed | failed
     process_result: Annotated[str, Field(default="")]
+
+
+class PlanStep(BaseModel):
+    """A single step in a cross-agent plan (P3-W8)."""
+
+    model_config = ConfigDict(strict=True)
+    agent_id: Annotated[str, Field(min_length=1, description="target agent id")]
+    action: Annotated[str, Field(min_length=1, description="action to perform")]
+    input: Annotated[dict, Field(default_factory=dict, description="step input payload")]
+
+
+class PlanExecuteRequest(BaseModel):
+    """Body schema for POST /plan/execute (P3-W8 cross-agent orchestration)."""
+
+    model_config = ConfigDict(strict=True)
+    plan_id: Annotated[str, Field(min_length=1, description="plan identifier")]
+    steps: Annotated[list[PlanStep], Field(min_length=1, description="ordered plan steps")]
+
+
+class PlanExecuteResponse(BaseModel):
+    """Result of a cross-agent plan execution (P3-W8)."""
+
+    model_config = ConfigDict(strict=True, frozen=True)
+    execution_id: Annotated[str, Field()]
+    plan_id: Annotated[str, Field()]
+    status: Annotated[str, Field()]
+    results: Annotated[list[dict], Field(default_factory=list)]

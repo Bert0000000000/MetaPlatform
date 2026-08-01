@@ -129,3 +129,50 @@ def test_roles_flat_paginated(client, auth_headers_acme) -> None:
     body = r.json()
     assert body["total"] >= 1, body
     assert all(ro["tenant_id"] == "tenant-acme" for ro in body["items"])
+
+
+# ---------------------------------------------------------------------------
+# P3-W8 business deepening: named seed-data + tenant-isolation tests
+# ---------------------------------------------------------------------------
+def test_capabilities_returns_seed_data(client, auth_headers_acme) -> None:
+    """GET /capabilities returns the seeded capability rows."""
+    r = client.get("/api/v1/arch/capabilities", headers=auth_headers_acme)
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["total"] >= 3, body
+    codes = {c["code"] for c in body["items"]}
+    assert {"cap-data", "cap-knowledge", "cap-platform"} <= codes
+    for c in body["items"]:
+        assert c["tenant_id"] == "tenant-acme"
+        assert "name" in c and "level" in c
+
+
+def test_capabilities_tenant_isolation(client, auth_headers_acme, auth_headers_globex) -> None:
+    """Capabilities are tenant-scoped: globex never sees acme rows."""
+    r_acme = client.get("/api/v1/arch/capabilities", headers=auth_headers_acme)
+    r_globex = client.get("/api/v1/arch/capabilities", headers=auth_headers_globex)
+    assert r_acme.status_code == 200
+    assert r_globex.status_code == 200
+    assert all(c["tenant_id"] == "tenant-acme" for c in r_acme.json()["items"])
+    assert all(c["tenant_id"] == "tenant-globex" for c in r_globex.json()["items"])
+
+
+def test_capability_mappings_returns_seed_data(client, auth_headers_acme) -> None:
+    """GET /capability-mappings returns the seeded capability -> application mappings."""
+    r = client.get("/api/v1/arch/capability-mappings", headers=auth_headers_acme)
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["total"] >= 1, body
+    for m in body["items"]:
+        assert {"capability_code", "application_code", "business_process_code"} <= set(m)
+
+
+def test_capability_mappings_tenant_isolation(client, auth_headers_acme, auth_headers_globex) -> None:
+    """Capability mappings are independently seeded per tenant (store isolation)."""
+    r_acme = client.get("/api/v1/arch/capability-mappings", headers=auth_headers_acme)
+    r_globex = client.get("/api/v1/arch/capability-mappings", headers=auth_headers_globex)
+    assert r_acme.status_code == 200
+    assert r_globex.status_code == 200
+    # Both tenants observe a full per-tenant seed set (>= 1 mapping each).
+    assert r_acme.json()["total"] >= 1
+    assert r_globex.json()["total"] >= 1

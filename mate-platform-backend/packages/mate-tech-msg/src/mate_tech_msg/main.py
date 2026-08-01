@@ -14,14 +14,17 @@ require an authenticated tenant.
 """
 from __future__ import annotations
 
+from dataclasses import asdict
+
 import structlog
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Query, Request
 
 # TECH-SERVICES / BUSINESS-SLICES: hooks 1, 2 (auth + tenant).
 from mate_platform.auth import install_auth
 from mate_platform.tenancy.guards import require_tenant
 
 from .dedup import DedupStore
+from .in_memory import list_messages
 from .kafka_client import create_kafka_client
 from .observability.tracing import init_tracing
 from .publisher import Publisher
@@ -108,3 +111,41 @@ async def list_topics(request: Request) -> dict[str, list[str]]:
             "mate.kb.ingest",
         ]
     }
+
+
+def _paginate(items: list, page: int, size: int) -> dict:
+    """Apply cursor-free pagination to a list of serialized dicts."""
+    total = len(items)
+    pages = (total + size - 1) // size if size > 0 else 0
+    start = (page - 1) * size
+    end = start + size
+    return {
+        "items": items[start:end],
+        "total": total,
+        "page": page,
+        "size": size,
+        "pages": pages,
+    }
+
+
+@app.get("/api/v1/msg/messages")
+async def list_messages_endpoint(
+    request: Request,
+    topic: str | None = Query(default=None, description="exact topic filter"),
+    since: float | None = Query(
+        default=None, description="epoch-seconds lower bound (inclusive)"
+    ),
+    page: int = Query(default=1, ge=1),
+    size: int = Query(default=20, ge=1, le=100),
+) -> dict:
+    """Query historical messages (P3-W8). Tenant guard at the top.
+
+    Supports filtering by ``topic`` (exact match) and ``since`` (epoch
+    seconds, inclusive). Returns the standard paginated envelope.
+    """
+    ctx = _require_ctx(request)
+    require_tenant(ctx)
+    tid = str(ctx.tenant_id)
+    rows = list_messages(tid, topic=topic, since=since)
+    items = [asdict(m) for m in rows]
+    return _paginate(items, page, size)

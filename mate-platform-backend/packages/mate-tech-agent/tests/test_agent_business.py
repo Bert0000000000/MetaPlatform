@@ -349,3 +349,71 @@ class TestInputValidation:
         """DELETE /state/{thread_id} for an unknown thread returns 404."""
         r = client.delete("/api/v1/agent/state/nope", headers=auth_acme)
         assert r.status_code == 404, r.text
+
+
+# ---------------------------------------------------------------------------
+# 5. Cross-agent plan execution (P3-W8)
+# ---------------------------------------------------------------------------
+class TestPlanExecute:
+    _PLAN = {
+        "plan_id": "plan-001",
+        "steps": [
+            {"agent_id": "agent-s1", "action": "summarize", "input": {"q": "sales"}},
+            {"agent_id": "agent-s2", "action": "research", "input": {"q": "ai"}},
+        ],
+    }
+
+    def test_plan_execute_happy_path(self, client, auth_acme):
+        """POST /plan/execute orchestrates steps and returns a completed record."""
+        r = client.post(
+            "/api/v1/agent/plan/execute",
+            json=self._PLAN,
+            headers=auth_acme,
+        )
+        assert r.status_code == 200, r.text
+        body = r.json()
+        assert body["plan_id"] == "plan-001"
+        assert body["status"] == "completed"
+        assert body["execution_id"].startswith("plan-exec-")
+        # One result per step, each marked completed.
+        assert len(body["results"]) == len(self._PLAN["steps"])
+        assert all(res["status"] == "completed" for res in body["results"])
+
+    def test_plan_execute_emits_outbox(self, client, auth_acme, outbox):
+        """POST /plan/execute emits agent.plan.executed with the right payload."""
+        client.post(
+            "/api/v1/agent/plan/execute",
+            json=self._PLAN,
+            headers=auth_acme,
+        )
+        events = [rec.event for rec in outbox.all_records()]
+        executed = [e for e in events if e.type == "agent.plan.executed"]
+        assert len(executed) == 1, [e.type for e in events]
+        ev = executed[0]
+        assert ev.tenant_id == "tenant-acme"
+        assert ev.payload["plan_id"] == "plan-001"
+        assert ev.payload["step_count"] == 2
+        assert ev.payload["status"] == "completed"
+
+    def test_plan_execute_tenant_isolation(
+        self, client, auth_acme, auth_globex, outbox,
+    ):
+        """Each tenant's plan execution is bound to its own tenant_id."""
+        client.post(
+            "/api/v1/agent/plan/execute",
+            json={"plan_id": "plan-acme", "steps": [
+                {"agent_id": "agent-s1", "action": "do"}]},
+            headers=auth_acme,
+        )
+        client.post(
+            "/api/v1/agent/plan/execute",
+            json={"plan_id": "plan-globex", "steps": [
+                {"agent_id": "agent-s1", "action": "do"}]},
+            headers=auth_globex,
+        )
+        events = [rec.event for rec in outbox.all_records()]
+        executed = [e for e in events if e.type == "agent.plan.executed"]
+        assert len(executed) == 2
+        by_plan = {e.payload["plan_id"]: e.tenant_id for e in executed}
+        assert by_plan["plan-acme"] == "tenant-acme"
+        assert by_plan["plan-globex"] == "tenant-globex"

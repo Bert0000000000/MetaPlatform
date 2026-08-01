@@ -64,6 +64,20 @@ class FlowTestRun:
     output: dict[str, Any] = field(default_factory=dict)
 
 
+@dataclass(frozen=True)
+class FlowDeployment:
+    """A Flowable BPMN deployment record (P3-W8)."""
+
+    id: str
+    tenant_id: str
+    flow_id: str
+    name: str
+    deployment_id: str  # Flowable deployment id or synthetic in-memory id
+    engine: str  # "flowable" | "in-memory"
+    status: str  # "deployed" | "fallback" | "failed"
+    deployed_at: str = ""
+
+
 # ---------------------------------------------------------------------------
 # BPMN structural validation
 # ---------------------------------------------------------------------------
@@ -154,6 +168,7 @@ def _seed_validations(tenant_id: str) -> dict[str, FlowValidation]:
 _FLOWS: dict[str, dict[str, FlowDefinition]] = {}
 _VALIDATIONS: dict[str, dict[str, FlowValidation]] = {}
 _TEST_RUNS: dict[str, dict[str, FlowTestRun]] = {}
+_DEPLOYMENTS: dict[str, dict[str, FlowDeployment]] = {}
 
 
 def _ensure_tenant(tenant_id: str) -> None:
@@ -166,6 +181,8 @@ def _ensure_tenant(tenant_id: str) -> None:
         _VALIDATIONS[tenant_id] = _seed_validations(tenant_id)
     if tenant_id not in _TEST_RUNS:
         _TEST_RUNS[tenant_id] = {}
+    if tenant_id not in _DEPLOYMENTS:
+        _DEPLOYMENTS[tenant_id] = {}
 
 
 # ---------------------------------------------------------------------------
@@ -283,6 +300,47 @@ def delete_flow(tenant_id: str, flow_id: str) -> bool:
     return True
 
 
+def deploy_flow(
+    tenant_id: str,
+    flow_id: str,
+    name: str,
+    deployment_id: str,
+    engine: str,
+    status: str,
+) -> FlowDeployment:
+    """Persist a Flowable BPMN deployment record (P3-W8).
+
+    Used by POST /flows/deploy after the FlowableClient returns the
+    engine deployment result (or the in-memory fallback).
+    """
+    import time
+
+    if not tenant_id:
+        raise ValueError("tenant_id is required")
+    _ensure_tenant(tenant_id)
+    did = f"dep-{uuid.uuid4().hex[:8]}"
+    rec = FlowDeployment(
+        id=did,
+        tenant_id=tenant_id,
+        flow_id=flow_id,
+        name=name,
+        deployment_id=deployment_id,
+        engine=engine,
+        status=status,
+        deployed_at=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+    )
+    _DEPLOYMENTS[tenant_id][did] = rec
+    return rec
+
+
+def list_deployments(tenant_id: str) -> list[FlowDeployment]:
+    """List deployment records for a tenant (P3-W8)."""
+    if not tenant_id:
+        return []
+    _ensure_tenant(tenant_id)
+    return sorted(_DEPLOYMENTS[tenant_id].values(), key=lambda x: x.deployed_at)
+
+
 # ---------------------------------------------------------------------------
 # Test helpers — DO NOT call from production code paths
 # ---------------------------------------------------------------------------
@@ -291,3 +349,4 @@ def reset_store() -> None:
     _FLOWS.clear()
     _VALIDATIONS.clear()
     _TEST_RUNS.clear()
+    _DEPLOYMENTS.clear()

@@ -27,11 +27,13 @@ from mate_platform.messaging.outbox import InMemoryOutboxWriter
 from mate_platform.tenancy.context import TenantId
 from mate_platform.tenancy.guards import require_tenant
 
+from ..clients import FlowableClient
 from ..repositories import (
     FlowDefinition,
     append_test_run,
     append_validation,
     delete_flow,
+    deploy_flow,
     get_flow,
     list_flows,
     list_validations,
@@ -336,3 +338,77 @@ async def delete_flow_endpoint(request: Request, fid: str) -> dict[str, Any]:
         {"flow_id": fid}, tid,
     )
     return {"deleted": fid}
+
+
+# ---------------------------------------------------------------------------
+# BUSINESS-SLICES deep: Flowable BPMN deploy integration (P3-W8)
+# ---------------------------------------------------------------------------
+class FlowDeployRequest(BaseModel):
+    """Body schema for POST /flows/deploy.
+
+    Either reference a stored ``flow_id`` (its BPMN is deployed) or pass
+    inline ``bpmn_xml``. ``name`` labels the Flowable deployment.
+    """
+
+    flow_id: str | None = None
+    name: str
+    bpmn_xml: str | None = None
+
+
+@router.post("/flows/deploy", status_code=201)
+async def deploy_flow_endpoint(
+    request: Request, body: FlowDeployRequest,
+) -> dict[str, Any]:
+    """Deploy a BPMN flow to the Flowable engine (P3-W8).
+
+    Resolves the BPMN (inline ``bpmn_xml`` or stored ``flow_id``), calls
+    the FlowableClient (real Flowable REST when ``FLOWABLE_BASE_URL`` is
+    set, in-memory fallback otherwise), persists a ``FlowDeployment``
+    record, and emits a ``wfe.flow.deployed`` outbox event.
+    """
+    tid = _tid(request)
+    if not body.name or not body.name.strip():
+        raise HTTPException(status_code=422, detail="name is required")
+
+    bpmn_xml = body.bpmn_xml
+    flow_id = body.flow_id or ""
+    if bpmn_xml is None:
+        if not flow_id:
+            raise HTTPException(
+                status_code=400,
+                detail="either flow_id or bpmn_xml is required",
+            )
+        flow = get_flow(tid, flow_id)
+        if flow is None:
+            raise HTTPException(status_code=404, detail="flow not found")
+        bpmn_xml = flow.bpmn_xml
+    elif not flow_id:
+        flow_id = f"adhoc-{uuid.uuid4().hex[:8]}"
+
+    client = FlowableClient()
+    result = await client.deploy(body.name, bpmn_xml)
+
+    rec = deploy_flow(
+        tenant_id=tid,
+        flow_id=flow_id,
+        name=body.name,
+        deployment_id=result["deployment_id"],
+        engine=result["engine"],
+        status=result["status"],
+    )
+
+    _emit(
+        request,
+        "wfe.flow.deployed",
+        rec.id,
+        {
+            "deployment_record_id": rec.id,
+            "flow_id": flow_id,
+            "deployment_id": result["deployment_id"],
+            "engine": result["engine"],
+            "status": result["status"],
+        },
+        tid,
+    )
+
+    return {"deployment": asdict(rec)}

@@ -44,6 +44,24 @@ class AgentMessage:
     created_at: str = ""
 
 
+@dataclass(frozen=True)
+class PlanExecution:
+    """Cross-agent plan execution record (P3-W8).
+
+    A plan is a sequence of steps, each routed to a target agent. The
+    orchestrator records the plan_id, the resolved steps + their per-step
+    results, and a terminal status (``completed`` on success).
+    """
+
+    id: str
+    tenant_id: str
+    plan_id: str
+    steps: list[dict[str, Any]] = field(default_factory=list)
+    results: list[dict[str, Any]] = field(default_factory=list)
+    status: str = "completed"
+    created_at: str = ""
+
+
 # ---------------------------------------------------------------------------
 # Seed builders
 # ---------------------------------------------------------------------------
@@ -94,12 +112,40 @@ def _seed_messages(tenant_id: str) -> dict[str, AgentMessage]:
     }
 
 
+def _seed_plan_executions(tenant_id: str) -> dict[str, PlanExecution]:
+    catalog = [
+        (
+            "plan-exec-seed-1",
+            "plan-seed-1",
+            [
+                {"agent_id": "agent-s1", "action": "summarize", "input": {"topic": "sales"}},
+                {"agent_id": "agent-s2", "action": "research", "input": {"query": "ai trends"}},
+            ],
+            [
+                {"agent_id": "agent-s1", "status": "completed", "output": "sales up"},
+                {"agent_id": "agent-s2", "status": "completed", "output": "ai rising"},
+            ],
+        ),
+    ]
+    return {
+        pid: PlanExecution(
+            id=pid, tenant_id=tenant_id, plan_id=plid,
+            steps=[dict(s) for s in steps],
+            results=[dict(r) for r in results],
+            status="completed",
+            created_at="2026-08-01T00:00:00Z",
+        )
+        for pid, plid, steps, results in catalog
+    }
+
+
 # ---------------------------------------------------------------------------
 # Stores
 # ---------------------------------------------------------------------------
 _AGENTS: dict[str, dict[str, Agent]] = {}
 _SESSIONS: dict[str, dict[str, AgentSession]] = {}
 _MESSAGES: dict[str, dict[str, AgentMessage]] = {}
+_PLAN_EXECUTIONS: dict[str, dict[str, PlanExecution]] = {}
 
 
 def _ensure_tenant(tenant_id: str) -> None:
@@ -111,6 +157,8 @@ def _ensure_tenant(tenant_id: str) -> None:
         _SESSIONS[tenant_id] = _seed_sessions(tenant_id)
     if tenant_id not in _MESSAGES:
         _MESSAGES[tenant_id] = _seed_messages(tenant_id)
+    if tenant_id not in _PLAN_EXECUTIONS:
+        _PLAN_EXECUTIONS[tenant_id] = _seed_plan_executions(tenant_id)
 
 
 def list_agents(tenant_id: str) -> list[Agent]:
@@ -209,7 +257,59 @@ def delete_message(tenant_id: str, mid: str) -> bool:
     return True
 
 
+def list_plan_executions(tenant_id: str) -> list[PlanExecution]:
+    """List cross-agent plan execution records for a tenant (P3-W8)."""
+    if not tenant_id:
+        return []
+    _ensure_tenant(tenant_id)
+    return sorted(_PLAN_EXECUTIONS[tenant_id].values(), key=lambda x: x.id)
+
+
+def get_plan_execution(tenant_id: str, exec_id: str) -> PlanExecution | None:
+    if not tenant_id:
+        return None
+    _ensure_tenant(tenant_id)
+    return _PLAN_EXECUTIONS[tenant_id].get(exec_id)
+
+
+def create_plan_execution(
+    tenant_id: str,
+    plan_id: str,
+    steps: list[dict[str, Any]],
+    results: list[dict[str, Any]] | None = None,
+    *,
+    status: str = "completed",
+) -> PlanExecution:
+    """Persist a cross-agent plan execution record.
+
+    Orchestrates the plan by recording each step + its per-step result.
+    The execution id is generated; the caller is responsible for emitting
+    the outbox event (ADR-0014 step 3).
+    """
+    import time as _time
+    import uuid as _uuid
+
+    if not tenant_id:
+        raise ValueError("tenant_id is required")
+    if not plan_id:
+        raise ValueError("plan_id is required")
+    _ensure_tenant(tenant_id)
+    eid = f"plan-exec-{_uuid.uuid4().hex[:8]}"
+    rec = PlanExecution(
+        id=eid,
+        tenant_id=tenant_id,
+        plan_id=plan_id,
+        steps=[dict(s) for s in steps],
+        results=[dict(r) for r in (results or [])],
+        status=status,
+        created_at=_time.strftime("%Y-%m-%dT%H:%M:%SZ", _time.gmtime()),
+    )
+    _PLAN_EXECUTIONS[tenant_id][eid] = rec
+    return rec
+
+
 def reset_store() -> None:
     _AGENTS.clear()
     _SESSIONS.clear()
     _MESSAGES.clear()
+    _PLAN_EXECUTIONS.clear()
