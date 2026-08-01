@@ -114,3 +114,37 @@ def test_register_external_agent(
     events = [rec.event for rec in outbox.all_records()]
     types = {e.type for e in events}
     assert "a2a.agent.registered" in types, types
+
+
+def test_search_agent_cards_paginated(client, auth_headers_acme) -> None:
+    """GET /agent-cards/search merges internal + external cards (FR-A2A-A2AGETA2AAGENTCARDSSEARCH)."""
+    r = client.get("/api/v1/a2a/agent-cards/search", headers=auth_headers_acme)
+    assert r.status_code == 200, r.text
+    body = r.json()
+    # >= 5 internal agents + >= 3 external agents
+    assert body["total"] >= 8, body
+    assert all(c["tenant_id"] == "tenant-acme" for c in body["items"])
+    assert {"page", "size", "pages"} <= set(body.keys())
+    # Cards carry a source tag so callers can tell internal vs federated apart.
+    sources = {c["source"] for c in body["items"]}
+    assert sources == {"internal", "external"}, sources
+
+    # Pagination: size=1 returns 1 item and pages == total.
+    r2 = client.get(
+        "/api/v1/a2a/agent-cards/search",
+        params={"page": 1, "size": 1},
+        headers=auth_headers_acme,
+    )
+    assert r2.status_code == 200
+    assert len(r2.json()["items"]) == 1
+    assert r2.json()["pages"] == r2.json()["total"]
+
+
+def test_list_delegations_paginated(client, auth_headers_acme) -> None:
+    """GET /delegations returns a paginated delegation list (FR-A2A-A2AGETA2ADELEGATIONS)."""
+    r = client.get("/api/v1/a2a/delegations", headers=auth_headers_acme)
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["total"] >= 5, body  # seed: >= 5 delegation tasks per tenant
+    assert all(d["tenant_id"] == "tenant-acme" for d in body["items"])
+    assert {"page", "size", "pages"} <= set(body.keys())

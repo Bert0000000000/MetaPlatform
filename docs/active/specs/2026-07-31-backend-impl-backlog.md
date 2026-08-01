@@ -17,18 +17,18 @@
 | 项 | 数 |
 |---|---:|
 | Spec 路由(去重后) | 214 |
-| 代码路由(`@router.*` + `@app.*`,去重) | 184 |
-| Spec 命中代码 | 174 |
-| Spec-only(**未实现**) | **33** |
+| 代码路由(`@router.*` + `@app.*`,去重) | 188 |
+| Spec 命中代码 | 178 |
+| Spec-only(**未实现**) | **29** |
 | Impl-only(legacy / 内部探针 / 路径别名) | 10 |
-| **17 域接入进度** | **12/17**(8/17 → 11/17 → 12/17,apphub/arch/copilot/dw 完成) |
+| **17 域接入进度** | **14/17**(8/17 → 11/17 → 12/17 → 14/17,a2a/wfe 完成) |
 
-**9 / 17 域已 5 步模式接入 + 3 / 17 域 P2 已建包(dashboard/apphub/arch/copilot/dw 全部或基本完成)**;**5 域 P2 待建包**(data / etl / metrics / scheduler / a2a / wfe)。
+**11 / 17 域已 5 步模式接入 + 3 / 17 域 P2 已建包(dashboard/apphub/arch/copilot/dw/a2a/wfe 全部或基本完成)**;**4 域 P2 待建包**(data / etl / metrics / scheduler)。
 
-**v1.2(8/1)vs v1.1(7/30)更新**:
-- **P2-W3 PR#15 完成**:新建 `mate-tech-dw` 包,15 endpoint 全通(14 GET + 1 POST `/documents/upload` stub)
-- **未实现 55 → 40**(-15)
-- **17 域 11/17 → 12/17**(+1)
+**v1.4(8/1)vs v1.3更新**:
+- **P2-W5 PR#17 完成**:a2a 补 2 endpoint(agent-cards/search + delegations) + wfe 新建包 2 endpoint(flows/test + flows/validate)
+- **未实现 33 → 29**(-4)
+- **17 域 12/17 → 14/17**(+2:a2a 2/2 全通 + wfe 2/2 全通)
 
 ---
 
@@ -105,20 +105,21 @@
 - **回归**:全后端 578 passed / 0 failed;infra/tests 186 passed
 - **真实跨服务聚合**:留 TD-6,待 P2-W5(接 mate-app-kb / mate-tech-rag / mate-tech-agent + `BearerAuth`)
 
-### 4.3 a2a 真实实现(2 endpoint)— **stub 已挂,真实留 P2-W3**
+### 4.3 ✅ a2a 补 2 endpoint — **已完成**(P2-W5 PR#17,8/1)
 
-- **现状**:`copilot/a2a/delegate` + `copilot/a2a/external` 已挂载为 501 stub(P2-W2 实现)。
-- **缺失**:`/api/v1/a2a/agent-cards/search` + `/api/v1/a2a/delegations`(独立 a2a 域);copilot 内 2 endpoint 真实实现。
-- **修复**:新建 `packages/mate-app-a2a/` 或在 copilot 内升级 stub;接入 Keycloak service account + agent 注册中心。
-- **TD-4 范围**。
+- **状态**:**已完成**(补 2 spec-only endpoint:agent-cards/search + delegations)
+- **改动**:`api/app.py` 新增 `GET /agent-cards/search`(合并 internal + external agents 为 card 列表,分页)+ `GET /delegations`(复用 list_delegations,分页 envelope)+ `_paginate` / `_agent_card` helper
+- **测试**:2 happy-path + 2 tenant(isolation × 2)= 4 新增 tests pass
+- **注**:a2a 包原有 10 个 FR-APP-A2A endpoint(P2-W3 建包),本次补齐契约的 2 个 spec-only canonical 路径
 
-### 4.4 wfe 包代码 + 2 endpoint(1 周)
+### 4.4 ✅ wfe 包代码 + 2 endpoint — **已完成**(P2-W5 PR#17,8/1)
 
-- **现状**:OpenAPI `services/wfe.yaml` 已签,`packages/mate-app-wfe/` 不存在。
-- **缺失**:流程试运行 + 流程校验 2 个 endpoint。
-- **修复**:新建 `mate-app-wfe`,挂 Flowable engine client(POST /flows/test 用 BPMN XML 试运行,GET /flows/validate 做 schema 校验)。
-- **5 步 checklist**:全量。
-- **阻塞**:Flowable engine 8.0.0 集成(docker-compose.yml 已配)
+- **状态**:**已完成**(新建 `mate-app-wfe` 包 + 2 endpoint)
+- **改动**:新建 `packages/mate-app-wfe/`(`api/app.py` + `repositories/in_memory.py` + `clients.py` + `main.py`),2 endpoint 全通
+  - `POST /flows/test`:接收 flow_id(加载存储 BPMN)或 inline bpmn_xml(ad-hoc),跑 `validate_bpmn` 结构性校验,持久化 FlowTestRun + FlowValidation,emit `wfe.flow.tested` outbox event
+  - `GET /flows/validate`:分页返回 FlowValidation 记录(含 valid + issues)
+- **测试**:7 happy-path + 3 tenant(isolation × 2 + no-tenant 400)= 10 新增 tests pass
+- **BPMN 校验**:结构性检查(`<definitions>` + `<process>` + `<startEvent>` + `<endEvent>`),Flowable 8.0 引擎集成留 P2-W6
 
 ---
 
@@ -139,14 +140,14 @@
 | **apphub** | 5 | 5 | 0 | — | ✅ P2-W2 |
 | **arch** | 29 | 29 | 0 | — | ✅ P2-W4 PR#16 |
 | **copilot** | 35 | 35 | 0 | — | ✅ P2-W4 PR#16 |
-| **a2a** | 2 | 0(独立包) | **2** | 1 PR | **P2**(独立 a2a 域) |
-| **wfe** | 2 | 0 | **2** | 1 PR | **P2** |
+| **a2a** | 2 | 2 | 0 | — | ✅ P2-W5 PR#17 |
+| **wfe** | 2 | 2 | 0 | — | ✅ P2-W5 PR#17 |
 | **dw** | 15 | 15 | 0 | — | ✅ P2-W3 PR#15 |
 | **data** | 15 | 0 | **15** | 1 周(挂 DATA-D0-D8) | **P2** |
 | **etl** | 5 | 0 | **5** | 同上 | **P2** |
 | **metrics** | 5 | 0 | **5** | 同上 | **P2** |
 | **scheduler** | 5 | 0 | **5** | 同上 | **P2** |
-| **Σ** | **214** | **181** | **33** | — | — |
+| **Σ** | **214** | **185** | **29** | — | — |
 
 ---
 

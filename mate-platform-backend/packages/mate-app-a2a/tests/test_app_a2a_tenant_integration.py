@@ -98,3 +98,57 @@ def test_health_anonymous_ok(fresh_app: TestClient) -> None:
     r = fresh_app.get("/api/v1/a2a/health")
     assert r.status_code == 200, r.text
     assert r.json() == {"status": "ok"}
+
+
+def test_agent_cards_tenant_isolation(fresh_app: TestClient) -> None:
+    """P2-W5: GET /agent-cards/search enforces tenant isolation."""
+    token_acme = _token(tenant_id="tenant-acme")
+    token_globex = _token(tenant_id="tenant-globex")
+    path = "agent-cards/search"
+
+    r_acme = fresh_app.get(
+        f"/api/v1/a2a/{path}",
+        headers={"Authorization": f"Bearer {token_acme}"},
+    )
+    r_globex = fresh_app.get(
+        f"/api/v1/a2a/{path}",
+        headers={"Authorization": f"Bearer {token_globex}"},
+    )
+    assert r_acme.status_code == 200, r_acme.text
+    assert r_globex.status_code == 200, r_globex.text
+    # Cards carrying tenant_id must match the requesting tenant.
+    for item in r_acme.json()["items"]:
+        assert item["tenant_id"] == "tenant-acme", (path, item)
+    for item in r_globex.json()["items"]:
+        assert item["tenant_id"] == "tenant-globex", (path, item)
+
+
+def test_delegations_tenant_isolation(fresh_app: TestClient) -> None:
+    """P2-W5: GET /delegations enforces tenant isolation + no-tenant 400."""
+    token_acme = _token(tenant_id="tenant-acme")
+    token_globex = _token(tenant_id="tenant-globex")
+    path = "delegations"
+
+    r_acme = fresh_app.get(
+        f"/api/v1/a2a/{path}",
+        headers={"Authorization": f"Bearer {token_acme}"},
+    )
+    r_globex = fresh_app.get(
+        f"/api/v1/a2a/{path}",
+        headers={"Authorization": f"Bearer {token_globex}"},
+    )
+    assert r_acme.status_code == 200, r_acme.text
+    assert r_globex.status_code == 200, r_globex.text
+    for item in r_acme.json()["items"]:
+        assert item["tenant_id"] == "tenant-acme", (path, item)
+    for item in r_globex.json()["items"]:
+        assert item["tenant_id"] == "tenant-globex", (path, item)
+
+    # No-tenant token -> 400 E_TENANT_REQUIRED (require_tenant guard).
+    token_none = _token(tenant_id="")
+    r_none = fresh_app.get(
+        f"/api/v1/a2a/{path}",
+        headers={"Authorization": f"Bearer {token_none}"},
+    )
+    assert r_none.status_code == 400, r_none.text
+    assert r_none.json()["code"] == "E_TENANT_REQUIRED"

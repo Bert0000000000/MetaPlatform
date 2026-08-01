@@ -26,7 +26,7 @@ from __future__ import annotations
 from dataclasses import asdict
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Query, Request
 
 from mate_platform.messaging.events import Event
 from mate_platform.messaging.outbox import InMemoryOutboxWriter
@@ -214,3 +214,75 @@ async def register_agent(request: Request, body: dict[str, Any]) -> dict[str, An
         tid,
     )
     return {"agent_id": agent.id}
+
+
+# ---------------------------------------------------------------------------
+# Pagination helper (P2-W5: spec-only canonical paths)
+# ---------------------------------------------------------------------------
+def _paginate(items: list[Any], page: int, size: int) -> dict[str, Any]:
+    """Apply cursor-free pagination to a list of serialized dicts."""
+    total = len(items)
+    pages = (total + size - 1) // size if size > 0 else 0
+    start = (page - 1) * size
+    end = start + size
+    return {
+        "items": items[start:end],
+        "total": total,
+        "page": page,
+        "size": size,
+        "pages": pages,
+    }
+
+
+def _agent_card(agent: Any, source: str) -> dict[str, Any]:
+    """Normalize an Agent / ExternalAgent into an A2A agent-card dict."""
+    caps: list[str] = []
+    if source == "external":
+        caps = list(getattr(agent, "capabilities", ()) or ())
+    return {
+        "id": agent.id,
+        "tenant_id": agent.tenant_id,
+        "name": agent.name,
+        "endpoint": getattr(agent, "endpoint", "") or "",
+        "status": getattr(agent, "status", "active") or "active",
+        "source": source,  # "internal" | "external"
+        "capabilities": caps,
+    }
+
+
+# --- Spec-only canonical paths (P2-W5) --------------------------------------
+@router.get("/agent-cards/search")
+async def search_agent_cards(
+    request: Request,
+    page: int = Query(default=1, ge=1),
+    size: int = Query(default=20, ge=1, le=100),
+) -> dict[str, Any]:
+    """Search A2A agent cards (FR-A2A-A2AGETA2AAGENTCARDSSEARCH).
+
+    Merges internal agents and federated external agents into a
+    single card list, then paginates. Cards carry a `source` field
+    so callers can tell internal vs federated apart.
+    """
+    tid = _tid(request)
+    cards = [_agent_card(a, "internal") for a in list_agents(tid)]
+    cards += [_agent_card(a, "external") for a in list_external_agents(tid)]
+    # Stable ordering: by id (deterministic across tenants)
+    cards.sort(key=lambda c: c["id"])
+    return _paginate(cards, page, size)
+
+
+@router.get("/delegations")
+async def list_delegations_paginated(
+    request: Request,
+    page: int = Query(default=1, ge=1),
+    size: int = Query(default=20, ge=1, le=100),
+) -> dict[str, Any]:
+    """List delegation tasks, paginated (FR-A2A-A2AGETA2ADELEGATIONS).
+
+    This is the canonical spec path for `GET /api/v1/a2a/delegations`.
+    It returns the same DelegationTask rows as `GET /tasks` but in
+    the standard `{items,total,page,size,pages}` page envelope.
+    """
+    tid = _tid(request)
+    items = [task_to_dict(t) for t in list_delegations(tid)]
+    return _paginate(items, page, size)

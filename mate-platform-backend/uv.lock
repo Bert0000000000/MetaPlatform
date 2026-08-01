@@ -16,7 +16,12 @@ resolution-markers = [
 [manifest]
 members = [
     "mate-api-gateway",
+    "mate-app-a2a",
+    "mate-app-arch",
+    "mate-app-copilot",
+    "mate-app-hub",
     "mate-app-kb",
+    "mate-app-wfe",
     "mate-auth-service",
     "mate-clients",
     "mate-common",
@@ -24,6 +29,8 @@ members = [
     "mate-platform",
     "mate-platform-backend",
     "mate-tech-agent",
+    "mate-tech-db",
+    "mate-tech-dw",
     "mate-tech-iam",
     "mate-tech-llmgw",
     "mate-tech-mcp",
@@ -1988,13 +1995,173 @@ requires-dist = [
 ]
 
 [[package]]
+name = "mate-app-a2a"
+version = "0.1.0"
+source = { editable = "packages/mate-app-a2a" }
+dependencies = [
+    { name = "fastapi" },
+    { name = "mate-clients" },
+    { name = "mate-platform" },
+    { name = "pydantic" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "httpx" },
+    { name = "pyright" },
+    { name = "pytest" },
+    { name = "pytest-asyncio" },
+    { name = "respx" },
+    { name = "ruff" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "fastapi", specifier = ">=0.115.0" },
+    { name = "mate-clients", editable = "packages/mate-clients" },
+    { name = "mate-platform", editable = "packages/mate-platform" },
+    { name = "pydantic", specifier = ">=2.0.0" },
+]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "httpx", specifier = ">=0.28.0" },
+    { name = "pyright", specifier = ">=1.1.390" },
+    { name = "pytest", specifier = ">=8.3.0" },
+    { name = "pytest-asyncio", specifier = ">=0.24.0" },
+    { name = "respx", specifier = ">=0.21.0" },
+    { name = "ruff", specifier = ">=0.8.0" },
+]
+
+[[package]]
+name = "mate-app-arch"
+version = "0.1.0"
+source = { editable = "packages/mate-app-arch" }
+dependencies = [
+    { name = "fastapi" },
+    { name = "mate-clients" },
+    { name = "mate-platform" },
+    { name = "pydantic" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "httpx" },
+    { name = "pyright" },
+    { name = "pytest" },
+    { name = "pytest-asyncio" },
+    { name = "respx" },
+    { name = "ruff" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "fastapi", specifier = ">=0.115.0" },
+    { name = "mate-clients", editable = "packages/mate-clients" },
+    { name = "mate-platform", editable = "packages/mate-platform" },
+    { name = "pydantic", specifier = ">=2.0.0" },
+]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "httpx", specifier = ">=0.28.0" },
+    { name = "pyright", specifier = ">=1.1.390" },
+    { name = "pytest", specifier = ">=8.3.0" },
+    { name = "pytest-asyncio", specifier = ">=0.24.0" },
+    { name = "respx", specifier = ">=0.21.0" },
+    { name = "ruff", specifier = ">=0.8.0" },
+]
+
+[[package]]
+name = "mate-app-copilot"
+version = "0.1.0"
+source = { editable = "packages/mate-app-copilot" }
+dependencies = [
+    { name = "fastapi" },
+    { name = "mate-clients" },
+    { name = "mate-platform" },
+    { name = "pydantic" },
+    { name = "sqlparse" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "httpx" },
+    { name = "pyright" },
+    { name = "pytest" },
+    { name = "pytest-asyncio" },
+    { name = "respx" },
+    { name = "ruff" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "fastapi", specifier = ">=0.115.0" },
+    { name = "mate-clients", editable = "packages/mate-clients" },
+    { name = "mate-platform", editable = "packages/mate-platform" },
+    { name = "pydantic", specifier = ">=2.0.0" },
+    { name = "sqlparse", specifier = ">=0.5.0" },
+]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "httpx", specifier = ">=0.28.0" },
+    { name = "pyright", specifier = ">=1.1.390" },
+    { name = "pytest", specifier = ">=8.3.0" },
+    { name = "pytest-asyncio", specifier = ">=0.24.0" },
+    { name = "respx", specifier = ">=0.21.0" },
+    { name = "ruff", specifier = ">=0.8.0" },
+]
+
+[[package]]
+name = "mate-app-hub"
+version = "0.1.0"
+source = { editable = "packages/mate-app-hub" }
+dependencies = [
+    { name = "fastapi" },
+    { name = "mate-clients" },
+    { name = "mate-platform" },
+    { name = "pydantic" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "httpx" },
+    { name = "pyright" },
+    { name = "pytest" },
+    { name = "pytest-asyncio" },
+    { name = "respx" },
+    { name = "ruff" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "fastapi", specifier = ">=0.115.0" },
+    { name = "mate-clients", editable = "packages/mate-clients" },
+    { name = "mate-platform", editable = "packages/mate-platform" },
+    { name = "pydantic", specifier = ">=2.0.0" },
+]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "httpx", specifier = ">=0.28.0" },
+    { name = "pyright", specifier = ">=1.1.390" },
+    { name = "pytest", specifier = ">=8.3.0" },
+    { name = "pytest-asyncio", specifier = ">=0.24.0" },
+    { name = "respx", specifier = ">=0.21.0" },
+    { name = "ruff", specifier = ">=0.8.0" },
+]
+
+[[package]]
 name = "mate-app-kb"
 version = "0.1.0"
 source = { editable = "packages/mate-app-kb" }
 dependencies = [
     { name = "fastapi" },
     { name = "httpx" },
+    { name = "mate-clients" },
     { name = "mate-common" },
+    { name = "mate-platform" },
     { name = "pydantic" },
     { name = "python-multipart" },
     { name = "sse-starlette" },
@@ -2005,11 +2172,54 @@ dependencies = [
 requires-dist = [
     { name = "fastapi", specifier = ">=0.115.0" },
     { name = "httpx", specifier = ">=0.28.0" },
+    { name = "mate-clients", editable = "packages/mate-clients" },
     { name = "mate-common", editable = "packages/mate-common" },
+    { name = "mate-platform", editable = "packages/mate-platform" },
     { name = "pydantic", specifier = ">=2.0.0" },
     { name = "python-multipart", specifier = ">=0.0.32" },
     { name = "sse-starlette", specifier = ">=2.0.0" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.30.0" },
+]
+
+[[package]]
+name = "mate-app-wfe"
+version = "0.1.0"
+source = { editable = "packages/mate-app-wfe" }
+dependencies = [
+    { name = "fastapi" },
+    { name = "mate-clients" },
+    { name = "mate-platform" },
+    { name = "pydantic" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "httpx" },
+    { name = "pyjwt" },
+    { name = "pyright" },
+    { name = "pytest" },
+    { name = "pytest-asyncio" },
+    { name = "respx" },
+    { name = "ruff" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "fastapi", specifier = ">=0.115.0" },
+    { name = "mate-clients", editable = "packages/mate-clients" },
+    { name = "mate-platform", editable = "packages/mate-platform" },
+    { name = "pydantic", specifier = ">=2.0.0" },
+]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "httpx", specifier = ">=0.28.0" },
+    { name = "pyjwt", specifier = ">=2.10.0" },
+    { name = "pyright", specifier = ">=1.1.390" },
+    { name = "pytest", specifier = ">=8.3.0" },
+    { name = "pytest-asyncio", specifier = ">=0.24.0" },
+    { name = "respx", specifier = ">=0.21.0" },
+    { name = "ruff", specifier = ">=0.8.0" },
 ]
 
 [[package]]
@@ -2298,6 +2508,62 @@ requires-dist = [
 ]
 
 [[package]]
+name = "mate-tech-db"
+version = "0.1.0"
+source = { editable = "packages/mate-tech-db" }
+dependencies = [
+    { name = "pydantic" },
+    { name = "sqlalchemy" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "pydantic", specifier = ">=2.0" },
+    { name = "sqlalchemy", specifier = ">=2.0" },
+]
+
+[[package]]
+name = "mate-tech-dw"
+version = "0.1.0"
+source = { editable = "packages/mate-tech-dw" }
+dependencies = [
+    { name = "fastapi" },
+    { name = "mate-clients" },
+    { name = "mate-platform" },
+    { name = "pydantic" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "httpx" },
+    { name = "pyjwt" },
+    { name = "pyright" },
+    { name = "pytest" },
+    { name = "pytest-asyncio" },
+    { name = "respx" },
+    { name = "ruff" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "fastapi", specifier = ">=0.115.0" },
+    { name = "mate-clients", editable = "packages/mate-clients" },
+    { name = "mate-platform", editable = "packages/mate-platform" },
+    { name = "pydantic", specifier = ">=2.0.0" },
+]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "httpx", specifier = ">=0.28.0" },
+    { name = "pyjwt", specifier = ">=2.10.0" },
+    { name = "pyright", specifier = ">=1.1.390" },
+    { name = "pytest", specifier = ">=8.3.0" },
+    { name = "pytest-asyncio", specifier = ">=0.24.0" },
+    { name = "respx", specifier = ">=0.21.0" },
+    { name = "ruff", specifier = ">=0.8.0" },
+]
+
+[[package]]
 name = "mate-tech-iam"
 version = "0.1.0"
 source = { editable = "packages/mate-tech-iam" }
@@ -2402,7 +2668,9 @@ source = { editable = "packages/mate-tech-mcp" }
 dependencies = [
     { name = "fastapi" },
     { name = "httpx" },
+    { name = "mate-clients" },
     { name = "mate-common" },
+    { name = "mate-platform" },
     { name = "mcp" },
     { name = "opentelemetry-api" },
     { name = "opentelemetry-exporter-otlp-proto-grpc" },
@@ -2421,7 +2689,9 @@ dependencies = [
 requires-dist = [
     { name = "fastapi", specifier = ">=0.115.0" },
     { name = "httpx", specifier = ">=0.28.0" },
+    { name = "mate-clients", editable = "packages/mate-clients" },
     { name = "mate-common", editable = "packages/mate-common" },
+    { name = "mate-platform", editable = "packages/mate-platform" },
     { name = "mcp", specifier = ">=1.0.0" },
     { name = "opentelemetry-api", specifier = ">=1.27.0" },
     { name = "opentelemetry-exporter-otlp-proto-grpc", specifier = ">=1.27.0" },
@@ -2446,7 +2716,9 @@ dependencies = [
     { name = "fastapi" },
     { name = "httpx" },
     { name = "kafka-python-ng" },
+    { name = "mate-clients" },
     { name = "mate-common" },
+    { name = "mate-platform" },
     { name = "neo4j" },
     { name = "opentelemetry-api" },
     { name = "opentelemetry-exporter-otlp-proto-grpc" },
@@ -2473,7 +2745,9 @@ requires-dist = [
     { name = "fastapi", specifier = ">=0.115.0" },
     { name = "httpx", specifier = ">=0.28.0" },
     { name = "kafka-python-ng", specifier = ">=2.2.0" },
+    { name = "mate-clients", editable = "packages/mate-clients" },
     { name = "mate-common", editable = "packages/mate-common" },
+    { name = "mate-platform", editable = "packages/mate-platform" },
     { name = "neo4j", specifier = ">=5.25.0" },
     { name = "opentelemetry-api", specifier = ">=1.27.0" },
     { name = "opentelemetry-exporter-otlp-proto-grpc", specifier = ">=1.27.0" },
@@ -2562,7 +2836,9 @@ dependencies = [
     { name = "fastapi" },
     { name = "httpx" },
     { name = "kafka-python-ng" },
+    { name = "mate-clients" },
     { name = "mate-common" },
+    { name = "mate-platform" },
     { name = "neo4j" },
     { name = "opentelemetry-api" },
     { name = "opentelemetry-exporter-otlp-proto-grpc" },
@@ -2590,7 +2866,9 @@ requires-dist = [
     { name = "fastapi", specifier = ">=0.115.0" },
     { name = "httpx", specifier = ">=0.28.0" },
     { name = "kafka-python-ng", specifier = ">=2.2.0" },
+    { name = "mate-clients", editable = "packages/mate-clients" },
     { name = "mate-common", editable = "packages/mate-common" },
+    { name = "mate-platform", editable = "packages/mate-platform" },
     { name = "neo4j", specifier = ">=5.25.0" },
     { name = "opentelemetry-api", specifier = ">=1.27.0" },
     { name = "opentelemetry-exporter-otlp-proto-grpc", specifier = ">=1.27.0" },
@@ -2617,7 +2895,9 @@ version = "0.1.0"
 source = { editable = "packages/mate-tech-rag" }
 dependencies = [
     { name = "fastapi" },
+    { name = "mate-clients" },
     { name = "mate-common" },
+    { name = "mate-platform" },
     { name = "pydantic" },
     { name = "uvicorn", extra = ["standard"] },
 ]
@@ -2625,7 +2905,9 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "fastapi", specifier = ">=0.115.0" },
+    { name = "mate-clients", editable = "packages/mate-clients" },
     { name = "mate-common", editable = "packages/mate-common" },
+    { name = "mate-platform", editable = "packages/mate-platform" },
     { name = "pydantic", specifier = ">=2.0.0" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.30.0" },
 ]
@@ -4376,6 +4658,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/68/ee/22a0559283c3cf6048678e787ed5d4959dcd00dedd8ba4567eeae684eeb1/sqlmodel-0.0.39.tar.gz", hash = "sha256:23d8e50a8d8ee936032ed79c55023a5d618dd6bc3c510bbf4909d1a7a605a570", size = 91057, upload-time = "2026-06-25T13:01:38.475Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/cf/7d/b9813a582d4eb310be35e1fc7dfaae71207d7b62e9e53be314ebd251b53b/sqlmodel-0.0.39-py3-none-any.whl", hash = "sha256:90ebe92ce5cc11d7fff8dc7cb594790a102333c8fe7c14865254f6fc5c939795", size = 29680, upload-time = "2026-06-25T13:01:37.494Z" },
+]
+
+[[package]]
+name = "sqlparse"
+version = "0.5.5"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/90/76/437d71068094df0726366574cf3432a4ed754217b436eb7429415cf2d480/sqlparse-0.5.5.tar.gz", hash = "sha256:e20d4a9b0b8585fdf63b10d30066c7c94c5d7a7ec47c889a2d83a3caa93ff28e", size = 120815, upload-time = "2025-12-19T07:17:45.073Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/49/4b/359f28a903c13438ef59ebeee215fb25da53066db67b305c125f1c6d2a25/sqlparse-0.5.5-py3-none-any.whl", hash = "sha256:12a08b3bf3eec877c519589833aed092e2444e68240a3577e8e26148acc7b1ba", size = 46138, upload-time = "2025-12-19T07:17:46.573Z" },
 ]
 
 [[package]]
