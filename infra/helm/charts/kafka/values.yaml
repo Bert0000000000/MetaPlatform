@@ -6,6 +6,10 @@
 # values for the four-layer metaplatform workload.
 # =============================================================================
 
+# Force the service DNS name to "kafka" so PLATFORM-EVENT-01
+# producers / consumers resolve bootstrap servers consistently.
+fullnameOverride: kafka
+
 image:
   registry: docker.io
   repository: bitnami/kafka
@@ -28,9 +32,9 @@ resources:
     memory: 1Gi
 
 persistence:
-  enabled: true
+  enabled: false       # true in production (PVC); false = emptyDir
   size: 8Gi
-  storageClass: ""
+  storageClass: ""     # "" = cluster default StorageClass
 
 # Producer / consumer defaults.
 config:
@@ -88,7 +92,7 @@ service:
   type: ClusterIP
   ports:
     client: 9092
-    internal: 9092
+    internal: 9094
 
 # Schema Registry (Confluent 7.6) — required by PLATFORM-EVENT-01
 # schema_id_for() path.
@@ -100,3 +104,42 @@ schemaRegistry:
   service:
     type: ClusterIP
     port: 8081
+
+# ZooKeeper — only used when kraft.enabled is false. Provides a
+# fallback for environments that cannot run KRaft (older Kafka <
+# 3.3 or organisational policy). The chart prefers KRaft.
+zookeeper:
+  replicaCount: 1     # 3 in production if ZooKeeper mode is used
+  image:
+    registry: docker.io
+    repository: bitnami/zookeeper
+    tag: 3.9.2
+    pullPolicy: IfNotPresent
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  persistence:
+    enabled: false
+    size: 4Gi
+    storageClass: ""
+
+# Probes — TCP socket on the client port.
+probes:
+  readiness:
+    initialDelaySeconds: 10
+    periodSeconds: 10
+  liveness:
+    initialDelaySeconds: 30
+    periodSeconds: 30
+
+# NetworkPolicy — default-deny, only platform namespace can reach
+# Kafka on 9092 (hard rule 13).
+networkPolicy:
+  enabled: true
+  allowedIngressNamespaces:
+    - metaplatform
+    - api-gateway

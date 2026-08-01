@@ -247,6 +247,42 @@ def append_test_run(
     return rec
 
 
+def put_flow(tenant_id: str, flow: FlowDefinition) -> FlowDefinition:
+    """Insert or replace a flow definition. Used by POST /flows."""
+    if not tenant_id:
+        raise ValueError("tenant_id is required")
+    _ensure_tenant(tenant_id)
+    _FLOWS[tenant_id][flow.id] = flow
+    return flow
+
+
+def update_flow_status(tenant_id: str, flow_id: str, status: str) -> FlowDefinition | None:
+    """Transition a flow's status. Returns the updated flow or None."""
+    if not tenant_id:
+        return None
+    _ensure_tenant(tenant_id)
+    flow = _FLOWS[tenant_id].get(flow_id)
+    if flow is None:
+        return None
+    updated = FlowDefinition(
+        id=flow.id, tenant_id=flow.tenant_id, name=flow.name,
+        bpmn_xml=flow.bpmn_xml, version=flow.version, status=status,
+    )
+    _FLOWS[tenant_id][flow_id] = updated
+    return updated
+
+
+def delete_flow(tenant_id: str, flow_id: str) -> bool:
+    """Delete a flow definition. Returns True if deleted."""
+    if not tenant_id:
+        return False
+    _ensure_tenant(tenant_id)
+    if flow_id not in _FLOWS[tenant_id]:
+        return False
+    del _FLOWS[tenant_id][flow_id]
+    return True
+
+
 # ---------------------------------------------------------------------------
 # Test helpers — DO NOT call from production code paths
 # ---------------------------------------------------------------------------

@@ -12,27 +12,63 @@ double-check the tenant — the guard is the source of truth.
   GET /api/v1/apphub/pages       — page templates
   GET /api/v1/apphub/templates   — workflow / form templates
 
+BUSINESS-SLICES deep: adds CRUD endpoints for apps, groups, modules,
+pages, and templates with version management, category validation,
+and outbox event emission (ADR-0014 step 3).
+
 The router is mounted by `mate_app_hub.main.create_app()` after
 `install_auth(app)` so the bearer-token middleware populates
 `request.state.ctx` before any handler runs.
 """
 from __future__ import annotations
 
+import re
 from dataclasses import asdict
+from typing import Any
 
-from fastapi import APIRouter, Query, Request
+from fastapi import APIRouter, HTTPException, Query, Request
+from pydantic import BaseModel, Field
+from typing import Annotated
 
+from mate_platform.messaging.events import Event
+from mate_platform.messaging.outbox import InMemoryOutboxWriter
+from mate_platform.tenancy.context import TenantId
 from mate_platform.tenancy.guards import require_tenant
 
 from ..repositories import (
+    ApphubApp,
+    ApphubGroup,
+    ApphubModule,
+    ApphubPage,
+    ApphubTemplate,
+    delete_app,
+    delete_group,
+    get_app,
+    get_group,
+    get_module,
+    get_template,
     list_apps,
     list_groups,
     list_modules,
     list_pages,
     list_templates,
+    put_app,
+    put_group,
+    put_module,
+    put_page,
+    put_template,
 )
 
 router = APIRouter(prefix="/api/v1/apphub", tags=["apphub"])
+
+# Valid categories (must match an existing group code).
+_VALID_CATEGORIES = frozenset({"knowledge", "platform", "data"})
+
+# Valid template types.
+_VALID_TEMPLATE_TYPES = frozenset({"workflow", "form", "approval"})
+
+# Semver pattern: MAJOR.MINOR.PATCH
+_SEMVER_RE = re.compile(r"^\d+\.\d+\.\d+$")
 
 
 def _serialize(rows: list) -> list[dict]:
@@ -51,6 +87,30 @@ def _tenant_id(request: Request) -> str:
     ctx = request.state.ctx
     tenant_id = require_tenant(ctx)
     return str(tenant_id)
+
+
+def _emit(
+    request: Request,
+    event_type: str,
+    aggregate_id: str,
+    payload: dict[str, Any],
+    tenant_id: str,
+) -> None:
+    """Append an outbox event if a writer is configured (ADR-0014 step 3)."""
+    writer: InMemoryOutboxWriter | None = getattr(
+        request.app.state, "outbox_writer", None
+    )
+    if writer is None:
+        return
+    writer.append(
+        Event.create(
+            type=event_type,
+            tenant_id=TenantId(tenant_id),
+            aggregate_id=aggregate_id,
+            payload=payload,
+            trace_id=getattr(request.state.ctx, "trace_id", ""),
+        )
+    )
 
 
 @router.get("/apps")
@@ -116,3 +176,299 @@ async def list_workflow_templates(
     if template_type:
         items = [t for t in items if t["template_type"] == template_type]
     return {"items": items, "total": len(items)}
+
+
+# ---------------------------------------------------------------------------
+# BUSINESS-SLICES deep: App registration + version management
+# ---------------------------------------------------------------------------
+class AppRegisterRequest(BaseModel):
+    """Body schema for POST /apps."""
+    name: Annotated[str, Field(min_length=1, max_length=256)]
+    code: Annotated[str, Field(min_length=1, max_length=64)]
+    category: Annotated[str, Field(min_length=1, max_length=64)]
+    description: Annotated[str, Field(default="", max_length=2048)]
+    version: Annotated[str, Field(default="1.0.0")]
+    owner: Annotated[str, Field(default="platform-team")]
+    tags: Annotated[list[str], Field(default_factory=list)]
+
+
+class AppUpdateRequest(BaseModel):
+    """Body schema for PATCH /apps/{code}."""
+    name: Annotated[str | None, Field(default=None, max_length=256)]
+    description: Annotated[str | None, Field(default=None, max_length=2048)]
+    version: Annotated[str | None, Field(default=None)]
+    owner: Annotated[str | None, Field(default=None, max_length=256)]
+
+
+@router.post("/apps", status_code=201)
+async def register_app(
+    request: Request, body: AppRegisterRequest,
+) -> dict:
+    """Register a new application.
+
+    Validation rules:
+      - ``code`` must be unique within the tenant.
+      - ``category`` must be one of the known categories (knowledge /
+        platform / data) and match an existing group.
+      - ``version`` must be a valid semver (MAJOR.MINOR.PATCH).
+    """
+    tid = _tenant_id(request)
+    if body.category not in _VALID_CATEGORIES:
+        raise HTTPException(
+            status_code=422,
+            detail=f"invalid category '{body.category}'; must be one of {sorted(_VALID_CATEGORIES)}",
+        )
+    if get_group(tid, body.category) is None:
+        raise HTTPException(
+            status_code=422,
+            detail=f"category '{body.category}' has no matching group",
+        )
+    if not _SEMVER_RE.match(body.version):
+        raise HTTPException(
+            status_code=422,
+            detail=f"invalid version '{body.version}'; expected MAJOR.MINOR.PATCH",
+        )
+    existing = get_app(tid, body.code)
+    if existing is not None:
+        raise HTTPException(
+            status_code=409,
+            detail=f"app '{body.code}' already registered",
+        )
+    app = ApphubApp(
+        id=f"app-{body.code}", tenant_id=tid,
+        name=body.name, code=body.code, category=body.category,
+        description=body.description, version=body.version,
+        owner=body.owner, tags=tuple(body.tags),
+    )
+    put_app(tid, app)
+    _emit(
+        request, "apphub.app.registered", body.code,
+        {"code": body.code, "name": body.name, "version": body.version},
+        tid,
+    )
+    return asdict(app)
+
+
+@router.patch("/apps/{code}")
+async def update_app(
+    request: Request, code: str, body: AppUpdateRequest,
+) -> dict:
+    """Update an application's metadata.
+
+    Version bumps must follow semver. The new version must differ
+    from the current one.
+    """
+    tid = _tenant_id(request)
+    app = get_app(tid, code)
+    if app is None:
+        raise HTTPException(status_code=404, detail="app not found")
+    new_version = body.version if body.version is not None else app.version
+    if not _SEMVER_RE.match(new_version):
+        raise HTTPException(
+            status_code=422,
+            detail=f"invalid version '{new_version}'; expected MAJOR.MINOR.PATCH",
+        )
+    if new_version == app.version and body.version is not None:
+        raise HTTPException(
+            status_code=409,
+            detail="new version must differ from current version",
+        )
+    updated = ApphubApp(
+        id=app.id, tenant_id=tid,
+        name=body.name if body.name is not None else app.name,
+        code=app.code, category=app.category,
+        description=body.description if body.description is not None else app.description,
+        version=new_version,
+        owner=body.owner if body.owner is not None else app.owner,
+        tags=app.tags,
+    )
+    put_app(tid, updated)
+    _emit(
+        request, "apphub.app.updated", code,
+        {"code": code, "version": new_version}, tid,
+    )
+    return asdict(updated)
+
+
+@router.delete("/apps/{code}")
+async def delete_app_endpoint(request: Request, code: str) -> dict:
+    """Delete an application by code."""
+    tid = _tenant_id(request)
+    app = get_app(tid, code)
+    if app is None:
+        raise HTTPException(status_code=404, detail="app not found")
+    delete_app(tid, code)
+    _emit(request, "apphub.app.deleted", code, {"code": code}, tid)
+    return {"deleted": code}
+
+
+# ---------------------------------------------------------------------------
+# BUSINESS-SLICES deep: Group CRUD
+# ---------------------------------------------------------------------------
+class GroupCreateRequest(BaseModel):
+    name: Annotated[str, Field(min_length=1, max_length=256)]
+    code: Annotated[str, Field(min_length=1, max_length=64)]
+    icon: Annotated[str, Field(default="folder", max_length=64)]
+    sort_order: Annotated[int, Field(default=0, ge=0)]
+
+
+@router.post("/groups", status_code=201)
+async def create_group(
+    request: Request, body: GroupCreateRequest,
+) -> dict:
+    """Create a new application group."""
+    tid = _tenant_id(request)
+    if get_group(tid, body.code) is not None:
+        raise HTTPException(status_code=409, detail=f"group '{body.code}' already exists")
+    group = ApphubGroup(
+        id=f"grp-{body.code}", tenant_id=tid,
+        name=body.name, code=body.code,
+        icon=body.icon, sort_order=body.sort_order,
+    )
+    put_group(tid, group)
+    _emit(
+        request, "apphub.group.created", body.code,
+        {"code": body.code, "name": body.name}, tid,
+    )
+    return asdict(group)
+
+
+@router.delete("/groups/{code}")
+async def delete_group_endpoint(request: Request, code: str) -> dict:
+    """Delete a group. A group with apps referencing its category cannot be deleted."""
+    tid = _tenant_id(request)
+    group = get_group(tid, code)
+    if group is None:
+        raise HTTPException(status_code=404, detail="group not found")
+    # Check no apps use this category.
+    apps = [a for a in list_apps(tid) if a.category == code]
+    if apps:
+        raise HTTPException(
+            status_code=409,
+            detail=f"cannot delete group '{code}'; {len(apps)} apps reference it",
+        )
+    delete_group(tid, code)
+    _emit(request, "apphub.group.deleted", code, {"code": code}, tid)
+    return {"deleted": code}
+
+
+# ---------------------------------------------------------------------------
+# BUSINESS-SLICES deep: Module CRUD
+# ---------------------------------------------------------------------------
+class ModuleCreateRequest(BaseModel):
+    name: Annotated[str, Field(min_length=1, max_length=256)]
+    code: Annotated[str, Field(min_length=1, max_length=64)]
+    app_code: Annotated[str, Field(min_length=1, max_length=64)]
+    description: Annotated[str, Field(default="", max_length=2048)]
+    entry_path: Annotated[str, Field(default="", max_length=512)]
+
+
+@router.post("/modules", status_code=201)
+async def create_module(
+    request: Request, body: ModuleCreateRequest,
+) -> dict:
+    """Create a new business module.
+
+    The ``app_code`` must reference an existing registered app.
+    """
+    tid = _tenant_id(request)
+    if get_app(tid, body.app_code) is None:
+        raise HTTPException(
+            status_code=422, detail=f"app '{body.app_code}' not found",
+        )
+    if get_module(tid, body.code) is not None:
+        raise HTTPException(
+            status_code=409, detail=f"module '{body.code}' already exists",
+        )
+    module = ApphubModule(
+        id=f"mod-{body.code}", tenant_id=tid,
+        name=body.name, code=body.code, app_code=body.app_code,
+        description=body.description, entry_path=body.entry_path,
+    )
+    put_module(tid, module)
+    _emit(
+        request, "apphub.module.created", body.code,
+        {"code": body.code, "app_code": body.app_code}, tid,
+    )
+    return asdict(module)
+
+
+# ---------------------------------------------------------------------------
+# BUSINESS-SLICES deep: Page CRUD
+# ---------------------------------------------------------------------------
+class PageCreateRequest(BaseModel):
+    name: Annotated[str, Field(min_length=1, max_length=256)]
+    code: Annotated[str, Field(min_length=1, max_length=64)]
+    module_code: Annotated[str, Field(min_length=1, max_length=64)]
+    layout: Annotated[str, Field(default="single", max_length=64)]
+    schema_version: Annotated[int, Field(default=1, ge=1)]
+
+
+@router.post("/pages", status_code=201)
+async def create_page(
+    request: Request, body: PageCreateRequest,
+) -> dict:
+    """Create a new page template.
+
+    The ``module_code`` must reference an existing module.
+    """
+    tid = _tenant_id(request)
+    if get_module(tid, body.module_code) is None:
+        raise HTTPException(
+            status_code=422, detail=f"module '{body.module_code}' not found",
+        )
+    page = ApphubPage(
+        id=f"page-{body.code}", tenant_id=tid,
+        name=body.name, code=body.code,
+        module_code=body.module_code, layout=body.layout,
+        schema_version=body.schema_version,
+    )
+    put_page(tid, page)
+    _emit(
+        request, "apphub.page.created", body.code,
+        {"code": body.code, "module_code": body.module_code}, tid,
+    )
+    return asdict(page)
+
+
+# ---------------------------------------------------------------------------
+# BUSINESS-SLICES deep: Template CRUD
+# ---------------------------------------------------------------------------
+class TemplateCreateRequest(BaseModel):
+    name: Annotated[str, Field(min_length=1, max_length=256)]
+    code: Annotated[str, Field(min_length=1, max_length=64)]
+    template_type: Annotated[str, Field(min_length=1, max_length=64)]
+    description: Annotated[str, Field(default="", max_length=2048)]
+    content: Annotated[dict, Field(default_factory=dict)]
+
+
+@router.post("/templates", status_code=201)
+async def create_template(
+    request: Request, body: TemplateCreateRequest,
+) -> dict:
+    """Create a new workflow / form / approval template.
+
+    The ``template_type`` must be one of: workflow / form / approval.
+    """
+    tid = _tenant_id(request)
+    if body.template_type not in _VALID_TEMPLATE_TYPES:
+        raise HTTPException(
+            status_code=422,
+            detail=f"invalid template_type '{body.template_type}'; must be one of {sorted(_VALID_TEMPLATE_TYPES)}",
+        )
+    if get_template(tid, body.code) is not None:
+        raise HTTPException(
+            status_code=409, detail=f"template '{body.code}' already exists",
+        )
+    template = ApphubTemplate(
+        id=f"tpl-{body.code}", tenant_id=tid,
+        name=body.name, code=body.code,
+        template_type=body.template_type,
+        description=body.description, content=body.content,
+    )
+    put_template(tid, template)
+    _emit(
+        request, "apphub.template.created", body.code,
+        {"code": body.code, "template_type": body.template_type}, tid,
+    )
+    return asdict(template)

@@ -36,6 +36,11 @@ from fastapi import APIRouter, FastAPI, HTTPException, Request
 # BUSINESS-SLICES P1 wave 3: hook 1 (auth).
 from mate_platform.auth import install_auth
 
+from .federation import ExternalMcpClient, FederationRegistry, FederationRouter
+from .federation_routes import router as federation_router_routes
+from .federation_routes import _set_external_client as _share_federation_external_client
+from .federation_routes import _set_outbox as _share_federation_outbox
+from .federation_routes import _set_registry as _share_federation_registry
 from .prompts.templates import list_prompts, render_prompt
 from .resources.ontology import OntologyResource, build_ontology_resource
 from .server import MCPServer, create_server
@@ -56,6 +61,15 @@ mcp_server.register_resource(_ontology)
 
 # per-tenant per-tool rate limiter.
 _rate_limiter = ToolRateLimiter(config=RateLimitConfig(limit=50, window_sec=60))
+
+# 扩展能力 (backlog §3.8): MCP Federation registry + external client.
+federation_registry = FederationRegistry()
+federation_external_client = ExternalMcpClient()
+_share_federation_registry(federation_registry)
+_share_federation_external_client(federation_external_client)
+# Outbox writer is optional — None in test profile; production wires
+# the InMemoryOutboxWriter or SQL-backed writer at startup.
+_share_federation_outbox(None)
 
 # HTTP bridge router carrying the 5 spec endpoints. Endpoint
 # handlers must be registered onto `http_bridge` BEFORE we call
@@ -171,6 +185,8 @@ install_auth(app)
 
 # Mount the bridge AFTER all routes are registered on it.
 app.include_router(http_bridge)
+# 扩展能力 (backlog §3.8): MCP Federation endpoints.
+app.include_router(federation_router_routes)
 
 
 @app.get("/healthz")

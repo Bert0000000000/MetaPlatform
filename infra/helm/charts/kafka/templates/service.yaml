@@ -1,13 +1,54 @@
+{{/*
+  Headless service — required by the StatefulSet for stable pod DNS
+  names (kafka-0.kafka-headless, kafka-1.kafka-headless, …). The
+  KRaft controller quorum voters and advertised listeners depend on
+  these stable names.
+*/}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "kafka.fullname" . }}-headless
+  labels:
+    {{- include "kafka.labels" . | nindent 4 }}
+    app.kubernetes.io/component: broker
+spec:
+  type: ClusterIP
+  clusterIP: None
+  selector:
+    {{- include "kafka.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: broker
+  ports:
+    - name: client
+      port: {{ .Values.service.ports.client }}
+      targetPort: client
+      protocol: TCP
+    {{- if .Values.kraft.enabled }}
+    - name: controller
+      port: 9093
+      targetPort: controller
+      protocol: TCP
+    {{- end }}
+    - name: internal
+      port: {{ .Values.service.ports.internal }}
+      targetPort: internal
+      protocol: TCP
+---
+{{/*
+  ClusterIP service — the stable client access point. Producers and
+  consumers connect to <release>-kafka:9092.
+*/}}
 apiVersion: v1
 kind: Service
 metadata:
   name: {{ include "kafka.fullname" . }}
   labels:
     {{- include "kafka.labels" . | nindent 4 }}
+    app.kubernetes.io/component: broker
 spec:
   type: {{ .Values.service.type }}
   selector:
     {{- include "kafka.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: broker
   ports:
     - name: client
       port: {{ .Values.service.ports.client }}

@@ -31,12 +31,31 @@ from ..repositories import (
     FlowDefinition,
     append_test_run,
     append_validation,
+    delete_flow,
     get_flow,
+    list_flows,
     list_validations,
+    put_flow,
+    update_flow_status,
     validate_bpmn,
 )
 
 router = APIRouter(prefix="/api/v1/wfe", tags=["wfe"])
+
+
+# ---------------------------------------------------------------------------
+# Flow lifecycle state machine (BUSINESS-SLICES deep implementation)
+# ---------------------------------------------------------------------------
+# Allowed transitions:
+#   draft     -> active      (validated + published)
+#   active    -> deprecated  (superseded)
+#   active    -> draft       (withdrawn for edits)
+#   deprecated -> (terminal)
+_FLOW_TRANSITIONS: dict[str, frozenset[str]] = {
+    "draft": frozenset({"active"}),
+    "active": frozenset({"deprecated", "draft"}),
+    "deprecated": frozenset(),
+}
 
 
 # ---------------------------------------------------------------------------
@@ -190,3 +209,130 @@ async def list_flows_validate(
     tid = _tid(request)
     items = [asdict(v) for v in list_validations(tid)]
     return _paginate(items, page, size)
+
+
+# ---------------------------------------------------------------------------
+# BUSINESS-SLICES deep: Flow definition CRUD + status transitions
+# ---------------------------------------------------------------------------
+class FlowCreateRequest(BaseModel):
+    """Body schema for POST /flows."""
+    name: str
+    bpmn_xml: str
+    version: str = "1.0"
+
+
+class FlowStatusRequest(BaseModel):
+    """Body schema for PATCH /flows/{id}/status."""
+    status: str  # draft / active / deprecated
+
+
+@router.get("/flows")
+async def list_flows_endpoint(
+    request: Request,
+    page: int = Query(default=1, ge=1),
+    size: int = Query(default=20, ge=1, le=100),
+) -> dict[str, Any]:
+    """List flow definitions (paginated, tenant-scoped)."""
+    tid = _tid(request)
+    items = [asdict(f) for f in list_flows(tid)]
+    return _paginate(items, page, size)
+
+
+@router.post("/flows", status_code=201)
+async def create_flow(
+    request: Request, body: FlowCreateRequest,
+) -> dict[str, Any]:
+    """Create a new flow definition.
+
+    The BPMN is structurally validated before persistence. A flow
+    with invalid BPMN is still persisted (status=draft) but the
+    validation issues are returned so the caller can fix them.
+    """
+    tid = _tid(request)
+    if not body.name or not body.name.strip():
+        raise HTTPException(status_code=422, detail="name is required")
+    if not body.bpmn_xml or not body.bpmn_xml.strip():
+        raise HTTPException(status_code=422, detail="bpmn_xml is required")
+    fid = f"flow-{uuid.uuid4().hex[:8]}"
+    flow = FlowDefinition(
+        id=fid, tenant_id=tid, name=body.name,
+        bpmn_xml=body.bpmn_xml, version=body.version, status="draft",
+    )
+    put_flow(tid, flow)
+    # Validate immediately and persist the validation record.
+    valid, issues = validate_bpmn(body.bpmn_xml)
+    append_validation(tid, fid, valid, issues)
+    _emit(
+        request, "wfe.flow.created", fid,
+        {"flow_id": fid, "name": body.name, "valid": valid}, tid,
+    )
+    return {"flow": asdict(flow), "validation": {"valid": valid, "issues": issues}}
+
+
+@router.get("/flows/{fid}")
+async def get_flow_endpoint(request: Request, fid: str) -> dict[str, Any]:
+    """Get a single flow definition by id."""
+    tid = _tid(request)
+    flow = get_flow(tid, fid)
+    if flow is None:
+        raise HTTPException(status_code=404, detail="flow not found")
+    return asdict(flow)
+
+
+@router.patch("/flows/{fid}/status")
+async def transition_flow_status(
+    request: Request, fid: str, body: FlowStatusRequest,
+) -> dict[str, Any]:
+    """Transition a flow's lifecycle status.
+
+    State machine:
+      draft     -> active      (the flow must pass BPMN validation)
+      active    -> deprecated  (superseded)
+      active    -> draft       (withdrawn for edits)
+      deprecated -> (terminal, no further transitions)
+    """
+    tid = _tid(request)
+    flow = get_flow(tid, fid)
+    if flow is None:
+        raise HTTPException(status_code=404, detail="flow not found")
+    current = flow.status
+    allowed = _FLOW_TRANSITIONS.get(current, frozenset())
+    if body.status not in allowed:
+        raise HTTPException(
+            status_code=409,
+            detail=f"invalid transition: {current} -> {body.status}",
+        )
+    # draft -> active requires a valid BPMN.
+    if current == "draft" and body.status == "active":
+        valid, issues = validate_bpmn(flow.bpmn_xml)
+        if not valid:
+            raise HTTPException(
+                status_code=422,
+                detail=f"cannot activate: BPMN invalid: {issues}",
+            )
+    updated = update_flow_status(tid, fid, body.status)
+    _emit(
+        request, "wfe.flow.status_changed", fid,
+        {"flow_id": fid, "from": current, "to": body.status}, tid,
+    )
+    return asdict(updated)
+
+
+@router.delete("/flows/{fid}")
+async def delete_flow_endpoint(request: Request, fid: str) -> dict[str, Any]:
+    """Delete a flow definition (only allowed in draft or deprecated)."""
+    tid = _tid(request)
+    flow = get_flow(tid, fid)
+    if flow is None:
+        raise HTTPException(status_code=404, detail="flow not found")
+    if flow.status == "active":
+        raise HTTPException(
+            status_code=409,
+            detail="cannot delete an active flow; deprecate first",
+        )
+    delete_flow(tid, fid)
+    _emit(
+        request, "wfe.flow.deleted", fid,
+        {"flow_id": fid}, tid,
+    )
+    return {"deleted": fid}

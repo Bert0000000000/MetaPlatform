@@ -1,0 +1,132 @@
+{{/*
+  ZooKeeper StatefulSet + headless Service.
+
+  Rendered ONLY when KRaft mode is disabled (kraft.enabled: false).
+  In KRaft mode (the default and production preference) this template
+  produces no output, avoiding the ZooKeeper dependency entirely.
+
+  ZooKeeper is provided as a fallback for environments that cannot run
+  KRaft (e.g. older Kafka < 3.3 or organisational policy). The chart
+  prefers KRaft — see ADR-0013 (PLATFORM-EVENT-01) and values.yaml.
+*/}}
+{{- if not .Values.kraft.enabled }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "kafka.fullname" . }}-zookeeper-headless
+  labels:
+    {{- include "kafka.labels" . | nindent 4 }}
+    app.kubernetes.io/component: zookeeper
+spec:
+  type: ClusterIP
+  clusterIP: None
+  selector:
+    {{- include "kafka.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: zookeeper
+  ports:
+    - name: client
+      port: 2181
+      targetPort: client
+      protocol: TCP
+    - name: follower
+      port: 2888
+      targetPort: follower
+      protocol: TCP
+    - name: election
+      port: 3888
+      targetPort: election
+      protocol: TCP
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "kafka.fullname" . }}-zookeeper
+  labels:
+    {{- include "kafka.labels" . | nindent 4 }}
+    app.kubernetes.io/component: zookeeper
+spec:
+  serviceName: {{ include "kafka.fullname" . }}-zookeeper-headless
+  replicas: {{ .Values.zookeeper.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "kafka.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: zookeeper
+  template:
+    metadata:
+      labels:
+        {{- include "kafka.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: zookeeper
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        runAsGroup: 1001
+        fsGroup: 1001
+      containers:
+        - name: zookeeper
+          image: "{{ .Values.zookeeper.image.registry }}/{{ .Values.zookeeper.image.repository }}:{{ .Values.zookeeper.image.tag }}"
+          imagePullPolicy: {{ .Values.zookeeper.image.pullPolicy }}
+          ports:
+            - name: client
+              containerPort: 2181
+              protocol: TCP
+            - name: follower
+              containerPort: 2888
+              protocol: TCP
+            - name: election
+              containerPort: 3888
+              protocol: TCP
+          env:
+            - name: ZOO_SERVER_ID
+              value: "1"
+            {{- if gt (int .Values.zookeeper.replicaCount) 1 }}
+            - name: ZOO_SERVERS
+              value: {{ include "kafka.zookeeper.servers" . | quote }}
+            {{- end }}
+          resources:
+            {{- toYaml .Values.zookeeper.resources | nindent 12 }}
+          livenessProbe:
+            tcpSocket:
+              port: client
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          readinessProbe:
+            tcpSocket:
+              port: client
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: data
+              mountPath: /bitnami/zookeeper
+      {{- if not .Values.zookeeper.persistence.enabled }}
+      volumes:
+        - name: data
+          emptyDir: {}
+      {{- end }}
+  {{- if .Values.zookeeper.persistence.enabled }}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+        labels:
+          {{- include "kafka.selectorLabels" . | nindent 10 }}
+          app.kubernetes.io/component: zookeeper
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: {{ .Values.zookeeper.persistence.size }}
+        {{- if .Values.zookeeper.persistence.storageClass }}
+        storageClassName: {{ .Values.zookeeper.persistence.storageClass }}
+        {{- end }}
+  {{- end }}
+{{- end }}

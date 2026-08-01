@@ -116,6 +116,111 @@ async def embeddings_endpoint(req: EmbeddingRequest) -> EmbeddingResponse:
 
 
 # ---------------------------------------------------------------------------
+# Multimodal chat (扩展能力 — backlog §3.3)
+#
+# Spec status: ``contracts/openapi/services/llmgw.yaml`` does NOT yet
+# declare ``/api/v1/llmgw/chat/multimodal``. This endpoint is an
+# extension capability per backlog §3.3 ("PRD 提到但无实现"). The
+# handler is wired under the canonical ``/api/v1/llmgw`` prefix so
+# once the contract is amended with the new operationId the route
+# will already be at the canonical path.
+# ---------------------------------------------------------------------------
+class MultimodalContentPartAPI(BaseModel):
+    """Content part of a multimodal message."""
+
+    type: str = Field(..., description="text | image_url | image_base64 | audio_url | audio_base64 | video_url")
+    text: str | None = None
+    url: str | None = None
+    data: str | None = None
+    media_type: str | None = None
+    detail: str | None = None
+
+
+class MultimodalMessageAPI(BaseModel):
+    """Multimodal message: role + content parts."""
+
+    role: str
+    content: list[MultimodalContentPartAPI]
+    name: str | None = None
+    tool_call_id: str | None = None
+
+
+class MultimodalChatRequest(BaseModel):
+    """/chat/multimodal 请求体 (扩展能力)."""
+
+    model: str = Field(..., description="支持多模态的模型名(gpt-4o, claude-3-5-sonnet, qwen-vl-max 等)")
+    messages: list[MultimodalMessageAPI]
+    temperature: float = 1.0
+    max_tokens: int | None = None
+    tools: list[dict[str, Any]] | None = None
+
+
+class MultimodalChatResponseAPI(BaseModel):
+    """/chat/multimodal 响应体."""
+
+    content: str
+    model: str
+    finish_reason: str | None = None
+    tool_calls: list[dict[str, Any]] = []
+    usage: dict[str, int] = {}
+    modality: str = "text"
+
+
+@router.post("/chat/multimodal", response_model=MultimodalChatResponseAPI)
+async def multimodal_chat_endpoint(req: MultimodalChatRequest) -> MultimodalChatResponseAPI:
+    """扩展能力 endpoint: 多模态 chat (image / audio / video input).
+
+    Body shape mirrors OpenAI Vision + Anthropic Messages content-part
+    arrays; the router dispatches to the right provider adapter.
+    """
+    from ..multimodal import MultimodalContentPart, MultimodalMessage
+    from ..multimodal_router import multimodal_chat as router_multimodal_chat
+
+    try:
+        msgs = [
+            MultimodalMessage(
+                role=m.role,
+                content=[
+                    MultimodalContentPart(
+                        type=p.type,
+                        text=p.text,
+                        url=p.url,
+                        data=p.data,
+                        media_type=p.media_type,
+                        detail=p.detail,
+                    )
+                    for p in m.content
+                ],
+                name=m.name,
+                tool_call_id=m.tool_call_id,
+            )
+            for m in req.messages
+        ]
+        resp = await router_multimodal_chat(
+            req.model,
+            msgs,
+            temperature=req.temperature,
+            max_tokens=req.max_tokens,
+            tools=req.tools,
+        )
+        return MultimodalChatResponseAPI(
+            content=resp.content,
+            model=resp.model,
+            finish_reason=resp.finish_reason,
+            tool_calls=resp.tool_calls,
+            usage=resp.usage,
+            modality=resp.modality,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    except NotImplementedError as e:
+        raise HTTPException(status_code=501, detail=str(e)) from e
+    except Exception as e:
+        logger.error("llmgw.multimodal.chat.error", error=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+# ---------------------------------------------------------------------------
 # Deprecated alias handlers under /api/v1/llm/*  (P0 close-out 2026-07-30)
 # These re-emit the canonical handler result with an RFC 8594 Deprecation
 # response header pointing at /api/v1/llmgw/*, so existing clients (the

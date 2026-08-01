@@ -22,6 +22,8 @@ from __future__ import annotations
 import logging
 import time
 import uuid
+from dataclasses import asdict
+from typing import Any
 
 from fastapi import FastAPI, File, HTTPException, Request, Response, UploadFile
 from fastapi.responses import StreamingResponse
@@ -30,17 +32,59 @@ from mate_app_kb import __version__
 from mate_app_kb.api.schemas import (
     ChatRequest,
     ChatResponse,
+    CollectionCreateRequest,
+    CollectionResponse,
+    DocumentResponse,
+    DocumentTransitionRequest,
     HealthResponse,
+    SearchLogResponse,
     SearchRequest,
     SearchResponse,
     StatsResponse,
     UploadResponse,
 )
 from mate_app_kb.clients import AgentClient, RAGClient
+from mate_app_kb.repositories.in_memory import (
+    KbCollection,
+    KbDocument,
+    KbSearchLog,
+    delete_collection,
+    delete_document,
+    get_collection,
+    get_document,
+    list_collections,
+    list_documents,
+    list_search_logs,
+    put_collection,
+    put_document,
+    put_search_log,
+)
 from mate_platform.auth import install_auth
+from mate_platform.messaging.events import Event
+from mate_platform.messaging.outbox import InMemoryOutboxWriter
+from mate_platform.tenancy.context import TenantId
 from mate_platform.tenancy.guards import require_tenant
 
 _log = logging.getLogger(__name__)
+
+# ---------------------------------------------------------------------------
+# Document lifecycle state machine (BUSINESS-SLICES deep implementation)
+# ---------------------------------------------------------------------------
+# Allowed transitions:
+#   uploaded  -> indexing  (parser picked up the document)
+#   indexing  -> indexed   (chunks persisted, searchable)
+#   indexing  -> failed    (validation / parse error)
+#   indexed   -> archived  (soft-delete from active search)
+# Any other transition is rejected with HTTP 409.
+_DOC_TRANSITIONS: dict[str, frozenset[str]] = {
+    "uploaded": frozenset({"indexing"}),
+    "indexing": frozenset({"indexed", "failed"}),
+    "indexed": frozenset({"archived"}),
+    "failed": frozenset({"indexing"}),
+    "archived": frozenset(),
+}
+
+_VALID_SEARCH_MODES = frozenset({"AUTO", "FACTUAL", "ENTITY", "THEMATIC"})
 
 
 # Standard deprecation header (RFC 8594). The legacy prefix
@@ -59,6 +103,9 @@ def create_app(rag: RAGClient | None = None, agent: AgentClient | None = None) -
     # populated with a verified RequestContext (or a 401/403 response
     # was returned).
     install_auth(app)
+    # Hook 3 of 5: default outbox writer (no-op until a test attaches one).
+    if not hasattr(app.state, "outbox_writer"):
+        app.state.outbox_writer = InMemoryOutboxWriter()
 
     # Handlers for /healthz are anonymous (the middleware already
     # whitelists them); nothing to do for them beyond the AppConfig.
@@ -71,6 +118,69 @@ def create_app(rag: RAGClient | None = None, agent: AgentClient | None = None) -
             # ctx or returns 401; the check is a safety net.
             raise HTTPException(status_code=401, detail="no auth context")
         return ctx
+
+    def _tid(request: Request) -> str:
+        """Return the verified tenant_id for the current request."""
+        return str(require_tenant(_require_ctx(request)))
+
+    def _emit(
+        request: Request,
+        event_type: str,
+        aggregate_id: str,
+        payload: dict[str, Any],
+        tenant_id: str,
+    ) -> None:
+        """Append an outbox event if a writer is configured (ADR-0014 step 3)."""
+        writer: InMemoryOutboxWriter | None = getattr(
+            request.app.state, "outbox_writer", None
+        )
+        if writer is None:
+            return
+        writer.append(
+            Event.create(
+                type=event_type,
+                tenant_id=TenantId(tenant_id),
+                aggregate_id=aggregate_id,
+                payload=payload,
+                trace_id=getattr(request.state.ctx, "trace_id", ""),
+            )
+        )
+
+    def _now_iso() -> str:
+        return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+
+    def _score_hits(hits: list[dict], query: str) -> list[dict]:
+        """Apply retrieval scoring rules to search hits.
+
+        - Normalises ``score`` to [0, 1] when the upstream provides
+          a raw score.
+        - Deduplicates by ``document_id`` keeping the highest score.
+        - Sorts by score descending.
+        """
+        if not hits:
+            return []
+        q_lower = query.lower()
+        q_terms = set(q_lower.split())
+        best_per_doc: dict[str, dict] = {}
+        for h in hits:
+            doc_id = h.get("document_id", h.get("id", ""))
+            raw = h.get("score", 0.0)
+            try:
+                raw_f = float(raw)
+            except (TypeError, ValueError):
+                raw_f = 0.0
+            # Keyword overlap boost: if the chunk text contains query
+            # terms, bump the normalised score.
+            text = (h.get("text", "") or h.get("content", "")).lower()
+            overlap = len(q_terms & set(text.split())) if q_terms else 0
+            overlap_boost = min(overlap * 0.05, 0.2)
+            norm = min(max(raw_f, 0.0) + overlap_boost, 1.0) if raw_f > 0 else overlap_boost
+            h_copy = dict(h)
+            h_copy["score"] = round(norm, 4)
+            existing = best_per_doc.get(doc_id)
+            if existing is None or h_copy["score"] > existing["score"]:
+                best_per_doc[doc_id] = h_copy
+        return sorted(best_per_doc.values(), key=lambda x: x["score"], reverse=True)
 
     def _rag(request: Request) -> RAGClient:
         ctx = _require_ctx(request)
@@ -106,23 +216,81 @@ def create_app(rag: RAGClient | None = None, agent: AgentClient | None = None) -
         request: Request,
         file: UploadFile = File(...),
         document_id: str | None = None,
+        collection_id: str | None = None,
     ) -> UploadResponse:
         # Hook 2 of 3: require a tenant binding.
-        ctx = _require_ctx(request)
-        require_tenant(ctx)
+        tid = _tid(request)
         try:
             raw = await file.read()
             if not raw:
                 raise HTTPException(status_code=400, detail="empty file")
             doc_id = document_id or str(uuid.uuid4())
-            data = _rag(request).upload(
-                raw, file.filename or "unknown", doc_id, file.content_type or "text/plain"
+            # Register the document in the local store with lifecycle
+            # status "uploaded" before delegating to the RAG upstream.
+            now = _now_iso()
+            col_id = collection_id or ""
+            if col_id:
+                col = get_collection(tid, col_id)
+                if col is None:
+                    raise HTTPException(
+                        status_code=404, detail=f"collection {col_id} not found"
+                    )
+            local_doc = KbDocument(
+                id=doc_id,
+                tenant_id=tid,
+                collection_id=col_id,
+                document_id=doc_id,
+                filename=file.filename or "unknown",
+                size_bytes=len(raw),
+                chunk_count=0,
+                status="uploaded",
+                metadata={"source": "upload", "content_type": file.content_type or ""},
+                created_at=now,
+                updated_at=now,
+            )
+            put_document(tid, local_doc)
+            _emit(
+                request, "kb.document.uploaded", doc_id,
+                {"document_id": doc_id, "filename": file.filename or "",
+                 "size_bytes": len(raw), "collection_id": col_id},
+                tid,
+            )
+            try:
+                data = _rag(request).upload(
+                    raw, file.filename or "unknown", doc_id, file.content_type or "text/plain"
+                )
+            except Exception:
+                # Mark the document as failed if the upstream errors.
+                failed_doc = KbDocument(
+                    id=doc_id, tenant_id=tid, collection_id=col_id,
+                    document_id=doc_id, filename=file.filename or "unknown",
+                    size_bytes=len(raw), chunk_count=0, status="failed",
+                    metadata={"source": "upload", "error": "upstream failure"},
+                    created_at=now, updated_at=_now_iso(),
+                )
+                put_document(tid, failed_doc)
+                raise
+            chunk_count = data.get("chunk_count", 0)
+            # Transition uploaded -> indexed on successful upstream ingest.
+            indexed_doc = KbDocument(
+                id=doc_id, tenant_id=tid, collection_id=col_id,
+                document_id=doc_id, filename=file.filename or "unknown",
+                size_bytes=data.get("size_bytes", len(raw)),
+                chunk_count=chunk_count, status="indexed",
+                metadata={"source": "upload", "indexed_in": data.get("indexed_in", [])},
+                created_at=now, updated_at=_now_iso(),
+            )
+            put_document(tid, indexed_doc)
+            _emit(
+                request, "kb.document.indexed", doc_id,
+                {"document_id": doc_id, "chunks": chunk_count, "status": "indexed"},
+                tid,
             )
             return UploadResponse(
                 document_id=data.get("document_id", doc_id),
                 filename=data.get("filename", file.filename or ""),
                 size_bytes=data.get("size_bytes", len(raw)),
-                chunk_count=data.get("chunk_count", 0),
+                chunk_count=chunk_count,
                 indexed_in=data.get("indexed_in", []),
             )
         except HTTPException:
@@ -133,19 +301,34 @@ def create_app(rag: RAGClient | None = None, agent: AgentClient | None = None) -
     @app.post("/api/v1/kb/search", response_model=SearchResponse)
     async def search(request: Request, req: SearchRequest) -> SearchResponse:  # pyright: ignore[reportUnusedFunction]
         # Hook 2: tenant guard.
-        ctx = _require_ctx(request)
-        require_tenant(ctx)
+        tid = _tid(request)
         start = time.perf_counter()
         try:
             data = _rag(request).search(req.query, top_k=req.top_k, mode=req.mode)
         except Exception as exc:
             raise HTTPException(status_code=502, detail=f"upstream error: {exc}") from exc
         latency_ms = int((time.perf_counter() - start) * 1000)
+        # Apply retrieval scoring: normalise, dedupe by document, sort.
+        raw_hits = data.get("hits", [])
+        scored = _score_hits(raw_hits, req.query)
+        # Write a search audit log entry (BUSINESS-SLICES deep).
+        log_id = f"log-{uuid.uuid4().hex[:8]}"
+        put_search_log(tid, KbSearchLog(
+            id=log_id, tenant_id=tid, query=req.query[:200],
+            mode=req.mode, total_hits=len(scored), latency_ms=latency_ms,
+            created_at=_now_iso(),
+        ))
+        _emit(
+            request, "kb.search.executed", req.query[:64],
+            {"query": req.query[:200], "mode": req.mode, "hits": len(scored),
+             "latency_ms": latency_ms},
+            tid,
+        )
         return SearchResponse(
             query=data.get("query", req.query),
             mode=data.get("mode", req.mode),
-            total=data.get("total", 0),
-            hits=data.get("hits", []),
+            total=len(scored),
+            hits=scored,
             latency_ms=latency_ms,
         )
 
@@ -192,6 +375,144 @@ def create_app(rag: RAGClient | None = None, agent: AgentClient | None = None) -
             total_chunks=data.get("total_chunks", 0),
             embedder_dim=data.get("embedder_dim", 0),
         )
+
+    # ------------------------------------------------------------------
+    # BUSINESS-SLICES deep: Collection CRUD
+    # ------------------------------------------------------------------
+    @app.get("/api/v1/kb/collections", response_model=list[CollectionResponse])
+    async def list_cols(request: Request) -> list[CollectionResponse]:  # pyright: ignore[reportUnusedFunction]
+        tid = _tid(request)
+        return [CollectionResponse(**asdict(c)) for c in list_collections(tid)]
+
+    @app.post("/api/v1/kb/collections", response_model=CollectionResponse, status_code=201)
+    async def create_col(  # pyright: ignore[reportUnusedFunction]
+        request: Request, req: CollectionCreateRequest,
+    ) -> CollectionResponse:
+        tid = _tid(request)
+        cid = f"col-{uuid.uuid4().hex[:8]}"
+        now = _now_iso()
+        col = KbCollection(
+            id=cid, tenant_id=tid, name=req.name, description=req.description,
+            document_count=0, status="active", config=req.config,
+            created_at=now, updated_at=now,
+        )
+        put_collection(tid, col)
+        _emit(
+            request, "kb.collection.created", cid,
+            {"collection_id": cid, "name": req.name}, tid,
+        )
+        return CollectionResponse(**asdict(col))
+
+    @app.get("/api/v1/kb/collections/{cid}", response_model=CollectionResponse)
+    async def get_col(  # pyright: ignore[reportUnusedFunction]
+        request: Request, cid: str,
+    ) -> CollectionResponse:
+        tid = _tid(request)
+        col = get_collection(tid, cid)
+        if col is None:
+            raise HTTPException(status_code=404, detail="collection not found")
+        return CollectionResponse(**asdict(col))
+
+    @app.delete("/api/v1/kb/collections/{cid}")
+    async def delete_col(  # pyright: ignore[reportUnusedFunction]
+        request: Request, cid: str,
+    ) -> dict:  # pyright: ignore[reportUnusedFunction]
+        tid = _tid(request)
+        col = get_collection(tid, cid)
+        if col is None:
+            raise HTTPException(status_code=404, detail="collection not found")
+        delete_collection(tid, cid)
+        _emit(
+            request, "kb.collection.deleted", cid,
+            {"collection_id": cid}, tid,
+        )
+        return {"deleted": cid}
+
+    # ------------------------------------------------------------------
+    # BUSINESS-SLICES deep: Document management + lifecycle
+    # ------------------------------------------------------------------
+    @app.get("/api/v1/kb/documents", response_model=list[DocumentResponse])
+    async def list_docs(  # pyright: ignore[reportUnusedFunction]
+        request: Request,
+        collection_id: str | None = None,
+        status: str | None = None,
+    ) -> list[DocumentResponse]:
+        tid = _tid(request)
+        docs = list_documents(tid)
+        if collection_id:
+            docs = [d for d in docs if d.collection_id == collection_id]
+        if status:
+            docs = [d for d in docs if d.status == status]
+        return [DocumentResponse(**asdict(d)) for d in docs]
+
+    @app.get("/api/v1/kb/documents/{did}", response_model=DocumentResponse)
+    async def get_doc(  # pyright: ignore[reportUnusedFunction]
+        request: Request, did: str,
+    ) -> DocumentResponse:
+        tid = _tid(request)
+        doc = get_document(tid, did)
+        if doc is None:
+            raise HTTPException(status_code=404, detail="document not found")
+        return DocumentResponse(**asdict(doc))
+
+    @app.patch("/api/v1/kb/documents/{did}/status", response_model=DocumentResponse)
+    async def transition_doc(  # pyright: ignore[reportUnusedFunction]
+        request: Request, did: str, req: DocumentTransitionRequest,
+    ) -> DocumentResponse:
+        tid = _tid(request)
+        doc = get_document(tid, did)
+        if doc is None:
+            raise HTTPException(status_code=404, detail="document not found")
+        current = doc.status
+        allowed = _DOC_TRANSITIONS.get(current, frozenset())
+        if req.status not in allowed:
+            raise HTTPException(
+                status_code=409,
+                detail=f"invalid transition: {current} -> {req.status}",
+            )
+        now = _now_iso()
+        meta = dict(doc.metadata)
+        if req.error:
+            meta["error"] = req.error
+        updated = KbDocument(
+            id=doc.id, tenant_id=tid, collection_id=doc.collection_id,
+            document_id=doc.document_id, filename=doc.filename,
+            size_bytes=doc.size_bytes,
+            chunk_count=req.chunk_count if req.chunk_count is not None else doc.chunk_count,
+            status=req.status, metadata=meta,
+            created_at=doc.created_at, updated_at=now,
+        )
+        put_document(tid, updated)
+        _emit(
+            request, "kb.document.transitioned", did,
+            {"document_id": did, "from": current, "to": req.status}, tid,
+        )
+        return DocumentResponse(**asdict(updated))
+
+    @app.delete("/api/v1/kb/documents/{did}")
+    async def delete_doc(  # pyright: ignore[reportUnusedFunction]
+        request: Request, did: str,
+    ) -> dict:  # pyright: ignore[reportUnusedFunction]
+        tid = _tid(request)
+        doc = get_document(tid, did)
+        if doc is None:
+            raise HTTPException(status_code=404, detail="document not found")
+        delete_document(tid, did)
+        _emit(
+            request, "kb.document.deleted", did,
+            {"document_id": did}, tid,
+        )
+        return {"deleted": did}
+
+    # ------------------------------------------------------------------
+    # BUSINESS-SLICES deep: Search audit log
+    # ------------------------------------------------------------------
+    @app.get("/api/v1/kb/search/logs", response_model=list[SearchLogResponse])
+    async def list_search_logs_ep(  # pyright: ignore[reportUnusedFunction]
+        request: Request,
+    ) -> list[SearchLogResponse]:
+        tid = _tid(request)
+        return [SearchLogResponse(**asdict(l)) for l in list_search_logs(tid)]
 
     # ------------------------------------------------------------------
     # Deprecated aliases: /api/v1/app-kb/*  (P0 close-out 2026-07-30)

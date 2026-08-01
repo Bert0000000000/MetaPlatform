@@ -25,13 +25,32 @@ keycloak:
     tls:
       - secretName: keycloak-tls
         hosts: [keycloak.staging.metaplatform.io]
-postgres:
+postgresql:
   enabled: true
 redis:
   enabled: true
 kafka:
   enabled: true
-  mode: kraft
+  fullnameOverride: kafka
+  kraft:
+    enabled: true
+    clusterId: "metaplatform-kraft-cluster-staging"
+  replicaCount: 2
+  persistence:
+    enabled: true
+    size: 15Gi
+    storageClass: ""
+  config:
+    auto.create.topics.enable: "false"
+    default.replication.factor: "2"
+    num.partitions: "6"
+    log.retention.hours: "72"
+    compression.type: "producer"
+  networkPolicy:
+    enabled: true
+    allowedIngressNamespaces:
+      - metaplatform
+      - api-gateway
 prometheus:
   enabled: true
 grafana:

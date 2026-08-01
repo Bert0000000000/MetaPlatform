@@ -542,6 +542,89 @@ def append_document(tenant_id: str, doc: DwDocument) -> DwDocument:
     return doc
 
 
+def get_employee(tenant_id: str, employee_id: str) -> DwEmployee | None:
+    """Return a single employee by id, or None."""
+    if not tenant_id:
+        return None
+    _ensure_tenant(tenant_id)
+    return _EMPLOYEES[tenant_id].get(employee_id)
+
+
+def append_employee_task(
+    tenant_id: str, task: DwEmployeeTask,
+) -> DwEmployeeTask:
+    """Persist a new employee task. Used by POST /employees/{id}/tasks."""
+    if not tenant_id:
+        raise ValueError("tenant_id is required")
+    _ensure_tenant(tenant_id)
+    _EMPLOYEE_TASKS[tenant_id][task.id] = task
+    return task
+
+
+def get_employee_task(
+    tenant_id: str, task_id: str,
+) -> DwEmployeeTask | None:
+    """Return a single employee task by id, or None."""
+    if not tenant_id:
+        return None
+    _ensure_tenant(tenant_id)
+    return _EMPLOYEE_TASKS[tenant_id].get(task_id)
+
+
+def update_employee_task(
+    tenant_id: str, task_id: str, *, status: str, finished_at: str | None = None,
+    duration_ms: int | None = None,
+) -> DwEmployeeTask | None:
+    """Update an employee task's status. Returns the updated task or None."""
+    if not tenant_id:
+        return None
+    _ensure_tenant(tenant_id)
+    task = _EMPLOYEE_TASKS[tenant_id].get(task_id)
+    if task is None:
+        return None
+    updated = DwEmployeeTask(
+        id=task.id, tenant_id=task.tenant_id, employee_id=task.employee_id,
+        title=task.title, status=status, started_at=task.started_at,
+        finished_at=finished_at if finished_at is not None else task.finished_at,
+        duration_ms=duration_ms if duration_ms is not None else task.duration_ms,
+    )
+    _EMPLOYEE_TASKS[tenant_id][task_id] = updated
+    return updated
+
+
+def append_evaluation(
+    tenant_id: str, evaluation: DwEvaluation,
+) -> DwEvaluation:
+    """Persist a new evaluation. Used by POST /employees/{id}/evaluations."""
+    if not tenant_id:
+        raise ValueError("tenant_id is required")
+    _ensure_tenant(tenant_id)
+    _EVALUATIONS[tenant_id][evaluation.id] = evaluation
+    return evaluation
+
+
+def append_learning_feedback(
+    tenant_id: str, feedback: DwLearningFeedback,
+) -> DwLearningFeedback:
+    """Persist learning feedback. Used by POST /learning/feedback."""
+    if not tenant_id:
+        raise ValueError("tenant_id is required")
+    _ensure_tenant(tenant_id)
+    _LEARNING_FEEDBACK[tenant_id][feedback.id] = feedback
+    return feedback
+
+
+def append_collaboration(
+    tenant_id: str, collab: DwCollaboration,
+) -> DwCollaboration:
+    """Persist a collaboration session. Used by POST /collaborations."""
+    if not tenant_id:
+        raise ValueError("tenant_id is required")
+    _ensure_tenant(tenant_id)
+    _COLLABORATIONS[tenant_id][collab.id] = collab
+    return collab
+
+
 def list_employees(tenant_id: str) -> list[DwEmployee]:
     if not tenant_id:
         return []

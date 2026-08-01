@@ -26,6 +26,8 @@ from .kafka_client import create_kafka_client
 from .observability.tracing import init_tracing
 from .publisher import Publisher
 from .schemas import PublishRequest, PublishResponse
+from .subscription_routes import router as subscription_router
+from .subscriptions import SubscriptionStore
 
 logger = structlog.get_logger(__name__)
 
@@ -33,6 +35,15 @@ logger = structlog.get_logger(__name__)
 kafka = create_kafka_client()
 dedup = DedupStore()
 publisher = Publisher(kafka=kafka, dedup=dedup)
+
+# 扩展能力 (backlog §3.6): 订阅 / Webhook / 推送通道 in-memory store.
+subscription_store = SubscriptionStore()
+# Share the store with the subscription_routes module so handlers
+# resolve to the same instance (the router module also creates a
+# default store at import time as a fallback for direct-import tests).
+from .subscription_routes import _set_store as _share_subscription_store  # noqa: E402
+
+_share_subscription_store(subscription_store)
 
 # OTel init (kept from original).
 init_tracing()
@@ -47,6 +58,9 @@ app = FastAPI(
 # After this call, every request has request.state.ctx populated or a
 # 401/403 was returned.
 install_auth(app)
+
+# Mount the subscription / webhook extension router (backlog §3.6).
+app.include_router(subscription_router)
 
 
 def _require_ctx(request: Request):

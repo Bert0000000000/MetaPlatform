@@ -59,3 +59,67 @@ class StatsResponse(BaseModel):
     model_config = ConfigDict(strict=True, frozen=True)
     total_chunks: Annotated[int, Field(ge=0)]
     embedder_dim: Annotated[int, Field(ge=0)]
+
+
+# ---------------------------------------------------------------------------
+# BUSINESS-SLICES deep implementation schemas
+# ---------------------------------------------------------------------------
+
+class CollectionCreateRequest(BaseModel):
+    model_config = ConfigDict(strict=True)
+    name: Annotated[str, Field(min_length=1, max_length=256)]
+    description: Annotated[str, Field(default="", max_length=2048)]
+    config: Annotated[dict, Field(default_factory=dict)]
+
+
+class CollectionResponse(BaseModel):
+    model_config = ConfigDict(strict=True, frozen=True)
+    id: Annotated[str, Field()]
+    tenant_id: Annotated[str, Field()]
+    name: Annotated[str, Field()]
+    description: Annotated[str, Field()]
+    document_count: Annotated[int, Field(ge=0)]
+    status: Annotated[str, Field()]
+    config: Annotated[dict, Field(default_factory=dict)]
+    created_at: Annotated[str, Field()]
+    updated_at: Annotated[str, Field()]
+
+
+class DocumentResponse(BaseModel):
+    model_config = ConfigDict(strict=True, frozen=True)
+    id: Annotated[str, Field()]
+    tenant_id: Annotated[str, Field()]
+    collection_id: Annotated[str, Field()]
+    document_id: Annotated[str, Field()]
+    filename: Annotated[str, Field()]
+    size_bytes: Annotated[int, Field(ge=0)]
+    chunk_count: Annotated[int, Field(ge=0)]
+    status: Annotated[str, Field()]
+    metadata: Annotated[dict, Field(default_factory=dict)]
+    created_at: Annotated[str, Field()]
+    updated_at: Annotated[str, Field()]
+
+
+class SearchLogResponse(BaseModel):
+    model_config = ConfigDict(strict=True, frozen=True)
+    id: Annotated[str, Field()]
+    tenant_id: Annotated[str, Field()]
+    query: Annotated[str, Field()]
+    mode: Annotated[str, Field()]
+    total_hits: Annotated[int, Field(ge=0)]
+    latency_ms: Annotated[int, Field(ge=0)]
+    created_at: Annotated[str, Field()]
+
+
+class DocumentTransitionRequest(BaseModel):
+    """Transition a document's lifecycle status.
+
+    Allowed transitions:
+      uploaded -> indexing -> indexed
+      uploaded -> indexing -> failed
+      indexed  -> archived
+    """
+    model_config = ConfigDict(strict=True)
+    status: Annotated[Literal["indexing", "indexed", "failed", "archived"], Field()]
+    error: Annotated[str | None, Field(default=None, max_length=2048)]
+    chunk_count: Annotated[int | None, Field(default=None, ge=0)]

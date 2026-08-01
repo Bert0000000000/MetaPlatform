@@ -25,6 +25,10 @@ from mate_platform.auth import install_auth
 from mate_platform.tenancy.guards import require_tenant
 
 from .admin import router as admin_router
+from .admin.alert_rule_routes import router as alert_rule_management_router
+from .admin.alert_rule_routes import _set_outbox as _share_alert_rule_outbox
+from .admin.alert_rule_routes import _set_store as _share_alert_rule_store
+from .alerts.management import AlertRuleStore
 from .health.aggregator import aggregate_health
 from .metrics.prom import render_metrics
 from .tracing.instrument import auto_instrument
@@ -35,6 +39,13 @@ logger = structlog.get_logger(__name__)
 
 configure_json_logging(os.getenv("LOG_LEVEL", "INFO"))
 init_tracing(os.getenv("OTEL_SERVICE_NAME", "mate-tech-obs"))
+
+# 扩展能力 (backlog §3.7): Alertmanager 告警规则管理 (写) in-memory store.
+alert_rule_store = AlertRuleStore()
+_share_alert_rule_store(alert_rule_store)
+# Outbox writer is optional — None in test profile; production wires
+# the InMemoryOutboxWriter or SQL-backed writer at startup.
+_share_alert_rule_outbox(None)
 
 app = FastAPI(
     title="mate-tech-obs",
@@ -96,6 +107,8 @@ async def instrument_status(request: Request) -> dict[str, object]:
 
 
 app.include_router(admin_router)
+# 扩展能力 (backlog §3.7): Alertmanager 告警规则管理 (写) endpoints.
+app.include_router(alert_rule_management_router)
 
 
 @app.on_event("startup")  # pyright: ignore[reportDeprecated]

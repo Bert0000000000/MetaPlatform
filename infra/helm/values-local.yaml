@@ -42,7 +42,37 @@ redis:
   enabled: true
 kafka:
   enabled: true
-  mode: kraft
+  fullnameOverride: kafka
+  kraft:
+    enabled: true
+    clusterId: "metaplatform-kraft-cluster-local"
+  replicaCount: 1
+  persistence:
+    enabled: false   # emptyDir for local dev — data is ephemeral
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  config:
+    auto.create.topics.enable: "true"   # convenient for local dev
+    default.replication.factor: "1"
+    num.partitions: "3"
+    log.retention.hours: "24"
+    compression.type: "producer"
+    inter.broker.listener.names: "INTERNAL,CLIENT"
+    advertised.listeners: "INTERNAL://kafka:9092,CLIENT://kafka:9092"
+    listener.security.protocol.map: "INTERNAL:PLAINTEXT,CLIENT:PLAINTEXT"
+  zookeeper:
+    replicaCount: 1
+    persistence:
+      enabled: false
+  networkPolicy:
+    enabled: true
+    allowedIngressNamespaces:
+      - metaplatform
 prometheus:
   enabled: true
 grafana:

@@ -14,6 +14,10 @@ spec:
     metadata:
       labels:
         {{- include "kafka.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: broker
+      annotations:
+        # Roll the pod when the ConfigMap changes (broker tuning).
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
     spec:
       securityContext:
         runAsNonRoot: true
@@ -24,36 +28,84 @@ spec:
         - name: kafka
           image: "{{ .Values.image.registry }}/{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          # Override the entrypoint so KAFKA_CFG_NODE_ID is derived from
+          # the StatefulSet pod ordinal (kafka-0 → 0, kafka-1 → 1, …).
+          # This is required for multi-broker KRaft ensembles; for a
+          # single-broker dev install the ordinal is always 0.
+          command:
+            - /bin/bash
+            - -ec
+            - |
+              export KAFKA_CFG_NODE_ID="${HOSTNAME##*-}"
+              {{- if .Values.kraft.enabled }}
+              exec /opt/bitnami/scripts/kafka/entrypoint.sh /opt/bitnami/scripts/kafka/run.sh
+              {{- else }}
+              export KAFKA_CFG_ZOOKEEPER_CONNECT="{{ include "kafka.fullname" . }}-zookeeper-headless:2181"
+              exec /opt/bitnami/scripts/kafka/entrypoint.sh /opt/bitnami/scripts/kafka/run.sh
+              {{- end }}
           ports:
             - name: client
               containerPort: 9092
               protocol: TCP
+            {{- if .Values.kraft.enabled }}
+            - name: controller
+              containerPort: 9093
+              protocol: TCP
+            {{- end }}
             - name: internal
               containerPort: 9094
               protocol: TCP
           env:
-            - name: KAFKA_CFG_NODE_ID
-              value: "0"
+            {{- if .Values.kraft.enabled }}
             - name: KAFKA_CFG_PROCESS_ROLES
               value: "controller,broker"
             - name: KAFKA_CFG_CONTROLLER_QUORUM_VOTERS
-              value: "0@kafka-0.kafka-headless:9093"
+              value: {{ include "kafka.kraft.quorumVoters" . | quote }}
             - name: KAFKA_CFG_LISTENERS
               value: "PLAINTEXT://:9092,CONTROLLER://:9093"
             - name: KAFKA_CFG_ADVERTISED_LISTENERS
-              value: "PLAINTEXT://{{ include "kafka.fullname" . }}:9092"
+              value: "PLAINTEXT://{{ include "kafka.fullname" . }}-headless:9092"
             - name: KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP
               value: "CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT"
             - name: KAFKA_CFG_CONTROLLER_LISTENER_NAMES
               value: "CONTROLLER"
             - name: KAFKA_CFG_INTER_BROKER_LISTENER_NAME
               value: "PLAINTEXT"
+            {{- else }}
+            - name: KAFKA_CFG_LISTENERS
+              value: "PLAINTEXT://:9092"
+            - name: KAFKA_CFG_ADVERTISED_LISTENERS
+              value: "PLAINTEXT://{{ include "kafka.fullname" . }}-headless:9092"
+            - name: KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP
+              value: "PLAINTEXT:PLAINTEXT"
+            - name: KAFKA_CFG_INTER_BROKER_LISTENER_NAME
+              value: "PLAINTEXT"
+            {{- end }}
             - name: KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE
-              value: {{ .Values.config.auto.create.topics.enable | quote }}
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "kafka.fullname" . }}
+                  key: auto-create-topics
             - name: KAFKA_CFG_DEFAULT_REPLICATION_FACTOR
-              value: {{ .Values.config.default.replication.factor | quote }}
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "kafka.fullname" . }}
+                  key: default-replication-factor
             - name: KAFKA_CFG_NUM_PARTITIONS
-              value: {{ .Values.config.num.partitions | quote }}
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "kafka.fullname" . }}
+                  key: num-partitions
+            - name: KAFKA_CFG_LOG_RETENTION_HOURS
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "kafka.fullname" . }}
+                  key: log-retention-hours
+            - name: KAFKA_CFG_COMPRESSION_TYPE
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "kafka.fullname" . }}
+                  key: compression-type
             - name: ALLOW_PLAINTEXT_LISTENER
               value: "yes"
           resources:
@@ -61,13 +113,13 @@ spec:
           livenessProbe:
             tcpSocket:
               port: client
-            initialDelaySeconds: 30
-            periodSeconds: 30
+            initialDelaySeconds: {{ .Values.probes.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probes.liveness.periodSeconds }}
           readinessProbe:
             tcpSocket:
               port: client
-            initialDelaySeconds: 10
-            periodSeconds: 10
+            initialDelaySeconds: {{ .Values.probes.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probes.readiness.periodSeconds }}
           securityContext:
             runAsNonRoot: true
             readOnlyRootFilesystem: true
@@ -78,6 +130,28 @@ spec:
           volumeMounts:
             - name: data
               mountPath: /bitnami/kafka
+            - name: tmp
+              mountPath: /tmp
       volumes:
+        - name: tmp
+          emptyDir: {}
+      {{- if not .Values.persistence.enabled }}
         - name: data
           emptyDir: {}
+      {{- end }}
+  {{- if .Values.persistence.enabled }}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+        labels:
+          {{- include "kafka.selectorLabels" . | nindent 10 }}
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: {{ .Values.persistence.size }}
+        {{- if .Values.persistence.storageClass }}
+        storageClassName: {{ .Values.persistence.storageClass }}
+        {{- end }}
+  {{- end }}

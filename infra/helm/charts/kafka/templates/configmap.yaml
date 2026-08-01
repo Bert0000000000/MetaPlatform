@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "kafka.fullname" . }}
+  labels:
+    {{- include "kafka.labels" . | nindent 4 }}
+  annotations:
+    policy.description: |
+      Non-sensitive Kafka broker configuration. Consumed by the
+      StatefulSet via envFrom so broker tuning (partitions,
+      retention, compression) is decoupled from the image layer.
+data:
+  # Topic + replication defaults (PLATFORM-EVENT-01: topics are
+  # explicit, auto-create is OFF in production).
+  auto-create-topics: {{ .Values.config.auto.create.topics.enable | quote }}
+  default-replication-factor: {{ .Values.config.default.replication.factor | quote }}
+  num-partitions: {{ .Values.config.num.partitions | quote }}
+
+  # Retention + compression.
+  log-retention-hours: {{ .Values.config.log.retention.hours | quote }}
+  compression-type: {{ .Values.config.compression.type | quote }}
+
+  # Listener config (non-secret; SASL_SSL credentials live in Secret).
+  inter-broker-listener-names: {{ .Values.config.inter.broker.listener.names | quote }}
+  advertised-listeners: {{ .Values.config.advertised.listeners | quote }}
+  listener-security-protocol-map: {{ .Values.config.listener.security.protocol.map | quote }}

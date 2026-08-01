@@ -31,19 +31,34 @@ from __future__ import annotations
 import time
 import uuid
 from dataclasses import asdict
+from typing import Any
 
-from fastapi import APIRouter, Query, Request
-from pydantic import BaseModel
+from fastapi import APIRouter, HTTPException, Query, Request
+from pydantic import BaseModel, Field
+from typing import Annotated
 
+from mate_platform.messaging.events import Event
+from mate_platform.messaging.outbox import InMemoryOutboxWriter
+from mate_platform.tenancy.context import TenantId
 from mate_platform.tenancy.guards import require_tenant
 
 from ..repositories import (
+    DwCollaboration,
     DwDocument,
+    DwEmployeeTask,
+    DwEvaluation,
+    DwLearningFeedback,
+    append_collaboration,
+    append_document,
+    append_employee_task,
+    append_evaluation,
+    append_learning_feedback,
+    get_employee,
+    get_employee_task,
     list_auth_logins,
     list_collaborations,
     list_commits,
     list_documents,
-    append_document,
     list_employees,
     list_employee_tasks,
     list_evaluations,
@@ -54,9 +69,29 @@ from ..repositories import (
     list_models,
     list_tools,
     list_traces,
+    update_employee_task,
 )
 
 router = APIRouter(prefix="/api/v1/dw", tags=["dw"])
+
+# ---------------------------------------------------------------------------
+# Task lifecycle state machine (BUSINESS-SLICES deep implementation)
+# ---------------------------------------------------------------------------
+# Allowed transitions:
+#   pending  -> running   (task picked up)
+#   running  -> success   (completed)
+#   running  -> failed    (error)
+#   success  -> (terminal)
+#   failed   -> running   (retry)
+_TASK_TRANSITIONS: dict[str, frozenset[str]] = {
+    "pending": frozenset({"running"}),
+    "running": frozenset({"success", "failed"}),
+    "success": frozenset(),
+    "failed": frozenset({"running"}),
+}
+
+# Evaluation scoring thresholds.
+_EVAL_PASS_THRESHOLD = 60.0
 
 
 def _serialize(rows: list) -> list[dict]:
@@ -90,6 +125,41 @@ def _paginate(items: list, page: int, size: int) -> dict:
         "size": size,
         "pages": pages,
     }
+
+
+def _emit(
+    request: Request,
+    event_type: str,
+    aggregate_id: str,
+    payload: dict[str, Any],
+    tenant_id: str,
+) -> None:
+    """Append an outbox event if a writer is configured (ADR-0014 step 3)."""
+    writer: InMemoryOutboxWriter | None = getattr(
+        request.app.state, "outbox_writer", None
+    )
+    if writer is None:
+        return
+    writer.append(
+        Event.create(
+            type=event_type,
+            tenant_id=TenantId(tenant_id),
+            aggregate_id=aggregate_id,
+            payload=payload,
+            trace_id=getattr(request.state.ctx, "trace_id", ""),
+        )
+    )
+
+
+def _compute_grade(score: float) -> str:
+    """Map a numeric score to a letter grade."""
+    if score >= 90:
+        return "A"
+    if score >= 80:
+        return "B"
+    if score >= 60:
+        return "C"
+    return "D"
 
 
 # ---------------------------------------------------------------------------
@@ -331,3 +401,229 @@ async def dw_get_traces(
     tenant_id = _tenant_id(request)
     items = _serialize(list_traces(tenant_id))
     return _paginate(items, page, size)
+
+
+# ---------------------------------------------------------------------------
+# BUSINESS-SLICES deep: Task orchestration + status transitions
+# ---------------------------------------------------------------------------
+class TaskCreateRequest(BaseModel):
+    """Body schema for POST /employees/{id}/tasks."""
+    title: Annotated[str, Field(min_length=1, max_length=512)]
+
+
+class TaskStatusRequest(BaseModel):
+    """Body schema for PATCH /employees/{id}/tasks/{task_id}/status."""
+    status: str  # running / success / failed
+    duration_ms: int | None = None
+
+
+@router.post("/employees/{employee_id}/tasks", status_code=201)
+async def create_employee_task(
+    request: Request, employee_id: str, body: TaskCreateRequest,
+) -> dict:
+    """Create a new task for a digital employee (pending state).
+
+    The employee must exist and be in an active or idle state.
+    Offline employees cannot accept new tasks.
+    """
+    tid = _tenant_id(request)
+    emp = get_employee(tid, employee_id)
+    if emp is None:
+        raise HTTPException(status_code=404, detail="employee not found")
+    if emp.status == "offline":
+        raise HTTPException(
+            status_code=409, detail="offline employee cannot accept tasks",
+        )
+    now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    task = DwEmployeeTask(
+        id=f"dw-task-{uuid.uuid4().hex[:8]}",
+        tenant_id=tid, employee_id=employee_id,
+        title=body.title, status="pending",
+        started_at=now, finished_at=None, duration_ms=0,
+    )
+    append_employee_task(tid, task)
+    _emit(
+        request, "dw.task.created", task.id,
+        {"task_id": task.id, "employee_id": employee_id, "title": body.title},
+        tid,
+    )
+    return asdict(task)
+
+
+@router.patch("/employees/{employee_id}/tasks/{task_id}/status")
+async def transition_task_status(
+    request: Request, employee_id: str, task_id: str, body: TaskStatusRequest,
+) -> dict:
+    """Transition a task's lifecycle status.
+
+    State machine: pending -> running -> success | failed.
+    A failed task can be retried (failed -> running).
+    """
+    tid = _tenant_id(request)
+    task = get_employee_task(tid, task_id)
+    if task is None:
+        raise HTTPException(status_code=404, detail="task not found")
+    if task.employee_id != employee_id:
+        raise HTTPException(status_code=404, detail="task not found for this employee")
+    current = task.status
+    allowed = _TASK_TRANSITIONS.get(current, frozenset())
+    if body.status not in allowed:
+        raise HTTPException(
+            status_code=409,
+            detail=f"invalid transition: {current} -> {body.status}",
+        )
+    finished_at = None
+    duration = body.duration_ms
+    if body.status in ("success", "failed"):
+        finished_at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+        if duration is None:
+            duration = 0
+    updated = update_employee_task(
+        tid, task_id, status=body.status,
+        finished_at=finished_at, duration_ms=duration,
+    )
+    _emit(
+        request, "dw.task.status_changed", task_id,
+        {"task_id": task_id, "from": current, "to": body.status},
+        tid,
+    )
+    return asdict(updated)
+
+
+# ---------------------------------------------------------------------------
+# BUSINESS-SLICES deep: Evaluation scoring
+# ---------------------------------------------------------------------------
+class EvaluationCreateRequest(BaseModel):
+    """Body schema for POST /employees/{id}/evaluations."""
+    qa_set_id: Annotated[str, Field(min_length=1, max_length=256)]
+    score: Annotated[float, Field(ge=0, le=100)]
+
+
+@router.post("/employees/{employee_id}/evaluations", status_code=201)
+async def create_evaluation(
+    request: Request, employee_id: str, body: EvaluationCreateRequest,
+) -> dict:
+    """Submit an evaluation for a digital employee.
+
+    Scoring rules:
+      - score >= 60 -> passed=True
+      - score <  60 -> passed=False
+    A letter grade (A/B/C/D) is computed and returned alongside.
+    """
+    tid = _tenant_id(request)
+    emp = get_employee(tid, employee_id)
+    if emp is None:
+        raise HTTPException(status_code=404, detail="employee not found")
+    passed = body.score >= _EVAL_PASS_THRESHOLD
+    grade = _compute_grade(body.score)
+    now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    evaluation = DwEvaluation(
+        id=f"dw-eval-{uuid.uuid4().hex[:8]}",
+        tenant_id=tid, employee_id=employee_id,
+        qa_set_id=body.qa_set_id, score=body.score,
+        passed=passed, evaluated_at=now,
+    )
+    append_evaluation(tid, evaluation)
+    _emit(
+        request, "dw.evaluation.submitted", evaluation.id,
+        {"employee_id": employee_id, "score": body.score,
+         "passed": passed, "grade": grade},
+        tid,
+    )
+    return {**asdict(evaluation), "grade": grade}
+
+
+# ---------------------------------------------------------------------------
+# BUSINESS-SLICES deep: Learning feedback loop
+# ---------------------------------------------------------------------------
+class LearningFeedbackRequest(BaseModel):
+    """Body schema for POST /learning/feedback."""
+    employee_id: Annotated[str, Field(min_length=1, max_length=256)]
+    scenario: Annotated[str, Field(min_length=1, max_length=256)]
+    rating: Annotated[int, Field(ge=1, le=5)]
+    comment: Annotated[str, Field(default="", max_length=2048)]
+
+
+@router.post("/learning/feedback", status_code=201)
+async def submit_learning_feedback(
+    request: Request, body: LearningFeedbackRequest,
+) -> dict:
+    """Submit learning feedback closing the learning loop.
+
+    A rating <= 2 flags the scenario for retraining (needs_retrain=True).
+    A rating >= 4 marks the scenario as stable (needs_retrain=False).
+    """
+    tid = _tenant_id(request)
+    emp = get_employee(tid, body.employee_id)
+    if emp is None:
+        raise HTTPException(status_code=404, detail="employee not found")
+    now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    feedback = DwLearningFeedback(
+        id=f"dw-learn-fb-{uuid.uuid4().hex[:8]}",
+        tenant_id=tid, employee_id=body.employee_id,
+        scenario=body.scenario, rating=body.rating,
+        comment=body.comment, feedback_at=now,
+    )
+    append_learning_feedback(tid, feedback)
+    needs_retrain = body.rating <= 2
+    _emit(
+        request, "dw.feedback.submitted", feedback.id,
+        {"employee_id": body.employee_id, "scenario": body.scenario,
+         "rating": body.rating, "needs_retrain": needs_retrain},
+        tid,
+    )
+    return {**asdict(feedback), "needs_retrain": needs_retrain}
+
+
+# ---------------------------------------------------------------------------
+# BUSINESS-SLICES deep: Collaboration session management
+# ---------------------------------------------------------------------------
+class CollaborationCreateRequest(BaseModel):
+    """Body schema for POST /collaborations."""
+    employee_id: Annotated[str, Field(min_length=1, max_length=256)]
+    peer_employee_id: Annotated[str, Field(min_length=1, max_length=256)]
+    duration_ms: Annotated[int, Field(ge=0)]
+
+
+@router.post("/collaborations", status_code=201)
+async def start_collaboration(
+    request: Request, body: CollaborationCreateRequest,
+) -> dict:
+    """Start a peer collaboration session.
+
+    Both employees must exist and at least one must be active.
+    Self-collaboration (same employee_id) is rejected.
+    """
+    tid = _tenant_id(request)
+    if body.employee_id == body.peer_employee_id:
+        raise HTTPException(
+            status_code=422, detail="self-collaboration is not allowed",
+        )
+    emp1 = get_employee(tid, body.employee_id)
+    emp2 = get_employee(tid, body.peer_employee_id)
+    if emp1 is None:
+        raise HTTPException(status_code=404, detail="employee not found")
+    if emp2 is None:
+        raise HTTPException(status_code=404, detail="peer employee not found")
+    if emp1.status == "offline" and emp2.status == "offline":
+        raise HTTPException(
+            status_code=409,
+            detail="both employees are offline; cannot collaborate",
+        )
+    now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    session_id = f"sess-{uuid.uuid4().hex[:8]}"
+    collab = DwCollaboration(
+        id=f"dw-collab-{uuid.uuid4().hex[:8]}",
+        tenant_id=tid, employee_id=body.employee_id,
+        peer_employee_id=body.peer_employee_id,
+        session_id=session_id, started_at=now,
+        duration_ms=body.duration_ms,
+    )
+    append_collaboration(tid, collab)
+    _emit(
+        request, "dw.collaboration.started", collab.id,
+        {"session_id": session_id, "employee_id": body.employee_id,
+         "peer_employee_id": body.peer_employee_id},
+        tid,
+    )
+    return asdict(collab)

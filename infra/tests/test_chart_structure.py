@@ -23,6 +23,7 @@ REQUIRED_TOP_LEVEL_FILES = {
 
 REQUIRED_SUB_CHARTS = {
     "otel-collector",
+    "postgresql",
     "keycloak",
     "kafka",
     "network-policies",

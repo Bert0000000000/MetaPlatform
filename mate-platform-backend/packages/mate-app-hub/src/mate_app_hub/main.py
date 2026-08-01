@@ -13,6 +13,7 @@ from __future__ import annotations
 from fastapi import FastAPI
 
 from mate_platform.auth import install_auth
+from mate_platform.messaging.outbox import InMemoryOutboxWriter
 
 from .api import router as apphub_router
 
@@ -31,6 +32,9 @@ def create_app() -> FastAPI:
     # middleware. The five apphub endpoints all read tenant-bound
     # state, so none of them is widened into the anonymous set.
     install_auth(app)
+    # Step 3: default outbox writer (no-op until a test attaches one).
+    if not hasattr(app.state, "outbox_writer"):
+        app.state.outbox_writer = InMemoryOutboxWriter()
     app.include_router(apphub_router)
     return app
 

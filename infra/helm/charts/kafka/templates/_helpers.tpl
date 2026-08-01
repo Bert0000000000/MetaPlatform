@@ -37,7 +37,39 @@ helm.sh/chart: {{ printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | 
 {{ include "kafka.selectorLabels" . }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
-{{- with .Values.global.labels }}
+{{- with .Values.global }}
+{{- with .labels }}
 {{ toYaml . }}
 {{- end }}
+{{- end }}
+{{- end -}}
+
+{{/*
+ZooKeeper ensemble connection string.
+
+Built from replicaCount so the ensemble scales with the chart.
+Only used when kraft.enabled is false (ZooKeeper mode).
+*/}}
+{{- define "kafka.zookeeper.servers" -}}
+{{- $fullname := include "kafka.fullname" . -}}
+{{- $count := int .Values.zookeeper.replicaCount -}}
+{{- range $i := until $count -}}
+{{- if gt $i 0 }},{{- end -}}
+{{- printf "%s-zookeeper-%d.%s-zookeeper-headless:2888:3888" $fullname $i $fullname -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+KRaft controller quorum voters.
+
+Built from replicaCount so the KRaft ensemble scales correctly.
+Only used when kraft.enabled is true (the default).
+*/}}
+{{- define "kafka.kraft.quorumVoters" -}}
+{{- $fullname := include "kafka.fullname" . -}}
+{{- $count := int .Values.replicaCount -}}
+{{- range $i := until $count -}}
+{{- if gt $i 0 }},{{- end -}}
+{{- printf "%d@%s-%d.%s-headless:9093" $i $fullname $i $fullname -}}
+{{- end -}}
 {{- end -}}

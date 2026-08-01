@@ -289,6 +289,108 @@ def list_templates(tenant_id: str) -> list[ApphubTemplate]:
 
 
 # ---------------------------------------------------------------------------
+# Public write API (BUSINESS-SLICES deep implementation)
+# ---------------------------------------------------------------------------
+def get_app(tenant_id: str, code: str) -> ApphubApp | None:
+    """Return a single app by code, or None."""
+    if not tenant_id:
+        return None
+    _ensure_tenant(tenant_id)
+    return _APPS[tenant_id].get(code)
+
+
+def put_app(tenant_id: str, app: ApphubApp) -> ApphubApp:
+    """Insert or replace an app."""
+    if not tenant_id:
+        raise ValueError("tenant_id is required")
+    _ensure_tenant(tenant_id)
+    _APPS[tenant_id][app.code] = app
+    return app
+
+
+def delete_app(tenant_id: str, code: str) -> bool:
+    """Delete an app by code. Returns True if deleted."""
+    if not tenant_id:
+        return False
+    _ensure_tenant(tenant_id)
+    if code not in _APPS[tenant_id]:
+        return False
+    del _APPS[tenant_id][code]
+    return True
+
+
+def get_group(tenant_id: str, code: str) -> ApphubGroup | None:
+    """Return a single group by code, or None."""
+    if not tenant_id:
+        return None
+    _ensure_tenant(tenant_id)
+    return _GROUPS[tenant_id].get(code)
+
+
+def put_group(tenant_id: str, group: ApphubGroup) -> ApphubGroup:
+    """Insert or replace a group."""
+    if not tenant_id:
+        raise ValueError("tenant_id is required")
+    _ensure_tenant(tenant_id)
+    _GROUPS[tenant_id][group.code] = group
+    return group
+
+
+def delete_group(tenant_id: str, code: str) -> bool:
+    """Delete a group by code. Returns True if deleted."""
+    if not tenant_id:
+        return False
+    _ensure_tenant(tenant_id)
+    if code not in _GROUPS[tenant_id]:
+        return False
+    del _GROUPS[tenant_id][code]
+    return True
+
+
+def get_module(tenant_id: str, code: str) -> ApphubModule | None:
+    """Return a single module by code, or None."""
+    if not tenant_id:
+        return None
+    _ensure_tenant(tenant_id)
+    return _MODULES[tenant_id].get(code)
+
+
+def put_module(tenant_id: str, module: ApphubModule) -> ApphubModule:
+    """Insert or replace a module."""
+    if not tenant_id:
+        raise ValueError("tenant_id is required")
+    _ensure_tenant(tenant_id)
+    _MODULES[tenant_id][module.code] = module
+    return module
+
+
+def put_page(tenant_id: str, page: ApphubPage) -> ApphubPage:
+    """Insert or replace a page."""
+    if not tenant_id:
+        raise ValueError("tenant_id is required")
+    _ensure_tenant(tenant_id)
+    _PAGES[tenant_id][page.code] = page
+    return page
+
+
+def get_template(tenant_id: str, code: str) -> ApphubTemplate | None:
+    """Return a single template by code, or None."""
+    if not tenant_id:
+        return None
+    _ensure_tenant(tenant_id)
+    return _TEMPLATES[tenant_id].get(code)
+
+
+def put_template(tenant_id: str, template: ApphubTemplate) -> ApphubTemplate:
+    """Insert or replace a template."""
+    if not tenant_id:
+        raise ValueError("tenant_id is required")
+    _ensure_tenant(tenant_id)
+    _TEMPLATES[tenant_id][template.code] = template
+    return template
+
+
+# ---------------------------------------------------------------------------
 # Test helpers — DO NOT call from production code paths
 # ---------------------------------------------------------------------------
 def reset_store() -> None:

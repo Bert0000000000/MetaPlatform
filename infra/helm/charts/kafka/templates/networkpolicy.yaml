@@ -1,34 +1,61 @@
+{{- if .Values.networkPolicy.enabled }}
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: {{ include "kafka.fullname" . }}
   labels:
     {{- include "kafka.labels" . | nindent 4 }}
+  annotations:
+    policy.description: |
+      Default-deny for Kafka broker pods. Ingress restricted to the
+      platform namespace on port 9092 (client) and 9093 (controller,
+      KRaft only); egress restricted to DNS. Enforces hard rule 13
+      (NetworkPolicy default-deny = prod-blocking when absent).
 spec:
   podSelector:
     matchLabels:
       {{- include "kafka.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: broker
   policyTypes:
     - Ingress
     - Egress
   ingress:
-    # any pod in metaplatform can talk to Kafka on 9092.
+    # Only pods in the platform namespace may reach Kafka on 9092.
     - from:
+        {{- range .Values.networkPolicy.allowedIngressNamespaces }}
         - namespaceSelector:
             matchLabels:
-              kubernetes.io/metadata.name: metaplatform
+              kubernetes.io/metadata.name: {{ . }}
+        {{- end }}
       ports:
         - protocol: TCP
-          port: 9092
-    # schema registry on 8081.
+          port: {{ .Values.service.ports.client }}
+    {{- if .Values.kraft.enabled }}
+    # KRaft controller traffic on 9093 (inter-broker).
     - from:
+        {{- range .Values.networkPolicy.allowedIngressNamespaces }}
         - namespaceSelector:
             matchLabels:
-              kubernetes.io/metadata.name: metaplatform
+              kubernetes.io/metadata.name: {{ . }}
+        {{- end }}
+      ports:
+        - protocol: TCP
+          port: 9093
+    {{- end }}
+    {{- if .Values.schemaRegistry.enabled }}
+    # Schema Registry on 8081 (if enabled).
+    - from:
+        {{- range .Values.networkPolicy.allowedIngressNamespaces }}
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ . }}
+        {{- end }}
       ports:
         - protocol: TCP
           port: 8081
+    {{- end }}
   egress:
+    # DNS resolution (kube-system CoreDNS).
     - to:
         - namespaceSelector:
             matchLabels:
@@ -38,3 +65,4 @@ spec:
           port: 53
         - protocol: TCP
           port: 53
+{{- end }}
