@@ -6,6 +6,10 @@ from .audit import (
     StdoutAuditSink,
     emit_cross_tenant_data_access,
 )
+from .audit_middleware import (
+    install_cross_tenant_audit_middleware,
+    make_test_sink,
+)
 from .config import AuthConfig, load_auth_config
 from .identity import IdentityError, ServiceIdentity, ServiceToken
 from .jwks import ALLOWED_ALGS, JWKSCache, JWKSError
@@ -48,8 +52,10 @@ __all__ = [
     "build_service_identity",
     "emit_cross_tenant_data_access",
     "install_auth",
+    "install_cross_tenant_audit_middleware",
     "is_tenant_soft_deleted",
     "load_auth_config",
+    "make_test_sink",
     "request_gdpr_forget",
     "resolve_tenant",
 ]
