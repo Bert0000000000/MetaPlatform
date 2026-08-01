@@ -2004,6 +2004,69 @@ requirements:
     tests: []
     implementationStatus: placeholder
     acceptanceStatus: notAccepted
+  FR-MCP-MCPGETMCPFEDERATIONSERVERS:
+    prd: docs/active/prd/APP-MCPHUB/PRD-APP-MCPHUB-MCP服务中心_v2.2-20260727.md
+    service: mcp
+    operationIds:
+    - mcpGetMcpFederationServers
+    handler: null
+    tests: []
+    implementationStatus: placeholder
+    acceptanceStatus: notAccepted
+  FR-MCP-MCPPOSTMCPFEDERATIONSERVERS:
+    prd: docs/active/prd/APP-MCPHUB/PRD-APP-MCPHUB-MCP服务中心_v2.2-20260727.md
+    service: mcp
+    operationIds:
+    - mcpPostMcpFederationServers
+    handler: null
+    tests: []
+    implementationStatus: placeholder
+    acceptanceStatus: notAccepted
+  FR-MCP-MCPGETMCPFEDERATIONSERVERSSERVERID:
+    prd: docs/active/prd/APP-MCPHUB/PRD-APP-MCPHUB-MCP服务中心_v2.2-20260727.md
+    service: mcp
+    operationIds:
+    - mcpGetMcpFederationServersServerId
+    handler: null
+    tests: []
+    implementationStatus: placeholder
+    acceptanceStatus: notAccepted
+  FR-MCP-MCPPUTMCPFEDERATIONSERVERSSERVERID:
+    prd: docs/active/prd/APP-MCPHUB/PRD-APP-MCPHUB-MCP服务中心_v2.2-20260727.md
+    service: mcp
+    operationIds:
+    - mcpPutMcpFederationServersServerId
+    handler: null
+    tests: []
+    implementationStatus: placeholder
+    acceptanceStatus: notAccepted
+  FR-MCP-MCPDELETEMCPFEDERATIONSERVERSSERVERID:
+    prd: docs/active/prd/APP-MCPHUB/PRD-APP-MCPHUB-MCP服务中心_v2.2-20260727.md
+    service: mcp
+    operationIds:
+    - mcpDeleteMcpFederationServersServerId
+    handler: null
+    tests: []
+    implementationStatus: placeholder
+    acceptanceStatus: notAccepted
+  FR-MCP-MCPGETMCPFEDERATIONTOOLS:
+    prd: docs/active/prd/APP-MCPHUB/PRD-APP-MCPHUB-MCP服务中心_v2.2-20260727.md
+    service: mcp
+    operationIds:
+    - mcpGetMcpFederationTools
+    handler: null
+    tests: []
+    implementationStatus: placeholder
+    acceptanceStatus: notAccepted
+  FR-MCP-MCPPOSTMCPFEDERATIONTOOLSTOOLNAMEINVOKE:
+    prd: docs/active/prd/APP-MCPHUB/PRD-APP-MCPHUB-MCP服务中心_v2.2-20260727.md
+    service: mcp
+    operationIds:
+    - mcpPostMcpFederationToolsToolNameInvoke
+    handler: null
+    tests: []
+    implementationStatus: placeholder
+    acceptanceStatus: notAccepted
   FR-MSG-MSGGETMSGTOPICS:
     prd: docs/active/prd/_top/API-CONTRACT-前端接口契约清单_v1.0-20260727.md
     service: msg

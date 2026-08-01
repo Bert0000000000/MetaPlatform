@@ -1,6 +1,6 @@
 # Mate Platform 功能未实现清单(按业务能力维度)
 
-> 版本:v1.2 · 2026-08-01
+> 版本:v1.3 · 2026-08-01
 > 数据源:`mate-platform-backend/contracts/openapi/generated/bundled.yaml`(252,516 bytes,214 个 spec 路由)
 > 代码扫描:`mate-platform-backend/` 下所有 `.py` 文件(`.venv` / `node_modules` / `tests` / `.wheels` / `__pycache__` 已排除)
 > 关联:
@@ -10,6 +10,10 @@
 > - `docs/active/delivery/evidence/P0-CLOSE-ACCEPTANCE.md`(7/30 收尾)
 > - `docs/active/delivery/evidence/P2-W2-ACCEPTANCE.md`(7/31 主推进)
 > - `docs/active/delivery/evidence/P3-W6-W7-ACCEPTANCE.md`(8/1 v3.1 增量 wave)
+> - `docs/active/delivery/evidence/TD-5-ACCEPTANCE.md`(8/1 in-memory → PostgreSQL 收口)
+> - `docs/active/delivery/evidence/P3-W8-BUSINESS-ACCEPTANCE.md`(8/1 4 域业务深化)
+> - `docs/active/delivery/evidence/P3-W9-ONT-ACCEPTANCE.md`(8/1 SPARQL/推理/版本)
+> - `docs/active/delivery/evidence/G4-ACCEPTANCE.md`(8/1 kind e2e)
 
 ---
 
@@ -22,7 +26,19 @@
 - 🔴 **未实现**:完全没建包,或仅有 OpenAPI 占位
 - 🟠 **已落地但生产禁用**:deprecated / legacy 路径
 
-**v1.2(8/1)更新要点**:
+**v1.3(8/1 末)更新要点**(在 v1.2 基础上追加):
+- **TD-5 持久化收口**(8/1):17 域 in-memory → PostgreSQL(10 域 SQL 化,Alembic + PgClient + Repository);**SPEC 命中 209/214(仅 5 个 mcp endpoint 未实现)**
+- **P3-W8 业务深化**(8/1):4 域真实业务逻辑补齐 — arch 能力清单 + agent plan execute + msg 历史消息 + wfe BPMN deploy;16 tests
+- **P3-W9 业务深化**(8/1):SPARQL 真实化 + 推理引擎(subclass/transitivity/BFS/K-hop)+ 版本管理 4 endpoint;16 tests
+- **P3-W9 LLMGW/MSG/ONT 三域**(8/1):llmgw 真实路由(TD-6)+ msg 订阅 + ont 推理;WFE 2 endpoint + a2a 路径补齐
+- **G4 真实 K8s e2e**(8/1):kind cluster CI workflow + 本地 smoke 脚本
+- **G5 17 域 security 三段式补齐**(8/1):evidence `G5-ACCEPTANCE.md`
+- **G6 RLS 迁移 Alembic 0008**(8/1):58 张表 FORCE ROW LEVEL SECURITY,evidence `G6-ACCEPTANCE.md`
+- **累计测试**:1500+ → **1700+**(粗估,新增 ~200 tests)
+- **未实现 spec 路由**:55 → **5**(mcp 5 endpoint,实际挂载待 Part 2 补)
+- ⚠️ **G8 校对警告**(8/1):commit `d799b956` 声称 "G8 旧 infra 清理" 完成,但实际验证 `infra/{otel,lightrag,promtail}/` 3 目录仍在,`docker-compose.yml` 仍引用 `lightrag`;PROGRAM-BOARD 已保持 G8 Not Started,待 code 模式按 `2026-08-01-g8-legacy-infra-cleanup.md` 真正执行。
+
+**v1.2(8/1 早)更新要点**(保留原文):
 - **D1 lineage e2e 落地**(commit `bae2ec63`):跨域 trace chain(msg→obs→dw)+ 租户隔离断言 + `LineageHints` 自动注入;6 e2e tests
 - **copilot 35/35 全完成**(commit `4878eb82`):A2A stub 501 → 真实 TD-4 闭环;LLM stub → 真实 provider TD-6 闭环(OpenAI / Anthropic)
 - **G3 Outbox DDL**(commit `85f4df75`):Alembic 0007 迁移,`outbox_event` 表 11 字段 + 5 索引

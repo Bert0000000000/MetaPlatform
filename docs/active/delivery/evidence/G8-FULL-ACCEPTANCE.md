@@ -15,11 +15,11 @@ G8 FULL 承接 G8-ACCEPTANCE-FINAL(8/1 docker-compose 残留清理),扩展到:
 
 | 项目 | 状态 | 关联 commit |
 |---|---|---|
-| infra/otel/ 目录删除 | ✅ 已删(git ls-files 无记录) | P3-W6 wave |
-| infra/lightrag/ 目录删除 | ✅ 已删 | P3-W6 wave |
-| infra/promtail/ 目录删除 | ✅ 已删 | P3-W6 wave |
+| infra/otel/ 目录删除(文件 + 空目录) | ✅ 整目录已删 | P3-W6 wave + G8 FINAL |
+| infra/lightrag/ 目录删除(文件 + 空目录) | ✅ 整目录已删 | P3-W6 wave + G8 FINAL |
+| infra/promtail/ 目录删除 | ✅ 整目录已删 | P3-W6 wave |
 | docker-compose.yml 残留引用 | ✅ 4 处清除(lightrag/promtail/otel) | ef8c4105 |
-| PROFILES.md 引用清理 | ✅ 本批次 | 本 commit |
+| PROFILES.md 引用清理 | ✅ 本批次 | e51b617d |
 | architecture-implementation.md | ✅ 无残留(grep 0 匹配) | N/A |
 
 ## 3. grep 验证
@@ -33,4 +33,6 @@ git ls-files infra/otel/ infra/lightrag/ infra/promtail/ → 空 ✅
 
 ## 4. 结论
 
-G8 全量闭环:3 目录 + docker-compose + docs 全部清理完成。
+**G8 100% 闭环 ✅**
+
+3 个目录(otel / lightrag / promtail)整目录删除(文件 + 空目录)+ docker-compose.yml 残留引用清除 + PROFILES.md 引用清除。无遗留。

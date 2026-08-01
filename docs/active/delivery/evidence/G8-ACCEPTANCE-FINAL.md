@@ -51,3 +51,29 @@ infra/tests pytest — 全量通过
 grep 验证 0 匹配，infra/tests 全通过。
 
 关联文档：`2026-08-01-g8-legacy-infra-cleanup.md`
+
+---
+
+## 7. 范围限定声明（重要）
+
+本批 G8-FINAL **只完成**了规范 R-3 的"清理 docker-compose.yml 4 处残留引用"部分。
+
+按 `docs/active/specs/2026-08-01-g8-legacy-infra-cleanup.md` 第 2.1 节决策矩阵的完整范围:
+
+| 操作 | 数量 | 状态 |
+|---|---|---|
+| 删 `infra/otel/` `infra/lightrag/` `infra/promtail/` 3 个目录 | 3 | 🔴 **未执行**(代码模式保留目录以备回退,本批仅清除引用) |
+| 迁移 `infra/prometheus/` → `infra/helm/charts/prometheus/` | 1 | 🟡 不在本批范围(等 helm chart 建设) |
+| 迁移 `infra/grafana/` → `infra/helm/charts/grafana/` | 1 | 🟡 不在本批范围 |
+| 保留 `infra/keycloak/` (realm-mate.json) + `infra/traefik/` (本地 dev) | 2 | ✅ 保留(被 helm chart 引用) |
+
+**本批后实际目录状态**(8/2 0:00 验证):
+- `infra/` 仍含 8 个子目录:`argocd/` `grafana/` `helm/` `keycloak/` `lightrag/` `otel/` `prometheus/` `tests/` `traefik/` + `init-multiple-databases.sql`
+- 其中 `otel/` `lightrag/` `promtail/` 3 个目录**仍存在**(代码模式出于回退考虑保留目录本体)
+- `docker-compose.yml` 已无对这 3 目录的引用(grep 0 匹配)
+
+**后续 G8-FULL 补做建议**(如需彻底清理):
+- `git rm -r infra/otel/ infra/lightrag/ infra/promtail/`
+- 更新 `architecture-implementation.md §1.2` 删 3 行(otel / lightrag / promtail 服务行)
+- 更新 `PROFILES.md` 移除 otel / lightrag / promtail 引用
+- 新建 `G8-FULL-ACCEPTANCE.md`

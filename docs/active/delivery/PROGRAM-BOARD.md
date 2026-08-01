@@ -53,7 +53,7 @@
 | G5 | per-service `security:` 段补齐（17 域 oasdiff） | 每域接入时 | SEC-IAM-01 | **Accepted** ✅（commit 已合，17 域 security 三段式补齐，证据 `G5-ACCEPTANCE.md`） |
 | G6 | 已有表 `tenant_id` 回填 + RLS 迁移 | PLATFORM-EVENT-01 | SEC-TENANT-01 | **Accepted** ✅（commit 已合，Alembic 0008，58 张表 + FORCE ROW LEVEL SECURITY，证据 `G6-ACCEPTANCE.md`） |
 | **G7** | **SealedSecrets 主私钥异地备份 runbook** | SEC-IAM-01 | ADR-0010 §4.3 | **Accepted** ✅（commit `85f4df75`，2 runbook 文档） |
-| G8 | 清理 main 上旧 `infra/`（otel/prometheus/grafana/keycloak/traefik/lightrag/promtail） | PLATFORM-K8S-01 | docker-compose 时代残留 | **Accepted** ✅（docker-compose.yml 残留引用清理：lightrag service block + promtail mount + otel mount，grep 0 匹配，证据 `G8-ACCEPTANCE-FINAL.md`） |
+| G8 | 清理 main 上旧 `infra/`（otel/prometheus/grafana/keycloak/traefik/lightrag/promtail） | PLATFORM-K8S-01 | docker-compose 时代残留 | **Accepted** ✅（3 目录 + 2 空目录全部清理完成，docker-compose + PROFILES.md 引用清除，证据 `G8-FULL-ACCEPTANCE.md`） |
 
 ### P3-W6/W7 v3.1 增量 wave（2026-08-01）
 

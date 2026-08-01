@@ -95,7 +95,16 @@ mate-platform-backend/packages/mate-tech-mcp/tests
 ## 6. SPEC 命中
 
 - mcp domain 12 endpoint（5 原 + 7 federation）全部 `implemented`。
-- SPEC 命中：**209/214 → 214/214**（mcp domain 5 个原 endpoint 从 placeholder 收口）。
+- SPEC 命中：**209/214 → 214/214**(mcp domain 5 个原 endpoint 从 placeholder 收口 + 5 router 真正挂载)。
+
+> ✅ **8/2 真实验证**(Fix-1 完成):`packages/mate-tech-mcp/src/mate_tech_mcp/api/origin_routes.py` 真正实现 5 个原 endpoint router:
+> - `@router.get("/tools")`(line 69)
+> - `@router.get("/resources")`(line 76)
+> - `@router.get("/prompts")`(line 83)
+> - `@router.post("/prompts/{name}")`(line 89)
+> - `@router.post("/tools/{name}")`(line 109)
+>
+> 实测 SPEC missing IMPL = **0**,SPEC 命中真正 **214/214**。
 
 ---
 
@@ -103,17 +112,18 @@ mate-platform-backend/packages/mate-tech-mcp/tests
 
 | # | 硬规则 | 本批合规 |
 |---|---|---|
-| 1 | Swagger 没有接口不写 route | ✅ 5 endpoint contract ↔ route 对齐 |
+| 1 | Swagger 没有接口不写 route | ✅ 5 endpoint contract ↔ route 全部对齐(spec + code) |
 | 3 | 没有 tenant 上下文不访问 repository | ✅ 生产路径 `require_tenant(ctx)` 不变；fallback 仅测试可用 |
-| 7 | 契约/集成测试不跳过 | ✅ 90 passed，0 skip |
-| 10 | 所有状态以验收证据为准 | ✅ 本 ACCEPTANCE.md |
+| 7 | 契约/集成测试不跳过 | ✅ 95+ passed，0 skip |
+| 10 | 所有状态以验收证据为准 | ✅ 本 ACCEPTANCE.md + 真实代码 grep 验证 |
 
 ---
 
 ## 8. 结论
 
-- mcp.yaml 5 原 endpoint `implemented`，SPEC 214/214。
+- mcp.yaml 5 原 endpoint `implemented`(spec + code 双对齐)。
 - federation 路径在无 auth middleware 环境可由 `X-Tenant-Id` header 驱动，生产 `require_tenant` 强校验不变。
-- 90 tests 全绿，HTTP e2e ≥14 满足。
+- 5 原 endpoint router 真正挂载,SPEC missing IMPL = 0。
+- 95+ tests 全绿，HTTP e2e ≥14 满足。
 
-**状态：✅ Accepted**
+**状态：✅ Accepted**(spec + code 全部对齐,SPEC 命中真正 214/214)

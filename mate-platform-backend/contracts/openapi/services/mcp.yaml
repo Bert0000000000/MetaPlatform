@@ -38,7 +38,7 @@ paths:
       x-mate-permission: mcp.get
       x-mate-requirements:
       - FR-MCP-MCPGETHEALTHZ
-      x-mate-implementation-status: placeholder
+      x-mate-implementation-status: implemented
   /api/v1/mcp/tools:
     get:
       security:
