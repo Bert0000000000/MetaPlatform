@@ -45,7 +45,9 @@ from pydantic import BaseModel, Field
 from mate_platform.tenancy.guards import require_tenant
 
 from .subscriptions import (
+    DLQEntry,
     Delivery,
+    InMemoryDLQStore,
     Subscription,
     SubscriptionStore,
     deliver_with_retries,
@@ -65,6 +67,19 @@ def _set_store(store: SubscriptionStore) -> None:
     """Called by main.py to share its store instance with the router."""
     global subscription_store  # noqa: PLW0603
     subscription_store = store
+
+
+# DLQ store (shared with main.py the same way as subscription_store).
+dlq_store: InMemoryDLQStore = InMemoryDLQStore()
+
+
+def _set_dlq_store(store: InMemoryDLQStore) -> None:
+    """Called by main.py to share its DLQ store instance with the router."""
+    global dlq_store  # noqa: PLW0603
+    dlq_store = store
+
+
+dlq_router = APIRouter(prefix="/api/v1/msg/dlq", tags=["msg-dlq"])
 
 
 def _tenant_id(request: Request) -> str:
@@ -94,6 +109,18 @@ def _serialize_delivery(d: Delivery) -> dict[str, Any]:
     }
 
 
+def _serialize_dlq_entry(e: DLQEntry) -> dict[str, Any]:
+    return {
+        "message_id": e.message_id,
+        "tenant_id": e.tenant_id,
+        "subscription_id": e.subscription_id,
+        "topic": e.topic,
+        "payload": e.payload,
+        "error": e.error,
+        "failed_at": e.failed_at.isoformat(),
+    }
+
+
 # ---------------------------------------------------------------------------
 # Request / response models
 # ---------------------------------------------------------------------------
@@ -108,6 +135,10 @@ class CreateSubscriptionRequest(BaseModel):
 class TestWebhookRequest(BaseModel):
     topic: str | None = Field(default=None, description="Override topic; defaults to the sub's filter")
     payload: dict[str, Any] = Field(default_factory=lambda: {"test": True})
+
+
+class UpdateStatusRequest(BaseModel):
+    status: str = Field(..., description="New status: 'active' or 'paused'")
 
 
 # ---------------------------------------------------------------------------
@@ -223,4 +254,101 @@ async def test_webhook_endpoint(
     return {"delivery": _serialize_delivery(delivery)}
 
 
-__all__ = ["router", "subscription_store", "_set_store"]
+@router.patch("/{sub_id}/status")
+async def update_subscription_status_endpoint(
+    request: Request,
+    sub_id: str,
+    req: UpdateStatusRequest,
+) -> dict[str, Any]:
+    """Pause (active→paused) or resume (paused→active) a subscription."""
+    tenant_id = _tenant_id(request)
+    if req.status not in ("active", "paused"):
+        raise HTTPException(
+            status_code=400,
+            detail="status must be 'active' or 'paused'",
+        )
+    sub = subscription_store.update_subscription_status(
+        tenant_id=tenant_id,
+        sub_id=sub_id,
+        status=req.status,
+    )
+    if sub is None:
+        raise HTTPException(status_code=404, detail="subscription not found")
+    return {"subscription": _serialize_sub(sub)}
+
+
+# ---------------------------------------------------------------------------
+# DLQ endpoints
+# ---------------------------------------------------------------------------
+@dlq_router.get("")
+async def list_dlq_endpoint(
+    request: Request,
+    subscription_id: str | None = Query(default=None),
+    page: int = Query(default=1, ge=1),
+    size: int = Query(default=20, ge=1, le=100),
+) -> dict[str, Any]:
+    """Query DLQ entries (paginated, filterable by subscription_id)."""
+    tenant_id = _tenant_id(request)
+    offset = (page - 1) * size
+    rows = dlq_store.list(
+        tenant_id=tenant_id,
+        subscription_id=subscription_id,
+        limit=size,
+        offset=offset,
+    )
+    return {
+        "items": [_serialize_dlq_entry(e) for e in rows],
+        "total": len(rows),
+        "page": page,
+        "size": size,
+    }
+
+
+@dlq_router.post("/{message_id}/replay")
+async def replay_dlq_endpoint(
+    request: Request,
+    message_id: str,
+) -> dict[str, Any]:
+    """Replay a DLQ message: re-deliver to the original subscription."""
+    tenant_id = _tenant_id(request)
+    entry = dlq_store.get(tenant_id=tenant_id, message_id=message_id)
+    if entry is None:
+        raise HTTPException(status_code=404, detail="DLQ entry not found")
+    if entry.subscription_id is None:
+        raise HTTPException(
+            status_code=409,
+            detail="DLQ entry has no subscription_id; cannot replay via webhook",
+        )
+    sub = subscription_store.get_subscription(
+        tenant_id=tenant_id,
+        sub_id=entry.subscription_id,
+    )
+    if sub is None or sub.status != "active":
+        raise HTTPException(
+            status_code=409,
+            detail=f"subscription {entry.subscription_id} is not active",
+        )
+    delivery = await deliver_with_retries(
+        subscription_store,
+        sub,
+        entry.topic,
+        entry.payload,
+        attempt_delays=(0.0,),
+    )
+    if delivery.status == "success":
+        dlq_store.remove(tenant_id=tenant_id, message_id=message_id)
+    return {
+        "replayed": delivery.status == "success",
+        "message_id": message_id,
+        "delivery": _serialize_delivery(delivery),
+    }
+
+
+__all__ = [
+    "dlq_router",
+    "dlq_store",
+    "router",
+    "subscription_store",
+    "_set_dlq_store",
+    "_set_store",
+]

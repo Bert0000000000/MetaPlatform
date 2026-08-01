@@ -7,11 +7,18 @@ publish API:
 """
 from __future__ import annotations
 
+from typing import Any
+
 import structlog
 
 from .dedup import DedupStore
 from .kafka_client import KafkaClient
 from .schemas import PublishRequest, PublishResponse
+from .subscriptions import (
+    InMemoryDLQStore,
+    SubscriptionStore,
+    deliver_with_retries,
+)
 
 logger = structlog.get_logger(__name__)
 
@@ -25,10 +32,16 @@ class Publisher:
         dedup: DedupStore | None = None,
         *,
         default_partition_key_field: str = "tenant_id",
+        subscription_store: SubscriptionStore | None = None,
+        dlq_store: InMemoryDLQStore | None = None,
+        fanout_attempt_delays: tuple[float, ...] = (0.0,),
     ) -> None:
         self._kafka = kafka
         self._dedup = dedup or DedupStore()
         self._default_partition_key_field = default_partition_key_field
+        self._subscription_store = subscription_store
+        self._dlq_store = dlq_store
+        self._fanout_attempt_delays = fanout_attempt_delays
 
     async def publish(self, req: PublishRequest) -> PublishResponse:
         """鍙戝竷娑堟伅鍒?Kafka.
@@ -79,9 +92,60 @@ class Publisher:
             offset=offset,
             key=partition_key,
         )
+
+        # 4. Webhook fan-out: trigger matching active subscriptions.
+        await self._fanout_webhooks(
+            topic=req.topic,
+            payload=req.payload,
+            tenant_id=partition_key,
+        )
+
         return PublishResponse(
             topic=req.topic,
             partition=partition,
             offset=offset,
             idempotency_hit=False,
         )
+
+    async def _fanout_webhooks(
+        self,
+        *,
+        topic: str,
+        payload: dict[str, Any],
+        tenant_id: str,
+    ) -> None:
+        """Find matching active subscriptions and deliver webhooks.
+
+        If no subscription store is configured, this is a no-op. If no
+        subscriptions match the topic, the method returns silently —
+        not every message needs webhook delivery.
+        """
+        if self._subscription_store is None:
+            return
+        matches = self._subscription_store.find_matching(
+            tenant_id=tenant_id, topic=topic
+        )
+        if not matches:
+            return
+        logger.info(
+            "publisher.fanout",
+            topic=topic,
+            tenant_id=tenant_id,
+            match_count=len(matches),
+        )
+        for sub in matches:
+            try:
+                await deliver_with_retries(
+                    self._subscription_store,
+                    sub,
+                    topic,
+                    payload,
+                    attempt_delays=self._fanout_attempt_delays,
+                    dlq_store=self._dlq_store,
+                )
+            except Exception:
+                logger.exception(
+                    "publisher.fanout_error",
+                    sub_id=sub.id,
+                    topic=topic,
+                )

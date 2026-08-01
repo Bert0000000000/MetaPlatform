@@ -86,6 +86,19 @@ class Delivery:
     created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
 
+@dataclass(frozen=True)
+class DLQEntry:
+    """Dead-letter queue entry for permanently failed deliveries."""
+
+    message_id: str
+    tenant_id: str
+    subscription_id: str | None
+    topic: str
+    payload: dict[str, Any]
+    error: str
+    failed_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+
+
 # ---------------------------------------------------------------------------
 # Topic filter matching
 # ---------------------------------------------------------------------------
@@ -207,6 +220,39 @@ class SubscriptionStore:
             return True
         return False
 
+    def update_subscription_status(
+        self,
+        *,
+        tenant_id: str,
+        sub_id: str,
+        status: SubscriptionStatus,
+    ) -> Subscription | None:
+        """Update a subscription's status (active / paused / deleted)."""
+        bucket = self._subs.get(tenant_id, {})
+        old = bucket.get(sub_id)
+        if old is None:
+            return None
+        new_sub = Subscription(
+            id=old.id,
+            tenant_id=old.tenant_id,
+            topic_filter=old.topic_filter,
+            target_url=old.target_url,
+            secret=old.secret,
+            status=status,
+            created_at=old.created_at,
+            updated_at=datetime.now(UTC),
+            max_attempts=old.max_attempts,
+            metadata=old.metadata,
+        )
+        bucket[sub_id] = new_sub
+        logger.info(
+            "subscription.status_updated",
+            sub_id=sub_id,
+            tenant_id=tenant_id,
+            status=status,
+        )
+        return new_sub
+
     def find_matching(self, *, tenant_id: str, topic: str) -> list[Subscription]:
         """Return active subscriptions whose filter matches ``topic``."""
         return [
@@ -236,6 +282,86 @@ class SubscriptionStore:
         """Drop all data. Used by tests."""
         self._subs.clear()
         self._deliveries.clear()
+        self._counter = 0
+
+
+class InMemoryDLQStore:
+    """In-memory dead-letter queue store (tenant-scoped).
+
+    Records permanently failed deliveries so they can be queried and
+    replayed via the management API.
+    """
+
+    def __init__(self) -> None:
+        self._entries: dict[str, list[DLQEntry]] = {}  # tenant_id -> entries
+        self._counter: int = 0
+
+    def _next_id(self) -> str:
+        self._counter += 1
+        return f"dlq-{self._counter:08d}"
+
+    def put(
+        self,
+        *,
+        tenant_id: str,
+        topic: str,
+        payload: dict[str, Any],
+        error: str,
+        subscription_id: str | None = None,
+    ) -> DLQEntry:
+        """Append a failed-delivery record to the DLQ."""
+        entry = DLQEntry(
+            message_id=self._next_id(),
+            tenant_id=tenant_id,
+            subscription_id=subscription_id,
+            topic=topic,
+            payload=dict(payload),
+            error=error,
+        )
+        self._entries.setdefault(tenant_id, []).append(entry)
+        logger.info(
+            "dlq.put",
+            message_id=entry.message_id,
+            tenant_id=tenant_id,
+            topic=topic,
+            subscription_id=subscription_id,
+        )
+        return entry
+
+    def list(
+        self,
+        *,
+        tenant_id: str,
+        subscription_id: str | None = None,
+        limit: int = 100,
+        offset: int = 0,
+    ) -> list[DLQEntry]:
+        """Return DLQ entries, optionally filtered by subscription_id."""
+        rows = list(self._entries.get(tenant_id, []))
+        if subscription_id:
+            rows = [e for e in rows if e.subscription_id == subscription_id]
+        rows = sorted(rows, key=lambda e: e.failed_at, reverse=True)
+        return rows[offset : offset + limit]
+
+    def get(self, *, tenant_id: str, message_id: str) -> DLQEntry | None:
+        """Get a single DLQ entry by message_id (tenant-scoped)."""
+        for e in self._entries.get(tenant_id, []):
+            if e.message_id == message_id:
+                return e
+        return None
+
+    def remove(self, *, tenant_id: str, message_id: str) -> bool:
+        """Remove a DLQ entry (e.g. after successful replay)."""
+        bucket = self._entries.get(tenant_id, [])
+        for i, e in enumerate(bucket):
+            if e.message_id == message_id:
+                bucket.pop(i)
+                return True
+        return False
+
+    def reset(self) -> None:
+        """Drop all data. Used by tests."""
+        self._entries.clear()
         self._counter = 0
 
 
@@ -286,6 +412,7 @@ async def deliver_with_retries(
     payload: dict[str, Any],
     *,
     attempt_delays: tuple[float, ...] = (0.0, 1.0, 5.0),
+    dlq_store: InMemoryDLQStore | None = None,
 ) -> Delivery:
     """Deliver with bounded retries; record each attempt.
 
@@ -326,6 +453,14 @@ async def deliver_with_retries(
         delivered_at=delivered_at,
     )
     store.record_delivery(delivery)
+    if status == "failed" and dlq_store is not None:
+        dlq_store.put(
+            tenant_id=sub.tenant_id,
+            subscription_id=sub.id,
+            topic=topic,
+            payload=payload,
+            error=last_error or "unknown error",
+        )
     logger.info(
         "subscription.delivered",
         sub_id=sub.id,
@@ -338,8 +473,10 @@ async def deliver_with_retries(
 
 
 __all__ = [
+    "DLQEntry",
     "Delivery",
     "DeliveryStatus",
+    "InMemoryDLQStore",
     "Subscription",
     "SubscriptionStatus",
     "SubscriptionStore",

@@ -12,6 +12,8 @@ from typing import Any
 import structlog
 from aiokafka import AIOKafkaConsumer
 
+from .subscriptions import InMemoryDLQStore
+
 logger = structlog.get_logger(__name__)
 
 DLQ_TOPIC = "mate.msg.dlq"
@@ -40,6 +42,7 @@ class Subscriber:
         handler: Handler | None = None,
         max_retries: int = MAX_RETRIES,
         dlq_topic: str = DLQ_TOPIC,
+        dlq_store: InMemoryDLQStore | None = None,
     ) -> None:
         self._bootstrap = bootstrap_servers
         self._topics = topics
@@ -47,6 +50,7 @@ class Subscriber:
         self._handler = handler
         self._max_retries = max_retries
         self._dlq_topic = dlq_topic
+        self._dlq_store = dlq_store
         self._consumer: AIOKafkaConsumer | None = None
 
     async def start(self) -> None:
@@ -116,4 +120,32 @@ class Subscriber:
             offset=msg.offset,
             last_error=str(last_exc),
         )
-        # In production, send to a DLQ topic; here we only log.
+        if self._dlq_store is not None:
+            # Extract tenant_id from Kafka headers.
+            headers_dict = dict(msg.headers or [])
+            raw_tid = headers_dict.get("tenant_id")
+            if isinstance(raw_tid, bytes):
+                tenant_id = raw_tid.decode()
+            elif raw_tid is not None:
+                tenant_id = str(raw_tid)
+            else:
+                tenant_id = "unknown"
+
+            # Best-effort payload extraction.
+            value = msg.value
+            if hasattr(value, "decode"):
+                try:
+                    import json
+
+                    value = json.loads(value.decode())
+                except Exception:
+                    value = {}
+            payload = value if isinstance(value, dict) else {}
+
+            self._dlq_store.put(
+                tenant_id=tenant_id,
+                subscription_id=None,
+                topic=msg.topic,
+                payload=payload,
+                error=str(last_exc) if last_exc else "unknown error",
+            )
