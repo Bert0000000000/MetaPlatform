@@ -52,6 +52,19 @@ dataProducts:
   sloan:
     defaultTemplate: "metaplatform-default"
 
+# D2 v2: DataJob CRDs — scheduled pipelines that consume input
+# datasets and produce output datasets. Default cron runs nightly at
+# 02:00 UTC. Per SEC-TENANT-01 hard rule 3 every job carries a tenantId.
+dataJobs:
+  enabled: true
+  defaultSchedule: "0 2 * * *"
+
+# D2 v2: Dataset CRDs — minimal per-tenant dataset metadata contracts.
+# partitionByTenant enforces physical/storage isolation (hard rule 3).
+datasets:
+  enabled: true
+  partitionByTenant: true
+
 ingest:
   kafkaConnect:
     enabled: true

@@ -1,0 +1,43 @@
+# D2 v2: Dataset CRD
+# A Dataset is the minimal metadata contract for a unit of data owned
+# by a domain. DataProducts reference one or more Datasets; DataJobs
+# read/write them. The schema block feeds the DataHub GMS search index
+# and the GE expectation-suite binding (D3).
+#
+# Per ADR-0016 §3.2 (D2 scope) + SEC-TENANT-01 hard rule 3:
+#   - tenantId is mandatory.
+#   - partition.byTenant enforces physical/storage isolation per tenant.
+apiVersion: datahub.metaplatform.io/v1
+kind: Dataset
+metadata:
+  name: example-dataset
+  namespace: metaplatform
+  labels:
+    app.kubernetes.io/managed-by: datahub-operator
+    app.kubernetes.io/part-of: metaplatform
+spec:
+  # Per-tenant scoping (SEC-TENANT-01 hard rule 3).
+  tenantId: "acme"
+  domain: "iam"
+  owner: "platform-iam@metaplatform.local"
+  version: "1.0.0"
+  # Minimal schema contract; fields feed GMS search + GE binding (D3).
+  schema:
+    fields:
+      - name: "user_id"
+        type: "uuid"
+        nullable: false
+      - name: "email"
+        type: "string"
+        nullable: false
+      - name: "created_at"
+        type: "timestamp"
+        nullable: false
+  # SEC-TENANT-01: physical partitioning per tenant at storage layer.
+  partition:
+    byTenant: true
+  # SLO/SLA contract published to the catalog (hard rule 9 observability).
+  sla:
+    availability: "99.9%"
+    freshness: "P1D"        # max staleness = 1 day (ISO-8601 duration)
+    latencyP99Ms: 500

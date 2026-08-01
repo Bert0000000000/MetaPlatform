@@ -1,0 +1,34 @@
+# D2 v2: DataJob CRD
+# A DataJob is a scheduled data pipeline that consumes input datasets
+# and produces output datasets. Each run emits an OpenLineage event
+# to Marquez (D1 integration), which DataHub ingests (D4 sync).
+#
+# Per ADR-0016 §3.2 (D2 scope) + SEC-TENANT-01 hard rule 3:
+#   - tenantId is mandatory; cross-tenant jobs are rejected at admission.
+#   - lineage.marquezJob links the job back to the D1 lineage graph.
+apiVersion: datahub.metaplatform.io/v1
+kind: DataJob
+metadata:
+  name: example-job
+  namespace: metaplatform
+  labels:
+    app.kubernetes.io/managed-by: datahub-operator
+    app.kubernetes.io/part-of: metaplatform
+spec:
+  # Per-tenant scoping (SEC-TENANT-01 hard rule 3).
+  tenantId: "acme"
+  domain: "iam"
+  owner: "platform-messaging@metaplatform.local"
+  version: "1.0.0"
+  # Input datasets consumed by this job (refs to Dataset CRs).
+  inputs:
+    - "iam.user"
+    - "iam.role"
+  # Output datasets produced by this job (refs to Dataset CRs).
+  outputs:
+    - "iam.user_enriched"
+  # Cron schedule (UTC). Default pulled from values.dataJobs.defaultSchedule.
+  schedule: "0 2 * * *"
+  # D1 integration: every run emits an OpenLineage event for this Marquez job.
+  lineage:
+    marquezJob: "iam.user_enriched.etl"
