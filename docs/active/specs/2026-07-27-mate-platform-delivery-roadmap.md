@@ -1,6 +1,6 @@
 # Mate Platform 交付版本计划（Delivery Roadmap）
 
-> **版本**：v1.5 | **日期**：2026-08-01 | **状态**：v3.1 增量收口中（17/17 域接入 + G2/G3/G4/G7 + TD-5/TD-6 Accepted）
+> **版本**：v2.0 | **日期**：2026-08-02 | **状态**：v3.1 增量收口完成（17/17 域接入 + G1-G8 + D0-D8 + TD-1~7 Accepted）
 >
 > **配套文档**：
 > - 技术架构：`2026-07-27-mate-platform-technical-architecture.md`（v3.0 Plan D）
@@ -67,7 +67,7 @@
 | M5 蓝绿上线 | 2026-12-22 | 🟡 准备中 | TD-5 SQL 化收口完成;剩 G6 RLS 迁移 + G8 旧 infra 清理 + 真实 staging 演练 | 无 |
 
 **v3.0 GA 状态(2026-07-30)**:**9/9 核心批次 + DATA-D0-D8 全部 Accepted**,§13 硬规则 1-13 通过 pre-commit + CI + 测试三层闭环。
-**v3.1 增量状态(2026-08-01)**:17/17 域接入完成;G2/G3/G4/G5/G6/G7 Accepted;TD-5/TD-6 收口;**待 G1 / G8 收口**(G6 已是 Accepted,与 PROGRAM-BOARD 同步)。
+**v3.1 增量状态(2026-08-02)**:17/17 域接入完成;G2/G3/G4/G5/G6/G7/G8 **全部 Accepted**(8/2 G8 100% 闭环:3 目录 + 2 空目录已删);TD-5/TD-6 收口;**仅 G1(kafka sub-chart 选型)待收口**。
 
 ---
 

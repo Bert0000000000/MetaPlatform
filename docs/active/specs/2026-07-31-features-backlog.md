@@ -310,3 +310,4 @@
 | 2026-07-30 | v1.0 初版(spec 214 / 代码 89 / 未实现 125,8/17 接入) | TRAE 盘点 |
 | **2026-07-31** | **v1.1**:**P0-CLOSE + P2-W2 已落地**:11/17 接入(dashboard/apphub/arch/copilot 完成);未实现 125 → 55;5 步合规矩阵更新 | TRAE 盘点 |
 | **2026-08-01** | **v1.2**:**D1 lineage e2e + copilot 35/35 + A2A 真实 + LLM 真实 provider + G3 Outbox DDL + G7 SealedSecret runbook + DATA helm 真实化**;17/17 域 5 步合规;1500 tests / 0 failed | TRAE 盘点 |
+| **2026-08-02** | **v2.0**:**v3.1 最终收口对账**——G1-G8 全 Accepted、DATA-D0-D8 全 Accepted(含 D2-D8 v2 扩展)、17/17 域 5 步合规、SPEC 命中 214/214、TD-1~7 清零、Alembic 0001-0012、~2100+ tests;详见 `evidence/V3.1-FINAL-STATUS.md` | TRAE 盘点 |
