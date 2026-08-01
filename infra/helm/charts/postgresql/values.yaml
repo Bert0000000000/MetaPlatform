@@ -1,0 +1,73 @@
+# =============================================================================
+# PostgreSQL sub-chart values
+# =============================================================================
+# Closes the TD-5 persistence upgrade placeholder. Production deployments
+# use PVC (values-production.yaml); local dev uses emptyDir
+# (values-local.yaml).  Credentials are NEVER inline — always via
+# SealedSecret / ExternalSecret (hard rule 12).
+# =============================================================================
+
+# Force the service DNS name to "postgresql" so MATE_DB_URL resolves:
+#   postgresql://meta:$(PASSWORD)@postgresql:5432/metaplatform
+fullnameOverride: postgresql
+
+image:
+  repository: postgres
+  tag: "16"
+  pullPolicy: IfNotPresent
+
+replicaCount: 1   # 2 in production per values-production.yaml
+
+database:
+  name: metaplatform
+  username: meta
+  # Secret holding the PostgreSQL password. Must be provisioned via
+  # SealedSecret or ExternalSecret before install (hard rule 12).
+  existingSecretName: postgresql-credentials
+  existingSecretKey: password
+
+# Connection pool parameters injected via ConfigMap (non-sensitive).
+# Consumed by SQLAlchemy create_engine(pool_size=, max_overflow=).
+pool:
+  size: 10
+  maxOverflow: 20
+
+persistence:
+  enabled: false        # true in production (PVC); false = emptyDir
+  size: 50Gi
+  storageClass: ""      # "" = cluster default StorageClass
+
+service:
+  type: ClusterIP
+  port: 5432
+
+resources:
+  requests:
+    cpu: 250m
+    memory: 256Mi
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+
+probes:
+  readiness:
+    initialDelaySeconds: 15
+    periodSeconds: 10
+    timeoutSeconds: 5
+  liveness:
+    initialDelaySeconds: 30
+    periodSeconds: 30
+    timeoutSeconds: 5
+
+networkPolicy:
+  enabled: true
+  # Namespaces allowed to reach PostgreSQL on 5432 (hard rule 13).
+  allowedIngressNamespaces:
+    - metaplatform
+    - api-gateway
+
+# SealedSecret placeholder toggle. When true, the chart renders a
+# SealedSecret template with placeholder encryptedData that MUST be
+# replaced with real kubeseal output before applying to a cluster.
+sealedSecret:
+  enabled: true

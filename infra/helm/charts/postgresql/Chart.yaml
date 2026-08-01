@@ -1,0 +1,27 @@
+apiVersion: v2
+name: postgresql
+description: |
+  PostgreSQL 16 for MetaPlatform. StatefulSet with PVC persistence,
+  ConfigMap-driven connection pool parameters, and SealedSecret-based
+  credentials. Enforces production-readiness 13 hard rules:
+    - Rule 5  (production profile forbids SQLite fallback)
+    - Rule 12 (Secret must not enter git; SealedSecret placeholder)
+    - Rule 13 (NetworkPolicy default-deny, platform namespace only)
+
+type: application
+version: 0.1.0
+appVersion: "16"
+
+keywords:
+  - postgresql
+  - database
+  - persistence
+  - statefulset
+
+maintainers:
+  - name: MetaPlatform Platform Owner
+    email: platform@metaplatform.local
+
+annotations:
+  category: Database
+  licenses: Apache-2.0

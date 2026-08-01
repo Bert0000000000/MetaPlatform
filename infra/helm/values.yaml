@@ -191,7 +191,7 @@ service-templates:
 # External chart switches (placeholders; Bitnami/Confluent charts to be added
 # as umbrella dependencies once finalized).
 # -----------------------------------------------------------------------------
-postgres:
+postgresql:
   enabled: false
 redis:
   enabled: false

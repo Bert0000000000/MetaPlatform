@@ -33,6 +33,9 @@ dependencies:
   - name: otel-collector
     version: 0.1.0
     condition: otel-collector.enabled
+  - name: postgresql
+    version: 0.1.0
+    condition: postgresql.enabled
   - name: keycloak
     version: 0.1.0
     condition: keycloak.enabled

@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "postgresql.fullname" . }}
+  labels:
+    {{- include "postgresql.labels" . | nindent 4 }}
+data:
+  # Non-sensitive database configuration (hard rule 12: only secrets
+  # are kept out of git; these values are safe to commit).
+  database-name: {{ .Values.database.name | quote }}
+  database-user: {{ .Values.database.username | quote }}
+
+  # SQLAlchemy connection pool parameters. Consumed by
+  # mate-platform-backend create_engine(pool_size=, max_overflow=).
+  pool-size: {{ .Values.pool.size | quote }}
+  max-overflow: {{ .Values.pool.maxOverflow | quote }}

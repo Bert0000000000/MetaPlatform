@@ -22,8 +22,22 @@ keycloak:
     hosts:
       - host: keycloak.localhost
         paths: [/]
-postgres:
+postgresql:
   enabled: true
+  fullnameOverride: postgresql
+  replicaCount: 1
+  persistence:
+    enabled: false   # emptyDir for local dev — data is ephemeral
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  pool:
+    size: 5
+    maxOverflow: 10
 redis:
   enabled: true
 kafka:
