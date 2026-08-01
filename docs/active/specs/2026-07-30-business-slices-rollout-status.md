@@ -1,15 +1,15 @@
 # BUSINESS-SLICES 17 域接入进度(更新版)
 
-> 版本:v1.3 · 2026-07-31
+> 版本:v1.4 · 2026-08-01
 > 关联:ADR-0014 17 域集成模式
 > 配套:`docs/active/specs/2026-07-30-per-app-integration-checklist.md`
-> 配套:`docs/active/specs/2026-07-31-features-backlog.md` v1.1(功能维度盘点)
-> 配套:`docs/active/specs/2026-07-31-backend-impl-backlog.md` v1.1(接口维度详单)
-> 本次更新:P0-CLOSE(7/30 收尾)+ P2-W2(7/31)落地 4 域,17 域进度 8/17 → 11/17
+> 配套:`docs/active/specs/2026-07-31-features-backlog.md` v1.2(功能维度盘点)
+> 配套:`docs/active/specs/2026-07-31-backend-impl-backlog.md` v1.7(接口维度详单)
+> 本次更新:P3-W7 copilot A2A/LLM 真实(commit `4878eb82`),copilot 35/35 全完成
 
 ---
 
-## 1. 进度总览(v1.3)
+## 1. 进度总览(v1.4)
 
 | P | 域 | 状态 | 5 步完成 | 接入 commit / 证据 |
 |---|---|---|---|---|
@@ -25,7 +25,7 @@
 | **P2** | `dashboard` (mate-tech-iam) | ✅ Done | 5 / 5 | P2-W2 PR#11(7/31):9 个 PUT 补齐 + OutboxWriter 真实集成 |
 | **P2** | `apphub` (mate-app-hub) | ✅ Done | 5 / 5 | P2-W2 PR#12(7/31):新建包 + 5 endpoint + in-memory 仓库 |
 | **P2** | `arch` (mate-app-arch) | 🟡 27/29 | 5 / 5 | P2-W2 PR#13(7/31):新建包 + 27 endpoint + BFS 影响分析;**剩 2 endpoint 待补** |
-| **P2** | `copilot` (mate-app-copilot) | 🟡 32/35 | 5 / 5 | P2-W2 PR#14(7/31):新建包 + 32 endpoint + SQL/代码/NLQ/调度/Action;**剩 3 endpoint + A2A 真实 + LLM 真实 stub** |
+| **P2** | `copilot` (mate-app-copilot) | ✅ Done 35/35 | 5 / 5 | P2-W2 PR#14(7/31)→ P2-W4 PR#16 补 3 endpoint → **P3-W7 commit `4878eb82` A2A 真实 + LLM 真实 provider** |
 | P2 | `dw` | ⏳ 待建包 | — | 15 GET endpoint |
 | P2 | `data / etl / metrics / scheduler` | ⏳ 数据平台控制面挂载 | — | DATA-D0-D8 已落地,30 endpoint 待挂 |
 | P2 | `a2a` | 🟡 部分 | — | `/api/v1/a2a/*` 2 endpoint 独立未做;`copilot/a2a/*` 已 stub |
@@ -55,7 +55,7 @@
 |---|---|---|---|---|
 | `apphub` | ✅ | ✅ 5/5 | ✅ | P2-W2 完整 |
 | `arch` | ✅ | 🟡 27/29 | ✅ | P2-W2 落地;2 endpoint 待补 |
-| `copilot` | ✅ | 🟡 32/35 | ✅ | P2-W2 落地;3 endpoint + A2A + LLM 真实 stub 待 P2-W3 / P2-W5 |
+| `copilot` | ✅ | ✅ 35/35 | ✅ | P2-W2 落地 → P2-W4 补 3 → P3-W7 A2A 真实 + LLM 真实 provider;**35/35 全完成** |
 | `dashboard` | ✅ | ✅ 38/38 | ✅ | P2-W2 完整 |
 | `dw` | ⏳ | 🔴 | ⏳ | 15 GET;待 P1 启动 |
 | `data` | 🟡 模块在 | 🔴 HTTP 未挂 | ⏳ | DATA-D0-D8 落地;待数据平台控制面挂载 |
@@ -73,7 +73,7 @@
 
 ---
 
-## 4. 累计测试(7/31)
+## 4. 累计测试(8/1)
 
 | Suite | Pass |
 |---|---|
@@ -88,17 +88,22 @@
 | mate-tech-ont | 7 |
 | mate-app-hub | 9(P2-W2 新) |
 | mate-app-arch | 9(P2-W2 新) |
-| mate-app-copilot | 13(P2-W2 新) |
+| mate-app-copilot | 13(P2-W2)+ 6(P2-W4)+ 18(P3-W7 A2A/LLM 真实) |
+| mate-app-wfe | 10(P2-W5 新) |
+| mate-tech-dw | 23(P2-W3 新) |
+| mate-tech-data | 28(P2-W6 新) |
+| mate-tech-etl + metrics + scheduler | 56(P2-W7 新) |
 | mate-tech-iam(dashboard) | 62 dashboard tests(P2-W2 新) |
-| infra (PLATFORM-K8S-01 + GA) | 152 |
-| **Total on main** | **440+**(从 330+ → 440+) |
+| mate-tech-db | 23(G3 outbox migration) |
+| infra (PLATFORM-K8S-01 + GA + D1 lineage + DATA helm) | 278 |
+| **Total** | **1500 passed / 0 failed**(1222 后端 + 278 infra) |
 
 ---
 
 ## 5. 关联文档
 
-- `docs/active/specs/2026-07-31-features-backlog.md` v1.1 — 功能维度盘点
-- `docs/active/specs/2026-07-31-backend-impl-backlog.md` v1.1 — 接口维度详单
+- `docs/active/specs/2026-07-31-features-backlog.md` v1.2 — 功能维度盘点
+- `docs/active/specs/2026-07-31-backend-impl-backlog.md` v1.7 — 接口维度详单
 - `docs/active/specs/2026-07-27-mate-platform-delivery-roadmap.md` v1.3 — 主 Roadmap(附录 B)
 - `docs/active/specs/2026-07-30-per-app-integration-checklist.md` v1.0 — 5 步模式
 - `docs/active/delivery/evidence/P0-CLOSE-ACCEPTANCE.md`(7/30 收尾)
@@ -115,3 +120,4 @@
 | 2026-07-30 | v1.1 P1 wave 1(msg + obs) | TRAE 盘点 |
 | 2026-07-30 | v1.2 P2 wave 1(ont,唯一有包代码的 P2 域) | TRAE 盘点 |
 | **2026-07-31** | **v1.3**:**P0-CLOSE + P2-W2 落地**:11/17 接入;新增 4 域(arch/copilot/dashboard/apphub)已建包;累计测试 440+ | TRAE 盘点 |
+| **2026-08-01** | **v1.4**:**P3-W7 copilot A2A/LLM 真实**(commit `4878eb82`):copilot 🟡 32/35 → ✅ 35/35 Done;A2A stub 501 → 真实 TD-4 闭环;LLM stub → 真实 provider TD-6 闭环;累计测试 1500 / 0 failed | TRAE 盘点 |

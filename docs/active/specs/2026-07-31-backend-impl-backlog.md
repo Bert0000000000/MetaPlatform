@@ -1,6 +1,6 @@
 # 后端接口未实现开发清单
 
-> 版本:v1.6 · 2026-08-01(17 域接入收口)
+> 版本:v1.7 · 2026-08-01(17 域接入收口 + copilot A2A/LLM 真实)
 > 数据源:`mate-platform-backend/contracts/openapi/generated/bundled.yaml`(252,516 bytes,214 个 spec 路由)
 > 代码扫描:`mate-platform-backend/` 下所有 `.py` 文件(`.venv` / `node_modules` / `tests` / `.wheels` / `__pycache__` 已排除)
 > 关联:`docs/active/specs/2026-07-31-features-backlog.md` v1.1(功能维度)
@@ -10,6 +10,7 @@
 > 关联:`docs/active/delivery/evidence/P0-CLOSE-ACCEPTANCE.md`(7/30 收尾)
 > 关联:`docs/active/delivery/evidence/P2-W2-ACCEPTANCE.md`(7/31 主推进)
 > 关联:`docs/active/delivery/evidence/P2-W7-ACCEPTANCE.md`(8/1 17 域收口)
+> 关联:`docs/active/delivery/evidence/P3-W6-W7-ACCEPTANCE.md`(8/1 v3.1 增量 wave)
 
 ---
 
@@ -25,6 +26,13 @@
 | **17 域接入进度** | **17/17** ✅(8/17 → 11/17 → 12/17 → 14/17 → 15/17 → 17/17) |
 
 **17 / 17 域全部按 ADR-0014 5 步模式接入**(dashboard/apphub/arch/copilot/dw/a2a/wfe/data/etl/metrics/scheduler 全部完成)。
+
+**v1.7(8/1)vs v1.6更新**:
+- **copilot A2A / LLM 真实实现**(commit `4878eb82`,P3-W7):
+  - **A2A 真实**(TD-4 闭环):新建 `a2a/` 模块,`copilot/a2a/delegate` + `copilot/a2a/external` 从 stub 501 升级为真实 A2A 协议闭环
+  - **LLM 真实 provider**(TD-6 闭环):新建 `llm/base.py` + `openai_provider.py` + `anthropic_provider.py` + `factory.py`,从 stub 升级为真实 OpenAI / Anthropic provider
+  - copilot endpoint 35/35 全部完成(原 32/35,P3-W7 补齐 A2A 真实 + LLM 真实后的全部 endpoint)
+- **全后端回归**:1500 passed / 0 failed(1222 后端 + 278 infra)
 
 **v1.6(8/1)vs v1.5更新**:
 - **P2-W7 PR#19 完成**:新建 mate-tech-etl + mate-tech-metrics + mate-tech-scheduler 三包,24 endpoint(etl 8 + metrics 8 + scheduler 8)
@@ -93,7 +101,7 @@
 - **状态**:**已完成**(P2-W4 补齐 3 endpoint:actions/execute + generate/process + scheduling/templates)
 - **改动**(P2-W4):`api/app.py` 新增 `POST /actions/execute`(body 取 action_id/action_name,emit outbox event)+ `GET /generate/process`(分页,复用 list_plans)+ `GET /scheduling/templates`(分页,复用 list_templates)+ `_paginate` helper
 - **测试**(P2-W4):3 happy-path + 3 tenant(isolation + scoped + no-tenant 400)= 6 新增 tests pass
-- **A2A / LLM 真实实现**:TD-4 已闭环(P2-W3);TD-6 留 P2-W5
+- **A2A / LLM 真实实现**:TD-4 已闭环(P2-W3)→ P3-W7 A2A 真实协议闭环(commit `4878eb82`);TD-6 已闭环(P3-W7,LLM 真实 provider OpenAI / Anthropic 落地,commit `4878eb82`)
 
 ---
 
@@ -202,13 +210,14 @@
 
 ## 8. 关联文档
 
-- `docs/active/specs/2026-07-31-features-backlog.md` v1.1 — 功能维度盘点
+- `docs/active/specs/2026-07-31-features-backlog.md` v1.2 — 功能维度盘点
 - `docs/active/specs/2026-07-27-mate-platform-delivery-roadmap.md` v1.3 — 主 Roadmap(附录 B)
-- `docs/active/specs/2026-07-30-business-slices-rollout-status.md` v1.2 — 17 域接入进度
+- `docs/active/specs/2026-07-30-business-slices-rollout-status.md` v1.4 — 17 域接入进度
 - `docs/active/specs/2026-07-30-per-app-integration-checklist.md` v1.0 — 5 步模式
 - `docs/active/decisions/ADR-0014-tech-services-integration.md` — 集成模式决策
 - `docs/active/delivery/evidence/P0-CLOSE-ACCEPTANCE.md` — P0-CLOSE 收尾
 - `docs/active/delivery/evidence/P2-W2-ACCEPTANCE.md` — P2-W2 主推进
+- `docs/active/delivery/evidence/P3-W6-W7-ACCEPTANCE.md` — P3-W6/W7 v3.1 增量 wave
 
 ---
 
@@ -222,3 +231,5 @@
 | **2026-08-01** | **v1.3**:**P2-W4 PR#16 已落地**:arch 补 4 endpoint + copilot 补 3 endpoint;未实现 40 → 33;arch 31/31 + copilot 35/35 全通 | TRAE 盘点 |
 | **2026-08-01** | **v1.4**:**P2-W5 PR#17 已落地**:a2a 补 2 + wfe 新建包 2;未实现 33 → 29;17 域 12/17 → 14/17 | TRAE 盘点 |
 | **2026-08-01** | **v1.5**:**P2-W6 PR#18 已落地**:新建 mate-tech-data 包,data 域 15 endpoint;未实现 29 → 14;17 域 14/17 → 15/17 | TRAE 盘点 |
+| **2026-08-01** | **v1.6**:**P2-W7 PR#19 已落地**:etl + metrics + scheduler 三包 24 endpoint;未实现 14 → 0;17 域 15/17 → 17/17 收口 | TRAE 盘点 |
+| **2026-08-01** | **v1.7**:**P3-W7 copilot A2A/LLM 真实**(commit `4878eb82`):A2A stub 501 → 真实 TD-4 闭环;LLM stub → 真实 provider TD-6 闭环(OpenAI/Anthropic);copilot 35/35 全完成;1500 tests / 0 failed | TRAE 盘点 |

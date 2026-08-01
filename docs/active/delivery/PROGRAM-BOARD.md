@@ -1,6 +1,6 @@
 # Mate Platform 交付项目计划板（Program Board）
 
-> 更新时间：2026-07-31（含 v3.1 增量 sub-batch + PR 治理状态；P2 W2 Accepted）
+> 更新时间：2026-08-01（含 v3.1 增量 sub-batch + P3-W6/W7 wave + PR 治理状态；G3/G7 Accepted）
 > 本表跟踪各交付批次在契约、代码、测试、运行时和验收证据上的当前状态。
 
 ## v3.0 GA 状态（9/9 核心 + D0-D8 全部 Accepted）
@@ -44,16 +44,30 @@
 
 ### Pending — GA 硬规则收口（pre-GA）
 
-| # | 项 | 接力 | 来源 |
-|---|---|---|---|
-| G1 | kafka sub-chart 落地（Bitnami/Confluent chart 选型） | PLATFORM-EVENT-01 | 多批次依赖 |
-| G2 | pre-commit raw-SQL + secret 扫描（gitleaks） | GA-ACCEPTANCE | §13 硬规则 6 + 12 |
-| G3 | Outbox DDL 迁移（`CREATE TABLE outbox_event`）| TECH-SERVICES 接力 | §13 硬规则 9 |
-| G4 | 真实 K8s 集成 e2e（kind/staging 集群）| PLATFORM-K8S-01 | §13 硬规则 8 |
-| G5 | per-service `security:` 段补齐（17 域 oasdiff） | 每域接入时 | SEC-IAM-01 |
-| G6 | 已有表 `tenant_id` 回填 + RLS 迁移 | PLATFORM-EVENT-01 | SEC-TENANT-01 |
-| G7 | SealedSecrets 主私钥异地备份 runbook | SEC-IAM-01 | ADR-0010 §4.3 |
-| G8 | 清理 main 上旧 `infra/`（otel/prometheus/grafana/keycloak/traefik/lightrag/promtail） | PLATFORM-K8S-01 | docker-compose 时代残留 |
+| # | 项 | 接力 | 来源 | 状态 |
+|---|---|---|---|---|
+| G1 | kafka sub-chart 落地（Bitnami/Confluent chart 选型） | PLATFORM-EVENT-01 | 多批次依赖 | In Progress |
+| G2 | pre-commit raw-SQL + secret 扫描（gitleaks） | GA-ACCEPTANCE | §13 硬规则 6 + 12 | In Progress |
+| **G3** | **Outbox DDL 迁移（`CREATE TABLE outbox_event`）** | TECH-SERVICES 接力 | §13 硬规则 9 | **Accepted** ✅（commit `85f4df75`，Alembic 0007 + 6 tests） |
+| G4 | 真实 K8s 集成 e2e（kind/staging 集群）| PLATFORM-K8S-01 | §13 硬规则 8 | Not Started |
+| G5 | per-service `security:` 段补齐（17 域 oasdiff） | 每域接入时 | SEC-IAM-01 | In Progress |
+| G6 | 已有表 `tenant_id` 回填 + RLS 迁移 | PLATFORM-EVENT-01 | SEC-TENANT-01 | Not Started |
+| **G7** | **SealedSecrets 主私钥异地备份 runbook** | SEC-IAM-01 | ADR-0010 §4.3 | **Accepted** ✅（commit `85f4df75`，2 runbook 文档） |
+| G8 | 清理 main 上旧 `infra/`（otel/prometheus/grafana/keycloak/traefik/lightrag/promtail） | PLATFORM-K8S-01 | docker-compose 时代残留 | Not Started |
+
+### P3-W6/W7 v3.1 增量 wave（2026-08-01）
+
+| commit | 内容 | 测试 |
+|---|---|---:|
+| `bae2ec63` | **D1 lineage e2e** — 跨域 trace chain（msg→obs→dw）+ 租户隔离断言 + `LineageHints` 自动注入 | 6 e2e tests（infra）|
+| `d799b956` | **P3-W6 并行 wave 收口** — business + features + engines + G8 旧 infra 清理 | 1292 tests（全后端回归）|
+| `85f4df75` | **G3 Outbox DDL**（Alembic 0007，`outbox_event` 11 字段 + 5 索引）+ **G7 SealedSecrets 备份 runbook**（2 文档） | 6 tests（G3）+ 23 mate-tech-db 回归 |
+| `04ce4780` | **DATA helm subcharts 真实化** — debezium / marquez / datahub / ge 4 个 sub-chart 从占位升级为真实 values | 46 tests（infra helm） |
+| `4878eb82` | **copilot 补 3 endpoint + A2A 真实（TD-4）+ LLM 真实 provider（TD-6）** — OpenAI / Anthropic provider 落地；copilot 35/35 全完成 | 18 tests + 1 test 修复 |
+
+**测试总数演进**：1292（P3-W6）→ 1298（D1 +6）→ 1304（G3 +6）→ 1350（DATA helm +46）→ 1370（copilot/a2a/llmgw +20）
+
+**验收证据**：`evidence/P3-W6-W7-ACCEPTANCE.md`（1500 passed / 0 failed = 1222 后端 + 278 infra）
 
 ## 数据平台（DATA-D0-D8）—— v3.0 GA 硬前置已闭环
 
@@ -130,3 +144,4 @@ DATA-D0-D8 全部 8 阶段 Accepted（共 45/45 tests pass）。后续 sub-batch
 | 2026-07-30 | 初版 v3.0 GA 收口（39 行） | 8/8 核心批次 + D0-D8 全部 Accepted |
 | 2026-07-30 | v3.1 增量 + PR 治理（本文） | 与 git 状态同步；增加 v3.1 sub-batch / GA 收口 / PR 治理 3 个章节 |
 | 2026-07-31 | P2 W2 → Accepted | dashboard / apphub / arch / copilot 4 域 · 99 endpoints · 93 tests · PR #12 `833a809d` |
+| 2026-08-01 | P3-W6/W7 v3.1 增量 wave + G3/G7 → Accepted | D1 lineage e2e + G3 Outbox DDL + G7 SealedSecret runbook + DATA helm 真实化 + copilot 35/35 + A2A/LLM 真实；1500 tests / 0 failed |

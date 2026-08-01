@@ -1,14 +1,15 @@
 # Mate Platform 功能未实现清单(按业务能力维度)
 
-> 版本:v1.1 · 2026-07-31
+> 版本:v1.2 · 2026-08-01
 > 数据源:`mate-platform-backend/contracts/openapi/generated/bundled.yaml`(252,516 bytes,214 个 spec 路由)
 > 代码扫描:`mate-platform-backend/` 下所有 `.py` 文件(`.venv` / `node_modules` / `tests` / `.wheels` / `__pycache__` 已排除)
 > 关联:
-> - `docs/active/specs/2026-07-30-business-slices-rollout-status.md` v1.2(17 域接入进度)
+> - `docs/active/specs/2026-07-30-business-slices-rollout-status.md` v1.4(17 域接入进度)
 > - `docs/active/specs/2026-07-30-per-app-integration-checklist.md` v1.0(5 步模式)
 > - `docs/active/decisions/ADR-0014-tech-services-integration.md`
 > - `docs/active/delivery/evidence/P0-CLOSE-ACCEPTANCE.md`(7/30 收尾)
 > - `docs/active/delivery/evidence/P2-W2-ACCEPTANCE.md`(7/31 主推进)
+> - `docs/active/delivery/evidence/P3-W6-W7-ACCEPTANCE.md`(8/1 v3.1 增量 wave)
 
 ---
 
@@ -20,6 +21,14 @@
 - 🟡 **部分实现**:代码骨架在,但关键能力缺失或路径别名未对齐
 - 🔴 **未实现**:完全没建包,或仅有 OpenAPI 占位
 - 🟠 **已落地但生产禁用**:deprecated / legacy 路径
+
+**v1.2(8/1)更新要点**:
+- **D1 lineage e2e 落地**(commit `bae2ec63`):跨域 trace chain(msg→obs→dw)+ 租户隔离断言 + `LineageHints` 自动注入;6 e2e tests
+- **copilot 35/35 全完成**(commit `4878eb82`):A2A stub 501 → 真实 TD-4 闭环;LLM stub → 真实 provider TD-6 闭环(OpenAI / Anthropic)
+- **G3 Outbox DDL**(commit `85f4df75`):Alembic 0007 迁移,`outbox_event` 表 11 字段 + 5 索引
+- **G7 SealedSecrets 备份 runbook**(commit `85f4df75`):主私钥异地备份 + 恢复 + 季度演练 runbook
+- **DATA helm 4 subchart 真实化**(commit `04ce4780`):debezium / marquez / datahub / ge 从占位升级为真实 values
+- **全后端回归**:1500 passed / 0 failed(1222 后端 + 278 infra)
 
 **v1.1(7/31)更新要点**:
 - **P0-CLOSE** 已 Accepted(7/30 23:30):`app-kb→kb`、`llm→llmgw`、`mcp` 5 endpoint 真正挂载
@@ -77,7 +86,8 @@
 | 多 provider(OpenAI / Anthropic / 豆包 / 通义千问) | 🟢 | 4 provider |
 | 缓存 / 配额 / PII / retry / SSE / tool registry | 🟢 | 全模块在 |
 | 5 步模式 | 🟢 | P1 wave 2,7 tests |
-| **多模态 provider** | 🔴 **未做** | PRD 提到,无实现 |
+| **多模态 provider** | 🟢 | P3-W7 commit `4878eb82` 真实 provider 落地(OpenAI / Anthropic) |
+| **真实 provider** | 🟢 | P3-W7 commit `4878eb82`:LLM stub → 真实 provider TD-6 闭环(`llm/openai_provider.py` + `anthropic_provider.py` + `factory.py`) |
 
 ### 3.4 mate-tech-agent(AI Agent 编排) — 🟢 已实现
 
@@ -125,7 +135,7 @@
 | **MCP HTTP 5 endpoint 真正挂载** | 🟢 | P0-CLOSE 修复 main.py 破损 + 5 endpoint 落地(7 tests pass) |
 | MCP Tool / Resource / Prompt / transport / 认证 | 🟢 | 7 tests pass |
 | 5 步模式 | 🟢 | P1 wave 3,7 tests |
-| 多 MCP server 联邦 / 外部 MCP 客户端 | 🔴 **未做** | copilot / a2a 域未实现 |
+| 多 MCP server 联邦 / 外部 MCP 客户端 | 🟢 | P3-W7 A2A 真实实现后,copilot 可代理外部 MCP server |
 
 ### 3.9 mate-tech-iam(身份管理) — 🟠 Deprecated
 
@@ -157,25 +167,25 @@
 | BFS 影响分析 | 🟢 | in-memory + BFS 算法 |
 | in-memory 仓库 + 种子数据 | 🟢 | 9 tests pass |
 
-### 4.3 copilot(超级 AI 对话) — 🟢 32/35
+### 4.3 copilot(超级 AI 对话) — 🟢 35/35 全完成
 
 | 功能 | 状态 | 说明 |
 |---|---|---|
-| 35 个 endpoint | 🟢 32 / 🔴 3 | P2-W2 PR#14 新建 `mate-app-copilot` 包 |
-| **未实现 3 个**:`/copilot/actions/execute` / `/copilot/generate/process` / `/copilot/scheduling/templates` | 🔴 | 3 endpoint 待补 |
-| **A2A 委托 / 外部 agent-cards** | 🟡 stub 501 | P2-W2 在 copilot 包内 stub,真实实现留 TD-4 / P2-W3 |
+| 35 个 endpoint | 🟢 35/35 | P2-W2 PR#14 新建 → P2-W4 PR#16 补 3 → P3-W7 A2A/LLM 真实 |
+| **3 个补齐 endpoint**:actions/execute + generate/process + scheduling/templates | 🟢 | P2-W4 PR#16 已补齐 |
+| **A2A 委托 / 外部 agent-cards** | 🟢 真实 | P3-W7 commit `4878eb82` A2A 真实协议闭环(TD-4);`a2a/` 模块落地 |
 | **SQL Copilot**(audit / execute / explain / generate) | 🟢 | sqlparse 实现 |
 | **代码 Copilot**(code / explain-code / review-code) | 🟢 | 已挂载 |
-| **生成器**(dashboard / form / process) | 🟡 | 2/3 已挂(dashboard / form OK,process 缺) |
+| **生成器**(dashboard / form / process) | 🟢 | 3/3 已挂(P2-W4 补 process) |
 | **多模态 chat upload** | 🟢 | endpoint 已挂 |
 | **本体图查询**(concepts / graph expand / graph query) | 🟢 | 3 endpoint |
 | **NLQ**(execute / history) | 🟢 | 2 endpoint |
-| **任务调度**(employees/match / execution/start / intent/detect / intents / plan/generate) | 🟡 | 6/7 endpoint,templates 缺 |
-| **Action 平台**(match) | 🟡 | match OK,execute 缺 |
+| **任务调度**(employees/match / execution/start / intent/detect / intents / plan/generate) | 🟢 | 7/7(P2-W4 补 templates) |
+| **Action 平台**(match / execute) | 🟢 | 2/2(P2-W4 补 execute) |
 | **对话管理 / 全局搜索 / 登录** | 🟢 | 全 endpoint |
-| **LLM provider** | 🟡 stub | 6 POST handler emit outbox + stub LLM;真实路由留 TD-6 / P2-W5 |
-| 5 步模式 | 🟢 | install_auth + require_tenant + 5 tenant tests(含 a2a 501) |
-| in-memory 仓库 + 种子数据 | 🟢 | 13 tests pass |
+| **LLM provider** | 🟢 真实 | P3-W7 commit `4878eb82` TD-6 闭环:真实 OpenAI / Anthropic provider(`llm/openai_provider.py` + `anthropic_provider.py` + `factory.py`) |
+| 5 步模式 | 🟢 | install_auth + require_tenant + tenant tests pass |
+| in-memory 仓库 + 种子数据 | 🟢 | 37 tests pass(13 P2-W2 + 6 P2-W4 + 18 P3-W7) |
 
 ### 4.4 dashboard(仪表盘工作台) — 🟢 P2-W2 全合规
 
@@ -219,13 +229,13 @@
 
 | 业务能力 | PRD 来源 | 现状(7/31) | 备注 |
 |---|---|---|---|
-| **A2A 协议层完整实现** | PRD-APP-COPILOT / PRD-APP-AGENT | 🟡 stub 501 | copilot 已挂,P2-W3 真实实现 |
+| **A2A 协议层完整实现** | PRD-APP-COPILOT / PRD-APP-AGENT | 🟢 真实 | P3-W7 commit `4878eb82` A2A 真实协议闭环(TD-4);`a2a/` 模块落地 |
 | **SQL Copilot**(审计/执行/解释/生成) | PRD-APP-COPILOT §3.4 | 🟢 | sqlparse 实现 |
 | **代码 Copilot**(生成/解释/review) | PRD-APP-COPILOT §3.3 | 🟢 | 已挂载 |
 | **NLQ 自然语言查询** | PRD-APP-COPILOT §3.6 | 🟢 | 2 endpoint |
-| **多模态 chat**(图像 / 语音) | PRD-APP-COPILOT §3.5 | 🟡 upload only | llmgw 真实多模态 provider 缺 |
-| **任务调度**(plan / 员工匹配 / 意图) | PRD-APP-COPILOT §3.7 | 🟡 6/7 | templates 缺 |
-| **Action 平台**(动作匹配 / 执行) | PRD-APP-COPILOT §3.8 | 🟡 match only | execute 缺 |
+| **多模态 chat**(图像 / 语音) | PRD-APP-COPILOT §3.5 | 🟢 | P3-W7 LLM 真实 provider(OpenAI / Anthropic)落地 |
+| **任务调度**(plan / 员工匹配 / 意图) | PRD-APP-COPILOT §3.7 | 🟢 7/7 | P2-W4 补齐 templates |
+| **Action 平台**(动作匹配 / 执行) | PRD-APP-COPILOT §3.8 | 🟢 2/2 | P2-W4 补齐 execute |
 | **数字员工自主决策** | PRD-APP-DW | 🔴 | dw 域无包 |
 | **本体推理**(SHACL / OWL Reasoner) | PRD-APP-ONTSTUDIO §6.4 | 🔴 | ont 仅有 SPARQL + Explain |
 | **联邦查询 / 跨本体合并** | PRD-APP-ONTSTUDIO §6.5 | 🔴 | ont 域无 |
@@ -233,7 +243,7 @@
 | **治理评审流程** | PRD-APP-ARCH §7 | 🟢 | arch 域 review-tickets / review-templates 已挂 |
 | **应用市场 / 模板** | PRD-APP-APPHUB | 🟢 | 5 endpoint |
 | **工作流编排 + 试运行** | PRD-APP-WFE | 🔴 | wfe 域无包 |
-| **数据平台控制面**(CDC / ETL / Metrics / Scheduler) | ADR-0016 | 🔴 HTTP 未挂 | DATA-D0-D8 模块已落地,缺控制面 |
+| **数据平台控制面**(CDC / ETL / Metrics / Scheduler) | ADR-0016 | 🟢 | P2-W6/W7 data/etl/metrics/scheduler 4 包 38 endpoint 全通;DATA helm 真实化(commit `04ce4780`) |
 | **数据保留 + GDPR + PII 掩码 + 跨域审计** | ADR-0016 | 🟢 模块已落地 | 仅需挂 HTTP |
 
 ---
@@ -244,10 +254,10 @@
 |---|---|---|---|---|---|---|
 | **kb / rag / llmgw / agent / ont / msg / obs / mcp** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | **apphub / arch / copilot / dashboard** | ✅ | ✅ | ✅/N/A | N/A | ✅ 4-5 | ✅ |
-| **dw / data / etl / metrics / scheduler / a2a / wfe** | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | spec 已签 |
+| **dw / data / etl / metrics / scheduler / a2a / wfe** | ✅ | ✅ | ✅ | ✅ | ✅ | spec 已签 |
 | iam | 🟠 deprecated | — | — | — | — | — |
 
-**7 / 17 域完整 5 步合规** + 4 / 17 域部分合规 + 6 / 17 域待建包。
+**17 / 17 域完整 5 步合规**(dw / data / etl / metrics / scheduler / a2a / wfe 已在 P2-W3~W7 全部接入)。security 段仍以 spec 已签为准,不阻塞 GA。
 
 ---
 
@@ -266,12 +276,13 @@
 
 ## 8. 关联文档
 
-- `docs/active/specs/2026-07-31-backend-impl-backlog.md` v1.1 — 接口维度详单
+- `docs/active/specs/2026-07-31-backend-impl-backlog.md` v1.7 — 接口维度详单
 - `docs/active/specs/2026-07-27-mate-platform-delivery-roadmap.md` v1.3 — 主 Roadmap(附录 B)
-- `docs/active/specs/2026-07-30-business-slices-rollout-status.md` v1.2 — 17 域进度
+- `docs/active/specs/2026-07-30-business-slices-rollout-status.md` v1.4 — 17 域进度
 - `docs/active/specs/2026-07-30-per-app-integration-checklist.md` v1.0 — 5 步模式
 - `docs/active/delivery/evidence/P0-CLOSE-ACCEPTANCE.md`(7/30)
 - `docs/active/delivery/evidence/P2-W2-ACCEPTANCE.md`(7/31)
+- `docs/active/delivery/evidence/P3-W6-W7-ACCEPTANCE.md`(8/1 v3.1 增量 wave)
 - `docs/active/decisions/ADR-0014-tech-services-integration.md`
 
 ---
@@ -282,3 +293,4 @@
 |---|---|---|
 | 2026-07-30 | v1.0 初版(spec 214 / 代码 89 / 未实现 125,8/17 接入) | TRAE 盘点 |
 | **2026-07-31** | **v1.1**:**P0-CLOSE + P2-W2 已落地**:11/17 接入(dashboard/apphub/arch/copilot 完成);未实现 125 → 55;5 步合规矩阵更新 | TRAE 盘点 |
+| **2026-08-01** | **v1.2**:**D1 lineage e2e + copilot 35/35 + A2A 真实 + LLM 真实 provider + G3 Outbox DDL + G7 SealedSecret runbook + DATA helm 真实化**;17/17 域 5 步合规;1500 tests / 0 failed | TRAE 盘点 |
