@@ -17,10 +17,6 @@ from typing import Any
 
 import sqlparse
 from fastapi import APIRouter, HTTPException, Query, Request
-from mate_app_a2a.repositories import (  # pyright: ignore[reportMissingImports]
-    create_delegation,
-    list_external_agents,
-)
 from mate_app_arch.repositories import (  # pyright: ignore[reportMissingImports]
     list_capability_tree,
     list_data_assets,
@@ -34,6 +30,8 @@ from mate_platform.messaging.outbox import InMemoryOutboxWriter
 from mate_platform.tenancy.context import TenantId
 from mate_platform.tenancy.guards import require_tenant
 
+from ..a2a.client import get_default_client as get_default_a2a_client
+from ..a2a.models import DelegationRequest
 from ..clients import AsyncCopilotClient
 from ..llm import stub_provider
 from ..repositories import (
@@ -164,38 +162,87 @@ async def auth_login(request: Request) -> dict[str, Any]:
 # --- A2A (2) ----------------------------------------------------------------
 @router.post("/a2a/delegate")
 async def a2a_delegate(request: Request) -> dict[str, Any]:
-    """Proxy A2A delegation to mate-app-a2a (in-process for P2-W3).
+    """Delegate a task to an A2A-compatible agent (TD-4 real implementation).
 
-    Accepts {target_agent_id, message, context} and creates a
-    delegation task in the a2a repository. Returns the task_id +
-    pending status. Emits copilot.a2a.delegated outbox event.
+    Accepts ``{target_agent_id, message, context}`` and dispatches
+    via the local ``InMemoryA2AClient``. The response carries the
+    ``task_id``, ``status`` (``completed`` / ``failed``), the agent's
+    ``result`` payload, and ``lineage_hints`` for cross-service
+    correlation. Unknown agents return 404 (``E_AGENT_NOT_FOUND``).
+
+    Emits ``copilot.a2a.delegated`` outbox event regardless of
+    outcome — the audit log captures both successful and failed
+    delegations.
     """
     tid = _tid(request)
     body = await request.json()
 
-    task = create_delegation(
-        tenant_id=tid,
-        target_agent_id=body.get("target_agent_id", ""),
-        message=body.get("message", ""),
-        context=body.get("context", {}),
+    target_agent_id = str(body.get("target_agent_id", ""))
+    message = str(body.get("message", ""))
+    context = body.get("context", {})
+    if not isinstance(context, dict):
+        context = {}
+    trace_id = getattr(request.state.ctx, "trace_id", "")
+
+    client = get_default_a2a_client()
+    result = await client.delegate(
+        DelegationRequest(
+            target_agent_id=target_agent_id,
+            message=message,
+            context=context,
+            tenant_id=tid,
+            trace_id=trace_id,
+        )
     )
+
+    if result.status == "failed" and result.error_code == "E_AGENT_NOT_FOUND":
+        # Surface unknown-agent as 404 so callers can distinguish
+        # routing failures from execution failures.
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "code": result.error_code,
+                "message": result.error_message,
+                "target_agent_id": target_agent_id,
+            },
+        )
+
     _emit(
         request,
         event_type="copilot.a2a.delegated",
-        aggregate_id=task.id,
-        payload={"target_agent_id": body.get("target_agent_id", "")},
+        aggregate_id=result.task_id,
+        payload={
+            "task_id": result.task_id,
+            "target_agent_id": target_agent_id,
+            "status": result.status,
+        },
         tenant_id=tid,
     )
-    return asdict(task)
+    resp = asdict(result)
+    # Backward-compat: expose `id` as an alias of `task_id` so
+    # existing clients that key off `body["id"]` keep working.
+    resp["id"] = result.task_id
+    return resp
 
 
 @router.get("/a2a/external")
-async def a2a_external(request: Request) -> dict[str, Any]:
-    """Proxy external agent listing to mate-app-a2a (in-process)."""
+async def a2a_external(
+    request: Request,
+    capability: str | None = Query(default=None),
+) -> dict[str, Any]:
+    """List external (federated) agent cards (TD-4 real implementation).
+
+    Returns cards from the local ``AgentCardRegistry``, optionally
+    filtered by ``capability`` (case-insensitive match against any
+    entry in the card's ``capabilities`` tuple). The registry is
+    tenant-scoped — cards from other tenants are never surfaced.
+    """
     tid = _tid(request)
 
-    items = list_external_agents(tid)
-    return {"items": [asdict(e) for e in items], "total": len(items)}
+    client = get_default_a2a_client()
+    cards = client.discover_agents(tid, capability=capability)
+    items = [asdict(c) for c in cards]
+    return {"items": items, "total": len(items)}
 
 
 # --- Actions (3) ------------------------------------------------------------

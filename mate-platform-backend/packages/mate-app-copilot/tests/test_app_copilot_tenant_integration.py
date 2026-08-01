@@ -96,14 +96,32 @@ def test_tenant_isolation_ok(fresh_app: TestClient) -> None:
 
 
 def test_a2a_delegate_proxies_to_a2a(fresh_app: TestClient) -> None:
-    """POST /a2a/delegate now proxies to mate-app-a2a (not 501).
+    """POST /a2a/delegate dispatches via local InMemoryA2AClient (not 501).
 
-    P2-W3: the 501 stub has been replaced with an in-process proxy
-    to mate_app_a2a.repositories.create_delegation.
+    P3-W6 TD-4: the 501 stub was replaced with an in-process
+    ``InMemoryA2AClient`` + ``AgentCardRegistry``. The test must
+    pre-register the target agent ("agent-rag") in the registry
+    before the delegation call — otherwise the handler returns 404
+    ``E_AGENT_NOT_FOUND`` (the documented contract).
     """
-    from mate_app_a2a.repositories import in_memory as a2a_repo
+    from mate_app_copilot.a2a.client import get_default_client
+    from mate_app_copilot.a2a.registry import AgentCardRegistry
+    from mate_app_copilot.a2a.models import AgentCard
 
-    a2a_repo.reset_store()
+    # Reset the default client's registry and register agent-rag
+    # for tenant-acme so the delegation can resolve the card.
+    client = get_default_client()
+    client.registry.reset()
+    client.registry.register(
+        AgentCard(
+            id="agent-rag",
+            tenant_id="tenant-acme",
+            name="RAG Agent",
+            description="Internal RAG retrieval agent",
+            endpoint="http://mate-tech-rag:8080/api/v1/rag/search",
+            capabilities=("retrieval", "summarization"),
+        )
+    )
 
     token = _token(tenant_id="tenant-acme")
     r = fresh_app.post(
@@ -117,11 +135,16 @@ def test_a2a_delegate_proxies_to_a2a(fresh_app: TestClient) -> None:
     )
     assert r.status_code == 200, r.text
     body = r.json()
-    assert body["status"] == "pending"
+    # InMemoryA2AClient executes synchronously → status is "completed"
+    # (not "pending", which was the old create_delegation contract).
+    assert body["status"] == "completed", body
     assert body["target_agent_id"] == "agent-rag"
     assert body["id"].startswith("task-")
+    # Result payload carries agent card metadata for lineage.
+    assert body["result"]["agent_name"] == "RAG Agent"
+    assert "tenant_id" in body["lineage_hints"]
 
-    a2a_repo.reset_store()
+    client.registry.reset()
 
 
 def test_new_get_endpoints_tenant_isolation(fresh_app: TestClient) -> None:
