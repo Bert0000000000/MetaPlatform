@@ -1,0 +1,126 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "datahub.fullname" . }}
+  labels:
+    {{- include "datahub.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "datahub.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "datahub.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: catalog
+      annotations:
+        # Roll the pod when the ConfigMap changes (backend URLs).
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+        - name: datahub-gms
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http-gms
+              containerPort: 8080
+              protocol: TCP
+          env:
+            # Neo4j graph backend (DataHub metadata graph).
+            - name: NEO4J_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "datahub.fullname" . }}
+                  key: neo4j-host
+            - name: NEO4J_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "datahub.fullname" . }}
+                  key: neo4j-port
+            - name: NEO4J_URI
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "datahub.fullname" . }}
+                  key: neo4j-uri
+            - name: NEO4J_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.backends.neo4j.existingSecret }}
+                  key: {{ .Values.backends.neo4j.existingSecretKey | default "password" }}
+            # Elasticsearch search backend.
+            - name: ELASTICSEARCH_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "datahub.fullname" . }}
+                  key: elasticsearch-host
+            - name: ELASTICSEARCH_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "datahub.fullname" . }}
+                  key: elasticsearch-port
+            - name: ELASTICSEARCH_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.backends.elasticsearch.existingSecret }}
+                  key: {{ .Values.backends.elasticsearch.existingSecretKey | default "password" }}
+            # Kafka ingest (MCE / MAE consumers).
+            - name: KAFKA_BOOTSTRAP_SERVERS
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "datahub.fullname" . }}
+                  key: kafka-bootstrap-servers
+            # Per-tenant catalog scoping (SEC-TENANT-01 hard rule 3).
+            - name: DATAHUB_PARTITION_BY_CORP_GROUP
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "datahub.fullname" . }}
+                  key: tenant-partition-by-corp-group
+            - name: DATAHUB_DEFAULT_DOMAIN
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "datahub.fullname" . }}
+                  key: tenant-default-domain
+            # D4: lineage sync source (marquez).
+            - name: DATAHUB_LINEAGE_SOURCE
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "datahub.fullname" . }}
+                  key: lineage-source
+            - name: DATAHUB_LINEAGE_MARQUEZ_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "datahub.fullname" . }}
+                  key: lineage-marquez-url
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http-gms
+            initialDelaySeconds: {{ .Values.probes.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probes.liveness.periodSeconds }}
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http-gms
+            initialDelaySeconds: {{ .Values.probes.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probes.readiness.periodSeconds }}
+          securityContext:
+            runAsNonRoot: true
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}

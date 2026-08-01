@@ -1,0 +1,104 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "marquez.fullname" . }}
+  labels:
+    {{- include "marquez.labels" . | nindent 4 }}
+spec:
+  serviceName: {{ include "marquez.fullname" . }}-headless
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "marquez.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "marquez.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: lineage
+      annotations:
+        # Roll the pod when the ConfigMap changes (DB params).
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+        - name: marquez
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy | default "IfNotPresent" }}
+          ports:
+            - name: http-api
+              containerPort: 5000
+              protocol: TCP
+            - name: http-app
+              containerPort: 3000
+              protocol: TCP
+          env:
+            # Marquez uses POSTGRES_* env vars to wire the JDBC URL.
+            # The password is sourced from the existingSecret
+            # (hard rule 12: never inline).
+            - name: POSTGRES_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "marquez.fullname" . }}
+                  key: db-host
+            - name: POSTGRES_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "marquez.fullname" . }}
+                  key: db-port
+            - name: POSTGRES_DB
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "marquez.fullname" . }}
+                  key: db-name
+            - name: POSTGRES_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "marquez.fullname" . }}
+                  key: db-user
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.db.existingSecret }}
+                  key: {{ .Values.db.existingSecretKey | default "password" }}
+            # Per-tenant partitioning flag (SEC-TENANT-01).
+            - name: MARQUEZ_PARTITION_BY_TENANT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "marquez.fullname" . }}
+                  key: graph-partition-by-tenant
+            - name: OPENLINEAGE_VERSION
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "marquez.fullname" . }}
+                  key: openlineage-version
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http-api
+            initialDelaySeconds: {{ .Values.probes.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probes.liveness.periodSeconds }}
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http-api
+            initialDelaySeconds: {{ .Values.probes.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probes.readiness.periodSeconds }}
+          securityContext:
+            runAsNonRoot: true
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}

@@ -1,0 +1,54 @@
+{{- if .Values.networkPolicy.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "ge.fullname" . }}
+  labels:
+    {{- include "ge.labels" . | nindent 4 }}
+  annotations:
+    policy.description: |
+      Default-deny for Great Expectations validation runner pods.
+      Ingress restricted to the platform namespace on port 8080
+      (validation API); egress restricted to DNS and PostgreSQL
+      (5432) for the expectation store + target table reads.
+      Enforces hard rule 13 (NetworkPolicy default-deny = prod-
+      blocking when absent).
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "ge.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: quality
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Validation API from the platform namespace.
+    - from:
+        {{- range .Values.networkPolicy.allowedIngressNamespaces }}
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ . }}
+        {{- end }}
+      ports:
+        - protocol: TCP
+          port: {{ .Values.service.port }}
+  egress:
+    # DNS resolution (kube-system CoreDNS).
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    # PostgreSQL backend (expectation store + target table reads).
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: postgresql
+      ports:
+        - protocol: TCP
+          port: {{ .Values.networkPolicy.egress.postgresPort }}
+{{- end }}

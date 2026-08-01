@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "marquez.fullname" . }}
+  labels:
+    {{- include "marquez.labels" . | nindent 4 }}
+data:
+  # Marquez PostgreSQL backend connection (non-sensitive). The
+  # password is referenced via existingSecret in the StatefulSet
+  # (hard rule 12: never inline secrets).
+  #
+  # Per ADR-0016 §3.1: Marquez 0.30+ shares the business PG 16
+  # instance (postgresql sub-chart) and partitions the lineage
+  # graph by tenant.
+  db-host: {{ .Values.db.host | quote }}
+  db-port: {{ .Values.db.port | quote }}
+  db-name: {{ .Values.db.database | quote }}
+  db-user: {{ .Values.db.user | quote }}
+  # Per-tenant lineage graph partitioning (SEC-TENANT-01 hard rule 3).
+  graph-partition-by-tenant: {{ .Values.graph.partitionByTenant | quote }}
+  # OpenLineage API version consumed by event emitters.
+  openlineage-version: {{ .Values.graph.openlineageVersion | quote }}

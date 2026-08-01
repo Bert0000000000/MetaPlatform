@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "datahub.fullname" . }}
+  labels:
+    {{- include "datahub.labels" . | nindent 4 }}
+data:
+  # DataHub GMS (General Metadata Service) backend connections
+  # (non-sensitive). Per ADR-0016 §3.1: DataHub catalog uses
+  # Neo4j (graph), Elasticsearch (search), Kafka (MCE/MAE ingest).
+  # Passwords are referenced via existingSecrets in the Deployment
+  # (hard rule 12: never inline).
+  neo4j-host: {{ .Values.backends.neo4j.host | quote }}
+  neo4j-port: {{ .Values.backends.neo4j.port | quote }}
+  neo4j-uri: {{ printf "bolt://%s:%d" .Values.backends.neo4j.host (int .Values.backends.neo4j.port) | quote }}
+  elasticsearch-host: {{ .Values.backends.elasticsearch.host | quote }}
+  elasticsearch-port: {{ .Values.backends.elasticsearch.port | quote }}
+  kafka-bootstrap-servers: {{ .Values.ingest.kafkaConnect.bootstrapServers | quote }}
+  # Per-tenant catalog scoping (SEC-TENANT-01 hard rule 3).
+  tenant-partition-by-corp-group: {{ .Values.tenant.partitionByCorpGroup | quote }}
+  tenant-default-domain: {{ .Values.tenant.defaultDomain | quote }}
+  # D4: OpenLineage <-> DataHub sync (lineage source = marquez).
+  lineage-source: {{ .Values.lineage.source | quote }}
+  lineage-marquez-url: {{ .Values.lineage.marquezUrl | quote }}
+  lineage-pull-interval-seconds: {{ .Values.lineage.pullIntervalSeconds | quote }}

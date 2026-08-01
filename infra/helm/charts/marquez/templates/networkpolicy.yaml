@@ -1,0 +1,55 @@
+{{- if .Values.networkPolicy.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "marquez.fullname" . }}
+  labels:
+    {{- include "marquez.labels" . | nindent 4 }}
+  annotations:
+    policy.description: |
+      Default-deny for Marquez lineage server pods. Ingress
+      restricted to the platform namespace on port 5000 (OpenLineage
+      API) and 3000 (web UI); egress restricted to DNS and PostgreSQL
+      (5432) for the lineage metadata backend. Enforces hard rule 13
+      (NetworkPolicy default-deny = prod-blocking when absent).
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "marquez.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: lineage
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # OpenLineage API + web UI from the platform namespace.
+    - from:
+        {{- range .Values.networkPolicy.allowedIngressNamespaces }}
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ . }}
+        {{- end }}
+      ports:
+        - protocol: TCP
+          port: {{ .Values.service.port }}
+        - protocol: TCP
+          port: {{ .Values.service.appPort }}
+  egress:
+    # DNS resolution (kube-system CoreDNS).
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    # PostgreSQL backend (lineage metadata store).
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: postgresql
+      ports:
+        - protocol: TCP
+          port: {{ .Values.networkPolicy.egress.postgresPort }}
+{{- end }}

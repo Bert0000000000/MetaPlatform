@@ -1,0 +1,63 @@
+{{- if .Values.networkPolicy.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "debezium.fullname" . }}
+  labels:
+    {{- include "debezium.labels" . | nindent 4 }}
+  annotations:
+    policy.description: |
+      Default-deny for Debezium CDC pods. Ingress restricted to the
+      platform namespace on port 8083 (REST API); egress restricted
+      to DNS, PostgreSQL (5432) for the source connector, and Kafka
+      (9092) for the sink. Enforces hard rule 13 (NetworkPolicy
+      default-deny = prod-blocking when absent) and hard rule 4
+      (external systems accessed only via declared egress).
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "debezium.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: cdc
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Only pods in the platform namespace may reach the Debezium
+    # REST API on 8083.
+    - from:
+        {{- range .Values.networkPolicy.allowedIngressNamespaces }}
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ . }}
+        {{- end }}
+      ports:
+        - protocol: TCP
+          port: {{ .Values.service.port }}
+  egress:
+    # DNS resolution (kube-system CoreDNS).
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    # PostgreSQL source connector (logical replication / pgoutput).
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: postgresql
+      ports:
+        - protocol: TCP
+          port: {{ .Values.networkPolicy.egress.postgresPort }}
+    # Kafka sink (CDC events → topics).
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: kafka
+      ports:
+        - protocol: TCP
+          port: {{ .Values.networkPolicy.egress.kafkaPort }}
+{{- end }}

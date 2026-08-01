@@ -1,12 +1,15 @@
 apiVersion: v2
 name: debezium
 description: |
-  Debezium 2.5 (CDC) for PostgreSQL 16. Closes the DATA-D0-D8
+  Debezium 2.7 (CDC) for PostgreSQL 16. Closes the DATA-D0-D8
   D0 placeholder; emits change events to Kafka topics named
-  metaplatform.<domain>.<tenant>.<table>.cdc.
+  metaplatform.<domain>.<tenant>.<table>.cdc. Source connector
+  uses pgoutput logical replication; tenant_id is force-injected
+  via SMT (hard rule 3). Egress to postgresql + kafka is
+  enforced by NetworkPolicy (hard rule 13).
 type: application
 version: 0.1.0
-appVersion: "2.5.4"
+appVersion: "2.7.0"
 keywords:
   - debezium
   - cdc

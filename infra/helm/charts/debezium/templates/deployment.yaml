@@ -1,0 +1,103 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "debezium.fullname" . }}
+  labels:
+    {{- include "debezium.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "debezium.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "debezium.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: cdc
+      annotations:
+        # Roll the pod when the connector ConfigMap changes.
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        runAsGroup: 1001
+        fsGroup: 1001
+      containers:
+        - name: debezium
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http-api
+              containerPort: 8083
+              protocol: TCP
+          env:
+            # --- Kafka sink bootstrap (DEBEZIUM_SINK_*) ---
+            - name: DEBEZIUM_SINK_TYPE
+              value: "kafka"
+            - name: DEBEZIUM_SINK_KAFKA_BOOTSTRAP_SERVERS
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "debezium.fullname" . }}-connectors
+                  key: bootstrap-servers
+            - name: DEBEZIUM_SINK_KAFKA_PRODUCER_GROUP_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "debezium.fullname" . }}-connectors
+                  key: group-id
+            # --- PostgreSQL source (DEBEZIUM_SOURCE_*) ---
+            - name: DEBEZIUM_SOURCE_CONNECTOR_CLASS
+              value: "io.debezium.connector.postgresql.PostgresConnector"
+            - name: DEBEZIUM_SOURCE_DATABASE_HOSTNAME
+              value: {{ .Values.source.postgresHost | quote }}
+            - name: DEBEZIUM_SOURCE_DATABASE_PORT
+              value: {{ .Values.source.postgresPort | quote }}
+            - name: DEBEZIUM_SOURCE_DATABASE_USER
+              value: {{ .Values.source.postgresUser | quote }}
+            - name: DEBEZIUM_SOURCE_DATABASE_DBNAME
+              value: {{ .Values.source.postgresDatabase | quote }}
+            - name: DEBEZIUM_SOURCE_DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.source.existingSecretName }}
+                  key: {{ .Values.source.existingSecretKey }}
+            - name: DEBEZIUM_SOURCE_PLUGIN_NAME
+              value: "pgoutput"
+            # --- Transform: tenant_id injection (hard rule 3) ---
+            - name: DEBEZIUM_SOURCE_TRANSFORMS
+              value: "tenantInjection"
+            - name: DEBEZIUM_SOURCE_TRANSFORMS_tenantInjection_TYPE
+              value: "org.apache.kafka.connect.transforms.SetSchemaMetadata"
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http-api
+            initialDelaySeconds: {{ .Values.probes.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probes.liveness.periodSeconds }}
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http-api
+            initialDelaySeconds: {{ .Values.probes.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probes.readiness.periodSeconds }}
+          securityContext:
+            runAsNonRoot: true
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: connectors
+              mountPath: /etc/debezium/connectors
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: connectors
+          configMap:
+            name: {{ include "debezium.fullname" . }}-connectors
+        - name: tmp
+          emptyDir: {}

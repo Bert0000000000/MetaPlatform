@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "ge.fullname" . }}
+  labels:
+    {{- include "ge.labels" . | nindent 4 }}
+data:
+  # Great Expectations expectation suites configuration
+  # (non-sensitive). Per ADR-0016 §3.1: GE integrates with alembic /
+  # SQLAlchemy; DDL migrations must pass expectation checks.
+  #
+  # Per-tenant scoping (SEC-TENANT-01 hard rule 3): each tenant's
+  # expectation suites live in a per-tenant namespace, so a tenant's
+  # quality gates never see other tenants' schemas.
+  db-host: {{ .Values.db.host | quote }}
+  db-port: {{ .Values.db.port | quote }}
+  db-database: {{ .Values.db.database | quote }}
+  db-user: {{ .Values.db.user | quote }}
+  expectations-storage-per-tenant: {{ .Values.expectations.storagePerTenant | quote }}
+  expectations-default-profile: {{ .Values.expectations.defaultProfile | quote }}
+  # Critical checks enforced on every DDL migration (ADR-0016 §3.1).
+  critical-checks: |
+    tenant_id_not_null
+    tenant_id_matches_request_context
+  # Schedule for the validation runner (CronJob).
+  schedule: {{ .Values.schedule.cron | quote }}

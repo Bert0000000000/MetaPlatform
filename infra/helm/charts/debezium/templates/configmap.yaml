@@ -1,0 +1,53 @@
+{{- if .Values.connectors }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "debezium.fullname" . }}-connectors
+  labels:
+    {{- include "debezium.labels" . | nindent 4 }}
+  annotations:
+    # Roll the pod when the connector definitions change.
+    checksum/connectors: {{ toJson .Values.connectors | sha256sum }}
+data:
+  # Debezium connector definitions (PostgreSQL source → Kafka sink).
+  # One JSON file per connector; the Debezium Server runtime mounts
+  # this ConfigMap and registers each connector at startup.
+  #
+  # Per ADR-0016 §3.1: 17-domain CDC topic naming
+  #   metaplatform.<domain>.<tenant>.<table>.cdc
+  # tenant_id is force-injected (hard rule 3) via the
+  # `transforms=tenantInjection` SMT.
+  {{- range $i, $conn := .Values.connectors }}
+  connector-{{ $i }}-{{ $conn.name }}.json: |-
+    {
+      "name": "{{ $conn.name }}",
+      "config": {
+        "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+        "database.hostname": "{{ $.Values.source.postgresHost }}",
+        "database.port": "{{ $.Values.source.postgresPort }}",
+        "database.user": "{{ $.Values.source.postgresUser }}",
+        "database.dbname": "{{ $.Values.source.postgresDatabase }}",
+        "database.server.name": "{{ $conn.name }}",
+        "plugin.name": "pgoutput",
+        "slot.name": "{{ $conn.slotName }}",
+        "publication.name": "{{ $conn.publicationName }}",
+        "table.include.list": "{{ $conn.tableIncludeList }}",
+        "topic.prefix": "{{ $conn.topicPrefix }}",
+        "topic.creation.default.replication.factor": "{{ $.Values.config.kafkaReplicationFactor }}",
+        "topic.creation.default.partitions": "{{ $conn.partitions }}",
+        "transforms": "tenantInjection",
+        "transforms.tenantInjection.type": "org.apache.kafka.connect.transforms.SetSchemaMetadata",
+        "transforms.tenantInjection.record.value": "metaplatform.{{ $conn.domain }}.cdc",
+        "database.history.kafka.bootstrap.servers": "{{ $.Values.config.bootstrapServers }}",
+        "database.history.kafka.topic": "schema-history.{{ $conn.name }}",
+        "key.converter": "org.apache.kafka.connect.json.JsonConverter",
+        "value.converter": "org.apache.kafka.connect.json.JsonConverter",
+        "bootstrap.servers": "{{ $.Values.config.bootstrapServers }}",
+        "group.id": "{{ $.Values.config.groupId }}"
+      }
+    }
+  {{- end }}
+  # Kafka sink bootstrap servers (non-sensitive).
+  bootstrap-servers: {{ .Values.config.bootstrapServers | quote }}
+  group-id: {{ .Values.config.groupId | quote }}
+{{- end }}

@@ -1,0 +1,104 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "ge.fullname" . }}
+  labels:
+    {{- include "ge.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "ge.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "ge.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: quality
+      annotations:
+        # Roll the pod when the ConfigMap changes (expectation suites).
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+        - name: ge-runner
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http-api
+              containerPort: 8080
+              protocol: TCP
+          env:
+            # PostgreSQL backend for the GE expectation store.
+            - name: GE_DB_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "ge.fullname" . }}
+                  key: db-host
+            - name: GE_DB_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "ge.fullname" . }}
+                  key: db-port
+            - name: GE_DB_DATABASE
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "ge.fullname" . }}
+                  key: db-database
+            - name: GE_DB_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "ge.fullname" . }}
+                  key: db-user
+            - name: GE_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.db.existingSecret }}
+                  key: {{ .Values.db.existingSecretKey | default "password" }}
+            # Per-tenant expectation scoping (SEC-TENANT-01 hard rule 3).
+            - name: GE_EXPECTATIONS_STORAGE_PER_TENANT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "ge.fullname" . }}
+                  key: expectations-storage-per-tenant
+            - name: GE_EXPECTATIONS_DEFAULT_PROFILE
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "ge.fullname" . }}
+                  key: expectations-default-profile
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http-api
+            initialDelaySeconds: {{ .Values.probes.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probes.liveness.periodSeconds }}
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http-api
+            initialDelaySeconds: {{ .Values.probes.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probes.readiness.periodSeconds }}
+          securityContext:
+            runAsNonRoot: true
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: expectation-suites
+              mountPath: /etc/ge/expectations
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: expectation-suites
+          configMap:
+            name: {{ include "ge.fullname" . }}
+        - name: tmp
+          emptyDir: {}

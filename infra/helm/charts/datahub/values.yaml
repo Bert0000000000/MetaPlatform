@@ -1,9 +1,25 @@
-# DataHub chart - DATA-D0-D8 D4 expansion
+# =============================================================================
+# DataHub sub-chart values
+# =============================================================================
+# DataHub catalog. Per ADR-0016 §3.1 + D2/D4:
+#   - GMS (General Metadata Service) container
+#   - Backends: Neo4j (graph) + Elasticsearch (search) + Kafka (MCE/MAE)
+#   - Per-tenant catalog scoping via corp-group (SEC-TENANT-01 hard rule 3)
+#   - D4: lineage sync from Marquez (OpenLineage <-> DataHub)
+#   - NetworkPolicy default-deny + egress to kafka (hard rule 13)
+# =============================================================================
+
+# Force the service DNS name to "datahub" so the catalog REST API
+# is resolvable from the platform namespace.
+fullnameOverride: datahub
+
 image:
   repository: acryldata/datahub-gms
   tag: "0.13.0"
   pullPolicy: IfNotPresent
+
 replicaCount: 1
+
 resources:
   requests:
     cpu: 500m
@@ -11,14 +27,31 @@ resources:
   limits:
     cpu: 2000m
     memory: 2Gi
+
+# Backend connections (Neo4j + Elasticsearch + Kafka). Passwords
+# are referenced via existingSecrets (hard rule 12: never inline).
+backends:
+  neo4j:
+    host: "neo4j"
+    port: 7687
+    existingSecret: "datahub-neo4j"
+    existingSecretKey: "password"
+  elasticsearch:
+    host: "elasticsearch"
+    port: 9200
+    existingSecret: "datahub-elasticsearch"
+    existingSecretKey: "password"
+
 tenant:
   partitionByCorpGroup: true
   defaultDomain: "metaplatform"
+
 dataProducts:
   enabled: true
   versioning: "semver"
   sloan:
     defaultTemplate: "metaplatform-default"
+
 ingest:
   kafkaConnect:
     enabled: true
@@ -35,6 +68,7 @@ lineage:
   marquezUrl: "http://marquez.metaplatform.svc.cluster.local:5000"
   pullIntervalSeconds: 30
   openlineageVersion: "1.0.0"
+
 service:
   type: ClusterIP
   gms:
@@ -43,3 +77,20 @@ service:
     port: 9090
   maeConsumer:
     port: 9091
+
+probes:
+  readiness:
+    initialDelaySeconds: 30
+    periodSeconds: 10
+  liveness:
+    initialDelaySeconds: 60
+    periodSeconds: 30
+
+# NetworkPolicy — default-deny, egress to kafka for MCE/MAE ingest
+# (hard rule 13). Ingress restricted to the platform namespace.
+networkPolicy:
+  enabled: true
+  allowedIngressNamespaces:
+    - metaplatform
+  egress:
+    kafkaPort: 9092

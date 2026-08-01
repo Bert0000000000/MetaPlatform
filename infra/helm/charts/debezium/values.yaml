@@ -1,9 +1,134 @@
+# =============================================================================
+# Debezium sub-chart values
+# =============================================================================
+# CDC (Change Data Capture) for PostgreSQL 16. Per ADR-0016 §3.1:
+#   - PostgreSQL source connector (logical replication, pgoutput plugin)
+#   - Kafka sink (CDC events → metaplatform.<domain>.<tenant>.<table>.cdc)
+#   - tenant_id force-injected (hard rule 3)
+#   - NetworkPolicy default-deny + explicit egress (hard rule 13)
+# =============================================================================
+
+# Force the service DNS name to "debezium" so PLATFORM-EVENT-01
+# consumers resolve the CDC REST API consistently.
+fullnameOverride: debezium
+
 image:
-  repository: quay.io/debezium/connect
-  tag: "2.5.4.Final"
+  repository: quay.io/debezium/server
+  tag: "2.7.0.Final"
   pullPolicy: IfNotPresent
 
-replicaCount: 1
+replicaCount: 1   # 2 in production per values-production.yaml
+
+# Kafka sink + connector group configuration (non-sensitive).
 config:
   bootstrap.servers: "kafka:9092"
   group.id: "metaplatform-debezium"
+  kafkaReplicationFactor: "1"   # 3 in production
+
+# PostgreSQL source connector (logical replication). The password
+# is referenced via existingSecret (hard rule 12: never inline).
+source:
+  postgresHost: "postgresql"
+  postgresPort: 5432
+  postgresUser: "meta"
+  postgresDatabase: "metaplatform"
+  existingSecretName: "postgresql-credentials"
+  existingSecretKey: "password"
+
+# 17-domain CDC connectors. Each entry produces one Debezium
+# connector registered via the connectors ConfigMap. Topic naming
+# follows ADR-0016 §3.1: metaplatform.<domain>.<tenant>.<table>.cdc
+connectors:
+  - name: iam-cdc
+    domain: iam
+    slotName: debezium_iam
+    publicationName: dbz_iam
+    tableIncludeList: "public.iam_*"
+    topicPrefix: "metaplatform.iam"
+    partitions: 3
+  - name: msg-cdc
+    domain: msg
+    slotName: debezium_msg
+    publicationName: dbz_msg
+    tableIncludeList: "public.msg_*"
+    topicPrefix: "metaplatform.msg"
+    partitions: 6
+  - name: obs-cdc
+    domain: obs
+    slotName: debezium_obs
+    publicationName: dbz_obs
+    tableIncludeList: "public.obs_*"
+    topicPrefix: "metaplatform.obs"
+    partitions: 3
+  - name: rag-cdc
+    domain: rag
+    slotName: debezium_rag
+    publicationName: dbz_rag
+    tableIncludeList: "public.rag_*"
+    topicPrefix: "metaplatform.rag"
+    partitions: 6
+  - name: kb-cdc
+    domain: kb
+    slotName: debezium_kb
+    publicationName: dbz_kb
+    tableIncludeList: "public.kb_*"
+    topicPrefix: "metaplatform.kb"
+    partitions: 3
+  - name: agent-cdc
+    domain: agent
+    slotName: debezium_agent
+    publicationName: dbz_agent
+    tableIncludeList: "public.agent_*"
+    topicPrefix: "metaplatform.agent"
+    partitions: 6
+  - name: copilot-cdc
+    domain: copilot
+    slotName: debezium_copilot
+    publicationName: dbz_copilot
+    tableIncludeList: "public.copilot_*"
+    topicPrefix: "metaplatform.copilot"
+    partitions: 3
+  - name: dw-cdc
+    domain: dw
+    slotName: debezium_dw
+    publicationName: dbz_dw
+    tableIncludeList: "public.dw_*"
+    topicPrefix: "metaplatform.dw"
+    partitions: 3
+  - name: data-cdc
+    domain: data
+    slotName: debezium_data
+    publicationName: dbz_data
+    tableIncludeList: "public.data_*"
+    topicPrefix: "metaplatform.data"
+    partitions: 3
+
+resources:
+  requests:
+    cpu: 250m
+    memory: 512Mi
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+
+service:
+  type: ClusterIP
+  port: 8083
+
+probes:
+  readiness:
+    initialDelaySeconds: 15
+    periodSeconds: 10
+  liveness:
+    initialDelaySeconds: 30
+    periodSeconds: 30
+
+# NetworkPolicy — default-deny, egress to postgresql + kafka
+# (hard rule 13). Ingress restricted to the platform namespace.
+networkPolicy:
+  enabled: true
+  allowedIngressNamespaces:
+    - metaplatform
+  egress:
+    postgresPort: 5432
+    kafkaPort: 9092

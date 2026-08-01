@@ -1,0 +1,39 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "marquez.fullname" . }}
+  labels:
+    {{- include "marquez.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - name: http-api
+      port: {{ .Values.service.port }}
+      targetPort: http-api
+      protocol: TCP
+    - name: http-app
+      port: {{ .Values.service.appPort }}
+      targetPort: http-app
+      protocol: TCP
+  selector:
+    {{- include "marquez.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: lineage
+---
+# Headless service for the StatefulSet (stable pod DNS).
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "marquez.fullname" . }}-headless
+  labels:
+    {{- include "marquez.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  clusterIP: None
+  ports:
+    - name: http-api
+      port: {{ .Values.service.port }}
+      targetPort: http-api
+      protocol: TCP
+  selector:
+    {{- include "marquez.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: lineage

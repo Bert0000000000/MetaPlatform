@@ -1,9 +1,67 @@
+# =============================================================================
+# Marquez sub-chart values
+# =============================================================================
+# OpenLineage + Marquez 0.30+ lineage server. Per ADR-0016 §3.1:
+#   - PostgreSQL backend (shared business PG 16 instance)
+#   - Per-tenant lineage graph partitioning (SEC-TENANT-01 hard rule 3)
+#   - NetworkPolicy default-deny + egress to postgresql (hard rule 13)
+# =============================================================================
+
+# Force the service DNS name to "marquez" so OpenLineage event
+# emitters resolve the lineage API consistently.
+fullnameOverride: marquez
+
 image:
   repository: marquezproject/marquez
   tag: "0.30.0"
-replicaCount: 1
+  pullPolicy: IfNotPresent
+
+replicaCount: 1   # 2 in production per values-production.yaml
+
+# PostgreSQL backend (shared business PG 16 instance). The password
+# is referenced via existingSecret (hard rule 12: never inline).
 db:
-  host: postgres.metaplatform.svc.cluster.local
-  existingSecret: marquez-db
+  host: "postgresql"
+  port: 5432
+  database: "marquez"
+  user: "marquez"
+  existingSecret: "marquez-db"
+  existingSecretKey: "password"
+
+# Lineage graph configuration.
 graph:
+  # Per-tenant partitioning (SEC-TENANT-01 hard rule 3). Each
+  # tenant's lineage graph is isolated; cross-tenant queries are
+  # refused by the lineage server.
   partitionByTenant: true
+  openlineageVersion: "1.0.0"
+
+resources:
+  requests:
+    cpu: 250m
+    memory: 512Mi
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+
+service:
+  type: ClusterIP
+  port: 5000    # OpenLineage / Marquez API
+  appPort: 3000 # Marquez web UI
+
+probes:
+  readiness:
+    initialDelaySeconds: 15
+    periodSeconds: 10
+  liveness:
+    initialDelaySeconds: 30
+    periodSeconds: 30
+
+# NetworkPolicy — default-deny, egress to postgresql
+# (hard rule 13). Ingress restricted to the platform namespace.
+networkPolicy:
+  enabled: true
+  allowedIngressNamespaces:
+    - metaplatform
+  egress:
+    postgresPort: 5432

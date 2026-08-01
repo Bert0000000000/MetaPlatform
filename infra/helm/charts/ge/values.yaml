@@ -1,6 +1,18 @@
-# Great Expectations chart - DATA-D0-D8 D3 expansion
-# (D0 was a stub; D3 turns it on with the GE server + Airflow
-# integration)
+# =============================================================================
+# Great Expectations sub-chart values
+# =============================================================================
+# Quality gate validation runner. Per ADR-0016 §3.1 + D3:
+#   - PostgreSQL backend for the expectation store
+#   - Per-tenant expectation scoping (SEC-TENANT-01 hard rule 3)
+#   - DDL migration gate: failed expectations block migrations
+#   - D3: Airflow integration (GE server pushes results to Airflow)
+#   - NetworkPolicy default-deny + egress to postgresql (hard rule 13)
+# =============================================================================
+
+# Force the service DNS name to "ge" so the validation API is
+# resolvable from the platform namespace.
+fullnameOverride: ge
+
 image:
   repository: great_expectations/great_expectations
   tag: "1.0.0"
@@ -16,13 +28,15 @@ resources:
     cpu: 1000m
     memory: 1Gi
 
-# Postgres backend for the GE expectation store.
+# Postgres backend for the GE expectation store. The password is
+# referenced via existingSecret (hard rule 12: never inline).
 db:
-  host: postgres.metaplatform.svc.cluster.local
+  host: "postgresql"
   port: 5432
   database: great_expectations
   user: ge
   existingSecret: ge-db  # SealedSecret / ExternalSecret
+  existingSecretKey: "password"
 
 # Per-tenant scoping (SEC-TENANT-01 inheritance).
 # Each app's expectations live in a per-tenant namespace, so a
@@ -30,6 +44,12 @@ db:
 expectations:
   storagePerTenant: true
   defaultProfile: "metaplatform-default"
+
+# Validation runner schedule (CronJob-style cron expression).
+# The runner polls the expectation store and re-validates datasets
+# on a fixed cadence; DDL migrations trigger an immediate run.
+schedule:
+  cron: "0 */6 * * *"   # every 6 hours
 
 # Airflow integration: GE server pushes expectation results to
 # Airflow's metadata DB so DAGs can reference them. In v3.1, GE is
@@ -48,3 +68,20 @@ airflow:
 service:
   type: ClusterIP
   port: 8080
+
+probes:
+  readiness:
+    initialDelaySeconds: 15
+    periodSeconds: 10
+  liveness:
+    initialDelaySeconds: 30
+    periodSeconds: 30
+
+# NetworkPolicy — default-deny, egress to postgresql
+# (hard rule 13). Ingress restricted to the platform namespace.
+networkPolicy:
+  enabled: true
+  allowedIngressNamespaces:
+    - metaplatform
+  egress:
+    postgresPort: 5432
