@@ -1,0 +1,57 @@
+name: g4-kind-e2e
+
+on:
+  push:
+    branches: [main, codex/**]
+    paths:
+      - "infra/helm/**"
+      - ".github/workflows/g4-kind-e2e.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "infra/helm/**"
+
+permissions:
+  contents: read
+
+# Cancel in-progress runs on the same branch.
+concurrency:
+  group: g4-kind-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  g4-kind-smoke:
+    name: kind cluster helm install + smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: helm/kind-action@v1.10.0
+        with:
+          version: v0.22.0
+          node_image: kindest/node:v1.29.2
+          cluster_name: mate-platform-e2e
+          wait: 120s
+      - uses: azure/setup-helm@v4
+        with: { version: v3.14.4 }
+      - name: helm install (local values)
+        run: |
+          helm install mate-platform infra/helm \
+            --values infra/helm/values-local.yaml \
+            --namespace metaplatform \
+            --create-namespace \
+            --wait --timeout 5m
+      - name: smoke test (core pods ready)
+        run: |
+          kubectl -n metaplatform get pods
+          # keycloak must have a ready pod
+          kubectl -n metaplatform wait pod -l app.kubernetes.io/name=keycloak \
+            --for=condition=Ready --timeout=180s
+          # otel-collector must have a ready pod
+          kubectl -n metaplatform wait pod -l app.kubernetes.io/name=otel-collector \
+            --for=condition=Ready --timeout=180s
+          # networkpolicy default-deny must exist
+          kubectl -n metaplatform get networkpolicy | grep default-deny
+      - name: helm uninstall
+        if: always()
+        run: helm uninstall mate-platform --namespace metaplatform
