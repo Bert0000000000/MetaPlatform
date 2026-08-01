@@ -1,4 +1,9 @@
-"""In-memory repository exports for the data platform control plane."""
+"""In-memory repository exports for the data platform control plane.
+
+P3-W2 (TD-5) adds ``sql_store`` alongside in_memory — callers that
+need SQL persistence import ``sql_store`` directly. The in-memory
+store remains the default for dev / test.
+"""
 from .in_memory import (
     CdcTask,
     DataSource,
@@ -39,4 +44,7 @@ __all__ = [
     "test_source_connection",
     "update_cdc_task",
     "update_source",
+    "sql_store",
 ]
+
+from . import sql_store

@@ -1,4 +1,9 @@
-"""In-memory repository exports for the DAG scheduling control plane."""
+"""In-memory repository exports for the DAG scheduling control plane.
+
+P3-W2 (TD-5) adds ``sql_store`` alongside in_memory — callers that
+need SQL persistence import ``sql_store`` directly. The in-memory
+store remains the default for dev / test.
+"""
 from .in_memory import (
     DagNode,
     SchedulerTask,
@@ -27,4 +32,7 @@ __all__ = [
     "task_to_dict",
     "trigger_scheduler_task",
     "update_scheduler_task",
+    "sql_store",
 ]
+
+from . import sql_store
