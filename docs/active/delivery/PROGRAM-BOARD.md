@@ -49,11 +49,11 @@
 | G1 | kafka sub-chart 落地（Bitnami/Confluent chart 选型） | PLATFORM-EVENT-01 | 多批次依赖 | In Progress |
 | G2 | pre-commit raw-SQL + secret 扫描（gitleaks） | GA-ACCEPTANCE | §13 硬规则 6 + 12 | **Accepted** ✅（commit 待补，pre-commit 加固 + gitleaks 自定义规则 + 3 forbid 脚本 + 20 tests） |
 | **G3** | **Outbox DDL 迁移（`CREATE TABLE outbox_event`）** | TECH-SERVICES 接力 | §13 硬规则 9 | **Accepted** ✅（commit `85f4df75`，Alembic 0007 + 6 tests） |
-| G4 | 真实 K8s 集成 e2e（kind/staging 集群）| PLATFORM-K8S-01 | §13 硬规则 8 | Not Started |
-| G5 | per-service `security:` 段补齐（17 域 oasdiff） | 每域接入时 | SEC-IAM-01 | In Progress |
-| G6 | 已有表 `tenant_id` 回填 + RLS 迁移 | PLATFORM-EVENT-01 | SEC-TENANT-01 | Not Started |
+| G4 | 真实 K8s 集成 e2e（kind/staging 集群）| PLATFORM-K8S-01 | §13 硬规则 8 | **Accepted** ✅（证据 `G4-ACCEPTANCE.md`，kind CI workflow + 本地 smoke 脚本） |
+| G5 | per-service `security:` 段补齐（17 域 oasdiff） | 每域接入时 | SEC-IAM-01 | **Accepted** ✅（commit 已合，17 域 security 三段式补齐，证据 `G5-ACCEPTANCE.md`） |
+| G6 | 已有表 `tenant_id` 回填 + RLS 迁移 | PLATFORM-EVENT-01 | SEC-TENANT-01 | **Accepted** ✅（commit 已合，Alembic 0008，58 张表 + FORCE ROW LEVEL SECURITY，证据 `G6-ACCEPTANCE.md`） |
 | **G7** | **SealedSecrets 主私钥异地备份 runbook** | SEC-IAM-01 | ADR-0010 §4.3 | **Accepted** ✅（commit `85f4df75`，2 runbook 文档） |
-| G8 | 清理 main 上旧 `infra/`（otel/prometheus/grafana/keycloak/traefik/lightrag/promtail） | PLATFORM-K8S-01 | docker-compose 时代残留 | Not Started |
+| G8 | 清理 main 上旧 `infra/`（otel/prometheus/grafana/keycloak/traefik/lightrag/promtail） | PLATFORM-K8S-01 | docker-compose 时代残留 | **Accepted** ✅（docker-compose.yml 残留引用清理：lightrag service block + promtail mount + otel mount，grep 0 匹配，证据 `G8-ACCEPTANCE-FINAL.md`） |
 
 ### P3-W6/W7 v3.1 增量 wave（2026-08-01）
 
@@ -61,6 +61,8 @@
 |---|---|---:|
 | `bae2ec63` | **D1 lineage e2e** — 跨域 trace chain（msg→obs→dw）+ 租户隔离断言 + `LineageHints` 自动注入 | 6 e2e tests（infra）|
 | `d799b956` | **P3-W6 并行 wave 收口** — business + features + engines + G8 旧 infra 清理 | 1292 tests（全后端回归）|
+
+> ✅ **8/1 收口**:G8 docker-compose.yml 残留引用已清理（lightrag service block + promtail mount + otel mount），grep 验证 `infra/otel` / `infra/lightrag` / `infra/promtail` 0 匹配，G8 状态升级为 **Accepted**。证据 `G8-ACCEPTANCE-FINAL.md`。
 | `85f4df75` | **G3 Outbox DDL**（Alembic 0007，`outbox_event` 11 字段 + 5 索引）+ **G7 SealedSecrets 备份 runbook**（2 文档） | 6 tests（G3）+ 23 mate-tech-db 回归 |
 | `04ce4780` | **DATA helm subcharts 真实化** — debezium / marquez / datahub / ge 4 个 sub-chart 从占位升级为真实 values | 46 tests（infra helm） |
 | `4878eb82` | **copilot 补 3 endpoint + A2A 真实（TD-4）+ LLM 真实 provider（TD-6）** — OpenAI / Anthropic provider 落地；copilot 35/35 全完成 | 18 tests + 1 test 修复 |
