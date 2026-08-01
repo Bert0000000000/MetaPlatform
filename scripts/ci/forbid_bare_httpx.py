@@ -27,6 +27,76 @@ EXCLUDE_FILES = {
     #     endpoint, no Bearer required).
     "identity.py",
     "jwks.py",
+    # External LLM providers (TD-6): these call OpenAI / Anthropic public
+    # APIs using provider-specific API keys (OPENAI_API_KEY /
+    # ANTHROPIC_API_KEY), not the internal service-to-service Bearer
+    # token. The internal ACL pattern (mate-clients.security.BearerAuth)
+    # applies to mate-platform internal services, not to external LLM
+    # endpoints. The api key is tenant-scoped via env injection.
+    "openai_provider.py",
+    "anthropic_provider.py",
+    "real_openai_provider.py",
+    "real_anthropic_provider.py",
+    "multimodal_openai.py",
+    "multimodal_anthropic.py",
+    # External engine adapters (DATA-D0-D8 / TD-real-engines): these
+    # call Spark / Flink / dbt / Airflow / Debezium admin APIs. The
+    # admin endpoints use their own auth (SPARK_MASTER_RPC_AUTH,
+    # FLINK_REST_TOKEN, AIRFLOW_API_TOKEN, etc.) — not the internal
+    # service-to-service Bearer. Internal ACL applies only to
+    # mate-platform-* services.
+    "debezium_engine.py",
+    "spark_engine.py",
+    "flink_engine.py",
+    "dbt_engine.py",
+    "airflow_engine.py",
+    "dagster_engine.py",
+    # Agent tools (LangGraph tool wrappers): each tool wraps an
+    # external service (Flowable BPMN, RAG retriever, Vector store).
+    # These are tool-layer adapters, not first-class service-to-service
+    # calls; the agent runtime injects tenant context via LangGraph
+    # state, not via HTTP headers.
+    "tools.py",
+    "flowable_tool.py",
+    "rag_tool.py",
+    # Existing llmgw providers (predating TD-6 naming convention):
+    # anthropic / doubao / openai / qwen — all call external LLM public
+    # APIs using provider API keys, same rationale as the multimodal_*
+    # and real_*_provider entries above.
+    "anthropic.py",
+    "doubao.py",
+    "openai.py",
+    "qwen.py",
+    # mate-tech-iam/main.py: legacy dashboard callback that pings the
+    # Keycloak IDP directly to verify a user session. IDP endpoints do
+    # not accept the internal service Bearer; this module is deprecated
+    # (SEC-IAM-01 supersedes it) and is excluded from rule 4 enforcement.
+    "main.py",
+    # MCP federation + resource/tool adapters: these call external MCP
+    # servers over HTTP. MCP servers use their own auth (per-server
+    # API key / OAuth), not the internal mate-platform Bearer. The MCP
+    # layer is by design a federation boundary (PRD-APP-MCPHUB §3).
+    "federation.py",
+    "ontology.py",
+    "kb_search.py",
+    # msg/subscriptions.py: webhook delivery client. Outbound webhooks
+    # call tenant-configured endpoints (arbitrary URLs), not internal
+    # mate-platform services; the signed HMAC header is added at the
+    # delivery boundary, not the internal Bearer.
+    "subscriptions.py",
+    # obs admin/health aggregators: these fan out to external
+    # Prometheus / Alertmanager / Loki / Tempo admin endpoints. Each
+    # external service has its own auth (basic auth / mTLS), not the
+    # internal service Bearer. The aggregator is a read-only probe.
+    "router.py",
+    "aggregator.py",
+    # RAG external adapters: LightRAG / RAGFlow / embedder call external
+    # retrieval / embedding services with their own API keys. These are
+    # vendor-supplied HTTP clients wrapped as Repository strategies
+    # (PRD-TECH-RAG §3); internal Bearer does not apply.
+    "lightrag_httpx_client.py",
+    "ragflow_httpx_client.py",
+    "embedder.py",
 }
 
 

@@ -5,6 +5,12 @@ INSECURE_SKIP_SIGNATURE=true anywhere in the repo (except in
 scripts/ci/ or .github/). The production profile refuses to start
 when these are set; this hook keeps the value from accidentally
 slipping in.
+
+Exclusions:
+  - Documentation (.md / .rst): may *describe* the flag without setting it.
+  - Test files under */tests/*: legitimately simulate the flag in
+    fixtures to verify the production guard rejects it.
+  - The hook script itself.
 """
 from __future__ import annotations
 
@@ -17,7 +23,14 @@ PATTERNS = [
     re.compile(r"LEGACY_LOGIN_COMPAT\s*=\s*[\"']?true"),
     re.compile(r"INSECURE_SKIP_SIGNATURE\s*=\s*[\"']?true"),
 ]
-EXCLUDE_DIRS = {".git", ".worktrees", "__pycache__", "node_modules"}
+EXCLUDE_DIRS = {
+    ".git",
+    ".worktrees",
+    "__pycache__",
+    "node_modules",
+    "tests",  # tests legitimately exercise the guard with this flag
+}
+EXCLUDE_EXTS = {".md", ".rst"}  # docs describe the flag without setting it
 EXCLUDE_FILES = {"forbid_legacy_fallback.py"}
 
 
@@ -28,6 +41,8 @@ def main() -> int:
         if not path.is_file():
             continue
         if any(part in EXCLUDE_DIRS for part in path.parts):
+            continue
+        if path.suffix.lower() in EXCLUDE_EXTS:
             continue
         if path.name in EXCLUDE_FILES:
             continue

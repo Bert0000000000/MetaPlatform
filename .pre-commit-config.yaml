@@ -62,11 +62,12 @@ repos:
   # GA-ACCEPTANCE additions (ADR-0015)
   # -------------------------------------------------------------------
 
-  # rule 12: Secret 不进 git (gitleaks).
+  # rule 12: Secret 不进 git (gitleaks, custom .gitleaks.toml extends default).
   - repo: https://github.com/gitleaks/gitleaks
     rev: v8.18.4
     hooks:
       - id: gitleaks
+        args: [--config, .gitleaks.toml]
 
   # rule 3: 没有 tenant 上下文，不访问 repository (raw-SQL detector).
   # Forbid session.execute(text("...")) in app-*/src and
@@ -109,6 +110,27 @@ repos:
         language: system
         types: [python]
         files: ^mate-platform-backend/.*/src/.*\.py$
+
+  # rule 4 (Kafka): forbid bare kafka.KafkaProducer in app sources
+  # (use mate-clients.kafka ACL producer).
+  - repo: local
+    hooks:
+      - id: forbid-bare-kafka-producer
+        name: forbid bare KafkaProducer() in app sources (use mate-clients.kafka)
+        entry: python scripts/ci/forbid_bare_kafka_producer.py
+        language: system
+        types: [python]
+        files: ^mate-platform-backend/.*/src/.*\.py$
+
+  # rule 12 (values): forbid inline secret literals in helm values
+  # (use existingSecretName / existingSecretKey).
+  - repo: local
+    hooks:
+      - id: forbid-external-secret-plain
+        name: forbid inline password/apiKey/token in helm values
+        entry: python scripts/ci/forbid_external_secret_plain.py
+        language: system
+        files: ^infra/helm/.*values.*\.ya?ml$
 
   # rule 5: Production profile 禁止 fake / mock / memory fallback.
   - repo: local

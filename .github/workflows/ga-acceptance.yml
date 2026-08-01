@@ -65,17 +65,21 @@ jobs:
           cd infra/helm
           helm-docs --dry-run --sort-values-order=file || (echo "::error::README.md is out of sync with values.yaml" && exit 1)
 
-  # rule 12: secret 扫描 (gitleaks)
+  # rule 12: secret 扫描 (gitleaks, custom .gitleaks.toml extends default)
   ga-012-secret-scan:
     name: ga-012 gitleaks
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      # gitleaks-action auto-detects .gitleaks.toml at the repo root.
+      # The config extends the built-in default ruleset and adds
+      # Mate-Platform-specific rules (JWT / AWS / GitHub / PEM).
       - uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITLEAKS_CONFIG: .pre-commit-config.yaml
 
   # rule 1: OpenAPI oasdiff
   ga-001-openapi:

@@ -47,7 +47,7 @@
 | # | 项 | 接力 | 来源 | 状态 |
 |---|---|---|---|---|
 | G1 | kafka sub-chart 落地（Bitnami/Confluent chart 选型） | PLATFORM-EVENT-01 | 多批次依赖 | In Progress |
-| G2 | pre-commit raw-SQL + secret 扫描（gitleaks） | GA-ACCEPTANCE | §13 硬规则 6 + 12 | In Progress |
+| G2 | pre-commit raw-SQL + secret 扫描（gitleaks） | GA-ACCEPTANCE | §13 硬规则 6 + 12 | **Accepted** ✅（commit 待补，pre-commit 加固 + gitleaks 自定义规则 + 3 forbid 脚本 + 20 tests） |
 | **G3** | **Outbox DDL 迁移（`CREATE TABLE outbox_event`）** | TECH-SERVICES 接力 | §13 硬规则 9 | **Accepted** ✅（commit `85f4df75`，Alembic 0007 + 6 tests） |
 | G4 | 真实 K8s 集成 e2e（kind/staging 集群）| PLATFORM-K8S-01 | §13 硬规则 8 | Not Started |
 | G5 | per-service `security:` 段补齐（17 域 oasdiff） | 每域接入时 | SEC-IAM-01 | In Progress |
@@ -145,3 +145,4 @@ DATA-D0-D8 全部 8 阶段 Accepted（共 45/45 tests pass）。后续 sub-batch
 | 2026-07-30 | v3.1 增量 + PR 治理（本文） | 与 git 状态同步；增加 v3.1 sub-batch / GA 收口 / PR 治理 3 个章节 |
 | 2026-07-31 | P2 W2 → Accepted | dashboard / apphub / arch / copilot 4 域 · 99 endpoints · 93 tests · PR #12 `833a809d` |
 | 2026-08-01 | P3-W6/W7 v3.1 增量 wave + G3/G7 → Accepted | D1 lineage e2e + G3 Outbox DDL + G7 SealedSecret runbook + DATA helm 真实化 + copilot 35/35 + A2A/LLM 真实；1500 tests / 0 failed |
+| 2026-08-01 | G2 → Accepted | pre-commit 加固 + gitleaks 自定义规则 + 3 forbid 脚本（raw_sql / kafka_producer / external_secret）+ 20 tests；§13 第 3/4/12 条闭环 |

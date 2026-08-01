@@ -1,0 +1,70 @@
+# =============================================================================
+# Mate Platform custom gitleaks configuration (G2, ADR-0015 rule 12).
+# =============================================================================
+# This config EXTENDS the built-in default ruleset (useDefault = true) and
+# adds Mate-Platform-specific rules. Precedence: when a custom rule shares an
+# id with a default rule, the custom attributes override the default.
+#
+# Used by:
+#   - .pre-commit-config.yaml  (gitleaks v8.18.4 hook, args: [--config, .gitleaks.toml])
+#   - .github/workflows/ga-acceptance.yml ga-012-secret-scan
+#     (gitleaks-action@v2 auto-detects .gitleaks.toml at repo root)
+#
+# Reference: https://github.com/gitleaks/gitleaks/blob/master/README.md#configuration
+# =============================================================================
+
+title = "Mate Platform gitleaks config (extends default)"
+
+# Extend the default gitleaks config built into the binary. The latest
+# default lives at:
+#   https://github.com/gitleaks/gitleaks/blob/master/config/gitleaks.toml
+[extend]
+useDefault = true
+
+# -----------------------------------------------------------------------------
+# Custom rules (Mate-Platform-specific). ids are prefixed `mate-` so they do
+# not shadow any default rule.
+# -----------------------------------------------------------------------------
+
+# JWT HMAC signing secret. HS256/HS512 require >= 32 bytes of entropy; a
+# hardcoded secret of that length is a real compromise.
+[[rules]]
+id = "mate-jwt-secret"
+description = "Hardcoded JWT signing secret (>= 32 bytes)"
+regex = '''(?i)(jwt[_-]?(?:secret|signing[_-]?key|key))\s*[:=]\s*['"]?[A-Za-z0-9+/=_-]{32,}'''
+keywords = ["jwt", "jwtsecret", "jwt_secret", "jwt-signing-key"]
+
+# AWS Access Key ID (canonical AKIA... prefix).
+[[rules]]
+id = "mate-aws-access-key"
+description = "AWS Access Key ID"
+regex = '''AKIA[0-9A-Z]{16}'''
+keywords = ["akia"]
+
+# GitHub personal access tokens (classic ghp_ and fine-grained github_pat_).
+[[rules]]
+id = "mate-github-token"
+description = "GitHub personal access token"
+regex = '''ghp_[A-Za-z0-9]{36}|github_pat_[A-Za-z0-9_]{82}'''
+keywords = ["ghp_", "github_pat_"]
+
+# PEM private key block (defence-in-depth; the default `private-key` rule and
+# the pre-commit `detect-private-key` hook also cover this).
+[[rules]]
+id = "mate-private-key"
+description = "PEM private key block"
+regex = '''-----BEGIN (RSA |EC |DSA |OPENSSH |PGP |ENCRYPTED )?PRIVATE KEY-----'''
+keywords = ["-----begin"]
+
+# -----------------------------------------------------------------------------
+# Global allowlist. Test fixtures and scenario documents may contain sample
+# token shapes that are not real credentials.
+# -----------------------------------------------------------------------------
+[allowlist]
+description = "Allow test fixtures, scenario docs, and this config itself."
+paths = [
+    '''docs/active/reports/.*\.json''',
+    '''docs/active/scenarios/.*\.json''',
+    '''scripts/ci/tests/.*''',
+    '''\.gitleaks\.toml''',
+]
