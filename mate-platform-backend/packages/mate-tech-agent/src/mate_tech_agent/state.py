@@ -14,3 +14,8 @@ class AgentState(TypedDict, total=False):
     sub_questions: list[str]
     error: str
     thread_id: str
+    # BUSINESS-SLICES: tenant scoping + scenario tag so persist_node
+    # can save state under (tenant_id, thread_id) without a separate
+    # channel. LangGraph only retains keys declared in the schema.
+    tenant_id: str
+    _scenario: str

@@ -1,16 +1,33 @@
-"""FastAPI app: RAGFlow + Milvus/Neo4j/PG real clients + multipart upload + 3-strategy retrieval."""
+"""FastAPI app: RAGFlow + Milvus/Neo4j/PG real clients + multipart upload + 3-strategy retrieval.
+
+BUSINESS-SLICES deep implementation: adds ADR-0014 step 3 (outbox
+events: rag.document.ingested / rag.document.uploaded / rag.search.executed),
+tenant-scoped document registry with lifecycle (INGESTING -> INDEXED |
+FAILED), chunk-content validation, and tenant-scoped search hit
+filtering so tenant A cannot retrieve tenant B's indexed chunks.
+"""
 from __future__ import annotations
 
 import logging
 import os
 import uuid
+from typing import Any
 
 from fastapi import FastAPI, File, HTTPException, Request, UploadFile
 
 # BUSINESS-SLICES P1 wave 3: hooks 1, 2 (auth + tenant).
+# BUSINESS-SLICES deep: hook 3 (outbox) + tenant document registry + validation.
 from mate_platform.auth import install_auth
+from mate_platform.messaging.events import Event
+from mate_platform.messaging.outbox import InMemoryOutboxWriter
+from mate_platform.tenancy.context import TenantId
 from mate_platform.tenancy.guards import require_tenant
 from mate_tech_rag import __version__
+from mate_tech_rag.api.document_registry import (
+    mark_indexed,
+    register_document,
+    tenant_document_ids,
+)
 from mate_tech_rag.api.ingest import ingest
 from mate_tech_rag.api.parse import parse_document
 from mate_tech_rag.api.retrieval import (
@@ -57,6 +74,30 @@ def _backend_label(client: object) -> str:
     return "memory"
 
 
+def _emit(
+    request: Request,
+    event_type: str,
+    aggregate_id: str,
+    payload: dict[str, Any],
+    tenant_id: str,
+) -> None:
+    """Append an outbox event if a writer is configured (ADR-0014 step 3)."""
+    writer: InMemoryOutboxWriter | None = getattr(
+        request.app.state, "outbox_writer", None
+    )
+    if writer is None:
+        return
+    writer.append(
+        Event.create(
+            type=event_type,
+            tenant_id=TenantId(tenant_id),
+            aggregate_id=aggregate_id,
+            payload=payload,
+            trace_id=getattr(request.state.ctx, "trace_id", ""),
+        )
+    )
+
+
 def create_app() -> FastAPI:
     app = FastAPI(
         title="mate-tech-rag",
@@ -66,6 +107,9 @@ def create_app() -> FastAPI:
 
     # Hook 1 of 5: install auth middleware (SEC-IAM-01).
     install_auth(app)
+    # Default outbox writer (no-op until a test attaches one).
+    if not hasattr(app.state, "outbox_writer"):
+        app.state.outbox_writer = InMemoryOutboxWriter()
 
     def _require_ctx(request: Request):
         # Defence in depth: install_auth populates ctx or returns 401.
@@ -106,8 +150,21 @@ def create_app() -> FastAPI:
     async def parse_endpoint(request: Request, req: ParseRequest) -> ParseResponse:  # pyright: ignore[reportUnusedFunction]
         _require_ctx(request)
         require_tenant(request.state.ctx)
+        tenant_id = str(request.state.ctx.tenant_id)
         try:
-            return parse_document(req)
+            result = parse_document(req)
+            # Register the parsed document in the tenant registry.
+            register_document(
+                tenant_id, req.document_id, source="parse",
+            )
+            mark_indexed(tenant_id, req.document_id, result.chunk_count)
+            # Hook 3 of 5: emit document-parsed event.
+            _emit(
+                request, "rag.document.parsed", req.document_id,
+                {"document_id": req.document_id, "chunks": result.chunk_count},
+                tenant_id,
+            )
+            return result
         except Exception as exc:
             raise HTTPException(status_code=500, detail=str(exc)) from exc
 
@@ -120,11 +177,17 @@ def create_app() -> FastAPI:
         # Hook 2 of 5: tenant guard.
         _require_ctx(request)
         require_tenant(request.state.ctx)
+        tenant_id = str(request.state.ctx.tenant_id)
         try:
             raw = await file.read()
             if not raw:
                 raise HTTPException(status_code=400, detail="empty file")
             doc_id = document_id or str(uuid.uuid4())
+            # Register document in INGESTING state.
+            register_document(
+                tenant_id, doc_id, filename=file.filename or "",
+                size_bytes=len(raw), source="upload",
+            )
             ragflow = get_ragflow()
             embedder = get_embedder()
             hybrid = get_hybrid()
@@ -139,6 +202,18 @@ def create_app() -> FastAPI:
                 graph.insert(chunk_text, doc_id, {"filename": file.filename or ""})
                 lightrag.insert(chunk_text, doc_id, {"filename": file.filename or ""})
                 success += 1
+            mark_indexed(tenant_id, doc_id, success)
+            # Hook 3 of 5: emit document-uploaded event.
+            _emit(
+                request, "rag.document.uploaded", doc_id,
+                {
+                    "document_id": doc_id,
+                    "filename": file.filename or "",
+                    "size_bytes": len(raw),
+                    "chunks": success,
+                },
+                tenant_id,
+            )
             return UploadResponse(
                 document_id=doc_id,
                 filename=file.filename or "",
@@ -149,14 +224,32 @@ def create_app() -> FastAPI:
         except HTTPException:
             raise
         except Exception as exc:
+            if 'doc_id' in locals():
+                from mate_tech_rag.api.document_registry import mark_failed
+                mark_failed(tenant_id, doc_id, str(exc))
             raise HTTPException(status_code=500, detail=str(exc)) from exc
 
     @app.post("/api/v1/rag/ingest", response_model=IngestResponse)
     async def ingest_endpoint(request: Request, req: IngestRequest) -> IngestResponse:  # pyright: ignore[reportUnusedFunction]
         _require_ctx(request)
         require_tenant(request.state.ctx)
+        tenant_id = str(request.state.ctx.tenant_id)
         try:
-            return ingest(req)
+            result = ingest(req, tenant_id=tenant_id)
+            # Hook 3 of 5: emit document-ingested event.
+            _emit(
+                request, "rag.document.ingested", req.document_id,
+                {
+                    "document_id": req.document_id,
+                    "chunks": result.chunk_count,
+                    "total": result.total_chunks,
+                },
+                tenant_id,
+            )
+            return result
+        except ValueError as exc:
+            # Chunk validation failure -> 400 (not 500).
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
         except Exception as exc:
             raise HTTPException(status_code=500, detail=str(exc)) from exc
 
@@ -164,8 +257,36 @@ def create_app() -> FastAPI:
     async def search(request: Request, req: RetrievalRequest) -> RetrievalResponse:  # pyright: ignore[reportUnusedFunction]
         _require_ctx(request)
         require_tenant(request.state.ctx)
+        tenant_id = str(request.state.ctx.tenant_id)
         try:
-            return retrieve(req)
+            result = retrieve(req)
+            # Tenant-scoped hit filtering: only return hits from documents
+            # owned by this tenant (ADR-0014 cross-tenant isolation).
+            owned = tenant_document_ids(tenant_id)
+            if owned:
+                filtered = [h for h in result.hits if h.document_id in owned]
+            else:
+                filtered = []
+            filtered_resp = RetrievalResponse(
+                query=result.query,
+                hits=filtered,
+                total=len(filtered),
+                latency_ms=result.latency_ms,
+                mode=result.mode,
+            )
+            # Hook 3 of 5: emit search-executed event.
+            _emit(
+                request, "rag.search.executed", req.query[:64],
+                {
+                    "query": req.query[:200],
+                    "top_k": req.top_k,
+                    "mode": result.mode,
+                    "hits": len(filtered),
+                    "total_indexed": len(owned),
+                },
+                tenant_id,
+            )
+            return filtered_resp
         except Exception as exc:
             raise HTTPException(status_code=500, detail=str(exc)) from exc
 

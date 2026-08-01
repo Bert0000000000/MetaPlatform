@@ -106,9 +106,16 @@ def should_continue_after_planner(state: dict[str, Any]) -> str:
 
 
 def persist_node(state: dict[str, Any]) -> dict[str, Any]:
+    """Persist thread state (tenant-scoped, BUSINESS-SLICES).
+
+    Reads ``tenant_id`` from the state dict so the memory store can
+    scope the record by ``(tenant_id, thread_id)`` and prevent
+    cross-tenant reads.
+    """
     tid = state.get("thread_id", "")
-    if tid:
-        save_state(tid, dict(state))
+    tenant_id = state.get("tenant_id", "")
+    if tid and tenant_id:
+        save_state(tenant_id, tid, dict(state))
     return state
 
 

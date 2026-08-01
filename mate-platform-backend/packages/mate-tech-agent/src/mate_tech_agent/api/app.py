@@ -1,15 +1,30 @@
-"""FastAPI app for mate-tech-agent (S1 + S2 + S3)."""
+"""FastAPI app for mate-tech-agent (S1 + S2 + S3 + S4).
+
+BUSINESS-SLICES deep implementation: adds ADR-0014 step 3 (outbox
+events), tenant-scoped thread memory, a proper S3 human-in-the-loop
+review state machine (DRAFT -> PENDING_REVIEW -> APPROVED/REJECTED/
+EXPIRED), and input validation (AUTO scenario resolution, thread-id
+sanitisation). Endpoint contracts (HTTP method / path / response
+shape) are unchanged.
+"""
 # pyright: reportUnusedFunction=false
 from __future__ import annotations
 
+import os
 import time
 import uuid
+from dataclasses import dataclass
+from typing import Any
 
 # BUSINESS-SLICES P1 wave 2: hooks 1, 2 (auth + tenant).
+# BUSINESS-SLICES deep: hook 3 (outbox) + tenant-scoped memory + review FSM.
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import StreamingResponse
 
 from mate_platform.auth import install_auth
+from mate_platform.messaging.events import Event
+from mate_platform.messaging.outbox import InMemoryOutboxWriter
+from mate_platform.tenancy.context import TenantId
 from mate_platform.tenancy.guards import require_tenant
 from mate_tech_agent import __version__
 from mate_tech_agent.api.schemas import (
@@ -43,32 +58,134 @@ _GRAPHS = {
     "S4": build_s4_graph(),
 }
 
-_PENDING_REVIEWS: dict[str, dict] = {}
+# Default scenario when the client passes "AUTO".
+_AUTO_DEFAULT = "S1"
+
+# Review TTL: a pending review expires after this many seconds.
+_REVIEW_TTL = int(os.environ.get("AGENT_REVIEW_TTL_SECONDS", "3600"))
 
 
-def _run_s3_initial(req: ChatRequest, thread_id: str) -> dict:
-    """S3 first call: retrieve + answer + human_review (paused)."""
+# ---------------------------------------------------------------------------
+# Review state machine (S3 human-in-the-loop)
+# ---------------------------------------------------------------------------
+@dataclass
+class ReviewState:
+    """Lifecycle record for an S3 human review.
+
+    States: PENDING -> APPROVED | REJECTED | EXPIRED.
+    Once resolved (non-PENDING) the review cannot be re-submitted;
+    a second ``POST /review`` returns ``status=no_pending``.
+    """
+
+    thread_id: str
+    tenant_id: str
+    scenario: str
+    status: str  # PENDING | APPROVED | REJECTED | EXPIRED
+    created_at: float
+    resolved_at: float = 0.0
+    feedback: str = ""
+    approved: bool = False
+
+    def is_expired(self) -> bool:
+        if self.status != "PENDING":
+            return False
+        return (time.time() - self.created_at) > _REVIEW_TTL
+
+
+# tenant_id -> thread_id -> ReviewState
+_REVIEWS: dict[str, dict[str, ReviewState]] = {}
+
+
+def _get_review(tenant_id: str, thread_id: str) -> ReviewState | None:
+    """Return the review state, lazily expiring stale PENDING reviews."""
+    rs = _REVIEWS.get(tenant_id, {}).get(thread_id)
+    if rs is not None and rs.is_expired():
+        rs.status = "EXPIRED"
+        rs.resolved_at = time.time()
+    return rs
+
+
+def _set_review(rs: ReviewState) -> None:
+    _REVIEWS.setdefault(rs.tenant_id, {})[rs.thread_id] = rs
+
+
+def _clear_review(tenant_id: str, thread_id: str) -> None:
+    _REVIEWS.get(tenant_id, {}).pop(thread_id, None)
+
+
+def _resolve_scenario(requested: str) -> str:
+    """Map the requested scenario to a concrete graph key.
+
+    ``AUTO`` resolves to ``S1`` (the simplest single-pass scenario).
+    Unknown values are rejected by the caller with HTTP 501.
+    """
+    if requested == "AUTO":
+        return _AUTO_DEFAULT
+    return requested
+
+
+def _run_s3_initial(req: ChatRequest, thread_id: str, tenant_id: str) -> dict:
+    """S3 first call: retrieve + answer + human_review (paused).
+
+    Registers a PENDING review in the tenant-scoped ``_REVIEWS`` table
+    so the subsequent ``POST /review`` can resolve it through the FSM.
+    """
     init = {
         "messages": [{"role": "user", "content": req.message}],
         "thread_id": thread_id,
+        "tenant_id": tenant_id,
+        "_scenario": "S3",
     }
     state = retrieve_node(init)
     state = answer_node(state)
     state = human_review_node(state)
-    _PENDING_REVIEWS[thread_id] = dict(state)
-    save_state(thread_id, state)
+    _set_review(ReviewState(
+        thread_id=thread_id,
+        tenant_id=tenant_id,
+        scenario="S3",
+        status="PENDING",
+        created_at=time.time(),
+    ))
+    save_state(tenant_id, thread_id, state)
     return state
+
+
+def _emit(
+    request: Request,
+    event_type: str,
+    aggregate_id: str,
+    payload: dict[str, Any],
+    tenant_id: str,
+) -> None:
+    """Append an outbox event if a writer is configured (ADR-0014 step 3)."""
+    writer: InMemoryOutboxWriter | None = getattr(
+        request.app.state, "outbox_writer", None
+    )
+    if writer is None:
+        return
+    writer.append(
+        Event.create(
+            type=event_type,
+            tenant_id=TenantId(tenant_id),
+            aggregate_id=aggregate_id,
+            payload=payload,
+            trace_id=getattr(request.state.ctx, "trace_id", ""),
+        )
+    )
 
 
 def create_app() -> FastAPI:
     app = FastAPI(
         title="mate-tech-agent",
         version=__version__,
-        description="Mate Platform multi-agent service (LangGraph S1+S2+S3)",
+        description="Mate Platform multi-agent service (LangGraph S1+S2+S3+S4)",
     )
 
     # Hook 1 of 5: install auth middleware (SEC-IAM-01).
     install_auth(app)
+    # Default outbox writer (no-op until a test attaches one).
+    if not hasattr(app.state, "outbox_writer"):
+        app.state.outbox_writer = InMemoryOutboxWriter()
 
     def _require_ctx(request: Request):
         """Defence in depth: install_auth populates ctx or returns 401."""
@@ -77,6 +194,10 @@ def create_app() -> FastAPI:
             raise HTTPException(status_code=401, detail="no auth context")
         return ctx
 
+    def _tid(request: Request) -> str:
+        """Return the verified tenant_id for the current request."""
+        return str(require_tenant(_require_ctx(request)))
+
     @app.get("/healthz", response_model=HealthResponse)
     async def healthz() -> HealthResponse:
         return HealthResponse(status="ok", service="mate-tech-agent", version=__version__)
@@ -84,30 +205,58 @@ def create_app() -> FastAPI:
     @app.post("/api/v1/agent/chat", response_model=ChatResponse)
     async def chat(request: Request, req: ChatRequest) -> ChatResponse:
         # Hook 2 of 5: tenant guard.
-        ctx = _require_ctx(request)
-        require_tenant(ctx)
-        if req.scenario not in _GRAPHS:
+        tenant_id = _tid(request)
+        scenario = _resolve_scenario(req.scenario)
+        if scenario not in _GRAPHS:
             raise HTTPException(status_code=501, detail=f"scenario {req.scenario} not implemented")
         thread_id = req.thread_id or str(uuid.uuid4())
         start = time.perf_counter()
-        if req.scenario == "S3":
-            state = _run_s3_initial(req, thread_id)
+        if scenario == "S3":
+            state = _run_s3_initial(req, thread_id, tenant_id)
+            # Hook 3 of 5: emit review-requested event.
+            _emit(
+                request,
+                "agent.review.requested",
+                thread_id,
+                {"thread_id": thread_id, "scenario": "S3"},
+                tenant_id,
+            )
         else:
-            graph = _GRAPHS[req.scenario]
-            prior = load_state(thread_id)
-            base = dict(prior) if prior else {}
+            graph = _GRAPHS[scenario]
+            prior = load_state(tenant_id, thread_id)
+            base = dict(prior.get("state", {})) if prior else {}
             base.update({
                 "messages": [{"role": "user", "content": req.message}],
                 "thread_id": thread_id,
+                "tenant_id": tenant_id,
+                "_scenario": scenario,
             })
             try:
                 state = graph.invoke(base)
             except Exception as exc:
                 raise HTTPException(status_code=500, detail=str(exc)) from exc
+            # Belt-and-suspenders: ensure state is persisted even if the
+            # graph's persist_node dropped tenant_id during transitions.
+            state["tenant_id"] = tenant_id
+            state["thread_id"] = thread_id
+            save_state(tenant_id, thread_id, state)
         latency_ms = int((time.perf_counter() - start) * 1000)
+        # Hook 3 of 5: emit chat-completed event.
+        _emit(
+            request,
+            "agent.chat.completed",
+            thread_id,
+            {
+                "thread_id": thread_id,
+                "scenario": scenario,
+                "latency_ms": latency_ms,
+                "chunks": len(state.get("retrieved_chunks", [])),
+            },
+            tenant_id,
+        )
         return ChatResponse(
             thread_id=thread_id,
-            scenario=req.scenario,
+            scenario=scenario,
             answer=state.get("answer", ""),
             retrieved_chunks=state.get("retrieved_chunks", []),
             tool_calls=state.get("tool_calls", []),
@@ -116,18 +265,20 @@ def create_app() -> FastAPI:
 
     @app.post("/api/v1/agent/chat/stream")
     async def chat_stream(request: Request, req: ChatRequest):
-        ctx = _require_ctx(request)
-        require_tenant(ctx)
-        if req.scenario not in _GRAPHS:
+        tenant_id = _tid(request)
+        scenario = _resolve_scenario(req.scenario)
+        if scenario not in _GRAPHS:
             raise HTTPException(status_code=501, detail=f"scenario {req.scenario} not implemented")
         thread_id = req.thread_id or str(uuid.uuid4())
 
         async def event_gen():
             yield f"event: thread\ndata: {thread_id}\n\n"
-            if req.scenario == "S3":
+            if scenario == "S3":
                 init = {
                     "messages": [{"role": "user", "content": req.message}],
                     "thread_id": thread_id,
+                    "tenant_id": tenant_id,
+                    "_scenario": "S3",
                 }
                 state = retrieve_node(init)
                 rc = state.get("retrieved_chunks", [])
@@ -139,16 +290,31 @@ def create_app() -> FastAPI:
                     yield f"event: token\ndata: {token}\n\n"
                 yield "event: llm_done\ndata: complete\n\n"
                 state = human_review_node(state)
+                _set_review(ReviewState(
+                    thread_id=thread_id,
+                    tenant_id=tenant_id,
+                    scenario="S3",
+                    status="PENDING",
+                    created_at=time.time(),
+                ))
+                _emit(
+                    request,
+                    "agent.review.requested",
+                    thread_id,
+                    {"thread_id": thread_id, "scenario": "S3"},
+                    tenant_id,
+                )
+                save_state(tenant_id, thread_id, state)
                 yield "event: awaiting_review\ndata: pending=true\n\n"
-                _PENDING_REVIEWS[thread_id] = dict(state)
-                save_state(thread_id, state)
                 yield "event: done\ndata: paused\n\n"
                 return
 
-            if req.scenario == "S1":
+            if scenario == "S1":
                 init = {
                     "messages": [{"role": "user", "content": req.message}],
                     "thread_id": thread_id,
+                    "tenant_id": tenant_id,
+                    "_scenario": "S1",
                 }
                 state = retrieve_node(init)
                 rc = state.get("retrieved_chunks", [])
@@ -158,14 +324,23 @@ def create_app() -> FastAPI:
                 for token in stream_answer(llm, req.message, rc):
                     yield f"event: token\ndata: {token}\n\n"
                 yield "event: llm_done\ndata: complete\n\n"
-                save_state(thread_id, state)
+                save_state(tenant_id, thread_id, state)
+                _emit(
+                    request,
+                    "agent.chat.completed",
+                    thread_id,
+                    {"thread_id": thread_id, "scenario": "S1", "chunks": len(rc)},
+                    tenant_id,
+                )
                 yield "event: done\ndata: end\n\n"
                 return
 
-            if req.scenario == "S2":
+            if scenario == "S2":
                 init = {
                     "messages": [{"role": "user", "content": req.message}],
                     "thread_id": thread_id,
+                    "tenant_id": tenant_id,
+                    "_scenario": "S2",
                 }
                 state = planner_node(init)
                 sq = state.get("sub_questions", [])
@@ -179,7 +354,14 @@ def create_app() -> FastAPI:
                 for token in stream_answer(llm, req.message, rc):
                     yield f"event: token\ndata: {token}\n\n"
                 yield "event: llm_done\ndata: complete\n\n"
-                save_state(thread_id, state)
+                save_state(tenant_id, thread_id, state)
+                _emit(
+                    request,
+                    "agent.chat.completed",
+                    thread_id,
+                    {"thread_id": thread_id, "scenario": "S2", "chunks": len(rc)},
+                    tenant_id,
+                )
                 yield "event: done\ndata: end\n\n"
                 return
 
@@ -189,29 +371,74 @@ def create_app() -> FastAPI:
 
     @app.post("/api/v1/agent/review", response_model=HumanReviewResponse)
     async def review(request: Request, req: HumanReviewRequest) -> HumanReviewResponse:
-        ctx = _require_ctx(request)
-        require_tenant(ctx)
-        pending = _PENDING_REVIEWS.get(req.thread_id)
-        if not pending:
-            saved = load_state(req.thread_id)
-            if saved and "pending_review" in saved.get("state", {}):
-                pending = saved["state"]
-        if not pending:
+        tenant_id = _tid(request)
+        rs = _get_review(tenant_id, req.thread_id)
+
+        # No review record at all.
+        if rs is None:
             return HumanReviewResponse(
                 thread_id=req.thread_id,
                 status="no_pending",
                 message="no pending review for this thread",
             )
+
+        # Already resolved (approved / rejected) — idempotent rejection.
+        if rs.status == "APPROVED":
+            return HumanReviewResponse(
+                thread_id=req.thread_id,
+                status="no_pending",
+                message="review already approved",
+            )
+        if rs.status == "REJECTED":
+            return HumanReviewResponse(
+                thread_id=req.thread_id,
+                status="no_pending",
+                message="review already rejected",
+            )
+        # Expired — the review window lapsed.
+        if rs.status == "EXPIRED":
+            return HumanReviewResponse(
+                thread_id=req.thread_id,
+                status="expired",
+                message="review expired; start a new S3 chat to retry",
+            )
+
+        # PENDING -> resolve through the FSM.
+        saved = load_state(tenant_id, req.thread_id)
+        pending = None
+        if saved:
+            pending = saved.get("state", saved)
+        if not pending:
+            pending = {}
         pending = dict(pending)
         pending["approved"] = req.approved
         pending["feedback"] = req.feedback
+        pending["tenant_id"] = tenant_id
         try:
             state = post_review_node(pending)
             state = persist_node(state)
         except Exception as exc:
             raise HTTPException(status_code=500, detail=str(exc)) from exc
-        save_state(req.thread_id, state)
-        _PENDING_REVIEWS.pop(req.thread_id, None)
+        save_state(tenant_id, req.thread_id, state)
+
+        # Transition the FSM.
+        rs.status = "APPROVED" if req.approved else "REJECTED"
+        rs.resolved_at = time.time()
+        rs.feedback = req.feedback
+        rs.approved = req.approved
+
+        # Hook 3 of 5: emit review-resolved event.
+        _emit(
+            request,
+            "agent.review.resolved",
+            req.thread_id,
+            {
+                "thread_id": req.thread_id,
+                "approved": req.approved,
+                "status": rs.status,
+            },
+            tenant_id,
+        )
         return HumanReviewResponse(
             thread_id=req.thread_id,
             status="approved" if req.approved else "aborted",
@@ -220,21 +447,26 @@ def create_app() -> FastAPI:
 
     @app.get("/api/v1/agent/state/{thread_id}")
     async def get_state(request: Request, thread_id: str):
-        ctx = _require_ctx(request)
-        require_tenant(ctx)
-        s = load_state(thread_id)
+        tenant_id = _tid(request)
+        s = load_state(tenant_id, thread_id)
         if not s:
             raise HTTPException(status_code=404, detail="thread not found")
         return s
 
     @app.delete("/api/v1/agent/state/{thread_id}")
     async def delete_state_endpoint(request: Request, thread_id: str):
-        ctx = _require_ctx(request)
-        require_tenant(ctx)
-        ok = delete_state(thread_id)
-        _PENDING_REVIEWS.pop(thread_id, None)
+        tenant_id = _tid(request)
+        ok = delete_state(tenant_id, thread_id)
+        _clear_review(tenant_id, thread_id)
         if not ok:
             raise HTTPException(status_code=404, detail="thread not found")
+        _emit(
+            request,
+            "agent.thread.deleted",
+            thread_id,
+            {"thread_id": thread_id},
+            tenant_id,
+        )
         return {"deleted": thread_id}
 
     return app
