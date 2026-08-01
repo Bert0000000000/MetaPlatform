@@ -1,0 +1,54 @@
+==========================================================================
+ Kafka ({{ .Chart.Name }} {{ .Chart.Version }} / appVersion {{ .Chart.AppVersion }})
+ has been deployed in KRaft mode (no Zookeeper).
+==========================================================================
+
+Release         : {{ .Release.Name }}
+Namespace       : {{ .Release.Name }}
+Replicas        : {{ .Values.replicaCount }} broker(s)
+KRaft clusterId : {{ .Values.kraft.clusterId }}
+Persistence     : {{ if .Values.persistence.enabled }}PVC {{ .Values.persistence.size }}{{ else }}emptyDir (ephemeral){{ end }}
+Tenant isolation: {{ if .Values.tenantIsolation.enabled }}enabled (prefix="{{ .Values.tenantIsolation.topicPrefix }}"){{ else }}disabled{{ end }}
+
+Bootstrap servers (in-cluster):
+  {{ include "kafka.fullname" . }}:{{ .Values.service.ports.client }}
+
+Headless DNS (per-pod stable names, KRaft quorum):
+{{- $fullname := include "kafka.fullname" . -}}
+{{- range $i := until (int .Values.replicaCount) }}
+  {{ $fullname }}-{{ $i }}.{{ $fullname }}-headless:{{ $.Values.service.ports.client }}
+{{- end }}
+
+1. Verify the brokers are ready:
+
+   kubectl -n {{ .Release.Namespace }} rollout status statefulset/{{ include "kafka.fullname" . }} \
+       --timeout=300s
+
+2. Produce a test message (requires kafka client pod):
+
+   kubectl -n {{ .Release.Namespace }} exec -it {{ include "kafka.fullname" . }}-0 -- \
+       /opt/bitnami/kafka/bin/kafka-console-producer.sh \
+       --bootstrap-server {{ include "kafka.fullname" . }}:{{ .Values.service.ports.client }} \
+       --topic test
+
+3. Consume the test message:
+
+   kubectl -n {{ .Release.Namespace }} exec -it {{ include "kafka.fullname" . }}-0 -- \
+       /opt/bitnami/kafka/bin/kafka-console-consumer.sh \
+       --bootstrap-server {{ include "kafka.fullname" . }}:{{ .Values.service.ports.client }} \
+       --topic test --from-beginning
+
+4. PLATFORM-EVENT-01 producers/consumers should use the bootstrap
+   server above. Topic names follow the tenant-isolation convention:
+     {{ .Values.tenantIsolation.topicPrefix }}.<tenant_id>.<domain>.<event>
+
+NetworkPolicy (hard rule 13):
+  Ingress restricted to namespaces: {{ range .Values.networkPolicy.allowedIngressNamespaces }}{{ . }} {{ end }}
+  Egress restricted to DNS (kube-system:53).
+
+Schema Registry (if enabled):
+{{- if .Values.schemaRegistry.enabled }}
+  {{ include "kafka.fullname" . }}-schema-registry:{{ .Values.schemaRegistry.service.port }}
+{{- else }}
+  Disabled — set schemaRegistry.enabled: true to enable.
+{{- end }}

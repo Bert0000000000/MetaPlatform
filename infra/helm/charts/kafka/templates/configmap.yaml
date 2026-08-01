@@ -24,3 +24,8 @@ data:
   inter-broker-listener-names: {{ .Values.config.inter.broker.listener.names | quote }}
   advertised-listeners: {{ .Values.config.advertised.listeners | quote }}
   listener-security-protocol-map: {{ .Values.config.listener.security.protocol.map | quote }}
+
+  # G1: tenant isolation — topic prefix per tenant. The application
+  # layer resolves full topic names from this prefix + tenant_id.
+  tenant-isolation-enabled: {{ .Values.tenantIsolation.enabled | quote }}
+  tenant-topic-prefix: {{ .Values.tenantIsolation.topicPrefix | quote }}

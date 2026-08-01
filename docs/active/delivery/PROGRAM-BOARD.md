@@ -46,7 +46,7 @@
 
 | # | 项 | 接力 | 来源 | 状态 |
 |---|---|---|---|---|
-| G1 | kafka sub-chart 落地（Bitnami/Confluent chart 选型） | PLATFORM-EVENT-01 | 多批次依赖 | In Progress |
+| G1 | kafka sub-chart 落地（Bitnami/Confluent chart 选型） | PLATFORM-EVENT-01 | 多批次依赖 | **Accepted** ✅（KRaft 3-broker sub-chart + persistence 50Gi + tenantIsolation + networkpolicy + umbrella 集成 + 6 tests，证据 `G1-ACCEPTANCE.md`） |
 | G2 | pre-commit raw-SQL + secret 扫描（gitleaks） | GA-ACCEPTANCE | §13 硬规则 6 + 12 | **Accepted** ✅（commit 待补，pre-commit 加固 + gitleaks 自定义规则 + 3 forbid 脚本 + 20 tests） |
 | **G3** | **Outbox DDL 迁移（`CREATE TABLE outbox_event`）** | TECH-SERVICES 接力 | §13 硬规则 9 | **Accepted** ✅（commit `85f4df75`，Alembic 0007 + 6 tests） |
 | G4 | 真实 K8s 集成 e2e（kind/staging 集群）| PLATFORM-K8S-01 | §13 硬规则 8 | **Accepted** ✅（证据 `G4-ACCEPTANCE.md`，kind CI workflow + 本地 smoke 脚本） |

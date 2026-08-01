@@ -195,8 +195,60 @@ postgresql:
   enabled: false
 redis:
   enabled: false
+# -----------------------------------------------------------------------------
+# Kafka (G1) — KRaft 3-broker ensemble. Enabled by default per the
+# PLATFORM-EVENT-01 Outbox pipeline (ADR-0013). Local dev scales down
+# to 1 broker via values-local.yaml.
+# -----------------------------------------------------------------------------
 kafka:
-  enabled: false
+  enabled: true
+  fullnameOverride: kafka
+  kraft:
+    enabled: true
+    clusterId: "metaplatform-kraft-cluster"
+  replicaCount: 3
+  resources:
+    requests:
+      cpu: 1
+      memory: 2Gi
+    limits:
+      cpu: 2
+      memory: 4Gi
+  persistence:
+    enabled: true
+    size: 50Gi
+    storageClass: ""
+  autoScaling:
+    enabled: true
+  tenantIsolation:
+    enabled: true
+    topicPrefix: "tenant"
+  config:
+    auto.create.topics.enable: "false"
+    default.replication.factor: "3"
+    num.partitions: "6"
+    log.retention.hours: "72"
+    compression.type: "producer"
+    inter.broker.listener.names: "INTERNAL,CLIENT"
+    advertised.listeners: "INTERNAL://kafka:9092,CLIENT://kafka:9092"
+    listener.security.protocol.map: "INTERNAL:PLAINTEXT,CLIENT:PLAINTEXT"
+  service:
+    type: ClusterIP
+    ports:
+      client: 9092
+      internal: 9094
+  probes:
+    readiness:
+      initialDelaySeconds: 10
+      periodSeconds: 10
+    liveness:
+      initialDelaySeconds: 30
+      periodSeconds: 30
+  networkPolicy:
+    enabled: true
+    allowedIngressNamespaces:
+      - metaplatform
+      - api-gateway
 prometheus:
   enabled: false
 grafana:

@@ -21,20 +21,34 @@ kraft:
   enabled: true
   clusterId: "metaplatform-kraft-cluster"
 
-replicaCount: 1   # 3 in production per values-production.yaml
+# G1: 3-broker KRaft ensemble (combined controller+broker) as the
+# production-grade default. Local dev overrides to 1 via
+# values-local.yaml.
+replicaCount: 3
 
+# G1: 2Gi memory / 1 CPU requests; production override is 4Gi / 2 CPU
+# (values-production.yaml).
 resources:
   requests:
-    cpu: 250m
-    memory: 512Mi
+    cpu: 1
+    memory: 2Gi
   limits:
-    cpu: 1000m
-    memory: 1Gi
+    cpu: 2
+    memory: 4Gi
 
+# G1: PVC-backed persistence (50Gi default). Local dev overrides to
+# emptyDir via values-local.yaml (persistence.enabled: false).
 persistence:
-  enabled: false       # true in production (PVC); false = emptyDir
-  size: 8Gi
+  enabled: true
+  size: 50Gi
   storageClass: ""     # "" = cluster default StorageClass
+
+# G1: resource governance — requests/limits declared so the scheduler
+# can place pods and HPA/KEDA can reference them. Kafka brokers are
+# not horizontally auto-scaled (adding brokers requires partition
+# reassignment); this flag asserts that resource governance is ON.
+autoScaling:
+  enabled: true
 
 # Producer / consumer defaults.
 config:
@@ -87,6 +101,14 @@ topics:
       partitions: 3
     - name: dashboard
       partitions: 3
+
+# G1: tenant isolation — each tenant gets an independent topic prefix
+# so cross-tenant event streams are namespaced at the broker level.
+# The application layer (SEC-TENANT-01 kafka_tenant.py) resolves the
+# full topic name as: <topicPrefix>.<tenant_id>.<domain>.<event>.
+tenantIsolation:
+  enabled: true
+  topicPrefix: "tenant"
 
 service:
   type: ClusterIP

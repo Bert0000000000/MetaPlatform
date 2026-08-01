@@ -61,11 +61,14 @@ helm template kafka . -f ../../values-production.yaml
 | image.pullPolicy | string | `"IfNotPresent"` | Image pull policy |
 | kraft.enabled | bool | `true` | Use KRaft (no Zookeeper) |
 | kraft.clusterId | string | `"metaplatform-kraft-cluster"` | KRaft cluster id |
-| replicaCount | int | `1` | Number of brokers (3 in production) |
-| resources | object | `{"requests":{"cpu":"250m","memory":"512Mi"},"limits":{"cpu":"1000m","memory":"1Gi"}}` | Resource shape |
-| persistence.enabled | bool | `false` | Use PVC (true) or emptyDir (false) |
-| persistence.size | string | `"8Gi"` | Volume size |
+| replicaCount | int | `3` | Number of brokers (G1 default; 1 in local dev) |
+| resources | object | `{"requests":{"cpu":1,"memory":"2Gi"},"limits":{"cpu":2,"memory":"4Gi"}}` | Resource shape (prod 4Gi/2CPU) |
+| persistence.enabled | bool | `true` | Use PVC (true) or emptyDir (false) |
+| persistence.size | string | `"50Gi"` | Volume size |
 | persistence.storageClass | string | `""` | StorageClass (empty = cluster default) |
+| autoScaling.enabled | bool | `true` | Resource governance flag (requests/limits declared) |
+| tenantIsolation.enabled | bool | `true` | Per-tenant topic prefix isolation |
+| tenantIsolation.topicPrefix | string | `"tenant"` | Topic prefix convention |
 | config.auto.create.topics.enable | string | `"false"` | Topics are explicit (PLATFORM-EVENT-01) |
 | config.default.replication.factor | string | `"1"` | 3 in production |
 | config.num.partitions | string | `"6"` | Default partition count |
