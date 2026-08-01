@@ -12,6 +12,8 @@ servers:
 tags:
 - name: mcp
   description: mcp domain operations
+- name: federation
+  description: MCP federation (external MCP server registry & cross-server tool routing)
 security:
   - bearerAuth: []
     tenantHeader: []
@@ -65,7 +67,7 @@ paths:
       x-mate-permission: mcp.get
       x-mate-requirements:
       - FR-MCP-MCPGETMCPTOOLS
-      x-mate-implementation-status: placeholder
+      x-mate-implementation-status: implemented
   /api/v1/mcp/tools/{name}:
     post:
       summary: HTTP 桥接 — 调工具
@@ -111,7 +113,7 @@ paths:
       x-mate-permission: mcp.post
       x-mate-requirements:
       - FR-MCP-MCPPOSTMCPTOOLSNAME
-      x-mate-implementation-status: placeholder
+      x-mate-implementation-status: implemented
   /api/v1/mcp/resources:
     get:
       security:
@@ -131,7 +133,7 @@ paths:
       x-mate-permission: mcp.get
       x-mate-requirements:
       - FR-MCP-MCPGETMCPRESOURCES
-      x-mate-implementation-status: placeholder
+      x-mate-implementation-status: implemented
   /api/v1/mcp/prompts:
     get:
       security:
@@ -151,7 +153,7 @@ paths:
       x-mate-permission: mcp.get
       x-mate-requirements:
       - FR-MCP-MCPGETMCPPROMPTS
-      x-mate-implementation-status: placeholder
+      x-mate-implementation-status: implemented
   /api/v1/mcp/prompts/{name}:
     post:
       security:
@@ -183,7 +185,251 @@ paths:
       x-mate-permission: mcp.post
       x-mate-requirements:
       - FR-MCP-MCPPOSTMCPPROMPTSNAME
-      x-mate-implementation-status: placeholder
+      x-mate-implementation-status: implemented
+  # ---- MCP Federation (backlog §3.8): external MCP server registry ----
+  # Field names / response wrappers / status enum mirror the actual
+  # implementation in packages/mate-tech-mcp (federation.py +
+  # federation_routes.py). Spec follows code.
+  /api/v1/mcp/federation/servers:
+    post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
+      summary: 注册外部 MCP server
+      tags:
+      - federation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterFederationServerRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  server:
+                    $ref: '#/components/schemas/FederatedServer'
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
+      operationId: mcpPostMcpFederationServers
+      description: 注册外部 MCP server(租户隔离)
+      x-mate-owner: ai-protocols
+      x-mate-permission: mcp.post
+      x-mate-requirements:
+      - FR-MCP-FEDERATION-REGISTER
+      x-mate-implementation-status: implemented
+    get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
+      summary: 列出已注册的联邦 server
+      tags:
+      - federation
+      parameters:
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: string
+          enum: [active, disabled, deleted]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/FederatedServer'
+                  total:
+                    type: integer
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
+      operationId: mcpGetMcpFederationServers
+      description: 列出已注册的联邦 server(按 status 过滤)
+      x-mate-owner: ai-protocols
+      x-mate-permission: mcp.get
+      x-mate-requirements:
+      - FR-MCP-FEDERATION-LIST
+      x-mate-implementation-status: implemented
+  /api/v1/mcp/federation/servers/{server_id}:
+    parameters:
+    - name: server_id
+      in: path
+      required: true
+      schema:
+        type: string
+    get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
+      summary: 获取单个联邦 server 详情
+      tags:
+      - federation
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  server:
+                    $ref: '#/components/schemas/FederatedServer'
+        '404':
+          description: federated server not found
+      operationId: mcpGetMcpFederationServersServerId
+      description: 获取单个联邦 server 详情
+      x-mate-owner: ai-protocols
+      x-mate-permission: mcp.get
+      x-mate-requirements:
+      - FR-MCP-FEDERATION-GET
+      x-mate-implementation-status: implemented
+    put:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
+      summary: 更新联邦 server(transport_url / auth_token_ref / status / tools)
+      tags:
+      - federation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateFederationServerRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  server:
+                    $ref: '#/components/schemas/FederatedServer'
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
+        '404':
+          description: federated server not found
+      operationId: mcpPutMcpFederationServersServerId
+      description: 更新联邦 server
+      x-mate-owner: ai-protocols
+      x-mate-permission: mcp.post
+      x-mate-requirements:
+      - FR-MCP-FEDERATION-UPDATE
+      x-mate-implementation-status: implemented
+    delete:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
+      summary: 注销联邦 server(软删除 → status=deleted)
+      tags:
+      - federation
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deleted:
+                    type: boolean
+                  server_id:
+                    type: string
+        '404':
+          description: federated server not found
+      operationId: mcpDeleteMcpFederationServersServerId
+      description: 注销联邦 server
+      x-mate-owner: ai-protocols
+      x-mate-permission: mcp.post
+      x-mate-requirements:
+      - FR-MCP-FEDERATION-DELETE
+      x-mate-implementation-status: implemented
+  /api/v1/mcp/federation/tools:
+    get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
+      summary: 列出所有联邦 server 暴露的远程工具(聚合)
+      tags:
+      - federation
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/FederatedTool'
+                  total:
+                    type: integer
+      operationId: mcpGetMcpFederationTools
+      description: 列出所有联邦 server 暴露的远程工具(聚合)
+      x-mate-owner: ai-protocols
+      x-mate-permission: mcp.get
+      x-mate-requirements:
+      - FR-MCP-FEDERATION-TOOLS
+      x-mate-implementation-status: implemented
+  /api/v1/mcp/federation/tools/{tool_name}/invoke:
+    parameters:
+    - name: tool_name
+      in: path
+      required: true
+      schema:
+        type: string
+    post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
+      summary: 路由调用联邦工具
+      tags:
+      - federation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InvokeRemoteToolRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tool:
+                    type: string
+                  server_id:
+                    type: string
+                  server_name:
+                    type: string
+                  result: {}
+        '404':
+          description: tool not found in any federated server
+        '502':
+          description: remote MCP server unreachable
+      operationId: mcpPostMcpFederationToolsToolNameInvoke
+      description: 路由调用联邦工具(按 tool_name 找到暴露它的 server)
+      x-mate-owner: ai-protocols
+      x-mate-permission: mcp.post
+      x-mate-requirements:
+      - FR-MCP-FEDERATION-INVOKE
+      x-mate-implementation-status: implemented
 components:
   securitySchemes:
     bearerAuth:
@@ -213,4 +459,92 @@ components:
         description:
           type: string
         inputSchema:
+          type: object
+    # ---- Federation schemas (mirror federation.py FederatedServer) ----
+    FederatedServer:
+      type: object
+      properties:
+        id:
+          type: string
+        tenant_id:
+          type: string
+        name:
+          type: string
+        transport_url:
+          type: string
+          format: uri
+          description: Base URL of the remote MCP server (http/https)
+        auth_token_ref:
+          type: string
+          description: Secret reference, e.g. 'vault://path/to/token'
+        status:
+          type: string
+          enum: [active, disabled, deleted]
+        description:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        tools:
+          type: array
+          items:
+            type: string
+    RegisterFederationServerRequest:
+      type: object
+      required: [name, transport_url, auth_token_ref]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          description: Logical name (unique per tenant)
+        transport_url:
+          type: string
+          description: Base URL of the remote MCP server (http/https)
+        auth_token_ref:
+          type: string
+          description: Secret reference, e.g. 'vault://path/to/token'
+        description:
+          type: string
+        tools:
+          type: array
+          items:
+            type: string
+          description: Tool names this server exposes
+    UpdateFederationServerRequest:
+      type: object
+      properties:
+        transport_url:
+          type: string
+          nullable: true
+        auth_token_ref:
+          type: string
+          nullable: true
+        description:
+          type: string
+          nullable: true
+        status:
+          type: string
+          nullable: true
+          enum: [active, disabled, deleted]
+        tools:
+          type: array
+          items:
+            type: string
+          nullable: true
+    FederatedTool:
+      type: object
+      properties:
+        name:
+          type: string
+        server_id:
+          type: string
+        server_name:
+          type: string
+    InvokeRemoteToolRequest:
+      type: object
+      properties:
+        arguments:
           type: object

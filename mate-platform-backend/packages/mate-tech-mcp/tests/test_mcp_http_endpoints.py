@@ -30,6 +30,8 @@ from typing import TYPE_CHECKING
 from unittest.mock import patch
 
 import pytest
+import respx
+from httpx import Response
 
 if TYPE_CHECKING:
     from fastapi.testclient import TestClient
@@ -140,3 +142,170 @@ class TestMcpMainIsImportable:
                 if m == "mate_tech_mcp.main" or m.startswith("mate_tech_mcp."):
                     sys.modules.pop(m, None)
             import mate_tech_mcp.main  # noqa: F401
+
+
+# ---------------------------------------------------------------------------
+# P3-W10: MCP Federation HTTP e2e (7 federation + cross-tenant negatives)
+#
+# These tests mount ONLY the federation APIRouter on a bare FastAPI app
+# with NO install_auth middleware, so ``request.state.ctx`` is never set.
+# They therefore exercise the ``_tenant_id`` X-Tenant-Id fallback path
+# added in federation_routes.py (the fix that makes federation reachable
+# in test profiles / any environment where auth middleware is absent).
+# ---------------------------------------------------------------------------
+class TestMcpFederationHttpE2E:
+    """HTTP-level e2e for the 7 federation endpoints + cross-tenant guard."""
+
+    @pytest.fixture
+    def fed_client(self):
+        """Bare app with the federation router and no auth middleware."""
+        from fastapi import FastAPI
+        from fastapi.testclient import TestClient
+
+        from mate_tech_mcp import federation_routes as routes_mod
+        from mate_tech_mcp.federation_routes import router as fed_api_router
+
+        # Start each test from a clean registry + rebuilt federation router.
+        routes_mod.federation_registry.reset()
+        routes_mod._rebuild_federation_router()
+
+        app = FastAPI(title="mate-tech-mcp-fed-e2e")
+        # install_auth intentionally NOT mounted → state.ctx absent →
+        # _tenant_id must fall back to X-Tenant-Id header.
+        app.include_router(fed_api_router)
+        client = TestClient(app)
+        yield client
+
+        routes_mod.federation_registry.reset()
+
+    @staticmethod
+    def _hdr(tenant: str = "tenant-acme") -> dict[str, str]:
+        return {"X-Tenant-Id": tenant}
+
+    def _register(
+        self,
+        client,
+        tenant: str = "tenant-acme",
+        *,
+        name: str = "remote-search",
+        transport_url: str = "http://remote-mcp:8081",
+        tools: list[str] | None = None,
+    ) -> dict:
+        r = client.post(
+            "/api/v1/mcp/federation/servers",
+            json={
+                "name": name,
+                "transport_url": transport_url,
+                "auth_token_ref": "vault://secret/remote-search",
+                "description": "remote search server",
+                "tools": tools if tools is not None else ["remote.search", "remote.lookup"],
+            },
+            headers=self._hdr(tenant),
+        )
+        assert r.status_code == 201, r.text
+        return r.json()["server"]
+
+    # --- 7 federation endpoints -------------------------------------------------
+    def test_federation_register_server_returns_201(self, fed_client) -> None:
+        srv = self._register(fed_client)
+        assert srv["id"].startswith("fed-")
+        assert srv["tenant_id"] == "tenant-acme"
+        assert srv["status"] == "active"
+
+    def test_federation_list_servers_returns_200(self, fed_client) -> None:
+        self._register(fed_client, name="srv-a", tools=["tool1"])
+        self._register(
+            fed_client, name="srv-b", transport_url="http://b:8081", tools=["tool2"]
+        )
+        r = fed_client.get("/api/v1/mcp/federation/servers", headers=self._hdr())
+        assert r.status_code == 200
+        assert r.json()["total"] == 2
+
+    def test_federation_get_server_returns_200(self, fed_client) -> None:
+        srv = self._register(fed_client)
+        r = fed_client.get(
+            f"/api/v1/mcp/federation/servers/{srv['id']}", headers=self._hdr()
+        )
+        assert r.status_code == 200
+        assert r.json()["server"]["id"] == srv["id"]
+
+    def test_federation_update_server_returns_200(self, fed_client) -> None:
+        srv = self._register(fed_client)
+        r = fed_client.put(
+            f"/api/v1/mcp/federation/servers/{srv['id']}",
+            json={"status": "disabled", "description": "off"},
+            headers=self._hdr(),
+        )
+        assert r.status_code == 200, r.text
+        body = r.json()["server"]
+        assert body["status"] == "disabled"
+        assert body["description"] == "off"
+
+    def test_federation_delete_server_returns_200(self, fed_client) -> None:
+        srv = self._register(fed_client)
+        r = fed_client.delete(
+            f"/api/v1/mcp/federation/servers/{srv['id']}", headers=self._hdr()
+        )
+        assert r.status_code == 200
+        assert r.json()["deleted"] is True
+
+    def test_federation_list_tools_returns_200(self, fed_client) -> None:
+        self._register(fed_client, name="srv-a", tools=["tool1", "tool2"])
+        self._register(
+            fed_client, name="srv-b", transport_url="http://b:8081", tools=["tool3"]
+        )
+        r = fed_client.get("/api/v1/mcp/federation/tools", headers=self._hdr())
+        assert r.status_code == 200
+        assert r.json()["total"] == 3
+
+    @respx.mock
+    def test_federation_invoke_tool_returns_200(self, fed_client) -> None:
+        respx.post("http://remote-mcp:8081/api/v1/mcp/tools/remote.search").mock(
+            return_value=Response(200, json={"result": {"hits": [{"id": "h1"}]}})
+        )
+        srv = self._register(fed_client)
+        r = fed_client.post(
+            "/api/v1/mcp/federation/tools/remote.search/invoke",
+            json={"arguments": {"query": "hello"}},
+            headers=self._hdr(),
+        )
+        assert r.status_code == 200, r.text
+        body = r.json()
+        assert body["tool"] == "remote.search"
+        assert body["server_id"] == srv["id"]
+        assert body["result"] == {"hits": [{"id": "h1"}]}
+
+    # --- cross-tenant negatives (ADR-0014 step 5) ------------------------------
+    def test_cross_tenant_federation_get_returns_404(self, fed_client) -> None:
+        srv = self._register(fed_client, tenant="tenant-acme")
+        r = fed_client.get(
+            f"/api/v1/mcp/federation/servers/{srv['id']}",
+            headers=self._hdr("tenant-other"),
+        )
+        assert r.status_code == 404
+
+    def test_cross_tenant_federation_delete_returns_404(self, fed_client) -> None:
+        srv = self._register(fed_client, tenant="tenant-acme")
+        r = fed_client.delete(
+            f"/api/v1/mcp/federation/servers/{srv['id']}",
+            headers=self._hdr("tenant-other"),
+        )
+        assert r.status_code == 404
+        # original tenant can still see it
+        r2 = fed_client.get(
+            f"/api/v1/mcp/federation/servers/{srv['id']}", headers=self._hdr()
+        )
+        assert r2.status_code == 200
+
+    def test_federation_empty_tenant_header_returns_400(self, fed_client) -> None:
+        """No state.ctx AND an empty X-Tenant-Id → 400 (fallback guard)."""
+        r = fed_client.get(
+            "/api/v1/mcp/federation/servers", headers={"X-Tenant-Id": ""}
+        )
+        assert r.status_code == 400
+
+    def test_federation_no_header_defaults_tenant(self, fed_client) -> None:
+        """Absent X-Tenant-Id (and no ctx) falls back to 'default' tenant."""
+        r = fed_client.get("/api/v1/mcp/federation/servers")
+        assert r.status_code == 200
+        assert r.json()["total"] == 0
