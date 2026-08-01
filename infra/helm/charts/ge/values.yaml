@@ -45,6 +45,40 @@ expectations:
   storagePerTenant: true
   defaultProfile: "metaplatform-default"
 
+# D3 tenant-scoping block — explicit on/off switches for the
+# per-tenant quality namespace. Inherits SEC-TENANT-01 hard rule 3.
+tenantScoping:
+  enabled: true
+  storagePerTenant: true
+
+# D3 default checkpoints — these are the canonical suites that every
+# DDL migration / pipeline gate must pass. Each entry carries a
+# ``blocking`` flag: blocking failures stop the Airflow DAG;
+# non-blocking failures emit alerts only.
+# See infra/helm/charts/ge/templates/dag-template.py for the DAG
+# that runs these checkpoints.
+checkpoints:
+  - name: "tenant_id_not_null"
+    domain: "iam"
+    datasets: ["iam.user", "iam.role"]
+    blocking: true
+    description: "Critical: tenant_id column must never be NULL."
+  - name: "tenant_id_matches_context"
+    domain: "iam"
+    datasets: ["iam.user"]
+    blocking: true
+    description: "Critical: tenant_id must match the request context."
+  - name: "row_count_positive"
+    domain: "iam"
+    datasets: ["iam.user"]
+    blocking: false
+    description: "Non-blocking: dataset should have at least one row."
+  - name: "schema_in_sync"
+    domain: "data"
+    datasets: ["data.lineage_node"]
+    blocking: false
+    description: "Non-blocking: schema matches the catalog definition."
+
 # Validation runner schedule (CronJob-style cron expression).
 # The runner polls the expectation store and re-validates datasets
 # on a fixed cadence; DDL migrations trigger an immediate run.
