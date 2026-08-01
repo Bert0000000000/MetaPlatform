@@ -31,9 +31,13 @@ export function getAntdTheme(
         colorText: '#fafafa',
         colorTextSecondary: '#a1a1a1',
         colorTextTertiary: '#737373',
-        borderRadius: 4,
+                borderRadius: 4,
+                borderRadiusLG: 4,
         fontFamily: "'Geist', ui-sans-serif, system-ui, sans-serif",
         controlHeight: 36,
+        boxShadow: 'none',
+        boxShadowSecondary: 'none',
+        wireframe: false,
       },
       components: {
         Menu: {
@@ -53,6 +57,8 @@ export function getAntdTheme(
         Card: {
           colorBgContainer: '#111111',
           colorBorderSecondary: '#262626',
+          boxShadowTertiary: 'none',
+          paddingLG: 16,
         },
         Table: {
           colorBgContainer: '#111111',
@@ -68,6 +74,8 @@ export function getAntdTheme(
         Button: {
           colorBgContainer: 'transparent',
           colorBorder: '#262626',
+          primaryShadow: 'none',
+          defaultShadow: 'none',
         },
         Modal: {
           colorBgElevated: '#111111',
@@ -75,6 +83,11 @@ export function getAntdTheme(
         },
         Drawer: {
           colorBgElevated: '#111111',
+        },
+        Tag: {
+          defaultBg: '#1a1a1a',
+          defaultColor: '#a1a1a1',
+          borderRadiusSM: 4,
         },
       },
     },

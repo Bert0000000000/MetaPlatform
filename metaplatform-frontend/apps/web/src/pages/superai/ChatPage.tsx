@@ -1,35 +1,32 @@
 import { useState, useRef, useMemo, useCallback, useEffect } from 'react';
-import { Bubble, Sender, Welcome } from '@ant-design/x';
+import { Welcome } from '@ant-design/x';
 import {
-  Button,
-  Tabs,
   Typography,
-  Flex,
-  Tag,
-  Space,
   Tooltip,
   Select,
-  Card,
-  theme,
   Switch,
   Upload,
   Image,
   message,
+  Input,
+  Slider,
 } from 'antd';
 import type { UploadFile } from 'antd/es/upload/interface';
 import {
   RobotOutlined,
   UserOutlined,
-  MessageOutlined,
-  ThunderboltOutlined,
-  BarChartOutlined,
-  CodeOutlined,
-  ApartmentOutlined,
-  TeamOutlined,
-  GlobalOutlined,
   BookOutlined,
-  HistoryOutlined,
-  PictureOutlined,
+  PlusOutlined,
+  SearchOutlined,
+  StarFilled,
+  DeleteOutlined,
+  PaperClipOutlined,
+  SendOutlined,
+  CopyOutlined,
+  ReloadOutlined,
+  LikeOutlined,
+  DislikeOutlined,
+  RightOutlined,
 } from '@ant-design/icons';
 import { streamChat, listMultimodalModels, multimodalUploadChat } from '@/api/superai/chat';
 import { listKnowledgeBases, search as ragSearch } from '@/api/superai/rag';
@@ -41,61 +38,26 @@ import {
   toggleFavorite,
   getHistory,
 } from '@/api/superai/conversations';
-import HistorySidebar from './components/HistorySidebar';
 import MarkdownRenderer from './components/MarkdownRenderer';
-import AnalysisPanel from './components/AnalysisPanel';
-import ActionPanel from './components/ActionPanel';
-import ExplorePanel from './components/ExplorePanel';
-import GeneratePanel from './components/GeneratePanel';
-import PlanPanel from './components/PlanPanel';
 import KnowledgeGraph from './components/KnowledgeGraph';
 import type {
   ChatSession,
   ChatMessage,
-  ChatMode,
   Citation,
   KnowledgeBase,
-  SqlAuditResult,
-  ChartType,
-  ChartDataSet,
-  ActionResult,
-  GraphData,
-  GeneratedConfig,
-  CodeReviewResult,
   ChatImage,
   MultimodalModel,
-  Plan,
 } from '@/api/superai/types';
 
-const MODES: { key: ChatMode; label: string; icon: React.ReactNode }[] = [
-  { key: 'chat', label: '问答', icon: <MessageOutlined /> },
-  { key: 'analysis', label: '分析', icon: <BarChartOutlined /> },
-  { key: 'action', label: '操作', icon: <ThunderboltOutlined /> },
-  { key: 'exploration', label: '探索', icon: <ApartmentOutlined /> },
-  { key: 'code', label: '代码', icon: <CodeOutlined /> },
-  { key: 'task', label: '编排', icon: <TeamOutlined /> },
-  { key: 'dispatch', label: '调度', icon: <GlobalOutlined /> },
-];
+const UNIFIED_SYSTEM_PROMPT = `你是 Mate Platform 的智能助手 SuperAI。你会自动识别用户意图并用最合适的方式回答：
 
-const MODE_SYSTEM_PROMPTS: Record<ChatMode, string> = {
-  chat: '你是 Mate Platform 的智能助手 SuperAI，请用专业、简洁的中文回答。回答时请使用 Markdown 格式，支持标题、列表、代码块等。',
-  analysis: '你是 Mate Platform 的数据分析助手。用户会用自然语言描述分析需求，请帮助生成 SQL、执行查询并可视化结果。',
-  action: '你是 Mate Platform 的 Action 执行助手。根据用户的描述匹配合适的 Action，并辅助用户填写参数后执行。',
-  exploration: '你是 Mate Platform 的 Ontology 探索助手。帮助用户通过自然语言查询企业知识图谱，探索概念、实体和关系。',
-  code: '你是 Mate Platform 的代码生成助手。根据用户描述生成表单配置、审批流程、代码片段、仪表盘配置等。支持代码解释和安全审查。',
-  task: '你是 Mate Platform 的任务编排助手。帮助用户拆解复杂任务，编排多个步骤和 Action 完成端到端流程。',
-  dispatch: '你是 Mate Platform 的调度助手。帮助用户协调多个领域的数字员工协作完成跨域任务。',
-};
+- 普通问答：用专业、简洁的中文回答，使用 Markdown 格式。
+- 数据分析：当用户描述数据需求时，帮助生成 SQL 并解释。
+- 知识图谱：当用户查询实体关系时，结合 Ontology 知识图谱回答。
+- 代码生成：当用户需要表单/流程/代码时，生成配置和代码片段。
+- 任务编排：当用户描述复杂任务时，拆解步骤并给出执行方案。
 
-const MODE_PLACEHOLDER: Record<ChatMode, string> = {
-  chat: '请输入您的问题，按 Ctrl + Enter 发送',
-  analysis: '描述您想分析的数据，如：按部门统计本月销售额',
-  action: '描述您想执行的操作，如：给合同快到期的客户发送提醒',
-  exploration: '探索企业数据关系，如：客户A有哪些关联的合同和订单',
-  code: '描述您想生成的内容，如：生成一个客户信息登记表单',
-  task: '描述您的复杂任务，如：分析上个季度的客户流失原因并生成报告',
-  dispatch: '描述需要多领域数字员工协作的专业问题',
-};
+始终使用 Markdown 格式，支持标题、列表、代码块、表格等。回答要专业、准确、可溯源。`;
 
 const WELCOME_PROMPTS = [
   '什么是 Ontology 本体引擎？',
@@ -185,26 +147,247 @@ function conversationToSession(
 function CitationList({ citations }: { citations?: Citation[] }) {
   if (!citations || citations.length === 0) return null;
   return (
-    <Space wrap size="small" style={{ marginTop: 8 }}>
-      <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
+      <Typography.Text style={{ fontSize: 12, color: '#a1a1a1' }}>
         📚 参考来源：
       </Typography.Text>
       {citations.map((c) => (
         <Tooltip key={c.id} title={c.snippet} placement="topLeft">
-          <Tag color="blue" style={{ cursor: 'pointer', maxWidth: 200 }}>
+          <span
+            style={{
+              display: 'inline-block',
+              cursor: 'pointer',
+              maxWidth: 200,
+              background: '#1a1a1a',
+              border: '1px solid #262626',
+              color: '#a1a1a1',
+              borderRadius: 4,
+              padding: '2px 8px',
+              fontSize: 11,
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}
+          >
             {c.title} ({c.score}%)
-          </Tag>
+          </span>
         </Tooltip>
       ))}
-    </Space>
+    </div>
+  );
+}
+
+/** 思考过程折叠组件 */
+function ThinkingSection({ content, duration }: { content?: string; duration?: string }) {
+  const [expanded, setExpanded] = useState(false);
+  if (!content) return null;
+  return (
+    <div>
+      <div
+        onClick={() => setExpanded((v) => !v)}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          fontSize: 12,
+          color: '#a1a1a1',
+          cursor: 'pointer',
+          padding: '8px 0 4px',
+          userSelect: 'none',
+        }}
+      >
+        <RightOutlined
+            style={{
+            fontSize: 14,
+            transition: 'transform 0.2s',
+            transform: expanded ? 'rotate(90deg)' : 'none',
+          }}
+        />
+        <span>思考过程</span>
+        <span style={{ marginLeft: 'auto' }}>{duration}</span>
+      </div>
+      {expanded && (
+        <div
+          style={{
+            fontSize: 12,
+            color: '#a1a1a1',
+            lineHeight: 1.6,
+            padding: '8px 0 12px',
+            borderBottom: '1px solid #262626',
+            marginBottom: 12,
+          }}
+        >
+          {content}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** 消息操作按钮 */
+function MessageActions({ onCopy, onRegenerate }: { onCopy: () => void; onRegenerate?: () => void }) {
+  const btnStyle: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 4,
+    background: 'transparent',
+    border: 'none',
+    color: '#a1a1a1',
+    fontSize: 12,
+    padding: '4px 8px',
+    borderRadius: 4,
+    cursor: 'pointer',
+    fontFamily: "inherit",
+  };
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 8 }}>
+      <button style={btnStyle} onClick={onCopy} className="msg-action-btn">
+        <CopyOutlined style={{ fontSize: 14 }} />复制
+      </button>
+      {onRegenerate && (
+        <button style={btnStyle} onClick={onRegenerate} className="msg-action-btn">
+          <ReloadOutlined style={{ fontSize: 14 }} />重新生成
+        </button>
+      )}
+      <button style={btnStyle} className="msg-action-btn">
+        <LikeOutlined style={{ fontSize: 14 }} />
+      </button>
+      <button style={btnStyle} className="msg-action-btn">
+        <DislikeOutlined style={{ fontSize: 14 }} />
+      </button>
+    </div>
+  );
+}
+
+/** 单条消息渲染（贴合设计稿） */
+function MessageRow({ msg, onCopy }: { msg: ChatMessage; onCopy: (text: string) => void }) {
+  const isUser = msg.role === 'user';
+  const graphData = !isUser ? msg.metadata?.graphData : undefined;
+  const thinkingContent = !isUser ? msg.metadata?.thinking : undefined;
+  const thinkingDuration = !isUser ? msg.metadata?.thinkingDuration : undefined;
+
+  const time = msg.createdAt
+    ? new Date(msg.createdAt).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+    : '';
+
+  return (
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: isUser ? 'flex-end' : 'flex-start',
+      }}
+    >
+      {/* 消息头 */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+        <div
+          style={{
+            width: 24,
+            height: 24,
+            borderRadius: '50%',
+            background: '#1a1a1a',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+            color: '#a1a1a1',
+          }}
+        >
+          {isUser ? (
+            <UserOutlined style={{ fontSize: 14 }} />
+          ) : (
+            <RobotOutlined style={{ fontSize: 14 }} />
+          )}
+        </div>
+        <span style={{ fontSize: 12, fontWeight: 500, color: '#a1a1a1' }}>
+          {isUser ? 'Admin' : 'SuperAI'}
+        </span>
+        <span style={{ fontSize: 11, color: '#a1a1a1' }}>{time}</span>
+      </div>
+
+      {/* 消息气泡 */}
+      <div
+        style={{
+          maxWidth: 680,
+          padding: '14px 18px',
+          borderRadius: 4,
+          fontSize: 14,
+          lineHeight: 1.7,
+          background: isUser ? '#1a1a1a' : '#111111',
+          color: '#fafafa',
+          border: isUser ? 'none' : '1px solid #262626',
+        }}
+      >
+        {/* 思考中状态 */}
+        {msg.streaming && msg.content === '' && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: '#a1a1a1', padding: '8px 0 4px' }}>
+            <div style={{ display: 'inline-flex', gap: 3 }}>
+              <span className="thinking-dot" />
+              <span className="thinking-dot" />
+              <span className="thinking-dot" />
+            </div>
+            <span>正在思考...</span>
+          </div>
+        )}
+
+        {/* 思考过程（仅 AI） */}
+        {!isUser && thinkingContent && (
+          <ThinkingSection content={thinkingContent} duration={thinkingDuration} />
+        )}
+
+        {/* 内容 */}
+        {isUser ? (
+          <div>
+            <div style={{ whiteSpace: 'pre-wrap' }}>{msg.content}</div>
+            {msg.images && msg.images.length > 0 && (
+              <Image.PreviewGroup>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
+                  {msg.images.map((img, idx) => (
+                    <Image
+                      key={idx}
+                      src={img.base64 || img.url}
+                      alt="用户上传图片"
+                      style={{ maxHeight: 120, borderRadius: 4, cursor: 'pointer' }}
+                    />
+                  ))}
+                </div>
+              </Image.PreviewGroup>
+            )}
+          </div>
+        ) : (
+          <div>
+            <MarkdownRenderer content={msg.content || ''} />
+            {graphData && graphData.nodes.length > 0 && (
+              <div
+                style={{
+                  marginTop: 12,
+                  background: '#1a1a1a',
+                  border: '1px solid #262626',
+                  borderRadius: 4,
+                  padding: 8,
+                }}
+              >
+                <div style={{ display: 'flex', gap: 4, alignItems: 'center', marginBottom: 8 }}>
+                  <BookOutlined style={{ fontSize: 12, color: '#a1a1a1' }} />
+                  <Typography.Text style={{ fontSize: 12, color: '#a1a1a1' }}>
+                    知识图谱 · {graphData.nodes.length} 节点 / {graphData.edges.length} 关系
+                  </Typography.Text>
+                </div>
+                <KnowledgeGraph data={graphData} height={300} />
+              </div>
+            )}
+            <CitationList citations={msg.citations} />
+            {!msg.streaming && msg.content && (
+              <MessageActions onCopy={() => onCopy(msg.content)} />
+            )}
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 
 export default function ChatPage() {
-  const {
-    token: { colorBgContainer, borderRadiusLG },
-  } = theme.useToken();
-
   const [sessions, setSessions] = useState<ChatSession[]>(() => [
     {
       id: generateId(),
@@ -238,7 +421,6 @@ export default function ChatPage() {
   const [loading, setLoading] = useState(false);
   const [knowledgeBases, setKnowledgeBases] = useState<KnowledgeBase[]>([]);
   const [selectedKbIds, setSelectedKbIds] = useState<string[]>([]);
-  const [modeQuery, setModeQuery] = useState('');
   const [isMultimodal, setIsMultimodal] = useState(false);
   const [multimodalModels, setMultimodalModels] = useState<MultimodalModel[]>([]);
   const [selectedModelId, setSelectedModelId] = useState<string>('');
@@ -346,7 +528,6 @@ export default function ChatPage() {
     setSessions((prev) => [localSession, ...prev]);
     setActiveId(localSession.id);
     setInput('');
-    setModeQuery('');
     // 异步持久化到后端
     createConversation({ title: '新对话', mode: 'chat' })
       .then((conv) => {
@@ -366,7 +547,6 @@ export default function ChatPage() {
     (key: string) => {
       setActiveId(key);
       setInput('');
-      setModeQuery('');
       loadHistoryIfNeeded(key);
     },
     [loadHistoryIfNeeded],
@@ -483,7 +663,7 @@ export default function ChatPage() {
             modelId: selectedModelId,
             text: trimmed,
             images: filesToSend.map((f) => f.originFileObj as File).filter(Boolean),
-            systemPrompt: MODE_SYSTEM_PROMPTS[activeSession.mode],
+            systemPrompt: UNIFIED_SYSTEM_PROMPT,
           });
           updateMessage(sessionId, assistantId, (msg) => ({
             ...msg,
@@ -557,10 +737,10 @@ export default function ChatPage() {
         }
       }
 
-      const systemPrompt = MODE_SYSTEM_PROMPTS[activeSession.mode];
+      const systemPrompt = UNIFIED_SYSTEM_PROMPT;
 
-      // In exploration mode, fetch ontology graph in parallel and embed into the assistant message.
-      if (activeSession.mode === 'exploration') {
+      // 当用户输入涉及实体关系/知识图谱时，并行获取图谱数据
+      if (trimmed.match(/关系|关联|图谱|ontology|实体|依赖|拓扑/i)) {
         ontSemanticQuery(trimmed)
           .then((graphData) => {
             updateMessage(sessionId, assistantId, (msg) => ({
@@ -570,8 +750,7 @@ export default function ChatPage() {
           })
           .catch((error) => {
             /* Graph fetch failed; assistant text response still shows. */
-            message.warning('图谱数据加载失败，仅显示文本回复');
-            console.warn(error);
+            console.warn('Graph fetch failed:', error);
           });
       }
 
@@ -627,190 +806,244 @@ export default function ChatPage() {
     }
   }, []);
 
-  const handleModeChange = useCallback(
-    (mode: string) => {
-      updateSession(activeSession.id, (session) => ({
-        ...session,
-        mode: mode as ChatMode,
-      }));
-      setModeQuery('');
-    },
-    [activeSession.id, updateSession],
-  );
-
-  const handleModeResult = useCallback(
-    (metadata: {
-      sql?: string;
-      sqlAudit?: SqlAuditResult;
-      chartData?: ChartDataSet;
-      chartType?: ChartType;
-      actionResult?: ActionResult;
-      graphData?: GraphData;
-      generatedConfig?: GeneratedConfig;
-      codeReview?: CodeReviewResult;
-      plan?: Plan;
-    }) => {
-      const sessionId = activeSession.id;
-      const lastAssistantMsg = activeSession.messages
-        .filter((m) => m.role === 'assistant')
-        .pop();
-      if (lastAssistantMsg) {
-        updateMessage(sessionId, lastAssistantMsg.id, (msg) => ({
-          ...msg,
-          metadata: { ...msg.metadata, ...metadata },
-        }));
-      }
-    },
-    [activeSession, updateMessage],
-  );
-
   const contextTurns = Math.ceil(
     activeSession.messages.filter((m) => m.status === 'success').length / 2,
   );
 
-  const renderModePanel = () => {
-    switch (activeSession.mode) {
-      case 'analysis':
-        return (
-          <AnalysisPanel
-            query={modeQuery}
-            onQueryChange={setModeQuery}
-            onResult={handleModeResult}
-          />
-        );
-      case 'action':
-        return (
-          <ActionPanel
-            query={modeQuery}
-            onQueryChange={setModeQuery}
-            onResult={handleModeResult}
-          />
-        );
-      case 'exploration':
-        return (
-          <ExplorePanel
-            query={modeQuery}
-            onQueryChange={setModeQuery}
-            onResult={handleModeResult}
-          />
-        );
-      case 'code':
-        return (
-          <GeneratePanel
-            query={modeQuery}
-            onQueryChange={setModeQuery}
-            onResult={handleModeResult}
-          />
-        );
-      case 'task':
-        return (
-          <PlanPanel
-            query={modeQuery}
-            onQueryChange={setModeQuery}
-            onResult={handleModeResult}
-          />
-        );
-      default:
-        return null;
+  const [temperature, setTemperature] = useState(70);
+  const [currentModel, setCurrentModel] = useState('GPT-4o');
+  const [searchKeyword, setSearchKeyword] = useState('');
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // 注入 thinking-dot 动画样式
+  useEffect(() => {
+    const styleId = 'superai-thinking-dot-style';
+    if (document.getElementById(styleId)) return;
+    const style = document.createElement('style');
+    style.id = styleId;
+    style.textContent = `
+      .thinking-dot {
+        display: inline-block;
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: #a1a1a1;
+        animation: superai-pulse 1.4s infinite ease-in-out;
+      }
+      .thinking-dot:nth-child(2) { animation-delay: 0.2s; }
+      .thinking-dot:nth-child(3) { animation-delay: 0.4s; }
+      @keyframes superai-pulse {
+        0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
+        40% { opacity: 1; transform: scale(1); }
+      }
+      .msg-action-btn:hover {
+        color: #fafafa !important;
+        background: #1a1a1a !important;
+      }
+      .superai-scroll::-webkit-scrollbar { width: 6px; }
+      .superai-scroll::-webkit-scrollbar-track { background: transparent; }
+      .superai-scroll::-webkit-scrollbar-thumb { background: #262626; border-radius: 3px; }
+      .superai-scroll::-webkit-scrollbar-thumb:hover { background: #a1a1a1; }
+    `;
+    document.head.appendChild(style);
+  }, []);
+
+  // 自动滚动到底部
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
-  };
-
-  const isModePanelVisible = ['analysis', 'action', 'exploration', 'code', 'task'].includes(
-    activeSession.mode,
-  );
-
-  const bubbleItems: React.ComponentProps<typeof Bubble.List>['items'] = useMemo(() => {
-    return activeSession.messages.map((msg) => {
-      const isUser = msg.role === 'user';
-      const graphData = !isUser ? msg.metadata?.graphData : undefined;
-      return {
-        key: msg.id,
-        role: isUser ? 'user' : 'ai',
-        status: msg.status,
-        placement: isUser ? ('end' as const) : ('start' as const),
-        streaming: msg.streaming,
-        loading: msg.status === 'loading',
-        content: isUser ? (
-          <div>
-            <div style={{ whiteSpace: 'pre-wrap' }}>{msg.content}</div>
-            {msg.images && msg.images.length > 0 && (
-              <Image.PreviewGroup>
-                <Space wrap size="small" style={{ marginTop: 8 }}>
-                  {msg.images.map((img, idx) => (
-                    <Image
-                      key={idx}
-                      src={img.base64 || img.url}
-                      alt="用户上传图片"
-                      style={{ maxHeight: 120, borderRadius: 8, cursor: 'pointer' }}
-                    />
-                  ))}
-                </Space>
-              </Image.PreviewGroup>
-            )}
-          </div>
-        ) : (
-          <div>
-            <MarkdownRenderer content={msg.content || '...'} />
-            {graphData && graphData.nodes.length > 0 && (
-              <Card
-                size="small"
-                style={{ marginTop: 12, background: 'transparent' }}
-                bodyStyle={{ padding: 8 }}
-                title={
-                  <Space size={4}>
-                    <ApartmentOutlined />
-                    <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                      知识图谱 · {graphData.nodes.length} 节点 / {graphData.edges.length} 关系
-                    </Typography.Text>
-                  </Space>
-                }
-              >
-                <KnowledgeGraph data={graphData} height={300} />
-              </Card>
-            )}
-          </div>
-        ),
-        footer:
-          !isUser && msg.citations && msg.citations.length > 0
-            ? () => <CitationList citations={msg.citations} />
-            : undefined,
-      };
-    });
   }, [activeSession.messages]);
 
+  // textarea 自适应高度
+  const handleTextareaInput = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const target = e.target;
+    target.style.height = 'auto';
+    target.style.height = `${Math.min(target.scrollHeight, 160)}px`;
+    setInput(target.value);
+  }, []);
+
+  const handleTextareaKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        if (input.trim() && !loading) {
+          handleSend(input);
+        }
+      }
+    },
+    [input, loading, handleSend],
+  );
+
+  const handleCopyMessage = useCallback((text: string) => {
+    navigator.clipboard.writeText(text).then(() => {
+      message.success('已复制');
+    }).catch(() => {
+      message.error('复制失败');
+    });
+  }, []);
+
+  const filteredSessions = useMemo(() => {
+    if (!searchKeyword.trim()) return sessions;
+    const k = searchKeyword.toLowerCase();
+    return sessions.filter(
+      (s) =>
+        s.title.toLowerCase().includes(k) ||
+        s.messages.some((m) => m.content.toLowerCase().includes(k)),
+    );
+  }, [sessions, searchKeyword]);
+
   return (
-    <div style={{ display: 'flex', gap: 16, height: 'calc(100vh - 64px - 32px)' }}>
+    <div
+      style={{
+        display: 'flex',
+        height: '100%',
+        background: '#0a0a0a',
+        margin: '0 -24px',
+      }}
+    >
+      {/* 中间 - 会话列表 */}
       <div
         style={{
-          width: 260,
-          flexShrink: 0,
+          width: 240,
+          minWidth: 240,
+          background: '#0a0a0a',
+          borderRight: '1px solid #262626',
           display: 'flex',
           flexDirection: 'column',
-          gap: 12,
         }}
       >
+        {/* conversation-header */}
         <div
           style={{
-            background: colorBgContainer,
-            borderRadius: borderRadiusLG,
-            padding: 12,
-            flex: 1,
             display: 'flex',
-            flexDirection: 'column',
-            minHeight: 0,
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: 12,
+            borderBottom: '1px solid #262626',
           }}
         >
-          <HistorySidebar
-            sessions={sessions}
-            activeId={activeId}
-            onSelect={handleSelectConversation}
-            onDelete={handleDeleteConversation}
-            onNew={handleNewConversation}
-            onToggleFavorite={handleToggleFavorite}
+          <h2 style={{ fontSize: 14, fontWeight: 600, margin: 0 }}>会话</h2>
+          <button
+            onClick={handleNewConversation}
+            style={{
+              background: 'transparent',
+              color: '#fafafa',
+              border: '1px solid #262626',
+              borderRadius: 4,
+              height: 32,
+              padding: '0 12px',
+              fontSize: 12,
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 4,
+            }}
+          >
+            <PlusOutlined style={{ fontSize: 14 }} />新建
+          </button>
+        </div>
+
+        {/* 搜索框 */}
+        <div style={{ padding: '8px 12px 4px' }}>
+          <Input
+            placeholder="搜索会话..."
+            prefix={<SearchOutlined style={{ color: '#a1a1a1' }} />}
+            allowClear
+            value={searchKeyword}
+            onChange={(e) => setSearchKeyword(e.target.value)}
+            size="small"
+            style={{
+              background: '#1a1a1a',
+              borderColor: '#262626',
+              borderRadius: 4,
+            }}
           />
         </div>
 
-        <Card size="small" title={<Space><BookOutlined />知识库</Space>} style={{ flexShrink: 0 }}>
+        {/* conversation-list */}
+        <div className="superai-scroll" style={{ flex: 1, overflowY: 'auto', padding: 6 }}>
+          {filteredSessions.map((s) => (
+            <div
+              key={s.id}
+              onClick={() => handleSelectConversation(s.id)}
+              style={{
+                padding: '10px 12px',
+                borderRadius: 4,
+                cursor: 'pointer',
+                marginBottom: 2,
+                background: s.id === activeId ? '#1a1a1a' : 'transparent',
+                transition: 'background .15s',
+              }}
+              onMouseEnter={(e) => {
+                if (s.id !== activeId) e.currentTarget.style.background = '#111111';
+              }}
+              onMouseLeave={(e) => {
+                if (s.id !== activeId) e.currentTarget.style.background = 'transparent';
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 13,
+                  fontWeight: 500,
+                  marginBottom: 3,
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}
+              >
+                {s.title}
+              </div>
+              <div style={{ fontSize: 11, color: '#a1a1a1' }}>
+                {new Date(s.updatedAt).toLocaleString('zh-CN', {
+                  month: '2-digit',
+                  day: '2-digit',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 4 }}>
+                <span
+                  style={{
+                    display: 'inline-block',
+                    fontSize: 10,
+                    padding: '1px 6px',
+                    borderRadius: 4,
+                    background: '#111111',
+                    border: '1px solid #262626',
+                    color: '#a1a1a1',
+                  }}
+                >
+                  SuperAI
+                </span>
+                {s.favorite && (
+                  <StarFilled style={{ fontSize: 10, color: '#eab308' }} />
+                )}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteConversation(s.id);
+                  }}
+                  style={{
+                    marginLeft: 'auto',
+                    background: 'transparent',
+                    border: 'none',
+                    color: '#737373',
+                    cursor: 'pointer',
+                    padding: 2,
+                  }}
+                  title="删除"
+                >
+                  <DeleteOutlined style={{ fontSize: 12 }} />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* conversation-footer - 知识库选择 */}
+        <div style={{ padding: 12, borderTop: '1px solid #262626' }}>
           <Select
             mode="multiple"
             placeholder="选择知识库"
@@ -821,111 +1054,162 @@ export default function ChatPage() {
               label: `${kb.name} (${kb.documentCount}篇)`,
               value: kb.id,
             }))}
-            maxTagCount={2}
+            maxTagCount={1}
+            size="small"
           />
-        </Card>
+        </div>
       </div>
 
+      {/* 右侧 - 聊天区 */}
       <div
         style={{
           flex: 1,
           minWidth: 0,
           display: 'flex',
           flexDirection: 'column',
-          background: colorBgContainer,
-          borderRadius: borderRadiusLG,
-          padding: 24,
+          background: '#0a0a0a',
         }}
       >
-        <Flex justify="space-between" align="center" style={{ marginBottom: 8 }}>
-          <Space>
-            <Typography.Title level={5} style={{ margin: 0 }}>
-              {activeSession.title}
-            </Typography.Title>
-            <Tag color="blue">{MODES.find((m) => m.key === activeSession.mode)?.label}</Tag>
-          </Space>
-          <Space size="small">
-            <Tooltip title={`上下文中有 ${contextTurns} 轮对话（最多 ${MAX_CONTEXT_TURNS} 轮）`}>
-              <Tag icon={<HistoryOutlined />} color={contextTurns >= MAX_CONTEXT_TURNS ? 'orange' : 'default'}>
-                上下文：{contextTurns}/{MAX_CONTEXT_TURNS} 轮
-              </Tag>
-            </Tooltip>
-            {activeSession.favorite && <Tag color="gold">★ 已收藏</Tag>}
-          </Space>
-        </Flex>
-
+        {/* chat-topbar */}
         <div
           style={{
-            flex: 1,
-            minHeight: 0,
             display: 'flex',
-            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '12px 24px',
+            borderBottom: '1px solid #262626',
+            minHeight: 48,
           }}
         >
-          {activeSession.messages.length === 0 && !isModePanelVisible ? (
-            <Flex style={{ flex: 1 }} align="center" justify="center">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Tooltip title={`上下文 ${contextTurns}/${MAX_CONTEXT_TURNS} 轮`}>
+              <span style={{ fontSize: 14, fontWeight: 500 }}>
+                {activeSession.title}
+              </span>
+            </Tooltip>
+            {activeSession.favorite && (
+              <StarFilled style={{ fontSize: 12, color: '#eab308' }} />
+            )}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <span style={{ fontSize: 12, color: '#a1a1a1' }}>Temperature</span>
+            <Slider
+              min={0}
+              max={100}
+              value={temperature}
+              onChange={setTemperature}
+              style={{ width: 100, margin: 0 }}
+              tooltip={{ open: false }}
+            />
+            <span
+              style={{
+                fontFamily: "'Geist Mono', ui-monospace, monospace",
+                fontSize: 12,
+                minWidth: 28,
+                textAlign: 'right',
+              }}
+            >
+              {(temperature / 100).toFixed(1)}
+            </span>
+          </div>
+        </div>
+
+        {/* messages-area */}
+        <div
+          className="superai-scroll"
+          style={{
+            flex: 1,
+            overflowY: 'auto',
+            padding: 24,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 20,
+          }}
+        >
+          {activeSession.messages.length === 0 ? (
+            <div
+              style={{
+                flex: 1,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
               <Welcome
-                icon={<RobotOutlined style={{ fontSize: 48 }} />}
+                variant="borderless"
+                icon={<RobotOutlined style={{ fontSize: 36, color: '#fafafa' }} />}
                 title="你好，我是 SuperAI"
-                description="Mate Platform 的统一 AI 交互入口。基于 Ontology 与 RAG，为您提供可溯源的智能问答、数据分析、Action 执行等能力。"
+                description="统一 AI 交互入口，自动识别您的意图 — 智能问答、数据分析、知识图谱、代码生成，一个输入框搞定。"
                 extra={
-                  <Space wrap style={{ justifyContent: 'center', marginTop: 16 }}>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 8, marginTop: 16, maxWidth: 560 }}>
                     {WELCOME_PROMPTS.map((prompt) => (
-                      <Button
+                      <button
                         key={prompt}
-                        type="dashed"
                         onClick={() => handleSend(prompt)}
+                        style={{
+                          background: '#1a1a1a',
+                          border: '1px solid #262626',
+                          color: '#a1a1a1',
+                          borderRadius: 4,
+                          padding: '6px 12px',
+                          fontSize: 12,
+                          cursor: 'pointer',
+                        }}
                       >
                         {prompt}
-                      </Button>
+                      </button>
                     ))}
-                  </Space>
+                  </div>
                 }
               />
-            </Flex>
+            </div>
           ) : (
-            <Bubble.List
-              items={bubbleItems}
-              autoScroll
-              role={{
-                ai: { placement: 'start', avatar: <RobotOutlined /> },
-                user: { placement: 'end', avatar: <UserOutlined /> },
-              }}
-            />
+            <>
+              {activeSession.messages.map((msg) => (
+                <MessageRow
+                  key={msg.id}
+                  msg={msg}
+                  onCopy={handleCopyMessage}
+                />
+              ))}
+              <div ref={messagesEndRef} />
+            </>
           )}
         </div>
 
-        {isModePanelVisible && (
-          <div style={{ marginTop: 8, maxHeight: 400, overflow: 'auto' }}>
-            {renderModePanel()}
-          </div>
-        )}
-
-        <div style={{ marginTop: 8 }}>
-          <Tabs
-            activeKey={activeSession.mode}
-            onChange={handleModeChange}
-            size="small"
-            items={MODES.map((m) => ({
-              key: m.key,
-              label: (
-                <Space size={4}>
-                  {m.icon}
-                  <span>{m.label}</span>
-                </Space>
-              ),
-            }))}
-            style={{ marginBottom: 8 }}
-          />
-          <Flex justify="space-between" align="center" style={{ marginBottom: 8 }}>
-            <Space>
-              <Switch
-                checked={isMultimodal}
-                onChange={handleMultimodalToggle}
-                checkedChildren="多模态"
-                unCheckedChildren="文本"
-              />
-              {isMultimodal && (
+        {/* input-bar */}
+        <div
+          style={{
+            background: '#111111',
+            borderTop: '1px solid #262626',
+            padding: '16px 24px',
+            display: 'flex',
+            alignItems: 'flex-end',
+            gap: 12,
+          }}
+        >
+          <div
+            style={{
+              flex: 1,
+              minWidth: 0,
+              display: 'flex',
+              flexDirection: 'column',
+              background: '#1a1a1a',
+              border: '1px solid #262626',
+              borderRadius: 4,
+            }}
+            onFocus={(e) => (e.currentTarget.style.borderColor = '#fafafa')}
+            onBlur={(e) => (e.currentTarget.style.borderColor = '#262626')}
+          >
+            {isMultimodal && (
+              <div style={{ padding: '8px 12px 0', display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                <Switch
+                  checked={isMultimodal}
+                  onChange={handleMultimodalToggle}
+                  checkedChildren="多模态"
+                  unCheckedChildren="文本"
+                  size="small"
+                />
                 <Select
                   placeholder="选择多模态模型"
                   value={selectedModelId}
@@ -934,52 +1218,137 @@ export default function ChatPage() {
                     label: m.displayName || m.modelCode,
                     value: m.modelId,
                   }))}
-                  style={{ width: 220 }}
+                  style={{ width: 180 }}
+                  size="small"
                 />
-              )}
-            </Space>
-            {isMultimodal && (
-              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                最多 8 张，单张 ≤5MB（png/jpeg/webp）
-              </Typography.Text>
+                <span style={{ fontSize: 11, color: '#737373' }}>
+                  最多 8 张 · 单张 ≤5MB
+                </span>
+              </div>
             )}
-          </Flex>
-          {isMultimodal && (
-            <Upload
-              fileList={imageFiles}
-              onChange={({ fileList }) =>
-                setImageFiles(fileList.map((f) => ({ ...f, status: 'done' })))
+            {isMultimodal && imageFiles.length > 0 && (
+              <div style={{ padding: '8px 12px 0' }}>
+                <Upload
+                  fileList={imageFiles}
+                  onChange={({ fileList }) =>
+                    setImageFiles(fileList.map((f) => ({ ...f, status: 'done' })))
+                  }
+                  beforeUpload={beforeUpload}
+                  multiple
+                  maxCount={8}
+                  listType="picture-card"
+                  accept="image/png,image/jpeg,image/webp"
+                >
+                  {imageFiles.length < 8 && (
+                    <div>
+                      <PaperClipOutlined />
+                      <div style={{ marginTop: 8, fontSize: 12 }}>上传图片</div>
+                    </div>
+                  )}
+                </Upload>
+              </div>
+            )}
+            <textarea
+              ref={textareaRef}
+              value={input}
+              onChange={handleTextareaInput}
+              onKeyDown={handleTextareaKeyDown}
+              placeholder={
+                isMultimodal
+                  ? '输入文字描述，与图片一起发送，Shift + Enter 换行...'
+                  : '输入消息，Shift + Enter 换行...'
               }
-              beforeUpload={beforeUpload}
-              multiple
-              maxCount={8}
-              listType="picture-card"
-              accept="image/png,image/jpeg,image/webp"
+              style={{
+                width: '100%',
+                minHeight: 40,
+                maxHeight: 160,
+                resize: 'none',
+                background: 'transparent',
+                border: 'none',
+                color: '#fafafa',
+                fontSize: 14,
+                fontFamily: "'Geist', ui-sans-serif, system-ui, sans-serif",
+                padding: '10px 14px',
+                outline: 'none',
+                lineHeight: 1.5,
+              }}
+            />
+            {/* 工具栏：附件按钮 + 模型指示器（在输入区域内部） */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '4px 8px 6px 8px',
+              }}
             >
-              {imageFiles.length < 8 && (
-                <div>
-                  <PictureOutlined />
-                  <div style={{ marginTop: 8 }}>上传图片</div>
-                </div>
-              )}
-            </Upload>
-          )}
-          {!isModePanelVisible && (
-          <Sender
-            value={input}
-            onChange={setInput}
-            onSubmit={handleSend}
-            loading={loading}
-            onCancel={handleCancel}
-            placeholder={
-              isMultimodal
-                ? '输入文字描述，与图片一起发送'
-                : MODE_PLACEHOLDER[activeSession.mode]
-            }
-            autoSize={{ minRows: 2, maxRows: 6 }}
-            style={{ marginTop: isMultimodal ? 8 : 0 }}
-          />
-          )}
+              <Tooltip title={isMultimodal ? '关闭多模态' : '开启多模态（图片上传）'}>
+                <button
+                  onClick={() => handleMultimodalToggle(!isMultimodal)}
+                  style={{
+                    background: 'transparent',
+                    color: isMultimodal ? '#fafafa' : '#a1a1a1',
+                    border: 'none',
+                    borderRadius: 4,
+                    height: 28,
+                    width: 28,
+                    padding: 0,
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.color = '#fafafa';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.color = isMultimodal ? '#fafafa' : '#a1a1a1';
+                  }}
+                >
+                  <PaperClipOutlined style={{ fontSize: 14 }} />
+                </button>
+              </Tooltip>
+              <div
+                style={{
+                  fontSize: 11,
+                  color: '#a1a1a1',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {currentModel}
+              </div>
+            </div>
+          </div>
+
+          <button
+            onClick={() => {
+              if (loading) {
+                handleCancel();
+              } else if (input.trim()) {
+                handleSend(input);
+              }
+            }}
+            disabled={!loading && !input.trim()}
+            style={{
+              background: loading ? '#1a1a1a' : '#fafafa',
+              color: loading ? '#a1a1a1' : '#0a0a0a',
+              border: 'none',
+              borderRadius: 4,
+              height: 40,
+              width: 40,
+              padding: 0,
+              fontSize: 14,
+              cursor: (!loading && !input.trim()) ? 'not-allowed' : 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+              opacity: (!loading && !input.trim()) ? 0.5 : 1,
+            }}
+          >
+            {loading ? '■' : <SendOutlined style={{ fontSize: 16 }} />}
+          </button>
         </div>
       </div>
     </div>

@@ -91,6 +91,8 @@ export interface ChatMessageMetadata {
   generatedConfig?: GeneratedConfig;
   codeReview?: CodeReviewResult;
   plan?: Plan;
+  thinking?: string;
+  thinkingDuration?: string;
 }
 
 export interface ChatSession {
