@@ -32,6 +32,7 @@ REQUIRED_SUB_CHARTS = {
     "marquez",
     "datahub",
     "ge",
+    "paimon",
 }
 
 
