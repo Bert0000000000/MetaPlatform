@@ -12,6 +12,12 @@ servers:
 tags:
 - name: apphub
   description: apphub domain operations
+- name: runtime
+  description: app runtime lifecycle operations
+- name: publish
+  description: app publish operations
+- name: shortlink
+  description: shortlink operations
 security:
   - bearerAuth: []
     tenantHeader: []
@@ -52,7 +58,47 @@ paths:
       x-mate-permission: apphub.get
       x-mate-requirements:
       - FR-APPHUB-APPHUBGETAPPHUBAPPS
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
+    post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
+        oidcScopes: [platform.write]
+      tags:
+      - apphub
+      summary: Create application
+      operationId: apphubPostApphubApps
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApiResponse'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/ServerError'
+        '422':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/ServerError'
+      description: Register a new application.
+      x-mate-owner: application-platform
+      x-mate-permission: apphub.write
+      x-mate-requirements:
+      - FR-APPHUB-APPHUBPOSTAPPHUBAPPS
+      x-mate-implementation-status: implemented
   /api/v1/apphub/apps/groups:
     get:
       security:
@@ -88,7 +134,7 @@ paths:
       x-mate-permission: apphub.get
       x-mate-requirements:
       - FR-APPHUB-APPHUBGETAPPHUBAPPSGROUPS
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
   /api/v1/apphub/modules:
     get:
       security:
@@ -124,7 +170,47 @@ paths:
       x-mate-permission: apphub.get
       x-mate-requirements:
       - FR-APPHUB-APPHUBGETAPPHUBMODULES
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
+    post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
+        oidcScopes: [platform.write]
+      tags:
+      - apphub
+      summary: Create business module
+      operationId: apphubPostApphubModules
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApiResponse'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/ServerError'
+        '422':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/ServerError'
+      description: Create a new business module.
+      x-mate-owner: application-platform
+      x-mate-permission: apphub.write
+      x-mate-requirements:
+      - FR-APPHUB-APPHUBPOSTAPPHUBMODULES
+      x-mate-implementation-status: implemented
   /api/v1/apphub/pages:
     get:
       security:
@@ -160,7 +246,45 @@ paths:
       x-mate-permission: apphub.get
       x-mate-requirements:
       - FR-APPHUB-APPHUBGETAPPHUBPAGES
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
+    post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
+        oidcScopes: [platform.write]
+      tags:
+      - apphub
+      summary: Create page template
+      operationId: apphubPostApphubPages
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApiResponse'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/ServerError'
+      description: Create a new page template.
+      x-mate-owner: application-platform
+      x-mate-permission: apphub.write
+      x-mate-requirements:
+      - FR-APPHUB-APPHUBPOSTAPPHUBPAGES
+      x-mate-implementation-status: implemented
   /api/v1/apphub/templates:
     get:
       security:
@@ -196,7 +320,388 @@ paths:
       x-mate-permission: apphub.get
       x-mate-requirements:
       - FR-APPHUB-APPHUBGETAPPHUBTEMPLATES
-      x-mate-implementation-status: planned
+      x-mate-implementation-status: implemented
+    post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
+        oidcScopes: [platform.write]
+      tags:
+      - apphub
+      summary: Create workflow / form / approval template
+      operationId: apphubPostApphubTemplates
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApiResponse'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/ServerError'
+        '422':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/ServerError'
+      description: Create a new workflow / form / approval template.
+      x-mate-owner: application-platform
+      x-mate-permission: apphub.write
+      x-mate-requirements:
+      - FR-APPHUB-APPHUBPOSTAPPHUBTEMPLATES
+      x-mate-implementation-status: implemented
+  /api/v1/apphub/apps/{code}:
+    patch:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
+        oidcScopes: [platform.write]
+      tags:
+      - apphub
+      summary: Update application metadata
+      operationId: apphubPatchApphubAppsCode
+      parameters:
+      - name: code
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApiResponse'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/ServerError'
+        '422':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/ServerError'
+      description: Update an application's metadata (version bumps follow semver).
+      x-mate-owner: application-platform
+      x-mate-permission: apphub.write
+      x-mate-requirements:
+      - FR-APPHUB-APPHUBPATCHAPPHUBAPPSCODE
+      x-mate-implementation-status: implemented
+    delete:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
+        oidcScopes: [platform.write]
+      tags:
+      - apphub
+      summary: Delete application
+      operationId: apphubDeleteApphubAppsCode
+      parameters:
+      - name: code
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+      description: Delete an application by code.
+      x-mate-owner: application-platform
+      x-mate-permission: apphub.write
+      x-mate-requirements:
+      - FR-APPHUB-APPHUBDELETEAPPHUBAPPSCODE
+      x-mate-implementation-status: implemented
+  /api/v1/apphub/groups:
+    post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
+        oidcScopes: [platform.write]
+      tags:
+      - apphub
+      summary: Create application group
+      operationId: apphubPostApphubGroups
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApiResponse'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      description: Create a new application group.
+      x-mate-owner: application-platform
+      x-mate-permission: apphub.write
+      x-mate-implementation-status: implemented
+  /api/v1/apphub/groups/{code}:
+    delete:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
+        oidcScopes: [platform.write]
+      tags:
+      - apphub
+      summary: Delete application group
+      operationId: apphubDeleteApphubGroupsCode
+      parameters:
+      - name: code
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      description: Delete a group (blocked if apps reference its category).
+      x-mate-owner: application-platform
+      x-mate-permission: apphub.write
+      x-mate-implementation-status: implemented
+  /api/v1/apphub/apps/{appId}/runtime:
+    get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
+        oidcScopes: [platform.read]
+      tags:
+      - runtime
+      summary: Get app runtime status
+      operationId: apphubGetAppRuntime
+      parameters:
+      - name: appId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      description: Get the runtime status of an application.
+      x-mate-owner: application-platform
+      x-mate-permission: runtime.read
+      x-mate-implementation-status: implemented
+  /api/v1/apphub/apps/{appId}/runtime/execute:
+    post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
+        oidcScopes: [platform.write]
+      tags:
+      - runtime
+      summary: Execute app runtime action
+      operationId: apphubPostAppRuntimeExecute
+      parameters:
+      - name: appId
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApiResponse'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      description: Execute a runtime action for an application.
+      x-mate-owner: application-platform
+      x-mate-permission: runtime.execute
+      x-mate-implementation-status: implemented
+  /api/v1/apphub/apps/{appId}/publish:
+    post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
+        oidcScopes: [platform.write]
+      tags:
+      - publish
+      summary: Publish application version
+      operationId: apphubPostAppPublish
+      parameters:
+      - name: appId
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApiResponse'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      description: Publish a new version of an application.
+      x-mate-owner: application-platform
+      x-mate-permission: apphub.write
+      x-mate-implementation-status: implemented
+  /api/v1/apphub/shortlinks:
+    get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
+        oidcScopes: [platform.read]
+      tags:
+      - shortlink
+      summary: List shortlinks
+      operationId: apphubListShortlinks
+      parameters:
+      - $ref: '#/components/parameters/Page'
+      - $ref: '#/components/parameters/Size'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      description: List shortlinks for the current tenant.
+      x-mate-owner: application-platform
+      x-mate-permission: shortlink.read
+      x-mate-implementation-status: implemented
+    post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
+        oidcScopes: [platform.write]
+      tags:
+      - shortlink
+      summary: Create shortlink
+      operationId: apphubPostShortlink
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApiResponse'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      description: Create a new shortlink for an application.
+      x-mate-owner: application-platform
+      x-mate-permission: shortlink.write
+      x-mate-implementation-status: implemented
+  /api/v1/apphub/shortlinks/{code}:
+    get:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
+        oidcScopes: [platform.read]
+      tags:
+      - shortlink
+      summary: Resolve shortlink
+      operationId: apphubGetShortlink
+      parameters:
+      - name: code
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      description: Resolve a shortlink by code.
+      x-mate-owner: application-platform
+      x-mate-permission: shortlink.read
+      x-mate-implementation-status: implemented
 components:
   securitySchemes:
     bearerAuth:
