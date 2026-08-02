@@ -1,6 +1,6 @@
 # Mate Platform 交付项目计划板（Program Board）
 
-> 更新时间：2026-08-01（含 v3.1 增量 sub-batch + P3-W6/W7 wave + PR 治理状态；G3/G7 Accepted）
+> 更新时间：2026-08-02（含 v3.1 增量 sub-batch + P3-W6/W7 wave + PR 治理状态 + K2 APPHUB-RUNTIME-01 收口；G1-G8 全 Accepted）
 > 本表跟踪各交付批次在契约、代码、测试、运行时和验收证据上的当前状态。
 
 ## v3.0 GA 状态（9/9 核心 + D0-D8 全部 Accepted）
@@ -157,3 +157,4 @@ DATA-D0-D8 全部 8 阶段 Accepted（共 45/45 tests pass）。后续 sub-batch
 | 2026-07-31 | P2 W2 → Accepted | dashboard / apphub / arch / copilot 4 域 · 99 endpoints · 93 tests · PR #12 `833a809d` |
 | 2026-08-01 | P3-W6/W7 v3.1 增量 wave + G3/G7 → Accepted | D1 lineage e2e + G3 Outbox DDL + G7 SealedSecret runbook + DATA helm 真实化 + copilot 35/35 + A2A/LLM 真实；1500 tests / 0 failed |
 | 2026-08-01 | G2 → Accepted | pre-commit 加固 + gitleaks 自定义规则 + 3 forbid 脚本（raw_sql / kafka_producer / external_secret）+ 20 tests；§13 第 3/4/12 条闭环 |
+| 2026-08-02 | K2 APPHUB-RUNTIME-01 收口 → Accepted | 治理收口 5 件（require_evidence 拼写 bug 修复 + openapi.json 聚合 231 paths + apphub.yaml 6 operation 字段补齐 + ACCEPTANCE 13 门禁 + PROGRAM-BOARD）+ 阶段 D 收尾 4 件（4 页面切 marketplace API + QR Code + dist 增量 + tsc 0 error）|
