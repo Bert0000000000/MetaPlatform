@@ -16,7 +16,7 @@ EVIDENCE = Path("docs/active/delivery/evidence")
 
 
 def main() -> int:
-    pb = Path("docs/active/delivery/PROGRAM-BOBOARD.md")
+    pb = Path("docs/active/delivery/PROGRAM-BOARD.md")
     if not pb.exists():
         return 0
     text = pb.read_text(encoding="utf-8")
