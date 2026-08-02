@@ -301,6 +301,30 @@ services:
         limits:
           memory: 8G
 
+  # DeerFlow Engine - 深度调研 Agent (Deep Research)
+  # ByteDance DeerFlow as external Docker service for A2A research workflows.
+  # Profiles: research (standalone), ai (bundled with RAG/agent stack).
+  deerflow-engine:
+    <<: [*restart, *logging]
+    image: bytedance/deer-flow:latest
+    container_name: mate-deerflow-engine
+    environment:
+      - LLM_API_KEY=${OPENAI_API_KEY}
+      - LLM_BASE_URL=${OPENAI_BASE_URL:-https://api.openai.com/v1}
+      - LLM_MODEL=${OPENAI_CHAT_MODEL:-gpt-4o}
+      - SEARCH_API_KEY=${TAVILY_API_KEY}
+      - SEARCH_PROVIDER=tavily
+    ports:
+      - "${DEERFLOW_PORT:-8001}:8001"
+    volumes:
+      - deerflowdata:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    profiles: ["research", "ai"]
+
   # ===========================================================================
   # 3. Python 闂傚倸鍊搁崐鎼佸磹閹间礁纾归柟闂寸绾剧懓顪冪€ｎ亝鎹ｉ柣顓炴閵嗘帒顫濋敐鍛婵°倗濮烽崑娑⑺囬悽绋挎瀬闁瑰墽绮崑鎰版煕閹邦剙绾ч柣銈呭濮婄粯鎷呯粵瀣異闂佹悶鍔岄妶鎼佸箖濮椻偓楠炲洭顢涘Ο瑙勭潖闂備礁婀遍崕銈夊箰閹间礁鐒垫い鎺戝暙閸氬湱绱掓潏銊ョ瑨闁宠棄顦～婊堝幢濡も偓婢瑰姊绘担鍛婃儓闁瑰啿绻掗崚鎺戠暆閸曘劉鍋撻弮鍫濈妞ゆ柨妲堣閺屾盯鍩勯崘鐐暭闂佽崵鍠嗛崝鎴﹀蓟閿濆棙鍎熼柕蹇曞Т濮ｅ牓姊洪崨濠冨鞍闁烩晩鍨跺畷娲焵椤掍降浜滈柟鍝勭У缁佹澘顭跨憴鍕嗘垿濡甸崟顖涙櫇闁稿本鐟﹂崰姘舵⒑缁洘鏉归柛瀣尭椤啴濡堕崱妤€娼戦梺绋款儐閹稿墽妲愰幒妤佸亹闁肩⒈鍎疯閳ь剝顫夊ú妯好洪悢鐓庤摕闁糕剝顨忛崥瀣煕濞戝崬鐏ｉ柡瀣暣濮婃椽鎮烽弶鎸庡€梺璇″灠閻倿骞冮埄鍐ㄧ窞鐎光偓閳ь剛绮?(濠电姷鏁告慨鐑藉极閸涘﹥鍙忛柣銏犲閺佸﹪鏌″搴″箹缂佹劖顨嗘穱濠囧Χ閸涱厽娈查梺鍝勬缁秵绌辨繝鍥ч柛娑卞幗濞堝爼姊哄ú璇插箺闁荤啿鏅犲濠氭偄閸忕厧鈧粯淇婇鐐存珳缂侇喖鐖煎娲焻閻愯尪瀚板褍澧界槐鎺楁偐閾忣偄纰嶉梺浼欑秮閺€杈╃紦閻ｅ瞼鐭欓悹鍥﹀嫎閸斿秹濡甸崟顖氱睄闁搞儺鐏濋幘瀵哥闁告侗鍘惧瓭闂佸疇顫夐崹鍧楀箖閳哄懎鍨傛い鎰剁稻閻﹀骸鈹戦悩鎰佸晱闁哥姵宀稿顐ｇ節濮橆剛鐤囧┑鐘绘涧椤戝懐绮堥崼銏″枑閹兼番鍔岀粣妤呮煕閳╁啰鈯曢柣鎾卞劦閺岋繝宕掑☉鍗炲妼濠电偠鍋愰崰搴ㄦ箒濠电姴锕ょ€氼噣鎯岄幒妤佺厸閻忕偟纭堕崑鎾诲箛娴ｅ憡鍊梻浣告啞閸旀垿宕濆畝鍕剁稏闁告侗鍠氱弧鈧梺闈涢獜缂嶅棗顭囬幇顓滀簻妞ゆ挾鍋為崰妯活殽?
   # ===========================================================================
@@ -853,6 +877,7 @@ volumes:
   nacosdata:
   ragflowdata:
   lightragdata:
+  deerflowdata:
   lokidata:
   promdata:
   grafanadata:

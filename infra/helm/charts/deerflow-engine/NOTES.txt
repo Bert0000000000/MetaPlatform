@@ -1,0 +1,42 @@
+==========================================================================
+ DeerFlow Engine ({{ .Chart.Name }} {{ .Chart.Version }} / appVersion {{ .Chart.AppVersion }})
+ deep-research agent has been deployed.
+==========================================================================
+
+Release         : {{ .Release.Name }}
+Namespace       : {{ .Release.Namespace }}
+Replicas        : {{ .Values.replicaCount }}
+Image           : {{ .Values.image.registry }}/{{ .Values.image.repository }}:{{ .Values.image.tag }}
+Persistence     : {{ if .Values.persistence.enabled }}PVC {{ .Values.persistence.size }}{{ else }}emptyDir (ephemeral){{ end }}
+
+In-cluster endpoint (copilot / a2a clients):
+  http://{{ include "deerflow-engine.fullname" . }}:{{ .Values.service.port }}
+
+Healthcheck     : GET {{ .Values.healthcheck.path }} (port {{ .Values.healthcheck.port }})
+
+1. Verify the deployment is ready:
+
+   kubectl -n {{ .Release.Namespace }} rollout status deployment/{{ include "deerflow-engine.fullname" . }} \
+       --timeout=180s
+
+2. Provision the secret (hard rule 12 — never commit to git):
+
+   kubectl -n {{ .Release.Namespace }} create secret generic {{ .Values.secretRef.name }} \
+       --from-literal=LLM_API_KEY=<openai-key> \
+       --from-literal=SEARCH_API_KEY=<tavily-key>
+
+   Or via SealedSecret / ExternalSecret in production.
+
+3. Smoke-test the healthcheck from inside the cluster:
+
+   kubectl -n {{ .Release.Namespace }} run -it --rm curl --image=curlimages/curl:8.10.1 \
+       --restart=Never -- \
+       curl -fsS http://{{ include "deerflow-engine.fullname" . }}:{{ .Values.service.port }}{{ .Values.healthcheck.path }}
+
+NetworkPolicy (hard rule 13):
+  Ingress restricted to namespaces: {{ range .Values.networkPolicy.allowedIngressNamespaces }}{{ . }} {{ end }}
+  Egress restricted to DNS (kube-system:53) + HTTPS (:443) for LLM/search providers.
+
+References:
+  - PR-5: DeerFlow Engine docker-compose + research profile
+  - docs/active/specs/2026-08-02-deerflow-pr-prompts.md

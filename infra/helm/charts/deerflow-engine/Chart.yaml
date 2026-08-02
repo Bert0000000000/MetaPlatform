@@ -1,0 +1,28 @@
+apiVersion: v2
+name: deerflow-engine
+description: |
+  ByteDance DeerFlow deep-research engine. Runs as an external
+  Docker service in `docker-compose.yml` under the `research` and
+  `ai` profiles (PR-5). This Helm chart mirrors the compose service
+  for production K8s deployments — Deployment + Service + ConfigMap
+  (non-secret LLM / search config) + NetworkPolicy (default-deny,
+  hard rule 13). Secrets (LLM_API_KEY, SEARCH_API_KEY) are delivered
+  via SealedSecret / ExternalSecret (hard rule 12).
+
+type: application
+version: 0.1.0
+appVersion: "latest"
+
+keywords:
+  - deerflow
+  - deep-research
+  - agent
+  - a2a
+
+maintainers:
+  - name: MetaPlatform Platform Owner
+    email: platform@metaplatform.local
+
+annotations:
+  category: AI
+  licenses: Apache-2.0

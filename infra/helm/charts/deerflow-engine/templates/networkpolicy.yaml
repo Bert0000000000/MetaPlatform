@@ -1,0 +1,50 @@
+{{- if .Values.networkPolicy.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "deerflow-engine.fullname" . }}
+  labels:
+    {{- include "deerflow-engine.labels" . | nindent 4 }}
+  annotations:
+    policy.description: |
+      Default-deny for DeerFlow research agent pods. Ingress restricted
+      to the platform namespace on port 8001 (HTTP); egress restricted
+      to DNS + HTTPS (LLM / search providers are external). Enforces
+      hard rule 13 (NetworkPolicy default-deny = prod-blocking when absent).
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "deerflow-engine.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: research-agent
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Only pods in the platform namespace may reach DeerFlow on 8001.
+    - from:
+        {{- range .Values.networkPolicy.allowedIngressNamespaces }}
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ . }}
+        {{- end }}
+      ports:
+        - protocol: TCP
+          port: {{ .Values.service.port }}
+  egress:
+    # DNS resolution (kube-system CoreDNS).
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    # HTTPS egress to LLM + search providers (OpenAI / Tavily).
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - protocol: TCP
+          port: 443
+{{- end }}

@@ -1,0 +1,86 @@
+# =============================================================================
+# DeerFlow Engine sub-chart values
+# =============================================================================
+# Mirrors the docker-compose.yml `deerflow-engine` service (PR-5) so the
+# deep-research agent has a production K8s deployment path. The non-secret
+# LLM / search config lives in a ConfigMap; secrets (LLM_API_KEY,
+# SEARCH_API_KEY) are injected from a SealedSecret / ExternalSecret
+# (hard rule 12).
+# =============================================================================
+
+# Force the service DNS name to "deerflow-engine" so copilot / a2a
+# clients resolve the research agent endpoint consistently.
+fullnameOverride: deerflow-engine
+
+image:
+  registry: docker.io
+  repository: bytedance/deer-flow
+  tag: latest
+  pullPolicy: IfNotPresent
+
+# PR-5 default: single replica. DeerFlow is a stateless research
+# worker; horizontal scaling is opt-in via autoScaling.enabled.
+replicaCount: 1
+
+# Resource governance (hard rule 8) — requests + limits declared so
+# the scheduler can place pods. Production override is 2CPU / 4Gi.
+resources:
+  requests:
+    cpu: 500m
+    memory: 1Gi
+  limits:
+    cpu: 1
+    memory: 2Gi
+
+autoScaling:
+  enabled: false
+
+# LLM configuration — non-secret values go to the ConfigMap.
+# The corresponding secret keys (LLM_API_KEY, SEARCH_API_KEY) are
+# referenced by the Deployment via secretKeyRef.
+llm:
+  baseUrl: "https://api.openai.com/v1"
+  model: "gpt-4o"
+
+# Search provider config — Tavily by default (matches compose).
+search:
+  provider: "tavily"
+
+# Secret references — the operator must provision a Secret named
+# `deerflow-engine-secret` with keys LLM_API_KEY and SEARCH_API_KEY.
+# This keeps secrets out of git (hard rule 12).
+secretRef:
+  name: deerflow-engine-secret
+
+service:
+  type: ClusterIP
+  port: 8001
+
+# Probes — HTTP GET /healthz on 8001 (matches compose healthcheck).
+healthcheck:
+  enabled: true
+  path: /healthz
+  port: 8001
+  readiness:
+    initialDelaySeconds: 10
+    periodSeconds: 10
+  liveness:
+    initialDelaySeconds: 30
+    periodSeconds: 30
+  startup:
+    initialDelaySeconds: 0
+    periodSeconds: 10
+    failureThreshold: 30
+
+persistence:
+  enabled: false
+  size: 5Gi
+  storageClass: ""
+
+# NetworkPolicy — default-deny, only platform namespace can reach
+# DeerFlow on 8001 (hard rule 13).
+networkPolicy:
+  enabled: true
+  allowedIngressNamespaces:
+    - metaplatform
+    - api-gateway

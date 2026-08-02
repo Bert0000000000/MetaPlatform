@@ -15,6 +15,7 @@
 | `iam` | + keycloak, mate-tech-iam, mate-auth-service | 改鉴权/SSO | +1.5G |
 | `events` | + kafka, rabbitmq, nacos | 改消息总线/事件流 | +1.5G |
 | `ai` | + ragflow | 文档解析/GraphRAG | +2.3G |
+| `research` | + deerflow-engine | 深度调研 Agent | +2G |
 | `obs` | + loki, prometheus, grafana, otel-collector | 调试可观测性 | +1.5G |
 | `workflow` | + flowable, kie-server | 改 BPMN/规则引擎 | +1.5G |
 | `rag` | infra + mate-tech-rag | 改 RAG 检索 | +0.5G |
