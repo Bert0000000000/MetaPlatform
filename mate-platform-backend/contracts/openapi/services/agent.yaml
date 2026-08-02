@@ -46,6 +46,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.write]
       summary: Agent chat (S1 | S2 | S3 | S4)
       tags:
       - agent
@@ -80,6 +81,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.write]
       summary: SSE streaming chat (S1 / S2 / S3)
       tags:
       - agent
@@ -108,6 +110,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.write]
       summary: S3 human review resume (approve / abort)
       tags:
       - agent
@@ -146,6 +149,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.read]
       summary: Read persisted thread state
       tags:
       - agent
@@ -171,6 +175,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.write]
       summary: Delete persisted thread state
       tags:
       - agent

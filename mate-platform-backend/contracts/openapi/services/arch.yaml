@@ -22,6 +22,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.read]
       tags:
       - arch
       summary: /v1/ea/applications
@@ -57,6 +58,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.read]
       tags:
       - arch
       summary: /v1/ea/business-processes
@@ -92,6 +94,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.read]
       tags:
       - arch
       summary: /v1/ea/capabilities
@@ -127,6 +130,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.read]
       tags:
       - arch
       summary: /v1/ea/capabilities/tree
@@ -162,6 +166,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.read]
       tags:
       - arch
       summary: /v1/ea/capability-mappings
@@ -197,6 +202,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.read]
       tags:
       - arch
       summary: /v1/ea/data-assets
@@ -232,6 +238,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.read]
       tags:
       - arch
       summary: /v1/ea/data-assets/catalog
@@ -267,6 +274,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.read]
       tags:
       - arch
       summary: /v1/ea/data-entities
@@ -302,6 +310,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.read]
       tags:
       - arch
       summary: /v1/ea/data-flows
@@ -337,6 +346,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.read]
       tags:
       - arch
       summary: /v1/ea/data-standards
@@ -372,6 +382,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.read]
       tags:
       - arch
       summary: /v1/ea/data/domains
@@ -407,6 +418,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.read]
       tags:
       - arch
       summary: /v1/ea/deployments
@@ -442,6 +454,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.read]
       tags:
       - arch
       summary: /v1/ea/governance/principle-categories
@@ -477,6 +490,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.read]
       tags:
       - arch
       summary: /v1/ea/governance/principles
@@ -512,6 +526,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.read]
       tags:
       - arch
       summary: /v1/ea/governance/review-templates
@@ -547,6 +562,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.read]
       tags:
       - arch
       summary: /v1/ea/governance/review-tickets
@@ -582,6 +598,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.read]
       tags:
       - arch
       summary: /v1/ea/governance/tech-debts
@@ -617,6 +634,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.read]
       tags:
       - arch
       summary: /v1/ea/impact-analysis
@@ -652,6 +670,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.read]
       tags:
       - arch
       summary: /v1/ea/infrastructures
@@ -687,6 +706,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.read]
       tags:
       - arch
       summary: /v1/ea/ontology-mappings/changes
@@ -722,6 +742,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.read]
       tags:
       - arch
       summary: /v1/ea/ontology-mappings/rules
@@ -757,6 +778,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.read]
       tags:
       - arch
       summary: /v1/ea/orgs
@@ -792,6 +814,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.read]
       tags:
       - arch
       summary: /v1/ea/orgs/tree
@@ -827,6 +850,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.read]
       tags:
       - arch
       summary: /v1/ea/roles
@@ -862,6 +886,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.read]
       tags:
       - arch
       summary: /v1/ea/tech-stacks
@@ -897,6 +922,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.read]
       tags:
       - arch
       summary: /v1/ea/technology-components
@@ -932,6 +958,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.read]
       tags:
       - arch
       summary: /v1/ea/technology-radar
@@ -967,6 +994,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.read]
       tags:
       - arch
       summary: /v1/ea/technology-stacks
@@ -1002,6 +1030,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.read]
       tags:
       - arch
       summary: /v1/ea/value-streams

@@ -62,6 +62,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.read]
       summary: Aggregated health (9 apps + 7 infra)
       tags:
       - obs
@@ -82,6 +83,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.read]
       summary: Auto-instrument status
       tags:
       - obs
@@ -102,6 +104,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.admin]
       summary: Operations health (per service)
       tags:
       - obs
@@ -122,6 +125,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.admin]
       summary: Self process metrics snapshot
       tags:
       - obs
@@ -142,6 +146,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.admin]
       summary: List alert rules
       tags:
       - obs
@@ -162,6 +167,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.admin]
       summary: Prometheus passthrough (best-effort)
       tags:
       - obs
@@ -189,6 +195,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.admin]
       summary: Capacity snapshot
       tags:
       - obs

@@ -46,6 +46,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.write]
       summary: Multipart upload (text/markdown) -> RAG upload
       tags:
       - kb
@@ -84,6 +85,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.write]
       summary: Search via RAG (forwarded)
       tags:
       - kb
@@ -116,6 +118,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.write]
       summary: Agent chat (forwarded to mate-tech-agent)
       tags:
       - kb
@@ -148,6 +151,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.write]
       summary: Agent chat (SSE) - proxies mate-tech-agent stream
       tags:
       - kb
@@ -176,6 +180,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.read]
       summary: Forwarded RAG stats
       tags:
       - kb

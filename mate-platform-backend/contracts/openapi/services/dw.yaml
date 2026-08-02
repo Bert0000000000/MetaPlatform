@@ -22,6 +22,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.read]
       tags:
       - dw
       summary: /v1/dw/auth/login
@@ -57,6 +58,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.read]
       tags:
       - dw
       summary: /v1/dw/collaborations
@@ -92,6 +94,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.read]
       tags:
       - dw
       summary: /v1/dw/commit
@@ -127,6 +130,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.read]
       tags:
       - dw
       summary: /v1/dw/documents
@@ -162,6 +166,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.write]
       tags:
       - dw
       summary: /v1/dw/documents/upload
@@ -201,6 +206,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.read]
       tags:
       - dw
       summary: /v1/dw/employees
@@ -236,6 +242,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.read]
       tags:
       - dw
       summary: /v1/dw/employees/tasks
@@ -271,6 +278,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.read]
       tags:
       - dw
       summary: /v1/dw/evaluations
@@ -306,6 +314,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.read]
       tags:
       - dw
       summary: /v1/dw/extract
@@ -341,6 +350,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.read]
       tags:
       - dw
       summary: /v1/dw/knowledge-bases
@@ -376,6 +386,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.read]
       tags:
       - dw
       summary: /v1/dw/learning/extract
@@ -411,6 +422,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.read]
       tags:
       - dw
       summary: /v1/dw/learning/feedback
@@ -446,6 +458,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.read]
       tags:
       - dw
       summary: /v1/dw/models
@@ -481,6 +494,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.read]
       tags:
       - dw
       summary: /v1/dw/tools
@@ -516,6 +530,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.read]
       tags:
       - dw
       summary: /v1/dw/traces

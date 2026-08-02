@@ -58,6 +58,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.read]
       summary: Current user profile (synthetic)
       tags:
       - dashboard
@@ -78,6 +79,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.read]
       summary: Aggregated permissions (synthetic)
       tags:
       - dashboard
@@ -98,6 +100,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.read]
       summary: Get user preferences
       tags:
       - dashboard
@@ -122,6 +125,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.write]
       summary: Update user preferences
       tags:
       - dashboard
@@ -148,6 +152,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.read]
       summary: Active sessions (synthetic)
       tags:
       - dashboard
@@ -179,6 +184,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.write]
       summary: Revoke session
       tags:
       - dashboard
@@ -205,6 +211,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.read]
       summary: List API keys (synthetic)
       tags:
       - dashboard
@@ -239,6 +246,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.write]
       summary: Create API key
       tags:
       - dashboard
@@ -271,6 +279,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.write]
       summary: Revoke API key
       tags:
       - dashboard
@@ -297,6 +306,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.read]
       summary: List notifications (in-memory)
       tags:
       - dashboard
@@ -317,6 +327,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.read]
       summary: Unread notification count
       tags:
       - dashboard
@@ -343,6 +354,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.write]
       summary: Mark one notification read
       tags:
       - dashboard
@@ -369,6 +381,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.write]
       summary: Mark all notifications read
       tags:
       - dashboard
@@ -389,6 +402,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.read]
       summary: Get notification preferences
       tags:
       - dashboard
@@ -408,6 +422,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.write]
       summary: Update notification preferences
       tags:
       - dashboard
@@ -434,6 +449,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.read]
       summary: Metric cards (in-memory)
       tags:
       - dashboard
@@ -454,6 +470,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.read]
       summary: Metric trend (in-memory)
       tags:
       - dashboard
@@ -483,6 +500,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.read]
       summary: Pending todos (in-memory)
       tags:
       - dashboard
@@ -503,6 +521,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.read]
       summary: Done todos (in-memory)
       tags:
       - dashboard
@@ -529,6 +548,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.write]
       summary: Approve / reject todo
       tags:
       - dashboard
@@ -561,6 +581,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.read]
       summary: List digital workers (in-memory)
       tags:
       - dashboard
@@ -581,6 +602,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.read]
       summary: List deliverables (in-memory)
       tags:
       - dashboard
@@ -607,6 +629,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.write]
       summary: Generate a one-shot download URL
       tags:
       - dashboard
@@ -645,6 +668,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.write]
       summary: Delete deliverable
       tags:
       - dashboard
@@ -671,6 +695,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.read]
       summary: List anomaly events (in-memory)
       tags:
       - dashboard
@@ -706,6 +731,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.read]
       summary: Anomaly detail
       tags:
       - dashboard
@@ -738,6 +764,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.write]
       summary: RCA (synthetic)
       tags:
       - dashboard
@@ -770,6 +797,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.write]
       summary: Trigger remediation (synthetic; mode=AUTO executes, mode=ADVISE suggests)
       tags:
       - dashboard
@@ -812,6 +840,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.read]
       summary: List anomaly detection rules (in-memory)
       tags:
       - dashboard
@@ -831,6 +860,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.write]
       summary: Create anomaly rule
       tags:
       - dashboard
@@ -863,6 +893,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.write]
       summary: Update anomaly rule
       tags:
       - dashboard
@@ -894,6 +925,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.write]
       summary: Delete anomaly rule
       tags:
       - dashboard
@@ -920,6 +952,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.read]
       summary: Global search (in-memory index)
       tags:
       - dashboard

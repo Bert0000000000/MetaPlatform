@@ -42,6 +42,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.write]
       summary: 发布消息
       tags:
       - msg
@@ -74,6 +75,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.read]
       summary: 列出主题
       tags:
       - msg

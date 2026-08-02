@@ -44,6 +44,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.read]
       summary: 列出所有已注册工具
       tags:
       - mcp
@@ -75,6 +76,8 @@ paths:
       - mcp
       security:
       - bearerAuth: []
+        tenantHeader: []
+        oidcScopes: [platform.write]
       parameters:
       - name: name
         in: path
@@ -119,6 +122,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.read]
       summary: 列出资源
       tags:
       - mcp
@@ -139,6 +143,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.read]
       summary: 列出 prompt 模板
       tags:
       - mcp
@@ -159,6 +164,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.write]
       summary: 渲染 prompt 模板
       tags:
       - mcp
@@ -195,6 +201,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.write]
       summary: 注册外部 MCP server
       tags:
       - federation
@@ -227,6 +234,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.read]
       summary: 列出已注册的联邦 server
       tags:
       - federation
@@ -271,6 +279,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.read]
       summary: 获取单个联邦 server 详情
       tags:
       - federation
@@ -297,6 +306,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.write]
       summary: 更新联邦 server(transport_url / auth_token_ref / status / tools)
       tags:
       - federation
@@ -331,6 +341,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.write]
       summary: 注销联邦 server(软删除 → status=deleted)
       tags:
       - federation
@@ -360,6 +371,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.read]
       summary: 列出所有联邦 server 暴露的远程工具(聚合)
       tags:
       - federation
@@ -395,6 +407,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.write]
       summary: 路由调用联邦工具
       tags:
       - federation

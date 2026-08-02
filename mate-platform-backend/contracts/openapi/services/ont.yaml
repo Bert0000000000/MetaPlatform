@@ -42,6 +42,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.write]
       summary: Create ontology
       tags:
       - ont
@@ -78,6 +79,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.read]
       summary: Read ontology
       tags:
       - ont
@@ -108,6 +110,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.write]
       summary: Create class
       tags:
       - ont
@@ -144,6 +147,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.read]
       summary: Read class
       tags:
       - ont
@@ -174,6 +178,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.read]
       summary: List instances (optional class_id filter)
       tags:
       - ont
@@ -204,6 +209,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.write]
       summary: Create instance
       tags:
       - ont
@@ -240,6 +246,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.read]
       summary: Read instance
       tags:
       - ont
@@ -269,6 +276,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.write]
       summary: Delete instance
       tags:
       - ont
@@ -295,6 +303,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.read]
       summary: List relations
       tags:
       - ont
@@ -320,6 +329,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.write]
       summary: Create relation
       tags:
       - ont
@@ -350,6 +360,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.write]
       summary: SPARQL -> Cypher -> execute
       tags:
       - ont
@@ -380,6 +391,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.write]
       summary: SPARQL EXPLAIN (parse + transpile only)
       tags:
       - ont

@@ -22,6 +22,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.write]
       tags:
       - wfe
       summary: /v1/wfe/flows/test
@@ -61,6 +62,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.read]
       tags:
       - wfe
       summary: /v1/wfe/flows/validate

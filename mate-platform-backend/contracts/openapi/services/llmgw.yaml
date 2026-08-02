@@ -22,6 +22,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.write]
       summary: 非流式 chat
       tags:
       - llmgw
@@ -54,6 +55,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.write]
       summary: SSE 流式 chat
       tags:
       - llmgw
@@ -82,6 +84,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.write]
       summary: 嵌入向量
       tags:
       - llmgw
@@ -108,6 +111,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.write]
       summary: 多模态对话(图像/语音/视频 → 文本)
       tags:
       - llmgw

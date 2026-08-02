@@ -46,6 +46,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.read]
       summary: System status (embedder + index backends)
       tags:
       - rag
@@ -70,6 +71,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.read]
       summary: Indexed chunk count + embedder dim
       tags:
       - rag
@@ -94,6 +96,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.admin]
       summary: PostgreSQL store diagnostics
       tags:
       - rag
@@ -118,6 +121,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.write]
       summary: Parse raw text via RAGFlow and fan out to 3 indexes
       tags:
       - rag
@@ -150,6 +154,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.write]
       summary: Ingest pre-chunked text into all 3 indexes
       tags:
       - rag
@@ -182,6 +187,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.write]
       summary: Multipart upload (text/markdown) -> parse + 3-index fan-out
       tags:
       - rag
@@ -222,6 +228,7 @@ paths:
       security:
       - bearerAuth: []
         tenantHeader: []
+        oidcScopes: [platform.write]
       summary: 3-strategy retrieval (auto / factual / entity / thematic)
       tags:
       - rag
