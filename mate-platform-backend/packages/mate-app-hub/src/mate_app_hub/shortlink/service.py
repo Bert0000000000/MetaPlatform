@@ -21,11 +21,19 @@ def create_shortlink(
     tenant_id: str,
     app_id: str,
     role: str | None = None,
+    expires_at: datetime | None = None,
 ) -> ShortlinkEntry:
-    """Generate a unique code and persist a new ShortlinkEntry."""
+    """Generate a unique code and persist a new ShortlinkEntry.
+
+    ``expires_at`` is an optional timezone-aware datetime. When provided
+    it is serialised to ISO format and stored alongside the entry so
+    callers can later resolve with expiry enforcement.
+    """
     with get_tracer().start_as_current_span("apphub.shortlink.create") as span:
         span.set_attribute("apphub.tenant_id", tenant_id)
         span.set_attribute("apphub.app_id", app_id)
+        if expires_at is not None:
+            span.set_attribute("apphub.has_expires_at", True)
         code: str | None = None
         for _ in range(_MAX_COLLISION_RETRIES):
             candidate = generate_code()
@@ -41,6 +49,7 @@ def create_shortlink(
             app_id=app_id,
             code=code,
             role=role,
+            expires_at=expires_at.isoformat() if expires_at is not None else None,
             created_at=now,
         )
         store.put(entry)

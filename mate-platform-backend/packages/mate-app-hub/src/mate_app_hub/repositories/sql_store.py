@@ -409,3 +409,118 @@ def seed_from_inmemory(tenant_id: str) -> dict[str, int]:
         [put_template(tenant_id, t) for t in mem.list_templates(tenant_id)]
     )
     return counts
+
+
+# ---------------------------------------------------------------------------
+# Shortlink persistence (APPHUB-RUNTIME-01 K3-1)
+# ---------------------------------------------------------------------------
+def _orm_to_shortlink(row: models.ApphubShortlinkORM):
+    """Re-hydrate an ORM row into a shortlink.repository.ShortlinkEntry."""
+    from ..shortlink.repository import ShortlinkEntry
+    return ShortlinkEntry(
+        id=row.id,
+        tenant_id=row.tenant_id,
+        app_id=row.app_id,
+        code=row.code,
+        role=row.role,
+        expires_at=row.expires_at.isoformat() if row.expires_at else None,
+        created_at=row.created_at.isoformat() if row.created_at else "",
+    )
+
+
+def put_shortlink(tenant_id: str, entry) -> object:
+    """Insert or update a shortlink entry for the given tenant."""
+    if not tenant_id:
+        return entry
+    s = _session()
+    existing = s.get(models.ApphubShortlinkORM, entry.id)
+    if existing:
+        existing.app_id = entry.app_id
+        existing.code = entry.code
+        existing.role = entry.role
+        existing.expires_at = (
+            __import__("datetime").datetime.fromisoformat(entry.expires_at)
+            if entry.expires_at
+            else None
+        )
+    else:
+        s.add(models.ApphubShortlinkORM(
+            id=entry.id,
+            tenant_id=tenant_id,
+            app_id=entry.app_id,
+            code=entry.code,
+            role=entry.role,
+            expires_at=(
+                __import__("datetime").datetime.fromisoformat(entry.expires_at)
+                if entry.expires_at
+                else None
+            ),
+        ))
+    s.commit()
+    return entry
+
+
+def get_shortlink_by_code(tenant_id: str, code: str):
+    """Look up a shortlink by (tenant_id, code). Returns ShortlinkEntry or None."""
+    if not tenant_id:
+        return None
+    s = _session()
+    row = s.execute(
+        select(models.ApphubShortlinkORM).where(
+            models.ApphubShortlinkORM.tenant_id == tenant_id,
+            models.ApphubShortlinkORM.code == code,
+        )
+    ).scalar_one_or_none()
+    return _orm_to_shortlink(row) if row else None
+
+
+def list_shortlinks(tenant_id: str) -> list:
+    """List all shortlinks for a tenant."""
+    if not tenant_id:
+        return []
+    s = _session()
+    rows = s.execute(
+        select(models.ApphubShortlinkORM)
+        .where(models.ApphubShortlinkORM.tenant_id == tenant_id)
+        .order_by(models.ApphubShortlinkORM.created_at.desc())
+    ).scalars().all()
+    return [_orm_to_shortlink(r) for r in rows]
+
+
+def delete_shortlink_by_code(tenant_id: str, code: str) -> bool:
+    """Delete a shortlink by (tenant_id, code). Returns True if deleted."""
+    if not tenant_id:
+        return False
+    s = _session()
+    row = s.execute(
+        select(models.ApphubShortlinkORM).where(
+            models.ApphubShortlinkORM.tenant_id == tenant_id,
+            models.ApphubShortlinkORM.code == code,
+        )
+    ).scalar_one_or_none()
+    if row is None:
+        return False
+    s.delete(row)
+    s.commit()
+    return True
+
+
+def shortlink_exists(tenant_id: str, code: str) -> bool:
+    """Check if a shortlink exists for (tenant_id, code)."""
+    if not tenant_id:
+        return False
+    s = _session()
+    row = s.execute(
+        select(models.ApphubShortlinkORM.id).where(
+            models.ApphubShortlinkORM.tenant_id == tenant_id,
+            models.ApphubShortlinkORM.code == code,
+        )
+    ).scalar_one_or_none()
+    return row is not None
+
+
+def reset_shortlinks() -> None:
+    """Truncate the apphub_shortlinks table (test helper)."""
+    s = _session()
+    s.execute(models.ApphubShortlinkORM.__table__.delete())
+    s.commit()

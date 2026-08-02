@@ -11,7 +11,7 @@ helpers in sql_store.py.
 """
 from __future__ import annotations
 
-from sqlalchemy import Integer, String, Text
+from sqlalchemy import DateTime, Index, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from mate_tech_db.base import Base
@@ -76,3 +76,28 @@ class ApphubTemplateORM(Base):
     template_type: Mapped[str] = mapped_column(String(32), default="")
     description: Mapped[str] = mapped_column(Text, default="")
     content: Mapped[str] = mapped_column(Text, default="{}")  # JSON
+
+
+class ApphubShortlinkORM(Base):
+    """Short-link persistence (APPHUB-RUNTIME-01 K3-1).
+
+    Mirrors ``shortlink.repository.ShortlinkEntry``. Codes are unique
+    per tenant via the composite index on ``(tenant_id, code)``.
+    """
+
+    __tablename__ = "apphub_shortlinks"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    app_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    code: Mapped[str] = mapped_column(String(16), nullable=False)
+    role: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    expires_at: Mapped[str | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[str] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now(),
+    )
+
+    __table_args__ = (
+        Index("ix_apphub_shortlinks_tenant_code", "tenant_id", "code", unique=True),
+        Index("ix_apphub_shortlinks_tenant_app", "tenant_id", "app_id"),
+    )

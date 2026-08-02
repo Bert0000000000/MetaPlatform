@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import asdict
+from datetime import datetime
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query, Request
@@ -569,8 +570,13 @@ async def create_shortlink_endpoint(request: Request) -> dict:
     """Create a new short-link for an app."""
     tenant_id = _tenant_id(request)
     body = await request.json()
+    expires_at_raw = body.get("expires_at")
+    expires_at_dt: datetime | None = None
+    if expires_at_raw:
+        expires_at_dt = datetime.fromisoformat(expires_at_raw)
     entry = create_shortlink(
-        get_default_store(), tenant_id, body["app_id"], body.get("role"),
+        get_default_store(), tenant_id, body["app_id"],
+        body.get("role"), expires_at_dt,
     )
     _emit(
         request, "apphub.shortlink.created", entry.code,
