@@ -71,6 +71,12 @@
 
 **验收证据**：`evidence/P3-W6-W7-ACCEPTANCE.md`（1500 passed / 0 failed = 1222 后端 + 278 infra）
 
+### APPHUB-RUNTIME-01 收口（2026-08-02）
+
+| sub-batch | 内容 | 状态 | 日期 | 备注 |
+|---|---|---|---|---|
+| K2 | APPHUB-RUNTIME-01 收口 | **Accepted** ✅ | 2026-08-02 | 治理收口 5 件 + 阶段 D 收尾 |
+
 ## 数据平台（DATA-D0-D8）—— v3.0 GA 硬前置已闭环
 
 DATA-D0-D8 全部 8 阶段 Accepted（共 45/45 tests pass）。后续 sub-batch 在独立批次接力，详见 `docs/active/specs/2026-07-27-mate-platform-delivery-roadmap.md` 附录 A。
