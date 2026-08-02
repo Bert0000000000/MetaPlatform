@@ -90,11 +90,17 @@ class TestServiceSecuritySegments:
         )
 
 
-def test_all_seventeen_domains_covered() -> None:
-    """Guard against silent contract drift: exactly the 17 known domains."""
+def test_all_eighteen_domains_covered() -> None:
+    """Guard against silent contract drift: exactly the 18 known domains.
+
+    deep-research added in v3.1 by commit ``3e739c0451cb`` PR-1+2
+    (mate-tech-deep-research 包). To add a new domain, append to
+    ``expected`` AND update the umbrella helm chart accordingly.
+    """
     names = {p.stem for p in SERVICE_FILES}
     expected = {
         "a2a", "agent", "apphub", "arch", "copilot", "dashboard", "data",
+        "deep-research",
         "dw", "iam", "kb", "llmgw", "mcp", "msg", "obs", "ont", "rag", "wfe",
     }
     assert names == expected, f"service contract set drifted: {names ^ expected}"

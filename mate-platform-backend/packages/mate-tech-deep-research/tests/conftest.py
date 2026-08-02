@@ -30,13 +30,14 @@ os.environ.setdefault("KEYCLOAK_AUDIENCE", "metaplatform-backend")
 os.environ.setdefault("SERVICE_CLIENT_ID", "metaplatform-backend")
 os.environ.setdefault("SERVICE_CLIENT_SECRET", "test-secret")
 
-from mate_platform.messaging.outbox import InMemoryOutboxWriter
-
 from mate_tech_deep_research.api import router as router_module
-from mate_tech_deep_research.deerflow.client import DeerFlowClient
+from mate_tech_deep_research.api.schemas import ResearchResponse, Source
+from mate_tech_deep_research.deerflow.client import DeerFlowUnavailableError
 from mate_tech_deep_research.main import create_app
 
-JWT_SECRET = "test-secret"
+from mate_platform.messaging.outbox import InMemoryOutboxWriter
+
+JWT_SECRET = "test-secret"  # noqa: S105
 
 
 def _keycloak_token(
@@ -76,11 +77,6 @@ class _StubDeerFlowClient:
     """
 
     def __init__(self) -> None:
-        from mate_tech_deep_research.api.schemas import (
-            ResearchResponse,
-            Source,
-        )
-
         self.response = ResearchResponse(
             report="# Stub report\n\nHello.",
             sources=[
@@ -101,8 +97,6 @@ class _StubDeerFlowClient:
         return not self.raise_unavailable
 
     async def research(self, request):  # type: ignore[no-untyped-def]
-        from mate_tech_deep_research.deerflow.client import DeerFlowUnavailableError
-
         self.calls.append(request)
         if self.raise_unavailable:
             raise DeerFlowUnavailableError("stub: DeerFlow Engine unavailable")

@@ -13,14 +13,13 @@ from __future__ import annotations
 from dataclasses import replace
 
 import pytest
-
-from mate_platform.messaging.outbox import InMemoryOutboxWriter
-from mate_platform.tenancy.context import AuthMethod, RequestContext, TenantId
-
 from mate_tech_deep_research.events.publisher import (
     EVENT_TYPE,
     publish_research_completed,
 )
+
+from mate_platform.messaging.outbox import InMemoryOutboxWriter
+from mate_platform.tenancy.context import AuthMethod, RequestContext, TenantId
 
 
 def _ctx(tenant: str = "tenant-acme") -> RequestContext:

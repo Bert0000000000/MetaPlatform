@@ -18,7 +18,6 @@ from __future__ import annotations
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-
 from mate_app_a2a.bootstrap.agent_registration import (
     get_startup_agent,
     register_deerflow_at_startup,
@@ -26,6 +25,7 @@ from mate_app_a2a.bootstrap.agent_registration import (
 )
 from mate_app_copilot.routing.complexity import is_deep_research_query
 from mate_app_copilot.routing.dispatcher import dispatch
+
 from mate_platform.messaging.outbox import InMemoryOutboxWriter
 from mate_platform.tenancy.context import AuthMethod, RequestContext, TenantId
 
@@ -163,7 +163,7 @@ async def test_complexity_routing_deep() -> None:
         query=query,
         llmgw_client=llmgw,
         ctx=_ctx(),
-        bearer_token="test-token",
+        bearer_token="test-token",  # noqa: S106
         http_client=http,
     )
 

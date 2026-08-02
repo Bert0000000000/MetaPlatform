@@ -9,7 +9,6 @@ from __future__ import annotations
 import httpx
 import pytest
 import respx
-
 from mate_tech_deep_research.api.schemas import ResearchRequest, Source
 from mate_tech_deep_research.deerflow.client import (
     DeerFlowClient,
@@ -161,7 +160,7 @@ async def test_no_bearer_header_when_api_key_empty() -> None:
     try:
         # Internal client should have no Authorization header.
         headers = client._client.headers
-        assert "authorization" not in {k.lower() for k in headers.keys()}
+        assert "authorization" not in {k.lower() for k in headers}
     finally:
         await client.aclose()
 

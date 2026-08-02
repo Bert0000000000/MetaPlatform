@@ -23,8 +23,8 @@ EVENT_TYPE = "deep.research.completed"
 
 def publish_research_completed(
     *,
-    outbox: "OutboxWriter | None",
-    ctx: "RequestContext | None",
+    outbox: OutboxWriter | None,
+    ctx: RequestContext | None,
     query: str,
     report_size: int,
     sources_count: int,

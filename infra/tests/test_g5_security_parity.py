@@ -246,11 +246,20 @@ def test_secured_endpoint_inventory_non_empty() -> None:
     )
 
 
-def test_all_seventeen_domains_present() -> None:
-    """All 17 known domains must be in the contract set."""
+def test_all_eighteen_domains_present() -> None:
+    """All known domains must be in the contract set.
+
+    As of v3.1+v3.2 the platform has 18 spec files (deep-research added
+    by ``3e739c0451cb`` PR-1+2). This test guards against drift in either
+    direction: missing spec files (regression) and unexpected new files
+    (untracked extension). To add a new domain, append to ``expected``
+    here AND run ``infra/tests/test_chart_structure.py`` so the umbrella
+    chart picks it up.
+    """
     names = {p.stem for p in SERVICES_DIR.glob("*.yaml")}
     expected = {
         "a2a", "agent", "apphub", "arch", "copilot", "dashboard", "data",
+        "deep-research",
         "dw", "iam", "kb", "llmgw", "mcp", "msg", "obs", "ont", "rag", "wfe",
     }
     assert names == expected, f"service contract set drifted: {names ^ expected}"

@@ -7,7 +7,7 @@ from upstream JSON.
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 
@@ -56,4 +56,4 @@ class ResearchResponse:
 
 def now_iso() -> str:
     """ISO-8601 UTC timestamp helper (used by tests / mocks)."""
-    return datetime.now(tz=timezone.utc).isoformat()
+    return datetime.now(tz=UTC).isoformat()

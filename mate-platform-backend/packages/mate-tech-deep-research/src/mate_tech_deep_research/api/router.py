@@ -19,7 +19,7 @@ from mate_platform.tenancy.guards import require_tenant
 
 from ..deerflow.client import DeerFlowClient, DeerFlowUnavailableError
 from ..events.publisher import publish_research_completed
-from .schemas import ResearchRequest, ResearchResponse
+from .schemas import ResearchRequest
 
 router = APIRouter(prefix="/api/v1/a2a/agent/deep-research", tags=["deep-research"])
 
@@ -29,7 +29,7 @@ _client_singleton: DeerFlowClient | None = None
 
 def set_deerflow_client(client: DeerFlowClient | None) -> None:
     """Test hook: override the singleton DeerFlowClient (or clear it)."""
-    global _client_singleton
+    global _client_singleton  # noqa: PLW0603 (test override hook, not a long-lived mutable)
     _client_singleton = client
 
 
