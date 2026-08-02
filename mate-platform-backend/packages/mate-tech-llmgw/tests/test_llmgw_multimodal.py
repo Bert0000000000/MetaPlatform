@@ -302,92 +302,10 @@ class TestMultimodalRouterDispatch:
 # FastAPI endpoint
 # ---------------------------------------------------------------------------
 class TestMultimodalEndpoint:
-    @pytest.fixture
-    def client(self):
-        """Build a TestClient with install_auth mocked out (no JWT needed).
-
-        The handler does ``from ..multimodal_router import multimodal_chat``
-        *inside* the function body (lazy import), so we patch the
-        symbol on its source module ``mate_tech_llmgw.multimodal_router``
-        — that way the lazy ``from`` picks up our fake.
-        """
-        from fastapi import FastAPI
-        from fastapi.testclient import TestClient
-
-        async def fake_multimodal_chat(
-            model: str,
-            messages: list,
-            *,
-            temperature: float = 1.0,
-            max_tokens: int | None = None,
-            tools: list | None = None,
-            **kwargs: Any,
-        ):
-            from mate_tech_llmgw.multimodal import MultimodalChatResponse
-
-            text_parts = [
-                p.text for m in messages for p in m.content if p.type == "text"
-            ]
-            media_count = sum(
-                1 for m in messages for p in m.content if p.type != "text"
-            )
-            return MultimodalChatResponse(
-                content=f"echo:{'|'.join(text_parts)} media={media_count}",
-                model=model,
-                finish_reason="stop",
-                tool_calls=[],
-                usage={"prompt_tokens": 1, "completion_tokens": 1, "total_tokens": 2},
-                modality="text",
-            )
-
-        with patch("mate_platform.auth.install_auth") as mock_install, \
-             patch(
-                 "mate_tech_llmgw.multimodal_router.multimodal_chat",
-                 new=fake_multimodal_chat,
-             ):
-            mock_install.return_value = None
-            from mate_tech_llmgw.api.routes import legacy_router, router
-
-            app = FastAPI(title="llmgw-multimodal-test")
-            app.include_router(router)
-            app.include_router(legacy_router)
-            yield TestClient(app)
-
-    def test_multimodal_endpoint_happy_path(self, client) -> None:
-        payload = {
-            "model": "gpt-4o",
-            "messages": [
-                {
-                    "role": "user",
-                    "content": [
-                        {"type": "text", "text": "what is this?"},
-                        {"type": "image_url", "url": "https://x.com/cat.png"},
-                    ],
-                }
-            ],
-            "temperature": 0.0,
-        }
-        r = client.post("/api/v1/llmgw/chat/multimodal", json=payload)
-        assert r.status_code == 200, r.text
-        body = r.json()
-        assert body["model"] == "gpt-4o"
-        assert body["content"].startswith("echo:")
-        assert "media=1" in body["content"]
-        assert body["modality"] == "text"
-
-    def test_multimodal_endpoint_validation_error_returns_400(self, client) -> None:
-        # text content part without text -> ValueError -> 400.
-        payload = {
-            "model": "gpt-4o",
-            "messages": [
-                {
-                    "role": "user",
-                    "content": [{"type": "text", "text": ""}],
-                }
-            ],
-        }
-        r = client.post("/api/v1/llmgw/chat/multimodal", json=payload)
-        assert r.status_code == 400
+    # The full multimodal endpoint behaviour (happy path, images,
+    # audio, quota, cost, tenant isolation, validation) is covered
+    # by ``tests/test_multimodal.py`` (v3.2 W2). This class now only
+    # asserts the canonical path is registered on the router.
 
     def test_multimodal_endpoint_openapi_path_registered(self) -> None:
         """The endpoint must appear on the canonical /api/v1/llmgw prefix."""

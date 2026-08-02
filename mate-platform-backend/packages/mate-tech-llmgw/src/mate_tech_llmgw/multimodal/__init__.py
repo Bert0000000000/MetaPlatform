@@ -1,23 +1,22 @@
-"""Multimodal chat types & routing (扩展能力 — backlog §3.3).
+"""Multimodal chat types & routing (扩展能力 — backlog §3.3 + v3.2 W2).
+
+This package hosts two layers:
+
+1. **OpenAI-Vision / Anthropic compatible types** —
+   :class:`MultimodalContentPart`, :class:`MultimodalMessage`,
+   :class:`MultimodalChatResponse`, :class:`MultimodalChatProvider` —
+   consumed by :mod:`mate_tech_llmgw.multimodal_router` and the
+   ``providers/multimodal_*.py`` adapters.
+2. **v3.2 W2 simplified engine** — :class:`MultimodalEngine`,
+   :class:`MultimodalRequest`, :class:`MultimodalResponse`,
+   :class:`StubMultimodalProvider` (re-exported from
+   :mod:`mate_tech_llmgw.multimodal.engine`) — a flattened
+   prompt + images + audio interface with an injectable provider.
 
 PRD-APP-COPILOT §3.5 calls for image / audio / video inputs to the
-LLM gateway. The existing ``chat`` module only models text content;
-this module adds the multimodal message shape, the provider-facing
-``MultimodalChatProvider`` protocol, and a router that dispatches to
-the OpenAI / Anthropic / Qwen / Doubao multimodal adapters.
-
-Design notes
-------------
-* ``MultimodalContentPart`` is a discriminated union: ``type`` ∈
-  ``{text, image_url, image_base64, audio_url, audio_base64, video_url}``.
-* Provider-specific translation lives in
-  ``providers/multimodal_*.py`` adapters (one per provider family);
-  the OpenAI / Doubao / Qwen adapters share the OpenAI Vision schema
-  (``{"type": "image_url", "image_url": {"url": ...}}``), the
-  Anthropic adapter uses
-  ``{"type": "image", "source": {"type": "base64", "media_type": ..., "data": ...}}``.
-* The router mirrors :mod:`mate_tech_llmgw.router` semantics so
-  ``multimodal_chat(model, messages)`` is a drop-in extension.
+LLM gateway. The OpenAI-Vision types model full content-part arrays;
+the v3.2 W2 engine offers a simpler entry point for callers that only
+need text + image + audio references → text output.
 """
 from __future__ import annotations
 
@@ -130,10 +129,28 @@ class MultimodalChatProvider(Protocol):
     ) -> MultimodalChatResponse: ...
 
 
+# ---------------------------------------------------------------------------
+# v3.2 W2: simplified engine (text + image + audio → text).
+# Re-exported here so ``from mate_tech_llmgw.multimodal import
+# MultimodalEngine`` resolves alongside the legacy content-part types.
+# ---------------------------------------------------------------------------
+from .engine import (  # noqa: E402
+    MultimodalEngine,
+    MultimodalProviderProtocol,
+    MultimodalRequest,
+    MultimodalResponse,
+    StubMultimodalProvider,
+)
+
 __all__ = [
     "ContentPartType",
     "MultimodalChatProvider",
     "MultimodalChatResponse",
     "MultimodalContentPart",
+    "MultimodalEngine",
     "MultimodalMessage",
+    "MultimodalProviderProtocol",
+    "MultimodalRequest",
+    "MultimodalResponse",
+    "StubMultimodalProvider",
 ]

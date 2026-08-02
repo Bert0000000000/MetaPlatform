@@ -25,6 +25,7 @@ from .router import chat as router_chat
 logger = structlog.get_logger(__name__)
 
 # P3-W9: management API helpers (cache / quota / cost singletons).
+from ..quota.bucket import QuotaExceededError  # noqa: E402
 from ..router import get_cache, get_cost_recorder, get_quota_bucket  # noqa: E402
 
 # Canonical prefix per the spec.
@@ -210,108 +211,90 @@ async def real_chat_endpoint(req: RealChatRequest) -> RealChatResponseAPI:
 
 
 # ---------------------------------------------------------------------------
-# Multimodal chat (扩展能力 — backlog §3.3)
+# Multimodal chat — simplified engine (v3.2 W2)
 #
-# Spec status: ``contracts/openapi/services/llmgw.yaml`` does NOT yet
-# declare ``/api/v1/llmgw/chat/multimodal``. This endpoint is an
-# extension capability per backlog §3.3 ("PRD 提到但无实现"). The
-# handler is wired under the canonical ``/api/v1/llmgw`` prefix so
-# once the contract is amended with the new operationId the route
-# will already be at the canonical path.
+# ``POST /api/v1/llmgw/chat/multimodal`` accepts a flattened body
+# (prompt + images + audio + model) and delegates to the
+# :class:`~mate_tech_llmgw.multimodal.engine.MultimodalEngine`.
+# Quota and cost reuse the same singletons as the text chat path
+# (``get_quota_bucket`` / ``get_cost_recorder``), so multimodal calls
+# are subject to the same per-tenant RPM/TPM limits and cost metering.
 # ---------------------------------------------------------------------------
-class MultimodalContentPartAPI(BaseModel):
-    """Content part of a multimodal message."""
+class MultimodalApiRequest(BaseModel):
+    """``/chat/multimodal`` simplified request body (v3.2 W2)."""
 
-    type: str = Field(..., description="text | image_url | image_base64 | audio_url | audio_base64 | video_url")
-    text: str | None = None
-    url: str | None = None
-    data: str | None = None
-    media_type: str | None = None
-    detail: str | None = None
-
-
-class MultimodalMessageAPI(BaseModel):
-    """Multimodal message: role + content parts."""
-
-    role: str
-    content: list[MultimodalContentPartAPI]
-    name: str | None = None
-    tool_call_id: str | None = None
+    prompt: str = Field(..., description="文本提示")
+    images: list[str] = Field(default_factory=list, description="base64 data URI 或 URL")
+    audio: list[str] = Field(default_factory=list, description="base64 data URI 或 URL")
+    model: str = Field("gpt-4o-mini", description="多模态模型名")
+    tenant_id: str = Field(default="default", description="租户 ID")
 
 
-class MultimodalChatRequest(BaseModel):
-    """/chat/multimodal 请求体 (扩展能力)."""
-
-    model: str = Field(..., description="支持多模态的模型名(gpt-4o, claude-3-5-sonnet, qwen-vl-max 等)")
-    messages: list[MultimodalMessageAPI]
-    temperature: float = 1.0
-    max_tokens: int | None = None
-    tools: list[dict[str, Any]] | None = None
-
-
-class MultimodalChatResponseAPI(BaseModel):
-    """/chat/multimodal 响应体."""
+class MultimodalApiResponse(BaseModel):
+    """``/chat/multimodal`` response body."""
 
     content: str
     model: str
-    finish_reason: str | None = None
-    tool_calls: list[dict[str, Any]] = []
-    usage: dict[str, int] = {}
-    modality: str = "text"
+    usage: dict[str, Any] = {}
 
 
-@router.post("/chat/multimodal", response_model=MultimodalChatResponseAPI)
-async def multimodal_chat_endpoint(req: MultimodalChatRequest) -> MultimodalChatResponseAPI:
-    """扩展能力 endpoint: 多模态 chat (image / audio / video input).
+@router.post("/chat/multimodal", response_model=MultimodalApiResponse)
+async def multimodal_chat_endpoint(req: MultimodalApiRequest) -> MultimodalApiResponse:
+    """v3.2 W2: simplified multimodal chat (text + image + audio → text).
 
-    Body shape mirrors OpenAI Vision + Anthropic Messages content-part
-    arrays; the router dispatches to the right provider adapter.
+    Quota and cost reuse the same singletons as the text chat path
+    (``get_quota_bucket()`` / ``get_cost_recorder()``), so multimodal
+    calls are subject to the same per-tenant RPM/TPM limits and cost
+    metering.
     """
-    from ..multimodal import MultimodalContentPart, MultimodalMessage
-    from ..multimodal_router import multimodal_chat as router_multimodal_chat
+    from ..multimodal.engine import MultimodalEngine, MultimodalRequest
 
-    try:
-        msgs = [
-            MultimodalMessage(
-                role=m.role,
-                content=[
-                    MultimodalContentPart(
-                        type=p.type,
-                        text=p.text,
-                        url=p.url,
-                        data=p.data,
-                        media_type=p.media_type,
-                        detail=p.detail,
-                    )
-                    for p in m.content
-                ],
-                name=m.name,
-                tool_call_id=m.tool_call_id,
+    # --- 1. Quota check (mirrors router.chat semantics) ---
+    bucket = get_quota_bucket()
+    if bucket is not None:
+        estimated_tokens = max(1, len(req.prompt) // 4) + 100 * (
+            len(req.images) + len(req.audio)
+        )
+        try:
+            await bucket.acquire(
+                tenant_id=req.tenant_id, estimated_tokens=estimated_tokens
             )
-            for m in req.messages
-        ]
-        resp = await router_multimodal_chat(
-            req.model,
-            msgs,
-            temperature=req.temperature,
-            max_tokens=req.max_tokens,
-            tools=req.tools,
-        )
-        return MultimodalChatResponseAPI(
-            content=resp.content,
-            model=resp.model,
-            finish_reason=resp.finish_reason,
-            tool_calls=resp.tool_calls,
-            usage=resp.usage,
-            modality=resp.modality,
-        )
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e)) from e
-    except NotImplementedError as e:
-        raise HTTPException(status_code=501, detail=str(e)) from e
+        except QuotaExceededError as e:
+            raise HTTPException(
+                status_code=429,
+                detail=f"Quota exceeded for tenant '{req.tenant_id}'; retry after {e.retry_after}s",
+                headers={"Retry-After": str(e.retry_after)},
+            ) from e
+        except Exception as e:
+            logger.warning(
+                "llmgw.multimodal.quota.degraded", tenant=req.tenant_id, error=str(e)
+            )
+
+    # --- 2. Engine call ---
+    engine = MultimodalEngine()
+    request = MultimodalRequest(
+        prompt=req.prompt,
+        images=list(req.images),
+        audio=list(req.audio),
+        model=req.model,
+    )
+    try:
+        resp = await engine.chat(request)
     except Exception as e:
         logger.error("llmgw.multimodal.chat.error", error=str(e))
         raise HTTPException(status_code=500, detail=str(e)) from e
+
+    # --- 3. Cost record ---
+    recorder = get_cost_recorder()
+    if recorder is not None:
+        try:
+            await recorder.record(
+                model=req.model, tenant_id=req.tenant_id, usage=resp.usage
+            )
+        except Exception as e:
+            logger.warning("llmgw.multimodal.cost.record_failed", error=str(e))
+
+    return MultimodalApiResponse(content=resp.content, model=resp.model, usage=resp.usage)
 
 
 # ---------------------------------------------------------------------------

@@ -103,6 +103,66 @@ paths:
       x-mate-requirements:
       - FR-LLMGW-LLMGWPOSTLLMGWEMBEDDINGS
       x-mate-implementation-status: placeholder
+  /api/v1/llmgw/chat/multimodal:
+    post:
+      security:
+      - bearerAuth: []
+        tenantHeader: []
+      summary: 多模态对话(图像/语音/视频 → 文本)
+      tags:
+      - llmgw
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - prompt
+              properties:
+                prompt:
+                  type: string
+                images:
+                  type: array
+                  items:
+                    type: string
+                audio:
+                  type: array
+                  items:
+                    type: string
+                model:
+                  type: string
+                  default: gpt-4o-mini
+                tenant_id:
+                  type: string
+                  default: default
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  content:
+                    type: string
+                  model:
+                    type: string
+                  usage:
+                    type: object
+        '422':
+          description: Validation error (missing prompt)
+        '429':
+          description: Quota exceeded
+        '400':
+          $ref: ../common/errors.yaml#/components/responses/Error400
+      operationId: llmgwPostChatMultimodal
+      description: 多模态对话(图像/语音/视频 → 文本),基于 MultimodalEngine(v3.2 W2)
+      x-mate-owner: ai-runtime
+      x-mate-permission: llmgw.post
+      x-mate-requirements:
+      - FR-LLMGW-LLMGWPOSTCHATMULTIMODAL
+      x-mate-implementation-status: implemented
   /healthz:
     get:
       security:
