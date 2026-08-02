@@ -36,11 +36,11 @@ from fastapi import APIRouter, FastAPI
 # BUSINESS-SLICES P1 wave 3: hook 1 (auth).
 from mate_platform.auth import install_auth
 
-from .federation import ExternalMcpClient, FederationRegistry, FederationRouter
-from .federation_routes import router as federation_router_routes
+from .federation import ExternalMcpClient, FederationRegistry
 from .federation_routes import _set_external_client as _share_federation_external_client
 from .federation_routes import _set_outbox as _share_federation_outbox
 from .federation_routes import _set_registry as _share_federation_registry
+from .federation_routes import router as federation_router_routes
 from .resources.ontology import OntologyResource, build_ontology_resource
 from .server import MCPServer, create_server
 from .tools.kb_search import build_kb_search_tool

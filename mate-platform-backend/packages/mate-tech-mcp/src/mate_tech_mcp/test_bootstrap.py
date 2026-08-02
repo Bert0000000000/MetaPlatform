@@ -43,10 +43,21 @@ def test_ontology_module_level() -> None:
 
 
 def test_routes_registered() -> None:
-    """FastAPI 路由注册."""
-    paths = {r.path for r in app.routes if hasattr(r, "path")}  # pyright: ignore[reportAttributeAccessIssue]
-    # 核心 4 路由
+    """FastAPI 路由注册 (P3-W10 Fix-1 / W1).
+
+    Uses ``app.openapi()`` (which honours include_router routing) instead
+    of ``app.routes`` — FastAPI puts routers behind ``_IncludedRouter``
+    wrappers that do not expose their inner routes via ``r.path``.
+    """
+    schema = app.openapi()  # pyright: ignore[reportAttributeAccessIssue]
+    paths = set(schema.get("paths", {}).keys())
+    # 核心 5 路由 (spec endpoint)
     assert "/healthz" in paths
     assert "/api/v1/mcp/tools" in paths
+    assert "/api/v1/mcp/tools/{name}" in paths
     assert "/api/v1/mcp/resources" in paths
     assert "/api/v1/mcp/prompts" in paths
+    assert "/api/v1/mcp/prompts/{name}" in paths
+    # Federation 路由 (W1 commit)
+    assert "/api/v1/mcp/federation/servers" in paths
+    assert "/api/v1/mcp/federation/tools" in paths

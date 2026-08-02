@@ -14,6 +14,7 @@ the loop.
 from __future__ import annotations
 
 import asyncio
+import contextlib
 from typing import TYPE_CHECKING
 
 import structlog
@@ -63,7 +64,7 @@ class HealthChecker:
         results: dict[str, str] = {}
         # ``_servers`` maps tenant_id -> {server_id: FederatedServer}.
         # Liveness is platform-scoped, so we walk every tenant.
-        for tenant_id, bucket in self._registry._servers.items():  # noqa: SLF001
+        for tenant_id, bucket in self._registry._servers.items():
             for server_id, srv in list(bucket.items()):
                 if srv.status != "active":
                     results[server_id] = "inactive" if srv.status == "disabled" else srv.status
@@ -72,7 +73,7 @@ class HealthChecker:
                     ok = await self._remote.health_check(
                         srv.transport_url, srv.auth_token_ref
                     )
-                except Exception as e:  # noqa: BLE001 — heartbeat must not crash
+                except Exception as e:
                     logger.warning(
                         "federation.heartbeat.check_failed",
                         server_id=server_id,
@@ -106,7 +107,7 @@ class HealthChecker:
         while True:
             try:
                 await self.check_all()
-            except Exception as e:  # noqa: BLE001 — loop must survive a bad probe
+            except Exception as e:
                 logger.error("federation.heartbeat.loop_error", error=str(e))
             await asyncio.sleep(self.interval_sec)
 
@@ -114,10 +115,8 @@ class HealthChecker:
         """Cancel the background loop if one is running."""
         if self._task is not None:
             self._task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._task
-            except asyncio.CancelledError:
-                pass
             self._task = None
 
 

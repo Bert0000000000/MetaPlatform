@@ -9,10 +9,9 @@ from __future__ import annotations
 import json
 from typing import Any
 
+from mate_tech_db.base import Base, get_session  # noqa: F401
 from sqlalchemy import select
 from sqlalchemy.orm import Session
-
-from mate_tech_db.base import Base, get_session  # noqa: F401
 
 from . import sql_models as models
 from .in_memory import McpPrompt, McpResource, McpTool
@@ -304,7 +303,7 @@ def delete_prompt(tenant_id: str, pid: str) -> bool:
 # Bootstrap
 # ---------------------------------------------------------------------------
 def seed_from_inmemory(tenant_id: str) -> dict[str, int]:
-    from . import in_memory as mem  # noqa: PLC0415
+    from . import in_memory as mem
 
     counts: dict[str, int] = {}
     counts["tools"] = len(

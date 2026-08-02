@@ -39,15 +39,14 @@ from typing import Any
 
 import structlog
 from fastapi import APIRouter, HTTPException, Query, Request
-from pydantic import BaseModel, Field
-
 from mate_platform.tenancy.guards import require_tenant
+from pydantic import BaseModel, Field
 
 from .federation import (
     ExternalMcpClient,
+    FederatedServer,
     FederationRegistry,
     FederationRouter,
-    FederatedServer,
     emit_federation_event,
 )
 
@@ -66,7 +65,7 @@ federation_outbox: Any = None
 
 def _set_registry(registry: FederationRegistry) -> None:
     """Called by main.py to share its registry instance with the router."""
-    global federation_registry  # noqa: PLW0603
+    global federation_registry
     federation_registry = registry
     # Rebuild the federation router with the new registry so tool
     # routing uses the shared instance.
@@ -75,18 +74,18 @@ def _set_registry(registry: FederationRegistry) -> None:
 
 def _set_outbox(outbox: Any) -> None:
     """Called by main.py to share its outbox instance with the router."""
-    global federation_outbox  # noqa: PLW0603
+    global federation_outbox
     federation_outbox = outbox
 
 
 def _set_external_client(client: ExternalMcpClient) -> None:
     """Called by main.py to share its external MCP client with the router."""
-    global federation_router  # noqa: PLW0603
+    global federation_router
     federation_router = FederationRouter(federation_registry, client=client)
 
 
 def _rebuild_federation_router() -> None:
-    global federation_router  # noqa: PLW0603
+    global federation_router
     federation_router = FederationRouter(federation_registry)
 
 
@@ -279,10 +278,10 @@ async def invoke_remote_tool_endpoint(
 
 
 __all__ = [
-    "router",
-    "federation_registry",
-    "federation_router",
     "_set_external_client",
     "_set_outbox",
     "_set_registry",
+    "federation_registry",
+    "federation_router",
+    "router",
 ]

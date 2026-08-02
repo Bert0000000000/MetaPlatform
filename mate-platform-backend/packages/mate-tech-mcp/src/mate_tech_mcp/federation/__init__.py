@@ -34,14 +34,12 @@ cross-tenant reads (SEC-TENANT-01 hard rule 3).
 """
 from __future__ import annotations
 
-import asyncio
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Any
 
 import httpx
 import structlog
-
 from mate_platform.messaging import Event, OutboxWriter
 
 logger = structlog.get_logger(__name__)
@@ -453,12 +451,12 @@ from .mcp_remote_client import (  # noqa: E402
 __all__ = [
     "AuthError",
     "ExternalMcpClient",
+    "FederatedServer",
     "FederationClientError",
     "FederationDLQ",
     "FederationDLQEntry",
     "FederationRegistry",
     "FederationRouter",
-    "FederatedServer",
     "HealthChecker",
     "McpRemoteClient",
     "RemoteError",

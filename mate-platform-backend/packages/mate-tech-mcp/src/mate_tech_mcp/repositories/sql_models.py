@@ -4,10 +4,9 @@ Table names are prefixed with ``mcp_``.
 """
 from __future__ import annotations
 
+from mate_tech_db.base import Base
 from sqlalchemy import Boolean, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
-
-from mate_tech_db.base import Base
 
 
 class McpToolORM(Base):
