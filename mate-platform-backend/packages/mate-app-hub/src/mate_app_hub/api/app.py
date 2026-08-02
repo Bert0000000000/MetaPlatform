@@ -58,6 +58,12 @@ from ..repositories import (
     put_page,
     put_template,
 )
+from ..runtime import (
+    RuntimeAction,
+    execute_action,
+    load_app_runtime,
+    render_page,
+)
 
 router = APIRouter(prefix="/api/v1/apphub", tags=["apphub"])
 
@@ -111,6 +117,28 @@ def _emit(
             trace_id=getattr(request.state.ctx, "trace_id", ""),
         )
     )
+
+
+def _runtime_tenant_id(request: Request) -> str:
+    """Tenant resolver with X-Tenant-Id fallback.
+
+    Production: install_auth middleware populates ``request.state.ctx``.
+    Test profile (or any environment without auth middleware): falls
+    back to the ``X-Tenant-Id`` header (same pattern as
+    ``federation_routes._tenant_id``).
+    """
+    ctx = getattr(request.state, "ctx", None)
+    if ctx is not None:
+        tenant_id = getattr(ctx, "tenant_id", None)
+        if tenant_id:
+            return str(require_tenant(ctx))
+    header_tenant = request.headers.get("X-Tenant-Id")
+    if not header_tenant:
+        raise HTTPException(
+            status_code=400,
+            detail="missing tenant context (no ctx / X-Tenant-Id)",
+        )
+    return str(header_tenant)
 
 
 @router.get("/apps")
@@ -472,3 +500,67 @@ async def create_template(
         {"code": body.code, "template_type": body.template_type}, tid,
     )
     return asdict(template)
+
+
+# ---------------------------------------------------------------------------
+# APPHUB-RUNTIME-01 phase B: runtime engine endpoints
+# ---------------------------------------------------------------------------
+@router.get("/apps/{app_id}/runtime")
+async def get_app_runtime(app_id: str, request: Request) -> dict:
+    """Return the runtime context + render tree for an app."""
+    tenant_id = _runtime_tenant_id(request)
+    try:
+        ctx = load_app_runtime(tenant_id, app_id)
+    except ValueError:
+        raise HTTPException(status_code=404, detail="app not found")
+    nodes = render_page(ctx)
+    return {
+        "app_id": app_id,
+        "version": ctx.version,
+        "modules": ctx.modules,
+        "render_tree": [asdict(node) for node in nodes],
+    }
+
+
+@router.post("/apps/{app_id}/runtime/execute")
+async def execute_runtime_action(app_id: str, request: Request) -> dict:
+    """Execute a runtime action (submit_form / trigger_flow / call_api / navigate)."""
+    tenant_id = _runtime_tenant_id(request)
+    body = await request.json()
+    try:
+        ctx = load_app_runtime(tenant_id, app_id)
+    except ValueError:
+        raise HTTPException(status_code=404, detail="app not found")
+    action = RuntimeAction(
+        action_id=body["action_id"],
+        action_type=body["action_type"],
+        target=body.get("target", ""),
+    )
+    result = await execute_action(ctx, action, body.get("payload", {}))
+    return {
+        "action_id": result.action_id,
+        "success": result.success,
+        "data": result.data,
+        "error": result.error,
+    }
+
+
+@router.post("/apps/{app_id}/publish")
+async def publish_app(app_id: str, request: Request) -> dict:
+    """Mark an app as PUBLISHED and emit an outbox event."""
+    tenant_id = _runtime_tenant_id(request)
+    app = get_app(tenant_id, app_id)
+    if app is None:
+        raise HTTPException(status_code=404, detail="app not found")
+    published = ApphubApp(
+        id=app.id, tenant_id=app.tenant_id,
+        name=app.name, code=app.code, category=app.category,
+        description=app.description, version="1.0.0",
+        owner=app.owner, tags=app.tags,
+    )
+    put_app(tenant_id, published)
+    _emit(
+        request, "apphub.app.published", app_id,
+        {"version": "1.0.0", "status": "PUBLISHED"}, tenant_id,
+    )
+    return {"app_id": app_id, "status": "PUBLISHED", "version": "1.0.0"}
