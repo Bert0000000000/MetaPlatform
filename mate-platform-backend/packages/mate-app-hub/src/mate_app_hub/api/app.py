@@ -125,28 +125,6 @@ def _emit(
     )
 
 
-def _runtime_tenant_id(request: Request) -> str:
-    """Tenant resolver with X-Tenant-Id fallback.
-
-    Production: install_auth middleware populates ``request.state.ctx``.
-    Test profile (or any environment without auth middleware): falls
-    back to the ``X-Tenant-Id`` header (same pattern as
-    ``federation_routes._tenant_id``).
-    """
-    ctx = getattr(request.state, "ctx", None)
-    if ctx is not None:
-        tenant_id = getattr(ctx, "tenant_id", None)
-        if tenant_id:
-            return str(require_tenant(ctx))
-    header_tenant = request.headers.get("X-Tenant-Id")
-    if not header_tenant:
-        raise HTTPException(
-            status_code=400,
-            detail="missing tenant context (no ctx / X-Tenant-Id)",
-        )
-    return str(header_tenant)
-
-
 @router.get("/apps")
 async def list_registered_apps(
     request: Request,
@@ -514,7 +492,7 @@ async def create_template(
 @router.get("/apps/{app_id}/runtime")
 async def get_app_runtime(app_id: str, request: Request) -> dict:
     """Return the runtime context + render tree for an app."""
-    tenant_id = _runtime_tenant_id(request)
+    tenant_id = _tenant_id(request)
     try:
         ctx = load_app_runtime(tenant_id, app_id)
     except ValueError:
@@ -531,7 +509,7 @@ async def get_app_runtime(app_id: str, request: Request) -> dict:
 @router.post("/apps/{app_id}/runtime/execute")
 async def execute_runtime_action(app_id: str, request: Request) -> dict:
     """Execute a runtime action (submit_form / trigger_flow / call_api / navigate)."""
-    tenant_id = _runtime_tenant_id(request)
+    tenant_id = _tenant_id(request)
     body = await request.json()
     try:
         ctx = load_app_runtime(tenant_id, app_id)
@@ -554,7 +532,7 @@ async def execute_runtime_action(app_id: str, request: Request) -> dict:
 @router.post("/apps/{app_id}/publish")
 async def publish_app(app_id: str, request: Request) -> dict:
     """Mark an app as PUBLISHED and emit an outbox event."""
-    tenant_id = _runtime_tenant_id(request)
+    tenant_id = _tenant_id(request)
     app = get_app(tenant_id, app_id)
     if app is None:
         raise HTTPException(status_code=404, detail="app not found")
@@ -578,7 +556,7 @@ async def publish_app(app_id: str, request: Request) -> dict:
 @router.get("/shortlinks/{code}")
 async def resolve_shortlink_endpoint(code: str, request: Request) -> dict:
     """Resolve a short code to its bound app metadata."""
-    tenant_id = _runtime_tenant_id(request)
+    tenant_id = _tenant_id(request)
     try:
         result = resolve_shortlink(get_default_store(), tenant_id, code)
     except ValueError:
@@ -589,7 +567,7 @@ async def resolve_shortlink_endpoint(code: str, request: Request) -> dict:
 @router.post("/shortlinks", status_code=201)
 async def create_shortlink_endpoint(request: Request) -> dict:
     """Create a new short-link for an app."""
-    tenant_id = _runtime_tenant_id(request)
+    tenant_id = _tenant_id(request)
     body = await request.json()
     entry = create_shortlink(
         get_default_store(), tenant_id, body["app_id"], body.get("role"),
@@ -608,7 +586,7 @@ async def create_shortlink_endpoint(request: Request) -> dict:
 @router.get("/shortlinks")
 async def list_shortlinks_endpoint(request: Request) -> dict:
     """List all short-links for the current tenant."""
-    tenant_id = _runtime_tenant_id(request)
+    tenant_id = _tenant_id(request)
     entries = list_shortlinks(get_default_store(), tenant_id)
     return {
         "items": [

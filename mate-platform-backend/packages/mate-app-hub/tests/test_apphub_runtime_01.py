@@ -458,3 +458,53 @@ def test_access_denied_error() -> None:
     # Unknown role → access denied.
     assert check_runtime_access(ctx, "guest") is False
     assert RuntimeErrorCode.ACCESS_DENIED.value == "ACCESS_DENIED"
+
+
+# ---------------------------------------------------------------------------
+# K3-3 negative tenant tests (no Authorization header → 401/403)
+# ---------------------------------------------------------------------------
+def test_get_runtime_without_ctx_returns_401(client: TestClient) -> None:
+    """无 ctx 调 GET /apps/{app_id}/runtime → 401/403."""
+    response = client.get("/api/v1/apphub/apps/app-1/runtime")
+    assert response.status_code in (401, 403), (
+        f"expected 401/403, got {response.status_code}: {response.text}"
+    )
+
+
+def test_post_runtime_execute_without_ctx_returns_401(client: TestClient) -> None:
+    """无 ctx 调 POST /apps/{app_id}/runtime/execute → 401/403."""
+    response = client.post(
+        "/api/v1/apphub/apps/app-1/runtime/execute",
+        json={"action_id": "act-1", "action_type": "submit_form",
+              "target": "form-1", "payload": {}},
+    )
+    assert response.status_code in (401, 403), (
+        f"expected 401/403, got {response.status_code}: {response.text}"
+    )
+
+
+def test_post_publish_without_ctx_returns_401(client: TestClient) -> None:
+    """无 ctx 调 POST /apps/{app_id}/publish → 401/403."""
+    response = client.post("/api/v1/apphub/apps/app-1/publish")
+    assert response.status_code in (401, 403), (
+        f"expected 401/403, got {response.status_code}: {response.text}"
+    )
+
+
+def test_get_shortlink_without_ctx_returns_401(client: TestClient) -> None:
+    """无 ctx 调 GET /shortlinks/{code} → 401/403."""
+    response = client.get("/api/v1/apphub/shortlinks/ABC123")
+    assert response.status_code in (401, 403), (
+        f"expected 401/403, got {response.status_code}: {response.text}"
+    )
+
+
+def test_post_shortlink_without_ctx_returns_401(client: TestClient) -> None:
+    """无 ctx 调 POST /shortlinks → 401/403."""
+    response = client.post(
+        "/api/v1/apphub/shortlinks",
+        json={"app_id": "app-1", "role": "viewer"},
+    )
+    assert response.status_code in (401, 403), (
+        f"expected 401/403, got {response.status_code}: {response.text}"
+    )
