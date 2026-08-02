@@ -128,6 +128,7 @@ export default function TemplateSubmitPage() {
       // 截图：mock，仅保存文件名
       const screenshotNames = screenshots.map((f) => f.name).filter(Boolean);
 
+      // TODO: 切到 API — marketplace.ts 暂无 submitTemplate/createTemplate
       addCreatedTemplate({
         name: values.name,
         category: values.category,

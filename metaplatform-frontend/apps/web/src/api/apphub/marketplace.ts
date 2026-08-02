@@ -14,7 +14,7 @@ async function post<T>(url: string, body?: unknown): Promise<T> {
 export interface TemplateItem {
   templateId: string;
   name: string;
-  category: 'OA' | 'CRM' | 'HR' | 'Finance' | 'Project' | 'Other';
+  category: string;
   description: string;
   icon: string;
   tags: string[];
@@ -24,6 +24,8 @@ export interface TemplateItem {
   preview?: string;
   configSnapshot?: string;
   createdAt: string;
+  author?: string;
+  usageCount?: number;
 }
 
 export interface TemplateComment {

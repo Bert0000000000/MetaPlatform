@@ -37,6 +37,7 @@ export default function MyTemplatesPage() {
   const [activeTab, setActiveTab] = useState<'all' | 'installed' | 'created'>('all');
 
   const refresh = () => {
+    // TODO: 切到 API — marketplace.ts listTemplates 暂不支持 createdBy/source 过滤
     setTemplates(loadUserTemplates());
   };
 

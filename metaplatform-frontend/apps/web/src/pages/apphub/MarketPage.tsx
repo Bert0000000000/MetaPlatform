@@ -1,18 +1,14 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, Tag, Typography, Button, Space, Rate, Input, Select, Row, Col, Empty, Tooltip, message } from 'antd';
+import { Card, Tag, Typography, Button, Space, Rate, Input, Select, Row, Col, Empty, Tooltip, Spin, message } from 'antd';
 import * as Icons from '@ant-design/icons';
 import {
-  OFFICIAL_TEMPLATES,
   TEMPLATE_CATEGORIES,
   CATEGORY_COLOR,
   CATEGORY_LABEL,
-  computeTemplateRating,
-  installOfficialTemplate,
-  loadUserTemplates,
-  type OfficialTemplate,
   type TemplateCategory,
 } from './data/templates';
+import { listTemplates, installTemplate, type TemplateItem } from '@/api/apphub/marketplace';
 
 type SortBy = 'newest' | 'popular' | 'rating';
 
@@ -29,34 +25,48 @@ export default function MarketPage() {
   const [keyword, setKeyword] = useState('');
   const [category, setCategory] = useState<TemplateCategory | undefined>(undefined);
   const [sortBy, setSortBy] = useState<SortBy>('newest');
-  const [installedIds, setInstalledIds] = useState<Set<string>>(
-    () => new Set(loadUserTemplates().map((t) => t.templateId)),
-  );
+  const [templates, setTemplates] = useState<TemplateItem[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [installedIds, setInstalledIds] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    const fetchTemplates = async () => {
+      setLoading(true);
+      try {
+        const data = await listTemplates({
+          keyword: keyword.trim() || undefined,
+          category,
+        });
+        setTemplates(data);
+      } catch {
+        setTemplates([]);
+        message.error('加载模板列表失败');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchTemplates();
+  }, [keyword, category]);
 
   const filtered = useMemo(() => {
-    const kw = keyword.trim().toLowerCase();
-    let list = OFFICIAL_TEMPLATES.filter((t) => {
-      if (category && t.category !== category) return false;
-      if (!kw) return true;
-      const haystack = [t.name, t.description, t.author, ...t.tags].join(' ').toLowerCase();
-      return haystack.includes(kw);
-    });
-
-    list = [...list];
-    if (sortBy === 'popular') list.sort((a, b) => b.usageCount - a.usageCount);
+    let list = [...templates];
+    if (sortBy === 'popular') list.sort((a, b) => (b.usageCount ?? b.downloadCount) - (a.usageCount ?? a.downloadCount));
     else if (sortBy === 'rating') list.sort((a, b) => b.rating - a.rating);
     else list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-
     return list;
-  }, [keyword, category, sortBy]);
+  }, [templates, sortBy]);
 
-  const handleInstall = (t: OfficialTemplate) => {
-    const result = installOfficialTemplate(t.templateId);
-    if (result) {
-      message.success(`已安装模板：${t.name}`);
-      setInstalledIds((prev) => new Set([...prev, t.templateId]));
-    } else {
-      message.info('该模板已安装，可在"我的模板"中查看');
+  const handleInstall = async (t: TemplateItem) => {
+    try {
+      const result = await installTemplate(t.templateId);
+      if (result.success) {
+        message.success(`已安装模板：${t.name}`);
+        setInstalledIds((prev) => new Set([...prev, t.templateId]));
+      } else {
+        message.info('该模板已安装，可在"我的模板"中查看');
+      }
+    } catch {
+      message.error('安装失败，请稍后重试');
     }
   };
 
@@ -76,7 +86,7 @@ export default function MarketPage() {
           <Col flex="auto">
             <Input
               prefix={<Icons.SearchOutlined />}
-              placeholder="按名称、描述、标签、作者搜索模板"
+              placeholder="按名称、描述、标签搜索模板"
               value={keyword}
               onChange={(e) => setKeyword(e.target.value)}
               allowClear
@@ -122,16 +132,16 @@ export default function MarketPage() {
         共 {filtered.length} 个模板
       </Typography.Text>
 
-      {filtered.length === 0 ? (
+      {loading ? (
+        <div style={{ textAlign: 'center', padding: 48 }}>
+          <Spin />
+        </div>
+      ) : filtered.length === 0 ? (
         <Empty description="没有匹配的模板" />
       ) : (
         <Row gutter={[16, 16]}>
           {filtered.map((t) => {
             const installed = installedIds.has(t.templateId);
-            const ratingInfo = computeTemplateRating(t.templateId, {
-              rating: t.rating,
-              ratingCount: t.ratingCount,
-            });
             return (
               <Col key={t.templateId} xs={24} sm={12} md={8} lg={6}>
                 <Card
@@ -178,7 +188,9 @@ export default function MarketPage() {
                     title={
                       <Space>
                         <Typography.Text strong>{t.name}</Typography.Text>
-                        <Tag color={CATEGORY_COLOR[t.category]}>{CATEGORY_LABEL[t.category]}</Tag>
+                        <Tag color={CATEGORY_COLOR[t.category as TemplateCategory] ?? 'default'}>
+                          {CATEGORY_LABEL[t.category as TemplateCategory] ?? t.category}
+                        </Tag>
                       </Space>
                     }
                     description={
@@ -196,14 +208,16 @@ export default function MarketPage() {
                           ))}
                         </Space>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <Rate disabled value={ratingInfo.rating} allowHalf style={{ fontSize: 12 }} />
+                          <Rate disabled value={t.rating} allowHalf style={{ fontSize: 12 }} />
                           <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                            {t.usageCount} 次使用
+                            {t.usageCount ?? t.downloadCount} 次使用
                           </Typography.Text>
                         </div>
-                        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                          作者：{t.author}
-                        </Typography.Text>
+                        {t.author && (
+                          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                            作者：{t.author}
+                          </Typography.Text>
+                        )}
                       </div>
                     }
                   />

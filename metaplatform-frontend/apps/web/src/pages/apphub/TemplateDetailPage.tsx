@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   Avatar,
@@ -12,6 +12,7 @@ import {
   Rate,
   Row,
   Space,
+  Spin,
   Tag,
   Timeline,
   Typography,
@@ -22,15 +23,15 @@ import {
   OFFICIAL_TEMPLATES,
   CATEGORY_COLOR,
   CATEGORY_LABEL,
-  addTemplateComment,
-  computeTemplateRating,
-  installOfficialTemplate,
-  loadTemplateComments,
-  loadUserTemplates,
   type OfficialTemplate,
-  type TemplateComment,
 } from './data/templates';
-import { getUser } from '@mate/shared';
+import {
+  getTemplate,
+  listTemplateComments,
+  addTemplateComment,
+  installTemplate,
+  type TemplateComment,
+} from '@/api/apphub/marketplace';
 
 const IconMap = Icons as unknown as Record<string, React.ComponentType<{ className?: string }>>;
 
@@ -61,24 +62,81 @@ interface CommentFormValues {
   comment?: string;
 }
 
+type DisplayTemplate = Omit<OfficialTemplate, 'isOfficial'> & { isOfficial: boolean };
+
 export default function TemplateDetailPage() {
   const { templateId } = useParams<{ templateId: string }>();
   const navigate = useNavigate();
+  const [template, setTemplate] = useState<DisplayTemplate | undefined>(undefined);
   const [installed, setInstalled] = useState(false);
   const [comments, setComments] = useState<TemplateComment[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [form] = Form.useForm<CommentFormValues>();
 
-  const template: OfficialTemplate | undefined = useMemo(
-    () => OFFICIAL_TEMPLATES.find((t) => t.templateId === templateId),
-    [templateId],
-  );
-
   useEffect(() => {
-    if (!templateId) return;
-    setInstalled(loadUserTemplates().some((t) => t.templateId === templateId));
-    setComments(loadTemplateComments(templateId));
+    const fetchData = async () => {
+      if (!templateId) return;
+      setLoading(true);
+      try {
+        const apiData = await getTemplate(templateId);
+        // API is primary source; merge with local data for rich preview fields
+        const localData = OFFICIAL_TEMPLATES.find((t) => t.templateId === templateId);
+        if (localData) {
+          setTemplate({
+            ...localData,
+            name: apiData.name,
+            description: apiData.description,
+            icon: apiData.icon,
+            tags: apiData.tags,
+            rating: apiData.rating,
+            ratingCount: apiData.ratingCount ?? localData.ratingCount,
+            usageCount: apiData.usageCount ?? localData.usageCount,
+            author: apiData.author ?? localData.author,
+            createdAt: apiData.createdAt,
+          });
+        } else {
+          setTemplate({
+            templateId: apiData.templateId,
+            name: apiData.name,
+            category: apiData.category as OfficialTemplate['category'],
+            description: apiData.description,
+            icon: apiData.icon,
+            tags: apiData.tags,
+            rating: apiData.rating,
+            ratingCount: apiData.ratingCount ?? 0,
+            usageCount: apiData.usageCount ?? apiData.downloadCount,
+            author: apiData.author ?? '—',
+            screenshots: [],
+            fields: [],
+            flows: [],
+            isOfficial: false,
+            createdAt: apiData.createdAt,
+          });
+        }
+      } catch {
+        setTemplate(OFFICIAL_TEMPLATES.find((t) => t.templateId === templateId));
+      } finally {
+        setLoading(false);
+      }
+
+      try {
+        const data = await listTemplateComments(templateId);
+        setComments(data);
+      } catch {
+        setComments([]);
+      }
+    };
+    fetchData();
   }, [templateId]);
+
+  if (loading) {
+    return (
+      <div style={{ textAlign: 'center', padding: 48 }}>
+        <Spin />
+      </div>
+    );
+  }
 
   if (!template) {
     return (
@@ -90,32 +148,34 @@ export default function TemplateDetailPage() {
     );
   }
 
-  const ratingInfo = computeTemplateRating(templateId!, {
-    rating: template.rating,
-    ratingCount: template.ratingCount,
-  });
+  const ratingInfo = { rating: template.rating, ratingCount: template.ratingCount ?? 0 };
 
-  const handleInstall = () => {
-    const result = installOfficialTemplate(template.templateId);
-    if (result) {
-      message.success(`已安装模板：${template.name}`);
-      setInstalled(true);
-    } else {
-      message.info('该模板已安装');
-      setInstalled(true);
+  const handleInstall = async () => {
+    try {
+      const result = await installTemplate(template.templateId);
+      if (result.success) {
+        message.success(`已安装模板：${template.name}`);
+        setInstalled(true);
+      } else {
+        message.info('该模板已安装');
+        setInstalled(true);
+      }
+    } catch {
+      message.error('安装失败，请稍后重试');
     }
   };
 
-  const handleSubmitComment = (values: CommentFormValues) => {
+  const handleSubmitComment = async (values: CommentFormValues) => {
     if (!templateId) return;
     setSubmitting(true);
     try {
-      const user = getUser();
-      const userId = user?.username ?? '匿名用户';
-      addTemplateComment(templateId, userId, values.rating, values.comment);
-      setComments(loadTemplateComments(templateId));
+      await addTemplateComment(templateId, { rating: values.rating, comment: values.comment });
+      const data = await listTemplateComments(templateId);
+      setComments(data);
       message.success('评论已提交');
       form.resetFields();
+    } catch {
+      message.error('评论提交失败');
     } finally {
       setSubmitting(false);
     }
@@ -131,7 +191,7 @@ export default function TemplateDetailPage() {
           {template.name}
         </Typography.Title>
         <Tag color={CATEGORY_COLOR[template.category]}>{CATEGORY_LABEL[template.category]}</Tag>
-        <Tag>官方模板</Tag>
+        {template.isOfficial && <Tag>官方模板</Tag>}
       </Space>
 
       <Row gutter={16}>
@@ -197,7 +257,7 @@ export default function TemplateDetailPage() {
             {template.screenshots.length === 0 ? (
               <Empty
                 image={Empty.PRESENTED_IMAGE_SIMPLE}
-                description="暂无截图（mock 数据，可后续在投稿表单中上传）"
+                description="暂无截图"
               />
             ) : (
               <Row gutter={[12, 12]}>
@@ -216,58 +276,66 @@ export default function TemplateDetailPage() {
 
           {/* 字段预览 */}
           <Card title={`字段预览（${template.fields.length} 个）`} style={{ marginBottom: 16 }}>
-            <List
-              size="small"
-              dataSource={template.fields}
-              renderItem={(field) => (
-                <List.Item>
-                  <Space>
-                    <Typography.Text strong>{field.label}</Typography.Text>
-                    <Tag>{field.fieldKey}</Tag>
-                    <Tag color="blue">{FIELD_TYPE_LABEL[field.type] ?? field.type}</Tag>
-                    {field.required ? <Tag color="red">必填</Tag> : null}
-                    {field.options && field.options.length > 0 ? (
-                      <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                        选项：{field.options.join(' / ')}
-                      </Typography.Text>
-                    ) : null}
-                  </Space>
-                </List.Item>
-              )}
-            />
+            {template.fields.length === 0 ? (
+              <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无字段定义" />
+            ) : (
+              <List
+                size="small"
+                dataSource={template.fields}
+                renderItem={(field) => (
+                  <List.Item>
+                    <Space>
+                      <Typography.Text strong>{field.label}</Typography.Text>
+                      <Tag>{field.fieldKey}</Tag>
+                      <Tag color="blue">{FIELD_TYPE_LABEL[field.type] ?? field.type}</Tag>
+                      {field.required ? <Tag color="red">必填</Tag> : null}
+                      {field.options && field.options.length > 0 ? (
+                        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                          选项：{field.options.join(' / ')}
+                        </Typography.Text>
+                      ) : null}
+                    </Space>
+                  </List.Item>
+                )}
+              />
+            )}
           </Card>
 
           {/* 流程预览 */}
           <Card title={`流程预览（${template.flows.length} 个）`} style={{ marginBottom: 16 }}>
-            {template.flows.map((flow, idx) => (
-              <Card
-                key={idx}
-                type="inner"
-                title={flow.name}
-                extra={flow.description ? <Typography.Text type="secondary">{flow.description}</Typography.Text> : null}
-                style={{ marginBottom: idx === template.flows.length - 1 ? 0 : 12 }}
-              >
-                <Timeline
-                  items={flow.nodes.map((node) => ({
-                    color: NODE_TYPE_COLOR[node.type],
-                    dot: <Icons.CheckCircleOutlined style={{ fontSize: 16 }} />,
-                    children: (
-                      <Space direction="vertical" size={0}>
-                        <Space>
-                          <Typography.Text strong>{node.name}</Typography.Text>
-                          <Tag color={NODE_TYPE_COLOR[node.type]}>{node.type}</Tag>
+            {template.flows.length === 0 ? (
+              <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无流程定义" />
+            ) : (
+              template.flows.map((flow, idx) => (
+                <Card
+                  key={idx}
+                  type="inner"
+                  title={flow.name}
+                  extra={flow.description ? <Typography.Text type="secondary">{flow.description}</Typography.Text> : null}
+                  style={{ marginBottom: idx === template.flows.length - 1 ? 0 : 12 }}
+                >
+                  <Timeline
+                    items={flow.nodes.map((node) => ({
+                      color: NODE_TYPE_COLOR[node.type],
+                      dot: <Icons.CheckCircleOutlined style={{ fontSize: 16 }} />,
+                      children: (
+                        <Space direction="vertical" size={0}>
+                          <Space>
+                            <Typography.Text strong>{node.name}</Typography.Text>
+                            <Tag color={NODE_TYPE_COLOR[node.type]}>{node.type}</Tag>
+                          </Space>
+                          {node.assignee ? (
+                            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                              处理人：{node.assignee}
+                            </Typography.Text>
+                          ) : null}
                         </Space>
-                        {node.assignee ? (
-                          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                            处理人：{node.assignee}
-                          </Typography.Text>
-                        ) : null}
-                      </Space>
-                    ),
-                  }))}
-                />
-              </Card>
-            ))}
+                      ),
+                    }))}
+                  />
+                </Card>
+              ))
+            )}
           </Card>
         </Col>
 

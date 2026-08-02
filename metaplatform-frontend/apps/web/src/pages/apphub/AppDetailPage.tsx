@@ -424,6 +424,19 @@ export default function AppDetailPage() {
                             <Button size="small" icon={<CopyOutlined />} onClick={handleCopyShortlink}>
                               复制链接
                             </Button>
+                            <div style={{ textAlign: 'center', marginTop: 8 }}>
+                              <img
+                                src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(
+                                  `${window.location.origin}/s/${shortlink.code}`,
+                                )}`}
+                                alt="QR Code"
+                                width={160}
+                                height={160}
+                              />
+                              <Typography.Text type="secondary" style={{ display: 'block', marginTop: 4 }}>
+                                扫码访问
+                              </Typography.Text>
+                            </div>
                           </Space>
                         </Card>
                       )}
