@@ -249,6 +249,56 @@ kafka:
     allowedIngressNamespaces:
       - metaplatform
       - api-gateway
+# -----------------------------------------------------------------------------
+# Apache Paimon (C1) — streaming data lake storage (REST catalog server).
+# Enabled by default per the CDC → data lake pipeline (ADR-0016 §3.1:
+# D0 Debezium → Paimon tables). The catalog runs in filesystem mode
+# with an S3-backed warehouse.
+# -----------------------------------------------------------------------------
+paimon:
+  enabled: true
+  fullnameOverride: paimon
+  replicaCount: 2
+  image:
+    repository: apache/paimon
+    tag: "0.8"
+    pullPolicy: IfNotPresent
+  catalog:
+    mode: filesystem
+    warehouse: "s3://mate-platform/data-lake"
+    hive_metastore: ""
+  resources:
+    requests:
+      memory: "1Gi"
+      cpu: "500m"
+    limits:
+      memory: "2Gi"
+      cpu: "1"
+  persistence:
+    enabled: true
+    size: 100Gi
+    storageClass: ""
+  tables:
+    autoCreate: true
+    formats: [orc, parquet]
+    retention:
+      enabled: true
+      days: 90
+  cdc:
+    enabled: true
+    debeziumConnector: "mate-platform-debezium"
+    topics:
+      prefix: "mate.cdc."
+  tenantIsolation:
+    enabled: true
+    tablePrefix: "tenant_"
+  service:
+    type: ClusterIP
+    port: 8081
+  networkPolicy:
+    enabled: true
+    allowedIngressNamespaces:
+      - metaplatform
 prometheus:
   enabled: false
 grafana:

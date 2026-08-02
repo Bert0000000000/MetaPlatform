@@ -1,0 +1,144 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "paimon.fullname" . }}
+  labels:
+    {{- include "paimon.labels" . | nindent 4 }}
+spec:
+  serviceName: {{ include "paimon.fullname" . }}-headless
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "paimon.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "paimon.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: catalog
+      annotations:
+        # Roll the pod when the ConfigMap changes (catalog tuning).
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        runAsGroup: 1001
+        fsGroup: 1001
+      containers:
+        - name: paimon
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: rest
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+          env:
+            - name: PAIMON_CATALOG_MODE
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "paimon.fullname" . }}
+                  key: catalog-mode
+            - name: PAIMON_WAREHOUSE
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "paimon.fullname" . }}
+                  key: warehouse
+            {{- if .Values.catalog.hive_metastore }}
+            - name: PAIMON_HIVE_METASTORE
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "paimon.fullname" . }}
+                  key: hive-metastore
+            {{- end }}
+            - name: PAIMON_TABLES_AUTO_CREATE
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "paimon.fullname" . }}
+                  key: tables-auto-create
+            - name: PAIMON_TABLES_FORMATS
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "paimon.fullname" . }}
+                  key: tables-formats
+            - name: PAIMON_RETENTION_ENABLED
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "paimon.fullname" . }}
+                  key: retention-enabled
+            - name: PAIMON_RETENTION_DAYS
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "paimon.fullname" . }}
+                  key: retention-days
+            {{- if .Values.cdc.enabled }}
+            - name: PAIMON_CDC_ENABLED
+              value: "true"
+            - name: PAIMON_CDC_DEBEZIUM_CONNECTOR
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "paimon.fullname" . }}
+                  key: cdc-debezium-connector
+            - name: PAIMON_CDC_TOPICS_PREFIX
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "paimon.fullname" . }}
+                  key: cdc-topics-prefix
+            {{- end }}
+            {{- if .Values.tenantIsolation.enabled }}
+            - name: PAIMON_TENANT_ISOLATION_ENABLED
+              value: "true"
+            - name: PAIMON_TENANT_TABLE_PREFIX
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "paimon.fullname" . }}
+                  key: tenant-table-prefix
+            {{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: rest
+            initialDelaySeconds: {{ .Values.probes.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probes.liveness.periodSeconds }}
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: rest
+            initialDelaySeconds: {{ .Values.probes.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probes.readiness.periodSeconds }}
+          securityContext:
+            runAsNonRoot: true
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: data
+              mountPath: /opt/paimon/data
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
+      {{- if not .Values.persistence.enabled }}
+        - name: data
+          emptyDir: {}
+      {{- end }}
+  {{- if .Values.persistence.enabled }}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+        labels:
+          {{- include "paimon.selectorLabels" . | nindent 10 }}
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: {{ .Values.persistence.size }}
+        {{- if .Values.persistence.storageClass }}
+        storageClassName: {{ .Values.persistence.storageClass }}
+        {{- end }}
+  {{- end }}

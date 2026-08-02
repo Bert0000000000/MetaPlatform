@@ -60,3 +60,6 @@ dependencies:
   - name: ge
     version: 0.1.0
     condition: ge.enabled
+  - name: paimon
+    version: 0.1.0
+    condition: paimon.enabled

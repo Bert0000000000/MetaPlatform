@@ -1,0 +1,26 @@
+apiVersion: v2
+name: paimon
+description: |
+  Apache Paimon streaming data lake storage. Provides the REST
+  catalog server consumed by Flink / Spark table store workloads
+  and the CDC → data lake pipeline (D0 Debezium → Paimon tables).
+  Supports Iceberg-compatible table format and S3-backed warehouse.
+
+type: application
+version: 0.1.0
+appVersion: "0.8"
+
+keywords:
+  - paimon
+  - data-lake
+  - streaming
+  - cdc
+  - iceberg
+
+maintainers:
+  - name: MetaPlatform Platform Owner
+    email: platform@metaplatform.local
+
+annotations:
+  category: DataLake
+  licenses: Apache-2.0

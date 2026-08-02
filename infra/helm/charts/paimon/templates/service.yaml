@@ -1,0 +1,46 @@
+{{/*
+  Headless service — required by the StatefulSet for stable pod DNS
+  names (paimon-0.paimon-headless, paimon-1.paimon-headless, …).
+  Flink / Spark connectors use these stable names for catalog
+  coordination.
+*/}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "paimon.fullname" . }}-headless
+  labels:
+    {{- include "paimon.labels" . | nindent 4 }}
+    app.kubernetes.io/component: catalog
+spec:
+  type: ClusterIP
+  clusterIP: None
+  selector:
+    {{- include "paimon.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: catalog
+  ports:
+    - name: rest
+      port: {{ .Values.service.port }}
+      targetPort: rest
+      protocol: TCP
+---
+{{/*
+  ClusterIP service — the stable REST catalog access point. Flink /
+  Spark table store clients connect to <release>-paimon:8081.
+*/}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "paimon.fullname" . }}
+  labels:
+    {{- include "paimon.labels" . | nindent 4 }}
+    app.kubernetes.io/component: catalog
+spec:
+  type: {{ .Values.service.type }}
+  selector:
+    {{- include "paimon.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: catalog
+  ports:
+    - name: rest
+      port: {{ .Values.service.port }}
+      targetPort: rest
+      protocol: TCP

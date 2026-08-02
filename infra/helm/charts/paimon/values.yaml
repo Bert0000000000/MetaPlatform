@@ -1,0 +1,86 @@
+# =============================================================================
+# Apache Paimon sub-chart values
+# =============================================================================
+# Closes the v3.2 W1 C1 task. Paimon is the streaming data lake
+# storage layer for the Mate Platform CDC → data lake pipeline
+# (ADR-0016 §3.1: D0 Debezium → Paimon tables). The catalog runs
+# in filesystem mode by default with an S3-backed warehouse; hive
+# and jdbc modes are supported via catalog.mode override.
+# =============================================================================
+
+# Force the service DNS name to "paimon" so Flink / Spark table
+# store connectors resolve the REST catalog consistently.
+fullnameOverride: paimon
+
+replicaCount: 2
+
+image:
+  repository: apache/paimon
+  tag: "0.8"
+  pullPolicy: IfNotPresent
+
+# Paimon as a Flink/Spark table store. This deployment runs the
+# REST catalog server; the warehouse is S3-backed by default.
+catalog:
+  mode: filesystem    # filesystem | hive | jdbc
+  warehouse: "s3://mate-platform/data-lake"
+  hive_metastore: ""  # set when mode=hive (e.g. thrift://hive-metastore:9083)
+
+resources:
+  requests:
+    memory: "1Gi"
+    cpu: "500m"
+  limits:
+    memory: "2Gi"
+    cpu: "1"
+
+persistence:
+  enabled: true
+  size: 100Gi
+  storageClass: ""     # "" = cluster default StorageClass
+
+# Data lake table configuration.
+tables:
+  autoCreate: true
+  formats: [orc, parquet]
+  retention:
+    enabled: true
+    days: 90
+
+# CDC integration (Debezium → Paimon tables). The connector group
+# consumes CDC topics from Kafka (D0 Debezium) and materialises
+# them into Paimon lake tables.
+cdc:
+  enabled: true
+  debeziumConnector: "mate-platform-debezium"
+  topics:
+    prefix: "mate.cdc."
+
+# G1/C1: tenant isolation — each tenant gets an independent table
+# prefix so cross-tenant lake tables are namespaced at the catalog
+# level. SEC-TENANT-01 lake writers resolve full table names as:
+#   <tablePrefix>.<tenant_id>.<domain>.<table>
+tenantIsolation:
+  enabled: true
+  tablePrefix: "tenant_"
+
+# REST catalog service port.
+service:
+  type: ClusterIP
+  port: 8081
+
+# Probes — HTTP GET on the catalog health endpoint.
+probes:
+  readiness:
+    initialDelaySeconds: 15
+    periodSeconds: 10
+  liveness:
+    initialDelaySeconds: 30
+    periodSeconds: 30
+
+# NetworkPolicy — default-deny, namespace-scoped ingress only
+# (hard rule 13). Egress restricted to DNS + S3 / Kafka (CDC sink).
+networkPolicy:
+  enabled: true
+  allowedIngressNamespaces:
+    - metaplatform
