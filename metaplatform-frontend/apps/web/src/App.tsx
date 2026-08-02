@@ -49,6 +49,7 @@ const ApphubTemplateDetailPage = lazy(() => import('./pages/apphub/TemplateDetai
 const ApphubMyTemplatesPage = lazy(() => import('./pages/apphub/MyTemplatesPage'));
 const ApphubTemplateSubmitPage = lazy(() => import('./pages/apphub/TemplateSubmitPage'));
 const ApphubAIDesignerPage = lazy(() => import('./pages/apphub/AIDesignerPage'));
+const ApphubRuntimePage = lazy(() => import('./pages/apphub/runtime/AppRuntimePage'));
 
 const OntologyModelingPage = lazy(() => import('./pages/ontology/OntologyModelingPage'));
 const OntologyDatacenterPage = lazy(() => import('./pages/ontology/OntologyDatacenterPage'));
@@ -144,6 +145,7 @@ function AppRoutes() {
     <Suspense fallback={<Loading />}>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/s/:code" element={<ApphubRuntimePage />} />
         <Route
           path="/"
           element={

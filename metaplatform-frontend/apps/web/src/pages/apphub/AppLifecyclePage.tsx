@@ -21,6 +21,7 @@ import {
   ClockCircleOutlined,
 } from '@ant-design/icons';
 import { getApp, updateApp } from '@/api/apphub/apps';
+import { publishApp } from '@/api/apphub/runtime';
 import type { AppItem, AppStatus } from '@/api/apphub/types';
 
 const STATUS_MAP: Record<AppStatus, { label: string; color: string }> = {
@@ -35,6 +36,7 @@ export default function AppLifecyclePage() {
   const [app, setApp] = useState<AppItem | null>(null);
   const [loading, setLoading] = useState(true);
   const [confirmOfflineOpen, setConfirmOfflineOpen] = useState(false);
+  const [publishing, setPublishing] = useState(false);
 
   const load = async () => {
     if (!appId) return;
@@ -69,9 +71,15 @@ export default function AppLifecyclePage() {
   };
 
   const handleOnline = async () => {
-    await updateApp(app.appId, { status: 'PUBLISHED' });
-    message.success('应用已恢复上线');
-    load();
+    setPublishing(true);
+    try {
+      await updateApp(app.appId, { status: 'PUBLISHED' });
+      await publishApp(app.appId);
+      message.success('应用已恢复上线');
+      load();
+    } finally {
+      setPublishing(false);
+    }
   };
 
   return (
@@ -92,6 +100,7 @@ export default function AppLifecyclePage() {
             type="primary"
             icon={<CloudUploadOutlined />}
             onClick={handleOnline}
+            loading={publishing}
           >
             发布
           </Button>

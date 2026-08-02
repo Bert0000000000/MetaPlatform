@@ -26,13 +26,16 @@ import {
   AppstoreOutlined,
   SendOutlined,
   CloudUploadOutlined,
+  ShareAltOutlined,
+  CopyOutlined,
 } from '@ant-design/icons';
 import { getApp, updateApp, deleteApp } from '@/api/apphub/apps';
+import { createShortlink } from '@/api/apphub/shortlink';
 import { listModules, createModule, updateModule, deleteModule } from '@/api/apphub/modules';
 import AppForm from './components/AppForm';
 import ModuleForm from './components/ModuleForm';
 import ReleaseRecordPage from './ReleaseRecordPage';
-import type { AppItem, ModuleItem, ModuleCreateRequest, ModuleUpdateRequest, AppStatus } from '@/api/apphub/types';
+import type { AppItem, ModuleItem, ModuleCreateRequest, ModuleUpdateRequest, AppStatus, Shortlink } from '@/api/apphub/types';
 import type { MenuProps } from 'antd';
 
 const STATUS_MAP: Record<AppStatus, { label: string; color: string }> = {
@@ -66,6 +69,8 @@ export default function AppDetailPage() {
   const [moduleFormOpen, setModuleFormOpen] = useState(false);
   const [editingModule, setEditingModule] = useState<ModuleItem | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [shortlink, setShortlink] = useState<Shortlink | null>(null);
+  const [shortlinkLoading, setShortlinkLoading] = useState(false);
 
   const loadApp = async () => {
     if (!appId) return;
@@ -149,6 +154,27 @@ export default function AppDetailPage() {
     await deleteModule(module.moduleId);
     message.success('模块已删除');
     loadApp();
+  };
+
+  const handleCreateShortlink = async () => {
+    if (!appId) return;
+    setShortlinkLoading(true);
+    try {
+      const sl = await createShortlink(appId);
+      setShortlink(sl);
+      message.success('短链已生成');
+    } catch {
+      message.error('短链生成失败');
+    } finally {
+      setShortlinkLoading(false);
+    }
+  };
+
+  const handleCopyShortlink = () => {
+    if (!shortlink) return;
+    const url = `${window.location.origin}/s/${shortlink.code}`;
+    navigator.clipboard?.writeText(url);
+    message.success('短链已复制');
   };
 
   const moreItems: MenuProps['items'] = [
@@ -357,6 +383,55 @@ export default function AppDetailPage() {
               key: 'releases',
               label: '发布记录',
               children: appId ? <ReleaseRecordPage appId={appId} /> : <Empty description="应用 ID 无效" />,
+            },
+            {
+              key: 'shortlink',
+              label: (
+                <span>
+                  <ShareAltOutlined /> 短链分享
+                </span>
+              ),
+              children:
+                app.status === 'PUBLISHED' ? (
+                  <div style={{ maxWidth: 480 }}>
+                    <Typography.Paragraph type="secondary">
+                      为已发布的应用生成短链，便于快速访问与分享。访问短链无需登录鉴权（自决权限）。
+                    </Typography.Paragraph>
+                    <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+                      <Button
+                        type="primary"
+                        icon={<ShareAltOutlined />}
+                        onClick={handleCreateShortlink}
+                        loading={shortlinkLoading}
+                      >
+                        生成短链
+                      </Button>
+                      {shortlink && (
+                        <Card size="small">
+                          <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                            <div>
+                              <Typography.Text type="secondary">短链 Code：</Typography.Text>
+                              <Typography.Text copyable code>
+                                {shortlink.code}
+                              </Typography.Text>
+                            </div>
+                            <div>
+                              <Typography.Text type="secondary">访问链接：</Typography.Text>
+                              <Typography.Link href={`/s/${shortlink.code}`} target="_blank">
+                                {`${window.location.origin}/s/${shortlink.code}`}
+                              </Typography.Link>
+                            </div>
+                            <Button size="small" icon={<CopyOutlined />} onClick={handleCopyShortlink}>
+                              复制链接
+                            </Button>
+                          </Space>
+                        </Card>
+                      )}
+                    </Space>
+                  </div>
+                ) : (
+                  <Empty description="应用发布后可生成短链" />
+                ),
             },
           ]}
         />

@@ -332,3 +332,42 @@ export interface DashboardGenResult {
   widgets: DashboardGenWidget[];
   apiExamples: DashboardApiExample[];
 }
+
+// ===== Runtime + Shortlink types (APPHUB-RUNTIME-01) =====
+
+export interface RenderNode {
+  node_type: 'page' | 'form' | 'flow' | 'board';
+  title: string;
+  layout: Record<string, unknown>;
+  children: RenderNode[];
+  config: Record<string, unknown>;
+}
+
+export interface AppRuntime {
+  app_id: string;
+  version: string;
+  modules: Record<string, unknown>[];
+  render_tree: RenderNode[];
+}
+
+export interface RuntimeAction {
+  action_id: string;
+  action_type: 'submit_form' | 'trigger_flow' | 'call_api' | 'navigate';
+  target: string;
+  payload?: Record<string, unknown>;
+}
+
+export interface ActionResult {
+  action_id: string;
+  success: boolean;
+  data: Record<string, unknown>;
+  error: string | null;
+}
+
+export interface Shortlink {
+  code: string;
+  app_id: string;
+  role?: string;
+  expires_at?: string;
+  created_at: string;
+}
