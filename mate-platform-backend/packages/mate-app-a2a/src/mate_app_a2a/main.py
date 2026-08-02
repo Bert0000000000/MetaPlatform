@@ -14,6 +14,7 @@ from fastapi import FastAPI
 from mate_platform.auth import install_auth
 
 from .api import router as a2a_router
+from .bootstrap.agent_registration import register_deerflow_at_startup_if_enabled
 
 
 def create_app() -> FastAPI:
@@ -29,6 +30,9 @@ def create_app() -> FastAPI:
     # tenant-bound state via require_tenant.
     install_auth(app, extra_anonymous_paths={"/api/v1/a2a/health"})
     app.include_router(a2a_router)
+    # Auto-register the DeerFlow deep-research agent so it is available
+    # without manual configuration (PR-3).
+    register_deerflow_at_startup_if_enabled()
     return app
 
 
