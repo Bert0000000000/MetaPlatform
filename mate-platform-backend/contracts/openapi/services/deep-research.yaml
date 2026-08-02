@@ -1,0 +1,153 @@
+openapi: 3.1.0
+info:
+  title: Deep Research Agent API
+  version: 1.0.0
+  x-mate-owner: ai-protocols
+  description: |
+    Canonical contract for the Deep Research A2A agent. Delegates deep
+    web research tasks to the DeerFlow Engine.
+  contact:
+    name: Mate Platform API Governance
+    email: api-governance@metaplatform.local
+servers:
+  - url: /
+tags:
+  - name: deep-research
+    description: Deep Research agent operations
+security:
+  - bearerAuth: []
+    tenantHeader: []
+    oidcScopes: [platform.write]
+paths:
+  /api/v1/a2a/agent/deep-research/invoke:
+    post:
+      security:
+        - bearerAuth: []
+          tenantHeader: []
+          oidcScopes: [platform.write]
+      tags:
+        - deep-research
+      summary: Delegate a deep research task to DeerFlow
+      operationId: deepResearchInvokeDeepResearch
+      description: |
+        Invokes the Deep Research agent. The caller supplies a
+        capability id (currently only `web-research`) and an input
+        payload describing the query, depth, and source budget. The
+        agent delegates to DeerFlow Engine and returns a markdown
+        report plus the sources used.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeepResearchInvokeRequest'
+      responses:
+        '200':
+          description: Research completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeepResearchInvokeResponse'
+        '400':
+          description: Malformed request (unknown capability, empty query)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Missing or invalid bearer token
+        '403':
+          description: Tenant binding rejected
+        '503':
+          description: DeerFlow Engine unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      x-mate-owner: ai-protocols
+      x-mate-permission: deep-research.invoke
+      x-mate-requirements:
+        - FR-DEEP-RESEARCH-INVOKE
+      x-mate-implementation-status: implemented
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+    tenantHeader:
+      type: apiKey
+      in: header
+      name: X-Tenant-Id
+    oidcScopes:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: /protocol/openid-connect/token
+          scopes:
+            platform.read: read access
+            platform.write: write access
+  schemas:
+    DeepResearchInvokeRequest:
+      type: object
+      required: [capability_id, input]
+      properties:
+        capability_id:
+          type: string
+          enum: [web-research]
+          description: The capability to invoke.
+        input:
+          $ref: '#/components/schemas/DeepResearchInput'
+    DeepResearchInput:
+      type: object
+      required: [query]
+      properties:
+        query:
+          type: string
+          description: The research question.
+        depth:
+          type: string
+          enum: [shallow, medium, deep]
+          default: deep
+        max_sources:
+          type: integer
+          default: 10
+          minimum: 1
+        output_format:
+          type: string
+          enum: [markdown, json]
+          default: markdown
+    DeepResearchInvokeResponse:
+      type: object
+      properties:
+        capability_id:
+          type: string
+        report:
+          type: string
+        sources:
+          type: array
+          items:
+            $ref: '#/components/schemas/Source'
+        duration_ms:
+          type: integer
+    Source:
+      type: object
+      properties:
+        url:
+          type: string
+        title:
+          type: string
+        snippet:
+          type: string
+        reliability:
+          type: string
+          enum: [high, medium, low]
+        fetched_at:
+          type: string
+          format: date-time
+    ErrorResponse:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
