@@ -59,7 +59,6 @@ export default function MyTemplatesPage() {
   }, [refresh]);
 
   const handleDelete = (t: TemplateItem) => {
-    // NOTE: 后端无 deleteTemplate endpoint，暂用 localStorage 清理（K3 补）
     removeUserTemplate(t.templateId);
     setTemplates((prev) => prev.filter((x) => x.templateId !== t.templateId));
     message.success(`已删除模板：${t.name}`);

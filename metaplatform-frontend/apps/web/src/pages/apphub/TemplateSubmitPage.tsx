@@ -91,6 +91,14 @@ const ICON_OPTIONS = [
   'CheckSquareOutlined',
 ];
 
+/** 模板投稿 — 本地暂存实现，后端 endpoint 接入后无缝切换为 API 调用 */
+async function submitTemplate(
+  payload: Parameters<typeof addCreatedTemplate>[0],
+): Promise<{ templateId: string }> {
+  const tpl = addCreatedTemplate(payload);
+  return { templateId: tpl.templateId };
+}
+
 export default function TemplateSubmitPage() {
   const navigate = useNavigate();
   const [form] = Form.useForm<SubmitFormValues>();
@@ -128,8 +136,7 @@ export default function TemplateSubmitPage() {
       // 截图：mock，仅保存文件名
       const screenshotNames = screenshots.map((f) => f.name).filter(Boolean);
 
-      // NOTE: 后端无 submitTemplate endpoint，暂用 localStorage（K3 补）
-      addCreatedTemplate({
+      await submitTemplate({
         name: values.name,
         category: values.category,
         description: values.description,
