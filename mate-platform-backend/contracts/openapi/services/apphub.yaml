@@ -533,11 +533,19 @@ paths:
                 $ref: '#/components/schemas/ApiResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
       description: Get the runtime status of an application.
       x-mate-owner: application-platform
-      x-mate-permission: runtime.read
+      x-mate-permission: apphub.get
+      x-mate-requirements:
+      - FR-APPHUB-RUNTIME-001
       x-mate-implementation-status: implemented
   /api/v1/apphub/apps/{appId}/runtime/execute:
     post:
@@ -570,11 +578,19 @@ paths:
                 $ref: '#/components/schemas/ApiResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
       description: Execute a runtime action for an application.
       x-mate-owner: application-platform
-      x-mate-permission: runtime.execute
+      x-mate-permission: apphub.write
+      x-mate-requirements:
+      - FR-APPHUB-RUNTIME-002
       x-mate-implementation-status: implemented
   /api/v1/apphub/apps/{appId}/publish:
     post:
@@ -607,11 +623,19 @@ paths:
                 $ref: '#/components/schemas/ApiResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
       description: Publish a new version of an application.
       x-mate-owner: application-platform
       x-mate-permission: apphub.write
+      x-mate-requirements:
+      - FR-APPHUB-RUNTIME-003
       x-mate-implementation-status: implemented
   /api/v1/apphub/shortlinks:
     get:
@@ -635,11 +659,19 @@ paths:
                 $ref: '#/components/schemas/ApiResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
       description: List shortlinks for the current tenant.
       x-mate-owner: application-platform
-      x-mate-permission: shortlink.read
+      x-mate-permission: apphub.get
+      x-mate-requirements:
+      - FR-APPHUB-RUNTIME-006
       x-mate-implementation-status: implemented
     post:
       security:
@@ -665,11 +697,19 @@ paths:
                 $ref: '#/components/schemas/ApiResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
       description: Create a new shortlink for an application.
       x-mate-owner: application-platform
-      x-mate-permission: shortlink.write
+      x-mate-permission: apphub.write
+      x-mate-requirements:
+      - FR-APPHUB-RUNTIME-005
       x-mate-implementation-status: implemented
   /api/v1/apphub/shortlinks/{code}:
     get:
@@ -696,11 +736,19 @@ paths:
                 $ref: '#/components/schemas/ApiResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
       description: Resolve a shortlink by code.
       x-mate-owner: application-platform
-      x-mate-permission: shortlink.read
+      x-mate-permission: apphub.get
+      x-mate-requirements:
+      - FR-APPHUB-RUNTIME-004
       x-mate-implementation-status: implemented
 components:
   securitySchemes:
@@ -1107,3 +1155,80 @@ components:
           - ACTIVE
           - INACTIVE
           - ERROR
+    AppRuntime:
+      type: object
+      required:
+      - app_id
+      - version
+      - modules
+      - render_tree
+      properties:
+        app_id:
+          type: string
+        version:
+          type: string
+        modules:
+          type: array
+          items:
+            type: string
+        render_tree:
+          $ref: '#/components/schemas/RenderNode'
+    Shortlink:
+      type: object
+      required:
+      - code
+      - app_id
+      - tenant_id
+      - role
+      - expires_at
+      - created_at
+      properties:
+        code:
+          type: string
+        app_id:
+          type: string
+        tenant_id:
+          type: string
+        role:
+          type: string
+        expires_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+    RenderNode:
+      type: object
+      required:
+      - node_type
+      - title
+      - layout
+      - children
+      - config
+      properties:
+        node_type:
+          type: string
+        title:
+          type: string
+        layout:
+          type: string
+        children:
+          type: array
+          items:
+            $ref: '#/components/schemas/RenderNode'
+        config:
+          type: object
+    ActionResult:
+      type: object
+      required:
+      - action_id
+      - success
+      properties:
+        action_id:
+          type: string
+        success:
+          type: boolean
+        data:
+          type: object
+        error:
+          type: string
