@@ -1,6 +1,6 @@
 # Mate Platform 交付项目计划板（Program Board）
 
-> 更新时间：2026-08-03（含 v3.1 增量 sub-batch + P3-W6/W7 wave + PR 治理状态 + K2/K3 APPHUB-RUNTIME-01 收口 + mcp Fix-1/P3-W10 测试闭环；G1-G8 全 Accepted）
+> 更新时间：2026-08-03（含 v3.1 增量 sub-batch + P3-W6/W7 wave + PR 治理状态 + K2/K3 APPHUB-RUNTIME-01 收口 + mcp Fix-1/P3-W10 测试闭环 + v3.2 W2/W3 验证闭环；G1-G8 全 Accepted）
 > 本表跟踪各交付批次在契约、代码、测试、运行时和验收证据上的当前状态。
 
 ## v3.0 GA 状态（9/9 核心 + D0-D8 全部 Accepted）
@@ -160,3 +160,4 @@ DATA-D0-D8 全部 8 阶段 Accepted（共 45/45 tests pass）。后续 sub-batch
 | 2026-08-02 | K2 APPHUB-RUNTIME-01 收口 → Accepted | 治理收口 5 件（require_evidence 拼写 bug 修复 + openapi.json 聚合 231 paths + apphub.yaml 6 operation 字段补齐 + ACCEPTANCE 13 门禁 + PROGRAM-BOARD）+ 阶段 D 收尾 4 件（4 页面切 marketplace API + QR Code + dist 增量 + tsc 0 error）|
 | 2026-08-03 | K3 APPHUB-RUNTIME-01 后端硬化 4 件 → Accepted | K3-1 SQL 持久化（`b5250c01`）+ K3-2 OTel 4 关键路径 span（`ea5f8b42`）+ K3-3 租户双轨清理（`4dddf302`）+ K3-4 executor 真实化 RealExecutor + mate_clients stubs（`2b5aa99f`）；硬规则 6 ruff 0 + pyright 0（`5632dbc4`）；134 tests / 0 skip |
 | 2026-08-03 | mcp Fix-1 P3-W10 测试闭环 → Accepted | `4338554ed16f`（test_routes_registered 用 app.openapi() 检查 + test_rate_limit mock 修正 + test_api_edge Keycloak JWT + ruff config 扩展 + ruff auto-fix）；`pytest packages/mate-tech-mcp → 146 passed / 0 failed`，`ruff check packages/mate-tech-mcp → All checks passed!` |
+| 2026-08-03 | v3.2 W2/W3 验证闭环 → Accepted | `b2bdae4a22c2`（infra/tests G5 security parity 17→18 域加 deep-research + deep-research test_tenant_integration 模块名冲突 rename + conftest/router 修 ruff + ruff auto-fix）；`pytest packages → 1566 passed / 0 failed`，`pytest infra/tests/ → 1492 passed / 4 skipped` |
