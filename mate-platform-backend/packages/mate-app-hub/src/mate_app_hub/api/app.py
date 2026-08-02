@@ -64,6 +64,12 @@ from ..runtime import (
     load_app_runtime,
     render_page,
 )
+from ..shortlink import (
+    create_shortlink,
+    get_default_store,
+    list_shortlinks,
+    resolve_shortlink,
+)
 
 router = APIRouter(prefix="/api/v1/apphub", tags=["apphub"])
 
@@ -564,3 +570,49 @@ async def publish_app(app_id: str, request: Request) -> dict:
         {"version": "1.0.0", "status": "PUBLISHED"}, tenant_id,
     )
     return {"app_id": app_id, "status": "PUBLISHED", "version": "1.0.0"}
+
+
+# ---------------------------------------------------------------------------
+# APPHUB-RUNTIME-01 phase C: short-link endpoints
+# ---------------------------------------------------------------------------
+@router.get("/shortlinks/{code}")
+async def resolve_shortlink_endpoint(code: str, request: Request) -> dict:
+    """Resolve a short code to its bound app metadata."""
+    tenant_id = _runtime_tenant_id(request)
+    try:
+        result = resolve_shortlink(get_default_store(), tenant_id, code)
+    except ValueError:
+        raise HTTPException(status_code=404, detail="shortlink not found")
+    return result
+
+
+@router.post("/shortlinks", status_code=201)
+async def create_shortlink_endpoint(request: Request) -> dict:
+    """Create a new short-link for an app."""
+    tenant_id = _runtime_tenant_id(request)
+    body = await request.json()
+    entry = create_shortlink(
+        get_default_store(), tenant_id, body["app_id"], body.get("role"),
+    )
+    _emit(
+        request, "apphub.shortlink.created", entry.code,
+        {"app_id": body["app_id"]}, tenant_id,
+    )
+    return {
+        "code": entry.code,
+        "app_id": entry.app_id,
+        "created_at": entry.created_at,
+    }
+
+
+@router.get("/shortlinks")
+async def list_shortlinks_endpoint(request: Request) -> dict:
+    """List all short-links for the current tenant."""
+    tenant_id = _runtime_tenant_id(request)
+    entries = list_shortlinks(get_default_store(), tenant_id)
+    return {
+        "items": [
+            {"code": e.code, "app_id": e.app_id, "created_at": e.created_at}
+            for e in entries
+        ],
+    }
