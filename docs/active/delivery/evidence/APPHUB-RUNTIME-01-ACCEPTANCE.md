@@ -1,8 +1,8 @@
 # APPHUB-RUNTIME-01 — 应用中心运行时引擎 + 短链 ACCEPTANCE
 
 > 验收日期: 2026-08-02
-> 范围: APPHUB-RUNTIME-01 批次 K1(4 commit)+ K2(收口)
-> 结论: ✅ Accepted
+> 范围: APPHUB-RUNTIME-01 批次 K1(4 commit)+ K2(收口)+ K2.1(evidence 闭环)
+> 结论: ✅ Accepted (K2.1 evidence 闭环)
 
 ## 1. 改动清单(K1 4 commit + K2 收口)
 
@@ -45,4 +45,26 @@
 
 ## 4. 结论
 
-✅ Accepted(批次 K1 4 commit + K2 收口 / 107 tests / 13 门禁)
+✅ Accepted (K2.1 evidence 闭环)
+
+K1 4 commit + K2 5 commit + 8e69f1eb + K2.1 evidence 闭环
+107 tests / 0 skip / 13 硬规则 8 ✅ / 2 🟡 / 3 N/A
+K2 5 处核心瑕疵 + 1 项 tsc 日志已全部修复
+
+## 5. K2.1 6 处硬证据补齐(2026-08-02)
+
+| # | 瑕疵 | 修复证据 |
+|---|---|---|
+| A-1 | 6 op 强类型 schema | apphub.yaml 200/201 响应 → AppRuntime/ActionResult/Shortlink |
+| A-2 | x-mate-required-tenant: true | apphub.yaml grep 6 命中 |
+| A-3 | 409/422 错误响应 | POST op 补 409+422 / GET op 补 422 |
+| B-1 | MyTemplates/TemplateSubmit | 切 marketplace API + TODO 移除 |
+| B-2 | QR Code 本地化 | qrcode.react 替换 api.qrserver.com |
+| C-1 | tsc 日志 | tsc-out.log / tsc-err.log 提交(exit 0) |
+
+## 6. 提交链
+
+- K1: dadd68bf / 53c5c71b / bb12d860 / e3d924d3
+- K2: bb87bc94 / f859165d / 3810d929 / ad4d64b9 / 59a72d52
+- K2 治理: 8e69f1eb
+- K2.1: aafa7775 / df6b22e6 / 10c986ff / (本批 C+D)
