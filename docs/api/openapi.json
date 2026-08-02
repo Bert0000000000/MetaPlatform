@@ -2,8 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Mate Platform Aggregated API",
-    "version": "2026-08-02",
-    "description": "Aggregated from 18 service specs, 282 operations."
+    "version": "2026-08-02"
   },
   "paths": {
     "/api/v1/a2a/agent-cards/search": {
@@ -1218,7 +1217,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiResponse"
+                  "$ref": "#/components/schemas/AppRuntime"
                 }
               }
             }
@@ -1235,6 +1234,9 @@
           "404": {
             "$ref": "#/components/responses/NotFound"
           },
+          "422": {
+            "description": "Unprocessable Entity (validation error)"
+          },
           "500": {
             "$ref": "#/components/responses/ServerError"
           }
@@ -1242,6 +1244,7 @@
         "description": "Get the runtime status of an application.",
         "x-mate-owner": "application-platform",
         "x-mate-permission": "apphub.get",
+        "x-mate-required-tenant": true,
         "x-mate-requirements": [
           "FR-APPHUB-RUNTIME-001"
         ],
@@ -1290,7 +1293,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiResponse"
+                  "$ref": "#/components/schemas/ActionResult"
                 }
               }
             }
@@ -1307,6 +1310,12 @@
           "404": {
             "$ref": "#/components/responses/NotFound"
           },
+          "409": {
+            "description": "Conflict (resource already exists or state conflict)"
+          },
+          "422": {
+            "description": "Unprocessable Entity (validation error)"
+          },
           "500": {
             "$ref": "#/components/responses/ServerError"
           }
@@ -1314,6 +1323,7 @@
         "description": "Execute a runtime action for an application.",
         "x-mate-owner": "application-platform",
         "x-mate-permission": "apphub.write",
+        "x-mate-required-tenant": true,
         "x-mate-requirements": [
           "FR-APPHUB-RUNTIME-002"
         ],
@@ -1362,7 +1372,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiResponse"
+                  "$ref": "#/components/schemas/AppRuntime"
                 }
               }
             }
@@ -1379,6 +1389,12 @@
           "404": {
             "$ref": "#/components/responses/NotFound"
           },
+          "409": {
+            "description": "Conflict (resource already exists or state conflict)"
+          },
+          "422": {
+            "description": "Unprocessable Entity (validation error)"
+          },
           "500": {
             "$ref": "#/components/responses/ServerError"
           }
@@ -1386,6 +1402,7 @@
         "description": "Publish a new version of an application.",
         "x-mate-owner": "application-platform",
         "x-mate-permission": "apphub.write",
+        "x-mate-required-tenant": true,
         "x-mate-requirements": [
           "FR-APPHUB-RUNTIME-003"
         ],
@@ -1422,7 +1439,10 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiResponse"
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Shortlink"
+                  }
                 }
               }
             }
@@ -1446,6 +1466,7 @@
         "description": "List shortlinks for the current tenant.",
         "x-mate-owner": "application-platform",
         "x-mate-permission": "apphub.get",
+        "x-mate-required-tenant": true,
         "x-mate-requirements": [
           "FR-APPHUB-RUNTIME-006"
         ],
@@ -1482,7 +1503,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiResponse"
+                  "$ref": "#/components/schemas/Shortlink"
                 }
               }
             }
@@ -1499,6 +1520,12 @@
           "404": {
             "$ref": "#/components/responses/NotFound"
           },
+          "409": {
+            "description": "Conflict (resource already exists or state conflict)"
+          },
+          "422": {
+            "description": "Unprocessable Entity (validation error)"
+          },
           "500": {
             "$ref": "#/components/responses/ServerError"
           }
@@ -1506,6 +1533,7 @@
         "description": "Create a new shortlink for an application.",
         "x-mate-owner": "application-platform",
         "x-mate-permission": "apphub.write",
+        "x-mate-required-tenant": true,
         "x-mate-requirements": [
           "FR-APPHUB-RUNTIME-005"
         ],
@@ -1544,7 +1572,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiResponse"
+                  "$ref": "#/components/schemas/Shortlink"
                 }
               }
             }
@@ -1561,6 +1589,9 @@
           "404": {
             "$ref": "#/components/responses/NotFound"
           },
+          "422": {
+            "description": "Unprocessable Entity (validation error)"
+          },
           "500": {
             "$ref": "#/components/responses/ServerError"
           }
@@ -1568,6 +1599,7 @@
         "description": "Resolve a shortlink by code.",
         "x-mate-owner": "application-platform",
         "x-mate-permission": "apphub.get",
+        "x-mate-required-tenant": true,
         "x-mate-requirements": [
           "FR-APPHUB-RUNTIME-004"
         ],
@@ -17068,6 +17100,6 @@
     "operations": 282,
     "schemas": 81,
     "services": 18,
-    "last_generated": "2026-08-02T07:04:58.450846+00:00"
+    "last_generated": "2026-08-02T08:07:35.879573+00:00"
   }
 }

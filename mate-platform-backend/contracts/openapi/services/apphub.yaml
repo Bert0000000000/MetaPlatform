@@ -530,7 +530,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                $ref: '#/components/schemas/AppRuntime'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -539,11 +539,14 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+        '422':
+          description: Unprocessable Entity (validation error)
         '500':
           $ref: '#/components/responses/ServerError'
       description: Get the runtime status of an application.
       x-mate-owner: application-platform
       x-mate-permission: apphub.get
+      x-mate-required-tenant: true
       x-mate-requirements:
       - FR-APPHUB-RUNTIME-001
       x-mate-implementation-status: implemented
@@ -575,7 +578,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                $ref: '#/components/schemas/ActionResult'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -584,11 +587,16 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+        '409':
+          description: Conflict (resource already exists or state conflict)
+        '422':
+          description: Unprocessable Entity (validation error)
         '500':
           $ref: '#/components/responses/ServerError'
       description: Execute a runtime action for an application.
       x-mate-owner: application-platform
       x-mate-permission: apphub.write
+      x-mate-required-tenant: true
       x-mate-requirements:
       - FR-APPHUB-RUNTIME-002
       x-mate-implementation-status: implemented
@@ -620,7 +628,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                $ref: '#/components/schemas/AppRuntime'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -629,11 +637,16 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+        '409':
+          description: Conflict (resource already exists or state conflict)
+        '422':
+          description: Unprocessable Entity (validation error)
         '500':
           $ref: '#/components/responses/ServerError'
       description: Publish a new version of an application.
       x-mate-owner: application-platform
       x-mate-permission: apphub.write
+      x-mate-required-tenant: true
       x-mate-requirements:
       - FR-APPHUB-RUNTIME-003
       x-mate-implementation-status: implemented
@@ -656,7 +669,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                type: array
+                items:
+                  $ref: '#/components/schemas/Shortlink'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -670,6 +685,7 @@ paths:
       description: List shortlinks for the current tenant.
       x-mate-owner: application-platform
       x-mate-permission: apphub.get
+      x-mate-required-tenant: true
       x-mate-requirements:
       - FR-APPHUB-RUNTIME-006
       x-mate-implementation-status: implemented
@@ -694,7 +710,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                $ref: '#/components/schemas/Shortlink'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -703,11 +719,16 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+        '409':
+          description: Conflict (resource already exists or state conflict)
+        '422':
+          description: Unprocessable Entity (validation error)
         '500':
           $ref: '#/components/responses/ServerError'
       description: Create a new shortlink for an application.
       x-mate-owner: application-platform
       x-mate-permission: apphub.write
+      x-mate-required-tenant: true
       x-mate-requirements:
       - FR-APPHUB-RUNTIME-005
       x-mate-implementation-status: implemented
@@ -733,7 +754,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                $ref: '#/components/schemas/Shortlink'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -742,11 +763,14 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+        '422':
+          description: Unprocessable Entity (validation error)
         '500':
           $ref: '#/components/responses/ServerError'
       description: Resolve a shortlink by code.
       x-mate-owner: application-platform
       x-mate-permission: apphub.get
+      x-mate-required-tenant: true
       x-mate-requirements:
       - FR-APPHUB-RUNTIME-004
       x-mate-implementation-status: implemented
