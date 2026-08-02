@@ -54,7 +54,7 @@ def fresh_app() -> TestClient:
     return TestClient(create_app(), raise_server_exceptions=False)
 
 
-def test_wrong_tenant_403(fresh_app: TestClient) -> None:
+def test_wrong_tenant_403(fresh_app: TestClient)-> None:
     token_a = _token(tenant_id="tenant-acme")
     r = fresh_app.get(
         "/api/v1/apphub/apps",
@@ -67,7 +67,7 @@ def test_wrong_tenant_403(fresh_app: TestClient) -> None:
     assert "tenant" in r.text.lower()
 
 
-def test_missing_scope_403(fresh_app: TestClient) -> None:
+def test_missing_scope_403(fresh_app: TestClient)-> None:
     """Token without `platform.read` still reaches the handler today.
 
     Step 4 (per-scope ACL wiring via mate_clients.security.BearerAuth)
@@ -82,7 +82,7 @@ def test_missing_scope_403(fresh_app: TestClient) -> None:
     assert r.status_code == 200, r.text
 
 
-def test_no_tenant_400(fresh_app: TestClient) -> None:
+def test_no_tenant_400(fresh_app: TestClient)-> None:
     token = _token(tenant_id="")
     r = fresh_app.get(
         "/api/v1/apphub/apps",
@@ -94,7 +94,7 @@ def test_no_tenant_400(fresh_app: TestClient) -> None:
     assert r.json()["code"] == "E_TENANT_REQUIRED"
 
 
-def test_tenant_isolation_ok(fresh_app: TestClient) -> None:
+def test_tenant_isolation_ok(fresh_app: TestClient)-> None:
     """Acme and globex must see disjoint catalogs.
 
     This is the strongest isolation guarantee: same endpoint,

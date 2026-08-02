@@ -6,7 +6,7 @@ expired so callers (HTTP layer) can map it to a 404.
 """
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from ..telemetry import get_tracer
 from .repository import InMemoryShortlinkStore
@@ -30,10 +30,10 @@ def resolve(
             raise ValueError("shortlink not found")
         if entry.expires_at:
             expires = datetime.fromisoformat(entry.expires_at)
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
             # Normalise naive (tz-naive) expiry timestamps to UTC for compare.
             if expires.tzinfo is None:
-                expires = expires.replace(tzinfo=timezone.utc)
+                expires = expires.replace(tzinfo=UTC)
             if expires < now:
                 raise ValueError("shortlink expired")
         return {

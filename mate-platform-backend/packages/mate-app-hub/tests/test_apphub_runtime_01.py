@@ -16,11 +16,9 @@ import asyncio
 
 import pytest
 from fastapi.testclient import TestClient
-
 from mate_app_hub.main import create_app
 from mate_app_hub.repositories import in_memory as in_memory_repo
 from mate_app_hub.runtime import (
-    ActionResult,
     RenderNode,
     RuntimeAction,
     RuntimeContext,
@@ -33,6 +31,7 @@ from mate_app_hub.runtime import (
     render_page,
     resolve_field_binding,
 )
+
 from mate_platform.messaging.outbox import InMemoryOutboxWriter
 
 
@@ -40,7 +39,7 @@ from mate_platform.messaging.outbox import InMemoryOutboxWriter
 # Fixtures
 # ---------------------------------------------------------------------------
 @pytest.fixture(autouse=True)
-def _reset_store() -> None:
+def _reset_store() -> None:  # pyright: ignore[reportUnusedFunction]
     """Reset the in-memory store before and after each test."""
     in_memory_repo.reset_store()
     yield
@@ -65,7 +64,7 @@ def client(outbox: InMemoryOutboxWriter) -> TestClient:
 # ---------------------------------------------------------------------------
 # Schema tests (3)
 # ---------------------------------------------------------------------------
-def test_runtime_context_creation() -> None:
+def test_runtime_context_creation()-> None:
     ctx = RuntimeContext(
         app_id="kb", tenant_id="tenant-acme",
         version="1.0.0", user_role="admin",
@@ -78,7 +77,7 @@ def test_runtime_context_creation() -> None:
     assert len(ctx.modules) == 1
 
 
-def test_render_node_tree() -> None:
+def test_render_node_tree()-> None:
     child = RenderNode(node_type="form", title="Child Form")
     parent = RenderNode(
         node_type="page", title="Parent Page",
@@ -90,7 +89,7 @@ def test_render_node_tree() -> None:
     assert parent.children[0].node_type == "form"
 
 
-def test_runtime_action_creation() -> None:
+def test_runtime_action_creation()-> None:
     action = RuntimeAction(
         action_id="act-1",
         action_type="submit_form",
@@ -106,18 +105,18 @@ def test_runtime_action_creation() -> None:
 # ---------------------------------------------------------------------------
 # Loader tests (6)
 # ---------------------------------------------------------------------------
-def test_load_app_runtime_existing_app() -> None:
+def test_load_app_runtime_existing_app()-> None:
     ctx = load_app_runtime("tenant-acme", "kb")
     assert ctx.app_id == "kb"
     assert ctx.tenant_id == "tenant-acme"
 
 
-def test_load_app_runtime_nonexistent_returns_error() -> None:
+def test_load_app_runtime_nonexistent_returns_error()-> None:
     with pytest.raises(ValueError, match="not found"):
         load_app_runtime("tenant-acme", "nonexistent-app")
 
 
-def test_load_app_runtime_cross_tenant_returns_error() -> None:
+def test_load_app_runtime_cross_tenant_returns_error()-> None:
     from mate_app_hub.repositories import ApphubApp, put_app
 
     # Register a custom app only in tenant-acme.
@@ -138,7 +137,7 @@ def test_load_app_runtime_cross_tenant_returns_error() -> None:
         load_app_runtime("tenant-globex", "rt-only")
 
 
-def test_load_app_runtime_includes_modules() -> None:
+def test_load_app_runtime_includes_modules()-> None:
     ctx = load_app_runtime("tenant-acme", "kb")
     assert len(ctx.modules) >= 1
     module_codes = {m["code"] for m in ctx.modules}
@@ -146,14 +145,14 @@ def test_load_app_runtime_includes_modules() -> None:
     assert "kb-doc" in module_codes
 
 
-def test_load_app_runtime_includes_pages() -> None:
+def test_load_app_runtime_includes_pages()-> None:
     ctx = load_app_runtime("tenant-acme", "kb")
     for mod in ctx.modules:
         assert "pages" in mod
         assert isinstance(mod["pages"], list)
 
 
-def test_load_app_runtime_version_latest() -> None:
+def test_load_app_runtime_version_latest()-> None:
     ctx = load_app_runtime("tenant-acme", "kb")
     # Default version="latest" resolves to the app's actual version.
     assert ctx.version is not None
@@ -163,7 +162,7 @@ def test_load_app_runtime_version_latest() -> None:
 # ---------------------------------------------------------------------------
 # Renderer tests (5)
 # ---------------------------------------------------------------------------
-def test_render_page_returns_nodes() -> None:
+def test_render_page_returns_nodes()-> None:
     ctx = RuntimeContext(
         app_id="test-app", tenant_id="t1",
         modules=[{
@@ -180,7 +179,7 @@ def test_render_page_returns_nodes() -> None:
     assert all(n.node_type == "page" for n in nodes)
 
 
-def test_render_page_filtered_by_module() -> None:
+def test_render_page_filtered_by_module()-> None:
     ctx = RuntimeContext(
         app_id="test-app", tenant_id="t1",
         modules=[
@@ -201,13 +200,13 @@ def test_render_page_filtered_by_module() -> None:
     assert nodes[0].config["module_code"] == "mod-a"
 
 
-def test_render_page_empty_app_returns_empty() -> None:
+def test_render_page_empty_app_returns_empty()-> None:
     ctx = RuntimeContext(app_id="empty", tenant_id="t1", modules=[])
     nodes = render_page(ctx)
     assert nodes == []
 
 
-def test_render_node_has_layout() -> None:
+def test_render_node_has_layout()-> None:
     ctx = RuntimeContext(
         app_id="test-app", tenant_id="t1",
         modules=[{
@@ -221,7 +220,7 @@ def test_render_node_has_layout() -> None:
     assert nodes[0].layout["type"] == "two_col"
 
 
-def test_render_node_has_children() -> None:
+def test_render_node_has_children()-> None:
     child = RenderNode(node_type="form", title="Sub-form")
     parent = RenderNode(node_type="page", title="Page", children=[child])
     assert len(parent.children) == 1
@@ -238,35 +237,35 @@ def _ctx() -> RuntimeContext:
     return RuntimeContext(app_id="kb", tenant_id="tenant-acme")
 
 
-def test_execute_submit_form_success() -> None:
+def test_execute_submit_form_success()-> None:
     action = RuntimeAction(action_id="a1", action_type="submit_form", target="f1")
     result = asyncio.run(execute_action(_ctx(), action, {"name": "test"}))
     assert result.success is True
     assert result.data["submitted"] is True
 
 
-def test_execute_trigger_flow_success() -> None:
+def test_execute_trigger_flow_success()-> None:
     action = RuntimeAction(action_id="a2", action_type="trigger_flow", target="flow-1")
     result = asyncio.run(execute_action(_ctx(), action, {}))
     assert result.success is True
     assert result.data["flow_id"] == "flow-1"
 
 
-def test_execute_call_api_success() -> None:
+def test_execute_call_api_success()-> None:
     action = RuntimeAction(action_id="a3", action_type="call_api", target="/api/v1/test")
     result = asyncio.run(execute_action(_ctx(), action, {}))
     assert result.success is True
     assert result.data["endpoint"] == "/api/v1/test"
 
 
-def test_execute_navigate_returns_url() -> None:
+def test_execute_navigate_returns_url()-> None:
     action = RuntimeAction(action_id="a4", action_type="navigate", target="/kb/detail")
     result = asyncio.run(execute_action(_ctx(), action, {}))
     assert result.success is True
     assert result.data["url"] == "/kb/detail"
 
 
-def test_execute_unknown_action_returns_error() -> None:
+def test_execute_unknown_action_returns_error()-> None:
     action = RuntimeAction(action_id="a5", action_type="delete_record", target="x")
     result = asyncio.run(execute_action(_ctx(), action, {}))
     assert result.success is False
@@ -274,7 +273,7 @@ def test_execute_unknown_action_returns_error() -> None:
     assert "unknown" in result.error.lower()
 
 
-def test_execute_action_with_empty_payload() -> None:
+def test_execute_action_with_empty_payload()-> None:
     action = RuntimeAction(action_id="a6", action_type="submit_form", target="f2")
     result = asyncio.run(execute_action(_ctx(), action, {}))
     assert result.success is True
@@ -284,14 +283,14 @@ def test_execute_action_with_empty_payload() -> None:
 # ---------------------------------------------------------------------------
 # Binding tests (3)
 # ---------------------------------------------------------------------------
-def test_resolve_field_binding_basic() -> None:
+def test_resolve_field_binding_basic()-> None:
     form_config = {"fields": [{"name": "title", "bind": "flow_title"}]}
     flow_config = {"variables": {"flow_title": {"type": "string"}}}
     mapping = resolve_field_binding(form_config, flow_config)
     assert mapping["title"] == "flow_title"
 
 
-def test_resolve_field_binding_no_flow_config() -> None:
+def test_resolve_field_binding_no_flow_config()-> None:
     form_config = {"fields": [{"name": "title"}, {"name": "body"}]}
     mapping = resolve_field_binding(form_config, {})
     # No flow variables → identity mapping.
@@ -299,7 +298,7 @@ def test_resolve_field_binding_no_flow_config() -> None:
     assert mapping["body"] == "body"
 
 
-def test_resolve_field_binding_complex_mapping() -> None:
+def test_resolve_field_binding_complex_mapping()-> None:
     form_config = {
         "fields": [
             {"name": "applicant", "bind": "initiator"},
@@ -324,25 +323,25 @@ def test_resolve_field_binding_complex_mapping() -> None:
 # ---------------------------------------------------------------------------
 # Authz tests (4)
 # ---------------------------------------------------------------------------
-def test_admin_has_full_access() -> None:
+def test_admin_has_full_access()-> None:
     ctx = RuntimeContext(app_id="kb", tenant_id="t1", user_role="admin")
     assert check_runtime_access(ctx, "admin") is True
     assert check_publish_access("admin") is True
 
 
-def test_editor_blocked_from_publish() -> None:
+def test_editor_blocked_from_publish()-> None:
     ctx = RuntimeContext(app_id="kb", tenant_id="t1", user_role="editor")
     assert check_runtime_access(ctx, "editor") is True
     assert check_publish_access("editor") is False
 
 
-def test_viewer_read_only() -> None:
+def test_viewer_read_only()-> None:
     ctx = RuntimeContext(app_id="kb", tenant_id="t1", user_role="viewer")
     assert check_runtime_access(ctx, "viewer") is True
     assert check_publish_access("viewer") is False
 
 
-def test_check_shortlink_access_role_match() -> None:
+def test_check_shortlink_access_role_match()-> None:
     ctx = RuntimeContext(app_id="kb", tenant_id="t1")
     assert check_shortlink_access(ctx, "viewer") is True
     assert check_shortlink_access(ctx, None) is False
@@ -351,9 +350,7 @@ def test_check_shortlink_access_role_match() -> None:
 # ---------------------------------------------------------------------------
 # Endpoint tests (5)
 # ---------------------------------------------------------------------------
-def test_get_runtime_endpoint_returns_200(
-    client: TestClient, auth_headers_acme: dict[str, str],
-) -> None:
+def test_get_runtime_endpoint_returns_200(client: TestClient, auth_headers_acme: dict[str, str])-> None:
     r = client.get("/api/v1/apphub/apps/kb/runtime", headers=auth_headers_acme)
     assert r.status_code == 200, r.text
     body = r.json()
@@ -363,11 +360,7 @@ def test_get_runtime_endpoint_returns_200(
     assert len(body["modules"]) >= 1
 
 
-def test_get_runtime_endpoint_cross_tenant_404(
-    client: TestClient,
-    auth_headers_acme: dict[str, str],
-    auth_headers_globex: dict[str, str],
-) -> None:
+def test_get_runtime_endpoint_cross_tenant_404(client: TestClient, auth_headers_acme: dict[str, str], auth_headers_globex: dict[str, str])-> None:
     # Register a custom app in tenant-acme only.
     r_reg = client.post(
         "/api/v1/apphub/apps",
@@ -387,9 +380,7 @@ def test_get_runtime_endpoint_cross_tenant_404(
     assert r.status_code == 404, r.text
 
 
-def test_execute_endpoint_submit_form(
-    client: TestClient, auth_headers_acme: dict[str, str],
-) -> None:
+def test_execute_endpoint_submit_form(client: TestClient, auth_headers_acme: dict[str, str])-> None:
     r = client.post(
         "/api/v1/apphub/apps/kb/runtime/execute",
         json={
@@ -406,9 +397,7 @@ def test_execute_endpoint_submit_form(
     assert body["action_id"] == "act-1"
 
 
-def test_publish_endpoint_returns_published(
-    client: TestClient, auth_headers_acme: dict[str, str],
-) -> None:
+def test_publish_endpoint_returns_published(client: TestClient, auth_headers_acme: dict[str, str])-> None:
     r = client.post(
         "/api/v1/apphub/apps/kb/publish",
         headers=auth_headers_acme,
@@ -420,11 +409,7 @@ def test_publish_endpoint_returns_published(
     assert body["app_id"] == "kb"
 
 
-def test_publish_endpoint_emits_outbox(
-    client: TestClient,
-    auth_headers_acme: dict[str, str],
-    outbox: InMemoryOutboxWriter,
-) -> None:
+def test_publish_endpoint_emits_outbox(client: TestClient, auth_headers_acme: dict[str, str], outbox: InMemoryOutboxWriter)-> None:
     client.post(
         "/api/v1/apphub/apps/kb/publish",
         headers=auth_headers_acme,
@@ -438,7 +423,7 @@ def test_publish_endpoint_emits_outbox(
 # ---------------------------------------------------------------------------
 # Errors tests (3)
 # ---------------------------------------------------------------------------
-def test_error_code_enum_values() -> None:
+def test_error_code_enum_values()-> None:
     assert RuntimeErrorCode.APP_NOT_FOUND.value == "APP_NOT_FOUND"
     assert RuntimeErrorCode.MODULE_NOT_FOUND.value == "MODULE_NOT_FOUND"
     assert RuntimeErrorCode.ACTION_NOT_SUPPORTED.value == "ACTION_NOT_SUPPORTED"
@@ -446,14 +431,14 @@ def test_error_code_enum_values() -> None:
     assert RuntimeErrorCode.VERSION_CONFLICT.value == "VERSION_CONFLICT"
 
 
-def test_app_not_found_error() -> None:
+def test_app_not_found_error()-> None:
     with pytest.raises(ValueError, match="not found"):
         load_app_runtime("tenant-acme", "no-such-app")
     # The error code is available for structured error handling.
     assert RuntimeErrorCode.APP_NOT_FOUND.value == "APP_NOT_FOUND"
 
 
-def test_access_denied_error() -> None:
+def test_access_denied_error()-> None:
     ctx = RuntimeContext(app_id="kb", tenant_id="t1")
     # Unknown role → access denied.
     assert check_runtime_access(ctx, "guest") is False
@@ -463,7 +448,7 @@ def test_access_denied_error() -> None:
 # ---------------------------------------------------------------------------
 # K3-3 negative tenant tests (no Authorization header → 401/403)
 # ---------------------------------------------------------------------------
-def test_get_runtime_without_ctx_returns_401(client: TestClient) -> None:
+def test_get_runtime_without_ctx_returns_401(client: TestClient)-> None:
     """无 ctx 调 GET /apps/{app_id}/runtime → 401/403."""
     response = client.get("/api/v1/apphub/apps/app-1/runtime")
     assert response.status_code in (401, 403), (
@@ -471,7 +456,7 @@ def test_get_runtime_without_ctx_returns_401(client: TestClient) -> None:
     )
 
 
-def test_post_runtime_execute_without_ctx_returns_401(client: TestClient) -> None:
+def test_post_runtime_execute_without_ctx_returns_401(client: TestClient)-> None:
     """无 ctx 调 POST /apps/{app_id}/runtime/execute → 401/403."""
     response = client.post(
         "/api/v1/apphub/apps/app-1/runtime/execute",
@@ -483,7 +468,7 @@ def test_post_runtime_execute_without_ctx_returns_401(client: TestClient) -> Non
     )
 
 
-def test_post_publish_without_ctx_returns_401(client: TestClient) -> None:
+def test_post_publish_without_ctx_returns_401(client: TestClient)-> None:
     """无 ctx 调 POST /apps/{app_id}/publish → 401/403."""
     response = client.post("/api/v1/apphub/apps/app-1/publish")
     assert response.status_code in (401, 403), (
@@ -491,7 +476,7 @@ def test_post_publish_without_ctx_returns_401(client: TestClient) -> None:
     )
 
 
-def test_get_shortlink_without_ctx_returns_401(client: TestClient) -> None:
+def test_get_shortlink_without_ctx_returns_401(client: TestClient)-> None:
     """无 ctx 调 GET /shortlinks/{code} → 401/403."""
     response = client.get("/api/v1/apphub/shortlinks/ABC123")
     assert response.status_code in (401, 403), (
@@ -499,7 +484,7 @@ def test_get_shortlink_without_ctx_returns_401(client: TestClient) -> None:
     )
 
 
-def test_post_shortlink_without_ctx_returns_401(client: TestClient) -> None:
+def test_post_shortlink_without_ctx_returns_401(client: TestClient)-> None:
     """无 ctx 调 POST /shortlinks → 401/403."""
     response = client.post(
         "/api/v1/apphub/shortlinks",

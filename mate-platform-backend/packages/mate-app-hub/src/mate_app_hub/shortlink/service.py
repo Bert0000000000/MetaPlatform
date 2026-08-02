@@ -6,7 +6,7 @@ HTTP endpoints.
 """
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from ..telemetry import get_tracer
 from .generator import generate_code
@@ -42,7 +42,7 @@ def create_shortlink(
                 break
         if code is None:
             raise ValueError("code collision after 3 retries")
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
         entry = ShortlinkEntry(
             id=f"sl-{code}",
             tenant_id=tenant_id,

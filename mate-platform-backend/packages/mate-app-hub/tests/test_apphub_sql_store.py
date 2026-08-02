@@ -6,15 +6,21 @@ store's CRUD + tenant isolation for the 5 apphub entities.
 from __future__ import annotations
 
 import pytest
-
 from mate_app_hub.repositories import in_memory as mem
-from mate_app_hub.repositories import sql_models as models  # noqa: F401
+from mate_app_hub.repositories import (
+    sql_models as models,  # noqa: F401  # pyright: ignore[reportUnusedImport]
+)
 from mate_app_hub.repositories import sql_store as sql
-from mate_tech_db.base import Base, create_all, init_engine, reset_engine
+
+from mate_tech_db.base import (  # pyright: ignore[reportUnusedImport]
+    create_all,
+    init_engine,
+    reset_engine,
+)
 
 
 @pytest.fixture(autouse=True)
-def _fresh_db() -> None:
+def _fresh_db() -> None:  # pyright: ignore[reportUnusedFunction]
     """Reset the engine and create all tables before each test."""
     reset_engine()
     init_engine("sqlite:///:memory:")

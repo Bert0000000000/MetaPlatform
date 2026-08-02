@@ -16,6 +16,7 @@
     "pythonVersion": "3.12",
     "typeCheckingMode": "strict",
     "useLibraryCodeForTypes": true,
+    "reportMissingImports": "none",
     "reportMissingTypeStubs": false,
     "reportUnknownMemberType": false,
     "reportUnknownVariableType": false,
@@ -54,6 +55,7 @@
         "services/auth-service/src",
         "packages/mate-kernel/src",
         "packages/mate-platform/src",
-        "packages/mate-clients/src"
+        "packages/mate-clients/src",
+        "packages/mate-app-hub/src"
     ]
 }

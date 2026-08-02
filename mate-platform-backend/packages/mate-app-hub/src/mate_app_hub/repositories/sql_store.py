@@ -9,6 +9,7 @@ Dict fields (``content``) are JSON-serialised to TEXT.
 from __future__ import annotations
 
 import json
+from datetime import datetime
 from typing import Any
 
 from sqlalchemy import select
@@ -16,6 +17,7 @@ from sqlalchemy.orm import Session
 
 from mate_tech_db.base import get_session
 
+from ..shortlink.repository import ShortlinkEntry
 from . import sql_models as models
 from .in_memory import (
     ApphubApp,
@@ -416,7 +418,6 @@ def seed_from_inmemory(tenant_id: str) -> dict[str, int]:
 # ---------------------------------------------------------------------------
 def _orm_to_shortlink(row: models.ApphubShortlinkORM):
     """Re-hydrate an ORM row into a shortlink.repository.ShortlinkEntry."""
-    from ..shortlink.repository import ShortlinkEntry
     return ShortlinkEntry(
         id=row.id,
         tenant_id=row.tenant_id,
@@ -428,7 +429,7 @@ def _orm_to_shortlink(row: models.ApphubShortlinkORM):
     )
 
 
-def put_shortlink(tenant_id: str, entry) -> object:
+def put_shortlink(tenant_id: str, entry: ShortlinkEntry) -> object:
     """Insert or update a shortlink entry for the given tenant."""
     if not tenant_id:
         return entry
@@ -439,7 +440,7 @@ def put_shortlink(tenant_id: str, entry) -> object:
         existing.code = entry.code
         existing.role = entry.role
         existing.expires_at = (
-            __import__("datetime").datetime.fromisoformat(entry.expires_at)
+            datetime.fromisoformat(entry.expires_at)
             if entry.expires_at
             else None
         )
@@ -451,7 +452,7 @@ def put_shortlink(tenant_id: str, entry) -> object:
             code=entry.code,
             role=entry.role,
             expires_at=(
-                __import__("datetime").datetime.fromisoformat(entry.expires_at)
+                datetime.fromisoformat(entry.expires_at)
                 if entry.expires_at
                 else None
             ),

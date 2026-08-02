@@ -18,13 +18,13 @@ services.
 from __future__ import annotations
 
 import pytest
-
 from mate_app_hub.runtime.executor import (
     MockExecutor,
     RealExecutor,
     get_executor,
 )
 from mate_app_hub.runtime.schema import RuntimeAction, RuntimeContext
+
 from mate_clients.api_gateway import APIGatewayClient
 from mate_clients.forms import FormsClient
 from mate_clients.wfe import FlowableClient
@@ -49,9 +49,7 @@ def ctx() -> RuntimeContext:
     )
 
 
-def test_real_executor_submit_form_returns_submission_id(
-    real_executor: RealExecutor, ctx: RuntimeContext,
-) -> None:
+def test_real_executor_submit_form_returns_submission_id(real_executor: RealExecutor, ctx: RuntimeContext)-> None:
     """RealExecutor.submit_form → FormsClient.submit with synthetic id."""
     action = RuntimeAction(action_id="act-1", action_type="submit_form", target="form-1")
     import asyncio
@@ -65,9 +63,7 @@ def test_real_executor_submit_form_returns_submission_id(
     assert result.data["app_id"] == "app-1"
 
 
-def test_real_executor_trigger_flow_returns_process_instance_id(
-    real_executor: RealExecutor, ctx: RuntimeContext,
-) -> None:
+def test_real_executor_trigger_flow_returns_process_instance_id(real_executor: RealExecutor, ctx: RuntimeContext)-> None:
     """RealExecutor.trigger_flow → FlowableClient.start_process."""
     action = RuntimeAction(
         action_id="act-2", action_type="trigger_flow", target="process.approval",
@@ -82,9 +78,7 @@ def test_real_executor_trigger_flow_returns_process_instance_id(
     assert result.data["business_key"] == "app-1"
 
 
-def test_real_executor_call_api_returns_call_id(
-    real_executor: RealExecutor, ctx: RuntimeContext,
-) -> None:
+def test_real_executor_call_api_returns_call_id(real_executor: RealExecutor, ctx: RuntimeContext)-> None:
     """RealExecutor.call_api → APIGatewayClient.invoke."""
     action = RuntimeAction(action_id="act-3", action_type="call_api", target="api.echo")
     import asyncio
@@ -97,9 +91,7 @@ def test_real_executor_call_api_returns_call_id(
     assert result.data["echoed_payload"] == {"input": "hello"}
 
 
-def test_real_executor_navigate_returns_target(
-    real_executor: RealExecutor, ctx: RuntimeContext,
-) -> None:
+def test_real_executor_navigate_returns_target(real_executor: RealExecutor, ctx: RuntimeContext)-> None:
     """RealExecutor.navigate → 仅返回跳转目标."""
     action = RuntimeAction(
         action_id="act-4", action_type="navigate", target="/dashboard",
@@ -110,9 +102,7 @@ def test_real_executor_navigate_returns_target(
     assert result.data == {"navigate": "/dashboard"}
 
 
-def test_real_executor_dispatch_routes_to_correct_handler(
-    real_executor: RealExecutor, ctx: RuntimeContext,
-) -> None:
+def test_real_executor_dispatch_routes_to_correct_handler(real_executor: RealExecutor, ctx: RuntimeContext)-> None:
     """RealExecutor.dispatch dispatches by action_type."""
     action = RuntimeAction(
         action_id="act-5", action_type="trigger_flow", target="process.x",
@@ -123,9 +113,7 @@ def test_real_executor_dispatch_routes_to_correct_handler(
     assert "processInstanceId" in result.data
 
 
-def test_real_executor_dispatch_unknown_action_returns_error(
-    real_executor: RealExecutor, ctx: RuntimeContext,
-) -> None:
+def test_real_executor_dispatch_unknown_action_returns_error(real_executor: RealExecutor, ctx: RuntimeContext)-> None:
     """Unknown action_type → success=False with error message."""
     action = RuntimeAction(
         action_id="act-6", action_type="not_a_real_action", target="x",
@@ -136,7 +124,7 @@ def test_real_executor_dispatch_unknown_action_returns_error(
     assert "unknown action type" in (result.error or "")
 
 
-def test_get_executor_returns_real_by_default() -> None:
+def test_get_executor_returns_real_by_default()-> None:
     """get_executor() with no env override returns RealExecutor."""
     import os
     os.environ.pop("APPHUB_EXECUTOR_MODE", None)
@@ -144,7 +132,7 @@ def test_get_executor_returns_real_by_default() -> None:
     assert isinstance(executor, RealExecutor)
 
 
-def test_get_executor_returns_mock_when_mode_is_mock() -> None:
+def test_get_executor_returns_mock_when_mode_is_mock()-> None:
     """APPHUB_EXECUTOR_MODE=mock → MockExecutor."""
     import os
     os.environ["APPHUB_EXECUTOR_MODE"] = "mock"
@@ -155,9 +143,7 @@ def test_get_executor_returns_mock_when_mode_is_mock() -> None:
         os.environ.pop("APPHUB_EXECUTOR_MODE", None)
 
 
-def test_mock_executor_dispatch_returns_legacy_shape(
-    ctx: RuntimeContext,
-) -> None:
+def test_mock_executor_dispatch_returns_legacy_shape(ctx: RuntimeContext)-> None:
     """MockExecutor.dispatch delegates to legacy execute_action."""
     import asyncio
     mock = MockExecutor()

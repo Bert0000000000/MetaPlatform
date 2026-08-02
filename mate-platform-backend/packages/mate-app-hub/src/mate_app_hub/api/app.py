@@ -25,11 +25,10 @@ from __future__ import annotations
 import re
 from dataclasses import asdict
 from datetime import datetime
-from typing import Any
+from typing import Annotated, Any
 
 from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import BaseModel, Field
-from typing import Annotated
 
 from mate_platform.messaging.events import Event
 from mate_platform.messaging.outbox import InMemoryOutboxWriter
@@ -497,7 +496,7 @@ async def get_app_runtime(app_id: str, request: Request) -> dict:
     try:
         ctx = load_app_runtime(tenant_id, app_id)
     except ValueError:
-        raise HTTPException(status_code=404, detail="app not found")
+        raise HTTPException(status_code=404, detail="app not found") from None
     nodes = render_page(ctx)
     return {
         "app_id": app_id,
@@ -515,7 +514,7 @@ async def execute_runtime_action(app_id: str, request: Request) -> dict:
     try:
         ctx = load_app_runtime(tenant_id, app_id)
     except ValueError:
-        raise HTTPException(status_code=404, detail="app not found")
+        raise HTTPException(status_code=404, detail="app not found") from None
     action = RuntimeAction(
         action_id=body["action_id"],
         action_type=body["action_type"],
@@ -561,7 +560,7 @@ async def resolve_shortlink_endpoint(code: str, request: Request) -> dict:
     try:
         result = resolve_shortlink(get_default_store(), tenant_id, code)
     except ValueError:
-        raise HTTPException(status_code=404, detail="shortlink not found")
+        raise HTTPException(status_code=404, detail="shortlink not found") from None
     return result
 
 

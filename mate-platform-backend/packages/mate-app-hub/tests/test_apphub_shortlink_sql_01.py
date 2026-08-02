@@ -16,25 +16,23 @@ Uses an in-memory SQLite engine via ``mate_tech_db.base.init_engine``
 """
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
+from typing import Any
 
 import pytest
-
 from mate_app_hub.repositories import sql_store
-from mate_app_hub.repositories.sql_models import ApphubShortlinkORM  # noqa: F401
 from mate_app_hub.shortlink.repository import InMemoryShortlinkStore, ShortlinkEntry
 from mate_app_hub.shortlink.resolver import resolve
 from mate_app_hub.shortlink.service import (
     create_shortlink,
-    list_shortlinks,
     resolve_shortlink,
-    revoke_shortlink,
 )
+
 from mate_tech_db.base import create_all, init_engine, reset_engine
 
 
 @pytest.fixture(autouse=True)
-def _fresh_db() -> None:
+def _fresh_db() -> None:  # pyright: ignore[reportUnusedFunction]
     """Reset the engine and create all tables before each test."""
     reset_engine()
     init_engine("sqlite:///:memory:")
@@ -43,9 +41,9 @@ def _fresh_db() -> None:
     reset_engine()
 
 
-def _put(**kwargs) -> ShortlinkEntry:
+def _put(**kwargs: Any) -> ShortlinkEntry:
     """Convenience helper: build a ShortlinkEntry and put_shortlink via sql_store."""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     expires = kwargs.get("expires_at")
     # Derive a unique id from the code so multiple inserts in one
     # test do not overwrite each other (sl-1, sl-2, ...).
@@ -63,8 +61,8 @@ def _put(**kwargs) -> ShortlinkEntry:
 
 def test_create_and_resolve_round_trip() -> None:
     """put_shortlink + get_shortlink_by_code round-trip preserves fields."""
-    future = datetime.now(timezone.utc) + timedelta(hours=1)
-    entry = _put(
+    future = datetime.now(UTC) + timedelta(hours=1)
+    _put(
         tenant_id="tenant-a", code="ABC123",
         app_id="app-1", role="editor", expires_at=future,
     )
@@ -86,7 +84,7 @@ def test_cross_tenant_isolation() -> None:
 
 def test_expires_at_filter() -> None:
     """A past expires_at makes resolve raise ValueError("shortlink expired")."""
-    past = datetime.now(timezone.utc) - timedelta(hours=1)
+    past = datetime.now(UTC) - timedelta(hours=1)
     entry = _put(
         tenant_id="tenant-a", code="OLD01",
         app_id="app-1", expires_at=past,
@@ -126,7 +124,7 @@ def test_shortlink_exists_helper() -> None:
 
 def test_resolve_shortlink_helper() -> None:
     """service.resolve_shortlink delegates to resolver.resolve."""
-    future = datetime.now(timezone.utc) + timedelta(hours=1)
+    future = datetime.now(UTC) + timedelta(hours=1)
     entry = _put(
         tenant_id="tenant-a", code="HLP01",
         app_id="app-1", role="admin", expires_at=future,
@@ -147,7 +145,7 @@ def test_revoke_shortlink_helper() -> None:
 
 def test_create_shortlink_helper_with_expires_at() -> None:
     """service.create_shortlink with expires_at passes it through."""
-    future = datetime.now(timezone.utc) + timedelta(hours=2)
+    future = datetime.now(UTC) + timedelta(hours=2)
     store = InMemoryShortlinkStore()
     entry = create_shortlink(store, "tenant-a", "app-1", expires_at=future)
     assert entry.expires_at is not None

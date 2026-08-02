@@ -20,13 +20,12 @@ from collections.abc import Iterator
 
 import pytest
 from fastapi.testclient import TestClient
-from opentelemetry.sdk.trace.export.in_memory_span_exporter import (
-    InMemorySpanExporter,
-)
-
 from mate_app_hub.main import create_app
 from mate_app_hub.repositories import in_memory as in_memory_repo
 from mate_app_hub.telemetry import install_in_memory_exporter
+from opentelemetry.sdk.trace.export.in_memory_span_exporter import (
+    InMemorySpanExporter,
+)
 
 
 @pytest.fixture
@@ -52,6 +51,7 @@ def auth_headers() -> dict[str, str]:
     test directory is the root of a pytest run).
     """
     import time as _time
+
     import jwt as _pyjwt
 
     now = int(_time.time())
@@ -77,9 +77,7 @@ def auth_headers() -> dict[str, str]:
     return {"Authorization": f"Bearer {token}"}
 
 
-def test_load_app_runtime_emits_span(
-    client: TestClient, span_exporter: InMemorySpanExporter, auth_headers: dict[str, str],
-) -> None:
+def test_load_app_runtime_emits_span(client: TestClient, span_exporter: InMemorySpanExporter, auth_headers: dict[str, str])-> None:
     """GET /apps/{app_id}/runtime → apphub.runtime.load span."""
     response = client.get("/api/v1/apphub/apps/kb/runtime", headers=auth_headers)
     assert response.status_code == 200, response.text
@@ -89,9 +87,7 @@ def test_load_app_runtime_emits_span(
     )
 
 
-def test_execute_action_emits_span(
-    client: TestClient, span_exporter: InMemorySpanExporter, auth_headers: dict[str, str],
-) -> None:
+def test_execute_action_emits_span(client: TestClient, span_exporter: InMemorySpanExporter, auth_headers: dict[str, str])-> None:
     """POST /apps/{app_id}/runtime/execute → apphub.runtime.submit_form span.
 
     K3-4 (RealExecutor) emits a per-action span named after the action
@@ -114,14 +110,11 @@ def test_execute_action_emits_span(
     )
 
 
-def test_resolve_shortlink_emits_span(span_exporter: InMemorySpanExporter) -> None:
+def test_resolve_shortlink_emits_span(span_exporter: InMemorySpanExporter)-> None:
     """resolver.resolve → apphub.shortlink.resolve span."""
-    from mate_app_hub.shortlink.repository import ShortlinkEntry
-    from mate_app_hub.shortlink.resolver import resolve
-
-    store = type("Store", (), {})()  # noqa: F841
     # Use the real in-memory store for a clean test surface.
-    from mate_app_hub.shortlink.repository import InMemoryShortlinkStore
+    from mate_app_hub.shortlink.repository import InMemoryShortlinkStore, ShortlinkEntry
+    from mate_app_hub.shortlink.resolver import resolve
     real_store = InMemoryShortlinkStore()
     real_store.put(ShortlinkEntry(
         id="sl-ABC", tenant_id="tenant-a", app_id="app-1", code="ABC123",
@@ -134,7 +127,7 @@ def test_resolve_shortlink_emits_span(span_exporter: InMemorySpanExporter) -> No
     )
 
 
-def test_create_shortlink_emits_span(span_exporter: InMemorySpanExporter) -> None:
+def test_create_shortlink_emits_span(span_exporter: InMemorySpanExporter)-> None:
     """service.create_shortlink → apphub.shortlink.create span."""
     from mate_app_hub.shortlink.repository import InMemoryShortlinkStore
     from mate_app_hub.shortlink.service import create_shortlink

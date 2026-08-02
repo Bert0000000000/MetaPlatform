@@ -40,7 +40,7 @@ _tracer: trace.Tracer | None = None
 
 def get_tracer() -> trace.Tracer:
     """Return the package's tracer. Initialised lazily on first call."""
-    global _tracer
+    global _tracer  # noqa: PLW0603
     if _tracer is None:
         _tracer = trace.get_tracer(_TRACER_NAME, _TRACER_VERSION)
     return _tracer
@@ -52,7 +52,7 @@ def install_in_memory_exporter() -> Generator[InMemorySpanExporter, None, None]:
     Returns the exporter so the test can introspect the captured spans.
     The provider is shut down on context exit.
     """
-    global _tracer
+    global _tracer  # noqa: PLW0603
     exporter = InMemorySpanExporter()
     provider = TracerProvider()
     provider.add_span_processor(SimpleSpanProcessor(exporter))
@@ -62,7 +62,7 @@ def install_in_memory_exporter() -> Generator[InMemorySpanExporter, None, None]:
     # of the existing provider via the SDK's add_span_processor path is
     # not exposed at the API level — so for tests we directly bypass the
     # trace singleton and rebuild the cached tracer against our provider.
-    trace._TRACER_PROVIDER_SET_ONCE._done = False  # noqa: SLF001
+    trace._TRACER_PROVIDER_SET_ONCE._done = False
     trace.set_tracer_provider(provider)
     _tracer = None  # force get_tracer() to pick up the new provider
     try:
