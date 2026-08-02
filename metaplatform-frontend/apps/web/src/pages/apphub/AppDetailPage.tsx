@@ -32,6 +32,7 @@ import {
 import { getApp, updateApp, deleteApp } from '@/api/apphub/apps';
 import { createShortlink } from '@/api/apphub/shortlink';
 import { listModules, createModule, updateModule, deleteModule } from '@/api/apphub/modules';
+import { QRCodeSVG } from 'qrcode.react';
 import AppForm from './components/AppForm';
 import ModuleForm from './components/ModuleForm';
 import ReleaseRecordPage from './ReleaseRecordPage';
@@ -425,13 +426,11 @@ export default function AppDetailPage() {
                               复制链接
                             </Button>
                             <div style={{ textAlign: 'center', marginTop: 8 }}>
-                              <img
-                                src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(
-                                  `${window.location.origin}/s/${shortlink.code}`,
-                                )}`}
-                                alt="QR Code"
-                                width={160}
-                                height={160}
+                              <QRCodeSVG
+                                value={`${window.location.origin}/s/${shortlink.code}`}
+                                size={160}
+                                level="M"
+                                marginSize={4}
                               />
                               <Typography.Text type="secondary" style={{ display: 'block', marginTop: 4 }}>
                                 扫码访问
