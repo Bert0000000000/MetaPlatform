@@ -18,7 +18,12 @@ from .authz import (
 )
 from .binding import resolve_field_binding
 from .errors import RuntimeErrorCode
-from .executor import execute_action
+from .executor import (
+    MockExecutor,
+    RealExecutor,
+    execute_action,
+    get_executor,
+)
 from .loader import load_app_runtime
 from .renderer import render_page
 from .schema import (
@@ -30,6 +35,8 @@ from .schema import (
 
 __all__ = [
     "ActionResult",
+    "MockExecutor",
+    "RealExecutor",
     "RenderNode",
     "RuntimeAction",
     "RuntimeContext",
@@ -38,6 +45,7 @@ __all__ = [
     "check_runtime_access",
     "check_shortlink_access",
     "execute_action",
+    "get_executor",
     "load_app_runtime",
     "render_page",
     "resolve_field_binding",

@@ -92,7 +92,11 @@ def test_load_app_runtime_emits_span(
 def test_execute_action_emits_span(
     client: TestClient, span_exporter: InMemorySpanExporter, auth_headers: dict[str, str],
 ) -> None:
-    """POST /apps/{app_id}/runtime/execute → apphub.runtime.execute span."""
+    """POST /apps/{app_id}/runtime/execute → apphub.runtime.submit_form span.
+
+    K3-4 (RealExecutor) emits a per-action span named after the action
+    type. ``submit_form`` → ``apphub.runtime.submit_form``.
+    """
     response = client.post(
         "/api/v1/apphub/apps/kb/runtime/execute",
         headers=auth_headers,
@@ -105,8 +109,8 @@ def test_execute_action_emits_span(
     )
     assert response.status_code == 200, response.text
     spans = span_exporter.get_finished_spans()
-    assert any(s.name == "apphub.runtime.execute" for s in spans), (
-        f"expected apphub.runtime.execute span, got {[s.name for s in spans]}"
+    assert any(s.name == "apphub.runtime.submit_form" for s in spans), (
+        f"expected apphub.runtime.submit_form span, got {[s.name for s in spans]}"
     )
 
 

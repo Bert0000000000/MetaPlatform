@@ -61,7 +61,7 @@ from ..repositories import (
 )
 from ..runtime import (
     RuntimeAction,
-    execute_action,
+    get_executor,
     load_app_runtime,
     render_page,
 )
@@ -521,7 +521,7 @@ async def execute_runtime_action(app_id: str, request: Request) -> dict:
         action_type=body["action_type"],
         target=body.get("target", ""),
     )
-    result = await execute_action(ctx, action, body.get("payload", {}))
+    result = await get_executor().dispatch(ctx, action, body.get("payload", {}))
     return {
         "action_id": result.action_id,
         "success": result.success,
