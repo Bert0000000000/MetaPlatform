@@ -6,6 +6,7 @@ land in subsequent phases.
 """
 from __future__ import annotations
 
+from ..telemetry import get_tracer
 from .schema import ActionResult, RuntimeAction, RuntimeContext
 
 
@@ -21,32 +22,36 @@ async def execute_action(
       - navigate     → returns the target URL
     Unknown action types return ``success=False``.
     """
-    if action.action_type == "submit_form":
+    with get_tracer().start_as_current_span("apphub.runtime.execute") as span:
+        span.set_attribute("apphub.action_type", action.action_type)
+        span.set_attribute("apphub.tenant_id", ctx.tenant_id)
+        span.set_attribute("apphub.app_id", ctx.app_id)
+        if action.action_type == "submit_form":
+            return ActionResult(
+                action_id=action.action_id,
+                success=True,
+                data={"submitted": True, "target": action.target, "payload": payload},
+            )
+        if action.action_type == "trigger_flow":
+            return ActionResult(
+                action_id=action.action_id,
+                success=True,
+                data={"triggered": True, "flow_id": action.target},
+            )
+        if action.action_type == "call_api":
+            return ActionResult(
+                action_id=action.action_id,
+                success=True,
+                data={"called": True, "endpoint": action.target},
+            )
+        if action.action_type == "navigate":
+            return ActionResult(
+                action_id=action.action_id,
+                success=True,
+                data={"url": action.target},
+            )
         return ActionResult(
             action_id=action.action_id,
-            success=True,
-            data={"submitted": True, "target": action.target, "payload": payload},
+            success=False,
+            error=f"unknown action type: {action.action_type}",
         )
-    if action.action_type == "trigger_flow":
-        return ActionResult(
-            action_id=action.action_id,
-            success=True,
-            data={"triggered": True, "flow_id": action.target},
-        )
-    if action.action_type == "call_api":
-        return ActionResult(
-            action_id=action.action_id,
-            success=True,
-            data={"called": True, "endpoint": action.target},
-        )
-    if action.action_type == "navigate":
-        return ActionResult(
-            action_id=action.action_id,
-            success=True,
-            data={"url": action.target},
-        )
-    return ActionResult(
-        action_id=action.action_id,
-        success=False,
-        error=f"unknown action type: {action.action_type}",
-    )

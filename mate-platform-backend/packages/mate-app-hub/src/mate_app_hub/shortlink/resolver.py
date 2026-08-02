@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
+from ..telemetry import get_tracer
 from .repository import InMemoryShortlinkStore
 
 
@@ -21,20 +22,23 @@ def resolve(
     unknown for the tenant, and ``ValueError("shortlink expired")``
     when ``expires_at`` is in the past.
     """
-    entry = store.get_by_code(tenant_id, code)
-    if entry is None:
-        raise ValueError("shortlink not found")
-    if entry.expires_at:
-        expires = datetime.fromisoformat(entry.expires_at)
-        now = datetime.now(timezone.utc)
-        # Normalise naive (tz-naive) expiry timestamps to UTC for compare.
-        if expires.tzinfo is None:
-            expires = expires.replace(tzinfo=timezone.utc)
-        if expires < now:
-            raise ValueError("shortlink expired")
-    return {
-        "app_id": entry.app_id,
-        "role": entry.role,
-        "expires_at": entry.expires_at,
-        "created_at": entry.created_at,
-    }
+    with get_tracer().start_as_current_span("apphub.shortlink.resolve") as span:
+        span.set_attribute("apphub.tenant_id", tenant_id)
+        span.set_attribute("apphub.shortlink_code", code)
+        entry = store.get_by_code(tenant_id, code)
+        if entry is None:
+            raise ValueError("shortlink not found")
+        if entry.expires_at:
+            expires = datetime.fromisoformat(entry.expires_at)
+            now = datetime.now(timezone.utc)
+            # Normalise naive (tz-naive) expiry timestamps to UTC for compare.
+            if expires.tzinfo is None:
+                expires = expires.replace(tzinfo=timezone.utc)
+            if expires < now:
+                raise ValueError("shortlink expired")
+        return {
+            "app_id": entry.app_id,
+            "role": entry.role,
+            "expires_at": entry.expires_at,
+            "created_at": entry.created_at,
+        }

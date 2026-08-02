@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
+from ..telemetry import get_tracer
 from .generator import generate_code
 from .repository import InMemoryShortlinkStore, ShortlinkEntry
 from .resolver import resolve
@@ -22,25 +23,28 @@ def create_shortlink(
     role: str | None = None,
 ) -> ShortlinkEntry:
     """Generate a unique code and persist a new ShortlinkEntry."""
-    code: str | None = None
-    for _ in range(_MAX_COLLISION_RETRIES):
-        candidate = generate_code()
-        if not store.exists(tenant_id, candidate):
-            code = candidate
-            break
-    if code is None:
-        raise ValueError("code collision after 3 retries")
-    now = datetime.now(timezone.utc).isoformat()
-    entry = ShortlinkEntry(
-        id=f"sl-{code}",
-        tenant_id=tenant_id,
-        app_id=app_id,
-        code=code,
-        role=role,
-        created_at=now,
-    )
-    store.put(entry)
-    return entry
+    with get_tracer().start_as_current_span("apphub.shortlink.create") as span:
+        span.set_attribute("apphub.tenant_id", tenant_id)
+        span.set_attribute("apphub.app_id", app_id)
+        code: str | None = None
+        for _ in range(_MAX_COLLISION_RETRIES):
+            candidate = generate_code()
+            if not store.exists(tenant_id, candidate):
+                code = candidate
+                break
+        if code is None:
+            raise ValueError("code collision after 3 retries")
+        now = datetime.now(timezone.utc).isoformat()
+        entry = ShortlinkEntry(
+            id=f"sl-{code}",
+            tenant_id=tenant_id,
+            app_id=app_id,
+            code=code,
+            role=role,
+            created_at=now,
+        )
+        store.put(entry)
+        return entry
 
 
 def resolve_shortlink(
