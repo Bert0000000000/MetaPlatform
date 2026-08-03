@@ -9,9 +9,10 @@ FROM mate-api-gateway:dev
 USER root
 WORKDIR /app
 
-# Copy llmgw + mate-common source
+# Copy llmgw + mate-common + mate-platform source
 COPY packages/mate-tech-llmgw/ /tmp/build/packages/mate-tech-llmgw/
 COPY packages/mate-common/ /tmp/build/packages/mate-common/
+COPY packages/mate-platform/ /tmp/build/packages/mate-platform/
 
 # Install llmgw-specific runtime deps (LLM SDKs + redis + pybreaker)
 ENV PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple/
@@ -26,6 +27,7 @@ RUN pip install --no-cache-dir \
 RUN SITE=/usr/local/lib/python3.12/site-packages && \
     cp -r /tmp/build/packages/mate-tech-llmgw/src/mate_tech_llmgw "$SITE/" && \
     cp -r /tmp/build/packages/mate-common/src/mate_common "$SITE/" && \
+    cp -r /tmp/build/packages/mate-platform/src/mate_platform "$SITE/" && \
     rm -rf /tmp/build
 
 ENV PATH="/usr/local/bin:$PATH" \

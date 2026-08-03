@@ -78,6 +78,12 @@ META-INF/
 
 # Local .env files
 .env
+.env.bak-*
+.env.local
+.env.*.local
+
+# Temporary build context (workaround for WSL2 + ACL pytest_cache locks)
+.tmp-build-context/
 
 # Temporary scripts and JSON outputs
 docs/006-TMP/*.json
